@@ -68,7 +68,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
             using (var sha256 = SHA256.Create())
             {
                 // Replace the hash with the managed DLL name.
-                var hash = sha256.ComputeHash(Encoding.UTF8.GetBytes("foobar"));
+                var hash = sha256.ComputeHash("foobar"u8);
                 var hashStr = BitConverter.ToString(hash).Replace("-", "").ToLower();
                 BinaryUtils.SearchAndReplace(tempPath, Encoding.UTF8.GetBytes(hashStr), Encoding.UTF8.GetBytes(appDll));
             }

@@ -286,7 +286,7 @@ namespace System.IO.Ports.Tests
                     Thread.Sleep(250);
                 }
 
-                com1.BaseStream.BeginWrite(new byte[] { (byte)'A' }, 0, 1, null, null);
+                com1.BaseStream.BeginWrite("A"u8, 0, 1, null, null);
                 Thread.Sleep(250);
 
                 Assert.Throws<TimeoutException>(

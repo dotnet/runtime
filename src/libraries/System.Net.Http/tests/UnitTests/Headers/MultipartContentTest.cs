@@ -21,15 +21,15 @@ namespace System.Net.Http.Tests
             stringContent.Headers.Add("latin1", "\uD83D\uDE00");
             complexContent.Add(stringContent);
 
-            var byteArrayContent = new ByteArrayContent(Encoding.ASCII.GetBytes("bar2"));
+            var byteArrayContent = new ByteArrayContent("bar2"u8);
             byteArrayContent.Headers.Add("utf8", "\uD83D\uDE00");
             complexContent.Add(byteArrayContent);
 
-            byteArrayContent = new ByteArrayContent(Encoding.ASCII.GetBytes("bar3"));
+            byteArrayContent = new ByteArrayContent("bar3"u8);
             byteArrayContent.Headers.Add("ascii", "\uD83D\uDE00");
             complexContent.Add(byteArrayContent);
 
-            byteArrayContent = new ByteArrayContent(Encoding.ASCII.GetBytes("bar4"));
+            byteArrayContent = new ByteArrayContent("bar4"u8);
             byteArrayContent.Headers.Add("default", "\uD83D\uDE00");
             complexContent.Add(byteArrayContent);
 

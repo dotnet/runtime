@@ -13,7 +13,7 @@ namespace System.Net.Tests
     {
         protected HttpListenerFactory Factory { get; }
         protected Socket Client { get; }
-        protected static byte[] SimpleMessage { get; } = Encoding.UTF8.GetBytes("Hello");
+        protected static byte[] SimpleMessage { get; } = "Hello"u8;
 
         public HttpListenerResponseTestBase()
         {
@@ -276,7 +276,7 @@ namespace System.Net.Tests
                 response.OutputStream.Write(SimpleMessage, 0, SimpleMessage.Length);
 
                 // There is no more space left in the stream - the responseEntity ("a") won't be sent.
-                response.Close(new byte[] { (byte)'a' }, willBlock);
+                response.Close("a"u8, willBlock);
                 Assert.Equal(SimpleMessage.Length, response.ContentLength64);
 
                 string clientResponse = GetClientResponse(111);
@@ -296,7 +296,7 @@ namespace System.Net.Tests
                 response.OutputStream.Write(SimpleMessage, 0, SimpleMessage.Length - 1);
 
                 // There is space left in the stream - the responseEntity will be sent.
-                response.Close(new byte[] { (byte)'a' }, willBlock);
+                response.Close("a"u8, willBlock);
                 Assert.Equal(SimpleMessage.Length, response.ContentLength64);
 
                 string clientResponse = GetClientResponse(111);
@@ -314,7 +314,7 @@ namespace System.Net.Tests
             {
                 response.SendChunked = true;
 
-                response.Close(new byte[] { (byte)'a' }, willBlock);
+                response.Close("a"u8, willBlock);
                 Assert.Equal(-1, response.ContentLength64);
 
                 string clientResponse = GetClientResponse(126);
@@ -333,7 +333,7 @@ namespace System.Net.Tests
                 response.SendChunked = true;
                 response.OutputStream.Write(SimpleMessage, 0, SimpleMessage.Length);
 
-                response.Close(new byte[] { (byte)'a' }, willBlock);
+                response.Close("a"u8, willBlock);
                 Assert.Equal(-1, response.ContentLength64);
 
                 string clientResponse = GetClientResponse(136);
@@ -372,14 +372,14 @@ namespace System.Net.Tests
 
                 if (willBlock)
                 {
-                    Assert.Throws<InvalidOperationException>(() => response.Close(new byte[] { (byte)'a', (byte)'b' }, willBlock));
+                    Assert.Throws<InvalidOperationException>(() => response.Close("ab"u8, willBlock));
                 }
                 else
                 {
                     // Since this is non-blocking, an InvalidOperation or ProtocolViolationException may be thrown,
                     // depending on timing. This is because any exceptions are swallowed up by NonBlockingCloseCallback,
                     // but the response could have closed before that.
-                    Assert.ThrowsAny<InvalidOperationException>(() => response.Close(new byte[] { (byte)'a', (byte)'b' }, willBlock));
+                    Assert.ThrowsAny<InvalidOperationException>(() => response.Close("ab"u8, willBlock));
                 }
 
                 string clientResponse = GetClientResponse(110);
@@ -426,7 +426,7 @@ namespace System.Net.Tests
                 // NonBlockingCloseCallback internally.
                 try
                 {
-                    context.Response.Close(new byte[] { (byte)'a', (byte)'b' }, willBlock);
+                    context.Response.Close("ab", willBlock);
                 }
                 catch (HttpListenerException)
                 {

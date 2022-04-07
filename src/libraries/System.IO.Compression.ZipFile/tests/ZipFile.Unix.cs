@@ -65,7 +65,7 @@ namespace System.IO.Compression.Tests
         {
             // '7600' tests that S_ISUID, S_ISGID, and S_ISVTX bits don't get extracted to file permissions
             string[] testPermissions = new[] { "777", "755", "644", "754", "7600" };
-            byte[] contents = Encoding.UTF8.GetBytes("contents");
+            byte[] contents = "contents"u8;
 
             string archivePath = GetTestFilePath();
             using (FileStream fileStream = new FileStream(archivePath, FileMode.CreateNew))

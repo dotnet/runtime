@@ -39,6 +39,13 @@ namespace System.Net.Mail
             Append(value, 0, value.Length);
         }
 
+        internal void Append(ReadOnlySpan<byte> value)
+        {
+            EnsureBuffer(value.Length);
+            value.CopyTo(_buffer.AsSpan(_offset));
+            _offset += value.Length;
+        }
+
         internal void Append(byte[] value, int offset, int count)
         {
             EnsureBuffer(count);

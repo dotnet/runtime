@@ -33,7 +33,7 @@ namespace Microsoft.Diagnostics.NETCore.Client
 
         // Helper expression to quickly get V1 magic string for comparison
         // should be 14 bytes long
-        public static byte[] DotnetIpcV1 => Encoding.ASCII.GetBytes("DOTNET_IPC_V1" + '\0');
+        public static byte[] DotnetIpcV1 => "DOTNET_IPC_V1\0"u8;
 
         public byte[] Serialize()
         {

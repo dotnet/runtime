@@ -150,7 +150,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(MultipartContentToStringMode.CopyToAsync, true)]
         public async Task ReadAsStringAsync_OneSubContentWithHeaders_MatchesExpected(MultipartContentToStringMode mode, bool async)
         {
-            var subContent = new ByteArrayContent(Encoding.UTF8.GetBytes("This is a ByteArrayContent"));
+            var subContent = new ByteArrayContent("This is a ByteArrayContent"u8);
             subContent.Headers.Add("someHeaderName", "andSomeHeaderValue");
             subContent.Headers.Add("someOtherHeaderName", new[] { "withNotOne", "ButTwoValues" });
             subContent.Headers.Add("oneMoreHeader", new[] { "withNotOne", "AndNotTwo", "butThreeValues" });
@@ -177,7 +177,7 @@ namespace System.Net.Http.Functional.Tests
         public async Task ReadAsStringAsync_TwoSubContents_MatchesExpected(MultipartContentToStringMode mode, bool async)
         {
             var mc = new MultipartContent("someSubtype", "theBoundary");
-            mc.Add(new ByteArrayContent(Encoding.UTF8.GetBytes("This is a ByteArrayContent")));
+            mc.Add(new ByteArrayContent("This is a ByteArrayContent"u8));
             mc.Add(new StringContent("This is a StringContent"));
 
             Assert.Equal(
@@ -274,9 +274,9 @@ namespace System.Net.Http.Functional.Tests
             var mc = new MultipartContent();
             if (nestedContent)
             {
-                mc.Add(new ByteArrayContent(Encoding.UTF8.GetBytes("This is a ByteArrayContent")));
+                mc.Add(new ByteArrayContent("This is a ByteArrayContent"u8));
                 mc.Add(new StringContent("This is a StringContent"));
-                mc.Add(new ByteArrayContent(Encoding.UTF8.GetBytes("Another ByteArrayContent :-)")));
+                mc.Add(new ByteArrayContent("Another ByteArrayContent :-)"u8));
             }
 
             var memStream = new MemoryStream();
@@ -399,7 +399,7 @@ namespace System.Net.Http.Functional.Tests
             stringContent.Headers.Add("StringContent", "foo");
             mc.Add(stringContent);
 
-            var byteArrayContent = new ByteArrayContent(Encoding.ASCII.GetBytes("foo"));
+            var byteArrayContent = new ByteArrayContent("foo"u8);
             byteArrayContent.Headers.Add("ByteArrayContent", "foo");
             mc.Add(byteArrayContent);
 
@@ -445,15 +445,15 @@ namespace System.Net.Http.Functional.Tests
             stringContent.Headers.Add("latin1", "\uD83D\uDE00");
             mc.Add(stringContent);
 
-            var byteArrayContent = new ByteArrayContent(Encoding.ASCII.GetBytes("bar2"));
+            var byteArrayContent = new ByteArrayContent("bar2"u8);
             byteArrayContent.Headers.Add("utf8", "\uD83D\uDE00");
             mc.Add(byteArrayContent);
 
-            byteArrayContent = new ByteArrayContent(Encoding.ASCII.GetBytes("bar3"));
+            byteArrayContent = new ByteArrayContent("bar3"u8);
             byteArrayContent.Headers.Add("ascii", "\uD83D\uDE00");
             mc.Add(byteArrayContent);
 
-            byteArrayContent = new ByteArrayContent(Encoding.ASCII.GetBytes("bar4"));
+            byteArrayContent = new ByteArrayContent("bar4"u8);
             byteArrayContent.Headers.Add("default", "\uD83D\uDE00");
             mc.Add(byteArrayContent);
 
@@ -476,28 +476,28 @@ namespace System.Net.Http.Functional.Tests
             }
 
             byte[] expected = Concat(
-                Encoding.Latin1.GetBytes("--fooBoundary\r\n"),
-                Encoding.Latin1.GetBytes("Content-Type: text/plain; charset=utf-8\r\n"),
-                Encoding.Latin1.GetBytes("latin1: "),
+                "--fooBoundary\r\n"u8,
+                "Content-Type: text/plain; charset=utf-8\r\n"u8,
+                "latin1: "u8,
                 Encoding.Latin1.GetBytes("\uD83D\uDE00"),
-                Encoding.Latin1.GetBytes("\r\n\r\n"),
-                Encoding.Latin1.GetBytes("bar1"),
-                Encoding.Latin1.GetBytes("\r\n--fooBoundary\r\n"),
-                Encoding.Latin1.GetBytes("utf8: "),
-                Encoding.UTF8.GetBytes("\uD83D\uDE00"),
-                Encoding.Latin1.GetBytes("\r\n\r\n"),
-                Encoding.Latin1.GetBytes("bar2"),
-                Encoding.Latin1.GetBytes("\r\n--fooBoundary\r\n"),
-                Encoding.Latin1.GetBytes("ascii: "),
+                "\r\n\r\n"u8,
+                "bar1"u8,
+                "\r\n--fooBoundary\r\n"u8,
+                "utf8: "u8,
+                "\uD83D\uDE00"u8,
+                "\r\n\r\n"u8,
+                "bar2"u8,
+                "\r\n--fooBoundary\r\n"u8,
+                "ascii: "u8,
                 Encoding.ASCII.GetBytes("\uD83D\uDE00"),
-                Encoding.Latin1.GetBytes("\r\n\r\n"),
-                Encoding.Latin1.GetBytes("bar3"),
-                Encoding.Latin1.GetBytes("\r\n--fooBoundary\r\n"),
-                Encoding.Latin1.GetBytes("default: "),
+                "\r\n\r\n"u8,
+                "bar3"u8,
+                "\r\n--fooBoundary\r\n"u8,
+                "default: "u8,
                 Encoding.Latin1.GetBytes("\uD83D\uDE00"),
-                Encoding.Latin1.GetBytes("\r\n\r\n"),
-                Encoding.Latin1.GetBytes("bar4"),
-                Encoding.Latin1.GetBytes("\r\n--fooBoundary--\r\n"));
+                "\r\n\r\n"u8,
+                "bar4"u8,
+                "\r\n--fooBoundary--\r\n"u8);
 
             Assert.Equal(expected, ms.ToArray());
 

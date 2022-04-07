@@ -78,7 +78,7 @@ namespace System.Text.Json.Tests
                 };
 
                 const string CharLabel = "char";
-                byte[] byteUtf8 = Encoding.UTF8.GetBytes("byte");
+                byte[] byteUtf8 = "byte"u8;
                 using var writer = new Utf8JsonWriter(buffer, options);
 
                 if (skipValidation)

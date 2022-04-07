@@ -27,7 +27,7 @@ namespace Tracing.Tests.Common
     public class IpcAdvertise
     {
         public static int Size_V1 => 34;
-        public static byte[] Magic_V1 => System.Text.Encoding.ASCII.GetBytes("ADVR_V1" + '\0');
+        public static byte[] Magic_V1 => "ADVR_V1\0"u8;
         public static int MagicSize_V1 => 8;
 
         public byte[] Magic = Magic_V1;

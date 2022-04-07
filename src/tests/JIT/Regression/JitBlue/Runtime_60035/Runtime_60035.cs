@@ -11,7 +11,7 @@ namespace Runtime_60035
     {
         static int Main(string[] args)
         {
-            byte[] inputBytes = Encoding.UTF8.GetBytes("https://github.com/dotnet/runtime");
+            byte[] inputBytes = "https://github.com/dotnet/runtime"u8;
             Console.WriteLine(UrlEncoder.Default.FindFirstCharacterToEncodeUtf8(inputBytes));
             return 100;
         }

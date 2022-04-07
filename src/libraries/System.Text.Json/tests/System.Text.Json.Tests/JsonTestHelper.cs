@@ -448,19 +448,19 @@ namespace System.Text.Json
                         // Special casing Null so that it matches what JSON.NET does
                         break;
                     case JsonTokenType.StartObject:
-                        Assert.True(json.ValueSpan.SequenceEqual(new byte[] { (byte)'{' }));
+                        Assert.True(json.ValueSpan.SequenceEqual("{"u8));
                         Assert.True(json.ValueSequence.IsEmpty);
                         break;
                     case JsonTokenType.EndObject:
-                        Assert.True(json.ValueSpan.SequenceEqual(new byte[] { (byte)'}' }));
+                        Assert.True(json.ValueSpan.SequenceEqual("}"u8));
                         Assert.True(json.ValueSequence.IsEmpty);
                         break;
                     case JsonTokenType.StartArray:
-                        Assert.True(json.ValueSpan.SequenceEqual(new byte[] { (byte)'[' }));
+                        Assert.True(json.ValueSpan.SequenceEqual("["u8));
                         Assert.True(json.ValueSequence.IsEmpty);
                         break;
                     case JsonTokenType.EndArray:
-                        Assert.True(json.ValueSpan.SequenceEqual(new byte[] { (byte)']' }));
+                        Assert.True(json.ValueSpan.SequenceEqual("]"u8));
                         Assert.True(json.ValueSequence.IsEmpty);
                         break;
                     default:
@@ -496,18 +496,18 @@ namespace System.Text.Json
                     case JsonTokenType.Null:
                         break;
                     case JsonTokenType.StartObject:
-                        Assert.True(valueSpan.SequenceEqual(new byte[] { (byte)'{' }));
+                        Assert.True(valueSpan.SequenceEqual("{"u8));
                         root = ReaderDictionaryLoop(ref json);
                         break;
                     case JsonTokenType.StartArray:
-                        Assert.True(valueSpan.SequenceEqual(new byte[] { (byte)'[' }));
+                        Assert.True(valueSpan.SequenceEqual("["u8));
                         root = ReaderListLoop(ref json);
                         break;
                     case JsonTokenType.EndObject:
-                        Assert.True(valueSpan.SequenceEqual(new byte[] { (byte)'}' }));
+                        Assert.True(valueSpan.SequenceEqual("}"u8));
                         break;
                     case JsonTokenType.EndArray:
-                        Assert.True(valueSpan.SequenceEqual(new byte[] { (byte)']' }));
+                        Assert.True(valueSpan.SequenceEqual("]"u8));
                         break;
                     case JsonTokenType.None:
                     case JsonTokenType.Comment:
@@ -581,7 +581,7 @@ namespace System.Text.Json
                         }
                         break;
                     case JsonTokenType.StartObject:
-                        Assert.True(valueSpan.SequenceEqual(new byte[] { (byte)'{' }));
+                        Assert.True(valueSpan.SequenceEqual("{"u8));
                         value = ReaderDictionaryLoop(ref json);
                         if (dictionary.TryGetValue(key, out _))
                         {
@@ -593,7 +593,7 @@ namespace System.Text.Json
                         }
                         break;
                     case JsonTokenType.StartArray:
-                        Assert.True(valueSpan.SequenceEqual(new byte[] { (byte)'[' }));
+                        Assert.True(valueSpan.SequenceEqual("["u8));
                         value = ReaderListLoop(ref json);
                         if (dictionary.TryGetValue(key, out _))
                         {
@@ -605,7 +605,7 @@ namespace System.Text.Json
                         }
                         break;
                     case JsonTokenType.EndObject:
-                        Assert.True(valueSpan.SequenceEqual(new byte[] { (byte)'}' }));
+                        Assert.True(valueSpan.SequenceEqual("}"u8));
                         return dictionary;
                     case JsonTokenType.None:
                     case JsonTokenType.Comment:
@@ -646,17 +646,17 @@ namespace System.Text.Json
                         arrayList.Add(value);
                         break;
                     case JsonTokenType.StartObject:
-                        Assert.True(valueSpan.SequenceEqual(new byte[] { (byte)'{' }));
+                        Assert.True(valueSpan.SequenceEqual("{"u8));
                         value = ReaderDictionaryLoop(ref json);
                         arrayList.Add(value);
                         break;
                     case JsonTokenType.StartArray:
-                        Assert.True(valueSpan.SequenceEqual(new byte[] { (byte)'[' }));
+                        Assert.True(valueSpan.SequenceEqual("["u8));
                         value = ReaderListLoop(ref json);
                         arrayList.Add(value);
                         break;
                     case JsonTokenType.EndArray:
-                        Assert.True(valueSpan.SequenceEqual(new byte[] { (byte)']' }));
+                        Assert.True(valueSpan.SequenceEqual("]"u8));
                         return arrayList;
                     case JsonTokenType.None:
                     case JsonTokenType.Comment:

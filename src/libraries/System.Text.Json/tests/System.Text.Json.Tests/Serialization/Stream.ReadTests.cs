@@ -69,7 +69,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task ReadPrimitivesWithTrailingTriviaAsync()
         {
-            using (MemoryStream stream = new MemoryStream(Encoding.UTF8.GetBytes(" 1\t// Comment\r\n/* Multi\r\nLine */")))
+            using (MemoryStream stream = new MemoryStream(" 1\t// Comment\r\n/* Multi\r\nLine */"u8))
             {
                 JsonSerializerOptions options = new JsonSerializerOptions
                 {
@@ -85,7 +85,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task ReadReferenceTypeCollectionPassingNullValueAsync()
         {
-            using (MemoryStream stream = new MemoryStream(Encoding.UTF8.GetBytes("null")))
+            using (MemoryStream stream = new MemoryStream("null"u8))
             {
                 IList<object> referenceTypeCollection = await Serializer.DeserializeWrapper<IList<object>>(stream);
                 Assert.Null(referenceTypeCollection);
@@ -95,7 +95,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task ReadValueTypeCollectionPassingNullValueAsync()
         {
-            using (MemoryStream stream = new MemoryStream(Encoding.UTF8.GetBytes("null")))
+            using (MemoryStream stream = new MemoryStream("null"u8))
             {
                 IList<int> valueTypeCollection = await Serializer.DeserializeWrapper<IList<int>>(stream);
                 Assert.Null(valueTypeCollection);

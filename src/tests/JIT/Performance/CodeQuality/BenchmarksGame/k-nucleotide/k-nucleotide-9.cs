@@ -68,7 +68,7 @@ namespace BenchmarksGame
         {
             // find three sequence
             int matchIndex = 0;
-            var toFind = new[] { (byte)'>', (byte)'T', (byte)'H', (byte)'R', (byte)'E', (byte)'E' };
+            byte[] toFind = ">THREE"u8;
             var buffer = new byte[BLOCK_SIZE];
             do
             {
@@ -78,7 +78,7 @@ namespace BenchmarksGame
 
             // Skip to end of line
             matchIndex = 0;
-            toFind = new[] { (byte)'\n' };
+            toFind = "\n"u8;
             threeStart = find(buffer, toFind, threeStart, ref matchIndex);
             while (threeStart == -1)
             {
@@ -99,7 +99,7 @@ namespace BenchmarksGame
 
             // find next seq or end of input
             matchIndex = 0;
-            toFind = new[] { (byte)'>' };
+            toFind = ">"u8;
             threeEnd = find(buffer, toFind, threeStart, ref matchIndex);
             while (threeEnd == -1)
             {

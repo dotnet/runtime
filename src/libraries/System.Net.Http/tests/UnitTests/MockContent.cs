@@ -72,7 +72,7 @@ namespace System.Net.Http.Tests
 
             if (mockData == null)
             {
-                _mockData = Encoding.UTF8.GetBytes("data");
+                _mockData = "data"u8;
             }
             else
             {

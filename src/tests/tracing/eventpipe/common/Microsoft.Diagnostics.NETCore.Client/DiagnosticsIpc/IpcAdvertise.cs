@@ -25,7 +25,7 @@ namespace Microsoft.Diagnostics.NETCore.Client
 
     internal sealed class IpcAdvertise
     {
-        private static byte[] Magic_V1 => Encoding.ASCII.GetBytes("ADVR_V1" + '\0');
+        private static byte[] Magic_V1 => "ADVR_V1\0"u8;
         private static readonly int IpcAdvertiseV1SizeInBytes = Magic_V1.Length + 16 + 8 + 2; // 34 bytes
 
         private IpcAdvertise(byte[] magic, Guid cookie, UInt64 pid, UInt16 future)

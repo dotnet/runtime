@@ -10,7 +10,7 @@ namespace System.Text.Json
     public sealed partial class Utf8JsonWriter
     {
         private static readonly char[] s_singleLineCommentDelimiter = new char[2] { '*', '/' };
-        private static ReadOnlySpan<byte> SingleLineCommentDelimiterUtf8 => new byte[2] { (byte)'*', (byte)'/' };
+        private static ReadOnlySpan<byte> SingleLineCommentDelimiterUtf8 => "*/"u8;
 
         /// <summary>
         /// Writes the string text value (as a JSON comment).

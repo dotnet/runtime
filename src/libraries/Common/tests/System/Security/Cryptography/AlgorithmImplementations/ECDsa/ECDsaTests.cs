@@ -274,8 +274,6 @@ namespace System.Security.Cryptography.EcDsa.Tests
         [MemberData(nameof(InteroperableSignatureConfigurations))]
         public void SignVerify_InteroperableSameKeys_RoundTripsUnlessTampered(ECDsa ecdsa, HashAlgorithmName hashAlgorithm)
         {
-            byte[] data = Encoding.UTF8.GetBytes("something to repeat and sign");
-
             // large enough to make hashing work though multiple iterations and not a multiple of 4KB it uses.
             byte[] dataArray = new byte[33333];
 

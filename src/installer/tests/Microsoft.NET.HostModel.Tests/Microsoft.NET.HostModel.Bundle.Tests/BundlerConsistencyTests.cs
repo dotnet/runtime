@@ -347,7 +347,7 @@ namespace Microsoft.NET.HostModel.Tests
             using (var file = File.OpenWrite(singleFile))
             {
                 file.Position = file.Length;
-                var blob = Encoding.UTF8.GetBytes("Mock signature at the end of the bundle");
+                var blob = "Mock signature at the end of the bundle"u8;
                 file.Write(blob, 0, blob.Length);
             }
 

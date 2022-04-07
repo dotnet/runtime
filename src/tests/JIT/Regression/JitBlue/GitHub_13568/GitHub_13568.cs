@@ -10,7 +10,7 @@ namespace VectorWiden
 {
     class Program
     {
-        private static byte[] _asciiBytes = Encoding.ASCII.GetBytes("text/plain,text/html;q=0.9,application/xhtml+xml;q=0.9,application/xml;q=0.8,*/*;q=0.7");
+        private static byte[] _asciiBytes = "text/plain,text/html;q=0.9,application/xhtml+xml;q=0.9,application/xml;q=0.8,*/*;q=0.7"u8;
         private static string _asciiString = new string('\0', _asciiBytes.Length);
         private static string compareString = "text/plain,text/html;q=0.9,application/xhtml+xml;q=0.9,application/xml;q=0.8,*/*;q=0.7";
 

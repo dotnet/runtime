@@ -106,11 +106,11 @@ namespace System.Net.Sockets.Tests
                             // Verify Read and Write on both streams
                             byte[] buffer = new byte[1];
 
-                            await serverStream.WriteAsync(new byte[] { (byte)'a' }, 0, 1);
+                            await serverStream.WriteAsync("a"u8, 0, 1);
                             Assert.Equal(1, await clientStream.ReadAsync(buffer, 0, 1));
                             Assert.Equal('a', (char)buffer[0]);
 
-                            await clientStream.WriteAsync(new byte[] { (byte)'b' }, 0, 1);
+                            await clientStream.WriteAsync("b"u8, 0, 1);
                             Assert.Equal(1, await serverStream.ReadAsync(buffer, 0, 1));
                             Assert.Equal('b', (char)buffer[0]);
                         }
@@ -147,11 +147,11 @@ namespace System.Net.Sockets.Tests
                             // Verify Read and Write on both streams
                             byte[] buffer = new byte[1];
 
-                            await serverStream.WriteAsync(new byte[] { (byte)'a' }, 0, 1);
+                            await serverStream.WriteAsync("a"u8, 0, 1);
                             Assert.Equal(1, await clientStream.ReadAsync(buffer, 0, 1));
                             Assert.Equal('a', (char)buffer[0]);
 
-                            await clientStream.WriteAsync(new byte[] { (byte)'b' }, 0, 1);
+                            await clientStream.WriteAsync("b"u8, 0, 1);
                             Assert.Equal(1, await serverStream.ReadAsync(buffer, 0, 1));
                             Assert.Equal('b', (char)buffer[0]);
                         }
@@ -190,11 +190,11 @@ namespace System.Net.Sockets.Tests
                                 // Verify Read and Write on both streams
                                 byte[] buffer = new byte[1];
 
-                                await serverStream.WriteAsync(new byte[] { (byte)'a' }, 0, 1);
+                                await serverStream.WriteAsync("a"u8, 0, 1);
                                 Assert.Equal(1, await clientStream.ReadAsync(buffer, 0, 1));
                                 Assert.Equal('a', (char)buffer[0]);
 
-                                await clientStream.WriteAsync(new byte[] { (byte)'b' }, 0, 1);
+                                await clientStream.WriteAsync("b"u8, 0, 1);
                                 Assert.Equal(1, await serverStream.ReadAsync(buffer, 0, 1));
                                 Assert.Equal('b', (char)buffer[0]);
                             }
@@ -242,7 +242,7 @@ namespace System.Net.Sockets.Tests
                             // Verify Read and Write on both streams
                             byte[] buffer = new byte[1];
 
-                            await serverStream.WriteAsync(new byte[] { (byte)'a' }, 0, 1);
+                            await serverStream.WriteAsync("a"u8, 0, 1);
                             Assert.Equal(1, await clientStream.ReadAsync(buffer, 0, 1));
                             Assert.Equal('a', (char)buffer[0]);
 

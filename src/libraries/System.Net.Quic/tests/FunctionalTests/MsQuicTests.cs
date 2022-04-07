@@ -25,7 +25,7 @@ namespace System.Net.Quic.Tests
     [Collection(nameof(DisableParallelization))]
     public class MsQuicTests : QuicTestBase<MsQuicProviderFactory>
     {
-        private static byte[] s_data = Encoding.UTF8.GetBytes("Hello world!");
+        private static byte[] s_data = "Hello world!"u8;
 
         public MsQuicTests(ITestOutputHelper output) : base(output) { }
 
@@ -551,7 +551,7 @@ namespace System.Net.Quic.Tests
         {
             (QuicConnection clientConnection, QuicConnection serverConnection) = await CreateConnectedQuicConnection();
 
-            ReadOnlyMemory<byte> helloWorld = Encoding.ASCII.GetBytes("Hello world!");
+            ReadOnlyMemory<byte> helloWorld = "Hello world!"u8;
             ReadOnlySequence<byte> ros = CreateReadOnlySequenceFromBytes(helloWorld.ToArray());
 
             Assert.False(ros.IsSingleSegment);

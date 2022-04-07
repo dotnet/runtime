@@ -13,10 +13,10 @@ namespace System.Text.Json.Tests
         [Fact]
         public static void TestTextEqualsBasic()
         {
-            byte[] connectionId = Encoding.UTF8.GetBytes("connectionId");
-            byte[] availableTransports = Encoding.UTF8.GetBytes("availableTransports");
-            byte[] value123 = Encoding.UTF8.GetBytes("123");
-            byte[] embeddedQuotes = Encoding.UTF8.GetBytes("My name is \"Ahson\"");
+            byte[] connectionId = "connectionId"u8;
+            byte[] availableTransports = "availableTransports"u8;
+            byte[] value123 = "123"u8;
+            byte[] embeddedQuotes = "My name is \"Ahson\""u8;
             bool foundId = false;
             bool foundTransports = false;
             bool foundValue = false;
@@ -370,7 +370,7 @@ namespace System.Text.Json.Tests
             {
                 if (json.TokenType == JsonTokenType.String)
                 {
-                    if (json.ValueTextEquals(new byte[] { (byte)'a' }) ||
+                    if (json.ValueTextEquals("a"u8) ||
                         json.ValueTextEquals(new char[] { 'a' }) ||
                         json.ValueTextEquals("a"))
                     {
@@ -390,7 +390,7 @@ namespace System.Text.Json.Tests
             {
                 if (json.TokenType == JsonTokenType.String)
                 {
-                    if (json.ValueTextEquals(new byte[] { (byte)'a' }) ||
+                    if (json.ValueTextEquals("a"u8) ||
                         json.ValueTextEquals(new char[] { 'a' }) ||
                         json.ValueTextEquals("a"))
                     {
@@ -550,7 +550,7 @@ namespace System.Text.Json.Tests
         public static void TestTextEqualsMismatchMultiSegment()
         {
             string jsonString = "\"Hi, \\\"Ahson\\\"!\"";
-            byte[] lookup = Encoding.UTF8.GetBytes("Hello, \"Ahson\"");
+            byte[] lookup = "Hello, \"Ahson\""u8;
             byte[] utf8Data = Encoding.UTF8.GetBytes(jsonString);
             bool found = false;
 

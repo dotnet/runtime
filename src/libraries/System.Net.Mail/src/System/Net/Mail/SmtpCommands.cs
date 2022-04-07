@@ -666,25 +666,25 @@ namespace System.Net.Mail
 
     internal static class SmtpCommands
     {
-        internal static readonly byte[] Auth = Encoding.ASCII.GetBytes("AUTH ");
-        internal static readonly byte[] CRLF = Encoding.ASCII.GetBytes("\r\n");
-        internal static readonly byte[] Data = Encoding.ASCII.GetBytes("DATA\r\n");
-        internal static readonly byte[] DataStop = Encoding.ASCII.GetBytes("\r\n.\r\n");
-        internal static readonly byte[] EHello = Encoding.ASCII.GetBytes("EHLO ");
-        internal static readonly byte[] Expand = Encoding.ASCII.GetBytes("EXPN ");
-        internal static readonly byte[] Hello = Encoding.ASCII.GetBytes("HELO ");
-        internal static readonly byte[] Help = Encoding.ASCII.GetBytes("HELP");
-        internal static readonly byte[] Mail = Encoding.ASCII.GetBytes("MAIL FROM:");
-        internal static readonly byte[] Noop = Encoding.ASCII.GetBytes("NOOP\r\n");
-        internal static readonly byte[] Quit = Encoding.ASCII.GetBytes("QUIT\r\n");
-        internal static readonly byte[] Recipient = Encoding.ASCII.GetBytes("RCPT TO:");
-        internal static readonly byte[] Reset = Encoding.ASCII.GetBytes("RSET\r\n");
-        internal static readonly byte[] Send = Encoding.ASCII.GetBytes("SEND FROM:");
-        internal static readonly byte[] SendAndMail = Encoding.ASCII.GetBytes("SAML FROM:");
-        internal static readonly byte[] SendOrMail = Encoding.ASCII.GetBytes("SOML FROM:");
-        internal static readonly byte[] Turn = Encoding.ASCII.GetBytes("TURN\r\n");
-        internal static readonly byte[] Verify = Encoding.ASCII.GetBytes("VRFY ");
-        internal static readonly byte[] StartTls = Encoding.ASCII.GetBytes("STARTTLS");
+        internal static readonly byte[] Auth = "AUTH "u8;
+        internal static readonly byte[] CRLF = "\r\n"u8;
+        internal static readonly byte[] Data = "DATA\r\n"u8;
+        internal static readonly byte[] DataStop = "\r\n.\r\n"u8;
+        internal static readonly byte[] EHello = "EHLO "u8;
+        internal static readonly byte[] Expand = "EXPN "u8;
+        internal static readonly byte[] Hello = "HELO "u8;
+        internal static readonly byte[] Help = "HELP"u8;
+        internal static readonly byte[] Mail = "MAIL FROM:"u8;
+        internal static readonly byte[] Noop = "NOOP\r\n"u8;
+        internal static readonly byte[] Quit = "QUIT\r\n"u8;
+        internal static readonly byte[] Recipient = "RCPT TO:"u8;
+        internal static readonly byte[] Reset = "RSET\r\n"u8;
+        internal static readonly byte[] Send = "SEND FROM:"u8;
+        internal static readonly byte[] SendAndMail = "SAML FROM:"u8;
+        internal static readonly byte[] SendOrMail = "SOML FROM:"u8;
+        internal static readonly byte[] Turn = "TURN\r\n"u8;
+        internal static readonly byte[] Verify = "VRFY "u8;
+        internal static readonly byte[] StartTls = "STARTTLS"u8;
     }
 
 

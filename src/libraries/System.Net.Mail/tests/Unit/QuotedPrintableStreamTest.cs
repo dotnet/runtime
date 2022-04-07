@@ -50,10 +50,10 @@ namespace System.Net.Mime.Tests
             var outputStream = new MemoryStream();
             var testStream = new QuotedPrintableStream(outputStream, false);
 
-            byte[] bytesToWrite1 = Encoding.ASCII.GetBytes("Hello \r");
+            byte[] bytesToWrite1 = "Hello \r"u8;
             testStream.Write(bytesToWrite1, 0, bytesToWrite1.Length);
 
-            byte[] bytesToWrite2 = Encoding.ASCII.GetBytes("\n World");
+            byte[] bytesToWrite2 = "\n World"u8;
             testStream.Write(bytesToWrite2, 0, bytesToWrite2.Length);
 
             testStream.Flush();

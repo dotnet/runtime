@@ -20,8 +20,6 @@ namespace System.Net.Security.Tests
 
     public abstract class SslStreamStreamToStreamTest
     {
-        private readonly byte[] _sampleMsg = Encoding.UTF8.GetBytes("Sample Test Message");
-
         protected static async Task WithServerCertificate(X509Certificate serverCertificate, Func<X509Certificate, string, Task> func)
         {
             X509Certificate certificate = serverCertificate ?? Configuration.Certificates.GetServerCertificate();

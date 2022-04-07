@@ -248,7 +248,7 @@ namespace System.Drawing.Tests
 
             // Change data.
             PropertyItem item = source.GetPropertyItem(PropertyTagExifUserComment);
-            item.Value = Encoding.ASCII.GetBytes("Hello World\0");
+            item.Value = "Hello World\0"u8;
             item.Len = item.Value.Length;
 
             bitmap.SetPropertyItem(item);
@@ -263,7 +263,7 @@ namespace System.Drawing.Tests
 
             // New data.
             item.Id = propid;
-            item.Value = Encoding.ASCII.GetBytes("New Value\0");
+            item.Value = "New Value\0"u8;
             item.Len = item.Value.Length;
 
             bitmap.SetPropertyItem(item);
@@ -307,7 +307,7 @@ namespace System.Drawing.Tests
 
             // Change data.
             PropertyItem item = bitmap.GetPropertyItem(PropertyTagExifUserComment);
-            item.Value = Encoding.ASCII.GetBytes("Hello World\0");
+            item.Value = "Hello World\0"u8;
             item.Len = item.Value.Length;
 
             bitmap.SetPropertyItem(item);
@@ -350,7 +350,7 @@ namespace System.Drawing.Tests
 
             // New data.
             item.Id = propid;
-            item.Value = Encoding.ASCII.GetBytes("New Value\0");
+            item.Value = "New Value\0"u8;
             item.Len = item.Value.Length;
 
             bitmap.SetPropertyItem(item);
@@ -451,7 +451,7 @@ namespace System.Drawing.Tests
 
             // Change data.
             PropertyItem item = source.GetPropertyItem(PropertyTagExifUserComment);
-            item.Value = Encoding.ASCII.GetBytes("Hello World\0");
+            item.Value = "Hello World\0"u8;
             item.Len = item.Value.Length;
 
             bitmap.SetPropertyItem(item);
@@ -466,7 +466,7 @@ namespace System.Drawing.Tests
 
             // New data.
             item.Id = propid;
-            item.Value = Encoding.ASCII.GetBytes("New Value\0");
+            item.Value = "New Value\0"u8;
             item.Len = item.Value.Length;
 
             bitmap.SetPropertyItem(item);

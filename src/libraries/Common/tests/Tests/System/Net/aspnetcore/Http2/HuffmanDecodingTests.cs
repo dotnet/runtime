@@ -93,7 +93,7 @@ namespace System.Net.Http.Unit.Tests.HPack
         // This input sequence will encode to 17 bits, thus offsetting the next character to encode
         // by exactly one bit. We use this below to generate a prefix that encodes all of the possible starting
         // bit offsets for a character, from 0 to 7.
-        private static readonly byte[] s_offsetByOneBit = new byte[] { (byte)'c', (byte)'l', (byte)'r' };
+        private static readonly byte[] s_offsetByOneBit = "clr"u8;
 
         public static IEnumerable<byte[]> TestData()
         {
@@ -190,27 +190,27 @@ namespace System.Net.Http.Unit.Tests.HPack
         public static readonly TheoryData<byte[], byte[]> _validData = new TheoryData<byte[], byte[]>
         {
             // Single 5-bit symbol
-            { new byte[] { 0x07 }, Encoding.ASCII.GetBytes("0") },
+            { new byte[] { 0x07 }, "0"u8 },
             // Single 6-bit symbol
-            { new byte[] { 0x57 }, Encoding.ASCII.GetBytes("%") },
+            { new byte[] { 0x57 }, "%"u8 },
             // Single 7-bit symbol
-            { new byte[] { 0xb9 }, Encoding.ASCII.GetBytes(":") },
+            { new byte[] { 0xb9 }, ":"u8 },
             // Single 8-bit symbol
-            { new byte[] { 0xf8 }, Encoding.ASCII.GetBytes("&") },
+            { new byte[] { 0xf8 }, "&"u8 },
             // Single 10-bit symbol
-            { new byte[] { 0xfe, 0x3f }, Encoding.ASCII.GetBytes("!") },
+            { new byte[] { 0xfe, 0x3f }, "!"u8 },
             // Single 11-bit symbol
-            { new byte[] { 0xff, 0x7f }, Encoding.ASCII.GetBytes("+") },
+            { new byte[] { 0xff, 0x7f }, "+"u8 },
             // Single 12-bit symbol
-            { new byte[] { 0xff, 0xaf }, Encoding.ASCII.GetBytes("#") },
+            { new byte[] { 0xff, 0xaf }, "#"u8 },
             // Single 13-bit symbol
-            { new byte[] { 0xff, 0xcf }, Encoding.ASCII.GetBytes("$") },
+            { new byte[] { 0xff, 0xcf }, "$"u8 },
             // Single 14-bit symbol
-            { new byte[] { 0xff, 0xf3 }, Encoding.ASCII.GetBytes("^") },
+            { new byte[] { 0xff, 0xf3 }, "^"u8 },
             // Single 15-bit symbol
-            { new byte[] { 0xff, 0xf9 }, Encoding.ASCII.GetBytes("<") },
+            { new byte[] { 0xff, 0xf9 }, "<"u8 },
             // Single 19-bit symbol
-            { new byte[] { 0xff, 0xfe, 0x1f }, Encoding.ASCII.GetBytes("\\") },
+            { new byte[] { 0xff, 0xfe, 0x1f }, "\\"u8 },
             // Single 20-bit symbol
             { new byte[] { 0xff, 0xfe, 0x6f }, new byte[] { 0x80 } },
             // Single 21-bit symbol
@@ -233,11 +233,11 @@ namespace System.Net.Http.Unit.Tests.HPack
             { new byte[] { 0xff, 0xff, 0xff, 0xf3 }, new byte[] { 0x0a } },
 
             //               h      e         l          l      o         *
-            { new byte[] { 0b100111_00, 0b101_10100, 0b0_101000_0, 0b0111_1111 }, Encoding.ASCII.GetBytes("hello") },
+            { new byte[] { 0b100111_00, 0b101_10100, 0b0_101000_0, 0b0111_1111 }, "hello"u8 },
 
             // Sequences that uncovered errors
-            { new byte[] { 0xb6, 0xb9, 0xac, 0x1c, 0x85, 0x58, 0xd5, 0x20, 0xa4, 0xb6, 0xc2, 0xad, 0x61, 0x7b, 0x5a, 0x54, 0x25, 0x1f }, Encoding.ASCII.GetBytes("upgrade-insecure-requests") },
-            { new byte[] { 0xfe, 0x53 }, Encoding.ASCII.GetBytes("\"t") },
+            { new byte[] { 0xb6, 0xb9, 0xac, 0x1c, 0x85, 0x58, 0xd5, 0x20, 0xa4, 0xb6, 0xc2, 0xad, 0x61, 0x7b, 0x5a, 0x54, 0x25, 0x1f }, "upgrade-insecure-requests"u8 },
+            { new byte[] { 0xfe, 0x53 }, "\"t"u8 },
             { new byte[] { 0xff, 0xff, 0xf6, 0xff, 0xff, 0xfd, 0x68 }, new byte[] { 0xcf, 0xf0, 0x73 } },
             { new byte[] { 0xff, 0xff, 0xf9, 0xff, 0xff, 0xfd, 0x86 }, new byte[] { 0xd5, 0xc7, 0x69 } },
         };
@@ -344,7 +344,7 @@ namespace System.Net.Http.Unit.Tests.HPack
             int decodedLength = Huffman.Decode(new ReadOnlySpan<byte>(encoded, 0, encoded.Length), ref decodedBytes);
 
             Assert.Equal(expectedLength, decodedLength);
-            Assert.Equal(new byte[] { (byte)'B', (byte)'\n' }, decodedBytes);
+            Assert.Equal("B\n"u8, decodedBytes);
         }
 
         [Theory]

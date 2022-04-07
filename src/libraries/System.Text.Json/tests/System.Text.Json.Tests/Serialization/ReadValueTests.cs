@@ -61,7 +61,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void ReaderOptionsWinMaxDepth()
         {
-            byte[] utf8 = Encoding.UTF8.GetBytes("[[]]");
+            byte[] utf8 = "[[]]"u8;
 
             var readerOptions = new JsonReaderOptions
             {
@@ -114,7 +114,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void ReaderOptionsWinTrailingCommas()
         {
-            byte[] utf8 = Encoding.UTF8.GetBytes("[1, 2, 3,]");
+            byte[] utf8 = "[1, 2, 3,]"u8;
 
             var serializerOptions = new JsonSerializerOptions
             {
@@ -151,7 +151,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void ReaderOptionsWinComments()
         {
-            byte[] utf8 = Encoding.UTF8.GetBytes("[1, 2, /* some comment */ 3]");
+            byte[] utf8 = "[1, 2, /* some comment */ 3]"u8;
 
             var serializerOptions = new JsonSerializerOptions
             {
@@ -175,7 +175,7 @@ namespace System.Text.Json.Serialization.Tests
             ReadAndVerify(utf8, serializerOptions: null, readerOptions, utf8.Length);
             ReadAndVerify(utf8, serializerOptions, readerOptions, utf8.Length);
 
-            byte[] utf8_CommentsAfter = Encoding.UTF8.GetBytes("[1, 2, 3]/* some comment */");
+            byte[] utf8_CommentsAfter = "[1, 2, 3]/* some comment */"u8;
 
             ReadAndVerify(utf8_CommentsAfter, serializerOptions, readerOptions: default, expectedLength: "[1, 2, 3]".Length);
             ReadAndVerify(utf8_CommentsAfter, serializerOptions, readerOptions, expectedLength: "[1, 2, 3]".Length);
@@ -193,7 +193,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void OnInvalidReaderIsRestored()
         {
-            byte[] utf8 = Encoding.UTF8.GetBytes("[1, 2, 3}");
+            byte[] utf8 = "[1, 2, 3}"u8;
 
             var reader = new Utf8JsonReader(utf8, isFinalBlock: true, state: default);
             reader.Read();
@@ -292,7 +292,7 @@ namespace System.Text.Json.Serialization.Tests
         public static void NotEnoughData(bool isFinalBlock)
         {
             {
-                byte[] utf8 = Encoding.UTF8.GetBytes("\"start of string");
+                byte[] utf8 = "\"start of string"u8;
 
                 var reader = new Utf8JsonReader(utf8, isFinalBlock, state: default);
                 Assert.Equal(0, reader.BytesConsumed);
@@ -310,7 +310,7 @@ namespace System.Text.Json.Serialization.Tests
             }
 
             {
-                byte[] utf8 = Encoding.UTF8.GetBytes("{");
+                byte[] utf8 = "{"u8;
 
                 var reader = new Utf8JsonReader(utf8, isFinalBlock, state: default);
                 reader.Read();
@@ -333,7 +333,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void EndObjectOrArrayIsInvalid()
         {
-            byte[] utf8 = Encoding.UTF8.GetBytes("[{}]");
+            byte[] utf8 = "[{}]"u8;
 
             var reader = new Utf8JsonReader(utf8, isFinalBlock: true, state: default);
             reader.Read();
@@ -575,7 +575,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void ReadPartial()
         {
-            byte[] utf8 = Encoding.UTF8.GetBytes("[1, 2, 3]");
+            byte[] utf8 = "[1, 2, 3]"u8;
             var reader = new Utf8JsonReader(utf8, isFinalBlock: true, state: default);
             reader.Read();
             int[] array = JsonSerializer.Deserialize<int[]>(ref reader);

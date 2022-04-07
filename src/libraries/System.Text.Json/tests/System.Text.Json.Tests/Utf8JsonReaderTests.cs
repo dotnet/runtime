@@ -110,7 +110,7 @@ namespace System.Text.Json.Tests
         [Fact]
         public static void InitialState()
         {
-            var json = new Utf8JsonReader(Encoding.UTF8.GetBytes("1"), isFinalBlock: true, state: default);
+            var json = new Utf8JsonReader("1"u8, isFinalBlock: true, state: default);
 
             Assert.Equal(0, json.BytesConsumed);
             Assert.Equal(0, json.TokenStartIndex);
@@ -133,7 +133,7 @@ namespace System.Text.Json.Tests
         [Fact]
         public static void InitialStateSimpleCtor()
         {
-            var json = new Utf8JsonReader(Encoding.UTF8.GetBytes("1"));
+            var json = new Utf8JsonReader("1"u8);
 
             Assert.Equal(0, json.BytesConsumed);
             Assert.Equal(0, json.TokenStartIndex);
@@ -156,7 +156,7 @@ namespace System.Text.Json.Tests
         [Fact]
         public static void StateRecovery()
         {
-            byte[] utf8 = Encoding.UTF8.GetBytes("[1]");
+            byte[] utf8 = "[1]"u8;
             var json = new Utf8JsonReader(utf8, isFinalBlock: false, state: default);
 
             Assert.Equal(0, json.BytesConsumed);
@@ -182,7 +182,7 @@ namespace System.Text.Json.Tests
             Assert.Equal(JsonTokenType.Number, json.TokenType);
             Assert.Equal(default, json.Position);
             Assert.False(json.HasValueSequence);
-            Assert.True(json.ValueSpan.SequenceEqual(new byte[] { (byte)'1' }));
+            Assert.True(json.ValueSpan.SequenceEqual("1"u8));
             Assert.True(json.ValueSequence.IsEmpty);
 
             Assert.Equal(64, json.CurrentState.Options.MaxDepth);

@@ -60,7 +60,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void ParseUntyped()
         {
-            byte[] bytes = Encoding.UTF8.GetBytes("42");
+            byte[] bytes = "42"u8;
             object obj = JsonSerializer.Deserialize(bytes, typeof(object));
             Assert.IsType<JsonElement>(obj);
             JsonElement element = (JsonElement)obj;

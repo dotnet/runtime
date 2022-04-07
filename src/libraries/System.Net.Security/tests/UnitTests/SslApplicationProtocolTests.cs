@@ -42,7 +42,7 @@ namespace System.Net.Security.Tests
         [Fact]
         public void Constructor_ByteArray_Copies()
         {
-            byte[] expected = Encoding.UTF8.GetBytes("hello");
+            byte[] expected = "hello"u8;
             SslApplicationProtocol byteProtocol = new SslApplicationProtocol(expected);
 
             ArraySegment<byte> arraySegment;

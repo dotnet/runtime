@@ -287,7 +287,7 @@ ho0YNYGUDSgOs6RxBpw1rJUCnAlHNU09peCjEP+aZSrhsxlejN/GpVS4e0JTmMeo
 xTL6VO9mx52x6h5WDAQAisMVeMkBoxQUWLANXiw1zSfVbsmB7mDknsRcvD3tcgMs
 7YLD7LQMiPAIjDlOP8XP/w==
 -----END ENCRYPTED PRIVATE KEY-----";
-                byte[] passwordBytes = Encoding.UTF8.GetBytes("test");
+                byte[] passwordBytes = "test"u8;
                 dsa.ImportFromEncryptedPem(pem, passwordBytes);
                 DSAParameters dsaParameters = dsa.ExportParameters(true);
 
@@ -319,7 +319,7 @@ MGHbpaaShD6iJfoGMRX0frr0mMCtuOOZkkjBF9pSpkhaH0TDSq1PrVLxcM0/S4Vs
 dVYwfovccu8ktEAwk5XAOo0r+5CCw2lDDw/hbDeO87BToC5Cc5nu3F5LxAUj8Flc
 v8pi3w==
 -----END ENCRYPTED PRIVATE KEY-----";
-                byte[] passwordBytes = Encoding.UTF8.GetBytes("test");
+                byte[] passwordBytes = "test"u8;
                 ArgumentException ae = AssertExtensions.Throws<ArgumentException>("input", () =>
                     dsa.ImportFromEncryptedPem(pem, passwordBytes));
                 Assert.Contains(AmbiguousExceptionMarker, ae.Message);
@@ -332,7 +332,7 @@ v8pi3w==
             using (DSA dsa = DSAFactory.Create())
             {
                 string pem = "";
-                byte[] passwordBytes = Encoding.UTF8.GetBytes("test");
+                byte[] passwordBytes = "test"u8;
                 ArgumentException ae = AssertExtensions.Throws<ArgumentException>("input", () =>
                     dsa.ImportFromEncryptedPem(pem, passwordBytes));
                 Assert.Contains(NoPemExceptionMarker, ae.Message);

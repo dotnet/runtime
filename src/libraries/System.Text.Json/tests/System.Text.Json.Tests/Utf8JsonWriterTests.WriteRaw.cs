@@ -13,7 +13,7 @@ namespace System.Text.Json.Tests
         private const string TestGuidAsStr = "eb97fadd-3ebf-4781-8722-f4773989160e";
         private readonly static Guid s_guid = Guid.Parse(TestGuidAsStr);
 
-        private static byte[] s_oneAsJson = new byte[] { (byte)'1' };
+        private static byte[] s_oneAsJson = "1"u8;
 
         [Theory]
         [MemberData(nameof(GetRootLevelPrimitives))]
@@ -57,13 +57,13 @@ namespace System.Text.Json.Tests
             Action<byte[]> validate;
 
             validate = (data) => Assert.Equal(123456789, JsonSerializer.Deserialize<long>(data));
-            yield return new object[] { Encoding.UTF8.GetBytes("123456789"), validate };
+            yield return new object[] { "123456789"u8, validate };
 
             validate = (data) => Assert.Equal(1234.56789, JsonSerializer.Deserialize<double>(data));
-            yield return new object[] { Encoding.UTF8.GetBytes("1234.56789"), validate };
+            yield return new object[] { "1234.56789"u8, validate };
 
             validate = (data) => Assert.Equal(1234.56789, JsonSerializer.Deserialize<double>(data));
-            yield return new object[] { Encoding.UTF8.GetBytes(" 1234.56789 "), validate };
+            yield return new object[] { " 1234.56789 "u8, validate };
 
             validate = (data) => Assert.Equal(@"Hello", JsonSerializer.Deserialize<string>(data));
             yield return new object[] { Encoding.UTF8.GetBytes(@"""Hello"""), validate };
@@ -110,7 +110,7 @@ namespace System.Text.Json.Tests
             };
             yield return new object[] { json, validate };
 
-            json = Encoding.UTF8.GetBytes("[ 1, 1,1,1,1 ] ");
+            json = "[ 1, 1,1,1,1 ] "u8;
             validate = (data) =>
             {
                 foreach (int val in JsonSerializer.Deserialize<int[]>(data))
@@ -266,7 +266,7 @@ namespace System.Text.Json.Tests
                 {
                     writer.WriteRawValue(@"{}", skipInputValidation);
                     writer.Flush();
-                    Assert.True(ms.ToArray().SequenceEqual(new byte[] { (byte)'{',  (byte)'{', (byte)'}' }));
+                    Assert.True(ms.ToArray().SequenceEqual("{{}"u8));
                 }
                 else
                 {

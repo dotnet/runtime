@@ -10,14 +10,9 @@ namespace System.Text.Json
 {
     public static partial class JsonSerializer
     {
-        internal static readonly byte[] s_idPropertyName
-            = new byte[] { (byte)'$', (byte)'i', (byte)'d' };
-
-        internal static readonly byte[] s_refPropertyName
-            = new byte[] { (byte)'$', (byte)'r', (byte)'e', (byte)'f' };
-
-        internal static readonly byte[] s_valuesPropertyName
-            = new byte[] { (byte)'$', (byte)'v', (byte)'a', (byte)'l', (byte)'u', (byte)'e', (byte)'s' };
+        internal static readonly byte[] s_idPropertyName = "$id"u8;
+        internal static readonly byte[] s_refPropertyName = "$ref"u8;
+        internal static readonly byte[] s_valuesPropertyName = "$values"u8;
 
         internal static bool TryReadMetadata(JsonConverter converter, ref Utf8JsonReader reader, ref ReadStack state)
         {

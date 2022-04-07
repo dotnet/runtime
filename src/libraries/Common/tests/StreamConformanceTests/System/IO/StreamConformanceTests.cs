@@ -824,7 +824,7 @@ namespace System.IO.Tests
                 return;
             }
 
-            await WriteAsync(mode, stream, new[] { (byte)'a', (byte)'b', (byte)'h', (byte)'e', (byte)'l', (byte)'l', (byte)'o', (byte)'c', (byte)'d' }, 2, 5);
+            await WriteAsync(mode, stream, "abhellocd"u8, 2, 5);
             stream.Position = 0;
 
             using StreamReader reader = new StreamReader(stream);
@@ -1846,7 +1846,7 @@ namespace System.IO.Tests
             {
                 write = Task.Run(async () =>
                 {
-                    await writeable.WriteAsync(Encoding.UTF8.GetBytes("hello"));
+                    await writeable.WriteAsync("hello"u8);
                     await writeable.DisposeAsync();
                 });
             }
@@ -1910,7 +1910,7 @@ namespace System.IO.Tests
             using StreamPair streams = await CreateConnectedStreamsAsync();
             (Stream writeable, Stream readable) = GetReadWritePair(streams);
 
-            byte[] buffer = new[] { (byte)'\0', (byte)'\0', (byte)'h', (byte)'e', (byte)'l', (byte)'l', (byte)'o', (byte)'\0', (byte)'\0' };
+            byte[] buffer = "\0\0hello\0\0"u8;
             const int Offset = 2, Count = 5;
 
             Task write = Task.Run(async () =>
@@ -2192,7 +2192,7 @@ namespace System.IO.Tests
 
                         Task write = Task.Run(async () =>
                         {
-                            await writeable.WriteAsync(Encoding.UTF8.GetBytes("hello"));
+                            await writeable.WriteAsync("hello"u8);
                             if (FlushRequiredToWriteData)
                             {
                                 if (FlushGuaranteesAllDataWritten)
@@ -2246,7 +2246,7 @@ namespace System.IO.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/67853", TestPlatforms.tvOS)]
         public virtual async Task ZeroByteWrite_OtherDataReceivedSuccessfully(ReadWriteMode mode)
         {
-            byte[][] buffers = new[] { Array.Empty<byte>(), Encoding.UTF8.GetBytes("hello"), Array.Empty<byte>(), Encoding.UTF8.GetBytes("world") };
+            byte[][] buffers = new[] { Array.Empty<byte>(), "hello"u8, Array.Empty<byte>(), "world"u8 };
 
             using StreamPair streams = await CreateConnectedStreamsAsync();
             foreach ((Stream writeable, Stream readable) in GetReadWritePairs(streams))
@@ -2890,7 +2890,7 @@ namespace System.IO.Tests
             // (a) produce at least two readable bytes, so we can unblock the reader and read a single byte without clearing its buffer; and
             // (b) produce no more than 1K of readable bytes, so we can clear the reader buffer below.
             // If this isn't the case for some Stream(s), we can modify the data or parameterize it per Stream.
-            byte[] data = Encoding.UTF8.GetBytes("hello world");
+            byte[] data = "hello world"u8;
 
             using StreamPair innerStreams = ConnectedStreams.CreateBidirectional();
             (Stream innerWriteable, Stream innerReadable) = GetReadWritePair(innerStreams);

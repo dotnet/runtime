@@ -981,31 +981,31 @@ namespace System.Reflection.Metadata.Tests
             writer.Clear();
 
             writer.WriteUTF8("abc", 0, 1, allowUnpairedSurrogates: true, prependSize: false);
-            AssertEx.Equal(new[] { (byte)'a' }, writer.ToArray());
+            AssertEx.Equal("a"u8, writer.ToArray());
             writer.Clear();
 
             writer.WriteUTF8("abc", 0, 2, allowUnpairedSurrogates: true, prependSize: false);
-            AssertEx.Equal(new[] { (byte)'a', (byte)'b' }, writer.ToArray());
+            AssertEx.Equal("ab"u8, writer.ToArray());
             writer.Clear();
 
             writer.WriteUTF8("abc", 0, 3, allowUnpairedSurrogates: true, prependSize: false);
-            AssertEx.Equal(new[] { (byte)'a', (byte)'b', (byte)'c' }, writer.ToArray());
+            AssertEx.Equal("abc"u8, writer.ToArray());
             writer.Clear();
 
             writer.WriteUTF8("abc", 1, 0, allowUnpairedSurrogates: true, prependSize: false);
-            AssertEx.Equal(new byte[0], writer.ToArray());
+            AssertEx.Equal(""u8, writer.ToArray());
             writer.Clear();
 
             writer.WriteUTF8("abc", 1, 1, allowUnpairedSurrogates: true, prependSize: false);
-            AssertEx.Equal(new[] { (byte)'b' }, writer.ToArray());
+            AssertEx.Equal("b"u8, writer.ToArray());
             writer.Clear();
 
             writer.WriteUTF8("abc", 1, 2, allowUnpairedSurrogates: true, prependSize: false);
-            AssertEx.Equal(new[] { (byte)'b', (byte)'c' }, writer.ToArray());
+            AssertEx.Equal("bc"u8, writer.ToArray());
             writer.Clear();
 
             writer.WriteUTF8("abc", 2, 1, allowUnpairedSurrogates: true, prependSize: false);
-            AssertEx.Equal(new[] { (byte)'c' }, writer.ToArray());
+            AssertEx.Equal("c"u8, writer.ToArray());
             writer.Clear();
         }
 

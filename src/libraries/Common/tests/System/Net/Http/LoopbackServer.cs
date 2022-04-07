@@ -18,8 +18,8 @@ namespace System.Net.Test.Common
 {
     public sealed partial class LoopbackServer : GenericLoopbackServer, IDisposable
     {
-        private static readonly byte[] s_newLineBytes = new byte[] { (byte)'\r', (byte)'\n' };
-        private static readonly byte[] s_colonSpaceBytes = new byte[] { (byte)':', (byte)' ' };
+        private static readonly byte[] s_newLineBytes = "\r\n"u8;
+        private static readonly byte[] s_colonSpaceBytes = ": "u8;
 
         private SocketWrapper _socketWrapper;
 #if TARGET_BROWSER

@@ -15,7 +15,7 @@ namespace System.Text.Json.Tests
         [Fact]
         public static void InitialStateMultiSegment()
         {
-            byte[] utf8 = Encoding.UTF8.GetBytes("1");
+            byte[] utf8 = "1"u8;
             ReadOnlySequence<byte> sequence = JsonTestHelper.GetSequence(utf8, 1);
             var json = new Utf8JsonReader(sequence, isFinalBlock: true, state: default);
 
@@ -393,7 +393,7 @@ namespace System.Text.Json.Tests
         [Fact]
         public static void InitialStateSimpleCtorMultiSegment()
         {
-            byte[] utf8 = Encoding.UTF8.GetBytes("1");
+            byte[] utf8 = "1"u8;
             ReadOnlySequence<byte> sequence = JsonTestHelper.GetSequence(utf8, 1);
             var json = new Utf8JsonReader(sequence);
 
@@ -417,7 +417,7 @@ namespace System.Text.Json.Tests
         [Fact]
         public static void StateRecoveryMultiSegment()
         {
-            byte[] utf8 = Encoding.UTF8.GetBytes("[1]");
+            byte[] utf8 = "[1]"u8;
             ReadOnlySequence<byte> sequence = JsonTestHelper.GetSequence(utf8, 1);
             var json = new Utf8JsonReader(sequence, isFinalBlock: false, state: default);
 
@@ -444,7 +444,7 @@ namespace System.Text.Json.Tests
             Assert.NotEqual(default, json.Position);
             Assert.True(json.HasValueSequence);
             Assert.True(json.ValueSpan.SequenceEqual(default));
-            Assert.True(json.ValueSequence.ToArray().AsSpan().SequenceEqual(new byte[] { (byte)'1' }));
+            Assert.True(json.ValueSequence.ToArray().AsSpan().SequenceEqual("1"u8));
 
             Assert.Equal(64, json.CurrentState.Options.MaxDepth);
             Assert.False(json.CurrentState.Options.AllowTrailingCommas);
