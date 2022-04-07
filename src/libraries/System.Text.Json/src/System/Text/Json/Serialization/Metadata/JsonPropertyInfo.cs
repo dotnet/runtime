@@ -90,24 +90,21 @@ namespace System.Text.Json.Serialization.Metadata
             _isConfigured = true;
         }
 
-        internal virtual void GetPolicies(JsonIgnoreCondition? ignoreCondition)
+        internal void GetPolicies(JsonIgnoreCondition? ignoreCondition)
         {
-            if (!IsForTypeInfo)
+            Debug.Assert(MemberInfo != null);
+            DetermineSerializationCapabilities(ignoreCondition);
+            DeterminePropertyName();
+            DetermineIgnoreCondition(ignoreCondition);
+
+            JsonPropertyOrderAttribute? orderAttr = GetAttribute<JsonPropertyOrderAttribute>(MemberInfo);
+            if (orderAttr != null)
             {
-                Debug.Assert(MemberInfo != null);
-                DetermineSerializationCapabilities(ignoreCondition);
-                DeterminePropertyName();
-                DetermineIgnoreCondition(ignoreCondition);
-
-                JsonPropertyOrderAttribute? orderAttr = GetAttribute<JsonPropertyOrderAttribute>(MemberInfo);
-                if (orderAttr != null)
-                {
-                    Order = orderAttr.Order;
-                }
-
-                JsonNumberHandlingAttribute? attribute = GetAttribute<JsonNumberHandlingAttribute>(MemberInfo);
-                NumberHandling = attribute?.Handling;
+                Order = orderAttr.Order;
             }
+
+            JsonNumberHandlingAttribute? attribute = GetAttribute<JsonNumberHandlingAttribute>(MemberInfo);
+            NumberHandling = attribute?.Handling;
         }
 
         private void DeterminePropertyName()
@@ -330,7 +327,7 @@ namespace System.Text.Json.Serialization.Metadata
         internal bool HasGetter { get; set; }
         internal bool HasSetter { get; set; }
 
-        internal virtual void Initialize(
+        internal abstract void Initialize(
             Type parentClassType,
             Type declaredPropertyType,
             ConverterStrategy converterStrategy,
@@ -338,25 +335,8 @@ namespace System.Text.Json.Serialization.Metadata
             bool isVirtual,
             JsonConverter converter,
             JsonIgnoreCondition? ignoreCondition,
-            JsonNumberHandling? parentTypeNumberHandling,
-            JsonSerializerOptions options)
-        {
-            Debug.Assert(converter != null);
-
-            DeclaringType = parentClassType;
-            PropertyType = declaredPropertyType;
-            ConverterStrategy = converterStrategy;
-            MemberInfo = memberInfo;
-            IsVirtual = isVirtual;
-            ConverterBase = converter;
-            Options = options;
-        }
-
-        internal abstract void InitializeForTypeInfo(
-            Type declaredType,
-            JsonTypeInfo runtimeTypeInfo,
-            JsonConverter converter,
-            JsonSerializerOptions options);
+            JsonSerializerOptions options,
+            JsonTypeInfo? jsonTypeInfo = null);
 
         internal bool IgnoreDefaultValuesOnRead { get; private set; }
         internal bool IgnoreDefaultValuesOnWrite { get; private set; }
@@ -483,7 +463,7 @@ namespace System.Text.Json.Serialization.Metadata
 
         internal Type DeclaringType { get; set; } = null!;
 
-        internal MemberInfo? MemberInfo { get; private set; }
+        internal MemberInfo? MemberInfo { get; set; }
 
         internal JsonTypeInfo JsonTypeInfo
         {
