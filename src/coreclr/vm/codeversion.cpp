@@ -1767,10 +1767,10 @@ PCODE CodeVersionManager::PublishVersionableCodeIfNecessary(
             {
                 if (doPublish)
                 {
-                    bool mayHaveEntryPointSlotsToBackpatch = pMethodDesc->MayHaveEntryPointSlotsToBackpatch();
-                    MethodDescBackpatchInfoTracker::ConditionalLockHolder slotBackpatchLockHolder(
-                        mayHaveEntryPointSlotsToBackpatch);
-                    pMethodDesc->TrySetInitialCodeEntryPointForVersionableMethod(pCode, mayHaveEntryPointSlotsToBackpatch);
+                    bool mayHaveEntryPointSlotsToBackpatch2 = pMethodDesc->MayHaveEntryPointSlotsToBackpatch();
+                    MethodDescBackpatchInfoTracker::ConditionalLockHolder slotBackpatchLockHolder2(
+                        mayHaveEntryPointSlotsToBackpatch2);
+                    pMethodDesc->TrySetInitialCodeEntryPointForVersionableMethod(pCode, mayHaveEntryPointSlotsToBackpatch2);
                 }
                 else
                 {
