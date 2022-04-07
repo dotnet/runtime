@@ -33,7 +33,8 @@
              Properties="RunningPublish=true
               ;RuntimeIdentifier=$(RuntimeIdentifier)
               ;CoreCLRArtifactsPath=$(CoreCLRArtifactsPath)
-              ;R2ROverridePath=$(MSBuildThisFileDirectory)ReadyToRun.targets"
+              ;R2ROverridePath=$(MSBuildThisFileDirectory)ReadyToRun.targets
+              ;DotNetBuildFromSource=$(DotNetBuildFromSource)"
              Targets="DeleteAssetsJson;Restore;Publish;PublishItemsOutputGroup">
       <Output TaskParameter="TargetOutputs"
               ItemName="_RawCrossgenPublishFiles" />
