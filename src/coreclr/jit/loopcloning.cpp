@@ -2140,9 +2140,10 @@ bool Compiler::optIsStackLocalInvariant(unsigned loopNum, unsigned lclNum)
 //  optExtractArrIndex: Try to extract the array index from "tree".
 //
 //  Arguments:
-//      tree        the tree to be checked if it is the array [] operation.
-//      result      the extracted GT_INDEX information is updated in result.
-//      lhsNum      for the root level (function is recursive) callers should pass BAD_VAR_NUM.
+//      tree             the tree to be checked if it is the array [] operation.
+//      result           the extracted GT_INDEX information is updated in result.
+//      lhsNum           for the root level (function is recursive) callers should pass BAD_VAR_NUM.
+//      topLevelIsFinal  OUT: set to `true` if see a non-TYP_REF element type array.
 //
 //  Return Value:
 //      Returns true if array index can be extracted, else, return false. See assumption about
@@ -2203,7 +2204,7 @@ bool Compiler::optIsStackLocalInvariant(unsigned loopNum, unsigned lclNum)
 // used as an index expression, or array base var is used as the array base. This saves us from parsing
 // all the forms that morph can create, especially for arrays of structs.
 //
-bool Compiler::optExtractArrIndex(GenTree* tree, ArrIndex* result, unsigned lhsNum)
+bool Compiler::optExtractArrIndex(GenTree* tree, ArrIndex* result, unsigned lhsNum, bool* topLevelIsFinal)
 {
     if (tree->gtOper != GT_COMMA)
     {
@@ -2247,37 +2248,31 @@ bool Compiler::optExtractArrIndex(GenTree* tree, ArrIndex* result, unsigned lhsN
     result->useBlock = compCurBB;
     result->rank++;
 
+    // If the array element type (saved from the GT_INDEX node during morphing) is anything but
+    // TYP_REF, then it must the the final level of jagged array.
+    assert(arrBndsChk->gtInxType != TYP_VOID);
+    *topLevelIsFinal = (arrBndsChk->gtInxType != TYP_REF);
+
     return true;
 }
 
 //---------------------------------------------------------------------------------------------------------------
-//  optReconstructArrIndex: Reconstruct array index.
+//  optReconstructArrIndexHelp: Helper function for optReconstructArrIndex. See that function for more details.
 //
 //  Arguments:
-//      tree        the tree to be checked if it is an array [][][] operation.
-//      result      OUT: the extracted GT_INDEX information.
-//      lhsNum      for the root level (function is recursive) callers should pass BAD_VAR_NUM.
+//      tree             the tree to be checked if it is an array [][][] operation.
+//      result           OUT: the extracted GT_INDEX information.
+//      lhsNum           var number of array object we're looking for.
+//      topLevelIsFinal  OUT: set to `true` if we reached a non-TYP_REF element type array.
 //
 //  Return Value:
 //      Returns true if array index can be extracted, else, return false. "rank" field in
-//      "result" contains the array access depth. The "indLcls" fields contain the indices.
+//      "result" contains the array access depth. The "indLcls" field contains the indices.
 //
-//  Operation:
-//      Recursively look for a list of array indices. For example, if the tree is
-//          V03 = (V05 = V00[V01]), V05[V02]
-//      that corresponds to access of V00[V01][V02]. The return value would then be:
-//      ArrIndex result { arrLcl: V00, indLcls: [V01, V02], rank: 2 }
-//
-//      Note that the array expression is implied by the array bounds check under the COMMA, and the array bounds
-//      checks is what is parsed from the morphed tree; the array addressing expression is not parsed.
-//
-//  Assumption:
-//      The method extracts only if the array base and indices are GT_LCL_VAR.
-//
-bool Compiler::optReconstructArrIndex(GenTree* tree, ArrIndex* result, unsigned lhsNum)
+bool Compiler::optReconstructArrIndexHelp(GenTree* tree, ArrIndex* result, unsigned lhsNum, bool* topLevelIsFinal)
 {
     // If we can extract "tree" (which is a top level comma) return.
-    if (optExtractArrIndex(tree, result, lhsNum))
+    if (optExtractArrIndex(tree, result, lhsNum, topLevelIsFinal))
     {
         return true;
     }
@@ -2294,16 +2289,150 @@ bool Compiler::optReconstructArrIndex(GenTree* tree, ArrIndex* result, unsigned 
         GenTree* rhs = before->gtGetOp2();
 
         // "rhs" should contain an GT_INDEX
-        if (!lhs->IsLocal() || !optReconstructArrIndex(rhs, result, lhsNum))
+        if (!lhs->IsLocal() || !optReconstructArrIndexHelp(rhs, result, lhsNum, topLevelIsFinal))
         {
             return false;
         }
+
+        // If rhs represents an array of elements other than arrays (e.g., an array of structs),
+        // then we can't go any farther.
+        if (*topLevelIsFinal)
+        {
+            return false;
+        }
+
         unsigned lhsNum = lhs->AsLclVarCommon()->GetLclNum();
         GenTree* after  = tree->gtGetOp2();
         // Pass the "lhsNum", so we can verify if indeed it is used as the array base.
-        return optExtractArrIndex(after, result, lhsNum);
+        return optExtractArrIndex(after, result, lhsNum, topLevelIsFinal);
     }
     return false;
+}
+
+//---------------------------------------------------------------------------------------------------------------
+//  optReconstructArrIndex: Reconstruct array index from a post-morph tree.
+//
+//  Arguments:
+//      tree        the tree to be checked if it is an array [][][] operation.
+//      result      OUT: the extracted GT_INDEX information.
+//
+//  Return Value:
+//      Returns true if array index can be extracted, else, return false. "rank" field in
+//      "result" contains the array access depth. The "indLcls" field contains the indices.
+//
+//  Operation:
+//      Recursively look for a list of array indices. For example, if the tree is
+//          V03 = (V05 = V00[V01]), V05[V02]
+//      that corresponds to access of V00[V01][V02]. The return value would then be:
+//      ArrIndex result { arrLcl: V00, indLcls: [V01, V02], rank: 2 }
+//
+//      Note that the array expression is implied by the array bounds check under the COMMA, and the array bounds
+//      checks is what is parsed from the morphed tree; the array addressing expression is not parsed.
+//      However, the array bounds checks are not quite sufficient because of the way "morph" alters the trees.
+//      Specifically, we normally see a COMMA node with a LHS of the morphed array INDEX expression and RHS
+//      of the bounds check. E.g., for int[][], a[i][j] we have a pre-morph tree:
+//
+// \--*  INDEX     int
+//   +--*  INDEX     ref
+//   |  +--*  LCL_VAR   ref    V00 loc0
+//   |  \--*  LCL_VAR   int    V02 loc2
+//   \--*  LCL_VAR   int    V03 loc3
+//
+//      and post-morph tree:
+//
+// \--*  COMMA     int
+//    +--*  ASG       ref
+//    |  +--*  LCL_VAR   ref    V19 tmp12
+//    |  \--*  COMMA     ref
+//    |     +--*  BOUNDS_CHECK_Rng void
+//    |     |  +--*  LCL_VAR   int    V02 loc2
+//    |     |  \--*  ARR_LENGTH int
+//    |     |     \--*  LCL_VAR   ref    V00 loc0
+//    |     \--*  IND       ref
+//    |        \--*  ADD       byref
+//    |           +--*  LCL_VAR   ref    V00 loc0
+//    |           \--*  ADD       long
+//    |              +--*  LSH       long
+//    |              |  +--*  CAST      long <- uint
+//    |              |  |  \--*  LCL_VAR   int    V02 loc2
+//    |              |  \--*  CNS_INT   long   3
+//    |              \--*  CNS_INT   long   16 Fseq[#FirstElem]
+//    \--*  COMMA     int
+//       +--*  BOUNDS_CHECK_Rng void
+//       |  +--*  LCL_VAR   int    V03 loc3
+//       |  \--*  ARR_LENGTH int
+//       |     \--*  LCL_VAR   ref    V19 tmp12
+//       \--*  IND       int
+//          \--*  ADD       byref
+//             +--*  LCL_VAR   ref    V19 tmp12
+//             \--*  ADD       long
+//                +--*  LSH       long
+//                |  +--*  CAST      long <- uint
+//                |  |  \--*  LCL_VAR   int    V03 loc3
+//                |  \--*  CNS_INT   long   2
+//                \--*  CNS_INT   long   16 Fseq[#FirstElem]
+//
+//      However, for an array of structs that contains an array field, e.g. ValueTuple<int[], int>[], expression
+//      a[i].Item1[j],
+//
+// \--*  INDEX     int
+//    +--*  FIELD     ref    Item1
+//       |  \--*  ADDR      byref
+//       |     \--*  INDEX     struct<System.ValueTuple`2[System.Int32[],System.Int32], 16>
+//       |        +--*  LCL_VAR   ref    V01 loc1
+//       |        \--*  LCL_VAR   int    V04 loc4
+//       \--*  LCL_VAR   int    V06 loc6
+//
+//      Morph "hoists" the bounds check above the struct field access:
+//
+// \--*  COMMA     int
+//    +--*  ASG       ref
+//    |  +--*  LCL_VAR   ref    V23 tmp16
+//    |  \--*  COMMA     ref
+//    |     +--*  BOUNDS_CHECK_Rng void
+//    |     |  +--*  LCL_VAR   int    V04 loc4
+//    |     |  \--*  ARR_LENGTH int
+//    |     |     \--*  LCL_VAR   ref    V01 loc1
+//    |     \--*  IND       ref
+//    |        \--*  ADDR      byref  Zero Fseq[Item1]
+//    |           \--*  IND       struct<System.ValueTuple`2[System.Int32[],System.Int32], 16>
+//    |              \--*  ADD       byref
+//    |                 +--*  LCL_VAR   ref    V01 loc1
+//    |                 \--*  ADD       long
+//    |                    +--*  LSH       long
+//    |                    |  +--*  CAST      long <- uint
+//    |                    |  |  \--*  LCL_VAR   int    V04 loc4
+//    |                    |  \--*  CNS_INT   long   4
+//    |                    \--*  CNS_INT   long   16 Fseq[#FirstElem]
+//    \--*  COMMA     int
+//       +--*  BOUNDS_CHECK_Rng void
+//       |  +--*  LCL_VAR   int    V06 loc6
+//       |  \--*  ARR_LENGTH int
+//       |     \--*  LCL_VAR   ref    V23 tmp16
+//       \--*  IND       int
+//          \--*  ADD       byref
+//             +--*  LCL_VAR   ref    V23 tmp16
+//             \--*  ADD       long
+//                +--*  LSH       long
+//                |  +--*  CAST      long <- uint
+//                |  |  \--*  LCL_VAR   int    V06 loc6
+//                |  \--*  CNS_INT   long   2
+//                \--*  CNS_INT   long   16 Fseq[#FirstElem]
+//
+//      This should not be parsed as a jagged array (e.g., a[i][j]). To ensure that it is not, the type of the
+//      GT_INDEX node is stashed in the GT_BOUNDS_CHECK node during morph. If we see a bounds check node where
+//      the GT_INDEX was not TYP_REF, then it must be the outermost jagged array level. E.g., if it is
+//      TYP_STRUCT, then we have an array of structs, and any further bounds checks must be of one of its fields.
+//
+//      It would be much better if we didn't need to parse these trees at all, and did all this work pre-morph.
+//
+//  Assumption:
+//      The method extracts only if the array base and indices are GT_LCL_VAR.
+//
+bool Compiler::optReconstructArrIndex(GenTree* tree, ArrIndex* result)
+{
+    bool topLevelIsFinal = false;
+    return optReconstructArrIndexHelp(tree, result, BAD_VAR_NUM, &topLevelIsFinal);
 }
 
 //----------------------------------------------------------------------------------------------
@@ -2329,7 +2458,7 @@ Compiler::fgWalkResult Compiler::optCanOptimizeByLoopCloning(GenTree* tree, Loop
     ArrIndex arrIndex(getAllocator(CMK_LoopClone));
 
     // Check if array index can be optimized.
-    if (optReconstructArrIndex(tree, &arrIndex, BAD_VAR_NUM))
+    if (optReconstructArrIndex(tree, &arrIndex))
     {
         assert(tree->gtOper == GT_COMMA);
 

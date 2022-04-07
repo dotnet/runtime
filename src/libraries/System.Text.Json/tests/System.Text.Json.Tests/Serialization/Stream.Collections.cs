@@ -21,6 +21,7 @@ namespace System.Text.Json.Serialization.Tests
         [Theory]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/35927", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoInterpreter))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/35927", TestPlatforms.Browser)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/59678", typeof(PlatformDetection), nameof(PlatformDetection.IsOSX), nameof(PlatformDetection.IsX64Process))]
         [MemberData(nameof(GetTestedCollectionData))]
         public async Task HandleCollectionsAsync<TCollection, TElement>(TCollection collection, int bufferSize, Witness<TElement> elementType)
         {

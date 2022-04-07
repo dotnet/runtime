@@ -5436,6 +5436,7 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
         }
 
         GenTreeBoundsChk* arrBndsChk = new (this, GT_BOUNDS_CHECK) GenTreeBoundsChk(index, arrLen, SCK_RNGCHK_FAIL);
+        arrBndsChk->gtInxType        = elemTyp;
 
         bndsChk = arrBndsChk;
 
@@ -6231,7 +6232,7 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
             // should be unified to always use the IND(<address>) form.
             CLANG_FORMAT_COMMENT_ANCHOR;
 
-#ifdef TARGET_64BIT
+#if defined(TARGET_64BIT) || defined(TARGET_X86)
             bool preferIndir = true;
 #else  // !TARGET_64BIT
             bool preferIndir = isBoxedStatic;
@@ -17690,6 +17691,13 @@ void Compiler::fgRetypeImplicitByRefArgs()
 #if FEATURE_MULTIREG_ARGS
                     fieldVarDsc->SetOtherArgReg(REG_NA);
 #endif
+                    // Promoted fields of implicit byrefs can't be OSR locals.
+                    //
+                    if (fieldVarDsc->lvIsOSRLocal)
+                    {
+                        assert(opts.IsOSR());
+                        fieldVarDsc->lvIsOSRLocal = false;
+                    }
                 }
 
                 // Hijack lvFieldLclStart to record the new temp number.

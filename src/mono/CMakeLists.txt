@@ -547,19 +547,6 @@ set(MONO_llvm_extra_libs_armcodegen_1100 "LLVMARMCodeGen" "LLVMCFGuard" "LLVMGlo
 # llvm-config --libs aarch64codegen
 set(MONO_llvm_extra_libs_aarch64codegen_1100 "LLVMAArch64CodeGen" "LLVMCFGuard" "LLVMGlobalISel" "LLVMSelectionDAG" "LLVMAsmPrinter" "LLVMDebugInfoDWARF" "LLVMCodeGen" "LLVMTarget" "LLVMScalarOpts" "LLVMInstCombine" "LLVMAggressiveInstCombine" "LLVMTransformUtils" "LLVMBitWriter" "LLVMAnalysis" "LLVMProfileData" "LLVMObject" "LLVMTextAPI" "LLVMMCParser" "LLVMBitReader" "LLVMCore" "LLVMRemarks" "LLVMBitstreamReader" "LLVMAArch64Desc" "LLVMMC" "LLVMDebugInfoCodeView" "LLVMDebugInfoMSF" "LLVMBinaryFormat" "LLVMAArch64Utils" "LLVMAArch64Info" "LLVMSupport" "LLVMDemangle")
 
-
-# llvm-config --libs analysis core bitwriter mcjit orcjit
-set(MONO_llvm_core_libs_900 "LLVMOrcJIT" "LLVMJITLink" "LLVMMCJIT" "LLVMExecutionEngine" "LLVMRuntimeDyld" "LLVMAsmPrinter" "LLVMDebugInfoDWARF" "LLVMCodeGen" "LLVMTarget" "LLVMScalarOpts" "LLVMInstCombine" "LLVMAggressiveInstCombine" "LLVMTransformUtils" "LLVMBitWriter" "LLVMAnalysis" "LLVMProfileData" "LLVMObject" "LLVMMCParser" "LLVMMC" "LLVMDebugInfoCodeView" "LLVMDebugInfoMSF" "LLVMBitReader" "LLVMBitstreamReader" "LLVMCore" "LLVMRemarks" "LLVMBinaryFormat" "LLVMSupport" "LLVMDemangle")
-
-# llvm-config --libs x86codegen
-set(MONO_llvm_extra_libs_x86codegen_900 "LLVMX86CodeGen" "LLVMGlobalISel" "LLVMX86Desc" "LLVMX86Utils" "LLVMX86Info" "LLVMMCDisassembler" "LLVMSelectionDAG" "LLVMAsmPrinter" "LLVMDebugInfoDWARF" "LLVMCodeGen" "LLVMTarget" "LLVMScalarOpts" "LLVMInstCombine" "LLVMAggressiveInstCombine" "LLVMTransformUtils" "LLVMBitWriter" "LLVMAnalysis" "LLVMProfileData" "LLVMObject" "LLVMMCParser" "LLVMMC" "LLVMDebugInfoCodeView" "LLVMDebugInfoMSF" "LLVMBitReader" "LLVMBitstreamReader" "LLVMCore" "LLVMRemarks" "LLVMBinaryFormat" "LLVMSupport" "LLVMDemangle")
-
-# llvm-config --libs armcodegen
-set(MONO_llvm_extra_libs_armcodegen_900 "LLVMARMCodeGen" "LLVMGlobalISel" "LLVMSelectionDAG" "LLVMAsmPrinter" "LLVMDebugInfoDWARF" "LLVMCodeGen" "LLVMTarget" "LLVMScalarOpts" "LLVMInstCombine" "LLVMAggressiveInstCombine" "LLVMTransformUtils" "LLVMBitWriter" "LLVMAnalysis" "LLVMProfileData" "LLVMObject" "LLVMMCParser" "LLVMBitReader" "LLVMBitstreamReader" "LLVMCore" "LLVMRemarks" "LLVMARMDesc" "LLVMMCDisassembler" "LLVMMC" "LLVMDebugInfoCodeView" "LLVMDebugInfoMSF" "LLVMBinaryFormat" "LLVMARMUtils" "LLVMARMInfo" "LLVMSupport" "LLVMDemangle")
-
-# llvm-config --libs aarch64codegen
-set(MONO_llvm_extra_libs_aarch64codegen_900 "LLVMAArch64CodeGen" "LLVMGlobalISel" "LLVMSelectionDAG" "LLVMAsmPrinter" "LLVMDebugInfoDWARF" "LLVMCodeGen" "LLVMTarget" "LLVMScalarOpts" "LLVMInstCombine" "LLVMAggressiveInstCombine" "LLVMTransformUtils" "LLVMBitWriter" "LLVMAnalysis" "LLVMProfileData" "LLVMObject" "LLVMMCParser" "LLVMBitReader" "LLVMBitstreamReader" "LLVMCore" "LLVMRemarks" "LLVMAArch64Desc" "LLVMMC" "LLVMDebugInfoCodeView" "LLVMDebugInfoMSF" "LLVMBinaryFormat" "LLVMAArch64Utils" "LLVMAArch64Info" "LLVMSupport" "LLVMDemangle")
-
 ######################################
 # LLVM CHECKS
 ######################################
@@ -626,7 +613,7 @@ if(LLVM_PREFIX)
     separate_arguments(llvm_libs NATIVE_COMMAND ${llvm_libs_space_separated})
   endif()
 
-  if (${llvm_api_version} LESS 900)
+  if (${llvm_api_version} LESS 1100)
     message(FATAL_ERROR "LLVM version too old.")
   endif()
 

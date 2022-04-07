@@ -19,6 +19,7 @@ namespace System.Text.RegularExpressions.Tests
             {
                 yield return new object[] { engine, @"a", RegexOptions.IgnoreCase, new[] { 'a', 'A' } };
                 yield return new object[] { engine, @"ac", RegexOptions.None, new[] { 'a', 'c' } };
+                yield return new object[] { engine, @"\u00E5\u00C5\u212B", RegexOptions.None, new[] { '\u00E5', '\u00C5', '\u212B' } };
                 yield return new object[] { engine, @"ace", RegexOptions.None, new[] { 'a', 'c', 'e' } };
                 yield return new object[] { engine, @"aceg", RegexOptions.None, new[] { 'a', 'c', 'e', 'g' } };
                 yield return new object[] { engine, @"aceg", RegexOptions.IgnoreCase, new[] { 'a', 'A', 'c', 'C', 'e', 'E', 'g', 'G' } };
@@ -37,6 +38,7 @@ namespace System.Text.RegularExpressions.Tests
                 yield return new object[] { engine, @"a ", RegexOptions.None, new[] { 'a', ' ' } };
                 yield return new object[] { engine, @"a \t\r", RegexOptions.None, new[] { 'a', ' ', '\t', '\r' } };
                 yield return new object[] { engine, @"aeiou", RegexOptions.None, new[] { 'a', 'e', 'i', 'o', 'u' } };
+                yield return new object[] { engine, @"\u0000aeiou\u00FF", RegexOptions.None, new[] { '\u0000', 'a', 'e', 'i', 'o', 'u', '\u00FF' } };
                 yield return new object[] { engine, @"a-a", RegexOptions.None, new[] { 'a' } };
                 yield return new object[] { engine, @"ab", RegexOptions.None, new[] { 'a', 'b' } };
                 yield return new object[] { engine, @"a-b", RegexOptions.None, new[] { 'a', 'b' } };
@@ -45,6 +47,7 @@ namespace System.Text.RegularExpressions.Tests
                 yield return new object[] { engine, @"ACEGIKMOQSUWY", RegexOptions.None, new[] { 'A', 'C', 'E', 'G', 'I', 'K', 'M', 'O', 'Q', 'S', 'U', 'W', 'Y' } };
                 yield return new object[] { engine, @"abcAB", RegexOptions.None, new[] { 'A', 'B', 'a', 'b', 'c' } };
                 yield return new object[] { engine, @"a-c", RegexOptions.None, new[] { 'a', 'b', 'c' } };
+                yield return new object[] { engine, @"a-fA-F", RegexOptions.None, new[] { 'a', 'b', 'c', 'd', 'e', 'f', 'A', 'B', 'C', 'D', 'E', 'F' } };
                 yield return new object[] { engine, @"a-fA-F0-9", RegexOptions.None, new[] { 'a', 'b', 'c', 'd', 'e', 'f', 'A', 'B', 'C', 'D', 'E', 'F', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9' } };
                 yield return new object[] { engine, @"X-b", RegexOptions.None, new[] { 'X', 'Y', 'Z', '[', '\\', ']', '^', '_', '`', 'a', 'b' } };
                 yield return new object[] { engine, @"\u0083\u00DE-\u00E1", RegexOptions.None, new[] { '\u0083', '\u00DE', '\u00DF', '\u00E0', '\u00E1' } };
@@ -55,6 +58,7 @@ namespace System.Text.RegularExpressions.Tests
                 yield return new object[] { engine, @"[a-z-[d-w-[m-o]]]", RegexOptions.None, new[] { 'a', 'b', 'c', 'm', 'n', 'n', 'o', 'x', 'y', 'z' } };
                 yield return new object[] { engine, @"\p{IsBasicLatin}-[\x00-\x7F]", RegexOptions.None, new char[0] };
                 yield return new object[] { engine, @"[0-9-[2468]]", RegexOptions.None, new[] { '0', '1', '3', '5', '7', '9' } };
+                yield return new object[] { engine, @"[\u1000-\u1001\u3000-\u3002\u5000-\u5003]", RegexOptions.None, new[] { '\u1000', '\u1001', '\u3000', '\u3001', '\u3002', '\u5000', '\u5001', '\u5002', '\u5003' } };
             }
         }
 
@@ -69,8 +73,8 @@ namespace System.Text.RegularExpressions.Tests
             }
             else
             {
-                await ValidateSetAsync(engine, $"[{set}]", options, new HashSet<char>(expectedIncluded), null);
-                await ValidateSetAsync(engine, $"[^{set}]", options, null, new HashSet<char>(expectedIncluded));
+                await ValidateSetAsync(engine, $"[{set}]", options, new HashSet<char>(expectedIncluded), null, validateEveryChar: true);
+                await ValidateSetAsync(engine, $"[^{set}]", options, null, new HashSet<char>(expectedIncluded), validateEveryChar: true);
             }
         }
 
@@ -146,11 +150,19 @@ namespace System.Text.RegularExpressions.Tests
             await ValidateSetAsync(engine, @"[\u0000-\uFFFFa-z]", RegexOptions.None, null, set);
             await ValidateSetAsync(engine, @"[\u0000-\u1000\u1001-\u2002\u2003-\uFFFF]", RegexOptions.None, null, set);
             await ValidateSetAsync(engine, @"[\u0000-\uFFFE\u0001-\uFFFF]", RegexOptions.None, null, set, validateEveryChar: true);
+            foreach (string all in new[] { @"[\d\D]", @"[\D\d]", @"[\w\W]", @"[\W\w]", @"[\s\S]", @"[\S\s]", })
+            {
+                await ValidateSetAsync(engine, all, RegexOptions.None, null, new HashSet<char>(), validateEveryChar: true);
+            }
 
             await ValidateSetAsync(engine, @"[^\u0000-\uFFFF]", RegexOptions.None, set, null);
             await ValidateSetAsync(engine, @"[^\u0000-\uFFFFa-z]", RegexOptions.None, set, null);
             await ValidateSetAsync(engine, @"[^\u0000-\uFFFE\u0001-\uFFFF]", RegexOptions.None, set, null);
             await ValidateSetAsync(engine, @"[^\u0000-\u1000\u1001-\u2002\u2003-\uFFFF]", RegexOptions.None, set, null, validateEveryChar: true);
+            foreach (string empty in new[] { @"[^\d\D]", @"[^\D\d]", @"[^\w\W]", @"[^\W\w]", @"[^\s\S]", @"[^\S\s]", })
+            {
+                await ValidateSetAsync(engine, empty, RegexOptions.None, set, null, validateEveryChar: true);
+            }
         }
 
         [Theory]

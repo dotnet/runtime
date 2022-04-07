@@ -930,7 +930,7 @@ namespace System.Security.Principal
         }
 
 
-        private static IdentityReferenceCollection TranslateToNTAccounts(IdentityReferenceCollection sourceSids!!, out bool someFailed)
+        private static unsafe IdentityReferenceCollection TranslateToNTAccounts(IdentityReferenceCollection sourceSids!!, out bool someFailed)
         {
             if (sourceSids.Count == 0)
             {
@@ -1004,7 +1004,7 @@ namespace System.Security.Principal
                 }
 
 
-                NamesPtr.Initialize((uint)sourceSids.Count, (uint)Marshal.SizeOf<Interop.LSA_TRANSLATED_NAME>());
+                NamesPtr.Initialize((uint)sourceSids.Count, (uint)sizeof(Interop.LSA_TRANSLATED_NAME));
                 ReferencedDomainsPtr.InitializeReferencedDomainsList();
 
                 //
