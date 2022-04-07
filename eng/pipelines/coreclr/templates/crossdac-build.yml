@@ -39,7 +39,7 @@ steps:
             Write-Error "Couldn't find one of the expected crossdac files."
           }
 
-          New-Item $targetDir -ea 0
+          New-Item $targetDir -Force -ea 0
           $availableFiles | %{ cp $_.FullName $targetDir -v }
         }
 
