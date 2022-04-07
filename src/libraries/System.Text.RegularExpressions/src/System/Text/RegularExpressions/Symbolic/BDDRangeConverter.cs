@@ -24,13 +24,13 @@ namespace System.Text.RegularExpressions.Symbolic
         /// </summary>
         public static (uint, uint)[] ToRanges(BDD set)
         {
-            const int MaxBit = 15;
+            const int MaxBit = 15; // most significant bit of a 16-bit char
 
             if (set.IsEmpty)
                 return Array.Empty<(uint, uint)>();
 
             if (set.IsFull)
-                return new[] { (0u, ((uint)1 << MaxBit << 1) - 1) }; //note: maxBit could be 31
+                return new[] { (0u, ((uint)1 << MaxBit << 1) - 1) };
 
             var rc = new BDDRangeConverter();
             return LiftRanges(MaxBit + 1, MaxBit - set.Ordinal, rc.ToRangesFromOrdinal(set));
