@@ -4419,19 +4419,14 @@ void GenTree::VisitBinOpOperands(TVisitor visitor)
  *  not zero-initialized and can contain data from a prior allocation lifetime.
  */
 
-inline void* __cdecl operator new(size_t sz, Compiler* compiler, CompMemKind cmk)
+inline void* operator new(size_t sz, Compiler* compiler, CompMemKind cmk)
 {
     return compiler->getAllocator(cmk).allocate<char>(sz);
 }
 
-inline void* __cdecl operator new[](size_t sz, Compiler* compiler, CompMemKind cmk)
+inline void* operator new[](size_t sz, Compiler* compiler, CompMemKind cmk)
 {
     return compiler->getAllocator(cmk).allocate<char>(sz);
-}
-
-inline void* __cdecl operator new(size_t sz, void* p, const jitstd::placement_t& /* syntax_difference */)
-{
-    return p;
 }
 
 /*****************************************************************************/
