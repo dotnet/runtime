@@ -17691,6 +17691,13 @@ void Compiler::fgRetypeImplicitByRefArgs()
 #if FEATURE_MULTIREG_ARGS
                     fieldVarDsc->SetOtherArgReg(REG_NA);
 #endif
+                    // Promoted fields of implicit byrefs can't be OSR locals.
+                    //
+                    if (fieldVarDsc->lvIsOSRLocal)
+                    {
+                        assert(opts.IsOSR());
+                        fieldVarDsc->lvIsOSRLocal = false;
+                    }
                 }
 
                 // Hijack lvFieldLclStart to record the new temp number.
