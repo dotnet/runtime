@@ -327,7 +327,7 @@ jobs:
       targetRid: browser-wasm
       platform: Browser_wasm_firefox
       container:
-        image: ubuntu-18.04-webassembly-20220407161809-74250f7
+        image: ubuntu-18.04-webassembly-20220317214646-1ad56e8
         registry: mcr
       jobParameters:
         hostedOs: Linux
