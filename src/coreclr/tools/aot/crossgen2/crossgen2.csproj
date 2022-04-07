@@ -46,6 +46,7 @@
           Condition="'$(NativeAotSupported)' == 'true' and '$(RunningPublish)' == 'true'" />
 
   <Target Name="DeleteAssetsJson" Condition="'$(DotNetBuildFromSource)' == 'true'">
+    <Message Importance="high" Text="Deleting project.assets.json" />
     <Delete Files="$(ProjectAssetsFile)" />
   </Target>
 
@@ -54,8 +55,8 @@
       <Output TaskParameter="Lines" ItemName="_LinesFromFile" />
     </ReadLinesFromFile>
 
-    <Message Text="FileContents: $(ProjectAssetsFile)" />
-    <Message Text="%(_LinesFromFile.Identity)" />
+    <Message Importance="high" Text="FileContents: $(ProjectAssetsFile)" />
+    <Message Importance="high" Text="%(_LinesFromFile.Identity)" />
   </Target>
 
 </Project>
