@@ -120,6 +120,7 @@
     <FeaturePortableThreadPool>true</FeaturePortableThreadPool>
     <FeaturePerfTracing>true</FeaturePerfTracing>
     <FeatureObjCMarshal Condition="'$(TargetsOSX)' == 'true' or '$(TargetsMacCatalyst)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">true</FeatureObjCMarshal>
+    <FeatureWasmThreads Condition="'$(TargetsBrowser)' == 'true' and '$(WasmEnableThreads)' == 'true'">true</FeatureWasmThreads>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -127,6 +128,7 @@
     <DefineConstants Condition="'$(FeatureManagedEtwChannels)' == 'true'">$(DefineConstants);FEATURE_MANAGED_ETW_CHANNELS</DefineConstants>
     <DefineConstants Condition="'$(FeaturePerfTracing)' == 'true'">$(DefineConstants);FEATURE_PERFTRACING</DefineConstants>
     <DefineConstants Condition="'$(FeatureObjCMarshal)' == 'true'">$(DefineConstants);FEATURE_OBJCMARSHAL</DefineConstants>
+    <DefineConstants Condition="'$(FeatureWasmThreads)' == 'true'" >$(DefineConstants);FEATURE_WASM_THREADS</DefineConstants>
   </PropertyGroup>
 
   <!-- ILLinker settings -->

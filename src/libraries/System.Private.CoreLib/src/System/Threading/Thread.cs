@@ -145,7 +145,9 @@ namespace System.Threading
             Initialize();
         }
 
-//        [UnsupportedOSPlatformGuard("browser")]
+#if !FEATURE_WASM_THREADS
+        [UnsupportedOSPlatformGuard("browser")]
+#endif
         internal static bool IsThreadStartSupported => true;
 
         /// <summary>Causes the operating system to change the state of the current instance to <see cref="ThreadState.Running"/>, and optionally supplies an object containing data to be used by the method the thread executes.</summary>
@@ -153,7 +155,9 @@ namespace System.Threading
         /// <exception cref="ThreadStateException">The thread has already been started.</exception>
         /// <exception cref="OutOfMemoryException">There is not enough memory available to start this thread.</exception>
         /// <exception cref="InvalidOperationException">This thread was created using a <see cref="ThreadStart"/> delegate instead of a <see cref="ParameterizedThreadStart"/> delegate.</exception>
-//        [UnsupportedOSPlatform("browser")]
+#if !FEATURE_WASM_THREADS
+        [UnsupportedOSPlatform("browser")]
+#endif
         public void Start(object? parameter) => Start(parameter, captureContext: true);
 
         /// <summary>Causes the operating system to change the state of the current instance to <see cref="ThreadState.Running"/>, and optionally supplies an object containing data to be used by the method the thread executes.</summary>
@@ -165,7 +169,9 @@ namespace System.Threading
         /// Unlike <see cref="Start"/>, which captures the current <see cref="ExecutionContext"/> and uses that context to invoke the thread's delegate,
         /// <see cref="UnsafeStart"/> explicitly avoids capturing the current context and flowing it to the invocation.
         /// </remarks>
-//        [UnsupportedOSPlatform("browser")]
+#if !FEATURE_WASM_THREADS
+        [UnsupportedOSPlatform("browser")]
+#endif
         public void UnsafeStart(object? parameter) => Start(parameter, captureContext: false);
 
         private void Start(object? parameter, bool captureContext)
@@ -192,7 +198,9 @@ namespace System.Threading
         /// <summary>Causes the operating system to change the state of the current instance to <see cref="ThreadState.Running"/>.</summary>
         /// <exception cref="ThreadStateException">The thread has already been started.</exception>
         /// <exception cref="OutOfMemoryException">There is not enough memory available to start this thread.</exception>
-//        [UnsupportedOSPlatform("browser")]
+#if !FEATURE_WASM_THREADS
+        [UnsupportedOSPlatform("browser")]
+#endif
         public void Start() => Start(captureContext: true);
 
         /// <summary>Causes the operating system to change the state of the current instance to <see cref="ThreadState.Running"/>.</summary>
@@ -202,7 +210,9 @@ namespace System.Threading
         /// Unlike <see cref="Start"/>, which captures the current <see cref="ExecutionContext"/> and uses that context to invoke the thread's delegate,
         /// <see cref="UnsafeStart"/> explicitly avoids capturing the current context and flowing it to the invocation.
         /// </remarks>
-//        [UnsupportedOSPlatform("browser")]
+#if !FEATURE_WASM_THREADS
+        [UnsupportedOSPlatform("browser")]
+#endif
         public void UnsafeStart() => Start(captureContext: false);
 
         private void Start(bool captureContext)
@@ -219,7 +229,6 @@ namespace System.Threading
 
             StartCore();
         }
-//#endif
 
         private void RequireCurrentThread()
         {

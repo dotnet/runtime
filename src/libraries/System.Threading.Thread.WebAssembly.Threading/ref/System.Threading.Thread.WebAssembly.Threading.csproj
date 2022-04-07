@@ -1,0 +1,42 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>System.Threading.Thread</AssemblyName>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <FeatureWasmThreads>true</FeatureWasmThreads>
+    <!-- It is a core assembly because it defines System.Object so we need to pass RuntimeMetadataVersion to the compiler -->
+    <RuntimeMetadataVersion>v4.0.30319</RuntimeMetadataVersion>
+    <!-- disable warnings about obsolete APIs,
+        Remove warning disable when nullable attributes are respected,
+        Type has no accessible constructors which use only CLS-compliant types -->
+    <NoWarn>$(NoWarn);0809;0618;CS8614;CS3015;NU5131</NoWarn>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(FeatureWasmThreads)' == 'true'">
+    <!-- Place this assembly in the nuget ref folder -->
+    <BuildOutputTargetFolder>ref</BuildOutputTargetFolder>
+    <DefineConstants>$(DefineConstants);FEATURE_WASM_THREADS</DefineConstants>
+    <IsPackable>true</IsPackable>
+    <PackageDescription>Exposes Threading APIs from System.Runtime for WebAssembly projects</PackageDescription>
+    <PackageId>$(MSBuildProjectName)</PackageId>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(LibrariesProjectRoot)System.Threading.Thread\ref\System.Threading.Thread.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\System.Runtime\ref\System.Runtime.csproj" />
+    <ProjectReference Include="..\..\System.Runtime.Extensions\ref\System.Runtime.Extensions.csproj" />
+    <ProjectReference Include="..\..\System.Security.Principal\ref\System.Security.Principal.csproj" />
+    <ProjectReference Include="..\..\System.Threading\ref\System.Threading.csproj" />
+  </ItemGroup>
+  <Target Name="_ExperimentalUpdateFileVersion"
+          AfterTargets="_InitializeAssemblyVersion">
+    <PropertyGroup>
+      <_FileVersionMaj>$(FileVersion.Split('.')[0])</_FileVersionMaj>
+      <_FileVersionMin>$(FileVersion.Split('.')[1])</_FileVersionMin>
+      <_FileVersionBld>$(FileVersion.Split('.')[2])</_FileVersionBld>
+      <_FileVersionRev>$(FileVersion.Split('.')[3])</_FileVersionRev>
+      <FileVersion>$(_FileVersionMaj).$([MSBuild]::Add($(_FileVersionMin), 100)).$(_FileVersionBld).$(_FileVersionRev)</FileVersion>
+    </PropertyGroup>
+  </Target>
+</Project>

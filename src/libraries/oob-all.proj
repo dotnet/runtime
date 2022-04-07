@@ -8,6 +8,9 @@
 
   <!-- Reference all out-of-band projects. -->
   <ItemGroup>
+    <ProjectReference Include="$(MSBuildThisFileDirectory)System.Threading.Thread.WebAssembly.Threading\ref\System.Threading.Thread.Webassembly.Threading.csproj"
+                      Condition="'$(BuildAllConfigurations)' == 'true'" />
+
     <ProjectReference Include="$(MSBuildThisFileDirectory)*\src\*.*proj"
                       Exclude="@(ProjectExclusions);
                                $(MSBuildThisFileDirectory)*\src\**\*.shproj;
