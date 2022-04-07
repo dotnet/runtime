@@ -153,7 +153,8 @@ namespace System.Threading.RateLimiting.Tests
             Assert.Equal(1, limiterFactory.Limiters[0].Limiter.WaitAsyncCallCount);
         }
 
-        [Fact]
+        // Uses Task.Wait in a Task.Run to purposefully test a blocking scenario, this doesn't work on WASM currently
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task Create_BlockingFactoryDoesNotBlockOtherPartitions()
         {
             var limiterFactory = new TrackingRateLimiterFactory<int>();
