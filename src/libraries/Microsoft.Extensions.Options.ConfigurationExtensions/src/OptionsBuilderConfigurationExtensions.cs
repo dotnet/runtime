@@ -6,7 +6,7 @@ using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 
-namespace Microsoft.Extensions.DependencyInjection
+namespace Microsoft.Extensions.Options.ConfigurationExtensions
 {
     /// <summary>
     /// Extension methods for adding configuration related options services to the DI container via <see cref="OptionsBuilder{TOptions}"/>.
