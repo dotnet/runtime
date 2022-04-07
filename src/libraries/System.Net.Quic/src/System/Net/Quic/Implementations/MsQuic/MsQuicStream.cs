@@ -927,7 +927,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                         return HandleEventStartComplete(state, ref evt);
                     // Received data on the stream
                     case QUIC_STREAM_EVENT_TYPE.RECEIVE:
-                        return HandleEventRecv(state, ref evt);
+                        return HandleEventReceive(state, ref evt);
                     // Send has completed.
                     // Contains a canceled bool to indicate if the send was canceled.
                     case QUIC_STREAM_EVENT_TYPE.SEND_COMPLETE:
@@ -966,7 +966,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             }
         }
 
-        private static unsafe uint HandleEventRecv(State state, ref StreamEvent evt)
+        private static unsafe uint HandleEventReceive(State state, ref StreamEvent evt)
         {
             ref StreamEventDataReceive receiveEvent = ref evt.Data.Receive;
 
@@ -1051,18 +1051,19 @@ namespace System.Net.Quic.Implementations.MsQuic
                         break;
 
                     default:
-                        Debug.Assert(state.ReadState is ReadState.Aborted or ReadState.ConnectionClosed, $"Unexpected {nameof(ReadState)} '{state.ReadState}' in {nameof(HandleEventRecv)}.");
+                        Debug.Assert(state.ReadState is ReadState.Aborted or ReadState.ConnectionClosed, $"Unexpected {nameof(ReadState)} '{state.ReadState}' in {nameof(HandleEventReceive)}.");
 
                         // There was a race between a user aborting the read stream and the callback being ran.
                         // This will eat any received data.
                         return MsQuicStatusCodes.Success;
                 }
-            }
 
-            // We're completing a pending read.
-            if (shouldComplete)
-            {
-                state.ReceiveResettableCompletionSource.Complete(readLength);
+                // We're completing a pending read. This statement must be still inside a lock, otherwise another thread
+                // could see ReadState.None and access the still incomplete completion source
+                if (shouldComplete)
+                {
+                    state.ReceiveResettableCompletionSource.Complete(readLength);
+                }
             }
 
             // Returning Success when the entire buffer hasn't been consumed will cause MsQuic to disable further receive events until EnableReceive() is called.
