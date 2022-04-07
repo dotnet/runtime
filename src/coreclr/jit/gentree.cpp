@@ -13434,16 +13434,12 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
                         i1 = -i1;
                         break;
 
+                    // Note: BSWAP16 is considered to leave upper 16 bits
+                    // undefined as it differs by platform, so we cannot
+                    // constant fold it.
                     case GT_BSWAP:
                         i1 = ((i1 >> 24) & 0xFF) | ((i1 >> 8) & 0xFF00) | ((i1 << 8) & 0xFF0000) |
                              ((i1 << 24) & 0xFF000000);
-                        break;
-
-                    case GT_BSWAP16:
-                        // Semantics of bswap16 is to swap lower 2 bytes, but
-                        // leaver upper 2 bytes alone (with a cast inserted as
-                        // necessary during import).
-                        i1 = (i1 & 0xFFFF0000) | ((i1 >> 8) & 0xFF) | ((i1 << 8) & 0xFF00);
                         break;
 
                     case GT_CAST:

@@ -557,15 +557,9 @@ T ValueNumStore::EvalOpSpecialized(VNFunc vnf, T v0)
             case GT_NOT:
                 return ~v0;
 
-            case GT_BSWAP16:
-            {
-                UINT16 v0_unsigned = UINT16(v0);
-
-                v0_unsigned = ((v0_unsigned >> 8) & 0xFF) | ((v0_unsigned << 8) & 0xFF00);
-                // Swap 2 lower bytes, leave rest alone
-                return (v0 & ~T(0xFFFF)) | T(v0_unsigned);
-            }
-
+            // Note: BSWAP16 is considered to leave upper 16 bits
+            // undefined as it differs by platform, so we cannot
+            // constant fold it.
             case GT_BSWAP:
                 if (sizeof(T) == 4)
                 {
@@ -3356,7 +3350,7 @@ bool ValueNumStore::CanEvalForConstantArgs(VNFunc vnf)
             // Unary Ops
             case GT_NEG:
             case GT_NOT:
-            case GT_BSWAP16:
+            // Cannot constant fold BSWAP16 as upper bits are undefined.
             case GT_BSWAP:
 
             // Binary Ops
