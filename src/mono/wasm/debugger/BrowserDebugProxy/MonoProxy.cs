@@ -760,11 +760,11 @@ namespace Microsoft.WebAssembly.Diagnostics
                     }
                     case "valuetype":
                     {
-                        var resValType = context.SdbAgent.GetValueTypeClass(objectId.Value);
-                        if (resValType == null)
+                        var valType = context.SdbAgent.GetValueTypeClass(objectId.Value);
+                        if (valType == null)
                             return ValueOrError<JToken>.WithError($"Internal Error: No valuetype found for {objectId}.");
-                        var resValue = await resValType.GetValues(context.SdbAgent, accessorPropertiesOnly, token);
-                        return resValType switch
+                        var resValue = await valType.GetValues(context.SdbAgent, accessorPropertiesOnly, token);
+                        return resValue switch
                         {
                             null => ValueOrError<JToken>.WithError($"Could not get properties for {objectId}"),
                             _ => ValueOrError<JToken>.WithValue(sortByAccessLevel ? JObject.FromObject(new { result = resValue }) : resValue)
