@@ -59,7 +59,7 @@ namespace System.Text.Json
                     // Some of the validation is done during construction (i.e. validity of JsonConverter, inner types etc.)
                     // therefore we need to unwrap TargetInvocationException for better user experience
                     ExceptionDispatchInfo.Capture(ex.InnerException).Throw();
-                    throw ex.InnerException;
+                    throw null!;
                 }
 #endif
             }

@@ -152,7 +152,7 @@ namespace System.Text.Json.Serialization.Metadata
         /// TypeInfo (for the cases mentioned above). In addition, methods that have a JsonPropertyInfo argument would also likely
         /// need to add an argument for JsonTypeInfo.
         /// </remarks>
-        internal JsonPropertyInfo PropertyInfoForTypeInfo { get; set; }
+        internal JsonPropertyInfo PropertyInfoForTypeInfo { get; private set; }
 
         /// <summary>
         /// Returns a helper class used for computing the default value.
@@ -162,24 +162,11 @@ namespace System.Text.Json.Serialization.Metadata
 
         internal JsonNumberHandling? NumberHandling { get; set; }
 
-        internal JsonTypeInfo()
-        {
-            Debug.Assert(false, "This constructor should not be called.");
-        }
-
-        internal JsonTypeInfo(Type type, JsonSerializerOptions options!!)
-        {
-            Type = type;
-            Options = options;
-            // Setting this option is deferred to the initialization methods of the various metadada info types.
-            PropertyInfoForTypeInfo = null!;
-        }
-
         internal JsonTypeInfo(Type type, JsonConverter converter, JsonSerializerOptions options)
         {
             Type = type;
             Options = options;
-            PropertyInfoForTypeInfo = CreatePropertyInfoForTypeInfo(Type, converter, NumberHandling, Options);
+            PropertyInfoForTypeInfo = CreatePropertyInfoForTypeInfo(Type, converter, Options, this);
             ElementType = converter.ElementType;
 
             switch (PropertyInfoForTypeInfo.ConverterStrategy)

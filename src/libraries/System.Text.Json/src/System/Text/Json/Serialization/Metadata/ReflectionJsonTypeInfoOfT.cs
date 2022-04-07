@@ -176,7 +176,7 @@ namespace System.Text.Json.Serialization.Metadata
                 ThrowHelper.ThrowInvalidOperationException_SerializationDuplicateTypeAttribute(Type, typeof(JsonExtensionDataAttribute));
             }
 
-            JsonPropertyInfo jsonPropertyInfo = AddProperty(memberInfo, memberType, declaringType, isVirtual, typeNumberHandling, Options);
+            JsonPropertyInfo jsonPropertyInfo = AddProperty(memberInfo, memberType, declaringType, isVirtual, Options);
             Debug.Assert(jsonPropertyInfo.NameAsString != null);
 
             if (hasExtensionAttribute)
@@ -197,7 +197,6 @@ namespace System.Text.Json.Serialization.Metadata
             Type memberType,
             Type parentClassType,
             bool isVirtual,
-            JsonNumberHandling? parentTypeNumberHandling,
             JsonSerializerOptions options)
         {
             JsonIgnoreCondition? ignoreCondition = JsonPropertyInfo.GetAttribute<JsonIgnoreAttribute>(memberInfo)?.Condition;
@@ -221,7 +220,6 @@ namespace System.Text.Json.Serialization.Metadata
                 isVirtual,
                 converter,
                 options,
-                parentTypeNumberHandling,
                 ignoreCondition);
         }
 

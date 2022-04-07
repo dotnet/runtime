@@ -58,8 +58,8 @@ namespace System.Text.Json.Serialization.Metadata
             bool isVirtual,
             JsonConverter converter,
             JsonSerializerOptions options,
-            JsonNumberHandling? parentTypeNumberHandling = null,
-            JsonIgnoreCondition? ignoreCondition = null)
+            JsonIgnoreCondition? ignoreCondition = null,
+            JsonTypeInfo? jsonTypeInfo = null)
         {
             // Create the JsonPropertyInfo instance.
             JsonPropertyInfo jsonPropertyInfo = converter.CreateJsonPropertyInfo();
@@ -72,8 +72,8 @@ namespace System.Text.Json.Serialization.Metadata
                 isVirtual,
                 converter,
                 ignoreCondition,
-                parentTypeNumberHandling,
-                options);
+                options,
+                jsonTypeInfo);
 
             return jsonPropertyInfo;
         }
@@ -85,17 +85,17 @@ namespace System.Text.Json.Serialization.Metadata
         private static JsonPropertyInfo CreatePropertyInfoForTypeInfo(
             Type declaredPropertyType,
             JsonConverter converter,
-            JsonNumberHandling? numberHandling,
-            JsonSerializerOptions options)
+            JsonSerializerOptions options,
+            JsonTypeInfo? jsonTypeInfo = null)
         {
             JsonPropertyInfo jsonPropertyInfo = CreateProperty(
                 declaredPropertyType: declaredPropertyType,
                 memberInfo: null, // Not a real property so this is null.
                 parentClassType: ObjectType, // a dummy value (not used)
                 isVirtual: false,
-                converter,
-                options,
-                parentTypeNumberHandling: numberHandling);
+                converter: converter,
+                options: options,
+                jsonTypeInfo: jsonTypeInfo);
 
             Debug.Assert(jsonPropertyInfo.IsForTypeInfo);
 
