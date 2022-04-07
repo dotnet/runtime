@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using System.Text.Unicode;
 using System.Runtime.CompilerServices;
+using System.Runtime.Intrinsics;
 
 namespace System.Globalization
 {
@@ -234,6 +235,33 @@ namespace System.Globalization
             if (GlobalizationMode.UseNls)
             {
                 return CompareInfo.NlsIndexOfOrdinalCore(source, value, ignoreCase: true, fromBeginning: true);
+            }
+
+            if (Vector128.IsHardwareAccelerated && (source.Length > Vector128<ushort>.Count))
+            {
+                char c = value[0];
+                if (char.IsAscii(c))
+                {
+                    int candidatePos;
+                    if (char.IsInRange(c, 'a', 'z'))
+                    {
+                        // Search for the first occurrence of c or its ToUpper
+                        candidatePos = source.IndexOfAny(c, (char)(c & ~0x20));
+                    }
+                    else if (char.IsInRange(c, 'A', 'Z'))
+                    {
+                        // Search for the first occurrence of c or its ToLower
+                        candidatePos = source.IndexOfAny(c, (char)(c | 0x20));
+                    }
+                    else
+                    {
+                        // Search for first occurrence of c only
+                        candidatePos = source.IndexOf(c);
+                    }
+                    if (candidatePos == -1)
+                        return candidatePos;
+                    return IndexOfOrdinalIgnoreCase(source.Slice(candidatePos), value);
+                }
             }
 
             return OrdinalCasing.IndexOf(source, value);
