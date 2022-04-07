@@ -249,7 +249,12 @@ sealed class OutOfProcessTest : ITestInfo
         Method = displayName;
         DisplayNameForFiltering = displayName;
         TestNameExpression = $"@\"{displayName}\"";
-        ExecutionStatement = $@"TestLibrary.OutOfProcessTest.RunOutOfProcessTest(typeof(Program).Assembly.Location, @""{relativeAssemblyPath}"");";
+        ExecutionStatement = $@"
+if (TestLibrary.OutOfProcessTest.OutOfProcessTestsSupported)
+{{
+TestLibrary.OutOfProcessTest.RunOutOfProcessTest(typeof(Program).Assembly.Location, @""{relativeAssemblyPath}"");
+}}
+";
     }
 
     public string TestNameExpression { get; }
