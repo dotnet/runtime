@@ -56,7 +56,9 @@
       <RunScriptCommands Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(OS)' != 'Windows_NT' and '$(RunInFirefox)'=='1'"
                          Include="update-alternatives --install /usr/bin/python python /usr/bin/python3 1" />
       <RunScriptCommands Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(OS)' != 'Windows_NT' and '$(RunInFirefox)'!='1'"
-                         Include="python --version" />                         
+                         Include="python --version" />           
+      <RunScriptCommands Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(OS)' != 'Windows_NT' and '$(RunInFirefox)'!='1'"
+                         Include="python3 --version" />                                               
     </ItemGroup>
 
     <PropertyGroup>
