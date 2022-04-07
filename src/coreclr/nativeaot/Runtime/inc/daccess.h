@@ -529,6 +529,8 @@
 
 #define DACCESS_TABLE_RESOURCE L"COREXTERNALDATAACCESSRESOURCE"
 
+#define DACCESS_TABLE_SYMBOL "g_dacTable"
+
 #include "type_traits.hpp"
 
 #ifdef DACCESS_COMPILE

@@ -532,6 +532,7 @@
 #include "corerror.h"
 
 #define DACCESS_TABLE_RESOURCE "COREXTERNALDATAACCESSRESOURCE"
+#define DACCESS_TABLE_SYMBOL "g_dacTable"
 
 #ifdef PAL_STDCPP_COMPAT
 #include <type_traits>

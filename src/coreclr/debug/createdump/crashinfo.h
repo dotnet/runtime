@@ -6,6 +6,9 @@
 #else
 #include "../dbgutil/elfreader.h"
 
+// This should match the macro with the same name in daccess.h
+#define DACCESS_TABLE_SYMBOL "g_dacTable"
+
 // typedef for our parsing of the auxv variables in /proc/pid/auxv.
 #if TARGET_64BIT
 typedef Elf64_auxv_t elf_aux_entry;

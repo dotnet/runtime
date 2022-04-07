@@ -7118,7 +7118,7 @@ GetDacTableAddress(ICorDebugDataTarget* dataTarget, ULONG64 baseAddress, PULONG6
     *dacTableAddress = baseAddress + DAC_TABLE_RVA;
 #else
     // On Linux/MacOS try to get the dac table address via the export symbol
-    if (!TryGetSymbol(dataTarget, baseAddress, "g_dacTable", dacTableAddress))
+    if (!TryGetSymbol(dataTarget, baseAddress, DACCESS_TABLE_SYMBOL, dacTableAddress))
     {
         return CORDBG_E_MISSING_DEBUGGER_EXPORTS;
     }

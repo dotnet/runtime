@@ -252,7 +252,7 @@ void CrashInfo::VisitModule(MachOModule& module)
             m_coreclrPath = module.Name().substr(0, last + 1);
 
             uint64_t symbolOffset;
-            if (!module.TryLookupSymbol("g_dacTable", &symbolOffset))
+            if (!module.TryLookupSymbol(DACCESS_TABLE_SYMBOL, &symbolOffset))
             {
                 TRACE("TryLookupSymbol(g_dacTable) FAILED\n");
             }
