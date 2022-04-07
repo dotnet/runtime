@@ -58,7 +58,7 @@ namespace System.Text.Json
             }
 
             state.Current.JsonPropertyInfo = jsonPropertyInfo;
-            state.Current.NumberHandling = jsonPropertyInfo.NumberHandling;
+            state.Current.NumberHandling = jsonPropertyInfo.EffectiveNumberHandling;
             return jsonPropertyInfo;
         }
 
@@ -82,7 +82,7 @@ namespace System.Text.Json
                 unescapedPropertyName = propertyName;
             }
 
-            if (options.ReferenceHandlingStrategy == ReferenceHandlingStrategy.Preserve)
+            if (state.CanContainMetadata)
             {
                 if (propertyName.Length > 0 && propertyName[0] == '$')
                 {

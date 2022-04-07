@@ -179,7 +179,7 @@ namespace System.Xml
             }
         }
 
-        private string ConstructBaseURI(string baseURI, string systemId)
+        private static string ConstructBaseURI(string baseURI, string systemId)
         {
             if (baseURI == null)
                 return systemId;

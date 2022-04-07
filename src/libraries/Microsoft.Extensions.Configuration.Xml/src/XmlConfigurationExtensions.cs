@@ -62,7 +62,7 @@ namespace Microsoft.Extensions.Configuration
         /// <param name="optional">Whether the file is optional.</param>
         /// <param name="reloadOnChange">Whether the configuration should be reloaded if the file changes.</param>
         /// <returns>The <see cref="IConfigurationBuilder"/>.</returns>
-        public static IConfigurationBuilder AddXmlFile(this IConfigurationBuilder builder!!, IFileProvider provider, string path, bool optional, bool reloadOnChange)
+        public static IConfigurationBuilder AddXmlFile(this IConfigurationBuilder builder!!, IFileProvider? provider, string path, bool optional, bool reloadOnChange)
         {
             if (string.IsNullOrEmpty(path))
             {
@@ -85,7 +85,7 @@ namespace Microsoft.Extensions.Configuration
         /// <param name="builder">The <see cref="IConfigurationBuilder"/> to add to.</param>
         /// <param name="configureSource">Configures the source.</param>
         /// <returns>The <see cref="IConfigurationBuilder"/>.</returns>
-        public static IConfigurationBuilder AddXmlFile(this IConfigurationBuilder builder, Action<XmlConfigurationSource> configureSource)
+        public static IConfigurationBuilder AddXmlFile(this IConfigurationBuilder builder, Action<XmlConfigurationSource>? configureSource)
             => builder.Add(configureSource);
 
         /// <summary>

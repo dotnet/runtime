@@ -9,6 +9,7 @@ using System.Text.Encodings.Web;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
+using System.Threading;
 
 namespace System.Text.Json
 {
@@ -579,7 +580,7 @@ namespace System.Text.Json
         /// <summary>
         /// Whether the options instance has been primed for reflection-based serialization.
         /// </summary>
-        internal bool IsInitializedForReflectionSerializer { get; private set; }
+        internal bool IsInitializedForReflectionSerializer;
 
         /// <summary>
         /// Initializes the converters for the reflection-based serializer.
@@ -589,7 +590,7 @@ namespace System.Text.Json
         internal void InitializeForReflectionSerializer()
         {
             RootReflectionSerializerDependencies();
-            IsInitializedForReflectionSerializer = true;
+            Volatile.Write(ref IsInitializedForReflectionSerializer, true);
             if (_cachingContext != null)
             {
                 _cachingContext.Options.IsInitializedForReflectionSerializer = true;
@@ -599,19 +600,22 @@ namespace System.Text.Json
         private JsonTypeInfo GetJsonTypeInfoFromContextOrCreate(Type type)
         {
             JsonTypeInfo? info = _serializerContext?.GetTypeInfo(type);
-            if (info != null)
+            if (info == null && IsInitializedForReflectionSerializer)
             {
-                return info;
+                Debug.Assert(
+                    s_typeInfoCreationFunc != null,
+                    "Reflection-based JsonTypeInfo creator should be initialized if IsInitializedForReflectionSerializer is true.");
+                info = s_typeInfoCreationFunc(type, this);
             }
 
-            if (!IsInitializedForReflectionSerializer)
+            if (info == null)
             {
                 ThrowHelper.ThrowNotSupportedException_NoMetadataForType(type);
                 return null!;
             }
 
-            Debug.Assert(s_typeInfoCreationFunc != null);
-            return s_typeInfoCreationFunc(type, this);
+            info.EnsureConfigured();
+            return info;
         }
 
         internal JsonDocumentOptions GetDocumentOptions()

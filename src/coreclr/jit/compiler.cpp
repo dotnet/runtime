@@ -319,7 +319,6 @@ unsigned totalLoopCount;          // counts the total number of natural loops
 unsigned totalUnnatLoopCount;     // counts the total number of (not-necessarily natural) loops
 unsigned totalUnnatLoopOverflows; // # of methods that identified more unnatural loops than we can represent
 unsigned iterLoopCount;           // counts the # of loops with an iterator (for like)
-unsigned simpleTestLoopCount;     // counts the # of loops with an iterator and a simple loop condition (iter < const)
 unsigned constIterLoopCount;      // counts the # of loops with a constant iterator (for like)
 bool     hasMethodLoops;          // flag to keep track if we already counted a method as having loops
 unsigned loopsThisMethod;         // counts the number of loops in the current method
@@ -1556,7 +1555,6 @@ void Compiler::compShutdown()
     fprintf(fout, "Total number of 'unnatural' loops is %5u\n", totalUnnatLoopCount);
     fprintf(fout, "# of methods overflowing unnat loop limit is %5u\n", totalUnnatLoopOverflows);
     fprintf(fout, "Total number of loops with an         iterator is %5u\n", iterLoopCount);
-    fprintf(fout, "Total number of loops with a simple   iterator is %5u\n", simpleTestLoopCount);
     fprintf(fout, "Total number of loops with a constant iterator is %5u\n", constIterLoopCount);
 
     fprintf(fout, "--------------------------------------------------\n");
@@ -1918,7 +1916,6 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
     m_blockToEHPreds     = nullptr;
     m_fieldSeqStore      = nullptr;
     m_zeroOffsetFieldMap = nullptr;
-    m_arrayInfoMap       = nullptr;
     m_refAnyClass        = nullptr;
     for (MemoryKind memoryKind : allMemoryKinds())
     {
@@ -2234,7 +2231,7 @@ void Compiler::compSetProcessor()
     opts.compUseCMOV = jitFlags.IsSet(JitFlags::JIT_FLAG_USE_CMOV);
 #ifdef DEBUG
     if (opts.compUseCMOV)
-        opts.compUseCMOV                = !compStressCompile(STRESS_USE_CMOV, 50);
+        opts.compUseCMOV                   = !compStressCompile(STRESS_USE_CMOV, 50);
 #endif // DEBUG
 
 #endif // TARGET_X86
@@ -2409,15 +2406,17 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     opts.compJitAlignLoopBoundary       = (unsigned short)JitConfig.JitAlignLoopBoundary();
     opts.compJitAlignLoopMinBlockWeight = (unsigned short)JitConfig.JitAlignLoopMinBlockWeight();
 
-    opts.compJitAlignLoopForJcc      = JitConfig.JitAlignLoopForJcc() == 1;
-    opts.compJitAlignLoopMaxCodeSize = (unsigned short)JitConfig.JitAlignLoopMaxCodeSize();
-    opts.compJitHideAlignBehindJmp   = JitConfig.JitHideAlignBehindJmp() == 1;
+    opts.compJitAlignLoopForJcc            = JitConfig.JitAlignLoopForJcc() == 1;
+    opts.compJitAlignLoopMaxCodeSize       = (unsigned short)JitConfig.JitAlignLoopMaxCodeSize();
+    opts.compJitHideAlignBehindJmp         = JitConfig.JitHideAlignBehindJmp() == 1;
+    opts.compJitOptimizeStructHiddenBuffer = JitConfig.JitOptimizeStructHiddenBuffer() == 1;
 #else
-    opts.compJitAlignLoopAdaptive       = true;
-    opts.compJitAlignLoopBoundary       = DEFAULT_ALIGN_LOOP_BOUNDARY;
-    opts.compJitAlignLoopMinBlockWeight = DEFAULT_ALIGN_LOOP_MIN_BLOCK_WEIGHT;
-    opts.compJitAlignLoopMaxCodeSize    = DEFAULT_MAX_LOOPSIZE_FOR_ALIGN;
-    opts.compJitHideAlignBehindJmp      = true;
+    opts.compJitAlignLoopAdaptive          = true;
+    opts.compJitAlignLoopBoundary          = DEFAULT_ALIGN_LOOP_BOUNDARY;
+    opts.compJitAlignLoopMinBlockWeight    = DEFAULT_ALIGN_LOOP_MIN_BLOCK_WEIGHT;
+    opts.compJitAlignLoopMaxCodeSize       = DEFAULT_MAX_LOOPSIZE_FOR_ALIGN;
+    opts.compJitHideAlignBehindJmp         = true;
+    opts.compJitOptimizeStructHiddenBuffer = true;
 #endif
 
 #ifdef TARGET_XARCH
@@ -2666,8 +2665,6 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 #endif // DEBUG
 
 #ifdef FEATURE_SIMD
-    // Minimum bar for availing SIMD benefits is SSE2 on AMD64/x86.
-    featureSIMD = jitFlags->IsSet(JitFlags::JIT_FLAG_FEATURE_SIMD);
     setUsesSIMDTypes(false);
 #endif // FEATURE_SIMD
 
@@ -4076,6 +4073,15 @@ const char* Compiler::compGetTieringName(bool wantShortName) const
 {
     const bool tier0 = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0);
     const bool tier1 = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER1);
+
+    if (!opts.compMinOptsIsSet)
+    {
+        // If 'compMinOptsIsSet' is not set, just return here. Otherwise, if this method is called
+        // by the assertAbort(), we would recursively call assert while trying to get MinOpts()
+        // and eventually stackoverflow.
+        return "Optimization-Level-Not-Yet-Set";
+    }
+
     assert(!tier0 || !tier1); // We don't expect multiple TIER flags to be set at one time.
 
     if (tier0)
@@ -4934,6 +4940,9 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
             RecomputeLoopInfo();
         }
     }
+
+    // Remove dead blocks
+    DoPhase(this, PHASE_REMOVE_DEAD_BLOCKS, &Compiler::fgRemoveDeadBlocks);
 
     // Insert GC Polls
     DoPhase(this, PHASE_INSERT_GC_POLLS, &Compiler::fgInsertGCPolls);
@@ -9151,10 +9160,6 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
                 {
                     chars += printf("[VAR_DEATH]");
                 }
-                if (tree->gtFlags & GTF_VAR_ARR_INDEX)
-                {
-                    chars += printf("[VAR_ARR_INDEX]");
-                }
 #if defined(DEBUG)
                 if (tree->gtDebugFlags & GTF_DEBUG_VAR_CSE_REF)
                 {
@@ -9300,8 +9305,14 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
                 }
                 break;
 
-            case GT_CNS_INT:
+            case GT_ARR_ADDR:
+                if (tree->gtFlags & GTF_ARR_ADDR_NONNULL)
+                {
+                    chars += printf("[ARR_ADDR_NONNULL]");
+                }
+                break;
 
+            case GT_CNS_INT:
             {
                 GenTreeFlags handleKind = (tree->gtFlags & GTF_ICON_HDL_MASK);
 
@@ -9727,24 +9738,16 @@ bool Compiler::killGCRefs(GenTree* tree)
 
 bool Compiler::lvaIsOSRLocal(unsigned varNum)
 {
+    LclVarDsc* const varDsc = lvaGetDesc(varNum);
+
+#ifdef DEBUG
     if (!opts.IsOSR())
     {
-        return false;
+        assert(!varDsc->lvIsOSRLocal);
     }
+#endif
 
-    if (varNum < info.compLocalsCount)
-    {
-        return true;
-    }
-
-    LclVarDsc* varDsc = lvaGetDesc(varNum);
-
-    if (varDsc->lvIsStructField)
-    {
-        return (varDsc->lvParentLcl < info.compLocalsCount);
-    }
-
-    return false;
+    return varDsc->lvIsOSRLocal;
 }
 
 //------------------------------------------------------------------------------
@@ -9872,6 +9875,9 @@ void Compiler::EnregisterStats::RecordLocal(const LclVarDsc* varDsc)
         {
             case DoNotEnregisterReason::AddrExposed:
                 m_addrExposed++;
+                break;
+            case DoNotEnregisterReason::HiddenBufferStructArg:
+                m_hiddenStructArg++;
                 break;
             case DoNotEnregisterReason::DontEnregStructs:
                 m_dontEnregStructs++;
@@ -10043,6 +10049,7 @@ void Compiler::EnregisterStats::Dump(FILE* fout) const
     }
 
     PRINT_STATS(m_addrExposed, notEnreg);
+    PRINT_STATS(m_hiddenStructArg, notEnreg);
     PRINT_STATS(m_dontEnregStructs, notEnreg);
     PRINT_STATS(m_notRegSizeStruct, notEnreg);
     PRINT_STATS(m_localField, notEnreg);

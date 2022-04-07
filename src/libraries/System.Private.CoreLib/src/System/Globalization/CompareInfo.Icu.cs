@@ -362,14 +362,17 @@ namespace System.Globalization
 
                 if (source.Length < prefix.Length)
                 {
-                    if (*b >= 0x80)
+                    int charB = *b;
+
+                    if (charB >= 0x80 || HighCharTable[charB])
                         goto InteropCall;
                     return false;
                 }
 
                 if (source.Length > prefix.Length)
                 {
-                    if (*a >= 0x80)
+                    int charA = *a;
+                    if (charA >= 0x80  || HighCharTable[charA])
                         goto InteropCall;
                 }
 
@@ -426,14 +429,18 @@ namespace System.Globalization
 
                 if (source.Length < prefix.Length)
                 {
-                    if (*b >= 0x80)
+                    int charB = *b;
+
+                    if (charB >= 0x80 || HighCharTable[charB])
                         goto InteropCall;
                     return false;
                 }
 
                 if (source.Length > prefix.Length)
                 {
-                    if (*a >= 0x80)
+                    int charA = *a;
+
+                    if (charA >= 0x80 || HighCharTable[charA])
                         goto InteropCall;
                 }
 
@@ -527,14 +534,18 @@ namespace System.Globalization
 
                 if (source.Length < suffix.Length)
                 {
-                    if (*b >= 0x80)
+                    int charB = *b;
+
+                    if (charB >= 0x80 || HighCharTable[charB])
                         goto InteropCall;
                     return false;
                 }
 
                 if (source.Length > suffix.Length)
                 {
-                    if (*a >= 0x80)
+                    int charA = *a;
+
+                    if (charA >= 0x80 || HighCharTable[charA])
                         goto InteropCall;
                 }
 
@@ -591,14 +602,18 @@ namespace System.Globalization
 
                 if (source.Length < suffix.Length)
                 {
-                    if (*b >= 0x80)
+                    int charB = *b;
+
+                    if (charB >= 0x80 || HighCharTable[charB])
                         goto InteropCall;
                     return false;
                 }
 
                 if (source.Length > suffix.Length)
                 {
-                    if (*a >= 0x80)
+                    int charA = *a;
+
+                    if (charA >= 0x80 || HighCharTable[charA])
                         goto InteropCall;
                 }
 

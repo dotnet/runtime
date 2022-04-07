@@ -210,7 +210,7 @@ namespace System.Data.ProviderBase
             return resultTable;
         }
 
-        private DataColumn[] FilterColumns(DataTable sourceTable, string[]? hiddenColumnNames, DataColumnCollection destinationColumns)
+        private static DataColumn[] FilterColumns(DataTable sourceTable, string[]? hiddenColumnNames, DataColumnCollection destinationColumns)
         {
             DataColumn newDestinationColumn;
             int currentColumn;
@@ -479,7 +479,7 @@ namespace System.Data.ProviderBase
             return requestedSchema;
         }
 
-        private bool IncludeThisColumn(DataColumn sourceColumn, string[]? hiddenColumnNames)
+        private static bool IncludeThisColumn(DataColumn sourceColumn, string[]? hiddenColumnNames)
         {
             bool result = true;
             string sourceColumnName = sourceColumn.ColumnName;

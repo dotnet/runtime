@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.Runtime.InteropServices;
-using System.Text.RegularExpressions.Symbolic.Unicode;
 using System.Threading;
 
 namespace System.Text.RegularExpressions.Symbolic
@@ -26,11 +25,11 @@ namespace System.Text.RegularExpressions.Symbolic
         private Dictionary<(bool IgnoreCase, string Set), BDD>? _setBddCache;
 
         /// <summary>Constructs a regex to symbolic finite automata converter</summary>
-        public RegexNodeConverter(CultureInfo culture, Hashtable? captureSparseMapping)
+        public RegexNodeConverter(SymbolicRegexBuilder<BDD> builder, CultureInfo culture, Hashtable? captureSparseMapping)
         {
+            _builder = builder;
             _culture = culture;
             _captureSparseMapping = captureSparseMapping;
-            _builder = new SymbolicRegexBuilder<BDD>(CharSetSolver.Instance);
         }
 
         /// <summary>Converts a <see cref="RegexNode"/> into its corresponding <see cref="SymbolicRegexNode{S}"/>.</summary>
@@ -53,10 +52,10 @@ namespace System.Text.RegularExpressions.Symbolic
                 // Singletons and multis
 
                 case RegexNodeKind.One:
-                    return _builder.CreateSingleton(CharSetSolver.Instance.CharConstraint(node.Ch, (node.Options & RegexOptions.IgnoreCase) != 0, _culture.Name));
+                    return _builder.CreateSingleton(CharSetSolver.Instance.CharConstraint(node.Ch));
 
                 case RegexNodeKind.Notone:
-                    return _builder.CreateSingleton(CharSetSolver.Instance.Not(CharSetSolver.Instance.CharConstraint(node.Ch, (node.Options & RegexOptions.IgnoreCase) != 0, _culture.Name)));
+                    return _builder.CreateSingleton(CharSetSolver.Instance.Not(CharSetSolver.Instance.CharConstraint(node.Ch)));
 
                 case RegexNodeKind.Set:
                     return ConvertSet(node);
@@ -70,7 +69,7 @@ namespace System.Text.RegularExpressions.Symbolic
                         var nodes = new SymbolicRegexNode<BDD>[str.Length];
                         for (int i = 0; i < nodes.Length; i++)
                         {
-                            nodes[i] = _builder.CreateSingleton(CharSetSolver.Instance.CharConstraint(str[i], ignoreCase, _culture.Name));
+                            nodes[i] = _builder.CreateSingleton(CharSetSolver.Instance.CharConstraint(str[i]));
                         }
                         return _builder.CreateConcat(nodes, tryCreateFixedLengthMarker);
                     }
@@ -108,7 +107,7 @@ namespace System.Text.RegularExpressions.Symbolic
                     {
                         // Create a BDD that represents the character, then create a loop around it.
                         bool ignoreCase = (node.Options & RegexOptions.IgnoreCase) != 0;
-                        BDD bdd = CharSetSolver.Instance.CharConstraint(node.Ch, ignoreCase, _culture.Name);
+                        BDD bdd = CharSetSolver.Instance.CharConstraint(node.Ch);
                         if (node.IsNotoneFamily)
                         {
                             bdd = CharSetSolver.Instance.Not(bdd);
@@ -263,7 +262,7 @@ namespace System.Text.RegularExpressions.Symbolic
                     return false;
                 }
 
-                conjuncts = new();
+                conjuncts = new List<RegexNode>();
                 conjuncts.Add(node.Child(0));
                 node = node.Child(1);
                 while (IsIntersect(node))
@@ -293,7 +292,7 @@ namespace System.Text.RegularExpressions.Symbolic
             }
 
             // Lazily-initialize the set cache on first use, since some expressions may not have character classes in them.
-            _setBddCache ??= new();
+            _setBddCache ??= new Dictionary<(bool IgnoreCase, string Set), BDD>();
 
             // Try to get the cached BDD for the combined ignoreCase+set key.
             // If one doesn't yet exist, compute and populate it.
@@ -323,7 +322,7 @@ namespace System.Text.RegularExpressions.Symbolic
                 {
                     foreach ((char first, char last) in ranges)
                     {
-                        BDD bdd = CharSetSolver.Instance.RangeConstraint(first, last, ignoreCase, _culture.Name);
+                        BDD bdd = CharSetSolver.Instance.RangeConstraint(first, last);
                         if (negate)
                         {
                             bdd = CharSetSolver.Instance.Not(bdd);

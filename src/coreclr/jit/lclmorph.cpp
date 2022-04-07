@@ -259,12 +259,6 @@ class LocalAddressVisitor final : public GenTreeVisitor<LocalAddressVisitor>
                     {
                         haveCorrectFieldForVN = false;
                     }
-                    else if (FieldSeqStore::IsPseudoField(field->gtFldHnd))
-                    {
-                        assert(compiler->compObjectStackAllocation());
-                        // We use PseudoFields when accessing stack allocated classes.
-                        haveCorrectFieldForVN = false;
-                    }
                     else if (val.m_fieldSeq == nullptr)
                     {
 
@@ -279,7 +273,7 @@ class LocalAddressVisitor final : public GenTreeVisitor<LocalAddressVisitor>
                     {
                         FieldSeqNode* lastSeqNode = val.m_fieldSeq->GetTail();
                         assert(lastSeqNode != nullptr);
-                        if (lastSeqNode->IsPseudoField() || lastSeqNode == FieldSeqStore::NotAField())
+                        if (lastSeqNode == FieldSeqStore::NotAField())
                         {
                             haveCorrectFieldForVN = false;
                         }
@@ -678,17 +672,38 @@ private:
 
         // In general we don't know how an exposed struct field address will be used - it may be used to
         // access only that specific field or it may be used to access other fields in the same struct
-        // be using pointer/ref arithmetic. It seems reasonable to make an exception for the "this" arg
-        // of calls - it would be highly unsual for a struct member method to attempt to access memory
+        // by using pointer/ref arithmetic. It seems reasonable to make an exception for the "this" arg
+        // of calls - it would be highly unusual for a struct member method to attempt to access memory
         // beyond "this" instance. And calling struct member methods is common enough that attempting to
         // mark the entire struct as address exposed results in CQ regressions.
-        bool isThisArg = user->IsCall() && (user->AsCall()->gtCallThisArg != nullptr) &&
-                         (val.Node() == user->AsCall()->gtCallThisArg->GetNode());
+        GenTreeCall* callTree  = user->IsCall() ? user->AsCall() : nullptr;
+        bool         isThisArg = (callTree != nullptr) && (callTree->gtCallThisArg != nullptr) &&
+                         (val.Node() == callTree->gtCallThisArg->GetNode());
         bool exposeParentLcl = varDsc->lvIsStructField && !isThisArg;
 
-        m_compiler->lvaSetVarAddrExposed(exposeParentLcl ? varDsc->lvParentLcl
-                                                         : val.LclNum() DEBUGARG(AddressExposedReason::ESCAPE_ADDRESS));
+        bool hasHiddenStructArg = false;
+        if (m_compiler->opts.compJitOptimizeStructHiddenBuffer)
+        {
+            if (varTypeIsStruct(varDsc) && varDsc->lvIsTemp)
+            {
+                // We rely here on the fact that the return buffer, if present, is always first in the arg list.
+                if ((callTree != nullptr) && callTree->HasRetBufArg() &&
+                    (val.Node() == callTree->gtCallArgs->GetNode()))
+                {
+                    assert(!exposeParentLcl);
 
+                    m_compiler->lvaSetHiddenBufferStructArg(val.LclNum());
+                    hasHiddenStructArg = true;
+                    callTree->SetLclRetBufArg(callTree->gtCallArgs);
+                }
+            }
+        }
+
+        if (!hasHiddenStructArg)
+        {
+            m_compiler->lvaSetVarAddrExposed(
+                exposeParentLcl ? varDsc->lvParentLcl : val.LclNum() DEBUGARG(AddressExposedReason::ESCAPE_ADDRESS));
+        }
 #ifdef TARGET_64BIT
         // If the address of a variable is passed in a call and the allocation size of the variable
         // is 32 bits we will quirk the size to 64 bits. Some PInvoke signatures incorrectly specify
@@ -711,7 +726,7 @@ private:
         // Other usages require more changes. For example, a tree like OBJ(ADD(ADDR(LCL_VAR), 4))
         // could be changed to OBJ(LCL_FLD_ADDR) but then DefinesLocalAddr does not recognize
         // LCL_FLD_ADDR (even though it does recognize LCL_VAR_ADDR).
-        if (user->OperIs(GT_CALL, GT_ASG))
+        if (user->OperIs(GT_CALL, GT_ASG) && !hasHiddenStructArg)
         {
             MorphLocalAddress(val);
         }
@@ -1005,10 +1020,7 @@ private:
 
         if ((fieldSeq != nullptr) && (fieldSeq != FieldSeqStore::NotAField()))
         {
-            // TODO-ADDR: ObjectAllocator produces FIELD nodes with FirstElemPseudoField as field
-            // handle so we cannot use FieldSeqNode::GetFieldHandle() because it asserts on such
-            // handles. ObjectAllocator should be changed to create LCL_FLD nodes directly.
-            assert(!indir->OperIs(GT_FIELD) || (indir->AsField()->gtFldHnd == fieldSeq->GetTail()->m_fieldHnd));
+            assert(!indir->OperIs(GT_FIELD) || (indir->AsField()->gtFldHnd == fieldSeq->GetTail()->GetFieldHandle()));
         }
         else
         {

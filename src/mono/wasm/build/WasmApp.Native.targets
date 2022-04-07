@@ -194,10 +194,11 @@
 
       <_EmccCommonFlags Include="$(_DefaultEmccFlags)" />
       <_EmccCommonFlags Include="$(EmccFlags)" />
-      <_EmccCommonFlags Include="-s DISABLE_EXCEPTION_CATCHING=0" />
       <_EmccCommonFlags Include="-s EXPORT_ES6=1"                   Condition="'$(WasmEnableES6)' == 'true'" />
       <_EmccCommonFlags Include="-g"                                Condition="'$(WasmNativeStrip)' == 'false'" />
       <_EmccCommonFlags Include="-v"                                Condition="'$(EmccVerbose)' != 'false'" />
+      <_EmccCommonFlags Include="-s DISABLE_EXCEPTION_CATCHING=0"   Condition="'$(WasmExceptionHandling)' == 'false'" />
+      <_EmccCommonFlags Include="-fwasm-exceptions"                 Condition="'$(WasmExceptionHandling)' == 'true'" />
 
       <_EmccIncludePaths Include="$(_WasmIntermediateOutputPath.TrimEnd('\/'))" />
       <_EmccIncludePaths Include="$(_WasmRuntimePackIncludeDir)mono-2.0" />
@@ -254,6 +255,8 @@
       <_WasmNativeFileForLinking Include="@(NativeFileReference)" />
 
       <EmscriptenEnvVars Include="EMSDK_PYTHON=$(EmscriptenPythonToolsPath)python.exe" Condition="'$(OS)' == 'Windows_NT'" />
+      <EmscriptenEnvVars Include="PYTHONPATH=$(EmscriptenPythonToolsPath)" Condition="'$(OS)' == 'Windows_NT'" />
+      <EmscriptenEnvVars Include="PYTHONHOME=" Condition="'$(OS)' == 'Windows_NT'" />
       <EmscriptenEnvVars Include="EM_CACHE=$(WasmCachePath)" Condition="'$(WasmCachePath)' != ''" />
     </ItemGroup>
 
@@ -366,6 +369,12 @@
   </Target>
 
   <Target Name="_WasmWriteRspFilesForLinking">
+	<PropertyGroup>
+      <_WasmEHLib Condition="'$(WasmExceptionHandling)' == 'true'">libmono-wasm-eh-wasm.a</_WasmEHLib>
+      <_WasmEHLib Condition="'$(WasmExceptionHandling)' != 'true'">libmono-wasm-eh-js.a</_WasmEHLib>
+      <_WasmEHLibToExclude Condition="'$(WasmExceptionHandling)' == 'true'">libmono-wasm-eh-js.a</_WasmEHLibToExclude>
+      <_WasmEHLibToExclude Condition="'$(WasmExceptionHandling)' != 'true'">libmono-wasm-eh-wasm.a</_WasmEHLibToExclude>
+	</PropertyGroup>
     <ItemGroup>
       <!-- order matters -->
       <_WasmNativeFileForLinking Include="%(_BitcodeFile.ObjectFile)" />
@@ -374,6 +383,8 @@
       <_WasmNativeFileForLinking
           Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)*.a"
           Exclude="@(_MonoRuntimeComponentDontLink->'$(MicrosoftNetCoreAppRuntimePackRidNativeDir)%(Identity)')" />
+      <_WasmNativeFileForLinking Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)$(_WasmEHLib)" />
+      <_WasmNativeFileForLinking Remove="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)$(_WasmEHLibToExclude)" />
 
       <_WasmExtraJSFile Include="@(Content)" Condition="'%(Content.Extension)' == '.js'" />
 
@@ -415,7 +426,7 @@
     </ItemGroup>
 
     <Message Text="Stripping symbols from dotnet.wasm ..." Importance="High" Condition="'$(WasmNativeStrip)' == 'true'" />
-    <Exec Command='wasm-opt$(_ExeExt) --strip-dwarf "$(_WasmIntermediateOutputPath)dotnet.wasm" -o "$(_WasmIntermediateOutputPath)dotnet.wasm"'
+    <Exec Command='wasm-opt$(_ExeExt) --enable-exception-handling --strip-dwarf "$(_WasmIntermediateOutputPath)dotnet.wasm" -o "$(_WasmIntermediateOutputPath)dotnet.wasm"'
           Condition="'$(WasmNativeStrip)' == 'true'"
           IgnoreStandardErrorWarningFormat="true"
           EnvironmentVariables="@(EmscriptenEnvVars)" />
@@ -504,6 +515,7 @@
       <MonoAOTCompilerDefaultAotArguments Include="static" />
       <MonoAOTCompilerDefaultAotArguments Include="direct-icalls" />
       <MonoAOTCompilerDefaultAotArguments Include="deterministic" />
+      <MonoAOTCompilerDefaultProcessArguments Include="--wasm-exceptions" Condition="'$(WasmExceptionHandling)' == 'true'" />
       <AotProfilePath Include="$(WasmAotProfilePath)"/>
     </ItemGroup>
     <ItemGroup>

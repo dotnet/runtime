@@ -133,6 +133,7 @@ namespace System.Threading.Tasks
         /// <summary>Register the continuation to invoke when the operation completes.</summary>
         public void UnsafeOnCompleted(Action continuation) => OnCompleted(continuation);
 
+#pragma warning disable CA1822
         [Conditional("DEBUG")]
         private void AssertResultConsistency(bool expectedCompleted)
         {
@@ -147,5 +148,6 @@ namespace System.Threading.Tasks
             }
 #endif
         }
+#pragma warning restore CA1822
     }
 }

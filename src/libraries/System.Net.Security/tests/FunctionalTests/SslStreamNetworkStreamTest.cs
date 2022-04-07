@@ -123,6 +123,13 @@ namespace System.Net.Security.Tests
                     Assert.Contains("SSL_ERROR_SSL", e.InnerException.Message);
                     Assert.NotNull(e.InnerException.InnerException);
                     Assert.Contains("protocol", e.InnerException.InnerException.Message);
+
+                    e = await Assert.ThrowsAsync<AuthenticationException>(() => clientAuthenticationTask);
+
+                    Assert.NotNull(e.InnerException);
+                    Assert.Contains("SSL_ERROR_SSL", e.InnerException.Message);
+                    Assert.NotNull(e.InnerException.InnerException);
+                    Assert.Contains("protocol", e.InnerException.InnerException.Message);
                 }
             }
 
@@ -742,7 +749,6 @@ namespace System.Net.Security.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/46837", TestPlatforms.OSX)]
         public async Task SslStream_UntrustedCaWithCustomCallback_OK(bool usePartialChain)
         {
             int split = Random.Shared.Next(0, certificates.serverChain.Count - 1);
@@ -805,7 +811,6 @@ namespace System.Net.Security.Tests
         [PlatformSpecific(TestPlatforms.AnyUnix)]
         [InlineData(true)]
         [InlineData(false)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/46837", TestPlatforms.OSX)]
         public async Task SslStream_UntrustedCaWithCustomCallback_Throws(bool customCallback)
         {
             string errorMessage;
@@ -852,12 +857,12 @@ namespace System.Net.Security.Tests
         }
 
         [ConditionalFact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/46837", TestPlatforms.OSX)]
         public async Task SslStream_ClientCertificate_SendsChain()
         {
             List<SslStream> streams = new List<SslStream>();
             TestHelper.CleanupCertificates();
             (X509Certificate2 clientCertificate, X509Certificate2Collection clientChain) = TestHelper.GenerateCertificates("SslStream_ClinetCertificate_SendsChain", serverCertificate: false);
+
             using (X509Store store = new X509Store(StoreName.CertificateAuthority, StoreLocation.CurrentUser))
             {
                 // add chain certificate so we can construct chain since there is no way how to pass intermediates directly.
@@ -879,7 +884,7 @@ namespace System.Net.Security.Tests
                 }
             }
 
-            var clientOptions = new SslClientAuthenticationOptions() { TargetHost = "localhost", };
+            var clientOptions = new SslClientAuthenticationOptions() { TargetHost = "localhost" };
             clientOptions.RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true;
             clientOptions.LocalCertificateSelectionCallback = (sender, target, certificates, remoteCertificate, issuers) => clientCertificate;
 
@@ -896,7 +901,8 @@ namespace System.Net.Security.Tests
                     _output.WriteLine("received {0}", c.Subject);
                 }
 
-                Assert.True(chain.ChainPolicy.ExtraStore.Count >= clientChain.Count - 1, "client did not sent expected chain");
+                Assert.Equal(clientChain.Count - 1, chain.ChainPolicy.ExtraStore.Count);
+                Assert.Contains(clientChain[0], chain.ChainPolicy.ExtraStore);
                 return true;
             };
 
@@ -909,7 +915,7 @@ namespace System.Net.Security.Tests
 
                 Task t1 = client.AuthenticateAsClientAsync(clientOptions, CancellationToken.None);
                 Task t2 = server.AuthenticateAsServerAsync(serverOptions, CancellationToken.None);
-                await Task.WhenAll(t1, t2).WaitAsync(TestConfiguration.PassingTestTimeout);
+                await TestConfiguration.WhenAllOrAnyFailedWithTimeout(t1, t2);
 
                 // hold to the streams so they stay in credential cache
                 streams.Add(client);

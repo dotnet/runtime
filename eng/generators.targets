@@ -44,11 +44,12 @@
   <ItemGroup Condition="'@(EnabledGenerators)' != ''
                         and @(EnabledGenerators->AnyHaveMetadataValue('Identity', 'LibraryImportGenerator'))
                         and '$(IncludeLibraryImportGeneratorSources)' == 'true'">
-    <Compile Include="$(LibrariesProjectRoot)Common\src\System\Runtime\InteropServices\LibraryImportAttribute.cs" />
-    <Compile Include="$(LibrariesProjectRoot)Common\src\System\Runtime\InteropServices\StringMarshalling.cs" />
 
-    <!-- Only add the following files if we are on the latest TFM (that is, net7). -->
-    <Compile Condition="'$(NetCoreAppCurrentTargetFrameworkMoniker)' == '$(TargetFrameworkMoniker)'" Include="$(LibrariesProjectRoot)Common\src\System\Runtime\InteropServices\GeneratedMarshallingAttribute.cs" />
+    <!-- Only add the following files if we are not on the latest TFM. -->
+    <Compile Condition="'$(NetCoreAppCurrentTargetFrameworkMoniker)' != '$(TargetFrameworkMoniker)'"
+             Include="$(CoreLibSharedDir)System\Runtime\InteropServices\LibraryImportAttribute.cs" />
+    <Compile Condition="'$(NetCoreAppCurrentTargetFrameworkMoniker)' != '$(TargetFrameworkMoniker)'"
+             Include="$(CoreLibSharedDir)System\Runtime\InteropServices\StringMarshalling.cs" />
 
     <!-- Only add the following files if we are on the latest TFM (that is, net7) and the project is SPCL or has references to System.Runtime.CompilerServices.Unsafe and System.Memory -->
     <Compile Condition="'$(NetCoreAppCurrentTargetFrameworkMoniker)' == '$(TargetFrameworkMoniker)'

@@ -14,11 +14,11 @@ namespace System.Text.RegularExpressions.Symbolic
         internal readonly MintermClassifier _classifier;
         private readonly BitVector[] _mintermVectors;
 
-        public BitVectorAlgebra(CharSetSolver solver, BDD[] minterms)
+        public BitVectorAlgebra(BDD[] minterms)
         {
             _minterms = minterms;
 
-            _classifier = new MintermClassifier(solver, minterms);
+            _classifier = new MintermClassifier(minterms);
             _mintermGenerator = new MintermGenerator<BitVector>(this);
 
             var singleBitVectors = new BitVector[minterms.Length];
@@ -49,12 +49,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
         public BitVector Or(BitVector predicate1, BitVector predicate2) => BitVector.Or(predicate1, predicate2);
 
-        public BitVector CharConstraint(char c, bool caseInsensitive = false, string? culture = null)
-        {
-            Debug.Assert(!caseInsensitive);
-            int i = _classifier.GetMintermID(c);
-            return _mintermVectors[i];
-        }
+        public BitVector CharConstraint(char c) => _mintermVectors[_classifier.GetMintermID(c)];
 
         /// <summary>
         /// Assumes that set is a union of some minterms (or empty).

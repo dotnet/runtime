@@ -312,7 +312,7 @@ namespace System.IO
         internal void SetLastWriteTime(string path, DateTimeOffset time, bool asDirectory)
             => SetAccessOrWriteTime(path, time, isAccessTime: false, asDirectory);
 
-        private DateTimeOffset UnixTimeToDateTimeOffset(long seconds, long nanoseconds)
+        private static DateTimeOffset UnixTimeToDateTimeOffset(long seconds, long nanoseconds)
         {
             return DateTimeOffset.FromUnixTimeSeconds(seconds).AddTicks(nanoseconds / NanosecondsPerTick);
         }

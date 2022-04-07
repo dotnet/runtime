@@ -180,6 +180,29 @@ namespace System.Text.RegularExpressions.Tests
             Assert.Equal("SYSLIB1043", Assert.Single(diagnostics).Id);
         }
 
+        [Fact]
+        public async Task Diagnostic_MethodMustBeNonAbstract()
+        {
+            IReadOnlyList<Diagnostic> diagnostics = await RegexGeneratorHelper.RunGenerator(@"
+                using System.Text.RegularExpressions;
+
+                partial class C
+                {
+                    [RegexGenerator(""ab"")]
+                    public abstract partial Regex MethodMustBeNonAbstract();
+                }
+
+                partial interface I
+                {
+                    [RegexGenerator(""ab"")]
+                    public static abstract partial Regex MethodMustBeNonAbstract();
+                }
+            ");
+
+            Assert.Equal(2, diagnostics.Count);
+            Assert.All(diagnostics, d => Assert.Equal("SYSLIB1043", d.Id));
+        }
+
         [Theory]
         [InlineData(LanguageVersion.CSharp9)]
         [InlineData(LanguageVersion.CSharp10)]
@@ -514,6 +537,98 @@ namespace System.Text.RegularExpressions.Tests
                 namespace D
                 {
                     internal interface IBlah { }
+                }
+            ", compile: true));
+        }
+
+        [Fact]
+        public async Task Valid_InterfaceStatics()
+        {
+            Assert.Empty(await RegexGeneratorHelper.RunGenerator(@"
+                using System.Text.RegularExpressions;
+
+                partial interface INonGeneric
+                {
+                    [RegexGenerator("".+?"")]
+                    public static partial Regex Test();
+                }
+
+                partial interface IGeneric<T>
+                {
+                    [RegexGenerator("".+?"")]
+                    public static partial Regex Test();
+                }
+
+                partial interface ICovariantGeneric<out T>
+                {
+                    [RegexGenerator("".+?"")]
+                    public static partial Regex Test();
+                }
+
+                partial interface IContravariantGeneric<in T>
+                {
+                    [RegexGenerator("".+?"")]
+                    public static partial Regex Test();
+                }
+            ", compile: true));
+        }
+
+        [Fact]
+        public async Task Valid_VirtualBaseImplementations()
+        {
+            Assert.Empty(await RegexGeneratorHelper.RunGenerator(@"
+                using System.Text.RegularExpressions;
+
+                partial class C
+                {
+                    [RegexGenerator(""ab"")]
+                    public virtual partial Regex Valid();
+                }
+            ", compile: true));
+        }
+
+        [Fact]
+        public async Task Valid_SameMethodNameInMultipleTypes()
+        {
+            Assert.Empty(await RegexGeneratorHelper.RunGenerator(@"
+                using System.Text.RegularExpressions;
+                namespace A
+                {
+                    public partial class B<U>
+                    {
+                        private partial class C<T>
+                        {
+                            [RegexGenerator(""1"")]
+                            public partial Regex Valid();
+                        }
+
+                        private partial class C<T1,T2>
+                        {
+                            [RegexGenerator(""2"")]
+                            private static partial Regex Valid();
+
+                            private partial class D
+                            {
+                                [RegexGenerator(""3"")]
+                                internal partial Regex Valid();
+                            }
+                        }
+
+                        private partial class E
+                        {
+                            [RegexGenerator(""4"")]
+                            private static partial Regex Valid();
+                        }
+                    }
+                }
+
+                partial class F
+                {
+                    [RegexGenerator(""5"")]
+                    public partial Regex Valid();
+
+                    [RegexGenerator(""6"")]
+                    public partial Regex Valid2();
                 }
             ", compile: true));
         }

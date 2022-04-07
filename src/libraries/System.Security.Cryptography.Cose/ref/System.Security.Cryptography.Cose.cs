@@ -56,16 +56,21 @@ namespace System.Security.Cryptography.Cose
         public System.Security.Cryptography.Cose.CoseHeaderMap ProtectedHeaders { get { throw null; } }
         public System.Security.Cryptography.Cose.CoseHeaderMap UnprotectedHeaders { get { throw null; } }
         public static System.Security.Cryptography.Cose.CoseSign1Message DecodeSign1(byte[] cborPayload) { throw null; }
+        public static System.Security.Cryptography.Cose.CoseSign1Message DecodeSign1(ReadOnlySpan<byte> cborPayload) { throw null; }
     }
     public sealed partial class CoseSign1Message : System.Security.Cryptography.Cose.CoseMessage
     {
         internal CoseSign1Message() { }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
-        public static byte[] Sign(byte[] content, System.Security.Cryptography.Cose.CoseHeaderMap protectedHeaders, System.Security.Cryptography.Cose.CoseHeaderMap unprotectedHeaders, System.Security.Cryptography.AsymmetricAlgorithm key, System.Security.Cryptography.HashAlgorithmName hashAlgorithm, bool isDetached = false) { throw null; }
+        public static byte[] Sign(ReadOnlySpan<byte> content, System.Security.Cryptography.AsymmetricAlgorithm key, System.Security.Cryptography.HashAlgorithmName hashAlgorithm, System.Security.Cryptography.Cose.CoseHeaderMap? protectedHeaders = null, System.Security.Cryptography.Cose.CoseHeaderMap? unprotectedHeaders = null, bool isDetached = false) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        public static byte[] Sign(byte[] content, System.Security.Cryptography.AsymmetricAlgorithm key, System.Security.Cryptography.HashAlgorithmName hashAlgorithm, System.Security.Cryptography.Cose.CoseHeaderMap? protectedHeaders = null, System.Security.Cryptography.Cose.CoseHeaderMap? unprotectedHeaders = null, bool isDetached = false) { throw null; }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public static byte[] Sign(byte[] content, System.Security.Cryptography.ECDsa key, System.Security.Cryptography.HashAlgorithmName hashAlgorithm, bool isDetached = false) { throw null; }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public static byte[] Sign(byte[] content, System.Security.Cryptography.RSA key, System.Security.Cryptography.HashAlgorithmName hashAlgorithm, bool isDetached = false) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        public static bool TrySign(ReadOnlySpan<byte> content, Span<byte> destination, System.Security.Cryptography.AsymmetricAlgorithm key!!, System.Security.Cryptography.HashAlgorithmName hashAlgorithm, out int bytesWritten, System.Security.Cryptography.Cose.CoseHeaderMap? protectedHeaders = null, System.Security.Cryptography.Cose.CoseHeaderMap? unprotectedHeaders = null, bool isDetached = false) { throw null; }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public bool Verify(System.Security.Cryptography.ECDsa key) { throw null; }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]

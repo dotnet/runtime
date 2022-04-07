@@ -51,7 +51,6 @@
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
-#include <mono/metadata/w32error.h>
 
 #define INVALID_ADDRESS 0xffffffff
 
@@ -1085,20 +1084,6 @@ pe_image_load_cli_data (MonoImage *image)
 	return TRUE;
 }
 
-static void
-mono_image_load_time_date_stamp (MonoImage *image)
-{
-	image->time_date_stamp = 0;
-#ifndef HOST_WIN32
-	if (!image->filename)
-		return;
-
-	gunichar2 *uni_name = g_utf8_to_utf16 (image->filename, -1, NULL, NULL, NULL);
-	mono_pe_file_time_date_stamp (uni_name, &image->time_date_stamp);
-	g_free (uni_name);
-#endif
-}
-
 void
 mono_image_load_names (MonoImage *image)
 {
@@ -1235,8 +1220,6 @@ do_mono_image_load (MonoImage *image, MonoImageOpenStatus *status,
 	dump_encmap (image);
 
 	mono_image_load_names (image);
-
-	mono_image_load_time_date_stamp (image);
 
 done:
 	MONO_PROFILER_RAISE (image_loaded, (image));
@@ -1825,7 +1808,7 @@ mono_image_open_a_lot_parameterized (MonoLoadedImages *li, MonoAssemblyLoadConte
 		fname_utf16 = g_utf8_to_utf16 (absfname, -1, NULL, NULL, NULL);
 		module_handle = MonoLoadImage (fname_utf16);
 		if (status && module_handle == NULL)
-			last_error = mono_w32error_get_last ();
+			last_error = GetLastError ();
 
 		/* mono_image_open_from_module_handle is called by _CorDllMain. */
 		image = (MonoImage*)g_hash_table_lookup (loaded_images, absfname);
@@ -2307,10 +2290,6 @@ mono_image_close_finish (MonoImage *image)
 
 	mono_metadata_update_image_close_all (image);
 
-#ifndef DISABLE_PERFCOUNTERS
-	/* FIXME: use an explicit subtraction method as soon as it's available */
-	mono_atomic_fetch_add_i32 (&mono_perfcounters->loader_bytes, -1 * mono_mempool_get_allocated (image->mempool));
-#endif
 
 	if (!image_is_dynamic (image)) {
 		if (debug_assembly_unload)
@@ -2844,9 +2823,6 @@ mono_image_alloc (MonoImage *image, guint size)
 {
 	gpointer res;
 
-#ifndef DISABLE_PERFCOUNTERS
-	mono_atomic_fetch_add_i32 (&mono_perfcounters->loader_bytes, size);
-#endif
 	mono_image_lock (image);
 	res = mono_mempool_alloc (image->mempool, size);
 	mono_image_unlock (image);
@@ -2859,9 +2835,6 @@ mono_image_alloc0 (MonoImage *image, guint size)
 {
 	gpointer res;
 
-#ifndef DISABLE_PERFCOUNTERS
-	mono_atomic_fetch_add_i32 (&mono_perfcounters->loader_bytes, size);
-#endif
 	mono_image_lock (image);
 	res = mono_mempool_alloc0 (image->mempool, size);
 	mono_image_unlock (image);
@@ -2874,9 +2847,6 @@ mono_image_strdup (MonoImage *image, const char *s)
 {
 	char *res;
 
-#ifndef DISABLE_PERFCOUNTERS
-	mono_atomic_fetch_add_i32 (&mono_perfcounters->loader_bytes, (gint32)strlen (s));
-#endif
 	mono_image_lock (image);
 	res = mono_mempool_strdup (image->mempool, s);
 	mono_image_unlock (image);
@@ -2891,9 +2861,6 @@ mono_image_strdup_vprintf (MonoImage *image, const char *format, va_list args)
 	mono_image_lock (image);
 	buf = mono_mempool_strdup_vprintf (image->mempool, format, args);
 	mono_image_unlock (image);
-#ifndef DISABLE_PERFCOUNTERS
-	mono_atomic_fetch_add_i32 (&mono_perfcounters->loader_bytes, (gint32)strlen (buf));
-#endif
 	return buf;
 }
 

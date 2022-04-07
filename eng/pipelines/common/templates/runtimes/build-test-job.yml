@@ -11,7 +11,6 @@ parameters:
   variables: {}
   pool: ''
   runtimeFlavor: 'coreclr'
-  runtimeFlavorDisplayName: 'CoreCLR'
   runtimeVariant: ''
   dependsOn: []
   dependOnEvaluatePaths: false
@@ -52,10 +51,10 @@ jobs:
     # Compute job name from template parameters
     ${{ if in(parameters.testGroup, 'innerloop', 'clrinterpreter') }}:
       name: '${{ parameters.runtimeFlavor }}_common_test_build_p0_AnyOS_AnyCPU_${{ parameters.buildConfig }}'
-      displayName: '${{ parameters.runtimeFlavorDisplayName }} Common Pri0 Test Build AnyOS AnyCPU ${{ parameters.buildConfig }}'
+      displayName: '${{ parameters.runtimeFlavor }} Common Pri0 Test Build AnyOS AnyCPU ${{ parameters.buildConfig }}'
     ${{ if notIn(parameters.testGroup, 'innerloop', 'clrinterpreter') }}:
       name: '${{ parameters.runtimeFlavor }}_common_test_build_p1_AnyOS_AnyCPU_${{ parameters.buildConfig }}'
-      displayName: '${{ parameters.runtimeFlavorDisplayName }} Common Pri1 Test Build AnyOS AnyCPU ${{ parameters.buildConfig }}'
+      displayName: '${{ parameters.runtimeFlavor }} Common Pri1 Test Build AnyOS AnyCPU ${{ parameters.buildConfig }}'
 
     # Since the condition is being altered, merge the default with the additional conditions.
     # See https://docs.microsoft.com/azure/devops/pipelines/process/conditions

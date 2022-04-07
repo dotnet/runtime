@@ -123,7 +123,7 @@ void Compiler::lvaInitTypeRef()
     info.compILargsCount = info.compArgsCount;
 
 #ifdef FEATURE_SIMD
-    if (supportSIMDTypes() && (info.compRetNativeType == TYP_STRUCT))
+    if (info.compRetNativeType == TYP_STRUCT)
     {
         var_types structType = impNormStructType(info.compMethodInfo->args.retTypeClass);
         info.compRetType     = structType;
@@ -269,6 +269,10 @@ void Compiler::lvaInitTypeRef()
     LclVarDsc*              varDsc    = varDscInfo.varDsc;
     CORINFO_ARG_LIST_HANDLE localsSig = info.compMethodInfo->locals.args;
 
+#ifdef TARGET_ARM
+    compHasSplitParam = varDscInfo.hasSplitParam;
+#endif
+
     for (unsigned i = 0; i < info.compMethodInfo->locals.numArgs;
          i++, varNum++, varDsc++, localsSig = info.compCompHnd->getArgNext(localsSig))
     {
@@ -299,19 +303,6 @@ void Compiler::lvaInitTypeRef()
             CORINFO_CLASS_HANDLE clsHnd = info.compCompHnd->getArgClass(&info.compMethodInfo->locals, localsSig);
             lvaSetClass(varNum, clsHnd);
         }
-
-        if (opts.IsOSR() && info.compPatchpointInfo->IsExposed(varNum))
-        {
-            JITDUMP("-- V%02u is OSR exposed\n", varNum);
-            varDsc->lvHasLdAddrOp = 1;
-
-            // todo: Why does it apply only to non-structs?
-            //
-            if (!varTypeIsStruct(varDsc) && !varTypeIsSIMD(varDsc))
-            {
-                lvaSetVarAddrExposed(varNum DEBUGARG(AddressExposedReason::OSR_EXPOSED));
-            }
-        }
     }
 
     if ( // If there already exist unsafe buffers, don't mark more structs as unsafe
@@ -330,6 +321,33 @@ void Compiler::lvaInitTypeRef()
             if ((lvaTable[i].lvType == TYP_STRUCT) && compStressCompile(STRESS_GENERIC_VARN, 60))
             {
                 lvaTable[i].lvIsUnsafeBuffer = true;
+            }
+        }
+    }
+
+    // If this is an OSR method, mark all the OSR locals and model OSR exposure.
+    //
+    // Do this before we add the GS Cookie Dummy or Outgoing args to the locals
+    // so we don't have to do special checks to exclude them.
+    //
+    if (opts.IsOSR())
+    {
+        for (unsigned lclNum = 0; lclNum < lvaCount; lclNum++)
+        {
+            LclVarDsc* const varDsc = lvaGetDesc(lclNum);
+            varDsc->lvIsOSRLocal    = true;
+
+            if (info.compPatchpointInfo->IsExposed(lclNum))
+            {
+                JITDUMP("-- V%02u is OSR exposed\n", lclNum);
+                varDsc->lvHasLdAddrOp = 1;
+
+                // todo: Why does it apply only to non-structs?
+                //
+                if (!varTypeIsStruct(varDsc) && !varTypeIsSIMD(varDsc))
+                {
+                    lvaSetVarAddrExposed(lclNum DEBUGARG(AddressExposedReason::OSR_EXPOSED));
+                }
             }
         }
     }
@@ -467,17 +485,14 @@ void Compiler::lvaInitThisPtr(InitVarDscInfo* varDscInfo)
         {
             varDsc->lvType = TYP_BYREF;
 #ifdef FEATURE_SIMD
-            if (supportSIMDTypes())
+            CorInfoType simdBaseJitType = CORINFO_TYPE_UNDEF;
+            var_types   type            = impNormStructType(info.compClassHnd, &simdBaseJitType);
+            if (simdBaseJitType != CORINFO_TYPE_UNDEF)
             {
-                CorInfoType simdBaseJitType = CORINFO_TYPE_UNDEF;
-                var_types   type            = impNormStructType(info.compClassHnd, &simdBaseJitType);
-                if (simdBaseJitType != CORINFO_TYPE_UNDEF)
-                {
-                    assert(varTypeIsSIMD(type));
-                    varDsc->lvSIMDType = true;
-                    varDsc->SetSimdBaseJitType(simdBaseJitType);
-                    varDsc->lvExactSize = genTypeSize(type);
-                }
+                assert(varTypeIsSIMD(type));
+                varDsc->lvSIMDType = true;
+                varDsc->SetSimdBaseJitType(simdBaseJitType);
+                varDsc->lvExactSize = genTypeSize(type);
             }
 #endif // FEATURE_SIMD
         }
@@ -548,7 +563,7 @@ void Compiler::lvaInitRetBuffArg(InitVarDscInfo* varDscInfo, bool useFixedRetBuf
         varDsc->lvOnFrame = true; // The final home for this incoming register might be our local stack frame
 
 #ifdef FEATURE_SIMD
-        if (supportSIMDTypes() && varTypeIsSIMD(info.compRetType))
+        if (varTypeIsSIMD(info.compRetType))
         {
             varDsc->lvSIMDType = true;
 
@@ -968,6 +983,7 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
                     unsigned numEnregistered = varDscInfo->maxIntRegArgNum - firstRegArgNum;
                     varDsc->SetStackOffset(-(int)numEnregistered * REGSIZE_BYTES);
                     varDscInfo->stackArgSize += (cSlots - numEnregistered) * REGSIZE_BYTES;
+                    varDscInfo->hasSplitParam = true;
                     JITDUMP("set user arg V%02u offset to %d\n", varDscInfo->varNum, varDsc->GetStackOffset());
                 }
             }
@@ -1110,13 +1126,6 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
 
             lvaSetVarAddrExposed(varDscInfo->varNum DEBUGARG(AddressExposedReason::TOO_CONSERVATIVE));
 #endif // !TARGET_X86
-        }
-
-        if (opts.IsOSR() && info.compPatchpointInfo->IsExposed(varDscInfo->varNum))
-        {
-            JITDUMP("-- V%02u is OSR exposed\n", varDscInfo->varNum);
-            varDsc->lvHasLdAddrOp = 1;
-            lvaSetVarAddrExposed(varDscInfo->varNum DEBUGARG(AddressExposedReason::OSR_EXPOSED));
         }
     }
 
@@ -1858,7 +1867,7 @@ bool Compiler::StructPromotionHelper::CanConstructAndPromoteField(lvaStructPromo
     fldInfo.fldOffset  = 0;
     fldInfo.fldOrdinal = 0;
     fldInfo.fldSize    = TARGET_POINTER_SIZE;
-    fldInfo.fldType    = TYP_BYREF;
+    fldInfo.fldType    = TYP_REF;
 
     structPromotionInfo->canPromote = true;
     return true;
@@ -1900,6 +1909,14 @@ bool Compiler::StructPromotionHelper::CanPromoteStructVar(unsigned lclNum)
     if (!compiler->lvaEnregMultiRegVars && varDsc->lvIsMultiRegArgOrRet())
     {
         JITDUMP("  struct promotion of V%02u is disabled because lvIsMultiRegArgOrRet()\n", lclNum);
+        return false;
+    }
+
+    // If the local was exposed at Tier0, we currently have to assume it's aliased for OSR.
+    //
+    if (compiler->lvaIsOSRLocal(lclNum) && compiler->info.compPatchpointInfo->IsExposed(lclNum))
+    {
+        JITDUMP("  struct promotion of V%02u is disabled because it is an exposed OSR local\n", lclNum);
         return false;
     }
 
@@ -2355,6 +2372,7 @@ void Compiler::StructPromotionHelper::PromoteStructVar(unsigned lclNum)
         fieldVarDsc->lvFldOrdinal    = pFieldInfo->fldOrdinal;
         fieldVarDsc->lvParentLcl     = lclNum;
         fieldVarDsc->lvIsParam       = varDsc->lvIsParam;
+        fieldVarDsc->lvIsOSRLocal    = varDsc->lvIsOSRLocal;
 
         // This new local may be the first time we've seen a long typed local.
         if (fieldVarDsc->lvType == TYP_LONG)
@@ -2497,6 +2515,57 @@ void Compiler::lvaSetVarAddrExposed(unsigned varNum DEBUGARG(AddressExposedReaso
 }
 
 //------------------------------------------------------------------------
+// lvaSetHiddenBufferStructArg: Set the local var "varNum" as hidden buffer struct arg.
+//
+// Arguments:
+//    varNum - the varNum of the local
+//
+// Notes:
+//    Most ABIs "return" large structures via return buffers, where the callee takes an address as the
+//    argument, and writes the result to it. This presents a problem: ordinarily, addresses of locals
+//    that escape to calls leave the local in question address-exposed. For this very special case of
+//    a return buffer, however, it is known that the callee will not do anything with it except write
+//    to it, once. As such, we handle addresses of locals that represent return buffers specially: we
+//    *do not* mark the local address-exposed, instead saving the address' "Use*" in the call node, and
+//    treat the call much like an "ASG(IND(addr), ...)" node throughout the compilation. A complicating
+//    factor here is that the address can be moved to the late args list, and we have to fetch it from
+//    the ASG setup node in that case. In the future, we should make it such that these addresses do
+//    not ever need temps (currently they may because of conservative GLOB_REF setting on FIELD nodes).
+//
+//    TODO-ADDR-Bug: currently, we rely on these locals not being present in call argument lists,
+//    outside of the buffer address argument itself, as liveness - currently - treats the location node
+//    associated with the address itself as the definition point, and call arguments can be reordered
+//    rather arbitrarily. We should fix liveness to treat the call as the definition point instead and
+//    enable this optimization for "!lvIsTemp" locals.
+//
+
+void Compiler::lvaSetHiddenBufferStructArg(unsigned varNum)
+{
+    LclVarDsc* varDsc = lvaGetDesc(varNum);
+
+#ifdef DEBUG
+    varDsc->SetHiddenBufferStructArg(true);
+#endif
+
+    if (varDsc->lvPromoted)
+    {
+        noway_assert(varTypeIsStruct(varDsc));
+
+        for (unsigned i = varDsc->lvFieldLclStart; i < varDsc->lvFieldLclStart + varDsc->lvFieldCnt; ++i)
+        {
+            noway_assert(lvaTable[i].lvIsStructField);
+#ifdef DEBUG
+            lvaTable[i].SetHiddenBufferStructArg(true);
+#endif
+
+            lvaSetVarDoNotEnregister(i DEBUGARG(DoNotEnregisterReason::HiddenBufferStructArg));
+        }
+    }
+
+    lvaSetVarDoNotEnregister(varNum DEBUGARG(DoNotEnregisterReason::HiddenBufferStructArg));
+}
+
+//------------------------------------------------------------------------
 // lvaSetVarLiveInOutOfHandler: Set the local varNum as being live in and/or out of a handler
 //
 // Arguments:
@@ -2568,6 +2637,10 @@ void Compiler::lvaSetVarDoNotEnregister(unsigned varNum DEBUGARG(DoNotEnregister
         case DoNotEnregisterReason::AddrExposed:
             JITDUMP("it is address exposed\n");
             assert(varDsc->IsAddressExposed());
+            break;
+        case DoNotEnregisterReason::HiddenBufferStructArg:
+            JITDUMP("it is hidden buffer struct arg\n");
+            assert(varDsc->IsHiddenBufferStructArg());
             break;
         case DoNotEnregisterReason::DontEnregStructs:
             JITDUMP("struct enregistration is disabled\n");
@@ -2922,8 +2995,8 @@ void Compiler::lvaSetClass(unsigned varNum, CORINFO_CLASS_HANDLE clsHnd, bool is
     assert(varDsc->lvClassHnd == NO_CLASS_HANDLE);
     assert(!varDsc->lvClassIsExact);
 
-    JITDUMP("\nlvaSetClass: setting class for V%02i to (%p) %s %s\n", varNum, dspPtr(clsHnd),
-            info.compCompHnd->getClassName(clsHnd), isExact ? " [exact]" : "");
+    JITDUMP("\nlvaSetClass: setting class for V%02i to (%p) %s %s\n", varNum, dspPtr(clsHnd), eeGetClassName(clsHnd),
+            isExact ? " [exact]" : "");
 
     varDsc->lvClassHnd     = clsHnd;
     varDsc->lvClassIsExact = isExact;
@@ -3033,9 +3106,9 @@ void Compiler::lvaUpdateClass(unsigned varNum, CORINFO_CLASS_HANDLE clsHnd, bool
     if (isNewClass || (isExact != varDsc->lvClassIsExact))
     {
         JITDUMP("\nlvaUpdateClass:%s Updating class for V%02u", shouldUpdate ? "" : " NOT", varNum);
-        JITDUMP(" from (%p) %s%s", dspPtr(varDsc->lvClassHnd), info.compCompHnd->getClassName(varDsc->lvClassHnd),
+        JITDUMP(" from (%p) %s%s", dspPtr(varDsc->lvClassHnd), eeGetClassName(varDsc->lvClassHnd),
                 varDsc->lvClassIsExact ? " [exact]" : "");
-        JITDUMP(" to (%p) %s%s\n", dspPtr(clsHnd), info.compCompHnd->getClassName(clsHnd), isExact ? " [exact]" : "");
+        JITDUMP(" to (%p) %s%s\n", dspPtr(clsHnd), eeGetClassName(clsHnd), isExact ? " [exact]" : "");
     }
 #endif // DEBUG
 
@@ -3801,13 +3874,44 @@ var_types LclVarDsc::GetRegisterType() const
 }
 
 //------------------------------------------------------------------------
-// GetActualRegisterType: Determine an actual register type for this local var.
+// GetStackSlotHomeType:
+//   Get the canonical type of the stack slot that this enregistrable local is
+//   using when stored on the stack.
 //
 // Return Value:
-//    TYP_UNDEF if the layout is not enregistrable, the register type otherwise.
+//   TYP_UNDEF if the layout is not enregistrable. Otherwise returns the type
+//    of the stack slot home for the local.
 //
-var_types LclVarDsc::GetActualRegisterType() const
+// Remarks:
+//   This function always returns a canonical type: for all 4-byte types
+//   (structs, floats, ints) it will return TYP_INT. It is meant to be used
+//   when moving locals between register and stack. Because of this the
+//   returned type is usually at least one 4-byte stack slot. However, there
+//   are certain exceptions for promoted fields in OSR methods (that may refer
+//   back to the original frame) and due to macOS arm64 where subsequent small
+//   parameters can be packed into the same stack slot.
+//
+var_types LclVarDsc::GetStackSlotHomeType() const
 {
+    if (varTypeIsSmall(TypeGet()))
+    {
+        if (compMacOsArm64Abi() && lvIsParam && !lvIsRegArg)
+        {
+            // Allocated by caller and potentially only takes up a small slot
+            return GetRegisterType();
+        }
+
+        if (lvIsOSRLocal && lvIsStructField)
+        {
+#if defined(TARGET_X86)
+            // Revisit when we support OSR on x86
+            unreached();
+#else
+            return GetRegisterType();
+#endif
+        }
+    }
+
     return genActualType(GetRegisterType());
 }
 
@@ -4105,8 +4209,12 @@ void Compiler::lvaMarkLclRefs(GenTree* tree, BasicBlock* block, Statement* stmt,
                     varDsc->lvSingleDefRegCandidate           = false;
                     varDsc->lvDisqualifySingleDefRegCandidate = true;
                 }
-                else
+                else if (!varDsc->lvDoNotEnregister)
                 {
+                    // Variables can be marked as DoNotEngister in earlier stages like LocalAddressVisitor.
+                    // No need to track them for single-def.
+                    CLANG_FORMAT_COMMENT_ANCHOR;
+
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
                     // TODO-CQ: If the varType needs partial callee save, conservatively do not enregister
                     // such variable. In future, need to enable enregisteration for such variables.
@@ -7459,6 +7567,10 @@ void Compiler::lvaDumpEntry(unsigned lclNum, FrameLayoutState curState, size_t r
         {
             printf("X");
         }
+        if (varDsc->IsHiddenBufferStructArg())
+        {
+            printf("H");
+        }
         if (varTypeIsStruct(varDsc))
         {
             printf("S");
@@ -7509,6 +7621,10 @@ void Compiler::lvaDumpEntry(unsigned lclNum, FrameLayoutState curState, size_t r
     if (varDsc->IsAddressExposed())
     {
         printf(" addr-exposed");
+    }
+    if (varDsc->IsHiddenBufferStructArg())
+    {
+        printf(" hidden-struct-arg");
     }
     if (varDsc->lvHasLdAddrOp)
     {

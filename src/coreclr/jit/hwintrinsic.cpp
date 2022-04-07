@@ -574,12 +574,11 @@ GenTree* Compiler::addRangeCheckForHWIntrinsic(GenTree* immOp, int immLowerBound
 //    true iff the given instruction set is enabled via configuration (environment variables, etc.).
 bool Compiler::compSupportsHWIntrinsic(CORINFO_InstructionSet isa)
 {
-    return compHWIntrinsicDependsOn(isa) && (featureSIMD || HWIntrinsicInfo::isScalarIsa(isa)) &&
-           (
+    return compHWIntrinsicDependsOn(isa) && (
 #ifdef DEBUG
-               JitConfig.EnableIncompleteISAClass() ||
+                                                JitConfig.EnableIncompleteISAClass() ||
 #endif
-               HWIntrinsicInfo::isFullyImplementedIsa(isa));
+                                                HWIntrinsicInfo::isFullyImplementedIsa(isa));
 }
 
 //------------------------------------------------------------------------
@@ -765,8 +764,9 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
     int                    numArgs         = sig->numArgs;
     var_types              retType         = JITtype2varType(sig->retType);
     CorInfoType            simdBaseJitType = CORINFO_TYPE_UNDEF;
+    GenTree*               retNode         = nullptr;
 
-    if ((retType == TYP_STRUCT) && featureSIMD)
+    if (retType == TYP_STRUCT)
     {
         unsigned int sizeBytes;
         simdBaseJitType = getBaseJitTypeAndSizeOfSIMDType(sig->retTypeSigClass, &sizeBytes);
@@ -805,7 +805,6 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
         }
         else
         {
-            assert(featureSIMD);
             unsigned int sizeBytes;
 
             simdBaseJitType = getBaseJitTypeAndSizeOfSIMDType(clsHnd, &sizeBytes);
@@ -1007,11 +1006,10 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
             return nullptr;
         }
 
-        GenTree*            op1     = nullptr;
-        GenTree*            op2     = nullptr;
-        GenTree*            op3     = nullptr;
-        GenTree*            op4     = nullptr;
-        GenTreeHWIntrinsic* retNode = nullptr;
+        GenTree* op1 = nullptr;
+        GenTree* op2 = nullptr;
+        GenTree* op3 = nullptr;
+        GenTree* op4 = nullptr;
 
         switch (numArgs)
         {
@@ -1054,9 +1052,10 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
 
                         CorInfoType auxiliaryType = CORINFO_TYPE_UNDEF;
 
-                        if (!varTypeIsSIMD(op1->TypeGet()))
+                        if (!varTypeIsSIMD(op1))
                         {
                             auxiliaryType = CORINFO_TYPE_PTR;
+                            retNode->gtFlags |= (GTF_EXCEPT | GTF_GLOB_REF);
                         }
 
                         retNode->AsHWIntrinsic()->SetAuxiliaryJitType(auxiliaryType);
@@ -1181,31 +1180,23 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                 retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, op3, op4, intrinsic, simdBaseJitType, simdSize);
                 break;
 #endif
-
             default:
-                return nullptr;
+                break;
         }
-
-        const bool isMemoryStore = retNode->OperIsMemoryStore();
-
-        if (isMemoryStore || retNode->OperIsMemoryLoad())
-        {
-            if (isMemoryStore)
-            {
-                // A MemoryStore operation is an assignment
-                retNode->gtFlags |= GTF_ASG;
-            }
-
-            // This operation contains an implicit indirection
-            //   it could point into the global heap or
-            //   it could throw a null reference exception.
-            //
-            retNode->gtFlags |= (GTF_GLOB_REF | GTF_EXCEPT);
-        }
-        return retNode;
+    }
+    else
+    {
+        retNode = impSpecialIntrinsic(intrinsic, clsHnd, method, sig, simdBaseJitType, retType, simdSize);
     }
 
-    return impSpecialIntrinsic(intrinsic, clsHnd, method, sig, simdBaseJitType, retType, simdSize);
+    if ((retNode != nullptr) && retNode->OperIs(GT_HWINTRINSIC))
+    {
+        assert(!retNode->OperMayThrow(this) || ((retNode->gtFlags & GTF_EXCEPT) != 0));
+        assert(!retNode->OperRequiresAsgFlag() || ((retNode->gtFlags & GTF_ASG) != 0));
+        assert(!retNode->OperIsImplicitIndir() || ((retNode->gtFlags & GTF_GLOB_REF) != 0));
+    }
+
+    return retNode;
 }
 
 #endif // FEATURE_HW_INTRINSICS

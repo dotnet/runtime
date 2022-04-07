@@ -38,7 +38,6 @@
 #include <mono/utils/mono-threads-coop.h>
 #include <mono/utils/mono-tls.h>
 #include <mono/utils/atomic.h>
-#include <mono/utils/mono-jemalloc.h>
 #include <mono/utils/mono-conc-hashtable.h>
 #include <mono/utils/mono-signal-handler.h>
 #include <mono/utils/ftnptr.h>
@@ -1077,7 +1076,9 @@ typedef enum {
 	/* The InterpMethod for a method */
 	MONO_RGCTX_INFO_INTERP_METHOD                 = 35,
 	/* The llvmonly interp entry for a method */
-	MONO_RGCTX_INFO_LLVMONLY_INTERP_ENTRY         = 36
+	MONO_RGCTX_INFO_LLVMONLY_INTERP_ENTRY         = 36,
+	/* Same as VIRT_METHOD_CODE, but resolve MonoMethod* instead of code */
+	MONO_RGCTX_INFO_VIRT_METHOD                   = 37
 } MonoRgctxInfoType;
 
 /* How an rgctx is passed to a method */
@@ -1087,8 +1088,6 @@ typedef enum {
 	MONO_RGCTX_ACCESS_THIS = 1,
 	/* Loaded from an additional mrgctx argument */
 	MONO_RGCTX_ACCESS_MRGCTX = 2,
-	/* Loaded from an additional vtable argument */
-	MONO_RGCTX_ACCESS_VTABLE = 3
 } MonoRgctxAccess;
 
 typedef struct _MonoRuntimeGenericContextInfoTemplate {
@@ -1105,12 +1104,14 @@ typedef struct {
 
 typedef struct {
 	MonoVTable *class_vtable; /* must be the first element */
+	MonoMethod *method;
 	MonoGenericInst *method_inst;
+	gpointer *entries;
 	gpointer infos [MONO_ZERO_LEN_ARRAY];
 } MonoMethodRuntimeGenericContext;
 
 /* MONO_ABI_SIZEOF () would include the 'infos' field as well */
-#define MONO_SIZEOF_METHOD_RUNTIME_GENERIC_CONTEXT (TARGET_SIZEOF_VOID_P * 2)
+#define MONO_SIZEOF_METHOD_RUNTIME_GENERIC_CONTEXT (TARGET_SIZEOF_VOID_P * 4)
 
 #define MONO_RGCTX_SLOT_MAKE_RGCTX(i)	(i)
 #define MONO_RGCTX_SLOT_MAKE_MRGCTX(i)	((i) | 0x80000000)
@@ -1124,6 +1125,12 @@ typedef struct {
 	MonoRuntimeGenericContextInfoTemplate *entries;
 	int num_entries, count_entries;
 } MonoGSharedVtMethodInfo;
+
+typedef struct {
+	MonoMethod *method;
+	MonoRuntimeGenericContextInfoTemplate *entries;
+	int num_entries, count_entries;
+} MonoGSharedMethodInfo;
 
 /* This is used by gsharedvt methods to allocate locals and compute local offsets */
 typedef struct {
@@ -1380,6 +1387,8 @@ typedef struct {
 	MonoGenericSharingContext gsctx;
 	MonoGenericContext *gsctx_context;
 
+	MonoGSharedMethodInfo *gshared_info;
+
 	MonoGSharedVtMethodInfo *gsharedvt_info;
 
 	gpointer jit_mm;
@@ -1394,8 +1403,8 @@ typedef struct {
 	/* Points to a MonoGSharedVtMethodRuntimeInfo at runtime */
 	MonoInst *gsharedvt_info_var;
 
-	/* For native-to-managed wrappers, CEE_MONO_JIT_(AT|DE)TACH opcodes */
-	MonoInst *orig_domain_var;
+	/* Points to the call to mini_init_method_rgctx () */
+	MonoInst *init_method_rgctx_ins;
 
 	MonoInst *lmf_var;
 	MonoInst *lmf_addr_var;
@@ -2818,6 +2827,9 @@ MonoMethod* mini_get_gsharedvt_in_sig_wrapper (MonoMethodSignature *sig);
 MonoMethod* mini_get_gsharedvt_out_sig_wrapper (MonoMethodSignature *sig);
 MonoMethodSignature* mini_get_gsharedvt_out_sig_wrapper_signature (gboolean has_this, gboolean has_ret, int param_count);
 gboolean mini_gsharedvt_runtime_invoke_supported (MonoMethodSignature *sig);
+gpointer mini_instantiate_gshared_info (MonoRuntimeGenericContextInfoTemplate *oti,
+										MonoGenericContext *context, MonoClass *klass);
+
 G_EXTERN_C void mono_interp_entry_from_trampoline (gpointer ccontext, gpointer imethod);
 G_EXTERN_C void mono_interp_to_native_trampoline (gpointer addr, gpointer ccontext);
 MonoMethod* mini_get_interp_in_wrapper (MonoMethodSignature *sig);

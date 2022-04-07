@@ -33,7 +33,6 @@
 #include <mono/metadata/profiler.h>
 #include <mono/metadata/object.h>
 #include <mono/metadata/debug-helpers.h>
-#include <mono/utils/mono-counters.h>
 
 #define HASH_SIZE 9371
 #define SMALL_HASH_SIZE 31

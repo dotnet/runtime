@@ -49,12 +49,6 @@
 #include "mini-runtime.h"
 #include "aot-runtime.h"
 
-#ifdef MONO_XEN_OPT
-static gboolean optimize_for_xen = TRUE;
-#else
-#define optimize_for_xen 0
-#endif
-
 static GENERATE_TRY_GET_CLASS_WITH_CACHE (math, "System", "Math")
 
 
@@ -400,15 +394,16 @@ collect_field_info_nested (MonoClass *klass, GArray *fields_array, int offset, g
 		while ((field = mono_class_get_fields_internal (klass, &iter))) {
 			if (field->type->attrs & FIELD_ATTRIBUTE_STATIC)
 				continue;
+			g_assert (!m_field_is_from_update (field));
 			if (MONO_TYPE_ISSTRUCT (field->type)) {
-				collect_field_info_nested (mono_class_from_mono_type_internal (field->type), fields_array, field->offset - MONO_ABI_SIZEOF (MonoObject), pinvoke, unicode);
+				collect_field_info_nested (mono_class_from_mono_type_internal (field->type), fields_array, m_field_get_offset (field) - MONO_ABI_SIZEOF (MonoObject), pinvoke, unicode);
 			} else {
 				int align;
 				StructFieldInfo f;
 
 				f.type = field->type;
 				f.size = mono_type_size (field->type, &align);
-				f.offset = field->offset - MONO_ABI_SIZEOF (MonoObject) + offset;
+				f.offset = m_field_get_offset (field) - MONO_ABI_SIZEOF (MonoObject) + offset;
 
 				g_array_append_val (fields_array, f);
 			}
@@ -1543,7 +1538,7 @@ mono_arch_compute_omit_fp (MonoCompile *cfg)
 {
 	MonoMethodSignature *sig;
 	MonoMethodHeader *header;
-	int i, locals_size;
+	int i;
 	CallInfo *cinfo;
 
 	if (cfg->arch.omit_fp_computed)
@@ -1590,14 +1585,6 @@ mono_arch_compute_omit_fp (MonoCompile *cfg)
 			 */
 			cfg->arch.omit_fp = FALSE;
 		}
-	}
-
-	locals_size = 0;
-	for (i = cfg->locals_start; i < cfg->num_varinfo; i++) {
-		MonoInst *ins = cfg->varinfo [i];
-		int ialign;
-
-		locals_size += mono_type_size (ins->inst_vtype, &ialign);
 	}
 }
 
@@ -1759,7 +1746,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 		offset = 0;
 	}
 
-	cfg->arch.saved_iregs = cfg->used_int_regs;
+	cfg->arch.saved_iregs = (guint32)cfg->used_int_regs;
 	if (cfg->method->save_lmf) {
 		/* Save all callee-saved registers normally (except RBP, if not already used), and restore them when unwinding through an LMF */
 		guint32 iregs_to_save = AMD64_CALLEE_SAVED_REGS & ~(1<<AMD64_RBP);
@@ -3134,9 +3121,6 @@ emit_call (MonoCompile *cfg, MonoCallInst *call, guint8 *code, MonoJitICallId ji
 #ifdef MONO_ARCH_NOMAP32BIT
 		near_call = FALSE;
 #endif
-		/* The 64bit XEN kernel does not honour the MAP_32BIT flag. (#522894) */
-		if (optimize_for_xen)
-			near_call = FALSE;
 
 		if (cfg->compile_aot) {
 			near_call = TRUE;
@@ -4419,14 +4403,8 @@ mono_amd64_emit_tls_get (guint8* code, int dreg, int tls_offset)
 	x86_prefix (code, X86_GS_PREFIX);
 	amd64_mov_reg_mem (code, dreg, tls_gs_offset + (tls_offset * 8), 8);
 #else
-	if (optimize_for_xen) {
-		x86_prefix (code, X86_FS_PREFIX);
-		amd64_mov_reg_mem (code, dreg, 0, 8);
-		amd64_mov_reg_membase (code, dreg, dreg, tls_offset, 8);
-	} else {
-		x86_prefix (code, X86_FS_PREFIX);
-		amd64_mov_reg_mem (code, dreg, tls_offset, 8);
-	}
+	x86_prefix (code, X86_FS_PREFIX);
+	amd64_mov_reg_mem (code, dreg, tls_offset, 8);
 #endif
 	return code;
 }
@@ -4440,7 +4418,6 @@ mono_amd64_emit_tls_set (guint8 *code, int sreg, int tls_offset)
 	x86_prefix (code, X86_GS_PREFIX);
 	amd64_mov_mem_reg (code, tls_gs_offset + (tls_offset * 8), sreg, 8);
 #else
-	g_assert (!optimize_for_xen);
 	x86_prefix (code, X86_FS_PREFIX);
 	amd64_mov_mem_reg (code, tls_offset, sreg, 8);
 #endif
@@ -8674,9 +8651,6 @@ mono_arch_get_delegate_virtual_invoke_impl (MonoMethodSignature *sig, MonoMethod
 void
 mono_arch_finish_init (void)
 {
-#if !defined(HOST_WIN32) && defined(MONO_XEN_OPT)
-	optimize_for_xen = access ("/proc/xen", F_OK) == 0;
-#endif
 }
 
 #define CMP_SIZE (6 + 1)

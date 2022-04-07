@@ -34,6 +34,7 @@ namespace System.Drawing.Imaging
         internal ref byte GetPinnableReference() => ref Unsafe.As<MetafileType, byte>(ref type);
 
 #if NET7_0_OR_GREATER
+        [CustomTypeMarshaller(typeof(MetafileHeaderEmf), Direction = CustomTypeMarshallerDirection.In, Features = CustomTypeMarshallerFeatures.TwoStageMarshalling)]
         internal unsafe struct PinningMarshaller
         {
             private readonly MetafileHeaderEmf _managed;
@@ -44,7 +45,7 @@ namespace System.Drawing.Imaging
 
             public ref byte GetPinnableReference() => ref (_managed is null ? ref Unsafe.NullRef<byte>() : ref _managed.GetPinnableReference());
 
-            public void* Value => Unsafe.AsPointer(ref GetPinnableReference());
+            public void* ToNativeValue() => Unsafe.AsPointer(ref GetPinnableReference());
         }
 #endif
     }

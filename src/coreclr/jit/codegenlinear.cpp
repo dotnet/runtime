@@ -889,7 +889,7 @@ void CodeGen::genSpillVar(GenTree* tree)
         // therefore be store-normalized (rather than load-normalized). In fact, not performing store normalization
         // can lead to problems on architectures where a lclVar may be allocated to a register that is not
         // addressable at the granularity of the lclVar's defined type (e.g. x86).
-        var_types lclType = varDsc->GetActualRegisterType();
+        var_types lclType = varDsc->GetStackSlotHomeType();
         emitAttr  size    = emitTypeSize(lclType);
 
         // If this is a write-thru or a single-def variable, we don't actually spill at a use,
@@ -1213,22 +1213,15 @@ void CodeGen::genUnspillRegIfNeeded(GenTree* tree)
 // TODO-Cleanup: The following code could probably be further merged and cleaned up.
 #if defined(TARGET_XARCH) || defined(TARGET_ARM64)
             // Load local variable from its home location.
-            // In most cases the tree type will indicate the correct type to use for the load.
-            // However, if it is NOT a normalizeOnLoad lclVar (i.e. NOT a small int that always gets
-            // widened when loaded into a register), and its size is not the same as the actual register type
-            // of the lclVar, then we need to change the type of the tree node when loading.
-            // This situation happens due to "optimizations" that avoid a cast and
-            // simply retype the node when using long type lclVar as an int.
-            // While loading the int in that case would work for this use of the lclVar, if it is
-            // later used as a long, we will have incorrectly truncated the long.
-            // In the normalizeOnLoad case ins_Load will return an appropriate sign- or zero-
-            // extending load.
-            var_types lclActualType = varDsc->GetActualRegisterType();
-            assert(lclActualType != TYP_UNDEF);
-            if (spillType != lclActualType && !varTypeIsGC(spillType) && !varDsc->lvNormalizeOnLoad())
+            // Never allow truncating the locals here, otherwise a subsequent
+            // use of the local with a wider type would see the truncated
+            // value. We do allow wider loads as those can be efficient even
+            // when unaligned and might be smaller encoding wise (on xarch).
+            var_types lclLoadType = varDsc->lvNormalizeOnLoad() ? varDsc->TypeGet() : varDsc->GetStackSlotHomeType();
+            assert(lclLoadType != TYP_UNDEF);
+            if (genTypeSize(spillType) < genTypeSize(lclLoadType))
             {
-                assert(!varTypeIsGC(varDsc));
-                spillType = lclActualType;
+                spillType = lclLoadType;
             }
 #elif defined(TARGET_ARM)
 // No normalizing for ARM
@@ -1607,6 +1600,13 @@ void CodeGen::genConsumeRegs(GenTree* tree)
             assert(cast->isContained());
             genConsumeAddress(cast->CastOp());
         }
+        else if (tree->OperIs(GT_CAST))
+        {
+            // Can be contained as part of LEA on ARM64
+            GenTreeCast* cast = tree->AsCast();
+            assert(cast->isContained());
+            genConsumeAddress(cast->CastOp());
+        }
 #endif
         else if (tree->OperIsLocalRead())
         {
@@ -1976,7 +1976,9 @@ void CodeGen::genSetBlockSrc(GenTreeBlk* blkNode, regNumber srcReg)
         {
             // This must be a local struct.
             // Load its address into srcReg.
-            inst_RV_TT(INS_lea, srcReg, src, 0, EA_BYREF);
+            unsigned varNum = src->AsLclVarCommon()->GetLclNum();
+            unsigned offset = src->AsLclVarCommon()->GetLclOffs();
+            GetEmitter()->emitIns_R_S(INS_lea, EA_BYREF, srcReg, varNum, offset);
             return;
         }
     }
@@ -2049,7 +2051,7 @@ void CodeGen::genConsumeBlockOp(GenTreeBlk* blkNode, regNumber dstReg, regNumber
 void CodeGen::genSpillLocal(unsigned varNum, var_types type, GenTreeLclVar* lclNode, regNumber regNum)
 {
     const LclVarDsc* varDsc = compiler->lvaGetDesc(varNum);
-    assert(!varDsc->lvNormalizeOnStore() || (type == varDsc->GetActualRegisterType()));
+    assert(!varDsc->lvNormalizeOnStore() || (type == varDsc->GetStackSlotHomeType()));
 
     // We have a register candidate local that is marked with GTF_SPILL.
     // This flag generally means that we need to spill this local.

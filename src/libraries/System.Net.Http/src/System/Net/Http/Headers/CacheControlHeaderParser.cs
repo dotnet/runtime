@@ -1,6 +1,7 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Diagnostics;
 
 namespace System.Net.Http.Headers
@@ -22,8 +23,29 @@ namespace System.Net.Http.Headers
         protected override int GetParsedValueLength(string value, int startIndex, object? storeValue,
             out object? parsedValue)
         {
-            CacheControlHeaderValue? temp = storeValue as CacheControlHeaderValue;
-            Debug.Assert(storeValue == null || temp != null, "'storeValue' is not of type CacheControlHeaderValue");
+            CacheControlHeaderValue? temp = null;
+            bool isInvalidValue = true;
+            if (storeValue is List<object> list)
+            {
+                foreach (object item in list)
+                {
+                    if (item is not HttpHeaders.InvalidValue)
+                    {
+                        isInvalidValue = false;
+                        temp = item as CacheControlHeaderValue;
+                        break;
+                    }
+                }
+            }
+            else
+            {
+                if (storeValue is not HttpHeaders.InvalidValue)
+                {
+                    isInvalidValue = false;
+                    temp = storeValue as CacheControlHeaderValue;
+                }
+            }
+            Debug.Assert(isInvalidValue || storeValue == null || temp != null, "'storeValue' is not of type CacheControlHeaderValue");
 
             int resultLength = CacheControlHeaderValue.GetCacheControlLength(value, startIndex, temp, out temp);
 
