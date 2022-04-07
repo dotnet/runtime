@@ -92,7 +92,9 @@
       <Output TaskParameter="DownloadedFile" PropertyName="_DownloadedFile" />
     </DownloadFile>
     <Exec Command="tar -xf $(_DownloadedFile) -C $(FirefoxDir)"/>
-    <Exec Command='echo "user_pref(\"devtools.chrome.enabled\", true);\nuser_pref(\"devtools.debugger.remote-enabled\", true);\nuser_pref(\"devtools.debugger.prompt-connection\", false);" > $(FirefoxDir)/prefs.js'/>
+    <Exec Command="rm -rf $(_DownloadedFile)"/>
+    <Exec Command="mkdir $(FirefoxDir)profile"/>
+    <Exec Command='echo "user_pref(\"devtools.chrome.enabled\", true);\nuser_pref(\"devtools.debugger.remote-enabled\", true);\nuser_pref(\"devtools.debugger.prompt-connection\", false);" > $(FirefoxDir)profile/prefs.js'/>
     
 
     <PropertyGroup>
