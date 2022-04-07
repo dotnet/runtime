@@ -7,6 +7,42 @@ namespace Mono.Linker.Tests.Cases.Substitutions
 	[SetupLinkerSubstitutionFile ("StubBody.xml")]
 	public class StubBody
 	{
+		[ExpectedInstructionSequence (new[] {
+			"nop",
+			"newobj System.Void Mono.Linker.Tests.Cases.Substitutions.StubBody::.ctor()",
+			"pop",
+			"ldc.i4.5",
+			"newobj System.Void Mono.Linker.Tests.Cases.Substitutions.StubBody/NestedType::.ctor(System.Int32)",
+			"pop",
+			"ldnull",
+			"pop",
+			"ldc.i4.0",
+			"pop",
+			"ldc.i4.0",
+			"pop",
+			"call System.Decimal Mono.Linker.Tests.Cases.Substitutions.StubBody::TestMethod_4()",
+			"pop",
+			"ldc.i4.0",
+			"pop",
+			"call System.Void Mono.Linker.Tests.Cases.Substitutions.StubBody::TestMethod_6()",
+			"nop",
+			"ldc.r8 0",
+			"pop",
+			"ldc.i4.5",
+			"call T Mono.Linker.Tests.Cases.Substitutions.StubBody::TestMethod_8<System.Int32>(T)",
+			"pop",
+			"ldc.r4 0",
+			"pop",
+			"ldc.i8 0x0",
+			"pop",
+			"ldnull",
+			"pop",
+			"ldnull",
+			"pop",
+			"ldnull",
+			"pop",
+			"ret",
+		})]
 		public static void Main ()
 		{
 			new StubBody ();
@@ -50,31 +86,16 @@ namespace Mono.Linker.Tests.Cases.Substitutions
 			throw new NotImplementedException ();
 		}
 
-		[Kept]
-		[ExpectedInstructionSequence (new[] {
-				"ldnull",
-				"ret",
-			})]
 		static string TestMethod_1 ()
 		{
 			throw new NotImplementedException ();
 		}
 
-		[Kept]
-		[ExpectedInstructionSequence (new[] {
-				"ldc.i4.0",
-				"ret",
-			})]
 		static byte TestMethod_2 ()
 		{
 			throw new NotImplementedException ();
 		}
 
-		[Kept]
-		[ExpectedInstructionSequence (new[] {
-				"ldc.i4.0",
-				"ret",
-			})]
 		static char TestMethod_3 ()
 		{
 			throw new NotImplementedException ();
@@ -93,11 +114,6 @@ namespace Mono.Linker.Tests.Cases.Substitutions
 			throw new NotImplementedException ();
 		}
 
-		[Kept]
-		[ExpectedInstructionSequence (new[] {
-				"ldc.i4.0",
-				"ret",
-			})]
 		static bool TestMethod_5 ()
 		{
 			throw new NotImplementedException ();
@@ -112,12 +128,6 @@ namespace Mono.Linker.Tests.Cases.Substitutions
 			TestMethod_5 ();
 		}
 
-		[Kept]
-		[ExpectedInstructionSequence (new[] {
-				"ldc.r8 0",
-				"ret",
-			})]
-		[ExpectLocalsModified]
 		static double TestMethod_7 ()
 		{
 			double d = 1.1;
@@ -137,53 +147,27 @@ namespace Mono.Linker.Tests.Cases.Substitutions
 			throw new NotImplementedException ();
 		}
 
-		[Kept]
-		[ExpectedInstructionSequence (new[] {
-				"ldc.r4 0",
-				"ret",
-			})]
-		[ExpectLocalsModified]
 		static float TestMethod_9 ()
 		{
 			float f = 1.1f;
 			return f;
 		}
 
-		[Kept]
-		[ExpectedInstructionSequence (new[] {
-				"ldc.i8 0x0",
-				"ret",
-			})]
 		static ulong TestMethod_10 ()
 		{
 			throw new NotImplementedException ();
 		}
 
-		[Kept]
-		[ExpectedInstructionSequence (new[] {
-				"ldnull",
-				"ret",
-			})]
 		static long[] TestMethod_11 ()
 		{
 			throw new NotImplementedException ();
 		}
 
-		[Kept]
-		[ExpectedInstructionSequence (new[] {
-				"ldnull",
-				"ret",
-			})]
 		static object TestMethod_12 ()
 		{
 			throw new NotImplementedException ();
 		}
 
-		[Kept]
-		[ExpectedInstructionSequence (new[] {
-				"ldnull",
-				"ret",
-			})]
 		static System.Collections.Generic.List<int> TestMethod_13 ()
 		{
 			throw new NotImplementedException ();

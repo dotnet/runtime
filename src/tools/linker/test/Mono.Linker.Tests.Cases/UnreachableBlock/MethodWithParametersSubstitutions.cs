@@ -34,8 +34,6 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 
 		static bool _isEnabledField;
 
-		[Kept]
-		[ExpectBodyModified]
 		static bool IsEnabledWithValueParam (int param)
 		{
 			return _isEnabledField;
@@ -54,8 +52,6 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 		[Kept] static void MethodWithValueParam_Reached () { }
 		static void MethodWithValueParam_NeverReached () { }
 
-		[Kept]
-		[ExpectBodyModified]
 		static bool IsEnabledWithReferenceParam (string param)
 		{
 			return _isEnabledField;
@@ -76,13 +72,14 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 
 		[Kept]
 		[ExpectedInstructionSequence (new[] {
-			"ldnull",
-			"ldnull",
-			"call System.Boolean Mono.Linker.Tests.Cases.UnreachableBlock.MethodWithParametersSubstitutions::StaticMethod(System.Object,System.Int32[])",
+			"nop",
+			"nop",
+			"ldc.i4.1",
 			"pop",
 			"ldc.i4.1",
-			"ret"
+			"ret",
 		})]
+		[System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
 		static int TestMethodWithComplexParams_1 ()
 		{
 			if (StaticMethod (null, null))
@@ -290,7 +287,6 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 		[Kept] static void MethodWithMultipleRefParams_Reached1 () { }
 		static void MethodWithMultipleRefParams_Reached2 () { }
 
-		[Kept]
 		static bool IsEnabledWithValueParamAndConstReturn_NoSubstitutions (int param)
 		{
 			return true;
@@ -298,8 +294,8 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 
 		[Kept]
 		[ExpectedInstructionSequence (new[] {
-			"ldc.i4.0",
-			"call System.Boolean Mono.Linker.Tests.Cases.UnreachableBlock.MethodWithParametersSubstitutions::IsEnabledWithValueParamAndConstReturn_NoSubstitutions(System.Int32)",
+			"nop",
+			"ldc.i4.1",
 			"pop",
 			"call System.Void Mono.Linker.Tests.Cases.UnreachableBlock.MethodWithParametersSubstitutions::MethodWithValueParamAndConstReturn_NoSubstitutions_Reached1()",
 			"ret",

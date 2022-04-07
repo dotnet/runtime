@@ -35,17 +35,23 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 			return _isEnabledField;
 		}
 
-		[Kept]
 		InstanceMethodSubstitutions GetInstance ()
 		{
 			return null;
 		}
 
-		[Kept]
-		static bool PropFalse { [Kept] get { return false; } }
+		static bool PropFalse { get { return false; } }
 
 		[Kept]
-		[ExpectBodyModified]
+		[ExpectedInstructionSequence (new[] {
+			"nop",
+			"ldnull",
+			"callvirt System.Boolean Mono.Linker.Tests.Cases.UnreachableBlock.InstanceMethodSubstitutions::IsEnabled()",
+			"brfalse.s il_9",
+			"ldarg.0",
+			"call System.Void Mono.Linker.Tests.Cases.UnreachableBlock.InstanceMethodSubstitutions::CallOnInstance_Reached()",
+			"ret",
+		})]
 		void TestCallOnInstance ()
 		{
 
@@ -57,8 +63,8 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 
 		[Kept]
 		[ExpectedInstructionSequence (new[] {
-			"call System.Boolean Mono.Linker.Tests.Cases.UnreachableBlock.InstanceMethodSubstitutions::get_PropFalse()",
-			"brfalse.s il_7",
+			"ldc.i4.0",
+			"brfalse.s il_3",
 			"ldc.i4.1",
 			"ret"
 		})]
@@ -99,15 +105,23 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 		}
 
 		[Kept]
+		[ExpectedInstructionSequence (new[] {
+			"nop",
+			"ldc.i4.1",
+			"pop",
+			"ldarg.0",
+			"call System.Void Mono.Linker.Tests.Cases.UnreachableBlock.InstanceMethodSubstitutions::InstanceMethodWithoutSubstitution_Reached1()",
+			"ret",
+			})]
 		void TestInstanceMethodWithoutSubstitution ()
 		{
-			if (InstanceMethodWithoutSubstitution ())
+			InstanceMethodSubstitutions ims = this;
+			if (ims.InstanceMethodWithoutSubstitution ())
 				InstanceMethodWithoutSubstitution_Reached1 ();
 			else
 				InstanceMethodWithoutSubstitution_Reached2 ();
 		}
 
-		[Kept]
 		bool InstanceMethodWithoutSubstitution ()
 		{
 			return true;
@@ -118,29 +132,32 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 		{
 		}
 
-		[Kept]
 		void InstanceMethodWithoutSubstitution_Reached2 ()
 		{
 		}
 
 		[Kept]
+		[ExpectedInstructionSequence (new[] {
+			"nop",
+			"ldc.i4.0",
+			"brfalse.s il_4",
+			"ldarg.0",
+			"call System.Void Mono.Linker.Tests.Cases.UnreachableBlock.InstanceMethodSubstitutions::Propagation_Reached2()",
+			"ret",
+		})]
 		void TestPropagation ()
 		{
-			// Propagation of return value across instance method is not supported
-			// (propagation of return value from a method which has call in the body is not supported)
 			if (PropagateIsEnabled ())
 				Propagation_Reached1 ();
 			else
 				Propagation_Reached2 ();
 		}
 
-		[Kept]
 		bool PropagateIsEnabled ()
 		{
 			return IsEnabled ();
 		}
 
-		[Kept]
 		void Propagation_Reached1 ()
 		{
 		}

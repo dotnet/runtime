@@ -1,4 +1,5 @@
 using System;
+using System.Runtime.CompilerServices;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
@@ -28,6 +29,7 @@ namespace Mono.Linker.Tests.Cases.Substitutions
 				"ldstr 'abcd'",
 				"ret",
 			})]
+		[MethodImplAttribute (MethodImplOptions.NoInlining)]
 		static string TestMethod_1 ()
 		{
 			throw new NotImplementedException ();
@@ -38,6 +40,7 @@ namespace Mono.Linker.Tests.Cases.Substitutions
 				"ldc.i4 0x4",
 				"ret",
 			})]
+		[MethodImplAttribute (MethodImplOptions.NoInlining)]
 		static byte TestMethod_2 ()
 		{
 			throw new NotImplementedException ();
@@ -48,6 +51,7 @@ namespace Mono.Linker.Tests.Cases.Substitutions
 				"ldc.i4 0x78",
 				"ret",
 			})]
+		[MethodImplAttribute (MethodImplOptions.NoInlining)]
 		static char TestMethod_3 ()
 		{
 			throw new NotImplementedException ();
@@ -58,6 +62,7 @@ namespace Mono.Linker.Tests.Cases.Substitutions
 				"ldc.i4 0x3",
 				"ret"
 			})]
+		[MethodImplAttribute (MethodImplOptions.NoInlining)]
 		static sbyte TestMethod_4 ()
 		{
 			throw new NotImplementedException ();
@@ -68,6 +73,7 @@ namespace Mono.Linker.Tests.Cases.Substitutions
 				"ldc.i4.1",
 				"ret",
 			})]
+		[MethodImplAttribute (MethodImplOptions.NoInlining)]
 		static bool TestMethod_5 ()
 		{
 			throw new NotImplementedException ();
@@ -78,6 +84,7 @@ namespace Mono.Linker.Tests.Cases.Substitutions
 				"ldc.i4.1",
 				"ret",
 			})]
+		[MethodImplAttribute (MethodImplOptions.NoInlining)]
 		static bool TestMethod_6 ()
 		{
 			throw new NotImplementedException ();
@@ -88,6 +95,7 @@ namespace Mono.Linker.Tests.Cases.Substitutions
 				"ldc.r8 2.5",
 				"ret",
 			})]
+		[MethodImplAttribute (MethodImplOptions.NoInlining)]
 		static double TestMethod_7 ()
 		{
 			throw new NotImplementedException ();
@@ -98,6 +106,7 @@ namespace Mono.Linker.Tests.Cases.Substitutions
 				"ldc.i4 0xfffffffd",
 				"ret"
 			})]
+		[MethodImplAttribute (MethodImplOptions.NoInlining)]
 		static int TestMethod_8 ()
 		{
 			throw new NotImplementedException ();
@@ -108,6 +117,7 @@ namespace Mono.Linker.Tests.Cases.Substitutions
 				"ldc.r4 6",
 				"ret",
 			})]
+		[MethodImplAttribute (MethodImplOptions.NoInlining)]
 		static float TestMethod_9 ()
 		{
 			throw new NotImplementedException ();
@@ -118,6 +128,7 @@ namespace Mono.Linker.Tests.Cases.Substitutions
 				"ldc.i8 0x1e240",
 				"ret",
 			})]
+		[MethodImplAttribute (MethodImplOptions.NoInlining)]
 		static ulong TestMethod_10 ()
 		{
 			throw new NotImplementedException ();
@@ -128,6 +139,7 @@ namespace Mono.Linker.Tests.Cases.Substitutions
 				"ldc.i8 0xfffffffffffffc18",
 				"ret",
 			})]
+		[MethodImplAttribute (MethodImplOptions.NoInlining)]
 		static long TestMethod_11 ()
 		{
 			throw new NotImplementedException ();
@@ -138,6 +150,7 @@ namespace Mono.Linker.Tests.Cases.Substitutions
 				"ldc.i4 0xffffffff",
 				"ret",
 			})]
+		[MethodImplAttribute (MethodImplOptions.NoInlining)]
 		static uint TestMethod_12 ()
 		{
 			throw new NotImplementedException ();

@@ -9,16 +9,18 @@ namespace Mono.Linker.Tests.Cases.FeatureSettings
 	[SetupLinkerArgument ("--enable-opt", "ipconstprop")]
 	public class FeatureSubstitutions
 	{
-		[Kept]
 		static bool IsOptionalFeatureEnabled {
-			[Kept]
-			[ExpectedInstructionSequence (new[] {
-				"ldc.i4.0",
-				"ret",
-			})]
 			get;
 		}
 
+		[ExpectedInstructionSequence (new[] {
+			"nop",
+			"call System.Void Mono.Linker.Tests.Cases.FeatureSettings.FeatureSubstitutions::TestOptionalFeature()",
+			"nop",
+			"ldc.i4.1",
+			"pop",
+			"ret",
+		})]
 		public static void Main ()
 		{
 			TestOptionalFeature ();
@@ -26,11 +28,16 @@ namespace Mono.Linker.Tests.Cases.FeatureSettings
 		}
 
 		[Kept]
-		[ExpectBodyModified]
 		[ExpectedInstructionSequence (new[] {
-			"call",
-			"brfalse",
-			"call",
+			"nop",
+			"ldc.i4.0",
+			"stloc.0",
+			"ldloc.0",
+			"brfalse.s il_6",
+			"nop",
+			"call System.Void Mono.Linker.Tests.Cases.FeatureSettings.FeatureSubstitutions::UseFallback()",
+			"nop",
+			"nop",
 			"ret",
 		})]
 		static void TestOptionalFeature ()
@@ -51,13 +58,7 @@ namespace Mono.Linker.Tests.Cases.FeatureSettings
 		{
 		}
 
-		[Kept]
 		static bool IsDefaultFeatureEnabled {
-			[Kept]
-			[ExpectedInstructionSequence (new[] {
-				"ldc.i4.1",
-				"ret",
-			})]
 			get => throw new NotImplementedException ();
 		}
 	}

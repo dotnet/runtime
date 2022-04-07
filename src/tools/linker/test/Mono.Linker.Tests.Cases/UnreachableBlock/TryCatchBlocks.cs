@@ -18,13 +18,14 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 		{
 			[Kept]
 			[ExpectedInstructionSequence (new[] {
-				"call System.Int32 Mono.Linker.Tests.Cases.UnreachableBlock.TryCatchBlocks/TryCatchInRemovedBranch::get_Prop()",
 				"ldc.i4.6",
-				"beq.s il_8",
+				"ldc.i4.6",
+				"beq.s il_4",
 				"ldc.i4.3",
 				"ret"
 			})]
 			[ExpectedLocalsSequence (new string[0])]
+			[System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
 			public static int Test ()
 			{
 				if (Prop != 6) {
@@ -39,9 +40,7 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 				return 3;
 			}
 
-			[Kept]
 			static int Prop {
-				[Kept]
 				get {
 					return 6;
 				}
@@ -56,16 +55,16 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 		{
 			[Kept]
 			[ExpectedInstructionSequence (new[] {
-				"call System.Int32 Mono.Linker.Tests.Cases.UnreachableBlock.TryCatchBlocks/TryCatchInKeptBranchBeforeRemovedBranch::get_Prop()",
+				"ldc.i4.0",
 				"pop",
 				".try",
 				"call System.Void Mono.Linker.Tests.Cases.UnreachableBlock.TryCatchBlocks/TryCatchInKeptBranchBeforeRemovedBranch::Reached()",
-				"leave.s il_15",
+				"leave.s il_11",
 				".endtry",
 				".catch",
 				"pop",
 				"call System.Void Mono.Linker.Tests.Cases.UnreachableBlock.TryCatchBlocks/TryCatchInKeptBranchBeforeRemovedBranch::Reached_2()",
-				"leave.s il_15",
+				"leave.s il_11",
 				".endcatch",
 				"ret",
 			})]
@@ -78,8 +77,7 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 				}
 			}
 
-			[Kept]
-			static int Prop { [Kept] get => 0; }
+			static int Prop { get => 0; }
 
 			[Kept]
 			static void Reached () { }

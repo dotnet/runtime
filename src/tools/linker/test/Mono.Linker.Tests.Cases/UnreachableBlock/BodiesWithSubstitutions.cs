@@ -66,10 +66,7 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 				NeverReached_1 ();
 		}
 
-		[Kept]
 		static int Property {
-			[Kept]
-			[ExpectBodyModified]
 			get {
 				return field;
 			}
@@ -99,9 +96,7 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 		{
 		}
 
-		[Kept]
 		static int PropagateProperty {
-			[Kept]
 			get {
 				return Property;
 			}
@@ -198,7 +193,6 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 			[Kept]
 			static int depth = 0;
 
-			[Kept]
 			static bool IsTrue ()
 			{
 				return true;
@@ -250,7 +244,6 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 			[Kept]
 			static int depth = 0;
 
-			[Kept]
 			static bool IsTrue ()
 			{
 				return true;
@@ -325,16 +318,16 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 
 		static class DeepConstant
 		{
-			[Kept] static bool Method1 () => Method2 ();
-			[Kept] static bool Method2 () => Method3 ();
-			[Kept] static bool Method3 () => Method4 ();
-			[Kept] static bool Method4 () => Method5 ();
-			[Kept] static bool Method5 () => Method6 ();
-			[Kept] static bool Method6 () => Method7 ();
-			[Kept] static bool Method7 () => Method8 ();
-			[Kept] static bool Method8 () => Method9 ();
-			[Kept] static bool Method9 () => Method10 ();
-			[Kept] static bool Method10 () => false;
+			static bool Method1 () => Method2 ();
+			static bool Method2 () => Method3 ();
+			static bool Method3 () => Method4 ();
+			static bool Method4 () => Method5 ();
+			static bool Method5 () => Method6 ();
+			static bool Method6 () => Method7 ();
+			static bool Method7 () => Method8 ();
+			static bool Method8 () => Method9 ();
+			static bool Method9 () => Method10 ();
+			static bool Method10 () => false;
 
 			static void NotReached () { }
 			[Kept] static void Reached () { }
@@ -382,10 +375,7 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 			}
 		}
 
-		[Kept]
 		static bool CollisionProperty {
-			[Kept]
-			[ExpectBodyModified]
 			get {
 				// Need to call something with constant value to force processing of this method
 				_ = Property;
@@ -422,7 +412,12 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 		}
 
 		[Kept]
-		[ExpectBodyModified]
+		[ExpectedInstructionSequence (new[] {
+			"call System.Boolean Mono.Linker.Tests.Cases.UnreachableBlock.BodiesWithSubstitutions::get_NoInliningProperty()",
+			"brfalse.s il_7",
+			"call System.Void Mono.Linker.Tests.Cases.UnreachableBlock.BodiesWithSubstitutions::NoInlining_Reached()",
+			"ret",
+		})]
 		static void TestSubstitutionOnNoInlining ()
 		{
 			if (NoInliningProperty)
@@ -435,17 +430,19 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 		static void NoInlining_Reached () { }
 		static void NoInlining_NeverReached () { }
 
-		[Kept]
 		static bool IntrinsicProperty {
-			[Kept]
-			[ExpectBodyModified]
 			[Intrinsic]
 			[KeptAttributeAttribute (typeof (IntrinsicAttribute))]
 			get { return true; }
 		}
 
 		[Kept]
-		[ExpectBodyModified]
+		[ExpectedInstructionSequence (new[] {
+			"ldc.i4.0",
+			"brfalse.s il_3",
+			"call System.Void Mono.Linker.Tests.Cases.UnreachableBlock.BodiesWithSubstitutions::Intrinsic_Reached()",
+			"ret",
+		})]
 		static void TestSubstitutionOnIntrinsic ()
 		{
 			if (IntrinsicProperty)
