@@ -550,7 +550,7 @@ namespace Microsoft.Interop
                 if (elementUnmanagedType != (UnmanagedType)SizeAndParamIndexInfo.UnspecifiedConstSize)
                 {
                     elementMarshallingInfo = elementType.SpecialType == SpecialType.System_String
-                        ? CreateStringMarshallingInfo(elementType, elementUnmanagedType, attrData)
+                        ? CreateStringMarshallingInfo(elementType, elementUnmanagedType)
                         : new MarshalAsInfo(elementUnmanagedType, _defaultInfo.CharEncoding);
                 }
                 else
@@ -564,7 +564,7 @@ namespace Microsoft.Interop
 
             if (type.SpecialType == SpecialType.System_String)
             {
-                return CreateStringMarshallingInfo(type, unmanagedType, attrData);
+                return CreateStringMarshallingInfo(type, unmanagedType);
             }
 
             return new MarshalAsInfo(unmanagedType, _defaultInfo.CharEncoding);
@@ -666,7 +666,11 @@ namespace Microsoft.Interop
                         break;
                 }
 
-                if (bufferElementType is null)
+                // Attribute data may be null when using runtime-provided marshallers by default for certain types (strings, for example)
+                // without the user explicitly putting an attribute on the type or parameter. The marshallers should have the correct shape
+                // already in thoses cases, so the diagnostic here is not so interesting.
+                Debug.Assert(bufferElementType is not null || attrData is not null);
+                if (bufferElementType is null && attrData is not null)
                 {
                     _diagnostics.ReportInvalidMarshallingAttributeInfo(attrData, nameof(SR.ValueInCallerAllocatedBufferRequiresSpanConstructorMessage), nativeType.ToDisplayString(), type.ToDisplayString());
                     return NoMarshallingInfo.Instance;
@@ -745,7 +749,7 @@ namespace Microsoft.Interop
                         if (_defaultInfo.StringMarshallingCustomType is not null)
                         {
                             AttributeData attrData = _contextSymbol is IMethodSymbol
-                                ? _contextSymbol.GetAttributes().First(a => a.AttributeClass.ToDisplayString() == TypeNames.LibraryImportAttribute)
+                                ? _contextSymbol.GetAttributes().FirstOrDefault(a => a.AttributeClass.ToDisplayString() == TypeNames.LibraryImportAttribute)
                                 : default;
                             marshallingInfo = CreateNativeMarshallingInfo(type, _defaultInfo.StringMarshallingCustomType, attrData, true, indirectionLevel, parsedCountInfo, useSiteAttributes, inspectedElements, ref maxIndirectionDepthUsed);
                             return true;
@@ -753,10 +757,7 @@ namespace Microsoft.Interop
                     }
                     else if (type.SpecialType == SpecialType.System_String)
                     {
-                        AttributeData attrData = _contextSymbol is IMethodSymbol
-                            ? _contextSymbol.GetAttributes().First(a => a.AttributeClass.ToDisplayString() == TypeNames.LibraryImportAttribute)
-                            : default;
-                        marshallingInfo = CreateStringMarshallingInfo(type, _defaultInfo.CharEncoding, default);
+                        marshallingInfo = CreateStringMarshallingInfo(type, _defaultInfo.CharEncoding);
                         return true;
                     }
 
@@ -828,8 +829,7 @@ namespace Microsoft.Interop
 
         private MarshallingInfo CreateStringMarshallingInfo(
             ITypeSymbol type,
-            UnmanagedType unmanagedType,
-            AttributeData attrData)
+            UnmanagedType unmanagedType)
         {
             CharEncoding charEncoding = unmanagedType switch
             {
@@ -841,13 +841,12 @@ namespace Microsoft.Interop
             if (charEncoding == CharEncoding.Undefined)
                 return new MarshalAsInfo(unmanagedType, _defaultInfo.CharEncoding);
 
-            return CreateStringMarshallingInfo(type, charEncoding, attrData);
+            return CreateStringMarshallingInfo(type, charEncoding);
         }
 
         private MarshallingInfo CreateStringMarshallingInfo(
             ITypeSymbol type,
-            CharEncoding charEncoding,
-            AttributeData attrData)
+            CharEncoding charEncoding)
         {
             string? marshallerName = charEncoding switch
             {
@@ -866,7 +865,7 @@ namespace Microsoft.Interop
             return CreateNativeMarshallingInfoForValue(
                 type,
                 stringMarshaller,
-                attrData,
+                default,
                 customTypeMarshallerData.Value,
                 allowPinningManagedType: charEncoding == CharEncoding.Utf16,
                 useDefaultMarshalling: false);

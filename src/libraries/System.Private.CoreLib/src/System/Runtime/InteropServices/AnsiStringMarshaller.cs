@@ -13,15 +13,15 @@ namespace System.Runtime.InteropServices
         Features = CustomTypeMarshallerFeatures.UnmanagedResources | CustomTypeMarshallerFeatures.TwoStageMarshalling | CustomTypeMarshallerFeatures.CallerAllocatedBuffer)]
     public unsafe ref struct AnsiStringMarshaller
     {
-        private byte* allocated;
-        private Span<byte> span;
+        private byte* _allocated;
+        private readonly Span<byte> _span;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="AnsiStringMarshaller"/>.
         /// </summary>
         /// <param name="str">The string to marshal.</param>
         public AnsiStringMarshaller(string str)
-            : this(str, default(Span<byte>))
+            : this(str, default)
         { }
 
         /// <summary>
@@ -30,26 +30,30 @@ namespace System.Runtime.InteropServices
         /// <param name="str">The string to marshal.</param>
         /// <param name="buffer">Buffer that may be used for marshalling.</param>
         /// <remarks>
+        /// The <paramref name="buffer"/> must not be movable - that is, it should not be
+        /// on the managed heap or it should be pinned.
         /// <seealso cref="CustomTypeMarshallerFeatures.CallerAllocatedBuffer"/>
         /// </remarks>
         public AnsiStringMarshaller(string str, Span<byte> buffer)
         {
-            allocated = null;
-            span = default;
+            _allocated = null;
             if (str is null)
-                return;
-
-            // +1 for null terminator
-            // + 1 for the null character from the user.  + 1 for the null character we put in.
-            int maxLength = (str.Length + 1) * Marshal.SystemMaxDBCSCharSize + 1;
-            if (buffer.Length >= maxLength)
             {
-                int length = Marshal.StringToAnsiString(str, (byte*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(buffer)), buffer.Length);
-                span = buffer.Slice(0, length);
+                _span = default;
+                return;
+            }
+
+            // + 1 for null terminator
+            int maxByteCount = (str.Length + 1) * Marshal.SystemMaxDBCSCharSize + 1;
+            if (buffer.Length >= maxByteCount)
+            {
+                Marshal.StringToAnsiString(str, (byte*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(buffer)), buffer.Length);
+                _span = buffer;
             }
             else
             {
-                allocated = (byte*)Marshal.StringToCoTaskMemAnsi(str);
+                _allocated = (byte*)Marshal.StringToCoTaskMemAnsi(str);
+                _span = default;
             }
         }
 
@@ -59,7 +63,7 @@ namespace System.Runtime.InteropServices
         /// <remarks>
         /// <seealso cref="CustomTypeMarshallerFeatures.TwoStageMarshalling"/>
         /// </remarks>
-        public byte* ToNativeValue() => allocated != null ? allocated : (byte*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(span));
+        public byte* ToNativeValue() => _allocated != null ? _allocated : (byte*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(_span));
 
         /// <summary>
         /// Sets the native value representing the string.
@@ -68,7 +72,7 @@ namespace System.Runtime.InteropServices
         /// <remarks>
         /// <seealso cref="CustomTypeMarshallerFeatures.TwoStageMarshalling"/>
         /// </remarks>
-        public void FromNativeValue(byte* value) => allocated = value;
+        public void FromNativeValue(byte* value) => _allocated = value;
 
         /// <summary>
         /// Returns the managed string.
@@ -76,7 +80,7 @@ namespace System.Runtime.InteropServices
         /// <remarks>
         /// <seealso cref="CustomTypeMarshallerDirection.Out"/>
         /// </remarks>
-        public string? ToManaged() => allocated == null ? null : new string((sbyte*)allocated);
+        public string? ToManaged() => _allocated == null ? null : new string((sbyte*)_allocated);
 
         /// <summary>
         /// Frees native resources.
@@ -84,6 +88,10 @@ namespace System.Runtime.InteropServices
         /// <remarks>
         /// <seealso cref="CustomTypeMarshallerFeatures.UnmanagedResources"/>
         /// </remarks>
-        public void FreeNative() => Marshal.FreeCoTaskMem((IntPtr)allocated);
+        public void FreeNative()
+        {
+            if (_allocated != null)
+                Marshal.FreeCoTaskMem((IntPtr)_allocated);
+        }
     }
 }

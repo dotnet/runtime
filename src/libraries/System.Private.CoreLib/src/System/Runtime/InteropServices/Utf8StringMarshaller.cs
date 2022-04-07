@@ -14,23 +14,15 @@ namespace System.Runtime.InteropServices
         Features = CustomTypeMarshallerFeatures.UnmanagedResources | CustomTypeMarshallerFeatures.TwoStageMarshalling | CustomTypeMarshallerFeatures.CallerAllocatedBuffer)]
     public unsafe ref struct Utf8StringMarshaller
     {
-        private byte* allocated;
-        private Span<byte> span;
-
-        // Conversion from a 2-byte 'char' in UTF-16 to bytes in UTF-8 has a maximum of 3 bytes per 'char'
-        // Two bytes ('char') in UTF-16 can be either:
-        //   - Code point in the Basic Multilingual Plane: all 16 bits are that of the code point
-        //   - Part of a pair for a code point in the Supplementary Planes: 10 bits are that of the code point
-        // In UTF-8, 3 bytes are need to represent the code point in first and 4 bytes in the second. Thus, the
-        // maximum number of bytes per 'char' is 3.
-        private const int MaxByteCountPerChar = 3;
+        private byte* _allocated;
+        private readonly Span<byte> _span;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Utf8StringMarshaller"/>.
         /// </summary>
         /// <param name="str">The string to marshal.</param>
         public Utf8StringMarshaller(string str)
-            : this(str, default(Span<byte>))
+            : this(str, default)
         { }
 
         /// <summary>
@@ -39,27 +31,37 @@ namespace System.Runtime.InteropServices
         /// <param name="str">The string to marshal.</param>
         /// <param name="buffer">Buffer that may be used for marshalling.</param>
         /// <remarks>
+        /// The <paramref name="buffer"/> must not be movable - that is, it should not be
+        /// on the managed heap or it should be pinned.
         /// <seealso cref="CustomTypeMarshallerFeatures.CallerAllocatedBuffer"/>
         /// </remarks>
         public Utf8StringMarshaller(string str, Span<byte> buffer)
         {
-            allocated = null;
-            span = default;
+            _allocated = null;
             if (str is null)
+            {
+                _span = default;
                 return;
+            }
 
-            // + 1 for number of characters in case left over high surrogate is ?
-            // * <MaxByteCountPerChar> (3 for UTF-8)
-            // +1 for null terminator
-            if (buffer.Length >= (str.Length + 1) * MaxByteCountPerChar + 1)
+            // + 1 for null terminator
+            int maxByteCount =  Encoding.UTF8.GetMaxByteCount(str.Length) + 1;
+            if (buffer.Length >= maxByteCount)
             {
                 int byteCount = Encoding.UTF8.GetBytes(str, buffer);
                 buffer[byteCount] = 0; // null-terminate
-                span = buffer;
+                _span = buffer;
             }
             else
             {
-                allocated = (byte*)Marshal.StringToCoTaskMemUTF8(str);
+                _allocated = (byte*)Marshal.AllocCoTaskMem(maxByteCount);
+                int byteCount;
+                fixed (char* ptr = str)
+                {
+                    byteCount = Encoding.UTF8.GetBytes(ptr, str.Length, _allocated, maxByteCount);
+                }
+                _allocated[byteCount] = 0; // null-terminate
+                _span = default;
             }
         }
 
@@ -69,7 +71,7 @@ namespace System.Runtime.InteropServices
         /// <remarks>
         /// <seealso cref="CustomTypeMarshallerFeatures.TwoStageMarshalling"/>
         /// </remarks>
-        public byte* ToNativeValue() => allocated != null ? allocated : (byte*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(span));
+        public byte* ToNativeValue() => _allocated != null ? _allocated : (byte*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(_span));
 
         /// <summary>
         /// Sets the native value representing the string.
@@ -78,7 +80,7 @@ namespace System.Runtime.InteropServices
         /// <remarks>
         /// <seealso cref="CustomTypeMarshallerFeatures.TwoStageMarshalling"/>
         /// </remarks>
-        public void FromNativeValue(byte* value) => allocated = value;
+        public void FromNativeValue(byte* value) => _allocated = value;
 
         /// <summary>
         /// Returns the managed string.
@@ -86,7 +88,7 @@ namespace System.Runtime.InteropServices
         /// <remarks>
         /// <seealso cref="CustomTypeMarshallerDirection.Out"/>
         /// </remarks>
-        public string? ToManaged() => allocated == null ? null : Marshal.PtrToStringUTF8((IntPtr)allocated);
+        public string? ToManaged() => _allocated == null ? null : Marshal.PtrToStringUTF8((IntPtr)_allocated);
 
         /// <summary>
         /// Frees native resources.
@@ -96,8 +98,8 @@ namespace System.Runtime.InteropServices
         /// </remarks>
         public void FreeNative()
         {
-            if (allocated != null)
-                Marshal.FreeCoTaskMem((IntPtr)allocated);
+            if (_allocated != null)
+                Marshal.FreeCoTaskMem((IntPtr)_allocated);
         }
     }
 }

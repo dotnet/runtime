@@ -13,16 +13,16 @@ namespace System.Runtime.InteropServices
         Features = CustomTypeMarshallerFeatures.UnmanagedResources | CustomTypeMarshallerFeatures.TwoStageMarshalling | CustomTypeMarshallerFeatures.CallerAllocatedBuffer)]
     public unsafe ref struct Utf16StringMarshaller
     {
-        private ushort* allocated;
-        private Span<ushort> span;
-        private bool isNullString;
+        private ushort* _allocated;
+        private readonly Span<ushort> _span;
+        private bool _isNullString;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Utf16StringMarshaller"/>.
         /// </summary>
         /// <param name="str">The string to marshal.</param>
         public Utf16StringMarshaller(string str)
-            : this(str, default(Span<ushort>))
+            : this(str, default)
         {
         }
 
@@ -32,29 +32,31 @@ namespace System.Runtime.InteropServices
         /// <param name="str">The string to marshal.</param>
         /// <param name="buffer">Buffer that may be used for marshalling.</param>
         /// <remarks>
+        /// The <paramref name="buffer"/> must not be movable - that is, it should not be
+        /// on the managed heap or it should be pinned.
         /// <seealso cref="CustomTypeMarshallerFeatures.CallerAllocatedBuffer"/>
         /// </remarks>
         public Utf16StringMarshaller(string str, Span<ushort> buffer)
         {
-            isNullString = false;
-            span = default;
+            _isNullString = false;
+            _allocated = null;
             if (str is null)
             {
-                allocated = null;
-                isNullString = true;
+                _isNullString = true;
+                _span = default;
             }
             else if ((str.Length + 1) < buffer.Length)
             {
-                span = buffer;
-                str.AsSpan().CopyTo(MemoryMarshal.Cast<ushort, char>(buffer));
+                _span = buffer;
+                str.CopyTo(MemoryMarshal.Cast<ushort, char>(buffer));
                 // Supplied memory is in an undefined state so ensure
                 // there is a trailing null in the buffer.
-                span[str.Length] = '\0';
-                allocated = null;
+                _span[str.Length] = '\0';
             }
             else
             {
-                allocated = (ushort*)Marshal.StringToCoTaskMemUni(str);
+                _allocated = (ushort*)Marshal.StringToCoTaskMemUni(str);
+                _span = default;
             }
         }
 
@@ -63,10 +65,10 @@ namespace System.Runtime.InteropServices
         /// </summary>
         public ref ushort GetPinnableReference()
         {
-            if (allocated != null)
-                return ref Unsafe.AsRef<ushort>(allocated);
+            if (_allocated != null)
+                return ref Unsafe.AsRef<ushort>(_allocated);
 
-            return ref span.GetPinnableReference();
+            return ref _span.GetPinnableReference();
         }
 
         /// <summary>
@@ -75,7 +77,7 @@ namespace System.Runtime.InteropServices
         /// <remarks>
         /// <seealso cref="CustomTypeMarshallerFeatures.TwoStageMarshalling"/>
         /// </remarks>
-        public ushort* ToNativeValue() => allocated != null ? allocated : (ushort*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(span));
+        public ushort* ToNativeValue() => _allocated != null ? _allocated : (ushort*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(_span));
 
         /// <summary>
         /// Sets the native value representing the string.
@@ -86,8 +88,8 @@ namespace System.Runtime.InteropServices
         /// </remarks>
         public void FromNativeValue(ushort* value)
         {
-            allocated = value;
-            isNullString = value == null;
+            _allocated = value;
+            _isNullString = value == null;
         }
 
         /// <summary>
@@ -98,13 +100,13 @@ namespace System.Runtime.InteropServices
         /// </remarks>
         public string? ToManaged()
         {
-            if (isNullString)
+            if (_isNullString)
                 return null;
 
-            if (allocated != null)
-                return new string((char*)allocated);
+            if (_allocated != null)
+                return new string((char*)_allocated);
 
-            return MemoryMarshal.Cast<ushort, char>(span).ToString();
+            return MemoryMarshal.Cast<ushort, char>(_span).ToString();
         }
 
         /// <summary>
@@ -115,8 +117,8 @@ namespace System.Runtime.InteropServices
         /// </remarks>
         public void FreeNative()
         {
-            if (allocated != null)
-                Marshal.FreeCoTaskMem((IntPtr)allocated);
+            if (_allocated != null)
+                Marshal.FreeCoTaskMem((IntPtr)_allocated);
         }
     }
 }
