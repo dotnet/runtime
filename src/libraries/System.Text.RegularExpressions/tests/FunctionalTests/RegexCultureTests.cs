@@ -106,6 +106,7 @@ namespace System.Text.RegularExpressions.Tests
         /// </summary>
         [Theory]
         [MemberData(nameof(TurkishI_Is_Differently_LowerUpperCased_In_Turkish_Culture_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/37069", TestPlatforms.Android)]
         public void TurkishI_Is_Differently_LowerUpperCased_In_Turkish_Culture(int length, RegexOptions options)
         {
             var turkish = new CultureInfo("tr-TR");
@@ -160,6 +161,7 @@ namespace System.Text.RegularExpressions.Tests
 
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Doesn't support NonBacktracking")]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60568", TestPlatforms.Android)]
         public async Task TurkishI_Is_Differently_LowerUpperCased_In_Turkish_Culture_NonBacktracking()
         {
             var turkish = new CultureInfo("tr-TR");
@@ -320,6 +322,8 @@ namespace System.Text.RegularExpressions.Tests
         }
 
         [Theory]
+        // .NET Framework doesn't use the Regex Casing table for case equivalences.
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         [MemberData(nameof(Match_In_Different_Cultures_CriticalCases_TestData))]
         public async Task Match_In_Different_Cultures_CriticalCases(string pattern, RegexOptions options, RegexEngine engine, CultureInfo culture, string input, string match_expected)
         {
@@ -329,6 +333,8 @@ namespace System.Text.RegularExpressions.Tests
         }
 
         [Fact]
+        // .NET Framework doesn't use the Regex Casing table for case equivalences.
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public void Match_InvariantCulture_None_vs_Compiled()
         {
             string pattern = "(?i:iI+)";
