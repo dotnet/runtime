@@ -232,7 +232,8 @@ PATCH_LABEL JIT_WriteBarrier_Region64_Patch_Label_RegionShrDest
 
         // Check whether the region we're storing into is gen 0 - nothing to do in this case
         cmp     byte ptr [rdi + rax], 0
-        jne     NotGen0_Region64
+        .byte 0x75, 0x04
+        //jne     NotGen0_Region64
         REPRET
 
         NOP_2_BYTE // padding for alignment of constant
@@ -241,20 +242,23 @@ PATCH_LABEL JIT_WriteBarrier_Region64_Patch_Label_RegionShrDest
 PATCH_LABEL JIT_WriteBarrier_Region64_Patch_Label_Lower
         movabs  r9, 0xF0F0F0F0F0F0F0F0
         cmp     rsi, r9
-        jae     NotLow_Region64
+        .byte 0x73, 0x01
+        // jae     NotLow_Region64
         ret
     NotLow_Region64:
 PATCH_LABEL JIT_WriteBarrier_Region64_Patch_Label_Upper
         movabs  r9, 0xF0F0F0F0F0F0F0F0
         cmp     rsi, r9
-        jb      NotHigh_Region64
+        .byte 0x72, 0x02
+        // jb      NotHigh_Region64
         REPRET
     NotHigh_Region64:
 PATCH_LABEL JIT_WriteBarrier_Region64_Patch_Label_RegionShrSrc
         shr     rsi, 0x16 // compute region index
         mov     dl, [rsi + rax]
         cmp     dl, [rdi + rax]
-        jb      IsOldToYoung_Region64
+        .byte 0x72, 0x03
+        // jb      IsOldToYoung_Region64
         REPRET
         nop
 
@@ -269,7 +273,8 @@ PATCH_LABEL JIT_WriteBarrier_Region64_Patch_Label_CardTable
         mov     dl, 1
         shl     dl, cl
         test    byte ptr [r8 + rax], dl
-        je      UpdateCardTable_Region64
+        .byte 0x74, 0x02
+        // je      UpdateCardTable_Region64
         REPRET
 
     UpdateCardTable_Region64:
@@ -279,7 +284,8 @@ PATCH_LABEL JIT_WriteBarrier_Region64_Patch_Label_CardBundleTable
         movabs  rax, 0xF0F0F0F0F0F0F0F0
         shr     r8, 0x0A
         cmp     byte ptr [r8 + rax], 0xFF
-        jne     UpdateCardBundleTable_Region64
+        .byte 0x75, 0x02
+        // jne     UpdateCardBundleTable_Region64
         REPRET
 
     UpdateCardBundleTable_Region64:
@@ -550,7 +556,8 @@ PATCH_LABEL JIT_WriteBarrier_WriteWatch_Region64_Patch_Label_WriteWatchTable
 PATCH_LABEL JIT_WriteBarrier_WriteWatch_Region64_Patch_Label_RegionShrDest
         shr     rdi, 0x16 // compute region index
         cmp     byte ptr [rax], 0x0
-        jne     CheckGen0_WriteWatch_Region64
+        .byte 0x75, 0x03
+        // jne     CheckGen0_WriteWatch_Region64
         mov     byte ptr [rax], 0xFF
     CheckGen0_WriteWatch_Region64:
 PATCH_LABEL JIT_WriteBarrier_WriteWatch_Region64_Patch_Label_RegionToGeneration
@@ -558,7 +565,8 @@ PATCH_LABEL JIT_WriteBarrier_WriteWatch_Region64_Patch_Label_RegionToGeneration
 
         // Check whether the region we're storing into is gen 0 - nothing to do in this case
         cmp     byte ptr [rdi + rax], 0
-        jne     NotGen0_WriteWatch_Region64
+        .byte 0x75, 0x08
+        // jne     NotGen0_WriteWatch_Region64
         REPRET
 
         NOP_2_BYTE // padding for alignment of constant
@@ -569,20 +577,23 @@ PATCH_LABEL JIT_WriteBarrier_WriteWatch_Region64_Patch_Label_RegionToGeneration
 PATCH_LABEL JIT_WriteBarrier_WriteWatch_Region64_Patch_Label_Lower
         movabs  r9, 0xF0F0F0F0F0F0F0F0
         cmp     rsi, r9
-        jae     NotLow_WriteWatch_Region64
+        .byte 0x73, 0x01
+        // jae     NotLow_WriteWatch_Region64
         ret
     NotLow_WriteWatch_Region64:
 PATCH_LABEL JIT_WriteBarrier_WriteWatch_Region64_Patch_Label_Upper
         mov     r9, 0xF0F0F0F0F0F0F0F0
         cmp     rsi, r9
-        jb      NotHigh_WriteWatch_Region64
+        .byte 0x72, 0x02
+        // jb      NotHigh_WriteWatch_Region64
         REPRET
     NotHigh_WriteWatch_Region64:
 PATCH_LABEL JIT_WriteBarrier_WriteWatch_Region64_Patch_Label_RegionShrSrc
         shr     rsi, 0x16 // compute region index
         mov     dl, [rsi + rax]
         cmp     dl, [rdi + rax]
-        jb      IsOldToYoung_WriteWatch_Region64
+        .byte 0x72, 0x03
+        // jb      IsOldToYoung_WriteWatch_Region64
         REPRET
         nop
 
@@ -597,7 +608,8 @@ PATCH_LABEL JIT_WriteBarrier_WriteWatch_Region64_Patch_Label_CardTable
         mov     dl, 1
         shl     dl, cl
         test    byte ptr [r8 + rax], dl
-        je      UpdateCardTable_WriteWatch_Region64
+        .byte 0x74, 0x02
+        // je      UpdateCardTable_WriteWatch_Region64
         REPRET
 
     UpdateCardTable_WriteWatch_Region64:
@@ -607,7 +619,8 @@ PATCH_LABEL JIT_WriteBarrier_WriteWatch_Region64_Patch_Label_CardBundleTable
         mov     rax, 0xF0F0F0F0F0F0F0F0
         shr     r8, 0x0A
         cmp     byte ptr [r8 + rax], 0xFF
-        jne     UpdateCardBundleTable_WriteWatch_Region64
+        .byte 0x75, 0x02
+        // jne     UpdateCardBundleTable_WriteWatch_Region64
         REPRET
 
     UpdateCardBundleTable_WriteWatch_Region64:
