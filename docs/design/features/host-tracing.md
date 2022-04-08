@@ -20,12 +20,12 @@ All these components (with the exception to custom host) include the same code f
 
 Tracing is enabled by setting `COREHOST_TRACE=1` env. variable.
 
-In .NET Core 2.1 and below the host tracing is only written to the `stderr` output of the process.
+In .NET Core 2.1 and below, the host tracing is only written to the `stderr` output of the process.
 
-Starting with .NET Core 3 tracing can be redirected and its verbosity controlled:
+Starting with .NET Core 3, tracing can be redirected and its verbosity controlled:
 
 * Redirect the trace to a file (always appends) - enable tracing via `COREHOST_TRACE=1` and also set `COREHOST_TRACEFILE=<path>` in the environment for the process. The `<path>` is resolved against current directory and the file is opened for text append write.
-* Control trace verbosity via `COREHOST_TRACE_VERBOSITY` env. variable.  If unset tracing is with the maximum level of detail.  When set in the range 1-4 the tracing verbosity increases with an increase in the value of `COREHOST_TRACE_VERBOSITY`.
+* Control trace verbosity via `COREHOST_TRACE_VERBOSITY` env. variable.  If not set, tracing contains the maximum level of detail.  When set in the range 1-4, the tracing verbosity increases with an increase in the value of `COREHOST_TRACE_VERBOSITY`.
   * `COREHOST_TRACE_VERBOSITY=1` shows errors
   * `COREHOST_TRACE_VERBOSITY=2` shows errors and warnings
   * `COREHOST_TRACE_VERBOSITY=3` shows errors, warnings, and info
@@ -36,7 +36,7 @@ Starting with .NET Core 3 tracing can be redirected and its verbosity controlled
 The host components implement two routes for outputting errors:
 
 * Errors go to `stderr`. This is the default route and is used by both the `dotnet` and `apphost` as well.
-* Starting with .NET Core 3 custom host can redirect errors to a registered error writer. Custom host does this by implementing `hostfxr_error_writer_fn` callback and passing it to:
+* Starting with .NET Core 3, a custom host can redirect errors to a registered error writer by implementing `hostfxr_error_writer_fn` callback and passing it to:
 
 ``` C++
 void hostfxr_set_error_writer(hostfxr_error_writer_fn error_writer)
@@ -51,13 +51,13 @@ The functions behave exactly the same in both components. The `error_writer` par
 
 Custom host can and should set the error writer as the first thing it does with the respective host component to ensure that all errors are routed to it.
 
-The `hostfxr_set_error_writer` sets the error writer only for the current thread (the setting is thread local). The custom host must set it separately (and potentially with different callbacks) on each thread it wants to use `hostfxr` functions (and have them redirect errors).
+`hostfxr_set_error_writer` sets the error writer only for the current thread (the setting is thread local). The custom host must set it separately (and potentially with different callbacks) on each thread where wants to use `hostfxr` functions and with error redirection.
 
 Only one error writer can be registered on a given thread at any given time.
 
 All errors are also written to a trace output if one is enabled (via `COREHOST_TRACE=1`) regardless of which error routing is used.
 
-The `hostfxr` component propagates the error writer to the `hostpolicy` component before it calls into it. So custom host only needs to register its error writer with the `hostfxr` component. The propagation of the error writer is only done for the duration necessary after which it will be unregistered again.
+The `hostfxr` component propagates the error writer to the `hostpolicy` component before it calls into it, so a custom host only needs to register its error writer with the `hostfxr` component. The propagation of the error writer is only done for the duration necessary, after which it will be unregistered again.
 In case of a .NET Core 3+ `hostfxr` which would call into an old (.NET Core 2.1) `hostpolicy` component, the `hostfxr` will not perform the propagation in any way since the older `hostpolicy` doesn't support this mechanism.
 
 The error writer callback is declared as:
@@ -66,7 +66,7 @@ The error writer callback is declared as:
 typedef void (__cdecl *error_writer_fn)(const pal::char_t* message);
 ```
 
-The `message` parameter is a standard `NUL` terminated string. The memory for it is owned by the caller (so some of the hosting components, it may not be just `hostfxr`) and it's only valid for the duration of the call to the error writer callback.
+The `message` parameter is a standard `NULL` terminated string. The memory for it is owned by the caller (so some of the hosting components, it may not be just `hostfxr`) and it's only valid for the duration of the call to the error writer callback.
 
 ## Implementation notes
 
