@@ -710,10 +710,11 @@ namespace System.Threading.RateLimiting.Test
             Assert.True(lease.IsAcquired);
         }
 
+        private static readonly double TickFrequency = (double)TimeSpan.TicksPerSecond / Stopwatch.Frequency;
+
         [Fact]
         public async Task ReplenishWorksWithTicksOverInt32Max()
         {
-            // Use a large value like TimeSpan.FromMinutes(1) to avoid any issues with differing Stopwatch frequencies across OSes
             using var limiter = new TokenBucketRateLimiter(new TokenBucketRateLimiterOptions(10, QueueProcessingOrder.OldestFirst, 2,
                 TimeSpan.FromMinutes(1), 1, autoReplenishment: false));
 
@@ -735,11 +736,11 @@ namespace System.Threading.RateLimiting.Test
             Assert.False(wait.IsCompleted);
 
             // Tick 1 millisecond too soon and verify that the queued item wasn't completed
-            replenishInternalMethod.Invoke(limiter, new object[] { tick + 1L * TimeSpan.TicksPerMinute - 1 * TimeSpan.TicksPerMillisecond });
+            replenishInternalMethod.Invoke(limiter, new object[] { tick + 1L * (long)(TimeSpan.TicksPerMinute / TickFrequency) - 1 * (long)(TimeSpan.TicksPerMillisecond / TickFrequency) });
             Assert.False(wait.IsCompleted);
 
             // ticks would wrap if using uint
-            replenishInternalMethod.Invoke(limiter, new object[] { tick + 1L * TimeSpan.TicksPerMinute });
+            replenishInternalMethod.Invoke(limiter, new object[] { tick + 1L * (long)(TimeSpan.TicksPerMinute / TickFrequency) });
             lease = await wait;
             Assert.True(lease.IsAcquired);
         }
