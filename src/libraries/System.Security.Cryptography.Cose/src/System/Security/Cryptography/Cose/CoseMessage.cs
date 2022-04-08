@@ -4,8 +4,10 @@
 using System.Buffers;
 using System.Diagnostics;
 using System.Formats.Cbor;
+using System.IO;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
+using System.Threading.Tasks;
 
 namespace System.Security.Cryptography.Cose
 {
@@ -181,19 +183,62 @@ namespace System.Security.Cryptography.Cose
             return reader.ReadByteString();
         }
 
-        internal static int CreateToBeSigned(string context, ReadOnlySpan<byte> encodedProtectedHeader, ReadOnlySpan<byte> content, Span<byte> destination)
+        internal static int CreateHashedToBeSigned(Span<byte> destination, string context, ReadOnlySpan<byte> encodedProtectedHeader, ReadOnlySpan<byte> content, HashAlgorithmName hashAlgorithm)
+        {
+            int bytesWritten = CreateToBeSigned(destination, context, encodedProtectedHeader, ReadOnlySpan<byte>.Empty);
+            bytesWritten -= 1; // Trim the empty bstr content, it is just a placeholder.
+
+            using (var hasher = IncrementalHash.CreateHash(hashAlgorithm))
+            {
+                hasher.AppendData(destination.Slice(0, bytesWritten));
+
+                // content length
+                CoseHelpers.WriteByteStringLength(hasher, (ulong)content.Length);
+
+                //content
+                hasher.AppendData(content);
+
+                return hasher.GetHashAndReset(destination);
+            }
+        }
+
+        internal static async Task<int> CreateHashedToBeSignedAsync(byte[] destination, string context, ReadOnlyMemory<byte> encodedProtectedHeader, Stream content, HashAlgorithmName hashAlgorithm)
+        {
+            int bytesWritten = CreateToBeSigned(destination, context, encodedProtectedHeader.Span, ReadOnlySpan<byte>.Empty);
+            bytesWritten -= 1; // Trim the empty bstr content, it is just a placeholder.
+
+            using (IncrementalHash hasher = IncrementalHash.CreateHash(hashAlgorithm))
+            {
+                hasher.AppendData(destination, 0, bytesWritten);
+
+                //content length
+                CoseHelpers.WriteByteStringLength(hasher, (ulong)(content.Length - content.Position));
+
+                // content
+                byte[] buffer = new byte[4096];
+                int bytesRead;
+#pragma warning disable CA1835 // Prefer the 'Memory'-based overloads for 'ReadAsync' and 'WriteAsync'
+                while ((bytesRead = await content.ReadAsync(buffer, 0, buffer.Length).ConfigureAwait(false)) > 0)
+#pragma warning restore CA1835
+                {
+                    hasher.AppendData(buffer, 0, bytesRead);
+                }
+
+                return hasher.GetHashAndReset(destination);
+            }
+        }
+
+        internal static int CreateToBeSigned(Span<byte> destination, string context, ReadOnlySpan<byte> encodedProtectedHeader, ReadOnlySpan<byte> content)
         {
             var writer = new CborWriter();
             writer.WriteStartArray(4);
             writer.WriteTextString(context); // context
             writer.WriteByteString(encodedProtectedHeader); // body_protected
             writer.WriteByteString(Span<byte>.Empty); // external_aad
-            writer.WriteByteString(content); //payload or content
+            writer.WriteByteString(content); // content
             writer.WriteEndArray();
-            int bytesWritten = writer.Encode(destination);
 
-            Debug.Assert(bytesWritten == writer.BytesWritten && bytesWritten == ComputeToBeSignedEncodedSize(context, encodedProtectedHeader, content));
-            return bytesWritten;
+            return writer.Encode(destination);
         }
 
         internal static int ComputeToBeSignedEncodedSize(string context, ReadOnlySpan<byte> encodedProtectedHeader, ReadOnlySpan<byte> content)
@@ -224,6 +269,16 @@ namespace System.Security.Cryptography.Cose
         {
             ECDsa,
             RSA,
+        }
+
+        internal static KeyType GetKeyType(AsymmetricAlgorithm key)
+        {
+            return key switch
+            {
+                ECDsa => KeyType.ECDsa,
+                RSA => KeyType.RSA,
+                _ => throw new CryptographicException(SR.Format(SR.Sign1UnsupportedKey, key.GetType()))
+            };
         }
     }
 }

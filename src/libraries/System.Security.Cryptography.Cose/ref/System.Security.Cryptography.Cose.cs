@@ -70,6 +70,8 @@ namespace System.Security.Cryptography.Cose
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public static byte[] Sign(System.ReadOnlySpan<byte> content, System.Security.Cryptography.AsymmetricAlgorithm key, System.Security.Cryptography.HashAlgorithmName hashAlgorithm, System.Security.Cryptography.Cose.CoseHeaderMap? protectedHeaders = null, System.Security.Cryptography.Cose.CoseHeaderMap? unprotectedHeaders = null, bool isDetached = false) { throw null; }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        public static System.Threading.Tasks.Task<byte[]> SignAsync(System.IO.Stream detachedContent, System.Security.Cryptography.AsymmetricAlgorithm key, System.Security.Cryptography.HashAlgorithmName hashAlgorithm, System.Security.Cryptography.Cose.CoseHeaderMap? protectedHeaders = null, System.Security.Cryptography.Cose.CoseHeaderMap? unprotectedHeaders = null) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public static bool TrySign(System.ReadOnlySpan<byte> content, System.Span<byte> destination, System.Security.Cryptography.AsymmetricAlgorithm key, System.Security.Cryptography.HashAlgorithmName hashAlgorithm, out int bytesWritten, System.Security.Cryptography.Cose.CoseHeaderMap? protectedHeaders = null, System.Security.Cryptography.Cose.CoseHeaderMap? unprotectedHeaders = null, bool isDetached = false) { throw null; }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public bool Verify(System.Security.Cryptography.AsymmetricAlgorithm key) { throw null; }
@@ -77,5 +79,7 @@ namespace System.Security.Cryptography.Cose
         public bool Verify(System.Security.Cryptography.AsymmetricAlgorithm key, byte[] content) { throw null; }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public bool Verify(System.Security.Cryptography.AsymmetricAlgorithm key, System.ReadOnlySpan<byte> content) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        public System.Threading.Tasks.Task<bool> VerifyAsync(System.Security.Cryptography.AsymmetricAlgorithm key, System.IO.Stream detachedContent) { throw null; }
     }
 }
