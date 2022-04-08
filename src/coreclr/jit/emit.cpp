@@ -1118,6 +1118,10 @@ void emitter::emitBegFN(bool hasFramePtr
     emitFirstColdIG   = nullptr;
     emitTotalCodeSize = 0;
 
+#ifdef TARGET_LOONGARCH64
+    emitCounts_INS_OPTS_J = 0;
+#endif
+
 #if EMITTER_STATS
     emitTotalIGmcnt++;
     emitSizeMethod      = 0;
@@ -1296,6 +1300,13 @@ weight_t emitter::getCurrentBlockWeight()
     }
 }
 
+#if defined(TARGET_LOONGARCH64)
+void emitter::dispIns(instrDesc* id)
+{
+    // For LoongArch64 using the emitDisInsName().
+    NYI_LOONGARCH64("Not used on LOONGARCH64.");
+}
+#else
 void emitter::dispIns(instrDesc* id)
 {
 #ifdef DEBUG
@@ -1317,6 +1328,7 @@ void emitter::dispIns(instrDesc* id)
     emitIFcounts[id->idInsFmt()]++;
 #endif
 }
+#endif
 
 void emitter::appendToCurIG(instrDesc* id)
 {
@@ -2305,6 +2317,11 @@ void emitter::emitSetFrameRangeGCRs(int offsLo, int offsHi)
 #ifdef TARGET_AMD64
             // doesn't have to be all negative on amd
             printf("-%04X ... %04X\n", -offsLo, offsHi);
+#elif defined(TARGET_LOONGARCH64)
+            if (offsHi < 0)
+                printf("-%04X ... -%04X\n", -offsLo, -offsHi);
+            else
+                printf("-%04X ... %04X\n", -offsLo, offsHi);
 #else
             printf("-%04X ... -%04X\n", -offsLo, -offsHi);
             assert(offsHi <= 0);
@@ -2638,7 +2655,7 @@ const char* emitter::emitLabelString(insGroup* ig)
 
 #endif // DEBUG
 
-#ifdef TARGET_ARMARCH
+#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64)
 
 // Does the argument location point to an IG at the end of a function or funclet?
 // We can ignore the codePos part of the location, since it doesn't affect the
@@ -2999,9 +3016,9 @@ void emitter::emitGenerateUnwindNop(instrDesc* id, void* context)
     Compiler* comp = (Compiler*)context;
 #if defined(TARGET_ARM)
     comp->unwindNop(id->idCodeSize());
-#elif defined(TARGET_ARM64)
+#elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
     comp->unwindNop();
-#endif // defined(TARGET_ARM64)
+#endif // defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
 }
 
 /*****************************************************************************
@@ -3015,7 +3032,7 @@ void emitter::emitUnwindNopPadding(emitLocation* locFrom, Compiler* comp)
     emitWalkIDs(locFrom, emitGenerateUnwindNop, comp);
 }
 
-#endif // TARGET_ARMARCH
+#endif // TARGET_ARMARCH || TARGET_LOONGARCH64
 
 #if defined(TARGET_ARM)
 
@@ -3402,6 +3419,9 @@ const size_t hexEncodingSize = 19;
 #elif defined(TARGET_ARM)
 const size_t basicIndent     = 12;
 const size_t hexEncodingSize = 11;
+#elif defined(TARGET_LOONGARCH64)
+const size_t basicIndent     = 12;
+const size_t hexEncodingSize = 19;
 #endif
 
 #ifdef DEBUG
@@ -4083,8 +4103,10 @@ void emitter::emitDispCommentForHandle(size_t handle, GenTreeFlags flag)
  *  ARM64 has a small and large encoding for both conditional branch and loading label addresses.
  *      The large encodings are pseudo-ops that represent a multiple instruction sequence, similar to ARM. (Currently
  *      NYI).
+ *  LoongArch64 has an individual implementation for emitJumpDistBind().
  */
 
+#ifndef TARGET_LOONGARCH64
 void emitter::emitJumpDistBind()
 {
 #ifdef DEBUG
@@ -4835,6 +4857,7 @@ AGAIN:
     emitCheckIGoffsets();
 #endif // DEBUG
 }
+#endif
 
 #if FEATURE_LOOP_ALIGN
 
@@ -5645,6 +5668,11 @@ emitter::instrDescAlign* emitter::emitAlignInNextIG(instrDescAlign* alignInstr)
 
 void emitter::emitCheckFuncletBranch(instrDesc* jmp, insGroup* jmpIG)
 {
+#ifdef TARGET_LOONGARCH64
+    // TODO-LoongArch64: support idDebugOnlyInfo.
+    return;
+#else
+
 #ifdef DEBUG
     // We should not be jumping/branching across funclets/functions
     // Except possibly a 'call' to a finally funclet for a local unwind
@@ -5740,6 +5768,7 @@ void emitter::emitCheckFuncletBranch(instrDesc* jmp, insGroup* jmpIG)
         }
     }
 #endif // DEBUG
+#endif
 }
 
 /*****************************************************************************
@@ -6523,7 +6552,11 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
                     }
                 }
 
-#endif // TARGET_XARCH
+#elif defined(TARGET_LOONGARCH64)
+
+                isJccAffectedIns = true;
+
+#endif // TARGET_LOONGARCH64
 
                 // Jcc affected instruction boundaries were printed above; handle other cases here.
                 if (!isJccAffectedIns)
@@ -6693,6 +6726,9 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
 #elif defined(TARGET_ARM64)
                     assert(!jmp->idAddr()->iiaHasInstrCount());
                     emitOutputLJ(NULL, adr, jmp);
+#elif defined(TARGET_LOONGARCH64)
+                    // For LoongArch64 `emitFwdJumps` is always false.
+                    unreached();
 #else
 #error Unsupported or unset target architecture
 #endif
@@ -6706,6 +6742,9 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
 #elif defined(TARGET_ARMARCH)
                     assert(!jmp->idAddr()->iiaHasInstrCount());
                     emitOutputLJ(NULL, adr, jmp);
+#elif defined(TARGET_LOONGARCH64)
+                    // For LoongArch64 `emitFwdJumps` is always false.
+                    unreached();
 #else
 #error Unsupported or unset target architecture
 #endif
@@ -8678,7 +8717,7 @@ cnsval_ssize_t emitter::emitGetInsSC(instrDesc* id)
         int  adr = emitComp->lvaFrameAddress(varNum, &FPbased);
         int  dsp = adr + offs;
         if (id->idIns() == INS_sub)
-            dsp = -dsp;
+            dsp    = -dsp;
 #endif
         return dsp;
     }
@@ -9305,13 +9344,14 @@ regMaskTP emitter::emitGetGCRegsKilledByNoGCCall(CorInfoHelpFunc helper)
             // This uses and defs RDI and RSI.
             result = RBM_CALLEE_TRASH_NOGC & ~(RBM_RDI | RBM_RSI);
             break;
-#elif defined(TARGET_ARMARCH)
+#elif defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64)
             result = RBM_CALLEE_GCTRASH_WRITEBARRIER_BYREF;
             break;
 #else
             assert(!"unknown arch");
 #endif
 
+#if !defined(TARGET_LOONGARCH64)
         case CORINFO_HELP_PROF_FCN_ENTER:
             result = RBM_PROFILER_ENTER_TRASH;
             break;
@@ -9328,8 +9368,9 @@ regMaskTP emitter::emitGetGCRegsKilledByNoGCCall(CorInfoHelpFunc helper)
         case CORINFO_HELP_PROF_FCN_TAILCALL:
             result = RBM_PROFILER_TAILCALL_TRASH;
             break;
+#endif // !defined(TARGET_LOONGARCH64)
 
-#if defined(TARGET_ARMARCH)
+#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64)
         case CORINFO_HELP_ASSIGN_REF:
         case CORINFO_HELP_CHECKED_ASSIGN_REF:
             result = RBM_CALLEE_GCTRASH_WRITEBARRIER;
