@@ -820,7 +820,6 @@ namespace System.Net.Quic.Tests
 
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/67612")]
         public async Task WriteAsync_LocalAbort_Throws()
         {
             if (IsMockProvider)
@@ -831,12 +830,12 @@ namespace System.Net.Quic.Tests
 
             const int ExpectedErrorCode = 0xfffffff;
 
-            TaskCompletionSource waitForAbortTcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            SemaphoreSlim sem = new SemaphoreSlim(0);
 
             await RunBidirectionalClientServer(
                 clientStream =>
                 {
-                    return Task.CompletedTask;
+                    return sem.WaitAsync();
                 },
                 async serverStream =>
                 {
@@ -848,7 +847,9 @@ namespace System.Net.Quic.Tests
                     serverStream.AbortWrite(ExpectedErrorCode);
 
                     await Assert.ThrowsAsync<QuicOperationAbortedException>(() => writeTask.WaitAsync(TimeSpan.FromSeconds(3)));
+                    sem.Release();
                 });
+
         }
 
         [Fact]

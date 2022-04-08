@@ -324,10 +324,13 @@ namespace System.Net.Quic.Implementations.MsQuic
             {
                 if (_state.SendErrorCode != -1)
                 {
+                    // aborted by peer
                     throw new QuicStreamAbortedException(_state.SendErrorCode);
                 }
 
-                throw new OperationCanceledException(cancellationToken);
+                // aborted locally
+                throw new QuicOperationAbortedException(SR.net_quic_sending_aborted);
+
             }
 
             if (cancellationToken.IsCancellationRequested)
@@ -376,7 +379,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                         throw new QuicStreamAbortedException(_state.SendErrorCode);
                     }
 
-                    throw new OperationCanceledException(SR.net_quic_sending_aborted);
+                    throw new QuicOperationAbortedException();
                 }
                 if (_state.SendState == SendState.ConnectionClosed)
                 {
