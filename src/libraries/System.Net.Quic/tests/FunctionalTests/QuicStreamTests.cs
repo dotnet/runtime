@@ -829,7 +829,6 @@ namespace System.Net.Quic.Tests
             }
 
             const int ExpectedErrorCode = 0xfffffff;
-
             SemaphoreSlim sem = new SemaphoreSlim(0);
 
             await RunBidirectionalClientServer(
@@ -849,7 +848,6 @@ namespace System.Net.Quic.Tests
                     await Assert.ThrowsAsync<QuicOperationAbortedException>(() => writeTask.WaitAsync(TimeSpan.FromSeconds(3)));
                     sem.Release();
                 });
-
         }
 
         [Fact]

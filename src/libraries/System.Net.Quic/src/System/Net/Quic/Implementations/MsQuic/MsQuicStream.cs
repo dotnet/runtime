@@ -330,7 +330,6 @@ namespace System.Net.Quic.Implementations.MsQuic
 
                 // aborted locally
                 throw new QuicOperationAbortedException(SR.net_quic_sending_aborted);
-
             }
 
             if (cancellationToken.IsCancellationRequested)
