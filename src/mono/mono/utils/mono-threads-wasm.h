@@ -22,6 +22,7 @@
 gboolean
 mono_threads_wasm_is_browser_thread (void);
 
+#ifndef DISABLE_THREADS
 /**
  * Runs the given function asynchronously on the main thread.
  * See emscripten/threading.h emscripten_async_run_in_main_runtime_thread
@@ -34,6 +35,7 @@ mono_threads_wasm_async_run_in_main_thread (void (*func) (void));
  */
 void
 mono_threads_wasm_async_run_in_main_thread_vi (void (*func)(gpointer), gpointer user_data);
+#endif /* DISABLE_THREADS */
 
 #endif /* HOST_WASM*/
 

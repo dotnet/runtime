@@ -321,7 +321,7 @@
     <PropertyGroup Condition="'$(TargetsBrowser)' == 'true'">
       <_MonoMinimal Condition="'$(Configuration)' == 'Release'">,debugger_agent,log_dest</_MonoMinimal>
       <_MonoMinimal Condition="'$(Configuration)' == 'Release' and '$(MonoEnableAssertMessages)' != 'true'">$(_MonoMinimal),assert_messages</_MonoMinimal>
-      <_MonoMinimal Condition="'$(WasmEnableThreads)' == ''">$(_MonoMinimal),threads</_MonoMinimal>
+      <_MonoMinimal Condition="'$(WasmEnableThreads)' != 'true'">$(_MonoMinimal),threads</_MonoMinimal>
     </PropertyGroup>
     <ItemGroup Condition="'$(TargetsBrowser)' == 'true'">
       <_MonoCMakeArgs Include="-DENABLE_MINIMAL=jit,sgen_major_marksweep_conc,sgen_split_nursery,sgen_gc_bridge,sgen_toggleref,sgen_debug_helpers,sgen_binary_protocol,logging,interpreter,qcalls$(_MonoMinimal)"/>

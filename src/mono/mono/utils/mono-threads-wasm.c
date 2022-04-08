@@ -374,27 +374,36 @@ mono_background_exec (void)
 gboolean
 mono_threads_platform_is_main_thread (void)
 {
+#ifdef DISABLE_THREADS
+	return TRUE;
+#else
 	return emscripten_is_main_runtime_thread ();
+#endif
 }
 
 gboolean
 mono_threads_wasm_is_browser_thread (void)
 {
+#ifdef DISABLE_THREADS
+	return TRUE;
+#else
 	return emscripten_is_main_browser_thread ();
+#endif
 }
 
+#ifndef DISABLE_THREADS
 void
 mono_threads_wasm_async_run_in_main_thread (void (*func) (void))
 {
-	emscripten_async_run_in_main_runtime_thread(EM_FUNC_SIG_V, func);
+	emscripten_async_run_in_main_runtime_thread (EM_FUNC_SIG_V, func);
 }
 
 void
 mono_threads_wasm_async_run_in_main_thread_vi (void (*func) (gpointer), gpointer user_data)
 {
-	emscripten_async_run_in_main_runtime_thread(EM_FUNC_SIG_VI, func, user_data);
+	emscripten_async_run_in_main_runtime_thread (EM_FUNC_SIG_VI, func, user_data);
 }
-
+#endif /* DISABLE_THREADS */
 
 #endif /* HOST_BROWSER */
 
