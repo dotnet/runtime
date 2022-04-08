@@ -329,6 +329,9 @@ void VolatileLoadBarrier()
 template <typename T>
 class Volatile
 {
+    // To enable the DAC table to correctly handle volatile DAC-ized statics while also being computed at compile time, we need to
+    // give the dac table type access to the internal field directly to take the address of it.
+    friend struct _DacGlobals;
 private:
     //
     // The data which we are treating as volatile

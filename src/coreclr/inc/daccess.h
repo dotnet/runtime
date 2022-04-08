@@ -342,7 +342,8 @@
 // it's an array or some other value that is not important to have
 // in a minidump) a second macro, DEFINE_DACVAR_NO_DUMP, will allow
 // you to make the required entry in the DacGlobals structure without
-// dumping its value.
+// dumping its value. If the variable is implemented with one of the VOLATILE_* macros
+// then the DEFINE_DACVAR_VOLATILE macro must be used.
 //
 // For convenience, here is a list of the various variable declaration and
 // initialization macros:
@@ -361,6 +362,25 @@
 //                            initialized outside the
 //                            class declaration
 // ------------------------------------------------------------------------------------------------
+// VOLATILE_SVAL_DECL(type, name)    static volatile   class MyClass
+//                                   non-pointer data  {
+//                                   member declared      // static Volatile<int> i;
+//                                   within the class     VOLATILE_SVAL_DECL(int, i);
+//                                    declaration      }
+//
+// VOLATILE_SVAL_IMPL(type, cls,     static volatile
+//                    name)          non-pointer data  // Volatile<int> MyClass::i;
+//                                   member defined    VOLATILE_SVAL_IMPL(int, MyClass, i);
+//                                   outside the
+//                                   class declaration
+//
+// VOLATILE_SVAL_IMPL_INIT(          static volatile
+//    type, cls, name)               non-pointer data  // Volatile<int> MyClass::i = 0;
+//                                   member defined    VOLATILE_SVAL_IMPL_INIT(int, MyClass, i, 0);
+//                                   and initialized
+//                                   outside the
+//                                   class declaration
+// ------------------------------------------------------------------------------------------------
 // SPTR_DECL(type, name)      static pointer data       class MyClass
 //                            member declared within    {
 //                            the class declaration        // static int * pInt;
@@ -375,6 +395,25 @@
 //                name, val)  member defined and        SPTR_IMPL_INIT(int, MyClass, pInt, NULL);
 //                            initialized outside the
 //                            class declaration
+// ------------------------------------------------------------------------------------------------
+// VOLATILE_SPTR_DECL(type, name)    static volatile   class MyClass
+//                                   pointer data      {
+//                                   member declared      // static Volatile<int*> i;
+//                                   within the class     VOLATILE_SPTR_DECL(int, i);
+//                                    declaration      }
+//
+// VOLATILE_SPTR_IMPL(type, cls,     static volatile
+//                    name)          pointer data      // Volatile<int*> MyClass::i;
+//                                   member defined    VOLATILE_SPTR_IMPL(int, MyClass, i);
+//                                   outside the
+//                                   class declaration
+//
+// VOLATILE_SPTR_IMPL_INIT(          static volatile
+//    type, cls, name)               pointer data      // Volatile<int*> MyClass::i = 0;
+//                                   member defined    VOLATILE_SPTR_IMPL_INIT(int, MyClass, i, 0);
+//                                   and initialized
+//                                   outside the
+//                                   class declaration
 // ------------------------------------------------------------------------------------------------
 // GVAL_DECL(type, name)      extern declaration of     // extern int g_i
 //                            global non-pointer        GVAL_DECL(int, g_i);
@@ -597,26 +636,29 @@ typedef struct _DacGlobals
 #ifdef _MSC_VER
 private:
     const static _DacGlobals s_dacGlobals;
+#endif
 public:
-#else
     static void Initialize();
-#endif // _MSC_VER
 
 // These will define all of the dac related mscorwks static and global variables
-#define DEFINE_DACVAR(id_type, size, id, var)                 id_type id;
-#define DEFINE_DACVAR_NO_DUMP(id_type, size, id, var)         id_type id;
+#define DEFINE_DACVAR(size, id, var)                 TADDR id;
+#define DEFINE_DACVAR_VOLATILE(size, id, var)        TADDR id;
+#define DEFINE_DACVAR_NO_DUMP(size, id, var)         TADDR id;
 #include "dacvars.h"
+#undef DEFINE_DACVAR_VOLATILE
+#undef DEFINE_DACVAR_NODUMP
+#undef DEFINE_DACVAR
 
-#define DEFINE_DACGFN(func) ULONGLONG fn__##func;
-#define DEFINE_DACGFN_STATIC(class, func) ULONGLONG fn__##class##__##func;
+#define DEFINE_DACGFN(func) TADDR fn__##func;
+#define DEFINE_DACGFN_STATIC(class, func) TADDR fn__##class##__##func;
 #include "gfunc_list.h"
 #undef DEFINE_DACGFN
 #undef DEFINE_DACGFN_STATIC
 
     // Vtable pointer values for all classes that must
     // be instanted using vtable pointers as the identity.
-#define VPTR_CLASS(name) ULONGLONG name##__vtAddr;
-#define VPTR_MULTI_CLASS(name, keyBase) ULONGLONG name##__##keyBase##__mvtAddr;
+#define VPTR_CLASS(name) TADDR name##__vtAddr;
+#define VPTR_MULTI_CLASS(name, keyBase) TADDR name##__##keyBase##__mvtAddr;
 #include "vptr_list.h"
 #undef VPTR_CLASS
 #undef VPTR_MULTI_CLASS
@@ -1464,7 +1506,7 @@ template<typename type>
 class __GlobalVal
 {
 public:
-    __GlobalVal< type >(PULONG ptr)
+    __GlobalVal< type >(TADDR* ptr)
     {
         m_ptr = ptr;
     }
@@ -1503,14 +1545,14 @@ public:
     }
 
 private:
-    PULONG m_ptr;
+    TADDR* m_ptr;
 };
 
 template<typename type, size_t size>
 class __GlobalArray
 {
 public:
-    __GlobalArray< type, size >(PULONG ptr)
+    __GlobalArray< type, size >(TADDR* ptr)
     {
         m_ptr = ptr;
     }
@@ -1536,14 +1578,14 @@ public:
     }
 
 private:
-    PULONG m_ptr;
+    TADDR* m_ptr;
 };
 
 template<typename acc_type, typename store_type>
 class __GlobalPtr
 {
 public:
-    __GlobalPtr< acc_type, store_type >(PULONG ptr)
+    __GlobalPtr< acc_type, store_type >(TADDR* ptr)
     {
         m_ptr = ptr;
     }
@@ -1623,7 +1665,7 @@ public:
         }
     }
 
-    PULONG m_ptr;
+    TADDR* m_ptr;
 };
 
 template<typename acc_type, typename store_type>
@@ -1894,6 +1936,10 @@ public: name(TADDR addr, TADDR vtAddr);
 #define _SPTR_IMPL_NS_INIT(acc_type, store_type, ns, cls, var, init) \
     __GlobalPtr< acc_type, store_type > cls::var(&g_dacGlobals.ns##__##cls##__##var)
 
+#define VOLATILE_SPTR_DECL(type, var) SPTR_DECL(type, var)
+#define VOLATILE_SPTR_IMPL(type, cls, var) SPTR_IMPL(type, cls, var)
+#define VOLATILE_SPTR_IMPL_INIT(type, cls, var, init) SPTR_IMPL_INIT(type, cls, var, init)
+
 #define _GPTR_DECL(acc_type, store_type, var) \
     extern __GlobalPtr< acc_type, store_type > var
 #define _GPTR_IMPL(acc_type, store_type, var) \
@@ -1911,6 +1957,10 @@ public: name(TADDR addr, TADDR vtAddr);
     __GlobalVal< type > cls::var(&g_dacGlobals.ns##__##cls##__##var)
 #define SVAL_IMPL_NS_INIT(type, ns, cls, var, init) \
     __GlobalVal< type > cls::var(&g_dacGlobals.ns##__##cls##__##var)
+
+#define VOLATILE_SVAL_DECL(type, var) SVAL_DECL(type, var)
+#define VOLATILE_SVAL_IMPL(type, cls, var) SVAL_IMPL(type, cls, var)
+#define VOLATILE_SVAL_IMPL_INIT(type, cls, var, init) SVAL_IMPL_INIT(type, cls, var, init)
 
 #define GVAL_DECL(type, var) \
     extern __GlobalVal< type > var
@@ -2165,6 +2215,9 @@ public: name(int dummy) : base(dummy) {}
     store_type cls::var
 #define _SPTR_IMPL_NS_INIT(acc_type, store_type, ns, cls, var, init) \
     store_type cls::var = init
+#define VOLATILE_SPTR_DECL(type, var) _SPTR_DECL(type*, Volatile<PTR_##type>, var)
+#define VOLATILE_SPTR_IMPL(type, cls, var) _SPTR_IMPL(type*, Volatile<PTR_##type>, cls, var)
+#define VOLATILE_SPTR_IMPL_INIT(type, cls, var, init) _SPTR_IMPL_INIT(type*, Volatile<PTR_##type>, cls, var, init)
 #define _GPTR_DECL(acc_type, store_type, var) \
     extern store_type var
 #define _GPTR_IMPL(acc_type, store_type, var) \
@@ -2177,6 +2230,12 @@ public: name(int dummy) : base(dummy) {}
     type cls::var
 #define SVAL_IMPL_INIT(type, cls, var, init) \
     type cls::var = init
+#define VOLATILE_SVAL_DECL(type, var) \
+    static Volatile<type> var
+#define VOLATILE_SVAL_IMPL(type, cls, var) \
+    Volatile<type> cls::var
+#define VOLATILE_SVAL_IMPL_INIT(type, cls, var, init) \
+    Volatile<type> cls::var = init
 #define SVAL_IMPL_NS(type, ns, cls, var) \
     type cls::var
 #define SVAL_IMPL_NS_INIT(type, ns, cls, var, init) \

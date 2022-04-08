@@ -446,7 +446,7 @@ extern "C" bool
 TryGetSymbol(ICorDebugDataTarget* dataTarget, uint64_t baseAddress, const char* symbolName, uint64_t* symbolAddress)
 {
     DWORD exportTableRva;
-    if (FAILED(GetMachineAndDirectoryAddress(dataTarget, baseAddress, IMAGE_DIRECTORY_ENTRY_RESOURCE, nullptr, &exportTableRva)))
+    if (FAILED(GetMachineAndDirectoryAddress(dataTarget, baseAddress, IMAGE_DIRECTORY_ENTRY_EXPORT, nullptr, &exportTableRva)))
     {
         return false;
     }
