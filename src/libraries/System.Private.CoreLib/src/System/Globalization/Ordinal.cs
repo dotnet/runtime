@@ -248,9 +248,7 @@ namespace System.Globalization
             }
 
             // hoist some expressions from the loop
-            int valueTailLength = value.Length - 1;
-            int remainingSearchSpaceLength = source.Length - valueTailLength;
-            ref char valueTail = ref Unsafe.Add(ref valueRef, 1);
+            int searchSpaceLength = source.Length - value.Length - 1;
             ref char searchSpace = ref MemoryMarshal.GetReference(source);
             char valueCharU = default;
             char valueCharL = default;
@@ -266,17 +264,9 @@ namespace System.Globalization
 
             do
             {
-                int relativeIndex;
-                if (isLetter)
-                {
-                    relativeIndex = SpanHelpers.IndexOfAny(ref Unsafe.Add(ref searchSpace, offset),
-                        valueCharU, valueCharL, remainingSearchSpaceLength);
-                }
-                else
-                {
-                    relativeIndex = SpanHelpers.IndexOf(ref Unsafe.Add(ref searchSpace, offset),
-                        valueChar, remainingSearchSpaceLength);
-                }
+                int relativeIndex = isLetter ?
+                    SpanHelpers.IndexOfAny(ref Unsafe.Add(ref searchSpace, offset), valueCharU, valueCharL, searchSpaceLength) :
+                    SpanHelpers.IndexOf(ref Unsafe.Add(ref searchSpace, offset), valueChar, searchSpaceLength);
 
                 // Do a quick search for the first element of "value".
                 if (relativeIndex < 0)
@@ -284,24 +274,26 @@ namespace System.Globalization
                     break;
                 }
 
-                remainingSearchSpaceLength -= relativeIndex;
+                searchSpaceLength -= relativeIndex;
                 offset += relativeIndex;
 
-                if (remainingSearchSpaceLength <= 0)
+                if (searchSpaceLength <= 0)
                 {
                     break;
                 }
 
                 // Found the first element of "value". See if the tail matches.
-                if (EqualsIgnoreCase(ref Unsafe.Add(ref searchSpace, (nuint)(offset + 1)), ref valueTail, valueTailLength))
+                if (EqualsIgnoreCase(
+                        ref Unsafe.Add(ref searchSpace, (nuint)(offset + 1)),
+                        ref Unsafe.Add(ref valueRef, 1), value.Length - 1))
                 {
                     return (int)offset;  // The tail matched. Return a successful find.
                 }
 
-                remainingSearchSpaceLength--;
+                searchSpaceLength--;
                 offset++;
             }
-            while (remainingSearchSpaceLength > 0);
+            while (searchSpaceLength > 0);
 
             return -1;
         }
