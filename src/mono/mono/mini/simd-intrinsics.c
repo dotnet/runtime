@@ -931,6 +931,7 @@ static guint16 sri_vector_methods [] = {
 	SN_WidenUpper,
 	SN_WithElement,
 	SN_Xor,
+	SN_get_IsHardwareAccelerated,
 };
 
 /* nint and nuint haven't been enabled yet for System.Runtime.Intrinsics.
@@ -983,8 +984,19 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 	
 	MonoClass *klass = cmethod->klass;
 	MonoTypeEnum arg0_type = fsig->param_count > 0 ? get_underlying_type (fsig->params [0]) : MONO_TYPE_VOID;
+	
+	gboolean supported = FALSE;
+#ifdef MONO_ARCH_SIMD_INTRINSICS
+	supported = TRUE;
+#endif
 
 	switch (id) {
+	case SN_get_IsHardwareAccelerated: {
+		MonoInst* ins;
+		EMIT_NEW_ICONST (cfg, ins, supported ? 1 : 0);
+		ins->type = STACK_I4;
+		return ins;
+	}
 	case SN_Abs: {
 		if (!is_element_type_primitive (fsig->params [0]))
 			return NULL;
