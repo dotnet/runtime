@@ -175,55 +175,5 @@ endif
 LEAF_END_MARKED JIT_WriteBarrier_Debug, _TEXT
 endif
 
-
-extern g_global_alloc_lock:dword
-extern g_global_alloc_context:qword
-
-LEAF_ENTRY AllocateStringFastUP, _TEXT
-
-        ; We were passed the number of characters in ECX
-
-        ; we need to load the method table for string from the global
-
-        mov     r11, [g_pStringClass]
-
-        ; Instead of doing elaborate overflow checks, we just limit the number of elements
-        ; to (LARGE_OBJECT_SIZE - 256)/sizeof(WCHAR) or less.
-        ; This will avoid all overflow problems, as well as making sure
-        ; big string objects are correctly allocated in the big object heap.
-
-        cmp     ecx, (ASM_LARGE_OBJECT_SIZE - 256)/2
-        jae     FramedAllocateString
-
-        ; Calculate the final size to allocate.
-        ; We need to calculate baseSize + cnt*2, then round that up by adding 7 and anding ~7.
-
-        lea     r8d, [STRING_BASE_SIZE + ecx*2 + 7]
-        and     r8d, -8
-
-        inc     [g_global_alloc_lock]
-        jnz     FramedAllocateString
-
-        mov     rax, [g_global_alloc_context + OFFSETOF__gc_alloc_context__alloc_ptr]       ; alloc_ptr
-        mov     r10, [g_global_alloc_context + OFFSETOF__gc_alloc_context__alloc_limit]     ; limit_ptr
-
-        add     r8, rax
-
-        cmp     r8, r10
-        ja      AllocFailed
-
-        mov     qword ptr [g_global_alloc_context + OFFSETOF__gc_alloc_context__alloc_ptr], r8     ; update the alloc ptr
-        mov     [rax], r11
-        mov     [g_global_alloc_lock], -1
-
-        mov     [rax + OFFSETOF__StringObject__m_StringLength], ecx
-
-        ret
-
-    AllocFailed:
-        mov     [g_global_alloc_lock], -1
-        jmp     FramedAllocateString
-LEAF_END AllocateStringFastUP, _TEXT
-
         end
 

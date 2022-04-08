@@ -33,7 +33,6 @@ EXTERN_C Object* JIT_NewArr1VC_MP_InlineGetThread (CORINFO_CLASS_HANDLE arrayMT,
 EXTERN_C Object* JIT_TrialAllocSFastMP(CORINFO_CLASS_HANDLE typeHnd_);
 EXTERN_C Object* JIT_BoxFastMP (CORINFO_CLASS_HANDLE type, void* unboxedData);
 EXTERN_C Object* AllocateStringFastMP (CLR_I4 cch);
-EXTERN_C Object* AllocateStringFastUP (CLR_I4 cch);
 
 EXTERN_C Object* JIT_NewArr1OBJ_MP (CORINFO_CLASS_HANDLE arrayMT, INT_PTR size);
 EXTERN_C Object* JIT_NewArr1VC_MP (CORINFO_CLASS_HANDLE arrayMT, INT_PTR size);
@@ -86,15 +85,6 @@ void InitJITHelpers1()
             SetJitHelperFunction(CORINFO_HELP_NEWARR_1_OBJ, JIT_NewArr1OBJ_MP_InlineGetThread);
 
             ECall::DynamicallyAssignFCallImpl(GetEEFuncEntryPoint(AllocateStringFastMP_InlineGetThread), ECall::FastAllocateString);
-        }
-        else
-        {
-            // Replace the 1p slow allocation helpers with faster version
-            //
-            // When we're running Workstation GC on a single proc box we don't have
-            // InlineGetThread versions because there is no need to call GetThread
-
-            ECall::DynamicallyAssignFCallImpl(GetEEFuncEntryPoint(AllocateStringFastUP), ECall::FastAllocateString);
         }
 #endif // TARGET_UNIX
     }
