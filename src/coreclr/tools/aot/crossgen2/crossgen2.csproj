@@ -50,7 +50,9 @@
     <Delete Files="$(ProjectAssetsFile)" />
   </Target>
 
-  <Target Name="PrintAssetsJson" Condition="'$(DotNetBuildFromSource)' == 'true'" BeforeTargets="ResolvePackageAssets">
+  <Target Name="PrintAssetsJson" Condition="'$(DotNetBuildFromSource)' == 'true'" 
+    BeforeTargets="ResolvePackageAssets"
+    DependsOnTargets="Restore">
     <ReadLinesFromFile File="$(ProjectAssetsFile)">
       <Output TaskParameter="Lines" ItemName="_LinesFromFile" />
     </ReadLinesFromFile>
