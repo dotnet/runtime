@@ -16173,6 +16173,7 @@ BOOL gc_heap::a_fit_segment_end_p (int gen_number,
         {
             goto found_fit;
         }
+
         else
         {
 #ifndef USE_REGIONS
@@ -16182,19 +16183,12 @@ BOOL gc_heap::a_fit_segment_end_p (int gen_number,
                 *commit_failed_p = TRUE;
             }
             else
-#endif // !USE_REGIONS
             {
-#ifdef USE_REGIONS
-                if (heap_hard_limit)
-                {
-                    *commit_failed_p = TRUE;
-                }
-                else
-#endif // USE_REGIONS
-                {
-                    assert (heap_hard_limit);
-                }
+                assert (heap_hard_limit);
             }
+#else 
+            *commit_failed_p = TRUE;
+#endif // USE_REGIONS
         }
     }
 
