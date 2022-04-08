@@ -65,7 +65,7 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
         cp $CORE_ROOT/lib*.so $CORE_ROOT/lib*.dylib $(scriptPath)
       else
         cp *.dll IL-CG2/
-        rm IL-CG2/composite-r2r.dll
+        rm IL-CG2/composite-r2r.dll 2>/dev/null
       fi
 
       ExtraCrossGen2Args+=" $(CrossGen2TestExtraArguments)"
@@ -185,7 +185,7 @@ if defined RunCrossGen2 (
 
     mkdir IL-CG2
     copy *.dll IL-CG2\
-    del IL-CG2\composite-r2r.dll
+    del IL-CG2\composite-r2r.dll 2>null
 
     if defined CompositeBuildMode (
         set ExtraCrossGen2Args=!ExtraCrossGen2Args! --composite
