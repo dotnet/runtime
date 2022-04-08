@@ -46,7 +46,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                 QUIC_HANDLE* handle;
                 ThrowIfFailure(ApiTable->RegistrationOpen(&cfg, &handle), "RegistrationOpen failed");
 
-                Registration = new SafeMsQuicRegistrationHandle((IntPtr)handle);
+                Registration = new SafeMsQuicRegistrationHandle(handle);
             }
         }
 

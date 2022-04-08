@@ -9,27 +9,18 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
-using static System.Net.Quic.Implementations.MsQuic.Internal.MsQuicNativeMethods;
+using Microsoft.Quic;
 
 namespace System.Net.Quic.Implementations.MsQuic.Internal
 {
-    internal sealed class SafeMsQuicConfigurationHandle : SafeHandle
+    internal sealed class SafeMsQuicConfigurationHandle : MsQuicSafeHandle
     {
         private static readonly FieldInfo _contextCertificate = typeof(SslStreamCertificateContext).GetField("Certificate", BindingFlags.NonPublic | BindingFlags.Instance)!;
         private static readonly FieldInfo _contextChain = typeof(SslStreamCertificateContext).GetField("IntermediateCertificates", BindingFlags.NonPublic | BindingFlags.Instance)!;
 
-        public override bool IsInvalid => handle == IntPtr.Zero;
-
-        public SafeMsQuicConfigurationHandle()
-            : base(IntPtr.Zero, ownsHandle: true)
+        public unsafe SafeMsQuicConfigurationHandle(QUIC_HANDLE* handle)
+            : base(handle, ptr => MsQuicApi.Api.ApiTable->ConfigurationClose((QUIC_HANDLE*)ptr), "cnfg")
         { }
-
-        protected override bool ReleaseHandle()
-        {
-            MsQuicApi.Api.ConfigurationCloseDelegate(handle);
-            SetHandle(IntPtr.Zero);
-            return true;
-        }
 
         // TODO: consider moving the static code from here to keep all the handle classes small and simple.
         public static SafeMsQuicConfigurationHandle Create(QuicClientConnectionOptions options)
