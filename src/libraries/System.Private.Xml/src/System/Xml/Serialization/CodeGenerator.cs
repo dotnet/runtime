@@ -17,7 +17,6 @@ using System.Xml;
 using System.Xml.Serialization.Configuration;
 using System.Security;
 using System.Text.RegularExpressions;
-using System.Xml.Extensions;
 
 namespace System.Xml.Serialization
 {
