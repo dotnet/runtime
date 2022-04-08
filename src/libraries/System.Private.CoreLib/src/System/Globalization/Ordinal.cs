@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using System.Text.Unicode;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 
 namespace System.Globalization
@@ -224,7 +225,7 @@ namespace System.Globalization
                 // target strings can never be found inside small search spaces. This check also
                 // handles empty 'source' spans.
 
-                return -1;
+                goto NOT_FOUND;
             }
 
             if (GlobalizationMode.Invariant)
@@ -237,34 +238,46 @@ namespace System.Globalization
                 return CompareInfo.NlsIndexOfOrdinalCore(source, value, ignoreCase: true, fromBeginning: true);
             }
 
-            if (Vector128.IsHardwareAccelerated && (source.Length > Vector128<ushort>.Count))
+            // if value starts with an ASCII char we can use a vectorized path
+            ref char valueRef = ref MemoryMarshal.GetReference(value);
+            char valueChar = valueRef;
+
+            if (!char.IsAscii(valueChar))
             {
-                char c = value[0];
-                if (char.IsAscii(c))
-                {
-                    int candidatePos;
-                    if (char.IsInRange(c, 'a', 'z'))
-                    {
-                        // Search for the first occurrence of c or its ToUpper
-                        candidatePos = source.IndexOfAny(c, (char)(c & ~0x20));
-                    }
-                    else if (char.IsInRange(c, 'A', 'Z'))
-                    {
-                        // Search for the first occurrence of c or its ToLower
-                        candidatePos = source.IndexOfAny(c, (char)(c | 0x20));
-                    }
-                    else
-                    {
-                        // Search for first occurrence of c only
-                        candidatePos = source.IndexOf(c);
-                    }
-                    if (candidatePos == -1)
-                        return candidatePos;
-                    return IndexOfOrdinalIgnoreCase(source.Slice(candidatePos), value);
-                }
+                // Fallback to a more non-ASCII friendly version
+                return OrdinalCasing.IndexOf(source, value);
             }
 
-            return OrdinalCasing.IndexOf(source, value);
+            ref char searchSpace = ref MemoryMarshal.GetReference(source);
+            int valueLength = value.Length;
+            int searchSpaceLength = source.Length;
+
+            do
+            {
+                // if val is either [a..z] or [A..Z] - search for its lower and upper counter parts using IndexOfAny
+                // otherwise use just plain IndexOf
+                int candidatePos = (uint)((valueChar | 0x20) - 'a') <= 'z' - 'a' ?
+                    SpanHelpers.IndexOfAny(ref searchSpace, (char)(valueChar & ~0x20), (char)(valueChar | 0x20), searchSpaceLength) :
+                    SpanHelpers.IndexOf(ref searchSpace, valueChar, searchSpaceLength);
+
+                if (candidatePos == -1)
+                {
+                    // the whole input doesn't contain the first char
+                    goto NOT_FOUND;
+                }
+
+                // Do ASCII and non-ASCII friendly compare for the current candidate
+                if (EqualsIgnoreCase(ref searchSpace, ref valueRef, valueLength))
+                {
+                    return source.Length - searchSpaceLength;
+                }
+
+                searchSpace = Unsafe.Add(ref searchSpace, (nuint)(candidatePos + valueLength));
+                searchSpaceLength -= candidatePos + valueLength;
+            } while (searchSpaceLength >= valueLength);
+
+        NOT_FOUND:
+            return -1;
         }
 
         internal static int LastIndexOf(string source, string value, int startIndex, int count)
