@@ -29,8 +29,10 @@
           DestinationFolder="$(MicrosoftNetCoreAppRuntimePackNativeDir)"
           SkipUnchangedFiles="true" />
 
-    <_TargetsToRun>Publish;PublishItemsOutputGroup</_TargetsToRun>
-    <_TargetsToRun Condition="'$(DotNetBuildFromSource)' != 'true'">DeleteAssetsJson;Restore</_TargetsToRun>
+    <PropertyGroup>
+      <_TargetsToRun>Publish;PublishItemsOutputGroup</_TargetsToRun>
+      <_TargetsToRun Condition="'$(DotNetBuildFromSource)' != 'true'">DeleteAssetsJson;Restore</_TargetsToRun>
+    </PropertyGroup>
 
     <MSBuild Projects="$(RepoRoot)src/coreclr/tools/aot/crossgen2/crossgen2.csproj"
              Properties="RunningPublish=true
