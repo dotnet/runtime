@@ -128,7 +128,6 @@ namespace System.IO.Compression.Tests
             ZipFile.ExtractToDirectory(compat("WindowsInvalid_FromWindows.zip"), testDirectory);
             CheckExists(testDirectory, "aa_b_d");
 
-
             void CheckExists(string testDirectory, string file)
             {
                 string path = Path.Combine(testDirectory, file);
