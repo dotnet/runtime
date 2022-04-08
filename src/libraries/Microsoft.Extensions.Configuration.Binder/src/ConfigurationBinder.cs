@@ -423,19 +423,13 @@ namespace Microsoft.Extensions.Configuration
                 throw new InvalidOperationException(SR.Format(SR.Error_CannotActivateAbstractOrInterface, type));
             }
 
-            ConstructorInfo[] constructors = type.GetConstructors(DeclaredOnlyLookup);
+            ConstructorInfo[] constructors = type.GetConstructors(BindingFlags.Public | BindingFlags.Instance);
 
             bool hasParameterlessPublicConstructor =
-                constructors.Any(ctor => ctor.IsPublic && ctor.GetParameters().Length == 0);
+                constructors.Any(ctor => ctor.GetParameters().Length == 0);
 
             if (constructors.Length > 0 && !hasParameterlessPublicConstructor)
             {
-                // if the only constructor is private, then throw
-                if (constructors.Length == 1 && !constructors[0].IsPublic)
-                {
-                    throw new InvalidOperationException(SR.Format(SR.Error_MissingParameterlessConstructor, type));
-                }
-
                 // find the biggest constructor so that we can bind to the most parameters
                 ParameterInfo[]? chosenParameters = null;
                 ConstructorInfo? chosenConstructor = null;
@@ -463,7 +457,7 @@ namespace Microsoft.Extensions.Configuration
 
                     for (int index = 0; index < chosenParameters.Length; index++)
                     {
-                        parameterValues[index] = GetParameterValue(chosenParameters[index], config, options);
+                        parameterValues[index] = BindParameter(chosenParameters[index], config, options);
                     }
 
                     return chosenConstructor.Invoke(parameterValues);
@@ -745,7 +739,7 @@ namespace Microsoft.Extensions.Configuration
         }
 
         [RequiresUnreferencedCode(PropertyTrimmingWarningMessage)]
-        private static object? GetParameterValue(ParameterInfo property, IConfiguration config, BinderOptions options)
+        private static object? BindParameter(ParameterInfo property, IConfiguration config, BinderOptions options)
         {
             string parameterName = property.Name!;
 
@@ -773,15 +767,13 @@ namespace Microsoft.Extensions.Configuration
 
         private static string GetPropertyName(MemberInfo property)
         {
-            var customAttributesData = property.GetCustomAttributesData();
-
-            return TryGetNameFromAttributes(customAttributesData) ?? property.Name;
+            return TryGetNameFromAttributes(property.GetCustomAttributesData()) ?? property.Name;
         }
 
         private static string? TryGetNameFromAttributes(IList<CustomAttributeData> customAttributesData)
         {
             // Check for a custom property name used for configuration key binding
-            foreach (var attributeData in customAttributesData)
+            foreach (CustomAttributeData attributeData in customAttributesData)
             {
                 if (attributeData.AttributeType != typeof(ConfigurationKeyNameAttribute))
                 {
