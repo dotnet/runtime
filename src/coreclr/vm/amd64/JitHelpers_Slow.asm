@@ -44,26 +44,7 @@ EXTERN  g_GCShadow:QWORD
 EXTERN  g_GCShadowEnd:QWORD
 endif
 
-JIT_NEW                 equ     ?JIT_New@@YAPEAVObject@@PEAUCORINFO_CLASS_STRUCT_@@@Z
-CopyValueClassUnchecked equ     ?CopyValueClassUnchecked@@YAXPEAX0PEAVMethodTable@@@Z
-JIT_Box                 equ     ?JIT_Box@@YAPEAVObject@@PEAUCORINFO_CLASS_STRUCT_@@PEAX@Z
-g_pStringClass          equ     ?g_pStringClass@@3PEAVMethodTable@@EA
-FramedAllocateString    equ     ?FramedAllocateString@@YAPEAVStringObject@@K@Z
-JIT_NewArr1             equ     ?JIT_NewArr1@@YAPEAVObject@@PEAUCORINFO_CLASS_STRUCT_@@_J@Z
-
 INVALIDGCVALUE          equ     0CCCCCCCDh
-
-extern JIT_NEW:proc
-extern CopyValueClassUnchecked:proc
-extern JIT_Box:proc
-extern g_pStringClass:QWORD
-extern FramedAllocateString:proc
-extern JIT_NewArr1:proc
-
-extern JIT_GetSharedNonGCStaticBase_Helper:proc
-extern JIT_GetSharedGCStaticBase_Helper:proc
-
-extern JIT_InternalThrow:proc
 
 ifdef _DEBUG
 ; Version for when we're sure to be in the GC, checks whether or not the card
