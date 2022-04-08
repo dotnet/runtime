@@ -846,7 +846,7 @@ namespace System
         /// <inheritdoc cref="IShiftOperators{TSelf, TResult}.op_RightShift(TSelf, int)" />
         static ulong IShiftOperators<ulong, ulong>.operator >>(ulong value, int shiftAmount) => value >> (int)shiftAmount;
 
-        /// <inheritdoc cref="IShiftOperators{TSelf, TResult}.op_UnsignedRightShift(TSelf, int)" />
+        // /// <inheritdoc cref="IShiftOperators{TSelf, TResult}.op_UnsignedRightShift(TSelf, int)" />
         // static ulong IShiftOperators<ulong, ulong>.operator >>>(ulong value, int shiftAmount) => value >> (int)shiftAmount;
 
         //
