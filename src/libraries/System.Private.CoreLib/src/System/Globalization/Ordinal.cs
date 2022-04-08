@@ -248,7 +248,8 @@ namespace System.Globalization
             }
 
             // hoist some expressions from the loop
-            int searchSpaceLength = source.Length - (value.Length - 1);
+            int valueTailLength = value.Length - 1;
+            int searchSpaceLength = source.Length - valueTailLength;
             ref char searchSpace = ref MemoryMarshal.GetReference(source);
             char valueCharU = default;
             char valueCharL = default;
@@ -275,17 +276,17 @@ namespace System.Globalization
                 }
 
                 searchSpaceLength -= relativeIndex;
-                offset += relativeIndex;
-
                 if (searchSpaceLength <= 0)
                 {
                     break;
                 }
+                offset += relativeIndex;
 
                 // Found the first element of "value". See if the tail matches.
-                if (EqualsIgnoreCase(
+                if (valueTailLength == 0 || // for single-char values we already matched first chars
+                    EqualsIgnoreCase(
                         ref Unsafe.Add(ref searchSpace, (nuint)(offset + 1)),
-                        ref Unsafe.Add(ref valueRef, 1), value.Length - 1))
+                        ref Unsafe.Add(ref valueRef, 1), valueTailLength))
                 {
                     return (int)offset;  // The tail matched. Return a successful find.
                 }
