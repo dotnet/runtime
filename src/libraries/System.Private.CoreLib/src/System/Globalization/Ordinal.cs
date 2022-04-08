@@ -274,7 +274,7 @@ namespace System.Globalization
                         ref Unsafe.Add(ref valueRef, (nuint)1),
                         valueLength - 1))
                 {
-                    return source.Length - searchSpaceLength;
+                    return source.Length - searchSpaceLength + candidatePos;
                 }
 
                 searchSpace = Unsafe.Add(ref searchSpace, (nuint)(candidatePos + valueLength));
