@@ -3,7 +3,6 @@
     <!-- These need to be set here because the root Directory.Build.props sets up the intermediate path early -->
     <Configuration>Release</Configuration>
     <OutputType>Exe</OutputType>
-    <RunAnalyzers>true</RunAnalyzers>
   </PropertyGroup>
 
   <Import Project="..\Directory.Build.props"/>
@@ -27,8 +26,4 @@
 
   <!-- Import late, so properties like $(ArtifactsBinDir) are set -->
   <Import Project="$(MonoProjectRoot)wasm\build\WasmApp.InTree.props" />
-
-  <PropertyGroup>
-    <RunAnalyzers>true</RunAnalyzers>
-  </PropertyGroup>
 </Project>
