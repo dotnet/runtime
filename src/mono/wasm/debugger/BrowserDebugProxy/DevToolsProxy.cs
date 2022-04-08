@@ -430,8 +430,15 @@ namespace Microsoft.WebAssembly.Diagnostics
             port = ((IPEndPoint)_server.LocalEndpoint).Port;
             System.Console.WriteLine($"Now listening on: 127.0.0.1:{port} for Firefox debugging");
             TcpClient newClient = await _server.AcceptTcpClientAsync();
-            var monoProxy = new FirefoxMonoProxy(loggerFactory, portBrowser);
-            await monoProxy.Run(newClient, socketForDebuggerTests);
+            try {
+                var monoProxy = new FirefoxMonoProxy(loggerFactory, portBrowser);
+                await monoProxy.Run(newClient, socketForDebuggerTests);
+            }
+            catch (Exception)
+            {
+                _server.Stop();
+                throw;
+            }
             _server.Stop();
         }
     }

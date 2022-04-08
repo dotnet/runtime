@@ -122,7 +122,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 proc.BeginErrorReadLine();
                 proc.BeginOutputReadLine();
                 string line;
-                if (await Task.WhenAny(tcs.Task, Task.Delay(8000)) != tcs.Task)
+                if (await Task.WhenAny(tcs.Task, Task.Delay(10000)) != tcs.Task)
                 {
                     if (devToolsUrl.Port != 0)
                     {
