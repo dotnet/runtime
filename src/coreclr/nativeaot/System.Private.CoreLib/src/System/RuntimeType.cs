@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Diagnostics.CodeAnalysis;
 
 namespace System
@@ -82,7 +83,7 @@ namespace System
                 else
                 {
                     Type underlyingType = Enum.InternalGetUnderlyingType(this);
-                    if (!(underlyingType.TypeHandle.ToEETypePtr() == value.EETypePtr))
+                    if (!(underlyingType.TypeHandle.ToEETypePtr() == value.GetEETypePtr()))
                         throw new ArgumentException(SR.Format(SR.Arg_EnumUnderlyingTypeAndObjectMustBeSameType, value.GetType(), underlyingType));
                 }
 

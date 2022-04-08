@@ -496,7 +496,7 @@ mono_wasm_assembly_load (const char *name)
 	return res;
 }
 
-MonoClass* 
+MonoClass*
 mono_wasm_find_corlib_class (const char *namespace, const char *name)
 {
 	return mono_class_from_name (mono_get_corlib (), namespace, name);
@@ -535,25 +535,37 @@ mono_wasm_box_primitive (MonoClass *klass, void *value, int value_size)
 	return mono_value_box (root_domain, klass, value);
 }
 
+void
+mono_wasm_invoke_method_ref (MonoMethod *method, MonoObject **this_arg_in, void *params[], MonoObject **out_exc, MonoObject **out_result)
+{
+	MonoObject* temp_exc = NULL;
+	if (out_exc)
+		*out_exc = NULL;
+	else
+		out_exc = &temp_exc;
+
+	if (out_result) {
+		*out_result = NULL;
+		*out_result = mono_runtime_invoke (method, this_arg_in ? *this_arg_in : NULL, params, out_exc);
+	} else {
+		mono_runtime_invoke (method, this_arg_in ? *this_arg_in : NULL, params, out_exc);
+	}
+
+	if (*out_exc && out_result) {
+		MonoObject *exc2 = NULL;
+		*out_result = (MonoObject*)mono_object_to_string (*out_exc, &exc2);
+		if (exc2)
+			*out_result = (MonoObject*) mono_string_new (root_domain, "Exception Double Fault");
+		return;
+	}
+}
+
+// deprecated
 MonoObject*
 mono_wasm_invoke_method (MonoMethod *method, MonoObject *this_arg, void *params[], MonoObject **out_exc)
 {
-	MonoObject *exc = NULL;
-	MonoObject *res;
-
-	if (out_exc)
-		*out_exc = NULL;
-	res = mono_runtime_invoke (method, this_arg, params, &exc);
-	if (exc) {
-		if (out_exc)
-			*out_exc = exc;
-
-		MonoObject *exc2 = NULL;
-		res = (MonoObject*)mono_object_to_string (exc, &exc2);
-		if (exc2)
-			res = (MonoObject*) mono_string_new (root_domain, "Exception Double Fault");
-		return res;
-	}
+	MonoObject* result = NULL;
+	mono_wasm_invoke_method_ref (method, &this_arg, params, out_exc, &result);
 
 	MonoMethodSignature *sig = mono_method_signature (method);
 	MonoType *type = mono_signature_get_return_type (sig);
@@ -563,7 +575,7 @@ mono_wasm_invoke_method (MonoMethod *method, MonoObject *this_arg, void *params[
 	if (mono_type_get_type (type) == MONO_TYPE_VOID)
 		return NULL;
 
-	return res;
+	return result;
 }
 
 MonoMethod*
@@ -576,7 +588,7 @@ mono_wasm_assembly_get_entry_point (MonoAssembly *assembly)
 	uint32_t entry = mono_image_get_entry_point (image);
 	if (!entry)
 		return NULL;
-	
+
 	mono_domain_ensure_entry_assembly (root_domain, assembly);
 	method = mono_get_method (image, entry, NULL);
 
@@ -696,10 +708,10 @@ mono_wasm_string_array_new (int size)
 }
 
 void
-mono_wasm_string_get_data (
-	MonoString *string, mono_unichar2 **outChars, int *outLengthBytes, int *outIsInterned
+mono_wasm_string_get_data_ref (
+	MonoString **string, mono_unichar2 **outChars, int *outLengthBytes, int *outIsInterned
 ) {
-	if (!string) {
+	if (!string || !(*string)) {
 		if (outChars)
 			*outChars = 0;
 		if (outLengthBytes)
@@ -710,12 +722,19 @@ mono_wasm_string_get_data (
 	}
 
 	if (outChars)
-		*outChars = mono_string_chars (string);
+		*outChars = mono_string_chars (*string);
 	if (outLengthBytes)
-		*outLengthBytes = mono_string_length (string) * 2;
+		*outLengthBytes = mono_string_length (*string) * 2;
 	if (outIsInterned)
-		*outIsInterned = mono_string_instance_is_interned (string);
+		*outIsInterned = mono_string_instance_is_interned (*string);
 	return;
+}
+
+void
+mono_wasm_string_get_data (
+	MonoString *string, mono_unichar2 **outChars, int *outLengthBytes, int *outIsInterned
+) {
+	mono_wasm_string_get_data_ref(&string, outChars, outLengthBytes, outIsInterned);
 }
 
 void add_assembly(const char* base_dir, const char *name) {

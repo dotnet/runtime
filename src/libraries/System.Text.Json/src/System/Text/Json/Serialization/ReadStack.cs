@@ -109,7 +109,7 @@ namespace System.Text.Json
             SupportContinuation = supportContinuation;
             Current.JsonTypeInfo = jsonTypeInfo;
             Current.JsonPropertyInfo = jsonTypeInfo.PropertyInfoForTypeInfo;
-            Current.NumberHandling = Current.JsonPropertyInfo.NumberHandling;
+            Current.NumberHandling = Current.JsonPropertyInfo.EffectiveNumberHandling;
             UseFastPath = !supportContinuation && !CanContainMetadata;
         }
 
@@ -138,7 +138,7 @@ namespace System.Text.Json
                     Current.JsonTypeInfo = jsonTypeInfo;
                     Current.JsonPropertyInfo = jsonTypeInfo.PropertyInfoForTypeInfo;
                     // Allow number handling on property to win over handling on type.
-                    Current.NumberHandling = numberHandling ?? Current.JsonPropertyInfo.NumberHandling;
+                    Current.NumberHandling = numberHandling ?? Current.JsonPropertyInfo.EffectiveNumberHandling;
                 }
             }
             else
@@ -346,7 +346,7 @@ namespace System.Text.Json
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void SetConstructorArgumentState()
         {
-            if (Current.JsonTypeInfo.IsObjectWithParameterizedCtor)
+            if (Current.JsonTypeInfo.PropertyInfoForTypeInfo.ConverterBase.ConstructorIsParameterized)
             {
                 // A zero index indicates a new stack frame.
                 if (Current.CtorArgumentStateIndex == 0)
