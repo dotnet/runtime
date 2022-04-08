@@ -5,7 +5,6 @@ using System.Diagnostics;
 using System.Text.Unicode;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Runtime.Intrinsics;
 
 namespace System.Globalization
 {
@@ -224,6 +223,7 @@ namespace System.Globalization
                 // A non-linguistic search compares chars directly against one another, so large
                 // target strings can never be found inside small search spaces. This check also
                 // handles empty 'source' spans.
+
                 return -1;
             }
 
