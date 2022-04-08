@@ -162,6 +162,9 @@ namespace Microsoft.Interop
         /// </summary>
         public string? NotSupportedDetails { get; init; }
 
+        /// <summary>
+        /// [Optional] Properties to attach to any diagnostic emitted due to this exception.
+        /// </summary>
         public ImmutableDictionary<string, string>? DiagnosticProperties { get; init; }
     }
 }

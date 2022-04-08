@@ -21,6 +21,9 @@ namespace Microsoft.Interop.Analyzers
     {
         private const string EquivalenceKey = nameof(AddDisableRuntimeMarshallingAttributeFixer);
 
+        private const string PropertiesFolderName = "Properties";
+        private const string AssemblyInfoFileName = "AssemblyInfo.cs";
+
         public override ImmutableArray<string> FixableDiagnosticIds { get; } = ImmutableArray.Create(GeneratorDiagnostics.Ids.TypeNotSupported);
 
         // TODO: Write a custom fix all provider
@@ -54,7 +57,7 @@ namespace Microsoft.Interop.Analyzers
 
             if (assemblyInfo is null)
             {
-                assemblyInfo = project.AddDocument("AssemblyInfo.cs", "", folders: new[] { "Properties" });
+                assemblyInfo = project.AddDocument(AssemblyInfoFileName, "", folders: new[] { PropertiesFolderName });
             }
 
             DocumentEditor editor = await DocumentEditor.CreateAsync(assemblyInfo, cancellationToken).ConfigureAwait(false);
@@ -71,9 +74,11 @@ namespace Microsoft.Interop.Analyzers
 
             static bool IsPropertiesAssemblyInfo(Document document)
             {
-                return document.Name == "AssemblyInfo.cs"
+                // We specifically want to match a file in the Properties folder with the provided name (AssemblyInfo.cs) to match other VS templates that add this file.
+                // We are very strict about this to ensure that we discover the correct file when it is already created and added to the project.
+                return document.Name == AssemblyInfoFileName
                     && document.Folders.Count == 1
-                    && document.Folders[0] == "Properties";
+                    && document.Folders[0] == PropertiesFolderName;
             }
         }
     }
