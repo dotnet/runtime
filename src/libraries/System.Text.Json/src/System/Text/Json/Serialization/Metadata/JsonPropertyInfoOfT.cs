@@ -60,6 +60,7 @@ namespace System.Text.Json.Serialization.Metadata
             DeclaringType = parentClassType;
             MemberInfo = memberInfo;
             IsVirtual = isVirtual;
+            IgnoreCondition = ignoreCondition;
 
             if (memberInfo != null)
             {
@@ -113,12 +114,7 @@ namespace System.Text.Json.Serialization.Metadata
                         }
                 }
 
-                // TODO (perf): can we pre-compute some of these values during source gen?
-                _converterIsExternalAndPolymorphic = !converter.IsInternalConverter && PropertyType != converter.TypeToConvert;
-                PropertyTypeCanBeNull = PropertyType.CanBeNull();
-                _propertyTypeEqualsTypeToConvert = typeof(T) == PropertyType;
-
-                GetPolicies(ignoreCondition);
+                GetPolicies();
             }
             else
             {
@@ -136,23 +132,21 @@ namespace System.Text.Json.Serialization.Metadata
             // Property name settings.
             if (propertyInfo.JsonPropertyName != null)
             {
-                NameAsString = propertyInfo.JsonPropertyName;
+                Name = propertyInfo.JsonPropertyName;
             }
             else if (options.PropertyNamingPolicy == null)
             {
-                NameAsString = ClrName;
+                Name = ClrName;
             }
             else
             {
-                NameAsString = options.PropertyNamingPolicy.ConvertName(ClrName);
-                if (NameAsString == null)
+                Name = options.PropertyNamingPolicy.ConvertName(ClrName);
+                if (Name == null)
                 {
                     ThrowHelper.ThrowInvalidOperationException_SerializerPropertyNameNull(DeclaringType, this);
                 }
             }
 
-            NameAsUtf8Bytes ??= Encoding.UTF8.GetBytes(NameAsString!);
-            EscapedNameSection ??= JsonHelpers.GetEscapedPropertyNameSection(NameAsUtf8Bytes, Options.Encoder);
             SrcGen_IsPublic = propertyInfo.IsPublic;
             SrcGen_HasJsonInclude = propertyInfo.HasJsonInclude;
             SrcGen_IsExtensionData = propertyInfo.IsExtensionData;
@@ -189,14 +183,19 @@ namespace System.Text.Json.Serialization.Metadata
                 DeclaringType = declaringType;
                 IgnoreCondition = propertyInfo.IgnoreCondition;
                 MemberType = propertyInfo.IsProperty ? MemberTypes.Property : MemberTypes.Field;
-
-                _converterIsExternalAndPolymorphic = !ConverterBase.IsInternalConverter && PropertyType != ConverterBase.TypeToConvert;
-                PropertyTypeCanBeNull = typeof(T).CanBeNull();
-                _propertyTypeEqualsTypeToConvert = ConverterBase.TypeToConvert == typeof(T);
                 ConverterStrategy = Converter!.ConverterStrategy;
-                DetermineIgnoreCondition(IgnoreCondition);
                 NumberHandling = propertyInfo.NumberHandling;
-                DetermineSerializationCapabilities(IgnoreCondition);
+            }
+        }
+
+        internal override void Configure()
+        {
+            base.Configure();
+
+            if (!IsForTypeInfo && !IsIgnored)
+            {
+                _converterIsExternalAndPolymorphic = !ConverterBase.IsInternalConverter && PropertyType != ConverterBase.TypeToConvert;
+                _propertyTypeEqualsTypeToConvert = typeof(T) == PropertyType;
             }
         }
 

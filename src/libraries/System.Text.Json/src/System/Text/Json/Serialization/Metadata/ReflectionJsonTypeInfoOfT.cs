@@ -177,7 +177,7 @@ namespace System.Text.Json.Serialization.Metadata
             }
 
             JsonPropertyInfo jsonPropertyInfo = AddProperty(memberInfo, memberType, declaringType, isVirtual, Options);
-            Debug.Assert(jsonPropertyInfo.NameAsString != null);
+            Debug.Assert(jsonPropertyInfo.Name != null);
 
             if (hasExtensionAttribute)
             {
