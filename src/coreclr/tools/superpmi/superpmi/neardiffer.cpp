@@ -1142,8 +1142,8 @@ bool NearDiffer::compare(MethodContext* mc, CompileResult* cr1, CompileResult* c
              orig_hotCodeBlock_2, orig_coldCodeBlock_2, orig_roDataBlock_2);
 
     RelocContext rc;
-
     rc.mc                      = mc;
+
     rc.hotCodeAddress          = (size_t)hotCodeBlock_1;
     rc.hotCodeSize             = hotCodeSize_1;
     rc.coldCodeAddress         = (size_t)coldCodeBlock_1;
@@ -1158,7 +1158,6 @@ bool NearDiffer::compare(MethodContext* mc, CompileResult* cr1, CompileResult* c
     cr1->applyRelocs(&rc, coldCodeBlock_1, coldCodeSize_1, orig_coldCodeBlock_1);
     cr1->applyRelocs(&rc, roDataBlock_1, roDataSize_1, orig_roDataBlock_1);
 
-    rc.mc                      = mc;
     rc.hotCodeAddress          = (size_t)hotCodeBlock_2;
     rc.hotCodeSize             = hotCodeSize_2;
     rc.coldCodeAddress         = (size_t)coldCodeBlock_2;
