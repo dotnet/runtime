@@ -967,6 +967,7 @@ void CompileResult::applyRelocs(RelocContext* rc, unsigned char* block1, ULONG b
                                              (int)tmp.target, (int)tmp.target);
                                     delta        = (INT64)(int)tmp.target;
                                     deltaIsFinal = true;
+                                    break; // No need to consider the remaining GetHelperFtn entries
                                 }
                             }
                         }
@@ -988,6 +989,7 @@ void CompileResult::applyRelocs(RelocContext* rc, unsigned char* block1, ULONG b
                                              (int)tmp.target, (int)tmp.target);
                                     delta        = (INT64)(int)tmp.target;
                                     deltaIsFinal = true;
+                                    break; // No need to consider the remaining GetFunctionEntryPoint entries
                                 }
                             }
                         }
