@@ -33,5 +33,30 @@ if [ "x$extraLibsArg" != "x" ]; then
 	fi
 	export LD_LIBRARY_PATH=$extraLibsDir
 fi
+_RuntimeDir=$(dirname $runtimeExe)
+# Consume OpenSSL as found on Helix
+if [ -d "$_RuntimeDir/openssl" ]; then
+	_thisArch=$(uname -m)
+	echo "****** arch is $_thisArch"
+	case "$_thisArch" in
+		x86_64)
+			_thisArchAndroid=x86_64
+		;;
+		i*86)
+			_thisArchAndroid=x86
+		;;
+		armv*)
+			_thisArchAndroid=armeabi-v7a
+		;;
+		aarch*)
+			_thisArchAndroid=arm64-v8a
+		;;
+		*)
+		;;
+	esac
+	export LD_LIBRARY_PATH=$_RuntimeDir/openssl/prefab/modules/ssl/libs/android.$_thisArchAndroid:$_RuntimeDir/openssl/prefab/modules/crypto/libs/android.$_thisArchAndroid
+	#proof of sanity
+	ls -lh $_RuntimeDir/openssl/prefab/modules/ssl/libs/android.$_thisArchAndroid
+fi
 cd $currentDirectory
 $runtimeExe exec --runtimeconfig ${currentTest}.runtimeconfig.json --depsfile ${currentTest}.deps.json xunit.console.dll ${currentTest}.dll -xml testResults.xml -nologo -nocolor -notrait category=IgnoreForCI -notrait category=OuterLoop
