@@ -288,7 +288,7 @@ namespace System.IO.Compression.Tests
                 FileInfo fileWithBadDate = new FileInfo(GetTestFilePath());
                 fileWithBadDate.Create().Dispose();
                 fileWithBadDate.LastWriteTimeUtc = new DateTime(1970, 1, 1, 1, 1, 1);
-
+                
                 string archivePath = GetTestFilePath();
                 using (FileStream output = File.Open(archivePath, FileMode.Create))
                 using (ZipArchive archive = new ZipArchive(output, ZipArchiveMode.Create))
@@ -352,9 +352,12 @@ namespace System.IO.Compression.Tests
         [InlineData("NullCharFileName_FromWindows")]
         [InlineData("NullCharFileName_FromUnix")]
         [PlatformSpecific(TestPlatforms.AnyUnix)]  // Checks Unix-specific invalid file path
-        public void Unix_ZipWithInvalidFileNames_ThrowsArgumentException(string zipName)
+        public void Unix_ZipWithInvalidFileNames(string zipName)
         {
-            Assert.Throws<ArgumentException>(() => ZipFile.ExtractToDirectory(compat(zipName) + ".zip", GetTestFilePath()));
+            string tempDirectory = GetTestFilePath();
+            ZipFile.ExtractToDirectory(compat(zipName) + ".zip", tempDirectory);
+
+            Assert.True(File.Exists(Path.Combine(tempDirectory, "a_6b6d")));
         }
 
         [Fact]
@@ -425,14 +428,15 @@ namespace System.IO.Compression.Tests
         [InlineData("NullCharFileName_FromWindows", "path")]
         [InlineData("NullCharFileName_FromUnix", "path")]
         [PlatformSpecific(TestPlatforms.Windows)]  // Checks Windows-specific invalid file path
-        public void Windows_ZipWithInvalidFileNames_ThrowsException(string zipName, string paramName)
+        public void Windows_ZipWithInvalidFileNames(string zipName, string paramName)
         {
-            if (paramName == null)
+            if (paramName == null) 
             {
                 string tempDirectory = GetTestFilePath();
                 ZipFile.ExtractToDirectory(compat(zipName) + ".zip", tempDirectory);
 
                 Assert.True(File.Exists(Path.Combine(tempDirectory, "aa_b_d")));
+
             }
             else
             {

@@ -9,15 +9,7 @@ namespace System.IO.Compression
     {
         internal static string SanitizeZipFilePath(string zipPath)
         {
-            StringBuilder builder = new StringBuilder(zipPath);
-            for (int i = 0; i < zipPath.Length; i++)
-            {
-                if ((int)builder[i] == 0)
-                {
-                    builder[i] = '_';
-                }
-            }
-            return builder.ToString();
+            return zipPath.Replace('\0', '_');
         }
     }
 }

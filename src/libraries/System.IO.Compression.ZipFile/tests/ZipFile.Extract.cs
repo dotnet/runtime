@@ -112,23 +112,29 @@ namespace System.IO.Compression.Tests
             
             var testDirectory = GetTestFilePath();
             ZipFile.ExtractToDirectory(compat("InvalidWindowsFileNameChars.zip"), testDirectory);
-            Assert.True(File.Exists(Path.Combine(testDirectory, "TestText______________________________________.txt")));
-            Assert.True(File.Exists(Path.Combine(testDirectory, "Test______________________________________/TestText1______________________________________.txt")));
-            Assert.True(File.Exists(Path.Combine(testDirectory, "Test/normalText.txt")));
+            CheckExists(testDirectory, "TestText______________________________________.txt");
+            CheckExists(testDirectory, "Test______________________________________/TestText1______________________________________.txt");
+            CheckExists(testDirectory, "Test/normalText.txt");
 
             ZipFile.ExtractToDirectory(compat("NullCharFileName_FromWindows.zip"), testDirectory);
-            Assert.True(File.Exists(Path.Combine(testDirectory, "a_6b6d")));
-            File.Delete(Path.Combine(testDirectory, "a_6b6d"));
+            CheckExists(testDirectory, "a_6b6d");
 
             ZipFile.ExtractToDirectory(compat("NullCharFileName_FromUnix.zip"), testDirectory);
-            Assert.True(File.Exists(Path.Combine(testDirectory, "a_6b6d")));
+            CheckExists(testDirectory, "a_6b6d");
 
             ZipFile.ExtractToDirectory(compat("WindowsInvalid_FromUnix.zip"), testDirectory);
-            Assert.True(File.Exists(Path.Combine(testDirectory, "aa_b_d")));
-            File.Delete(Path.Combine(testDirectory, "aa_b_d"));
+            CheckExists(testDirectory, "aa_b_d");
 
             ZipFile.ExtractToDirectory(compat("WindowsInvalid_FromWindows.zip"), testDirectory);
-            Assert.True(File.Exists(Path.Combine(testDirectory, "aa_b_d")));
+            CheckExists(testDirectory, "aa_b_d");
+
+
+            void CheckExists(string testDirectory, string file)
+            {
+                string path = Path.Combine(testDirectory, file);
+                Assert.True(File.Exists(path));
+                File.Delete(path);
+            }
         }
 
         [Theory]
