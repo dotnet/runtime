@@ -3868,11 +3868,11 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             mustExpand |= IsTargetAbi(CORINFO_CORERT_ABI);
             break;
 
+        case NI_Internal_Runtime_MethodTable_Of:
         case NI_System_ByReference_ctor:
         case NI_System_ByReference_get_Value:
         case NI_System_Activator_AllocatorOf:
         case NI_System_Activator_DefaultConstructorOf:
-        case NI_System_Object_MethodTableOf:
         case NI_System_EETypePtr_EETypePtrOf:
             mustExpand = true;
             break;
@@ -4037,9 +4037,9 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 break;
             }
 
+            case NI_Internal_Runtime_MethodTable_Of:
             case NI_System_Activator_AllocatorOf:
             case NI_System_Activator_DefaultConstructorOf:
-            case NI_System_Object_MethodTableOf:
             case NI_System_EETypePtr_EETypePtrOf:
             {
                 assert(IsTargetAbi(CORINFO_CORERT_ABI)); // Only CoreRT supports it.
@@ -5233,10 +5233,6 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
             {
                 result = NI_System_Object_GetType;
             }
-            else if (strcmp(methodName, "MethodTableOf") == 0)
-            {
-                result = NI_System_Object_MethodTableOf;
-            }
         }
         else if (strcmp(className, "RuntimeTypeHandle") == 0)
         {
@@ -5333,6 +5329,16 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
             if (strcmp(methodName, "EETypePtrOf") == 0)
             {
                 result = NI_System_EETypePtr_EETypePtrOf;
+            }
+        }
+    }
+    else if (strcmp(namespaceName, "Internal.Runtime") == 0)
+    {
+        if (strcmp(className, "MethodTable") == 0)
+        {
+            if (strcmp(methodName, "Of") == 0)
+            {
+                result = NI_Internal_Runtime_MethodTable_Of;
             }
         }
     }
