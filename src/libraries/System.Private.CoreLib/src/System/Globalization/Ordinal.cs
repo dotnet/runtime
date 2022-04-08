@@ -248,7 +248,7 @@ namespace System.Globalization
             }
 
             // hoist some expressions from the loop
-            int searchSpaceLength = source.Length - value.Length - 1;
+            int searchSpaceLength = source.Length - (value.Length - 1);
             ref char searchSpace = ref MemoryMarshal.GetReference(source);
             char valueCharU = default;
             char valueCharL = default;
