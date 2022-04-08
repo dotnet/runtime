@@ -29,7 +29,7 @@ namespace Microsoft.Extensions.Logging.Console
     {
         protected ConsoleFormatter(string name) { }
         public string Name { get { throw null; } }
-        public abstract void Write<TState>(in Microsoft.Extensions.Logging.Abstractions.LogEntry<TState> logEntry, Microsoft.Extensions.Logging.IExternalScopeProvider scopeProvider, System.IO.TextWriter textWriter);
+        public abstract void Write<TState>(in Microsoft.Extensions.Logging.Abstractions.LogEntry<TState> logEntry, Microsoft.Extensions.Logging.IExternalScopeProvider? scopeProvider, System.IO.TextWriter textWriter);
     }
     public static partial class ConsoleFormatterNames
     {
@@ -42,7 +42,7 @@ namespace Microsoft.Extensions.Logging.Console
         public ConsoleFormatterOptions() { }
         public bool IncludeScopes { get { throw null; } set { } }
         [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("DateTimeFormat")]
-        public string TimestampFormat { get { throw null; } set { } }
+        public string? TimestampFormat { get { throw null; } set { } }
         public bool UseUtcTimestamp { get { throw null; } set { } }
     }
     [System.ObsoleteAttribute("ConsoleLoggerFormat has been deprecated.")]
@@ -58,12 +58,12 @@ namespace Microsoft.Extensions.Logging.Console
         public bool DisableColors { get { throw null; } set { } }
         [System.ObsoleteAttribute("ConsoleLoggerOptions.Format has been deprecated. Use ConsoleLoggerOptions.FormatterName instead.")]
         public Microsoft.Extensions.Logging.Console.ConsoleLoggerFormat Format { get { throw null; } set { } }
-        public string FormatterName { get { throw null; } set { } }
+        public string? FormatterName { get { throw null; } set { } }
         [System.ObsoleteAttribute("ConsoleLoggerOptions.IncludeScopes has been deprecated. Use ConsoleFormatterOptions.IncludeScopes instead.")]
         public bool IncludeScopes { get { throw null; } set { } }
         public Microsoft.Extensions.Logging.LogLevel LogToStandardErrorThreshold { get { throw null; } set { } }
         [System.ObsoleteAttribute("ConsoleLoggerOptions.TimestampFormat has been deprecated. Use ConsoleFormatterOptions.TimestampFormat instead.")]
-        public string TimestampFormat { get { throw null; } set { } }
+        public string? TimestampFormat { get { throw null; } set { } }
         [System.ObsoleteAttribute("ConsoleLoggerOptions.UseUtcTimestamp has been deprecated. Use ConsoleFormatterOptions.UseUtcTimestamp instead.")]
         public bool UseUtcTimestamp { get { throw null; } set { } }
     }
@@ -72,7 +72,7 @@ namespace Microsoft.Extensions.Logging.Console
     public partial class ConsoleLoggerProvider : Microsoft.Extensions.Logging.ILoggerProvider, Microsoft.Extensions.Logging.ISupportExternalScope, System.IDisposable
     {
         public ConsoleLoggerProvider(Microsoft.Extensions.Options.IOptionsMonitor<Microsoft.Extensions.Logging.Console.ConsoleLoggerOptions> options) { }
-        public ConsoleLoggerProvider(Microsoft.Extensions.Options.IOptionsMonitor<Microsoft.Extensions.Logging.Console.ConsoleLoggerOptions> options, System.Collections.Generic.IEnumerable<Microsoft.Extensions.Logging.Console.ConsoleFormatter> formatters) { }
+        public ConsoleLoggerProvider(Microsoft.Extensions.Options.IOptionsMonitor<Microsoft.Extensions.Logging.Console.ConsoleLoggerOptions> options, System.Collections.Generic.IEnumerable<Microsoft.Extensions.Logging.Console.ConsoleFormatter>? formatters) { }
         public Microsoft.Extensions.Logging.ILogger CreateLogger(string name) { throw null; }
         public void Dispose() { }
         public void SetScopeProvider(Microsoft.Extensions.Logging.IExternalScopeProvider scopeProvider) { }
