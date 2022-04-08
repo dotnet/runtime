@@ -749,6 +749,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 var getMethodId = retDebuggerCmdReader.ReadInt32();
                 retDebuggerCmdReader.ReadInt32(); //setmethod
                 retDebuggerCmdReader.ReadInt32(); //attrs
+                retDebuggerCmdReader.ReadInt32(); //property accessibility
                 if (await sdbAgent.MethodIsStatic(getMethodId, token))
                     continue;
                 using var command_params_writer_to_proxy = new MonoBinaryWriter();
@@ -1700,6 +1701,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 var getMethodId = retDebuggerCmdReader.ReadInt32();
                 retDebuggerCmdReader.ReadInt32(); //setmethod
                 var attrs = retDebuggerCmdReader.ReadInt32(); //attrs
+                var accessibility = retDebuggerCmdReader.ReadInt32(); //property accessibility
                 if (propertyNameStr == propertyName)
                 {
                     return getMethodId;
@@ -1724,6 +1726,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 var getMethodId = retDebuggerCmdReader.ReadInt32();
                 retDebuggerCmdReader.ReadInt32(); //setmethod
                 var attrs = retDebuggerCmdReader.ReadInt32(); //attrs
+                var accessibility = (MethodAttributes)(retDebuggerCmdReader.ReadInt32() & (int)MethodAttributes.MemberAccessMask);
                 if (getMethodId == 0 || await GetParamCount(getMethodId, token) != 0 || await MethodIsStatic(getMethodId, token))
                     continue;
                 JObject propRet = null;
@@ -2693,6 +2696,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     var getMethodId = retDebuggerCmdReader.ReadInt32();
                     var setMethodId = retDebuggerCmdReader.ReadInt32(); //setmethod
                     var attrValue = retDebuggerCmdReader.ReadInt32(); //attrs
+                    var accessibility = retDebuggerCmdReader.ReadInt32(); //accessibility
                     //Console.WriteLine($"{propertyNameStr} - {attrValue}");
                     if (ret.Where(attribute => attribute["name"].Value<string>().Equals(propertyNameStr)).Any())
                     {

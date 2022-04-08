@@ -8014,6 +8014,13 @@ type_commands_internal (int command, MonoClass *klass, MonoDomain *domain, guint
 			buffer_add_methodid (buf, domain, p->get);
 			buffer_add_methodid (buf, domain, p->set);
 			buffer_add_int (buf, p->attrs & ~MONO_PROPERTY_META_FLAG_MASK);
+			if (CHECK_PROTOCOL_VERSION(2, 62)) {
+				// hack: check property accesibility level
+				// one of: getter or setter has to be at least the accessibility of the property,
+            	// so we choose higher value (wider scope)
+				int p_access = p->get->flags > p->set->flags ? p->get->flags : p->set->flags;
+				buffer_add_int (buf, p_access);
+			}
 			i ++;
 		}
 		g_assert (i == nprops);
