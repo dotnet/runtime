@@ -49,7 +49,7 @@ The compiler will need an indication for existing troublesome APIs where ByRefLi
 namespace System.Runtime.CompilerServices
 {
     /// <summary>
-    /// Indicates to the compiler that constrain checks should be suppressed
+    /// Indicates to the compiler that constraint checks should be suppressed
     /// and will instead be enforced at run-time.
     /// </summary>
     [AttributeUsage(AttributeTargets.Constructor | AttributeTargets.Method | AttributeTargets.Property)]
