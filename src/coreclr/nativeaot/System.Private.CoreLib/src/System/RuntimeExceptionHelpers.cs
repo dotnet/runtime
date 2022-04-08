@@ -268,7 +268,7 @@ namespace System
             if (exception != null)
             {
                 if (reason == RhFailFastReason.PN_UnhandledException)
-                    errorCode = (uint)(exception.EETypePtr.GetHashCode());
+                    errorCode = (uint)(exception.GetEETypePtr().GetHashCode());
                 else if (exception.HResult != 0)
                     errorCode = (uint)exception.HResult;
             }

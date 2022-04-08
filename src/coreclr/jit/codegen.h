@@ -235,7 +235,16 @@ protected:
 
     void genJumpToThrowHlpBlk(emitJumpKind jumpKind, SpecialCodeKind codeKind, BasicBlock* failBlk = nullptr);
 
+#ifdef TARGET_LOONGARCH64
+    void genSetRegToIcon(regNumber reg, ssize_t val, var_types type);
+    void genJumpToThrowHlpBlk_la(SpecialCodeKind codeKind,
+                                 instruction     ins,
+                                 regNumber       reg1,
+                                 BasicBlock*     failBlk = nullptr,
+                                 regNumber       reg2    = REG_R0);
+#else
     void genCheckOverflow(GenTree* tree);
+#endif
 
     //-------------------------------------------------------------------------
     //
@@ -251,7 +260,11 @@ protected:
     //
 
     void genEstablishFramePointer(int delta, bool reportUnwindData);
+#if defined(TARGET_LOONGARCH64)
+    void genFnPrologCalleeRegArgs();
+#else
     void genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbered, RegState* regState);
+#endif
     void genEnregisterIncomingStackArgs();
 #if defined(TARGET_ARM64)
     void genEnregisterOSRArgsAndLocals(regNumber initReg, bool* pInitRegZeroed);
@@ -263,7 +276,7 @@ protected:
     void genClearStackVec3ArgUpperBits();
 #endif // UNIX_AMD64_ABI && FEATURE_SIMD
 
-#if defined(TARGET_ARM64)
+#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
     bool genInstrWithConstant(instruction ins,
                               emitAttr    attr,
                               regNumber   reg1,
@@ -323,6 +336,7 @@ protected:
     void genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, int lowestCalleeSavedOffset, int spDelta);
 
     void genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroed);
+
 #else
     void genPushCalleeSavedRegisters();
 #endif
@@ -408,7 +422,25 @@ protected:
 
     FuncletFrameInfoDsc genFuncletInfo;
 
-#endif // TARGET_AMD64
+#elif defined(TARGET_LOONGARCH64)
+
+    // A set of information that is used by funclet prolog and epilog generation.
+    // It is collected once, before funclet prologs and epilogs are generated,
+    // and used by all funclet prologs and epilogs, which must all be the same.
+    struct FuncletFrameInfoDsc
+    {
+        regMaskTP fiSaveRegs;                // Set of callee-saved registers saved in the funclet prolog (includes RA)
+        int fiFunction_CallerSP_to_FP_delta; // Delta between caller SP and the frame pointer in the parent function
+                                             // (negative)
+        int fiSP_to_FPRA_save_delta;         // FP/RA register save offset from SP (positive)
+        int fiSP_to_PSP_slot_delta;          // PSP slot offset from SP (positive)
+        int fiCallerSP_to_PSP_slot_delta;    // PSP slot offset from Caller SP (negative)
+        int fiFrameType;                     // Funclet frame types are numbered. See genFuncletProlog() for details.
+        int fiSpDelta1;                      // Stack pointer delta 1 (negative)
+    };
+
+    FuncletFrameInfoDsc genFuncletInfo;
+#endif // TARGET_LOONGARCH64
 
 #if defined(TARGET_XARCH)
 
@@ -596,6 +628,10 @@ protected:
 
 #if defined(DEBUG) && defined(TARGET_ARM64)
     void genArm64EmitterUnitTests();
+#endif
+
+#if defined(DEBUG) && defined(TARGET_LOONGARCH64)
+    void genLoongArch64EmitterUnitTests();
 #endif
 
 #if defined(DEBUG) && defined(LATE_DISASM) && defined(TARGET_AMD64)
@@ -1234,8 +1270,6 @@ protected:
     void genCodeForStoreLclFld(GenTreeLclFld* tree);
     void genCodeForStoreLclVar(GenTreeLclVar* tree);
     void genCodeForReturnTrap(GenTreeOp* tree);
-    void genCodeForJcc(GenTreeCC* tree);
-    void genCodeForSetcc(GenTreeCC* setcc);
     void genCodeForStoreInd(GenTreeStoreInd* tree);
     void genCodeForSwap(GenTreeOp* tree);
     void genCodeForCpObj(GenTreeObj* cpObjNode);
@@ -1324,7 +1358,11 @@ protected:
     void genTableBasedSwitch(GenTree* tree);
     void genCodeForArrIndex(GenTreeArrIndex* treeNode);
     void genCodeForArrOffset(GenTreeArrOffs* treeNode);
+#if defined(TARGET_LOONGARCH64)
+    instruction genGetInsForOper(GenTree* treeNode);
+#else
     instruction genGetInsForOper(genTreeOps oper, var_types type);
+#endif
     bool genEmitOptimizedGCWriteBarrier(GCInfo::WriteBarrierForm writeBarrierForm, GenTree* addr, GenTree* data);
     GenTree* getCallTarget(const GenTreeCall* call, CORINFO_METHOD_HANDLE* methHnd);
     regNumber getCallIndirectionCellReg(const GenTreeCall* call);
@@ -1333,7 +1371,11 @@ protected:
     void genJmpMethod(GenTree* jmp);
     BasicBlock* genCallFinally(BasicBlock* block);
     void genCodeForJumpTrue(GenTreeOp* jtrue);
-#ifdef TARGET_ARM64
+#if defined(TARGET_LOONGARCH64)
+    // TODO: refactor for LA.
+    void genCodeForJumpCompare(GenTreeOp* tree);
+#endif
+#if defined(TARGET_ARM64)
     void genCodeForJumpCompare(GenTreeOp* tree);
     void genCodeForMadd(GenTreeOp* tree);
     void genCodeForBfiz(GenTreeOp* tree);
@@ -1348,6 +1390,10 @@ protected:
 
     void genMultiRegStoreToSIMDLocal(GenTreeLclVar* lclNode);
     void genMultiRegStoreToLocal(GenTreeLclVar* lclNode);
+
+#if defined(TARGET_LOONGARCH64)
+    void genMultiRegCallStoreToLocal(GenTree* treeNode);
+#endif
 
     // Codegen for multi-register struct returns.
     bool isStructReturn(GenTree* treeNode);
@@ -1364,9 +1410,9 @@ protected:
     void genFloatReturn(GenTree* treeNode);
 #endif // TARGET_X86
 
-#if defined(TARGET_ARM64)
+#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
     void genSimpleReturn(GenTree* treeNode);
-#endif // TARGET_ARM64
+#endif // TARGET_ARM64 || TARGET_LOONGARCH64
 
     void genReturn(GenTree* treeNode);
 
@@ -1656,6 +1702,7 @@ public:
     instruction genMapShiftInsToShiftByConstantIns(instruction ins, int shiftByValue);
 #endif // TARGET_XARCH
 
+#ifndef TARGET_LOONGARCH64
     // Maps a GenCondition code to a sequence of conditional jumps or other conditional instructions
     // such as X86's SETcc. A sequence of instructions rather than just a single one is required for
     // certain floating point conditions.
@@ -1699,6 +1746,10 @@ public:
 
     void inst_JCC(GenCondition condition, BasicBlock* target);
     void inst_SETCC(GenCondition condition, var_types type, regNumber dstReg);
+
+    void genCodeForJcc(GenTreeCC* tree);
+    void genCodeForSetcc(GenTreeCC* setcc);
+#endif // !TARGET_LOONGARCH64
 };
 
 // A simple phase that just invokes a method on the codegen instance

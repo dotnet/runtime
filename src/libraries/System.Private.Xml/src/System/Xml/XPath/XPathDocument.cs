@@ -106,14 +106,14 @@ namespace System.Xml.XPath
         /// <summary>
         /// Create a new document and load the content from the Uri.
         /// </summary>
-        public XPathDocument(string uri) : this(uri, XmlSpace.Default)
+        public XPathDocument([StringSyntax(StringSyntaxAttribute.Uri)] string uri) : this(uri, XmlSpace.Default)
         {
         }
 
         /// <summary>
         /// Create a new document and load the content from the Uri, with whitespace handling controlled according to "space".
         /// </summary>
-        public XPathDocument(string uri, XmlSpace space)
+        public XPathDocument([StringSyntax(StringSyntaxAttribute.Uri)] string uri, XmlSpace space)
         {
             XmlTextReaderImpl reader = SetupReader(new XmlTextReaderImpl(uri));
 

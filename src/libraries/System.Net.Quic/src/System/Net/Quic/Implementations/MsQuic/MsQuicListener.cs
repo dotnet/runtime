@@ -59,6 +59,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                     AuthenticationOptions.RemoteCertificateValidationCallback = options.ServerAuthenticationOptions.RemoteCertificateValidationCallback;
                     AuthenticationOptions.ServerCertificateSelectionCallback = options.ServerAuthenticationOptions.ServerCertificateSelectionCallback;
                     AuthenticationOptions.ApplicationProtocols = options.ServerAuthenticationOptions.ApplicationProtocols;
+                    AuthenticationOptions.CipherSuitesPolicy = options.ServerAuthenticationOptions.CipherSuitesPolicy;
 
                     if (options.ServerAuthenticationOptions.ServerCertificate == null && options.ServerAuthenticationOptions.ServerCertificateContext == null &&
                         options.ServerAuthenticationOptions.ServerCertificateSelectionCallback != null)

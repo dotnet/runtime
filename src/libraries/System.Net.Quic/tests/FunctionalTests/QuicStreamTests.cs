@@ -820,6 +820,7 @@ namespace System.Net.Quic.Tests
 
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/67612")]
         public async Task WriteAsync_LocalAbort_Throws()
         {
             if (IsMockProvider)

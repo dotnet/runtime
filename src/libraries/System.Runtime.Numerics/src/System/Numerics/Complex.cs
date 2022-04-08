@@ -389,11 +389,11 @@ namespace System.Numerics
 
         public override string ToString() => $"({m_real}, {m_imaginary})";
 
-        public string ToString(string? format) => ToString(format, null);
+        public string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format) => ToString(format, null);
 
         public string ToString(IFormatProvider? provider) => ToString(null, provider);
 
-        public string ToString(string? format, IFormatProvider? provider)
+        public string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format, IFormatProvider? provider)
         {
             return string.Format(provider, "({0}, {1})", m_real.ToString(format, provider), m_imaginary.ToString(format, provider));
         }

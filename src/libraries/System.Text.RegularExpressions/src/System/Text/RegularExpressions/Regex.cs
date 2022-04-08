@@ -67,7 +67,7 @@ namespace System.Text.RegularExpressions
             RegexTree tree = Init(pattern, RegexOptions.None, s_defaultMatchTimeout, ref culture);
 
             // Create the interpreter factory.
-            factory = new RegexInterpreterFactory(tree, culture);
+            factory = new RegexInterpreterFactory(tree);
 
             // NOTE: This overload _does not_ delegate to the one that takes options, in order
             // to avoid unnecessarily rooting the support for RegexOptions.NonBacktracking/Compiler
@@ -101,7 +101,7 @@ namespace System.Text.RegularExpressions
                 }
 
                 // If no factory was created, fall back to creating one for the interpreter.
-                factory ??= new RegexInterpreterFactory(tree, culture);
+                factory ??= new RegexInterpreterFactory(tree);
             }
         }
 
