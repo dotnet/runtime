@@ -247,17 +247,15 @@ namespace System.Globalization
                 return OrdinalCasing.IndexOf(source, value);
             }
 
-
+            // hoist some expressions from the loop
             int valueTailLength = value.Length - 1;
+            int remainingSearchSpaceLength = source.Length - valueTailLength;
             ref char valueTail = ref Unsafe.Add(ref valueRef, 1);
             ref char searchSpace = ref MemoryMarshal.GetReference(source);
-            int remainingSearchSpaceLength = source.Length - valueTailLength;
-
-            // hoist some expressions from the loop
             char valueCharU = default;
             char valueCharL = default;
-            bool isLetter = false;
             nint offset = 0;
+            bool isLetter = false;
 
             if ((uint)((valueChar | 0x20) - 'a') <= 'z' - 'a')
             {
@@ -266,42 +264,36 @@ namespace System.Globalization
                 isLetter = true;
             }
 
-            while (remainingSearchSpaceLength > 0)
+            do
             {
                 int relativeIndex;
                 if (isLetter)
                 {
-                    relativeIndex =
-                        SpanHelpers.IndexOfAny(
-                            ref Unsafe.Add(ref searchSpace, offset),
-                            valueCharU,
-                            valueCharL,
-                            remainingSearchSpaceLength);
+                    relativeIndex = SpanHelpers.IndexOfAny(ref Unsafe.Add(ref searchSpace, offset),
+                        valueCharU, valueCharL, remainingSearchSpaceLength);
                 }
                 else
                 {
-                    relativeIndex =
-                        SpanHelpers.IndexOf(
-                            ref Unsafe.Add(ref searchSpace, offset),
-                            valueChar,
-                            remainingSearchSpaceLength);
+                    relativeIndex = SpanHelpers.IndexOf(ref Unsafe.Add(ref searchSpace, offset),
+                        valueChar, remainingSearchSpaceLength);
                 }
 
                 // Do a quick search for the first element of "value".
                 if (relativeIndex < 0)
+                {
                     break;
+                }
 
                 remainingSearchSpaceLength -= relativeIndex;
                 offset += relativeIndex;
 
                 if (remainingSearchSpaceLength <= 0)
-                    break;  // The unsearched portion is now shorter than the sequence we're looking for. So it can't be there.
+                {
+                    break;
+                }
 
                 // Found the first element of "value". See if the tail matches.
-                if (EqualsIgnoreCase(
-                        ref Unsafe.Add(ref searchSpace, (nuint)(offset + 1)),
-                        ref valueTail,
-                        valueTailLength))
+                if (EqualsIgnoreCase(ref Unsafe.Add(ref searchSpace, (nuint)(offset + 1)), ref valueTail, valueTailLength))
                 {
                     return (int)offset;  // The tail matched. Return a successful find.
                 }
@@ -309,6 +301,7 @@ namespace System.Globalization
                 remainingSearchSpaceLength--;
                 offset++;
             }
+            while (remainingSearchSpaceLength > 0);
 
             return -1;
         }
