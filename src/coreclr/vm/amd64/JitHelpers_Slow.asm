@@ -225,59 +225,5 @@ LEAF_ENTRY AllocateStringFastUP, _TEXT
         jmp     FramedAllocateString
 LEAF_END AllocateStringFastUP, _TEXT
 
-; HCIMPL2(Object*, JIT_NewArr1OBJ_UP, CORINFO_CLASS_HANDLE arrayMT, INT_PTR size)
-LEAF_ENTRY JIT_NewArr1OBJ_UP, _TEXT
-
-        ; We were passed a (shared) method table in RCX, which contains the element type.
-
-        ; The element count is in RDX
-
-        ; NOTE: if this code is ported for CORINFO_HELP_NEWSFAST_ALIGN8, it will need
-        ; to emulate the double-specific behavior of JIT_TrialAlloc::GenAllocArray.
-
-        ; Verifies that LARGE_OBJECT_SIZE fits in 32-bit.  This allows us to do array size
-        ; arithmetic using 32-bit registers.
-        .erre ASM_LARGE_OBJECT_SIZE lt 100000000h
-
-        cmp     rdx, (ASM_LARGE_OBJECT_SIZE - 256)/8 ; sizeof(void*)
-        jae     OversizedArray
-
-        ; In this case we know the element size is sizeof(void *), or 8 for x64
-        ; This helps us in two ways - we can shift instead of multiplying, and
-        ; there's no need to align the size either
-
-        mov     r8d, dword ptr [rcx + OFFSET__MethodTable__m_BaseSize]
-        lea     r8d, [r8d + edx * 8]
-
-        ; No need for rounding in this case - element size is 8, and m_BaseSize is guaranteed
-        ; to be a multiple of 8.
-
-        inc     [g_global_alloc_lock]
-        jnz     JIT_NewArr1
-
-        mov     rax, [g_global_alloc_context + OFFSETOF__gc_alloc_context__alloc_ptr]       ; alloc_ptr
-        mov     r10, [g_global_alloc_context + OFFSETOF__gc_alloc_context__alloc_limit]     ; limit_ptr
-
-        add     r8, rax
-
-        cmp     r8, r10
-        ja      AllocFailed
-
-        mov     qword ptr [g_global_alloc_context + OFFSETOF__gc_alloc_context__alloc_ptr], r8     ; update the alloc ptr
-        mov     [rax], rcx
-        mov     [g_global_alloc_lock], -1
-
-        mov     dword ptr [rax + OFFSETOF__ArrayBase__m_NumComponents], edx
-
-        ret
-
-    AllocFailed:
-        mov     [g_global_alloc_lock], -1
-
-    OversizedArray:
-        jmp     JIT_NewArr1
-LEAF_END JIT_NewArr1OBJ_UP, _TEXT
-
-
         end
 
