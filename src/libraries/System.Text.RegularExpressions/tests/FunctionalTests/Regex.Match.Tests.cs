@@ -1048,37 +1048,58 @@ namespace System.Text.RegularExpressions.Tests
             Assert.Throws<RegexMatchTimeoutException>(() => r.Match(input));
         }
 
-        // TODO: Figure out what to do with default timeouts for source generated regexes
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [InlineData(RegexOptions.None)]
-        [InlineData(RegexOptions.Compiled)]
-        public void Match_DefaultTimeout_Throws(RegexOptions options)
+        [MemberData(nameof(RegexHelpers.AvailableEngines_MemberData), MemberType = typeof(RegexHelpers))]
+        public void Match_InstanceMethods_DefaultTimeout_Throws(RegexEngine engine)
         {
-            RemoteExecutor.Invoke(optionsString =>
+            if (RegexHelpers.IsNonBacktracking(engine))
             {
+                // test relies on backtracking taking a long time
+                return;
+            }
+
+            RemoteExecutor.Invoke(async engineString =>
+            {
+                RegexEngine engine = (RegexEngine)int.Parse(engineString, CultureInfo.InvariantCulture);
+
                 const string Pattern = @"^([0-9a-zA-Z]([-.\w]*[0-9a-zA-Z])*@(([0-9a-zA-Z])+([-\w]*[0-9a-zA-Z])*\.)+[a-zA-Z]{2,9})$";
                 string input = new string('a', 50) + "@a.a";
 
                 AppDomain.CurrentDomain.SetData(RegexHelpers.DefaultMatchTimeout_ConfigKeyName, TimeSpan.FromMilliseconds(100));
 
-                if ((RegexOptions)int.Parse(optionsString, CultureInfo.InvariantCulture) == RegexOptions.None)
-                {
-                    Assert.Throws<RegexMatchTimeoutException>(() => new Regex(Pattern).Match(input));
-                    Assert.Throws<RegexMatchTimeoutException>(() => new Regex(Pattern).IsMatch(input));
-                    Assert.Throws<RegexMatchTimeoutException>(() => new Regex(Pattern).Matches(input).Count);
+                Regex r = await RegexHelpers.GetRegexAsync(engine, Pattern);
+                Assert.Throws<RegexMatchTimeoutException>(() => r.Match(input));
+                Assert.Throws<RegexMatchTimeoutException>(() => r.IsMatch(input));
+                Assert.Throws<RegexMatchTimeoutException>(() => r.Matches(input).Count);
 
+            }, ((int)engine).ToString(CultureInfo.InvariantCulture)).Dispose();
+        }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(RegexOptions.None)]
+        [InlineData(RegexOptions.Compiled)]
+        public void Match_StaticMethods_DefaultTimeout_Throws(RegexOptions options)
+        {
+            RemoteExecutor.Invoke(optionsString =>
+            {
+                RegexOptions options = (RegexOptions)int.Parse(optionsString, CultureInfo.InvariantCulture);
+
+                const string Pattern = @"^([0-9a-zA-Z]([-.\w]*[0-9a-zA-Z])*@(([0-9a-zA-Z])+([-\w]*[0-9a-zA-Z])*\.)+[a-zA-Z]{2,9})$";
+                string input = new string('a', 50) + "@a.a";
+
+                AppDomain.CurrentDomain.SetData(RegexHelpers.DefaultMatchTimeout_ConfigKeyName, TimeSpan.FromMilliseconds(100));
+
+                if (options == RegexOptions.None)
+                {
                     Assert.Throws<RegexMatchTimeoutException>(() => Regex.Match(input, Pattern));
                     Assert.Throws<RegexMatchTimeoutException>(() => Regex.IsMatch(input, Pattern));
                     Assert.Throws<RegexMatchTimeoutException>(() => Regex.Matches(input, Pattern).Count);
                 }
 
-                Assert.Throws<RegexMatchTimeoutException>(() => new Regex(Pattern, (RegexOptions)int.Parse(optionsString, CultureInfo.InvariantCulture)).Match(input));
-                Assert.Throws<RegexMatchTimeoutException>(() => new Regex(Pattern, (RegexOptions)int.Parse(optionsString, CultureInfo.InvariantCulture)).IsMatch(input));
-                Assert.Throws<RegexMatchTimeoutException>(() => new Regex(Pattern, (RegexOptions)int.Parse(optionsString, CultureInfo.InvariantCulture)).Matches(input).Count);
+                Assert.Throws<RegexMatchTimeoutException>(() => Regex.Match(input, Pattern, options));
+                Assert.Throws<RegexMatchTimeoutException>(() => Regex.IsMatch(input, Pattern, options));
+                Assert.Throws<RegexMatchTimeoutException>(() => Regex.Matches(input, Pattern, options).Count);
 
-                Assert.Throws<RegexMatchTimeoutException>(() => Regex.Match(input, Pattern, (RegexOptions)int.Parse(optionsString, CultureInfo.InvariantCulture)));
-                Assert.Throws<RegexMatchTimeoutException>(() => Regex.IsMatch(input, Pattern, (RegexOptions)int.Parse(optionsString, CultureInfo.InvariantCulture)));
-                Assert.Throws<RegexMatchTimeoutException>(() => Regex.Matches(input, Pattern, (RegexOptions)int.Parse(optionsString, CultureInfo.InvariantCulture)).Count);
             }, ((int)options).ToString(CultureInfo.InvariantCulture)).Dispose();
         }
 
