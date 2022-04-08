@@ -774,5 +774,21 @@ namespace System.Threading.RateLimiting.Test
             limiter.TryReplenish();
             Assert.NotNull(limiter.IdleDuration);
         }
+
+        [Fact]
+        public void ReplenishingRateLimiterPropertiesHaveCorrectValues()
+        {
+            var replenishPeriod = TimeSpan.FromMinutes(1);
+            using ReplenishingRateLimiter limiter = new TokenBucketRateLimiter(new TokenBucketRateLimiterOptions(1, QueueProcessingOrder.OldestFirst, 2,
+                replenishPeriod, 1, autoReplenishment: true));
+            Assert.True(limiter.IsAutoReplenishing);
+            Assert.Equal(replenishPeriod, limiter.ReplenishmentPeriod);
+
+            replenishPeriod = TimeSpan.FromSeconds(2);
+            using ReplenishingRateLimiter limiter2 = new TokenBucketRateLimiter(new TokenBucketRateLimiterOptions(1, QueueProcessingOrder.OldestFirst, 2,
+                replenishPeriod, 1, autoReplenishment: false));
+            Assert.False(limiter2.IsAutoReplenishing);
+            Assert.Equal(replenishPeriod, limiter2.ReplenishmentPeriod);
+        }
     }
 }

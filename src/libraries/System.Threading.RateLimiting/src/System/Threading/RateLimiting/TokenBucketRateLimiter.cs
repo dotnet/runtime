@@ -305,8 +305,9 @@ namespace System.Threading.RateLimiting
                     }
                 }
 
-                if (_tokenCount == _options.TokenLimit && _idleSince is null)
+                if (_tokenCount == _options.TokenLimit)
                 {
+                    Debug.Assert(_idleSince is null);
                     Debug.Assert(_queueCount == 0);
                     _idleSince = Stopwatch.GetTimestamp();
                 }
