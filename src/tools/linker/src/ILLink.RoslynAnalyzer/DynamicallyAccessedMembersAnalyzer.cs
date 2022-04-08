@@ -131,22 +131,31 @@ namespace ILLink.RoslynAnalyzer
 				&& context.ContainingSymbol.IsInRequiresUnreferencedCodeAttributeScope ())
 				return;
 
+			var symbol = context.SemanticModel.GetSymbolInfo (context.Node).Symbol;
+
+			// Avoid unnecesary execution if not NamedType or Method
+			if (symbol is not INamedTypeSymbol && symbol is not IMethodSymbol)
+				return;
+
+			// Members inside nameof or cref comments, commonly used to access the string value of a variable, type, or a memeber,
+			// can generate diagnostics warnings, which can be noisy and unhelpful. 
+			// Walking the node heirarchy to check if the member is inside a nameof/cref to not generate diagnostics
+			var parentNode = context.Node;
+			while (parentNode != null) {
+				if (parentNode is InvocationExpressionSyntax invocationExpression &&
+					invocationExpression.Expression is IdentifierNameSyntax ident1 &&
+					ident1.Identifier.ValueText.Equals ("nameof"))
+					return;
+				else if (parentNode is NameMemberCrefSyntax)
+					return;
+
+				parentNode = parentNode.Parent;
+			}
+
 			ImmutableArray<ITypeParameterSymbol> typeParams = default;
 			ImmutableArray<ITypeSymbol> typeArgs = default;
-			var symbol = context.SemanticModel.GetSymbolInfo (context.Node).Symbol;
 			switch (symbol) {
 			case INamedTypeSymbol type:
-				// INamedTypeSymbol inside nameof, commonly used to access the string value of a variable, type, or a memeber,
-				// can generate diagnostics warnings, which can be noisy and unhelpful. 
-				// Walking the node heirarchy to check if INamedTypeSymbol is inside a nameof to not generate diagnostics
-				var parentNode = context.Node;
-				while (parentNode != null) {
-					if (parentNode is InvocationExpressionSyntax invocationExpression && invocationExpression.Expression is IdentifierNameSyntax ident1) {
-						if (ident1.Identifier.ValueText.Equals ("nameof"))
-							return;
-					}
-					parentNode = parentNode.Parent;
-				}
 				typeParams = type.TypeParameters;
 				typeArgs = type.TypeArguments;
 				break;
