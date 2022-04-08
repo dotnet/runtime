@@ -287,7 +287,7 @@ namespace System.Text.Json.Serialization.Converters
                     {
                         // Remember the current property for JsonPath support if an exception is thrown.
                         state.Current.JsonPropertyInfo = jsonPropertyInfo;
-                        state.Current.NumberHandling = jsonPropertyInfo.NumberHandling;
+                        state.Current.NumberHandling = jsonPropertyInfo.EffectiveNumberHandling;
 
                         bool success = jsonPropertyInfo.GetMemberAndWriteJson(obj, ref state, writer);
                         // Converters only return 'false' when out of data which is not possible in fast path.
@@ -303,7 +303,7 @@ namespace System.Text.Json.Serialization.Converters
                 {
                     // Remember the current property for JsonPath support if an exception is thrown.
                     state.Current.JsonPropertyInfo = dataExtensionProperty;
-                    state.Current.NumberHandling = dataExtensionProperty.NumberHandling;
+                    state.Current.NumberHandling = dataExtensionProperty.EffectiveNumberHandling;
 
                     bool success = dataExtensionProperty.GetMemberAndWriteJsonExtensionData(obj, ref state, writer);
                     Debug.Assert(success);
@@ -340,7 +340,7 @@ namespace System.Text.Json.Serialization.Converters
                     if (jsonPropertyInfo.ShouldSerialize)
                     {
                         state.Current.JsonPropertyInfo = jsonPropertyInfo;
-                        state.Current.NumberHandling = jsonPropertyInfo.NumberHandling;
+                        state.Current.NumberHandling = jsonPropertyInfo.EffectiveNumberHandling;
 
                         if (!jsonPropertyInfo.GetMemberAndWriteJson(obj!, ref state, writer))
                         {
@@ -370,7 +370,7 @@ namespace System.Text.Json.Serialization.Converters
                     {
                         // Remember the current property for JsonPath support if an exception is thrown.
                         state.Current.JsonPropertyInfo = dataExtensionProperty;
-                        state.Current.NumberHandling = dataExtensionProperty.NumberHandling;
+                        state.Current.NumberHandling = dataExtensionProperty.EffectiveNumberHandling;
 
                         if (!dataExtensionProperty.GetMemberAndWriteJsonExtensionData(obj, ref state, writer))
                         {

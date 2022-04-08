@@ -3868,11 +3868,11 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             mustExpand |= IsTargetAbi(CORINFO_CORERT_ABI);
             break;
 
+        case NI_Internal_Runtime_MethodTable_Of:
         case NI_System_ByReference_ctor:
         case NI_System_ByReference_get_Value:
         case NI_System_Activator_AllocatorOf:
         case NI_System_Activator_DefaultConstructorOf:
-        case NI_System_Object_MethodTableOf:
         case NI_System_EETypePtr_EETypePtrOf:
             mustExpand = true;
             break;
@@ -4037,9 +4037,9 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 break;
             }
 
+            case NI_Internal_Runtime_MethodTable_Of:
             case NI_System_Activator_AllocatorOf:
             case NI_System_Activator_DefaultConstructorOf:
-            case NI_System_Object_MethodTableOf:
             case NI_System_EETypePtr_EETypePtrOf:
             {
                 assert(IsTargetAbi(CORINFO_CORERT_ABI)); // Only CoreRT supports it.
@@ -5233,10 +5233,6 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
             {
                 result = NI_System_Object_GetType;
             }
-            else if (strcmp(methodName, "MethodTableOf") == 0)
-            {
-                result = NI_System_Object_MethodTableOf;
-            }
         }
         else if (strcmp(className, "RuntimeTypeHandle") == 0)
         {
@@ -5333,6 +5329,16 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
             if (strcmp(methodName, "EETypePtrOf") == 0)
             {
                 result = NI_System_EETypePtr_EETypePtrOf;
+            }
+        }
+    }
+    else if (strcmp(namespaceName, "Internal.Runtime") == 0)
+    {
+        if (strcmp(className, "MethodTable") == 0)
+        {
+            if (strcmp(methodName, "Of") == 0)
+            {
+                result = NI_Internal_Runtime_MethodTable_Of;
             }
         }
     }
@@ -8541,7 +8547,7 @@ bool Compiler::impTailCallRetTypeCompatible(bool                     allowWideni
         return true;
     }
 
-#if defined(TARGET_AMD64) || defined(TARGET_ARMARCH)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
     // Jit64 compat:
     if (callerRetType == TYP_VOID)
     {
@@ -8571,7 +8577,7 @@ bool Compiler::impTailCallRetTypeCompatible(bool                     allowWideni
     {
         return (varTypeIsIntegral(calleeRetType) || isCalleeRetTypMBEnreg) && (callerRetTypeSize == calleeRetTypeSize);
     }
-#endif // TARGET_AMD64 || TARGET_ARMARCH
+#endif // TARGET_AMD64 || TARGET_ARM64 || TARGET_LOONGARCH64
 
     return false;
 }
@@ -10380,7 +10386,7 @@ GenTree* Compiler::impFixupStructReturnType(GenTree*                 op,
         return impAssignMultiRegTypeToVar(op, retClsHnd DEBUGARG(unmgdCallConv));
     }
 
-#elif FEATURE_MULTIREG_RET && defined(TARGET_ARM64)
+#elif FEATURE_MULTIREG_RET && (defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64))
 
     // Is method returning a multi-reg struct?
     if (IsMultiRegReturnedType(retClsHnd, unmgdCallConv))
@@ -10419,7 +10425,7 @@ GenTree* Compiler::impFixupStructReturnType(GenTree*                 op,
         return impAssignMultiRegTypeToVar(op, retClsHnd DEBUGARG(unmgdCallConv));
     }
 
-#endif //  FEATURE_MULTIREG_RET && TARGET_ARM64
+#endif //  FEATURE_MULTIREG_RET && (TARGET_ARM64 || TARGET_LOONGARCH64)
 
     if (!op->IsCall() || !op->AsCall()->TreatAsHasRetBufArg(this))
     {
@@ -14135,6 +14141,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 }
 
                 op1 = impPopStack().val;
+
                 impBashVarAddrsToI(op1);
 
                 // Casts from floating point types must not have GTF_UNSIGNED set.
@@ -17443,7 +17450,7 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
                     }
                 }
                 else
-#elif defined(TARGET_ARM64)
+#elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
                 ReturnTypeDesc retTypeDesc;
                 retTypeDesc.InitializeStructReturnType(this, retClsHnd, info.compCallConv);
                 unsigned retRegCount = retTypeDesc.GetReturnRegCount();
@@ -20811,6 +20818,9 @@ bool Compiler::IsTargetIntrinsic(NamedIntrinsic intrinsicName)
         default:
             return false;
     }
+#elif defined(TARGET_LOONGARCH64)
+    // TODO-LoongArch64: add some instrinsics.
+    return false;
 #else
     // TODO: This portion of logic is not implemented for other arch.
     // The reason for returning true is that on all other arch the only intrinsic

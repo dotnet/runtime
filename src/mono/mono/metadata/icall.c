@@ -6018,11 +6018,17 @@ ves_icall_System_Environment_Exit (int result)
 void
 ves_icall_System_Environment_FailFast (MonoStringHandle message, MonoExceptionHandle exception, MonoStringHandle errorSource, MonoError *error)
 {
-	if (MONO_HANDLE_IS_NULL (message)) {
+	if (MONO_HANDLE_IS_NULL (errorSource)) {
 		g_warning ("Process terminated.");
 	} else {
+		char *errorSourceMsg = mono_string_handle_to_utf8 (errorSource, error);
+		g_warning ("Process terminated. %s", errorSourceMsg);
+		g_free (errorSourceMsg);
+	}
+
+	if (!MONO_HANDLE_IS_NULL (message)) {
 		char *msg = mono_string_handle_to_utf8 (message, error);
-		g_warning ("Process terminated due to \"%s\"", msg);
+		g_warning (msg);
 		g_free (msg);
 	}
 
