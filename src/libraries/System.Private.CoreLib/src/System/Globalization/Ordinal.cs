@@ -267,7 +267,11 @@ namespace System.Globalization
                 }
 
                 // Do ASCII and non-ASCII friendly compare for the current candidate
-                if (EqualsIgnoreCase(ref searchSpace, ref valueRef, valueLength))
+                // Since we already know first chars match we ignore them and inspect valueLength - 1
+                if (EqualsIgnoreCase(
+                        ref Unsafe.Add(ref searchSpace, (nuint)(candidatePos + 1)),
+                        ref Unsafe.Add(ref valueRef, (nuint)1),
+                        valueLength - 1))
                 {
                     return source.Length - searchSpaceLength;
                 }
