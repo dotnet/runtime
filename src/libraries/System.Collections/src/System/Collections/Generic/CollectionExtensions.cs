@@ -8,13 +8,15 @@ namespace System.Collections.Generic
 {
     public static class CollectionExtensions
     {
-        public static TValue? GetValueOrDefault<TKey, TValue>(this IReadOnlyDictionary<TKey, TValue> dictionary, TKey key)
+        public static TValue? GetValueOrDefault<TKey, TValue>(this IReadOnlyDictionary<TKey, TValue> dictionary, TKey? key)
         {
+            if (key == null) return default!;
             return dictionary.GetValueOrDefault(key, default!);
         }
 
-        public static TValue GetValueOrDefault<TKey, TValue>(this IReadOnlyDictionary<TKey, TValue> dictionary!!, TKey key, TValue defaultValue)
+        public static TValue GetValueOrDefault<TKey, TValue>(this IReadOnlyDictionary<TKey, TValue> dictionary!!, TKey? key, TValue defaultValue)
         {
+            if (key == null) return defaultValue;
             TValue? value;
             return dictionary.TryGetValue(key, out value) ? value : defaultValue;
         }
