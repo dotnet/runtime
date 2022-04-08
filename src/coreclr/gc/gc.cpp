@@ -16176,7 +16176,9 @@ BOOL gc_heap::a_fit_segment_end_p (int gen_number,
 
         else
         {
-#ifndef USE_REGIONS
+#ifdef USE_REGIONS
+            *commit_failed_p = TRUE;
+#else 
             if (!hard_limit_short_seg_end_p)
             {
                 dprintf (2, ("can't grow segment, doing a full gc"));
@@ -16186,8 +16188,6 @@ BOOL gc_heap::a_fit_segment_end_p (int gen_number,
             {
                 assert (heap_hard_limit);
             }
-#else 
-            *commit_failed_p = TRUE;
 #endif // USE_REGIONS
         }
     }
