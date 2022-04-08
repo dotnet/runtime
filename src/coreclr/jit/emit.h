@@ -2383,15 +2383,40 @@ public:
 
     COMP_HANDLE emitCmpHandle;
 
-    /************************************************************************/
-    /*               Helpers for interface to EE                            */
-    /************************************************************************/
+/************************************************************************/
+/*               Helpers for interface to EE                            */
+/************************************************************************/
 
-    void emitRecordRelocation(void* location,       /* IN */
-                              void* target,         /* IN */
-                              WORD  fRelocType,     /* IN */
-                              WORD  slotNum   = 0,  /* IN */
-                              INT32 addlDelta = 0); /* IN */
+#ifdef DEBUG
+
+#define emitRecordRelocation(location, target, fRelocType)                                                             \
+    emitRecordRelocationHelp(location, target, fRelocType, #fRelocType)
+
+#define emitRecordRelocationWithAddlDelta(location, target, fRelocType, addlDelta)                                     \
+    emitRecordRelocationHelp(location, target, fRelocType, #fRelocType, addlDelta)
+
+    void emitRecordRelocationHelp(void*       location,       /* IN */
+                                  void*       target,         /* IN */
+                                  uint16_t    fRelocType,     /* IN */
+                                  const char* relocTypeName,  /* IN */
+                                  int32_t     addlDelta = 0); /* IN */
+
+#else // !DEBUG
+
+    void emitRecordRelocationWithAddlDelta(void*    location,   /* IN */
+                                           void*    target,     /* IN */
+                                           uint16_t fRelocType, /* IN */
+                                           int32_t  addlDelta)  /* IN */
+    {
+        emitRecordRelocation(location, target, fRelocType, addlDelta);
+    }
+
+    void emitRecordRelocation(void*    location,       /* IN */
+                              void*    target,         /* IN */
+                              uint16_t fRelocType,     /* IN */
+                              int32_t  addlDelta = 0); /* IN */
+
+#endif // !DEBUG
 
 #ifdef TARGET_ARM
     void emitHandlePCRelativeMov32(void* location, /* IN */
