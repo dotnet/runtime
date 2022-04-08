@@ -10,6 +10,7 @@ using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using Microsoft.Quic;
+using static Microsoft.Quic.MsQuic;
 
 namespace System.Net.Quic.Implementations.MsQuic.Internal
 {
@@ -54,12 +55,12 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                 }
             }
 
-            return Create(options, QUIC_CREDENTIAL_FLAGS.CLIENT, certificate: certificate, certificateContext: null, options.ClientAuthenticationOptions?.ApplicationProtocols, options.ClientAuthenticationOptions?.CipherSuitesPolicy);
+            return Create(options, QUIC_CREDENTIAL_FLAGS.QUIC_CREDENTIAL_FLAG_CLIENT, certificate: certificate, certificateContext: null, options.ClientAuthenticationOptions?.ApplicationProtocols, options.ClientAuthenticationOptions?.CipherSuitesPolicy);
         }
 
         public static SafeMsQuicConfigurationHandle Create(QuicOptions options, SslServerAuthenticationOptions? serverAuthenticationOptions, string? targetHost = null)
         {
-            QUIC_CREDENTIAL_FLAGS flags = QUIC_CREDENTIAL_FLAGS.NONE;
+            QUIC_CREDENTIAL_FLAGS flags = QUIC_CREDENTIAL_FLAGS.QUIC_CREDENTIAL_FLAG_NONE;
             X509Certificate? certificate = serverAuthenticationOptions?.ServerCertificate;
 
             if (serverAuthenticationOptions != null)
@@ -73,7 +74,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
 
                 if (serverAuthenticationOptions.ClientCertificateRequired)
                 {
-                    flags |= QUIC_CREDENTIAL_FLAGS.REQUIRE_CLIENT_AUTHENTICATION | QUIC_CREDENTIAL_FLAGS.INDICATE_CERTIFICATE_RECEIVED | QUIC_CREDENTIAL_FLAGS.NO_CERTIFICATE_VALIDATION;
+                    flags |= QUIC_CREDENTIAL_FLAGS.QUIC_CREDENTIAL_FLAG_REQUIRE_CLIENT_AUTHENTICATION | QUIC_CREDENTIAL_FLAGS.QUIC_CREDENTIAL_FLAG_INDICATE_CERTIFICATE_RECEIVED | QUIC_CREDENTIAL_FLAGS.QUIC_CREDENTIAL_FLAG_NO_CERTIFICATE_VALIDATION;
                 }
 
                 if (certificate == null && serverAuthenticationOptions?.ServerCertificateSelectionCallback != null && targetHost != null)
@@ -105,7 +106,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                 throw new Exception("MaxBidirectionalStreams overflow.");
             }
 
-            if ((flags & QUIC_CREDENTIAL_FLAGS.CLIENT) == 0)
+            if ((flags & QUIC_CREDENTIAL_FLAGS.QUIC_CREDENTIAL_FLAG_CLIENT) == 0)
             {
                 if (certificate == null && certificateContext == null)
                 {
@@ -114,66 +115,67 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             }
             else
             {
-                flags |= QUIC_CREDENTIAL_FLAGS.INDICATE_CERTIFICATE_RECEIVED | QUIC_CREDENTIAL_FLAGS.NO_CERTIFICATE_VALIDATION;
+                flags |= QUIC_CREDENTIAL_FLAGS.QUIC_CREDENTIAL_FLAG_INDICATE_CERTIFICATE_RECEIVED | QUIC_CREDENTIAL_FLAGS.QUIC_CREDENTIAL_FLAG_NO_CERTIFICATE_VALIDATION;
             }
 
             if (!OperatingSystem.IsWindows())
             {
                 // Use certificate handles on Windows, fall-back to ASN1 otherwise.
-                flags |= QUIC_CREDENTIAL_FLAGS.USE_PORTABLE_CERTIFICATES;
+                flags |= QUIC_CREDENTIAL_FLAGS.QUIC_CREDENTIAL_FLAG_USE_PORTABLE_CERTIFICATES;
             }
 
             Debug.Assert(!MsQuicApi.Api.Registration.IsInvalid);
 
-            var settings = new QuicSettings
-            {
-                IsSetFlags = QuicSettingsIsSetFlags.PeerBidiStreamCount |
-                             QuicSettingsIsSetFlags.PeerUnidiStreamCount,
-                PeerBidiStreamCount = (ushort)options.MaxBidirectionalStreams,
-                PeerUnidiStreamCount = (ushort)options.MaxUnidirectionalStreams
-            };
+            QUIC_SETTINGS settings = new QUIC_SETTINGS();
+            settings.IsSet.PeerUnidiStreamCount = 1;
+            settings.PeerUnidiStreamCount = (ushort)options.MaxUnidirectionalStreams;
+            settings.IsSet.PeerBidiStreamCount = 1;
+            settings.PeerBidiStreamCount = (ushort)options.MaxBidirectionalStreams;
 
+            settings.IsSet.IdleTimeoutMs = 1;
             if (options.IdleTimeout != Timeout.InfiniteTimeSpan)
             {
                 if (options.IdleTimeout <= TimeSpan.Zero) throw new Exception("IdleTimeout must not be negative.");
-
-                ulong ms = (ulong)options.IdleTimeout.Ticks / TimeSpan.TicksPerMillisecond;
-                if (ms > (1ul << 62) - 1) throw new Exception("IdleTimeout is too large (max 2^62-1 milliseconds)");
-
                 settings.IdleTimeoutMs = (ulong)options.IdleTimeout.TotalMilliseconds;
             }
             else
             {
                 settings.IdleTimeoutMs = 0;
             }
-            settings.IsSetFlags |= QuicSettingsIsSetFlags.IdleTimeoutMs;
 
-            uint status;
-            SafeMsQuicConfigurationHandle? configurationHandle;
+            SafeMsQuicConfigurationHandle configurationHandle;
             X509Certificate2[]? intermediates = null;
 
             MemoryHandle[]? handles = null;
-            QuicBuffer[]? buffers = null;
+            // TODO: should they be pinned? The content is pinned, but the array holding the individual buffers isn't.
+            QUIC_BUFFER[]? buffers = null;
             try
             {
+                QUIC_HANDLE* handle;
                 MsQuicAlpnHelper.Prepare(alpnProtocols, out handles, out buffers);
-                status = MsQuicApi.Api.ConfigurationOpenDelegate(MsQuicApi.Api.Registration, (QuicBuffer*)Marshal.UnsafeAddrOfPinnedArrayElement(buffers, 0), (uint)alpnProtocols.Count, ref settings, (uint)sizeof(QuicSettings), context: IntPtr.Zero, out configurationHandle);
+                ThrowIfFailure(
+                    MsQuicApi.Api.ApiTable->ConfigurationOpen(
+                        MsQuicApi.Api.Registration.QuicHandle,
+                        (QUIC_BUFFER*)Marshal.UnsafeAddrOfPinnedArrayElement(buffers, 0),
+                        (uint)alpnProtocols.Count,
+                        &settings,
+                        (uint)sizeof(QUIC_SETTINGS), (void*)IntPtr.Zero, &handle),
+                    "ConfigurationOpen failed");
+                configurationHandle = new SafeMsQuicConfigurationHandle(handle);
             }
             finally
             {
                 MsQuicAlpnHelper.Return(ref handles, ref buffers);
             }
 
-            QuicExceptionHelpers.ThrowIfFailed(status, "ConfigurationOpen failed.");
-
             try
             {
-                CredentialConfig config = default;
+                QUIC_CREDENTIAL_CONFIG config = default;
                 config.Flags = flags; // TODO: consider using LOAD_ASYNCHRONOUS with a callback.
 
                 if (cipherSuitesPolicy != null)
                 {
-                    config.Flags |= QUIC_CREDENTIAL_FLAGS.SET_ALLOWED_CIPHER_SUITES;
+                    config.Flags |= QUIC_CREDENTIAL_FLAGS.QUIC_CREDENTIAL_FLAG_SET_ALLOWED_CIPHER_SUITES;
                     config.AllowedCipherSuites = CipherSuitePolicyToFlags(cipherSuitesPolicy);
                 }
 
@@ -188,17 +190,17 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                     }
                 }
 
+                int status;
                 if (certificate != null)
                 {
                     if (OperatingSystem.IsWindows())
                     {
-                        config.Type = QUIC_CREDENTIAL_TYPE.CONTEXT;
-                        config.Certificate = certificate.Handle;
-                        status = MsQuicApi.Api.ConfigurationLoadCredentialDelegate(configurationHandle, ref config);
+                        config.Type = QUIC_CREDENTIAL_TYPE.QUIC_CREDENTIAL_TYPE_CERTIFICATE_CONTEXT;
+                        config.CertificateContext = (void*)certificate.Handle;
+                        status = MsQuicApi.Api.ApiTable->ConfigurationLoadCredential(configurationHandle.QuicHandle, &config);
                     }
                     else
                     {
-                        CredentialConfigCertificatePkcs12 pkcs12Config;
                         byte[] asn1;
 
                         if (intermediates?.Length > 0)
@@ -217,32 +219,35 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                             asn1 = certificate.Export(X509ContentType.Pkcs12);
                         }
 
-                        fixed (void* ptr = asn1)
+                        fixed (byte* ptr = asn1)
                         {
-                            pkcs12Config.Asn1Blob = (IntPtr)ptr;
-                            pkcs12Config.Asn1BlobLength = (uint)asn1.Length;
-                            pkcs12Config.PrivateKeyPassword = IntPtr.Zero;
+                            QUIC_CERTIFICATE_PKCS12 pkcs12Config = new QUIC_CERTIFICATE_PKCS12
+                            {
+                                Asn1Blob = ptr,
+                                Asn1BlobLength = (uint)asn1.Length,
+                                PrivateKeyPassword = (sbyte*)IntPtr.Zero
+                            };
 
-                            config.Type = QUIC_CREDENTIAL_TYPE.PKCS12;
-                            config.Certificate = (IntPtr)(&pkcs12Config);
-                            status = MsQuicApi.Api.ConfigurationLoadCredentialDelegate(configurationHandle, ref config);
+                            config.Type = QUIC_CREDENTIAL_TYPE.QUIC_CREDENTIAL_TYPE_CERTIFICATE_PKCS12;
+                            config.CertificatePkcs12 = &pkcs12Config;
+                            status = MsQuicApi.Api.ApiTable->ConfigurationLoadCredential(configurationHandle.QuicHandle, &config);
                         }
                     }
                 }
                 else
                 {
-                    config.Type = QUIC_CREDENTIAL_TYPE.NONE;
-                    status = MsQuicApi.Api.ConfigurationLoadCredentialDelegate(configurationHandle, ref config);
+                    config.Type = QUIC_CREDENTIAL_TYPE.QUIC_CREDENTIAL_TYPE_NONE;
+                    status = MsQuicApi.Api.ApiTable->ConfigurationLoadCredential(configurationHandle.QuicHandle, &config);
                 }
 
 #if TARGET_WINDOWS
                 if ((Interop.SECURITY_STATUS)status == Interop.SECURITY_STATUS.AlgorithmMismatch && MsQuicApi.Tls13MayBeDisabled)
                 {
-                    throw new QuicException(SR.net_ssl_app_protocols_invalid, null, (int)status);
+                    throw new QuicException(status, SR.net_ssl_app_protocols_invalid);
                 }
 #endif
 
-                QuicExceptionHelpers.ThrowIfFailed(status, "ConfigurationLoadCredential failed.");
+                ThrowIfFailure(status, "ConfigurationLoadCredential failed");
             }
             catch
             {
@@ -255,20 +260,20 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
 
         private static QUIC_ALLOWED_CIPHER_SUITE_FLAGS CipherSuitePolicyToFlags(CipherSuitesPolicy cipherSuitesPolicy)
         {
-            QUIC_ALLOWED_CIPHER_SUITE_FLAGS flags = QUIC_ALLOWED_CIPHER_SUITE_FLAGS.NONE;
+            QUIC_ALLOWED_CIPHER_SUITE_FLAGS flags = QUIC_ALLOWED_CIPHER_SUITE_FLAGS.QUIC_ALLOWED_CIPHER_SUITE_NONE;
 
             foreach (TlsCipherSuite cipher in cipherSuitesPolicy.AllowedCipherSuites)
             {
                 switch (cipher)
                 {
                     case TlsCipherSuite.TLS_AES_128_GCM_SHA256:
-                        flags |= QUIC_ALLOWED_CIPHER_SUITE_FLAGS.AES_128_GCM_SHA256;
+                        flags |= QUIC_ALLOWED_CIPHER_SUITE_FLAGS.QUIC_ALLOWED_CIPHER_SUITE_AES_128_GCM_SHA256;
                         break;
                     case TlsCipherSuite.TLS_AES_256_GCM_SHA384:
-                        flags |= QUIC_ALLOWED_CIPHER_SUITE_FLAGS.AES_256_GCM_SHA384;
+                        flags |= QUIC_ALLOWED_CIPHER_SUITE_FLAGS.QUIC_ALLOWED_CIPHER_SUITE_AES_256_GCM_SHA384;
                         break;
                     case TlsCipherSuite.TLS_CHACHA20_POLY1305_SHA256:
-                        flags |= QUIC_ALLOWED_CIPHER_SUITE_FLAGS.CHACHA20_POLY1305_SHA256;
+                        flags |= QUIC_ALLOWED_CIPHER_SUITE_FLAGS.QUIC_ALLOWED_CIPHER_SUITE_CHACHA20_POLY1305_SHA256;
                         break;
                     case TlsCipherSuite.TLS_AES_128_CCM_SHA256: // not supported by MsQuic (yet?), but QUIC RFC allows it so we ignore it.
                     default:
@@ -277,7 +282,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                 }
             }
 
-            if (flags == QUIC_ALLOWED_CIPHER_SUITE_FLAGS.NONE)
+            if (flags == QUIC_ALLOWED_CIPHER_SUITE_FLAGS.QUIC_ALLOWED_CIPHER_SUITE_NONE)
             {
                 throw new ArgumentException(SR.net_quic_empty_cipher_suite, nameof(SslClientAuthenticationOptions.CipherSuitesPolicy));
             }

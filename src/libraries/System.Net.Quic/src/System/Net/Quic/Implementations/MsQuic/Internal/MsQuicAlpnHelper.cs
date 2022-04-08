@@ -5,16 +5,16 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Net.Security;
-using static System.Net.Quic.Implementations.MsQuic.Internal.MsQuicNativeMethods;
+using Microsoft.Quic;
 
 namespace System.Net.Quic.Implementations.MsQuic.Internal
 {
     internal static class MsQuicAlpnHelper
     {
-        public static unsafe void Prepare(List<SslApplicationProtocol> alpnProtocols, [NotNull] out MemoryHandle[]? handles, [NotNull] out QuicBuffer[]? buffers)
+        public static unsafe void Prepare(List<SslApplicationProtocol> alpnProtocols, [NotNull] out MemoryHandle[]? handles, [NotNull] out QUIC_BUFFER[]? buffers)
         {
             handles = ArrayPool<MemoryHandle>.Shared.Rent(alpnProtocols.Count);
-            buffers = ArrayPool<QuicBuffer>.Shared.Rent(alpnProtocols.Count);
+            buffers = ArrayPool<QUIC_BUFFER>.Shared.Rent(alpnProtocols.Count);
 
             try
             {
@@ -35,7 +35,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             }
         }
 
-        public static void Return(ref MemoryHandle[]? handles, ref QuicBuffer[]? buffers)
+        public static void Return(ref MemoryHandle[]? handles, ref QUIC_BUFFER[]? buffers)
         {
             if (handles is MemoryHandle[] notNullHandles)
             {
@@ -48,10 +48,10 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                 ArrayPool<MemoryHandle>.Shared.Return(notNullHandles);
             }
 
-            if (buffers is QuicBuffer[] notNullBuffers)
+            if (buffers is QUIC_BUFFER[] notNullBuffers)
             {
                 buffers = null;
-                ArrayPool<QuicBuffer>.Shared.Return(notNullBuffers);
+                ArrayPool<QUIC_BUFFER>.Shared.Return(notNullBuffers);
             }
         }
     }
