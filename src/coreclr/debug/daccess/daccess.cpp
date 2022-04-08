@@ -24,12 +24,10 @@
 #include "primitives.h"
 #include "dbgutil.h"
 
-#ifdef TARGET_UNIX
 #ifdef USE_DAC_TABLE_RVA
 #include <dactablerva.h>
 #else
 extern "C" bool TryGetSymbol(ICorDebugDataTarget* dataTarget, uint64_t baseAddress, const char* symbolName, uint64_t* symbolAddress);
-#endif
 #endif
 
 #include "dwbucketmanager.hpp"
@@ -7096,17 +7094,9 @@ bool ClrDataAccess::MdCacheGetEEName(TADDR taEEStruct, SString & eeName)
 
 #endif // FEATURE_MINIMETADATA_IN_TRIAGEDUMPS
 
-// Needed for RT_RCDATA.
-#define MAKEINTRESOURCE(v) MAKEINTRESOURCEW(v)
-
-// this funny looking double macro forces x to be macro expanded before L is prepended
-#define _WIDE(x) _WIDE2(x)
-#define _WIDE2(x) W(x)
-
 HRESULT
 GetDacTableAddress(ICorDebugDataTarget* dataTarget, ULONG64 baseAddress, PULONG64 dacTableAddress)
 {
-#ifdef TARGET_UNIX
 #ifdef USE_DAC_TABLE_RVA
 #ifdef DAC_TABLE_SIZE
     if (DAC_TABLE_SIZE != sizeof(g_dacGlobals))
@@ -7117,12 +7107,11 @@ GetDacTableAddress(ICorDebugDataTarget* dataTarget, ULONG64 baseAddress, PULONG6
     // On MacOS, FreeBSD or NetBSD use the RVA include file
     *dacTableAddress = baseAddress + DAC_TABLE_RVA;
 #else
-    // On Linux/MacOS try to get the dac table address via the export symbol
+    // Otherwise, try to get the dac table address via the export symbol
     if (!TryGetSymbol(dataTarget, baseAddress, DACCESS_TABLE_SYMBOL, dacTableAddress))
     {
         return CORDBG_E_MISSING_DEBUGGER_EXPORTS;
     }
-#endif
 #endif
     return S_OK;
 }
@@ -7130,7 +7119,6 @@ GetDacTableAddress(ICorDebugDataTarget* dataTarget, ULONG64 baseAddress, PULONG6
 HRESULT
 ClrDataAccess::GetDacGlobals()
 {
-#ifdef TARGET_UNIX
     ULONG64 dacTableAddress;
     HRESULT hr = GetDacTableAddress(m_pTarget, m_globalBase, &dacTableAddress);
     if (FAILED(hr))
@@ -7146,115 +7134,7 @@ ClrDataAccess::GetDacGlobals()
         return CORDBG_E_UNSUPPORTED;
     }
     return S_OK;
-#else
-    HRESULT status = E_FAIL;
-    DWORD rsrcRVA = 0;
-    LPVOID rsrcData = NULL;
-    DWORD rsrcSize = 0;
-
-    DWORD resourceSectionRVA = 0;
-
-    if (FAILED(status = GetMachineAndResourceSectionRVA(m_pTarget, m_globalBase, NULL, &resourceSectionRVA)))
-    {
-        _ASSERTE_MSG(false, "DAC fatal error: can't locate resource section in " TARGET_MAIN_CLR_DLL_NAME_A);
-        return CORDBG_E_MISSING_DEBUGGER_EXPORTS;
-    }
-
-    if (FAILED(status = GetResourceRvaFromResourceSectionRvaByName(m_pTarget, m_globalBase,
-        resourceSectionRVA, (DWORD)(size_t)RT_RCDATA, _WIDE(DACCESS_TABLE_RESOURCE), 0,
-        &rsrcRVA, &rsrcSize)))
-    {
-        _ASSERTE_MSG(false, "DAC fatal error: can't locate DAC table resource in " TARGET_MAIN_CLR_DLL_NAME_A);
-        return CORDBG_E_MISSING_DEBUGGER_EXPORTS;
-    }
-
-    rsrcData = new (nothrow) BYTE[rsrcSize];
-    if (rsrcData == NULL)
-        return E_OUTOFMEMORY;
-
-    if (FAILED(status = ReadFromDataTarget(m_pTarget, m_globalBase + rsrcRVA, (BYTE*)rsrcData, rsrcSize)))
-    {
-        _ASSERTE_MSG(false, "DAC fatal error: can't load DAC table resource from " TARGET_MAIN_CLR_DLL_NAME_A);
-        return CORDBG_E_MISSING_DEBUGGER_EXPORTS;
-    }
-
-
-    PBYTE rawData = (PBYTE)rsrcData;
-    DWORD bytesLeft = rsrcSize;
-
-    // Read the header
-    struct DacTableHeader header;
-
-    // We currently expect the header to be 2 32-bit values and 1 16-byte value,
-    // make sure there is no packing going on or anything.
-    static_assert_no_msg(sizeof(DacTableHeader) == 2 * 4 + 16);
-
-    if (bytesLeft < sizeof(DacTableHeader))
-    {
-        _ASSERTE_MSG(false, "DAC fatal error: DAC table too small for header.");
-        goto Exit;
-    }
-    memcpy(&header, rawData, sizeof(DacTableHeader));
-    rawData += sizeof(DacTableHeader);
-    bytesLeft -= sizeof(DacTableHeader);
-
-    // Save the table info for later use
-    g_dacTableInfo = header.info;
-
-    // Sanity check that the DAC table is the size we expect.
-    // This could fail if a different version of dacvars.h or vptr_list.h was used when building
-    // mscordacwks.dll than when running DacTableGen.
-
-    if (offsetof(DacGlobals, EEJitManager__vtAddr) != header.numGlobals * sizeof(ULONG))
-    {
-#ifdef _DEBUG
-        char szMsgBuf[1024];
-        _snprintf_s(szMsgBuf, sizeof(szMsgBuf), _TRUNCATE,
-            "DAC fatal error: mismatch in number of globals in DAC table. Read from file: %d, expected: %zd.",
-            header.numGlobals,
-            (size_t)offsetof(DacGlobals, EEJitManager__vtAddr) / sizeof(ULONG));
-        _ASSERTE_MSG(false, szMsgBuf);
-#endif // _DEBUG
-
-        status = E_INVALIDARG;
-        goto Exit;
-    }
-
-    if (sizeof(DacGlobals) != (header.numGlobals + header.numVptrs) * sizeof(ULONG))
-    {
-#ifdef _DEBUG
-        char szMsgBuf[1024];
-        _snprintf_s(szMsgBuf, sizeof(szMsgBuf), _TRUNCATE,
-            "DAC fatal error: mismatch in number of vptrs in DAC table. Read from file: %d, expected: %zd.",
-            header.numVptrs,
-            (size_t)(sizeof(DacGlobals) - offsetof(DacGlobals, EEJitManager__vtAddr)) / sizeof(ULONG));
-        _ASSERTE_MSG(false, szMsgBuf);
-#endif // _DEBUG
-
-        status = E_INVALIDARG;
-        goto Exit;
-    }
-
-    // Copy the DAC table into g_dacGlobals
-    if (bytesLeft < sizeof(DacGlobals))
-    {
-        _ASSERTE_MSG(false, "DAC fatal error: DAC table resource too small for DacGlobals.");
-        status = E_UNEXPECTED;
-        goto Exit;
-    }
-    memcpy(&g_dacGlobals, rawData, sizeof(DacGlobals));
-    rawData += sizeof(DacGlobals);
-    bytesLeft -= sizeof(DacGlobals);
-
-    status = S_OK;
-
-Exit:
-
-    return status;
-#endif
 }
-
-#undef MAKEINTRESOURCE
 
 //----------------------------------------------------------------------------
 //

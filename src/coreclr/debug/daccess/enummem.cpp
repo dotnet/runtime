@@ -1546,6 +1546,12 @@ HRESULT ClrDataAccess::EnumMemCLRMainModuleInfo()
         {
             ReportMem(dac_cast<TADDR>(runtimeExport), sizeof(RuntimeInfo), true);
         }
+
+        runtimeExport = pe.GetExport(DACCESS_TABLE_SYMBOL);
+        if (runtimeExport != NULL)
+        {
+            ReportMem(dac_cast<TADDR>(runtimeExport), sizeof(DacGlobals), true);
+        }
     }
     else
     {

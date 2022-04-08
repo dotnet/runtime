@@ -531,7 +531,6 @@
 #include "safemath.h"
 #include "corerror.h"
 
-#define DACCESS_TABLE_RESOURCE "COREXTERNALDATAACCESSRESOURCE"
 #define DACCESS_TABLE_SYMBOL "g_dacTable"
 
 #ifdef PAL_STDCPP_COMPAT
@@ -595,41 +594,30 @@ typedef SIZE_T TSIZE_T;
 
 typedef struct _DacGlobals
 {
-#ifdef TARGET_UNIX
+#ifdef _MSC_VER
+private:
+    const static _DacGlobals s_dacGlobals;
+public:
+#else
     static void Initialize();
-    void InitializeEntries(TADDR baseAddress);
-#endif // TARGET_UNIX
+#endif // _MSC_VER
 
 // These will define all of the dac related mscorwks static and global variables
 #define DEFINE_DACVAR(id_type, size, id, var)                 id_type id;
 #define DEFINE_DACVAR_NO_DUMP(id_type, size, id, var)         id_type id;
 #include "dacvars.h"
 
-    // Global functions.
-    ULONG fn__ThreadpoolMgr__AsyncTimerCallbackCompletion;
-    ULONG fn__DACNotifyCompilationFinished;
-    ULONG fn__ThePreStub;
-
-#ifdef TARGET_ARM
-    ULONG fn__ThePreStubCompactARM;
-#endif // TARGET_ARM
-
-    ULONG fn__ThePreStubPatchLabel;
-#ifdef FEATURE_COMINTEROP
-    ULONG fn__Unknown_AddRef;
-    ULONG fn__Unknown_AddRefSpecial;
-    ULONG fn__Unknown_AddRefInner;
-#endif
-#ifdef FEATURE_COMWRAPPERS
-    ULONG fn__ManagedObjectWrapper_QueryInterface;
-    ULONG fn__TrackerTarget_QueryInterface;
-#endif
+#define DEFINE_DACGFN(func) ULONGLONG fn__##func;
+#define DEFINE_DACGFN_STATIC(class, func) ULONGLONG fn__##class##__##func;
+#include "gfunc_list.h"
+#undef DEFINE_DACGFN
+#undef DEFINE_DACGFN_STATIC
 
     // Vtable pointer values for all classes that must
     // be instanted using vtable pointers as the identity.
-#define VPTR_CLASS(name) ULONG name##__vtAddr;
-#define VPTR_MULTI_CLASS(name, keyBase) ULONG name##__##keyBase##__mvtAddr;
-#include <vptr_list.h>
+#define VPTR_CLASS(name) ULONGLONG name##__vtAddr;
+#define VPTR_MULTI_CLASS(name, keyBase) ULONGLONG name##__##keyBase##__mvtAddr;
+#include "vptr_list.h"
 #undef VPTR_CLASS
 #undef VPTR_MULTI_CLASS
 } DacGlobals;
@@ -1476,19 +1464,19 @@ template<typename type>
 class __GlobalVal
 {
 public:
-    __GlobalVal< type >(PULONG rvaPtr)
+    __GlobalVal< type >(PULONG ptr)
     {
-        m_rvaPtr = rvaPtr;
+        m_ptr = ptr;
     }
 
     operator type() const
     {
-        return (type)*__DPtr< type >(DacGlobalBase() + *m_rvaPtr);
+        return (type)*__DPtr< type >(*m_ptr);
     }
 
     __DPtr< type > operator&() const
     {
-        return __DPtr< type >(DacGlobalBase() + *m_rvaPtr);
+        return __DPtr< type >(*m_ptr);
     }
 
     // @dbgtodo  dac support: This updates values in the host.  This seems extremely dangerous
@@ -1496,7 +1484,7 @@ public:
     // was used.  Try disabling this and see what fails...
     __GlobalVal<type> & operator=(const type & val)
     {
-        type* ptr = __DPtr< type >(DacGlobalBase() + *m_rvaPtr);
+        type* ptr = __DPtr< type >(*m_ptr);
         // Update the host copy;
         *ptr = val;
         // Write back to the target.
@@ -1506,68 +1494,68 @@ public:
 
     bool IsValid(void) const
     {
-        return __DPtr< type >(DacGlobalBase() + *m_rvaPtr).IsValid();
+        return __DPtr< type >(*m_ptr).IsValid();
     }
     void EnumMem(void) const
     {
-        TADDR p = DacGlobalBase() + *m_rvaPtr;
+        TADDR p = *m_ptr;
         __DPtr< type >(p).EnumMem();
     }
 
 private:
-    PULONG m_rvaPtr;
+    PULONG m_ptr;
 };
 
 template<typename type, size_t size>
 class __GlobalArray
 {
 public:
-    __GlobalArray< type, size >(PULONG rvaPtr)
+    __GlobalArray< type, size >(PULONG ptr)
     {
-        m_rvaPtr = rvaPtr;
+        m_ptr = ptr;
     }
 
     __DPtr< type > operator&() const
     {
-        return __DPtr< type >(DacGlobalBase() + *m_rvaPtr);
+        return __DPtr< type >(*m_ptr);
     }
 
     type& operator[](unsigned int index) const
     {
-        return __DPtr< type >(DacGlobalBase() + *m_rvaPtr)[index];
+        return __DPtr< type >(*m_ptr)[index];
     }
 
     bool IsValid(void) const
     {
         // Only validates the base pointer, not the full array range.
-        return __DPtr< type >(DacGlobalBase() + *m_rvaPtr).IsValid();
+        return __DPtr< type >(*m_ptr).IsValid();
     }
     void EnumMem(void) const
     {
-        DacEnumMemoryRegion(DacGlobalBase() + *m_rvaPtr, sizeof(type) * size);
+        DacEnumMemoryRegion(*m_ptr, sizeof(type) * size);
     }
 
 private:
-    PULONG m_rvaPtr;
+    PULONG m_ptr;
 };
 
 template<typename acc_type, typename store_type>
 class __GlobalPtr
 {
 public:
-    __GlobalPtr< acc_type, store_type >(PULONG rvaPtr)
+    __GlobalPtr< acc_type, store_type >(PULONG ptr)
     {
-        m_rvaPtr = rvaPtr;
+        m_ptr = ptr;
     }
 
     __DPtr< store_type > operator&() const
     {
-        return __DPtr< store_type >(DacGlobalBase() + *m_rvaPtr);
+        return __DPtr< store_type >(*m_ptr);
     }
 
     store_type & operator=(store_type & val)
     {
-        store_type* ptr = __DPtr< store_type >(DacGlobalBase() + *m_rvaPtr);
+        store_type* ptr = __DPtr< store_type >(*m_ptr);
         // Update the host copy;
         *ptr = val;
         // Write back to the target.
@@ -1577,39 +1565,39 @@ public:
 
     acc_type operator->() const
     {
-        return (acc_type)*__DPtr< store_type >(DacGlobalBase() + *m_rvaPtr);
+        return (acc_type)*__DPtr< store_type >(*m_ptr);
     }
     operator acc_type() const
     {
-        return (acc_type)*__DPtr< store_type >(DacGlobalBase() + *m_rvaPtr);
+        return (acc_type)*__DPtr< store_type >(*m_ptr);
     }
     operator store_type() const
     {
-        return *__DPtr< store_type >(DacGlobalBase() + *m_rvaPtr);
+        return *__DPtr< store_type >(*m_ptr);
     }
     bool operator!() const
     {
-        return !*__DPtr< store_type >(DacGlobalBase() + *m_rvaPtr);
+        return !*__DPtr< store_type >(*m_ptr);
     }
 
     typename store_type::_Type& operator[](int index)
     {
-        return (*__DPtr< store_type >(DacGlobalBase() + *m_rvaPtr))[index];
+        return (*__DPtr< store_type >(*m_ptr))[index];
     }
 
     typename store_type::_Type& operator[](unsigned int index)
     {
-        return (*__DPtr< store_type >(DacGlobalBase() + *m_rvaPtr))[index];
+        return (*__DPtr< store_type >(*m_ptr))[index];
     }
 
     TADDR GetAddr() const
     {
-        return (*__DPtr< store_type >(DacGlobalBase() + *m_rvaPtr)).GetAddr();
+        return (*__DPtr< store_type >(*m_ptr)).GetAddr();
     }
 
     TADDR GetAddrRaw () const
     {
-        return DacGlobalBase() + *m_rvaPtr;
+        return *m_ptr;
     }
 
     // This is only testing the the pointer memory is available but does not verify
@@ -1617,17 +1605,17 @@ public:
     //
     bool IsValidPtr(void) const
     {
-        return __DPtr< store_type >(DacGlobalBase() + *m_rvaPtr).IsValid();
+        return __DPtr< store_type >(*m_ptr).IsValid();
     }
 
     bool IsValid(void) const
     {
-        return __DPtr< store_type >(DacGlobalBase() + *m_rvaPtr).IsValid() &&
-            (*__DPtr< store_type >(DacGlobalBase() + *m_rvaPtr)).IsValid();
+        return __DPtr< store_type >(*m_ptr).IsValid() &&
+            (*__DPtr< store_type >(*m_ptr)).IsValid();
     }
     void EnumMem(void) const
     {
-        __DPtr< store_type > ptr(DacGlobalBase() + *m_rvaPtr);
+        __DPtr< store_type > ptr(*m_ptr);
         ptr.EnumMem();
         if (ptr.IsValid())
         {
@@ -1635,7 +1623,7 @@ public:
         }
     }
 
-    PULONG m_rvaPtr;
+    PULONG m_ptr;
 };
 
 template<typename acc_type, typename store_type>
@@ -1643,7 +1631,7 @@ inline bool operator==(const __GlobalPtr<acc_type, store_type>& gptr,
                        acc_type host)
 {
     return DacGetTargetAddrForHostAddr(host, true) ==
-        *__DPtr< TADDR >(DacGlobalBase() + *gptr.m_rvaPtr);
+        *__DPtr< TADDR >(*gptr.m_ptr);
 }
 template<typename acc_type, typename store_type>
 inline bool operator!=(const __GlobalPtr<acc_type, store_type>& gptr,
@@ -1657,7 +1645,7 @@ inline bool operator==(acc_type host,
                        const __GlobalPtr<acc_type, store_type>& gptr)
 {
     return DacGetTargetAddrForHostAddr(host, true) ==
-        *__DPtr< TADDR >(DacGlobalBase() + *gptr.m_rvaPtr);
+        *__DPtr< TADDR >(*gptr.m_ptr);
 }
 template<typename acc_type, typename store_type>
 inline bool operator!=(acc_type host,
@@ -1826,13 +1814,13 @@ typedef __VoidPtr PTR_CVOID;
         VPTR_ANY_CLASS_METHODS(name)                            \
         static TADDR VPtrTargetVTable() {                       \
             SUPPORTS_DAC;                                       \
-            return DacGlobalBase() + g_dacGlobals.name##__vtAddr; }
+            return g_dacGlobals.name##__vtAddr; }
 
 #define VPTR_MULTI_CLASS_METHODS(name, keyBase)                 \
         VPTR_ANY_CLASS_METHODS(name)                            \
         static TADDR VPtrTargetVTable() {                       \
             SUPPORTS_DAC;                                       \
-            return DacGlobalBase() + g_dacGlobals.name##__##keyBase##__mvtAddr; }
+            return g_dacGlobals.name##__##keyBase##__mvtAddr; }
 
 #define VPTR_VTABLE_CLASS(name, base)                           \
 public: name(TADDR addr, TADDR vtAddr) : base(addr, vtAddr) {}  \
@@ -1884,7 +1872,7 @@ public: name(TADDR addr, TADDR vtAddr);
 // Safe access for retrieving the target address of a PTR.
 #define PTR_TO_TADDR(ptr) ((ptr).GetAddr())
 
-#define GFN_TADDR(name) (DacGlobalBase() + g_dacGlobals.fn__ ## name)
+#define GFN_TADDR(name) (g_dacGlobals.fn__ ## name)
 
 #define GVAL_ADDR(g) \
     ((g).operator&())
@@ -2144,13 +2132,13 @@ public: name(int dummy) : base(dummy) {}
 
 #else // TARGET_UNIX
 
-#define VPTR_VTABLE_CLASS(name, base)
+#define VPTR_VTABLE_CLASS(name, base) friend struct _DacGlobals;
 #define VPTR_VTABLE_CLASS_AND_CTOR(name, base)
-#define VPTR_MULTI_VTABLE_CLASS(name, base)
-#define VPTR_BASE_CONCRETE_VTABLE_CLASS(name)
-#define VPTR_BASE_VTABLE_CLASS(name)
+#define VPTR_MULTI_VTABLE_CLASS(name, base) friend struct _DacGlobals;
+#define VPTR_BASE_CONCRETE_VTABLE_CLASS(name) friend struct _DacGlobals;
+#define VPTR_BASE_VTABLE_CLASS(name) friend struct _DacGlobals;
 #define VPTR_BASE_VTABLE_CLASS_AND_CTOR(name)
-#define VPTR_ABSTRACT_VTABLE_CLASS(name, base)
+#define VPTR_ABSTRACT_VTABLE_CLASS(name, base) friend struct _DacGlobals;
 #define VPTR_ABSTRACT_VTABLE_CLASS_AND_CTOR(name, base)
 
 #endif // TARGET_UNIX
