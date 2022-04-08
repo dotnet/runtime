@@ -74,7 +74,7 @@
     <MonoComponentsStatic Condition="'$(MonoComponentsStatic)' == ''">true</MonoComponentsStatic>
   </PropertyGroup>
 
-  <Import Project="$(MonoProjectRoot)emscripten.targets" Condition="'$(TargetsBrowser)' == 'true'" />
+  <!--<Import Project="$(MonoProjectRoot)emscripten.targets" Condition="'$(TargetsBrowser)' == 'true'" />-->
 
   <ItemGroup Condition="'$(TargetsBrowser)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true' or '$(TargetsMacCatalyst)' == 'true'">
     <PackageReference Include="Microsoft.NETCore.Runtime.ICU.Transport" PrivateAssets="all" Version="$(MicrosoftNETCoreRuntimeICUTransportVersion)" GeneratePathProperty="true" />

@@ -40,6 +40,11 @@
       <_BuildNativeUnixArgs>$(_BuildNativeArgs)$(_ProcessCountArg)$(_PortableBuildArg)$(_CrossBuildArg)$(_BuildNativeCompilerArg)$(_KeepNativeSymbolsBuildArg)$(_CMakeArgs) $(Compiler)</_BuildNativeUnixArgs>
     </PropertyGroup>
 
+    <ItemGroup>
+      <_ScriptLine Include="@(EmscriptenEnvVars -> 'export %(Identity)')" />
+    </ItemGroup>
+    <WriteLinesToFile Lines="@(_ScriptLine)" File="$(ArtifactsObjDir)/emwrapper.sh" Overwrite="true" />
+
     <Message Text="$(MSBuildThisFileDirectory)build-native.sh $(_BuildNativeUnixArgs)" Importance="High"/>
     <Exec Command="&quot;$(MSBuildThisFileDirectory)build-native.sh&quot; $(_BuildNativeUnixArgs)" />
   </Target>

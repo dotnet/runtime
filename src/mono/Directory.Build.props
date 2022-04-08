@@ -77,4 +77,6 @@
     <MonoAOTCompilerProjDirectory>$([MSBuild]::NormalizeDirectory('$(RepoTasksDir)', 'AotCompilerTask'))</MonoAOTCompilerProjDirectory>
   </PropertyGroup>
 
+  <Import Project="$(MonoProjectRoot)emscripten.targets" />
+
 </Project>

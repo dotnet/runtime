@@ -1,5 +1,5 @@
 <Project Sdk="Microsoft.Build.NoTargets">
-  <Import Project="$(MonoProjectRoot)emscripten.targets" />
+  <!--<Import Project="$(MonoProjectRoot)emscripten.targets" />-->
 
   <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.RunWithEmSdkEnv" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
 
