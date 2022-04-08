@@ -24,7 +24,7 @@ In .NET Core 2.1 and below, the host tracing is only written to the `stderr` out
 
 Starting with .NET Core 3, tracing can be redirected and its verbosity controlled:
 
-* Redirect the trace to a file (always appends) - enable tracing via `COREHOST_TRACE=1` and also set `COREHOST_TRACEFILE=<path>` in the environment for the process. The `<path>` is resolved against current directory and the file is opened for text append write.
+* Redirect the trace to a file (always appends) - enable tracing via `COREHOST_TRACE=1` and also set `COREHOST_TRACEFILE=<path>` in the environment for the process. The `<path>` is resolved against current directory and the file is opened for text append write. The directory for the file must exist, the file itself will be created if it doesn't exist.
 * Control trace verbosity via `COREHOST_TRACE_VERBOSITY` env. variable.  If not set, tracing contains the maximum level of detail.  When set in the range 1-4, the tracing verbosity increases with an increase in the value of `COREHOST_TRACE_VERBOSITY`.
   * `COREHOST_TRACE_VERBOSITY=1` shows errors
   * `COREHOST_TRACE_VERBOSITY=2` shows errors and warnings
@@ -70,13 +70,27 @@ The `message` parameter is a standard `NULL` terminated string. The memory for i
 
 ## Implementation notes
 
+Several components disable error writing to `stderr`. Note that enabling tracing via `COREHOST_TRACE=1` still works and without additional env. variables will output tracing, which includes all errors, into `stderr`.
+
 ### `nethost`
 
 The `nethost` library intentionally disables error writing to `stderr` but also doesn't provide a way to register error writer. It is possible to add support for registering custom error writer in the future.
 
 ### `apphost`
 
-`apphost` on Windows uses the `hostfxr_set_error_writer` to redirect error writing when the app is a GUI app. The callback writes to `stderr` immediately and also caches the errors into a buffer. Upon error exit the buffer is used to show a user friendly dialog box.
+`apphost` on Windows uses the `hostfxr_set_error_writer` to redirect error writing. The callback writes to `stderr` immediately and also caches the errors into a buffer.
+
+In all cases the buffered error is written into Windows Event Log.
+
+If it's a GUI app, the buffered error is used to show a user friendly dialog box.
+
+### `ijwhost`
+
+`ijwhost` intentionally disables error writing to `stderr`.
+
+### `comhost`
+
+`comhost` redirects error writing to a custom callback which buffers the errors. It will use the buffered error to set error info via `IErrorInfo` interface.
 
 ## Future investments
 
