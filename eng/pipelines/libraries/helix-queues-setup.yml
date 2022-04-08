@@ -179,7 +179,7 @@ jobs:
 
     # WebAssembly Firefox
     - ${{ if eq(parameters.platform, 'Browser_wasm_firefox') }}:
-      - (Ubuntu.1804.Amd64)Ubuntu.1804.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-webassembly-20220406215106-2a68041
+      - (Ubuntu.1804.Amd64)Ubuntu.1804.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-webassembly-20220408055539-9325e2b
 
     # WebAssembly windows
     - ${{ if eq(parameters.platform, 'Browser_wasm_win') }}:
