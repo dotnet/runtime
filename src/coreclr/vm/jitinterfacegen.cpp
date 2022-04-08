@@ -32,7 +32,6 @@ EXTERN_C Object* JIT_NewArr1VC_MP_InlineGetThread (CORINFO_CLASS_HANDLE arrayMT,
 // the "slow" versions).
 EXTERN_C Object* JIT_TrialAllocSFastMP(CORINFO_CLASS_HANDLE typeHnd_);
 EXTERN_C Object* JIT_BoxFastMP (CORINFO_CLASS_HANDLE type, void* unboxedData);
-EXTERN_C Object* JIT_BoxFastUP (CORINFO_CLASS_HANDLE type, void* unboxedData);
 EXTERN_C Object* AllocateStringFastMP (CLR_I4 cch);
 EXTERN_C Object* AllocateStringFastUP (CLR_I4 cch);
 
@@ -96,7 +95,6 @@ void InitJITHelpers1()
             //
             // When we're running Workstation GC on a single proc box we don't have
             // InlineGetThread versions because there is no need to call GetThread
-            SetJitHelperFunction(CORINFO_HELP_BOX, JIT_BoxFastUP);
             SetJitHelperFunction(CORINFO_HELP_NEWARR_1_VC, JIT_NewArr1VC_UP);
             SetJitHelperFunction(CORINFO_HELP_NEWARR_1_OBJ, JIT_NewArr1OBJ_UP);
 
