@@ -1554,7 +1554,10 @@ bool SystemDomain::IsReflectionInvocationMethod(MethodDesc* pMeth)
         CLASS__RUNTIME_HELPERS,
         CLASS__DYNAMICMETHOD,
         CLASS__DELEGATE,
-        CLASS__MULTICAST_DELEGATE
+        CLASS__MULTICAST_DELEGATE,
+        CLASS__METHOD_INVOKER,
+        CLASS__CONSTRUCTOR_INVOKER,
+        CLASS__DYNAMIC_METHOD_INVOKER
     };
 
     static bool fInited = false;

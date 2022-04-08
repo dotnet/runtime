@@ -9,13 +9,32 @@
     <ProjectReference Include="$(RepoTasksDir)WasmAppBuilder\WasmAppBuilder.csproj" />
     <ProjectReference Include="$(RepoTasksDir)WasmBuildTasks\WasmBuildTasks.csproj" />
 
-    <PackageFile Include="Sdk\Sdk.targets" TargetPath="Sdk" />
     <PackageFile Include="Sdk\AutoImport.props" TargetPath="Sdk" />
     <PackageFile Include="$(RepoRoot)\src\mono\wasm\build\WasmApp.props" TargetPath="Sdk" />
     <PackageFile Include="$(RepoRoot)\src\mono\wasm\build\WasmApp.targets" TargetPath="Sdk" />
     <PackageFile Include="$(RepoRoot)\src\mono\wasm\build\WasmApp.Native.*" TargetPath="Sdk" />
     <PackageFile Include="$(RepoRoot)\src\mono\wasm\build\EmSdkRepo.Defaults.props" TargetPath="Sdk" />
   </ItemGroup>
+
+  <Target Name="_PrepareForPack" BeforeTargets="GetPackageFiles">
+    <PropertyGroup>
+      <SdkTargetsPath>$(IntermediateOutputPath)Sdk.targets</SdkTargetsPath>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <_ReplacementValue Include="TargetFrameworkForNETCoreTasks" Value="$(TargetFrameworkForNETCoreTasks)" />
+      <_ReplacementValue Include="TargetFrameworkForNETFrameworkTasks" Value="$(TargetFrameworkForNETFrameworkTasks)" />
+    </ItemGroup>
+
+    <GenerateFileFromTemplate
+      TemplateFile="Sdk/Sdk.targets.in"
+      Properties="@(_ReplacementValue)"
+      OutputPath="$(SdkTargetsPath)" />
+
+    <ItemGroup>
+      <PackageFile Include="$(SdkTargetsPath)" TargetPath="Sdk" />
+    </ItemGroup>
+  </Target>
 
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
 </Project>
