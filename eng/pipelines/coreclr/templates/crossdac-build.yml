@@ -28,7 +28,8 @@ steps:
 
           $availableFiles = ls -File $crossDacDir
 
-          Write-Host "Probed for files in ""$crossDacDir"", found [$availableFiles]"
+          Write-Host "Probed for files in ""$crossDacDir"", found:"
+          $availableFiles | fl
 
           if (-not ("mscordaccore.dll" -in $availableFiles.Name `
                    -and "mscordaccore.pdb" -in $availableFiles.Name `
@@ -39,12 +40,15 @@ steps:
             Write-Error "Couldn't find one of the expected crossdac files."
           }
 
-          New-Item $targetDir -Force -ea 0
+          New-Item $targetDir -ItemType 'Directory' -Force -ea 0
           $availableFiles | %{ cp $_.FullName $targetDir -v }
         }
 
         CopyAndVerifyCrossOsAssets -CrossDacDir $(buildMuslDacRootFolderPath) -TargetDir '$(buildMuslDacStagingPath)/${{ parameters.hostArchType }}'
         CopyAndVerifyCrossOsAssets -CrossDacDir $(buildLinuxDacRootFolderPath) -TargetDir '$(buildLinuxDacStagingPath)/${{ parameters.hostArchType }}'
+
+        Write-Host "Final directory contents:"
+        ls -R $(crossDacArtifactPath)
 
       displayName: Gather CrossDac Artifacts
 
