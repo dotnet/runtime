@@ -165,6 +165,11 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			new DerivedTypeWithOpenGenericOnBaseWithRequirements<TestType> ();
 		}
 
+		/// <summary>
+		/// Adding a comment to verify that analyzer doesn't null ref when trying to analyze
+		/// generic parameter in cref comments on a class
+		/// <see cref="GenericBaseTypeWithRequirements{T}"/>
+		/// </summary>
 		class GenericBaseTypeWithRequirements<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] T>
 		{
 			public GenericBaseTypeWithRequirements ()
@@ -452,6 +457,11 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			MethodRequiresNothingPassThrough<TestType> ();
 		}
 
+		/// <summary>
+		/// Adding a comment to verify that analyzer doesn't null ref when trying to analyze
+		/// generic parameter comments on a method
+		/// <see cref="MethodRequiresPublicFields{T}"/>
+		/// </summary>
 		[ExpectedWarning ("IL2087", nameof (DataFlowTypeExtensions.RequiresPublicMethods))]
 		static void MethodRequiresPublicFields<
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] T> ()
