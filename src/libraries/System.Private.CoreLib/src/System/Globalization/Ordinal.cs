@@ -224,8 +224,7 @@ namespace System.Globalization
                 // A non-linguistic search compares chars directly against one another, so large
                 // target strings can never be found inside small search spaces. This check also
                 // handles empty 'source' spans.
-
-                goto NOT_FOUND;
+                return -1;
             }
 
             if (GlobalizationMode.Invariant)
@@ -248,40 +247,69 @@ namespace System.Globalization
                 return OrdinalCasing.IndexOf(source, value);
             }
 
+
+            int valueTailLength = value.Length - 1;
+            ref char valueTail = ref Unsafe.Add(ref valueRef, 1);
             ref char searchSpace = ref MemoryMarshal.GetReference(source);
-            int valueLength = value.Length;
-            int searchSpaceLength = source.Length;
+            int remainingSearchSpaceLength = source.Length - valueTailLength;
 
-            do
+            // hoist some expressions from the loop
+            char valueCharU = default;
+            char valueCharL = default;
+            bool isLetter = false;
+            nint offset = 0;
+
+            if ((uint)((valueChar | 0x20) - 'a') <= 'z' - 'a')
             {
-                // if val is either [a..z] or [A..Z] - search for its lower and upper counter parts using IndexOfAny
-                // otherwise use just plain IndexOf
-                int candidatePos = (uint)((valueChar | 0x20) - 'a') <= 'z' - 'a' ?
-                    SpanHelpers.IndexOfAny(ref searchSpace, (char)(valueChar & ~0x20), (char)(valueChar | 0x20), searchSpaceLength) :
-                    SpanHelpers.IndexOf(ref searchSpace, valueChar, searchSpaceLength);
+                valueCharU = (char)(valueChar & ~0x20);
+                valueCharL = (char)(valueChar | 0x20);
+                isLetter = true;
+            }
 
-                if ((candidatePos == -1) || (searchSpaceLength - candidatePos) < valueLength)
+            while (remainingSearchSpaceLength > 0)
+            {
+                int relativeIndex;
+                if (isLetter)
                 {
-                    // the whole input doesn't contain the first char or it does
-                    // but there is no room left to fit the value
-                    goto NOT_FOUND;
+                    relativeIndex =
+                        SpanHelpers.IndexOfAny(
+                            ref Unsafe.Add(ref searchSpace, offset),
+                            valueCharU,
+                            valueCharL,
+                            remainingSearchSpaceLength);
+                }
+                else
+                {
+                    relativeIndex =
+                        SpanHelpers.IndexOf(
+                            ref Unsafe.Add(ref searchSpace, offset),
+                            valueChar,
+                            remainingSearchSpaceLength);
                 }
 
-                // Do ASCII and non-ASCII friendly compare for the current candidate
-                // Since we already know first chars match we ignore them and inspect valueLength - 1
+                // Do a quick search for the first element of "value".
+                if (relativeIndex < 0)
+                    break;
+
+                remainingSearchSpaceLength -= relativeIndex;
+                offset += relativeIndex;
+
+                if (remainingSearchSpaceLength <= 0)
+                    break;  // The unsearched portion is now shorter than the sequence we're looking for. So it can't be there.
+
+                // Found the first element of "value". See if the tail matches.
                 if (EqualsIgnoreCase(
-                        ref Unsafe.Add(ref searchSpace, (nuint)(candidatePos + 1)),
-                        ref Unsafe.Add(ref valueRef, (nuint)1),
-                        valueLength - 1))
+                        ref Unsafe.Add(ref searchSpace, (nuint)(offset + 1)),
+                        ref valueTail,
+                        valueTailLength))
                 {
-                    return source.Length - searchSpaceLength + candidatePos;
+                    return (int)offset;  // The tail matched. Return a successful find.
                 }
 
-                searchSpace = Unsafe.Add(ref searchSpace, (nuint)(candidatePos + valueLength));
-                searchSpaceLength -= candidatePos + valueLength;
-            } while (searchSpaceLength >= valueLength);
+                remainingSearchSpaceLength--;
+                offset++;
+            }
 
-        NOT_FOUND:
             return -1;
         }
 
