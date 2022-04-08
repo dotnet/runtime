@@ -786,7 +786,7 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
             imm3 = imm3 ? imm2 - imm3 : imm2;
             code = emitInsCode(ins);
             code |= (code_t)reg1;
-            code |= (code_t)REG_RA;
+            code |= (code_t)REG_RA << 5;
             code |= (code_t)(imm3 & 0xfff) << 10;
         }
     }

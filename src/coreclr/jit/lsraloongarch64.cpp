@@ -256,6 +256,12 @@ int LinearScan::BuildNode(GenTree* tree)
                 // everything is made explicit by adding casts.
                 assert(tree->gtGetOp1()->TypeGet() == tree->gtGetOp2()->TypeGet());
             }
+            else if (tree->gtOverflow())
+            {
+                // Need a register different from target reg to check for overflow.
+                buildInternalIntRegisterDefForNode(tree);
+                setInternalRegsDelayFree = true;
+            }
             FALLTHROUGH;
 
         case GT_AND:
@@ -355,12 +361,6 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_GE:
         case GT_GT:
         case GT_JCMP:
-            if (!varTypeIsFloating(tree))
-            {
-                buildInternalIntRegisterDefForNode(tree);
-                buildInternalIntRegisterDefForNode(tree);
-                buildInternalRegisterUses();
-            }
             srcCount = BuildCmp(tree);
             break;
 

@@ -862,6 +862,11 @@ fgArgTabEntry* fgArgInfo::AddRegArg(unsigned          argNum,
     curArgTabEntry->SetByteSize(byteSize, isStruct, isFloatHfa);
     curArgTabEntry->SetByteOffset(0);
 
+#ifdef TARGET_LOONGARCH64
+    curArgTabEntry->structFloatFieldType[0] = TYP_UNDEF;
+    curArgTabEntry->structFloatFieldType[1] = TYP_UNDEF;
+#endif
+
     hasRegArgs = true;
     if (argCount >= argTableSize)
     {

@@ -4223,23 +4223,18 @@ void CodeGen::genCodeForCompare(GenTreeOp* jtree)
         }
         else
         {
-            regNumber tmpRegOp1 = tree->ExtractTempReg();
-            regNumber tmpRegOp2 = tree->ExtractTempReg();
-            regNumber regOp2    = op2->GetRegNum();
-            if (cmpSize == EA_4BYTE)
+            regNumber regOp2 = op2->GetRegNum();
+
+            if ((cmpSize == EA_4BYTE) && IsUnsigned)
             {
+                regNumber tmpRegOp1 = REG_RA;
+                regNumber tmpRegOp2 = rsGetRsvdReg();
+
+                emit->emitIns_R_R_I(INS_slli_w, EA_4BYTE, tmpRegOp1, regOp1, 0);
+                emit->emitIns_R_R_I(INS_slli_w, EA_4BYTE, tmpRegOp2, regOp2, 0);
+
                 regOp1 = tmpRegOp1;
                 regOp2 = tmpRegOp2;
-                if (IsUnsigned)
-                {
-                    emit->emitIns_R_R_I_I(INS_bstrpick_d, EA_PTRSIZE, tmpRegOp1, op1->GetRegNum(), 31, 0);
-                    emit->emitIns_R_R_I_I(INS_bstrpick_d, EA_PTRSIZE, tmpRegOp2, op2->GetRegNum(), 31, 0);
-                }
-                else
-                {
-                    emit->emitIns_R_R_I(INS_slli_w, EA_4BYTE, tmpRegOp1, op1->GetRegNum(), 0);
-                    emit->emitIns_R_R_I(INS_slli_w, EA_4BYTE, tmpRegOp2, op2->GetRegNum(), 0);
-                }
             }
 
             if (tree->OperIs(GT_LT))
@@ -4271,7 +4266,6 @@ void CodeGen::genCodeForCompare(GenTreeOp* jtree)
                 emit->emitIns_R_R_I(INS_sltui, EA_PTRSIZE, targetReg, targetReg, 1);
             }
         }
-        genProduceReg(tree);
     }
 }
 
@@ -4497,7 +4491,7 @@ void CodeGen::genCodeForJumpTrue(GenTreeOp* jtrue)
                 if (IsUnsigned && cmpSize == EA_4BYTE && op2->OperIs(GT_LCL_VAR) &&
                     compiler->lvaTable[op2->AsLclVar()->GetLclNum()].lvIsRegCandidate())
                 {
-                    regNumber tmpRegOp1 = tree->ExtractTempReg();
+                    regNumber tmpRegOp1 = rsGetRsvdReg();
                     emit->emitIns_R_R_I_I(INS_bstrpick_d, EA_8BYTE, REG_RA, regOp2, 31, 0);
                     emit->emitIns_R_R_I_I(INS_bstrpick_d, EA_8BYTE, tmpRegOp1, regOp1, 31, 0);
                     regOp1 = tmpRegOp1;
@@ -4506,7 +4500,7 @@ void CodeGen::genCodeForJumpTrue(GenTreeOp* jtrue)
                 else if (IsUnsigned && cmpSize == EA_4BYTE && op1->OperIs(GT_LCL_VAR) &&
                          compiler->lvaTable[op1->AsLclVar()->GetLclNum()].lvIsRegCandidate())
                 {
-                    regNumber tmpRegOp1 = tree->ExtractTempReg();
+                    regNumber tmpRegOp1 = rsGetRsvdReg();
                     emit->emitIns_R_R_I_I(INS_bstrpick_d, EA_8BYTE, tmpRegOp1, regOp1, 31, 0);
                     emit->emitIns_R_R_I_I(INS_bstrpick_d, EA_8BYTE, REG_RA, regOp2, 31, 0);
                     regOp1 = tmpRegOp1;
@@ -4522,7 +4516,7 @@ void CodeGen::genCodeForJumpTrue(GenTreeOp* jtrue)
                 {
                     if (!(op1->gtFlags & GTF_UNSIGNED))
                     {
-                        regNumber tmpRegOp1 = tree->ExtractTempReg();
+                        regNumber tmpRegOp1 = rsGetRsvdReg();
                         emit->emitIns_R_R_I_I(INS_bstrpick_d, EA_8BYTE, tmpRegOp1, regOp1, 31, 0);
                         regOp1 = tmpRegOp1;
                     }

@@ -6552,7 +6552,11 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
                     }
                 }
 
-#endif // TARGET_XARCH
+#elif defined(TARGET_LOONGARCH64)
+
+                isJccAffectedIns = true;
+
+#endif // TARGET_LOONGARCH64
 
                 // Jcc affected instruction boundaries were printed above; handle other cases here.
                 if (!isJccAffectedIns)

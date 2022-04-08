@@ -1313,7 +1313,7 @@ AGAIN:
     noway_assert(op2);
     switch (op2->gtOper)
     {
-#if !defined(TARGET_ARMARCH)
+#if !defined(TARGET_ARMARCH) && !defined(TARGET_LOONGARCH64)
         // TODO-ARM64-CQ, TODO-ARM-CQ: For now we only handle MUL and LSH because
         // arm doesn't support both scale and offset at the same. Offset is handled
         // at the emitter as a peephole optimization.
@@ -1370,7 +1370,7 @@ AGAIN:
                 goto FOUND_AM;
             }
             break;
-#endif // TARGET_ARMARCH
+#endif // TARGET_ARMARCH || TARGET_LOONGARCH64
 
         case GT_NOP:
 
