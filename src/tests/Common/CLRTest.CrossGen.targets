@@ -77,6 +77,7 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
       __cg2ExitCode=0
 
       OneFileCrossgen2() {
+        date +%H:%M:%S
         __OutputFile=$1
 
         __ResponseFile="$__OutputFile.rsp"
@@ -114,6 +115,7 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
         __cg2ExitCode=$?
 
         export COMPlus_GCName COMPlus_GCStress COMPlus_HeapVerify COMPlus_ReadyToRun COMPlus_TC_OnStackReplacement COMPlus_TC_PartialCompilation
+        date +%H:%M:%S
       }
 
       if [ ! -z ${CompositeBuildMode+x} ]%3B then
@@ -208,6 +210,7 @@ if defined RunCrossGen2 (
 
     goto :DoneCrossgen2Operations
 :CompileOneFileCrossgen2
+    echo %time%
     set __ResponseFile=!__OutputFile!.rsp
     del /Q !__ResponseFile!
 
@@ -253,6 +256,7 @@ if defined RunCrossGen2 (
     call !__Command!
     endlocal
     set CrossGen2Status=!ERRORLEVEL!
+    echo %time%
     Exit /b 0
 
 :DoneCrossgen2Operations
