@@ -81,7 +81,7 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
         __OutputFile=$1
 
         __ResponseFile="$__OutputFile.rsp"
-        rm $__ResponseFile
+        rm $__ResponseFile 2>/dev/null
 
         __Command=$_DebuggerFullPath
         # Tests run locally need __TestDotNetCmd (set by runtest.py) or a compatible 5.0 dotnet runtime in the path
@@ -212,7 +212,7 @@ if defined RunCrossGen2 (
 :CompileOneFileCrossgen2
     echo %time%
     set __ResponseFile=!__OutputFile!.rsp
-    del /Q !__ResponseFile!
+    del /Q !__ResponseFile! 2>null
 
     set __Command=!_DebuggerFullPath!
     REM Tests run locally need __TestDotNetCmd (set by runtest.py) or a compatible 5.0 dotnet runtime in the path
