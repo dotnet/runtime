@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Reflection;
+using System.Text.Json.Reflection;
 
 namespace System.Text.Json.Serialization.Metadata
 {
@@ -35,7 +36,7 @@ namespace System.Text.Json.Serialization.Metadata
             Debug.Assert(!info.ShouldDeserialize);
             Debug.Assert(!info.ShouldSerialize);
 
-            info.NameAsString = string.Empty;
+            info.Name = string.Empty;
 
             return info;
         }
@@ -65,16 +66,27 @@ namespace System.Text.Json.Serialization.Metadata
 
         private bool _isConfigured;
 
-        internal void Configure()
+        internal void EnsureConfigured()
         {
             if (_isConfigured)
             {
                 return;
             }
 
+            Configure();
+
+            _isConfigured = true;
+        }
+
+        internal virtual void Configure()
+        {
+            if (!IsForTypeInfo)
+            {
+                CacheNameAsUtf8BytesAndEscapedNameSection();
+            }
+
             if (IsIgnored)
             {
-                _isConfigured = true;
                 return;
             }
 
@@ -84,18 +96,17 @@ namespace System.Text.Json.Serialization.Metadata
             }
             else
             {
+                PropertyTypeCanBeNull = PropertyType.CanBeNull();
                 DetermineNumberHandlingForProperty();
+                DetermineIgnoreCondition(IgnoreCondition);
+                DetermineSerializationCapabilities(IgnoreCondition);
             }
-
-            _isConfigured = true;
         }
 
-        internal void GetPolicies(JsonIgnoreCondition? ignoreCondition)
+        internal void GetPolicies()
         {
             Debug.Assert(MemberInfo != null);
-            DetermineSerializationCapabilities(ignoreCondition);
             DeterminePropertyName();
-            DetermineIgnoreCondition(ignoreCondition);
 
             JsonPropertyOrderAttribute? orderAttr = GetAttribute<JsonPropertyOrderAttribute>(MemberInfo);
             if (orderAttr != null)
@@ -122,7 +133,7 @@ namespace System.Text.Json.Serialization.Metadata
                     ThrowHelper.ThrowInvalidOperationException_SerializerPropertyNameNull(DeclaringType, this);
                 }
 
-                NameAsString = name;
+                Name = name;
             }
             else if (Options.PropertyNamingPolicy != null)
             {
@@ -132,16 +143,19 @@ namespace System.Text.Json.Serialization.Metadata
                     ThrowHelper.ThrowInvalidOperationException_SerializerPropertyNameNull(DeclaringType, this);
                 }
 
-                NameAsString = name;
+                Name = name;
             }
             else
             {
-                NameAsString = MemberInfo.Name;
+                Name = MemberInfo.Name;
             }
+        }
 
-            Debug.Assert(NameAsString != null);
+        internal void CacheNameAsUtf8BytesAndEscapedNameSection()
+        {
+            Debug.Assert(Name != null);
 
-            NameAsUtf8Bytes = Encoding.UTF8.GetBytes(NameAsString);
+            NameAsUtf8Bytes = Encoding.UTF8.GetBytes(Name);
             EscapedNameSection = JsonHelpers.GetEscapedPropertyNameSection(NameAsUtf8Bytes, Options.Encoder);
         }
 
@@ -347,8 +361,8 @@ namespace System.Text.Json.Serialization.Metadata
         internal bool IsForTypeInfo { get; set; }
 
         // There are 3 copies of the property name:
-        // 1) NameAsString. The unescaped property name.
-        // 2) NameAsUtf8Bytes. The Utf8 version of NameAsString. Used during during deserialization for property lookup.
+        // 1) Name. The unescaped property name.
+        // 2) NameAsUtf8Bytes. The Utf8 version of Name. Used during during deserialization for property lookup.
         // 3) EscapedNameSection. The escaped verson of NameAsUtf8Bytes plus the wrapping quotes and a trailing colon. Used during serialization.
 
         /// <summary>
@@ -357,10 +371,10 @@ namespace System.Text.Json.Serialization.Metadata
         /// the value specified in JsonPropertyNameAttribute,
         /// or the value returned from PropertyNamingPolicy(clrPropertyName).
         /// </summary>
-        internal string NameAsString { get; set; } = null!;
+        internal string Name { get; set; } = null!;
 
         /// <summary>
-        /// Utf8 version of NameAsString.
+        /// Utf8 version of Name.
         /// </summary>
         internal byte[] NameAsUtf8Bytes { get; set; } = null!;
 
