@@ -11,10 +11,8 @@
 #ifndef _MONO_METADATA_MARHSAL_SHARED_H_
 #define _MONO_METADATA_MARHSAL_SHARED_H_
 
-/* TODO: These shouldn't be global variables */
-MonoMethod *sh_dangerous_add_ref;
-MonoMethod *sh_dangerous_release;
-
+MonoMethod** mono_marshal_shared_get_sh_dangerous_add_ref (void);
+MonoMethod** mono_marshal_shared_get_sh_dangerous_release (void);
 
 void
 emit_marshal_custom_get_instance (MonoMethodBuilder *mb, MonoClass *klass, MonoMarshalSpec *spec);

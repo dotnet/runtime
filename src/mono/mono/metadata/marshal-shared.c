@@ -24,6 +24,18 @@ static GENERATE_GET_CLASS_WITH_CACHE (date_time, "System", "DateTime");
 static GENERATE_TRY_GET_CLASS_WITH_CACHE (icustom_marshaler, "System.Runtime.InteropServices", "ICustomMarshaler");
 static GENERATE_TRY_GET_CLASS_WITH_CACHE (marshal, "System.Runtime.InteropServices", "Marshal");
 
+static MonoMethod *sh_dangerous_add_ref = NULL;
+static MonoMethod *sh_dangerous_release = NULL;
+
+MonoMethod** mono_marshal_shared_get_sh_dangerous_add_ref (void)
+{
+	return &sh_dangerous_add_ref;
+}
+
+MonoMethod** mono_marshal_shared_get_sh_dangerous_release (void)
+{
+	return &sh_dangerous_release;
+}
 
 // On legacy Mono, LPTSTR was either UTF16 or UTF8 depending on platform
 static MonoJitICallId
@@ -92,8 +104,8 @@ emit_marshal_custom_get_instance (MonoMethodBuilder *mb, MonoClass *klass, MonoM
 void
 mono_marshal_shared_init_safe_handle (void)
 {
-	mono_atomic_store_seq (&sh_dangerous_add_ref, mono_marshal_shared_get_method_nofail (mono_class_try_get_safehandle_class (), "DangerousAddRef", 1, 0));
-	mono_atomic_store_seq (&sh_dangerous_release, mono_marshal_shared_get_method_nofail (mono_class_try_get_safehandle_class (), "DangerousRelease", 0, 0));
+	mono_atomic_store_seq (mono_marshal_shared_get_sh_dangerous_add_ref(), mono_marshal_shared_get_method_nofail (mono_class_try_get_safehandle_class (), "DangerousAddRef", 1, 0));
+	mono_atomic_store_seq (mono_marshal_shared_get_sh_dangerous_release(), mono_marshal_shared_get_method_nofail (mono_class_try_get_safehandle_class (), "DangerousRelease", 0, 0));
 }
 
 void

@@ -1392,7 +1392,7 @@ emit_marshal_safehandle_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 		conv_arg = mono_mb_add_local (mb, int_type);
 		*conv_arg_type = int_type;
 
-		if (!sh_dangerous_add_ref)
+		if (! *mono_marshal_shared_get_sh_dangerous_add_ref())
 			mono_marshal_shared_init_safe_handle ();
 
 		mono_mb_emit_ldarg (mb, argnum);
@@ -1419,7 +1419,7 @@ emit_marshal_safehandle_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 				mono_mb_emit_ldarg (mb, argnum);
 				mono_mb_emit_byte (mb, CEE_LDIND_REF);
 				mono_mb_emit_ldloc_addr (mb, dar_release_slot);
-				mono_mb_emit_managed_call (mb, sh_dangerous_add_ref, NULL);
+				mono_mb_emit_managed_call (mb, *	mono_marshal_shared_get_sh_dangerous_add_ref (), NULL);
 
 				/* Pull the handle field from SafeHandle */
 				mono_mb_emit_ldarg (mb, argnum);
@@ -1434,7 +1434,7 @@ emit_marshal_safehandle_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 			/* safehandle.DangerousAddRef (ref release) */
 			mono_mb_emit_ldarg (mb, argnum);
 			mono_mb_emit_ldloc_addr (mb, dar_release_slot);
-			mono_mb_emit_managed_call (mb, sh_dangerous_add_ref, NULL);
+			mono_mb_emit_managed_call (mb, *mono_marshal_shared_get_sh_dangerous_add_ref(), NULL);
 
 			/* Pull the handle field from SafeHandle */
 			mono_mb_emit_ldarg (mb, argnum);
@@ -1458,7 +1458,7 @@ emit_marshal_safehandle_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 		int dar_release_slot = conv_arg + 1;
 		int label_next = 0;
 
-		if (!sh_dangerous_release)
+		if (! *(mono_marshal_shared_get_sh_dangerous_release ()))
 			mono_marshal_shared_init_safe_handle ();
 
 		if (m_type_is_byref (t)) {
@@ -1468,7 +1468,7 @@ emit_marshal_safehandle_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 				label_next = mono_mb_emit_branch (mb, CEE_BRFALSE);
 				mono_mb_emit_ldarg (mb, argnum);
 				mono_mb_emit_byte (mb, CEE_LDIND_I);
-				mono_mb_emit_managed_call (mb, sh_dangerous_release, NULL);
+				mono_mb_emit_managed_call (mb, *mono_marshal_shared_get_sh_dangerous_release (), NULL);
 				mono_mb_patch_branch (mb, label_next);
 			}
 
@@ -1521,7 +1521,7 @@ emit_marshal_safehandle_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 			mono_mb_emit_ldloc (mb, dar_release_slot);
 			label_next = mono_mb_emit_branch (mb, CEE_BRFALSE);
 			mono_mb_emit_ldarg (mb, argnum);
-			mono_mb_emit_managed_call (mb, sh_dangerous_release, NULL);
+			mono_mb_emit_managed_call (mb, *mono_marshal_shared_get_sh_dangerous_release (), NULL);
 			mono_mb_patch_branch (mb, label_next);
 		}
 		break;

@@ -93,6 +93,7 @@ set(metadata_common_sources
     marshal.h
     marshal-legacy.c
     marshal-legacy.h
+    marshal-legacy-noilgen.c
     marshal-internals.h
     marshal-noilgen.c
     marshal-shared.h

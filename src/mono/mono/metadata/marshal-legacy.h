@@ -32,7 +32,13 @@ mono_emit_marshal_legacy (EmitMarshalContext *m, int argnum, MonoType *t,
 void
 mono_install_marshal_callbacks_legacy (MonoMarshalCallbacksLegacy *cb);
 
+#ifdef ENABLE_ILGEN
 void
 mono_marshal_ilgen_legacy_init (void);
+#else
+void
+mono_marshal_noilgen_legacy_init (void);
+#endif 
+
 
 #endif // __MARSHAL_LEGACY_H__
