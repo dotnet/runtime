@@ -21,7 +21,7 @@ parameters:
   iOSLlvmBuild: 'False'
   skipLiveLibrariesDownload: false
   collectHelixLogsScript: ''
-  timeoutInMinutes: '320'
+  timeoutInMinutes: 320
 
 ### Perf job
 
