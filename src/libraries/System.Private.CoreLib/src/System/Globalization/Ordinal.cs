@@ -237,7 +237,7 @@ namespace System.Globalization
                 return CompareInfo.NlsIndexOfOrdinalCore(source, value, ignoreCase: true, fromBeginning: true);
             }
 
-            // if value starts with an ASCII char we can use a vectorized path
+            // If value starts with an ASCII char, we can use a vectorized path
             ref char valueRef = ref MemoryMarshal.GetReference(value);
             char valueChar = valueRef;
 
@@ -247,7 +247,7 @@ namespace System.Globalization
                 return OrdinalCasing.IndexOf(source, value);
             }
 
-            // hoist some expressions from the loop
+            // Hoist some expressions from the loop
             int valueTailLength = value.Length - 1;
             int searchSpaceLength = source.Length - valueTailLength;
             ref char searchSpace = ref MemoryMarshal.GetReference(source);
@@ -265,11 +265,10 @@ namespace System.Globalization
 
             do
             {
+                // Do a quick search for the first element of "value".
                 int relativeIndex = isLetter ?
                     SpanHelpers.IndexOfAny(ref Unsafe.Add(ref searchSpace, offset), valueCharU, valueCharL, searchSpaceLength) :
                     SpanHelpers.IndexOf(ref Unsafe.Add(ref searchSpace, offset), valueChar, searchSpaceLength);
-
-                // Do a quick search for the first element of "value".
                 if (relativeIndex < 0)
                 {
                     break;
