@@ -29,13 +29,16 @@
           DestinationFolder="$(MicrosoftNetCoreAppRuntimePackNativeDir)"
           SkipUnchangedFiles="true" />
 
+    <_TargetsToRun>Publish;PublishItemsOutputGroup</_TargetsToRun>
+    <_TargetsToRun Condition="'$(DotNetBuildFromSource) != true">DeleteAssetsJson;Restore</_TargetsToRun>
+
     <MSBuild Projects="$(RepoRoot)src/coreclr/tools/aot/crossgen2/crossgen2.csproj"
              Properties="RunningPublish=true
               ;RuntimeIdentifier=$(RuntimeIdentifier)
               ;CoreCLRArtifactsPath=$(CoreCLRArtifactsPath)
               ;R2ROverridePath=$(MSBuildThisFileDirectory)ReadyToRun.targets
               ;DotNetBuildFromSource=$(DotNetBuildFromSource)"
-             Targets="DeleteAssetsJson;Restore;Publish;PublishItemsOutputGroup">
+             Targets="$(_TargetsToRun)">
       <Output TaskParameter="TargetOutputs"
               ItemName="_RawCrossgenPublishFiles" />
     </MSBuild>
