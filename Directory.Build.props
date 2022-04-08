@@ -53,7 +53,7 @@
     <NetCoreAppCurrent>net$(NetCoreAppCurrentVersion)</NetCoreAppCurrent>
     <NetCoreAppMinimum>net6.0</NetCoreAppMinimum>
 
-    <NetCoreAppToolCurrentVersion>6.0</NetCoreAppToolCurrentVersion>
+    <NetCoreAppToolCurrentVersion>7.0</NetCoreAppToolCurrentVersion>
     <NetCoreAppToolCurrent>net$(NetCoreAppToolCurrentVersion)</NetCoreAppToolCurrent>
     <NetCoreAppCurrentToolTargetFrameworkMoniker>$(NetCoreAppCurrentIdentifier),Version=v$(NetCoreAppToolCurrentVersion)</NetCoreAppCurrentToolTargetFrameworkMoniker>
 
@@ -61,7 +61,7 @@
     <NetCoreAppLatestStablePackageBaselineVersion>$(NetCoreAppLatestStableVersion).0</NetCoreAppLatestStablePackageBaselineVersion>
     <NetCoreAppLatestStable>net$(NetCoreAppLatestStableVersion)</NetCoreAppLatestStable>
 
-    <AspNetCoreAppCurrentVersion>6.0</AspNetCoreAppCurrentVersion>
+    <AspNetCoreAppCurrentVersion>7.0</AspNetCoreAppCurrentVersion>
     <AspNetCoreAppCurrent>net$(AspNetCoreAppCurrentVersion)</AspNetCoreAppCurrent>
 
     <NetFrameworkMinimum>net462</NetFrameworkMinimum>
