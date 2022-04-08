@@ -5,20 +5,19 @@
     <Nullable>enable</Nullable>
     <RootNamespace>Microsoft.Interop</RootNamespace>
     <RunAnalyzers>true</RunAnalyzers>
-    <DefineConstants>$(DefineConstants);LIBRARYIMPORT_GENERATOR_TEST</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="$(LibrariesProjectRoot)Common\src\System\Runtime\InteropServices\CustomTypeMarshallerKind.cs"
+    <Compile Include="$(LibrariesProjectRoot)System.Private.CoreLib\src\System\Runtime\InteropServices\CustomTypeMarshallerKind.cs"
              Link="Common\System\Runtime\InteropServices\CustomTypeMarshallerKind.cs" />
-    <Compile Include="$(LibrariesProjectRoot)Common\src\System\Runtime\InteropServices\CustomTypeMarshallerDirection.cs"
+    <Compile Include="$(LibrariesProjectRoot)System.Private.CoreLib\src\System\Runtime\InteropServices\CustomTypeMarshallerDirection.cs"
              Link="Common\System\Runtime\InteropServices\CustomTypeMarshallerDirection.cs" />
-    <Compile Include="$(LibrariesProjectRoot)Common\src\System\Runtime\InteropServices\CustomTypeMarshallerFeatures.cs"
+    <Compile Include="$(LibrariesProjectRoot)System.Private.CoreLib\src\System\Runtime\InteropServices\CustomTypeMarshallerFeatures.cs"
              Link="Common\System\Runtime\InteropServices\CustomTypeMarshallerFeatures.cs" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.CodeAnalysis" Version="$(MicrosoftCodeAnalysisVersion)" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.CodeAnalysis" Version="$(MicrosoftCodeAnalysisVersion_4_X)" PrivateAssets="all" />
     <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="$(MicrosoftCodeAnalysisAnalyzersVersion)" PrivateAssets="all" />
   </ItemGroup>
 

@@ -149,11 +149,7 @@ namespace System.Runtime.InteropServices
     public enum ClassInterfaceType
     {
         None = 0,
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("Support for IDispatch may be unavailable in future releases.")]
         AutoDispatch = 1,
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("Support for IDispatch may be unavailable in future releases.")]
         AutoDual = 2,
     }
     [System.CLSCompliantAttribute(false)]
@@ -326,6 +322,41 @@ namespace System.Runtime.InteropServices
         Handled = 0,
         NotHandled = 1,
         Failed = 2,
+    }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Struct)]
+    public sealed partial class CustomTypeMarshallerAttribute : System.Attribute
+    {
+        public CustomTypeMarshallerAttribute(System.Type managedType, System.Runtime.InteropServices.CustomTypeMarshallerKind marshallerKind = System.Runtime.InteropServices.CustomTypeMarshallerKind.Value) { }
+        public System.Type ManagedType { get { throw null; } }
+        public System.Runtime.InteropServices.CustomTypeMarshallerKind MarshallerKind { get { throw null; } }
+        public int BufferSize { get { throw null; } set { } }
+        public System.Runtime.InteropServices.CustomTypeMarshallerDirection Direction { get { throw null; } set { } }
+        public System.Runtime.InteropServices.CustomTypeMarshallerFeatures Features { get { throw null; } set { } }
+        public struct GenericPlaceholder
+        {
+        }
+    }
+    [System.FlagsAttribute]
+    public enum CustomTypeMarshallerDirection
+    {
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        None = 0,
+        In = 0x1,
+        Out = 0x2,
+        Ref = In | Out,
+    }
+    [System.FlagsAttribute]
+    public enum CustomTypeMarshallerFeatures
+    {
+        None = 0,
+        UnmanagedResources = 0x1,
+        CallerAllocatedBuffer = 0x2,
+        TwoStageMarshalling = 0x4
+    }
+    public enum CustomTypeMarshallerKind
+    {
+        Value,
+        LinearCollection
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Module, Inherited=false)]
     public sealed partial class DefaultCharSetAttribute : System.Attribute
@@ -781,6 +812,17 @@ namespace System.Runtime.InteropServices
         public MarshalDirectiveException(string? message) { }
         public MarshalDirectiveException(string? message, System.Exception? inner) { }
     }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Parameter | System.AttributeTargets.ReturnValue, AllowMultiple = true)]
+    public sealed partial class MarshalUsingAttribute : System.Attribute
+    {
+        public MarshalUsingAttribute() { }
+        public MarshalUsingAttribute(System.Type nativeType) { }
+        public System.Type? NativeType { get { throw null; } }
+        public string CountElementName { get { throw null; } set { } }
+        public int ConstantElementCount { get { throw null; } set { } }
+        public int ElementIndirectionDepth { get { throw null; } set { } }
+        public const string ReturnsCountValue = "return-value";
+    }
     public static partial class NativeLibrary
     {
         public static void Free(System.IntPtr handle) { }
@@ -792,6 +834,12 @@ namespace System.Runtime.InteropServices
         public static bool TryGetExport(System.IntPtr handle, string name, out System.IntPtr address) { throw null; }
         public static bool TryLoad(string libraryPath, out System.IntPtr handle) { throw null; }
         public static bool TryLoad(string libraryName, System.Reflection.Assembly assembly, System.Runtime.InteropServices.DllImportSearchPath? searchPath, out System.IntPtr handle) { throw null; }
+    }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Struct | System.AttributeTargets.Class | System.AttributeTargets.Enum | System.AttributeTargets.Delegate)]
+    public sealed partial class NativeMarshallingAttribute : System.Attribute
+    {
+        public NativeMarshallingAttribute(System.Type nativeType) { }
+        public System.Type NativeType { get { throw null; } }
     }
     public static unsafe partial class NativeMemory
     {
@@ -900,9 +948,9 @@ namespace System.Runtime.InteropServices
         public static System.Runtime.InteropServices.NFloat Parse(string s, System.IFormatProvider? provider) { throw null; }
         public override string ToString() { throw null; }
         public string ToString(System.IFormatProvider? provider) { throw null; }
-        public string ToString(string? format) { throw null; }
-        public string ToString(string? format, System.IFormatProvider? provider) { throw null; }
-        public bool TryFormat(System.Span<char> destination, out int charsWritten, System.ReadOnlySpan<char> format = default(System.ReadOnlySpan<char>), System.IFormatProvider? provider = null) { throw null; }
+        public string ToString([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] string? format) { throw null; }
+        public string ToString([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] string? format, System.IFormatProvider? provider) { throw null; }
+        public bool TryFormat(System.Span<char> destination, out int charsWritten, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] System.ReadOnlySpan<char> format = default(System.ReadOnlySpan<char>), System.IFormatProvider? provider = null) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.Runtime.InteropServices.NFloat result) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> s, out System.Runtime.InteropServices.NFloat result) { throw null; }
         public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.Runtime.InteropServices.NFloat result) { throw null; }

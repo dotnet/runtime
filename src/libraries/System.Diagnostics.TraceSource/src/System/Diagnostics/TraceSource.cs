@@ -5,6 +5,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Specialized;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 
 namespace System.Diagnostics
@@ -257,7 +258,7 @@ namespace System.Diagnostics
         }
 
         [Conditional("TRACE")]
-        public void TraceEvent(TraceEventType eventType, int id, string? format, params object?[]? args)
+        public void TraceEvent(TraceEventType eventType, int id, [StringSyntax(StringSyntaxAttribute.CompositeFormat)] string? format, params object?[]? args)
         {
             Initialize();
 
@@ -399,7 +400,7 @@ namespace System.Diagnostics
         }
 
         [Conditional("TRACE")]
-        public void TraceInformation(string? format, params object?[]? args)
+        public void TraceInformation([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string? format, params object?[]? args)
         {
             // No need to call Initialize()
             TraceEvent(TraceEventType.Information, 0, format, args);

@@ -249,7 +249,12 @@ sealed class OutOfProcessTest : ITestInfo
         Method = displayName;
         DisplayNameForFiltering = displayName;
         TestNameExpression = $"@\"{displayName}\"";
-        ExecutionStatement = $@"TestLibrary.OutOfProcessTest.RunOutOfProcessTest(typeof(Program).Assembly.Location, @""{relativeAssemblyPath}"");";
+        ExecutionStatement = $@"
+if (TestLibrary.OutOfProcessTest.OutOfProcessTestsSupported)
+{{
+TestLibrary.OutOfProcessTest.RunOutOfProcessTest(typeof(Program).Assembly.Location, @""{relativeAssemblyPath}"");
+}}
+";
     }
 
     public string TestNameExpression { get; }
@@ -354,6 +359,6 @@ sealed class WrapperLibraryTestSummaryReporting : ITestReporterWrapper
 
     public string GenerateSkippedTestReporting(ITestInfo skippedTest)
     {
-        return $"{_summaryLocalIdentifier}.ReportSkippedTest({skippedTest.TestNameExpression}, \"{skippedTest.ContainingType}\", \"{skippedTest.Method}\", System.TimeSpan.Zero, string.Empty);";
+        return $"{_summaryLocalIdentifier}.ReportSkippedTest({skippedTest.TestNameExpression}, \"{skippedTest.ContainingType}\", @\"{skippedTest.Method}\", System.TimeSpan.Zero, string.Empty);";
     }
 }

@@ -26,7 +26,7 @@ DumpWriter::OpenDump(const char* dumpFileName)
     m_fd = open(dumpFileName, O_WRONLY|O_CREAT|O_TRUNC, S_IWUSR | S_IRUSR);
     if (m_fd == -1)
     {
-        fprintf(stderr, "Could not open output %s: %d %s\n", dumpFileName, errno, strerror(errno));
+        printf_error("Could not open output %s: %d %s\n", dumpFileName, errno, strerror(errno));
         return false;
     }
     return true;
@@ -46,7 +46,7 @@ DumpWriter::WriteData(int fd, const void* buffer, size_t length)
         } while (written == -1 && errno == EINTR);
 
         if (written < 1) {
-            fprintf(stderr, "WriteData FAILED %d %s\n", errno, strerror(errno));
+            printf_error("WriteData FAILED %d %s\n", errno, strerror(errno));
             return false;
         }
         done += written;

@@ -252,7 +252,7 @@ fi
 
 if [[ "$monoaot" == "true" ]]; then
     configurations="$configurations LLVM=$llvm MonoInterpreter=$monointerpreter MonoAOT=$monoaot"
-    extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments --category-exclusion-filter NoAOT"
+    extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments --category-exclusion-filter NoAOT NoWASM"
 fi
 
 cleaned_branch_name="main"
@@ -297,6 +297,8 @@ if [[ "$monoaot" == "true" ]]; then
     mv $monoaot_path $monoaot_dotnet_path
     extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments --runtimes monoaotllvm --aotcompilerpath \$HELIX_CORRELATION_PAYLOAD/monoaot/sgen/mini/mono-sgen --customruntimepack \$HELIX_CORRELATION_PAYLOAD/monoaot/pack --aotcompilermode llvm"
 fi
+
+extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments --logBuildOutput"
 
 if [[ "$use_core_run" == true ]]; then
     new_core_root=$payload_directory/Core_Root

@@ -31,7 +31,7 @@ namespace System.Text.Json.Serialization
         /// <summary>
         /// Can the converter have $id metadata.
         /// </summary>
-        internal virtual bool CanHaveIdMetadata => false;
+        internal virtual bool CanHaveMetadata => false;
 
         /// <summary>
         /// The converter supports polymorphic writes; only reserved for System.Object types.
@@ -132,10 +132,5 @@ namespace System.Text.Json.Serialization
         /// </summary>
         [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
         internal virtual void ConfigureJsonTypeInfoUsingReflection(JsonTypeInfo jsonTypeInfo, JsonSerializerOptions options) { }
-
-        /// <summary>
-        /// Creates the instance and assigns it to state.Current.ReturnValue.
-        /// </summary>
-        internal virtual void CreateInstanceForReferenceResolver(ref Utf8JsonReader reader, ref ReadStack state, JsonSerializerOptions options) { }
     }
 }

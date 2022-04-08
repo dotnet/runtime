@@ -278,7 +278,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/53090")]
         public async Task ReservedFrameType_Throws()
         {
             const int ReservedHttp2PriorityFrameId = 0x2;
@@ -1138,7 +1137,7 @@ namespace System.Net.Http.Functional.Tests
 
                 await requestStream.WriteAsync(message);
                 await requestStream.FlushAsync();
-                
+
                 await Task.Delay(TimeSpan.FromSeconds(11)); // longer than client.Timeout
 
                 // Http3WriteStream is disposed after cancellation fired
@@ -1208,7 +1207,7 @@ namespace System.Net.Http.Functional.Tests
 
                 await requestStream.WriteAsync(message);
                 await requestStream.FlushAsync();
-                
+
                 cts.Cancel();
                 await Task.Delay(250);
 
@@ -1291,7 +1290,7 @@ namespace System.Net.Http.Functional.Tests
 
                 await requestStream.WriteAsync(message);
                 await requestStream.FlushAsync();
-                
+
                 // cancelling after SendAsync finished should not apply -- nothing should happen
                 cts.Cancel();
                 await Task.Delay(250);

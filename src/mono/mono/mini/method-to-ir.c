@@ -6542,6 +6542,20 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	if (cfg->llvm_only)
 		g_assert (cfg->interp);
 
+	if (cfg->llvm_only && cfg->interp && cfg->method == method && !cfg->deopt && !cfg->interp_entry_only) {
+		if (header->num_clauses) {
+			/* deopt is only disabled for gsharedvt */
+			g_assert (cfg->gsharedvt);
+			for (int i = 0; i < header->num_clauses; ++i) {
+				MonoExceptionClause *clause = &header->clauses [i];
+				/* Finally clauses are checked after the remove_finally pass */
+
+				if (clause->flags != MONO_EXCEPTION_CLAUSE_FINALLY)
+					cfg->interp_entry_only = TRUE;
+			}
+		}
+	}
+
 	/* we use a separate basic block for the initialization code */
 	NEW_BBLOCK (cfg, init_localsbb);
 	if (cfg->method == method)
@@ -11312,22 +11326,26 @@ mono_ldptr:
 		case MONO_CEE_LDFTN: {
 			MonoInst *argconst;
 			MonoMethod *cil_method;
+			gboolean gshared_static_virtual = FALSE;
 
 			cmethod = mini_get_method (cfg, method, n, NULL, generic_context);
 			CHECK_CFG_ERROR;
 
 			if (constrained_class) {
-				if (m_method_is_static (cmethod) && mini_class_check_context_used (cfg, constrained_class))
-					// FIXME:
-					GENERIC_SHARING_FAILURE (CEE_LDFTN);
-				cmethod = get_constrained_method (cfg, image, n, cmethod, constrained_class, generic_context);
-				constrained_class = NULL;
-				CHECK_CFG_ERROR;
+				if (m_method_is_static (cmethod) && mini_class_check_context_used (cfg, constrained_class)) {
+					gshared_static_virtual = TRUE;
+				} else {
+					cmethod = get_constrained_method (cfg, image, n, cmethod, constrained_class, generic_context);
+					constrained_class = NULL;
+					CHECK_CFG_ERROR;
+				}
+			} else {
+				// we can't save token info if we have a constrained_class since
+				// n no longer represents the token for cmethod
+				mono_save_token_info (cfg, image, n, cmethod);
 			}
 
 			mono_class_init_internal (cmethod->klass);
-
-			mono_save_token_info (cfg, image, n, cmethod);
 
 			context_used = mini_method_check_context_used (cfg, cmethod);
 
@@ -11342,7 +11360,7 @@ mono_ldptr:
 			/*
 			 * Optimize the common case of ldftn+delegate creation
 			 */
-			if ((sp > stack_start) && (next_ip + 4 < end) && ip_in_bb (cfg, cfg->cbb, next_ip) && (next_ip [0] == CEE_NEWOBJ)) {
+			if (!gshared_static_virtual && (sp > stack_start) && (next_ip + 4 < end) && ip_in_bb (cfg, cfg->cbb, next_ip) && (next_ip [0] == CEE_NEWOBJ)) {
 				MonoMethod *ctor_method = mini_get_method (cfg, method, read32 (next_ip + 1), NULL, generic_context);
 				if (ctor_method && (m_class_get_parent (ctor_method->klass) == mono_defaults.multicastdelegate_class)) {
 					MonoInst *target_ins, *handle_ins;
@@ -11420,7 +11438,12 @@ mono_ldptr:
 				}
 			}
 
-			argconst = emit_get_rgctx_method (cfg, context_used, cmethod, MONO_RGCTX_INFO_METHOD);
+			if (gshared_static_virtual) {
+				argconst = emit_get_rgctx_virt_method (cfg, -1, constrained_class, cmethod, MONO_RGCTX_INFO_VIRT_METHOD);
+				constrained_class = NULL;
+			} else {
+				argconst = emit_get_rgctx_method (cfg, context_used, cmethod, MONO_RGCTX_INFO_METHOD);
+			}
 			ins = mono_emit_jit_icall (cfg, mono_ldftn, &argconst);
 			*sp++ = ins;
 

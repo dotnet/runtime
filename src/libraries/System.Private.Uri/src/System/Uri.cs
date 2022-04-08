@@ -362,7 +362,7 @@ namespace System
         //  a user, or that was copied & pasted from a document. That is, we do not
         //  expect already encoded URI to be supplied.
         //
-        public Uri(string uriString!!)
+        public Uri([StringSyntax(StringSyntaxAttribute.Uri)] string uriString!!)
         {
             CreateThis(uriString, false, UriKind.Absolute);
             DebugSetLeftCtor();
@@ -374,7 +374,7 @@ namespace System
         //  Uri constructor. Assumes that input string is canonically escaped
         //
         [Obsolete("This constructor has been deprecated; the dontEscape parameter is always false. Use Uri(string) instead.")]
-        public Uri(string uriString!!, bool dontEscape)
+        public Uri([StringSyntax(StringSyntaxAttribute.Uri)] string uriString!!, bool dontEscape)
         {
             CreateThis(uriString, dontEscape, UriKind.Absolute);
             DebugSetLeftCtor();
@@ -399,7 +399,7 @@ namespace System
         //
         // Uri(string, UriKind);
         //
-        public Uri(string uriString!!, UriKind uriKind)
+        public Uri([StringSyntax(StringSyntaxAttribute.Uri, "uriKind")] string uriString!!, UriKind uriKind)
         {
             CreateThis(uriString, false, uriKind);
             DebugSetLeftCtor();
@@ -410,7 +410,7 @@ namespace System
         /// </summary>
         /// <param name="uriString">A string that identifies the resource to be represented by the <see cref="Uri"/> instance.</param>
         /// <param name="creationOptions">Options that control how the <seealso cref="Uri"/> is created and behaves.</param>
-        public Uri(string uriString!!, in UriCreationOptions creationOptions)
+        public Uri([StringSyntax(StringSyntaxAttribute.Uri)] string uriString!!, in UriCreationOptions creationOptions)
         {
             CreateThis(uriString, false, UriKind.Absolute, in creationOptions);
             DebugSetLeftCtor();

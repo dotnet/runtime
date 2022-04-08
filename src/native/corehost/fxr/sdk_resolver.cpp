@@ -61,7 +61,7 @@ pal::string_t sdk_resolver::resolve(const pal::string_t& dotnet_root, bool print
     fx_ver_t resolved_version;
 
     vector<pal::string_t> locations;
-    get_framework_and_sdk_locations(dotnet_root, &locations);
+    get_framework_and_sdk_locations(dotnet_root, /*disable_multilevel_lookup*/ true, &locations);
 
     for (auto&& dir : locations)
     {
@@ -85,38 +85,65 @@ pal::string_t sdk_resolver::resolve(const pal::string_t& dotnet_root, bool print
     return {};
 }
 
-void sdk_resolver::print_resolution_error(const pal::string_t& dotnet_root, const pal::char_t *prefix) const
+void sdk_resolver::print_global_file_path()
+{
+    trace::println(
+        _X("\n")
+        _X("global.json file:\n")
+        _X("  %s"),
+        global_file.empty() ? _X("Not found") : global_file.c_str());
+}
+
+void sdk_resolver::print_resolution_error(const pal::string_t& dotnet_root, const pal::char_t *main_error_prefix) const
 {
     bool sdk_exists = false;
-    const pal::char_t *no_sdk_message = _X("It was not possible to find any installed .NET SDKs.");
+    const pal::char_t *no_sdk_message = _X("No .NET SDKs were found.");
     if (!version.is_empty())
     {
         pal::string_t requested = version.as_str();
-        if (!global_file.empty())
+        trace::error(
+            _X("%sA compatible .NET SDK was not found.\n")
+            _X("\n")
+            _X("Requested SDK version: %s"),
+            main_error_prefix,
+            requested.c_str());
+
+        bool has_global_file = !global_file.empty();
+        if (has_global_file)
+            trace::error(_X("global.json file: %s"), global_file.c_str());
+
+        trace::error(_X("\nInstalled SDKs:"));
+        sdk_exists = sdk_info::print_all_sdks(dotnet_root, _X(""));
+        if (!sdk_exists)
+            trace::error(no_sdk_message);
+
+        trace::error(_X(""));
+        if (has_global_file)
         {
-            trace::error(_X("%sA compatible installed .NET SDK for global.json version [%s] from [%s] was not found."), prefix, requested.c_str(), global_file.c_str());
-            trace::error(_X("%sInstall the [%s] .NET SDK or update [%s] with an installed .NET SDK:"), prefix, requested.c_str(), global_file.c_str());
+            trace::error(_X("Install the [%s] .NET SDK or update [%s] to match an installed SDK."), requested.c_str(), global_file.c_str());
         }
         else
         {
-            trace::error(_X("%sA compatible installed .NET SDK version [%s] was not found."), prefix, requested.c_str());
-            trace::error(_X("%sInstall the [%s] .NET SDK or create a global.json file with an installed .NET SDK:"), prefix, requested.c_str());
+            trace::error(_X("Install the [%s] .NET SDK or create a global.json file matching an installed SDK."), requested.c_str());
         }
-
-        sdk_exists = sdk_info::print_all_sdks(dotnet_root, pal::string_t{prefix}.append(_X("  ")));
-        if (!sdk_exists)
-            trace::error(_X("%s  %s"), prefix, no_sdk_message);
     }
     else
     {
-        trace::error(_X("%s%s"), prefix, no_sdk_message);
+        trace::error(_X("%s%s"), main_error_prefix, no_sdk_message);
     }
 
     if (!sdk_exists)
     {
-        trace::error(_X("%sInstall a .NET SDK from:"), prefix);
-        trace::error(_X("%s  %s"), prefix, DOTNET_CORE_DOWNLOAD_URL);
+        trace::error(
+            _X("\n")
+            _X("Download a .NET SDK:\n")
+            DOTNET_CORE_DOWNLOAD_URL);
     }
+
+    trace::error(
+        _X("\n")
+        _X("Learn about SDK resolution:\n")
+        DOTNET_SDK_NOT_FOUND_URL);
 }
 
 sdk_resolver sdk_resolver::from_nearest_global_file(bool allow_prerelease)

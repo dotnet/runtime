@@ -115,7 +115,7 @@ namespace System.Text.Json
 
             Current.JsonTypeInfo = jsonTypeInfo;
             Current.JsonPropertyInfo = jsonTypeInfo.PropertyInfoForTypeInfo;
-            Current.NumberHandling = Current.JsonPropertyInfo.NumberHandling;
+            Current.NumberHandling = Current.JsonPropertyInfo.EffectiveNumberHandling;
 
             JsonSerializerOptions options = jsonTypeInfo.Options;
             if (options.ReferenceHandlingStrategy != ReferenceHandlingStrategy.None)
@@ -154,7 +154,7 @@ namespace System.Text.Json
                     Current.JsonTypeInfo = jsonTypeInfo;
                     Current.JsonPropertyInfo = jsonTypeInfo.PropertyInfoForTypeInfo;
                     // Allow number handling on property to win over handling on type.
-                    Current.NumberHandling = numberHandling ?? Current.JsonPropertyInfo.NumberHandling;
+                    Current.NumberHandling = numberHandling ?? Current.JsonPropertyInfo.EffectiveNumberHandling;
                 }
             }
             else
