@@ -1082,8 +1082,8 @@ namespace System
         // IAdditionOperators
         //
 
-        // /// <inheritdoc cref="IAdditionOperators{TSelf, TOther, TResult}.op_Addition(TSelf, TOther)" />
-        // static decimal IAdditionOperators<decimal, decimal, decimal>.operator checked +(decimal left, decimal right) => checked(left + right);
+        /// <inheritdoc cref="IAdditionOperators{TSelf, TOther, TResult}.op_Addition(TSelf, TOther)" />
+        static decimal IAdditionOperators<decimal, decimal, decimal>.operator checked +(decimal left, decimal right) => left + right;
 
         //
         // IAdditiveIdentity
@@ -1096,22 +1096,22 @@ namespace System
         // IDecrementOperators
         //
 
-        // /// <inheritdoc cref="IDecrementOperators{TSelf}.op_CheckedDecrement(TSelf)" />
-        // static decimal IDecrementOperators<decimal>.operator checked --(decimal value) => checked(--value);
+        /// <inheritdoc cref="IDecrementOperators{TSelf}.op_CheckedDecrement(TSelf)" />
+        static decimal IDecrementOperators<decimal>.operator checked --(decimal value) => --value;
 
         //
         // IDivisionOperators
         //
 
-        // /// <inheritdoc cref="IDivisionOperators{TSelf, TOther, TResult}.op_CheckedDivision(TSelf, TOther)" />
-        // static decimal IDivisionOperators<decimal, decimal, decimal>.operator checked /(decimal left, decimal right) => checked(left / right);
+        /// <inheritdoc cref="IDivisionOperators{TSelf, TOther, TResult}.op_CheckedDivision(TSelf, TOther)" />
+        static decimal IDivisionOperators<decimal, decimal, decimal>.operator checked /(decimal left, decimal right) => left / right;
 
         //
         // IIncrementOperators
         //
 
-        // /// <inheritdoc cref="IIncrementOperators{TSelf}.op_CheckedIncrement(TSelf)" />
-        // static decimal IIncrementOperators<decimal>.operator checked ++(decimal value) => checked(++value);
+        /// <inheritdoc cref="IIncrementOperators{TSelf}.op_CheckedIncrement(TSelf)" />
+        static decimal IIncrementOperators<decimal>.operator checked ++(decimal value) => ++value;
 
         //
         // IMinMaxValue
@@ -1134,8 +1134,8 @@ namespace System
         // IMultiplyOperators
         //
 
-        // /// <inheritdoc cref="IMultiplyOperators{TSelf, TOther, TResult}.op_CheckedMultiply(TSelf, TOther)" />
-        // public static decimal operator checked *(decimal left, decimal right) => checked(left * right);
+        /// <inheritdoc cref="IMultiplyOperators{TSelf, TOther, TResult}.op_CheckedMultiply(TSelf, TOther)" />
+        public static decimal operator checked *(decimal left, decimal right) => left * right;
 
         //
         // INumber
@@ -1504,14 +1504,14 @@ namespace System
         // ISubtractionOperators
         //
 
-        // /// <inheritdoc cref="ISubtractionOperators{TSelf, TOther, TResult}.op_CheckedSubtraction(TSelf, TOther)" />
-        // static decimal ISubtractionOperators<decimal, decimal, decimal>.operator checked -(decimal left, decimal right) => checked(left - right);
+        /// <inheritdoc cref="ISubtractionOperators{TSelf, TOther, TResult}.op_CheckedSubtraction(TSelf, TOther)" />
+        static decimal ISubtractionOperators<decimal, decimal, decimal>.operator checked -(decimal left, decimal right) => left - right;
 
         //
         // IUnaryNegationOperators
         //
 
-        // /// <inheritdoc cref="IUnaryNegationOperators{TSelf, TResult}.op_CheckedUnaryNegation(TSelf)" />
-        // static decimal IUnaryNegationOperators<decimal, decimal>.operator checked -(decimal value) => checked(-value);
+        /// <inheritdoc cref="IUnaryNegationOperators{TSelf, TResult}.op_CheckedUnaryNegation(TSelf)" />
+        static decimal IUnaryNegationOperators<decimal, decimal>.operator checked -(decimal value) => -value;
     }
 }

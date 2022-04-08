@@ -4606,15 +4606,15 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 	/* Add byval attributes if needed */
 	for (i = 0; i < sig->param_count; ++i) {
 		LLVMArgInfo *ainfo = &call->cinfo->args [i + sig->hasthis];
-
-		if (ainfo && ainfo->storage == LLVMArgVtypeByVal)
-			mono_llvm_add_instr_attr (lcall, 1 + ainfo->pindex, LLVM_ATTR_BY_VAL);
+		gboolean is_byval = (ainfo && ainfo->storage == LLVMArgVtypeByVal);
 
 #ifdef TARGET_WASM
-		if (ainfo && ainfo->storage == LLVMArgVtypeByRef)
-			/* This causes llvm to make a copy of the value which is what we need */
-			mono_llvm_add_instr_byval_attr (lcall, 1 + ainfo->pindex, LLVMGetElementType (param_types [ainfo->pindex]));
+		/* This causes llvm to make a copy of the value which is what we need */
+		is_byval |= (ainfo && ainfo->storage == LLVMArgVtypeByRef);
 #endif
+
+		if (is_byval)
+			mono_llvm_add_instr_byval_attr (lcall, 1 + ainfo->pindex, LLVMGetElementType (param_types [ainfo->pindex]));
 	}
 
 	gboolean is_simd = MONO_CLASS_IS_SIMD (ctx->cfg, mono_class_from_mono_type_internal (sig->ret));
@@ -11814,20 +11814,20 @@ emit_method_inner (EmitContext *ctx)
 		}
 		LLVMSetValueName (LLVMGetParam (method, pindex), name);
 		g_free (name);
-		if (ainfo->storage == LLVMArgVtypeByVal)
-			mono_llvm_add_param_attr (LLVMGetParam (method, pindex), LLVM_ATTR_BY_VAL);
+
+		gboolean is_byval = ainfo->storage == LLVMArgVtypeByVal;
+#ifdef TARGET_WASM
+		/* This causes llvm to make a copy of the value which is what we need */
+		is_byval |= ainfo->storage == LLVMArgVtypeByRef;
+#endif
+
+		if (is_byval)
+			mono_llvm_add_param_byval_attr (LLVMGetParam (method, pindex), LLVMGetElementType (LLVMTypeOf (LLVMGetParam (method, pindex))));
 
 		if (ainfo->storage == LLVMArgVtypeByRef || ainfo->storage == LLVMArgVtypeAddr) {
 			/* For OP_LDADDR */
 			cfg->args [i + sig->hasthis]->opcode = OP_VTARG_ADDR;
 		}
-
-#ifdef TARGET_WASM
-		if (ainfo->storage == LLVMArgVtypeByRef) {
-			/* This causes llvm to make a copy of the value which is what we need */
-			mono_llvm_add_param_byval_attr (LLVMGetParam (method, pindex), LLVMGetElementType (LLVMTypeOf (LLVMGetParam (method, pindex))));
-		}
-#endif
 	}
 	g_free (names);
 
