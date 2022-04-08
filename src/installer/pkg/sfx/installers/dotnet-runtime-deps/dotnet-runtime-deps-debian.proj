@@ -5,7 +5,7 @@
 
   <ItemGroup>
     <LinuxPackageDependency Include="libc6;libgcc1;libgssapi-krb5-2;libstdc++6;zlib1g"/>
-    <LinuxPackageDependency Include="libssl1.0.0 | libssl1.0.2 | libssl1.1" />
+    <LinuxPackageDependency Include="libssl1.0.0 | libssl1.0.2 | libssl1.1 | libssl3" />
     <KnownLibIcuVersion Include="72;71;70;69;68;67;66;65;63;60;57;55;52" />
     <LibIcuPackageDependency Include="libicu" Dependencies="libicu | @(KnownLibIcuVersion -> 'libicu%(Identity)', ' | ')" />
     <LinuxPackageDependency

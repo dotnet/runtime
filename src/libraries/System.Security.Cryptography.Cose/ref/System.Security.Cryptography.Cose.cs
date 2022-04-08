@@ -8,6 +8,8 @@ namespace System.Security.Cryptography.Cose
 {
     public readonly partial struct CoseHeaderLabel : System.IEquatable<System.Security.Cryptography.Cose.CoseHeaderLabel>
     {
+        private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public CoseHeaderLabel(int label) { throw null; }
         public CoseHeaderLabel(string label) { throw null; }
         public static System.Security.Cryptography.Cose.CoseHeaderLabel Algorithm { get { throw null; } }
@@ -42,6 +44,8 @@ namespace System.Security.Cryptography.Cose
         public bool TryGetEncodedValue(System.Security.Cryptography.Cose.CoseHeaderLabel label, out System.ReadOnlyMemory<byte> encodedValue) { throw null; }
         public partial struct Enumerator : System.Collections.Generic.IEnumerator<(System.Security.Cryptography.Cose.CoseHeaderLabel Label, System.ReadOnlyMemory<byte> EncodedValue)>, System.Collections.IEnumerator, System.IDisposable
         {
+            private object _dummy;
+            private int _dummyPrimitive;
             public readonly (System.Security.Cryptography.Cose.CoseHeaderLabel Label, System.ReadOnlyMemory<byte> EncodedValue) Current { get { throw null; } }
             object System.Collections.IEnumerator.Current { get { throw null; } }
             public void Dispose() { }
@@ -56,28 +60,22 @@ namespace System.Security.Cryptography.Cose
         public System.Security.Cryptography.Cose.CoseHeaderMap ProtectedHeaders { get { throw null; } }
         public System.Security.Cryptography.Cose.CoseHeaderMap UnprotectedHeaders { get { throw null; } }
         public static System.Security.Cryptography.Cose.CoseSign1Message DecodeSign1(byte[] cborPayload) { throw null; }
-        public static System.Security.Cryptography.Cose.CoseSign1Message DecodeSign1(ReadOnlySpan<byte> cborPayload) { throw null; }
+        public static System.Security.Cryptography.Cose.CoseSign1Message DecodeSign1(System.ReadOnlySpan<byte> cborPayload) { throw null; }
     }
     public sealed partial class CoseSign1Message : System.Security.Cryptography.Cose.CoseMessage
     {
         internal CoseSign1Message() { }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
-        public static byte[] Sign(ReadOnlySpan<byte> content, System.Security.Cryptography.AsymmetricAlgorithm key, System.Security.Cryptography.HashAlgorithmName hashAlgorithm, System.Security.Cryptography.Cose.CoseHeaderMap? protectedHeaders = null, System.Security.Cryptography.Cose.CoseHeaderMap? unprotectedHeaders = null, bool isDetached = false) { throw null; }
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public static byte[] Sign(byte[] content, System.Security.Cryptography.AsymmetricAlgorithm key, System.Security.Cryptography.HashAlgorithmName hashAlgorithm, System.Security.Cryptography.Cose.CoseHeaderMap? protectedHeaders = null, System.Security.Cryptography.Cose.CoseHeaderMap? unprotectedHeaders = null, bool isDetached = false) { throw null; }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
-        public static byte[] Sign(byte[] content, System.Security.Cryptography.ECDsa key, System.Security.Cryptography.HashAlgorithmName hashAlgorithm, bool isDetached = false) { throw null; }
+        public static byte[] Sign(System.ReadOnlySpan<byte> content, System.Security.Cryptography.AsymmetricAlgorithm key, System.Security.Cryptography.HashAlgorithmName hashAlgorithm, System.Security.Cryptography.Cose.CoseHeaderMap? protectedHeaders = null, System.Security.Cryptography.Cose.CoseHeaderMap? unprotectedHeaders = null, bool isDetached = false) { throw null; }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
-        public static byte[] Sign(byte[] content, System.Security.Cryptography.RSA key, System.Security.Cryptography.HashAlgorithmName hashAlgorithm, bool isDetached = false) { throw null; }
+        public static bool TrySign(System.ReadOnlySpan<byte> content, System.Span<byte> destination, System.Security.Cryptography.AsymmetricAlgorithm key, System.Security.Cryptography.HashAlgorithmName hashAlgorithm, out int bytesWritten, System.Security.Cryptography.Cose.CoseHeaderMap? protectedHeaders = null, System.Security.Cryptography.Cose.CoseHeaderMap? unprotectedHeaders = null, bool isDetached = false) { throw null; }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
-        public static bool TrySign(ReadOnlySpan<byte> content, Span<byte> destination, System.Security.Cryptography.AsymmetricAlgorithm key!!, System.Security.Cryptography.HashAlgorithmName hashAlgorithm, out int bytesWritten, System.Security.Cryptography.Cose.CoseHeaderMap? protectedHeaders = null, System.Security.Cryptography.Cose.CoseHeaderMap? unprotectedHeaders = null, bool isDetached = false) { throw null; }
+        public bool Verify(System.Security.Cryptography.AsymmetricAlgorithm key) { throw null; }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
-        public bool Verify(System.Security.Cryptography.ECDsa key) { throw null; }
+        public bool Verify(System.Security.Cryptography.AsymmetricAlgorithm key, byte[] content) { throw null; }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
-        public bool Verify(System.Security.Cryptography.ECDsa key, System.ReadOnlySpan<byte> content) { throw null; }
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
-        public bool Verify(System.Security.Cryptography.RSA key) { throw null; }
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
-        public bool Verify(System.Security.Cryptography.RSA key, System.ReadOnlySpan<byte> content) { throw null; }
+        public bool Verify(System.Security.Cryptography.AsymmetricAlgorithm key, System.ReadOnlySpan<byte> content) { throw null; }
     }
 }
