@@ -225,64 +225,6 @@ LEAF_ENTRY AllocateStringFastUP, _TEXT
         jmp     FramedAllocateString
 LEAF_END AllocateStringFastUP, _TEXT
 
-; HCIMPL2(Object*, JIT_NewArr1VC_UP, CORINFO_CLASS_HANDLE arrayMT, INT_PTR size)
-LEAF_ENTRY JIT_NewArr1VC_UP, _TEXT
-
-        ; We were passed a (shared) method table in RCX, which contains the element type.
-
-        ; The element count is in RDX
-
-        ; NOTE: if this code is ported for CORINFO_HELP_NEWSFAST_ALIGN8, it will need
-        ; to emulate the double-specific behavior of JIT_TrialAlloc::GenAllocArray.
-
-        ; Do a conservative check here.  This is to avoid overflow while doing the calculations.  We don't
-        ; have to worry about "large" objects, since the allocation quantum is never big enough for
-        ; LARGE_OBJECT_SIZE.
-
-        ; For Value Classes, this needs to be 2^16 - slack (2^32 / max component size),
-        ; The slack includes the size for the array header and round-up ; for alignment.  Use 256 for the
-        ; slack value out of laziness.
-
-        ; In both cases we do a final overflow check after adding to the alloc_ptr.
-
-        cmp     rdx, (65535 - 256)
-        jae     JIT_NewArr1
-
-        movzx   r8d, word ptr [rcx + OFFSETOF__MethodTable__m_dwFlags]  ; component size is low 16 bits
-        imul    r8d, edx  ; signed mul, but won't overflow due to length restriction above
-        add     r8d, dword ptr [rcx + OFFSET__MethodTable__m_BaseSize]
-
-        ; round the size to a multiple of 8
-
-        add     r8d, 7
-        and     r8d, -8
-
-        inc     [g_global_alloc_lock]
-        jnz     JIT_NewArr1
-
-        mov     rax, [g_global_alloc_context + OFFSETOF__gc_alloc_context__alloc_ptr]       ; alloc_ptr
-        mov     r10, [g_global_alloc_context + OFFSETOF__gc_alloc_context__alloc_limit]     ; limit_ptr
-
-        add     r8, rax
-        jc      AllocFailed
-
-        cmp     r8, r10
-        ja      AllocFailed
-
-        mov     qword ptr [g_global_alloc_context + OFFSETOF__gc_alloc_context__alloc_ptr], r8     ; update the alloc ptr
-        mov     [rax], rcx
-        mov     [g_global_alloc_lock], -1
-
-        mov     dword ptr [rax + OFFSETOF__ArrayBase__m_NumComponents], edx
-
-        ret
-
-    AllocFailed:
-        mov     [g_global_alloc_lock], -1
-        jmp     JIT_NewArr1
-LEAF_END JIT_NewArr1VC_UP, _TEXT
-
-
 ; HCIMPL2(Object*, JIT_NewArr1OBJ_UP, CORINFO_CLASS_HANDLE arrayMT, INT_PTR size)
 LEAF_ENTRY JIT_NewArr1OBJ_UP, _TEXT
 
