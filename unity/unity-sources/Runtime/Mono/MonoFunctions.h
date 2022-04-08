@@ -515,18 +515,6 @@ typedef UNUSED_SYMBOL void (*UnityLogErrorCallback) (const char* message);
 DO_API(void, mono_unity_set_editor_logging_callback, (UnityLogErrorCallback callback))
 #endif
 
-#if ENABLE_CORECLR
-DO_API(int, coreclr_array_length, (MonoArray * array))
-DO_API(void, mono_gc_mark_stack_slot, (void* objRef))
-DO_API(void, mono_gc_unmark_stack_slot, (void* objRef))
-DO_API(MonoObject*, mono_runtime_invoke_with_nested_object, (MonoMethod * method, void *obj, void *parentobj, void **params, MonoException **exc));
-DO_API(int, mono_type_get_num_generic_args, (MonoType * type))
-DO_API(MonoType*, mono_type_get_generic_arg, (MonoType * type, int index))
-DO_API(MonoType*, mono_field_get_type_specific, (MonoClassField * field, MonoClass * owner))
-DO_API(void, mono_enter_internal_call,  (MonoInternalCallFrameOpaque * frame))
-DO_API(void, mono_exit_internal_call,  (MonoInternalCallFrameOpaque * frame))
-#endif
-
 #undef DO_API
 #undef DO_API_NO_RETURN
 #undef DO_API_OPTIONAL
