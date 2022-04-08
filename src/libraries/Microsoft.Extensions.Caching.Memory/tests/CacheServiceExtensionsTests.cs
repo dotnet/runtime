@@ -30,6 +30,34 @@ namespace Microsoft.Extensions.Caching.Distributed
             Assert.Equal(ServiceLifetime.Singleton, memoryCache.Lifetime);
         }
 
+#if NET6_0_OR_GREATER
+        [Fact]
+        public void AddMemoryCache_RegistersMemoryCacheAsWithTrackingEnabled()
+        {
+            var memoryCache = new ServiceCollection()
+                .AddMemoryCache()
+                .BuildServiceProvider()
+                .GetRequiredService<IMemoryCache>();
+
+            Assert.IsType<MemoryCache>(memoryCache);
+            Assert.NotNull(memoryCache);
+            Assert.NotNull(memoryCache.GetCurrentStatistics());
+        }
+
+        [Fact]
+        public void AddMemoryCache_OtherOverloadNotSettingFlag_RegistersMemoryCacheAsWithTrackingEnabled()
+        {
+            var memoryCache = new ServiceCollection()
+                .AddMemoryCache(o => o.SizeLimit = 10)
+                .BuildServiceProvider()
+                .GetRequiredService<IMemoryCache>();
+
+            Assert.IsType<MemoryCache>(memoryCache);
+            Assert.NotNull(memoryCache);
+            Assert.NotNull(memoryCache.GetCurrentStatistics());
+        }
+#endif
+
         [Fact]
         public void AddDistributedMemoryCache_DoesntConflictWithMemoryCache()
         {

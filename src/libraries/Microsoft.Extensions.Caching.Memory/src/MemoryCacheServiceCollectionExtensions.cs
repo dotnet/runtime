@@ -23,6 +23,7 @@ namespace Microsoft.Extensions.DependencyInjection
         {
             services.AddOptions();
             services.TryAdd(ServiceDescriptor.Singleton<IMemoryCache, MemoryCache>());
+            services.Configure((MemoryCacheOptions o) => o.TrackStatistics = true);
 
             return services;
         }
