@@ -14,7 +14,7 @@ namespace System.Diagnostics
     }
 
     // We are not using the public LinkedList<T> because we need to ensure thread safety operation on the list.
-    internal sealed class DiagLinkedList<T> : ActivityItemEnumerable<T>
+    internal sealed class DiagLinkedList<T> : IEnumerable<T>
     {
         private DiagNode<T>? _first;
         private DiagNode<T>? _last;
@@ -146,52 +146,8 @@ namespace System.Diagnostics
             }
         }
 
-        public override Enumerator GetEnumerator() => new Enumerator(_first);
-    }
-
-    public abstract class ActivityItemEnumerable<T> : IEnumerable<T>
-    {
-        public abstract Enumerator GetEnumerator();
+        public Activity.Enumerator<T> GetEnumerator() => new Activity.Enumerator<T>(_first);
         IEnumerator<T> IEnumerable<T>.GetEnumerator() => GetEnumerator();
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
-
-        public struct Enumerator : IEnumerator<T>
-        {
-            private static readonly DiagNode<T> s_Empty = new DiagNode<T>(default!);
-
-            private DiagNode<T>? _nextNode;
-            private DiagNode<T> _currentNode;
-
-            internal Enumerator(DiagNode<T>? head)
-            {
-                _nextNode = head;
-                _currentNode = s_Empty;
-            }
-
-            public readonly ref T Current => ref _currentNode.Value;
-
-            T IEnumerator<T>.Current => Current;
-
-            object? IEnumerator.Current => Current;
-
-            public bool MoveNext()
-            {
-                if (_nextNode == null)
-                {
-                    _currentNode = s_Empty;
-                    return false;
-                }
-
-                _currentNode = _nextNode;
-                _nextNode = _nextNode.Next;
-                return true;
-            }
-
-            void IEnumerator.Reset() => throw new NotSupportedException();
-
-            public void Dispose()
-            {
-            }
-        }
     }
 }

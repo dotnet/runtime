@@ -35,9 +35,9 @@ namespace System.Diagnostics
     {
 #pragma warning disable CA1825 // Array.Empty<T>() doesn't exist in all configurations
         private static readonly IEnumerable<KeyValuePair<string, string?>> s_emptyBaggageTags = new KeyValuePair<string, string?>[0];
-        private static readonly ActivityItemEnumerable<KeyValuePair<string, object?>> s_emptyTagObjects = new DiagLinkedList<KeyValuePair<string, object?>>();
-        private static readonly ActivityItemEnumerable<ActivityLink> s_emptyLinks = new DiagLinkedList<ActivityLink>();
-        private static readonly ActivityItemEnumerable<ActivityEvent> s_emptyEvents = new DiagLinkedList<ActivityEvent>();
+        private static readonly TagsLinkedList s_emptyTagObjects = new TagsLinkedList(Array.Empty<KeyValuePair<string, object?>>());
+        private static readonly DiagLinkedList<ActivityLink> s_emptyLinks = new DiagLinkedList<ActivityLink>();
+        private static readonly DiagLinkedList<ActivityEvent> s_emptyEvents = new DiagLinkedList<ActivityEvent>();
 #pragma warning restore CA1825
         private static readonly ActivitySource s_defaultSource = new ActivitySource(string.Empty);
 
@@ -357,6 +357,12 @@ namespace System.Diagnostics
                 }
             }
         }
+
+        public Enumerator<KeyValuePair<string, object?>> EnumerateTagObjects() => (_tags ?? s_emptyTagObjects).GetEnumerator();
+
+        public Enumerator<ActivityEvent> EnumerateEvents() => (_events ?? s_emptyEvents).GetEnumerator();
+
+        public Enumerator<ActivityLink> EnumerateLinks() => (_links ?? s_emptyLinks).GetEnumerator();
 
         /// <summary>
         /// Returns the value of the key-value pair added to the activity with <see cref="AddBaggage(string, string)"/>.
@@ -1339,7 +1345,48 @@ namespace System.Diagnostics
             private set => _state = (_state & ~State.FormatFlags) | (State)((byte)value & (byte)State.FormatFlags);
         }
 
-        private sealed class BaggageLinkedList : ActivityItemEnumerable<KeyValuePair<string, string?>>
+        public struct Enumerator<T> : IEnumerator<T>
+        {
+            private static readonly DiagNode<T> s_Empty = new DiagNode<T>(default!);
+
+            private DiagNode<T>? _nextNode;
+            private DiagNode<T> _currentNode;
+
+            internal Enumerator(DiagNode<T>? head)
+            {
+                _nextNode = head;
+                _currentNode = s_Empty;
+            }
+
+            public readonly Enumerator<T> GetEnumerator() => this;
+
+            public readonly ref T Current => ref _currentNode.Value;
+
+            T IEnumerator<T>.Current => Current;
+
+            object? IEnumerator.Current => Current;
+
+            public bool MoveNext()
+            {
+                if (_nextNode == null)
+                {
+                    _currentNode = s_Empty;
+                    return false;
+                }
+
+                _currentNode = _nextNode;
+                _nextNode = _nextNode.Next;
+                return true;
+            }
+
+            void IEnumerator.Reset() => throw new NotSupportedException();
+
+            public readonly void Dispose()
+            {
+            }
+        }
+
+        private sealed class BaggageLinkedList : IEnumerable<KeyValuePair<string, string?>>
         {
             private DiagNode<KeyValuePair<string, string?>>? _first;
 
@@ -1415,10 +1462,12 @@ namespace System.Diagnostics
                 }
             }
 
-            public override Enumerator GetEnumerator() => new Enumerator(_first);
+            public Enumerator<KeyValuePair<string, string?>> GetEnumerator() => new Enumerator<KeyValuePair<string, string?>>(_first);
+            IEnumerator<KeyValuePair<string, string?>> IEnumerable<KeyValuePair<string, string?>>.GetEnumerator() => GetEnumerator();
+            IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
         }
 
-        private sealed class TagsLinkedList : ActivityItemEnumerable<KeyValuePair<string, object?>>
+        private sealed class TagsLinkedList : IEnumerable<KeyValuePair<string, object?>>
         {
             private DiagNode<KeyValuePair<string, object?>>? _first;
             private DiagNode<KeyValuePair<string, object?>>? _last;
@@ -1574,7 +1623,9 @@ namespace System.Diagnostics
                 }
             }
 
-            public override Enumerator GetEnumerator() => new Enumerator(_first);
+            public Enumerator<KeyValuePair<string, object?>> GetEnumerator() => new Enumerator<KeyValuePair<string, object?>>(_first);
+            IEnumerator<KeyValuePair<string, object?>> IEnumerable<KeyValuePair<string, object?>>.GetEnumerator() => GetEnumerator();
+            IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
             public IEnumerable<KeyValuePair<string, string?>> EnumerateStringValues()
             {

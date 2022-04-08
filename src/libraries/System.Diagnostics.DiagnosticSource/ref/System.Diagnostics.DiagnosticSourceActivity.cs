@@ -68,7 +68,21 @@ namespace System.Diagnostics
         protected virtual void Dispose(bool disposing) { throw null; }
         public void SetCustomProperty(string propertyName, object? propertyValue) { throw null; }
         public object? GetCustomProperty(string propertyName) { throw null; }
-        public ActivityContext Context { get { throw null; } }
+        public System.Diagnostics.ActivityContext Context { get { throw null; } }
+        public System.Diagnostics.Activity.Enumerator<System.Collections.Generic.KeyValuePair<string, object?>> EnumerateTagObjects() { throw null; }
+        public System.Diagnostics.Activity.Enumerator<ActivityEvent> EnumerateEvents() { throw null; }
+        public System.Diagnostics.Activity.Enumerator<ActivityLink> EnumerateLinks() { throw null; }
+
+        public struct Enumerator<T> : System.Collections.Generic.IEnumerator<T>
+        {
+            public readonly Enumerator<T> GetEnumerator() { throw null; }
+            public readonly ref T Current { get { throw null; } }
+            T System.Collections.Generic.IEnumerator<T>.Current { get { throw null; } }
+            object? System.Collections.IEnumerator.Current { get { throw null; } }
+            public bool MoveNext() { throw null; }
+            void System.Collections.IEnumerator.Reset() { }
+            public readonly void Dispose() { }
+        }
     }
     public class ActivityTagsCollection : System.Collections.Generic.IDictionary<string, object?>
     {
@@ -99,22 +113,6 @@ namespace System.Diagnostics
             public void Dispose() { throw null; }
             public bool MoveNext() { throw null; }
             void System.Collections.IEnumerator.Reset() { throw null; }
-        }
-    }
-    public abstract class ActivityItemEnumerable<T> : System.Collections.Generic.IEnumerable<T>
-    {
-        public abstract Enumerator GetEnumerator();
-        System.Collections.Generic.IEnumerator<T> System.Collections.Generic.IEnumerable<T>.GetEnumerator() { throw null; }
-        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
-
-        public struct Enumerator : System.Collections.Generic.IEnumerator<T>
-        {
-            public readonly ref T Current { get { throw null; } }
-            T System.Collections.Generic.IEnumerator<T>.Current { get { throw null; } }
-            object? System.Collections.IEnumerator.Current { get { throw null; } }
-            public bool MoveNext() { throw null; }
-            void System.Collections.IEnumerator.Reset() { }
-            public void Dispose() { }
         }
     }
     public enum ActivityStatusCode
