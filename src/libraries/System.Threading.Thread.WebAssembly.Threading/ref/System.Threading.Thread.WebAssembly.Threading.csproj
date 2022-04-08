@@ -3,8 +3,6 @@
     <AssemblyName>System.Threading.Thread</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <FeatureWasmThreads>true</FeatureWasmThreads>
-    <!-- It is a core assembly because it defines System.Object so we need to pass RuntimeMetadataVersion to the compiler -->
-    <RuntimeMetadataVersion>v4.0.30319</RuntimeMetadataVersion>
     <!-- disable warnings about obsolete APIs,
         Remove warning disable when nullable attributes are respected,
         Type has no accessible constructors which use only CLS-compliant types -->
@@ -16,19 +14,20 @@
     <!-- Place this assembly in the nuget ref folder -->
     <BuildOutputTargetFolder>ref</BuildOutputTargetFolder>
     <DefineConstants>$(DefineConstants);FEATURE_WASM_THREADS</DefineConstants>
-    <!-- XXX FIXME: if I set this to true, then the PackageReference to this file in Wasm.Browser.CJS.Sample.csproj fails during nuget restore while looking for a nuget for this file.  why??? -->
-    <IsPackable Condition="false">true</IsPackable>
+    <IsPackable>true</IsPackable>
     <PackageDescription>Exposes Threading APIs from System.Runtime for WebAssembly projects</PackageDescription>
     <PackageId>$(MSBuildProjectName)</PackageId>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <DisablePackageBaselineValidation>true</DisablePackageBaselineValidation>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(LibrariesProjectRoot)System.Threading.Thread\ref\System.Threading.Thread.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\System.Runtime\ref\System.Runtime.csproj" />
-    <ProjectReference Include="..\..\System.Runtime.Extensions\ref\System.Runtime.Extensions.csproj" />
-    <ProjectReference Include="..\..\System.Security.Principal\ref\System.Security.Principal.csproj" />
-    <ProjectReference Include="..\..\System.Threading\ref\System.Threading.csproj" />
+    <ProjectReference Include="..\..\System.Runtime\ref\System.Runtime.csproj" PrivateAssets="all" />
+    <ProjectReference Include="..\..\System.Runtime.Extensions\ref\System.Runtime.Extensions.csproj" PrivateAssets="all" />
+    <ProjectReference Include="..\..\System.Security.Principal\ref\System.Security.Principal.csproj" PrivateAssets="all" />
+    <ProjectReference Include="..\..\System.Threading\ref\System.Threading.csproj" PrivateAssets="all" />
   </ItemGroup>
   <Target Name="_ExperimentalUpdateFileVersion"
           AfterTargets="_InitializeAssemblyVersion">

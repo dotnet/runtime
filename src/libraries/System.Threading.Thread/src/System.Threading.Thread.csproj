@@ -3,7 +3,7 @@
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <Nullable>enable</Nullable>
-    <FeatureWasmThreading>false</FeatureWasmThreading>
+    <FeatureWasmThreads>false</FeatureWasmThreads>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="$(CoreLibProject)" />
