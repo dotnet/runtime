@@ -31,7 +31,7 @@ namespace System.IO.Tests
         public static void CreationFromMemoryStreamWithEncodingFalse()
         {
             var ms2 = new MemoryStream();
-            ms2.Write(new byte[] { 65, 66, 67, 68 }, 0, 4);
+            ms2.Write("ABCD"u8, 0, 4);
             ms2.Position = 0;
             var sr2 = new StreamReader(ms2, false);
 
@@ -43,7 +43,7 @@ namespace System.IO.Tests
         public static void CreationFromMemoryStreamWithEncodingTrue()
         {
             var ms2 = new MemoryStream();
-            ms2.Write(new byte[] { 65, 66, 67, 68 }, 0, 4);
+            ms2.Write("ABCD"u8, 0, 4);
             ms2.Position = 0;
             var sr2 = new StreamReader(ms2, true);
 

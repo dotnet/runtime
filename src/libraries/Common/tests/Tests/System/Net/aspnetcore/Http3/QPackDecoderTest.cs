@@ -36,9 +36,9 @@ namespace System.Net.Http.Unit.Tests.QPack
         private static readonly byte[] _headerNameHuffmanBytes = new byte[] { 0xa8, 0xbe, 0x16, 0x9c, 0xa3, 0x90, 0xb6, 0x7f };
 
         private const string _headerNameString = "new-header";
-        private const string _headerValueString = "value";
 
-        private static readonly byte[] _headerValueBytes = Encoding.ASCII.GetBytes(_headerValueString);
+        private const string _headerValueString = "value";
+        private static readonly byte[] _headerValueBytes = "value"u8;
 
         // v      a     l      u      e    *
         // 11101110 00111010 00101101 00101111

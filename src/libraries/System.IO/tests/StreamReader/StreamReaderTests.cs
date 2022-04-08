@@ -22,14 +22,13 @@ namespace System.IO.Tests
 
         protected virtual Stream GetSmallStream()
         {
-            byte[] testData = new byte[] { 72, 69, 76, 76, 79 };
+            byte[] testData = "HELLO"u8;
             return new MemoryStream(testData);
         }
 
         protected virtual Stream GetLargeStream()
         {
-            byte[] testData = new byte[] { 72, 69, 76, 76, 79 };
-            // System.Collections.Generic.
+            byte[] testData = "HELLO"u8;
 
             List<byte> data = new List<byte>();
             for (int i = 0; i < 1000; i++)

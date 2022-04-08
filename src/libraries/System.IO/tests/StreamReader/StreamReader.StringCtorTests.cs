@@ -65,7 +65,7 @@ namespace System.IO.Tests
             string testfile = Path.GetTempFileName();
             try
             {
-                File.WriteAllBytes(testfile, new byte[] { 65, 66, 67, 68 });
+                File.WriteAllBytes(testfile, "ABCD"u8);
                 using (var sr2 = new StreamReader(testfile, detectEncodingFromByteOrderMarks))
                 {
                     Assert.Equal("ABCD", sr2.ReadToEnd());

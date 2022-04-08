@@ -13,18 +13,16 @@ namespace System.Net.Security.Tests
         [Fact]
         public void Constants_Values_AreCorrect()
         {
-            Assert.Equal(new SslApplicationProtocol(new byte[] { 0x68, 0x33 }), SslApplicationProtocol.Http3);
-            Assert.Equal(new SslApplicationProtocol(new byte[] { 0x68, 0x32 }), SslApplicationProtocol.Http2);
-            Assert.Equal(new SslApplicationProtocol(new byte[] { 0x68, 0x74, 0x74, 0x70, 0x2f, 0x31, 0x2e, 0x31 }), SslApplicationProtocol.Http11);
+            Assert.Equal(new SslApplicationProtocol("h3"u8), SslApplicationProtocol.Http3);
+            Assert.Equal(new SslApplicationProtocol("h2"u8), SslApplicationProtocol.Http2);
+            Assert.Equal(new SslApplicationProtocol("http/1.1"u8), SslApplicationProtocol.Http11);
         }
 
         [Fact]
         public void Constructor_Overloads_Succeeds()
         {
-            const string hello = "hello";
-            byte[] expected = Encoding.UTF8.GetBytes(hello);
-            SslApplicationProtocol byteProtocol = new SslApplicationProtocol(expected);
-            SslApplicationProtocol stringProtocol = new SslApplicationProtocol(hello);
+            SslApplicationProtocol byteProtocol = new SslApplicationProtocol("hello"u8);
+            SslApplicationProtocol stringProtocol = new SslApplicationProtocol("hello");
             Assert.Equal(byteProtocol, stringProtocol);
 
             SslApplicationProtocol defaultProtocol = default;
@@ -95,7 +93,7 @@ namespace System.Net.Security.Tests
         public static IEnumerable<object[]> Protocol_InEquality_TestData()
         {
             yield return new object[] { new SslApplicationProtocol("hello"), new SslApplicationProtocol("world") };
-            yield return new object[] { new SslApplicationProtocol(new byte[] { 0x42 }), new SslApplicationProtocol(new byte[] { 0x52, 0x62 }) };
+            yield return new object[] { new SslApplicationProtocol(new byte[] { 0x42 }), new SslApplicationProtocol("Rb"u8) };
             yield return new object[] { null, new SslApplicationProtocol(new byte[] { 0x42 }) };
             yield return new object[] { new SslApplicationProtocol(new byte[] { 0x42 }), null };
         }

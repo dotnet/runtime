@@ -45,16 +45,14 @@ namespace System.Net.Http.Unit.Tests.HPack
         private const string _userAgentString = "user-agent";
 
         private const string _headerNameString = "new-header";
-
-        private static readonly byte[] _headerNameBytes = Encoding.ASCII.GetBytes(_headerNameString);
+        private static readonly byte[] _headerNameBytes = "new-header"u8;
 
         // n     e     w       -      h     e     a     d     e     r      *
         // 10101000 10111110 00010110 10011100 10100011 10010000 10110110 01111111
         private static readonly byte[] _headerNameHuffmanBytes = new byte[] { 0xa8, 0xbe, 0x16, 0x9c, 0xa3, 0x90, 0xb6, 0x7f };
 
         private const string _headerValueString = "value";
-
-        private static readonly byte[] _headerValueBytes = Encoding.ASCII.GetBytes(_headerValueString);
+        private static readonly byte[] _headerValueBytes = "value"u8;
 
         // v      a     l      u      e    *
         // 11101110 00111010 00101101 00101111

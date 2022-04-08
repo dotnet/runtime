@@ -29,7 +29,7 @@ namespace Generators
         //         {
         //             private RuntimeEventSource() : base(new Guid(0x49592c0f,0x5a05,0x516d,0xaa,0x4b,0xa6,0x4e,0x02,0x02,0x6c,0x89), "System.Runtime") { }
         //
-        //             private protected override ReadOnlySpan<byte> ProviderMetadata => new byte[] { 0x11, 0x0, 0x53, 0x79, 0x73, 0x74, 0x65, 0x6d, 0x2e, 0x52, 0x75, 0x6e, 0x74, 0x69, 0x6d, 0x65, 0x0, };
+        //             private protected override ReadOnlySpan<byte> ProviderMetadata => "\u0011\0System.Runtime\0"u8;
         //         }
         //     }
 

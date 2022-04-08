@@ -62,37 +62,16 @@ namespace {ec.Namespace}
 
         private static void GenerateProviderMetadata(string sourceName, StringBuilder sb)
         {
-            sb.Append(@"
-        private protected override ReadOnlySpan<byte> ProviderMetadata => new byte[] { ");
-
-            byte[] metadataBytes = MetadataForString(sourceName);
-            foreach (byte b in metadataBytes)
+            if (sourceName != null && sourceName.IndexOf('\0') >= 0)
             {
-                sb.Append($"0x{b:x}, ");
+                throw new ArgumentOutOfRangeException(nameof(sourceName));
             }
 
-            sb.AppendLine(@"};");
-        }
-
-        // From System.Private.CoreLib
-        private static byte[] MetadataForString(string name)
-        {
-            CheckName(name);
-            int metadataSize = Encoding.UTF8.GetByteCount(name) + 3;
-            byte[]? metadata = new byte[metadataSize];
+            int metadataSize = Encoding.UTF8.GetByteCount(sourceName) + 3;
             ushort totalSize = checked((ushort)(metadataSize));
-            metadata[0] = unchecked((byte)totalSize);
-            metadata[1] = unchecked((byte)(totalSize >> 8));
-            Encoding.UTF8.GetBytes(name, 0, name.Length, metadata, 2);
-            return metadata;
-        }
 
-        private static void CheckName(string? name)
-        {
-            if (name != null && 0 <= name.IndexOf('\0'))
-            {
-                throw new ArgumentOutOfRangeException(nameof(name));
-            }
+            sb.Append($@"
+        private protected override ReadOnlySpan<byte> ProviderMetadata => ""\u{(byte)totalSize:X4}\u{(byte)(totalSize >> 8):X4}{sourceName}\0""u8;");
         }
     }
 }

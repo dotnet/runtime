@@ -173,18 +173,18 @@ namespace System.Memory.Tests.SequenceReader
             }
 
             bytes = SequenceFactory.Create(new byte[][] {
-                new byte[] { 47, 42, 66, 32, 42, 32, 66, 42, 47 }   // /*b * b*/
+                "/*B * B*/"u8
             });
 
             baseReader = new SequenceReader<byte>(bytes);
             SequenceReader<byte> copyReader = baseReader;
 
-            Assert.True(copyReader.TryReadTo(out ReadOnlySpan<byte> span, new byte[] { 42, 47 }, advancePastDelimiter));    //  */
-            Assert.True(span.SequenceEqual(new byte[] { 47, 42, 66, 32, 42, 32, 66 }));
+            Assert.True(copyReader.TryReadTo(out ReadOnlySpan<byte> span, "*/"u8, advancePastDelimiter));    //  */
+            Assert.True(span.SequenceEqual("/*B * B"u8));
 
             copyReader = baseReader;
-            Assert.True(copyReader.TryReadTo(out ReadOnlySequence<byte> sequence, new byte[] { 42, 47 }, advancePastDelimiter));    //  */
-            Assert.True(sequence.ToArray().AsSpan().SequenceEqual(new byte[] { 47, 42, 66, 32, 42, 32, 66 }));
+            Assert.True(copyReader.TryReadTo(out ReadOnlySequence<byte> sequence, "*/"u8, advancePastDelimiter));    //  */
+            Assert.True(sequence.ToArray().AsSpan().SequenceEqual("/*B * B"u8));
         }
 
         [Theory,
@@ -258,7 +258,7 @@ namespace System.Memory.Tests.SequenceReader
         [Fact]
         public void TryReadTo_Span_At_Segments_Boundary()
         {
-            Span<byte> delimiter = new byte[] { 13, 10 }; // \r\n
+            Span<byte> delimiter = "\r\n"u8;
             BufferSegment<byte> segment = new BufferSegment<byte>("Hello\r"u8);
             segment.Append("\nWorld"u8); // add next segment
             ReadOnlySequence<byte> inputSeq = new ReadOnlySequence<byte>(segment, 0, segment, 6); // span only the first segment!

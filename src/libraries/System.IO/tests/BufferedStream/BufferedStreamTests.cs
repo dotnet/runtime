@@ -410,13 +410,13 @@ namespace System.IO.Tests
 
         protected override Stream GetSmallStream()
         {
-            byte[] testData = new byte[] { 72, 69, 76, 76, 79 };
+            byte[] testData = "HELLO"u8;
             return new BufferedStream(new MemoryStream(testData));
         }
 
         protected override Stream GetLargeStream()
         {
-            byte[] testData = new byte[] { 72, 69, 76, 76, 79 };
+            byte[] testData = "HELLO"u8;
             List<byte> data = new List<byte>();
             for (int i = 0; i < 1000; i++)
             {
