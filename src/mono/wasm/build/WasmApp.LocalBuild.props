@@ -22,7 +22,7 @@
   <Import Project="$(MSBuildThisFileDirectory)WasmApp.props" />
 
   <PropertyGroup>
-    <_TargetFrameworkForNETCoreTasks>net6.0</_TargetFrameworkForNETCoreTasks>
+    <_TargetFrameworkForNETCoreTasks>net7.0</_TargetFrameworkForNETCoreTasks>
     <MSBuildEnableWorkloadResolver>false</MSBuildEnableWorkloadResolver>
   </PropertyGroup>
 
