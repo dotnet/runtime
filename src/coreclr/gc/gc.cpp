@@ -16184,7 +16184,9 @@ BOOL gc_heap::a_fit_segment_end_p (int gen_number,
             else
 #endif // !USE_REGIONS
             {
+#ifdef USE_REGIONS
                 *commit_failed_p = TRUE;
+#endif // USE_REGIONS
                 assert (heap_hard_limit);
             }
         }
