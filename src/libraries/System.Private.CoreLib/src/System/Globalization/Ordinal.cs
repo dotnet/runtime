@@ -260,9 +260,10 @@ namespace System.Globalization
                     SpanHelpers.IndexOfAny(ref searchSpace, (char)(valueChar & ~0x20), (char)(valueChar | 0x20), searchSpaceLength) :
                     SpanHelpers.IndexOf(ref searchSpace, valueChar, searchSpaceLength);
 
-                if (candidatePos == -1)
+                if ((candidatePos == -1) || (searchSpaceLength - candidatePos) < valueLength)
                 {
-                    // the whole input doesn't contain the first char
+                    // the whole input doesn't contain the first char or it does
+                    // but there is no room left to fit the value
                     goto NOT_FOUND;
                 }
 
