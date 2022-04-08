@@ -13,10 +13,10 @@ namespace System.Numerics
         /// <returns>The result of decrementing <paramref name="value" />.</returns>
         static abstract TSelf operator --(TSelf value);
 
-        // /// <summary>Decrements a value.</summary>
-        // /// <param name="value">The value to decrement.</param>
-        // /// <returns>The result of decrementing <paramref name="value" />.</returns>
-        // /// <exception cref="OverflowException">The result of decrementing <paramref name="value" /> is not representable by <typeparamref name="TSelf" />.</exception>
-        // static abstract TSelf operator checked --(TSelf value);
+        /// <summary>Decrements a value.</summary>
+        /// <param name="value">The value to decrement.</param>
+        /// <returns>The result of decrementing <paramref name="value" />.</returns>
+        /// <exception cref="OverflowException">The result of decrementing <paramref name="value" /> is not representable by <typeparamref name="TSelf" />.</exception>
+        static abstract TSelf operator checked --(TSelf value);
     }
 }
