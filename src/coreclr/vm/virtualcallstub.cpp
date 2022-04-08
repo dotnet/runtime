@@ -1134,7 +1134,7 @@ PCODE VirtualCallStubManager::GetCallStub(TypeHandle ownerType, DWORD slot)
         LookupHolder *pLookupHolder = GenerateLookupStub(addrOfResolver, token.To_SIZE_T());
         return (size_t)(pLookupHolder->stub()->entryPoint());
     };
-    stub = (PCODE)lookups->FindOrAdd(Entry::Key_t(token.To_SIZE_T(), 0), stubgen);
+    stub = (PCODE)lookups->LookupOrAdd(Entry::Key_t(token.To_SIZE_T(), 0), stubgen);
 
     _ASSERTE(stub != CALL_STUB_EMPTY_ENTRY);
     stats.site_counter++;
@@ -1159,7 +1159,7 @@ PCODE VirtualCallStubManager::GetVTableCallStub(DWORD slot)
         VTableCallHolder *pHolder = GenerateVTableCallStub(slot);
         return (size_t)pHolder->stub()->entryPoint();
     };
-    PCODE stub = vtableCallers->FindOrAdd(Entry::Key_t(DispatchToken::CreateDispatchToken(slot).To_SIZE_T(), 0), stubgen);
+    PCODE stub = vtableCallers->LookupOrAdd(Entry::Key_t(DispatchToken::CreateDispatchToken(slot).To_SIZE_T(), 0), stubgen);
 
     _ASSERTE(stub != CALL_STUB_EMPTY_ENTRY);
     RETURN(stub);
@@ -1280,7 +1280,7 @@ ResolveCacheElem *VirtualCallStubManager::GetResolveCacheElem(void *pMT,
         return (size_t) GenerateResolveCacheElem(target, pMT, token);
     };
 
-    ResolveCacheElem* elem = (ResolveCacheElem*)cache_entries->FindOrAdd(Entry::Key_t(token, (size_t) pMT), stubgen);
+    ResolveCacheElem* elem = (ResolveCacheElem*)cache_entries->LookupOrAdd(Entry::Key_t(token, (size_t) pMT), stubgen);
 
     _ASSERTE(elem && (elem != CALL_STUB_EMPTY_ENTRY));
     return elem;
@@ -1637,7 +1637,7 @@ PCODE VirtualCallStubManager::ResolveWorker(StubCallSite* pCallSite,
         // First see if we can find a dispatcher stub for this token and type. If a
         // match is found, use the target stored in the entry.
         {
-            stub = (PCODE)dispatchers->Find(Entry::Key_t(token.To_SIZE_T(), (size_t) objectType));
+            stub = (PCODE)dispatchers->Lookup(Entry::Key_t(token.To_SIZE_T(), (size_t) objectType));
             if (stub != CALL_STUB_EMPTY_ENTRY)
             {
                 target = (PCODE)DispatchEntry::Target(stub);
@@ -1651,7 +1651,7 @@ PCODE VirtualCallStubManager::ResolveWorker(StubCallSite* pCallSite,
         if (target == NULL)
         {
             ResolveCacheElem * elem = NULL;
-            elem = (ResolveCacheElem *)cache_entries->Find(Entry::Key_t(token.To_SIZE_T(), (size_t) objectType));
+            elem = (ResolveCacheElem *)cache_entries->Lookup(Entry::Key_t(token.To_SIZE_T(), (size_t) objectType));
             if (elem  != CALL_STUB_EMPTY_ENTRY)
             {
                 target = (PCODE)ResolveCacheEntry::Target((size_t)elem);
@@ -1787,7 +1787,7 @@ void VirtualCallStubManager::ResolveWorkerInternal(StubCallSite* pCallSite,
                                                             );
                         return (size_t)(pNewResolveHolder->stub()->resolveEntryPoint());
                     };
-                    PCODE addrOfResolver = (PCODE)resolvers->FindOrAdd(Entry::Key_t(token.To_SIZE_T(), 0), stubgen);
+                    PCODE addrOfResolver = (PCODE)resolvers->LookupOrAdd(Entry::Key_t(token.To_SIZE_T(), 0), stubgen);
                     ResolveHolder *pResolveHolder = ResolveHolder::FromResolveEntry(addrOfResolver);
                     CONSISTENCY_CHECK(CheckPointer(pResolveHolder));
                     stub = pResolveHolder->stub()->resolveEntryPoint();
@@ -1813,7 +1813,7 @@ void VirtualCallStubManager::ResolveWorkerInternal(StubCallSite* pCallSite,
                                 return (size_t)(pDispatchHolderNew->stub()->entryPoint());
                             };
 
-                            PCODE addrOfDispatch = (PCODE)dispatchers->FindOrAdd(Entry::Key_t(token.To_SIZE_T(), (size_t) objectType), stubgen);
+                            PCODE addrOfDispatch = (PCODE)dispatchers->LookupOrAdd(Entry::Key_t(token.To_SIZE_T(), (size_t) objectType), stubgen);
                             DispatchHolder *pDispatchHolder = DispatchHolder::FromDispatchEntry(addrOfDispatch);
 
                             // Now assign the entrypoint to stub
@@ -1919,7 +1919,7 @@ void VirtualCallStubManager::ResolveWorkerInternal(StubCallSite* pCallSite,
                                     target, addrOfFail, objectType, token.To_SIZE_T());
                                 return (size_t)(pDispatchHolderNew->stub()->entryPoint());
                             };
-                            PCODE addrOfDispatch = (PCODE)dispatchers->FindOrAdd(new Entry::Key_t(token.To_SIZE_T(), (size_t) objectType), stubgen);
+                            PCODE addrOfDispatch = (PCODE)dispatchers->LookupOrAdd(Entry::Key_t(token.To_SIZE_T(), (size_t) objectType), stubgen);
                             DispatchHolder *pDispatchHolder = DispatchHolder::FromDispatchEntry(addrOfDispatch);
 
                             // increment the of times we changed a cache collision into a mono stub

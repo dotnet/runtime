@@ -1439,7 +1439,7 @@ public:
     ~FastTable() { LIMITED_METHOD_CONTRACT; }
 
     //find the requested entry (keys of prober), if not there return CALL_STUB_EMPTY_ENTRY
-    size_t Find(Entry::Key_t key)
+    size_t Lookup(Entry::Key_t key)
     {
         static_assert_no_msg(0 == CALL_STUB_EMPTY_ENTRY);
         auto shash = VolatileLoadWithoutBarrier(&_pshash);
@@ -1448,7 +1448,7 @@ public:
     }
     //add the entry, if it is not already there.  Probe is used to search.
     //Return the entry actually containted (existing or added)
-    size_t FindOrAdd(size_t entry, Entry::Key_t key)
+    size_t LookupOrAdd(size_t entry, Entry::Key_t key)
     {
         SHashWithCleanup *oldSHash = nullptr;
         size_t result = 0;
@@ -1536,23 +1536,23 @@ public:
     }
 
     //find the requested entry (keys of prober), if not there return CALL_STUB_EMPTY_ENTRY
-    inline size_t Find(Entry::Key_t key)
+    inline size_t Lookup(Entry::Key_t key)
     {
         WRAPPER_NO_CONTRACT;
-        return buckets[ComputeBucketIndex(key)].Find(key);
+        return buckets[ComputeBucketIndex(key)].Lookup(key);
     }
     //add the entry, if it is not already there.  Probe is used to search.
     template<class Generator>
-    size_t FindOrAdd(Entry::Key_t key, Generator &gen)
+    size_t LookupOrAdd(Entry::Key_t key, Generator &gen)
     {
         WRAPPER_NO_CONTRACT;
         FastTable<EntryType>* bucket = &buckets[ComputeBucketIndex(key)];
-        size_t result = bucket->Find(key);
+        size_t result = bucket->Lookup(key);
         if (result == CALL_STUB_EMPTY_ENTRY)
         {
             size_t newValue = gen();
             _ASSERTE(newValue != CALL_STUB_EMPTY_ENTRY);
-            result = bucket->FindOrAdd(newValue, key);
+            result = bucket->LookupOrAdd(newValue, key);
         }
         return result;
     }
