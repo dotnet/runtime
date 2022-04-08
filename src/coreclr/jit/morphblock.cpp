@@ -1382,6 +1382,13 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
                             srcAddrClone = m_comp->gtNewOperNode(GT_ADD, TYP_BYREF, srcAddrClone, fldOffsetNode);
                         }
                         srcFld = m_comp->gtNewIndir(destType, srcAddrClone);
+
+                        if (i != 0)
+                        {
+                            // We already did the null-check on the access of the first field.
+                            srcFld->gtFlags |= GTF_IND_NONFAULTING;
+                            srcFld->gtFlags &= ~GTF_EXCEPT;
+                        }
                     }
                     else
                     {
