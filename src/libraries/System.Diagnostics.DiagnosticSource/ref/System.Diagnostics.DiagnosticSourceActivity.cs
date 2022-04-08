@@ -75,7 +75,7 @@ namespace System.Diagnostics
 
         public struct Enumerator<T> : System.Collections.Generic.IEnumerator<T>
         {
-            public readonly Enumerator<T> GetEnumerator() { throw null; }
+            public readonly System.Diagnostics.Activity.Enumerator<T> GetEnumerator() { throw null; }
             public readonly ref T Current { get { throw null; } }
             T System.Collections.Generic.IEnumerator<T>.Current { get { throw null; } }
             object? System.Collections.IEnumerator.Current { get { throw null; } }
