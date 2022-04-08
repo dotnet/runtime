@@ -219,7 +219,7 @@ namespace System.Threading.RateLimiting
             TokenBucketRateLimiter limiter = (state as TokenBucketRateLimiter)!;
             Debug.Assert(limiter is not null);
 
-            // Use Environment.TickCount instead of DateTime.UtcNow to avoid issues on systems where the clock can change
+            // Use Stopwatch instead of DateTime.UtcNow to avoid issues on systems where the clock can change
             long nowTicks = Stopwatch.GetTimestamp();
             limiter!.ReplenishInternal(nowTicks);
         }
