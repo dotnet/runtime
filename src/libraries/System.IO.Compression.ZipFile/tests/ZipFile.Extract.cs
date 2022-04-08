@@ -70,9 +70,12 @@ namespace System.IO.Compression.Tests
         [InlineData("NullCharFileName_FromWindows")]
         [InlineData("NullCharFileName_FromUnix")]
         [PlatformSpecific(TestPlatforms.AnyUnix)]  // Checks Unix-specific invalid file path
-        public void Unix_ZipWithInvalidFileNames_ThrowsArgumentException(string zipName)
+        public void Unix_ZipWithInvalidFileNames(string zipName)
         {
-            AssertExtensions.Throws<ArgumentException>("path", () => ZipFile.ExtractToDirectory(compat(zipName) + ".zip", GetTestFilePath()));
+            var testDirectory = GetTestFilePath();
+            ZipFile.ExtractToDirectory(compat(zipName) + ".zip", testDirectory);
+
+            Assert.True(File.Exists(Path.Combine(testDirectory, "a_6b6d")));
         }
 
         [Theory]
@@ -90,18 +93,6 @@ namespace System.IO.Compression.Tests
             Assert.Equal(fileName, Path.GetFileName(results[0]));
         }
 
-        /// <summary>
-        /// This test ensures that a zipfile with path names that are invalid to this OS will throw errors
-        /// when an attempt is made to extract them.
-        /// </summary>
-        [Theory]
-        [InlineData("NullCharFileName_FromWindows")]
-        [InlineData("NullCharFileName_FromUnix")]
-        [PlatformSpecific(TestPlatforms.Windows)]  // Checks Windows-specific invalid file path
-        public void Windows_ZipWithInvalidFileNames_ThrowsArgumentException(string zipName)
-        {
-            AssertExtensions.Throws<ArgumentException>("path", null, () => ZipFile.ExtractToDirectory(compat(zipName) + ".zip", GetTestFilePath()));
-        }
 
         /// <summary>
         /// This test checks whether or not ZipFile.ExtractToDirectory() is capable of handling filenames
@@ -118,24 +109,26 @@ namespace System.IO.Compression.Tests
         [PlatformSpecific(TestPlatforms.Windows)]
         public void Windows_ZipWithInvalidFileNames()
         {
+            
             var testDirectory = GetTestFilePath();
             ZipFile.ExtractToDirectory(compat("InvalidWindowsFileNameChars.zip"), testDirectory);
             Assert.True(File.Exists(Path.Combine(testDirectory, "TestText______________________________________.txt")));
             Assert.True(File.Exists(Path.Combine(testDirectory, "Test______________________________________/TestText1______________________________________.txt")));
             Assert.True(File.Exists(Path.Combine(testDirectory, "Test/normalText.txt")));
-        }
 
-        /// <summary>
-        /// This test ensures that a zipfile with path names that are invalid to this OS will throw errors
-        /// when an attempt is made to extract them.
-        /// </summary>
-        [Theory]
-        [InlineData("WindowsInvalid_FromUnix")]
-        [InlineData("WindowsInvalid_FromWindows")]
-        [PlatformSpecific(TestPlatforms.Windows)]  // Checks Windows-specific invalid file path
-        public void Windows_ZipWithInvalidFileNames_ThrowsIOException(string zipName)
-        {
-            AssertExtensions.Throws<IOException>(() => ZipFile.ExtractToDirectory(compat(zipName) + ".zip", GetTestFilePath()));
+            ZipFile.ExtractToDirectory(compat("NullCharFileName_FromWindows.zip"), testDirectory);
+            Assert.True(File.Exists(Path.Combine(testDirectory, "a_6b6d")));
+            File.Delete(Path.Combine(testDirectory, "a_6b6d"));
+
+            ZipFile.ExtractToDirectory(compat("NullCharFileName_FromUnix.zip"), testDirectory);
+            Assert.True(File.Exists(Path.Combine(testDirectory, "a_6b6d")));
+
+            ZipFile.ExtractToDirectory(compat("WindowsInvalid_FromUnix.zip"), testDirectory);
+            Assert.True(File.Exists(Path.Combine(testDirectory, "aa_b_d")));
+            File.Delete(Path.Combine(testDirectory, "aa_b_d"));
+
+            ZipFile.ExtractToDirectory(compat("WindowsInvalid_FromWindows.zip"), testDirectory);
+            Assert.True(File.Exists(Path.Combine(testDirectory, "aa_b_d")));
         }
 
         [Theory]

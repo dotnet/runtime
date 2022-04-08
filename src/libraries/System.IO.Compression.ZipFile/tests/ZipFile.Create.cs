@@ -428,9 +428,19 @@ namespace System.IO.Compression.Tests
         public void Windows_ZipWithInvalidFileNames_ThrowsException(string zipName, string paramName)
         {
             if (paramName == null)
-                Assert.Throws<IOException>(() => ZipFile.ExtractToDirectory(compat(zipName) + ".zip", GetTestFilePath()));
+            {
+                string tempDirectory = GetTestFilePath();
+                ZipFile.ExtractToDirectory(compat(zipName) + ".zip", tempDirectory);
+
+                Assert.True(File.Exists(Path.Combine(tempDirectory, "aa_b_d")));
+            }
             else
-                AssertExtensions.Throws<ArgumentException>(paramName, null, () => ZipFile.ExtractToDirectory(compat(zipName) + ".zip", GetTestFilePath()));
+            {
+                string tempDirectory = GetTestFilePath();
+                ZipFile.ExtractToDirectory(compat(zipName) + ".zip", tempDirectory);
+
+                Assert.True(File.Exists(Path.Combine(tempDirectory, "a_6b6d")));
+            }
         }
 
         private static async Task UpdateArchive(ZipArchive archive, string installFile, string entryName)
