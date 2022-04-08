@@ -695,12 +695,14 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token, MonoError 
 		return NULL;
 	}
 
+#if 0  // FIXME this causes an issue when AOT compiling using llvm: 
 	if (mono_is_corlib_image (klass->image) && !strcmp (nspace, "System.Numerics")) {
 		/* The JIT can't handle SIMD types with != 16 size yet */
 		//if (!strcmp (name, "Vector2") || !strcmp (name, "Vector3") || !strcmp (name, "Vector4"))
 		if (!strcmp (name, "Vector4"))
 			klass->simd_type = 1;
 	}
+#endif
 
 	// compute is_byreflike
 	if (m_class_is_valuetype (klass))
