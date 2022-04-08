@@ -716,7 +716,7 @@ namespace System.Threading.RateLimiting.Test
         public async Task ReplenishWorksWithTicksOverInt32Max()
         {
             using var limiter = new TokenBucketRateLimiter(new TokenBucketRateLimiterOptions(10, QueueProcessingOrder.OldestFirst, 2,
-                TimeSpan.FromMinutes(1), 1, autoReplenishment: false));
+                TimeSpan.FromMilliseconds(2), 1, autoReplenishment: false));
 
             var lease = limiter.Acquire(10);
             Assert.True(lease.IsAcquired);
@@ -736,11 +736,11 @@ namespace System.Threading.RateLimiting.Test
             Assert.False(wait.IsCompleted);
 
             // Tick 1 millisecond too soon and verify that the queued item wasn't completed
-            replenishInternalMethod.Invoke(limiter, new object[] { tick + 1L * (long)(TimeSpan.TicksPerMinute / TickFrequency) - 1 * (long)(TimeSpan.TicksPerMillisecond / TickFrequency) });
+            replenishInternalMethod.Invoke(limiter, new object[] { tick + 1L * (long)(TimeSpan.TicksPerMillisecond / TickFrequency) });
             Assert.False(wait.IsCompleted);
 
             // ticks would wrap if using uint
-            replenishInternalMethod.Invoke(limiter, new object[] { tick + 1L * (long)(TimeSpan.TicksPerMinute / TickFrequency) });
+            replenishInternalMethod.Invoke(limiter, new object[] { tick + 2L * (long)(TimeSpan.TicksPerMillisecond / TickFrequency) });
             lease = await wait;
             Assert.True(lease.IsAcquired);
         }
