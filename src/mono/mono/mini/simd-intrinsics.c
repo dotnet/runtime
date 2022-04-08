@@ -838,15 +838,9 @@ type_to_extract_op (MonoTypeEnum type)
 }
 
 static MonoClass *
-create_class_instance (MonoCompile *cfg, MonoMethodSignature *fsig, const char* name_space, const char *name, gboolean same_type, MonoType *param_type)
+create_class_instance (const char* name_space, const char *name, MonoType *param_type)
 {
 	MonoClass *ivector = mono_class_load_from_name (mono_defaults.corlib, name_space, name);
-	if (same_type) {
-		MonoClass *arg_class = mono_class_from_mono_type_internal (fsig->params [0]);
-		param_type = mono_class_get_generic_class (arg_class)->context.class_inst->type_argv [0];
-	} else {
-		g_assert(param_type != NULL);
-	}
 
 	MonoType *args [ ] = { param_type };
 	MonoGenericContext ctx;
@@ -1278,7 +1272,8 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 				ins2->inst_c0 = 0;
 				ins2->inst_c1 = arg0_type;
 
-				MonoClass *ivector128_inst = create_class_instance (cfg, fsig, "System.Runtime.Intrinsics", "Vector128`1", TRUE, NULL);
+				MonoType* param_type = get_vector_t_elem_type (fsig->params[0]);
+				MonoClass *ivector128_inst = create_class_instance ("System.Runtime.Intrinsics", "Vector128`1", param_type);
 
 				ins1 = emit_simd_ins (cfg, ivector128_inst, OP_XINSERT_R8, ins1->dreg, ins2->dreg);
 				ins1->sreg3 = tmp;
@@ -1306,9 +1301,9 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 					type_new = m_class_get_byval_arg (mono_defaults.int64_class);
 					type_enum_new = MONO_TYPE_I8;
 				}
-				MonoClass *ivector128_64_inst = create_class_instance (cfg, fsig, "System.Runtime.Intrinsics", "Vector128`1", FALSE, type_new);
+				MonoClass *ivector128_64_inst = create_class_instance ("System.Runtime.Intrinsics", "Vector128`1", type_new);
 				arg0 = emit_simd_ins (cfg, ivector128_64_inst, OP_XCAST, arg0->dreg, -1);
-				MonoClass *ivector64_64_inst = create_class_instance (cfg, fsig, "System.Runtime.Intrinsics", "Vector64`1", FALSE, type_new);
+				MonoClass *ivector64_64_inst = create_class_instance ("System.Runtime.Intrinsics", "Vector64`1", type_new);
 				MonoInst *arg1 = emit_simd_ins (cfg, ivector64_64_inst, OP_XCAST, args [1]->dreg, -1);
 
 				//Insert arg1 to arg0
@@ -1317,7 +1312,8 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 				arg1 = emit_simd_ins (cfg, ivector64_64_inst, OP_EXTRACT_I8, arg1->dreg, -1);
 				arg1->inst_c0 = 0;
 				arg1->inst_c1 = type_enum_new;
-				MonoClass *ivector128_inst = create_class_instance (cfg, fsig, "System.Runtime.Intrinsics", "Vector128`1", TRUE, NULL);
+				MonoType *param_type = get_vector_t_elem_type (fsig->params[0]);
+				MonoClass *ivector128_inst = create_class_instance ("System.Runtime.Intrinsics", "Vector128`1", param_type);
 				MonoInst *ins = emit_simd_ins (cfg, ivector128_64_inst, OP_XINSERT_I8, arg0->dreg, arg1->dreg);
 				ins->sreg3 = tmp;
 				ins->inst_c1 = type_enum_new;
