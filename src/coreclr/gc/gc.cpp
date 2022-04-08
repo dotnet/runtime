@@ -2012,10 +2012,10 @@ void stomp_write_barrier_ephemeral (uint8_t* ephemeral_low, uint8_t* ephemeral_h
     args.is_runtime_suspended = true;
     args.ephemeral_low = ephemeral_low;
     args.ephemeral_high = ephemeral_high;
-#ifdef USE_REGIONS
+#if defined(USE_REGIONS) && !defined(TARGET_OSX)
     args.region_to_generation_table = map_region_to_generation_skewed;
     args.region_shr = region_shr;
-#endif //USE_REGIONS
+#endif //USE_REGIONS && !TARGET_OSX
     GCToEEInterface::StompWriteBarrier(&args);
 }
 
@@ -2041,10 +2041,10 @@ void stomp_write_barrier_initialize(uint8_t* ephemeral_low, uint8_t* ephemeral_h
     args.ephemeral_low = ephemeral_low;
     args.ephemeral_high = ephemeral_high;
 
-#ifdef USE_REGIONS
+#if defined(USE_REGIONS) && !defined(TARGET_OSX)
     args.region_to_generation_table = map_region_to_generation_skewed;
     args.region_shr = region_shr;
-#endif //USE_REGIONS
+#endif //USE_REGIONS && !TARGET_OSX
 
     GCToEEInterface::StompWriteBarrier(&args);
 }
