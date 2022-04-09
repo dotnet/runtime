@@ -139,7 +139,10 @@ namespace System.Net.Quic.Tests
             {
                 await t;
             }
-            catch { };
+            catch (Exception ex)
+            {
+                _output.WriteLine($"Ignored exception:{Environment.NewLine}{ex}");
+            }
         }
 
         [Fact]
@@ -307,7 +310,7 @@ namespace System.Net.Quic.Tests
             await Assert.ThrowsAsync<AuthenticationException>(async () => await clientTask);
         }
 
-        [Theory]
+        [ConditionalTheory]
         [InlineData("127.0.0.1", true)]
         [InlineData("::1", true)]
         [InlineData("127.0.0.1", false)]
@@ -386,6 +389,7 @@ namespace System.Net.Quic.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/67302")]
         public async Task WaitForAvailableUnidirectionStreamsAsyncWorks()
         {
             QuicListenerOptions listenerOptions = CreateQuicListenerOptions();
@@ -411,6 +415,7 @@ namespace System.Net.Quic.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/67302")]
         public async Task WaitForAvailableBidirectionStreamsAsyncWorks()
         {
             QuicListenerOptions listenerOptions = CreateQuicListenerOptions();

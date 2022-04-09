@@ -259,12 +259,6 @@ class LocalAddressVisitor final : public GenTreeVisitor<LocalAddressVisitor>
                     {
                         haveCorrectFieldForVN = false;
                     }
-                    else if (FieldSeqStore::IsPseudoField(field->gtFldHnd))
-                    {
-                        assert(compiler->compObjectStackAllocation());
-                        // We use PseudoFields when accessing stack allocated classes.
-                        haveCorrectFieldForVN = false;
-                    }
                     else if (val.m_fieldSeq == nullptr)
                     {
 
@@ -279,7 +273,7 @@ class LocalAddressVisitor final : public GenTreeVisitor<LocalAddressVisitor>
                     {
                         FieldSeqNode* lastSeqNode = val.m_fieldSeq->GetTail();
                         assert(lastSeqNode != nullptr);
-                        if (lastSeqNode->IsPseudoField() || lastSeqNode == FieldSeqStore::NotAField())
+                        if (lastSeqNode == FieldSeqStore::NotAField())
                         {
                             haveCorrectFieldForVN = false;
                         }
@@ -1026,11 +1020,7 @@ private:
 
         if ((fieldSeq != nullptr) && (fieldSeq != FieldSeqStore::NotAField()))
         {
-            // TODO-ADDR: ObjectAllocator produces FIELD nodes with FirstElemPseudoField as field
-            // handle so we cannot use FieldSeqNode::GetFieldHandle() because it asserts on such
-            // handles. ObjectAllocator should be changed to create LCL_FLD nodes directly.
-            assert(!indir->OperIs(GT_FIELD) ||
-                   (indir->AsField()->gtFldHnd == fieldSeq->GetTail()->GetFieldHandleValue()));
+            assert(!indir->OperIs(GT_FIELD) || (indir->AsField()->gtFldHnd == fieldSeq->GetTail()->GetFieldHandle()));
         }
         else
         {

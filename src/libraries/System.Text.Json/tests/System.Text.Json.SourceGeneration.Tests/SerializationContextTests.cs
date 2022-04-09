@@ -269,9 +269,11 @@ namespace System.Text.Json.SourceGeneration.Tests
             EmptyPoco expected = CreateEmptyPoco();
 
             string json = JsonSerializer.Serialize(expected, DefaultContext.EmptyPoco);
-            JsonTestHelper.AssertThrows_PropMetadataInit(() => JsonSerializer.Deserialize(json, DefaultContext.EmptyPoco), typeof(EmptyPoco));
+            // This would have thrown on the first property lookup but JSON is empty here
+            EmptyPoco obj = JsonSerializer.Deserialize(json, DefaultContext.EmptyPoco);
+            VerifyEmptyPoco(expected, obj);
 
-            EmptyPoco obj = JsonSerializer.Deserialize(json, ((ITestContext)MetadataWithPerTypeAttributeContext.Default).EmptyPoco);
+            obj = JsonSerializer.Deserialize(json, ((ITestContext)MetadataWithPerTypeAttributeContext.Default).EmptyPoco);
             VerifyEmptyPoco(expected, obj);
 
             AssertFastPathLogicCorrect(json, obj, DefaultContext.EmptyPoco);

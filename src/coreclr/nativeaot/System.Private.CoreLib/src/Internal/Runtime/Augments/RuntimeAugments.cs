@@ -703,7 +703,7 @@ namespace Internal.Runtime.Augments
 
         public static bool IsAssignable(object srcObject, RuntimeTypeHandle dstType)
         {
-            EETypePtr srcEEType = srcObject.EETypePtr;
+            EETypePtr srcEEType = srcObject.GetEETypePtr();
             return RuntimeImports.AreTypesAssignable(srcEEType, dstType.ToEETypePtr());
         }
 
@@ -851,7 +851,7 @@ namespace Internal.Runtime.Augments
 
         public static unsafe RuntimeTypeHandle GetRuntimeTypeHandleFromObjectReference(object obj)
         {
-            return new RuntimeTypeHandle(obj.EETypePtr);
+            return new RuntimeTypeHandle(obj.GetEETypePtr());
         }
 
         // Move memory which may be on the heap which may have object references in it.

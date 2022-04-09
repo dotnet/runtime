@@ -88,17 +88,23 @@ static GenTreeHWIntrinsic* CreateConstVector(Compiler* comp, var_types simdType,
 #ifdef TARGET_XARCH
     if (simdType == TYP_SIMD32)
     {
-        GenTree* long1 = comp->gtNewIconNode(*(ssize_t*)(cns + 0), TYP_LONG);
-        GenTree* long2 = comp->gtNewIconNode(*(ssize_t*)(cns + 4), TYP_LONG);
-        GenTree* long3 = comp->gtNewIconNode(*(ssize_t*)(cns + 8), TYP_LONG);
-        GenTree* long4 = comp->gtNewIconNode(*(ssize_t*)(cns + 12), TYP_LONG);
+        ssize_t fourLongs[4];
+        memcpy(fourLongs, cns, sizeof(ssize_t) * 4);
+
+        GenTree* long1 = comp->gtNewIconNode(fourLongs[0], TYP_LONG);
+        GenTree* long2 = comp->gtNewIconNode(fourLongs[1], TYP_LONG);
+        GenTree* long3 = comp->gtNewIconNode(fourLongs[2], TYP_LONG);
+        GenTree* long4 = comp->gtNewIconNode(fourLongs[3], TYP_LONG);
         return comp->gtNewSimdHWIntrinsicNode(simdType, long1, long2, long3, long4, NI_Vector256_Create, baseType, 32);
     }
 #endif // TARGET_XARCH
 
+    ssize_t twoLongs[2];
+    memcpy(twoLongs, cns, sizeof(ssize_t) * 2);
+
     assert(simdType == TYP_SIMD16);
-    GenTree* long1 = comp->gtNewIconNode(*(ssize_t*)(cns + 0), TYP_LONG);
-    GenTree* long2 = comp->gtNewIconNode(*(ssize_t*)(cns + 4), TYP_LONG);
+    GenTree* long1 = comp->gtNewIconNode(twoLongs[0], TYP_LONG);
+    GenTree* long2 = comp->gtNewIconNode(twoLongs[1], TYP_LONG);
     return comp->gtNewSimdHWIntrinsicNode(simdType, long1, long2, NI_Vector128_Create, baseType, 16);
 }
 
@@ -167,7 +173,7 @@ GenTree* Compiler::impExpandHalfConstEqualsSIMD(
     WCHAR cnsValue[maxPossibleLength]    = {};
     WCHAR toLowerMask[maxPossibleLength] = {};
 
-    CopyMemory((UINT8*)cnsValue, (UINT8*)cns, len * sizeof(WCHAR));
+    memcpy((UINT8*)cnsValue, (UINT8*)cns, len * sizeof(WCHAR));
 
     if ((cmpMode == OrdinalIgnoreCase) && !ConvertToLowerCase(cnsValue, toLowerMask, len))
     {

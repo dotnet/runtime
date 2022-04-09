@@ -2,13 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Internal.Reflection.Augments;
-using Internal.Reflection.Core.NonPortable;
+using Internal.Runtime;
 using Internal.Runtime.Augments;
 using System.Diagnostics.CodeAnalysis;
-using System.Runtime;
 using System.Runtime.Serialization;
 using System.Runtime.InteropServices;
-using System.Text;
 using System.Threading;
 
 using Debug = System.Diagnostics.Debug;
@@ -68,7 +66,7 @@ namespace System.Runtime.CompilerServices
             if (obj == null)
                 return null;
 
-            EETypePtr eeType = obj.EETypePtr;
+            EETypePtr eeType = obj.GetEETypePtr();
             if ((!eeType.IsValueType) || eeType.IsPrimitive)
                 return obj;
 
@@ -84,11 +82,11 @@ namespace System.Runtime.CompilerServices
                 return false;
 
             // If it's not a value class, don't compare by value
-            if (!o1.EETypePtr.IsValueType)
+            if (!o1.GetEETypePtr().IsValueType)
                 return false;
 
             // Make sure they are the same type.
-            if (o1.EETypePtr != o2.EETypePtr)
+            if (o1.GetEETypePtr() != o2.GetEETypePtr())
                 return false;
 
             return RuntimeImports.RhCompareObjectContentsAndPadding(o1, o2);
@@ -202,13 +200,33 @@ namespace System.Runtime.CompilerServices
             return false;
         }
 
+        internal static ref byte GetRawData(this object obj) =>
+            ref Unsafe.As<RawData>(obj).Data;
+
+        internal static unsafe nuint GetRawObjectDataSize(this object obj)
+        {
+            Debug.Assert(obj.GetEETypePtr().ComponentSize == 0);
+            return obj.GetEETypePtr().BaseSize - (uint)sizeof(ObjHeader) - (uint)sizeof(MethodTable*);
+        }
+
+        internal static unsafe ushort GetElementSize(this Array array)
+        {
+            return array.GetMethodTable()->ComponentSize;
+        }
+
+        internal static unsafe MethodTable* GetMethodTable(this object obj)
+            => obj.m_pEEType;
+
+        internal static unsafe EETypePtr GetEETypePtr(this object obj)
+            => new EETypePtr(obj.m_pEEType);
+
         // Returns true iff the object has a component size;
         // i.e., is variable length like System.String or Array.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static bool ObjectHasComponentSize(object obj)
         {
             Debug.Assert(obj != null);
-            return obj.EETypePtr.ComponentSize != 0;
+            return obj.GetEETypePtr().ComponentSize != 0;
         }
 
         public static void PrepareMethod(RuntimeMethodHandle method)
