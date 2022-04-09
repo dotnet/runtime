@@ -1,10 +1,13 @@
+#pragma warning disable IDE0073
 //
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 //
+#pragma warning restore IDE0073
 
 using System.Runtime.InteropServices;
 
+#pragma warning disable CS0649
 namespace Microsoft.Quic
 {
     internal partial struct QUIC_HANDLE
@@ -2671,3 +2674,4 @@ namespace Microsoft.Quic
         public const int QUIC_API_VERSION_2 = 2;
     }
 }
+#pragma warning restore CS0649

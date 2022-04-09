@@ -126,7 +126,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
 
             Debug.Assert(!MsQuicApi.Api.Registration.IsInvalid);
 
-            QUIC_SETTINGS settings = new QUIC_SETTINGS();
+            QUIC_SETTINGS settings = default(QUIC_SETTINGS);
             settings.IsSet.PeerUnidiStreamCount = 1;
             settings.PeerUnidiStreamCount = (ushort)options.MaxUnidirectionalStreams;
             settings.IsSet.PeerBidiStreamCount = 1;

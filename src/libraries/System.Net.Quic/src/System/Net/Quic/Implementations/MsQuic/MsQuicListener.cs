@@ -15,6 +15,7 @@ using System.Threading.Tasks;
 using System.Net.Sockets;
 using Microsoft.Quic;
 using static Microsoft.Quic.MsQuic;
+using System.Runtime.CompilerServices;
 
 namespace System.Net.Quic.Implementations.MsQuic
 {
@@ -234,7 +235,9 @@ namespace System.Net.Quic.Implementations.MsQuic
             return _state.StopCompletion.Task;
         }
 
-        [UnmanagedCallersOnly(CallConvs = new Type[] {typeof(CallConvCdecl)})]
+#pragma warning disable CS3016
+        [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvCdecl) })]
+#pragma warning restore CS3016
         private static unsafe int NativeCallback(QUIC_HANDLE* listener, void* context, QUIC_LISTENER_EVENT* listenerEvent)
         {
             GCHandle gcHandle = GCHandle.FromIntPtr((IntPtr)context);

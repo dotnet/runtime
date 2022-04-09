@@ -214,7 +214,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         internal override bool Connected => _state.Connected;
 
-        private unsafe static int HandleEventConnected(State state, ref QUIC_CONNECTION_EVENT connectionEvent)
+        private static unsafe int HandleEventConnected(State state, ref QUIC_CONNECTION_EVENT connectionEvent)
         {
             if (state.Connected)
             {
@@ -241,7 +241,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                     }
                 }
 
-                return QUIC_STATUS_USER_CANCELED
+                return QUIC_STATUS_USER_CANCELED;
             }
             else
             {
@@ -337,10 +337,10 @@ namespace System.Net.Quic.Implementations.MsQuic
             return QUIC_STATUS_SUCCESS;
         }
 
-        private static int HandleEventNewStream(State state, ref QUIC_CONNECTION_EVENT connectionEvent)
+        private static unsafe int HandleEventNewStream(State state, ref QUIC_CONNECTION_EVENT connectionEvent)
         {
-            var streamHandle = new SafeMsQuicStreamHandle(connectionEvent.Data.PeerStreamStarted.Stream);
-            if (!state.TryQueueNewStream(streamHandle, connectionEvent.Data.PeerStreamStarted.Flags))
+            var streamHandle = new SafeMsQuicStreamHandle(connectionEvent.PEER_STREAM_STARTED.Stream);
+            if (!state.TryQueueNewStream(streamHandle, connectionEvent.PEER_STREAM_STARTED.Flags))
             {
                 // This will call StreamCloseDelegate and free the stream.
                 // We will return Success to the MsQuic to prevent double free.
@@ -623,9 +623,9 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             ushort af = _remoteEndPoint.AddressFamily switch
             {
-                AddressFamily.Unspecified => QUIC_ADDRESS_FAMILY_UNSPEC,
-                AddressFamily.InterNetwork => QUIC_ADDRESS_FAMILY_INET
-                AddressFamily.InterNetworkV6 => QUIC_ADDRESS_FAMILY_INET6,
+                AddressFamily.Unspecified => (ushort)QUIC_ADDRESS_FAMILY_UNSPEC,
+                AddressFamily.InterNetwork => (ushort)QUIC_ADDRESS_FAMILY_INET,
+                AddressFamily.InterNetworkV6 => (ushort)QUIC_ADDRESS_FAMILY_INET6,
                 _ => throw new ArgumentException(SR.Format(SR.net_quic_unsupported_address_family, _remoteEndPoint.AddressFamily))
             };
 
@@ -732,7 +732,9 @@ namespace System.Net.Quic.Implementations.MsQuic
             }
         }
 
+#pragma warning disable CS3016
         [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvCdecl) })]
+#pragma warning restore CS3016
         private static unsafe int NativeCallback(QUIC_HANDLE* connection, void* context, QUIC_CONNECTION_EVENT* connectionEvent)
         {
             GCHandle gcHandle = GCHandle.FromIntPtr((IntPtr)context);

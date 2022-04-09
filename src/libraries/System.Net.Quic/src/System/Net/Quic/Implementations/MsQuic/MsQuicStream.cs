@@ -5,6 +5,7 @@ using System.Buffers;
 using System.Diagnostics;
 using System.IO;
 using System.Net.Quic.Implementations.MsQuic.Internal;
+using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -281,7 +282,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             using CancellationTokenRegistration registration = SetupWriteStartState(buffers.IsEmpty, cancellationToken);
 
-            await SendReadOnlySequenceAsync(buffers, endStream ? QUIC_SEND_FLAGS.FIN : QUIC_SEND_FLAGS.NONE).ConfigureAwait(false);
+            await SendReadOnlySequenceAsync(buffers, endStream ? QUIC_SEND_FLAGS.QUIC_SEND_FLAG_FIN : QUIC_SEND_FLAGS.QUIC_SEND_FLAG_NONE).ConfigureAwait(false);
 
             CleanupWriteCompletedState();
         }
@@ -819,7 +820,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             }
 
 
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(_state, $"{TraceId()} Stream disposing {disposing}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(_state, $"{_state.Handle} Stream disposing {disposing}");
 
             bool callShutdown = false;
             bool abortRead = false;
@@ -897,7 +898,9 @@ namespace System.Net.Quic.Implementations.MsQuic
         /// Callback calls for a single instance of a stream are serialized by msquic.
         /// They happen on a msquic thread and shouldn't take too long to not to block msquic.
         /// </summary>
+#pragma warning disable CS3016
         [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvCdecl) })]
+#pragma warning restore CS3016
         private static unsafe int NativeCallback(QUIC_HANDLE* stream, void* context, QUIC_STREAM_EVENT* streamEvent)
         {
             GCHandle gcHandle = GCHandle.FromIntPtr((IntPtr)context);
