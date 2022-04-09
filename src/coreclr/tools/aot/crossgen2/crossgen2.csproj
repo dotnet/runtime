@@ -51,8 +51,7 @@
   </Target>
 
   <Target Name="PrintAssetsJson" Condition="'$(DotNetBuildFromSource)' == 'true'" 
-    BeforeTargets="ResolvePackageAssets"
-    DependsOnTargets="Restore">
+    BeforeTargets="ResolvePackageAssets">
     <ReadLinesFromFile File="$(ProjectAssetsFile)">
       <Output TaskParameter="Lines" ItemName="_LinesFromFile" />
     </ReadLinesFromFile>
