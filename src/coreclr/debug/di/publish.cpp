@@ -81,7 +81,7 @@ BOOL GetAllProcessesInSystem(DWORD *ProcessId,
 
     } while ((succ == TRUE) && (iIndex < (int)dwArraySize));
 
-    // I would like to know if we're running more than 512 processes on Win95!!
+    // I would like to know if we're running more than 512 processes!!
     _ASSERTE (iIndex < (int)dwArraySize);
 
     *pdwNumEntries = iIndex;
