@@ -8717,7 +8717,7 @@ cnsval_ssize_t emitter::emitGetInsSC(instrDesc* id)
         int  adr = emitComp->lvaFrameAddress(varNum, &FPbased);
         int  dsp = adr + offs;
         if (id->idIns() == INS_sub)
-            dsp    = -dsp;
+            dsp = -dsp;
 #endif
         return dsp;
     }
