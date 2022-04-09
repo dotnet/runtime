@@ -19,7 +19,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             : base((IntPtr)handle, ownsHandle: true)
         {
             _releaseAction = releaseAction;
-            _traceId = $"[{prefix}][0x{DangerousGetHandle().ToString("X11")}]";
+            _traceId = $"[{prefix}][0x{DangerousGetHandle():X11}]";
 
             if (NetEventSource.Log.IsEnabled())
             {
