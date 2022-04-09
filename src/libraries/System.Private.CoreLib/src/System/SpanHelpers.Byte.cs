@@ -618,22 +618,19 @@ namespace System
                     // Mask to help find the first lane in compareResult that is set.
                     // MSB 0x10 corresponds to 1st lane, 0x01 corresponds to 0th lane and so forth.
                     Vector128<byte> mask = Vector128.Create((ushort)0x1001).AsByte();
-                    int matchedLane = 0;
-
                     Vector128<byte> values = Vector128.Create(value);
                     while (lengthToExamine > offset)
                     {
                         Vector128<byte> search = LoadVector128(ref searchSpace, offset);
                         Vector128<byte> compareResult = AdvSimd.CompareEqual(values, search);
 
-                        if (!TryFindFirstMatchedLane(mask, compareResult, ref matchedLane))
+                        if (compareResult == Vector128<byte>.Zero)
                         {
-                            // Zero flags set so no matches
                             offset += (nuint)Vector128<byte>.Count;
                             continue;
                         }
 
-                        return (int)(offset + (uint)matchedLane);
+                        return (int)(offset + FindFirstMatchedLane(mask, compareResult));
                     }
 
                     if (offset < (nuint)(uint)length)
@@ -1028,7 +1025,6 @@ namespace System
                 // Mask to help find the first lane in compareResult that is set.
                 // LSB 0x01 corresponds to lane 0, 0x10 - to lane 1, and so on.
                 Vector128<byte> mask = Vector128.Create((ushort)0x1001).AsByte();
-                int matchedLane = 0;
 
                 Vector128<byte> search;
                 Vector128<byte> matches;
@@ -1043,15 +1039,14 @@ namespace System
                             AdvSimd.CompareEqual(values0, search),
                             AdvSimd.CompareEqual(values1, search));
 
-                    if (!TryFindFirstMatchedLane(mask, matches, ref matchedLane))
+                    if (matches == Vector128<byte>.Zero)
                     {
-                        // Zero flags set so no matches
                         offset += (nuint)Vector128<byte>.Count;
                         continue;
                     }
 
                     // Find bitflag offset of first match and add to current offset
-                    offset += (uint)matchedLane;
+                    offset += FindFirstMatchedLane(mask, matches);
 
                     goto Found;
                 }
@@ -1064,14 +1059,14 @@ namespace System
                         AdvSimd.CompareEqual(values0, search),
                         AdvSimd.CompareEqual(values1, search));
 
-                if (!TryFindFirstMatchedLane(mask, matches, ref matchedLane))
+                if (matches == Vector128<byte>.Zero)
                 {
                     // None matched
                     goto NotFound;
                 }
 
                 // Find bitflag offset of first match and add to current offset
-                offset += (nuint)(uint)matchedLane;
+                offset += FindFirstMatchedLane(mask, matches);
 
                 goto Found;
             }
@@ -1361,7 +1356,6 @@ namespace System
                 // Mask to help find the first lane in compareResult that is set.
                 // LSB 0x01 corresponds to lane 0, 0x10 - to lane 1, and so on.
                 Vector128<byte> mask = Vector128.Create((ushort)0x1001).AsByte();
-                int matchedLane = 0;
 
                 Vector128<byte> search;
                 Vector128<byte> matches;
@@ -1379,15 +1373,14 @@ namespace System
                                     AdvSimd.CompareEqual(values1, search)),
                                 AdvSimd.CompareEqual(values2, search));
 
-                    if (!TryFindFirstMatchedLane(mask, matches, ref matchedLane))
+                    if (matches == Vector128<byte>.Zero)
                     {
-                        // Zero flags set so no matches
                         offset += (nuint)Vector128<byte>.Count;
                         continue;
                     }
 
                     // Find bitflag offset of first match and add to current offset
-                    offset += (uint)matchedLane;
+                    offset += FindFirstMatchedLane(mask, matches);
 
                     goto Found;
                 }
@@ -1402,14 +1395,14 @@ namespace System
                                 AdvSimd.CompareEqual(values1, search)),
                             AdvSimd.CompareEqual(values2, search));
 
-                if (!TryFindFirstMatchedLane(mask, matches, ref matchedLane))
+                if (matches == Vector128<byte>.Zero)
                 {
                     // None matched
                     goto NotFound;
                 }
 
                 // Find bitflag offset of first match and add to current offset
-                offset += (nuint)(uint)matchedLane;
+                offset += FindFirstMatchedLane(mask, matches);
 
                 goto Found;
             }
@@ -2228,7 +2221,7 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool TryFindFirstMatchedLane(Vector128<byte> mask, Vector128<byte> compareResult, ref int matchedLane)
+        private static uint FindFirstMatchedLane(Vector128<byte> mask, Vector128<byte> compareResult)
         {
             Debug.Assert(AdvSimd.Arm64.IsSupported);
 
@@ -2236,15 +2229,12 @@ namespace System
             Vector128<byte> maskedSelectedLanes = AdvSimd.And(compareResult, mask);
             Vector128<byte> pairwiseSelectedLane = AdvSimd.Arm64.AddPairwise(maskedSelectedLanes, maskedSelectedLanes);
             ulong selectedLanes = pairwiseSelectedLane.AsUInt64().ToScalar();
-            if (selectedLanes == 0)
-            {
-                // all lanes are zero, so nothing matched.
-                return false;
-            }
+
+            // It should be handled by compareResult != Vector.Zero
+            Debug.Assert(selectedLanes != 0);
 
             // Find the first lane that is set inside compareResult.
-            matchedLane = BitOperations.TrailingZeroCount(selectedLanes) >> 2;
-            return true;
+            return (uint)BitOperations.TrailingZeroCount(selectedLanes) >> 2;
         }
     }
 }
