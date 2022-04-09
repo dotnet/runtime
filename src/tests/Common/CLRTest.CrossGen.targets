@@ -185,7 +185,7 @@ if defined RunCrossGen2 (
 
     mkdir IL-CG2
     copy *.dll IL-CG2\
-    del IL-CG2\composite-r2r.dll 2>null
+    del IL-CG2\composite-r2r.dll 2>nul
 
     if defined CompositeBuildMode (
         set ExtraCrossGen2Args=!ExtraCrossGen2Args! --composite
@@ -212,7 +212,7 @@ if defined RunCrossGen2 (
 :CompileOneFileCrossgen2
     echo %time%
     set __ResponseFile=!__OutputFile!.rsp
-    del /Q !__ResponseFile! 2>null
+    del /Q !__ResponseFile! 2>nul
 
     set __Command=!_DebuggerFullPath!
     REM Tests run locally need __TestDotNetCmd (set by runtest.py) or a compatible 5.0 dotnet runtime in the path
