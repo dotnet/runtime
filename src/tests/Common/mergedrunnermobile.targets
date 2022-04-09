@@ -21,6 +21,24 @@
     <ProjectReference Include="$(RepoRoot)/src/tests/Common/XHarnessRunnerLibrary/XHarnessRunnerLibrary.csproj" />
   </ItemGroup>
 
+  <!--
+    We can't publish the test exclusion list at test build time as we don't know the full test run configuration
+    until we're about to send the test runs to Helix. Here we'll include a dummy text exclusion list into the app bundle
+    that we will patch with the actual test exclusion list later.
+    Adding the exclusion list here allows us to avoid having to manually patch the various metadata files for each app type
+    and allows us to only have to replace this file.
+  -->
+  <Target Name="_AddDummyTestExclusionListToAssets" BeforeTargets="AssignTargetPaths">
+    <ItemGroup>
+      <_PlaceholderExclusionList Include="$(IntermediateOutputPath)/PlaceholderTestExclusionList.txt" />
+      <Content Include="@(_PlaceholderExclusionList)" TargetPath="TestExclusionList.txt" CopyToOutputDirectory="PreserveNewest"/>
+    </ItemGroup>
+    <WriteLinesToFile File="@(_PlaceholderExclusionList)"
+                      Lines=""
+                      Overwrite="true"
+                      WriteOnlyWhenDifferent="true" />
+  </Target>
+
   <!-- Don't use the usual script generation, the scripts it generates are not useful for these tests. -->
   <Target Name="GenerateExecutionScriptsInternal" />
   <Target Name="GenerateLocalRunnerScript" DependsOnTargets="GenerateRunScript" AfterTargets="PublishTestAsSelfContained" />

@@ -115,7 +115,7 @@ steps:
       curl -o NuGet.config 'https://raw.githubusercontent.com/dotnet/maui/main/NuGet.config'
       curl -o dotnet-install.sh 'https://dotnet.microsoft.com/download/dotnet/scripts/v1/dotnet-install.sh'
       chmod -R a+rx .
-      ./dotnet-install.sh --channel 6.0.2xx --quality daily --install-dir .
+      ./dotnet-install.sh --channel 6.0.3xx --quality daily --install-dir .
       ./dotnet --info
       ./dotnet workload install maui --from-rollback-file https://aka.ms/dotnet/maui/main.json --configfile NuGet.config
     displayName: Install MAUI workload
@@ -142,6 +142,26 @@ steps:
     displayName: Build MAUI Android
     workingDirectory: $(Build.SourcesDirectory)/MauiTesting
 
+  - script: |
+      set -x
+      pwd
+      git clone https://github.com/microsoft/dotnet-podcasts.git -b maui/perf --single-branch
+      cd dotnet-podcasts
+      cp $(Build.SourcesDirectory)/src/tests/Common/maui/MauiScenario.props ./Directory.Build.props
+      cp $(Build.SourcesDirectory)/src/tests/Common/maui/MauiScenario.targets ./Directory.Build.targets
+    displayName:  Clone podcast app
+    workingDirectory: $(Build.SourcesDirectory)
+
+  - script: |
+      set -x
+      pwd
+      chmod -R a+r .
+      ../../../dotnet restore Microsoft.NetConf2021.Maui.csproj
+      ../../../dotnet publish Microsoft.NetConf2021.Maui.csproj -bl:MauiPodcastAndroid.binlog -r android-arm64 --self-contained --no-restore -f net6.0-android -c Release
+      mv ./bin/Release/net6.0-android/android-arm64/com.Microsoft.NetConf2021.Maui-Signed.apk $(Build.SourcesDirectory)/MauiTesting/MauiAndroidPodcast.apk
+    displayName: Build MAUI Podcast Android
+    workingDirectory:  $(Build.SourcesDirectory)/dotnet-podcasts/src/Mobile
+
     # This step pulls the product version from the used Microsoft.Maui.dll file properties and saves it for upload with the maui test counter.
     # We pull from this file as we did not find another place to reliably get the version information pre or post build.
   - powershell: |
@@ -154,7 +174,6 @@ steps:
 
   - script: |
       chmod -R a+r .
-
       # remove net6.0-maccatalyst to work around https://github.com/dotnet/sdk/issues/21877
       cp MauiTesting.csproj MauiTesting.csproj.bak
       sed -i'' -e 's/net6.0-ios;net6.0-maccatalyst/net6.0-ios/g' MauiTesting.csproj
@@ -165,6 +184,20 @@ steps:
       cp MauiTesting.csproj.bak MauiTesting.csproj
     displayName: Build MAUI iOS
     workingDirectory: $(Build.SourcesDirectory)/MauiTesting
+
+  - script: |
+      chmod -R a+r .
+      # remove net6.0-maccatalyst to work around https://github.com/dotnet/sdk/issues/21877
+      cp Microsoft.NetConf2021.Maui.csproj Microsoft.NetConf2021.Maui.csproj.bak
+      sed -i'' -e 's/net6.0-ios;net6.0-maccatalyst/net6.0-ios/g' Microsoft.NetConf2021.Maui.csproj
+
+      ../../../dotnet build ../Web/Components/Podcast.Components.Maui.csproj
+      ../../../dotnet publish Microsoft.NetConf2021.Maui.csproj -bl:MauiiOSPodcast.binlog -f net6.0-ios --self-contained -r ios-arm64 -c Release /p:_RequireCodeSigning=false
+      mv ./bin/Release/net6.0-ios/ios-arm64/publish/Microsoft.NetConf2021.Maui.ipa ./MauiiOSPodcast.ipa
+
+      cp Microsoft.NetConf2021.Maui.csproj.bak Microsoft.NetConf2021.Maui.csproj
+    displayName: Build MAUI Podcast iOS
+    workingDirectory: $(Build.SourcesDirectory)/dotnet-podcasts/src/Mobile
 
   - script: |
       chmod -R a+r .
@@ -194,6 +227,13 @@ steps:
       pathtoPublish: $(Build.SourcesDirectory)/MauiTesting/MauiMacCatalyst.binlog
       artifactName:  ${{ parameters.artifactName }}
 
+  - task: PublishBuildArtifacts@1
+    displayName: 'Publish MauiiOSPodcast binlog'
+    condition: always()
+    inputs:
+      pathtoPublish: $(Build.SourcesDirectory)/dotnet-podcasts/src/Mobile/MauiiOSPodcast.binlog
+      artifactName:  ${{ parameters.artifactName }}
+
   - template: /eng/pipelines/common/upload-artifact-step.yml
     parameters:
         rootFolder: $(Build.SourcesDirectory)/MauiTesting/MauiAndroidDefault.apk
@@ -206,10 +246,30 @@ steps:
 
   - template: /eng/pipelines/common/upload-artifact-step.yml
     parameters:
+        rootFolder: $(Build.SourcesDirectory)/MauiTesting/MauiAndroidPodcast.apk
+        includeRootFolder: true
+        displayName: Maui Android Podcast
+        artifactName: MauiAndroidPodcast
+        archiveExtension: '.tar.gz'
+        archiveType: tar
+        tarCompression: gz
+
+  - template: /eng/pipelines/common/upload-artifact-step.yml
+    parameters:
         rootFolder: $(Build.SourcesDirectory)/MauiTesting/MauiiOSDefault.ipa
         includeRootFolder: true
         displayName: Maui iOS IPA
         artifactName: MauiiOSDefaultIPA
+        archiveExtension: '.tar.gz'
+        archiveType: tar
+        tarCompression: gz
+
+  - template: /eng/pipelines/common/upload-artifact-step.yml
+    parameters:
+        rootFolder: $(Build.SourcesDirectory)/dotnet-podcasts/src/Mobile/MauiiOSPodcast.ipa
+        includeRootFolder: true
+        displayName: Maui iOS Podcast IPA
+        artifactName: MauiiOSPodcastIPA
         archiveExtension: '.tar.gz'
         archiveType: tar
         tarCompression: gz

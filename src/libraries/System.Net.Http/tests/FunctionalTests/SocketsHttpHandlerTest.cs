@@ -1044,17 +1044,17 @@ namespace System.Net.Http.Functional.Tests
         public SocketsHttpHandlerTest_Cookies_Http11(ITestOutputHelper output) : base(output) { }
     }
 
+    [ConditionalClass(typeof(SocketsHttpHandler), nameof(SocketsHttpHandler.IsSupported))]
     public sealed class SocketsHttpHandler_HttpClientHandler_Http11_Cancellation_Test : SocketsHttpHandler_Cancellation_Test
     {
         public SocketsHttpHandler_HttpClientHandler_Http11_Cancellation_Test(ITestOutputHelper output) : base(output) { }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Browser, "ConnectTimeout is not supported on Browser")]
         public void ConnectTimeout_Default()
         {
             using (var handler = new SocketsHttpHandler())
             {
-                Assert.Equal(Timeout.InfiniteTimeSpan, handler.ConnectTimeout);
+                Assert.Equal(TimeSpan.FromSeconds(15), handler.ConnectTimeout);
             }
         }
 
@@ -1062,7 +1062,6 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(0)]
         [InlineData(-2)]
         [InlineData(int.MaxValue + 1L)]
-        [SkipOnPlatform(TestPlatforms.Browser, "ConnectTimeout is not supported on Browser")]
         public void ConnectTimeout_InvalidValues(long ms)
         {
             using (var handler = new SocketsHttpHandler())
@@ -1076,7 +1075,6 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(1)]
         [InlineData(int.MaxValue - 1)]
         [InlineData(int.MaxValue)]
-        [SkipOnPlatform(TestPlatforms.Browser, "ConnectTimeout is not supported on Browser")]
         public void ConnectTimeout_ValidValues_Roundtrip(long ms)
         {
             using (var handler = new SocketsHttpHandler())
@@ -1087,7 +1085,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Browser, "ConnectTimeout is not supported on Browser")]
         public void ConnectTimeout_SetAfterUse_Throws()
         {
             using (var handler = new SocketsHttpHandler())
@@ -1101,7 +1098,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Browser, "ConnectTimeout is not supported on Browser")]
         public void Expect100ContinueTimeout_Default()
         {
             using (var handler = new SocketsHttpHandler())
@@ -1113,7 +1109,6 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [InlineData(-2)]
         [InlineData(int.MaxValue + 1L)]
-        [SkipOnPlatform(TestPlatforms.Browser, "ConnectTimeout is not supported on Browser")]
         public void Expect100ContinueTimeout_InvalidValues(long ms)
         {
             using (var handler = new SocketsHttpHandler())
@@ -1127,7 +1122,6 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(1)]
         [InlineData(int.MaxValue - 1)]
         [InlineData(int.MaxValue)]
-        [SkipOnPlatform(TestPlatforms.Browser, "ConnectTimeout is not supported on Browser")]
         public void Expect100ContinueTimeout_ValidValues_Roundtrip(long ms)
         {
             using (var handler = new SocketsHttpHandler())
@@ -1138,7 +1132,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Browser, "ConnectTimeout is not supported on Browser")]
         public void Expect100ContinueTimeout_SetAfterUse_Throws()
         {
             using (var handler = new SocketsHttpHandler())
@@ -2894,6 +2887,101 @@ namespace System.Net.Http.Functional.Tests
                 }, options: new LoopbackServer.Options{UseSsl = true});
         }
 
+        [Fact]
+        public async Task ConnectCallback_MultipleRequests_EachRequestIsUsedOnce()
+        {
+            using HttpClientHandler handler = CreateHttpClientHandler();
+            using HttpClient client = CreateHttpClient(handler);
+
+            handler.MaxConnectionsPerServer = 2;
+
+            TaskCompletionSource connectCallbackEntered = new(TaskCreationOptions.RunContinuationsAsynchronously);
+            TaskCompletionSource connectCallback1Gate = new(TaskCreationOptions.RunContinuationsAsynchronously);
+            TaskCompletionSource connectCallback2Gate = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+            var uri = new Uri("https://example.com");
+            HttpRequestMessage request1 = CreateRequest(HttpMethod.Get, uri, UseVersion, exactVersion: true);
+            HttpRequestMessage request2 = CreateRequest(HttpMethod.Get, uri, UseVersion, exactVersion: true);
+            HttpRequestMessage request3 = CreateRequest(HttpMethod.Get, uri, UseVersion, exactVersion: true);
+
+            List<int> requestsSeen = new();
+
+            GetUnderlyingSocketsHttpHandler(handler).ConnectCallback = async (context, cancellation) =>
+            {
+                if (context.InitialRequestMessage == request1) requestsSeen.Add(1);
+                else if (context.InitialRequestMessage == request2) requestsSeen.Add(2);
+                else if (context.InitialRequestMessage == request3) requestsSeen.Add(3);
+                else requestsSeen.Add(-1);
+
+                connectCallbackEntered.SetResult();
+
+                if (context.InitialRequestMessage == request1) await connectCallback1Gate.Task.WaitAsync(TestHelper.PassingTestTimeout);
+                if (context.InitialRequestMessage == request2) await connectCallback2Gate.Task.WaitAsync(TestHelper.PassingTestTimeout);
+
+                throw new Exception("No connection");
+            };
+
+            Task requestTask1 = client.SendAsync(request1);
+            await connectCallbackEntered.Task.WaitAsync(TestHelper.PassingTestTimeout);
+            Assert.Equal(new[] { 1 }, requestsSeen);
+
+            connectCallbackEntered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
+            Task requestTask2, requestTask3;
+
+            if (UseVersion.Major == 1)
+            {
+                requestTask2 = client.SendAsync(request2);
+                await connectCallbackEntered.Task.WaitAsync(TestHelper.PassingTestTimeout);
+                Assert.Equal(new[] { 1, 2 }, requestsSeen);
+
+                connectCallbackEntered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
+                requestTask3 = client.SendAsync(request3);
+                await Task.Delay(1);
+                Assert.Equal(new[] { 1, 2 }, requestsSeen);
+
+                connectCallback2Gate.SetResult();
+                await connectCallbackEntered.Task.WaitAsync(TestHelper.PassingTestTimeout);
+                Assert.Equal(new[] { 1, 2, 3 }, requestsSeen);
+
+                // First request was not canceled when the second connection attempt failed
+                Assert.NotEqual(TaskStatus.Faulted, requestTask1.Status);
+
+                connectCallback1Gate.SetResult();
+            }
+            else if (UseVersion.Major == 2)
+            {
+                requestTask2 = client.SendAsync(request2);
+                await Task.Delay(1);
+                Assert.Equal(new[] { 1 }, requestsSeen);
+
+                requestTask3 = client.SendAsync(request3);
+                await Task.Delay(1);
+                Assert.Equal(new[] { 1 }, requestsSeen);
+
+                connectCallback1Gate.SetResult();
+                await connectCallbackEntered.Task.WaitAsync(TestHelper.PassingTestTimeout);
+                Assert.Equal(new[] { 1, 2 }, requestsSeen);
+
+                connectCallbackEntered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
+                connectCallback2Gate.SetResult();
+                await connectCallbackEntered.Task.WaitAsync(TestHelper.PassingTestTimeout);
+                Assert.Equal(new[] { 1, 2, 3 }, requestsSeen);
+            }
+            else
+            {
+                throw new UnreachableException(UseVersion.ToString());
+            }
+
+            await Assert.ThrowsAsync<HttpRequestException>(() => requestTask1).WaitAsync(TestHelper.PassingTestTimeout);
+            await Assert.ThrowsAsync<HttpRequestException>(() => requestTask2).WaitAsync(TestHelper.PassingTestTimeout);
+            await Assert.ThrowsAsync<HttpRequestException>(() => requestTask3).WaitAsync(TestHelper.PassingTestTimeout);
+
+            Assert.Equal(new[] { 1, 2, 3 }, requestsSeen);
+        }
+
         private static bool PlatformSupportsUnixDomainSockets => Socket.OSSupportsUnixDomainSockets;
    }
 
@@ -3119,7 +3207,10 @@ namespace System.Net.Http.Functional.Tests
                     {
                         await server.AcceptConnectionSendResponseAndCloseAsync(content: "foo");
                     }
-                    catch { }
+                    catch (Exception ex)
+                    {
+                        _output.WriteLine($"Ignored exception:{Environment.NewLine}{ex}");
+                    }
                 }, options: options);
         }
 
@@ -3154,7 +3245,10 @@ namespace System.Net.Http.Functional.Tests
                     {
                         await server.AcceptConnectionSendResponseAndCloseAsync(content: "foo");
                     }
-                    catch { }
+                    catch (Exception ex)
+                    {
+                        _output.WriteLine($"Ignored exception:{Environment.NewLine}{ex}");
+                    }
                 }, options: options);
         }
     }
@@ -3554,7 +3648,10 @@ namespace System.Net.Http.Functional.Tests
                 {
                     await server.HandleRequestAsync();
                 }
-                catch { }
+                catch (Exception ex)
+                {
+                    _output.WriteLine($"Ignored exception:{Environment.NewLine}{ex}");
+                }
 
                 // On HTTP/1.x, an exception being thrown while sending the request content will result in the connection being closed.
                 // This test is ensuring that a subsequent request can succeed on a new connection.

@@ -8,7 +8,6 @@
 #pragma warning(disable:4090) // const problem
 #pragma warning(disable:4146) // unary minus operator applied to unsigned type, result still unsigned
 #pragma warning(disable:4244) // integer conversion, possible loss of data
-#pragma warning(disable:4267) // integer conversion, possible loss of data
 
 // promote warnings to errors
 #pragma warning(  error:4013) // function undefined; assuming extern returning int
@@ -83,6 +82,9 @@
 /* Host Platform is Darwin */
 #cmakedefine HOST_DARWIN 1
 
+/* Host Platform is OSX or Mac Catalyst */
+#cmakedefine HOST_OSX 1
+
 /* Host Platform is iOS */
 #cmakedefine HOST_IOS 1
 
@@ -154,9 +156,6 @@
 
 /* Define to 1 if you have the <sys/sysctl.h> header file. */
 #cmakedefine HAVE_SYS_SYSCTL_H 1
-
-/* Define to 1 if you have the <libproc.h> header file. */
-#cmakedefine HAVE_LIBPROC_H 1
 
 /* Define to 1 if you have the <sys/prctl.h> header file. */
 #cmakedefine HAVE_SYS_PRCTL_H 1
@@ -280,12 +279,6 @@
 /* Disable Soft Debugger Agent. */
 #cmakedefine DISABLE_DEBUGGER_AGENT 1
 
-/* Disable Performance Counters. */
-#cmakedefine DISABLE_PERFCOUNTERS 1
-
-/* Disable shared perfcounters. */
-#cmakedefine DISABLE_SHARED_PERFCOUNTERS 1
-
 /* Disable support code for the LLDB plugin. */
 #cmakedefine DISABLE_LLDB 1
 
@@ -312,9 +305,6 @@
 
 /* Disable Threads */
 #cmakedefine DISABLE_THREADS 1
-
-/* Disable perf counters */
-#cmakedefine DISABLE_PERF_COUNTERS
 
 /* Disable MONO_LOG_DEST */
 #cmakedefine DISABLE_LOG_DEST
@@ -351,9 +341,6 @@
 
 /* Define to 1 if you have the <execinfo.h> header file. */
 #cmakedefine HAVE_EXECINFO_H 1
-
-/* Define to 1 if you have the <sys/auxv.h> header file. */
-#cmakedefine HAVE_SYS_AUXV_H 1
 
 /* Define to 1 if you have the <sys/resource.h> header file. */
 #cmakedefine HAVE_SYS_RESOURCE_H 1
@@ -399,9 +386,6 @@
 
 /* Define to 1 if you have the `getpwuid_r' function. */
 #cmakedefine HAVE_GETPWUID_R 1
-
-/* Define to 1 if you have the `readlink' function. */
-#cmakedefine HAVE_READLINK 1
 
 /* Define to 1 if you have the `chmod' function. */
 #cmakedefine HAVE_CHMOD 1
@@ -512,6 +496,7 @@
 /* Define to 1 if you have the `pthread_jit_write_protect_np' function. */
 #cmakedefine HAVE_PTHREAD_JIT_WRITE_PROTECT_NP 1
 
+/* Have getauxval */
 #cmakedefine01 HAVE_GETAUXVAL
 
 /* Define to 1 if you have the declaration of `pthread_mutexattr_setprotocol',
@@ -520,9 +505,6 @@
 
 /* Enable support for using sigaltstack for SIGSEGV and stack overflow handling, this doesn't work on some platforms */
 #cmakedefine ENABLE_SIGALTSTACK 1
-
-/* Define to 1 if you have the `shm_open' function. */
-#cmakedefine HAVE_SHM_OPEN 1
 
 /* Define to 1 if you have the `poll' function. */
 #cmakedefine HAVE_POLL 1
@@ -553,9 +535,6 @@
 
 /* Have mktemp */
 #cmakedefine HAVE_MKTEMP 1
-
-/* Define to 1 if you have the <sys/errno.h> header file. */
-#cmakedefine HAVE_SYS_ERRNO_H 1
 
 /* Define to 1 if you have the <sys/sendfile.h> header file. */
 #cmakedefine HAVE_SYS_SENDFILE_H 1
@@ -648,9 +627,6 @@
 
 /* Define to 1 if `st_atimespec' is a member of `struct stat'. */
 #cmakedefine HAVE_STRUCT_STAT_ST_ATIMESPEC 1
-
-/* Define to 1 if `kp_proc' is a member of `struct kinfo_proc'. */
-#cmakedefine HAVE_STRUCT_KINFO_PROC_KP_PROC 1
 
 /* Define to 1 if you have the <sys/time.h> header file. */
 #cmakedefine HAVE_SYS_TIME_H 1
@@ -752,15 +728,6 @@
 #cmakedefine TARGET_S390X 1
 
 /* ... */
-#cmakedefine TARGET_MIPS 1
-
-/* ... */
-#cmakedefine TARGET_SPARC 1
-
-/* ... */
-#cmakedefine TARGET_SPARC64 1
-
-/* ... */
 #cmakedefine HOST_WASM 1
 
 /* ... */
@@ -790,15 +757,6 @@
 /* ... */
 #cmakedefine HOST_S390X 1
 
-/* ... */
-#cmakedefine HOST_MIPS 1
-
-/* ... */
-#cmakedefine HOST_SPARC 1
-
-/* ... */
-#cmakedefine HOST_SPARC64 1
-
 /* Host is RISC-V */
 #cmakedefine HOST_RISCV 1
 
@@ -820,7 +778,7 @@
 /* The JIT/AOT targets Mac Catalyst */
 #cmakedefine TARGET_MACCAT 1
 
-/* The JIT/AOT targets OSX */
+/* The JIT/AOT targets OSX or Mac Catalyst */
 #cmakedefine TARGET_OSX 1
 
 /* The JIT/AOT targets Apple platforms */

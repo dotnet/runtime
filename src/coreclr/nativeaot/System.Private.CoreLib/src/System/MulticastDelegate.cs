@@ -144,7 +144,7 @@ namespace System
         private MulticastDelegate NewMulticastDelegate(Delegate[] invocationList, int invocationCount, bool thisIsMultiCastAlready = false)
         {
             // First, allocate a new multicast delegate just like this one, i.e. same type as the this object
-            MulticastDelegate result = (MulticastDelegate)RuntimeImports.RhNewObject(this.EETypePtr);
+            MulticastDelegate result = (MulticastDelegate)RuntimeImports.RhNewObject(this.GetEETypePtr());
 
             // Performance optimization - if this already points to a true multicast delegate,
             // copy _methodPtr and _methodPtrAux fields rather than calling into the EE to get them
@@ -163,7 +163,7 @@ namespace System
             return result;
         }
 
-        private bool TrySetSlot(Delegate[] a, int index, Delegate o)
+        private static bool TrySetSlot(Delegate[] a, int index, Delegate o)
         {
             if (a[index] == null && System.Threading.Interlocked.CompareExchange<Delegate>(ref a[index], o, null) == null)
                 return true;
@@ -297,7 +297,7 @@ namespace System
             return newInvocationList;
         }
 
-        private bool EqualInvocationLists(Delegate[] a, Delegate[] b, int start, int count)
+        private static bool EqualInvocationLists(Delegate[] a, Delegate[] b, int start, int count)
         {
             for (int i = 0; i < count; i++)
             {

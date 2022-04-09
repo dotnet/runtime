@@ -32,6 +32,11 @@ namespace System.ComponentModel.DataAnnotations
         public int MatchTimeoutInMilliseconds { get; set; }
 
         /// <summary>
+        /// Gets the timeout to use when matching the regular expression pattern
+        /// </summary>
+        public TimeSpan MatchTimeout => TimeSpan.FromMilliseconds(MatchTimeoutInMilliseconds);
+
+        /// <summary>
         ///     Gets the regular expression pattern to use
         /// </summary>
         public string Pattern { get; }

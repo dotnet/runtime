@@ -163,7 +163,7 @@ namespace System.Xml.Schema
             }
         }
 
-        private bool IsValidAttributeGroupRedefine(XmlSchemaObject existingObject, XmlSchemaObject item, XmlSchemaObjectTable table)
+        private static bool IsValidAttributeGroupRedefine(XmlSchemaObject existingObject, XmlSchemaObject item, XmlSchemaObjectTable table)
         {
             XmlSchemaAttributeGroup attGroup = (item as XmlSchemaAttributeGroup)!;
             XmlSchemaAttributeGroup existingAttGroup = (existingObject as XmlSchemaAttributeGroup)!;
@@ -182,7 +182,7 @@ namespace System.Xml.Schema
             return false;
         }
 
-        private bool IsValidGroupRedefine(XmlSchemaObject existingObject, XmlSchemaObject item, XmlSchemaObjectTable table)
+        private static bool IsValidGroupRedefine(XmlSchemaObject existingObject, XmlSchemaObject item, XmlSchemaObjectTable table)
         {
             XmlSchemaGroup group = (item as XmlSchemaGroup)!;
             XmlSchemaGroup existingGroup = (existingObject as XmlSchemaGroup)!;
@@ -201,7 +201,7 @@ namespace System.Xml.Schema
             return false;
         }
 
-        private bool IsValidTypeRedefine(XmlSchemaObject existingObject, XmlSchemaObject item, XmlSchemaObjectTable table)
+        private static bool IsValidTypeRedefine(XmlSchemaObject existingObject, XmlSchemaObject item, XmlSchemaObjectTable table)
         {
             XmlSchemaType schemaType = (item as XmlSchemaType)!;
             XmlSchemaType existingType = (existingObject as XmlSchemaType)!;

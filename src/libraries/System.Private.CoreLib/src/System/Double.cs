@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /*============================================================
@@ -13,6 +13,7 @@
 
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
@@ -22,13 +23,14 @@ namespace System
     [Serializable]
     [StructLayout(LayoutKind.Sequential)]
     [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public readonly struct Double : IComparable, IConvertible, ISpanFormattable, IComparable<double>, IEquatable<double>
-#if FEATURE_GENERIC_MATH
-#pragma warning disable SA1001, CA2252 // SA1001: Comma positioning; CA2252: Preview Features
-        , IBinaryFloatingPoint<double>,
+    public readonly struct Double
+        : IComparable,
+          IConvertible,
+          ISpanFormattable,
+          IComparable<double>,
+          IEquatable<double>,
+          IBinaryFloatingPointIeee754<double>,
           IMinMaxValue<double>
-#pragma warning restore SA1001, CA2252
-#endif // FEATURE_GENERIC_MATH
     {
         private readonly double m_value; // Do not rename (binary serialization)
 
@@ -45,8 +47,35 @@ namespace System
         public const double PositiveInfinity = (double)1.0 / (double)(0.0);
         public const double NaN = (double)0.0 / (double)0.0;
 
-        // We use this explicit definition to avoid the confusion between 0.0 and -0.0.
-        internal const double NegativeZero = -0.0;
+        /// <summary>Represents the additive identity (0).</summary>
+        private const double AdditiveIdentity = 0.0;
+
+        /// <summary>Represents the multiplicative identity (1).</summary>
+        private const double MultiplicativeIdentity = 1.0;
+
+        /// <summary>Represents the number one (1).</summary>
+        private const double One = 1.0;
+
+        /// <summary>Represents the number zero (0).</summary>
+        private const double Zero = 0.0;
+
+        /// <summary>Represents the number negative one (-1).</summary>
+        private const double NegativeOne = -1.0;
+
+        /// <summary>Represents the number negative zero (-0).</summary>
+        public const double NegativeZero = -0.0;
+
+        /// <summary>Represents the natural logarithmic base, specified by the constant, e.</summary>
+        /// <remarks>Euler's number is approximately 2.7182818284590452354.</remarks>
+        public const double E = Math.E;
+
+        /// <summary>Represents the ratio of the circumference of a circle to its diameter, specified by the constant, π.</summary>
+        /// <remarks>Pi is approximately 3.1415926535897932385.</remarks>
+        public const double Pi = Math.PI;
+
+        /// <summary>Represents the number of radians in one turn, specified by the constant, τ.</summary>
+        /// <remarks>Tau is approximately 6.2831853071795864769.</remarks>
+        public const double Tau = Math.Tau;
 
         //
         // Constants for manipulating the private bit-representation
@@ -216,21 +245,27 @@ namespace System
             return IsNaN(temp) && IsNaN(m_value);
         }
 
+        /// <inheritdoc cref="IEqualityOperators{TSelf, TOther}.op_Equality(TSelf, TOther)" />
         [NonVersionable]
         public static bool operator ==(double left, double right) => left == right;
 
+        /// <inheritdoc cref="IEqualityOperators{TSelf, TOther}.op_Inequality(TSelf, TOther)" />
         [NonVersionable]
         public static bool operator !=(double left, double right) => left != right;
 
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_LessThan(TSelf, TOther)" />
         [NonVersionable]
         public static bool operator <(double left, double right) => left < right;
 
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_GreaterThan(TSelf, TOther)" />
         [NonVersionable]
         public static bool operator >(double left, double right) => left > right;
 
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_LessThanOrEqual(TSelf, TOther)" />
         [NonVersionable]
         public static bool operator <=(double left, double right) => left <= right;
 
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_GreaterThanOrEqual(TSelf, TOther)" />
         [NonVersionable]
         public static bool operator >=(double left, double right) => left >= right;
 
@@ -265,7 +300,7 @@ namespace System
             return Number.FormatDouble(m_value, null, NumberFormatInfo.CurrentInfo);
         }
 
-        public string ToString(string? format)
+        public string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format)
         {
             return Number.FormatDouble(m_value, format, NumberFormatInfo.CurrentInfo);
         }
@@ -275,12 +310,12 @@ namespace System
             return Number.FormatDouble(m_value, null, NumberFormatInfo.GetInstance(provider));
         }
 
-        public string ToString(string? format, IFormatProvider? provider)
+        public string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format, IFormatProvider? provider)
         {
             return Number.FormatDouble(m_value, format, NumberFormatInfo.GetInstance(provider));
         }
 
-        public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format = default, IFormatProvider? provider = null)
+        public bool TryFormat(Span<char> destination, out int charsWritten, [StringSyntax(StringSyntaxAttribute.NumericFormat)] ReadOnlySpan<char> format = default, IFormatProvider? provider = null)
         {
             return Number.TryFormatDouble(m_value, format, NumberFormatInfo.GetInstance(provider), destination, out charsWritten);
         }
@@ -449,32 +484,29 @@ namespace System
             return Convert.DefaultToType((IConvertible)this, type, provider);
         }
 
-#if FEATURE_GENERIC_MATH
         //
         // IAdditionOperators
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static double IAdditionOperators<double, double, double>.operator +(double left, double right)
-            => left + right;
+        /// <inheritdoc cref="IAdditionOperators{TSelf, TOther, TResult}.op_Addition(TSelf, TOther)" />
+        static double IAdditionOperators<double, double, double>.operator +(double left, double right) => left + right;
 
-        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        // static checked double IAdditionOperators<double, double, double>.operator +(double left, double right)
-        //     => checked(left + right);
+        /// <inheritdoc cref="IAdditionOperators{TSelf, TOther, TResult}.op_Addition(TSelf, TOther)" />
+        static double IAdditionOperators<double, double, double>.operator checked +(double left, double right) => left + right;
 
         //
         // IAdditiveIdentity
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static double IAdditiveIdentity<double, double>.AdditiveIdentity => 0.0;
+        /// <inheritdoc cref="IAdditiveIdentity{TSelf, TResult}.AdditiveIdentity" />
+        static double IAdditiveIdentity<double, double>.AdditiveIdentity => AdditiveIdentity;
 
         //
         // IBinaryNumber
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static bool IBinaryNumber<double>.IsPow2(double value)
+        /// <inheritdoc cref="IBinaryNumber{TSelf}.IsPow2(TSelf)" />
+        public static bool IsPow2(double value)
         {
             ulong bits = BitConverter.DoubleToUInt64Bits(value);
 
@@ -486,36 +518,35 @@ namespace System
                 && (significand == MinSignificand);
         }
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static double IBinaryNumber<double>.Log2(double value)
-            => Math.Log2(value);
+        /// <inheritdoc cref="IBinaryNumber{TSelf}.Log2(TSelf)" />
+        public static double Log2(double value) => Math.Log2(value);
 
         //
         // IBitwiseOperators
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        /// <inheritdoc cref="IBitwiseOperators{TSelf, TOther, TResult}.op_BitwiseAnd(TSelf, TOther)" />
         static double IBitwiseOperators<double, double, double>.operator &(double left, double right)
         {
             ulong bits = BitConverter.DoubleToUInt64Bits(left) & BitConverter.DoubleToUInt64Bits(right);
             return BitConverter.UInt64BitsToDouble(bits);
         }
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        /// <inheritdoc cref="IBitwiseOperators{TSelf, TOther, TResult}.op_BitwiseOr(TSelf, TOther)" />
         static double IBitwiseOperators<double, double, double>.operator |(double left, double right)
         {
             ulong bits = BitConverter.DoubleToUInt64Bits(left) | BitConverter.DoubleToUInt64Bits(right);
             return BitConverter.UInt64BitsToDouble(bits);
         }
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        /// <inheritdoc cref="IBitwiseOperators{TSelf, TOther, TResult}.op_ExclusiveOr(TSelf, TOther)" />
         static double IBitwiseOperators<double, double, double>.operator ^(double left, double right)
         {
             ulong bits = BitConverter.DoubleToUInt64Bits(left) ^ BitConverter.DoubleToUInt64Bits(right);
             return BitConverter.UInt64BitsToDouble(bits);
         }
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        /// <inheritdoc cref="IBitwiseOperators{TSelf, TOther, TResult}.op_OnesComplement(TSelf)" />
         static double IBitwiseOperators<double, double, double>.operator ~(double value)
         {
             ulong bits = ~BitConverter.DoubleToUInt64Bits(value);
@@ -523,401 +554,246 @@ namespace System
         }
 
         //
-        // IComparisonOperators
-        //
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static bool IComparisonOperators<double, double>.operator <(double left, double right)
-            => left < right;
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static bool IComparisonOperators<double, double>.operator <=(double left, double right)
-            => left <= right;
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static bool IComparisonOperators<double, double>.operator >(double left, double right)
-            => left > right;
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static bool IComparisonOperators<double, double>.operator >=(double left, double right)
-            => left >= right;
-
-        //
         // IDecrementOperators
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static double IDecrementOperators<double>.operator --(double value)
-            => --value;
+        /// <inheritdoc cref="IDecrementOperators{TSelf}.op_Decrement(TSelf)" />
+        static double IDecrementOperators<double>.operator --(double value) => --value;
 
-        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        // static checked double IDecrementOperators<double>.operator --(double value)
-        //     => checked(--value);
+        /// <inheritdoc cref="IDecrementOperators{TSelf}.op_CheckedDecrement(TSelf)" />
+        static double IDecrementOperators<double>.operator checked --(double value) => --value;
 
         //
         // IDivisionOperators
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static double IDivisionOperators<double, double, double>.operator /(double left, double right)
-            => left / right;
+        /// <inheritdoc cref="IDivisionOperators{TSelf, TOther, TResult}.op_Division(TSelf, TOther)" />
+        static double IDivisionOperators<double, double, double>.operator /(double left, double right) => left / right;
 
-        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        // static checked double IDivisionOperators<double, double, double>.operator /(double left, double right)
-        //     => checked(left / right);
+        /// <inheritdoc cref="IDivisionOperators{TSelf, TOther, TResult}.op_CheckedDivision(TSelf, TOther)" />
+        static double IDivisionOperators<double, double, double>.operator checked /(double left, double right) => left / right;
 
         //
-        // IEqualityOperators
+        // IExponentialFunctions
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static bool IEqualityOperators<double, double>.operator ==(double left, double right)
-            => left == right;
+        /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp" />
+        public static double Exp(double x) => Math.Exp(x);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static bool IEqualityOperators<double, double>.operator !=(double left, double right)
-            => left != right;
+        // /// <inheritdoc cref="IExponentialFunctions{TSelf}.ExpM1(TSelf)" />
+        // public static double ExpM1(double x) => Math.ExpM1(x);
+
+        // /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp2(TSelf)" />
+        // public static double Exp2(double x) => Math.Exp2(x);
+
+        // /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp2M1(TSelf)" />
+        // public static double Exp2M1(double x) => Math.Exp2M1(x);
+
+        // /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp10(TSelf)" />
+        // public static double Exp10(double x) => Math.Exp10(x);
+
+        // /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp10M1(TSelf)" />
+        // public static double Exp10M1(double x) => Math.Exp10M1(x);
 
         //
         // IFloatingPoint
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static double IFloatingPoint<double>.E => Math.E;
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.Ceiling(TSelf)" />
+        public static double Ceiling(double x) => Math.Ceiling(x);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static double IFloatingPoint<double>.Epsilon => Epsilon;
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.Floor(TSelf)" />
+        public static double Floor(double x) => Math.Floor(x);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static double IFloatingPoint<double>.NaN => NaN;
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.Round(TSelf)" />
+        public static double Round(double x) => Math.Round(x);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static double IFloatingPoint<double>.NegativeInfinity => NegativeInfinity;
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.Round(TSelf, int)" />
+        public static double Round(double x, int digits) => Math.Round(x, digits);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static double IFloatingPoint<double>.NegativeZero => -0.0;
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.Round(TSelf, MidpointRounding)" />
+        public static double Round(double x, MidpointRounding mode) => Math.Round(x, mode);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static double IFloatingPoint<double>.Pi => Math.PI;
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.Round(TSelf, int, MidpointRounding)" />
+        public static double Round(double x, int digits, MidpointRounding mode) => Math.Round(x, digits, mode);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static double IFloatingPoint<double>.PositiveInfinity => PositiveInfinity;
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.Truncate(TSelf)" />
+        public static double Truncate(double x) => Math.Truncate(x);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static double IFloatingPoint<double>.Tau => Math.Tau;
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static double IFloatingPoint<double>.Acos(double x)
-            => Math.Acos(x);
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static double IFloatingPoint<double>.Acosh(double x)
-            => Math.Acosh(x);
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static double IFloatingPoint<double>.Asin(double x)
-            => Math.Asin(x);
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static double IFloatingPoint<double>.Asinh(double x)
-            => Math.Asinh(x);
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static double IFloatingPoint<double>.Atan(double x)
-            => Math.Atan(x);
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static double IFloatingPoint<double>.Atan2(double y, double x)
-            => Math.Atan2(y, x);
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static double IFloatingPoint<double>.Atanh(double x)
-            => Math.Atanh(x);
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static double IFloatingPoint<double>.BitIncrement(double x)
-            => Math.BitIncrement(x);
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static double IFloatingPoint<double>.BitDecrement(double x)
-            => Math.BitDecrement(x);
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static double IFloatingPoint<double>.Cbrt(double x)
-            => Math.Cbrt(x);
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static double IFloatingPoint<double>.Ceiling(double x)
-            => Math.Ceiling(x);
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static double IFloatingPoint<double>.CopySign(double x, double y)
-            => Math.CopySign(x, y);
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static double IFloatingPoint<double>.Cos(double x)
-            => Math.Cos(x);
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static double IFloatingPoint<double>.Cosh(double x)
-            => Math.Cosh(x);
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static double IFloatingPoint<double>.Exp(double x)
-            => Math.Exp(x);
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static double IFloatingPoint<double>.Floor(double x)
-            => Math.Floor(x);
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static double IFloatingPoint<double>.FusedMultiplyAdd(double left, double right, double addend)
-            => Math.FusedMultiplyAdd(left, right, addend);
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static double IFloatingPoint<double>.IEEERemainder(double left, double right)
-            => Math.IEEERemainder(left, right);
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static TInteger IFloatingPoint<double>.ILogB<TInteger>(double x)
-            => TInteger.Create(Math.ILogB(x));
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static double IFloatingPoint<double>.Log(double x)
-            => Math.Log(x);
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static double IFloatingPoint<double>.Log(double x, double newBase)
-            => Math.Log(x, newBase);
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static double IFloatingPoint<double>.Log2(double x)
-            => Math.Log2(x);
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static double IFloatingPoint<double>.Log10(double x)
-            => Math.Log10(x);
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static double IFloatingPoint<double>.MaxMagnitude(double x, double y)
-            => Math.MaxMagnitude(x, y);
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static double IFloatingPoint<double>.MinMagnitude(double x, double y)
-            => Math.MinMagnitude(x, y);
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static double IFloatingPoint<double>.Pow(double x, double y)
-            => Math.Pow(x, y);
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static double IFloatingPoint<double>.Round(double x)
-            => Math.Round(x);
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static double IFloatingPoint<double>.Round<TInteger>(double x, TInteger digits)
-            => Math.Round(x, int.Create(digits));
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static double IFloatingPoint<double>.Round(double x, MidpointRounding mode)
-            => Math.Round(x, mode);
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static double IFloatingPoint<double>.Round<TInteger>(double x, TInteger digits, MidpointRounding mode)
-            => Math.Round(x, int.Create(digits), mode);
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static double IFloatingPoint<double>.ScaleB<TInteger>(double x, TInteger n)
-            => Math.ScaleB(x, int.Create(n));
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static double IFloatingPoint<double>.Sin(double x)
-            => Math.Sin(x);
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static double IFloatingPoint<double>.Sinh(double x)
-            => Math.Sinh(x);
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static double IFloatingPoint<double>.Sqrt(double x)
-            => Math.Sqrt(x);
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static double IFloatingPoint<double>.Tan(double x)
-            => Math.Tan(x);
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static double IFloatingPoint<double>.Tanh(double x)
-            => Math.Tanh(x);
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static double IFloatingPoint<double>.Truncate(double x)
-            => Math.Truncate(x);
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static bool IFloatingPoint<double>.IsFinite(double d) => IsFinite(d);
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static bool IFloatingPoint<double>.IsInfinity(double d) => IsInfinity(d);
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static bool IFloatingPoint<double>.IsNaN(double d) => IsNaN(d);
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static bool IFloatingPoint<double>.IsNegative(double d) => IsNegative(d);
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static bool IFloatingPoint<double>.IsNegativeInfinity(double d) => IsNegativeInfinity(d);
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static bool IFloatingPoint<double>.IsNormal(double d) => IsNormal(d);
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static bool IFloatingPoint<double>.IsPositiveInfinity(double d) => IsPositiveInfinity(d);
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static bool IFloatingPoint<double>.IsSubnormal(double d) => IsSubnormal(d);
-
-        // static double IFloatingPoint<double>.AcosPi(double x)
-        //     => Math.AcosPi(x);
         //
-        // static double IFloatingPoint<double>.AsinPi(double x)
-        //     => Math.AsinPi(x);
+        // IFloatingPointIeee754
         //
-        // static double IFloatingPoint<double>.AtanPi(double x)
-        //     => Math.AtanPi(x);
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.E" />
+        static double IFloatingPointIeee754<double>.E => Math.E;
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Epsilon" />
+        static double IFloatingPointIeee754<double>.Epsilon => Epsilon;
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.NaN" />
+        static double IFloatingPointIeee754<double>.NaN => NaN;
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.NegativeInfinity" />
+        static double IFloatingPointIeee754<double>.NegativeInfinity => NegativeInfinity;
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.NegativeZero" />
+        static double IFloatingPointIeee754<double>.NegativeZero => NegativeZero;
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Pi" />
+        static double IFloatingPointIeee754<double>.Pi => Pi;
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.PositiveInfinity" />
+        static double IFloatingPointIeee754<double>.PositiveInfinity => PositiveInfinity;
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Tau" />
+        static double IFloatingPointIeee754<double>.Tau => Tau;
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.BitDecrement(TSelf)" />
+        public static double BitDecrement(double x) => Math.BitDecrement(x);
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.BitIncrement(TSelf)" />
+        public static double BitIncrement(double x) => Math.BitIncrement(x);
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.FusedMultiplyAdd(TSelf, TSelf, TSelf)" />
+        public static double FusedMultiplyAdd(double left, double right, double addend) => Math.FusedMultiplyAdd(left, right, addend);
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Ieee754Remainder(TSelf, TSelf)" />
+        public static double Ieee754Remainder(double left, double right) => Math.IEEERemainder(left, right);
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ILogB(TSelf)" />
+        public static int ILogB(double x) => Math.ILogB(x);
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ReciprocalEstimate(TSelf)" />
+        public static double ReciprocalEstimate(double x) => Math.ReciprocalEstimate(x);
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ReciprocalSqrtEstimate(TSelf)" />
+        public static double ReciprocalSqrtEstimate(double x) => Math.ReciprocalSqrtEstimate(x);
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ScaleB(TSelf, int)" />
+        public static double ScaleB(double x, int n) => Math.ScaleB(x, n);
+
+        // /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Compound(TSelf, TSelf)" />
+        // public static double Compound(double x, double n) => Math.Compound(x, n);
+
+        // /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.MaxMagnitudeNumber(TSelf, TSelf)" />
+        // public static double MaxMagnitudeNumber(double x, double y) => Math.MaxMagnitudeNumber(x, y);
+
+        // /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.MaxNumber(TSelf, TSelf)" />
+        // public static double MaxNumber(double x, double y) => Math.MaxNumber(x, y);
+
+        // /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.MinMagnitudeNumber(TSelf, TSelf)" />
+        // public static double MinMagnitudeNumber(double x, double y) => Math.MinMagnitudeNumber(x, y);
+
+        // /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.MinNumber(TSelf, TSelf)" />
+        // public static double MinNumber(double x, double y) => Math.MinNumber(x, y);
+
         //
-        // static double IFloatingPoint<double>.Atan2Pi(double y, double x)
-        //     => Math.Atan2Pi(y, x);
+        // IHyperbolicFunctions
         //
-        // static double IFloatingPoint<double>.Compound(double x, double n)
-        //     => Math.Compound(x, n);
-        //
-        // static double IFloatingPoint<double>.CosPi(double x)
-        //     => Math.CosPi(x);
-        //
-        // static double IFloatingPoint<double>.ExpM1(double x)
-        //     => Math.ExpM1(x);
-        //
-        // static double IFloatingPoint<double>.Exp2(double x)
-        //     => Math.Exp2(x);
-        //
-        // static double IFloatingPoint<double>.Exp2M1(double x)
-        //     => Math.Exp2M1(x);
-        //
-        // static double IFloatingPoint<double>.Exp10(double x)
-        //     => Math.Exp10(x);
-        //
-        // static double IFloatingPoint<double>.Exp10M1(double x)
-        //     => Math.Exp10M1(x);
-        //
-        // static double IFloatingPoint<double>.Hypot(double x, double y)
-        //     => Math.Hypot(x, y);
-        //
-        // static double IFloatingPoint<double>.LogP1(double x)
-        //     => Math.LogP1(x);
-        //
-        // static double IFloatingPoint<double>.Log2P1(double x)
-        //     => Math.Log2P1(x);
-        //
-        // static double IFloatingPoint<double>.Log10P1(double x)
-        //     => Math.Log10P1(x);
-        //
-        // static double IFloatingPoint<double>.MaxMagnitudeNumber(double x, double y)
-        //     => Math.MaxMagnitudeNumber(x, y);
-        //
-        // static double IFloatingPoint<double>.MaxNumber(double x, double y)
-        //     => Math.MaxNumber(x, y);
-        //
-        // static double IFloatingPoint<double>.MinMagnitudeNumber(double x, double y)
-        //     => Math.MinMagnitudeNumber(x, y);
-        //
-        // static double IFloatingPoint<double>.MinNumber(double x, double y)
-        //     => Math.MinNumber(x, y);
-        //
-        // static double IFloatingPoint<double>.Root(double x, double n)
-        //     => Math.Root(x, n);
-        //
-        // static double IFloatingPoint<double>.SinPi(double x)
-        //     => Math.SinPi(x, y);
-        //
-        // static double TanPi(double x)
-        //     => Math.TanPi(x, y);
+
+        /// <inheritdoc cref="IHyperbolicFunctions{TSelf}.Acosh(TSelf)" />
+        public static double Acosh(double x) => Math.Acosh(x);
+
+        /// <inheritdoc cref="IHyperbolicFunctions{TSelf}.Asinh(TSelf)" />
+        public static double Asinh(double x) => Math.Asinh(x);
+
+        /// <inheritdoc cref="IHyperbolicFunctions{TSelf}.Atanh(TSelf)" />
+        public static double Atanh(double x) => Math.Atanh(x);
+
+        /// <inheritdoc cref="IHyperbolicFunctions{TSelf}.Cosh(TSelf)" />
+        public static double Cosh(double x) => Math.Cosh(x);
+
+        /// <inheritdoc cref="IHyperbolicFunctions{TSelf}.Sinh(TSelf)" />
+        public static double Sinh(double x) => Math.Sinh(x);
+
+        /// <inheritdoc cref="IHyperbolicFunctions{TSelf}.Tanh(TSelf)" />
+        public static double Tanh(double x) => Math.Tanh(x);
 
         //
         // IIncrementOperators
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static double IIncrementOperators<double>.operator ++(double value)
-            => ++value;
+        /// <inheritdoc cref="IIncrementOperators{TSelf}.op_Increment(TSelf)" />
+        static double IIncrementOperators<double>.operator ++(double value) => ++value;
 
-        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        // static checked double IIncrementOperators<double>.operator ++(double value)
-        //     => checked(++value);
+        /// <inheritdoc cref="IIncrementOperators{TSelf}.op_CheckedIncrement(TSelf)" />
+        static double IIncrementOperators<double>.operator checked ++(double value) => ++value;
+
+        //
+        // ILogarithmicFunctions
+        //
+
+        /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log(TSelf)" />
+        public static double Log(double x) => Math.Log(x);
+
+        /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log(TSelf, TSelf)" />
+        public static double Log(double x, double newBase) => Math.Log(x, newBase);
+
+        /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log10(TSelf)" />
+        public static double Log10(double x) => Math.Log10(x);
+
+        // /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.LogP1(TSelf)" />
+        // public static double LogP1(double x) => Math.LogP1(x);
+
+        // /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log2P1(TSelf)" />
+        // public static double Log2P1(double x) => Math.Log2P1(x);
+
+        // /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log10P1(TSelf)" />
+        // public static double Log10P1(double x) => Math.Log10P1(x);
 
         //
         // IMinMaxValue
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        /// <inheritdoc cref="IMinMaxValue{TSelf}.MinValue" />
         static double IMinMaxValue<double>.MinValue => MinValue;
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        /// <inheritdoc cref="IMinMaxValue{TSelf}.MaxValue" />
         static double IMinMaxValue<double>.MaxValue => MaxValue;
 
         //
         // IModulusOperators
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static double IModulusOperators<double, double, double>.operator %(double left, double right)
-            => left % right;
+        /// <inheritdoc cref="IModulusOperators{TSelf, TOther, TResult}.op_Modulus(TSelf, TOther)" />
+        static double IModulusOperators<double, double, double>.operator %(double left, double right) => left % right;
 
-        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        // static checked double IModulusOperators<double, double, double>.operator %(double left, double right)
-        //     => checked(left % right);
+        // static checked double IModulusOperators<double, double, double>.operator %(double left, double right) => checked(left % right);
 
         //
         // IMultiplicativeIdentity
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static double IMultiplicativeIdentity<double, double>.MultiplicativeIdentity => 1.0;
+        /// <inheritdoc cref="IMultiplicativeIdentity{TSelf, TResult}.MultiplicativeIdentity" />
+        static double IMultiplicativeIdentity<double, double>.MultiplicativeIdentity => MultiplicativeIdentity;
 
         //
         // IMultiplyOperators
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static double IMultiplyOperators<double, double, double>.operator *(double left, double right)
-            => (double)(left * right);
+        /// <inheritdoc cref="IMultiplyOperators{TSelf, TOther, TResult}.op_Multiply(TSelf, TOther)" />
+        static double IMultiplyOperators<double, double, double>.operator *(double left, double right) => left * right;
 
-        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        // static checked double IMultiplyOperators<double, double, double>.operator *(double left, double right)
-        //     => checked((double)(left * right));
+        /// <inheritdoc cref="IMultiplyOperators{TSelf, TOther, TResult}.op_CheckedMultiply(TSelf, TOther)" />
+        static double IMultiplyOperators<double, double, double>.operator checked *(double left, double right) => left * right;
 
         //
         // INumber
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static double INumber<double>.One => 1.0;
+        /// <inheritdoc cref="INumber{TSelf}.Abs(TSelf)" />
+        public static double Abs(double value) => Math.Abs(value);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static double INumber<double>.Zero => 0.0;
+        /// <inheritdoc cref="INumber{TSelf}.Clamp(TSelf, TSelf, TSelf)" />
+        public static double Clamp(double value, double min, double max) => Math.Clamp(value, min, max);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static double INumber<double>.Abs(double value)
-            => Math.Abs(value);
+        /// <inheritdoc cref="INumber{TSelf}.CopySign(TSelf, TSelf)" />
+        public static double CopySign(double x, double y) => Math.CopySign(x, y);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static double INumber<double>.Clamp(double value, double min, double max)
-            => Math.Clamp(value, min, max);
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        /// <inheritdoc cref="INumber{TSelf}.CreateChecked{TOther}(TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static double INumber<double>.Create<TOther>(TOther value)
+        public static double CreateChecked<TOther>(TOther value)
+            where TOther : INumber<TOther>
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -982,9 +858,10 @@ namespace System
             }
         }
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        /// <inheritdoc cref="INumber{TSelf}.CreateSaturating{TOther}(TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static double INumber<double>.CreateSaturating<TOther>(TOther value)
+        public static double CreateSaturating<TOther>(TOther value)
+            where TOther : INumber<TOther>
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -1049,9 +926,10 @@ namespace System
             }
         }
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        /// <inheritdoc cref="INumber{TSelf}.CreateTruncating{TOther}(TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static double INumber<double>.CreateTruncating<TOther>(TOther value)
+        public static double CreateTruncating<TOther>(TOther value)
+            where TOther : INumber<TOther>
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -1116,33 +994,25 @@ namespace System
             }
         }
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static (double Quotient, double Remainder) INumber<double>.DivRem(double left, double right)
-            => (left / right, left % right);
+        /// <inheritdoc cref="INumber{TSelf}.Max(TSelf, TSelf)" />
+        public static double Max(double x, double y) => Math.Max(x, y);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static double INumber<double>.Max(double x, double y)
-            => Math.Max(x, y);
+        /// <inheritdoc cref="INumber{TSelf}.MaxMagnitude(TSelf, TSelf)" />
+        public static double MaxMagnitude(double x, double y) => Math.MaxMagnitude(x, y);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static double INumber<double>.Min(double x, double y)
-            => Math.Min(x, y);
+        /// <inheritdoc cref="INumber{TSelf}.Min(TSelf, TSelf)" />
+        public static double Min(double x, double y) => Math.Min(x, y);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static double INumber<double>.Parse(string s, NumberStyles style, IFormatProvider? provider)
-            => Parse(s, style, provider);
+        /// <inheritdoc cref="INumber{TSelf}.MinMagnitude(TSelf, TSelf)" />
+        public static double MinMagnitude(double x, double y) => Math.MinMagnitude(x, y);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static double INumber<double>.Parse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider)
-            => Parse(s, style, provider);
+        /// <inheritdoc cref="INumber{TSelf}.Sign(TSelf)" />
+        public static int Sign(double value) => Math.Sign(value);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static double INumber<double>.Sign(double value)
-            => Math.Sign(value);
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        /// <inheritdoc cref="INumber{TSelf}.TryCreate{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumber<double>.TryCreate<TOther>(TOther value, out double result)
+        public static bool TryCreate<TOther>(TOther value, out double result)
+            where TOther : INumber<TOther>
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -1222,80 +1092,136 @@ namespace System
             }
         }
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static bool INumber<double>.TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out double result)
-            => TryParse(s, style, provider, out result);
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static bool INumber<double>.TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out double result)
-            => TryParse(s, style, provider, out result);
-
         //
-        // IParseable
+        // INumberBase
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static double IParseable<double>.Parse(string s, IFormatProvider? provider)
-            => Parse(s, provider);
+        /// <inheritdoc cref="INumberBase{TSelf}.One" />
+        static double INumberBase<double>.One => One;
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static bool IParseable<double>.TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out double result)
-            => TryParse(s, NumberStyles.Float | NumberStyles.AllowThousands, provider, out result);
+        /// <inheritdoc cref="INumberBase{TSelf}.Zero" />
+        static double INumberBase<double>.Zero => Zero;
+
+        //
+        // IParsable
+        //
+
+        public static bool TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out double result) => TryParse(s, NumberStyles.Float | NumberStyles.AllowThousands, provider, out result);
+
+        //
+        // IPowerFunctions
+        //
+
+        /// <inheritdoc cref="IPowerFunctions{TSelf}.Pow(TSelf, TSelf)" />
+        public static double Pow(double x, double y) => Math.Pow(x, y);
+
+        //
+        // IRootFunctions
+        //
+
+        /// <inheritdoc cref="IRootFunctions{TSelf}.Cbrt(TSelf)" />
+        public static double Cbrt(double x) => Math.Cbrt(x);
+
+        // /// <inheritdoc cref="IRootFunctions{TSelf}.Hypot(TSelf, TSelf)" />
+        // public static double Hypot(double x, double y) => Math.Hypot(x, y);
+
+        /// <inheritdoc cref="IRootFunctions{TSelf}.Sqrt(TSelf)" />
+        public static double Sqrt(double x) => Math.Sqrt(x);
+
+        // /// <inheritdoc cref="IRootFunctions{TSelf}.Root(TSelf, TSelf)" />
+        // public static double Root(double x, double n) => Math.Root(x, n);
 
         //
         // ISignedNumber
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static double ISignedNumber<double>.NegativeOne => -1;
+        /// <inheritdoc cref="ISignedNumber{TSelf}.NegativeOne" />
+        static double ISignedNumber<double>.NegativeOne => NegativeOne;
 
         //
-        // ISpanParseable
+        // ISpanParsable
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static double ISpanParseable<double>.Parse(ReadOnlySpan<char> s, IFormatProvider? provider)
-            => Parse(s, NumberStyles.Float | NumberStyles.AllowThousands, provider);
+        /// <inheritdoc cref="ISpanParsable{TSelf}.Parse(ReadOnlySpan{char}, IFormatProvider?)" />
+        public static double Parse(ReadOnlySpan<char> s, IFormatProvider? provider) => Parse(s, NumberStyles.Float | NumberStyles.AllowThousands, provider);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static bool ISpanParseable<double>.TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out double result)
-            => TryParse(s, NumberStyles.Float | NumberStyles.AllowThousands, provider, out result);
+        /// <inheritdoc cref="ISpanParsable{TSelf}.TryParse(ReadOnlySpan{char}, IFormatProvider?, out TSelf)" />
+        public static bool TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out double result) => TryParse(s, NumberStyles.Float | NumberStyles.AllowThousands, provider, out result);
 
         //
         // ISubtractionOperators
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static double ISubtractionOperators<double, double, double>.operator -(double left, double right)
-            => (double)(left - right);
+        /// <inheritdoc cref="ISubtractionOperators{TSelf, TOther, TResult}.op_Subtraction(TSelf, TOther)" />
+        static double ISubtractionOperators<double, double, double>.operator -(double left, double right) => left - right;
 
-        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        // static checked double ISubtractionOperators<double, double, double>.operator -(double left, double right)
-        //     => checked((double)(left - right));
+        /// <inheritdoc cref="ISubtractionOperators{TSelf, TOther, TResult}.op_CheckedSubtraction(TSelf, TOther)" />
+        static double ISubtractionOperators<double, double, double>.operator checked -(double left, double right) => left - right;
+
+        //
+        // ITrigonometricFunctions
+        //
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Acos(TSelf)" />
+        public static double Acos(double x) => Math.Acos(x);
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Asin(TSelf)" />
+        public static double Asin(double x) => Math.Asin(x);
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Atan(TSelf)" />
+        public static double Atan(double x) => Math.Atan(x);
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Atan2(TSelf, TSelf)" />
+        public static double Atan2(double y, double x) => Math.Atan2(y, x);
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Cos(TSelf)" />
+        public static double Cos(double x) => Math.Cos(x);
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Sin(TSelf)" />
+        public static double Sin(double x) => Math.Sin(x);
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.SinCos(TSelf)" />
+        public static (double Sin, double Cos) SinCos(double x) => Math.SinCos(x);
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Tan(TSelf)" />
+        public static double Tan(double x) => Math.Tan(x);
+
+        // /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.AcosPi(TSelf)" />
+        // public static double AcosPi(double x) => Math.AcosPi(x);
+
+        // /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.AsinPi(TSelf)" />
+        // public static double AsinPi(double x) => Math.AsinPi(x);
+
+        // /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.AtanPi(TSelf)" />
+        // public static double AtanPi(double x) => Math.AtanPi(x);
+
+        // /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Atan2Pi(TSelf)" />
+        // public static double Atan2Pi(double y, double x) => Math.Atan2Pi(y, x);
+
+        // /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.CosPi(TSelf)" />
+        // public static double CosPi(double x) => Math.CosPi(x);
+
+        // /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.SinPi(TSelf)" />
+        // public static double SinPi(double x) => Math.SinPi(x, y);
+
+        // /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.TanPi(TSelf)" />
+        // public static double TanPi(double x) => Math.TanPi(x, y);
 
         //
         // IUnaryNegationOperators
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static double IUnaryNegationOperators<double, double>.operator -(double value)
-            => (double)(-value);
+        /// <inheritdoc cref="IUnaryNegationOperators{TSelf, TResult}.op_UnaryNegation(TSelf)" />
+        static double IUnaryNegationOperators<double, double>.operator -(double value) => -value;
 
-        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        // static checked double IUnaryNegationOperators<double, double>.operator -(double value)
-        //     => checked((double)(-value));
+        /// <inheritdoc cref="IUnaryNegationOperators{TSelf, TResult}.op_CheckedUnaryNegation(TSelf)" />
+        static double IUnaryNegationOperators<double, double>.operator checked -(double value) => -value;
 
         //
-        // IUnaryNegationOperators
+        // IUnaryPlusOperators
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static double IUnaryPlusOperators<double, double>.operator +(double value)
-            => (double)(+value);
-
-        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        // static checked double IUnaryPlusOperators<double, double>.operator +(double value)
-        //     => checked((double)(+value));
-#endif // FEATURE_GENERIC_MATH
+        /// <inheritdoc cref="IUnaryPlusOperators{TSelf, TResult}.op_UnaryPlus(TSelf)" />
+        static double IUnaryPlusOperators<double, double>.operator +(double value) => (double)(+value);
     }
 }

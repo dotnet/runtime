@@ -658,7 +658,7 @@ namespace System.Xml
             return schemaInfoFound;
         }
 
-        private bool AncestorTypeHasWildcard(XmlSchemaObject? ancestorType)
+        private static bool AncestorTypeHasWildcard(XmlSchemaObject? ancestorType)
         {
             XmlSchemaComplexType? ancestorSchemaType = GetComplexType(ancestorType);
             if (ancestorType != null)
@@ -669,7 +669,7 @@ namespace System.Xml
             return false;
         }
 
-        private XmlSchemaComplexType? GetComplexType(XmlSchemaObject? schemaObject)
+        private static XmlSchemaComplexType? GetComplexType(XmlSchemaObject? schemaObject)
         {
             if (schemaObject == null)
             {

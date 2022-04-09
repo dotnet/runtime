@@ -21,7 +21,7 @@ namespace LibraryImportGenerator.UnitTests
         public const string RequiresIncrementalSyntaxTreeModifySupport = "The GeneratorDriver treats all SyntaxTree replace operations on a Compilation as an Add/Remove operation instead of a Modify operation"
             + ", so all cached results based on that input are thrown out. As a result, we cannot validate that unrelated changes within the same SyntaxTree do not cause regeneration.";
 
-        [ConditionalFact]
+        [Fact]
         public async Task AddingNewUnrelatedType_DoesNotRegenerateSource()
         {
             string source = CodeSnippets.BasicParametersAndModifiers<int>();
@@ -45,7 +45,7 @@ namespace LibraryImportGenerator.UnitTests
                 });
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task AppendingUnrelatedSource_DoesNotRegenerateSource()
         {
             string source = $"namespace NS{{{CodeSnippets.BasicParametersAndModifiers<int>()}}}";
@@ -75,7 +75,7 @@ namespace LibraryImportGenerator.UnitTests
                 });
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task AddingFileWithNewLibraryImport_DoesNotRegenerateOriginalMethod()
         {
             string source = CodeSnippets.BasicParametersAndModifiers<int>();
@@ -105,7 +105,7 @@ namespace LibraryImportGenerator.UnitTests
                 });
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task ReplacingFileWithNewLibraryImport_DoesNotRegenerateStubsInOtherFiles()
         {
             Compilation comp1 = await TestUtils.CreateCompilation(new string[] { CodeSnippets.BasicParametersAndModifiers<int>(), CodeSnippets.BasicParametersAndModifiers<bool>() });
@@ -132,7 +132,7 @@ namespace LibraryImportGenerator.UnitTests
                 });
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task ChangingMarshallingStrategy_RegeneratesStub()
         {
             string stubSource = CodeSnippets.BasicParametersAndModifiers("CustomType");
@@ -171,7 +171,7 @@ namespace LibraryImportGenerator.UnitTests
                 });
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task ChangingMarshallingAttributes_SameStrategy_DoesNotRegenerate()
         {
             string source = CodeSnippets.BasicParametersAndModifiers<int>();

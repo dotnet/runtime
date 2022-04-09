@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Buffers;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -182,7 +181,7 @@ namespace System.Net.Quic.Tests
                 QuicStream clientStream = clientConnection.OpenBidirectionalStream();
                 ValueTask writeTask = clientStream.WriteAsync(Encoding.UTF8.GetBytes("PING"), endStream: true);
                 ValueTask<QuicStream> acceptTask = serverConnection.AcceptStreamAsync();
-                await new Task[] { writeTask.AsTask(), acceptTask.AsTask()}.WhenAllOrAnyFailed(PassingTestTimeoutMilliseconds);
+                await new Task[] { writeTask.AsTask(), acceptTask.AsTask() }.WhenAllOrAnyFailed(PassingTestTimeoutMilliseconds);
                 QuicStream serverStream = acceptTask.Result;
                 await serverStream.ReadAsync(buffer);
             }
@@ -819,6 +818,39 @@ namespace System.Net.Quic.Tests
                 });
         }
 
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/67612")]
+        public async Task WriteAsync_LocalAbort_Throws()
+        {
+            if (IsMockProvider)
+            {
+                // Mock provider does not support aborting pending writes via AbortWrite
+                return;
+            }
+
+            const int ExpectedErrorCode = 0xfffffff;
+
+            TaskCompletionSource waitForAbortTcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
+            await RunBidirectionalClientServer(
+                clientStream =>
+                {
+                    return Task.CompletedTask;
+                },
+                async serverStream =>
+                {
+                    // It may happen, that the WriteAsync call finishes early (before the AbortWrite 
+                    // below), and we hit a check on the next iteration of the WriteForever.
+                    // But in most cases it will still exercise aborting the outstanding write task.
+
+                    var writeTask = WriteForever(serverStream, 1024 * 1024);
+                    serverStream.AbortWrite(ExpectedErrorCode);
+
+                    await Assert.ThrowsAsync<QuicOperationAbortedException>(() => writeTask.WaitAsync(TimeSpan.FromSeconds(3)));
+                });
+        }
+
         [Fact]
         public async Task WaitForWriteCompletionAsync_ServerWriteAborted_Throws()
         {
@@ -988,6 +1020,7 @@ namespace System.Net.Quic.Tests
         }
     }
 
+    [ConditionalClass(typeof(QuicTestBase<MockProviderFactory>), nameof(QuicTestBase<MockProviderFactory>.IsSupported))]
     public sealed class QuicStreamTests_MockProvider : QuicStreamTests<MockProviderFactory>
     {
         public QuicStreamTests_MockProvider(ITestOutputHelper output) : base(output) { }

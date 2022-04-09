@@ -72,6 +72,26 @@ namespace System.ServiceProcess
             }
         }
 
+#if NETCOREAPP
+        /// <summary>
+        /// When this method is called from OnStart, OnStop, OnPause or OnContinue,
+        /// the specified wait hint is passed to the
+        /// Service Control Manager to avoid having the service marked as not responding.
+        /// </summary>
+        /// <param name="time">The requested additional time</param>
+        public void RequestAdditionalTime(TimeSpan time) => RequestAdditionalTime(ToIntMilliseconds(time));
+
+        private static int ToIntMilliseconds(TimeSpan time)
+        {
+            long totalMilliseconds = (long)time.TotalMilliseconds;
+            if (totalMilliseconds < -1 || totalMilliseconds > int.MaxValue)
+            {
+                throw new ArgumentOutOfRangeException(nameof(time));
+            }
+            return (int)totalMilliseconds;
+        }
+#endif
+
         /// <summary>
         /// Indicates whether to report Start, Stop, Pause, and Continue commands in the event.
         /// </summary>

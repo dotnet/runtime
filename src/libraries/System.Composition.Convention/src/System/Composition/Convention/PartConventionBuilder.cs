@@ -496,7 +496,7 @@ namespace System.Composition.Convention
 
         internal bool BuildConstructorAttributes(Type type, ref List<Tuple<object, List<Attribute>>> configuredMembers)
         {
-            IEnumerable<ConstructorInfo> constructors = type.GetTypeInfo().DeclaredConstructors;
+            ConstructorInfo[] constructors = type.GetConstructors(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly);
 
             // First see if any of these constructors have the ImportingConstructorAttribute if so then we are already done
             foreach (ConstructorInfo ci in constructors)
@@ -534,7 +534,7 @@ namespace System.Composition.Convention
 
         internal static void BuildDefaultConstructorAttributes(Type type, ref List<Tuple<object, List<Attribute>>> configuredMembers)
         {
-            IEnumerable<ConstructorInfo> constructors = type.GetTypeInfo().DeclaredConstructors;
+            ConstructorInfo[] constructors = type.GetConstructors(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly);
 
             foreach (ConstructorInfo constructorInfo in FindLongestConstructors(constructors))
             {
@@ -733,7 +733,7 @@ namespace System.Composition.Convention
             return;
         }
 
-        private static IEnumerable<ConstructorInfo> FindLongestConstructors(IEnumerable<ConstructorInfo> constructors)
+        private static IEnumerable<ConstructorInfo> FindLongestConstructors(ConstructorInfo[] constructors)
         {
             ConstructorInfo longestConstructor = null;
             int argumentsCount = 0;

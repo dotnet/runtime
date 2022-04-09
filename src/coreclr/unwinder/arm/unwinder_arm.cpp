@@ -771,6 +771,12 @@ RtlpUnwindFunctionCompact(
         if (OffsetInFunction < PrologLength) {
             OffsetInScope = PrologLength - OffsetInFunction;
         }
+    } else {
+        ComputeFramePointerLength = 0;
+        PushPopParamsLength = 0;
+        PushPopFloatingPointLength = 0;
+        PushPopIntegerLength = 0;
+        StackAdjustLength = 0;
     }
 
     //
@@ -1043,6 +1049,8 @@ Return Value:
     if ((HeaderWord & (1 << 21)) != 0) {
         UnwindIndex = EpilogScopeCount;
         EpilogScopeCount = 0;
+    } else {
+        UnwindIndex = 0;
     }
 
     //

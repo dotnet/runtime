@@ -60,6 +60,13 @@ namespace System.Timers
         }
 
         /// <summary>
+        /// Initializes a new instance of the <see cref='Timer'/> class, setting the <see cref='Interval'/> property to the specified period.
+        /// </summary>
+        public Timer(TimeSpan interval) : this(interval.TotalMilliseconds)
+        {
+        }
+
+        /// <summary>
         /// Gets or sets a value indicating whether the Timer raises the Tick event each time the specified
         /// Interval has elapsed, when Enabled is set to true.
         /// </summary>

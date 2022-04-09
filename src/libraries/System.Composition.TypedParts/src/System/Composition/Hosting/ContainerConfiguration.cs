@@ -197,6 +197,54 @@ namespace System.Composition.Hosting
             return WithParts(assemblies.SelectMany(a => a.DefinedTypes.Select(dt => dt.AsType())), conventions);
         }
 
+        /// <summary>
+        /// Add a single instance to the container.
+        /// </summary>
+        /// <typeparam name="TExport">The type of the contract of the instance.</typeparam>
+        /// <param name="exportedInstance">The instance to add to the container.</param>
+        /// <returns>A configuration object allowing configuration to continue.</returns>
+        public ContainerConfiguration WithExport<TExport>(TExport exportedInstance!!)
+        {
+            return WithExport(exportedInstance, null, null);
+        }
+
+        /// <summary>
+        /// Add a single instance to the container.
+        /// </summary>
+        /// <typeparam name="TExport">The type of the contract of the instance.</typeparam>
+        /// <param name="exportedInstance">The instance to add to the container.</param>
+        /// <param name="contractName">Optionally, a name that discriminates this contract from others with the same type.</param>
+        /// <param name="metadata">Optionally, a non-empty collection of named constraints that apply to the contract.</param>
+        /// <returns>A configuration object allowing configuration to continue.</returns>
+        public ContainerConfiguration WithExport<TExport>(TExport exportedInstance!!, string contractName = null, IDictionary<string, object> metadata = null)
+        {
+            return WithExport(typeof(TExport), exportedInstance, contractName, metadata);
+        }
+
+        /// <summary>
+        /// Add a single instance to the container.
+        /// </summary>
+        /// <param name="contractType">The type of the contract of the instance.</param>
+        /// <param name="exportedInstance">The instance to add to the container.</param>
+        /// <returns>A configuration object allowing configuration to continue.</returns>
+        public ContainerConfiguration WithExport(Type contractType!!, object exportedInstance!!)
+        {
+            return WithExport(contractType, exportedInstance, null, null);
+        }
+
+        /// <summary>
+        /// Add a single instance to the container.
+        /// </summary>
+        /// <param name="contractType">The type of the contract of the instance.</param>
+        /// <param name="exportedInstance">The instance to add to the container.</param>
+        /// <param name="contractName">Optionally, a name that discriminates this contract from others with the same type.</param>
+        /// <param name="metadata">Optionally, a non-empty collection of named constraints that apply to the contract.</param>
+        /// <returns>A configuration object allowing configuration to continue.</returns>
+        public ContainerConfiguration WithExport(Type contractType!!, object exportedInstance!!, string contractName = null, IDictionary<string, object> metadata = null)
+        {
+            return WithProvider(new InstanceExportDescriptorProvider(exportedInstance, contractType, contractName, metadata));
+        }
+
         internal ExportDescriptorProvider[] DebugGetAddedExportDescriptorProviders()
         {
             return _addedSources.ToArray();
