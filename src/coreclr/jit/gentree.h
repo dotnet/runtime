@@ -8457,8 +8457,8 @@ inline bool GenTree::IsIntegralConst() const
 }
 
 //-------------------------------------------------------------------------
-// IsIntegralConstAbsPow2: Determines whether an integral constant is
-//                         the power of 2.
+// IsIntegralConstPow2: Determines whether an integral constant is
+//                      the power of 2.
 //
 // Return Value:
 //     Returns true if the GenTree's integral constant
