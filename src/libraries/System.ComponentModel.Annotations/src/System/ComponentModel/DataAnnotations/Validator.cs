@@ -533,10 +533,7 @@ namespace System.ComponentModel.DataAnnotations
                 var context = CreateValidationContext(instance, validationContext);
                 context.MemberName = property.Name;
 
-                //if (_store.GetPropertyValidationAttributes(context).Any())
-                {
-                    items.Add(new KeyValuePair<ValidationContext, object?>(context, property.GetValue(instance)));
-                }
+                items.Add(new KeyValuePair<ValidationContext, object?>(context, property.GetValue(instance)));
             }
 
             return items;
