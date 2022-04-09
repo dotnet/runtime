@@ -78,7 +78,9 @@ namespace Microsoft.Extensions.Http
             {
                 return new Lazy<ActiveHandlerTrackingEntry>(() =>
                 {
-                    return CreateHandlerEntry(name);
+                    ActiveHandlerTrackingEntry entry = CreateHandlerEntry(name);
+                    StartHandlerEntryTimer(entry);
+                    return entry;
                 }, LazyThreadSafetyMode.ExecutionAndPublication);
             };
 
@@ -106,9 +108,6 @@ namespace Microsoft.Extensions.Http
         public HttpMessageHandler CreateHandler(string name!!)
         {
             ActiveHandlerTrackingEntry entry = _activeHandlers.GetOrAdd(name, _entryFactory).Value;
-
-            StartHandlerEntryTimer(entry);
-
             return entry.Handler;
         }
 
@@ -196,7 +195,7 @@ namespace Microsoft.Extensions.Http
         // Internal so it can be overridden in tests
         internal virtual void StartHandlerEntryTimer(ActiveHandlerTrackingEntry entry)
         {
-            entry.StartExpiryTimer(_expiryCallback);
+            entry.UnsafeStartExpiryTimer(_expiryCallback);
         }
 
         // Internal so it can be overridden in tests
