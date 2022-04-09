@@ -640,7 +640,7 @@ GenTree* Lowering::LowerModPow2(GenTree* node)
     GenTree* dividend = mod->gtGetOp1();
     GenTree* divisor  = mod->gtGetOp2();
 
-    assert(divisor->IsIntegralConstAbsPow2());
+    assert(divisor->IsIntegralConstPow2());
 
     const var_types type = mod->TypeGet();
     assert((type == TYP_INT) || (type == TYP_LONG));

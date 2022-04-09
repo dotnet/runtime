@@ -11655,7 +11655,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
                 // However, we do skip this optimization for ARM64 if the second operand
                 // is an integral constant power of 2 because there is an even better
                 // optimization in lowering that is specific for ARM64.
-                else if (!(tree->OperIs(GT_MOD) && op2->IsIntegralConstAbsPow2()))
+                else if (!(tree->OperIs(GT_MOD) && op2->IsIntegralConstPow2()))
 #else
                 // XARCH only applies this transformation if we know
                 // that magic division will be used - which is determined
