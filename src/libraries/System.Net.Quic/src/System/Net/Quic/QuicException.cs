@@ -14,10 +14,15 @@ namespace System.Net.Quic
         {
         }
 
-        public QuicException(string? message, Exception? innerException, int result)
+        public QuicException(string? message, Exception? innerException, int hResult)
             : base(message, innerException)
         {
-            HResult = result;
+            // HResult 0 means OK, so do not override the default value set by Exception ctor,
+            // because in this case we don't have an HResult.
+            if (hResult != 0)
+            {
+                HResult = hResult;
+            }
         }
     }
 }
