@@ -678,7 +678,7 @@ namespace System.IO.Pipes.Tests
                 var firstConnectionTasks = new Task[]
                     {
                         firstClient.ConnectAsync(),
-                        Task.Run(() => server.WaitForConnectionAsync())
+                        server.WaitForConnectionAsync()
                     };
 
                 Assert.True(Task.WaitAll(firstConnectionTasks, 1000));
