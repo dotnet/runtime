@@ -36,7 +36,7 @@ namespace Microsoft.Quic
             if (StatusFailed(status))
             {
                 // TODO make custom exception, and maybe throw helpers
-                throw new QuicException(status, message);
+                throw new MsQuicException(status, message);
             }
         }
 
