@@ -35,7 +35,7 @@
 
     <MSBuild Projects="$(RepoRoot)src/coreclr/tools/aot/crossgen2/crossgen2.csproj"
              Properties="RunningPublish=true
-              ;RuntimeIdentifier=$(RuntimeIdentifier)
+              ;RuntimeIdentifier=$(PackageRID)
               ;CoreCLRArtifactsPath=$(CoreCLRArtifactsPath)
               ;R2ROverridePath=$(MSBuildThisFileDirectory)ReadyToRun.targets
               ;DotNetBuildFromSource=$(DotNetBuildFromSource)"
