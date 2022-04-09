@@ -29,7 +29,7 @@ namespace System
         // Allowing the set properties as it allows a more readable syntax in the specifiers (and are commonly used)
         // The get properties will be needed only if these attributes are used at Runtime, however, the compiler
         // is getting an internal error if the gets are not defined.
-
+#pragma warning disable CA1822
         public bool AllowMultiple
         {
             get { return false; }
@@ -41,5 +41,6 @@ namespace System
             get { return false; }
             set { }
         }
+#pragma warning restore CA1822
     }
 }

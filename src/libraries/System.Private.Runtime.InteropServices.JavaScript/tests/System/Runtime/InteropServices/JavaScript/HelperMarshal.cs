@@ -1,11 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Runtime.InteropServices.JavaScript;
-using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
-using Xunit;
 
 namespace System.Runtime.InteropServices.JavaScript.Tests
 {
@@ -48,13 +44,6 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             _byteBuffer = buffer.ToArray();
         }
 
-        internal static int[] _intBuffer;
-        private static void MarshalArrayBufferToInt32Array(ArrayBuffer buffer)
-        {
-            using (var ints = new Int32Array(buffer))
-                _intBuffer = ints.ToArray();
-        }
-
         internal static string _stringResource;
         private static void InvokeString(string s)
         {
@@ -83,11 +72,11 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             return _stringResource;
         }
 
-        internal static string _marshalledString;
+        internal static string _marshaledString;
         private static string InvokeMarshalString()
         {
-            _marshalledString = "Hic Sunt Dracones";
-            return _marshalledString;
+            _marshaledString = "Hic Sunt Dracones";
+            return _marshaledString;
         }
 
         internal static object _object1;
@@ -104,16 +93,16 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             return obj;
         }
 
-        internal static object _marshalledObject;
+        internal static object _marshaledObject;
         private static object InvokeMarshalObj()
         {
-            _marshalledObject = new object();
-            return _marshalledObject;
+            _marshaledObject = new object();
+            return _marshaledObject;
         }
 
         private static object InvokeReturnMarshalObj()
         {
-            return _marshalledObject;
+            return _marshaledObject;
         }
 
         internal static int _valOne, _valTwo;
@@ -183,63 +172,6 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             obj.SetObjectProperty("myBoolean", true, createIfNotExist);
         }
 
-        private static void MarshalByteBufferToInts(ArrayBuffer buffer)
-        {
-            using (var bytes = new Uint8Array(buffer))
-            {
-                var byteBuffer = bytes.ToArray();
-                _intBuffer = new int[bytes.Length / sizeof(int)];
-                for (int i = 0; i < bytes.Length; i += sizeof(int))
-                    _intBuffer[i / sizeof(int)] = BitConverter.ToInt32(byteBuffer, i);
-            }
-        }
-
-        private static void MarshalInt32Array(Int32Array buffer)
-        {
-            _intBuffer = buffer.ToArray();
-        }
-
-        internal static float[] _floatBuffer;
-        private static void MarshalFloat32Array(Float32Array buffer)
-        {
-            _floatBuffer = buffer.ToArray();
-        }
-        private static void MarshalArrayBufferToFloat32Array(ArrayBuffer buffer)
-        {
-            using (var floats = new Float32Array(buffer))
-                _floatBuffer = floats.ToArray();
-        }
-
-        internal static double[] _doubleBuffer;
-        private static void MarshalFloat64Array(Float64Array buffer)
-        {
-            _doubleBuffer = buffer.ToArray();
-        }
-
-        private static void MarshalArrayBufferToFloat64Array(ArrayBuffer buffer)
-        {
-            using (var doubles = new Float64Array(buffer))
-                _doubleBuffer = doubles.ToArray();
-        }
-
-        private static void MarshalByteBufferToDoubles(ArrayBuffer buffer)
-        {
-            using (var doubles = new Float64Array(buffer))
-                _doubleBuffer = doubles.ToArray();
-        }
-
-        private static void SetTypedArraySByte(JSObject obj)
-        {
-            sbyte[] buffer = Enumerable.Repeat((sbyte)0x20, 11).ToArray();
-            obj.SetObjectProperty("typedArray", Int8Array.From(buffer));
-        }
-
-        internal static sbyte[] _taSByte;
-        private static void GetTypedArraySByte(JSObject obj)
-        {
-            _taSByte = ((Int8Array)obj.GetObjectProperty("typedArray")).ToArray();
-        }
-
         private static void SetTypedArrayByte(JSObject obj)
         {
             var dragons = "hic sunt dracones";
@@ -251,78 +183,6 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         private static void GetTypedArrayByte(JSObject obj)
         {
             _taByte = ((Uint8Array)obj.GetObjectProperty("dracones")).ToArray();
-        }
-
-        private static void SetTypedArrayShort(JSObject obj)
-        {
-            short[] buffer = Enumerable.Repeat((short)0x20, 13).ToArray();
-            obj.SetObjectProperty("typedArray", Int16Array.From(buffer));
-        }
-
-        internal static short[] _taShort;
-        private static void GetTypedArrayShort(JSObject obj)
-        {
-            _taShort = ((Int16Array)obj.GetObjectProperty("typedArray")).ToArray();
-        }
-
-        private static void SetTypedArrayUShort(JSObject obj)
-        {
-            ushort[] buffer = Enumerable.Repeat((ushort)0x20, 14).ToArray();
-            obj.SetObjectProperty("typedArray", Uint16Array.From(buffer));
-        }
-
-        internal static ushort[] _taUShort;
-        private static void GetTypedArrayUShort(JSObject obj)
-        {
-            _taUShort = ((Uint16Array)obj.GetObjectProperty("typedArray")).ToArray();
-        }
-
-        private static void SetTypedArrayInt(JSObject obj)
-        {
-            int[] buffer = Enumerable.Repeat((int)0x20, 15).ToArray();
-            obj.SetObjectProperty("typedArray", Int32Array.From(buffer));
-        }
-
-        internal static int[] _taInt;
-        private static void GetTypedArrayInt(JSObject obj)
-        {
-            _taInt = ((Int32Array)obj.GetObjectProperty("typedArray")).ToArray();
-        }
-
-        public static void SetTypedArrayUInt(JSObject obj)
-        {
-            uint[] buffer = Enumerable.Repeat((uint)0x20, 16).ToArray();
-            obj.SetObjectProperty("typedArray", Uint32Array.From(buffer));
-        }
-
-        internal static uint[] _taUInt;
-        private static void GetTypedArrayUInt(JSObject obj)
-        {
-            _taUInt = ((Uint32Array)obj.GetObjectProperty("typedArray")).ToArray();
-        }
-
-        private static void SetTypedArrayFloat(JSObject obj)
-        {
-            float[] buffer = Enumerable.Repeat(3.14f, 17).ToArray();
-            obj.SetObjectProperty("typedArray", Float32Array.From(buffer));
-        }
-
-        internal static float[] _taFloat;
-        private static void GetTypedArrayFloat(JSObject obj)
-        {
-            _taFloat = ((Float32Array)obj.GetObjectProperty("typedArray")).ToArray();
-        }
-
-        private static void SetTypedArrayDouble(JSObject obj)
-        {
-            double[] buffer = Enumerable.Repeat(3.14d, 18).ToArray();
-            obj.SetObjectProperty("typedArray", Float64Array.From(buffer));
-        }
-
-        internal static double[] _taDouble;
-        private static void GetTypedArrayDouble(JSObject obj)
-        {
-            _taDouble = ((Float64Array)obj.GetObjectProperty("typedArray")).ToArray();
         }
 
         private static Function _sumFunction;
@@ -522,17 +382,6 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 
         internal static JSObject _funcActionBufferObjectResultValue;
         internal static int _funcActionBufferResultLengthValue;
-        private static Func<Uint8ClampedArray, Action<Uint8ClampedArray>> CreateFunctionAcceptingUint8ClampedArray()
-        {
-            return (buffer) =>
-            {
-                _funcActionBufferObjectResultValue = buffer;
-                return (i1) =>
-                {
-                    _funcActionBufferResultLengthValue = i1.Length;
-                };
-            };
-        }
 
         private static Func<Uint8Array, Action<Uint8Array>> CreateFunctionAcceptingUint8Array()
         {
@@ -545,91 +394,6 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 };
             };
         }
-
-        private static Func<Int8Array, Action<Int8Array>> CreateFunctionAcceptingInt8Array()
-        {
-            return (buffer) =>
-            {
-                _funcActionBufferObjectResultValue = buffer;
-                return (i1) =>
-                {
-                    _funcActionBufferResultLengthValue = i1.Length;
-                };
-            };
-        }
-
-        private static Func<Uint16Array, Action<Uint16Array>> CreateFunctionAcceptingUint16Array()
-        {
-            return (buffer) =>
-            {
-                _funcActionBufferObjectResultValue = buffer;
-                return (i1) =>
-                {
-                    _funcActionBufferResultLengthValue = i1.Length;
-                };
-            };
-        }
-
-        private static Func<Int16Array, Action<Int16Array>> CreateFunctionAcceptingInt16Array()
-        {
-            return (buffer) =>
-            {
-                _funcActionBufferObjectResultValue = buffer;
-                return (i1) =>
-                {
-                    _funcActionBufferResultLengthValue = i1.Length;
-                };
-            };
-        }
-
-        private static Func<Uint32Array, Action<Uint32Array>> CreateFunctionAcceptingUint32Array()
-        {
-            return (buffer) =>
-            {
-                _funcActionBufferObjectResultValue = buffer;
-                return (i1) =>
-                {
-                    _funcActionBufferResultLengthValue = i1.Length;
-                };
-            };
-        }
-
-        private static Func<Int32Array, Action<Int32Array>> CreateFunctionAcceptingInt32Array()
-        {
-            return (buffer) =>
-            {
-                _funcActionBufferObjectResultValue = buffer;
-                return (i1) =>
-                {
-                    _funcActionBufferResultLengthValue = i1.Length;
-                };
-            };
-        }
-
-        private static Func<Float32Array, Action<Float32Array>> CreateFunctionAcceptingFloat32Array()
-        {
-            return (buffer) =>
-            {
-                _funcActionBufferObjectResultValue = buffer;
-                return (i1) =>
-                {
-                    _funcActionBufferResultLengthValue = i1.Length;
-                };
-            };
-        }
-
-        private static Func<Float64Array, Action<Float64Array>> CreateFunctionAcceptingFloat64Array()
-        {
-            return (buffer) =>
-            {
-                _funcActionBufferObjectResultValue = buffer;
-                return (i1) =>
-                {
-                    _funcActionBufferResultLengthValue = i1.Length;
-                };
-            };
-        }
-
         private static Func<Array, Action<Array>> CreateFunctionAcceptingArray()
         {
             return (buffer) =>

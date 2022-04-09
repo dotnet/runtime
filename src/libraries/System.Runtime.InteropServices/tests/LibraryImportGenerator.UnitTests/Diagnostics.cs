@@ -16,58 +16,7 @@ namespace LibraryImportGenerator.UnitTests
 {
     public class Diagnostics
     {
-        [ConditionalTheory]
-        [InlineData(TestTargetFramework.Framework)]
-        [InlineData(TestTargetFramework.Core)]
-        [InlineData(TestTargetFramework.Standard)]
-        [InlineData(TestTargetFramework.Net5)]
-        public async Task TargetFrameworkNotSupported_NoDiagnostic(TestTargetFramework targetFramework)
-        {
-            string source = $@"
-using System.Runtime.InteropServices;
-{CodeSnippets.LibraryImportAttributeDeclaration}
-partial class Test
-{{
-    [LibraryImport(""DoesNotExist"")]
-    public static partial void Method();
-}}
-";
-            Compilation comp = await TestUtils.CreateCompilation(source, targetFramework);
-            TestUtils.AssertPreSourceGeneratorCompilation(comp);
-
-            var newComp = TestUtils.RunGenerators(comp, out var generatorDiags, new Microsoft.Interop.LibraryImportGenerator());
-            Assert.Empty(generatorDiags);
-
-            var newCompDiags = newComp.GetDiagnostics();
-            Assert.Empty(newCompDiags);
-        }
-
-        [ConditionalTheory]
-        [InlineData(TestTargetFramework.Framework)]
-        [InlineData(TestTargetFramework.Core)]
-        [InlineData(TestTargetFramework.Standard)]
-        [InlineData(TestTargetFramework.Net5)]
-        public async Task TargetFrameworkNotSupported_NoLibraryImport_NoDiagnostic(TestTargetFramework targetFramework)
-        {
-            string source = @"
-using System.Runtime.InteropServices;
-partial class Test
-{
-    [DllImport(""DoesNotExist"")]
-    public static extern void Method();
-}
-";
-            Compilation comp = await TestUtils.CreateCompilation(source, targetFramework);
-            TestUtils.AssertPreSourceGeneratorCompilation(comp);
-
-            var newComp = TestUtils.RunGenerators(comp, out var generatorDiags, new Microsoft.Interop.LibraryImportGenerator());
-            Assert.Empty(generatorDiags);
-
-            var newCompDiags = newComp.GetDiagnostics();
-            Assert.Empty(newCompDiags);
-        }
-
-        [ConditionalFact]
+        [Fact]
         public async Task ParameterTypeNotSupported_ReportsDiagnostic()
         {
             string source = @"
@@ -105,7 +54,7 @@ partial class Test
             Assert.Empty(newCompDiags);
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task ReturnTypeNotSupported_ReportsDiagnostic()
         {
             string source = @"
@@ -143,7 +92,7 @@ partial class Test
             Assert.Empty(newCompDiags);
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task ParameterTypeNotSupportedWithDetails_ReportsDiagnostic()
         {
             string source = @"
@@ -171,7 +120,7 @@ partial class Test
             Assert.Empty(newCompDiags);
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task ReturnTypeNotSupportedWithDetails_ReportsDiagnostic()
         {
             string source = @"
@@ -202,7 +151,7 @@ partial class Test
             Assert.Empty(newCompDiags);
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task ParameterConfigurationNotSupported_ReportsDiagnostic()
         {
             string source = @"
@@ -235,7 +184,7 @@ partial class Test
             Assert.Empty(newCompDiags);
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task ReturnConfigurationNotSupported_ReportsDiagnostic()
         {
             string source = @"
@@ -270,7 +219,7 @@ partial class Test
             Assert.Empty(newCompDiags);
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task MarshalAsUnmanagedTypeNotSupported_ReportsDiagnostic()
         {
             string source = @"
@@ -310,7 +259,7 @@ partial class Test
             Assert.Empty(newCompDiags);
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task MarshalAsFieldNotSupported_ReportsDiagnostic()
         {
             string source = @"
@@ -343,7 +292,7 @@ partial class Test
             Assert.Empty(newCompDiags);
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task StringMarshallingForwardingNotSupported_ReportsDiagnostic()
         {
             string source = @"
@@ -388,7 +337,7 @@ partial class Test
             Assert.Empty(newCompDiags);
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task InvalidStringMarshallingConfiguration_ReportsDiagnostic()
         {
             string source = @$"
@@ -426,7 +375,7 @@ partial class Test
             Assert.Empty(newCompDiags);
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task NonPartialMethod_ReportsDiagnostic()
         {
             string source = @"
@@ -458,7 +407,7 @@ partial class Test
             Assert.Empty(newCompDiags);
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task NonStaticMethod_ReportsDiagnostic()
         {
             string source = @"
@@ -485,7 +434,7 @@ partial class Test
             TestUtils.AssertPreSourceGeneratorCompilation(newComp);
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task GenericMethod_ReportsDiagnostic()
         {
             string source = @"
@@ -518,7 +467,7 @@ partial class Test
             TestUtils.AssertPreSourceGeneratorCompilation(newComp);
         }
 
-        [ConditionalTheory]
+        [Theory]
         [InlineData("class")]
         [InlineData("struct")]
         [InlineData("record")]
@@ -551,7 +500,7 @@ using System.Runtime.InteropServices;
             TestUtils.AssertPreSourceGeneratorCompilation(newComp, additionalDiag);
         }
 
-        [ConditionalTheory]
+        [Theory]
         [InlineData("class")]
         [InlineData("struct")]
         [InlineData("record")]

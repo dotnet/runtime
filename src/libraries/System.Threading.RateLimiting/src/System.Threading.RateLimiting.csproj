@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <Nullable>enable</Nullable>
@@ -18,13 +18,13 @@ System.Threading.RateLimiting.RateLimitLease</PackageDescription>
     <Compile Include="System\Threading\RateLimiting\ConcurrencyLimiterOptions.cs" />
     <Compile Include="System\Threading\RateLimiting\MetadataName.cs" />
     <Compile Include="System\Threading\RateLimiting\MetadataName.T.cs" />
+    <Compile Include="System\Threading\RateLimiting\PartitionedRateLimiter.T.cs" />
     <Compile Include="System\Threading\RateLimiting\QueueProcessingOrder.cs" />
     <Compile Include="System\Threading\RateLimiting\RateLimiter.cs" />
     <Compile Include="System\Threading\RateLimiting\RateLimitLease.cs" />
     <Compile Include="System\Threading\RateLimiting\TokenBucketRateLimiter.cs" />
     <Compile Include="System\Threading\RateLimiting\TokenBucketRateLimiterOptions.cs" />
-    <Compile Include="$(CommonPath)System\Collections\Generic\Deque.cs"
-             Link="Common\System\Collections\Generic\Deque.cs" />
+    <Compile Include="$(CommonPath)System\Collections\Generic\Deque.cs" Link="Common\System\Collections\Generic\Deque.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <Reference Include="System.Runtime" />

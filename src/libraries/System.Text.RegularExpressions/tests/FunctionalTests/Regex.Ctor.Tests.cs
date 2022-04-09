@@ -96,21 +96,6 @@ namespace System.Text.RegularExpressions.Tests
         [Fact]
         public static void Ctor_Invalid()
         {
-            if (PlatformDetection.IsNetCore)
-            {
-                // NonBacktracking option is not supported together with these other options
-                Assert.Throws<NotSupportedException>(() => new Regex("abc", RegexOptions.ECMAScript | RegexHelpers.RegexOptionNonBacktracking));
-                Assert.Throws<NotSupportedException>(() => new Regex("abc", RegexOptions.RightToLeft | RegexHelpers.RegexOptionNonBacktracking));
-
-                // NonBacktracking option is not supported for these constructs
-                Assert.Throws<NotSupportedException>(() => new Regex("(?=a)", RegexHelpers.RegexOptionNonBacktracking));
-                Assert.Throws<NotSupportedException>(() => new Regex("(?!a)", RegexHelpers.RegexOptionNonBacktracking));
-                Assert.Throws<NotSupportedException>(() => new Regex("(?<=a)", RegexHelpers.RegexOptionNonBacktracking));
-                Assert.Throws<NotSupportedException>(() => new Regex("(?<!a)", RegexHelpers.RegexOptionNonBacktracking));
-                Assert.Throws<NotSupportedException>(() => new Regex(@"(?(0)ab)", RegexHelpers.RegexOptionNonBacktracking));
-                Assert.Throws<NotSupportedException>(() => new Regex(@"([ab])\1", RegexHelpers.RegexOptionNonBacktracking));
-            }
-
             // Pattern is null
             AssertExtensions.Throws<ArgumentNullException>("pattern", () => new Regex(null));
             AssertExtensions.Throws<ArgumentNullException>("pattern", () => new Regex(null, RegexOptions.None));
@@ -132,49 +117,28 @@ namespace System.Text.RegularExpressions.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("options", () => new Regex("foo", RegexOptions.ECMAScript | RegexOptions.IgnoreCase | RegexOptions.Multiline | RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("options", () => new Regex("foo", RegexOptions.ECMAScript | RegexOptions.IgnoreCase | RegexOptions.Multiline | RegexOptions.CultureInvariant | RegexOptions.Singleline));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("options", () => new Regex("foo", RegexOptions.ECMAScript | RegexOptions.IgnoreCase | RegexOptions.Multiline | RegexOptions.CultureInvariant | RegexOptions.IgnorePatternWhitespace));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("options", () => new Regex("foo", RegexOptions.ECMAScript | RegexHelpers.RegexOptionNonBacktracking));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("options", () => new Regex("foo", RegexOptions.RightToLeft | RegexHelpers.RegexOptionNonBacktracking));
 
             // MatchTimeout is invalid
             AssertExtensions.Throws<ArgumentOutOfRangeException>("matchTimeout", () => new Regex("foo", RegexOptions.None, new TimeSpan(-1)));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("matchTimeout", () => new Regex("foo", RegexOptions.None, TimeSpan.Zero));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("matchTimeout", () => new Regex("foo", RegexOptions.None, TimeSpan.FromMilliseconds(int.MaxValue)));
-        }
 
-        /// <summary>
-        /// Nonsupported cases for the NonBacktracking option
-        /// </summary>
-        public static IEnumerable<object[]> Ctor_Invalid_NonBacktracking_Data()
-        {
-            yield return new object[] { @"(?<cat-0>cat)", RegexOptions.None, "balancing group" };
-            yield return new object[] { @"(?<cat>cat)\w+(?<dog-0>dog)", RegexOptions.None, "balancing group"};
-            yield return new object[] { @"(?<cat>cat)\w+(?<dog-cat>dog)", RegexOptions.None, "balancing group" };
-            yield return new object[] { @"abc", RegexOptions.RightToLeft, "RightToLeft" };
-            yield return new object[] { @"abc", RegexOptions.ECMAScript, "ECMAScript" };
-            yield return new object[] { @"^(a)?(?(1)a|b)+$", RegexOptions.None, "conditional" };
-            yield return new object[] { @"(abc)\1", RegexOptions.None, "backreference" };
-            yield return new object[] { @"a(?=d).", RegexOptions.None, "positive lookahead" };
-            yield return new object[] { @"a(?!b).", RegexOptions.None, "negative lookahead" };
-            yield return new object[] { @"(?<=a)b", RegexOptions.None, "positive lookbehind" };
-            yield return new object[] { @"(?<!c)b", RegexOptions.None, "negative lookbehind" };
-            yield return new object[] { @"(?>(abc)*).", RegexOptions.None, "atomic" };
-            yield return new object[] { @"\G(\w+\s?\w*),?", RegexOptions.None, "contiguous" };
-            yield return new object[] { @"(?>a*).", RegexOptions.None, "atomic" };
-            yield return new object[] { @"(?(A)B|C)", RegexOptions.None, "conditional" };
-        }
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Doesn't support NonBacktracking")]
-        [Theory]
-        [MemberData(nameof(Ctor_Invalid_NonBacktracking_Data))]
-        public void Ctor_Invalid_NonBacktracking(string pattern, RegexOptions options, string expected_word_in_error_message)
-        {
-            string actual = string.Empty;
-            try
+            if (PlatformDetection.IsNetCore)
             {
-                new Regex(pattern, options | RegexHelpers.RegexOptionNonBacktracking);
+                // Unsupported pattern constructs with specific options
+                Assert.Throws<NotSupportedException>(() => new Regex("(?=a)", RegexHelpers.RegexOptionNonBacktracking)); // NonBacktracking and positive lookaheads
+                Assert.Throws<NotSupportedException>(() => new Regex("(?!a)", RegexHelpers.RegexOptionNonBacktracking)); // NonBacktracking and negative lookaheads
+                Assert.Throws<NotSupportedException>(() => new Regex("(?<=a)", RegexHelpers.RegexOptionNonBacktracking)); // NonBacktracking and positive lookbehinds
+                Assert.Throws<NotSupportedException>(() => new Regex("(?<!a)", RegexHelpers.RegexOptionNonBacktracking)); // NonBacktracking and negative lookbehinds
+                Assert.Throws<NotSupportedException>(() => new Regex(@"(\w)\1", RegexHelpers.RegexOptionNonBacktracking)); // NonBacktracking and backreferences
+                Assert.Throws<NotSupportedException>(() => new Regex(@"(?(0)ab)", RegexHelpers.RegexOptionNonBacktracking)); // NonBacktracking and backreference conditionals
+                Assert.Throws<NotSupportedException>(() => new Regex(@"([ab])\1", RegexHelpers.RegexOptionNonBacktracking)); // NonBacktracking and expression conditionals
+                Assert.Throws<NotSupportedException>(() => new Regex(@"(?>a*)a", RegexHelpers.RegexOptionNonBacktracking)); // NonBacktracking and atomics
+                Assert.Throws<NotSupportedException>(() => new Regex(@"\Ga", RegexHelpers.RegexOptionNonBacktracking)); // NonBacktracking and start anchors
+                Assert.Throws<NotSupportedException>(() => new Regex(@"(?<C>A)(?<-C>B)$", RegexHelpers.RegexOptionNonBacktracking)); // NonBacktracking and balancing groups
             }
-            catch (NotSupportedException e)
-            {
-                actual = e.Message;
-            }
-            Assert.Contains(expected_word_in_error_message, actual);
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]

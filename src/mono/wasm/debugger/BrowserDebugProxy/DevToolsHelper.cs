@@ -66,13 +66,15 @@ namespace Microsoft.WebAssembly.Diagnostics
         public string Scheme { get; }
         public int Value { get; }
         public int SubValue { get; set; }
+        public bool IsValueType { get; set; }
 
         public static bool TryParse(JToken jToken, out DotnetObjectId objectId) => TryParse(jToken?.Value<string>(), out objectId);
 
         public static bool TryParse(string id, out DotnetObjectId objectId)
         {
             objectId = null;
-            try {
+            try
+            {
                 if (id == null)
                     return false;
 
@@ -88,12 +90,13 @@ namespace Microsoft.WebAssembly.Diagnostics
                 switch (objectId.Scheme)
                 {
                     case "methodId":
-                    {
-                        parts = id.Split(":");
-                        if (parts.Length > 3)
+                        if (parts.Length > 4)
+                        {
                             objectId.SubValue = int.Parse(parts[3]);
-                        break;
-                    }
+                            objectId.IsValueType = parts[4] == "ValueType";
+                            return true;
+                        }
+                        return false;
                 }
                 return true;
             }
@@ -129,7 +132,11 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         private Result(JObject resultOrError, bool isError)
         {
-            bool resultHasError = isError || string.Equals((resultOrError?["result"] as JObject)?["subtype"]?.Value<string>(), "error");
+            if (resultOrError == null)
+                throw new ArgumentNullException(nameof(resultOrError));
+
+            bool resultHasError = isError || string.Equals((resultOrError["result"] as JObject)?["subtype"]?.Value<string>(), "error");
+            resultHasError |= resultOrError["exceptionDetails"] != null;
             if (resultHasError)
             {
                 Value = null;
@@ -146,7 +153,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             var error = obj["error"] as JObject;
             if (error != null)
                 return new Result(error, true);
-            var result = obj["result"] as JObject;
+            var result = (obj["result"] as JObject) ?? new JObject();
             return new Result(result, false);
         }
 

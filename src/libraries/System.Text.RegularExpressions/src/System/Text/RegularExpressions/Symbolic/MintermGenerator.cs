@@ -9,63 +9,56 @@ using System.Threading;
 namespace System.Text.RegularExpressions.Symbolic
 {
     /// <summary>Provides a generic implementation for minterm generation over a given Boolean Algebra.</summary>
-    /// <typeparam name="TPredicate">type of predicates</typeparam>
+    /// <typeparam name="TSet">The type of set of elements (typically <see cref="BDD"/>, <see cref="BitVector"/> for more than 64 elements, or <see cref="ulong"/> for 64 or fewer elements).</typeparam>
     /// <remarks>
-    /// The minterms for a set of predicates are all their non-overlapping, satisfiable Boolean combinations. For example,
-    /// if the predicates are [0-9] and [0-4], then there are three minterms: [0-4], [5-9] and [^0-9]. Notably, there is no
-    /// minterm corresponding to "[0-9] and not [0-4]", since that is unsatisfiable.
+    /// The minterms for a collection of sets are all their non-overlapping, satisfiable Boolean combinations. For example,
+    /// if the sets are [0-9] and [0-4], then there are three minterms: [0-4], [5-9] and [^0-9]. Notably, there is no
+    /// minterm corresponding to "[0-9] and not [0-4]", since that is unsatisfiable (empty).
     /// </remarks>
-    internal sealed class MintermGenerator<TPredicate> where TPredicate : notnull
+    internal sealed class MintermGenerator<TSet> where TSet : IComparable<TSet>
     {
-        private readonly IBooleanAlgebra<TPredicate> _algebra;
+        private readonly ISolver<TSet> _solver;
 
-        /// <summary>Constructs a minterm generator for a given Boolean Algebra.</summary>
-        /// <param name="algebra">given Boolean Algebra</param>
-        public MintermGenerator(IBooleanAlgebra<TPredicate> algebra)
-        {
-            _algebra = algebra;
-        }
+        /// <summary>Constructs a minterm generator for a given solver.</summary>
+        /// <param name="solver">The solver for operating over sets.</param>
+        public MintermGenerator(ISolver<TSet> solver) => _solver = solver;
 
         /// <summary>
-        /// Given an array of predidates {p_1, p_2, ..., p_n} where n>=0,
-        /// enumerate all satisfiable Boolean combinations Tuple({b_1, b_2, ..., b_n}, p)
+        /// Given an array of sets {p_1, p_2, ..., p_n} where n>=0,
+        /// enumerate all satisfiable (non-empty) Boolean combinations Tuple({b_1, b_2, ..., b_n}, p)
         /// where p is satisfiable and equivalent to p'_1 &amp; p'_2 &amp; ... &amp; p'_n,
-        /// where p'_i = p_i if b_i = true and p'_i is Not(p_i). Otherwise, if n=0
-        /// return Tuple({},True).
+        /// where p'_i = p_i if b_i = true and p'_i is Not(p_i). Otherwise, if n=0 return Tuple({},True).
         /// </summary>
-        /// <param name="preds">array of predicates</param>
-        /// <returns>all minterms of the given predicate sequence</returns>
-        public List<TPredicate> GenerateMinterms(HashSet<TPredicate> preds)
+        /// <param name="sets">The sets from which to generate the minterms.</param>
+        /// <returns>All minterms of the given set sequence</returns>
+        public List<TSet> GenerateMinterms(HashSet<TSet> sets)
         {
-            var tree = new PartitionTree(_algebra.True);
-            foreach (TPredicate pred in preds)
+            var tree = new PartitionTree(_solver.Full);
+            foreach (TSet set in sets)
             {
-                // Push each predicate into the partition tree
-                tree.Refine(_algebra, pred);
+                // Push each set into the partition tree
+                tree.Refine(_solver, set);
             }
 
             // Return all minterms as the leaves of the partition tree
-            return tree.GetLeafPredicates();
+            return tree.GetLeafSets();
         }
 
         /// <summary>A partition tree for efficiently solving minterms.</summary>
         /// <remarks>
-        /// Predicates are pushed into the tree with Refine(), which creates leaves in the tree for all satisfiable
-        /// and non-overlapping combinations with any previously pushed predicates. At the end of the process the
+        /// Sets are pushed into the tree with Refine(), which creates leaves in the tree for all satisfiable (non-empty)
+        /// and non-overlapping combinations with any previously pushed sets. At the end of the process the
         /// minterms can be read from the leaves of the tree.
         /// </remarks>
         private sealed class PartitionTree
         {
-            internal readonly TPredicate _pred;
+            internal readonly TSet _set;
             private PartitionTree? _left;
             private PartitionTree? _right;
 
-            internal PartitionTree(TPredicate pred)
-            {
-                _pred = pred;
-            }
+            internal PartitionTree(TSet set) => _set = set;
 
-            internal void Refine(IBooleanAlgebra<TPredicate> solver, TPredicate other)
+            internal void Refine(ISolver<TSet> solver, TSet other)
             {
                 if (!StackHelper.TryEnsureSufficientExecutionStack())
                 {
@@ -73,12 +66,12 @@ namespace System.Text.RegularExpressions.Symbolic
                     return;
                 }
 
-                TPredicate thisAndOther = solver.And(_pred, other);
-                if (solver.IsSatisfiable(thisAndOther))
+                TSet thisAndOther = solver.And(_set, other);
+                if (!solver.IsEmpty(thisAndOther))
                 {
-                    // The predicates overlap, now check if this is contained in other
-                    TPredicate thisMinusOther = solver.And(_pred, solver.Not(other));
-                    if (solver.IsSatisfiable(thisMinusOther))
+                    // The sets overlap, now check if this is contained in other
+                    TSet thisMinusOther = solver.And(_set, solver.Not(other));
+                    if (!solver.IsEmpty(thisMinusOther))
                     {
                         // This is not contained in other, minterms may need to be split
                         if (_left is null)
@@ -97,10 +90,10 @@ namespace System.Text.RegularExpressions.Symbolic
                 }
             }
 
-            /// <summary>Get the predicates from all of the leaves in the tree.</summary>
-            internal List<TPredicate> GetLeafPredicates()
+            /// <summary>Get the sets from all of the leaves in the tree.</summary>
+            internal List<TSet> GetLeafSets()
             {
-                var leaves = new List<TPredicate>();
+                var leaves = new List<TSet>();
 
                 var stack = new Stack<PartitionTree>();
                 stack.Push(this);
@@ -108,7 +101,7 @@ namespace System.Text.RegularExpressions.Symbolic
                 {
                     if (node._left is null && node._right is null)
                     {
-                        leaves.Add(node._pred);
+                        leaves.Add(node._set);
                     }
                     else
                     {

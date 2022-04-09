@@ -1189,6 +1189,7 @@ public:
     void print (int hn, const char* msg="", int* ages=nullptr);
     static void print (region_free_list free_list[count_free_region_kinds], int hn, const char* msg="", int* ages=nullptr);
     void sort_by_committed_and_age();
+    static bool is_on_free_list (heap_segment* region, region_free_list free_list[count_free_region_kinds]);
 };
 #endif
 
@@ -2026,7 +2027,7 @@ protected:
     PER_HEAP_ISOLATED
     bool virtual_alloc_commit_for_heap (void* addr, size_t size, int h_number);
     PER_HEAP_ISOLATED
-    bool virtual_commit (void* address, size_t size, gc_oh_num oh, int h_number=-1, bool* hard_limit_exceeded_p=NULL);
+    bool virtual_commit (void* address, size_t size, gc_oh_num oh, int h_number=-1); 
     PER_HEAP_ISOLATED
     bool virtual_decommit (void* address, size_t size, gc_oh_num oh, int h_number=-1);
     PER_HEAP_ISOLATED
@@ -2127,7 +2128,7 @@ protected:
     BOOL find_card (uint32_t* card_table, size_t& card,
                     size_t card_word_end, size_t& end_card);
     PER_HEAP
-    BOOL grow_heap_segment (heap_segment* seg, uint8_t* high_address, bool* hard_limit_exceeded_p=NULL);
+    BOOL grow_heap_segment (heap_segment* seg, uint8_t* high_address);
     PER_HEAP
     int grow_heap_segment (heap_segment* seg, uint8_t* high_address, uint8_t* old_loc, size_t size, BOOL pad_front_p REQD_ALIGN_AND_OFFSET_DCL);
     PER_HEAP

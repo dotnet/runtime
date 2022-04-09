@@ -127,6 +127,7 @@ namespace System.Security.Cryptography
                 out bytesWritten);
         }
 
+        [Obsolete(Obsoletions.EccXmlExportImportMessage, DiagnosticId = Obsoletions.EccXmlExportImportDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public void FromXmlString(string xml, ECKeyXmlFormat format)
             => throw new PlatformNotSupportedException();
 
@@ -139,6 +140,7 @@ namespace System.Security.Cryptography
         public byte[] SignData(Stream data)
             => SignData(data, new HashAlgorithmName(HashAlgorithm.Algorithm));
 
+        [Obsolete(Obsoletions.EccXmlExportImportMessage, DiagnosticId = Obsoletions.EccXmlExportImportDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public string ToXmlString(ECKeyXmlFormat format)
             => throw new PlatformNotSupportedException();
 

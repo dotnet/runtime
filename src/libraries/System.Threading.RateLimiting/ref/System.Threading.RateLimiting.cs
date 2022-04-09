@@ -39,6 +39,19 @@ namespace System.Threading.RateLimiting
         public static bool operator !=(System.Threading.RateLimiting.MetadataName<T> left, System.Threading.RateLimiting.MetadataName<T> right) { throw null; }
         public override string ToString() { throw null; }
     }
+    public abstract partial class PartitionedRateLimiter<TResource> : System.IAsyncDisposable, System.IDisposable
+    {
+        protected PartitionedRateLimiter() { }
+        public System.Threading.RateLimiting.RateLimitLease Acquire(TResource resourceID, int permitCount = 1) { throw null; }
+        protected abstract System.Threading.RateLimiting.RateLimitLease AcquireCore(TResource resourceID, int permitCount);
+        public void Dispose() { }
+        protected virtual void Dispose(bool disposing) { }
+        public System.Threading.Tasks.ValueTask DisposeAsync() { throw null; }
+        protected virtual System.Threading.Tasks.ValueTask DisposeAsyncCore() { throw null; }
+        public abstract int GetAvailablePermits(TResource resourceID);
+        public System.Threading.Tasks.ValueTask<System.Threading.RateLimiting.RateLimitLease> WaitAsync(TResource resourceID, int permitCount = 1, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        protected abstract System.Threading.Tasks.ValueTask<System.Threading.RateLimiting.RateLimitLease> WaitAsyncCore(TResource resourceID, int permitCount, System.Threading.CancellationToken cancellationToken);
+    }
     public enum QueueProcessingOrder
     {
         OldestFirst = 0,

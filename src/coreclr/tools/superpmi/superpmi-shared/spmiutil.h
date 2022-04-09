@@ -76,4 +76,10 @@ void PutArm64Rel12(UINT32* pCode, INT32 imm12);
 void PutThumb2Mov32(UINT16* p, UINT32 imm32);
 void PutThumb2BlRel24(UINT16* p, INT32 imm24);
 
+template <typename T, int size>
+inline constexpr unsigned ArrLen(T (&)[size])
+{
+    return size;
+}
+
 #endif // !_SPMIUtil

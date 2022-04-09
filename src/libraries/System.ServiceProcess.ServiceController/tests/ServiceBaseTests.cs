@@ -72,6 +72,18 @@ namespace System.ServiceProcess.Tests
             }
         }
 
+#if NETCOREAPP
+        [Theory]
+        [InlineData(-2)]
+        [InlineData((long)int.MaxValue + 1)]
+        public void RequestAdditionalTime_Throws_ArgumentOutOfRangeException(long milliseconds)
+        {
+            TimeSpan time = TimeSpan.FromMilliseconds(milliseconds);
+            using var serviceBase = new ServiceBase();
+            Assert.Throws<ArgumentOutOfRangeException>("time", () => serviceBase.RequestAdditionalTime(time));
+        }
+#endif
+
         [ConditionalFact(nameof(IsProcessElevated))]
         public void TestOnStartThenStop()
         {

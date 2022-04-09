@@ -119,12 +119,10 @@ System.Net.Http.WinHttpHandler</PackageDescription>
     <Reference Include="System.Collections.NonGeneric" />
     <Reference Include="System.Diagnostics.Tracing" />
     <Reference Include="System.IO.Compression" />
-    <Reference Include="System.IO.Compression.Brotli" />
     <Reference Include="System.Memory" />
     <Reference Include="System.Net.Http" />
     <Reference Include="System.Net.Primitives" />
     <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.CompilerServices.Unsafe" />
     <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Security.Cryptography.Encoding" />
     <Reference Include="System.Security.Cryptography.X509Certificates" />
@@ -135,12 +133,9 @@ System.Net.Http.WinHttpHandler</PackageDescription>
     <Reference Include="System.Security.Cryptography" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <PackageReference Include="System.Buffers" Version="$(SystemBuffersVersion)" />
     <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <Reference Include="System.Net.Http" />
   </ItemGroup>
 </Project>

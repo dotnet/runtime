@@ -231,7 +231,7 @@ namespace LibraryImportGenerator.UnitTests
             yield return new[] { CodeSnippets.CollectionsOfCollectionsStress };
         }
 
-        [ConditionalTheory]
+        [Theory]
         [MemberData(nameof(CodeSnippetsToCompile))]
         public async Task ValidateSnippets(string source)
         {
@@ -257,7 +257,7 @@ namespace LibraryImportGenerator.UnitTests
             yield return new object[] { CodeSnippets.PreprocessorIfAfterAttributeAroundFunctionAdditionalFunctionAfter("Foo"), Array.Empty<string>() };
         }
 
-        [ConditionalTheory]
+        [Theory]
         [MemberData(nameof(CodeSnippetsToCompileWithPreprocessorSymbols))]
         public async Task ValidateSnippetsWithPreprocessorDefintions(string source, IEnumerable<string> preprocessorSymbols)
         {
@@ -303,8 +303,9 @@ namespace LibraryImportGenerator.UnitTests
             }
         }
 
-        [ConditionalTheory]
+        [Theory]
         [MemberData(nameof(CodeSnippetsToValidateFallbackForwarder))]
+        [OuterLoop("Uses the network for downlevel ref packs")]
         public async Task ValidateSnippetsFallbackForwarder(string source, TestTargetFramework targetFramework, bool expectFallbackForwarder)
         {
             Compilation comp = await TestUtils.CreateCompilation(source, targetFramework);
@@ -340,7 +341,7 @@ namespace LibraryImportGenerator.UnitTests
             yield return new[] { CodeSnippets.BasicParameterByValue("int") };
         }
 
-        [ConditionalTheory]
+        [Theory]
         [MemberData(nameof(FullyBlittableSnippetsToCompile))]
         public async Task ValidateSnippetsWithBlittableAutoForwarding(string source)
         {
@@ -374,7 +375,7 @@ namespace LibraryImportGenerator.UnitTests
             yield return new[] { CodeSnippets.SetLastErrorTrue<int>() };
         }
 
-        [ConditionalTheory]
+        [Theory]
         [MemberData(nameof(SnippetsWithBlittableTypesButNonBlittableDataToCompile))]
         public async Task ValidateSnippetsWithBlittableTypesButNonBlittableMetadataDoNotAutoForward(string source)
         {
@@ -412,7 +413,7 @@ namespace LibraryImportGenerator.UnitTests
 #pragma warning disable xUnit1004 // Test methods should not be skipped.
                                   // If we have any new experimental APIs that we are implementing that have not been approved,
                                   // we will add new scenarios for this test.
-        [ConditionalTheory(Skip = "No current scenarios to test.")]
+        [Theory(Skip = "No current scenarios to test.")]
 #pragma warning restore
         [MemberData(nameof(CodeSnippetsToCompileWithMarshalType))]
         public async Task ValidateSnippetsWithMarshalType(string source)
@@ -444,7 +445,7 @@ namespace LibraryImportGenerator.UnitTests
             yield return new object[] { new[] { CodeSnippets.BasicParameterByValue("int[]", CodeSnippets.DisableRuntimeMarshalling), CodeSnippets.BasicParameterWithByRefModifier("ref", "int") } };
         }
 
-        [ConditionalTheory]
+        [Theory]
         [MemberData(nameof(CodeSnippetsToCompileMultipleSources))]
         public async Task ValidateSnippetsWithMultipleSources(string[] sources)
         {

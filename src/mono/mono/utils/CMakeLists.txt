@@ -65,12 +65,8 @@ set(utils_common_sources
     mono-coop-mutex.h
     mono-once.h
     mono-lazy-init.h
-    mono-networkinterfaces.c
-    mono-networkinterfaces.h
     mono-proclib.c
-    mono-proclib-windows.c
     mono-proclib.h
-    mono-proclib-windows-internals.h
     mono-publib.c
     mono-string.h
     mono-time.c
@@ -153,7 +149,6 @@ set(utils_common_sources
     mono-tls.c
     mono-utils-debug.c
     mono-utils-debug.h
-    linux_magic.h
     mono-memory-model.h
     atomic.h
     atomic.c
