@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using System.Text.Unicode;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace System.Globalization
 {
@@ -236,7 +237,65 @@ namespace System.Globalization
                 return CompareInfo.NlsIndexOfOrdinalCore(source, value, ignoreCase: true, fromBeginning: true);
             }
 
-            return OrdinalCasing.IndexOf(source, value);
+            // If value starts with an ASCII char, we can use a vectorized path
+            ref char valueRef = ref MemoryMarshal.GetReference(value);
+            char valueChar = valueRef;
+
+            if (!char.IsAscii(valueChar))
+            {
+                // Fallback to a more non-ASCII friendly version
+                return OrdinalCasing.IndexOf(source, value);
+            }
+
+            // Hoist some expressions from the loop
+            int valueTailLength = value.Length - 1;
+            int searchSpaceLength = source.Length - valueTailLength;
+            ref char searchSpace = ref MemoryMarshal.GetReference(source);
+            char valueCharU = default;
+            char valueCharL = default;
+            nint offset = 0;
+            bool isLetter = false;
+
+            if ((uint)((valueChar | 0x20) - 'a') <= 'z' - 'a')
+            {
+                valueCharU = (char)(valueChar & ~0x20);
+                valueCharL = (char)(valueChar | 0x20);
+                isLetter = true;
+            }
+
+            do
+            {
+                // Do a quick search for the first element of "value".
+                int relativeIndex = isLetter ?
+                    SpanHelpers.IndexOfAny(ref Unsafe.Add(ref searchSpace, offset), valueCharU, valueCharL, searchSpaceLength) :
+                    SpanHelpers.IndexOf(ref Unsafe.Add(ref searchSpace, offset), valueChar, searchSpaceLength);
+                if (relativeIndex < 0)
+                {
+                    break;
+                }
+
+                searchSpaceLength -= relativeIndex;
+                if (searchSpaceLength <= 0)
+                {
+                    break;
+                }
+                offset += relativeIndex;
+
+                // Found the first element of "value". See if the tail matches.
+                if (valueTailLength == 0 || // for single-char values we already matched first chars
+                    EqualsIgnoreCase(
+                        ref Unsafe.Add(ref searchSpace, (nuint)(offset + 1)),
+                        ref Unsafe.Add(ref valueRef, 1), valueTailLength))
+                {
+                    return (int)offset;  // The tail matched. Return a successful find.
+                }
+
+                searchSpaceLength--;
+                offset++;
+            }
+            while (searchSpaceLength > 0);
+
+            return -1;
         }
 
         internal static int LastIndexOf(string source, string value, int startIndex, int count)
