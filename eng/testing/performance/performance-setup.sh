@@ -11,6 +11,7 @@ compilation_mode=tiered
 repository=$BUILD_REPOSITORY_NAME
 branch=$BUILD_SOURCEBRANCH
 commit_sha=$BUILD_SOURCEVERSION
+perf_sha=${PerfSha}
 build_number=$BUILD_BUILDNUMBER
 internal=false
 compare=false
@@ -32,6 +33,7 @@ using_wasm=false
 use_latest_dotnet=false
 logical_machine=
 javascript_engine="v8"
+only_sanity=false
 
 while (($# > 0)); do
   lowerI="$(echo $1 | tr "[:upper:]" "[:lower:]")"
@@ -140,6 +142,10 @@ while (($# > 0)); do
       ;;
     --latestdotnet)
       use_latest_dotnet=true
+      shift 1
+      ;;
+    --only-sanity)
+      only_sanity=true
       shift 1
       ;;
     *)
@@ -274,7 +280,9 @@ if [[ "$run_from_perf_repo" == true ]]; then
     performance_directory=$workitem_directory
     setup_arguments="--perf-hash $commit_sha $common_setup_arguments"
 else
-    git clone --branch main --depth 1 --quiet https://github.com/dotnet/performance.git $performance_directory
+    #git clone --branch main --depth 1 --quiet https://github.com/dotnet/performance.git $performance_directory
+    git clone --branch aj/wasm-testing --depth 1 --quiet https://github.com/radical/performance.git $performance_directory
+    #test -z "$perf_sha" || git reset --hard $perf_sha
     # uncomment to use BenchmarkDotNet sources instead of nuget packages
     # git clone https://github.com/dotnet/BenchmarkDotNet.git $benchmark_directory
 
@@ -345,3 +353,4 @@ Write-PipelineSetVariable -name "_BuildConfig" -value "$_BuildConfig" -is_multi_
 Write-PipelineSetVariable -name "Compare" -value "$compare" -is_multi_job_variable false
 Write-PipelineSetVariable -name "MonoDotnet" -value "$using_mono" -is_multi_job_variable false
 Write-PipelineSetVariable -name "WasmDotnet" -value "$using_wasm" -is_multi_job_variable false
+Write-PipelineSetVariable -name "OnlySanityCheck" -value "$only_sanity" -is_multi_job_variable false

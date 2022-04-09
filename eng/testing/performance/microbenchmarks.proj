@@ -69,7 +69,7 @@
   
   <PropertyGroup>
     <WorkItemTimeout>2:30</WorkItemTimeout>
-    <WorkItemTimeout Condition="'$(HelixSourcePrefix)' != 'official'">0:15</WorkItemTimeout>
+    <!--<WorkItemTimeout Condition="'$(HelixSourcePrefix)' != 'official'">0:15</WorkItemTimeout>-->
   </PropertyGroup>
 
   <ItemGroup>
@@ -83,6 +83,9 @@
   </PropertyGroup>
   <ItemGroup>
     <Partition Include="$(BuildConfig).Partition0" Index="0" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(OnlySanityCheck)' != 'true'">
     <Partition Include="$(BuildConfig).Partition1" Index="1" />
     <Partition Include="$(BuildConfig).Partition2" Index="2" />
     <Partition Include="$(BuildConfig).Partition3" Index="3" />
