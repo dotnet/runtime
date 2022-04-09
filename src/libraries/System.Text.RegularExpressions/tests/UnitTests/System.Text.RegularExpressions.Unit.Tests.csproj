@@ -16,6 +16,8 @@
     <Compile Include="RegexFindOptimizationsTests.cs" />
 
     <Compile Include="RegexReductionTests.cs" />
+
+    <Compile Include="RegexPrefixAnalyzerTests.cs" />
     <Compile Include="RegexTreeAnalyzerTests.cs" />
 
     <!-- Code included from System.Text.RegularExpressions -->
