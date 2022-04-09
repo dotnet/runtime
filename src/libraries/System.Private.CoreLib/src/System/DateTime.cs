@@ -69,7 +69,6 @@ namespace System
         private const long TicksPerDay = TicksPerHour * 24;
 
         // Number of milliseconds per time unit
-        private const long NanosecondsPerTick = 100;
         private const int MicrosecondsPerMillisecond = 1000;
         private const int MillisPerSecond = 1000;
         private const int MillisPerMinute = MillisPerSecond * 60;
@@ -365,8 +364,9 @@ namespace System
         /// you can use the corresponding <see cref="DateTimeOffset"/> constructor.
         /// </remarks>
         public DateTime(int year, int month, int day, int hour, int minute, int second, int millisecond)
-            : this(year, month, day, hour, minute, second, millisecond, 0)
         {
+            ulong ticks = Init(year, month, day, hour, minute, second, millisecond);
+            _dateData = ticks | (ticks & FlagsMask);
         }
 
         /// <summary>
@@ -423,8 +423,9 @@ namespace System
         /// you can use the corresponding <see cref="DateTimeOffset"/> constructor.
         /// </remarks>
         public DateTime(int year, int month, int day, int hour, int minute, int second, int millisecond, DateTimeKind kind)
-            : this(year, month, day, hour, minute, second, millisecond, 0, kind)
         {
+            ulong ticks = Init(year, month, day, hour, minute, second, millisecond, kind);
+            _dateData = ticks | (ticks & FlagsMask);
         }
 
         /// <summary>
@@ -537,19 +538,13 @@ namespace System
         /// </remarks>
         public DateTime(int year, int month, int day, int hour, int minute, int second, int millisecond, int microsecond)
         {
-            if ((uint)millisecond >= MillisPerSecond) ThrowMillisecondOutOfRange();
+            ulong ticks = Init(year, month, day, hour, minute, second, millisecond);
             if ((uint)microsecond >= MicrosecondsPerMillisecond) ThrowMicrosecondOutOfRange();
 
-            if (second != 60 || !s_systemSupportsLeapSeconds)
-            {
-                _dateData = DateToTicks(year, month, day) + TimeToTicks(hour, minute, second, millisecond, microsecond);
-            }
-            else
-            {
-                // if we have a leap second, then we adjust it to 59 so that DateTime will consider it the last in the specified minute.
-                this = new DateTime(year, month, day, hour, minute, 59, millisecond, microsecond);
-                ValidateLeapSecond();
-            }
+            ulong newTicks = (ticks & TicksMask) + (ulong)(microsecond * TicksPerMicrosecond);
+
+            if (newTicks > MaxTicks) ThrowDateArithmetic(0);
+            _dateData = newTicks | (ticks & FlagsMask);
         }
 
         /// <summary>
@@ -612,20 +607,13 @@ namespace System
         /// </remarks>
         public DateTime(int year, int month, int day, int hour, int minute, int second, int millisecond, int microsecond, DateTimeKind kind)
         {
-            if ((uint)millisecond >= MillisPerSecond) ThrowMillisecondOutOfRange();
-            if ((uint)kind > (uint)DateTimeKind.Local) ThrowInvalidKind();
+            ulong ticks = Init(year, month, day, hour, minute, second, millisecond, kind);
+            if ((uint)microsecond >= MicrosecondsPerMillisecond) ThrowMicrosecondOutOfRange();
 
-            if (second != 60 || !s_systemSupportsLeapSeconds)
-            {
-                ulong ticks = DateToTicks(year, month, day) + TimeToTicks(hour, minute, second, millisecond, microsecond);
-                _dateData = ticks | ((ulong)kind << KindShift);
-            }
-            else
-            {
-                // if we have a leap second, then we adjust it to 59 so that DateTime will consider it the last in the specified minute.
-                this = new DateTime(year, month, day, hour, minute, 59, millisecond, microsecond, kind);
-                ValidateLeapSecond();
-            }
+            ulong newTicks = (ticks & TicksMask) + (ulong)(microsecond * TicksPerMicrosecond);
+
+            if (newTicks > MaxTicks) ThrowDateArithmetic(0);
+            _dateData = newTicks | (ticks & FlagsMask);
         }
 
         /// <summary>
@@ -781,6 +769,55 @@ namespace System
             }
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static ulong Init(int year, int month, int day, int hour, int minute, int second, int millisecond)
+        {
+            if ((uint)millisecond >= MillisPerSecond) ThrowMillisecondOutOfRange();
+
+            if (second != 60 || !s_systemSupportsLeapSeconds)
+            {
+                ulong ticks = DateToTicks(year, month, day) + TimeToTicks(hour, minute, second);
+                ticks += (uint)millisecond * (uint)TicksPerMillisecond;
+                Debug.Assert(ticks <= MaxTicks, "Input parameters validated already");
+                return ticks;
+            }
+
+            // if we have a leap second, then we adjust it to 59 so that DateTime will consider it the last in the specified minute.
+            DateTime dt = new(year, month, day, hour, minute, 59, millisecond);
+
+            if (!IsValidTimeWithLeapSeconds(year, month, day, hour, 59, DateTimeKind.Unspecified))
+            {
+                ThrowHelper.ThrowArgumentOutOfRange_BadHourMinuteSecond();
+            }
+
+            return dt._dateData;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static ulong Init(int year, int month, int day, int hour, int minute, int second, int millisecond, DateTimeKind kind)
+        {
+            if ((uint)millisecond >= MillisPerSecond) ThrowMillisecondOutOfRange();
+            if ((uint)kind > (uint)DateTimeKind.Local) ThrowInvalidKind();
+
+            if (second != 60 || !s_systemSupportsLeapSeconds)
+            {
+                ulong ticks = DateToTicks(year, month, day) + TimeToTicks(hour, minute, second);
+                ticks += (uint)millisecond * (uint)TicksPerMillisecond;
+                Debug.Assert(ticks <= MaxTicks, "Input parameters validated already");
+                return ticks | ((ulong)kind << KindShift);
+            }
+
+            // if we have a leap second, then we adjust it to 59 so that DateTime will consider it the last in the specified minute.
+            DateTime dt = new(year, month, day, hour, minute, 59, millisecond, kind);
+
+            if (!IsValidTimeWithLeapSeconds(year, month, day, hour, 59, kind))
+            {
+                ThrowHelper.ThrowArgumentOutOfRange_BadHourMinuteSecond();
+            }
+
+            return dt._dateData;
+        }
+
         private void ValidateLeapSecond()
         {
             if (!IsValidTimeWithLeapSeconds(Year, Month, Day, Hour, Minute, Kind))
@@ -903,13 +940,12 @@ namespace System
         /// </exception>
         public DateTime AddMicroseconds(double value)
         {
-            long ticks = checked((long)(value * TicksPerMicrosecond));
-            if (value is < 0 or >= MaxMicroseconds)
+            if (value < -MaxMicroseconds || value > MaxMicroseconds)
             {
                 ThrowOutOfRange();
             }
 
-            return AddTicks(ticks);
+            return AddTicks((long)(value * TicksPerMicrosecond));
 
             static void ThrowOutOfRange() => throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_AddValue);
         }
