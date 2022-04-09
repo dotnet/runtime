@@ -153,14 +153,14 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             {
                 QUIC_HANDLE* handle;
                 MsQuicAlpnHelper.Prepare(alpnProtocols, out handles, out buffers);
-                ThrowIfFailure(
-                    MsQuicApi.Api.ApiTable->ConfigurationOpen(
-                        MsQuicApi.Api.Registration.QuicHandle,
-                        (QUIC_BUFFER*)Marshal.UnsafeAddrOfPinnedArrayElement(buffers, 0),
-                        (uint)alpnProtocols.Count,
-                        &settings,
-                        (uint)sizeof(QUIC_SETTINGS), (void*)IntPtr.Zero, &handle),
-                    "ConfigurationOpen failed");
+                ThrowIfFailure(MsQuicApi.Api.ApiTable->ConfigurationOpen(
+                    MsQuicApi.Api.Registration.QuicHandle,
+                    (QUIC_BUFFER*)Marshal.UnsafeAddrOfPinnedArrayElement(buffers, 0),
+                    (uint)alpnProtocols.Count,
+                    &settings,
+                    (uint)sizeof(QUIC_SETTINGS),
+                    (void*)IntPtr.Zero,
+                    &handle), "ConfigurationOpen failed");
                 configurationHandle = new SafeMsQuicConfigurationHandle(handle);
             }
             finally
@@ -243,7 +243,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
 #if TARGET_WINDOWS
                 if ((Interop.SECURITY_STATUS)status == Interop.SECURITY_STATUS.AlgorithmMismatch && MsQuicApi.Tls13MayBeDisabled)
                 {
-                    throw new QuicException(status, SR.net_ssl_app_protocols_invalid);
+                    throw new MsQuicException(status, SR.net_ssl_app_protocols_invalid);
                 }
 #endif
 

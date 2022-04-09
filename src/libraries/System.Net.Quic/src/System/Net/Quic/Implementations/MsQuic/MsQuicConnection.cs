@@ -48,7 +48,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             public TaskCompletionSource<int>? ConnectTcs;
             // TODO: only allocate these when there is an outstanding shutdown.
-            public readonly TaskCompletionSource<int> ShutdownTcs = new TaskCompletionSource<uint>(TaskCreationOptions.RunContinuationsAsynchronously);
+            public readonly TaskCompletionSource<int> ShutdownTcs = new TaskCompletionSource<int>(TaskCreationOptions.RunContinuationsAsynchronously);
 
             // Note that there's no such thing as resetable TCS, so we cannot reuse the same instance after we've set the result.
             // We also cannot use solutions like ManualResetValueTaskSourceCore, since we can have multiple waiters on the same TCS.
