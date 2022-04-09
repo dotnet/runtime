@@ -230,6 +230,56 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             public int Int2 { get; }
         }
 
+        public class ImmutableClassWAmbiguousConstructorOverloads
+        {
+            public ImmutableClassWAmbiguousConstructorOverloads(string string1, int int1, string string2, int int2)
+            {
+                String1 = "created by 1st constructor";
+                Int1 = int1;
+                String2 = string2;
+                Int2 = int2;
+            }
+
+            public ImmutableClassWAmbiguousConstructorOverloads(int int1, string string1, int int2, string string2)
+            {
+                Int1 = int1;
+                String1 = "created by 2st constructor";
+                Int2 = int2;
+                String2 = string2;
+            }
+
+            public string String1 { get; }
+            public string String2 { get; }
+            public int Int1 { get; }
+            public int Int2 { get; }
+        }
+
+        public class ImmutableClassWMoreConstructorParamsThatProperties
+        {
+            public ImmutableClassWMoreConstructorParamsThatProperties(string string1, int int1, string string2, int int2)
+            {
+                String1 = string1;
+                Int1 = int1;
+                String2 = string2;
+                Int2 = int2;
+            }
+
+            public ImmutableClassWMoreConstructorParamsThatProperties(int int1, string string1, int int2, string string2, int int3, string string3)
+            {
+                Int1 = int1;
+                String1 = string1;
+                Int2 = int2;
+                String2 = string2;
+
+                String1 = "set from the largest constructor";
+            }
+
+            public string String1 { get; }
+            public string String2 { get; }
+            public int Int1 { get; }
+            public int Int2 { get; }
+        }
+
         public class SemiImmutableClass
         {
             public SemiImmutableClass(string color, int length)
@@ -1194,7 +1244,7 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
         // If the immutable type has multiple constructors,
         // then pick the one with the most parameters
         // and try to bind as many as possible.
-        // The type used in example below has multiple constructors in
+        // The type used in the example below has multiple constructors in
         // an arbitrary order, but/ with the biggest (chosen) one
         // deliberately not first or last.
         [Fact]
@@ -1213,6 +1263,50 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
 
             var options = config.Get<ImmutableClassWithConstructorOverloads>();
             Assert.Equal("s1", options.String1);
+            Assert.Equal("s2", options.String2);
+            Assert.Equal(1, options.Int1);
+            Assert.Equal(2, options.Int2);
+        }
+
+        [Fact]
+        public void CanBindImmutableClass_PicksFirstOfAnyAmbiguousConstructors()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"String1", "s1"},
+                {"Int1", "1"},
+                {"String2", "s2"},
+                {"Int2", "2"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<ImmutableClassWAmbiguousConstructorOverloads>();
+            Assert.Equal("created by 1st constructor", options.String1);
+            Assert.Equal("s2", options.String2);
+            Assert.Equal(1, options.Int1);
+            Assert.Equal(2, options.Int2);
+        }
+
+        [Fact]
+        public void CanBindImmutableClass_PicksLargestConstructorEvenIfItHasExtraneousParameters()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"String1", "s1"},
+                {"Int1", "1"},
+                {"String2", "s2"},
+                {"Int2", "2"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<ImmutableClassWMoreConstructorParamsThatProperties>();
+
+            // the biggest constructor sets this field to something else
+            Assert.Equal("set from the largest constructor", options.String1);
             Assert.Equal("s2", options.String2);
             Assert.Equal(1, options.Int1);
             Assert.Equal(2, options.Int2);

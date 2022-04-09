@@ -428,6 +428,12 @@ namespace Microsoft.Extensions.Configuration
             bool hasParameterlessPublicConstructor =
                 constructors.Any(ctor => ctor.GetParameters().Length == 0);
 
+            // if it's not a value type, and there are no constructors, nor a default constructor
+            if (!type.IsValueType && constructors.Length == 0 && !hasParameterlessPublicConstructor)
+            {
+                throw new InvalidOperationException(SR.Format(SR.Error_MissingParameterlessConstructor, type));
+            }
+
             if (constructors.Length > 0 && !hasParameterlessPublicConstructor)
             {
                 // find the biggest constructor so that we can bind to the most parameters
