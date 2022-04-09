@@ -2016,8 +2016,8 @@ yynewstate:
 
 		yyerrlab:
 			++yynerrs;
-
-		case 1: FALLTHROUGH;
+			FALLTHROUGH;
+		case 1:
 		case 2: /* incompletely recovered error ... try again */
 
 			yyerrflag = 3;
