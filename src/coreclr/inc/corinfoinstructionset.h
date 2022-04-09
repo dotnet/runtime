@@ -632,7 +632,6 @@ inline CORINFO_InstructionSet InstructionSetFromR2RInstructionSet(ReadyToRunInst
         case READYTORUN_INSTRUCTION_Sha1: return InstructionSet_Sha1;
         case READYTORUN_INSTRUCTION_Sha256: return InstructionSet_Sha256;
         case READYTORUN_INSTRUCTION_Atomics: return InstructionSet_Atomics;
-        case READYTORUN_INSTRUCTION_Rcpc: return InstructionSet_Rcpc;
 #endif // TARGET_ARM64
 #ifdef TARGET_AMD64
         case READYTORUN_INSTRUCTION_X86Base: return InstructionSet_X86Base;
