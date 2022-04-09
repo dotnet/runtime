@@ -102,11 +102,8 @@ class Compiler;
 // Declare global operator new overloads that use the compiler's arena allocator
 //
 
-// I wanted to make the second argument optional, with default = CMK_Unknown, but that
-// caused these to be ambiguous with the global placement new operators.
-void* __cdecl operator new(size_t n, Compiler* context, CompMemKind cmk);
-void* __cdecl operator new[](size_t n, Compiler* context, CompMemKind cmk);
-void* __cdecl operator new(size_t n, void* p, const jitstd::placement_t& syntax_difference);
+void* operator new(size_t n, Compiler* context, CompMemKind cmk);
+void* operator new[](size_t n, Compiler* context, CompMemKind cmk);
 
 // Requires the definitions of "operator new" so including "LoopCloning.h" after the definitions.
 #include "loopcloning.h"
@@ -481,9 +478,15 @@ public:
 
     unsigned char lvIsTemp : 1; // Short-lifetime compiler temp
 
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
     unsigned char lvIsImplicitByRef : 1; // Set if the argument is an implicit byref.
-#endif                                   // defined(TARGET_AMD64) || defined(TARGET_ARM64)
+#endif // defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+
+#if defined(TARGET_LOONGARCH64)
+    unsigned char lvIs4Field1 : 1; // Set if the 1st field is int or float within struct for LA-ABI64.
+    unsigned char lvIs4Field2 : 1; // Set if the 2nd field is int or float within struct for LA-ABI64.
+    unsigned char lvIsSplit : 1;   // Set if the argument is splited.
+#endif                             // defined(TARGET_LOONGARCH64)
 
     unsigned char lvIsBoolean : 1; // set if variable is boolean
     unsigned char lvSingleDef : 1; // variable has a single def
@@ -1014,7 +1017,7 @@ public:
         }
 #endif
         assert(m_layout != nullptr);
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
         assert(varTypeIsStruct(TypeGet()) || (lvIsImplicitByRef && (TypeGet() == TYP_BYREF)));
 #else
         assert(varTypeIsStruct(TypeGet()));
@@ -1125,7 +1128,7 @@ public:
 
     var_types GetRegisterType() const;
 
-    var_types GetActualRegisterType() const;
+    var_types GetStackSlotHomeType() const;
 
     bool IsEnregisterableType() const
     {
@@ -1623,7 +1626,7 @@ struct FuncInfoDsc
     emitLocation* coldStartLoc; // locations for the cold section, if there is one.
     emitLocation* coldEndLoc;
 
-#elif defined(TARGET_ARMARCH)
+#elif defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64)
 
     UnwindInfo  uwi;     // Unwind information for this function/funclet's hot  section
     UnwindInfo* uwiCold; // Unwind information for this function/funclet's cold section
@@ -1638,7 +1641,7 @@ struct FuncInfoDsc
     emitLocation* coldStartLoc; // locations for the cold section, if there is one.
     emitLocation* coldEndLoc;
 
-#endif // TARGET_ARMARCH
+#endif // TARGET_ARMARCH || TARGET_LOONGARCH64
 
 #if defined(FEATURE_CFI_SUPPORT)
     jitstd::vector<CFI_CODE>* cfiCodes;
@@ -3250,7 +3253,7 @@ public:
     // For ARM64, this is structs larger than 16 bytes that are passed by reference.
     bool lvaIsImplicitByRefLocal(unsigned varNum)
     {
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
         LclVarDsc* varDsc = lvaGetDesc(varNum);
         if (varDsc->lvIsImplicitByRef)
         {
@@ -3259,7 +3262,7 @@ public:
             assert(varTypeIsStruct(varDsc) || (varDsc->lvType == TYP_BYREF));
             return true;
         }
-#endif // defined(TARGET_AMD64) || defined(TARGET_ARM64)
+#endif // defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
         return false;
     }
 
@@ -3346,6 +3349,8 @@ public:
         bool ShouldPromoteStructVar(unsigned lclNum);
         void PromoteStructVar(unsigned lclNum);
         void SortStructFields();
+
+        bool CanConstructAndPromoteField(lvaStructPromotionInfo* structPromotionInfo);
 
         lvaStructFieldInfo GetFieldInfo(CORINFO_FIELD_HANDLE fieldHnd, BYTE ordinal);
         bool TryPromoteStructField(lvaStructFieldInfo& outerFieldInfo);
@@ -7517,6 +7522,9 @@ public:
 #elif defined(TARGET_ARM64)
             reg     = REG_R11;
             regMask = RBM_R11;
+#elif defined(TARGET_LOONGARCH64)
+            reg     = REG_T8;
+            regMask = RBM_T8;
 #else
 #error Unsupported or unset target architecture
 #endif
@@ -7925,6 +7933,15 @@ public:
     void unwindReturn(regNumber reg);                                             // ret lr
 #endif                                                                            // defined(TARGET_ARM64)
 
+#if defined(TARGET_LOONGARCH64)
+    void unwindNop();
+    void unwindPadding(); // Generate a sequence of unwind NOP codes representing instructions between the last
+                          // instruction and the current location.
+    void unwindSaveReg(regNumber reg, int offset);
+    void unwindSaveRegPair(regNumber reg1, regNumber reg2, int offset);
+    void unwindReturn(regNumber reg);
+#endif // defined(TARGET_LOONGARCH64)
+
     //
     // Private "helper" functions for the unwind implementation.
     //
@@ -8010,9 +8027,13 @@ private:
         CORINFO_InstructionSet minimumIsa = InstructionSet_SSE2;
 #elif defined(TARGET_ARM64)
         CORINFO_InstructionSet minimumIsa = InstructionSet_AdvSimd;
+#elif defined(TARGET_LOONGARCH64)
+        // TODO: supporting SIMD feature for LoongArch64.
+        assert(!"unimplemented yet on LA");
+        CORINFO_InstructionSet minimumIsa = 0;
 #else
 #error Unsupported platform
-#endif // !TARGET_XARCH && !TARGET_ARM64
+#endif // !TARGET_XARCH && !TARGET_ARM64 && !TARGET_LOONGARCH64
 
         return compOpportunisticallyDependsOn(minimumIsa);
 #else
@@ -9465,6 +9486,8 @@ public:
 #define CPU_ARM 0x0300   // The generic ARM CPU
 #define CPU_ARM64 0x0400 // The generic ARM64 CPU
 
+#define CPU_LOONGARCH64 0x0800 // The generic LOONGARCH64 CPU
+
         unsigned genCPU; // What CPU are we running on
 
         // Number of class profile probes in this method
@@ -9990,7 +10013,7 @@ protected:
     void compSetProcessor();
     void compInitDebuggingInfo();
     void compSetOptimizationLevel();
-#ifdef TARGET_ARMARCH
+#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64)
     bool compRsvdRegCheck(FrameLayoutState curState);
 #endif
     void compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFlags* compileFlags);
@@ -11332,6 +11355,13 @@ const instruction INS_ABS  = INS_fabs;
 const instruction INS_SQRT = INS_fsqrt;
 
 #endif // TARGET_ARM64
+
+#ifdef TARGET_LOONGARCH64
+const instruction INS_BREAKPOINT = INS_break;
+const instruction INS_MULADD     = INS_fmadd_d; // NOTE: default is double.
+const instruction INS_ABS        = INS_fabs_d;  // NOTE: default is double.
+const instruction INS_SQRT       = INS_fsqrt_d; // NOTE: default is double.
+#endif                                          // TARGET_LOONGARCH64
 
 /*****************************************************************************/
 

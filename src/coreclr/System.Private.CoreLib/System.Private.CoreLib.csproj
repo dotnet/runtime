@@ -201,8 +201,6 @@
     <Compile Include="$(BclSourcesRoot)\System\Reflection\RuntimePropertyInfo.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Metadata\RuntimeTypeMetadataUpdateHandler.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Resources\ManifestBasedResourceGroveler.CoreCLR.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\CrossLoaderAllocatorHashHelpers.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\GCHeapHash.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\CastHelpers.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\ICastableHelpers.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\RuntimeFeature.CoreCLR.cs" />

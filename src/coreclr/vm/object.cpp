@@ -1952,20 +1952,3 @@ void ExceptionObject::GetStackTrace(StackTraceArray & stackTrace, PTRARRAYREF * 
 #endif // !defined(DACCESS_COMPILE)
 
 }
-
-bool LAHashDependentHashTrackerObject::IsLoaderAllocatorLive()
-{
-    return (ObjectFromHandle(_dependentHandle) != NULL);
-}
-
-void LAHashDependentHashTrackerObject::GetDependentAndLoaderAllocator(OBJECTREF *pLoaderAllocatorRef, GCHEAPHASHOBJECTREF *pGCHeapHash)
-{
-    OBJECTREF primary = ObjectFromHandle(_dependentHandle);
-    if (pLoaderAllocatorRef != NULL)
-        *pLoaderAllocatorRef = primary;
-
-    IGCHandleManager *mgr = GCHandleUtilities::GetGCHandleManager();
-    // Secondary is tracked only if primary is non-null
-    if (pGCHeapHash != NULL)
-        *pGCHeapHash = (GCHEAPHASHOBJECTREF)(OBJECTREF)((primary != NULL) ? mgr->GetDependentHandleSecondary(_dependentHandle) : NULL);
-}

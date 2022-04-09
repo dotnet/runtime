@@ -5,6 +5,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Text;
 using System.Xml.Schema;
@@ -12,7 +13,6 @@ using System.Xml.XPath;
 using System.Security;
 using System.Globalization;
 using System.Runtime.Versioning;
-using System.Diagnostics.CodeAnalysis;
 
 namespace System.Xml
 {
@@ -1355,7 +1355,7 @@ namespace System.Xml
         }
 
         // Loads the XML document from the specified string.
-        public virtual void LoadXml(string xml)
+        public virtual void LoadXml([StringSyntax(StringSyntaxAttribute.Xml)] string xml)
         {
             XmlTextReader reader = SetupReader(new XmlTextReader(new StringReader(xml), NameTable));
             try

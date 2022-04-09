@@ -84,7 +84,7 @@ namespace System
             }
             else
             {
-                EETypePtr srcEEType = srcObject.EETypePtr;
+                EETypePtr srcEEType = srcObject.GetEETypePtr();
 
                 if (RuntimeImports.AreTypesAssignable(srcEEType, dstEEType))
                     return srcObject;
@@ -240,7 +240,7 @@ namespace System
                     return CreateChangeTypeException(srcEEType, dstEEType, semantics);
             }
 
-            Debug.Assert(dstObject.EETypePtr == dstEEType);
+            Debug.Assert(dstObject.GetEETypePtr() == dstEEType);
             return null;
         }
 
@@ -371,7 +371,7 @@ namespace System
             {
                 // If the passed in array is not an actual object[] instance, we need to copy it over to an actual object[]
                 // instance so that the rest of the code can safely create managed object references to individual elements.
-                if (parameters != null && EETypePtr.EETypePtrOf<object[]>() != parameters.EETypePtr)
+                if (parameters != null && EETypePtr.EETypePtrOf<object[]>() != parameters.GetEETypePtr())
                 {
                     argSetupState.parameters = new object[parameters.Length];
                     Array.Copy(parameters, argSetupState.parameters, parameters.Length);
@@ -462,7 +462,7 @@ namespace System
         private static object DynamicInvokeBoxIntoNonNullable(object actualBoxedNullable)
         {
             // grab the pointer to data, box using the MethodTable of the actualBoxedNullable, and then return the boxed object
-            return RuntimeImports.RhBox(actualBoxedNullable.EETypePtr, ref actualBoxedNullable.GetRawData());
+            return RuntimeImports.RhBox(actualBoxedNullable.GetEETypePtr(), ref actualBoxedNullable.GetRawData());
         }
 
         [DebuggerStepThrough]
@@ -596,19 +596,19 @@ namespace System
                 {
                     if (nullable || paramType == DynamicInvokeParamType.Ref)
                     {
-                        if (widenAndCompareType.ToEETypePtr() != incomingParam.EETypePtr)
+                        if (widenAndCompareType.ToEETypePtr() != incomingParam.GetEETypePtr())
                         {
                             if (argSetupState.binderBundle == null)
-                                throw CreateChangeTypeArgumentException(incomingParam.EETypePtr, type.ToEETypePtr());
+                                throw CreateChangeTypeArgumentException(incomingParam.GetEETypePtr(), type.ToEETypePtr());
                             Type exactDstType = GetExactTypeForCustomBinder(argSetupState);
                             incomingParam = argSetupState.binderBundle.ChangeType(incomingParam, exactDstType);
-                            if (incomingParam != null && widenAndCompareType.ToEETypePtr() != incomingParam.EETypePtr)
-                                throw CreateChangeTypeArgumentException(incomingParam.EETypePtr, type.ToEETypePtr());
+                            if (incomingParam != null && widenAndCompareType.ToEETypePtr() != incomingParam.GetEETypePtr())
+                                throw CreateChangeTypeArgumentException(incomingParam.GetEETypePtr(), type.ToEETypePtr());
                         }
                     }
                     else
                     {
-                        if (widenAndCompareType.ToEETypePtr().ElementType != incomingParam.EETypePtr.ElementType)
+                        if (widenAndCompareType.ToEETypePtr().ElementType != incomingParam.GetEETypePtr().ElementType)
                         {
                             System.Diagnostics.Debug.Assert(paramType == DynamicInvokeParamType.In);
                             incomingParam = InvokeUtils.CheckArgument(incomingParam, widenAndCompareType.ToEETypePtr(), InvokeUtils.CheckArgumentSemantics.DynamicInvoke, argSetupState.binderBundle, ref argSetupState);

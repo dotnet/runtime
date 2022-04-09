@@ -1236,13 +1236,6 @@ DEFINE_CLASS(NULLABLE_COMPARER, CollectionsGeneric, NullableComparer`1)
 
 DEFINE_CLASS(INATTRIBUTE, Interop, InAttribute)
 
-DEFINE_CLASS_U(CompilerServices,           GCHeapHash,                      GCHeapHashObject)
-DEFINE_FIELD_U(_data,                      GCHeapHashObject,                _data)
-DEFINE_FIELD_U(_count,                     GCHeapHashObject,                _count)
-DEFINE_FIELD_U(_deletedCount,              GCHeapHashObject,                _deletedCount)
-
-DEFINE_CLASS(GCHEAPHASH, CompilerServices, GCHeapHash)
-
 DEFINE_CLASS(CASTHELPERS, CompilerServices, CastHelpers)
 DEFINE_FIELD(CASTHELPERS, TABLE, s_table)
 DEFINE_METHOD(CASTHELPERS, ISINSTANCEOFANY,  IsInstanceOfAny,             SM_PtrVoid_Obj_RetObj)
@@ -1255,21 +1248,6 @@ DEFINE_METHOD(CASTHELPERS, CHKCASTCLASSSPECIAL, ChkCastClassSpecial,      SM_Ptr
 DEFINE_METHOD(CASTHELPERS, UNBOX,            Unbox,                       SM_PtrVoid_Obj_RetRefByte)
 DEFINE_METHOD(CASTHELPERS, STELEMREF,        StelemRef,                   SM_Array_Int_Obj_RetVoid)
 DEFINE_METHOD(CASTHELPERS, LDELEMAREF,       LdelemaRef,                  SM_Array_Int_PtrVoid_RetRefObj)
-
-DEFINE_CLASS_U(CompilerServices,           LAHashDependentHashTracker,      LAHashDependentHashTrackerObject)
-DEFINE_FIELD_U(_dependentHandle,           LAHashDependentHashTrackerObject,_dependentHandle)
-DEFINE_FIELD_U(_loaderAllocator,           LAHashDependentHashTrackerObject,_loaderAllocator)
-
-DEFINE_CLASS(LAHASHDEPENDENTHASHTRACKER, CompilerServices, LAHashDependentHashTracker)
-#if FOR_ILLINK
-DEFINE_METHOD(LAHASHDEPENDENTHASHTRACKER,  CTOR,                            .ctor,        IM_RetVoid)
-#endif
-
-DEFINE_CLASS_U(CompilerServices,           LAHashKeyToTrackers,             LAHashKeyToTrackersObject)
-DEFINE_FIELD_U(_trackerOrTrackerSet,       LAHashKeyToTrackersObject,       _trackerOrTrackerSet)
-DEFINE_FIELD_U(_laLocalKeyValueStore,      LAHashKeyToTrackersObject,       _laLocalKeyValueStore)
-
-DEFINE_CLASS(LAHASHKEYTOTRACKERS, CompilerServices, LAHashKeyToTrackers)
 
 DEFINE_CLASS_U(System, GCMemoryInfoData, GCMemoryInfoData)
 DEFINE_FIELD_U(_highMemoryLoadThresholdBytes, GCMemoryInfoData, highMemLoadThresholdBytes)

@@ -1394,8 +1394,6 @@ void SystemDomain::LoadBaseSystemClasses()
     g_pDelegateClass = CoreLibBinder::GetClass(CLASS__DELEGATE);
     g_pMulticastDelegateClass = CoreLibBinder::GetClass(CLASS__MULTICAST_DELEGATE);
 
-    CrossLoaderAllocatorHashSetup::EnsureTypesLoaded();
-
     // further loading of nonprimitive types may need casting support.
     // initialize cast cache here.
     CastCache::Initialize();

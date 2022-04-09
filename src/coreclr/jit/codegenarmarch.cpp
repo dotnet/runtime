@@ -3627,7 +3627,7 @@ void CodeGen::genJmpMethod(GenTree* jmp)
         // assert should hold.
         assert(varDsc->GetRegNum() != REG_STK);
         assert(varDsc->IsEnregisterableLcl());
-        var_types storeType = varDsc->GetActualRegisterType();
+        var_types storeType = varDsc->GetStackSlotHomeType();
         emitAttr  storeSize = emitActualTypeSize(storeType);
 
 #ifdef TARGET_ARM

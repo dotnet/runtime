@@ -18,13 +18,13 @@ namespace System.Net
         protected WebProxy(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
         public WebProxy(string? Address) { }
         public WebProxy(string? Address, bool BypassOnLocal) { }
-        public WebProxy(string? Address, bool BypassOnLocal, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute(System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.Regex, System.Text.RegularExpressions.RegexOptions.IgnoreCase | System.Text.RegularExpressions.RegexOptions.CultureInvariant)] string[]? BypassList) { }
-        public WebProxy(string? Address, bool BypassOnLocal, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute(System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.Regex, System.Text.RegularExpressions.RegexOptions.IgnoreCase | System.Text.RegularExpressions.RegexOptions.CultureInvariant)] string[]? BypassList, System.Net.ICredentials? Credentials) { }
+        public WebProxy(string? Address, bool BypassOnLocal, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Regex", System.Text.RegularExpressions.RegexOptions.IgnoreCase | System.Text.RegularExpressions.RegexOptions.CultureInvariant)] string[]? BypassList) { }
+        public WebProxy(string? Address, bool BypassOnLocal, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Regex", System.Text.RegularExpressions.RegexOptions.IgnoreCase | System.Text.RegularExpressions.RegexOptions.CultureInvariant)] string[]? BypassList, System.Net.ICredentials? Credentials) { }
         public WebProxy(string Host, int Port) { }
         public WebProxy(System.Uri? Address) { }
         public WebProxy(System.Uri? Address, bool BypassOnLocal) { }
-        public WebProxy(System.Uri? Address, bool BypassOnLocal, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute(System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.Regex, System.Text.RegularExpressions.RegexOptions.IgnoreCase | System.Text.RegularExpressions.RegexOptions.CultureInvariant)] string[]? BypassList) { }
-        public WebProxy(System.Uri? Address, bool BypassOnLocal, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute(System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.Regex, System.Text.RegularExpressions.RegexOptions.IgnoreCase | System.Text.RegularExpressions.RegexOptions.CultureInvariant)] string[]? BypassList, System.Net.ICredentials? Credentials) { }
+        public WebProxy(System.Uri? Address, bool BypassOnLocal, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Regex", System.Text.RegularExpressions.RegexOptions.IgnoreCase | System.Text.RegularExpressions.RegexOptions.CultureInvariant)] string[]? BypassList) { }
+        public WebProxy(System.Uri? Address, bool BypassOnLocal, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Regex", System.Text.RegularExpressions.RegexOptions.IgnoreCase | System.Text.RegularExpressions.RegexOptions.CultureInvariant)] string[]? BypassList, System.Net.ICredentials? Credentials) { }
         public System.Uri? Address { get { throw null; } set { } }
         public System.Collections.ArrayList BypassArrayList { get { throw null; } }
         [System.Diagnostics.CodeAnalysis.AllowNullAttribute]

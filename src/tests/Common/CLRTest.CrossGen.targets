@@ -61,7 +61,7 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
     if [ ! -d IL-CG2 ]%3B then
       mkdir IL-CG2
       if [ ! -z ${CompositeBuildMode+x} ]%3B then
-        cp $(MSBuildProjectName).dll IL-CG2/
+        cp $(AssemblyName).dll IL-CG2/
         cp $CORE_ROOT/lib*.so $CORE_ROOT/lib*.dylib $(scriptPath)
       else
         cp *.dll IL-CG2/
@@ -143,7 +143,7 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
   fi
 
   export COMPlus_ZapRequire=$(ZapRequire)
-  export COMPlus_ZapRequireList=$(MSBuildProjectName)
+  export COMPlus_ZapRequireList=$(AssemblyName)
 fi
         ]]>
       </CrossgenBashScript>
@@ -265,7 +265,7 @@ if defined RunCrossGen2 (
     )
 
   set COMPlus_ZapRequire=$(ZapRequire)
-  set COMPlus_ZapRequireList=$(MSBuildProjectName)
+  set COMPlus_ZapRequireList=$(AssemblyName)
 )
         ]]>
       </CrossgenBatchScript>

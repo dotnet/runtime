@@ -40,7 +40,7 @@ namespace System.Net.Http.Headers
         public static readonly KnownHeader ContentRange = new KnownHeader("Content-Range", HttpHeaderType.Content | HttpHeaderType.NonTrailing, GenericHeaderParser.ContentRangeParser, null, H2StaticTable.ContentRange);
         public static readonly KnownHeader ContentSecurityPolicy = new KnownHeader("Content-Security-Policy", http3StaticTableIndex: H3StaticTable.ContentSecurityPolicyAllNone);
         public static readonly KnownHeader ContentType = new KnownHeader("Content-Type", HttpHeaderType.Content | HttpHeaderType.NonTrailing, MediaTypeHeaderParser.SingleValueParser, null, H2StaticTable.ContentType, H3StaticTable.ContentTypeApplicationDnsMessage);
-        public static readonly KnownHeader Cookie = new KnownHeader("Cookie", H2StaticTable.Cookie, H3StaticTable.Cookie);
+        public static readonly KnownHeader Cookie = new KnownHeader("Cookie", HttpHeaderType.Custom, CookieHeaderParser.Parser, null, H2StaticTable.Cookie, H3StaticTable.Cookie);
         public static readonly KnownHeader Cookie2 = new KnownHeader("Cookie2");
         public static readonly KnownHeader Date = new KnownHeader("Date", HttpHeaderType.General | HttpHeaderType.NonTrailing, DateHeaderParser.Parser, null, H2StaticTable.Date, H3StaticTable.Date);
         public static readonly KnownHeader ETag = new KnownHeader("ETag", HttpHeaderType.Response, GenericHeaderParser.SingleValueEntityTagParser, null, H2StaticTable.ETag, H3StaticTable.ETag);
