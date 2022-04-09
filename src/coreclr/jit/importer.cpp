@@ -4317,7 +4317,6 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                                 default:
                                     NO_WAY("Intrinsic not supported in this path.");
                             }
-
                             impPopStack(); // drop CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE call
                         }
                     }
@@ -7481,7 +7480,8 @@ void Compiler::impImportAndPushBox(CORINFO_RESOLVED_TOKEN* pResolvedToken)
     else
     {
         // Don't optimize, just call the helper and be done with it.
-        JITDUMP(" helper call because: %s\n", canExpandInline ? (byRefLike ? "byreflike" : "optimizing for size") : "nullable");
+        JITDUMP(" helper call because: %s\n",
+                canExpandInline ? (byRefLike ? "byreflike" : "optimizing for size") : "nullable");
         assert(operCls != nullptr);
 
         // Ensure that the value class is restored
