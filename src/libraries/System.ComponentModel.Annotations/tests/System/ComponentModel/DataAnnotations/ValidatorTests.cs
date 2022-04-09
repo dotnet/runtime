@@ -137,26 +137,119 @@ namespace System.ComponentModel.DataAnnotations.Tests
         }
 
         [Fact]
-        public static void TryValidateObject_validates_recursive()
+        public void ValidationResultFailedIfPropertyInUnattributedNestedValueFails()
         {
-            var objectToBeValidated = new Person
+            var thingToValidate = new TopLevelWithCompositeProperties
             {
-                Name = null,
-                Address = new Address
+                IntRange = 4,
+                Required = "aaa",
+                StringLength = "222",
+                AnnotatedOptionSubsection = new AnnotatedSubsection
                 {
-                    StreetName = null
+                    IntRange2 = 3 // in range
+                },
+                UnattributedAnnotatedOptionSubsection = new AnnotatedSubsection
+                {
+                    IntRange2 = 100 // out of range
                 }
             };
 
-            var validationContext = new ValidationContext(objectToBeValidated);
-
-            Assert.False(
-                Validator.TryValidateObject(objectToBeValidated, validationContext, null, false));
-
+            var context = new ValidationContext(thingToValidate);
             var validationResults = new List<ValidationResult>();
-            Assert.False(
-                Validator.TryValidateObject(objectToBeValidated, validationContext, validationResults, true));
+
+            Assert.False(Validator.TryValidateObject(thingToValidate, context, validationResults, true));
+            Assert.Equal(1, validationResults.Count);
+
+            Assert.Equal("Really out of range.", validationResults.Single().ErrorMessage);
+        }
+
+        [Fact]
+        public void ValidationResultFailedIfPropertyInNestedValueFails()
+        {
+            var thingToValidate = new TopLevelWithCompositeProperties
+            {
+                IntRange = 4,
+                Required = "aaa",
+                StringLength = "222",
+                AnnotatedOptionSubsection = new AnnotatedSubsection
+                {
+                    IntRange2 = 100 // out of range
+                }
+            };
+        
+            var context = new ValidationContext(thingToValidate);
+            var validationResults = new List<ValidationResult>();
+
+            Assert.False(Validator.TryValidateObject(thingToValidate, context, validationResults, true));
+            Assert.Equal(1, validationResults.Count);
+
+            Assert.Equal("Really out of range.", validationResults.Single().ErrorMessage);
+
+        }
+
+        [Fact]
+        public void ValidationResultFailedIfRequiredCompositePropertyIsNull()
+        {
+            var thingToValidate = new TopLevelWithCompositeProperties
+            {
+                IntRange = 4,
+                Required = "aaa",
+                StringLength = "222",
+                AnnotatedOptionSubsection = null! // fails - is marked as Required
+            };
+        
+            var context = new ValidationContext(thingToValidate);
+            var validationResults = new List<ValidationResult>();
+
+            Assert.False(Validator.TryValidateObject(thingToValidate, context, validationResults, true));
+            Assert.Equal(1, validationResults.Count);
+
+            Assert.Equal("The AnnotatedOptionSubsection field is required.", validationResults.Single().ErrorMessage);
+
+        }
+
+        [Fact]
+        public void HandlesNullNestedValue()
+        {
+            var thingToValidate = new TopLevelWithCompositeProperties
+            {
+                IntRange = 4,
+                Required = "aaa",
+                StringLength = "222",
+                AnnotatedOptionSubsection = new AnnotatedSubsection(),
+                UnattributedAnnotatedOptionSubsection = null!
+            };
+
+            var context = new ValidationContext(thingToValidate);
+            var validationResults = new List<ValidationResult>();
+
+            Assert.True(Validator.TryValidateObject(thingToValidate, context, validationResults, true));
+
+            Assert.Equal(0, validationResults.Count);
+        }
+
+        [Fact]
+        public void ReportsValidationErrorsInTopLevelAndSubLevelOptions()
+        {
+            var thingToValidate = new TopLevelWithCompositeProperties
+            {
+                IntRange = 200, // out of range
+                Required = "aaa",
+                StringLength = "222",
+                AnnotatedOptionSubsection = new AnnotatedSubsection
+                {
+                    IntRange2 = 100 // out of range
+                }
+            };
+
+            var context = new ValidationContext(thingToValidate);
+            var validationResults = new List<ValidationResult>();
+
+            Assert.False(Validator.TryValidateObject(thingToValidate, context, validationResults, true));
             Assert.Equal(2, validationResults.Count);
+
+            Assert.Equal("Out of range.", validationResults.ElementAt(0).ErrorMessage);
+            Assert.Equal("Really out of range.", validationResults.ElementAt(1).ErrorMessage);
         }
 
         [Fact]
@@ -1347,22 +1440,29 @@ namespace System.ComponentModel.DataAnnotations.Tests
         {
         }
 
-        public class Person
+        public class TopLevelWithCompositeProperties
         {
             [Required]
-            public string Name { get; set; }
+            public string Required { get; set; }
 
-            public Address Address { get; set; }
-        }
+            [StringLength(5, ErrorMessage = "Too long.")]
+            public string StringLength { get; set; }
 
-        public class Address
-        {
+            [Range(-5, 5, ErrorMessage = "Out of range.")]
+            public int IntRange { get; set; }
+
+            public AnnotatedSubsection UnattributedAnnotatedOptionSubsection { get; set; }
+
             [Required]
-            public string StreetName { get; set; }
-
-            public string Postcode { get; set; }
+            public AnnotatedSubsection AnnotatedOptionSubsection { get; set; }
         }
 
+        public class AnnotatedSubsection
+        {
+            [Range(-5, 5, ErrorMessage = "Really out of range.")]
+            public int IntRange2 { get; set; }
+        }
+        
         [ValidClass]
         public class ToBeValidated
         {

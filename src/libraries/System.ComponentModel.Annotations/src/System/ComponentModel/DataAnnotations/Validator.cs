@@ -475,13 +475,13 @@ namespace System.ComponentModel.DataAnnotations
                     {
                         var newContext = new ValidationContext(propertyValue, validationContext.Items);
 
-                        IEnumerable<ValidationError> r = GetObjectPropertyValidationErrors(
+                        IEnumerable<ValidationError> subErrors = GetObjectPropertyValidationErrors(
                             propertyValue,
                             newContext,
                             validateAllProperties,
                             breakOnFirstError);
 
-                        errors.AddRange(r);
+                        errors.AddRange(subErrors);
                     }
                 }
                 else
