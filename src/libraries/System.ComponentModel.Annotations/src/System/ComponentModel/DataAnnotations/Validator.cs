@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Reflection;
 
 namespace System.ComponentModel.DataAnnotations
 {
@@ -454,15 +455,34 @@ namespace System.ComponentModel.DataAnnotations
             var properties = GetPropertyValues(instance, validationContext);
             var errors = new List<ValidationError>();
 
-            foreach (var property in properties)
+            foreach (KeyValuePair<ValidationContext, object?> property in properties)
             {
                 // get list of all validation attributes for this property
-                var attributes = _store.GetPropertyValidationAttributes(property.Key);
+                var attributes = _store.GetPropertyValidationAttributes(property.Key).ToList();
+
+                object? propertyValue = property.Value;
 
                 if (validateAllProperties)
                 {
                     // validate all validation attributes on this property
-                    errors.AddRange(GetValidationErrors(property.Value, property.Key, attributes, breakOnFirstError));
+                    if (attributes.Count != 0)
+                    {
+                        errors.AddRange(
+                            GetValidationErrors(propertyValue, property.Key, attributes, breakOnFirstError));
+                    }
+
+                    if (propertyValue != null)
+                    {
+                        var newContext = new ValidationContext(propertyValue, validationContext.Items);
+
+                        IEnumerable<ValidationError> r = GetObjectPropertyValidationErrors(
+                            propertyValue,
+                            newContext,
+                            validateAllProperties,
+                            breakOnFirstError);
+
+                        errors.AddRange(r);
+                    }
                 }
                 else
                 {
@@ -473,10 +493,10 @@ namespace System.ComponentModel.DataAnnotations
                         {
                             // Note: we let the [Required] attribute do its own null testing,
                             // since the user may have subclassed it and have a deeper meaning to what 'required' means
-                            var validationResult = reqAttr.GetValidationResult(property.Value, property.Key);
+                            var validationResult = reqAttr.GetValidationResult(propertyValue, property.Key);
                             if (validationResult != ValidationResult.Success)
                             {
-                                errors.Add(new ValidationError(reqAttr, property.Value, validationResult!));
+                                errors.Add(new ValidationError(reqAttr, propertyValue, validationResult!));
                             }
                             break;
                         }
@@ -513,7 +533,7 @@ namespace System.ComponentModel.DataAnnotations
                 var context = CreateValidationContext(instance, validationContext);
                 context.MemberName = property.Name;
 
-                if (_store.GetPropertyValidationAttributes(context).Any())
+                //if (_store.GetPropertyValidationAttributes(context).Any())
                 {
                     items.Add(new KeyValuePair<ValidationContext, object?>(context, property.GetValue(instance)));
                 }

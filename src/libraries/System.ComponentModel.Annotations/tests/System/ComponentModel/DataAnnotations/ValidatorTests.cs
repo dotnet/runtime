@@ -137,6 +137,29 @@ namespace System.ComponentModel.DataAnnotations.Tests
         }
 
         [Fact]
+        public static void TryValidateObject_validates_recursive()
+        {
+            var objectToBeValidated = new Person
+            {
+                Name = null,
+                Address = new Address
+                {
+                    StreetName = null
+                }
+            };
+
+            var validationContext = new ValidationContext(objectToBeValidated);
+
+            Assert.False(
+                Validator.TryValidateObject(objectToBeValidated, validationContext, null, false));
+
+            var validationResults = new List<ValidationResult>();
+            Assert.False(
+                Validator.TryValidateObject(objectToBeValidated, validationContext, validationResults, true));
+            Assert.Equal(2, validationResults.Count);
+        }
+
+        [Fact]
         public static void TryValidateObject_returns_false_if_all_properties_are_valid_but_class_is_invalid()
         {
             var objectToBeValidated = new InvalidToBeValidated() { PropertyWithRequiredAttribute = "Valid Value" };
@@ -1322,6 +1345,22 @@ namespace System.ComponentModel.DataAnnotations.Tests
         [ValidClass, ValidClassDuplicate]
         public class DoublyInvalid
         {
+        }
+
+        public class Person
+        {
+            [Required]
+            public string Name { get; set; }
+
+            public Address Address { get; set; }
+        }
+
+        public class Address
+        {
+            [Required]
+            public string StreetName { get; set; }
+
+            public string Postcode { get; set; }
         }
 
         [ValidClass]
