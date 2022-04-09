@@ -16,13 +16,14 @@ namespace System.Text.RegularExpressions
         private readonly int _length;
 
         /// <summary>
-        /// Crates an instance of the <see cref="ValueMatch"/> type based on the passed in <paramref name="match"/>.
+        /// Crates an instance of the <see cref="ValueMatch"/> type based on the passed in <paramref name="index"/> and <paramref name="length"/>.
         /// </summary>
-        /// <param name="match">The <see cref="Match"/> object represented by this ValueMatch.</param>
-        internal ValueMatch(Match match)
+        /// <param name="index">The position in the original span where the first character of the captured sliced span is found.</param>
+        /// <param name="length">The length of the captured sliced span.</param>
+        internal ValueMatch(int index, int length)
         {
-            _index = match.Index;
-            _length = match.Length;
+            _index = index;
+            _length = length;
         }
 
         /// <summary>

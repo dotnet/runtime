@@ -38,11 +38,10 @@ namespace System.Text.RegularExpressions
         {
             int count = 0;
 
-            RunAllMatchesWithCallback(input, 0, ref count, static (ref int count, Match match) =>
+            foreach (ValueMatch _ in EnumerateMatches(input))
             {
                 count++;
-                return true;
-            }, reuseMatchObject: true);
+            }
 
             return count;
         }

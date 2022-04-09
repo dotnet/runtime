@@ -58,32 +58,6 @@ namespace System.Text.RegularExpressions.Tests
         }
 
         [Theory]
-        [MemberData(nameof(NoneCompiledBacktracking))]
-        public static void EnumerateMatches_Invalid(RegexOptions options)
-        {
-            Regex regex = new Regex("e", options);
-            Regex.ValueMatchEnumerator enumerator = regex.EnumerateMatches("dotnet");
-
-            Assert.True(ThrowsInvalidOperationException(ref enumerator));
-
-            while (enumerator.MoveNext()) ;
-            Assert.True(ThrowsInvalidOperationException(ref enumerator));
-
-            bool ThrowsInvalidOperationException(ref Regex.ValueMatchEnumerator enumerator)
-            {
-                try
-                {
-                    _ = enumerator.Current;
-                }
-                catch (InvalidOperationException)
-                {
-                    return true;
-                }
-                return false;
-            }
-        }
-
-        [Theory]
         [MemberData(nameof(RegexHelpers.AvailableEngines_MemberData), MemberType = typeof(RegexHelpers))]
         public void EnumerateMatches_Lookahead(RegexEngine engine)
         {

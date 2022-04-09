@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 
 namespace System.Text.RegularExpressions
@@ -85,10 +86,9 @@ namespace System.Text.RegularExpressions
         {
             private readonly Regex _regex;
             private readonly ReadOnlySpan<char> _input;
-            private ValueMatch _matchReference;
+            private ValueMatch _current;
             private int _startAt;
             private int _prevLen;
-            private bool _hasValidValue;
 
             /// <summary>
             /// Creates an instance of the <see cref="ValueMatchEnumerator"/> for the passed in <paramref name="regex"/> which iterates over <paramref name="input"/>.
@@ -100,10 +100,9 @@ namespace System.Text.RegularExpressions
             {
                 _regex = regex;
                 _input = input;
-                _matchReference = default;
+                _current = default;
                 _startAt = startAt;
                 _prevLen = -1;
-                _hasValidValue = false;
             }
 
             /// <summary>
@@ -121,16 +120,14 @@ namespace System.Text.RegularExpressions
             public bool MoveNext()
             {
                 Match? match = _regex.RunSingleMatch(quick: false, _prevLen, _input, _startAt);
-                if (match is not null && match != RegularExpressions.Match.Empty)
+                Debug.Assert(match != null, "Match shouldn't be null because we passed quick = false.");
+                if (match != RegularExpressions.Match.Empty)
                 {
-                    _matchReference = new ValueMatch(match);
-                    _hasValidValue = true;
+                    _current = new ValueMatch(match.Index, match.Length);
                     _startAt = match._textpos;
                     _prevLen = match.Length;
                     return true;
                 }
-                _hasValidValue = false;
-                _matchReference = default;
                 return false;
             }
 
@@ -138,7 +135,7 @@ namespace System.Text.RegularExpressions
             /// Gets the <see cref="ValueMatch"/> element at the current position of the enumerator.
             /// </summary>
             /// <exception cref="InvalidOperationException">Enumeration has either not started or has already finished.</exception>
-            public readonly ValueMatch Current => _hasValidValue ? _matchReference : throw new InvalidOperationException(SR.EnumNotStarted);
+            public readonly ValueMatch Current => _current;
         }
     }
 }
