@@ -48,6 +48,7 @@
   <Target Name="DeleteAssetsJson" Condition="'$(DotNetBuildFromSource)' == 'true'">
     <Message Importance="high" Text="Deleting project.assets.json" />
     <Delete Files="$(ProjectAssetsFile)" />
+    <Message Importance="high" Text="Continuing with RID $(RuntimeIdentifier)" />
   </Target>
 
   <Target Name="PrintAssetsJson" Condition="'$(DotNetBuildFromSource)' == 'true'" 
