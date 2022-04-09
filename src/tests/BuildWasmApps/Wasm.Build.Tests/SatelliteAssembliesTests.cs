@@ -112,7 +112,7 @@ namespace Wasm.Build.Tests
 
 #pragma warning disable xUnit1026
         [Theory]
-        [BuildAndRun(aot: true, host: RunHost.None)]
+        [BuildAndRun(host: RunHost.None, aot: true)]
         public void CheckThatSatelliteAssembliesAreNotAOTed(BuildArgs buildArgs, string id)
         {
             string projectName = $"check_sat_asm_not_aot";

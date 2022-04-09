@@ -68,7 +68,7 @@ namespace Wasm.Build.Tests
         }
 
         [Theory]
-        [BuildAndRun(aot: true, host: RunHost.None)]
+        [BuildAndRun(host: RunHost.None, aot: true)]
         public void IntermediateBitcodeToObjectFilesAreNotLLVMIR(BuildArgs buildArgs, string id)
         {
             string printFileTypeTarget = @"
