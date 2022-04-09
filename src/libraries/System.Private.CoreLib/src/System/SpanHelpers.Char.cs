@@ -717,7 +717,6 @@ namespace System
                     if (lengthToExamine > 0)
                     {
                         Vector128<ushort> values = Vector128.Create((ushort)value);
-
                         do
                         {
                             Debug.Assert(lengthToExamine >= Vector128<ushort>.Count);
@@ -725,7 +724,7 @@ namespace System
                             Vector128<ushort> search = LoadVector128(ref searchSpace, offset);
                             Vector128<ushort> compareResult = AdvSimd.CompareEqual(values, search);
 
-                            if (compareResult != Vector128<ushort>.Zero)
+                            if (compareResult == Vector128<ushort>.Zero)
                             {
                                 offset += Vector128<ushort>.Count;
                                 lengthToExamine -= Vector128<ushort>.Count;

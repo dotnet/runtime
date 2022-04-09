@@ -615,9 +615,6 @@ namespace System
                 {
                     lengthToExamine = GetByteVector128SpanLength(offset, length);
 
-                    // Mask to help find the first lane in compareResult that is set.
-                    // MSB 0x10 corresponds to 1st lane, 0x01 corresponds to 0th lane and so forth.
-                    Vector128<byte> mask = Vector128.Create((ushort)0x1001).AsByte();
                     Vector128<byte> values = Vector128.Create(value);
                     while (lengthToExamine > offset)
                     {
@@ -630,7 +627,7 @@ namespace System
                             continue;
                         }
 
-                        return (int)(offset + FindFirstMatchedLane(mask, compareResult));
+                        return (int)(offset + FindFirstMatchedLane(compareResult));
                     }
 
                     if (offset < (nuint)(uint)length)
@@ -1022,10 +1019,6 @@ namespace System
             }
             else if (AdvSimd.Arm64.IsSupported)
             {
-                // Mask to help find the first lane in compareResult that is set.
-                // LSB 0x01 corresponds to lane 0, 0x10 - to lane 1, and so on.
-                Vector128<byte> mask = Vector128.Create((ushort)0x1001).AsByte();
-
                 Vector128<byte> search;
                 Vector128<byte> matches;
                 Vector128<byte> values0 = Vector128.Create(value0);
@@ -1046,7 +1039,7 @@ namespace System
                     }
 
                     // Find bitflag offset of first match and add to current offset
-                    offset += FindFirstMatchedLane(mask, matches);
+                    offset += FindFirstMatchedLane(matches);
 
                     goto Found;
                 }
@@ -1066,7 +1059,7 @@ namespace System
                 }
 
                 // Find bitflag offset of first match and add to current offset
-                offset += FindFirstMatchedLane(mask, matches);
+                offset += FindFirstMatchedLane(matches);
 
                 goto Found;
             }
@@ -1353,10 +1346,6 @@ namespace System
             }
             else if (AdvSimd.Arm64.IsSupported)
             {
-                // Mask to help find the first lane in compareResult that is set.
-                // LSB 0x01 corresponds to lane 0, 0x10 - to lane 1, and so on.
-                Vector128<byte> mask = Vector128.Create((ushort)0x1001).AsByte();
-
                 Vector128<byte> search;
                 Vector128<byte> matches;
                 Vector128<byte> values0 = Vector128.Create(value0);
@@ -1380,7 +1369,7 @@ namespace System
                     }
 
                     // Find bitflag offset of first match and add to current offset
-                    offset += FindFirstMatchedLane(mask, matches);
+                    offset += FindFirstMatchedLane(matches);
 
                     goto Found;
                 }
@@ -1402,7 +1391,7 @@ namespace System
                 }
 
                 // Find bitflag offset of first match and add to current offset
-                offset += FindFirstMatchedLane(mask, matches);
+                offset += FindFirstMatchedLane(matches);
 
                 goto Found;
             }
@@ -2221,9 +2210,13 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static uint FindFirstMatchedLane(Vector128<byte> mask, Vector128<byte> compareResult)
+        private static uint FindFirstMatchedLane(Vector128<byte> compareResult)
         {
             Debug.Assert(AdvSimd.Arm64.IsSupported);
+
+            // Mask to help find the first lane in compareResult that is set.
+            // MSB 0x10 corresponds to 1st lane, 0x01 corresponds to 0th lane and so forth.
+            Vector128<byte> mask = Vector128.Create((ushort)0x1001).AsByte();
 
             // Find the first lane that is set inside compareResult.
             Vector128<byte> maskedSelectedLanes = AdvSimd.And(compareResult, mask);
