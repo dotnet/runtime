@@ -2460,9 +2460,9 @@ void CallArgs::DetermineArgABIInformation(Compiler* comp, GenTreeCall* call)
             assert(argx == arg.GetEarlyNode());
             assert(structSize != 0);
 
-            structPassingKind howToPassStruct;
+            Compiler::structPassingKind howToPassStruct;
             structBaseType  = comp->getArgTypeForStruct(objClass, &howToPassStruct, callIsVararg, structSize);
-            passStructByRef = (howToPassStruct == SPK_ByReference);
+            passStructByRef = (howToPassStruct == Compiler::SPK_ByReference);
 #if defined(TARGET_LOONGARCH64)
             if (!passStructByRef)
             {
@@ -2499,7 +2499,7 @@ void CallArgs::DetermineArgABIInformation(Compiler* comp, GenTreeCall* call)
                 byteSize = TARGET_POINTER_SIZE;
             }
 #else
-            if (howToPassStruct == SPK_ByReference)
+            if (howToPassStruct == Compiler::SPK_ByReference)
             {
                 byteSize = TARGET_POINTER_SIZE;
             }

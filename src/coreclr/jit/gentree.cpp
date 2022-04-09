@@ -1900,12 +1900,6 @@ GenTree* Compiler::getArrayLengthFromAllocation(GenTree* tree DEBUGARG(BasicBloc
     if (tree->OperGet() == GT_CALL)
     {
         GenTreeCall* call = tree->AsCall();
-        if (call->fgArgInfo == nullptr)
-        {
-            // Currently this function is only profitable during the late stages
-            // so we avoid complicating below code to access the early args.
-            return nullptr;
-        }
 
         if (call->gtCallType == CT_HELPER)
         {
@@ -1917,17 +1911,22 @@ GenTree* Compiler::getArrayLengthFromAllocation(GenTree* tree DEBUGARG(BasicBloc
                 case CORINFO_HELP_NEWARR_1_ALIGN8:
                 {
                     // This is an array allocation site. Grab the array length node.
-                    arrayLength = gtArgEntryByArgNum(call, 1)->GetNode();
+                    arrayLength = call->gtArgs.GetArgByIndex(1)->GetNode();
                     break;
                 }
 
                 case CORINFO_HELP_READYTORUN_NEWARR_1:
                 {
-                    // On arm when compiling on certain platforms for ready to run, a handle will be
-                    // inserted before the length. To handle this case, we will grab the last argument
-                    // as that's always the length. See fgInitArgInfo for where the handle is inserted.
-                    int arrLenArgNum = call->fgArgInfo->ArgCount() - 1;
-                    arrayLength      = gtArgEntryByArgNum(call, arrLenArgNum)->GetNode();
+                    // On arm when compiling on certain platforms for ready to
+                    // run, a handle will be inserted before the length. To
+                    // handle this case, we will grab the last argument as
+                    // that's always the length. See
+                    // CallArgs::DetermineArgABIInformation for where the
+                    // handle is inserted.
+                    for (CallArg& arg : call->gtArgs.Args())
+                    {
+                        arrayLength = arg.GetNode();
+                    }
                     break;
                 }
 
