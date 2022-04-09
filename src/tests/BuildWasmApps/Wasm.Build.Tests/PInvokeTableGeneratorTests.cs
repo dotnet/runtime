@@ -18,7 +18,7 @@ namespace Wasm.Build.Tests
         }
 
         [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
-        [BuildAndRun(host: RunHost.V8)]
+        [BuildAndRun(aot: false, host: RunHost.V8)]
         public void NativeLibraryWithVariadicFunctions(BuildArgs buildArgs, RunHost host, string id)
         {
             string code = @"
@@ -55,7 +55,7 @@ namespace Wasm.Build.Tests
         }
 
         [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
-        [BuildAndRun(host: RunHost.V8)]
+        [BuildAndRun(aot: false, host: RunHost.V8)]
         public void DllImportWithFunctionPointersCompilesWithWarning(BuildArgs buildArgs, RunHost host, string id)
         {
             string code = @"
@@ -87,7 +87,7 @@ namespace Wasm.Build.Tests
         }
 
         [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
-        [BuildAndRun(host: RunHost.V8)]
+        [BuildAndRun(aot: false, host: RunHost.V8)]
         public void DllImportWithFunctionPointers_ForVariadicFunction_CompilesWithWarning(BuildArgs buildArgs, RunHost host, string id)
         {
             string code = @"

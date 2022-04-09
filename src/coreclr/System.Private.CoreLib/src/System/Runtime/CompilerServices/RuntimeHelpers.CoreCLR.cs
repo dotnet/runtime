@@ -350,6 +350,34 @@ namespace System.Runtime.CompilerServices
                 }
             }
         }
+
+#pragma warning disable 0414
+        // Type that represents a managed view of the unmanaged GCFrame
+        // data structure in coreclr. The type layouts between the two should match.
+        internal unsafe ref struct GCFrameRegistration
+        {
+            private nuint m_reserved1;
+            private nuint m_reserved2;
+            private void* m_pObjRefs;
+            private uint m_numObjRefs;
+            private int m_MaybeInterior;
+
+            public GCFrameRegistration(void* allocation, uint elemCount, bool areByRefs = true)
+            {
+                m_reserved1 = 0;
+                m_reserved2 = 0;
+                m_pObjRefs = allocation;
+                m_numObjRefs = elemCount;
+                m_MaybeInterior = areByRefs ? 1 : 0;
+            }
+        }
+#pragma warning restore 0414
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern unsafe void RegisterForGCReporting(GCFrameRegistration* pRegistration);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern unsafe void UnregisterForGCReporting(GCFrameRegistration* pRegistration);
     }
     // Helper class to assist with unsafe pinning of arbitrary objects.
     // It's used by VM code.

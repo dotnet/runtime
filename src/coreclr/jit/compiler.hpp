@@ -602,7 +602,7 @@ inline bool isRegParamType(var_types type)
 #endif // !TARGET_X86
 }
 
-#if defined(TARGET_AMD64) || defined(TARGET_ARMARCH)
+#if defined(TARGET_AMD64) || defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64)
 /*****************************************************************************/
 // Returns true if 'type' is a struct that can be enregistered for call args
 //                         or can be returned by value in multiple registers.
@@ -660,7 +660,7 @@ inline bool Compiler::VarTypeIsMultiByteAndCanEnreg(var_types                typ
 
     return result;
 }
-#endif // TARGET_AMD64 || TARGET_ARMARCH
+#endif // TARGET_AMD64 || TARGET_ARMARCH || TARGET_LOONGARCH64
 
 /*****************************************************************************/
 
@@ -1108,7 +1108,7 @@ inline GenTreeField* Compiler::gtNewFieldRef(var_types type, CORINFO_FIELD_HANDL
         LclVarDsc* varDsc = lvaGetDesc(obj->AsUnOp()->gtOp1->AsLclVarCommon());
 
         varDsc->lvFieldAccessed = 1;
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
         // These structs are passed by reference and can easily become global
         // references if those references are exposed. We clear out
         // address-exposure information for these parameters when they are
@@ -1120,7 +1120,7 @@ inline GenTreeField* Compiler::gtNewFieldRef(var_types type, CORINFO_FIELD_HANDL
         {
             fieldNode->gtFlags |= GTF_GLOB_REF;
         }
-#endif // defined(TARGET_AMD64) || defined(TARGET_ARM64)
+#endif // defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
     }
     else
     {
@@ -1837,10 +1837,10 @@ inline void LclVarDsc::incRefCnts(weight_t weight, Compiler* comp, RefCountState
 
             bool doubleWeight = lvIsTemp;
 
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
             // and, for the time being, implicit byref params
             doubleWeight |= lvIsImplicitByRef;
-#endif // defined(TARGET_AMD64) || defined(TARGET_ARM64)
+#endif // defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
 
             if (doubleWeight && (weight * 2 > weight))
             {
@@ -3083,6 +3083,8 @@ inline unsigned genMapFloatRegNumToRegArgNum(regNumber regNum)
     assert(genRegMask(regNum) & RBM_FLTARG_REGS);
 
 #ifdef TARGET_ARM
+    return regNum - REG_F0;
+#elif defined(TARGET_LOONGARCH64)
     return regNum - REG_F0;
 #elif defined(TARGET_ARM64)
     return regNum - REG_V0;

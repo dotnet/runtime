@@ -2421,6 +2421,10 @@ public:
     GCFrame(Thread *pThread, OBJECTREF *pObjRefs, UINT numObjRefs, BOOL maybeInterior);
     ~GCFrame();
 
+    // Push and pop this frame from the thread's stack.
+    void Push(Thread* pThread);
+    void Pop();
+
 #endif // DACCESS_COMPILE
 
     void GcScanRoots(promote_func *fn, ScanContext* sc);
@@ -2446,9 +2450,9 @@ public:
 
 private:
     PTR_GCFrame   m_Next;
+    PTR_Thread    m_pCurThread;
     PTR_OBJECTREF m_pObjRefs;
     UINT          m_numObjRefs;
-    PTR_Thread    m_pCurThread;
     BOOL          m_MaybeInterior;
 };
 

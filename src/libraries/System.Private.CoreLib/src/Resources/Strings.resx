@@ -636,9 +636,6 @@
   <data name="Arg_NotSupportedException" xml:space="preserve">
     <value>Specified method is not supported.</value>
   </data>
-  <data name="Arg_NullIndex" xml:space="preserve">
-    <value>Arrays indexes must be set to an object instance.</value>
-  </data>
   <data name="Arg_NullReferenceException" xml:space="preserve">
     <value>Object reference not set to an instance of an object.</value>
   </data>

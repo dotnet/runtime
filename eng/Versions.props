@@ -47,10 +47,9 @@
     <MicrosoftCodeAnalysisNetAnalyzersVersion>7.0.0-preview1.22180.6</MicrosoftCodeAnalysisNetAnalyzersVersion>
     <MicrosoftCodeAnalysisVersion>4.2.0-2.final</MicrosoftCodeAnalysisVersion>
     <!--
-      TODO: Remove pinned compiler version once arcade supplies runtime with a compiler capable of handling !!
-      and has https://github.com/dotnet/roslyn/pull/59776
+      TODO: Remove pinned version once arcade supplies a 4.3 compiler.
     -->
-    <MicrosoftNetCompilersToolsetVersion>4.2.0-2.final</MicrosoftNetCompilersToolsetVersion>
+    <MicrosoftNetCompilersToolsetVersion>4.3.0-1.22206.2</MicrosoftNetCompilersToolsetVersion>
     <!-- SDK dependencies -->
     <MicrosoftDotNetCompatibilityVersion>2.0.0-alpha.1.21525.11</MicrosoftDotNetCompatibilityVersion>
     <!-- Arcade dependencies -->
@@ -172,7 +171,8 @@
     <SQLitePCLRawbundle_greenVersion>2.0.4</SQLitePCLRawbundle_greenVersion>
     <MoqVersion>4.12.0</MoqVersion>
     <FsCheckVersion>2.14.3</FsCheckVersion>
-    <SdkVersionForWorkloadTesting>7.0.100-preview.4.22207.2</SdkVersionForWorkloadTesting>
+    <!-- Uncomment to set a fixed version, else the latest is used -->
+    <!--<SdkVersionForWorkloadTesting>7.0.100-preview.3.22151.18</SdkVersionForWorkloadTesting>-->
     <CompilerPlatformTestingVersion>1.1.2-beta1.22122.4</CompilerPlatformTestingVersion>
     <!-- Docs -->
     <MicrosoftPrivateIntellisenseVersion>7.0.0-preview-20220331.1</MicrosoftPrivateIntellisenseVersion>
@@ -194,7 +194,7 @@
     <runtimeosx1012x64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>11.1.0-alpha.1.22178.2</runtimeosx1012x64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>
     <!-- emscripten / Node -->
     <MicrosoftNETWorkloadEmscriptenManifest70100Version>7.0.0-dev</MicrosoftNETWorkloadEmscriptenManifest70100Version>
-    <!--<MicrosoftNETWorkloadEmscriptenManifest70100Version>7.0.0-preview.4.22178.1</MicrosoftNETWorkloadEmscriptenManifest70100Version>-->
+    <!--<MicrosoftNETWorkloadEmscriptenManifest70100Version>7.0.0-preview.4.22201.2</MicrosoftNETWorkloadEmscriptenManifest70100Version>-->
     <MicrosoftNETRuntimeEmscriptenVersion>$(MicrosoftNETWorkloadEmscriptenManifest70100Version)</MicrosoftNETRuntimeEmscriptenVersion>
     <!-- workloads -->
     <SwixPackageVersion>1.1.87-gba258badda</SwixPackageVersion>

@@ -18,14 +18,6 @@ namespace System.Security.Cryptography.Cose
             : base(protectedHeader, unprotectedHeader, content, signature, protectedHeaderAsBstr) { }
 
         [UnsupportedOSPlatform("browser")]
-        public static byte[] Sign(byte[] content!!, ECDsa key!!, HashAlgorithmName hashAlgorithm, bool isDetached = false)
-            => SignCore(content.AsSpan(), key, hashAlgorithm, KeyType.ECDsa, null, null, isDetached);
-
-        [UnsupportedOSPlatform("browser")]
-        public static byte[] Sign(byte[] content!!, RSA key!!, HashAlgorithmName hashAlgorithm, bool isDetached = false)
-            => SignCore(content.AsSpan(), key, hashAlgorithm, KeyType.RSA, null, null, isDetached);
-
-        [UnsupportedOSPlatform("browser")]
         public static byte[] Sign(byte[] content!!, AsymmetricAlgorithm key!!, HashAlgorithmName hashAlgorithm, CoseHeaderMap? protectedHeaders = null, CoseHeaderMap? unprotectedHeaders = null, bool isDetached = false)
             => SignCore(content.AsSpan(), key, hashAlgorithm, GetKeyType(key), protectedHeaders, unprotectedHeaders, isDetached);
 
@@ -80,7 +72,7 @@ namespace System.Security.Cryptography.Cose
             {
                 ECDsa => KeyType.ECDsa,
                 RSA => KeyType.RSA,
-                _ => throw new CryptographicException(SR.Format(SR.Sign1SignUnsupportedKey, key.GetType()))
+                _ => throw new CryptographicException(SR.Format(SR.Sign1UnsupportedKey, key.GetType()))
             };
         }
 
@@ -197,16 +189,54 @@ namespace System.Security.Cryptography.Cose
         }
 
         [UnsupportedOSPlatform("browser")]
-        public bool Verify(ECDsa key) => VerifyECDsa(key, _content ?? throw new CryptographicException(SR.Sign1VerifyContentWasDetached));
+        public bool Verify(AsymmetricAlgorithm key!!)
+        {
+            if (_content == null)
+            {
+                throw new CryptographicException(SR.Sign1VerifyContentWasDetached);
+            }
+
+            return VerifyCore(key, _content);
+        }
 
         [UnsupportedOSPlatform("browser")]
-        public bool Verify(RSA key) => VerifyRSA(key, _content ?? throw new CryptographicException(SR.Sign1VerifyContentWasDetached));
+        public bool Verify(AsymmetricAlgorithm key!!, byte[] content!!)
+        {
+            if (_content != null)
+            {
+                throw new CryptographicException(SR.Sign1VerifyContentWasEmbedded);
+            }
+
+            return VerifyCore(key, content);
+        }
 
         [UnsupportedOSPlatform("browser")]
-        public bool Verify(ECDsa key, ReadOnlySpan<byte> content) => VerifyECDsa(key, _content == null ? content : throw new CryptographicException(SR.Sign1VerifyContentWasEmbedded));
+        public bool Verify(AsymmetricAlgorithm key, ReadOnlySpan<byte> content)
+        {
+            if (_content != null)
+            {
+                throw new CryptographicException(SR.Sign1VerifyContentWasEmbedded);
+            }
+
+            return VerifyCore(key, content);
+        }
 
         [UnsupportedOSPlatform("browser")]
-        public bool Verify(RSA key, ReadOnlySpan<byte> content) =>  VerifyRSA(key, _content == null ? content : throw new CryptographicException(SR.Sign1VerifyContentWasEmbedded));
+        private bool VerifyCore(AsymmetricAlgorithm key, ReadOnlySpan<byte> content)
+        {
+            if (key is ECDsa ecdsa)
+            {
+                return VerifyECDsa(ecdsa, content);
+            }
+            else if (key is RSA rsa)
+            {
+                return VerifyRSA(rsa, content);
+            }
+            else
+            {
+                throw new CryptographicException(SR.Format(SR.Sign1UnsupportedKey, key.GetType()));
+            }
+        }
 
         [UnsupportedOSPlatform("browser")]
         private bool VerifyECDsa(ECDsa key, ReadOnlySpan<byte> content)

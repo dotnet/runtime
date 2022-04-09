@@ -514,7 +514,6 @@
     <Compile Include="System\Xml\Serialization\TypeExtensions.cs" />
     <Compile Include="System\Xml\Serialization\PrimitiveXmlSerializers.cs" />
     <Compile Include="System\Xml\Serialization\Configuration\DateTimeSerializationSection.cs" />
-    <Compile Include="System\Xml\Extensions\ExtensionMethods.cs" />
     <Compile Include="System\Xml\Serialization\Globals.cs" />
   </ItemGroup>
   <!-- Embedded DTD files -->

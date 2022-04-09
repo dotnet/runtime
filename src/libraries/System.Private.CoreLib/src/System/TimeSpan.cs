@@ -519,8 +519,8 @@ namespace System
         // IAdditionOperators
         //
 
-        // /// <inheritdoc cref="IAdditionOperators{TSelf, TOther, TResult}.op_Addition(TSelf, TOther)" />
-        // static TimeSpan IAdditionOperators<TimeSpan, TimeSpan, TimeSpan>.operator checked +(TimeSpan left, TimeSpan right) => checked(left + right);
+        /// <inheritdoc cref="IAdditionOperators{TSelf, TOther, TResult}.op_Addition(TSelf, TOther)" />
+        static TimeSpan IAdditionOperators<TimeSpan, TimeSpan, TimeSpan>.operator checked +(TimeSpan left, TimeSpan right) => left + right;
 
         //
         // IAdditiveIdentity
@@ -533,11 +533,11 @@ namespace System
         // IDivisionOperators
         //
 
-        // /// <inheritdoc cref="IDivisionOperators{TSelf, TOther, TResult}.op_CheckedDivision(TSelf, TOther)" />
-        // static TimeSpan IDivisionOperators<TimeSpan, double, TimeSpan>.operator checked /(TimeSpan left, double right) => checked(left / right);
+        /// <inheritdoc cref="IDivisionOperators{TSelf, TOther, TResult}.op_CheckedDivision(TSelf, TOther)" />
+        static TimeSpan IDivisionOperators<TimeSpan, double, TimeSpan>.operator checked /(TimeSpan left, double right) => left / right;
 
-        // /// <inheritdoc cref="IDivisionOperators{TSelf, TOther, TResult}.op_CheckedDivision(TSelf, TOther)" />
-        // static double IDivisionOperators<TimeSpan, TimeSpan, double>.operator checked /(TimeSpan left, TimeSpan right) => checked(left / right);
+        /// <inheritdoc cref="IDivisionOperators{TSelf, TOther, TResult}.op_CheckedDivision(TSelf, TOther)" />
+        static double IDivisionOperators<TimeSpan, TimeSpan, double>.operator checked /(TimeSpan left, TimeSpan right) => left / right;
 
         //
         // IMinMaxValue
@@ -558,21 +558,21 @@ namespace System
         // IMultiplyOperators
         //
 
-        // /// <inheritdoc cref="IMultiplyOperators{TSelf, TOther, TResult}.op_CheckedMultiply(TSelf, TOther)" />
-        // static TimeSpan IMultiplyOperators<TimeSpan, double, TimeSpan>.operator checked *(TimeSpan left, double right) => checked(left * right);
+        /// <inheritdoc cref="IMultiplyOperators{TSelf, TOther, TResult}.op_CheckedMultiply(TSelf, TOther)" />
+        static TimeSpan IMultiplyOperators<TimeSpan, double, TimeSpan>.operator checked *(TimeSpan left, double right) => left * right;
 
         //
         // ISubtractionOperators
         //
 
-        // /// <inheritdoc cref="ISubtractionOperators{TSelf, TOther, TResult}.op_CheckedSubtraction(TSelf, TOther)" />
-        // static TimeSpan ISubtractionOperators<TimeSpan, TimeSpan, TimeSpan>.operator checked -(TimeSpan left, TimeSpan right) => checked(left - right);
+        /// <inheritdoc cref="ISubtractionOperators{TSelf, TOther, TResult}.op_CheckedSubtraction(TSelf, TOther)" />
+        static TimeSpan ISubtractionOperators<TimeSpan, TimeSpan, TimeSpan>.operator checked -(TimeSpan left, TimeSpan right) => left - right;
 
         //
         // IUnaryNegationOperators
         //
 
-        // /// <inheritdoc cref="IUnaryNegationOperators{TSelf, TResult}.op_CheckedUnaryNegation(TSelf)" />
-        // static TimeSpan IUnaryNegationOperators<TimeSpan, TimeSpan>.operator checked -(TimeSpan value) => checked(-value);
+        /// <inheritdoc cref="IUnaryNegationOperators{TSelf, TResult}.op_CheckedUnaryNegation(TSelf)" />
+        static TimeSpan IUnaryNegationOperators<TimeSpan, TimeSpan>.operator checked -(TimeSpan value) => -value;
     }
 }

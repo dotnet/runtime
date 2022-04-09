@@ -68,6 +68,12 @@
     <NetFrameworkToolCurrent>net472</NetFrameworkToolCurrent>
     <!-- Don't build for NETFramework during source-build. -->
     <NetFrameworkToolCurrent Condition="'$(DotNetBuildFromSource)' == 'true'" />
+
+    <TargetFrameworkForNETFrameworkTasks>$(NetFrameworkToolCurrent)</TargetFrameworkForNETFrameworkTasks>
+    <!-- Don't build for NETFramework during source-build. -->
+    <TargetFrameworkForNETFrameworkTasks Condition="'$(DotNetBuildFromSource)' == 'true'" />
+
+    <TargetFrameworkForNETCoreTasks>$(NetCoreAppToolCurrent)</TargetFrameworkForNETCoreTasks>
   </PropertyGroup>
 
   <PropertyGroup>

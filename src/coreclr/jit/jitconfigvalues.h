@@ -557,6 +557,11 @@ CONFIG_STRING(JitFunctionFile, W("JitFunctionFile"))
 //    of the frame)
 CONFIG_INTEGER(JitSaveFpLrWithCalleeSavedRegisters, W("JitSaveFpLrWithCalleeSavedRegisters"), 0)
 #endif // defined(TARGET_ARM64)
+
+#if defined(TARGET_LOONGARCH64)
+// Disable emitDispIns by default
+CONFIG_INTEGER(JitDispIns, W("JitDispIns"), 0)
+#endif // defined(TARGET_LOONGARCH64)
 #endif // DEBUG
 
 CONFIG_INTEGER(JitEnregStructLocals, W("JitEnregStructLocals"), 1) // Allow to enregister locals with struct type.
