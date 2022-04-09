@@ -56,6 +56,15 @@ namespace Microsoft.Extensions.Http
             StartExpiryTimerSlow(callback);
         }
 
+        internal void UnsafeStartExpiryTimer(TimerCallback callback)
+        {
+            if (Lifetime == Timeout.InfiniteTimeSpan) return;
+            Debug.Assert(Volatile.Read(ref _timerInitialized) == false);
+            _callback = callback;
+            _timer = NonCapturingTimer.Create(_timerCallback, this, Lifetime, Timeout.InfiniteTimeSpan);
+            _timerInitialized = true;
+        }
+
         private void StartExpiryTimerSlow(TimerCallback callback)
         {
             Debug.Assert(Lifetime != Timeout.InfiniteTimeSpan);
