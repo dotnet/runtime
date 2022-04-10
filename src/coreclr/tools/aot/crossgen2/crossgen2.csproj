@@ -10,7 +10,7 @@
     <!-- Trimming is not currently working, but set the appropriate feature flags for NativeAOT -->
     <PublishTrimmed Condition="'$(NativeAotSupported)' == 'true'">true</PublishTrimmed>
     <RuntimeIdentifiers Condition="'$(RunningPublish)' != 'true'">linux-x64;linux-musl-x64;linux-arm;linux-musl-arm;linux-arm64;linux-musl-arm64;freebsd-x64;osx-x64;osx-arm64;win-x64;win-x86;win-arm64;win-arm</RuntimeIdentifiers>
-    <RuntimeIdentifier Condition="'$(RunningPublihs)' == 'true' and '$(DotNetBuildFromSource)' == 'true'">$(PackageRID)</RuntimeIdentifier>
+    <RuntimeIdentifier Condition="'$(RunningPublish)' == 'true' and '$(DotNetBuildFromSource)' == 'true'">$(PackageRID)</RuntimeIdentifier>
   </PropertyGroup>
 
   <Import Project="crossgen2.props" />
