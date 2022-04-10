@@ -317,6 +317,24 @@ namespace System.ComponentModel.DataAnnotations.Tests
         }
 
         [Fact]
+        public void Recursive_reports_failures_on_attributed_collections()
+        {
+            var thingToValidate = new TypeWithRequiredList
+            {
+                Required = "..",
+                RequiredStrings = null
+            };
+
+            var context = new ValidationContext(thingToValidate);
+            var validationResults = new List<ValidationResult>();
+
+            Assert.False(Validator.TryValidateObject(thingToValidate, context, validationResults, true));
+            Assert.Equal(1, validationResults.Count);
+
+            Assert.Equal("The RequiredStrings field is required.", validationResults.ElementAt(0).ErrorMessage);
+        }
+
+        [Fact]
         public static void TryValidateObject_returns_false_if_all_properties_are_valid_but_class_is_invalid()
         {
             var objectToBeValidated = new InvalidToBeValidated() { PropertyWithRequiredAttribute = "Valid Value" };
@@ -1502,6 +1520,15 @@ namespace System.ComponentModel.DataAnnotations.Tests
         [ValidClass, ValidClassDuplicate]
         public class DoublyInvalid
         {
+        }
+
+        public class TypeWithRequiredList
+        {
+            [Required]
+            public string Required { get; set; }
+
+            [Required]
+            public List<string> RequiredStrings { get; set; }
         }
 
         public class TopLevelWithComplexProperties
