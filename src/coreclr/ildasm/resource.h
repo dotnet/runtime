@@ -175,7 +175,6 @@
 #define IDS_ERRORREOPENINGFILE          486
 #define IDS_ASSEMNAMETOOLONG            487
 #define IDS_ASMREFNAMETOOLONG           488
-#define IDS_ERRORCAPTION                489
 #define IDS_ILDASM_TITLE                490
 #define IDS_VERSION                     491
 #define IDS_W_CREATEDMRES               492

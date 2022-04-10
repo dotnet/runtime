@@ -240,7 +240,6 @@ BEGIN
     IDS_ERRORREOPENINGFILE  L"Error reopening the file with FileToken 0x%08X"
     IDS_ASSEMNAMETOOLONG    L"error *** Assembly name too long, truncated to 1023 characters"
     IDS_ASMREFNAMETOOLONG   L"error *** AssemblyRef name too long, truncated to 1023 characters"
-    IDS_ERRORCAPTION        L"ERROR"
     IDS_ILDASM_TITLE        L"Microsoft (R) .NET Framework IL Disassembler"
     IDS_VERSION             L"Version %s"
     IDS_W_CREATEDMRES       L"WARNING: managed resource file %s created"
