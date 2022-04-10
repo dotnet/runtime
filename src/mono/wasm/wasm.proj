@@ -226,7 +226,7 @@
           DestinationFolder="$(NativeBinDir)src/es6"
           SkipUnchangedFiles="true" />
 
-    <Copy SourceFiles="runtime\pinvoke.h"
+    <Copy SourceFiles="runtime\pinvoke.h;runtime\gc-common.h"
           DestinationFolder="$(NativeBinDir)include\wasm"
           SkipUnchangedFiles="true" />
 

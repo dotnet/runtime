@@ -1656,7 +1656,7 @@ BOOL Nullable::UnBox(void* destPtr, OBJECTREF boxedVal, MethodTable* destMT)
     if (boxedVal == NULL)
     {
         // Logically we are doing *dest->HasValueAddr(destMT) = false;
-        // We zero out the whole structure becasue it may contain GC references
+        // We zero out the whole structure because it may contain GC references
         // and these need to be initialized to zero.   (could optimize in the non-GC case)
         InitValueClass(destPtr, destMT);
         fRet = TRUE;
@@ -1703,16 +1703,16 @@ BOOL Nullable::UnBoxNoGC(void* destPtr, OBJECTREF boxedVal, MethodTable* destMT)
     CONTRACTL_END;
     Nullable* dest = (Nullable*) destPtr;
 
-        // We should only get here if we are unboxing a T as a Nullable<T>
+    // We should only get here if we are unboxing a T as a Nullable<T>
     _ASSERTE(IsNullableType(destMT));
 
-        // We better have a concrete instantiation, or our field offset asserts are not useful
+    // We better have a concrete instantiation, or our field offset asserts are not useful
     _ASSERTE(!destMT->ContainsGenericVariables());
 
     if (boxedVal == NULL)
     {
         // Logically we are doing *dest->HasValueAddr(destMT) = false;
-        // We zero out the whole structure becasue it may contain GC references
+        // We zero out the whole structure because it may contain GC references
         // and these need to be initialized to zero.   (could optimize in the non-GC case)
         InitValueClass(destPtr, destMT);
     }
@@ -1762,7 +1762,7 @@ BOOL Nullable::UnBoxIntoArgNoGC(ArgDestination *argDest, OBJECTREF boxedVal, Met
         if (boxedVal == NULL)
         {
             // Logically we are doing *dest->HasValueAddr(destMT) = false;
-            // We zero out the whole structure becasue it may contain GC references
+            // We zero out the whole structure because it may contain GC references
             // and these need to be initialized to zero.   (could optimize in the non-GC case)
             InitValueClassArg(argDest, destMT);
         }
@@ -1816,7 +1816,7 @@ void Nullable::UnBoxNoCheck(void* destPtr, OBJECTREF boxedVal, MethodTable* dest
     if (boxedVal == NULL)
     {
         // Logically we are doing *dest->HasValueAddr(destMT) = false;
-        // We zero out the whole structure becasue it may contain GC references
+        // We zero out the whole structure because it may contain GC references
         // and these need to be initialized to zero.   (could optimize in the non-GC case)
         InitValueClass(destPtr, destMT);
     }
@@ -1951,21 +1951,4 @@ void ExceptionObject::GetStackTrace(StackTraceArray & stackTrace, PTRARRAYREF * 
     SpinLock::ReleaseLock(&g_StackTraceArrayLock);
 #endif // !defined(DACCESS_COMPILE)
 
-}
-
-bool LAHashDependentHashTrackerObject::IsLoaderAllocatorLive()
-{
-    return (ObjectFromHandle(_dependentHandle) != NULL);
-}
-
-void LAHashDependentHashTrackerObject::GetDependentAndLoaderAllocator(OBJECTREF *pLoaderAllocatorRef, GCHEAPHASHOBJECTREF *pGCHeapHash)
-{
-    OBJECTREF primary = ObjectFromHandle(_dependentHandle);
-    if (pLoaderAllocatorRef != NULL)
-        *pLoaderAllocatorRef = primary;
-
-    IGCHandleManager *mgr = GCHandleUtilities::GetGCHandleManager();
-    // Secondary is tracked only if primary is non-null
-    if (pGCHeapHash != NULL)
-        *pGCHeapHash = (GCHEAPHASHOBJECTREF)(OBJECTREF)((primary != NULL) ? mgr->GetDependentHandleSecondary(_dependentHandle) : NULL);
 }

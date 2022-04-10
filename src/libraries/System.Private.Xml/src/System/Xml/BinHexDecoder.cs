@@ -116,7 +116,7 @@ namespace System.Xml
         //
         // Static methods
         //
-        public static byte[] Decode(char[] chars!!, bool allowOddChars)
+        public static byte[] Decode(ReadOnlySpan<char> chars, bool allowOddChars)
         {
             int len = chars.Length;
             if (len == 0)

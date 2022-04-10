@@ -1,10 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Threading;
-using System.Collections.Generic;
 
 namespace System.Net.Http
 {
@@ -130,7 +131,7 @@ namespace System.Net.Http
             _versionPolicy = DefaultVersionPolicy;
         }
 
-        public HttpRequestMessage(HttpMethod method, string? requestUri)
+        public HttpRequestMessage(HttpMethod method, [StringSyntax(StringSyntaxAttribute.Uri)] string? requestUri)
             : this(method, string.IsNullOrEmpty(requestUri) ? null : new Uri(requestUri, UriKind.RelativeOrAbsolute))
         {
         }

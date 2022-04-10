@@ -60,7 +60,7 @@ namespace System.Runtime
                 // Call the finalizer on the current target object. If the finalizer throws we'll fail
                 // fast via normal Redhawk exception semantics (since we don't attempt to catch
                 // anything).
-                ((delegate*<object, void>)target.MethodTable->FinalizerCode)(target);
+                ((delegate*<object, void>)target.GetMethodTable()->FinalizerCode)(target);
             }
         }
     }

@@ -4508,7 +4508,7 @@ namespace System.Text.RegularExpressions
             RegexNode root = _regexTree!.Root.Child(0);
             Label returnLabel = DefineLabel();
 
-            if (root.Kind is RegexNodeKind.Multi or RegexNodeKind.One or RegexNodeKind.Notone or RegexNodeKind.Set && (root.Options & RegexOptions.IgnoreCase) == 0)
+            if (root.Kind is RegexNodeKind.Multi or RegexNodeKind.One or RegexNodeKind.Notone or RegexNodeKind.Set)
             {
                 // If the whole expression is just one or more characters, we can rely on the FindOptimizations spitting out
                 // an IndexOf that will find the exact sequence or not, and we don't need to do additional checking beyond that.
@@ -4634,6 +4634,9 @@ namespace System.Text.RegularExpressions
             // but that call is relatively expensive.  Before we fall back to it, we try to optimize
             // some common cases for which we can do much better, such as known character classes
             // for which we can call a dedicated method, or a fast-path for ASCII using a lookup table.
+            // In some cases, multiple optimizations are possible for a given character class: the checks
+            // in this method are generally ordered from fastest / simplest to slowest / most complex so
+            // that we get the best optimization for a given char class.
 
             // First, see if the char class is a built-in one for which there's a better function
             // we can just call directly.
@@ -4710,14 +4713,17 @@ namespace System.Text.RegularExpressions
                 return;
             }
 
-            // Next if the character class contains nothing but a single Unicode category, we can calle char.GetUnicodeCategory and
+            // Next, if the character class contains nothing but Unicode categories, we can call char.GetUnicodeCategory and
             // compare against it.  It has a fast-lookup path for ASCII, so is as good or better than any lookup we'd generate (plus
             // we get smaller code), and it's what we'd do for the fallback (which we get to avoid generating) as part of CharInClass.
-            if (RegexCharClass.TryGetSingleUnicodeCategory(charClass, out UnicodeCategory category, out bool negated))
+            // Unlike the source generator, however, we only handle the case of a single UnicodeCategory: the source generator is able
+            // to rely on C# compiler optimizations to handle dealing with multiple values efficiently.
+            Span<UnicodeCategory> categories = stackalloc UnicodeCategory[1]; // handle the case of one and only one category
+            if (RegexCharClass.TryGetOnlyCategories(charClass, categories, out int numCategories, out bool negated))
             {
                 // char.GetUnicodeCategory(ch) == category
                 Call(s_charGetUnicodeInfo);
-                Ldc((int)category);
+                Ldc((int)categories[0]);
                 Ceq();
                 if (negated)
                 {
@@ -4728,59 +4734,212 @@ namespace System.Text.RegularExpressions
                 return;
             }
 
-            // All checks after this point require reading the input character multiple times,
+            // Checks after this point require reading the input character multiple times,
             // so we store it into a temporary local.
             using RentedLocalBuilder tempLocal = RentInt32Local();
             Stloc(tempLocal);
 
             // Next, if there's only 2 or 3 chars in the set (fairly common due to the sets we create for prefixes),
             // it's cheaper and smaller to compare against each than it is to use a lookup table.
-            if (!RegexCharClass.IsNegated(charClass))
+            Span<char> setChars = stackalloc char[3];
+            int numChars = RegexCharClass.GetSetChars(charClass, setChars);
+            if (numChars is 2 or 3)
             {
-                Span<char> setChars = stackalloc char[3];
-                int numChars = RegexCharClass.GetSetChars(charClass, setChars);
-                if (numChars is 2 or 3)
+                if (RegexCharClass.DifferByOneBit(setChars[0], setChars[1], out int mask)) // special-case common case of an upper and lowercase ASCII letter combination
                 {
-                    if (RegexCharClass.DifferByOneBit(setChars[0], setChars[1], out int mask)) // special-case common case of an upper and lowercase ASCII letter combination
-                    {
-                        // ((ch | mask) == setChars[1])
-                        Ldloc(tempLocal);
-                        Ldc(mask);
-                        Or();
-                        Ldc(setChars[1] | mask);
-                        Ceq();
-                    }
-                    else
-                    {
-                        // (ch == setChars[0]) | (ch == setChars[1])
-                        Ldloc(tempLocal);
-                        Ldc(setChars[0]);
-                        Ceq();
-                        Ldloc(tempLocal);
-                        Ldc(setChars[1]);
-                        Ceq();
-                        Or();
-                    }
-
-                    // | (ch == setChars[2])
-                    if (numChars == 3)
-                    {
-                        Ldloc(tempLocal);
-                        Ldc(setChars[2]);
-                        Ceq();
-                        Or();
-                    }
-
-                    return;
+                    // ((ch | mask) == setChars[1])
+                    Ldloc(tempLocal);
+                    Ldc(mask);
+                    Or();
+                    Ldc(setChars[1] | mask);
+                    Ceq();
                 }
+                else
+                {
+                    // (ch == setChars[0]) | (ch == setChars[1])
+                    Ldloc(tempLocal);
+                    Ldc(setChars[0]);
+                    Ceq();
+                    Ldloc(tempLocal);
+                    Ldc(setChars[1]);
+                    Ceq();
+                    Or();
+                }
+
+                // | (ch == setChars[2])
+                if (numChars == 3)
+                {
+                    Ldloc(tempLocal);
+                    Ldc(setChars[2]);
+                    Ceq();
+                    Or();
+                }
+
+                if (RegexCharClass.IsNegated(charClass))
+                {
+                    Ldc(0);
+                    Ceq();
+                }
+                return;
             }
 
-            using RentedLocalBuilder resultLocal = RentInt32Local();
+            // Next, handle simple sets of two ASCII letter ranges that are cased versions of each other, e.g. [A-Za-z].
+            // This can be implemented as if it were a single range, with an additional bitwise operation.
+            if (RegexCharClass.TryGetDoubleRange(charClass, out (char LowInclusive, char HighInclusive) rangeLower, out (char LowInclusive, char HighInclusive) rangeUpper) &&
+                RegexCharClass.IsAsciiLetter(rangeUpper.LowInclusive) &&
+                RegexCharClass.IsAsciiLetter(rangeUpper.HighInclusive) &&
+                (rangeLower.LowInclusive | 0x20) == rangeUpper.LowInclusive &&
+                (rangeLower.HighInclusive | 0x20) == rangeUpper.HighInclusive)
+            {
+                Debug.Assert(rangeLower.LowInclusive != rangeUpper.LowInclusive);
+                bool negate = RegexCharClass.IsNegated(charClass);
+
+                // (uint)((ch | 0x20) - lowInclusive) < highInclusive - lowInclusive + 1
+                Ldloc(tempLocal);
+                Ldc(0x20);
+                Or();
+                Ldc(rangeUpper.LowInclusive);
+                Sub();
+                Ldc(rangeUpper.HighInclusive - rangeUpper.LowInclusive + 1);
+                CltUn();
+                if (negate)
+                {
+                    Ldc(0);
+                    Ceq();
+                }
+                return;
+            }
 
             // Analyze the character set more to determine what code to generate.
             RegexCharClass.CharClassAnalysisResults analysis = RegexCharClass.Analyze(charClass);
 
-            // Helper method that emits a call to RegexRunner.CharInClass(ch{.ToLowerInvariant()}, charClass)
+            // Next, handle sets where the high - low + 1 range is <= 64.  In that case, we can emit
+            // a branchless lookup in a ulong that does not rely on loading any objects (e.g. the string-based
+            // lookup we use later).  This nicely handles common sets like [0-9A-Fa-f], [0-9a-f], [A-Za-z], etc.
+            if (analysis.OnlyRanges && (analysis.UpperBoundExclusiveIfOnlyRanges - analysis.LowerBoundInclusiveIfOnlyRanges) <= 64)
+            {
+                // Create the 64-bit value with 1s at indices corresponding to every character in the set,
+                // where the bit is computed to be the char value minus the lower bound starting from
+                // most significant bit downwards.
+                ulong bitmap = 0;
+                bool negatedClass = RegexCharClass.IsNegated(charClass);
+                for (int i = analysis.LowerBoundInclusiveIfOnlyRanges; i < analysis.UpperBoundExclusiveIfOnlyRanges; i++)
+                {
+                    if (RegexCharClass.CharInClass((char)i, charClass) ^ negatedClass)
+                    {
+                        bitmap |= (1ul << (63 - (i - analysis.LowerBoundInclusiveIfOnlyRanges)));
+                    }
+                }
+
+                // To determine whether a character is in the set, we subtract the lowest char (casting to
+                // uint to account for any smaller values); this subtraction happens before the result is
+                // zero-extended to ulong, meaning that `charMinusLow` will always have upper 32 bits equal to 0.
+                // We then left shift the constant with this offset, and apply a bitmask that has the highest
+                // bit set (the sign bit) if and only if `chExpr` is in the [low, low + 64) range.
+                // Then we only need to check whether this final result is less than 0: this will only be
+                // the case if both `charMinusLow` was in fact the index of a set bit in the constant, and also
+                // `chExpr` was in the allowed range (this ensures that false positive bit shifts are ignored).
+
+                // ulong charMinusLow = (uint)ch - lowInclusive;
+                LocalBuilder charMinusLow = _ilg!.DeclareLocal(typeof(ulong));
+                Ldloc(tempLocal);
+                Ldc(analysis.LowerBoundInclusiveIfOnlyRanges);
+                Sub();
+                _ilg!.Emit(OpCodes.Conv_U8);
+                Stloc(charMinusLow);
+
+                // ulong shift = bitmap << (int)charMinusLow;
+                LdcI8((long)bitmap);
+                Ldloc(charMinusLow);
+                _ilg!.Emit(OpCodes.Conv_I4);
+                Ldc(63);
+                And();
+                Shl();
+
+                // ulong mask = charMinusLow - 64;
+                Ldloc(charMinusLow);
+                Ldc(64);
+                _ilg!.Emit(OpCodes.Conv_I8);
+                Sub();
+
+                // (long)(shift & mask) < 0 // or >= for a negated character class
+                And();
+                Ldc(0);
+                _ilg!.Emit(OpCodes.Conv_I8);
+                _ilg!.Emit(OpCodes.Clt);
+                if (negatedClass)
+                {
+                    Ldc(0);
+                    Ceq();
+                }
+
+                return;
+            }
+
+            // Next, handle simple sets of two ranges, e.g. [\p{IsGreek}\p{IsGreekExtended}].
+            if (RegexCharClass.TryGetDoubleRange(charClass, out (char LowInclusive, char HighInclusive) range0, out (char LowInclusive, char HighInclusive) range1))
+            {
+                bool negate = RegexCharClass.IsNegated(charClass);
+
+                if (range0.LowInclusive == range0.HighInclusive)
+                {
+                    // ch == lowInclusive
+                    Ldloc(tempLocal);
+                    Ldc(range0.LowInclusive);
+                    Ceq();
+                }
+                else
+                {
+                    // (uint)(ch - lowInclusive) < (uint)(highInclusive - lowInclusive + 1)
+                    Ldloc(tempLocal);
+                    Ldc(range0.LowInclusive);
+                    Sub();
+                    Ldc(range0.HighInclusive - range0.LowInclusive + 1);
+                    CltUn();
+                }
+                if (negate)
+                {
+                    Ldc(0);
+                    Ceq();
+                }
+
+                if (range1.LowInclusive == range1.HighInclusive)
+                {
+                    // ch == lowInclusive
+                    Ldloc(tempLocal);
+                    Ldc(range1.LowInclusive);
+                    Ceq();
+                }
+                else
+                {
+                    // (uint)(ch - lowInclusive) < (uint)(highInclusive - lowInclusive + 1)
+                    Ldloc(tempLocal);
+                    Ldc(range1.LowInclusive);
+                    Sub();
+                    Ldc(range1.HighInclusive - range1.LowInclusive + 1);
+                    CltUn();
+                }
+                if (negate)
+                {
+                    Ldc(0);
+                    Ceq();
+                }
+
+                if (negate)
+                {
+                    And();
+                }
+                else
+                {
+                    Or();
+                }
+
+                return;
+            }
+
+            using RentedLocalBuilder resultLocal = RentInt32Local();
+
+            // Helper method that emits a call to RegexRunner.CharInClass(ch, charClass)
             void EmitCharInClass()
             {
                 Ldloc(tempLocal);
@@ -4795,10 +4954,10 @@ namespace System.Text.RegularExpressions
             if (analysis.ContainsNoAscii)
             {
                 // We determined that the character class contains only non-ASCII,
-                // for example if the class were [\p{IsGreek}\p{IsGreekExtended}], which is
-                // the same as [\u0370-\u03FF\u1F00-1FFF]. (In the future, we could possibly
-                // extend the analysis to produce a known lower-bound and compare against
-                // that rather than always using 128 as the pivot point.)
+                // for example if the class were [\u1000-\u2000\u3000-\u4000\u5000-\u6000].
+                // (In the future, we could possibly extend the analysis to produce a known
+                // lower-bound and compare against that rather than always using 128 as the
+                // pivot point.)
 
                 // ch >= 128 && RegexRunner.CharInClass(ch, "...")
                 Ldloc(tempLocal);
@@ -4866,7 +5025,7 @@ namespace System.Text.RegularExpressions
 
             // ch < 128 ? (bitVectorString[ch >> 4] & (1 << (ch & 0xF))) != 0 :
             Ldloc(tempLocal);
-            Ldc(analysis.ContainsOnlyAscii ? analysis.UpperBoundExclusiveIfContainsOnlyAscii : 128);
+            Ldc(analysis.ContainsOnlyAscii ? analysis.UpperBoundExclusiveIfOnlyRanges : 128);
             Bge(comparisonLabel);
             Ldstr(bitVectorString);
             Ldloc(tempLocal);
