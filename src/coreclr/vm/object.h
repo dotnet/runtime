@@ -1092,7 +1092,7 @@ public:
 };
 
 // This is the Method version of the Reflection object.
-//  A Method has adddition information.
+//  A Method has additional information:
 //   m_pMD - A pointer to the actual MethodDesc of the method.
 //   m_object - a field that has a reference type in it. Used only for RuntimeMethodInfoStub to keep the real type alive.
 // This structure matches the structure up to the m_pMD for several different managed types.
@@ -1112,6 +1112,7 @@ protected:
     OBJECTREF           m_empty5;
     OBJECTREF           m_empty6;
     OBJECTREF           m_empty7;
+    OBJECTREF           m_empty8;
     MethodDesc *        m_pMD;
 
 public:
@@ -1135,7 +1136,7 @@ public:
 };
 
 // This is the Field version of the Reflection object.
-//  A Method has adddition information.
+//  A Method has additional information:
 //   m_pFD - A pointer to the actual MethodDesc of the method.
 //   m_object - a field that has a reference type in it. Used only for RuntimeFieldInfoStub to keep the real type alive.
 // This structure matches the structure up to the m_pFD for several different managed types.
@@ -1152,6 +1153,7 @@ protected:
     INT32               m_empty2;
     OBJECTREF           m_empty3;
     OBJECTREF           m_empty4;
+    OBJECTREF           m_empty5;
     FieldDesc *         m_pFD;
 
 public:
@@ -2699,134 +2701,5 @@ typedef REF<ExceptionObject> EXCEPTIONREF;
 #else // USE_CHECKED_OBJECTREFS
 typedef PTR_ExceptionObject EXCEPTIONREF;
 #endif // USE_CHECKED_OBJECTREFS
-
-class GCHeapHashObject : public Object
-{
-#ifdef DACCESS_COMPILE
-    friend class ClrDataAccess;
-#endif
-    friend class GCHeap;
-    friend class JIT_TrialAlloc;
-    friend class CheckAsmOffsets;
-    friend class COMString;
-    friend class CoreLibBinder;
-
-    private:
-    BASEARRAYREF _data;
-    INT32 _count;
-    INT32 _deletedCount;
-
-    public:
-    INT32 GetCount() { LIMITED_METHOD_CONTRACT; return _count; }
-    void IncrementCount(bool replacingDeletedItem)
-    {
-        LIMITED_METHOD_CONTRACT;
-        ++_count;
-        if (replacingDeletedItem)
-            --_deletedCount;
-    }
-
-    void DecrementCount(bool deletingItem)
-    {
-        LIMITED_METHOD_CONTRACT;
-        --_count;
-        if (deletingItem)
-            ++_deletedCount;
-    }
-    INT32 GetDeletedCount() { LIMITED_METHOD_CONTRACT; return _deletedCount; }
-    void SetDeletedCountToZero() { LIMITED_METHOD_CONTRACT; _deletedCount = 0; }
-    INT32 GetCapacity() { LIMITED_METHOD_CONTRACT; if (_data == NULL) return 0; else return (_data->GetNumComponents()); }
-    BASEARRAYREF GetData() { LIMITED_METHOD_CONTRACT; return _data; }
-
-    void SetTable(BASEARRAYREF data)
-    {
-        STATIC_CONTRACT_NOTHROW;
-        STATIC_CONTRACT_GC_NOTRIGGER;
-        STATIC_CONTRACT_MODE_COOPERATIVE;
-
-        SetObjectReference((OBJECTREF*)&_data, (OBJECTREF)data);
-    }
-
-    protected:
-    GCHeapHashObject() {LIMITED_METHOD_CONTRACT; }
-   ~GCHeapHashObject() {LIMITED_METHOD_CONTRACT; }
-};
-
-typedef DPTR(GCHeapHashObject)  PTR_GCHeapHashObject;
-
-#ifdef USE_CHECKED_OBJECTREFS
-typedef REF<GCHeapHashObject> GCHEAPHASHOBJECTREF;
-#else   // USE_CHECKED_OBJECTREFS
-typedef PTR_GCHeapHashObject GCHEAPHASHOBJECTREF;
-#endif // USE_CHECKED_OBJECTREFS
-
-class LAHashDependentHashTrackerObject : public Object
-{
-#ifdef DACCESS_COMPILE
-    friend class ClrDataAccess;
-#endif
-    friend class CheckAsmOffsets;
-    friend class CoreLibBinder;
-
-    private:
-    OBJECTHANDLE _dependentHandle;
-    LoaderAllocator* _loaderAllocator;
-
-    public:
-    bool IsLoaderAllocatorLive();
-    bool IsTrackerFor(LoaderAllocator *pLoaderAllocator)
-    {
-        if (pLoaderAllocator != _loaderAllocator)
-            return false;
-
-        return IsLoaderAllocatorLive();
-    }
-
-    void GetDependentAndLoaderAllocator(OBJECTREF *pLoaderAllocatorRef, GCHEAPHASHOBJECTREF *pGCHeapHash);
-
-    // Be careful with this. This isn't safe to use unless something is keeping the LoaderAllocator live, or there is no intention to dereference this pointer
-    LoaderAllocator* GetLoaderAllocatorUnsafe()
-    {
-        return _loaderAllocator;
-    }
-
-    void Init(OBJECTHANDLE dependentHandle, LoaderAllocator* loaderAllocator)
-    {
-        LIMITED_METHOD_CONTRACT;
-        _dependentHandle = dependentHandle;
-        _loaderAllocator = loaderAllocator;
-    }
-};
-
-class LAHashKeyToTrackersObject : public Object
-{
-#ifdef DACCESS_COMPILE
-    friend class ClrDataAccess;
-#endif
-    friend class CheckAsmOffsets;
-    friend class CoreLibBinder;
-
-    public:
-    // _trackerOrTrackerSet is either a reference to a LAHashDependentHashTracker, or to a GCHeapHash of LAHashDependentHashTracker objects.
-    OBJECTREF _trackerOrTrackerSet;
-    // _laLocalKeyValueStore holds an object that represents a Key value (which must always be valid for the lifetime of the
-    // CrossLoaderAllocatorHeapHash, and the values which must also be valid for that entire lifetime. When a value might
-    // have a shorter lifetime it is accessed through the _trackerOrTrackerSet variable, which allows access to hashtables which
-    // are associated with that remote loaderallocator through a dependent handle, so that lifetime can be managed.
-    OBJECTREF _laLocalKeyValueStore;
-};
-
-typedef DPTR(LAHashDependentHashTrackerObject)  PTR_LAHashDependentHashTrackerObject;
-typedef DPTR(LAHashKeyToTrackersObject) PTR_LAHashKeyToTrackersObject;
-
-
-#ifdef USE_CHECKED_OBJECTREFS
-typedef REF<LAHashDependentHashTrackerObject> LAHASHDEPENDENTHASHTRACKERREF;
-typedef REF<LAHashKeyToTrackersObject> LAHASHKEYTOTRACKERSREF;
-#else   // USE_CHECKED_OBJECTREFS
-typedef PTR_LAHashDependentHashTrackerObject LAHASHDEPENDENTHASHTRACKERREF;
-typedef PTR_LAHashKeyToTrackersObject LAHASHKEYTOTRACKERSREF;
-#endif // USE_CHECKED_OBJECTREFS
-
 
 #endif // _OBJECT_H_

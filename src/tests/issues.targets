@@ -1868,6 +1868,12 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/refany/lcs_il_r/**">
             <Issue>https://github.com/dotnet/runtime/issues/34196</Issue>
         </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/tailcall/compat_i4_u_il_d/**">
+            <Issue>https://github.com/dotnet/runtime/issues/67756</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/tailcall/compat_i4_u_il_r/**">
+            <Issue>https://github.com/dotnet/runtime/issues/67756</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)JIT/Methodical/tailcall_v4/hijacking/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
@@ -4007,6 +4013,8 @@
             <FilteredExcludeList
                 Include="$([System.IO.Path]::GetRelativePath('$(XunitTestBinBase)', '%(ExcludeList.FullPath)'))"
                 Condition="'%(ExcludeList.Extension)' == '.dll'" />
+            <FilteredExcludeList Include="$([System.IO.Path]::ChangeExtension('$([System.IO.Path]::GetRelativePath('$(XunitTestBinBase)', '%(ExcludeList.RootDir)%(ExcludeList.Directory)%(ExcludeList.FileName)'))', '.cmd'))"
+                Condition="'%(ExcludeList.Extension)' == '.OutOfProcessTest'" />
       </ItemGroup>
     </Target>
 </Project>

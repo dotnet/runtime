@@ -27,19 +27,29 @@ namespace System.Reflection
         private Signature? m_signature;
         private RuntimeType m_declaringType;
         private object? m_keepalive;
-        private InvocationFlags m_invocationFlags;
+        private MethodInvoker? m_invoker;
 
         internal InvocationFlags InvocationFlags
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                InvocationFlags flags = m_invocationFlags;
+                InvocationFlags flags = Invoker._invocationFlags;
                 if ((flags & InvocationFlags.Initialized) == 0)
                 {
-                    flags = ComputeAndUpdateInvocationFlags(this, ref m_invocationFlags);
+                    flags = ComputeAndUpdateInvocationFlags(this, ref Invoker._invocationFlags);
                 }
                 return flags;
+            }
+        }
+
+        private MethodInvoker Invoker
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                m_invoker ??= new MethodInvoker(this);
+                return m_invoker;
             }
         }
         #endregion
@@ -295,7 +305,7 @@ namespace System.Reflection
 
         public override CallingConventions CallingConvention => Signature.CallingConvention;
 
-        private RuntimeType[] ArgumentTypes => Signature.Arguments;
+        internal RuntimeType[] ArgumentTypes => Signature.Arguments;
 
         [RequiresUnreferencedCode("Trimming may change method bodies. For example it can change some instructions, remove branches or local variables.")]
         public override MethodBody? GetMethodBody()
@@ -308,16 +318,9 @@ namespace System.Reflection
 
         #endregion
 
-        #region Invocation Logic(On MemberBase)
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private object? InvokeWorker(object? obj, BindingFlags invokeAttr, Span<object?> arguments)
-        {
-            bool wrapExceptions = (invokeAttr & BindingFlags.DoNotWrapExceptions) == 0;
-            return RuntimeMethodHandle.InvokeMethod(obj, in arguments, Signature, false, wrapExceptions);
-        }
-
-        [DebuggerStepThroughAttribute]
-        [Diagnostics.DebuggerHidden]
+        #region Invocation Logic
+        [DebuggerStepThrough]
+        [DebuggerHidden]
         internal object? InvokeOneParameter(object? obj, BindingFlags invokeAttr, Binder? binder, object? parameter, CultureInfo? culture)
         {
             // ContainsStackPointers means that the struct (either the declaring type or the return type)
@@ -337,11 +340,53 @@ namespace System.Reflection
                 throw new TargetParameterCountException(SR.Arg_ParmCnt);
             }
 
-            StackAllocedArguments stackArgs = default;
-            Span<object?> arguments = CheckArguments(ref stackArgs, new ReadOnlySpan<object?>(in parameter), binder, invokeAttr, culture, sig.Arguments);
+            object? retValue;
 
-            bool wrapExceptions = (invokeAttr & BindingFlags.DoNotWrapExceptions) == 0;
-            return RuntimeMethodHandle.InvokeMethod(obj, arguments, Signature, constructor: false, wrapExceptions);
+            unsafe
+            {
+                StackAllocedArguments argStorage = default;
+                Span<object?> copyOfParameters = new(ref argStorage._arg0, 1);
+                ReadOnlySpan<object?> parameters = new(in parameter);
+                Span<bool> shouldCopyBackParameters = new(ref argStorage._copyBack0, 1);
+
+                StackAllocatedByRefs byrefStorage = default;
+                IntPtr* pByRefStorage = (IntPtr*)&byrefStorage;
+
+                CheckArguments(
+                    copyOfParameters,
+                    pByRefStorage,
+                    shouldCopyBackParameters,
+                    parameters,
+                    ArgumentTypes,
+                    binder,
+                    culture,
+                    invokeAttr);
+
+                retValue = Invoker.InvokeUnsafe(obj, pByRefStorage, copyOfParameters, invokeAttr);
+            }
+
+            return retValue;
+        }
+
+        [DebuggerHidden]
+        [DebuggerStepThrough]
+        internal unsafe object? InvokeNonEmitUnsafe(object? obj, IntPtr* arguments, Span<object?> argsForTemporaryMonoSupport, BindingFlags invokeAttr)
+        {
+            if ((invokeAttr & BindingFlags.DoNotWrapExceptions) == 0)
+            {
+                try
+                {
+                    return RuntimeMethodHandle.InvokeMethod(obj, (void**)arguments, Signature, isConstructor: false);
+                }
+                catch (Exception e)
+                {
+                    throw new TargetInvocationException(e);
+                }
+            }
+            else
+            {
+                return RuntimeMethodHandle.InvokeMethod(obj, (void**)arguments, Signature, isConstructor: false);
+            }
         }
 
         #endregion

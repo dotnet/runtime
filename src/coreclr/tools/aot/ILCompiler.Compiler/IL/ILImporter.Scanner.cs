@@ -1292,13 +1292,13 @@ namespace Internal.IL
 
         private bool IsEETypePtrOf(MethodDesc method)
         {
-            if (method.IsIntrinsic && (method.Name == "EETypePtrOf" || method.Name == "MethodTableOf") && method.Instantiation.Length == 1)
+            if (method.IsIntrinsic && (method.Name == "EETypePtrOf" || method.Name == "Of") && method.Instantiation.Length == 1)
             {
                 MetadataType owningType = method.OwningType as MetadataType;
                 if (owningType != null)
                 {
                     return (owningType.Name == "EETypePtr" && owningType.Namespace == "System")
-                        || (owningType.Name == "Object" && owningType.Namespace == "System");
+                        || (owningType.Name == "MethodTable" && owningType.Namespace == "Internal.Runtime");
                 }
             }
 

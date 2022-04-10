@@ -10,7 +10,7 @@ namespace System.Diagnostics.CodeAnalysis
     /// <remarks>
     /// This allows tools to understand which methods are unsafe to call when compiling ahead of time.
     /// </remarks>
-    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Constructor, Inherited = false)]
+    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Constructor | AttributeTargets.Class, Inherited = false)]
     public sealed class RequiresDynamicCodeAttribute : Attribute
     {
         /// <summary>

@@ -2,327 +2,407 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
+using System.Runtime.InteropServices;
+using System.Threading;
 
 namespace System.Text.RegularExpressions.Symbolic
 {
     /// <summary>
-    /// Provides functionality to build character sets, to perform boolean operations over character sets,
-    /// and to construct a symbolic finite automata (SFA) over character sets from a regex.
-    /// Character sets are represented by bitvector sets.
+    /// Provides functionality to build character sets represented as <see cref="BDD"/>s
+    /// and to perform boolean operations over those sets.
     /// </summary>
-    internal sealed class CharSetSolver : BDDAlgebra, ICharAlgebra<BDD>
+    internal sealed class CharSetSolver : ISolver<BDD>
     {
-        /// <summary>BDDs for all ASCII characters for fast lookup.</summary>
-        private readonly BDD[] _charPredTable = new BDD[128];
-        internal readonly BDD _nonAscii;
+        /// <summary>BDD for each ASCII character that returns true for that one character.</summary>
+        /// <remarks>This cache is shared amongst all CharSetSolver instances and is accessed in a thread-safe manner.</remarks>
+        private static readonly BDD?[] s_asciiCache = new BDD[128];
+        /// <summary>BDD that returns true for every non-ASCII character.</summary>
+        /// <remarks>This instance is shared amongst all CharSetSolver instances and is accessed in a thread-safe manner.</remarks>
+        private static BDD? s_nonAscii;
 
-        /// <summary>Initialize the solver.</summary>
-        /// <remarks>Consumers should use the singleton <see cref="Instance"/>.</remarks>
-        private CharSetSolver()
+        /// <summary>Generator for minterms, lazily initialized on first use.</summary>
+        private MintermGenerator<BDD>? _mintermGenerator;
+        /// <summary>Cache of BDD instances created by this solver.</summary>
+        /// <remarks>
+        /// Cache of BDD instances created by this solver: two BDDs with the same ordinal and identical children references
+        /// will result in using the same BDD object.  BDD's Equals implementation does that shallow check, such that BDD
+        /// instances can be looked up by the ordinal/one/zero tuples, and these internalized BDD instances are then able
+        /// to be compared with == for reference equality.  The algorithms employed do not rely on this equality, but
+        /// benefit from it; the more equal BDDs that are actually found to be equal, the better the algorithms will perform.
+        /// </remarks>
+        private readonly Dictionary<(int ordinal, BDD? one, BDD? zero), BDD> _bddCache = new();
+        /// <summary>Cache of Boolean operations over BDDs and the BDDs they produce.</summary>
+        /// <remarks>
+        /// This cache is necessary for the recursive operation algorithms to be guaranteed linear time.
+        /// A well-crafted character class could otherwise cause execution time to be exponential.
+        /// </remarks>
+        private readonly Dictionary<(BooleanOperation op, BDD a, BDD? b), BDD> _operationCache = new();
+
+        /// <summary>Gets a BDD that contains every non-ASCII character.</summary>
+        public BDD NonAscii =>
+            s_nonAscii ??
+            Interlocked.CompareExchange(ref s_nonAscii, CreateSetFromRange('\x80', '\uFFFF'), null) ??
+            s_nonAscii;
+
+        /// <summary>Creates a BDD that contains only the specified character.</summary>
+        public BDD CreateFromChar(char c)
         {
-            _nonAscii = CreateCharSetFromRange('\x80', '\uFFFF');
-        }
-
-        /// <summary>Singleton instance of <see cref="CharSetSolver"/>.</summary>
-        public static CharSetSolver Instance { get; } = new CharSetSolver();
-
-        /// <summary>
-        /// Make a character predicate for the given character c.
-        /// </summary>
-        public BDD CharConstraint(char c)
-        {
-            // individual character BDDs are always fixed
-            BDD[] charPredTable = _charPredTable;
-            return c < charPredTable.Length ?
-                charPredTable[c] ??= CreateBDDFromChar(c) :
-                CreateBDDFromChar(c);
-        }
-
-        private BDD CreateBDDFromChar(ushort c)
-        {
-            BDD bdd = BDD.True;
-            for (int k = 0; k < 16; k++)
+            BDD?[] ascii = s_asciiCache;
+            if (c < (uint)ascii.Length)
             {
-                bdd = (c & (1 << k)) == 0 ? GetOrCreateBDD(k, BDD.False, bdd) : GetOrCreateBDD(k, bdd, BDD.False);
-            }
-            return bdd;
-        }
-
-        /// <summary>
-        /// Make a CharSet from all the characters in the range from m to n.
-        /// Returns the empty set if n is less than m
-        /// </summary>
-        public BDD CreateCharSetFromRange(char m, char n) =>
-            m == n ? CharConstraint(m) :
-            CreateSetFromRange(m, n, 15);
-
-        /// <summary>
-        /// Make a character set of all the characters in the interval from c to d.
-        /// </summary>
-        public BDD RangeConstraint(char c, char d)
-        {
-            if (c == d)
-            {
-                return CharConstraint(c);
+                // ASCII: return a cached BDD.
+                return
+                    ascii[c] ??
+                    Interlocked.CompareExchange(ref ascii[c], CreateBdd(c), null) ??
+                    ascii[c]!;
             }
 
-            return CreateSetFromRange(c, d, 15);
+            // Non-ascii: just create a new BDD.
+            return CreateBdd(c);
+
+            BDD CreateBdd(ushort c)
+            {
+                BDD bdd = BDD.True;
+                for (int k = 0; k < 16; k++)
+                {
+                    bdd = (c & (1 << k)) != 0 ?
+                        GetOrCreateBDD(k, bdd, BDD.False) :
+                        GetOrCreateBDD(k, BDD.False, bdd);
+                }
+
+                return bdd;
+            }
         }
 
 #if DEBUG
-        /// <summary>
-        /// Make a BDD encoding of k least significant bits of all the integers in the ranges
-        /// </summary>
-        internal BDD CreateBddForIntRanges(List<int[]> ranges)
+        /// <summary>Creates a BDD that contains all of the characters in each range.</summary>
+        internal BDD CreateSetFromRanges(List<(char Lower, char Upper)> ranges)
         {
-            BDD bdd = False;
-            foreach (int[] range in ranges)
+            BDD bdd = Empty;
+            foreach ((char Lower, char Upper) range in ranges)
             {
-                bdd = Or(bdd, CreateSetFromRange((uint)range[0], (uint)range[1], 15));
+                bdd = Or(bdd, CreateSetFromRange(range.Lower, range.Upper));
             }
 
             return bdd;
         }
 #endif
 
-        /// <summary>
-        /// Identity function, returns s.
-        /// </summary>
-        public BDD ConvertFromCharSet(BDDAlgebra _, BDD s) => s;
+        /// <summary>Identity function for <paramref name="set"/>, since <paramref name="set"/> is already a <see cref="BDD"/>.</summary>
+        public BDD ConvertFromBDD(BDD set, CharSetSolver _) => set;
 
-        /// <summary>
-        /// Convert the set into an equivalent array of ranges. The ranges are nonoverlapping and ordered.
-        /// </summary>
-        public static (uint, uint)[] ToRanges(BDD set) => BDDRangeConverter.ToRanges(set, 15);
+        /// <summary>Identity function for <paramref name="set"/>, since <paramref name="set"/> is already a <see cref="BDD"/>.</summary>
+        public BDD ConvertToBDD(BDD set, CharSetSolver _) => set;
 
-        public BDD ConvertToCharSet(BDD pred) => pred;
+        /// <summary>Returns null, as minterms are not relevant to <see cref="CharSetSolver"/>.</summary>
+        BDD[]? ISolver<BDD>.GetMinterms() => null;
 
-        public BDD[]? GetMinterms() => null;
+        /// <summary>Formats the contents of the specified set for human consumption.</summary>
+        string ISolver<BDD>.PrettyPrint(BDD characterClass, CharSetSolver solver) => PrettyPrint(characterClass);
 
-        public string PrettyPrint(BDD pred)
+        /// <summary>Formats the contents of the specified set for human consumption.</summary>
+        public string PrettyPrint(BDD set)
         {
-            if (pred.IsEmpty)
+            // Provide simple representations for character classes that match nothing and everything.
+            if (set.IsEmpty)
+            {
                 return "[]";
+            }
+            else if (set.IsFull)
+            {
+                return @"."; // technically this is only accurate with RegexOptions.Singleline, but it's cleaner than using [\s\S]
+            }
 
-            //check if pred is full, show this case with a dot
-            if (pred.IsFull)
-                return ".";
-
-            // try to optimize representation involving common direct use of \w, \s, and \d to avoid blowup of ranges
-            BDD w = UnicodeCategoryConditions.WordLetter;
-            if (pred == w)
+            // Provide simple representations for the built-in word, string, and digit classes
+            BDD w = UnicodeCategoryConditions.WordLetter(this);
+            if (set == w)
+            {
                 return @"\w";
-
-            BDD W = Not(w);
-            if (pred == W)
+            }
+            else if (set == Not(w))
+            {
                 return @"\W";
+            }
 
             BDD s = UnicodeCategoryConditions.WhiteSpace;
-            if (pred == s)
+            if (set == s)
+            {
                 return @"\s";
-
-            BDD S = Not(s);
-            if (pred == S)
+            }
+            else if (set == Not(s))
+            {
                 return @"\S";
+            }
 
             BDD d = UnicodeCategoryConditions.GetCategory(UnicodeCategory.DecimalDigitNumber);
-            if (pred == d)
-                return @"\d";
-
-            BDD D = Not(d);
-            if (pred == D)
-                return @"\D";
-
-            (uint, uint)[] ranges = ToRanges(pred);
-
-            if (IsSingletonRange(ranges))
-                return Escape((char)ranges[0].Item1);
-
-            #region if too many ranges try to optimize the representation using \d \w etc.
-            if (ranges.Length > 10)
+            if (set == d)
             {
-                BDD asciiDigit = CreateCharSetFromRange('0', '9');
-                BDD nonasciiDigit = And(d, Not(asciiDigit));
-                BDD wD = And(w, D);
-                BDD SW = And(S, W);
-                //s, d, wD, SW are the 4 main large minterms
-                //note: s|SW = W, d|wD = w
-                //
-                // Venn Diagram: s and w do not overlap, and d is contained in w
-                // ------------------------------------------------
-                // |                                              |
-                // |              SW     ------------(w)--------  |
-                // |   --------          |                     |  |
-                // |   |      |          |        ----------   |  |
-                // |   |  s   |          |  wD    |        |   |  |
-                // |   |      |          |        |   d    |   |  |
-                // |   --------          |        |        |   |  |
-                // |                     |        ----------   |  |
-                // |                     -----------------------  |
-                // ------------------------------------------------
-                //
-                //-------------------------------------------------------------------
-                // singletons
-                //---
-                if (Or(s, pred) == s)
-                    return $"[^\\S{RepresentSet(And(s, Not(pred)))}]";
-                //---
-                if (Or(d, pred) == d)
-                    return $"[^\\D{RepresentSet(And(d, Not(pred)))}]";
-                //---
-                if (Or(wD, pred) == wD)
-                    return $"[\\w-[\\d{RepresentSet(And(wD, Not(pred)))}]]";
-                //---
-                if (Or(SW, pred) == SW)
-                    return $"[^\\s\\w{RepresentSet(And(SW, Not(pred)))}]";
-                //-------------------------------------------------------------------
-                // unions of two
-                // s|SW
-                if (Or(W, pred) == W)
-                {
-                    string? repr1 = null;
-                    if (And(s, pred) == s)
-                    {
-                        //pred contains all of \s and is contained in \W
-                        repr1 = $"[\\s{RepresentSet(And(S, pred))}]";
-                    }
-
-                    //the more common case is that pred is not \w and not some specific non-word character such as ':'
-                    string repr2 = $"[^\\w{RepresentSet(And(W, Not(pred)))}]";
-                    return repr1 != null && repr1.Length < repr2.Length ? repr1 : repr2;
-                }
-                //---
-                // s|d
-                BDD s_or_d = Or(s, d);
-                if (pred == s_or_d)
-                    return "[\\s\\d]";
-
-                if (Or(s_or_d, pred) == s_or_d)
-                {
-                    //check first if this is purely ascii range for digits
-                    return And(pred, s).Equals(s) && And(pred, nonasciiDigit).IsEmpty ?
-                        $"[\\s{RepresentRanges(ToRanges(And(pred, asciiDigit)), checkSingletonComlement: false)}]" :
-                        $"[\\s\\d-[{RepresentSet(And(s_or_d, Not(pred)))}]]";
-                }
-                //---
-                // s|wD
-                BDD s_or_wD = Or(s, wD);
-                if (Or(s_or_wD, pred) == s_or_wD)
-                    return $"[\\s\\w-[\\d{RepresentSet(And(s_or_wD, Not(pred)))}]]";
-                //---
-                // d|wD
-                if (Or(w, pred) == w)
-                    return $"[\\w-[{RepresentSet(And(w, Not(pred)))}]]";
-                //---
-                // d|SW
-                BDD d_or_SW = Or(d, SW);
-                if (pred == d_or_SW)
-                    return "\\d|[^\\s\\w]";
-                if (Or(d_or_SW, pred) == d_or_SW)
-                    return $"[\\d-[{RepresentSet(And(d, Not(pred)))}]]|[^\\s\\w{RepresentSet(And(SW, Not(pred)))}]";
-                // wD|SW = S&D
-                BDD SD = Or(wD, SW);
-                if (Or(SD, pred) == SD)
-                    return $"[^\\s\\d{RepresentSet(And(SD, Not(pred)))}]";
-                //-------------------------------------------------------------------
-                //unions of three
-                // s|SW|wD = D
-                if (Or(D, pred) == D)
-                    return $"[^\\d{RepresentSet(And(D, Not(pred)))}]";
-                // SW|wD|d = S
-                if (Or(S, pred) == S)
-                    return $"[^\\s{RepresentSet(And(S, Not(pred)))}]";
-                // s|SW|d = complement of wD = W|d
-                BDD W_or_d = Not(wD);
-                if (Or(W_or_d, pred) == W_or_d)
-                    return $"[\\W\\d-[{RepresentSet(And(W_or_d, Not(pred)))}]]";
-                // s|wD|d = s|w
-                BDD s_or_w = Or(s, w);
-                if (Or(s_or_w, pred) == s_or_w)
-                    return $"[\\s\\w-[{RepresentSet(And(s_or_w, Not(pred)))}]]";
-                //-------------------------------------------------------------------
-                //touches all four minterms, typically happens as the fallback arc in .* extension
+                return @"\d";
             }
-            #endregion
+            else if (set == Not(d))
+            {
+                return @"\D";
+            }
 
-            // Represent either the ranges or its complement, if the complement representation is more compact.
-            string ranges_repr = $"[{RepresentRanges(ranges, checkSingletonComlement: false)}]";
-            string ranges_compl_repr = $"[^{RepresentRanges(ToRanges(Not(pred)), checkSingletonComlement: false)}]";
-            return ranges_repr.Length <= ranges_compl_repr.Length ? ranges_repr : ranges_compl_repr;
+            // For everything else, output a series of ranges.
+            var rcc = new RegexCharClass();
+            foreach ((uint, uint) range in BDDRangeConverter.ToRanges(set))
+            {
+                rcc.AddRange((char)range.Item1, (char)range.Item2);
+            }
+            return RegexCharClass.DescribeSet(rcc.ToStringClass());
         }
 
-        private static string RepresentSet(BDD set) =>
-            set.IsEmpty ? "" : RepresentRanges(ToRanges(set));
+        /// <summary>Unions two <see cref="BDD"/>s to produce a new <see cref="BDD"/>.</summary>
+        public BDD Or(BDD set1, BDD set2) => ApplyBinaryOp(BooleanOperation.Or, set1, set2);
 
-        private static string RepresentRanges((uint, uint)[] ranges, bool checkSingletonComlement = true)
+        /// <summary>Unions <see cref="BDD"/>s to produce a new <see cref="BDD"/>.</summary>
+        public BDD Or(ReadOnlySpan<BDD> sets)
         {
-            //check if ranges represents a complement of a singleton
-            if (checkSingletonComlement && ranges.Length == 2 &&
-                ranges[0].Item1 == 0 && ranges[1].Item2 == 0xFFFF &&
-                ranges[0].Item2 + 2 == ranges[1].Item1)
+            if (sets.Length == 0)
             {
-                return "^" + Escape((char)(ranges[0].Item2 + 1));
+                return Empty;
             }
 
-            StringBuilder sb = new();
-            for (int i = 0; i < ranges.Length; i++)
+            BDD result = sets[0];
+            for (int i = 1; i < sets.Length; i++)
             {
-                if (ranges[i].Item1 == ranges[i].Item2)
+                result = Or(result, sets[i]);
+            }
+            return result;
+        }
+
+        /// <summary>Intersects two <see cref="BDD"/>s to produce a new <see cref="BDD"/>.</summary>
+        public BDD And(BDD a, BDD b) => ApplyBinaryOp(BooleanOperation.And, a, b);
+
+        /// <summary>Intersects <see cref="BDD"/>s to produce a new <see cref="BDD"/>.</summary>
+        public BDD And(ReadOnlySpan<BDD> sets)
+        {
+            if (sets.Length == 0)
+            {
+                return Empty;
+            }
+
+            BDD result = sets[0];
+            for (int i = 1; i < sets.Length; i++)
+            {
+                result = And(result, sets[i]);
+            }
+            return result;
+        }
+
+        /// <summary>Negates a <see cref="BDD"/> to produce a new complement <see cref="BDD"/>.</summary>
+        public BDD Not(BDD set)
+        {
+            if (set == Empty)
+            {
+                return Full;
+            }
+
+            if (set == Full)
+            {
+                return Empty;
+            }
+
+            Debug.Assert(!set.IsLeaf, "Did not expect multi-terminal");
+            if (!_operationCache.TryGetValue((BooleanOperation.Not, set, null), out BDD? result))
+            {
+                _operationCache[(BooleanOperation.Not, set, null)] = result = GetOrCreateBDD(set.Ordinal, Not(set.One), Not(set.Zero));
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Applies the binary Boolean operation <paramref name="op"/> and constructs a new
+        /// <see cref="BDD"/> recursively from <paramref name="set1"/> and <paramref name="set2"/>.
+        /// </summary>
+        private BDD ApplyBinaryOp(BooleanOperation op, BDD set1, BDD set2)
+        {
+            Debug.Assert(op is BooleanOperation.Or or BooleanOperation.And or BooleanOperation.Xor);
+
+            // Handle base cases (when one of a or b is True or False or when a == b)
+            switch (op)
+            {
+                case BooleanOperation.Or:
+                    if (set1 == Empty) return set2;
+                    if (set2 == Empty) return set1;
+                    if (set1 == Full || set2 == Full) return Full;
+                    if (set1 == set2) return set1;
+                    break;
+
+                case BooleanOperation.And:
+                    if (set1 == Full) return set2;
+                    if (set2 == Full) return set1;
+                    if (set1 == Empty || set2 == Empty) return Empty;
+                    if (set1 == set2) return set1;
+                    break;
+
+                case BooleanOperation.Xor:
+                    if (set1 == Empty) return set2;
+                    if (set2 == Empty) return set1;
+                    if (set1 == set2) return Empty;
+                    if (set1 == Full) return Not(set2);
+                    if (set2 == Full) return Not(set1);
+                    break;
+            }
+
+            // Order operands by hash code to increase cache hits
+            if (set1.GetHashCode() > set2.GetHashCode())
+            {
+                (set2, set1) = (set1, set2);
+            }
+
+            Debug.Assert(!set1.IsLeaf || !set2.IsLeaf, "Did not expect multi-terminal case");
+            if (!_operationCache.TryGetValue((op, set1, set2), out BDD? result))
+            {
+                BDD one, two;
+                int ordinal;
+                if (set1.IsLeaf || set2.Ordinal > set1.Ordinal)
                 {
-                    sb.Append(Escape((char)ranges[i].Item1));
+                    Debug.Assert(!set2.IsLeaf);
+                    one = ApplyBinaryOp(op, set1, set2.One);
+                    two = ApplyBinaryOp(op, set1, set2.Zero);
+                    ordinal = set2.Ordinal;
                 }
-                else if (ranges[i].Item2 == ranges[i].Item1 + 1)
+                else if (set2.IsLeaf || set1.Ordinal > set2.Ordinal)
                 {
-                    sb.Append(Escape((char)ranges[i].Item1));
-                    sb.Append(Escape((char)ranges[i].Item2));
+                    one = ApplyBinaryOp(op, set1.One, set2);
+                    two = ApplyBinaryOp(op, set1.Zero, set2);
+                    ordinal = set1.Ordinal;
                 }
                 else
                 {
-                    sb.Append(Escape((char)ranges[i].Item1));
-                    sb.Append('-');
-                    sb.Append(Escape((char)ranges[i].Item2));
+                    one = ApplyBinaryOp(op, set1.One, set2.One);
+                    two = ApplyBinaryOp(op, set1.Zero, set2.Zero);
+                    ordinal = set1.Ordinal;
+                }
+
+                _operationCache[(op, set1, set2)] = result = one == two ? one : GetOrCreateBDD(ordinal, one, two);
+            }
+
+            return result;
+        }
+
+        /// <summary>Gets the full set.</summary>
+        public BDD Full => BDD.True;
+
+        /// <summary>Gets the empty set.</summary>
+        public BDD Empty => BDD.False;
+
+        /// <summary>Gets whether the set contains every value.</summary>
+        public bool IsFull(BDD set) => ApplyBinaryOp(BooleanOperation.Xor, set, Full) == Empty;
+
+        /// <summary>Gets whether the set contains no values.</summary>
+        public bool IsEmpty(BDD set) => set == Empty;
+
+        /// <summary>Generate all non-overlapping Boolean combinations of a set of BDDs.</summary>
+        public List<BDD> GenerateMinterms(HashSet<BDD> sets) =>
+            (_mintermGenerator ??= new(this)).GenerateMinterms(sets);
+
+        /// <summary>
+        /// Create a <see cref="BDD"/> representing the set of values in the range
+        /// from <paramref name="lower"/> to <paramref name="upper"/>, inclusive.
+        /// </summary>
+        public BDD CreateSetFromRange(char lower, char upper)
+        {
+            const int MaxBit = 15; // most significant bit of a 16-bit char
+            return
+                upper < lower ? Empty :
+                upper == lower ? CreateFromChar(lower) :
+                CreateSetFromRangeImpl(lower, upper, MaxBit);
+
+            BDD CreateSetFromRangeImpl(uint lower, uint upper, int maxBit)
+            {
+                // Mask with 1 at position of maxBit
+                uint mask = 1u << maxBit;
+
+                if (mask == 1) // Base case for least significant bit
+                {
+                    return
+                        upper == 0 ? GetOrCreateBDD(maxBit, Empty, Full) : // lower must also be 0
+                        lower == 1 ? GetOrCreateBDD(maxBit, Full, Empty) : // upper must also be 1
+                        Full; // Otherwise both 0 and 1 are included
+                }
+
+                // Check if range includes all numbers up to bit
+                if (lower == 0 && upper == ((mask << 1) - 1))
+                {
+                    return Full;
+                }
+
+                // Mask out the highest bit for the first and last elements in the range
+                uint lowerMasked = lower & mask;
+                uint upperMasked = upper & mask;
+
+                if (upperMasked == 0)
+                {
+                    // Highest value in range doesn't have maxBit set, so the one branch is empty
+                    BDD zero = CreateSetFromRangeImpl(lower, upper, maxBit - 1);
+                    return GetOrCreateBDD(maxBit, Empty, zero);
+                }
+                else if (lowerMasked == mask)
+                {
+                    // Lowest value in range has maxBit set, so the zero branch is empty
+                    BDD one = CreateSetFromRangeImpl(lower & ~mask, upper & ~mask, maxBit - 1);
+                    return GetOrCreateBDD(maxBit, one, Empty);
+                }
+                else // Otherwise the range straddles (1<<maxBit) and thus both cases need to be considered
+                {
+                    // If zero then less significant bits are from lower bound to maximum value with maxBit-1 bits
+                    BDD zero = CreateSetFromRangeImpl(lower, mask - 1, maxBit - 1);
+                    // If one then less significant bits are from zero to the upper bound with maxBit stripped away
+                    BDD one = CreateSetFromRangeImpl(0, upper & ~mask, maxBit - 1);
+                    return GetOrCreateBDD(maxBit, one, zero);
                 }
             }
-            return sb.ToString();
         }
 
-        /// <summary>Make an escaped string from a character.</summary>
-        /// <param name="c">The character to escape.</param>
-        private static string Escape(char c)
+        /// <summary>
+        /// Replace the True node in the BDD by a non-Boolean terminal.
+        /// Observe that the Ordinal of False is -1 and the Ordinal of True is -2.
+        /// </summary>
+        public BDD ReplaceTrue(BDD bdd, int terminal)
         {
-            uint code = c;
-            return c switch
+            Debug.Assert(terminal >= 0);
+
+            BDD leaf = GetOrCreateBDD(terminal, null, null);
+            return ReplaceTrueImpl(bdd, leaf, new Dictionary<BDD, BDD>());
+
+            BDD ReplaceTrueImpl(BDD bdd, BDD leaf, Dictionary<BDD, BDD> cache)
             {
-                '.' => @"\.",
-                '[' => @"\[",
-                ']' => @"\]",
-                '(' => @"\(",
-                ')' => @"\)",
-                '{' => @"\{",
-                '}' => @"\}",
-                '?' => @"\?",
-                '+' => @"\+",
-                '*' => @"\*",
-                '|' => @"\|",
-                '\\' => @"\\",
-                '^' => @"\^",
-                '$' => @"\$",
-                '-' => @"\-",
-                ':' => @"\:",
-                '\"' => "\\\"",
-                '\0' => @"\0",
-                '\t' => @"\t",
-                '\r' => @"\r",
-                '\v' => @"\v",
-                '\f' => @"\f",
-                '\n' => @"\n",
-                _ when code is >= 0x20 and <= 0x7E => c.ToString(),
-                _ when code <= 0xFF => $"\\x{code:X2}",
-                _ => $"\\u{code:X4}",
-            };
+                if (bdd == Full)
+                    return leaf;
+
+                if (bdd.IsLeaf)
+                    return bdd;
+
+                if (!cache.TryGetValue(bdd, out BDD? result))
+                {
+                    BDD one = ReplaceTrueImpl(bdd.One, leaf, cache);
+                    BDD zero = ReplaceTrueImpl(bdd.Zero, leaf, cache);
+                    cache[bdd] = result = GetOrCreateBDD(bdd.Ordinal, one, zero);
+                }
+
+                return result;
+            }
         }
 
-        private static bool IsSingletonRange((uint, uint)[] ranges) => ranges.Length == 1 && ranges[0].Item1 == ranges[0].Item2;
+        private BDD GetOrCreateBDD(int ordinal, BDD? one, BDD? zero)
+        {
+            ref BDD? bdd = ref CollectionsMarshal.GetValueRefOrAddDefault(_bddCache, (ordinal, one, zero), out _);
+            return bdd ??= new BDD(ordinal, one, zero);
+        }
+
+        /// <summary>Kinds of Boolean operations.</summary>
+        private enum BooleanOperation
+        {
+            Or,
+            And,
+            Xor,
+            Not,
+        }
     }
 }

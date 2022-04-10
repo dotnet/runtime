@@ -883,7 +883,7 @@ void DebuggerController::CancelOutstandingThreadStarter(Thread * pThread)
 
 //void DebuggerController::Initialize()   Sets up the static
 // variables for the static DebuggerController class.
-// How: Sets g_runningOnWin95, initializes the critical section
+// How: initializes the critical section
 HRESULT DebuggerController::Initialize()
 {
     CONTRACT(HRESULT)

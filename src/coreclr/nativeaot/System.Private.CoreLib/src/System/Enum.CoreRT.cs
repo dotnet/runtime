@@ -32,7 +32,7 @@ namespace System
 
         private CorElementType InternalGetCorElementType()
         {
-            return this.EETypePtr.CorElementType;
+            return this.GetEETypePtr().CorElementType;
         }
 
         //
@@ -46,7 +46,7 @@ namespace System
         //
         internal static bool TryGetUnboxedValueOfEnumOrInteger(object value, out ulong result)
         {
-            EETypePtr eeType = value.EETypePtr;
+            EETypePtr eeType = value.GetEETypePtr();
             // For now, this check is required to flush out pointers.
             if (!eeType.IsDefType)
             {
@@ -129,7 +129,7 @@ namespace System
             EETypePtr enumEEType;
             if (!enumType.TryGetEEType(out enumEEType))
                 return false;
-            if (!(enumEEType == value.EETypePtr))
+            if (!(enumEEType == value.GetEETypePtr()))
                 return false;
             return true;
         }

@@ -65,7 +65,7 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
         cp $CORE_ROOT/lib*.so $CORE_ROOT/lib*.dylib $(scriptPath)
       else
         cp *.dll IL-CG2/
-        rm IL-CG2/composite-r2r.dll
+        rm IL-CG2/composite-r2r.dll 2>/dev/null
       fi
 
       ExtraCrossGen2Args+=" $(CrossGen2TestExtraArguments)"
@@ -77,10 +77,11 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
       __cg2ExitCode=0
 
       OneFileCrossgen2() {
+        date +%H:%M:%S
         __OutputFile=$1
 
         __ResponseFile="$__OutputFile.rsp"
-        rm $__ResponseFile
+        rm $__ResponseFile 2>/dev/null
 
         __Command=$_DebuggerFullPath
         # Tests run locally need __TestDotNetCmd (set by runtest.py) or a compatible 5.0 dotnet runtime in the path
@@ -114,6 +115,7 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
         __cg2ExitCode=$?
 
         export COMPlus_GCName COMPlus_GCStress COMPlus_HeapVerify COMPlus_ReadyToRun COMPlus_TC_OnStackReplacement COMPlus_TC_PartialCompilation
+        date +%H:%M:%S
       }
 
       if [ ! -z ${CompositeBuildMode+x} ]%3B then
@@ -183,7 +185,7 @@ if defined RunCrossGen2 (
 
     mkdir IL-CG2
     copy *.dll IL-CG2\
-    del IL-CG2\composite-r2r.dll
+    del IL-CG2\composite-r2r.dll 2>nul
 
     if defined CompositeBuildMode (
         set ExtraCrossGen2Args=!ExtraCrossGen2Args! --composite
@@ -208,8 +210,9 @@ if defined RunCrossGen2 (
 
     goto :DoneCrossgen2Operations
 :CompileOneFileCrossgen2
+    echo %time%
     set __ResponseFile=!__OutputFile!.rsp
-    del /Q !__ResponseFile!
+    del /Q !__ResponseFile! 2>nul
 
     set __Command=!_DebuggerFullPath!
     REM Tests run locally need __TestDotNetCmd (set by runtest.py) or a compatible 5.0 dotnet runtime in the path
@@ -253,6 +256,7 @@ if defined RunCrossGen2 (
     call !__Command!
     endlocal
     set CrossGen2Status=!ERRORLEVEL!
+    echo %time%
     Exit /b 0
 
 :DoneCrossgen2Operations

@@ -177,43 +177,43 @@ namespace System.Text.RegularExpressions
         public int GroupNumberFromName(string name) { throw null; }
         protected void InitializeReferences() { }
         public bool IsMatch(System.ReadOnlySpan<char> input) { throw null; }
-        public static bool IsMatch(System.ReadOnlySpan<char> input, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute(System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.Regex)] string pattern) { throw null; }
-        public static bool IsMatch(System.ReadOnlySpan<char> input, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute(System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.Regex, "options")] string pattern, System.Text.RegularExpressions.RegexOptions options) { throw null; }
-        public static bool IsMatch(System.ReadOnlySpan<char> input, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute(System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.Regex, "options")] string pattern, System.Text.RegularExpressions.RegexOptions options, System.TimeSpan matchTimeout) { throw null; }
+        public static bool IsMatch(System.ReadOnlySpan<char> input, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Regex")] string pattern) { throw null; }
+        public static bool IsMatch(System.ReadOnlySpan<char> input, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Regex", "options")] string pattern, System.Text.RegularExpressions.RegexOptions options) { throw null; }
+        public static bool IsMatch(System.ReadOnlySpan<char> input, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Regex", "options")] string pattern, System.Text.RegularExpressions.RegexOptions options, System.TimeSpan matchTimeout) { throw null; }
         public bool IsMatch(string input) { throw null; }
         public bool IsMatch(string input, int startat) { throw null; }
-        public static bool IsMatch(string input, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute(System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.Regex)] string pattern) { throw null; }
-        public static bool IsMatch(string input, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute(System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.Regex, "options")] string pattern, System.Text.RegularExpressions.RegexOptions options) { throw null; }
-        public static bool IsMatch(string input, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute(System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.Regex, "options")] string pattern, System.Text.RegularExpressions.RegexOptions options, System.TimeSpan matchTimeout) { throw null; }
+        public static bool IsMatch(string input, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Regex")] string pattern) { throw null; }
+        public static bool IsMatch(string input, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Regex", "options")] string pattern, System.Text.RegularExpressions.RegexOptions options) { throw null; }
+        public static bool IsMatch(string input, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Regex", "options")] string pattern, System.Text.RegularExpressions.RegexOptions options, System.TimeSpan matchTimeout) { throw null; }
         public System.Text.RegularExpressions.Match Match(string input) { throw null; }
         public System.Text.RegularExpressions.Match Match(string input, int startat) { throw null; }
         public System.Text.RegularExpressions.Match Match(string input, int beginning, int length) { throw null; }
-        public static System.Text.RegularExpressions.Match Match(string input, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute(System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.Regex)] string pattern) { throw null; }
-        public static System.Text.RegularExpressions.Match Match(string input, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute(System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.Regex, "options")] string pattern, System.Text.RegularExpressions.RegexOptions options) { throw null; }
-        public static System.Text.RegularExpressions.Match Match(string input, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute(System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.Regex, "options")] string pattern, System.Text.RegularExpressions.RegexOptions options, System.TimeSpan matchTimeout) { throw null; }
+        public static System.Text.RegularExpressions.Match Match(string input, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Regex")] string pattern) { throw null; }
+        public static System.Text.RegularExpressions.Match Match(string input, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Regex", "options")] string pattern, System.Text.RegularExpressions.RegexOptions options) { throw null; }
+        public static System.Text.RegularExpressions.Match Match(string input, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Regex", "options")] string pattern, System.Text.RegularExpressions.RegexOptions options, System.TimeSpan matchTimeout) { throw null; }
         public System.Text.RegularExpressions.MatchCollection Matches(string input) { throw null; }
         public System.Text.RegularExpressions.MatchCollection Matches(string input, int startat) { throw null; }
-        public static System.Text.RegularExpressions.MatchCollection Matches(string input, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute(System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.Regex)] string pattern) { throw null; }
-        public static System.Text.RegularExpressions.MatchCollection Matches(string input, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute(System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.Regex, "options")] string pattern, System.Text.RegularExpressions.RegexOptions options) { throw null; }
-        public static System.Text.RegularExpressions.MatchCollection Matches(string input, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute(System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.Regex, "options")] string pattern, System.Text.RegularExpressions.RegexOptions options, System.TimeSpan matchTimeout) { throw null; }
+        public static System.Text.RegularExpressions.MatchCollection Matches(string input, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Regex")] string pattern) { throw null; }
+        public static System.Text.RegularExpressions.MatchCollection Matches(string input, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Regex", "options")] string pattern, System.Text.RegularExpressions.RegexOptions options) { throw null; }
+        public static System.Text.RegularExpressions.MatchCollection Matches(string input, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Regex", "options")] string pattern, System.Text.RegularExpressions.RegexOptions options, System.TimeSpan matchTimeout) { throw null; }
         public string Replace(string input, string replacement) { throw null; }
         public string Replace(string input, string replacement, int count) { throw null; }
         public string Replace(string input, string replacement, int count, int startat) { throw null; }
-        public static string Replace(string input, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute(System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.Regex)] string pattern, string replacement) { throw null; }
-        public static string Replace(string input, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute(System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.Regex, "options")] string pattern, string replacement, System.Text.RegularExpressions.RegexOptions options) { throw null; }
-        public static string Replace(string input, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute(System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.Regex, "options")] string pattern, string replacement, System.Text.RegularExpressions.RegexOptions options, System.TimeSpan matchTimeout) { throw null; }
-        public static string Replace(string input, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute(System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.Regex)] string pattern, System.Text.RegularExpressions.MatchEvaluator evaluator) { throw null; }
-        public static string Replace(string input, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute(System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.Regex, "options")] string pattern, System.Text.RegularExpressions.MatchEvaluator evaluator, System.Text.RegularExpressions.RegexOptions options) { throw null; }
-        public static string Replace(string input, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute(System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.Regex, "options")] string pattern, System.Text.RegularExpressions.MatchEvaluator evaluator, System.Text.RegularExpressions.RegexOptions options, System.TimeSpan matchTimeout) { throw null; }
+        public static string Replace(string input, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Regex")] string pattern, string replacement) { throw null; }
+        public static string Replace(string input, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Regex", "options")] string pattern, string replacement, System.Text.RegularExpressions.RegexOptions options) { throw null; }
+        public static string Replace(string input, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Regex", "options")] string pattern, string replacement, System.Text.RegularExpressions.RegexOptions options, System.TimeSpan matchTimeout) { throw null; }
+        public static string Replace(string input, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Regex")] string pattern, System.Text.RegularExpressions.MatchEvaluator evaluator) { throw null; }
+        public static string Replace(string input, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Regex", "options")] string pattern, System.Text.RegularExpressions.MatchEvaluator evaluator, System.Text.RegularExpressions.RegexOptions options) { throw null; }
+        public static string Replace(string input, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Regex", "options")] string pattern, System.Text.RegularExpressions.MatchEvaluator evaluator, System.Text.RegularExpressions.RegexOptions options, System.TimeSpan matchTimeout) { throw null; }
         public string Replace(string input, System.Text.RegularExpressions.MatchEvaluator evaluator) { throw null; }
         public string Replace(string input, System.Text.RegularExpressions.MatchEvaluator evaluator, int count) { throw null; }
         public string Replace(string input, System.Text.RegularExpressions.MatchEvaluator evaluator, int count, int startat) { throw null; }
         public string[] Split(string input) { throw null; }
         public string[] Split(string input, int count) { throw null; }
         public string[] Split(string input, int count, int startat) { throw null; }
-        public static string[] Split(string input, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute(System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.Regex)] string pattern) { throw null; }
-        public static string[] Split(string input, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute(System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.Regex, "options")] string pattern, System.Text.RegularExpressions.RegexOptions options) { throw null; }
-        public static string[] Split(string input, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute(System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.Regex, "options")] string pattern, System.Text.RegularExpressions.RegexOptions options, System.TimeSpan matchTimeout) { throw null; }
+        public static string[] Split(string input, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Regex")] string pattern) { throw null; }
+        public static string[] Split(string input, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Regex", "options")] string pattern, System.Text.RegularExpressions.RegexOptions options) { throw null; }
+        public static string[] Split(string input, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Regex", "options")] string pattern, System.Text.RegularExpressions.RegexOptions options, System.TimeSpan matchTimeout) { throw null; }
         void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo si, System.Runtime.Serialization.StreamingContext context) { }
         public override string ToString() { throw null; }
         public static string Unescape(string str) { throw null; }

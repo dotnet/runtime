@@ -293,9 +293,9 @@ namespace ILCompiler
             switch (lookupKind)
             {
                 case ReadyToRunHelperId.TypeHandle:
-                    return NodeFactory.ConstructedTypeSymbol((TypeDesc)targetOfLookup);
+                    return NodeFactory.ConstructedTypeSymbol(WithoutFunctionPointerType((TypeDesc)targetOfLookup));
                 case ReadyToRunHelperId.NecessaryTypeHandle:
-                    return NecessaryTypeSymbolIfPossible((TypeDesc)targetOfLookup);
+                    return NecessaryTypeSymbolIfPossible(WithoutFunctionPointerType((TypeDesc)targetOfLookup));
                 case ReadyToRunHelperId.TypeHandleForCasting:
                     {
                         var type = (TypeDesc)targetOfLookup;
@@ -418,6 +418,10 @@ namespace ILCompiler
             // Fixed lookup not possible - use helper.
             return GenericDictionaryLookup.CreateHelperLookup(contextSource, lookupKind, targetOfLookup);
         }
+
+        // CoreCLR compat - referring to function pointer types handled as IntPtr. No MethodTable for function pointers for now.
+        private static TypeDesc WithoutFunctionPointerType(TypeDesc type)
+            => type.IsFunctionPointer ? type.Context.GetWellKnownType(WellKnownType.IntPtr) : type;
 
         public bool IsFatPointerCandidate(MethodDesc containingMethod, MethodSignature signature)
         {
