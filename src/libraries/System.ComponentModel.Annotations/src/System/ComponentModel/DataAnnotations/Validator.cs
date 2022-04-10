@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -473,15 +474,29 @@ namespace System.ComponentModel.DataAnnotations
 
                     if (propertyValue != null)
                     {
-                        var newContext = new ValidationContext(propertyValue, validationContext.Items);
+                        if (propertyValue is IEnumerable items)
+                        {
+                            foreach (object? eachItem in items)
+                            {
+                                IEnumerable<ValidationError> e = GetObjectPropertyValidationErrors(
+                                    eachItem,
+                                    CreateValidationContext(eachItem, validationContext),
+                                    validateAllProperties,
+                                    breakOnFirstError);
 
-                        IEnumerable<ValidationError> subErrors = GetObjectPropertyValidationErrors(
-                            propertyValue,
-                            newContext,
-                            validateAllProperties,
-                            breakOnFirstError);
+                                errors.AddRange(e);
+                            }
+                        }
+                        else
+                        {
+                            IEnumerable<ValidationError> subErrors = GetObjectPropertyValidationErrors(
+                                propertyValue,
+                                CreateValidationContext(propertyValue, validationContext),
+                                validateAllProperties,
+                                breakOnFirstError);
 
-                        errors.AddRange(subErrors);
+                            errors.AddRange(subErrors);
+                        }
                     }
                 }
                 else
