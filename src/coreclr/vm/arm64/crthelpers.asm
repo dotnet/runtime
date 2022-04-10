@@ -6,11 +6,6 @@
 
 ;
 ; ==--==
-; ***********************************************************************
-; File: CrtHelpers.asm, see history in asmhelpers.asm
-;
-; ***********************************************************************
-
 #include "ksarm64.h"
 #include "asmconstants.h"
 #include "asmmacros.h"
