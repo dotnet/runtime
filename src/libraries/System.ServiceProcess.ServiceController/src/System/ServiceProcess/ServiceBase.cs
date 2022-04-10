@@ -698,11 +698,11 @@ namespace System.ServiceProcess
 
                 if (!multipleServices)
                 {
-                    _status.serviceType = ServiceTypeOptions.SERVICE_TYPE_WIN32_OWN_PROCESS;
+                    _status.serviceType = ServiceTypeOptions.SERVICE_WIN32_OWN_PROCESS;
                 }
                 else
                 {
-                    _status.serviceType = ServiceTypeOptions.SERVICE_TYPE_WIN32_SHARE_PROCESS;
+                    _status.serviceType = ServiceTypeOptions.SERVICE_WIN32_SHARE_PROCESS;
                 }
 
                 _status.currentState = ServiceControlStatus.STATE_START_PENDING;

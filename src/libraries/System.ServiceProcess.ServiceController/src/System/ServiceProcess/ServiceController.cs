@@ -669,7 +669,7 @@ namespace System.ServiceProcess
         /// <returns>Set of service controllers</returns>
         public static ServiceController[] GetDevices(string machineName)
         {
-            return GetServicesOfType(machineName, Interop.Advapi32.ServiceTypeOptions.SERVICE_TYPE_DRIVER);
+            return GetServicesOfType(machineName, Interop.Advapi32.ServiceTypeOptions.SERVICE_DRIVER);
         }
 
         /// <summary>
@@ -707,7 +707,7 @@ namespace System.ServiceProcess
         /// <returns></returns>
         public static ServiceController[] GetServices(string machineName)
         {
-            return GetServicesOfType(machineName, Interop.Advapi32.ServiceTypeOptions.SERVICE_TYPE_WIN32);
+            return GetServicesOfType(machineName, Interop.Advapi32.ServiceTypeOptions.SERVICE_WIN32);
         }
 
         /// <summary>
@@ -718,7 +718,7 @@ namespace System.ServiceProcess
         /// <returns></returns>
         private static Interop.Advapi32.ENUM_SERVICE_STATUS_PROCESS[] GetServicesInGroup(string machineName, string group)
         {
-            return GetServices(machineName, Interop.Advapi32.ServiceTypeOptions.SERVICE_TYPE_WIN32, group, status => status);
+            return GetServices(machineName, Interop.Advapi32.ServiceTypeOptions.SERVICE_WIN32, group, status => status);
         }
 
         /// <summary>
