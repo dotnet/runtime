@@ -49,6 +49,7 @@ set __BuildTypeRelease=0
 
 set __PgoInstrument=0
 set __PgoOptimize=0
+set __PgoOptDataPath=
 set __EnforcePgo=0
 set __ConsoleLoggingParameters=/clp:ForceNoAlign;Summary
 
@@ -64,7 +65,6 @@ set __BuildNative=1
 set __RestoreOptData=1
 set __HostArch=
 set __HostArch2=
-set __PgoOptDataPath=
 set __CMakeArgs=
 set __Ninja=1
 set __RequestedBuildComponents=

@@ -15,6 +15,9 @@ set __TargetOS=windows
 set CMAKE_BUILD_TYPE=Debug
 set "__LinkLibraries= "
 set __Ninja=1
+set __PgoInstrument=0
+set __PgoOptimize=0
+set __PgoOptDataPath=
 
 :Arg_Loop
 :: Since the native build requires some configuration information before msbuild is called, we have to do some manual args parsing
@@ -38,6 +41,9 @@ if /i [%1] == [rebuild] ( set __BuildTarget=rebuild&&shift&goto Arg_Loop)
 
 if /i [%1] == [msbuild] ( set __Ninja=0&&shift&goto Arg_Loop)
 
+if /i [%1] == [pgoinstrument] ( set __PgoInstrument=1&shift&goto Arg_Loop)
+if /i [%1] == [pgodatapath]   ( set __PgoOptDataPath=%2&set __PgoOptimize=1&shift&shift&goto Arg_Loop)
+
 shift
 goto :Arg_Loop
 
@@ -53,7 +59,7 @@ call "%__engNativeDir%\version\copy_version_files.cmd"
 
 :: cmake requires forward slashes in paths
 set __cmakeRepoRoot=%__repoRoot:\=/%
-set __ExtraCmakeParams="-DCMAKE_REPO_ROOT=%__cmakeRepoRoot%"
+set __ExtraCmakeParams="-DCLR_CMAKE_PGO_INSTRUMENT=%__PgoInstrument%" "-DCLR_CMAKE_OPTDATA_PATH=%__PgoOptDataPath%" "-DCLR_CMAKE_PGO_OPTIMIZE=%__PgoOptimize% -DCMAKE_REPO_ROOT=%__cmakeRepoRoot%"
 set __ExtraCmakeParams=%__ExtraCmakeParams% "-DCMAKE_BUILD_TYPE=%CMAKE_BUILD_TYPE%"
 
 if [%__outConfig%] == [] set __outConfig=%__TargetOS%-%__BuildArch%-%CMAKE_BUILD_TYPE%

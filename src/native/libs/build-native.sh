@@ -7,10 +7,24 @@ __scriptpath="$(cd "$(dirname "$0")"; pwd -P)"
 __nativeroot="$__scriptpath"
 __RepoRootDir="$(cd "$__scriptpath"/../../..; pwd -P)"
 __artifactsDir="$__RepoRootDir/artifacts"
+__PgoInstrument=0
+__PgoOptDataPath=""
+__PgoOptimize=0
+
 
 handle_arguments() {
 
     case "$1" in
+        pgodatapath|-pgodatapath)
+            __PgoOptimize=1
+            __PgoOptDataPath=$2
+            __ShiftArgs=1
+            ;;
+
+        pgoinstrument|-pgoinstrument)
+            __PgoInstrument=1
+            ;;
+
         outconfig|-outconfig)
             __outConfig="$2"
             __ShiftArgs=1
@@ -122,6 +136,8 @@ elif [[ "$__TargetOS" == tvOS ]]; then
         exit 1
     fi
 fi
+
+__CMakeArgs="-DCLR_CMAKE_PGO_INSTRUMENT=$__PgoInstrument -DCLR_CMAKE_OPTDATA_PATH=$__PgoOptDataPath -DCLR_CMAKE_PGO_OPTIMIZE=$__PgoOptimize $__CMakeArgs"
 
 # Set the remaining variables based upon the determined build configuration
 __outConfig="${__outConfig:-"$__TargetOS-$__TargetArch-$__BuildType"}"
