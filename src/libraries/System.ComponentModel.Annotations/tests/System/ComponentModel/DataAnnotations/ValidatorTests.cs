@@ -137,7 +137,7 @@ namespace System.ComponentModel.DataAnnotations.Tests
         }
 
         [Fact]
-        public void ValidationResultFailedIfPropertyInUnattributedNestedValueFails()
+        public void Recursive_fails_if_property_in_unattributed_nested_value_fails()
         {
             var thingToValidate = new TopLevelWithComplexProperties
             {
@@ -164,7 +164,7 @@ namespace System.ComponentModel.DataAnnotations.Tests
         }
 
         [Fact]
-        public void ValidationResultFailedIfPropertyInNestedValueFails()
+        public void Recursive_fails_if_nested_property_is_invalid()
         {
             var thingToValidate = new TopLevelWithComplexProperties
             {
@@ -188,7 +188,7 @@ namespace System.ComponentModel.DataAnnotations.Tests
         }
 
         [Fact]
-        public void ValidationResultFailedIfRequiredComplexPropertyIsNull()
+        public void Recursive_fails_if_required_complex_property_is_null()
         {
             var thingToValidate = new TopLevelWithComplexProperties
             {
@@ -205,11 +205,10 @@ namespace System.ComponentModel.DataAnnotations.Tests
             Assert.Equal(1, validationResults.Count);
 
             Assert.Equal("The AnnotatedSubsection field is required.", validationResults.Single().ErrorMessage);
-
         }
 
         [Fact]
-        public void HandlesNullNestedValue()
+        public void Recursive_unattributed_complex_property_does_not_cause_failure()
         {
             var thingToValidate = new TopLevelWithComplexProperties
             {
@@ -229,7 +228,7 @@ namespace System.ComponentModel.DataAnnotations.Tests
         }
 
         [Fact]
-        public void ReportsValidationErrorsInTopLevelAndSubLevelOptions()
+        public void Recursive_reports_failures_in_top_level_and_nested_levels()
         {
             var thingToValidate = new TopLevelWithComplexProperties
             {
@@ -253,7 +252,7 @@ namespace System.ComponentModel.DataAnnotations.Tests
         }
 
         [Fact]
-        public void ReportsValidationErrorsInSubLevelComplexLst()
+        public void Recursive_reports_failures_in_nested_complex_list()
         {
             var thingToValidate = new TopLevelWithComplexProperties
             {
@@ -262,16 +261,46 @@ namespace System.ComponentModel.DataAnnotations.Tests
                 StringLength = "222",
                 AnnotatedSubsection = new AnnotatedSubsection
                 {
-                    IntRange2 = 100, // out of range,
+                    IntRange2 = 100, // really out of range,
                     ComplexItems = new List<ComplexListItem>
                     {
                         new ComplexListItem
                         {
-                            IntRange3 = 42,
-                            RequiredString = null
+                            IntRange3 = 42, // really really out of range
+                            RequiredString = null // RequiredString is missing
                         }
                     }
                     
+                }
+            };
+
+            var context = new ValidationContext(thingToValidate);
+            var validationResults = new List<ValidationResult>();
+
+            Assert.False(Validator.TryValidateObject(thingToValidate, context, validationResults, true));
+            Assert.Equal(4, validationResults.Count);
+
+            Assert.Equal("Out of range.", validationResults.ElementAt(0).ErrorMessage);
+            Assert.Equal("Really out of range.", validationResults.ElementAt(1).ErrorMessage);
+            Assert.Equal("Really really out of range.", validationResults.ElementAt(2).ErrorMessage);
+            Assert.Equal("The RequiredString field is required.", validationResults.ElementAt(3).ErrorMessage);
+        }
+
+        [Fact]
+        public void Recursive_reports_failures_in_nested_complex_dictionary()
+        {
+            var thingToValidate = new TopLevelWithComplexProperties
+            {
+                IntRange = 200, // out of range
+                Required = "aaa",
+                StringLength = "222",
+                AnnotatedSubsection = new AnnotatedSubsection
+                {
+                    IntRange2 = 100, // really out of range,
+                    ComplexDictionary = new Dictionary<int, ComplexListItem>()
+                    {
+                        {1, new ComplexListItem{ IntRange3 = 42, RequiredString = null } } // really really out of range and RequiredString is missing
+                    }
                 }
             };
 
@@ -1498,6 +1527,7 @@ namespace System.ComponentModel.DataAnnotations.Tests
             public int IntRange2 { get; set; }
 
             public List<ComplexListItem> ComplexItems { get; set; }
+            public Dictionary<int, ComplexListItem> ComplexDictionary { get; set; }
         }
 
         public class ComplexListItem

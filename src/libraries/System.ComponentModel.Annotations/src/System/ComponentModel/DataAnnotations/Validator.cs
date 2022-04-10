@@ -474,7 +474,7 @@ namespace System.ComponentModel.DataAnnotations
 
                     if (propertyValue != null)
                     {
-                        if (propertyValue is IEnumerable items)
+                        if (propertyValue is not string && propertyValue is IEnumerable items)
                         {
                             foreach (object? eachItem in items)
                             {
