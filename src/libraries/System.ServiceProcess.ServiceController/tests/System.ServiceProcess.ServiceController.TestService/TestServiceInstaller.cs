@@ -109,11 +109,11 @@ namespace System.ServiceProcess.Tests
                             TestService.DebugTrace($"TestServiceInstaller: instructing ServiceController to start service {ServiceName}");
                             svc.Start();
                             if (!ServiceName.StartsWith("PropagateExceptionFromOnStart"))
-                                svc.WaitForStatus(ServiceControllerStatus.Running, TimeSpan.FromSeconds(120));
+                                svc.WaitForStatus(ServiceControllerStatus.Running, TimeSpan.FromSeconds(240));
                         }
                         else
                         {
-                            TestService.DebugTrace("TestServiceInstaller: service {ServiceName} already running");
+                            TestService.DebugTrace($"TestServiceInstaller: service {ServiceName} already running");
                         }
                     }
                 }
@@ -159,7 +159,7 @@ namespace System.ServiceProcess.Tests
                     }
 
                     // var sw = Stopwatch.StartNew();
-                    svc.WaitForStatus(ServiceControllerStatus.Stopped, TimeSpan.FromSeconds(120));
+                    svc.WaitForStatus(ServiceControllerStatus.Stopped, TimeSpan.FromSeconds(240));
                     // sw.Stop();
                     // if (sw.Elapsed > TimeSpan.FromSeconds(30))
                     // {
