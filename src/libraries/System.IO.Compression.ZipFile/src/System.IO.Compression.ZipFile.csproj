@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser;$(NetCoreAppCurrent)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser;$(NetCoreAppCurrent)</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
@@ -17,7 +17,7 @@
              Link="Common\System\IO\PathInternal.CaseSensitivity.cs" />
   </ItemGroup>
   <!-- Windows specific files -->
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows' or '$(TargetPlatformIdentifier)' == ''">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == ''">
     <Compile Include="System\IO\Compression\ZipFileValidName_Windows.cs" />
   </ItemGroup>
     <!-- Unix specific files -->
