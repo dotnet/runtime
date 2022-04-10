@@ -853,10 +853,10 @@ int LinearScan::BuildCall(GenTreeCall* call)
     for (CallArg& arg : call->gtArgs.LateArgs())
     {
         CallArgABIInformation& abiInfo = arg.AbiInfo;
-        GenTree* argNode = arg.GetLateNode();
+        GenTree*               argNode = arg.GetLateNode();
 
 #ifdef DEBUG
-        regNumber      argReg         = abiInfo.GetRegNum();
+        regNumber argReg = abiInfo.GetRegNum();
 #endif
 
         if (argNode->gtOper == GT_PUTARG_STK)
