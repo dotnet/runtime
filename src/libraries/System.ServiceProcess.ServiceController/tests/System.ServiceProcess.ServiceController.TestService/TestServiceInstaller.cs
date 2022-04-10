@@ -77,7 +77,7 @@ namespace System.ServiceProcess.Tests
                 if (serviceManagerHandle.IsInvalid)
                     throw new InvalidOperationException("Cannot open Service Control Manager");
 
-                TestService.DebugTrace($"TestServiceInstaller: creating service {ServiceName} with prerequisite services {servicesDependedOn}");
+                TestService.DebugTrace($"TestServiceInstaller: creating service '{ServiceName}' with prerequisite services {servicesDependedOn}");
 
                 // Install the service
                 using (var serviceHandle = new SafeServiceHandle(Interop.Advapi32.CreateService(serviceManagerHandle, ServiceName,
@@ -86,7 +86,7 @@ namespace System.ServiceProcess.Tests
                     ServiceCommandLine, null, IntPtr.Zero, servicesDependedOn, username, password)))
                 {
                     if (serviceHandle.IsInvalid)
-                        throw new Win32Exception("Cannot create service");
+                        throw new Win32Exception($"Cannot create service '{ServiceName}' with display name '{DisplayName}'. {new Win32Exception().Message}");
 
                     // A local variable in an unsafe method is already fixed -- so we don't need a "fixed { }" blocks to protect
                     // across the p/invoke calls below.
@@ -98,7 +98,7 @@ namespace System.ServiceProcess.Tests
                         bool success = Interop.Advapi32.ChangeServiceConfig2(serviceHandle, Interop.Advapi32.ServiceConfigOptions.SERVICE_CONFIG_DESCRIPTION, ref serviceDesc);
                         Marshal.FreeHGlobal(serviceDesc.description);
                         if (!success)
-                            throw new Win32Exception("Cannot set description");
+                            throw new Win32Exception($"Cannot set description on '{ServiceName}' with display name '{DisplayName}'. {new Win32Exception().Message}");
                     }
 
                     // Start the service after creating it
@@ -174,17 +174,17 @@ namespace System.ServiceProcess.Tests
             using (var serviceManagerHandle = new SafeServiceHandle(Interop.Advapi32.OpenSCManager(null, null, Interop.Advapi32.ServiceControllerOptions.SC_MANAGER_ALL)))
             {
                 if (serviceManagerHandle.IsInvalid)
-                    throw new Win32Exception("Could not open SCM");
+                    throw new Win32Exception($"Could not open SCM. {new Win32Exception().Message}");
 
                 using (var serviceHandle = new SafeServiceHandle(Interop.Advapi32.OpenService(serviceManagerHandle, ServiceName, Interop.Advapi32.ServiceOptions.STANDARD_RIGHTS_DELETE)))
                 {
                     if (serviceHandle.IsInvalid)
-                        throw new Win32Exception($"Could not find service '{ServiceName}'");
+                        throw new Win32Exception($"Could not find service '{ServiceName}'. {new Win32Exception().Message}");
 
                     TestService.DebugTrace("TestServiceInstaller: instructing ServiceController to Delete service " + ServiceName);
                     if (!Interop.Advapi32.DeleteService(serviceHandle))
                     {
-                        throw new Win32Exception($"Could not delete service '{ServiceName}'");
+                        throw new Win32Exception($"Could not delete service '{ServiceName}'. {new Win32Exception().Message}");
                     }
                 }
             }
