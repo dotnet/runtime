@@ -20,7 +20,7 @@
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == ''">
     <Compile Include="System\IO\Compression\ZipFileValidName_Windows.cs" />
   </ItemGroup>
-    <!-- Unix specific files -->
+  <!-- Unix specific files -->
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'Unix' or '$(TargetPlatformIdentifier)' == 'Browser'">
     <Compile Include="System\IO\Compression\ZipFileExtensions.ZipArchive.Create.Unix.cs" />
     <Compile Include="System\IO\Compression\ZipFileExtensions.ZipArchiveEntry.Extract.Unix.cs" />
