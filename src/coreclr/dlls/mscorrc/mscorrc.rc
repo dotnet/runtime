@@ -724,11 +724,11 @@ END
 // Profiler messages for event log
 STRINGTABLE DISCARDABLE
 BEGIN
-        IDS_E_PROF_BAD_PATH                     "Loading profiler failed.  COR_ENABLE_PROFILING and COR_PROFILER were set properly, but COR_PROFILER_PATH was not.  COR_PROFILER_PATH must be set to the full path of the profiler DLL to load with no more than 260 characters including the null terminator.\n"
-        IDS_E_PROF_NO_CLSID                     "Loading profiler failed.  COR_ENABLE_PROFILING was set properly, but COR_PROFILER was not.  COR_PROFILER must be set to the CLSID of the profiler to load.\n"
+        IDS_E_PROF_BAD_PATH                     "Loading profiler failed.  CORECLR_ENABLE_PROFILING and CORECLR_PROFILER were set properly, but CORECLR_PROFILER_PATH was not.  CORECLR_PROFILER_PATH must be set to the full path of the profiler DLL to load with no more than 260 characters including the null terminator.\n"
+        IDS_E_PROF_NO_CLSID                     "Loading profiler failed.  CORECLR_ENABLE_PROFILING was set properly, but CORECLR_PROFILER was not.  CORECLR_PROFILER must be set to the CLSID of the profiler to load.\n"
         IDS_E_PROF_INTERNAL_INIT                "Loading profiler failed due to an internal profiling services initialization failure.  Profiler CLSID: '%s'.  HRESULT: 0x%x.\n"
-        IDS_E_PROF_BAD_CLSID                    "Loading profiler failed.  COR_PROFILER is set to an invalid CLSID: '%s'.  HRESULT: 0x%x.\n"
-        IDS_E_PROF_NO_CALLBACK_IFACE            "Loading profiler failed.  COR_PROFILER is set to a CLSID of a COM object that does not implement the interface GUID (IID) requested by the CLR.  This often indicates that the profiler does not support this version of the CLR.  Profiler CLSID: '%s'.  Requested IID: '%s'.\n"
+        IDS_E_PROF_BAD_CLSID                    "Loading profiler failed.  CORECLR_PROFILER is set to an invalid CLSID: '%s'.  HRESULT: 0x%x.\n"
+        IDS_E_PROF_NO_CALLBACK_IFACE            "Loading profiler failed.  CORECLR_PROFILER is set to a CLSID of a COM object that does not implement the interface GUID (IID) requested by the CLR.  This often indicates that the profiler does not support this version of the CLR.  Profiler CLSID: '%s'.  Requested IID: '%s'.\n"
         IDS_E_PROF_CCI_FAILED                   "Loading profiler failed during instantiation.  Profiler CLSID: '%s'.  HRESULT: 0x%x.\n"
         IDS_E_PROF_INIT_CALLBACK_FAILED         "Loading profiler failed.  The profiler was instantiated, but the profiler failed during its initialization callback.  Profiler CLSID: '%s'.  HRESULT: 0x%x.\n"
         IDS_PROF_SUPPLEMENTARY_INFO             "Process ID (decimal): %d.  Message ID: [0x%x].\n"
