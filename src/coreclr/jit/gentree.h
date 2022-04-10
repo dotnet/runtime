@@ -4024,6 +4024,9 @@ struct CallArgABIInformation
         , StructIntRegs(0)
         , StructFloatRegs(0)
 #endif
+#ifdef TARGET_LOONGARCH64
+        , StructFloatFieldType()
+#endif
 #ifdef DEBUG_ARG_SLOTS
         , SlotNum(0)
         , NumSlots(0)
@@ -4069,6 +4072,12 @@ public:
     unsigned                                            StructFloatRegs;
     SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR StructDesc;
 #endif // UNIX_AMD64_ABI
+#ifdef TARGET_LOONGARCH64
+    // For LoongArch64's ABI, the struct which has float field(s) and no more than two fields
+    // may be passed by float register(s).
+    // e.g  `struct {int a; float b;}` passed by an integer register and a float register.
+    var_types StructFloatFieldType[2];
+#endif
 #if defined(DEBUG_ARG_SLOTS)
     // These fields were used to calculate stack size in stack slots for arguments
     // but now they are replaced by precise `m_byteOffset/m_byteSize` because of

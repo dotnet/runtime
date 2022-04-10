@@ -1659,7 +1659,7 @@ void CallArgs::EvalArgsToTemps(Compiler* comp, GenTreeCall* call)
                         // two FP registers).
                         // TODO-LoongArch64: fix "getPrimitiveTypeForStruct" or use the ABI information in
                         // the arg entry instead of calling it here.
-                        if ((lclVarType == TYP_STRUCT) && (curArgTabEntry->numRegs == 1))
+                        if ((lclVarType == TYP_STRUCT) && (arg.AbiInfo.NumRegs == 1))
 #else
                         if (lclVarType == TYP_STRUCT)
 #endif
@@ -2466,12 +2466,12 @@ void CallArgs::DetermineArgABIInformation(Compiler* comp, GenTreeCall* call)
 #if defined(TARGET_LOONGARCH64)
             if (!passStructByRef)
             {
-                assert((howToPassStruct == SPK_ByValue) || (howToPassStruct == SPK_PrimitiveType));
+                assert((howToPassStruct == Compiler::SPK_ByValue) || (howToPassStruct == Compiler::SPK_PrimitiveType));
 
                 floatFieldFlags = comp->info.compCompHnd->getLoongArch64PassStructInRegisterFlags(objClass);
 
                 passUsingFloatRegs = (floatFieldFlags & STRUCT_HAS_FLOAT_FIELDS_MASK) ? true : false;
-                compFloatingPointUsed |= passUsingFloatRegs;
+                comp->compFloatingPointUsed |= passUsingFloatRegs;
 
                 if ((floatFieldFlags & (STRUCT_HAS_FLOAT_FIELDS_MASK ^ STRUCT_FLOAT_FIELD_ONLY_ONE)) != 0)
                 {
@@ -2855,10 +2855,8 @@ void CallArgs::DetermineArgABIInformation(Compiler* comp, GenTreeCall* call)
                                                 : genMapIntRegArgNumToRegNum(intArgRegNum);
             }
 
-#ifdef TARGET_AMD64
-#ifndef UNIX_AMD64_ABI
+#ifdef WINDOWS_AMD64_ABI
             assert(size == 1);
-#endif
 #endif
 
             // This is a register argument
@@ -2869,19 +2867,24 @@ void CallArgs::DetermineArgABIInformation(Compiler* comp, GenTreeCall* call)
 #ifdef UNIX_AMD64_ABI
             arg.AbiInfo.StructIntRegs   = structIntRegs;
             arg.AbiInfo.StructFloatRegs = structFloatRegs;
-            assert(size <= 2);
-            if (size == 2)
-            {
-                arg.AbiInfo.SetRegNum(1, nextOtherRegNum);
-            }
 
             if (isStructArg)
             {
                 arg.AbiInfo.StructDesc.CopyFrom(structDesc);
             }
+#endif
+
+#if defined(UNIX_AMD64_ABI) || defined(TARGET_LOONGARCH64)
+            assert(size <= 2);
+
+            if (size == 2)
+            {
+                arg.AbiInfo.SetRegNum(1, nextOtherRegNum);
+            }
 
             INDEBUG(arg.CheckIsStruct());
 #endif
+
             arg.AbiInfo.IsBackFilled = isBackFilled;
 
             // Set up the next intArgRegNum and fltArgRegNum values.
@@ -2889,7 +2892,7 @@ void CallArgs::DetermineArgABIInformation(Compiler* comp, GenTreeCall* call)
             {
 #if defined(TARGET_LOONGARCH64)
                 // Increment intArgRegNum by 'size' registers
-                if (!isNonStandard)
+                if (nonStdRegNum == REG_NA)
                 {
                     if ((size > 1) && ((intArgRegNum + 1) == maxRegArgs) && (nextOtherRegNum == REG_STK))
                     {
@@ -2912,7 +2915,7 @@ void CallArgs::DetermineArgABIInformation(Compiler* comp, GenTreeCall* call)
                     {
                         structBaseType = structSize == 8 ? TYP_DOUBLE : TYP_FLOAT;
                         fltArgRegNum += 1;
-                        newArgEntry->structFloatFieldType[0] = structBaseType;
+                        arg.AbiInfo.StructFloatFieldType[0] = structBaseType;
                     }
                     else if ((floatFieldFlags & (STRUCT_FLOAT_FIELD_FIRST | STRUCT_FLOAT_FIELD_SECOND)) != 0)
                     {
@@ -2920,25 +2923,25 @@ void CallArgs::DetermineArgABIInformation(Compiler* comp, GenTreeCall* call)
                         intArgRegNum += 1;
                         if ((floatFieldFlags & STRUCT_FLOAT_FIELD_FIRST) != 0)
                         {
-                            newArgEntry->structFloatFieldType[0] =
+                            arg.AbiInfo.StructFloatFieldType[0] =
                                 (floatFieldFlags & STRUCT_FIRST_FIELD_SIZE_IS8) ? TYP_DOUBLE : TYP_FLOAT;
-                            newArgEntry->structFloatFieldType[1] =
+                            arg.AbiInfo.StructFloatFieldType[1] =
                                 (floatFieldFlags & STRUCT_SECOND_FIELD_SIZE_IS8) ? TYP_LONG : TYP_INT;
                         }
                         else
                         {
-                            newArgEntry->structFloatFieldType[0] =
+                            arg.AbiInfo.StructFloatFieldType[0] =
                                 (floatFieldFlags & STRUCT_FIRST_FIELD_SIZE_IS8) ? TYP_LONG : TYP_INT;
-                            newArgEntry->structFloatFieldType[1] =
+                            arg.AbiInfo.StructFloatFieldType[1] =
                                 (floatFieldFlags & STRUCT_SECOND_FIELD_SIZE_IS8) ? TYP_DOUBLE : TYP_FLOAT;
                         }
                     }
                     else if ((floatFieldFlags & STRUCT_FLOAT_FIELD_ONLY_TWO) != 0)
                     {
                         fltArgRegNum += 2;
-                        newArgEntry->structFloatFieldType[0] =
+                        arg.AbiInfo.StructFloatFieldType[0] =
                             (floatFieldFlags & STRUCT_FIRST_FIELD_SIZE_IS8) ? TYP_DOUBLE : TYP_FLOAT;
-                        newArgEntry->structFloatFieldType[1] =
+                        arg.AbiInfo.StructFloatFieldType[1] =
                             (floatFieldFlags & STRUCT_SECOND_FIELD_SIZE_IS8) ? TYP_DOUBLE : TYP_FLOAT;
                     }
                 }
@@ -3271,7 +3274,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
                 // For LoongArch64 the struct {float a; float b;} can be passed by two float registers.
                 DEBUG_ARG_SLOTS_ASSERT((size == roundupSize / TARGET_POINTER_SIZE) ||
                                        ((structBaseType == TYP_STRUCT) && (originalSize == TARGET_POINTER_SIZE) &&
-                                        (size == 2) && (size == argEntry->numRegs)));
+                                        (size == 2) && (size == arg.AbiInfo.NumRegs)));
 #else
                 // Check to see if we can transform this into load of a primitive type.
                 // 'size' must be the number of pointer sized items
@@ -3923,7 +3926,7 @@ GenTree* Compiler::fgMorphMultiregStructArg(CallArg* arg)
         // For LoongArch64's ABI, the struct which size is TARGET_POINTER_SIZE
         // may be passed by two registers.
         // e.g  `struct {int a; float b;}` passed by an integer register and a float register.
-        if (fgEntryPtr->numRegs == 2)
+        if (arg->AbiInfo.NumRegs == 2)
         {
             elemCount = 2;
         }
@@ -3939,10 +3942,10 @@ GenTree* Compiler::fgMorphMultiregStructArg(CallArg* arg)
             }
             else
 #elif defined(TARGET_LOONGARCH64)
-            if (varTypeIsFloating(fgEntryPtr->structFloatFieldType[inx]) ||
-                (genTypeSize(fgEntryPtr->structFloatFieldType[inx]) == 4))
+            if (varTypeIsFloating(arg->AbiInfo.StructFloatFieldType[inx]) ||
+                (genTypeSize(arg->AbiInfo.StructFloatFieldType[inx]) == 4))
             {
-                type[inx] = fgEntryPtr->structFloatFieldType[inx];
+                type[inx] = arg->AbiInfo.StructFloatFieldType[inx];
             }
             else
 #endif // TARGET_LOONGARCH64
