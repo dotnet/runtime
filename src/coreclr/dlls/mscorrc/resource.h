@@ -24,8 +24,6 @@
 // Resource strings for MDA descriptions.
 //-----------------------------------------------------------------------------
 
-#define MDARC_DEBUGGER_FIBER_MODE_NOT_SUPPORTED 0x1934
-
 #define IDS_RTL                                 0x01F5
 
 #define IDS_DS_ACTIVESESSIONS                   0x1701
@@ -230,7 +228,6 @@
 #define IDS_EE_BADMARSHALFIELD_NOSTRINGBUILDER  0x1a06
 #define IDS_EE_NAME_UNKNOWN                     0x1a07
 #define IDS_EE_NO_BACKING_CLASS_FACTORY         0x1a0b
-#define IDS_EE_NAME_UNKNOWN_UNQ                 0x1a0c
 #define IDS_EE_STRING_TOOLONG                   0x1a0d
 #define IDS_EE_VARARG_NOT_SUPPORTED             0x1a0f
 

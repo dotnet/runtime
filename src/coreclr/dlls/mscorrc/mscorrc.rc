@@ -42,15 +42,6 @@ LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
 
 #include "mscorrc.common.rc"
 
-
-#define MDARC_DEBUGGER_FIBER_MODE_NOT_SUPPORTED_MSG                                                         \
-    L"A thread has entered fiber mode and therefore debugging must be stopped."
-
-STRINGTABLE DISCARDABLE
-BEGIN
-    MDARC_DEBUGGER_FIBER_MODE_NOT_SUPPORTED     MDARC_DEBUGGER_FIBER_MODE_NOT_SUPPORTED_MSG
-END
-
 STRINGTABLE DISCARDABLE
 BEGIN
     CLDB_E_FILE_OLDVER                      "Version %d.%d is not a compatible version."
