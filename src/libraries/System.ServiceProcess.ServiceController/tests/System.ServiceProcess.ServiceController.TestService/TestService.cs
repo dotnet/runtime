@@ -22,7 +22,11 @@ namespace System.ServiceProcess.Tests
         public TestService(string serviceName, Exception throwException = null)
         {
             DebugTrace("TestService " + ServiceName + ": Ctor");
-            this.ServiceName = serviceName;
+
+            if (serviceName != "NoServiceNameOnServiceBase")
+            {
+                this.ServiceName = serviceName;
+            }
 
             // Enable all the events
             this.CanPauseAndContinue = true;
