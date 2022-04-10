@@ -894,7 +894,8 @@ HRESULT ProfilingAPIUtility::DoPreInitialization(
         const CLSID *pClsid,
         LPCWSTR wszClsid,
         LPCWSTR wszProfilerDLL,
-        LoadType loadType)
+        LoadType loadType,
+        DWORD dwConcurrentGCWaitTimeoutInMs)
 {
     CONTRACTL
     {
@@ -987,7 +988,7 @@ HRESULT ProfilingAPIUtility::DoPreInitialization(
 
     // Initialize internal state of our EEToProfInterfaceImpl.  This also loads the
     // profiler itself, but does not yet call its Initalize() callback
-    hr = pEEProf->Init(pProfEE, pClsid, wszClsid, wszProfilerDLL, (loadType == kAttachLoad));
+    hr = pEEProf->Init(pProfEE, pClsid, wszClsid, wszProfilerDLL, (loadType == kAttachLoad), dwConcurrentGCWaitTimeoutInMs);
     if (FAILED(hr))
     {
         LOG((LF_CORPROF, LL_ERROR, "**PROF: EEToProfInterfaceImpl::Init failed.\n"));
@@ -1051,6 +1052,7 @@ HRESULT ProfilingAPIUtility::DoPreInitialization(
 //    * pvClientData - For attach loads, this is the client data the trigger wants to
 //        pass to the profiler DLL
 //    * cbClientData - For attach loads, size of client data in bytes
+//    * dwConcurrentGCWaitTimeoutInMs - Time out for wait operation on concurrent GC. Attach scenario only
 //
 // Return Value:
 //    HRESULT indicating success or failure of the load
@@ -1066,7 +1068,8 @@ HRESULT ProfilingAPIUtility::LoadProfiler(
         LPCWSTR wszClsid,
         LPCWSTR wszProfilerDLL,
         LPVOID pvClientData,
-        UINT cbClientData)
+        UINT cbClientData,
+        DWORD dwConcurrentGCWaitTimeoutInMs)
 {
     CONTRACTL
     {
@@ -1127,7 +1130,7 @@ HRESULT ProfilingAPIUtility::LoadProfiler(
     }
 
     // Create the ProfToEE interface to provide to the profiling services
-    hr = DoPreInitialization(pEEProf, pClsid, wszClsid, wszProfilerDLL, loadType);
+    hr = DoPreInitialization(pEEProf, pClsid, wszClsid, wszProfilerDLL, loadType, dwConcurrentGCWaitTimeoutInMs);
     if (FAILED(hr))
     {
         return hr;
@@ -1239,6 +1242,15 @@ HRESULT ProfilingAPIUtility::LoadProfiler(
             LL_INFO10,
             "**PROF: Profiler failed its Initialize callback.  hr=0x%x.\n",
             hr));
+
+        // If we timed out due to waiting on concurrent GC to finish, it is very likely this is
+        // the reason InitializeForAttach callback failed even though we cannot be sure and we cannot
+        // cannot assume hr is going to be CORPROF_E_TIMEOUT_WAITING_FOR_CONCURRENT_GC.
+        // The best we can do in this case is to report this failure anyway.
+        if (pProfilerInfo->pProfInterface->HasTimedOutWaitingForConcurrentGC())
+        {
+            ProfilingAPIUtility::LogProfError(IDS_E_PROF_TIMEOUT_WAITING_FOR_CONCURRENT_GC, dwConcurrentGCWaitTimeoutInMs, wszClsid);
+        }
 
         // Check for known failure types, to customize the event we log
         if ((loadType == kAttachLoad) &&
