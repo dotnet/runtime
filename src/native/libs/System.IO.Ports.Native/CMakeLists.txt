@@ -1,5 +1,7 @@
 project(System.IO.Ports.Native C)
 
+include(${CMAKE_CURRENT_LIST_DIR}/../pgocsupport.cmake)
+
 if (GEN_SHARED_LIB)
     add_library(System.IO.Ports.Native
         SHARED
@@ -22,3 +24,8 @@ if (GEN_SHARED_LIB)
 endif()
 
 install (TARGETS System.IO.Ports.Native-Static DESTINATION ${STATIC_LIB_DESTINATION} COMPONENT libs)
+
+if (GEN_SHARED_LIB)
+    add_pgo(System.IO.Ports.Native)
+endif()
+add_pgo(System.IO.Ports.Native-Static)

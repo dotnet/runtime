@@ -1,6 +1,7 @@
 project(System.Security.Cryptography.Native.Apple C)
 
 include(${CMAKE_CURRENT_LIST_DIR}/extra_libs.cmake)
+include(${CMAKE_CURRENT_LIST_DIR}/../pgocsupport.cmake)
 
 set(NATIVE_LIBS_EXTRA)
 append_extra_cryptography_apple_libs(NATIVE_LIBS_EXTRA)
@@ -91,3 +92,9 @@ if (GEN_SHARED_LIB)
 endif()
 
 install (TARGETS System.Security.Cryptography.Native.Apple-Static DESTINATION ${STATIC_LIB_DESTINATION} COMPONENT libs)
+
+if (GEN_SHARED_LIB)
+    add_pgo(System.Security.Cryptography.Native.Apple)
+endif()
+add_pgo(System.Security.Cryptography.Native.Apple-Static)
+

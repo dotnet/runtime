@@ -1,5 +1,7 @@
 project(System.Security.Cryptography.Native.Android C)
 
+include(${CMAKE_CURRENT_LIST_DIR}/../pgocsupport.cmake)
+
 add_compile_options(-Wno-gnu-zero-variadic-macro-arguments)
 add_compile_options(-Wno-unused-parameter)
 add_compile_options(-Wno-unused-function)
@@ -51,3 +53,8 @@ set_target_properties(System.Security.Cryptography.Native.Android-Static PROPERT
 
 install_with_stripped_symbols (System.Security.Cryptography.Native.Android PROGRAMS .)
 install (TARGETS System.Security.Cryptography.Native.Android-Static DESTINATION .)
+
+if (GEN_SHARED_LIB)
+    add_pgo(System.Security.Cryptography.Native.Android)
+endif()
+add_pgo(System.Security.Cryptography.Native.Android-Static)

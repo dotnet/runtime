@@ -1,6 +1,7 @@
 project(System.IO.Compression.Native C)
 
 include(${CMAKE_CURRENT_LIST_DIR}/extra_libs.cmake)
+include(${CMAKE_CURRENT_LIST_DIR}/../pgocsupport.cmake)
 
 set(NATIVECOMPRESSION_SOURCES
     pal_zlib.c
@@ -169,3 +170,8 @@ else ()
 endif ()
 
 install (TARGETS System.IO.Compression.Native-Static DESTINATION ${STATIC_LIB_DESTINATION} COMPONENT libs)
+
+if (GEN_SHARED_LIB)
+    add_pgo(System.IO.Compression.Native)
+endif()
+add_pgo(System.IO.Compression.Native-Static)

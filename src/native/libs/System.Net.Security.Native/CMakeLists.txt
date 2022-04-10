@@ -1,5 +1,7 @@
 project(System.Net.Security.Native C)
 
+include(${CMAKE_CURRENT_LIST_DIR}/../pgocsupport.cmake)
+
 add_compile_options(-Wno-incompatible-pointer-types-discards-qualifiers)
 
 include(${CMAKE_CURRENT_LIST_DIR}/extra_libs.cmake)
@@ -50,3 +52,8 @@ if (GEN_SHARED_LIB)
 endif()
 
 install (TARGETS System.Net.Security.Native-Static DESTINATION ${STATIC_LIB_DESTINATION} COMPONENT libs)
+
+if (GEN_SHARED_LIB)
+    add_pgo(System.Net.Security.Native)
+endif()
+add_pgo(System.Net.Security.Native-Static)

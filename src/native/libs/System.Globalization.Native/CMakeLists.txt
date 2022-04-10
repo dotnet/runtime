@@ -1,5 +1,7 @@
 project(System.Globalization.Native C)
 
+include(${CMAKE_CURRENT_LIST_DIR}/../pgocsupport.cmake)
+
 if(CLR_CMAKE_TARGET_UNIX)
     add_compile_options(-Wno-switch-enum)
     add_compile_options(-Wno-covered-switch-default)
@@ -112,3 +114,8 @@ if(NOT CLR_CMAKE_TARGET_OSX AND NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMA
         )
     endif()
 endif()
+
+if (GEN_SHARED_LIB)
+    add_pgo(System.Globalization.Native)
+endif()
+add_pgo(System.Globalization.Native-Static)

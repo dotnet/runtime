@@ -9,6 +9,7 @@ add_compile_options(-Wno-used-but-marked-unused)
 add_definitions(-DOPENSSL_API_COMPAT=0x10100000L)
 
 include(${CMAKE_CURRENT_LIST_DIR}/extra_libs.cmake)
+include(${CMAKE_CURRENT_LIST_DIR}/../pgocsupport.cmake)
 
 set(NATIVE_LIBS_EXTRA)
 append_extra_cryptography_libs(NATIVE_LIBS_EXTRA)
@@ -122,3 +123,8 @@ if (GEN_SHARED_LIB)
 endif()
 
 install (TARGETS System.Security.Cryptography.Native.OpenSsl-Static DESTINATION ${STATIC_LIB_DESTINATION} COMPONENT libs)
+
+if (GEN_SHARED_LIB)
+    add_pgo(System.Security.Cryptography.Native.OpenSsl)
+endif()
+add_pgo(System.Security.Cryptography.Native.OpenSsl-Static)

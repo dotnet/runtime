@@ -1,5 +1,7 @@
 project(System.Native C)
 
+include(${CMAKE_CURRENT_LIST_DIR}/../pgocsupport.cmake)
+
 if (NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS)
     add_definitions(-DHAS_CONSOLE_SIGNALS)
 endif ()
@@ -115,3 +117,8 @@ add_library(System.Native-Static
 set_target_properties(System.Native-Static PROPERTIES OUTPUT_NAME System.Native CLEAN_DIRECT_OUTPUT 1)
 
 install (TARGETS System.Native-Static DESTINATION ${STATIC_LIB_DESTINATION} COMPONENT libs)
+
+if (GEN_SHARED_LIB)
+    add_pgo(System.Native)
+endif()
+add_pgo(System.Native-Static)
