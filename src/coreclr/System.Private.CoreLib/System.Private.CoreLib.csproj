@@ -160,6 +160,7 @@
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\CustomAttributeBuilder.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\DynamicILGenerator.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\DynamicMethod.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\DynamicMethodInvoker.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\EnumBuilder.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\EventBuilder.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\FieldBuilder.cs" />
@@ -313,7 +314,7 @@
 
   <Import Project="CreateRuntimeRootILLinkDescriptorFile.targets" />
 
-  <Target Name="CreateRuntimeRootIlLinkDescFile" BeforeTargets="CoreCompile" DependsOnTargets="_CreateILLinkRuntimeRootDescriptorFile"/>
+  <Target Name="CreateRuntimeRootIlLinkDescFile" BeforeTargets="CoreCompile" DependsOnTargets="_CreateILLinkRuntimeRootDescriptorFile" />
 
   <Import Project="$(RepositoryEngineeringDir)codeOptimization.targets" />
 

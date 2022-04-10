@@ -42,15 +42,6 @@ LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
 
 #include "mscorrc.common.rc"
 
-
-#define MDARC_DEBUGGER_FIBER_MODE_NOT_SUPPORTED_MSG                                                         \
-    L"A thread has entered fiber mode and therefore debugging must be stopped."
-
-STRINGTABLE DISCARDABLE
-BEGIN
-    MDARC_DEBUGGER_FIBER_MODE_NOT_SUPPORTED     MDARC_DEBUGGER_FIBER_MODE_NOT_SUPPORTED_MSG
-END
-
 STRINGTABLE DISCARDABLE
 BEGIN
     CLDB_E_FILE_OLDVER                      "Version %d.%d is not a compatible version."
@@ -150,9 +141,6 @@ BEGIN
     COR_E_SERIALIZATION                     "An error relating to serialization occurred during the load of file or assembly '%1'."
     COR_E_SECURITY                          "A security violation has occurred."
     IDS_EE_PROC_NOT_FOUND                   "A procedure imported by '%1' could not be loaded."
-    IDS_IBC_MISSING_EXTERNAL_TYPE           "The generic type specified by the IBC data is not available to this assembly"
-    IDS_IBC_MISSING_EXTERNAL_METHOD         "The generic method specified by the IBC data is not available to this assembly"
-    IDS_EE_HWINTRINSIC_NGEN_DISALLOWED      "Hardware intrinsics may not be used with ngen."
 
     IDS_INET_E_CANNOT_CONNECT               "Cannot connect to URL for '%1'."
     IDS_INET_E_RESOURCE_NOT_FOUND           "The server or proxy was not found for '%1'."
@@ -211,7 +199,6 @@ BEGIN
     COR_E_NEWER_RUNTIME                     "The assembly is built by a runtime newer than the currently loaded runtime, and cannot be loaded."
     IDS_EE_BAD_USER_PROFILE                 "The specified user does not have a valid profile.  Unable to load '%1'."
     IDS_EE_ALREADY_EXISTS                   "Cannot create/shadow copy '%1' when that file already exists."
-    IDS_EE_NOTNDIRECT                       "Not a PInvoke method."
     IDS_EE_ERRORTITLE                       "Error"
     IDS_EE_ERRORMESSAGETEMPLATE             "Error 0x%08x.\n\n%s."
     IDS_EE_RETHROW_NOT_ALLOWED              "No exception available to rethrow."
@@ -349,7 +336,6 @@ BEGIN
     IDS_CLASSLOAD_BADFORMAT                 "Could not load type '%1' from assembly '%2' because the format is invalid."
     IDS_CLASSLOAD_BYREFARRAY                "Could not create array type '%1' from assembly '%2' because the element type is ByRef."
     IDS_CLASSLOAD_BYREFLIKEARRAY            "Could not create array type '%1' from assembly '%2' because the element type is ByRef-like."
-    IDS_CLASSLOAD_MISSINGMETHOD             "Could not load type '%1' from assembly '%2' because the method '%3' could not be loaded."
     IDS_CLASSLOAD_FIELDTOOLARGE             "Size of field of type '%1' from assembly '%2' is too large."
     IDS_CLASSLOAD_CANTEXTEND                "Type '%1' from assembly '%2' cannot extend from any other type."
     IDS_CLASSLOAD_STATICVIRTUAL             "Method '%3' in type '%1' from assembly '%2' cannot be a static and a virtual."
@@ -433,8 +419,6 @@ BEGIN
     IDS_EE_INVOKE_NEW_ENUM_INVALID_RETURN   "Variant returned from an Invoke call with a DISPID of -4 does not contain a valid IUnknown pointer."
     IDS_EE_COM_OBJECT_RELEASE_RACE          "COM object that has been separated from its underlying RCW cannot be used. The COM object was released while it was still in use on another thread."
     IDS_EE_COM_OBJECT_NO_LONGER_HAS_WRAPPER "COM object that has been separated from its underlying RCW cannot be used."
-    IDS_EE_CALLBACK_NOT_CALLED_FROM_CCTOR   "Function can only be called from inside the class constructor of a class derived from a COM imported class."
-    IDS_EE_CALLBACK_ALREADY_REGISTERED      "Base type has already registered a type creation callback."
     IDS_EE_CANNOTCAST                       "Unable to cast object of type '%1' to type '%2'."
 
     IDS_EE_CANNOTCASTSAME                   "[A]%1 cannot be cast to [B]%2. %3. %4."
@@ -455,7 +439,6 @@ BEGIN
     IDS_EE_SAFEARRAYSZARRAYMISMATCH         "SafeArray cannot be marshaled to this array type because it has either nonzero lower bounds or more than one dimension."
 
     IDS_EE_ASSEMBLY_GETTYPE_CANNONT_HAVE_ASSEMBLY_SPEC "Type names passed to Assembly.GetType() must not specify an assembly."
-    IDS_EE_CANNOT_HAVE_ASSEMBLY_SPEC        "Unexpected assembly-qualifier in a typename."
     IDS_EE_NEEDS_ASSEMBLY_SPEC              "Typename needs an assembly qualifier."
 
     IDS_EE_FILELOAD_ERROR_GENERIC           "Could not load file or assembly '%1'. %2"
@@ -465,7 +448,6 @@ BEGIN
 
     IDS_EE_CREATEINSTANCE_FAILED            "Creating an instance of the COM component with CLSID %2 from the IClassFactory failed due to the following error: %1 %3."
     IDS_EE_CREATEINSTANCE_LIC_FAILED        "Creating an instance of the licensed COM component with CLSID %2 from the IClassFactory failed due to the following error: %1 %3."
-    IDS_EE_CREATEINSTANCEFROMAPP_FAILED     "Creating an instance of the COM component with CLSID %2 using CoCreateInstanceFromApp failed due to the following error: %1 %3. Please make sure your COM object is in the allowed list of CoCreateInstanceFromApp."
 
     IDS_EE_RCW_INVALIDCAST_ITF              "Unable to cast COM object of type '%2' to interface type '%3'. This operation failed because the QueryInterface call on the COM component for the interface with IID '%4' failed due to the following error: %1."
     IDS_EE_RCW_INVALIDCAST_EVENTITF         "Unable to cast COM object of type '%2' to event interface type '%3'. This operation failed because the QueryInterface call on the COM component for the interface with IID '%4' failed due to the following error: '%1' and the COM component does not support the source interface with IID '%5'."
@@ -480,7 +462,6 @@ BEGIN
     IDS_EE_MISSING_FIELD                    "Field not found: '%1'."
     IDS_EE_MISSING_METHOD                   "Method not found: '%1'."
 
-    IDS_EE_NO_IDISPATCH                     "This object cannot be marshaled as an IDispatch."
     IDS_EE_NO_IINSPECTABLE                  "Marshalling as IInspectable is not supported in the .NET runtime."
     IDS_EE_NO_BACKING_CLASS_FACTORY         "An instance of the __ComObject type cannot be created unless the type has been obtained using GetTypeFromProgID or GetTypeFromCLSID."
 
@@ -600,9 +581,6 @@ END
 
 STRINGTABLE DISCARDABLE
 BEGIN
-    IDS_ERROR                               "Error"
-
-    IDS_DEBUG_UNHANDLEDEXCEPTION_IPC         "INTERNAL ERROR:\n\nUnhandled exception in Debugger::HandleIPCEvent.\n\nEvent ID=0x%x.\n\nException code=0x%08x, Eip=0x%08x.\n\nProcess ID=0x%x (%d), Thread ID=0x%x (%d).\n\n"
     IDS_DEBUG_UNHANDLED_EXCEPTION_MSG        "Application has generated an exception that could not be handled.\n\nProcess ID=0x%x (%d), Thread ID=0x%x (%d).\n\nClick OK to terminate the application.\nClick CANCEL to debug the application."
     IDS_DEBUG_USER_BREAKPOINT_MSG            "Application has encountered a user-defined breakpoint.\n\nProcess ID=0x%x (%d), Thread ID=0x%x (%d).\n\nClick ABORT to terminate the application.\nClick RETRY to debug the application.\nClick IGNORE to ignore the breakpoint."
 
@@ -692,12 +670,10 @@ BEGIN
         BFA_BAD_SIGNATURE                       "The signature is incorrect."
         BFA_TYPEREG_NAME_TOO_LONG               "Full Name of Typeref is too long."
         BFA_BAD_TYPEREF_TOKEN                   "Invalid Typeref token."
-        BFA_BAD_CLASS_INT_CA                    "The ClassInterface custom attribute is invalid."
         BFA_BAD_CLASS_INT_CA_FORMAT             "ClassInterface custom attribute does not have the right format."
         BFA_BAD_COMPLUS_SIG                     "Illegal or unimplemented ELEM_TYPE in signature."
         BFA_BAD_ELEM_IN_SIZEOF                  "Bad element type in SizeOf."
         BFA_BAD_CA_HEADER                       "Malformed custom attribute header."
-        BFA_BAD_STRING_TOKEN                    "Bad string token."
         BFA_BAD_STRING_TOKEN_RANGE              "No string associated with token."
         BFA_FIXUP_WRONG_PLATFORM                "Image has a platform-specific fixup type that is not compatible with this platform."
         BFA_UNEXPECTED_GENERIC_TOKENTYPE        "Token specifying generic type must be either a typeref or typedef."
@@ -707,7 +683,6 @@ BEGIN
         BFA_UNEXPECTED_ARRAY_TYPE               "Array type not expected here."
         BFA_BAD_VISIBILITY                      "Bad type visibility flag value."
         BFA_FAMILY_ON_GLOBAL                    "Family flag is not allowed on global functions."
-        BFA_NOFIND_EXPORTED_TYPE                "Could not find exported type in metadata."
         BFA_NOT_AN_ARRAY                        "Expected array type."
         BFA_EXPECTED_METHODDEF_OR_MEMBERREF     "Generic member ref must be of type MethodDef or MemberRef."
         BFA_UNEXPECTED_FIELD_SIGNATURE          "An unexpected field signature was found."
@@ -761,7 +736,6 @@ STRINGTABLE DISCARDABLE
 BEGIN
     IDS_HOST_ASSEMBLY_RESOLVER_ASSEMBLY_ALREADY_LOADED_IN_CONTEXT "Assembly with same name is already loaded"
     IDS_HOST_ASSEMBLY_RESOLVER_DYNAMICALLY_EMITTED_ASSEMBLIES_UNSUPPORTED "Dynamically emitted assemblies are unsupported during host-based resolution."
-    IDS_HOST_ASSEMBLY_RESOLVER_INCOMPATIBLE_BINDING_CONTEXT "Assembly is already bound to an incompatible binding context."
 END
 
 STRINGTABLE DISCARDABLE

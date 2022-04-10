@@ -1107,7 +1107,7 @@ class exclusive_sync
 
     int spin_count;
 
-    uint8_t cache_separator[HS_CACHE_LINE_SIZE - sizeof (int) - sizeof (int32_t)];
+    uint8_t cache_separator[HS_CACHE_LINE_SIZE - (sizeof (spin_count) + sizeof (needs_checking) + sizeof (rwp_object))];
 
     // TODO - perhaps each object should be on its own cache line...
     VOLATILE(uint8_t*) alloc_objects[max_pending_allocs];
