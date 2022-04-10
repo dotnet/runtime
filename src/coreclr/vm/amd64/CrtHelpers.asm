@@ -6,11 +6,6 @@
 
 ;
 ; ==--==
-; ***********************************************************************
-; File: CrtHelpers.asm, see history in asmhelpers.asm
-;
-; ***********************************************************************
-
 include AsmMacros.inc
 
 extern memset:proc
