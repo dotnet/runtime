@@ -8,7 +8,7 @@
 
 #define IDS_RTL                         48
 
-#define IDS_USAGE_01                    IDS_USAGE_TITLE + 1
+#define IDS_USAGE_01                    201
 #define IDS_USAGE_02                    IDS_USAGE_01 + 1
 #define IDS_USAGE_03                    IDS_USAGE_02 + 1
 #define IDS_USAGE_04                    IDS_USAGE_03 + 1
