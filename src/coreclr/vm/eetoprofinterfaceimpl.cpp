@@ -464,9 +464,7 @@ EEToProfInterfaceImpl::EEToProfInterfaceImpl() :
     m_fModifiedRejitState(FALSE),
     m_pProfilerInfo(NULL),
     m_pFunctionIDHashTable(NULL),
-    m_pFunctionIDHashTableRWLock(NULL),
-    m_dwConcurrentGCWaitTimeoutInMs(INFINITE),
-    m_bHasTimedOutWaitingForConcurrentGC(FALSE)
+    m_pFunctionIDHashTableRWLock(NULL)
 {
     // Also NULL out this static.  (Note: consider making this a member variable.)
     m_pSavedAllocDataBlock = NULL;
@@ -502,8 +500,7 @@ HRESULT EEToProfInterfaceImpl::Init(
     const CLSID * pClsid,
     _In_z_ LPCWSTR wszClsid,
     _In_z_ LPCWSTR wszProfileDLL,
-    BOOL fLoadedViaAttach,
-    DWORD dwConcurrentGCWaitTimeoutInMs)
+    BOOL fLoadedViaAttach)
 {
     CONTRACTL
     {
@@ -524,7 +521,6 @@ HRESULT EEToProfInterfaceImpl::Init(
     _ASSERTE(pProfToEE != NULL);
 
     m_fLoadedViaAttach = fLoadedViaAttach;
-    m_dwConcurrentGCWaitTimeoutInMs = dwConcurrentGCWaitTimeoutInMs;
 
     // The rule sez your Crst should switch to preemptive when it's taken.  We intentionally
     // break this rule with CRST_UNSAFE_ANYMODE, because this Crst is taken DURING A GC
@@ -2432,26 +2428,14 @@ HRESULT EEToProfInterfaceImpl::SetEventMask(DWORD dwEventMask, DWORD dwEventMask
 
         //
         // Then wait until concurrent GC to finish if concurrent GC is in progress
-        // User can use a timeout that can be set by environment variable if the GC turns out
-        // to be too long. The default value is INFINITE.
         //
         // NOTE:
         // If we don't do it in this order there might be a new concurrent GC started
         // before we actually turn off concurrent GC
         //
-        hr = pGCHeap->WaitUntilConcurrentGCCompleteAsync(m_dwConcurrentGCWaitTimeoutInMs);
+        hr = pGCHeap->WaitUntilConcurrentGCCompleteAsync(INFINITE);
         if (FAILED(hr))
         {
-            if (hr == HRESULT_FROM_WIN32(ERROR_TIMEOUT))
-            {
-                // Convert it to a more specific HRESULT
-                hr = CORPROF_E_TIMEOUT_WAITING_FOR_CONCURRENT_GC;
-
-                // Since we cannot call LogProfEvent here due to contact violations, we'll need to
-                // remember the fact that we've failed, and report the failure later after InitializeForAttach
-                m_bHasTimedOutWaitingForConcurrentGC = TRUE;
-            }
-
             // TODO: think about race conditions... I am pretty sure there is one
             // Remember that we've turned off concurrent GC and we'll turn it back on in TerminateProfiling
             g_profControlBlock.fConcurrentGCDisabledForAttach = FALSE;

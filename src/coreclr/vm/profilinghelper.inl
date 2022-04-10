@@ -165,8 +165,7 @@ inline HRESULT ProfilingAPIUtility::LoadProfilerForAttach(
     const CLSID * pClsid,
     LPCWSTR wszProfilerDLL,
     LPVOID pvClientData,
-    UINT cbClientData,
-    DWORD dwConcurrentGCWaitTimeoutInMs)
+    UINT cbClientData)
 {
     CONTRACTL
     {
@@ -198,8 +197,7 @@ inline HRESULT ProfilingAPIUtility::LoadProfilerForAttach(
         wszClsid,
         wszProfilerDLL,
         pvClientData,
-        cbClientData,
-        dwConcurrentGCWaitTimeoutInMs);
+        cbClientData);
 }
 
 inline /* static */ CRITSEC_COOKIE ProfilingAPIUtility::GetStatusCrst()

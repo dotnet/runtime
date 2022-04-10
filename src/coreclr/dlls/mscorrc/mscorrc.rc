@@ -745,7 +745,6 @@ BEGIN
         IDS_PROF_PROFILER_DISABLED              "Profilers will not be loaded by the current version of the CLR because of the environment variable setting below.  Please consult the documentation for information on how to use this environment variable, and the risks associated with it.  Environment variable setting: %s=%s. Profiler CLSID: '%s'.\n"
         IDS_E_PROF_NOTIFICATION_DISABLED        "Profiler was prevented from loading notification profiler due to app settings.\n"
         IDS_E_PROF_NOTIFICATION_LIMIT_EXCEEDED  "Notification profiler was prevented from loading because the limit of notification profilers was reached.\n"
-        IDS_E_PROF_TIMEOUT_WAITING_FOR_CONCURRENT_GC    "Profiler timed out on waiting for concurrent GC to finish after '%d' milliseconds. Please configure your profiler to increase its attaching time out value and try again. Profiler CLSID: '%s'.\n"
         IDS_PROF_ALREADY_LOADED                 "A request was made to load a profiler when a profiler was already loaded.\n"
   END
 

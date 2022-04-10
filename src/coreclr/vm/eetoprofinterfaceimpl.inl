@@ -258,11 +258,5 @@ inline BOOL EEToProfInterfaceImpl::RequiresGenericsContextForEnterLeave()
         );
 }
 
-inline BOOL EEToProfInterfaceImpl::HasTimedOutWaitingForConcurrentGC()
-{
-    LIMITED_METHOD_CONTRACT;
-    return m_bHasTimedOutWaitingForConcurrentGC;
-}
-
 #endif // __EETOPROFINTERFACEIMPL_INL__
 

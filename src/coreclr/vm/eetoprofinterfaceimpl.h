@@ -50,8 +50,7 @@ public:
         const CLSID * pClsid,
         __inout_z LPCWSTR wszClsid,
         _In_z_ LPCWSTR wszProfileDLL,
-        BOOL fLoadedViaAttach,
-        DWORD dwConcurrentGCWaitTimeoutInMs);
+        BOOL fLoadedViaAttach);
 
     void SetProfilerInfo(ProfilerInfo *pProfilerInfo);
     
@@ -451,8 +450,6 @@ public:
     //
     HRESULT ProfilerDetachSucceeded();
 
-    BOOL HasTimedOutWaitingForConcurrentGC();
-
     HRESULT GetAssemblyReferences(LPCWSTR wszAssemblyPath, IAssemblyBindingClosure * pClosure, AssemblyReferenceClosureWalkContextForProfAPI * pContext);
 
     //
@@ -684,12 +681,6 @@ private:
     // Since the hash table can be read and writen concurrently, a reader-writer lock is used to synchronize
     // all accesses to the hash table.
     SimpleRWLock * m_pFunctionIDHashTableRWLock;
-
-    // Timeout for wait operation on concurrent GC. Only used for attach scenario
-    DWORD m_dwConcurrentGCWaitTimeoutInMs;
-
-    // Remember the fact we've timed out when waiting for concurrent GC. Will report the error later
-    BOOL m_bHasTimedOutWaitingForConcurrentGC;
 };
 
 #endif // __EETOPROFINTERFACEIMPL_H__

@@ -61,8 +61,7 @@ public:
         const CLSID * pClsid,
         LPCWSTR wszProfilerDLL,
         LPVOID pvClientData,
-        UINT cbClientData,
-        DWORD dwConcurrentGCWaitTimeoutInMs);
+        UINT cbClientData);
 
     static BOOL IsProfilerEvacuated(ProfilerInfo *pDetachInfo);
     static void TerminateProfiling(ProfilerInfo *pProfilerInfo);
@@ -96,16 +95,14 @@ private:
         const CLSID *pClsid,
         LPCWSTR wszClsid,
         LPCWSTR wszProfilerDLL,
-        LoadType loadType,
-        DWORD dwConcurrentGCWaitTimeoutInMs);
+        LoadType loadType);
     static HRESULT LoadProfiler(
         LoadType loadType,
         const CLSID * pClsid,
         LPCWSTR wszClsid,
         LPCWSTR wszProfilerDLL,
         LPVOID pvClientData,
-        UINT cbClientData,
-        DWORD dwConcurrentGCWaitTimeoutInMs = INFINITE);
+        UINT cbClientData);
     static HRESULT ProfilerCLSIDFromString(__inout_z LPWSTR wszClsid, CLSID * pClsid);
     static HRESULT AttemptLoadProfilerForStartup();
     static HRESULT AttemptLoadDelayedStartupProfilers();

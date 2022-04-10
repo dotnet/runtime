@@ -287,8 +287,7 @@ ds_rt_profiler_attach (DiagnosticsAttachProfilerCommandPayload *payload)
 		hr = ProfilingAPIUtility::LoadProfilerForAttach (reinterpret_cast<const CLSID *>(ds_attach_profiler_command_payload_get_profiler_guid_cref (payload)),
 			reinterpret_cast<LPCWSTR>(ds_attach_profiler_command_payload_get_profiler_path (payload)),
 			reinterpret_cast<LPVOID>(ds_attach_profiler_command_payload_get_client_data (payload)),
-			static_cast<UINT>(ds_attach_profiler_command_payload_get_client_data_len (payload)),
-			static_cast<DWORD>(ds_attach_profiler_command_payload_get_attach_timeout (payload)));
+			static_cast<UINT>(ds_attach_profiler_command_payload_get_client_data_len (payload)));
 	}
 	EX_CATCH_HRESULT (hr);
 
