@@ -4379,8 +4379,8 @@ public:
         PushFront(comp, node);
     }
 
-    void ResetArgABIInformation();
-    void DetermineArgABIInformation(Compiler* comp, GenTreeCall* call);
+    void ResetFinalArgsAndABIInfo();
+    void AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call);
 
     void ArgsComplete(Compiler* comp, GenTreeCall* call);
     void SortArgs(Compiler* comp, GenTreeCall* call);

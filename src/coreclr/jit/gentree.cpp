@@ -1262,7 +1262,7 @@ unsigned CallArgABIInformation::GetStackByteSize() const
 // Remarks:
 //   These arguments must be removed if ABI information needs to be
 //   reclassified by calling `DetermineArgABIInformation` as otherwise they
-//   will be readded. See `CallArgs::ResetArgABIInformation`.
+//   will be readded. See `CallArgs::ResetFinalArgsAndABIInfo`.
 //
 //   Note that the 'late' here is separate from CallArg::GetLateNode and
 //   friends. Late here refers to this being an argument that is added by morph
@@ -1804,8 +1804,8 @@ void CallArgs::PushLateBack(CallArg* arg)
 //
 // Remarks:
 //   This function cannot be used after morph. It will also invalidate ABI
-//   information, so it is expected that `CallArgs::DetermineArgABIInformation`
-//   was not called yet or that `CallArgs::ResetArgABIInformation` has been
+//   information, so it is expected that `CallArgs::AddFinalArgsAndDetermineABIInfo`
+//   was not called yet or that `CallArgs::ResetFinalArgsAndABIInfo` has been
 //   called prior to this.
 //
 bool CallArgs::Remove(CallArg* arg)
@@ -1921,7 +1921,7 @@ GenTree* Compiler::getArrayLengthFromAllocation(GenTree* tree DEBUGARG(BasicBloc
                     // run, a handle will be inserted before the length. To
                     // handle this case, we will grab the last argument as
                     // that's always the length. See
-                    // CallArgs::DetermineArgABIInformation for where the
+                    // CallArgs::AddFinalArgsAndDetermineABIInfo for where the
                     // handle is inserted.
                     for (CallArg& arg : call->gtArgs.Args())
                     {
@@ -2271,33 +2271,33 @@ bool GenTreeCall::Equals(GenTreeCall* c1, GenTreeCall* c2)
 }
 
 //--------------------------------------------------------------------------
-// ResetArgABIInformation: Reset ABI information classified for arguments,
+// ResetFinalArgsAndABIInfo: Reset ABI information classified for arguments,
 //                         removing late-added arguments.
 //
 // Remarks:
-//   This function can be called between `CallArgs::DetermineArgABIInformation`
+//   This function can be called between `CallArgs::AddFinalArgsAndDetermineABIInfo`
 //   and actually finishing the morphing of arguments. It cannot be called once
 //   the arguments have finished morphing.
 //
-void CallArgs::ResetArgABIInformation()
+void CallArgs::ResetFinalArgsAndABIInfo()
 {
     if (!IsAbiInformationDetermined())
     {
         return;
     }
 
-    // `CallArgs::DetermineArgABIInformation` not only sets up arg info, it
+    // `CallArgs::AddFinalArgsAndDetermineABIInfo` not only sets up arg info, it
     // also adds non-standard args to the IR, and we need to remove that extra
     // IR so it doesn't get added again.
     CallArg** link = &m_head;
 
     // We cannot handle this being called after fgMorphArgs, only between
-    // CallArgs::DetermineArgABIInformation and finishing args.
+    // CallArgs::AddFinalArgsAndDetermineABIInfo and finishing args.
     assert(!m_argsComplete);
 
     while ((*link) != nullptr)
     {
-        // Check if this is an argument added by DetermineArgABIInformation.
+        // Check if this is an argument added by AddFinalArgsAndDetermineABIInfo.
         if ((*link)->IsArgAddedLate())
         {
             JITDUMP("Removing arg %s [%06u] to prepare for re-morphing call\n",

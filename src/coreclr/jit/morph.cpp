@@ -1915,10 +1915,16 @@ GenTree* Compiler::fgInsertCommaFormTemp(GenTree** ppTree, CORINFO_CLASS_HANDLE 
     return new (this, GT_LCL_VAR) GenTreeLclVar(GT_LCL_VAR, subTree->TypeGet(), lclNum);
 }
 
-// Determine argument ABI information.
-// TODO-ARGS: This is equivalent to old fgInitArgInfo and thus may add arguments.
-// Refactor this to be idempotent.
-void CallArgs::DetermineArgABIInformation(Compiler* comp, GenTreeCall* call)
+// AddFinalArgsAndDetermineABIInfo:
+//   Add final arguments and determine the argument ABI information.
+//
+// Remarks:
+//   This adds the final "non-standard" arguments to the call and categorizes
+//   all the ABI information required for downstream JIT phases. This function
+//   modifies IR by adding certain non-standard arguments. For more information
+//   see CallArg::IsArgAddedLate and CallArgs::ResetFinalArgsAndABIInfo.
+//
+void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call)
 {
     assert(&call->gtArgs == this);
     unsigned argIndex     = 0;
@@ -3071,7 +3077,7 @@ void CallArgs::DetermineArgABIInformation(Compiler* comp, GenTreeCall* call)
 #ifdef DEBUG
     if (VERBOSE)
     {
-        JITDUMP("Args for call [%06u] %s after DetermineArgABIInformation:\n", comp->dspTreeID(call),
+        JITDUMP("Args for call [%06u] %s after AddFinalArgsAndDetermineABIInfo:\n", comp->dspTreeID(call),
                 GenTree::OpName(call->gtOper));
         for (CallArg& arg : Args())
         {
@@ -3113,7 +3119,7 @@ unsigned CallArgs::CountArgs()
 //    node itself is re-created.
 //
 // Notes:
-//    This calls CallArgs::DetermineArgABIInformation to determine ABI
+//    This calls CallArgs::AddFinalArgsAndDetermineABIInfo to determine ABI
 //    information for the call. If it has already been determined, that method
 //    will simply return.
 //
@@ -3151,7 +3157,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
 
     bool reMorphing = call->gtArgs.AreArgsComplete();
 
-    call->gtArgs.DetermineArgABIInformation(this, call);
+    call->gtArgs.AddFinalArgsAndDetermineABIInfo(this, call);
     JITDUMP("%sMorphing args for %d.%s:\n", (reMorphing) ? "Re" : "", call->gtTreeID, GenTree::OpName(call->gtOper));
 
     // If we are remorphing, process the late arguments (which were determined by a previous caller).
@@ -6263,7 +6269,7 @@ bool Compiler::fgCanFastTailCall(GenTreeCall* callee, const char** failReason)
 
     assert(!callee->gtArgs.AreArgsComplete());
 
-    callee->gtArgs.DetermineArgABIInformation(this, callee);
+    callee->gtArgs.AddFinalArgsAndDetermineABIInfo(this, callee);
 
     unsigned calleeArgStackSize = 0;
     unsigned callerArgStackSize = info.compArgStackSize;
@@ -7105,7 +7111,7 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
 #ifdef TARGET_XARCH
         // We have already computed arg info to make the fast tailcall decision, but on X64 we now
         // have to pass the indirection cell, so redo arg info.
-        call->gtArgs.ResetArgABIInformation();
+        call->gtArgs.ResetFinalArgsAndABIInfo();
 #endif
     }
 
@@ -7365,7 +7371,7 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
 
             // Force re-evaluating the argInfo. fgMorphTailCallViaJitHelper will modify the
             // argument list, invalidating the argInfo.
-            call->gtArgs.ResetArgABIInformation();
+            call->gtArgs.ResetFinalArgsAndABIInfo();
         }
 
         // Tail call via JIT helper: The VM can't use return address hijacking
@@ -7515,7 +7521,7 @@ GenTree* Compiler::fgMorphTailCallViaHelpers(GenTreeCall* call, CORINFO_TAILCALL
     // for non-standard args that we must get rid of. Get rid of that IR here
     // and do this first as it will 'expose' the retbuf as the first arg, which
     // we rely upon in fgCreateCallDispatcherAndGetResult.
-    call->gtArgs.ResetArgABIInformation();
+    call->gtArgs.ResetFinalArgsAndABIInfo();
 
     GenTree* callDispatcherAndGetResult = fgCreateCallDispatcherAndGetResult(call, help.hCallTarget, help.hDispatcher);
 
@@ -8602,7 +8608,7 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
             //     ret temp
 
             // Force re-evaluating the argInfo as the return argument has changed.
-            call->gtArgs.ResetArgABIInformation();
+            call->gtArgs.ResetFinalArgsAndABIInfo();
 
             // Create a new temp.
             unsigned tmpNum =
