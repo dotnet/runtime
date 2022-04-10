@@ -577,22 +577,8 @@ namespace System.ServiceProcess
 
         /// <summary>
         /// <para>When implemented in a derived class, <see cref='System.ServiceProcess.ServiceBase.OnCustomCommand'/>
-        /// executes when a custom command is passed to
-        /// the service. Specifies the actions to take when
+        /// executes when a custom command is passed to the service. Specifies the actions to take when
         /// a command with the specified parameter value occurs.</para>
-        /// <note type="rnotes">
-        ///    Previously had "Passed to the
-        ///    service by
-        ///    the SCM", but the SCM doesn't pass custom commands. Do we want to indicate an
-        ///    agent here? Would it be the ServiceController, or is there another way to pass
-        ///    the int into the service? I thought that the SCM did pass it in, but
-        ///    otherwise ignored it since it was an int it doesn't recognize. I was under the
-        ///    impression that the difference was that the SCM didn't have default processing, so
-        ///    it transmitted it without examining it or trying to performs its own
-        ///    default behavior on it. Please correct where my understanding is wrong in the
-        ///    second paragraph below--what, if any, contact does the SCM have with a
-        ///    custom command?
-        /// </note>
         /// </summary>
         protected virtual void OnCustomCommand(int command)
         {
