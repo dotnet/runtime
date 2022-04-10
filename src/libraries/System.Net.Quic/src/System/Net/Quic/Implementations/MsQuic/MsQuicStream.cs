@@ -183,6 +183,8 @@ namespace System.Net.Quic.Implementations.MsQuic
 
                 ThrowIfFailure(status, "Failed to open stream to peer");
 
+                _state.Handle = new SafeMsQuicStreamHandle(handle);
+
                 Debug.Assert(!Monitor.IsEntered(_state), "!Monitor.IsEntered(_state)");
                 ThrowIfFailure(MsQuicApi.Api.ApiTable->StreamStart(
                     _state.Handle.QuicHandle,
@@ -854,24 +856,27 @@ namespace System.Net.Quic.Implementations.MsQuic
                 }
             }
 
-            if (callShutdown)
+            if (_state.Handle != null && !_state.Handle.IsInvalid && !_state.Handle.IsClosed)
             {
-                try
+                if (callShutdown)
                 {
-                    // Handle race condition when stream can be closed handling SHUTDOWN_COMPLETE.
-                    StartShutdown(QUIC_STREAM_SHUTDOWN_FLAGS.QUIC_STREAM_SHUTDOWN_FLAG_GRACEFUL, errorCode: 0);
+                    try
+                    {
+                        // Handle race condition when stream can be closed handling SHUTDOWN_COMPLETE.
+                        StartShutdown(QUIC_STREAM_SHUTDOWN_FLAGS.QUIC_STREAM_SHUTDOWN_FLAG_GRACEFUL, errorCode: 0);
+                    }
+                    catch (ObjectDisposedException) { };
                 }
-                catch (ObjectDisposedException) { };
-            }
 
-            if (abortRead)
-            {
-                try
+                if (abortRead)
                 {
+                    try
+                    {
                     // TODO: error code used here MUST be specified by the application layer
-                    StartShutdown(QUIC_STREAM_SHUTDOWN_FLAGS.QUIC_STREAM_SHUTDOWN_FLAG_ABORT_RECEIVE, 0xffffffff);
+                        StartShutdown(QUIC_STREAM_SHUTDOWN_FLAGS.QUIC_STREAM_SHUTDOWN_FLAG_ABORT_RECEIVE, 0xffffffff);
+                    }
+                    catch (ObjectDisposedException) { };
                 }
-                catch (ObjectDisposedException) { };
             }
 
             if (completeRead)

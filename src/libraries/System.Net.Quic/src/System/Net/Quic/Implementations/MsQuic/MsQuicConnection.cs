@@ -671,18 +671,16 @@ namespace System.Net.Quic.Implementations.MsQuic
             // We store TCS to local variable to avoid NRE if callbacks finish fast and set _state.ConnectTcs to null.
             var tcs = _state.ConnectTcs = new TaskCompletionSource<int>(TaskCreationOptions.RunContinuationsAsynchronously);
 
+            IntPtr pTargetHost = Marshal.StringToCoTaskMemAnsi(targetHost);
             try
             {
-                fixed (char* pTargetHost = targetHost)
-                {
-                    Debug.Assert(!Monitor.IsEntered(_state), "!Monitor.IsEntered(_state)");
-                    ThrowIfFailure(MsQuicApi.Api.ApiTable->ConnectionStart(
-                        _state.Handle.QuicHandle,
-                        _configuration.QuicHandle,
-                        af,
-                        (sbyte*)pTargetHost,
-                        (ushort)port), "Failed to connect to peer");
-                }
+                Debug.Assert(!Monitor.IsEntered(_state), "!Monitor.IsEntered(_state)");
+                ThrowIfFailure(MsQuicApi.Api.ApiTable->ConnectionStart(
+                    _state.Handle.QuicHandle,
+                    _configuration.QuicHandle,
+                    af,
+                    (sbyte*)pTargetHost,
+                    (ushort)port), "Failed to connect to peer");
 
                 // this handle is ref counted by MsQuic, so safe to dispose here.
                 _configuration.Dispose();
@@ -692,6 +690,10 @@ namespace System.Net.Quic.Implementations.MsQuic
             {
                 _state.Connection = null;
                 throw;
+            }
+            finally
+            {
+                Marshal.FreeCoTaskMem(pTargetHost);
             }
 
             return new ValueTask(tcs.Task);

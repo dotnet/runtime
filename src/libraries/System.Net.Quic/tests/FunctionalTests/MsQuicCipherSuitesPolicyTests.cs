@@ -56,7 +56,7 @@ namespace System.Net.Quic.Tests
         [Fact]
         public async Task MismatchedCipherPolicies_ConnectAsync_ThrowsQuicException()
         {
-            await Assert.ThrowsAsync<QuicException>(() => TestConnection(
+            await Assert.ThrowsAnyAsync<QuicException>(() => TestConnection(
                new CipherSuitesPolicy(new[] { TlsCipherSuite.TLS_AES_128_GCM_SHA256 }),
                new CipherSuitesPolicy(new[] { TlsCipherSuite.TLS_AES_256_GCM_SHA384 })
             ));
