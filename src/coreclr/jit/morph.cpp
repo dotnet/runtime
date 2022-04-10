@@ -611,9 +611,9 @@ const char* getWellKnownArgName(WellKnownArg arg)
             return "ValidateIndirectCallTarget";
         case WellKnownArg::DispatchIndirectCallTarget:
             return "DispatchIndirectCallTarget";
-        default:
-            return "N/A";
     }
+
+    return "N/A";
 }
 
 //------------------------------------------------------------------------
@@ -1527,19 +1527,19 @@ GenTree* CallArgs::MakeTmpArgNode(Compiler* comp, CallArg* arg)
 //   After this function we may have the following shapes of early and late
 //   nodes in arguments:
 //   1. Early: GT_ASG, Late: GT_LCL_VAR.
-//        When the argument needs to be evaluated early because it has side
-//        effects it will be assigned to a temp in the early node and passed as
-//        the local in the late node. This can happen for both register and
-//        stack args.
+//        When the argument needs to be evaluated early (e.g. because it has
+//        side effects, or because it is a struct copy that requires it) it
+//        will be assigned to a temp in the early node and passed as the local
+//        in the late node. This can happen for both register and stack args.
 //
 //   2. Early: GT_ARGPLACE, Late: <any node>
 //        All arguments that are placed in registers need to appear as a late
 //        node. Some stack arguments may also require this pattern, for example
 //        if a later argument trashes the outgoing arg area by requiring a
 //        call.
-//        If the argument does not otherwise need to be evaluated into a temp
-//        (because it does not have side effects), we create just a placeholder
-//        GT_ARGPLACE for the early list and move it into the late list.
+//        If the argument does not otherwise need to be evaluated into a temp ,
+//        we create just a placeholder GT_ARGPLACE for the early list and move
+//        it into the late list.
 //
 //   3. Early: <any node>, Late: no node
 //        Arguments that are passed on stack and that do not need early
@@ -2102,10 +2102,14 @@ void CallArgs::DetermineArgABIInformation(Compiler* comp, GenTreeCall* call)
 
         // Add in this arg
         if (HasThisPointer())
+        {
             maxRegArgs++;
+        }
         // Add in the ret buff arg
         if (callHasRetBuffArg)
+        {
             maxRegArgs++;
+        }
     }
 #endif // UNIX_X86_ABI
 
@@ -3084,7 +3088,6 @@ unsigned CallArgs::OutgoingArgsStackSize() const
 {
     unsigned aligned = Compiler::GetOutgoingArgByteSize(m_nextStackByteOffset);
     return max(aligned, MIN_ARG_AREA_FOR_CALL);
-    ;
 }
 
 unsigned CallArgs::CountArgs()
