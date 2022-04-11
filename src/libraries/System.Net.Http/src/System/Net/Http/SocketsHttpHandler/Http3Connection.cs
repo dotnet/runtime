@@ -174,40 +174,49 @@ namespace System.Net.Http
             // Allocate an active request
             QuicStream? quicStream = null;
             Http3RequestStream? requestStream = null;
-            ValueTask waitTask = default;
 
             try
             {
                 try
                 {
-                    while (true)
+                    if (_connection != null)
                     {
+                        ValueTask<QuicStream> openTask;
+                        bool synchronous = false;
+
+                        // unfortunately, the compiler cannot infer that the task is consumed only once
+#pragma warning disable CA2012 // ValueTasks instances should only be consumed once
                         lock (SyncObj)
                         {
-                            if (_connection == null)
-                            {
-                                break;
-                            }
+                            openTask = _connection.OpenBidirectionalStreamAsync(cancellationToken);
 
-                            if (_connection.GetRemoteAvailableBidirectionalStreamCount() > 0)
+                            if (openTask.IsCompleted)
                             {
-                                quicStream = _connection.OpenBidirectionalStream();
+                                // hot path for synchronous completion: finish while still holding the lock
+                                synchronous = true;
+                                quicStream = openTask.Result;
                                 requestStream = new Http3RequestStream(request, this, quicStream);
                                 _activeRequests.Add(quicStream, requestStream);
-                                break;
+                            }
+                        }
+
+                        if (!synchronous)
+                        {
+                            // cold path: waiting until a stream is available
+                            if (HttpTelemetry.Log.IsEnabled() && queueStartingTimestamp == 0)
+                            {
+                                queueStartingTimestamp = Stopwatch.GetTimestamp();
                             }
 
-                            waitTask = _connection.WaitForAvailableBidirectionalStreamsAsync(cancellationToken);
-                        }
+                            quicStream = await openTask.ConfigureAwait(false);
+                            requestStream = new Http3RequestStream(request, this, quicStream);
 
-                        if (HttpTelemetry.Log.IsEnabled() && !waitTask.IsCompleted && queueStartingTimestamp == 0)
-                        {
-                            // We avoid logging RequestLeftQueue if a stream was available immediately (synchronously)
-                            queueStartingTimestamp = Stopwatch.GetTimestamp();
+                            lock (SyncObj)
+                            {
+                                _activeRequests.Add(quicStream, requestStream);
+                            }
                         }
-
-                        // Wait for an available stream (based on QUIC MAX_STREAMS) if there isn't one available yet.
-                        await waitTask.ConfigureAwait(false);
+#pragma warning restore CA2021
                     }
                 }
                 finally
@@ -377,7 +386,7 @@ namespace System.Net.Http
         {
             try
             {
-                _clientControl = _connection!.OpenUnidirectionalStream();
+                _clientControl = await _connection!.OpenUnidirectionalStreamAsync().ConfigureAwait(false);
                 await _clientControl.WriteAsync(_pool.Settings.Http3SettingsFrame, CancellationToken.None).ConfigureAwait(false);
             }
             catch (Exception ex)
