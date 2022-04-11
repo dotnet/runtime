@@ -2857,6 +2857,77 @@ ep_rt_mono_write_event_ee_startup_start (void)
 		NULL);
 }
 
+//---------------------------------------------------------------------------------------
+//
+// ep_rt_mono_send_method_details_event is the method responsible for sending details of
+// methods involved in events such as JitStart, Load/Unload, Rundown, R2R, and other
+// eventpipe events. It calls ep_rt_mono_log_type_and_parameters_if_necessary to log
+// unique types from the method type and available method instantiation parameter types
+// that are ultimately emitted as a BulkType event in ep_rt_mono_fire_bulk_type_event.
+// After appropraitely logging type information, it sends method details outlined by
+// the generated dotnetruntime.c and ClrEtwAll manifest.
+//
+// Arguments:
+//      * method - a MonoMethod hit during an eventpipe event
+
+void
+ep_rt_mono_send_method_details_event (MonoMethod *method)
+{
+	if (method->dynamic)
+		return;
+
+	MonoGenericContext *method_ctx = mono_method_get_context(method);
+
+	MonoGenericInst *method_inst = NULL;
+	if (method_ctx)
+		method_inst = method_ctx->method_inst;
+
+	if (method_inst)
+		if (method_inst->type_argc > 1024) // ETW has a limit for maximum event size. Do not log overly large method type argument sets
+			return;
+
+	intptr_t method_type_id = 0;
+	uint32_t method_token = (method->token & 0xFFFFFF) | 0x06000000; // dotnet-pgo ResolveMethodID expects method tokens with a 0x06 mask
+	uint64_t loader_module_id = 0;
+	MonoClass *klass = method->klass;
+	if (klass)
+	{
+		// Get the unique identifier for a MonoMethod's type
+		if (m_class_is_byreflike (klass))
+			method_type_id = (intptr_t)m_class_get_this_arg (klass);
+		else
+			method_type_id = (intptr_t)m_class_get_byval_arg (klass);
+
+		loader_module_id = (uint64_t)mono_class_get_image (klass);
+	}
+
+	uint32_t method_inst_parameter_types_count = 0;
+	if (method_inst)
+		method_inst_parameter_types_count = method_inst->type_argc;
+
+	intptr_t method_inst_parameters_type_ids[method_inst_parameter_types_count];
+	for (int i = 0; i < method_inst_parameter_types_count; i++)
+	{
+		// Get the unique identifier for a MonoMethod's instantiation parameter's type
+		MonoClass* method_inst_type_parameter_class = mono_class_from_mono_type_internal (method_inst->type_argv[i]);
+		if (m_class_is_byreflike (method_inst_type_parameter_class))
+			method_inst_parameters_type_ids[i] = m_class_get_this_arg (method_inst_type_parameter_class);
+		else
+			method_inst_parameters_type_ids[i] = m_class_get_byval_arg (method_inst_type_parameter_class);
+	}
+
+	// Fire bulk type event
+
+	FireEtwMethodDetails((uint64_t)method,
+						 (uint64_t)method_type_id,
+						 method_token,
+						 method_inst_parameter_types_count,
+						 loader_module_id,
+						 (uint64_t*)method_inst_parameters_type_ids,
+						 NULL,
+						 NULL);
+}
+
 bool
 ep_rt_mono_write_event_jit_start (MonoMethod *method)
 {
@@ -2873,7 +2944,7 @@ ep_rt_mono_write_event_jit_start (MonoMethod *method)
 		const char *method_name = NULL;
 		char *method_signature = NULL;
 
-		//TODO: SendMethodDetailsEvent
+		ep_rt_mono_send_method_details_event(method);
 
 		method_id = (uint64_t)method;
 
@@ -3039,7 +3110,7 @@ ep_rt_mono_write_event_method_load (
 				method_flags |= METHOD_FLAGS_GENERIC_METHOD;
 		}
 
-		//TODO: SendMethodDetailsEvent
+		ep_rt_mono_send_method_details_event(method);
 
 		if (verbose) {
 			method_name = method->name;

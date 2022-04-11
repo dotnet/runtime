@@ -2179,6 +2179,9 @@ ep_rt_volatile_store_ptr_without_barrier (
 bool
 ep_rt_mono_write_event_ee_startup_start (void);
 
+void
+ep_rt_mono_send_method_details_events (MonoMethod *method);
+
 bool
 ep_rt_mono_write_event_jit_start (MonoMethod *method);
 
