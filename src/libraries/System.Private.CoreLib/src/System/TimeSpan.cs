@@ -83,6 +83,9 @@ namespace System
         internal const long MaxMilliSeconds = long.MaxValue / TicksPerMillisecond;
         internal const long MinMilliSeconds = long.MinValue / TicksPerMillisecond;
 
+        internal const long MaxMicroSeconds = long.MaxValue / TicksPerMillisecond;
+        internal const long MinMicroSeconds = long.MinValue / TicksPerMillisecond;
+
         internal const long TicksPerTenthSecond = TicksPerMillisecond * 100;
 
         public static readonly TimeSpan Zero = new TimeSpan(0);
@@ -149,11 +152,10 @@ namespace System
         /// </exception>
         public TimeSpan(int days, int hours, int minutes, int seconds, int milliseconds, int microseconds)
         {
-            long totalMilliSeconds = ((long)days * 3600 * 24 + (long)hours * 3600 + (long)minutes * 60 + seconds) * 1000 + milliseconds;
-            if (totalMilliSeconds > MaxMilliSeconds || totalMilliSeconds < MinMilliSeconds)
+            long totalMicroseconds = ((long)days * 3600 * 24 + (long)hours * 3600 + (long)minutes * 60 + seconds) * 1000 + milliseconds + 1000 * microseconds;
+            if (totalMicroseconds > MaxMicroSeconds || totalMicroseconds < MinMicroSeconds)
                 ThrowHelper.ThrowArgumentOutOfRange_TimeSpanTooLong();
-            _ticks = (long)totalMilliSeconds * TicksPerMillisecond;
-            _ticks += microseconds * TicksPerMicrosecond;
+            _ticks = totalMicroseconds * TicksPerMicrosecond;
         }
 
         public long Ticks => _ticks;
@@ -180,7 +182,7 @@ namespace System
         /// The <see cref="Nanoseconds"/> property represents whole nanoseconds, whereas the
         /// <see cref="TotalNanoseconds"/> property represents whole and fractional nanoseconds.
         /// </remarks>
-        public int Nanoseconds => (int)((_ticks % TicksPerMicrosecond) % 100);
+        public int Nanoseconds => (int)((_ticks % TicksPerMicrosecond) * 100);
 
         public int Minutes => (int)((_ticks / TicksPerMinute) % 60);
 
@@ -358,6 +360,7 @@ namespace System
         /// </exception>
         public static TimeSpan FromMicroseconds(double value)
         {
+            // ISSUE: https://github.com/dotnet/runtime/issues/66815
             return Interval(value, TicksPerMicrosecond);
         }
 

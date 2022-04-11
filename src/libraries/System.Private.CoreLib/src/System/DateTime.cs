@@ -61,15 +61,16 @@ namespace System
           ISubtractionOperators<DateTime, DateTime, TimeSpan>
     {
         // Number of 100ns ticks per time unit
+        internal const int MicrosecondsPerMillisecond = 1000;
         private const long TicksPerMicrosecond = 10;
-        private const long TicksPerMillisecond = TicksPerMicrosecond * 1000;
+        private const long TicksPerMillisecond = TicksPerMicrosecond * MicrosecondsPerMillisecond;
+
         private const long TicksPerSecond = TicksPerMillisecond * 1000;
         private const long TicksPerMinute = TicksPerSecond * 60;
         private const long TicksPerHour = TicksPerMinute * 60;
         private const long TicksPerDay = TicksPerHour * 24;
 
         // Number of milliseconds per time unit
-        private const int MicrosecondsPerMillisecond = 1000;
         private const int MillisPerSecond = 1000;
         private const int MillisPerMinute = MillisPerSecond * 60;
         private const int MillisPerHour = MillisPerMinute * 60;
@@ -424,8 +425,7 @@ namespace System
         /// </remarks>
         public DateTime(int year, int month, int day, int hour, int minute, int second, int millisecond, DateTimeKind kind)
         {
-            ulong ticks = Init(year, month, day, hour, minute, second, millisecond, kind);
-            _dateData = ticks | (ticks & FlagsMask);
+            _dateData = Init(year, month, day, hour, minute, second, millisecond, kind);
         }
 
         /// <summary>
@@ -537,14 +537,8 @@ namespace System
         /// you can use the corresponding <see cref="DateTimeOffset"/> constructor.
         /// </remarks>
         public DateTime(int year, int month, int day, int hour, int minute, int second, int millisecond, int microsecond)
+            : this(year, month, day, hour, minute, second, millisecond, microsecond, DateTimeKind.Unspecified)
         {
-            ulong ticks = Init(year, month, day, hour, minute, second, millisecond);
-            if ((uint)microsecond >= MicrosecondsPerMillisecond) ThrowMicrosecondOutOfRange();
-
-            ulong newTicks = (ticks & TicksMask) + (ulong)(microsecond * TicksPerMicrosecond);
-
-            if (newTicks > MaxTicks) ThrowDateArithmetic(0);
-            _dateData = newTicks | (ticks & FlagsMask);
         }
 
         /// <summary>
@@ -672,9 +666,15 @@ namespace System
         /// you can use the corresponding <see cref="DateTimeOffset"/> constructor.
         /// </remarks>
         public DateTime(int year, int month, int day, int hour, int minute, int second, int millisecond, int microsecond, Calendar calendar!!)
+        : this(year, month, day, hour, minute, second, millisecond, microsecond, calendar, DateTimeKind.Unspecified)
         {
             if (second != 60 || !s_systemSupportsLeapSeconds)
             {
+                if (microsecond is < 0 or >= MicrosecondsPerMillisecond)
+                {
+                    ThrowMicrosecondOutOfRange();
+                }
+
                 var dateTime = calendar.ToDateTime(year, month, day, hour, minute, second, millisecond);
                 dateTime = dateTime.AddMicroseconds(microsecond);
                 _dateData = dateTime.UTicks;
@@ -751,50 +751,27 @@ namespace System
         /// </remarks>
         public DateTime(int year, int month, int day, int hour, int minute, int second, int millisecond, int microsecond, Calendar calendar!!, DateTimeKind kind)
         {
-            if ((uint)millisecond >= MillisPerSecond) ThrowMillisecondOutOfRange();
-            if ((uint)kind > (uint)DateTimeKind.Local) ThrowInvalidKind();
-
             if (second != 60 || !s_systemSupportsLeapSeconds)
             {
+                if (microsecond is < 0 or >= MicrosecondsPerMillisecond)
+                {
+                    ThrowMicrosecondOutOfRange();
+                }
+
                 var dateTime = calendar.ToDateTime(year, month, day, hour, minute, second, millisecond);
                 dateTime = dateTime.AddMicroseconds(microsecond);
-                ulong ticks = dateTime.UTicks;
-                _dateData = ticks | ((ulong)kind << KindShift);
+                _dateData = dateTime.UTicks | ((ulong)kind << KindShift);
             }
             else
             {
                 // if we have a leap second, then we adjust it to 59 so that DateTime will consider it the last in the specified minute.
-                this = new DateTime(year, month, day, hour, minute, 59, millisecond, microsecond, calendar, kind);
+                this = new DateTime(year, month, day, hour, minute, 59, millisecond, microsecond, calendar);
                 ValidateLeapSecond();
             }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static ulong Init(int year, int month, int day, int hour, int minute, int second, int millisecond)
-        {
-            if ((uint)millisecond >= MillisPerSecond) ThrowMillisecondOutOfRange();
-
-            if (second != 60 || !s_systemSupportsLeapSeconds)
-            {
-                ulong ticks = DateToTicks(year, month, day) + TimeToTicks(hour, minute, second);
-                ticks += (uint)millisecond * (uint)TicksPerMillisecond;
-                Debug.Assert(ticks <= MaxTicks, "Input parameters validated already");
-                return ticks;
-            }
-
-            // if we have a leap second, then we adjust it to 59 so that DateTime will consider it the last in the specified minute.
-            DateTime dt = new(year, month, day, hour, minute, 59, millisecond);
-
-            if (!IsValidTimeWithLeapSeconds(year, month, day, hour, 59, DateTimeKind.Unspecified))
-            {
-                ThrowHelper.ThrowArgumentOutOfRange_BadHourMinuteSecond();
-            }
-
-            return dt._dateData;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static ulong Init(int year, int month, int day, int hour, int minute, int second, int millisecond, DateTimeKind kind)
+        private static ulong Init(int year, int month, int day, int hour, int minute, int second, int millisecond, DateTimeKind kind = DateTimeKind.Unspecified)
         {
             if ((uint)millisecond >= MillisPerSecond) ThrowMillisecondOutOfRange();
             if ((uint)kind > (uint)DateTimeKind.Local) ThrowInvalidKind();
