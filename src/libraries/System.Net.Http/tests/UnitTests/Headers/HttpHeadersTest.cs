@@ -2390,6 +2390,29 @@ namespace System.Net.Http.Tests
             AssertExtensions.ThrowsContains<FormatException>(() => headers.Remove("\u0080"), "\u0080");
         }
 
+        [Theory]
+        [InlineData("\n")]
+        [InlineData("invalid\n")]
+        [InlineData("\r")]
+        [InlineData("invalid\r")]
+        [InlineData("\r\n")]
+        [InlineData("invalid\r\n")]
+        public void TryGetValues_InvalidValuesContainingNewLines_ShouldNotRemoveInvalidValueAndShouldReturnRequestedValue(string value)
+        {
+            const string Name = "custom";
+            HttpHeaders headers = new HttpRequestMessage().Headers;
+
+            headers.TryAddWithoutValidation(Name, value);
+            Assert.Equal(1, headers.NonValidated.Count);
+
+            Assert.True(headers.TryGetValues(Name, out IEnumerable<string> values));
+
+            // The entry shoud still exist as the parsing during the validating access should not remove the invalid value.
+            Assert.Equal(1, headers.NonValidated.Count);
+            Assert.Equal(1, values.Count());
+            Assert.Equal(value, values.Single());
+        }
+
         public static IEnumerable<object[]> NumberOfHeadersUpToArrayThreshold_AddNonValidated_EnumerateNonValidated()
         {
             for (int i = 0; i <= HttpHeaders.ArrayThreshold; i++)
