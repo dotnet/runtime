@@ -3250,7 +3250,7 @@ init_io_stream_slots (void)
 
 
 static MonoBoolean
-stream_has_overriden_begin_or_end_method (MonoObjectHandle stream, MonoError *error, int begin_slot, int end_slot)
+stream_has_overriden_begin_or_end_method (MonoObjectHandle stream, int begin_slot, int end_slot, MonoError *error)
 {
 	MonoClass* curr_klass = MONO_HANDLE_GET_CLASS (stream);
 	MonoClass* base_klass = mono_class_try_get_stream_class ();
@@ -3278,7 +3278,7 @@ ves_icall_System_IO_Stream_HasOverriddenBeginEndRead (MonoObjectHandle stream, M
 		init_io_stream_slots ();
 
 	// return true if BeginRead or EndRead were overriden
-	return stream_has_overriden_begin_or_end_method (stream, error, io_stream_begin_read_slot, io_stream_end_read_slot);
+	return stream_has_overriden_begin_or_end_method (stream, io_stream_begin_read_slot, io_stream_end_read_slot, error);
 }
 
 MonoBoolean
@@ -3288,7 +3288,7 @@ ves_icall_System_IO_Stream_HasOverriddenBeginEndWrite (MonoObjectHandle stream, 
 		init_io_stream_slots ();
 
 	// return true if BeginWrite or EndWrite were overriden
-	return stream_has_overriden_begin_or_end_method (stream, error, io_stream_begin_write_slot, io_stream_end_write_slot);
+	return stream_has_overriden_begin_or_end_method (stream, io_stream_begin_write_slot, io_stream_end_write_slot, error);
 }
 
 MonoBoolean
