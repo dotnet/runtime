@@ -27,7 +27,6 @@ namespace System.Net.Quic.Tests
     public sealed class MsQuicQuicStreamConformanceTests : QuicStreamConformanceTests
     {
         protected override QuicImplementationProvider Provider => QuicImplementationProviders.MsQuic;
-        protected override Type UnsupportedConcurrentExceptionType => typeof(InvalidOperationException);
         protected override bool UsableAfterCanceledReads => false;
         protected override bool BlocksOnZeroByteReads => true;
         protected override bool CanTimeout => true;
