@@ -288,7 +288,6 @@ namespace System.IO.Compression.Tests
                 FileInfo fileWithBadDate = new FileInfo(GetTestFilePath());
                 fileWithBadDate.Create().Dispose();
                 fileWithBadDate.LastWriteTimeUtc = new DateTime(1970, 1, 1, 1, 1, 1);
-                
                 string archivePath = GetTestFilePath();
                 using (FileStream output = File.Open(archivePath, FileMode.Create))
                 using (ZipArchive archive = new ZipArchive(output, ZipArchiveMode.Create))
