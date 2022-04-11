@@ -454,20 +454,33 @@ namespace WebAssemblyInfo
             return 0;
         }
 
-        public override string ToString()
+        public string ToString(int startIdx)
         {
             StringBuilder sb = new();
 
             for (var i = 0; i < Types.Length; i++)
             {
                 if (i > 0)
+                    sb.Append(", ");
+
+                if (startIdx >= 0)
+                {
+                    sb.Append('$');
+                    sb.Append(startIdx++.ToString());
                     sb.Append(' ');
+                }
 
                 sb.Append(Types[i].ToString());
             }
 
             return sb.ToString();
         }
+
+        public override string ToString()
+        {
+            return ToString(-1);
+        }
+
     }
 
     struct FunctionType : IComparable<FunctionType>
@@ -475,10 +488,10 @@ namespace WebAssemblyInfo
         public ResultType Parameters;
         public ResultType Results;
 
-        public string ToString(string? name)
+        public string ToString(string? name, bool displayVars = false)
         {
             var results = Results.Types.Length == 0 ? "" : $" (result {Results})";
-            var parameters = Parameters.Types.Length == 0 ? "" : $"(param { Parameters})";
+            var parameters = Parameters.Types.Length == 0 ? "" : $"(param { Parameters.ToString(displayVars ? 0 : -1)})";
             return $"(func {name}{parameters}{results})";
         }
 
