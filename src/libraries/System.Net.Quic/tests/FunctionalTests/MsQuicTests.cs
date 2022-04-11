@@ -467,7 +467,7 @@ namespace System.Net.Quic.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
-        public async Task OpenStreamAsync_Canceled_Throws(bool unidirectional)
+        public async Task OpenStreamAsync_Canceled_Throws_OperationCanceledException(bool unidirectional)
         {
             ValueTask<QuicStream> OpenStreamAsync(QuicConnection connection, CancellationToken token = default)
             {
@@ -491,7 +491,7 @@ namespace System.Net.Quic.Tests
             cts.Cancel();
 
             // awaiting the task should throw
-            var ex = await Assert.ThrowsAsync<OperationCanceledException>(async () => await waitTask);
+            var ex = await Assert.ThrowsAsync<OperationCanceledException>(() => waitTask.AsTask().WaitAsync(TimeSpan.FromSeconds(3)));
             Assert.Equal(cts.Token, ex.CancellationToken);
 
             // Close the streams, the waitTask should finish as a result.
@@ -510,7 +510,7 @@ namespace System.Net.Quic.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
-        public async Task OpenStreamAsync_PreCanceled_Throws(bool unidirectional)
+        public async Task OpenStreamAsync_PreCanceled_Throws_OperationCanceledException(bool unidirectional)
         {
             ValueTask<QuicStream> OpenStreamAsync(QuicConnection connection, CancellationToken token = default)
             {
@@ -524,12 +524,50 @@ namespace System.Net.Quic.Tests
             CancellationTokenSource cts = new CancellationTokenSource();
             cts.Cancel();
 
-            var ex = await Assert.ThrowsAsync<OperationCanceledException>(async () => await OpenStreamAsync(clientConnection, cts.Token));
+            var ex = await Assert.ThrowsAsync<OperationCanceledException>(() => OpenStreamAsync(clientConnection, cts.Token).AsTask().WaitAsync(TimeSpan.FromSeconds(3)));
             Assert.Equal(cts.Token, ex.CancellationToken);
 
             clientConnection.Dispose();
             serverConnection.Dispose();
         }
+
+        [Theory]
+        [InlineData(false, false)]
+        [InlineData(true, true)]
+        public async Task OpenStreamAsync_ConnectionAbort_Throws(bool unidirectional, bool localAbort)
+        {
+            ValueTask<QuicStream> OpenStreamAsync(QuicConnection connection, CancellationToken token = default)
+            {
+                return unidirectional
+                    ? connection.OpenUnidirectionalStreamAsync(token)
+                    : connection.OpenBidirectionalStreamAsync(token);
+            }
+
+            QuicListenerOptions listenerOptions = CreateQuicListenerOptions();
+            listenerOptions.MaxUnidirectionalStreams = 1;
+            listenerOptions.MaxBidirectionalStreams = 1;
+            (QuicConnection clientConnection, QuicConnection serverConnection) = await CreateConnectedQuicConnection(null, listenerOptions);
+
+            // Open one stream, second call should block
+            QuicStream stream = await OpenStreamAsync(clientConnection);
+            ValueTask<QuicStream> waitTask = OpenStreamAsync(clientConnection);
+            Assert.False(waitTask.IsCompleted);
+
+            if (localAbort)
+            {
+                await clientConnection.CloseAsync(0);
+                await Assert.ThrowsAsync<QuicOperationAbortedException>(() => waitTask.AsTask().WaitAsync(TimeSpan.FromSeconds(3)));
+            }
+            else
+            {
+                await serverConnection.CloseAsync(0);
+                await Assert.ThrowsAsync<QuicConnectionAbortedException>(() => waitTask.AsTask().WaitAsync(TimeSpan.FromSeconds(3)));
+            }
+
+            clientConnection.Dispose();
+            serverConnection.Dispose();
+        }
+
 
         [Fact]
         [OuterLoop("May take several seconds")]
