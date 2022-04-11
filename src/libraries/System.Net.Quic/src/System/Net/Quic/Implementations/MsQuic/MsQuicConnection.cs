@@ -592,10 +592,15 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             var stream = new MsQuicStream(_state, flags);
 
-            // should complete synchronously
-            ValueTask startTask = stream.StartAsync(QUIC_STREAM_START_FLAGS.FAIL_BLOCKED | QUIC_STREAM_START_FLAGS.SHUTDOWN_ON_FAIL | QUIC_STREAM_START_FLAGS.INDICATE_PEER_ACCEPT, default);
-            startTask.AsTask().GetAwaiter().GetResult();
-            Debug.Assert(startTask.IsCompleted);
+            try
+            {
+                stream.StartAsync(QUIC_STREAM_START_FLAGS.FAIL_BLOCKED | QUIC_STREAM_START_FLAGS.SHUTDOWN_ON_FAIL | QUIC_STREAM_START_FLAGS.INDICATE_PEER_ACCEPT, default).AsTask().GetAwaiter().GetResult();
+            }
+            catch
+            {
+                stream.Dispose();
+                throw;
+            }
 
             return stream;
         }
@@ -613,7 +618,15 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             var stream = new MsQuicStream(_state, flags);
 
-            await stream.StartAsync(QUIC_STREAM_START_FLAGS.SHUTDOWN_ON_FAIL | QUIC_STREAM_START_FLAGS.INDICATE_PEER_ACCEPT, cancellationToken).ConfigureAwait(false);
+            try
+            {
+                await stream.StartAsync(QUIC_STREAM_START_FLAGS.SHUTDOWN_ON_FAIL | QUIC_STREAM_START_FLAGS.INDICATE_PEER_ACCEPT, cancellationToken).ConfigureAwait(false);
+            }
+            catch
+            {
+                stream.Dispose();
+                throw;
+            }
 
             return stream;
         }

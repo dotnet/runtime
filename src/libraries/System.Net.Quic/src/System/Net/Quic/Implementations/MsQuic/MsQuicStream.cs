@@ -891,25 +891,16 @@ namespace System.Net.Quic.Implementations.MsQuic
         {
             Debug.Assert(!Monitor.IsEntered(_state));
 
-            try
+            cancellationToken.ThrowIfCancellationRequested();
+            using CancellationTokenRegistration registration = cancellationToken.UnsafeRegister(static (s, token) =>
             {
-                cancellationToken.ThrowIfCancellationRequested();
-                using CancellationTokenRegistration registration = cancellationToken.UnsafeRegister(static (s, token) =>
-                {
-                    ((State)s!).StartCompletionSource.TrySetCanceled(token);
-                }, _state);
+                ((State)s!).StartCompletionSource.TrySetCanceled(token);
+            }, _state);
 
-                uint status = MsQuicApi.Api.StreamStartDelegate(_state.Handle, flags);
-                QuicExceptionHelpers.ThrowIfFailed(status, "Could not start stream.");
+            uint status = MsQuicApi.Api.StreamStartDelegate(_state.Handle, flags);
+            QuicExceptionHelpers.ThrowIfFailed(status, "Could not start stream.");
 
-                await _state.StartCompletionSource.Task.ConfigureAwait(false);
-            }
-            catch
-            {
-                _state.Handle?.Dispose();
-                _state.StateGCHandle.Free();
-                throw;
-            }
+            await _state.StartCompletionSource.Task.ConfigureAwait(false);
         }
 
         /// <summary>
