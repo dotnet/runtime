@@ -66,6 +66,10 @@ NESTED_ENTRY JIT_BoxFastMP_InlineGetThread, _TEXT
         test    dword ptr [rax + OFFSETOF__MethodTableWriteableData__m_dwFlags], MethodTableWriteableData__enum_flag_Unrestored
         jnz     ClassNotInited
 
+        ; Check whether the object IsByRefLike
+        test    dword ptr [rcx + OFFSETOF__MethodTable__m_dwFlags], MethodTable__enum_flag_IsByRefLike
+        jnz     ClassIsByRefLike
+
         mov     r8d, [rcx + OFFSET__MethodTable__m_BaseSize]
 
         ; m_BaseSize is guaranteed to be a multiple of 8.
@@ -113,6 +117,7 @@ align 16
         pop     rax
         ret
 
+    ClassIsByRefLike:
     ClassNotInited:
     AllocFailed:
         jmp     JIT_Box

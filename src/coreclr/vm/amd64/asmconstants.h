@@ -197,6 +197,10 @@ ASMCONSTANTS_C_ASSERT(METHODTABLE_EQUIVALENCE_FLAGS
 #define               METHODTABLE_EQUIVALENCE_FLAGS 0x0
 #endif
 
+#define               MethodTable__enum_flag_IsByRefLike 0x00001000
+ASMCONSTANTS_C_ASSERT(MethodTable__enum_flag_IsByRefLike
+                    == MethodTable::enum_flag_IsByRefLike);
+
 #define               MethodTable__enum_flag_ContainsPointers 0x01000000
 ASMCONSTANTS_C_ASSERT(MethodTable__enum_flag_ContainsPointers
                     == MethodTable::enum_flag_ContainsPointers);

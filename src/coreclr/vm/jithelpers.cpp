@@ -2701,6 +2701,11 @@ HCIMPL2(Object*, JIT_Box, CORINFO_CLASS_HANDLE type, void* unboxedData)
 
     pMT->CheckRestore();
 
+    // we shouldn't allow boxing of types that contains stack pointers
+    // csc and vbc already disallow it.
+    if (pMT->IsByRefLike())
+        COMPlusThrow(kInvalidProgramException,W("NotSupported_ByRefLike"));
+
     // You can only box valuetypes
     if (!pMT->IsValueType())
         COMPlusThrow(kInvalidCastException, W("Arg_ObjObj"));

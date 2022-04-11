@@ -7253,6 +7253,7 @@ void Compiler::impImportAndPushBox(CORINFO_RESOLVED_TOKEN* pResolvedToken)
 
     // Look at what helper we should use.
     CorInfoHelpFunc boxHelper = info.compCompHnd->getBoxHelper(pResolvedToken->hClass);
+    bool            byRefLike = !!(info.compCompHnd->getClassAttribs(pResolvedToken->hClass) & CORINFO_FLG_BYREF_LIKE);
 
     // Determine what expansion to prefer.
     //
@@ -7264,12 +7265,12 @@ void Compiler::impImportAndPushBox(CORINFO_RESOLVED_TOKEN* pResolvedToken)
     //
     // Currently primitive type boxes always get inline expanded. We may
     // want to do the same for small structs if they don't come from
-    // calls and don't have GC pointers, since explicitly copying such
+    // calls, don't have GC pointers and aren't ByRefLike, since explicitly copying such
     // structs is cheap.
     JITDUMP("\nCompiler::impImportAndPushBox -- handling BOX(value class) via");
     bool canExpandInline = (boxHelper == CORINFO_HELP_BOX);
     bool optForSize      = !exprToBox->IsCall() && (operCls != nullptr) && opts.OptimizationDisabled();
-    bool expandInline    = canExpandInline && !optForSize;
+    bool expandInline    = canExpandInline && !optForSize && !byRefLike;
 
     if (expandInline)
     {
@@ -7480,7 +7481,7 @@ void Compiler::impImportAndPushBox(CORINFO_RESOLVED_TOKEN* pResolvedToken)
     else
     {
         // Don't optimize, just call the helper and be done with it.
-        JITDUMP(" helper call because: %s\n", canExpandInline ? "optimizing for size" : "nullable");
+        JITDUMP(" helper call because: %s\n", canExpandInline ? (byRefLike ? "byreflike" : "optimizing for size") : "nullable");
         assert(operCls != nullptr);
 
         // Ensure that the value class is restored
