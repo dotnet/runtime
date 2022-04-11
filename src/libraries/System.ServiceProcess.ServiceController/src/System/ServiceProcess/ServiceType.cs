@@ -6,6 +6,7 @@ namespace System.ServiceProcess
     [Flags]
     public enum ServiceType
     {
+        // Does not currently represent all of the Win32 values; see Interop.Advapi32.ServiceTypeOptions
         Adapter = Interop.Advapi32.ServiceTypeOptions.SERVICE_ADAPTER,
         FileSystemDriver = Interop.Advapi32.ServiceTypeOptions.SERVICE_FILE_SYSTEM_DRIVER,
         InteractiveProcess = Interop.Advapi32.ServiceTypeOptions.SERVICE_INTERACTIVE_PROCESS,

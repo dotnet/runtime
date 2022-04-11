@@ -95,14 +95,14 @@ internal static partial class Interop
             internal const int SERVICE_INTERACTIVE_PROCESS = 0x00000100;
             //internal const int SERVICE_PKG_PROCESS = 0x00000200;
 
-            internal const int SERVICE_TYPE_ALL =
-                SERVICE_WIN32 |
-                SERVICE_ADAPTER |
-                SERVICE_DRIVER |
-                SERVICE_INTERACTIVE_PROCESS;
-              //SERVICE_USER_SERVICE |
-              //SERVICE_USERSERVICE_INSTANCE |
-              //SERVICE_PKG_SERVICE;
+            // internal const int SERVICE_TYPE_ALL =
+            //    SERVICE_WIN32 |
+            //    SERVICE_ADAPTER |
+            //    SERVICE_DRIVER |
+            //    SERVICE_INTERACTIVE_PROCESS;
+            //    SERVICE_USER_SERVICE |
+            //    SERVICE_USERSERVICE_INSTANCE |
+            //    SERVICE_PKG_SERVICE;
         }
 
         internal static partial class ServiceAccessOptions

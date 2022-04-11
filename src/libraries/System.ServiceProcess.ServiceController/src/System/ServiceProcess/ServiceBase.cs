@@ -945,7 +945,8 @@ namespace System.ServiceProcess
                 statusOK = SetServiceStatus(_statusHandle, pStatus);
                 if (!statusOK)
                 {
-                    WriteLogEntry(SR.Format(SR.StartFailed, new Win32Exception().Message), EventLogEntryType.Error);
+                    string errorMessage = new Win32Exception().Message;
+                    WriteLogEntry(SR.Format(SR.StartFailed, errorMessage), EventLogEntryType.Error);
                     _status.currentState = ServiceControlStatus.STATE_STOPPED;
                     SetServiceStatus(_statusHandle, pStatus);
                 }
