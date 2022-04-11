@@ -366,8 +366,7 @@ namespace System
         /// </remarks>
         public DateTime(int year, int month, int day, int hour, int minute, int second, int millisecond)
         {
-            ulong ticks = Init(year, month, day, hour, minute, second, millisecond);
-            _dateData = ticks | (ticks & FlagsMask);
+            _dateData = Init(year, month, day, hour, minute, second, millisecond);
         }
 
         /// <summary>
@@ -668,23 +667,11 @@ namespace System
         public DateTime(int year, int month, int day, int hour, int minute, int second, int millisecond, int microsecond, Calendar calendar!!)
         : this(year, month, day, hour, minute, second, millisecond, microsecond, calendar, DateTimeKind.Unspecified)
         {
-            if (second != 60 || !s_systemSupportsLeapSeconds)
+            if (microsecond is < 0 or >= MicrosecondsPerMillisecond)
             {
-                if (microsecond is < 0 or >= MicrosecondsPerMillisecond)
-                {
-                    ThrowMicrosecondOutOfRange();
-                }
-
-                var dateTime = calendar.ToDateTime(year, month, day, hour, minute, second, millisecond);
-                dateTime = dateTime.AddMicroseconds(microsecond);
-                _dateData = dateTime.UTicks;
+                ThrowMicrosecondOutOfRange();
             }
-            else
-            {
-                // if we have a leap second, then we adjust it to 59 so that DateTime will consider it the last in the specified minute.
-                this = new DateTime(year, month, day, hour, minute, 59, millisecond, microsecond, calendar);
-                ValidateLeapSecond();
-            }
+            _dateData = new DateTime(_dateData).AddMicroseconds(microsecond)._dateData;
         }
 
         /// <summary>

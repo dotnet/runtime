@@ -83,8 +83,8 @@ namespace System
         internal const long MaxMilliSeconds = long.MaxValue / TicksPerMillisecond;
         internal const long MinMilliSeconds = long.MinValue / TicksPerMillisecond;
 
-        internal const long MaxMicroSeconds = long.MaxValue / TicksPerMillisecond;
-        internal const long MinMicroSeconds = long.MinValue / TicksPerMillisecond;
+        internal const long MaxMicroSeconds = long.MaxValue / TicksPerMicrosecond;
+        internal const long MinMicroSeconds = long.MinValue / TicksPerMicrosecond;
 
         internal const long TicksPerTenthSecond = TicksPerMillisecond * 100;
 
@@ -152,7 +152,7 @@ namespace System
         /// </exception>
         public TimeSpan(int days, int hours, int minutes, int seconds, int milliseconds, int microseconds)
         {
-            long totalMicroseconds = ((long)days * 3600 * 24 + (long)hours * 3600 + (long)minutes * 60 + seconds) * 1000 + milliseconds + 1000 * microseconds;
+            long totalMicroseconds = (((long)days * 3600 * 24 + (long)hours * 3600 + (long)minutes * 60 + seconds) * 1000 + milliseconds) * 1000 + microseconds;
             if (totalMicroseconds > MaxMicroSeconds || totalMicroseconds < MinMicroSeconds)
                 ThrowHelper.ThrowArgumentOutOfRange_TimeSpanTooLong();
             _ticks = totalMicroseconds * TicksPerMicrosecond;
