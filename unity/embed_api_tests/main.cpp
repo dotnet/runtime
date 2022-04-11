@@ -1692,6 +1692,7 @@ TEST(mono_custom_attrs_has_attr_can_check_assembly_attribute)
 #define kHelloString "Hello"
 #define kHelloWorldString "Hello, World!"
 #define kHelloWorldStringWithEmbeddedNull "Hello\0World"
+#define kHelloWorldStringWithUnicode "Hello, 団結!"
 
 void CheckString(MonoString* str, const char* expected, size_t len)
 {
@@ -1722,6 +1723,15 @@ TEST(mono_string_new_len_creates_string)
     CheckString(mono_string_new_len(mono_domain_get(), kHelloWorldString, 13), kHelloWorldString, 13);
     CheckString(mono_string_new_len(mono_domain_get(), kHelloWorldString, 5), kHelloString, 5);
     CheckString(mono_string_new_len(mono_domain_get(), kHelloWorldStringWithEmbeddedNull, 11), kHelloWorldStringWithEmbeddedNull, 11);
+}
+
+TEST(mono_string_new_len_with_unicode_ascii_creates_string)
+{
+    if (g_Mode == CoreCLR)
+    {
+        MonoString* str = mono_string_new_len(mono_domain_get(), kHelloWorldStringWithUnicode, strlen(kHelloWorldStringWithUnicode));
+        CHECK(str->length == 10);
+    }
 }
 
 void *ThreadFunc(void *arguments)

@@ -3025,7 +3025,7 @@ extern "C" EXPORT_API MonoString* EXPORT_CC mono_string_new_len(MonoDomain *doma
     assert(text != nullptr);
     InlineSString<256> sstr(SString::Utf8, text, length);
     GCX_COOP();
-    STRINGREF strObj = AllocateString(length);
+    STRINGREF strObj = AllocateString(sstr.GetCount());
     memcpyNoGCRefs(strObj->GetBuffer(), sstr.GetUnicode(), sstr.GetCount() * sizeof(WCHAR));
     return (MonoString*)OBJECTREFToObject(strObj);
 }
