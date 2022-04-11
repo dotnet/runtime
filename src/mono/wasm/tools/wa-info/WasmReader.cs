@@ -1041,6 +1041,7 @@ namespace WebAssemblyInfo
         {
             var b = Reader.ReadByte();
             vt.IsRefenceType = b <= 0x70;
+            vt.IsVectorType = b == 0x7b;
             vt.value = b;
         }
 

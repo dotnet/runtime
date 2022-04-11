@@ -408,6 +408,9 @@ namespace WebAssemblyInfo
         [FieldOffset(1)]
         public bool IsRefenceType;
 
+        [FieldOffset(2)]
+        public bool IsVectorType;
+
         public int CompareTo(ValueType other)
         {
             return IsRefenceType ? Reference.CompareTo(other.Reference) : Number.CompareTo(other.Number);
@@ -415,7 +418,13 @@ namespace WebAssemblyInfo
 
         public override string ToString()
         {
-            return IsRefenceType ? Reference.ToString() : Number.ToString();
+            if (IsRefenceType)
+                return Reference.ToString();
+
+            if (IsVectorType)
+                return "v128";
+
+            return Number.ToString();
         }
     }
 
