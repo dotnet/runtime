@@ -59,7 +59,7 @@
     </ReadLinesFromFile>
 
     <Message Importance="high" Text="FileContents: $(ProjectAssetsFile)" />
-    <Message Importance="high" Text="%(_LinesFromFile.Identity)" />
+    <Message Importance="high" Text="$([MSBuild]::Escape('%(_LinesFromFile.Identity)'))" />
   </Target>
 
   <Target Name="PrintAssetsJson2" Condition="'$(DotNetBuildFromSource)' == 'true'" 
@@ -69,6 +69,6 @@
     </ReadLinesFromFile>
 
     <Message Importance="high" Text="FileContents: $(ProjectAssetsFile)" />
-    <Message Importance="high" Text="%(_LinesFromFile.Identity)" />
+    <Message Importance="high" Text="$([MSBuild]::Escape('%(_LinesFromFile.Identity)'))" />
   </Target>
 </Project>
