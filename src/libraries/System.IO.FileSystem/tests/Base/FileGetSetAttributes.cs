@@ -65,6 +65,7 @@ namespace System.IO.Tests
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsCaseSensitiveOS))]
         [InlineData(FileAttributes.Hidden)]
         [PlatformSpecific(TestPlatforms.AnyUnix & ~(TestPlatforms.OSX | TestPlatforms.FreeBSD))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/67853", TestPlatforms.tvOS)]
         public void SettingInvalidAttributes_UnixExceptOSXAndFreeBSD(FileAttributes attributes)
         {
             string path = CreateItem();
