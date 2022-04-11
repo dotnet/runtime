@@ -4,7 +4,8 @@
     provides basic info needed for restore and build with the vanilla SDK.
   -->
   <ItemGroup>
-    <KnownFrameworkReference Include="Microsoft.NETCore.App"
+    <!-- Uncomment on change to a new SDK that doesn't support the new TFM, and point to the needed version of the runtime. -->
+    <!-- <KnownFrameworkReference Include="Microsoft.NETCore.App"
                              TargetFramework="net7.0"
                              RuntimeFrameworkName="Microsoft.NETCore.App"
                              DefaultRuntimeFrameworkVersion="7.0.0-preview.4.22201.3"
@@ -18,6 +19,6 @@
                       TargetFramework="net7.0"
                       AppHostPackNamePattern="Microsoft.NETCore.App.Host.**RID**"
                       AppHostPackVersion="7.0.0-preview.4.22201.3"
-                      AppHostRuntimeIdentifiers="linux-arm;linux-arm64;linux-musl-arm64;linux-musl-x64;linux-x64;osx-x64;rhel.6-x64;tizen.4.0.0-armel;tizen.5.0.0-armel;win-arm;win-arm64;win-x64;win-x86;linux-musl-arm;osx-arm64" />
+                      AppHostRuntimeIdentifiers="linux-arm;linux-arm64;linux-musl-arm64;linux-musl-x64;linux-x64;osx-x64;rhel.6-x64;tizen.4.0.0-armel;tizen.5.0.0-armel;win-arm;win-arm64;win-x64;win-x86;linux-musl-arm;osx-arm64" /> -->
   </ItemGroup>
 </Project>
