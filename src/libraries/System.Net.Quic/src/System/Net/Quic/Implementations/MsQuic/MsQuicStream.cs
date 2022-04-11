@@ -283,11 +283,11 @@ namespace System.Net.Quic.Implementations.MsQuic
         {
             ThrowIfDisposed();
 
-            using CancellationTokenRegistration registration = HandleWriteStartState(buffers.IsEmpty, cancellationToken);
+            using CancellationTokenRegistration registration = SetupWriteStartState(buffers.IsEmpty, cancellationToken);
 
             await SendReadOnlySequenceAsync(buffers, endStream ? QUIC_SEND_FLAGS.FIN : QUIC_SEND_FLAGS.NONE).ConfigureAwait(false);
 
-            HandleWriteCompletedState();
+            CleanupWriteCompletedState();
         }
 
         internal override ValueTask WriteAsync(ReadOnlyMemory<ReadOnlyMemory<byte>> buffers, CancellationToken cancellationToken = default)
@@ -299,25 +299,25 @@ namespace System.Net.Quic.Implementations.MsQuic
         {
             ThrowIfDisposed();
 
-            using CancellationTokenRegistration registration = HandleWriteStartState(buffers.IsEmpty, cancellationToken);
+            using CancellationTokenRegistration registration = SetupWriteStartState(buffers.IsEmpty, cancellationToken);
 
             await SendReadOnlyMemoryListAsync(buffers, endStream ? QUIC_SEND_FLAGS.FIN : QUIC_SEND_FLAGS.NONE).ConfigureAwait(false);
 
-            HandleWriteCompletedState();
+            CleanupWriteCompletedState();
         }
 
         internal override async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, bool endStream, CancellationToken cancellationToken = default)
         {
             ThrowIfDisposed();
 
-            using CancellationTokenRegistration registration = HandleWriteStartState(buffer.IsEmpty, cancellationToken);
+            using CancellationTokenRegistration registration = SetupWriteStartState(buffer.IsEmpty, cancellationToken);
 
             await SendReadOnlyMemoryAsync(buffer, endStream ? QUIC_SEND_FLAGS.FIN : QUIC_SEND_FLAGS.NONE).ConfigureAwait(false);
 
-            HandleWriteCompletedState();
+            CleanupWriteCompletedState();
         }
 
-        private CancellationTokenRegistration HandleWriteStartState(bool emptyBuffer, CancellationToken cancellationToken)
+        private CancellationTokenRegistration SetupWriteStartState(bool emptyBuffer, CancellationToken cancellationToken)
         {
             if (_state.SendState == SendState.Closed)
             {
@@ -394,7 +394,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             return registration;
         }
 
-        private void HandleWriteCompletedState()
+        private void CleanupWriteCompletedState()
         {
             lock (_state)
             {
@@ -405,7 +405,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             }
         }
 
-        private void HandleWriteFailedState()
+        private void CleanupWriteFailedState()
         {
             lock (_state)
             {
@@ -865,6 +865,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             {
                 try
                 {
+                    // TODO: error code used here MUST be specified by the application layer
                     StartShutdown(QUIC_STREAM_SHUTDOWN_FLAGS.ABORT_RECEIVE, 0xffffffff);
                 }
                 catch (ObjectDisposedException) { };
@@ -1351,7 +1352,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             if (!MsQuicStatusHelper.SuccessfulStatusCode(status))
             {
-                HandleWriteFailedState();
+                CleanupWriteFailedState();
                 CleanupSendState(_state);
 
                 if (status == MsQuicStatusCodes.Aborted)
@@ -1418,7 +1419,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             if (!MsQuicStatusHelper.SuccessfulStatusCode(status))
             {
-                HandleWriteFailedState();
+                CleanupWriteFailedState();
                 CleanupSendState(_state);
 
                 if (status == MsQuicStatusCodes.Aborted)
@@ -1482,7 +1483,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             if (!MsQuicStatusHelper.SuccessfulStatusCode(status))
             {
-                HandleWriteFailedState();
+                CleanupWriteFailedState();
                 CleanupSendState(_state);
 
                 if (status == MsQuicStatusCodes.Aborted)
