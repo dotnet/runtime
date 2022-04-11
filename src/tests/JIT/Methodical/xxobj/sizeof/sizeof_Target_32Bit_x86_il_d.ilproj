@@ -5,6 +5,7 @@
     <CLRTestPriority>1</CLRTestPriority>
     <!-- There are arch-specific versions of this test to allow it to be compiled for all targets -->
     <CLRTestTargetUnsupported Condition="'$(TargetArchitecture)' != 'x86'">true</CLRTestTargetUnsupported>
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <DebugType>Full</DebugType>
   </PropertyGroup>
   <ItemGroup>

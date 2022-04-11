@@ -120,16 +120,15 @@ namespace System.Text.Json.Serialization
             }
             else
             {
-                // Slower path that supports continuation and preserved references.
+                // Slower path that supports continuation and reading metadata.
 
-                bool preserveReferences = options.ReferenceHandlingStrategy == ReferenceHandlingStrategy.Preserve;
                 if (state.Current.ObjectState == StackFrameObjectState.None)
                 {
                     if (reader.TokenType == JsonTokenType.StartArray)
                     {
-                        state.Current.ObjectState = StackFrameObjectState.PropertyValue;
+                        state.Current.ObjectState = StackFrameObjectState.ReadMetadata;
                     }
-                    else if (preserveReferences)
+                    else if (state.CanContainMetadata)
                     {
                         if (reader.TokenType != JsonTokenType.StartObject)
                         {
@@ -147,27 +146,41 @@ namespace System.Text.Json.Serialization
                 }
 
                 // Handle the metadata properties.
-                if (preserveReferences && state.Current.ObjectState < StackFrameObjectState.PropertyValue)
+                if (state.CanContainMetadata && state.Current.ObjectState < StackFrameObjectState.ReadMetadata)
                 {
-                    if (JsonSerializer.ResolveMetadataForJsonArray<TCollection>(ref reader, ref state, options))
-                    {
-                        if (state.Current.ObjectState == StackFrameObjectState.ReadRefEndObject)
-                        {
-                            // This will never throw since it was previously validated in ResolveMetadataForJsonArray.
-                            value = (TCollection)state.Current.ReturnValue!;
-                            return true;
-                        }
-                    }
-                    else
+                    if (!JsonSerializer.TryReadMetadata(this, ref reader, ref state))
                     {
                         value = default;
                         return false;
                     }
+
+                    state.Current.ObjectState = StackFrameObjectState.ReadMetadata;
                 }
 
                 if (state.Current.ObjectState < StackFrameObjectState.CreatedObject)
                 {
+                    if (state.CanContainMetadata)
+                    {
+                        JsonSerializer.ValidateMetadataForArrayConverter(this, ref reader, ref state);
+                    }
+
+                    if (state.Current.MetadataPropertyNames == MetadataPropertyName.Ref)
+                    {
+                        value = JsonSerializer.ResolveReferenceId<TCollection>(ref state);
+                        return true;
+                    }
+
                     CreateCollection(ref reader, ref state, options);
+
+                    if (state.Current.MetadataPropertyNames.HasFlag(MetadataPropertyName.Id))
+                    {
+                        Debug.Assert(state.ReferenceId != null);
+                        Debug.Assert(options.ReferenceHandlingStrategy == ReferenceHandlingStrategy.Preserve);
+                        Debug.Assert(state.Current.ReturnValue is TCollection);
+                        state.ReferenceResolver.AddReference(state.ReferenceId, state.Current.ReturnValue);
+                        state.ReferenceId = null;
+                    }
+
                     state.Current.ObjectState = StackFrameObjectState.CreatedObject;
                 }
 
@@ -222,8 +235,8 @@ namespace System.Text.Json.Serialization
                 {
                     state.Current.ObjectState = StackFrameObjectState.EndToken;
 
-                    // Read the EndObject token for an array with preserve semantics.
-                    if (state.Current.ValidateEndTokenOnArray)
+                    // Array payload is nested inside a $values metadata property.
+                    if (state.Current.MetadataPropertyNames.HasFlag(MetadataPropertyName.Values))
                     {
                         if (!reader.Read())
                         {
@@ -235,7 +248,8 @@ namespace System.Text.Json.Serialization
 
                 if (state.Current.ObjectState < StackFrameObjectState.EndTokenValidation)
                 {
-                    if (state.Current.ValidateEndTokenOnArray)
+                    // Array payload is nested inside a $values metadata property.
+                    if (state.Current.MetadataPropertyNames.HasFlag(MetadataPropertyName.Values))
                     {
                         if (reader.TokenType != JsonTokenType.EndObject)
                         {
@@ -304,8 +318,5 @@ namespace System.Text.Json.Serialization
         }
 
         protected abstract bool OnWriteResume(Utf8JsonWriter writer, TCollection value, JsonSerializerOptions options, ref WriteStack state);
-
-        internal sealed override void CreateInstanceForReferenceResolver(ref Utf8JsonReader reader, ref ReadStack state, JsonSerializerOptions options)
-            => CreateCollection(ref reader, ref state, options);
     }
 }

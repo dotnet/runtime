@@ -129,6 +129,12 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(List<object>))]
         [JsonSerializable(typeof(StructCollection))]
         [JsonSerializable(typeof(ImmutableArray<int>))]
+        [JsonSerializable(typeof(LinkedList<int>))]
+        [JsonSerializable(typeof(LinkedList<int>[]))]
+        [JsonSerializable(typeof(LinkedList<object>))]
+        [JsonSerializable(typeof(LinkedList<object[]>))]
+        [JsonSerializable(typeof(LinkedList<Base[]>))]
+        [JsonSerializable(typeof(LinkedList<Base[][]>))]
         internal sealed partial class ReferenceHandlerTestsContext_Metadata : JsonSerializerContext
         {
         }
@@ -261,6 +267,12 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(List<object>))]
         [JsonSerializable(typeof(StructCollection))]
         [JsonSerializable(typeof(ImmutableArray<int>))]
+        [JsonSerializable(typeof(LinkedList<int>))]
+        [JsonSerializable(typeof(LinkedList<int>[]))]
+        [JsonSerializable(typeof(LinkedList<object>))]
+        [JsonSerializable(typeof(LinkedList<object[]>))]
+        [JsonSerializable(typeof(LinkedList<Base[]>))]
+        [JsonSerializable(typeof(LinkedList<Base[][]>))]
         internal sealed partial class ReferenceHandlerTestsContext_Default : JsonSerializerContext
         {
         }

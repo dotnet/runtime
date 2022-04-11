@@ -150,7 +150,7 @@ namespace System.Data.Odbc
             return InnerList[index];
         }
 
-        private static int IndexOf(System.Collections.IEnumerable items, string parameterName)
+        private static int IndexOf(List<OdbcParameter> items, string parameterName)
         {
             if (null != items)
             {

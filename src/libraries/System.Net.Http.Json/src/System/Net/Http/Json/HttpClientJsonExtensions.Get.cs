@@ -16,7 +16,7 @@ namespace System.Net.Http.Json
     public static partial class HttpClientJsonExtensions
     {
         [RequiresUnreferencedCode(HttpContentJsonExtensions.SerializationUnreferencedCodeMessage)]
-        public static Task<object?> GetFromJsonAsync(this HttpClient client!!, string? requestUri, Type type, JsonSerializerOptions? options, CancellationToken cancellationToken = default)
+        public static Task<object?> GetFromJsonAsync(this HttpClient client!!, [StringSyntax(StringSyntaxAttribute.Uri)] string? requestUri, Type type, JsonSerializerOptions? options, CancellationToken cancellationToken = default)
         {
             Task<HttpResponseMessage> taskResponse = client.GetAsync(requestUri, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
             return GetFromJsonAsyncCore(taskResponse, type, options, cancellationToken);
@@ -30,7 +30,7 @@ namespace System.Net.Http.Json
         }
 
         [RequiresUnreferencedCode(HttpContentJsonExtensions.SerializationUnreferencedCodeMessage)]
-        public static Task<TValue?> GetFromJsonAsync<TValue>(this HttpClient client!!, string? requestUri, JsonSerializerOptions? options, CancellationToken cancellationToken = default)
+        public static Task<TValue?> GetFromJsonAsync<TValue>(this HttpClient client!!, [StringSyntax(StringSyntaxAttribute.Uri)] string? requestUri, JsonSerializerOptions? options, CancellationToken cancellationToken = default)
         {
             Task<HttpResponseMessage> taskResponse = client.GetAsync(requestUri, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
             return GetFromJsonAsyncCore<TValue>(taskResponse, options, cancellationToken);
@@ -43,7 +43,7 @@ namespace System.Net.Http.Json
             return GetFromJsonAsyncCore<TValue>(taskResponse, options, cancellationToken);
         }
 
-        public static Task<object?> GetFromJsonAsync(this HttpClient client!!, string? requestUri, Type type, JsonSerializerContext context, CancellationToken cancellationToken = default)
+        public static Task<object?> GetFromJsonAsync(this HttpClient client!!, [StringSyntax(StringSyntaxAttribute.Uri)] string? requestUri, Type type, JsonSerializerContext context, CancellationToken cancellationToken = default)
         {
             Task<HttpResponseMessage> taskResponse = client.GetAsync(requestUri, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
             return GetFromJsonAsyncCore(taskResponse, type, context, cancellationToken);
@@ -55,7 +55,7 @@ namespace System.Net.Http.Json
             return GetFromJsonAsyncCore(taskResponse, type, context, cancellationToken);
         }
 
-        public static Task<TValue?> GetFromJsonAsync<TValue>(this HttpClient client!!, string? requestUri, JsonTypeInfo<TValue> jsonTypeInfo, CancellationToken cancellationToken = default)
+        public static Task<TValue?> GetFromJsonAsync<TValue>(this HttpClient client!!, [StringSyntax(StringSyntaxAttribute.Uri)] string? requestUri, JsonTypeInfo<TValue> jsonTypeInfo, CancellationToken cancellationToken = default)
         {
             Task<HttpResponseMessage> taskResponse = client.GetAsync(requestUri, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
             return GetFromJsonAsyncCore(taskResponse, jsonTypeInfo, cancellationToken);
@@ -68,7 +68,7 @@ namespace System.Net.Http.Json
         }
 
         [RequiresUnreferencedCode(HttpContentJsonExtensions.SerializationUnreferencedCodeMessage)]
-        public static Task<object?> GetFromJsonAsync(this HttpClient client, string? requestUri, Type type, CancellationToken cancellationToken = default)
+        public static Task<object?> GetFromJsonAsync(this HttpClient client, [StringSyntax(StringSyntaxAttribute.Uri)] string? requestUri, Type type, CancellationToken cancellationToken = default)
             => client.GetFromJsonAsync(requestUri, type, options: null, cancellationToken);
 
         [RequiresUnreferencedCode(HttpContentJsonExtensions.SerializationUnreferencedCodeMessage)]
@@ -76,7 +76,7 @@ namespace System.Net.Http.Json
             => client.GetFromJsonAsync(requestUri, type, options: null, cancellationToken);
 
         [RequiresUnreferencedCode(HttpContentJsonExtensions.SerializationUnreferencedCodeMessage)]
-        public static Task<TValue?> GetFromJsonAsync<TValue>(this HttpClient client, string? requestUri, CancellationToken cancellationToken = default)
+        public static Task<TValue?> GetFromJsonAsync<TValue>(this HttpClient client, [StringSyntax(StringSyntaxAttribute.Uri)] string? requestUri, CancellationToken cancellationToken = default)
             => client.GetFromJsonAsync<TValue>(requestUri, options: null, cancellationToken);
 
         [RequiresUnreferencedCode(HttpContentJsonExtensions.SerializationUnreferencedCodeMessage)]
