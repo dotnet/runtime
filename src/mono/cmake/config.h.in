@@ -18,6 +18,7 @@
 #pragma warning(disable:4706) // W4: assignment within conditional expression
 
 // promote warnings to errors
+#pragma warning(error:4005) // W1: 'identifier' : macro redefinition
 #pragma warning(error:4013) // W3: function undefined; assuming extern returning int
 #pragma warning(error:4022) // W1: call and prototype disagree
 #pragma warning(error:4047) // W1: differs in level of indirection
@@ -25,6 +26,7 @@
 #pragma warning(error:4098) // W1: void return returns a value
 #pragma warning(error:4113) // W1: call and prototype disagree
 #pragma warning(error:4127) // W4: conditional expression is constant
+#pragma warning(error:4131) // W4: 'function' : uses old-style declarator
 #pragma warning(error:4146) // W2: unary minus operator applied to unsigned type, result still unsigned
 #pragma warning(error:4172) // W1: returning address of local variable or temporary
 #pragma warning(error:4189) // W4: local variable is initialized but not referenced

@@ -11,12 +11,6 @@
 
 /* @(#) $Id$ */
 
-#ifdef _MSC_VER
-__pragma(warning (disable:4005)) /* macro redefinition */
-__pragma(warning (disable:4127)) /* conditional expression is constant */
-__pragma(warning (disable:4131)) /* uses old-style declarator */
-#endif
-
 /*
   Note on the use of DYNAMIC_CRC_TABLE: there is no mutex or semaphore
   protection on the static variables used to control the first-use generation

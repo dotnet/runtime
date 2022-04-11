@@ -5,11 +5,6 @@
 
 /* @(#) $Id$ */
 
-#ifdef _MSC_VER
-__pragma(warning (disable:4005)) /* macro redefinition */
-__pragma(warning (disable:4131)) /* uses old-style declarator */
-#endif
-
 #include "zutil.h"
 
 local uLong adler32_combine_ OF((uLong adler1, uLong adler2, z_off64_t len2));

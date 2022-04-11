@@ -5,11 +5,6 @@
 
 /* @(#) $Id$ */
 
-#ifdef _MSC_VER
-__pragma(warning (disable:4005)) /* macro redefinition */
-__pragma(warning (disable:4131)) /* uses old-style declarator */
-#endif
-
 #include "zutil.h"
 #ifndef Z_SOLO
 #  include "gzguts.h"

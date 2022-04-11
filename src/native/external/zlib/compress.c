@@ -5,10 +5,6 @@
 
 /* @(#) $Id$ */
 
-#ifdef _MSC_VER
-__pragma(warning (disable:4131)) /* uses old-style declarator */
-#endif
-
 #define ZLIB_INTERNAL
 #include "zlib.h"
 

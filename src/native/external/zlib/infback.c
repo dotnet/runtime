@@ -10,11 +10,6 @@
    inflate_fast() can be used with either inflate.c or infback.c.
  */
 
-#ifdef _MSC_VER
-__pragma(warning (disable:4005)) /* macro redefinition */
-__pragma(warning (disable:4131)) /* uses old-style declarator */
-#endif
-
 #include "zutil.h"
 #include "inftrees.h"
 #include "inflate.h"
