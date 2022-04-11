@@ -4282,14 +4282,16 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             }
 
             case NI_System_Type_get_IsValueType:
+            case NI_System_Type_get_IsByRefLike:
             {
                 // Optimize
                 //
                 //   call Type.GetTypeFromHandle (which is replaced with CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE)
-                //   call Type.IsValueType
+                //   call Type.IsXXX
                 //
                 // to `true` or `false`
-                // e.g. `typeof(int).IsValueType` => `true`
+                // e.g., `typeof(int).IsValueType` => `true`
+                // e.g., `typeof(Span<int>).IsByRefLike` => `true`
                 if (impStackTop().val->IsCall())
                 {
                     GenTreeCall* call = impStackTop().val->AsCall();
@@ -4298,12 +4300,24 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                         CORINFO_CLASS_HANDLE hClass = gtGetHelperArgClassHandle(call->gtCallArgs->GetNode());
                         if (hClass != NO_CLASS_HANDLE)
                         {
-                            retNode =
-                                gtNewIconNode((eeIsValueClass(hClass) &&
-                                               // pointers are not value types (e.g. typeof(int*).IsValueType is false)
-                                               info.compCompHnd->asCorInfoType(hClass) != CORINFO_TYPE_PTR)
-                                                  ? 1
-                                                  : 0);
+                            switch (ni)
+                            {
+                                case NI_System_Type_get_IsValueType:
+                                    retNode = gtNewIconNode(
+                                        (eeIsValueClass(hClass) &&
+                                         // pointers are not value types (e.g. typeof(int*).IsValueType is false)
+                                         info.compCompHnd->asCorInfoType(hClass) != CORINFO_TYPE_PTR)
+                                            ? 1
+                                            : 0);
+                                    break;
+                                case NI_System_Type_get_IsByRefLike:
+                                    retNode = gtNewIconNode(
+                                        (info.compCompHnd->getClassAttribs(hClass) & CORINFO_FLG_BYREF_LIKE) ? 1 : 0);
+                                    break;
+                                default:
+                                    NO_WAY("Intrinsic not supported in this path.");
+                            }
+
                             impPopStack(); // drop CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE call
                         }
                     }
@@ -5246,6 +5260,10 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
             if (strcmp(methodName, "get_IsValueType") == 0)
             {
                 result = NI_System_Type_get_IsValueType;
+            }
+            else if (strcmp(methodName, "get_IsByRefLike") == 0)
+            {
+                result = NI_System_Type_get_IsByRefLike;
             }
             else if (strcmp(methodName, "IsAssignableFrom") == 0)
             {
