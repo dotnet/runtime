@@ -2384,7 +2384,7 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
                         structSize = comp->info.compCompHnd->getClassSize(objClass);
                         break;
                     default:
-                        BADCODE("illegal argument tree in fgInitArgInfo");
+                        BADCODE("illegal argument tree: cannot determine size for ABI handling");
                         break;
                 }
             }
@@ -3255,7 +3255,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
                 }
                 else
                 {
-                    // We have a BADCODE assert for this in fgInitArgInfo.
+                    // We have a BADCODE assert for this in AddFinalArgsAndDetermineABIInfo.
                     assert(argObj->OperIs(GT_LCL_VAR));
                     originalSize = lvaGetDesc(argObj->AsLclVarCommon())->lvExactSize;
                 }
@@ -6154,9 +6154,9 @@ void Compiler::fgMorphCallInlineHelper(GenTreeCall* call, InlineResult* result, 
 //    This function is target specific and each target will make the fastTailCall
 //    decision differently. See the notes below.
 //
-//    This function calls fgInitArgInfo() to initialize the arg info table, which
-//    is used to analyze the argument. This function can alter the call arguments
-//    by adding argument IR nodes for non-standard arguments.
+//    This function calls AddFinalArgsAndDetermineABIInfo to initialize the ABI
+//    info, which is used to analyze the argument. This function can alter the
+//    call arguments by adding argument IR nodes for non-standard arguments.
 //
 // Windows Amd64:
 //    A fast tail call can be made whenever the number of callee arguments
@@ -6608,7 +6608,7 @@ bool Compiler::fgCallHasMustCopyByrefParameter(GenTreeCall* callee)
                                     // an implicit byref parameter should be TYP_BYREF, as these parameters could
                                     // refer to boxed heap locations (say if the method is invoked by reflection)
                                     // but there are some stack only structs (like typed references) where
-                                    // the importer/runtime code uses TYP_I_IMPL, and fgInitArgInfo will
+                                    // the importer/runtime code uses TYP_I_IMPL, and AddFinalArgsAndDetermineABIInfo will
                                     // transiently retype all simple address-of implicit parameter args as
                                     // TYP_I_IMPL.
                                     //
@@ -7515,12 +7515,11 @@ GenTree* Compiler::fgMorphTailCallViaHelpers(GenTreeCall* call, CORINFO_TAILCALL
     // can't do that in an assert.
     // assert(!fgCanFastTailCall(call, nullptr));
 
-    // We might or might not have called fgInitArgInfo before this point: in
-    // builds with FEATURE_FASTTAILCALL we will have called it when checking if
-    // we could do a fast tailcall, so it is possible we have added extra IR
-    // for non-standard args that we must get rid of. Get rid of that IR here
-    // and do this first as it will 'expose' the retbuf as the first arg, which
-    // we rely upon in fgCreateCallDispatcherAndGetResult.
+    // We might or might not have called AddFinalArgsAndDetermineABIInfo before
+    // this point: in builds with FEATURE_FASTTAILCALL we will have called it
+    // when checking if we could do a fast tailcall, so it is possible we have
+    // added extra IR for non-standard args that we must get rid of. Get rid of
+    // the extra arguments here.
     call->gtArgs.ResetFinalArgsAndABIInfo();
 
     GenTree* callDispatcherAndGetResult = fgCreateCallDispatcherAndGetResult(call, help.hCallTarget, help.hDispatcher);
