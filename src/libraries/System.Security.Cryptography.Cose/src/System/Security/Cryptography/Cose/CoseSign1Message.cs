@@ -117,8 +117,11 @@ namespace System.Security.Cryptography.Cose
             WriteHeaderMap(buffer.Slice(protectedMapBytesWritten), writer, unprotectedHeaders, isProtected: false, null);
             WriteContent(writer, content, isDetached);
 
-            int bytesWritten = CreateHashedToBeSigned(buffer, SigStructureCoxtextSign1, buffer.Slice(0, protectedMapBytesWritten), content, hashAlgorithm);
-            WriteSignature(buffer, writer, buffer.Slice(0, bytesWritten), key, keyType, hashAlgorithm);
+            using (IncrementalHash hasher = IncrementalHash.CreateHash(hashAlgorithm))
+            {
+                CreateHashedToBeSigned(buffer, hasher, SigStructureCoxtextSign1, buffer.Slice(0, protectedMapBytesWritten), content, hashAlgorithm);
+                WriteSignature(buffer, hasher, writer, key, keyType, hashAlgorithm);
+            }
 
             writer.WriteEndArray();
             return writer.Encode(buffer);
@@ -137,8 +140,11 @@ namespace System.Security.Cryptography.Cose
             WriteHeaderMap(buffer.AsSpan(protectedMapBytesWritten), writer, unprotectedHeaders, isProtected: false, null);
             WriteContent(writer, default, isDetached: true);
 
-            int bytesWritten = await CreateHashedToBeSignedAsync(buffer, SigStructureCoxtextSign1, buffer.AsMemory(0, protectedMapBytesWritten), content, hashAlgorithm).ConfigureAwait(false);
-            WriteSignature(buffer, writer, buffer.AsSpan(0, bytesWritten), key, keyType, hashAlgorithm);
+            using (IncrementalHash hasher = IncrementalHash.CreateHash(hashAlgorithm))
+            {
+                await CreateHashedToBeSignedAsync(buffer, hasher, SigStructureCoxtextSign1, buffer.AsMemory(0, protectedMapBytesWritten), content, hashAlgorithm).ConfigureAwait(false);
+                WriteSignature(buffer, hasher, writer, key, keyType, hashAlgorithm);
+            }
 
             writer.WriteEndArray();
             return writer.Encode(buffer);
@@ -174,18 +180,18 @@ namespace System.Security.Cryptography.Cose
         }
 
         [UnsupportedOSPlatform("browser")]
-        private static void WriteSignature(Span<byte> buffer, CborWriter writer, ReadOnlySpan<byte> hashedToBeSigned, AsymmetricAlgorithm key, KeyType keyType, HashAlgorithmName hashAlgorithm)
+        private static void WriteSignature(Span<byte> buffer, IncrementalHash hasher, CborWriter writer, AsymmetricAlgorithm key, KeyType keyType, HashAlgorithmName hashAlgorithm)
         {
             int bytesWritten;
 
             if (keyType == KeyType.ECDsa)
             {
-                bytesWritten = CoseHelpers.SignHashWithECDsa((ECDsa)key, hashedToBeSigned, buffer);
+                bytesWritten = CoseHelpers.SignHashWithECDsa((ECDsa)key, hasher, buffer);
             }
             else
             {
                 Debug.Assert(keyType == KeyType.RSA);
-                bytesWritten = CoseHelpers.SignHashWithRSA((RSA)key, hashedToBeSigned, hashAlgorithm, buffer);
+                bytesWritten = CoseHelpers.SignHashWithRSA((RSA)key, hasher, hashAlgorithm, buffer);
             }
 
             writer.WriteByteString(buffer.Slice(0, bytesWritten));
@@ -238,27 +244,29 @@ namespace System.Security.Cryptography.Cose
 
             HashAlgorithmName hashAlgorithm = GetHashAlgorithmFromCoseAlgorithmAndKeyType(nullableAlg.Value, keyType);
 
-            byte[] buffer;
-            if (_content == null)
+            if (_toBeSignedHash != null)
             {
-                // Never cache toBeSigned if the message has detached content since the passed-in content can be different in each call.
-                buffer = new byte[GetHashSizeInBytes(hashAlgorithm)];
-                int bytesWritten = CreateHashedToBeSigned(buffer, SigStructureCoxtextSign1, _protectedHeaderAsBstr, content, hashAlgorithm);
-                Debug.Assert(bytesWritten == buffer.Length);
-            }
-            else if (_toBeSignedHash == null)
-            {
-                buffer = new byte[GetHashSizeInBytes(hashAlgorithm)];
-                int bytesWritten = CreateHashedToBeSigned(buffer, SigStructureCoxtextSign1, _protectedHeaderAsBstr, content, hashAlgorithm);
-                Debug.Assert(bytesWritten == buffer.Length);
-                _toBeSignedHash = buffer;
-            }
-            else
-            {
-                buffer = _toBeSignedHash;
+                // toBeSigned shouldn't be cached if the message has detached content
+                // since the passed-in content can be different in each call.
+                Debug.Assert(_content != null);
+                return VerifyHash(key, hashAlgorithm, _toBeSignedHash, keyType);
             }
 
-            return VerifyHash(key, hashAlgorithm, buffer, keyType);
+            using (IncrementalHash hasher = IncrementalHash.CreateHash(hashAlgorithm))
+            {
+                int bufferLength = ComputeToBeSignedEncodedSize(SigStructureCoxtextSign1, _protectedHeaderAsBstr, ReadOnlySpan<byte>.Empty);
+                byte[] buffer = ArrayPool<byte>.Shared.Rent(bufferLength);
+
+                try
+                {
+                    CreateHashedToBeSigned(buffer, hasher, SigStructureCoxtextSign1, _protectedHeaderAsBstr, content, hashAlgorithm);
+                    return VerifyHash(key, hasher, hashAlgorithm, keyType);
+                }
+                finally
+                {
+                    ArrayPool<byte>.Shared.Return(buffer, clearArray: true);
+                }
+            }
         }
 
         [UnsupportedOSPlatform("browser")]
@@ -297,11 +305,56 @@ namespace System.Security.Cryptography.Cose
 
             HashAlgorithmName hashAlgorithm = GetHashAlgorithmFromCoseAlgorithmAndKeyType(nullableAlg.Value, keyType);
 
-            byte[] toBeSignedHash = new byte[GetHashSizeInBytes(hashAlgorithm)];
-            int bytesWritten = await CreateHashedToBeSignedAsync(toBeSignedHash, SigStructureCoxtextSign1, _protectedHeaderAsBstr, content, hashAlgorithm).ConfigureAwait(false);
-            Debug.Assert(bytesWritten == toBeSignedHash.Length);
+            using (IncrementalHash hasher = IncrementalHash.CreateHash(hashAlgorithm))
+            {
+                int bufferLength = ComputeToBeSignedEncodedSize(SigStructureCoxtextSign1, _protectedHeaderAsBstr, ReadOnlySpan<byte>.Empty);
+                byte[] buffer = ArrayPool<byte>.Shared.Rent(bufferLength);
 
-            return VerifyHash(key, hashAlgorithm, toBeSignedHash, keyType);
+                try
+                {
+                    await CreateHashedToBeSignedAsync(buffer, hasher, SigStructureCoxtextSign1, _protectedHeaderAsBstr, content, hashAlgorithm).ConfigureAwait(false);
+                    return VerifyHash(key, hasher, hashAlgorithm, keyType);
+                }
+                finally
+                {
+                    ArrayPool<byte>.Shared.Return(buffer, clearArray: true);
+                }
+            }
+        }
+
+        [UnsupportedOSPlatform("browser")]
+        private bool VerifyHash(AsymmetricAlgorithm key, IncrementalHash hasher, HashAlgorithmName hashAlgorithm, KeyType keyType)
+        {
+#if NETSTANDARD2_0 || NETFRAMEWORK
+            byte[] hash = hasher.GetHashAndReset();
+            if (_content != null)
+            {
+                _toBeSignedHash = hash;
+            }
+#else
+            Span<byte> hash = stackalloc byte[0];
+            if (_content != null)
+            {
+                hash = _toBeSignedHash = hasher.GetHashAndReset();
+            }
+            else
+            {
+                hash = stackalloc byte[hasher.HashLengthInBytes];
+                Debug.Assert(hasher.HashLengthInBytes <= 512 / 8); // largest hash we can get (SHA512).
+                hasher.GetHashAndReset(hash);
+            }
+#endif
+            if (keyType == KeyType.ECDsa)
+            {
+                var ecdsa = (ECDsa)key;
+                return ecdsa.VerifyHash(hash, _signature);
+            }
+            else
+            {
+                Debug.Assert(keyType == KeyType.RSA);
+                var rsa = (RSA)key;
+                return rsa.VerifyHash(hash, _signature, hashAlgorithm, RSASignaturePadding.Pss);
+            }
         }
 
         [UnsupportedOSPlatform("browser")]

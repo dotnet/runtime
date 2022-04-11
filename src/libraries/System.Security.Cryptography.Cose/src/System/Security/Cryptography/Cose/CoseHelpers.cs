@@ -103,13 +103,17 @@ namespace System.Security.Cryptography.Cose
         }
 
         [UnsupportedOSPlatform("browser")]
-        internal static int SignHashWithECDsa(ECDsa key, ReadOnlySpan<byte> hash, Span<byte> destination)
+        internal static int SignHashWithECDsa(ECDsa key, IncrementalHash hasher, Span<byte> destination)
         {
 #if NETSTANDARD2_0 || NETFRAMEWORK
-            byte[] signature = key.SignHash(hash.ToArray());
+            byte[] signature = key.SignHash(hasher.GetHashAndReset());
             signature.CopyTo(destination);
             return signature.Length;
 #else
+            Debug.Assert(hasher.HashLengthInBytes <= 512 / 8); // largest hash we can get (SHA512).
+            Span<byte> hash = stackalloc byte[hasher.HashLengthInBytes];
+            hasher.GetHashAndReset(hash);
+
             if (!key.TrySignHash(hash, destination, out int bytesWritten))
             {
                 Debug.Fail("TrySignData failed with a pre-calculated destination");
@@ -121,14 +125,18 @@ namespace System.Security.Cryptography.Cose
         }
 
         [UnsupportedOSPlatform("browser")]
-        internal static int SignHashWithRSA(RSA key, ReadOnlySpan<byte> data, HashAlgorithmName hashAlgorithm, Span<byte> destination)
+        internal static int SignHashWithRSA(RSA key, IncrementalHash hasher, HashAlgorithmName hashAlgorithm, Span<byte> destination)
         {
 #if NETSTANDARD2_0 || NETFRAMEWORK
-            byte[] signature = key.SignHash(data.ToArray(), hashAlgorithm, RSASignaturePadding.Pss);
+            byte[] signature = key.SignHash(hasher.GetHashAndReset(), hashAlgorithm, RSASignaturePadding.Pss);
             signature.CopyTo(destination);
             return signature.Length;
 #else
-            if (!key.TrySignHash(data, destination, hashAlgorithm, RSASignaturePadding.Pss, out int bytesWritten))
+            Debug.Assert(hasher.HashLengthInBytes <= 512 / 8); // largest hash we can get (SHA512).
+            Span<byte> hash = stackalloc byte[hasher.HashLengthInBytes];
+            hasher.GetHashAndReset(hash);
+
+            if (!key.TrySignHash(hash, destination, hashAlgorithm, RSASignaturePadding.Pss, out int bytesWritten))
             {
                 Debug.Fail("TrySignData failed with a pre-calculated destination");
                 throw new CryptographicException();
@@ -142,14 +150,6 @@ namespace System.Security.Cryptography.Cose
         internal static void AppendData(this IncrementalHash hasher, ReadOnlySpan<byte> data)
         {
             hasher.AppendData(data.ToArray());
-        }
-
-        internal static int GetHashAndReset(this IncrementalHash hasher, Span<byte> destination)
-        {
-            byte[] hash = hasher.GetHashAndReset();
-            hash.CopyTo(destination);
-
-            return hash.Length;
         }
 #endif
     }

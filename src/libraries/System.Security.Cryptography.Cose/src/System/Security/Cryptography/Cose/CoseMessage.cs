@@ -183,48 +183,49 @@ namespace System.Security.Cryptography.Cose
             return reader.ReadByteString();
         }
 
-        internal static int CreateHashedToBeSigned(Span<byte> destination, string context, ReadOnlySpan<byte> encodedProtectedHeader, ReadOnlySpan<byte> content, HashAlgorithmName hashAlgorithm)
+        // TODO: reanme appendtobesigned
+        internal static void CreateHashedToBeSigned(Span<byte> buffer, IncrementalHash hasher, string context, ReadOnlySpan<byte> encodedProtectedHeader, ReadOnlySpan<byte> content, HashAlgorithmName hashAlgorithm)
         {
-            int bytesWritten = CreateToBeSigned(destination, context, encodedProtectedHeader, ReadOnlySpan<byte>.Empty);
+            int bytesWritten = CreateToBeSigned(buffer, context, encodedProtectedHeader, ReadOnlySpan<byte>.Empty);
             bytesWritten -= 1; // Trim the empty bstr content, it is just a placeholder.
 
-            using (var hasher = IncrementalHash.CreateHash(hashAlgorithm))
-            {
-                hasher.AppendData(destination.Slice(0, bytesWritten));
+            hasher.AppendData(buffer.Slice(0, bytesWritten));
 
-                // content length
-                CoseHelpers.WriteByteStringLength(hasher, (ulong)content.Length);
+            // content length
+            CoseHelpers.WriteByteStringLength(hasher, (ulong)content.Length);
 
-                //content
-                hasher.AppendData(content);
-
-                return hasher.GetHashAndReset(destination);
-            }
+            //content
+            hasher.AppendData(content);
         }
 
-        internal static async Task<int> CreateHashedToBeSignedAsync(byte[] destination, string context, ReadOnlyMemory<byte> encodedProtectedHeader, Stream content, HashAlgorithmName hashAlgorithm)
+        internal static async Task CreateHashedToBeSignedAsync(byte[] buffer, IncrementalHash hasher, string context, ReadOnlyMemory<byte> encodedProtectedHeader, Stream content, HashAlgorithmName hashAlgorithm)
         {
-            int bytesWritten = CreateToBeSigned(destination, context, encodedProtectedHeader.Span, ReadOnlySpan<byte>.Empty);
+            int bytesWritten = CreateToBeSigned(buffer, context, encodedProtectedHeader.Span, ReadOnlySpan<byte>.Empty);
             bytesWritten -= 1; // Trim the empty bstr content, it is just a placeholder.
 
-            using (IncrementalHash hasher = IncrementalHash.CreateHash(hashAlgorithm))
+            hasher.AppendData(buffer, 0, bytesWritten);
+
+            //content length
+            CoseHelpers.WriteByteStringLength(hasher, (ulong)(content.Length - content.Position));
+
+            // content
+            byte[] contentBuffer = ArrayPool<byte>.Shared.Rent(4096);
+            int bytesRead;
+
+            try
             {
-                hasher.AppendData(destination, 0, bytesWritten);
-
-                //content length
-                CoseHelpers.WriteByteStringLength(hasher, (ulong)(content.Length - content.Position));
-
-                // content
-                byte[] buffer = new byte[4096];
-                int bytesRead;
-#pragma warning disable CA1835 // Prefer the 'Memory'-based overloads for 'ReadAsync' and 'WriteAsync'
-                while ((bytesRead = await content.ReadAsync(buffer, 0, buffer.Length).ConfigureAwait(false)) > 0)
-#pragma warning restore CA1835
+#if NETSTANDARD2_0 || NETFRAMEWORK
+                while ((bytesRead = await content.ReadAsync(contentBuffer, 0, contentBuffer.Length).ConfigureAwait(false)) > 0)
+#else
+                while ((bytesRead = await content.ReadAsync(contentBuffer).ConfigureAwait(false)) > 0)
+#endif
                 {
-                    hasher.AppendData(buffer, 0, bytesRead);
+                    hasher.AppendData(contentBuffer, 0, bytesRead);
                 }
-
-                return hasher.GetHashAndReset(destination);
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(contentBuffer, clearArray:true);
             }
         }
 
