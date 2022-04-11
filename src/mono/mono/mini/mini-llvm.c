@@ -9476,8 +9476,8 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			LLVMTypeRef t = LLVMInt64Type ();
 			LLVMTypeRef init_vec_t = LLVMVectorType (t, 2);
 			LLVMValueRef undef = LLVMGetUndef (init_vec_t);
-			LLVMValueRef vec = LLVMBuildInsertElement (ctx->builder, undef, values [ins->sreg1], const_int32 (0), "");
-			values [ins->dreg] = LLVMBuildInsertElement (ctx->builder, vec, values [ins->sreg2], const_int32 (1), "");
+			LLVMValueRef vec = LLVMBuildInsertElement (ctx->builder, undef, values [ins->sreg2], const_int32 (0), "");
+			values [ins->dreg] = LLVMBuildInsertElement (ctx->builder, vec, values [ins->sreg1], const_int32 (1), "");
 
 			break;
 		}
