@@ -87,8 +87,9 @@ namespace System.ServiceProcess.Tests
                 {
                     if (serviceHandle.IsInvalid)
                     {
-                        string errorMessage = new Win32Exception().Message;
-                        throw new Win32Exception($"Cannot create service '{ServiceName}' with display name '{DisplayName}'. {errorMessage}");
+                        int errorCode = Marshal.GetLastWin32Error();
+                        string errorMessage = new Win32Exception(errorCode).Message;
+                        throw new Win32Exception(errorCode, $"Cannot create service '{ServiceName}' with display name '{DisplayName}'. {errorMessage}");
                     }
 
                     // A local variable in an unsafe method is already fixed -- so we don't need a "fixed { }" blocks to protect
@@ -102,8 +103,9 @@ namespace System.ServiceProcess.Tests
                         Marshal.FreeHGlobal(serviceDesc.description);
                         if (!success)
                         {
-                            string errorMessage = new Win32Exception().Message;
-                            throw new Win32Exception($"Cannot set description on '{ServiceName}' with display name '{DisplayName}'. {errorMessage}");
+                            int errorCode = Marshal.GetLastWin32Error();
+                            string errorMessage = new Win32Exception(errorCode).Message;
+                            throw new Win32Exception(errorCode, $"Cannot set description on '{ServiceName}' with display name '{DisplayName}'. {errorMessage}");
                         }
                     }
 
@@ -181,23 +183,26 @@ namespace System.ServiceProcess.Tests
             {
                 if (serviceManagerHandle.IsInvalid)
                 {
-                    string errorMessage = new Win32Exception().Message;
-                    throw new Win32Exception($"Could not open SCM. {errorMessage}");
+                    int errorCode = Marshal.GetLastWin32Error();
+                    string errorMessage = new Win32Exception(errorCode).Message;
+                    throw new Win32Exception(errorCode, $"Could not open SCM. {errorMessage}");
                 }
 
                 using (var serviceHandle = new SafeServiceHandle(Interop.Advapi32.OpenService(serviceManagerHandle, ServiceName, Interop.Advapi32.ServiceOptions.STANDARD_RIGHTS_DELETE)))
                 {
                     if (serviceHandle.IsInvalid)
                     {
-                        string errorMessage = new Win32Exception().Message;
-                        throw new Win32Exception($"Could not find service '{ServiceName}'. {errorMessage}");
+                        int errorCode = Marshal.GetLastWin32Error();
+                        string errorMessage = new Win32Exception(errorCode).Message;
+                        throw new Win32Exception(errorCode, $"Could not find service '{ServiceName}'. {errorMessage}");
                     }
 
                     TestService.DebugTrace("TestServiceInstaller: instructing ServiceController to Delete service " + ServiceName);
                     if (!Interop.Advapi32.DeleteService(serviceHandle))
                     {
-                        string errorMessage = new Win32Exception().Message;
-                        throw new Win32Exception($"Could not delete service '{ServiceName}'. {errorMessage}");
+                        int errorCode = Marshal.GetLastWin32Error();
+                        string errorMessage = new Win32Exception(errorCode).Message;
+                        throw new Win32Exception(errorCode, $"Could not delete service '{ServiceName}'. {errorMessage}");
                     }
                 }
             }
