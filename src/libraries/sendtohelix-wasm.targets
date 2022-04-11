@@ -91,6 +91,8 @@
 
     <!-- Install SDK so that, we could use `dotnet dev-certs https` -->
     <NeedsDotNetSdk Condition="'$(NeedsWorkload)' != 'true'">true</NeedsDotNetSdk>
+
+    <UseDotNetCliVersionFromGlobalJson Condition="'$(IsWasmDebuggerTests)' == 'true'">true</UseDotNetCliVersionFromGlobalJson>
   </PropertyGroup>
 
   <Choose>
