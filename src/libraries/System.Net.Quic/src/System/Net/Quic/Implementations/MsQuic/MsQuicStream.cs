@@ -1690,6 +1690,21 @@ namespace System.Net.Quic.Implementations.MsQuic
             ConnectionClosed
         }
 
+        // Send state transitions:
+        //
+        // None  --(user calls WriteAsync() & waits)->  Pending
+        //
+        // Pending  --(event SEND_COMPLETE.Canceled == 0)->  Finished
+        // Pending  --(event SEND_COMPLETE.Canceled == 1)->  Aborted
+        //
+        // Finished  --(user awaits WriteAsync)->  None
+        //
+        // Any non-final state  --(event PEER_RECEIVE_ABORTED)->  Aborted (With SendErrorCode)
+        // Any non-final state  --(user calls AbortWrite())->  Aborted
+        // Any non-final state  --(CancellationToken's cancellation for WriteAsync())->  Aborted
+        // Any non-final state  --(event SHUTDOWN_COMPLETED with ConnectionClosed=true)->  ConnectionClosed
+        //
+        // Closed - no transitions, set for Unidirectional read-only streams
         private enum SendState
         {
             None = 0,
