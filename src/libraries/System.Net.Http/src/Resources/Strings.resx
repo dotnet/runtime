@@ -213,6 +213,9 @@
   <data name="net_http_content_field_too_long" xml:space="preserve">
     <value>The field cannot be longer than {0} characters.</value>
   </data>
+  <data name="net_http_log_headers_no_newlines" xml:space="preserve">
+    <value>Value for header '{0}' contains new-line characters. Value: '{1}'.</value>
+  </data>
   <data name="net_http_log_headers_invalid_quality" xml:space="preserve">
     <value>The 'q' value is invalid: '{0}'.</value>
   </data>

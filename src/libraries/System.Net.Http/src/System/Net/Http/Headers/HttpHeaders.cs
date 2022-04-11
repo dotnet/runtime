@@ -771,7 +771,10 @@ namespace System.Net.Http.Headers
             {
                 foreach (string rawValue in rawValues)
                 {
-                    AddParsedValue(info, rawValue);
+                    if (!ContainsNewLine(rawValue, descriptor))
+                    {
+                        AddParsedValue(info, rawValue);
+                    }
                 }
             }
             else
@@ -793,7 +796,10 @@ namespace System.Net.Http.Headers
 
             if (descriptor.Parser == null)
             {
-                AddParsedValue(info, rawValue);
+                if (!ContainsNewLine(rawValue, descriptor))
+                {
+                    AddParsedValue(info, rawValue);
+                }
             }
             else
             {
@@ -881,7 +887,7 @@ namespace System.Net.Http.Headers
                     }
                     else
                     {
-                        if (addWhenInvalid)
+                        if (!ContainsNewLine(value, descriptor) && addWhenInvalid)
                         {
                             AddInvalidValue(info, value);
                         }
@@ -898,7 +904,7 @@ namespace System.Net.Http.Headers
             }
 
             Debug.Assert(value != null);
-            if (addWhenInvalid)
+            if (!ContainsNewLine(value, descriptor) && addWhenInvalid)
             {
                 AddInvalidValue(info, value ?? string.Empty);
             }
@@ -1110,6 +1116,16 @@ namespace System.Net.Http.Headers
             {
                 throw new FormatException(SR.net_http_headers_no_newlines);
             }
+        }
+
+        private static bool ContainsNewLine(string value, HeaderDescriptor descriptor)
+        {
+            if (HttpRuleParser.ContainsNewLine(value))
+            {
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(null, SR.Format(SR.net_http_log_headers_no_newlines, descriptor.Name, value));
+                return true;
+            }
+            return false;
         }
 
         internal static string[] GetStoreValuesAsStringArray(HeaderDescriptor descriptor, HeaderStoreItemInfo info)
