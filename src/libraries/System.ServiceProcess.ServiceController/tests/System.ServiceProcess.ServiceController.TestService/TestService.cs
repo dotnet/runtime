@@ -109,7 +109,7 @@ namespace System.ServiceProcess.Tests
             {
                 WriteStreamAsync(PipeMessageByteCode.Stop, waitForConnect:false).Wait();
             }
-            catch(AggregateException ae) when (ae.InnerException.GetType() == typeof(InvalidOperationException))
+            catch (AggregateException ae) when (ae.InnerException.GetType() == typeof(InvalidOperationException))
             {
                 // Some tests don't bother to connect to the pipe, and just stop the service to clean up.
                 // Don't log this exception into the event log.
