@@ -1,7 +1,7 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Browser;$(NetCoreAppCurrent)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
@@ -21,7 +21,7 @@
     <Compile Include="System\IO\Compression\ZipFileValidName_Windows.cs" />
   </ItemGroup>
   <!-- Unix specific files -->
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == '' or '$(TargetPlatformIdentifier)' == 'Browser'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == ''">
     <Compile Include="System\IO\Compression\ZipFileExtensions.ZipArchive.Create.Unix.cs" />
     <Compile Include="System\IO\Compression\ZipFileExtensions.ZipArchiveEntry.Extract.Unix.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.IOErrors.cs"
