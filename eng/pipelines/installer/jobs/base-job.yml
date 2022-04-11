@@ -23,7 +23,7 @@ parameters:
   pgoType: ''
 
   packageDistroList:
-  - image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-14.04-debpkg-e5cf912-20175003025046
+  - image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-debpkg-20220408155542-cfdd435
     packageType: deb
     packagingArgs: /p:BuildDebPackage=true
   - image: mcr.microsoft.com/dotnet-buildtools/prereqs:rhel-7-rpmpkg-c982313-20174116044113
