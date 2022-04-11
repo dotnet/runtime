@@ -45,20 +45,6 @@ namespace System.Text.RegularExpressions.Tests
 
         [Theory]
         [MemberData(nameof(RegexHelpers.AvailableEngines_MemberData), MemberType = typeof(RegexHelpers))]
-        public void Enumerate_No_Match(RegexEngine engine)
-        {
-            Regex r = RegexHelpers.GetRegexAsync(engine, @"\da").GetAwaiter().GetResult();
-            int count = 0;
-            foreach(var match in r.EnumerateMatches("1A2b3c4d5e"))
-            {
-                count++;
-            }
-            Assert.Equal(0, count);
-
-        }
-
-        [Theory]
-        [MemberData(nameof(RegexHelpers.AvailableEngines_MemberData), MemberType = typeof(RegexHelpers))]
         public void EnumerateMatches_Lookahead(RegexEngine engine)
         {
             if (RegexHelpers.IsNonBacktracking(engine))
@@ -133,8 +119,8 @@ namespace System.Text.RegularExpressions.Tests
         {
             Regex regexAdvanced = RegexHelpers.GetRegexAsync(engine, pattern, options).GetAwaiter().GetResult();
             int count = 0;
-            var span = input.AsSpan();
-            foreach (var match in regexAdvanced.EnumerateMatches(span))
+            ReadOnlySpan<char> span = input.AsSpan();
+            foreach (ValueMatch match in regexAdvanced.EnumerateMatches(span))
             {
                 Assert.Equal(expected[count].Index, match.Index);
                 Assert.Equal(expected[count].Length, match.Length);

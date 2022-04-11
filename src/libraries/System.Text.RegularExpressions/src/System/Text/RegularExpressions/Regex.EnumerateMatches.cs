@@ -12,6 +12,8 @@ namespace System.Text.RegularExpressions
         /// Searches an input span for all occurrences of a regular expression and returns a <see cref="ValueMatchEnumerator"/> to iterate over the matches.
         /// </summary>
         /// <remarks>
+        /// Each match won't actually happen until <see cref="ValueMatchEnumerator.MoveNext"/> is invoked on the enumerator, with one match being performed per <see cref="ValueMatchEnumerator.MoveNext"/> call.
+        /// Since the evaluation of the match happens lazily, any changes to the passed in input in between calls to <see cref="ValueMatchEnumerator.MoveNext"/> will affect the match results.
         /// The enumerator returned by this method, as well as the structs returned by the enumerator that wrap each match found in the input are ref structs which
         /// make this method be amortized allocation free.
         /// </remarks>
@@ -27,6 +29,8 @@ namespace System.Text.RegularExpressions
         /// Searches an input span for all occurrences of a regular expression and returns a <see cref="ValueMatchEnumerator"/> to iterate over the matches.
         /// </summary>
         /// <remarks>
+        /// Each match won't actually happen until <see cref="ValueMatchEnumerator.MoveNext"/> is invoked on the enumerator, with one match being performed per <see cref="ValueMatchEnumerator.MoveNext"/> call.
+        /// Since the evaluation of the match happens lazily, any changes to the passed in input in between calls to <see cref="ValueMatchEnumerator.MoveNext"/> will affect the match results.
         /// The enumerator returned by this method, as well as the structs returned by the enumerator that wrap each match found in the input are ref structs which
         /// make this method be amortized allocation free.
         /// </remarks>
@@ -44,6 +48,8 @@ namespace System.Text.RegularExpressions
         /// Searches an input span for all occurrences of a regular expression and returns a <see cref="ValueMatchEnumerator"/> to iterate over the matches.
         /// </summary>
         /// <remarks>
+        /// Each match won't actually happen until <see cref="ValueMatchEnumerator.MoveNext"/> is invoked on the enumerator, with one match being performed per <see cref="ValueMatchEnumerator.MoveNext"/> call.
+        /// Since the evaluation of the match happens lazily, any changes to the passed in input in between calls to <see cref="ValueMatchEnumerator.MoveNext"/> will affect the match results.
         /// The enumerator returned by this method, as well as the structs returned by the enumerator that wrap each match found in the input are ref structs which
         /// make this method be amortized allocation free.
         /// </remarks>
@@ -62,6 +68,8 @@ namespace System.Text.RegularExpressions
         /// Searches an input span for all occurrences of a regular expression and returns a <see cref="ValueMatchEnumerator"/> to iterate over the matches.
         /// </summary>
         /// <remarks>
+        /// Each match won't actually happen until <see cref="ValueMatchEnumerator.MoveNext"/> is invoked on the enumerator, with one match being performed per <see cref="ValueMatchEnumerator.MoveNext"/> call.
+        /// Since the evaluation of the match happens lazily, any changes to the passed in input in between calls to <see cref="ValueMatchEnumerator.MoveNext"/> will affect the match results.
         /// The enumerator returned by this method, as well as the structs returned by the enumerator that wrap each match found in the input are ref structs which
         /// make this method be amortized allocation free.
         /// </remarks>
@@ -71,12 +79,11 @@ namespace System.Text.RegularExpressions
             new ValueMatchEnumerator(this, input, RightToLeft ? input.Length : 0);
 
         /// <summary>
-        /// Represents an enumerator containing the set of successful matches found by iteratively applying a regular expression pattern to the input span. The
-        /// enumerator has no public constructor. The <see cref="Regex.EnumerateMatches(ReadOnlySpan{char})"/> method returns a <see cref="Regex.ValueMatchEnumerator"/>
-        /// object.
+        /// Represents an enumerator containing the set of successful matches found by iteratively applying a regular expression pattern to the input span.
         /// </summary>
         /// <remarks>
-        /// The enumerator will lazily iterate over zero or more <see cref="ValueMatch"/> objects. If there is at least one successful match in the span, then
+        /// The enumerator has no public constructor. The <see cref="Regex.EnumerateMatches(ReadOnlySpan{char})"/> method returns a <see cref="Regex.ValueMatchEnumerator"/>
+        /// object.The enumerator will lazily iterate over zero or more <see cref="ValueMatch"/> objects. If there is at least one successful match in the span, then
         /// <see cref="MoveNext"/> returns <see langword="true"/> and <see cref="Current"/> will contain the first <see cref="ValueMatch"/>. If there are no successful matches,
         /// then <see cref="MoveNext"/> returns <see langword="false"/> and <see cref="Current"/> throws an <see cref="InvalidOperationException"/>.
         ///

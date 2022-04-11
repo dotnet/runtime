@@ -415,31 +415,40 @@ namespace System.Text.RegularExpressions
                 runner.InitializeTimeout(internalMatchTimeout);
                 runner.InitializeForScan(this, input, startat, quick);
 
-                int stoppos = RightToLeft ? 0 : input.Length;
-
                 // If previous match was empty or failed, advance by one before matching.
                 if (prevlen == 0)
                 {
-                    if (runner.runtextstart == stoppos)
+                    if (RightToLeft)
                     {
-                        return RegularExpressions.Match.Empty;
+                        if (runner.runtextstart == 0)
+                        {
+                            return RegularExpressions.Match.Empty;
+                        }
+                        runner.runtextpos--;
                     }
-
-                    runner.runtextpos += RightToLeft ? -1 : 1;
+                    else
+                    {
+                        if (runner.runtextstart == input.Length)
+                        {
+                            return RegularExpressions.Match.Empty;
+                        }
+                        runner.runtextpos++;
+                    }
                 }
 
                 runner.Scan(input);
 
                 // If runmatch is null it means that an override of Scan didn't implement it correctly, so we will
                 // let this null ref since there are lots of ways where you can end up in a erroneous state.
-                if (runner.runmatch!.FoundMatch)
+                Match match = runner.runmatch!;
+                if (match!.FoundMatch)
                 {
                     if (quick)
                     {
                         return null;
                     }
-                    runner.runmatch.Tidy(runner.runtextpos, 0);
-                    return runner.runmatch;
+                    match.Tidy(runner.runtextpos, 0);
+                    return match;
                 }
 
                 return RegularExpressions.Match.Empty;
