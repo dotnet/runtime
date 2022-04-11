@@ -95,8 +95,10 @@ namespace WebAssemblyInfo
             if (otherName == null)
                 otherName = other.GetFunctionName(otherIdx);
 
-            string sig1 = functionTypes[functions[idx].TypeIdx].ToString(name);
-            string sig2 = other.functionTypes[other.functions[otherIdx].TypeIdx].ToString(otherName);
+            var functionType1 = functionTypes[functions[idx].TypeIdx];
+            var functionType2 = other.functionTypes[other.functions[otherIdx].TypeIdx];
+            string sig1 = functionType1.ToString(name);
+            string sig2 = functionType2.ToString(otherName);
 
             bool sigPrinted = false;
             if (sig1 != sig2)
@@ -106,8 +108,8 @@ namespace WebAssemblyInfo
                 sigPrinted = true;
             }
 
-            string code1 = funcsCode[idx].ToString(this);
-            string code2 = other.funcsCode[otherIdx].ToString(other);
+            string code1 = funcsCode[idx].ToString(this, functionType1.Parameters.Types.Length);
+            string code2 = other.funcsCode[otherIdx].ToString(other, functionType1.Parameters.Types.Length);
 
             if (code1 == code2)
                 return;
