@@ -620,8 +620,8 @@ namespace System.Net.Quic.Tests
 
                     await Assert.ThrowsAsync<OperationCanceledException>(() => stream.WriteAsync(new byte[1], cts.Token).AsTask());
 
-                    // next write would also throw
-                    await Assert.ThrowsAsync<OperationCanceledException>(() => stream.WriteAsync(new byte[1]).AsTask());
+                    // aborting write causes the write direction to throw on subsequent operations
+                    await Assert.ThrowsAsync<QuicOperationAbortedException>(() => stream.WriteAsync(new byte[1]).AsTask());
 
                     // manual write abort is still required
                     stream.AbortWrite(expectedErrorCode);
@@ -672,7 +672,7 @@ namespace System.Net.Quic.Tests
                     await Assert.ThrowsAsync<OperationCanceledException>(() => WriteUntilCanceled().WaitAsync(TimeSpan.FromSeconds(3)));
 
                     // next write would also throw
-                    await Assert.ThrowsAsync<OperationCanceledException>(() => stream.WriteAsync(new byte[1]).AsTask());
+                    await Assert.ThrowsAsync<QuicOperationAbortedException>(() => stream.WriteAsync(new byte[1]).AsTask());
 
                     // manual write abort is still required
                     stream.AbortWrite(expectedErrorCode);

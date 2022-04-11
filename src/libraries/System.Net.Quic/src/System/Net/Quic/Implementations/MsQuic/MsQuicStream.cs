@@ -316,6 +316,19 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         private CancellationTokenRegistration HandleWriteStartState(bool emptyBuffer, CancellationToken cancellationToken)
         {
+            if (cancellationToken.IsCancellationRequested)
+            {
+                lock (_state)
+                {
+                    if (_state.SendState == SendState.None || _state.SendState == SendState.Pending)
+                    {
+                        _state.SendState = SendState.Aborted;
+                    }
+                }
+
+                throw new OperationCanceledException(cancellationToken);
+            }
+
             if (_state.SendState == SendState.Closed)
             {
                 throw new InvalidOperationException(SR.net_quic_writing_notallowed);
@@ -330,19 +343,6 @@ namespace System.Net.Quic.Implementations.MsQuic
 
                 // aborted locally
                 throw new QuicOperationAbortedException(SR.net_quic_sending_aborted);
-            }
-
-            if (cancellationToken.IsCancellationRequested)
-            {
-                lock (_state)
-                {
-                    if (_state.SendState == SendState.None || _state.SendState == SendState.Pending)
-                    {
-                        _state.SendState = SendState.Aborted;
-                    }
-                }
-
-                throw new OperationCanceledException(cancellationToken);
             }
 
             // if token was already cancelled, this would execute synchronously
@@ -1655,7 +1655,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             /// </summary>
             PendingRead,
 
-            // following states are final:
+            // following states are terminal:
 
             /// <summary>
             /// The peer has gracefully shutdown their sends / our receives; the stream's reads are complete.
@@ -1673,7 +1673,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             ConnectionClosed,
 
             /// <summary>
-            /// Stream is closed for reading.
+            /// Stream is closed for reading (is send-only).
             /// </summary>
             Closed
         }
@@ -1697,13 +1697,36 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         private enum SendState
         {
+            /// <summary>
+            /// The stream is open and there are no pending write operations.
+            /// </summary>
             None = 0,
+
+            /// <summary>
+            /// There is a pending WriteAsync operation awaiting completion notification from MsQuic.
+            /// </summary>
             Pending,
+
+            /// <summary>
+            /// Send completion notification from MsQuic was received.
+            /// </summary>
             Finished,
 
-            // Terminal states
+            // following states are terminal:
+
+            /// <summary>
+            /// User has aborted the stream, either via a cancellation token on WriteAsync(), or via AbortWrite().
+            /// </summary>
             Aborted,
+
+            /// <summary>
+            /// Connection was closed, either by user or by the peer.
+            /// </summary>
             ConnectionClosed,
+
+            /// <summary>
+            /// Stream is closed for writing (is receive-only).
+            /// </summary>
             Closed
         }
     }
