@@ -384,6 +384,10 @@ namespace System.Reflection
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal extern object? InternalInvoke(object? obj, in Span<object?> parameters, out Exception? exc);
 
+#pragma warning disable CA1822 // Mark members as static
+        internal bool SupportsNewInvoke => false;
+#pragma warning restore CA1822 // Mark members as static
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal unsafe object? InvokeNonEmitUnsafe(object? obj, IntPtr* byrefParameters, Span<object?> argsForTemporaryMonoSupport, BindingFlags invokeAttr)
         {

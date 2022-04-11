@@ -368,25 +368,15 @@ namespace System.Reflection
             return retValue;
         }
 
+#pragma warning disable CA1822 // Mark members as static
+        internal bool SupportsNewInvoke => true;
+#pragma warning restore CA1822 // Mark members as static
+
         [DebuggerHidden]
         [DebuggerStepThrough]
         internal unsafe object? InvokeNonEmitUnsafe(object? obj, IntPtr* arguments, Span<object?> argsForTemporaryMonoSupport, BindingFlags invokeAttr)
         {
-            if ((invokeAttr & BindingFlags.DoNotWrapExceptions) == 0)
-            {
-                try
-                {
-                    return RuntimeMethodHandle.InvokeMethod(obj, (void**)arguments, Signature, isConstructor: false);
-                }
-                catch (Exception e)
-                {
-                    throw new TargetInvocationException(e);
-                }
-            }
-            else
-            {
-                return RuntimeMethodHandle.InvokeMethod(obj, (void**)arguments, Signature, isConstructor: false);
-            }
+            return RuntimeMethodHandle.InvokeMethod(obj, (void**)arguments, Signature, isConstructor: false);
         }
 
         #endregion

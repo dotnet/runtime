@@ -2363,6 +2363,8 @@ namespace System
 
         public sealed override bool HasSameMetadataDefinitionAs(MemberInfo other) => HasSameMetadataDefinitionAsCore<RuntimeType>(other);
 
+        internal bool IsNullableOfT => Nullable.GetUnderlyingType(this) != null;
+
         public override bool IsSZArray
         {
             get

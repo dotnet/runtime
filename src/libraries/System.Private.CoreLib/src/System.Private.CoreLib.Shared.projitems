@@ -630,6 +630,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\MethodInfo.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\MethodInfo.Internal.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\MethodInvoker.cs" Condition="'$(TargetsCoreRT)' != 'true'" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\InvokerEmitUtil.cs" Condition="'$(TargetsCoreRT)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Missing.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Module.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\ModuleResolveEventHandler.cs" />

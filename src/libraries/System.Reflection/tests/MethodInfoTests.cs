@@ -708,6 +708,35 @@ namespace System.Reflection.Tests
                 name, BindingFlags.Public | BindingFlags.Static)!;
         }
 
+        [Fact]
+        public void ValueTypeMembers()
+        {
+            ValueTypeWithOverrides valueTypeWithOverrides = default;
+            valueTypeWithOverrides.Id = 1;
+
+            // ToString is overridden.
+            Assert.Equal("Hello", (string)GetMethod<ValueTypeWithOverrides>(nameof(ValueTypeWithOverrides.ToString)).
+                Invoke(valueTypeWithOverrides, null));
+
+            // Ensure a normal method works.
+            Assert.Equal(1, (int)GetMethod<ValueTypeWithOverrides>(nameof(ValueTypeWithOverrides.GetId)).
+                Invoke(valueTypeWithOverrides, null));
+
+            ValueTypeWithoutOverrides valueTypeWithoutOverrides = default;
+            valueTypeWithoutOverrides.Id = 1;
+
+            // ToString is not overridden.
+            Assert.Equal(typeof(ValueTypeWithoutOverrides).ToString(), (string)GetMethod<ValueTypeWithoutOverrides>(nameof(ValueTypeWithoutOverrides.ToString)).
+                Invoke(valueTypeWithoutOverrides, null ));
+
+            // Ensure a normal method works.
+            Assert.Equal(1, (int)GetMethod<ValueTypeWithoutOverrides>(nameof(ValueTypeWithoutOverrides.GetId)).
+                Invoke(valueTypeWithOverrides, null));
+
+            static MethodInfo GetMethod<T>(string name) => typeof(T).GetMethod(
+                name, BindingFlags.Public | BindingFlags.Instance)!;
+        }
+
         //Methods for Reflection Metadata
         private void DummyMethod1(string str, int iValue, long lValue)
         {
@@ -1013,6 +1042,19 @@ namespace System.Reflection.Tests
     public enum OtherColorsInt : int
     {
         Red = 1
+    }
+
+    public struct ValueTypeWithOverrides
+    {
+        public int Id;
+        public override string ToString() => "Hello";
+        public int GetId() => Id;
+    }
+
+    public struct ValueTypeWithoutOverrides
+    {
+        public int Id;
+        public int GetId() => Id;
     }
 
     public static class EnumMethods
