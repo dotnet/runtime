@@ -3746,7 +3746,6 @@ static SimdIntrinsic wasm_vector128_methods [] = {
 
 static const IntrinGroup supported_wasm_intrinsics [] = {
 	{ "WasmBase", 0, wasmbase_methods, sizeof (wasmbase_methods) },
-	{ "Vector128", 0, wasm_vector128_methods, sizeof (wasm_vector128_methods) },
 };
 
 static MonoInst*
@@ -3766,25 +3765,6 @@ emit_wasmbase_intrinsics (
 	return NULL;
 }
 
-static
-MonoInst*
-emit_wasm_intrinsics (const char *class_ns, const char *class_name, MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
-{
-	if (!strcmp (class_ns, "System.Runtime.Intrinsics.Wasm")) {
-		return emit_hardware_intrinsics (cfg, cmethod, fsig, args,
-			supported_wasm_intrinsics, sizeof (supported_wasm_intrinsics),
-			emit_wasmbase_intrinsics);
-	}
-
-	/* if (!strcmp (class_ns, "System.Numerics")) {
-		if (!strcmp (class_name, "Vector"))
-			return emit_sys_numerics_vector (cfg, cmethod, fsig, args);
-		if (!strcmp (class_name, "Vector`1"))
-			return emit_sys_numerics_vector_t (cfg, cmethod, fsig, args);
-	} */
-
-	return NULL;
-}
 #endif // TARGET_WASM
 
 #ifdef TARGET_ARM64
@@ -3842,12 +3822,25 @@ arch_emit_simd_intrinsics (const char *class_ns, const char *class_name, MonoCom
 #elif TARGET_WASM
 static
 MonoInst*
-emit_simd_intrinsics (const char *class_ns, const char *class_name, MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
+arch_emit_simd_intrinsics (const char *class_ns, const char *class_name, MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
 {
-	MonoInst *simd_inst = emit_wasm_intrinsics (class_ns, class_name, cfg, cmethod, fsig, args);
-	if (simd_inst != NULL)
-		cfg->uses_simd_intrinsics |= MONO_CFG_USES_SIMD_INTRINSICS;
-	return simd_inst;
+	if (!strcmp (class_ns, "System.Runtime.Intrinsics.Wasm")) {
+		return emit_hardware_intrinsics (cfg, cmethod, fsig, args,
+			supported_wasm_intrinsics, sizeof (supported_wasm_intrinsics),
+			emit_wasmbase_intrinsics);
+	}
+
+	if (!strcmp (class_ns, "System.Runtime.Intrinsics")) {
+		if (!strcmp (class_name, "Vector128"))
+			return emit_sri_vector (cfg, cmethod, fsig, args);
+	}
+
+	if (!strcmp (class_ns, "System.Runtime.Intrinsics")) {
+		if (!strcmp (class_name, "Vector128`1"))
+			return emit_vector64_vector128_t (cfg, cmethod, fsig, args);
+	}
+
+	return NULL;
 }
 #else
 static
