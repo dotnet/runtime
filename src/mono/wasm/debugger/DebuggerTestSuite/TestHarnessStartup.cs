@@ -172,6 +172,13 @@ namespace Microsoft.WebAssembly.Diagnostics
                 proc.Kill();
                 proc.WaitForExit();
                 proc.Close();
+#if !RUN_IN_CHROME
+                Process process = new Process();
+                process.StartInfo.FileName = "pkill";
+                process.StartInfo.Arguments = "firefox";
+                process.Start();
+                process.WaitForExit();// Waits here for the process to exit.
+#endif                
             }
         }
 
