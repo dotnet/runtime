@@ -1,3 +1,12 @@
+### Release version 0.0.9
+
+Changes:
+
+wa-info and wa-diff
+ * fix SIMD instructions disassembly
+ * improve disassembly readability, display parameters and local variable names
+ * handle vector type in value types
+
 ### Release version 0.0.8
 
 Changes:
