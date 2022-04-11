@@ -597,16 +597,10 @@
       Properties="@(CreateLibProperty)" />
   </Target>
 
-  <Target Name="EmitTestExclusionList">
+  <Target Name="EmitTestExclusionList" DependsOnTargets="GetFilteredExcludeList">
     <PropertyGroup>
       <TestExclusionListPath>$(CORE_ROOT)\TestExclusionList.txt</TestExclusionListPath>
     </PropertyGroup>
-
-    <ItemGroup>
-      <FilteredExcludeList
-        Include="$([System.IO.Path]::GetRelativePath('$(XunitTestBinBase)', '%(ExcludeList.FullPath)'))"
-        Condition="'%(ExcludeList.Extension)' == '.dll'" />
-    </ItemGroup>
 
     <WriteLinesToFile
         File="$(TestExclusionListPath)"

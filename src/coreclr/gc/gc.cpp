@@ -1107,7 +1107,7 @@ class exclusive_sync
 
     int spin_count;
 
-    uint8_t cache_separator[HS_CACHE_LINE_SIZE - sizeof (int) - sizeof (int32_t)];
+    uint8_t cache_separator[HS_CACHE_LINE_SIZE - (sizeof (spin_count) + sizeof (needs_checking) + sizeof (rwp_object))];
 
     // TODO - perhaps each object should be on its own cache line...
     VOLATILE(uint8_t*) alloc_objects[max_pending_allocs];
@@ -43062,7 +43062,7 @@ BOOL gc_heap::check_need_card (uint8_t* child_obj, int gen_num_for_cards,
                                uint8_t* low, uint8_t* high)
 {
 #ifdef USE_REGIONS
-    return (get_region_gen_num (child_obj) < gen_num_for_cards);
+    return (is_in_heap_range (child_obj) && (get_region_gen_num (child_obj) < gen_num_for_cards));
 #else
     return ((child_obj < high) && (child_obj >= low));
 #endif //USE_REGIONS

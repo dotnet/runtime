@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Text;
 using System.Xml.Schema;
@@ -40,7 +41,7 @@ namespace System.Xml
             _impl.OuterReader = this;
         }
 
-        public XmlTextReader(string url, Stream input)
+        public XmlTextReader([StringSyntax(StringSyntaxAttribute.Uri)] string url, Stream input)
         {
             _impl = new XmlTextReaderImpl(url, input);
             _impl.OuterReader = this;
@@ -52,7 +53,7 @@ namespace System.Xml
             _impl.OuterReader = this;
         }
 
-        public XmlTextReader(string url, Stream input, XmlNameTable nt)
+        public XmlTextReader([StringSyntax(StringSyntaxAttribute.Uri)] string url, Stream input, XmlNameTable nt)
         {
             _impl = new XmlTextReaderImpl(url, input, nt);
             _impl.OuterReader = this;
@@ -64,7 +65,7 @@ namespace System.Xml
             _impl.OuterReader = this;
         }
 
-        public XmlTextReader(string url, TextReader input)
+        public XmlTextReader([StringSyntax(StringSyntaxAttribute.Uri)] string url, TextReader input)
         {
             _impl = new XmlTextReaderImpl(url, input);
             _impl.OuterReader = this;
@@ -76,7 +77,7 @@ namespace System.Xml
             _impl.OuterReader = this;
         }
 
-        public XmlTextReader(string url, TextReader input, XmlNameTable nt)
+        public XmlTextReader([StringSyntax(StringSyntaxAttribute.Uri)] string url, TextReader input, XmlNameTable nt)
         {
             _impl = new XmlTextReaderImpl(url, input, nt);
             _impl.OuterReader = this;
@@ -88,19 +89,19 @@ namespace System.Xml
             _impl.OuterReader = this;
         }
 
-        public XmlTextReader(string xmlFragment, XmlNodeType fragType, XmlParserContext? context)
+        public XmlTextReader([StringSyntax(StringSyntaxAttribute.Xml)] string xmlFragment, XmlNodeType fragType, XmlParserContext? context)
         {
             _impl = new XmlTextReaderImpl(xmlFragment, fragType, context);
             _impl.OuterReader = this;
         }
 
-        public XmlTextReader(string url)
+        public XmlTextReader([StringSyntax(StringSyntaxAttribute.Uri)] string url)
         {
             _impl = new XmlTextReaderImpl(url, new NameTable());
             _impl.OuterReader = this;
         }
 
-        public XmlTextReader(string url, XmlNameTable nt)
+        public XmlTextReader([StringSyntax(StringSyntaxAttribute.Uri)] string url, XmlNameTable nt)
         {
             _impl = new XmlTextReaderImpl(url, nt);
             _impl.OuterReader = this;

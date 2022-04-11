@@ -205,11 +205,11 @@ namespace System
         public unsafe bool Equals(UIntPtr other) => (nuint)_value == (nuint)other;
 
         public unsafe override string ToString() => ((nuint_t)_value).ToString();
-        public unsafe string ToString(string? format) => ((nuint_t)_value).ToString(format);
+        public unsafe string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format) => ((nuint_t)_value).ToString(format);
         public unsafe string ToString(IFormatProvider? provider) => ((nuint_t)_value).ToString(provider);
-        public unsafe string ToString(string? format, IFormatProvider? provider) => ((nuint_t)_value).ToString(format, provider);
+        public unsafe string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format, IFormatProvider? provider) => ((nuint_t)_value).ToString(format, provider);
 
-        public unsafe bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format = default, IFormatProvider? provider = null) =>
+        public unsafe bool TryFormat(Span<char> destination, out int charsWritten, [StringSyntax(StringSyntaxAttribute.NumericFormat)] ReadOnlySpan<char> format = default, IFormatProvider? provider = null) =>
             ((nuint_t)_value).TryFormat(destination, out charsWritten, format, provider);
 
         public static UIntPtr Parse(string s) => (UIntPtr)nuint_t.Parse(s);
@@ -262,8 +262,8 @@ namespace System
         /// <inheritdoc cref="IAdditionOperators{TSelf, TOther, TResult}.op_Addition(TSelf, TOther)" />
         static nuint IAdditionOperators<nuint, nuint, nuint>.operator +(nuint left, nuint right) => (nuint)(left + right);
 
-        // /// <inheritdoc cref="IAdditionOperators{TSelf, TOther, TResult}.op_Addition(TSelf, TOther)" />
-        // static nuint IAdditionOperators<nuint, nuint, nuint>.operator checked +(nuint left, nuint right) => checked((nuint)(left + right));
+        /// <inheritdoc cref="IAdditionOperators{TSelf, TOther, TResult}.op_Addition(TSelf, TOther)" />
+        static nuint IAdditionOperators<nuint, nuint, nuint>.operator checked +(nuint left, nuint right) => checked((nuint)(left + right));
 
         //
         // IAdditiveIdentity
@@ -275,6 +275,9 @@ namespace System
         //
         // IBinaryInteger
         //
+
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.DivRem(TSelf, TSelf)" />
+        static (nuint Quotient, nuint Remainder) IBinaryInteger<nuint>.DivRem(nuint left, nuint right) => Math.DivRem(left, right);
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.LeadingZeroCount(TSelf)" />
         static nuint IBinaryInteger<nuint>.LeadingZeroCount(nuint value)
@@ -410,8 +413,8 @@ namespace System
         /// <inheritdoc cref="IDecrementOperators{TSelf}.op_Decrement(TSelf)" />
         static nuint IDecrementOperators<nuint>.operator --(nuint value) => --value;
 
-        // /// <inheritdoc cref="IDecrementOperators{TSelf}.op_Decrement(TSelf)" />
-        // static nuint IDecrementOperators<nuint>.operator checked --(nuint value) => checked(--value);
+        /// <inheritdoc cref="IDecrementOperators{TSelf}.op_Decrement(TSelf)" />
+        static nuint IDecrementOperators<nuint>.operator checked --(nuint value) => checked(--value);
 
         //
         // IDivisionOperators
@@ -420,8 +423,8 @@ namespace System
         /// <inheritdoc cref="IDivisionOperators{TSelf, TOther, TResult}.op_Division(TSelf, TOther)" />
         static nuint IDivisionOperators<nuint, nuint, nuint>.operator /(nuint left, nuint right) => left / right;
 
-        // /// <inheritdoc cref="IDivisionOperators{TSelf, TOther, TResult}.op_CheckedDivision(TSelf, TOther)" />
-        // static nuint IDivisionOperators<nuint, nuint, nuint>.operator checked /(nuint left, nuint right) => checked(left / right);
+        /// <inheritdoc cref="IDivisionOperators{TSelf, TOther, TResult}.op_CheckedDivision(TSelf, TOther)" />
+        static nuint IDivisionOperators<nuint, nuint, nuint>.operator checked /(nuint left, nuint right) => left / right;
 
         //
         // IIncrementOperators
@@ -430,8 +433,8 @@ namespace System
         /// <inheritdoc cref="IIncrementOperators{TSelf}.op_Increment(TSelf)" />
         static nuint IIncrementOperators<nuint>.operator ++(nuint value) => ++value;
 
-        // /// <inheritdoc cref="IIncrementOperators{TSelf}.op_CheckedIncrement(TSelf)" />
-        // static nuint IIncrementOperators<nuint>.operator checked ++(nuint value) => checked(++value);
+        /// <inheritdoc cref="IIncrementOperators{TSelf}.op_CheckedIncrement(TSelf)" />
+        static nuint IIncrementOperators<nuint>.operator checked ++(nuint value) => checked(++value);
 
         //
         // IMinMaxValue
@@ -464,18 +467,12 @@ namespace System
         /// <inheritdoc cref="IMultiplyOperators{TSelf, TOther, TResult}.op_Multiply(TSelf, TOther)" />
         static nuint IMultiplyOperators<nuint, nuint, nuint>.operator *(nuint left, nuint right) => left * right;
 
-        // /// <inheritdoc cref="IMultiplyOperators{TSelf, TOther, TResult}.op_CheckedMultiply(TSelf, TOther)" />
-        // static nuint IMultiplyOperators<nuint, nuint, nuint>.operator checked *(nuint left, nuint right) => checked(left * right);
+        /// <inheritdoc cref="IMultiplyOperators{TSelf, TOther, TResult}.op_CheckedMultiply(TSelf, TOther)" />
+        static nuint IMultiplyOperators<nuint, nuint, nuint>.operator checked *(nuint left, nuint right) => checked(left * right);
 
         //
         // INumber
         //
-
-        /// <inheritdoc cref="INumber{TSelf}.One" />
-        static nuint INumber<nuint>.One => 1;
-
-        /// <inheritdoc cref="INumber{TSelf}.Zero" />
-        static nuint INumber<nuint>.Zero => 0;
 
         /// <inheritdoc cref="INumber{TSelf}.Abs(TSelf)" />
         static nuint INumber<nuint>.Abs(nuint value) => value;
@@ -483,9 +480,12 @@ namespace System
         /// <inheritdoc cref="INumber{TSelf}.Clamp(TSelf, TSelf, TSelf)" />
         static nuint INumber<nuint>.Clamp(nuint value, nuint min, nuint max) => Math.Clamp(value, min, max);
 
-        /// <inheritdoc cref="INumber{TSelf}.Create{TOther}(TOther)" />
+        /// <inheritdoc cref="INumber{TSelf}.CopySign(TSelf, TSelf)" />
+        static nuint INumber<nuint>.CopySign(nuint value, nuint sign) => value;
+
+        /// <inheritdoc cref="INumber{TSelf}.CreateChecked{TOther}(TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static nuint INumber<nuint>.Create<TOther>(TOther value)
+        static nuint INumber<nuint>.CreateChecked<TOther>(TOther value)
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -698,17 +698,23 @@ namespace System
             }
         }
 
-        /// <inheritdoc cref="INumber{TSelf}.DivRem(TSelf, TSelf)" />
-        static (nuint Quotient, nuint Remainder) INumber<nuint>.DivRem(nuint left, nuint right) => Math.DivRem(left, right);
+        /// <inheritdoc cref="INumber{TSelf}.IsNegative(TSelf)" />
+        static bool INumber<nuint>.IsNegative(nuint value) => false;
 
         /// <inheritdoc cref="INumber{TSelf}.Max(TSelf, TSelf)" />
         static nuint INumber<nuint>.Max(nuint x, nuint y) => Math.Max(x, y);
 
+        /// <inheritdoc cref="INumber{TSelf}.MaxMagnitude(TSelf, TSelf)" />
+        static nuint INumber<nuint>.MaxMagnitude(nuint x, nuint y) => Math.Max(x, y);
+
         /// <inheritdoc cref="INumber{TSelf}.Min(TSelf, TSelf)" />
         static nuint INumber<nuint>.Min(nuint x, nuint y) => Math.Min(x, y);
 
+        /// <inheritdoc cref="INumber{TSelf}.MinMagnitude(TSelf, TSelf)" />
+        static nuint INumber<nuint>.MinMagnitude(nuint x, nuint y) => Math.Min(x, y);
+
         /// <inheritdoc cref="INumber{TSelf}.Sign(TSelf)" />
-        static nuint INumber<nuint>.Sign(nuint value) => (nuint)((value == 0) ? 0 : 1);
+        static int INumber<nuint>.Sign(nuint value) => (value == 0) ? 0 : 1;
 
         /// <inheritdoc cref="INumber{TSelf}.TryCreate{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -865,6 +871,16 @@ namespace System
         }
 
         //
+        // INumberBase
+        //
+
+        /// <inheritdoc cref="INumberBase{TSelf}.One" />
+        static nuint INumberBase<nuint>.One => 1;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.Zero" />
+        static nuint INumberBase<nuint>.Zero => 0;
+
+        //
         // IShiftOperators
         //
 
@@ -884,8 +900,8 @@ namespace System
         /// <inheritdoc cref="ISubtractionOperators{TSelf, TOther, TResult}.op_Subtraction(TSelf, TOther)" />
         static nuint ISubtractionOperators<nuint, nuint, nuint>.operator -(nuint left, nuint right) => left - right;
 
-        // /// <inheritdoc cref="ISubtractionOperators{TSelf, TOther, TResult}.op_CheckedSubtraction(TSelf, TOther)" />
-        // static nuint ISubtractionOperators<nuint, nuint, nuint>.operator checked -(nuint left, nuint right) => checked(left - right);
+        /// <inheritdoc cref="ISubtractionOperators{TSelf, TOther, TResult}.op_CheckedSubtraction(TSelf, TOther)" />
+        static nuint ISubtractionOperators<nuint, nuint, nuint>.operator checked -(nuint left, nuint right) => checked(left - right);
 
         //
         // IUnaryNegationOperators
@@ -894,8 +910,8 @@ namespace System
         /// <inheritdoc cref="IUnaryNegationOperators{TSelf, TResult}.op_UnaryNegation(TSelf)" />
         static nuint IUnaryNegationOperators<nuint, nuint>.operator -(nuint value) => (nuint)0 - value;
 
-        // /// <inheritdoc cref="IUnaryNegationOperators{TSelf, TResult}.op_CheckedUnaryNegation(TSelf)" />
-        // static nuint IUnaryNegationOperators<nuint, nuint>.operator checked -(nuint value) => checked((nuint)0 - value);
+        /// <inheritdoc cref="IUnaryNegationOperators{TSelf, TResult}.op_CheckedUnaryNegation(TSelf)" />
+        static nuint IUnaryNegationOperators<nuint, nuint>.operator checked -(nuint value) => checked((nuint)0 - value);
 
         //
         // IUnaryPlusOperators
@@ -903,8 +919,5 @@ namespace System
 
         /// <inheritdoc cref="IUnaryPlusOperators{TSelf, TResult}.op_UnaryPlus(TSelf)" />
         static nuint IUnaryPlusOperators<nuint, nuint>.operator +(nuint value) => +value;
-
-        // /// <inheritdoc cref="IUnaryPlusOperators{TSelf, TResult}.op_CheckedUnaryPlus(TSelf)" />
-        // static nuint IUnaryPlusOperators<nuint, nuint>.operator checked +(nuint value) => checked(+value);
     }
 }

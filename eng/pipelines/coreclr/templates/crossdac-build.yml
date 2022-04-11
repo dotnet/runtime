@@ -7,29 +7,50 @@ parameters:
 steps:
   # Always build the crossdac, that way we know in CI/PR if things break to build.
   - ${{ if and(eq(parameters.osGroup, 'windows'), notin(parameters.archType, 'x86')) }}:
-    - script: $(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) -hostarch ${{ parameters.hostArchType }} -ci -os Linux -cmakeargs "-DCLR_CROSS_COMPONENTS_BUILD=1" -ninja $(officialBuildIdArg) -component crosscomponents
+    - script: $(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) ${{ parameters.archType }} -hostarch ${{ parameters.hostArchType }} -ci -os Linux -cmakeargs "-DCLR_CROSS_COMPONENTS_BUILD=1" -ninja $(officialBuildIdArg) -component crosscomponents
       displayName: Build Cross OS Linux DAC for Windows
 
-    - script: $(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) -hostarch ${{ parameters.hostArchType }} -ci -os alpine -cmakeargs "-DCLR_CROSS_COMPONENTS_BUILD=1" -ninja $(officialBuildIdArg) -component crosscomponents
+    - script: $(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) ${{ parameters.archType }} -hostarch ${{ parameters.hostArchType }} -ci -os alpine -cmakeargs "-DCLR_CROSS_COMPONENTS_BUILD=1" -ninja $(officialBuildIdArg) -component crosscomponents
       displayName: Build Cross OS Linux-musl DAC for Windows
 
-    - task: CopyFiles@2
-      displayName: Gather CrossDac Artifacts (Linux)
-      inputs:
-        SourceFolder: $(buildLinuxDacRootFolderPath)
-        Contents: |
-          **/*
-          !**/sharedFramework/**/*
-        TargetFolder: $(buildLinuxDacStagingPath)
+    - powershell: |
+        function CopyAndVerifyCrossOsAssets {
+          [CmdletBinding()]
+          param (
+            [Parameter(Mandatory)][string]$crossDacDir,
+            [Parameter(Mandatory)][string]$targetDir
+          )
 
-    - task: CopyFiles@2
-      displayName: Gather CrossDac Artifacts (Linux_musl)
-      inputs:
-        SourceFolder: $(buildMuslDacRootFolderPath)
-        Contents: |
-          **/*
-          !**/sharedFramework/**/*
-        TargetFolder: '$(buildMuslDacStagingPath)'
+          if ('${{ parameters.archType }}' -ne '${{ parameters.hostArchType }}')
+          {
+            $crossDacDir = Join-Path $crossDacDir -ChildPath '${{ parameters.hostArchType }}'
+          }
+
+          $availableFiles = ls -File $crossDacDir
+
+          Write-Host "Probed for files in ""$crossDacDir"", found:"
+          $availableFiles | fl
+
+          if (-not ("mscordaccore.dll" -in $availableFiles.Name `
+                   -and "mscordaccore.pdb" -in $availableFiles.Name `
+                   -and "mscordbi.dll" -in $availableFiles.Name `
+                   -and "mscordbi.pdb" -in $availableFiles.Name`
+                   ))
+          {
+            Write-Error "Couldn't find one of the expected crossdac files."
+          }
+
+          New-Item $targetDir -ItemType 'Directory' -Force -ea 0
+          $availableFiles | %{ cp $_.FullName $targetDir -v }
+        }
+
+        CopyAndVerifyCrossOsAssets -CrossDacDir $(buildMuslDacRootFolderPath) -TargetDir '$(buildMuslDacStagingPath)/${{ parameters.hostArchType }}'
+        CopyAndVerifyCrossOsAssets -CrossDacDir $(buildLinuxDacRootFolderPath) -TargetDir '$(buildLinuxDacStagingPath)/${{ parameters.hostArchType }}'
+
+        Write-Host "Final directory contents:"
+        ls -R $(crossDacArtifactPath)
+
+      displayName: Gather CrossDac Artifacts
 
   - ${{ if eq(parameters.osGroup, 'Linux') }}:
     - task: CopyFiles@2
@@ -37,7 +58,7 @@ steps:
       inputs:
         SourceFolder: $(coreClrProductRootFolderPath)
         Contents: libcoreclr.so
-        TargetFolder: '$(crossDacArtifactPath)/${{ parameters.osGroup }}${{ parameters.osSubgroup }}.$(archType).$(buildConfigUpper)/$(crossDacHostArch)'
+        TargetFolder: '$(crossDacArtifactPath)/${{ parameters.osGroup }}${{ parameters.osSubgroup }}.$(archType).$(buildConfigUpper)/${{ parameters.hostArchType }}'
 
   # Make the assets available in a single container for the packaging job.
   - task: PublishBuildArtifacts@1

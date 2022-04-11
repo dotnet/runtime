@@ -49,7 +49,7 @@
 #define TARGET_WIN32_MSVC
 #endif
 
-#if LLVM_API_VERSION < 900
+#if LLVM_API_VERSION < 1100
 #error "The version of the mono llvm repository is too old."
 #endif
 
@@ -564,34 +564,13 @@ get_vtype_size_align (MonoType *t)
 /*
  * simd_class_to_llvm_type:
  *
- *   Return the LLVM type corresponding to the Mono.SIMD class KLASS
+ *   Return the LLVM type corresponding to the System.Numerics class KLASS
  */
 static LLVMTypeRef
 simd_class_to_llvm_type (EmitContext *ctx, MonoClass *klass)
 {
 	const char *klass_name = m_class_get_name (klass);
-	if (!strcmp (klass_name, "Vector2d")) {
-		return LLVMVectorType (LLVMDoubleType (), 2);
-	} else if (!strcmp (klass_name, "Vector2l")) {
-		return LLVMVectorType (LLVMInt64Type (), 2);
-	} else if (!strcmp (klass_name, "Vector2ul")) {
-		return LLVMVectorType (LLVMInt64Type (), 2);
-	} else if (!strcmp (klass_name, "Vector4i")) {
-		return LLVMVectorType (LLVMInt32Type (), 4);
-	} else if (!strcmp (klass_name, "Vector4ui")) {
-		return LLVMVectorType (LLVMInt32Type (), 4);
-	} else if (!strcmp (klass_name, "Vector4f")) {
-		return LLVMVectorType (LLVMFloatType (), 4);
-	} else if (!strcmp (klass_name, "Vector8s")) {
-		return LLVMVectorType (LLVMInt16Type (), 8);
-	} else if (!strcmp (klass_name, "Vector8us")) {
-		return LLVMVectorType (LLVMInt16Type (), 8);
-	} else if (!strcmp (klass_name, "Vector16sb")) {
-		return LLVMVectorType (LLVMInt8Type (), 16);
-	} else if (!strcmp (klass_name, "Vector16b")) {
-		return LLVMVectorType (LLVMInt8Type (), 16);
-	} else if (!strcmp (klass_name, "Vector2")) {
-		/* System.Numerics */
+	if (!strcmp (klass_name, "Vector2")) {
 		return LLVMVectorType (LLVMFloatType (), 4);
 	} else if (!strcmp (klass_name, "Vector3")) {
 		return LLVMVectorType (LLVMFloatType (), 4);
@@ -4606,15 +4585,15 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 	/* Add byval attributes if needed */
 	for (i = 0; i < sig->param_count; ++i) {
 		LLVMArgInfo *ainfo = &call->cinfo->args [i + sig->hasthis];
-
-		if (ainfo && ainfo->storage == LLVMArgVtypeByVal)
-			mono_llvm_add_instr_attr (lcall, 1 + ainfo->pindex, LLVM_ATTR_BY_VAL);
+		gboolean is_byval = (ainfo && ainfo->storage == LLVMArgVtypeByVal);
 
 #ifdef TARGET_WASM
-		if (ainfo && ainfo->storage == LLVMArgVtypeByRef)
-			/* This causes llvm to make a copy of the value which is what we need */
-			mono_llvm_add_instr_byval_attr (lcall, 1 + ainfo->pindex, LLVMGetElementType (param_types [ainfo->pindex]));
+		/* This causes llvm to make a copy of the value which is what we need */
+		is_byval |= (ainfo && ainfo->storage == LLVMArgVtypeByRef);
 #endif
+
+		if (is_byval)
+			mono_llvm_add_instr_byval_attr (lcall, 1 + ainfo->pindex, LLVMGetElementType (param_types [ainfo->pindex]));
 	}
 
 	gboolean is_simd = MONO_CLASS_IS_SIMD (ctx->cfg, mono_class_from_mono_type_internal (sig->ret));
@@ -11824,20 +11803,20 @@ emit_method_inner (EmitContext *ctx)
 		}
 		LLVMSetValueName (LLVMGetParam (method, pindex), name);
 		g_free (name);
-		if (ainfo->storage == LLVMArgVtypeByVal)
-			mono_llvm_add_param_attr (LLVMGetParam (method, pindex), LLVM_ATTR_BY_VAL);
+
+		gboolean is_byval = ainfo->storage == LLVMArgVtypeByVal;
+#ifdef TARGET_WASM
+		/* This causes llvm to make a copy of the value which is what we need */
+		is_byval |= ainfo->storage == LLVMArgVtypeByRef;
+#endif
+
+		if (is_byval)
+			mono_llvm_add_param_byval_attr (LLVMGetParam (method, pindex), LLVMGetElementType (LLVMTypeOf (LLVMGetParam (method, pindex))));
 
 		if (ainfo->storage == LLVMArgVtypeByRef || ainfo->storage == LLVMArgVtypeAddr) {
 			/* For OP_LDADDR */
 			cfg->args [i + sig->hasthis]->opcode = OP_VTARG_ADDR;
 		}
-
-#ifdef TARGET_WASM
-		if (ainfo->storage == LLVMArgVtypeByRef) {
-			/* This causes llvm to make a copy of the value which is what we need */
-			mono_llvm_add_param_byval_attr (LLVMGetParam (method, pindex), LLVMGetElementType (LLVMTypeOf (LLVMGetParam (method, pindex))));
-		}
-#endif
 	}
 	g_free (names);
 
