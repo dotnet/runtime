@@ -77,8 +77,11 @@ namespace System.Net.Quic.Implementations.MsQuic
             public readonly TaskCompletionSource ShutdownWriteCompletionSource = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
 
             public ShutdownState ShutdownState;
+
             // The value makes sure that we release the handles only once.
             public int ShutdownDone;
+            public const int ShutdownDone_Disposed = 1;
+            public const int ShutdownDone_NotificationReceived = 2;
 
             // Set once stream have been shutdown.
             public readonly TaskCompletionSource ShutdownCompletionSource = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -841,7 +844,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                 }
 
                 // Check if we already got final event.
-                releaseHandles = Interlocked.Exchange(ref _state.ShutdownDone, 1) == 2;
+                releaseHandles = Interlocked.Exchange(ref _state.ShutdownDone, State.ShutdownDone_Disposed) == State.ShutdownDone_NotificationReceived;
                 if (releaseHandles)
                 {
                     _state.ShutdownState = ShutdownState.Finished;
@@ -1209,7 +1212,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             }
 
             // Dispose was called before complete event.
-            bool releaseHandles = Interlocked.Exchange(ref state.ShutdownDone, 2) == 1;
+            bool releaseHandles = Interlocked.Exchange(ref state.ShutdownDone, State.ShutdownDone_NotificationReceived) == State.ShutdownDone_Disposed;
             if (releaseHandles)
             {
                 state.Cleanup();
