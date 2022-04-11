@@ -24,8 +24,10 @@ namespace System.Text.Json
             out bool useExtensionProperty,
             bool createExtensionProperty = true)
         {
+#if DEBUG
             Debug.Assert(state.Current.JsonTypeInfo.PropertyInfoForTypeInfo.ConverterStrategy == ConverterStrategy.Object,
                 GetLookupPropertyDebugInfo(obj, unescapedPropertyName, ref state));
+#endif
 
             useExtensionProperty = false;
 
