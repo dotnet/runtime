@@ -24,18 +24,8 @@ namespace System.Text.Json
             out bool useExtensionProperty,
             bool createExtensionProperty = true)
         {
-#if DEBUG
-            ConverterStrategy strat = state.Current.JsonTypeInfo.PropertyInfoForTypeInfo.ConverterStrategy;
-            string propName = JsonHelpers.Utf8GetString(unescapedPropertyName);
-            string objTypeName = obj?.GetType().FullName ?? "<null>";
-            string jtiTypeName = state.Current.JsonTypeInfo.GetType().Name;
-            string typeName = state.Current.JsonTypeInfo.Type.GetType().FullName!;
-            bool isConfigured = state.Current.JsonTypeInfo.IsConfigured;
-            bool propCacheInitialized = state.Current.JsonTypeInfo.PropertyCache != null;
-
-            Debug.Assert(strat == ConverterStrategy.Object,
-                $"ConverterStrategy is {strat}. propertyName = {propName}; obj.GetType() => {objTypeName}; JsonTypeInfo[{jtiTypeName}].Type = {typeName}; IsConfigured = {isConfigured}; HasPropertyCache = {propCacheInitialized}");
-#endif
+            Debug.Assert(state.Current.JsonTypeInfo.PropertyInfoForTypeInfo.ConverterStrategy == ConverterStrategy.Object,
+                GetLookupPropertyDebugInfo(obj, unescapedPropertyName, ref state));
 
             useExtensionProperty = false;
 
@@ -60,7 +50,8 @@ namespace System.Text.Json
 
                     if (createExtensionProperty)
                     {
-                        CreateDataExtensionProperty(obj!, dataExtProperty, options);
+                        Debug.Assert(obj != null, "obj is null");
+                        CreateDataExtensionProperty(obj, dataExtProperty, options);
                     }
 
                     jsonPropertyInfo = dataExtProperty;
@@ -72,6 +63,16 @@ namespace System.Text.Json
             state.Current.NumberHandling = jsonPropertyInfo.EffectiveNumberHandling;
             return jsonPropertyInfo;
         }
+
+#if DEBUG
+        private static string GetLookupPropertyDebugInfo(object? obj, ReadOnlySpan<byte> unescapedPropertyName, ref ReadStack state)
+        {
+            JsonTypeInfo jti = state.Current.JsonTypeInfo;
+            string objTypeName = obj?.GetType().FullName ?? "<null>";
+            string propertyName = JsonHelpers.Utf8GetString(unescapedPropertyName);
+            return $"ConverterStrategy is {jti.PropertyInfoForTypeInfo.ConverterStrategy}. propertyName = {propertyName}; obj.GetType() => {objTypeName}; DebugInfo={jti.GetDebugInfo()}";
+        }
+#endif
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static ReadOnlySpan<byte> GetPropertyName(
