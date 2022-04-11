@@ -89,7 +89,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 string baseDir = Path.GetDirectoryName(psi.FileName);                
                 if (File.Exists("/tmp/profile/prefs.js"))
                     di = new DirectoryInfo("/tmp/profile");
-                if (File.Exists(Path.Combine(baseDir, "..", "profile", "prefs.js")))
+                else if (File.Exists(Path.Combine(baseDir, "..", "profile", "prefs.js")))
                     di = new DirectoryInfo($"{Path.Combine(baseDir, "..", "profile")}");
                 if (di != null)
                 {
@@ -129,7 +129,6 @@ namespace Microsoft.WebAssembly.Diagnostics
                 proc.ErrorDataReceived += (sender, e) =>
                 {
                     var str = e.Data;
-                    Console.WriteLine($"{message_prefix} browser-stderr: {str}");
                     Logger.LogTrace($"{message_prefix} browser-stderr: {str}");
 
                     if (tcs.Task.IsCompleted)
@@ -147,14 +146,13 @@ namespace Microsoft.WebAssembly.Diagnostics
 
                 proc.OutputDataReceived += (sender, e) =>
                 {
-                    Console.WriteLine($"{message_prefix} browser-stdout: {e.Data}");
                     Logger.LogTrace($"{message_prefix} browser-stdout: {e.Data}");
                 };
 
                 proc.BeginErrorReadLine();
                 proc.BeginOutputReadLine();
                 string line;
-                if (await Task.WhenAny(tcs.Task, Task.Delay(10000)) != tcs.Task)
+                if (await Task.WhenAny(tcs.Task, Task.Delay(8000)) != tcs.Task)
                 {
                     if (devToolsUrl.Port != 0)
                     {
