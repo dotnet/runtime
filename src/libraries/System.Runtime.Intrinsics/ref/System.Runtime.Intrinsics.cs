@@ -4764,5 +4764,30 @@ namespace System.Runtime.Intrinsics.Wasm
     {
         public bool IsSupported { get { throw null; } }
         public static Vector128<byte> Constant(ulong p1, ulong p2) { throw null; }
+        public static Vector128<sbyte>  Splat(sbyte  x) { throw null; }
+        public static Vector128<byte>   Splat(byte   x) { throw null; }
+        public static Vector128<short>  Splat(short  x) { throw null; }
+        public static Vector128<ushort> Splat(ushort x) { throw null; }
+        public static Vector128<int>    Splat(int    x) { throw null; }
+        public static Vector128<uint>   Splat(uint   x) { throw null; }
+        public static Vector128<long>   Splat(long   x) { throw null; }
+        public static Vector128<ulong>  Splat(ulong  x) { throw null; }
+        public static Vector128<float>  Splat(float  x) { throw null; }
+        public static Vector128<double> Splat(double x) { throw null; }
+        public static Vector128<nint>   Splat(nint   x) { throw null; }
+        public static Vector128<nuint>  Splat(nuint  x) { throw null; }
+
+        public static int    ExtractLane(Vector128<sbyte>  a, byte imm) { throw null; }
+        public static uint   ExtractLane(Vector128<byte>   a, byte imm) { throw null; }
+        public static int    ExtractLane(Vector128<short>  a, byte imm) { throw null; }
+        public static uint   ExtractLane(Vector128<ushort> a, byte imm) { throw null; }
+        public static int    ExtractLane(Vector128<int>    a, byte imm) { throw null; }
+        public static uint   ExtractLane(Vector128<uint>   a, byte imm) { throw null; }
+        public static long   ExtractLane(Vector128<long>   a, byte imm) { throw null; }
+        public static ulong  ExtractLane(Vector128<ulong>  a, byte imm) { throw null; }
+        public static float  ExtractLane(Vector128<float>  a, byte imm) { throw null; }
+        public static double ExtractLane(Vector128<double> a, byte imm) { throw null; }
+        public static nint   ExtractLane(Vector128<nint>   a, byte imm) { throw null; }
+        public static nuint  ExtractLane(Vector128<nuint>  a, byte imm) { throw null; }
     }
 }

@@ -619,3 +619,4 @@ METHOD(DotProductBySelectedQuadruplet)
 // Wasm
 METHOD(Constant)
 METHOD(Splat)
+METHOD(ExtractLane)
