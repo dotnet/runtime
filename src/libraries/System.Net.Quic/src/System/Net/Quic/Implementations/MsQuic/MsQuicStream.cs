@@ -894,7 +894,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             cancellationToken.ThrowIfCancellationRequested();
             using CancellationTokenRegistration registration = cancellationToken.UnsafeRegister(static (s, token) =>
             {
-                ((State)s!).StartCompletionSource.TrySetCanceled(token);
+                ((State)s!).StartCompletionSource.TrySetException(new OperationCanceledException(token));
             }, _state);
 
             uint status = MsQuicApi.Api.StreamStartDelegate(_state.Handle, flags);

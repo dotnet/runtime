@@ -590,6 +590,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                 throw new InvalidOperationException(SR.net_quic_not_connected);
             }
 
+            cancellationToken.ThrowIfCancellationRequested();
             var stream = new MsQuicStream(_state, flags);
 
             try
