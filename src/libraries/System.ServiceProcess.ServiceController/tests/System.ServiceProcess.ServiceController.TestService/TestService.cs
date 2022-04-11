@@ -105,7 +105,15 @@ namespace System.ServiceProcess.Tests
             base.OnStop();
             // We may be  stopping because the test has completed and we're cleaning up the test service so there's no client at all, so don't waitForConnect.
             // Tests that verify "Stop" itself should ensure the client connection has completed before calling stop, by waiting on some other message from the pipe first.
-            WriteStreamAsync(PipeMessageByteCode.Stop, waitForConnect:false).Wait();
+            try
+            {
+                WriteStreamAsync(PipeMessageByteCode.Stop, waitForConnect:false).Wait();
+            }
+            catch(AggregateException ae) when (ae.InnerException.GetType() == typeof(InvalidOperationException))
+            {
+                // Some tests don't bother to connect to the pipe, and just stop the service to clean up.
+                // Don't log this exception into the event log.
+            }
         }
 
         public async Task WriteStreamAsync(PipeMessageByteCode code, int command = 0, bool waitForConnect = true)
