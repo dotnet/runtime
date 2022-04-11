@@ -6608,8 +6608,8 @@ bool Compiler::fgCallHasMustCopyByrefParameter(GenTreeCall* callee)
                                     // an implicit byref parameter should be TYP_BYREF, as these parameters could
                                     // refer to boxed heap locations (say if the method is invoked by reflection)
                                     // but there are some stack only structs (like typed references) where
-                                    // the importer/runtime code uses TYP_I_IMPL, and AddFinalArgsAndDetermineABIInfo will
-                                    // transiently retype all simple address-of implicit parameter args as
+                                    // the importer/runtime code uses TYP_I_IMPL, and AddFinalArgsAndDetermineABIInfo
+                                    // will transiently retype all simple address-of implicit parameter args as
                                     // TYP_I_IMPL.
                                     //
                                     if ((arg2.AbiInfo.ArgType == TYP_BYREF) || (arg2.AbiInfo.ArgType == TYP_I_IMPL))
