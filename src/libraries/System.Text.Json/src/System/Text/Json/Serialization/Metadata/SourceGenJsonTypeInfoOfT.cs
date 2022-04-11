@@ -18,40 +18,28 @@ namespace System.Text.Json.Serialization.Metadata
         /// Creates serialization metadata for a type using a simple converter.
         /// </summary>
         public SourceGenJsonTypeInfo(JsonConverter converter, JsonSerializerOptions options)
-            : base(typeof(T), options)
+            : base(converter, options)
         {
-            ElementType = converter.ElementType;
         }
 
         /// <summary>
         /// Creates serialization metadata for an object.
         /// </summary>
-        public SourceGenJsonTypeInfo(JsonSerializerOptions options, JsonObjectInfoValues<T> objectInfo) : base(typeof(T), options)
+        public SourceGenJsonTypeInfo(JsonSerializerOptions options, JsonObjectInfoValues<T> objectInfo) : base(GetConverter(objectInfo), options)
         {
-#pragma warning disable CS8714
-            // The type cannot be used as type parameter in the generic type or method.
-            // Nullability of type argument doesn't match 'notnull' constraint.
-            JsonConverter converter;
-
             if (objectInfo.ObjectWithParameterizedConstructorCreator != null)
             {
-                converter = new JsonMetadataServicesConverter<T>(
-                    () => new LargeObjectWithParameterizedConstructorConverter<T>(),
-                    ConverterStrategy.Object);
                 CreateObjectWithArgs = objectInfo.ObjectWithParameterizedConstructorCreator;
                 CtorParamInitFunc = objectInfo.ConstructorParameterMetadataInitializer;
             }
             else
             {
-                converter = new JsonMetadataServicesConverter<T>(() => new ObjectDefaultConverter<T>(), ConverterStrategy.Object);
                 SetCreateObjectFunc(objectInfo.ObjectCreator);
             }
-#pragma warning restore CS8714
+
 
             PropInitFunc = objectInfo.PropertyMetadataInitializer;
-            ElementType = converter.ElementType;
             SerializeHandler = objectInfo.SerializeHandler;
-            PropertyInfoForTypeInfo = JsonMetadataServices.CreateJsonPropertyInfoForClassInfo(typeof(T), this, converter, Options);
             NumberHandling = objectInfo.NumberHandling;
         }
 
@@ -64,21 +52,39 @@ namespace System.Text.Json.Serialization.Metadata
             Func<JsonConverter<T>> converterCreator,
             object? createObjectWithArgs = null,
             object? addFunc = null)
-            : base(typeof(T), options)
+            : base(GetConverter(collectionInfo, converterCreator), options)
         {
-            ConverterStrategy strategy = collectionInfo.KeyInfo == null ? ConverterStrategy.Enumerable : ConverterStrategy.Dictionary;
-            JsonConverter<T> converter = new JsonMetadataServicesConverter<T>(converterCreator, strategy);
-
-            KeyType = converter.KeyType;
-            ElementType = converter.ElementType;
             KeyTypeInfo = collectionInfo.KeyInfo;
             ElementTypeInfo = collectionInfo.ElementInfo ?? throw new ArgumentNullException(nameof(collectionInfo.ElementInfo));
             NumberHandling = collectionInfo.NumberHandling;
-            PropertyInfoForTypeInfo = JsonMetadataServices.CreateJsonPropertyInfoForClassInfo(typeof(T), this, converter, options);
             SerializeHandler = collectionInfo.SerializeHandler;
             CreateObjectWithArgs = createObjectWithArgs;
             AddMethodDelegate = addFunc;
             SetCreateObjectFunc(collectionInfo.ObjectCreator);
+        }
+
+        private static JsonConverter GetConverter(JsonObjectInfoValues<T> objectInfo)
+        {
+#pragma warning disable CS8714
+            // The type cannot be used as type parameter in the generic type or method.
+            // Nullability of type argument doesn't match 'notnull' constraint.
+            if (objectInfo.ObjectWithParameterizedConstructorCreator != null)
+            {
+                return new JsonMetadataServicesConverter<T>(
+                    () => new LargeObjectWithParameterizedConstructorConverter<T>(),
+                    ConverterStrategy.Object);
+            }
+            else
+            {
+                return new JsonMetadataServicesConverter<T>(() => new ObjectDefaultConverter<T>(), ConverterStrategy.Object);
+            }
+#pragma warning restore CS8714
+        }
+
+        private static JsonConverter GetConverter(JsonCollectionInfoValues<T> collectionInfo, Func<JsonConverter<T>> converterCreator)
+        {
+            ConverterStrategy strategy = collectionInfo.KeyInfo == null ? ConverterStrategy.Enumerable : ConverterStrategy.Dictionary;
+            return new JsonMetadataServicesConverter<T>(converterCreator, strategy);
         }
 
         internal override void LateAddProperties()

@@ -69,7 +69,7 @@ ac_check_headers (
   sys/prctl.h sys/socket.h sys/utsname.h sys/select.h sys/poll.h sys/wait.h sys/resource.h
   sys/ioctl.h sys/errno.h sys/sendfile.h sys/statvfs.h sys/statfs.h sys/mman.h sys/mount.h sys/time.h sys/random.h
   strings.h stdint.h unistd.h signal.h setjmp.h syslog.h netdb.h utime.h semaphore.h alloca.h ucontext.h pwd.h elf.h
-  gnu/lib-names.h netinet/tcp.h netinet/in.h link.h arpa/inet.h unwind.h poll.h wchar.h linux/magic.h
+  gnu/lib-names.h netinet/tcp.h netinet/in.h link.h arpa/inet.h unwind.h poll.h wchar.h
   android/legacy_signal_inlines.h execinfo.h pthread.h pthread_np.h net/if.h dirent.h
   CommonCrypto/CommonDigest.h dlfcn.h getopt.h pwd.h alloca.h
   /usr/include/malloc.h)
@@ -85,8 +85,8 @@ ac_check_funcs (
   gethrtime read_real_time gethostbyname gethostbyname2 getnameinfo getifaddrs
   access inet_ntop Qp2getifaddrs getpid mktemp)
 
-if (HOST_LINUX)
-  # sysctl is deprecated on Linux
+if (HOST_LINUX OR HOST_BROWSER)
+  # sysctl is deprecated on Linux and doesn't work on Browser
   set(HAVE_SYS_SYSCTL_H 0)
 else ()
   check_include_files("sys/types.h;sys/sysctl.h" HAVE_SYS_SYSCTL_H)
@@ -112,6 +112,7 @@ check_symbol_exists(madvise "sys/mman.h" HAVE_MADVISE)
 check_symbol_exists(pthread_mutexattr_setprotocol "pthread.h" HAVE_DECL_PTHREAD_MUTEXATTR_SETPROTOCOL)
 check_symbol_exists(CLOCK_MONOTONIC "time.h" HAVE_CLOCK_MONOTONIC)
 check_symbol_exists(CLOCK_MONOTONIC_COARSE "time.h" HAVE_CLOCK_MONOTONIC_COARSE)
+
 check_symbol_exists(sys_signame "signal.h" HAVE_SYSSIGNAME)
 check_symbol_exists(pthread_jit_write_protect_np "pthread.h" HAVE_PTHREAD_JIT_WRITE_PROTECT_NP)
 check_symbol_exists(getauxval sys/auxv.h HAVE_GETAUXVAL)
@@ -123,7 +124,6 @@ ac_check_type("struct ip_mreqn" ip_mreqn "netinet/in.h")
 ac_check_type("struct ip_mreq" ip_mreq "netinet/in.h")
 ac_check_type("clockid_t" clockid_t "sys/types.h")
 
-check_struct_has_member("struct kinfo_proc" kp_proc "sys/types.h;sys/param.h;sys/sysctl.h;sys/proc.h" HAVE_STRUCT_KINFO_PROC_KP_PROC)
 check_struct_has_member("struct sockaddr_in" sin_len "netinet/in.h" HAVE_SOCKADDR_IN_SIN_LEN)
 check_struct_has_member("struct sockaddr_in6" sin6_len "netinet/in.h" HAVE_SOCKADDR_IN6_SIN_LEN)
 check_struct_has_member("struct stat" st_atim "sys/types.h;sys/stat.h;unistd.h" HAVE_STRUCT_STAT_ST_ATIM)

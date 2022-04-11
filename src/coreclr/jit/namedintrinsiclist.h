@@ -79,8 +79,9 @@ enum NamedIntrinsic : unsigned short
     NI_System_ByReference_get_Value,
     NI_System_Activator_AllocatorOf,
     NI_System_Activator_DefaultConstructorOf,
-    NI_System_Object_MethodTableOf,
     NI_System_EETypePtr_EETypePtrOf,
+
+    NI_Internal_Runtime_MethodTable_Of,
 
     NI_System_Runtime_CompilerServices_RuntimeHelpers_CreateSpan,
     NI_System_Runtime_CompilerServices_RuntimeHelpers_InitializeArray,

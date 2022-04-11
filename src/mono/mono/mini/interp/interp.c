@@ -1041,6 +1041,7 @@ interp_throw (ThreadContext *context, MonoException *ex, InterpFrame *frame, con
 	 */
 	frame->state.ip = ip + 1;
 
+	// This LMF is pop'ed by the EH machinery before resuming
 	interp_push_lmf (&ext, frame);
 
 	if (mono_object_isinst_checked ((MonoObject *) ex, mono_defaults.exception_class, error)) {
@@ -1064,8 +1065,6 @@ interp_throw (ThreadContext *context, MonoException *ex, InterpFrame *frame, con
 	 */
 
 	mono_handle_exception (&ctx, (MonoObject*)ex);
-
-	interp_pop_lmf (&ext);
 
 	if (MONO_CONTEXT_GET_IP (&ctx) != 0) {
 		/* We need to unwind into non-interpreter code */

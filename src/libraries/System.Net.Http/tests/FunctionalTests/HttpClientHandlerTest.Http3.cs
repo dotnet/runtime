@@ -28,7 +28,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Theory]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/55774")]
         [InlineData(10)] // 2 bytes settings value.
         [InlineData(100)] // 4 bytes settings value.
         [InlineData(10_000_000)] // 8 bytes settings value.

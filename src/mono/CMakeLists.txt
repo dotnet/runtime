@@ -857,10 +857,6 @@ if(HOST_IOS OR HOST_ANDROID OR HOST_MACCAT)
 else()
   set(DISABLE_DLLMAP 1)
 endif()
-if (TARGET_BROWSER)
-  # sys/errno.h exists, but just emits a warning and includes errno.h
-  unset(HAVE_SYS_ERRNO_H)
-endif()
 ### End of OS specific checks
 
 include_directories("${CLR_SRC_NATIVE_DIR}")
