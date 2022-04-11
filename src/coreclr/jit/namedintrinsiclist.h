@@ -56,6 +56,7 @@ enum NamedIntrinsic : unsigned short
     NI_System_Threading_Thread_get_CurrentThread,
     NI_System_Threading_Thread_get_ManagedThreadId,
     NI_System_Type_get_IsValueType,
+    NI_System_Type_get_IsByRefLike,
     NI_System_Type_IsAssignableFrom,
     NI_System_Type_IsAssignableTo,
     NI_System_Type_op_Equality,
