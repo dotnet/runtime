@@ -17,7 +17,7 @@ namespace System.Text.Json
         /// Also sets state.Current.JsonPropertyInfo to a non-null value.
         /// </summary>
         internal static JsonPropertyInfo LookupProperty(
-            object obj,
+            object? obj,
             ReadOnlySpan<byte> unescapedPropertyName,
             ref ReadStack state,
             JsonSerializerOptions options,
@@ -27,7 +27,7 @@ namespace System.Text.Json
 #if DEBUG
             ConverterStrategy strat = state.Current.JsonTypeInfo.PropertyInfoForTypeInfo.ConverterStrategy;
             string propName = JsonHelpers.Utf8GetString(unescapedPropertyName);
-            string objTypeName = obj.GetType().FullName!;
+            string objTypeName = obj?.GetType().FullName ?? "<null>";
             string jtiTypeName = state.Current.JsonTypeInfo.GetType().Name;
             string typeName = state.Current.JsonTypeInfo.Type.GetType().FullName!;
             bool isConfigured = state.Current.JsonTypeInfo.IsConfigured;
@@ -60,7 +60,7 @@ namespace System.Text.Json
 
                     if (createExtensionProperty)
                     {
-                        CreateDataExtensionProperty(obj, dataExtProperty, options);
+                        CreateDataExtensionProperty(obj!, dataExtProperty, options);
                     }
 
                     jsonPropertyInfo = dataExtProperty;
