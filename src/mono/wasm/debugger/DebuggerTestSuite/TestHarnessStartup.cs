@@ -76,6 +76,35 @@ namespace Microsoft.WebAssembly.Diagnostics
             catch (Exception e) { Logger.LogError(e, "webserver: SendNodeList failed"); }
         }
 
+        public void CleanAndKillFirefox(ProcessStartInfo psi)
+        {
+#if !RUN_IN_CHROME
+                Process process = new Process();
+                process.StartInfo.FileName = "pkill";
+                process.StartInfo.Arguments = "firefox";
+                process.Start();
+                process.WaitForExit();// Waits here for the process to exit.
+
+                DirectoryInfo di = null;
+                string baseDir = Path.GetDirectoryName(psi.FileName);                
+                if (File.Exists("/tmp/profile/prefs.js"))
+                    di = new DirectoryInfo("/tmp/profile");
+                if (File.Exists(Path.Combine(baseDir, "..", "profile", "prefs.js")))
+                    di = new DirectoryInfo($"{Path.Combine(baseDir, "..", "profile")}");
+                if (di != null)
+                {
+                    Console.WriteLine($"Erasing Files - {di.FullName}");
+                    foreach (FileInfo file in di.EnumerateFiles())
+                    {
+                        if (file.Name != "prefs.js")
+                            file.Delete(); 
+                    }
+                    foreach (DirectoryInfo dir in di.EnumerateDirectories())
+                        dir.Delete(true); 
+                }
+#endif     
+        }
+
         public async Task LaunchAndServe(ProcessStartInfo psi,
                                          HttpContext context,
                                          Func<string, ILogger<TestHarnessProxy>, Task<string>> extract_conn_url,
@@ -93,6 +122,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
             var tcs = new TaskCompletionSource<string>();
 
+            CleanAndKillFirefox(psi);
             var proc = Process.Start(psi);
             try
             {
@@ -172,13 +202,6 @@ namespace Microsoft.WebAssembly.Diagnostics
                 proc.Kill();
                 proc.WaitForExit();
                 proc.Close();
-#if !RUN_IN_CHROME
-                Process process = new Process();
-                process.StartInfo.FileName = "pkill";
-                process.StartInfo.Arguments = "firefox";
-                process.Start();
-                process.WaitForExit();// Waits here for the process to exit.
-#endif                
             }
         }
 
