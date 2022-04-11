@@ -46,7 +46,7 @@ namespace System.Security.Cryptography.Cose.Tests
         [Fact]
         public void SignWithNullContent()
         {
-            Assert.Throws<ArgumentNullException>(() => Sign(null!, DefaultKey, DefaultHash));
+            Assert.Throws<ArgumentNullException>("content", () => Sign(null!, DefaultKey, DefaultHash));
         }
 
         [Theory]
@@ -63,7 +63,7 @@ namespace System.Security.Cryptography.Cose.Tests
         [Fact]
         public void SignWithNullKey()
         {
-            Assert.Throws<ArgumentNullException>(() => Sign(s_sampleContent, null!, DefaultHash));
+            Assert.Throws<ArgumentNullException>("key", () => Sign(s_sampleContent, null!, DefaultHash));
         }
 
         [Fact]
@@ -101,7 +101,7 @@ namespace System.Security.Cryptography.Cose.Tests
         internal override List<CoseAlgorithm> CoseAlgorithms => new() { CoseAlgorithm.ES256, CoseAlgorithm.ES384, CoseAlgorithm.ES512 };
 
         internal override byte[] Sign(byte[] content, ECDsa key, HashAlgorithmName hashAlgorithm, bool isDetached = false)
-            => CoseSign1Message.Sign(content, key, hashAlgorithm, isDetached);
+            => CoseSign1Message.Sign(content, key, hashAlgorithm, isDetached: isDetached);
         internal override bool Verify(CoseSign1Message msg, ECDsa key)
             => msg.Verify(key);
         internal override bool Verify(CoseSign1Message msg, ECDsa key, ReadOnlySpan<byte> content)
@@ -113,7 +113,7 @@ namespace System.Security.Cryptography.Cose.Tests
         internal override List<CoseAlgorithm> CoseAlgorithms => new() { CoseAlgorithm.PS256, CoseAlgorithm.PS384, CoseAlgorithm.PS512 };
 
         internal override byte[] Sign(byte[] content, RSA key, HashAlgorithmName hashAlgorithm, bool isDetached = false)
-            => CoseSign1Message.Sign(content, key, hashAlgorithm, isDetached);
+            => CoseSign1Message.Sign(content, key, hashAlgorithm, isDetached: isDetached);
         internal override bool Verify(CoseSign1Message msg, RSA key)
             => msg.Verify(key);
         internal override bool Verify(CoseSign1Message msg, RSA key, ReadOnlySpan<byte> content)

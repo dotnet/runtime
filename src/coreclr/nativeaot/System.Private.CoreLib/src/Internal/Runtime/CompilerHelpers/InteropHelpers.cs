@@ -508,7 +508,7 @@ namespace Internal.Runtime.CompilerHelpers
         internal static int AsAnyGetNativeSize(object o)
         {
             // Array, string and StringBuilder are not implemented.
-            if (o.EETypePtr.IsArray ||
+            if (o.GetEETypePtr().IsArray ||
                 o is string ||
                 o is StringBuilder)
             {
@@ -524,7 +524,7 @@ namespace Internal.Runtime.CompilerHelpers
         internal static void AsAnyMarshalManagedToNative(object o, IntPtr address)
         {
             // Array, string and StringBuilder are not implemented.
-            if (o.EETypePtr.IsArray ||
+            if (o.GetEETypePtr().IsArray ||
                 o is string ||
                 o is StringBuilder)
             {
@@ -537,7 +537,7 @@ namespace Internal.Runtime.CompilerHelpers
         internal static void AsAnyMarshalNativeToManaged(IntPtr address, object o)
         {
             // Array, string and StringBuilder are not implemented.
-            if (o.EETypePtr.IsArray ||
+            if (o.GetEETypePtr().IsArray ||
                 o is string ||
                 o is StringBuilder)
             {
@@ -552,7 +552,7 @@ namespace Internal.Runtime.CompilerHelpers
         internal static void AsAnyCleanupNative(IntPtr address, object o)
         {
             // Array, string and StringBuilder are not implemented.
-            if (o.EETypePtr.IsArray ||
+            if (o.GetEETypePtr().IsArray ||
                 o is string ||
                 o is StringBuilder)
             {
@@ -619,7 +619,7 @@ namespace Internal.Runtime.CompilerHelpers
                 throw new ApplicationException();
             }
 
-            if (!RuntimeImports.AreTypesAssignable(marshaller.EETypePtr, EETypePtr.EETypePtrOf<ICustomMarshaler>()))
+            if (!RuntimeImports.AreTypesAssignable(marshaller.GetEETypePtr(), EETypePtr.EETypePtrOf<ICustomMarshaler>()))
             {
                 throw new ApplicationException();
             }

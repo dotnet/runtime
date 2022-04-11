@@ -116,6 +116,35 @@ namespace System.Security.Cryptography.Cose.Tests
             Assert.False(msg.Verify(DefaultKey, wrongContent), "Calling Verify with the wrong content");
         }
 
+        [Fact]
+        public void VerifyThrowsIfContentIsNull()
+        {
+            byte[] encodedMsg = CoseSign1Message.Sign(s_sampleContent, DefaultKey, DefaultHash);
+            CoseSign1Message msg = CoseMessage.DecodeSign1(encodedMsg);
+
+            Assert.Throws<ArgumentNullException>("content", () => msg.Verify(DefaultKey, null!));
+        }
+
+        [Fact]
+        public void VerifyThrowsIfKeyIsNull()
+        {
+            byte[] encodedMsg = CoseSign1Message.Sign(s_sampleContent, DefaultKey, DefaultHash);
+            CoseSign1Message msg = CoseMessage.DecodeSign1(encodedMsg);
+
+            Assert.Throws<ArgumentNullException>("key", () => msg.Verify(null!));
+            Assert.Throws<ArgumentNullException>("key", () => msg.Verify(null!, s_sampleContent));
+        }
+
+        [Fact]
+        public void VerifyThrowsIfKeyIsNotSupported()
+        {
+            byte[] encodedMsg = CoseSign1Message.Sign(s_sampleContent, DefaultKey, DefaultHash);
+            CoseSign1Message msg = CoseMessage.DecodeSign1(encodedMsg);
+
+            AsymmetricAlgorithm key = ECDiffieHellman.Create();
+            Assert.Throws<CryptographicException>(() => msg.Verify(key));
+        }
+
         [Theory]
         // https://github.com/cose-wg/Examples/blob/master/sign1-tests/sign-fail-03.json
         [InlineData("D28445A1013903E6A10442313154546869732069732074686520636F6E74656E742E58408EB33E4CA31D1C465AB05AAC34CC6B23D58FEF5C083106C4D25A91AEF0B0117E2AF9A291AA32E14AB834DC56ED2A223444547E01F11D3B0916E5A4C345CACB36")]

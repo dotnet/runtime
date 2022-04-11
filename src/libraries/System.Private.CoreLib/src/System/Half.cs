@@ -472,7 +472,7 @@ namespace System
         /// <summary>
         /// Returns a string representation of the current value using the specified <paramref name="format"/>.
         /// </summary>
-        public string ToString(string? format)
+        public string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format)
         {
             return Number.FormatHalf(this, format, NumberFormatInfo.CurrentInfo);
         }
@@ -488,7 +488,7 @@ namespace System
         /// <summary>
         /// Returns a string representation of the current value using the specified <paramref name="format"/> and <paramref name="provider"/>.
         /// </summary>
-        public string ToString(string? format, IFormatProvider? provider)
+        public string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format, IFormatProvider? provider)
         {
             return Number.FormatHalf(this, format, NumberFormatInfo.GetInstance(provider));
         }
@@ -501,7 +501,7 @@ namespace System
         /// <param name="format">A span containing the characters that represent a standard or custom format string that defines the acceptable format for <paramref name="destination"/>.</param>
         /// <param name="provider">An optional object that supplies culture-specific formatting information for <paramref name="destination"/>.</param>
         /// <returns></returns>
-        public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format = default, IFormatProvider? provider = null)
+        public bool TryFormat(Span<char> destination, out int charsWritten, [StringSyntax(StringSyntaxAttribute.NumericFormat)] ReadOnlySpan<char> format = default, IFormatProvider? provider = null)
         {
             return Number.TryFormatHalf(this, format, NumberFormatInfo.GetInstance(provider), destination, out charsWritten);
         }
@@ -715,8 +715,8 @@ namespace System
         /// <inheritdoc cref="IAdditionOperators{TSelf, TOther, TResult}.op_Addition(TSelf, TOther)" />
         public static Half operator +(Half left, Half right) => (Half)((float)left + (float)right);
 
-        // /// <inheritdoc cref="IAdditionOperators{TSelf, TOther, TResult}.op_Addition(TSelf, TOther)" />
-        // static Half IAdditionOperators<Half, Half, Half>.operator checked +(Half left, Half right) => checked((Half)((float)left + (float)right));
+        /// <inheritdoc cref="IAdditionOperators{TSelf, TOther, TResult}.op_Addition(TSelf, TOther)" />
+        static Half IAdditionOperators<Half, Half, Half>.operator checked +(Half left, Half right) => left + right;
 
         //
         // IAdditiveIdentity
@@ -789,13 +789,8 @@ namespace System
             return (Half)tmp;
         }
 
-        // /// <inheritdoc cref="IDecrementOperators{TSelf}.op_CheckedDecrement(TSelf)" />
-        // static Half IDecrementOperators<Half>.operator checked --(Half value)
-        // {
-        //     var tmp = (float)value;
-        //     --tmp;
-        //     return (Half)tmp;
-        // }
+        /// <inheritdoc cref="IDecrementOperators{TSelf}.op_CheckedDecrement(TSelf)" />
+        static Half IDecrementOperators<Half>.operator checked --(Half value) => --value;
 
         //
         // IDivisionOperators
@@ -804,8 +799,8 @@ namespace System
         /// <inheritdoc cref="IDivisionOperators{TSelf, TOther, TResult}.op_Division(TSelf, TOther)" />
         public static Half operator /(Half left, Half right) => (Half)((float)left / (float)right);
 
-        // /// <inheritdoc cref="IDivisionOperators{TSelf, TOther, TResult}.op_CheckedDivision(TSelf, TOther)" />
-        // static Half IDivisionOperators<Half, Half, Half>.operator checked /(Half left, Half right) => checked((Half)((float)left / (float)right));
+        /// <inheritdoc cref="IDivisionOperators{TSelf, TOther, TResult}.op_CheckedDivision(TSelf, TOther)" />
+        static Half IDivisionOperators<Half, Half, Half>.operator checked /(Half left, Half right) => left / right;
 
         //
         // IExponentialFunctions
@@ -943,13 +938,8 @@ namespace System
             return (Half)tmp;
         }
 
-        // /// <inheritdoc cref="IIncrementOperators{TSelf}.op_CheckedIncrement(TSelf)" />
-        // static Half IIncrementOperators<Half>.operator checked ++(Half value)
-        // {
-        //     var tmp = (float)value;
-        //     ++tmp;
-        //     return (Half)tmp;
-        // }
+        /// <inheritdoc cref="IIncrementOperators{TSelf}.op_CheckedIncrement(TSelf)" />
+        static Half IIncrementOperators<Half>.operator checked ++(Half value) => ++value;
 
         //
         // ILogarithmicFunctions
@@ -994,8 +984,8 @@ namespace System
         /// <inheritdoc cref="IMultiplyOperators{TSelf, TOther, TResult}.op_Multiply(TSelf, TOther)" />
         public static Half operator *(Half left, Half right) => (Half)((float)left * (float)right);
 
-        // /// <inheritdoc cref="IMultiplyOperators{TSelf, TOther, TResult}.op_CheckedMultiply(TSelf, TOther)" />
-        // static Half IMultiplyOperators<Half, Half, Half>.operator checked *(Half left, Half right) => checked((Half)((float)left * (float)right));
+        /// <inheritdoc cref="IMultiplyOperators{TSelf, TOther, TResult}.op_CheckedMultiply(TSelf, TOther)" />
+        static Half IMultiplyOperators<Half, Half, Half>.operator checked *(Half left, Half right) => left * right;
 
         //
         // INumber
@@ -1375,8 +1365,8 @@ namespace System
         /// <inheritdoc cref="ISubtractionOperators{TSelf, TOther, TResult}.op_Subtraction(TSelf, TOther)" />
         public static Half operator -(Half left, Half right) => (Half)((float)left - (float)right);
 
-        // /// <inheritdoc cref="ISubtractionOperators{TSelf, TOther, TResult}.op_CheckedSubtraction(TSelf, TOther)" />
-        // static Half ISubtractionOperators<Half, Half, Half>.operator checked -(Half left, Half right) => checked((Half)((float)left - (float)right));
+        /// <inheritdoc cref="ISubtractionOperators{TSelf, TOther, TResult}.op_CheckedSubtraction(TSelf, TOther)" />
+        static Half ISubtractionOperators<Half, Half, Half>.operator checked -(Half left, Half right) => left - right;
 
         //
         // ITrigonometricFunctions
@@ -1438,8 +1428,8 @@ namespace System
         /// <inheritdoc cref="IUnaryNegationOperators{TSelf, TResult}.op_UnaryNegation(TSelf)" />
         public static Half operator -(Half value) => (Half)(-(float)value);
 
-        // /// <inheritdoc cref="IUnaryNegationOperators{TSelf, TResult}.op_CheckedUnaryNegation(TSelf)" />
-        // static Half IUnaryNegationOperators<Half, Half>.operator checked -(Half value) => checked((Half)(-(float)value));
+        /// <inheritdoc cref="IUnaryNegationOperators{TSelf, TResult}.op_CheckedUnaryNegation(TSelf)" />
+        static Half IUnaryNegationOperators<Half, Half>.operator checked -(Half value) => -value;
 
         //
         // IUnaryPlusOperators

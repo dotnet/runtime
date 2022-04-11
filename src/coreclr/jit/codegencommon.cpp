@@ -127,9 +127,9 @@ CodeGen::CodeGen(Compiler* theCompiler) : CodeGenInterface(theCompiler)
     /* Assume that we not fully interruptible */
 
     SetInterruptible(false);
-#ifdef TARGET_ARMARCH
+#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64)
     SetHasTailCalls(false);
-#endif // TARGET_ARMARCH
+#endif // TARGET_ARMARCH || TARGET_LOONGARCH64
 #ifdef DEBUG
     genInterruptibleUsed = false;
     genCurDispOffset     = (unsigned)-1;
@@ -596,7 +596,7 @@ regMaskTP Compiler::compHelperCallKillSet(CorInfoHelpFunc helper)
         case CORINFO_HELP_ASSIGN_BYREF:
 #if defined(TARGET_AMD64)
             return RBM_RSI | RBM_RDI | RBM_CALLEE_TRASH_NOGC;
-#elif defined(TARGET_ARMARCH)
+#elif defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64)
             return RBM_CALLEE_TRASH_WRITEBARRIER_BYREF;
 #elif defined(TARGET_X86)
             return RBM_ESI | RBM_EDI | RBM_ECX;
@@ -605,7 +605,7 @@ regMaskTP Compiler::compHelperCallKillSet(CorInfoHelpFunc helper)
             return RBM_CALLEE_TRASH;
 #endif
 
-#if defined(TARGET_ARMARCH)
+#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64)
         case CORINFO_HELP_ASSIGN_REF:
         case CORINFO_HELP_CHECKED_ASSIGN_REF:
             return RBM_CALLEE_TRASH_WRITEBARRIER;
@@ -1171,7 +1171,7 @@ AGAIN:
 
         cns += op2->AsIntConCommon()->IconValue();
 
-#if defined(TARGET_ARMARCH)
+#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64)
         if (cns == 0)
 #endif
         {
@@ -1191,7 +1191,7 @@ AGAIN:
 
                     goto AGAIN;
 
-#if !defined(TARGET_ARMARCH)
+#if !defined(TARGET_ARMARCH) && !defined(TARGET_LOONGARCH64)
                 // TODO-ARM64-CQ, TODO-ARM-CQ: For now we don't try to create a scaled index.
                 case GT_MUL:
                     if (op1->gtOverflow())
@@ -1214,7 +1214,7 @@ AGAIN:
                         goto FOUND_AM;
                     }
                     break;
-#endif // !defined(TARGET_ARMARCH)
+#endif // !defined(TARGET_ARMARCH) && !defined(TARGET_LOONGARCH64)
 
                 default:
                     break;
@@ -1235,7 +1235,7 @@ AGAIN:
 
     switch (op1->gtOper)
     {
-#if !defined(TARGET_ARMARCH)
+#if !defined(TARGET_ARMARCH) && !defined(TARGET_LOONGARCH64)
         // TODO-ARM64-CQ, TODO-ARM-CQ: For now we don't try to create a scaled index.
         case GT_ADD:
 
@@ -1294,7 +1294,7 @@ AGAIN:
                 goto FOUND_AM;
             }
             break;
-#endif // !TARGET_ARMARCH
+#endif // !TARGET_ARMARCH && !TARGET_LOONGARCH64
 
         case GT_NOP:
 
@@ -1313,7 +1313,7 @@ AGAIN:
     noway_assert(op2);
     switch (op2->gtOper)
     {
-#if !defined(TARGET_ARMARCH)
+#if !defined(TARGET_ARMARCH) && !defined(TARGET_LOONGARCH64)
         // TODO-ARM64-CQ, TODO-ARM-CQ: For now we only handle MUL and LSH because
         // arm doesn't support both scale and offset at the same. Offset is handled
         // at the emitter as a peephole optimization.
@@ -1370,7 +1370,7 @@ AGAIN:
                 goto FOUND_AM;
             }
             break;
-#endif // TARGET_ARMARCH
+#endif // TARGET_ARMARCH || TARGET_LOONGARCH64
 
         case GT_NOP:
 
@@ -1593,7 +1593,7 @@ void CodeGen::genJumpToThrowHlpBlk(emitJumpKind jumpKind, SpecialCodeKind codeKi
     else
     {
         // The code to throw the exception will be generated inline, and
-        //  we will jump around it in the normal non-exception case.
+        // we will jump around it in the normal non-exception case.
 
         BasicBlock*  tgtBlk          = nullptr;
         emitJumpKind reverseJumpKind = emitter::emitReverseJumpKind(jumpKind);
@@ -1620,6 +1620,7 @@ void CodeGen::genJumpToThrowHlpBlk(emitJumpKind jumpKind, SpecialCodeKind codeKi
  * have set the flags. Check if the operation caused an overflow.
  */
 
+#ifndef TARGET_LOONGARCH64
 // inline
 void CodeGen::genCheckOverflow(GenTree* tree)
 {
@@ -1666,6 +1667,7 @@ void CodeGen::genCheckOverflow(GenTree* tree)
 
     genJumpToThrowHlpBlk(jumpKind, SCK_OVERFLOW);
 }
+#endif
 
 #if defined(FEATURE_EH_FUNCLETS)
 
@@ -1814,6 +1816,10 @@ void CodeGen::genGenerateMachineCode()
         else if (compiler->info.genCPU == CPU_ARM64)
         {
             printf("generic ARM64 CPU");
+        }
+        else if (compiler->info.genCPU == CPU_LOONGARCH64)
+        {
+            printf("generic LOONGARCH64 CPU");
         }
         else
         {
@@ -2019,7 +2025,7 @@ void CodeGen::genEmitMachineCode()
 
     bool trackedStackPtrsContig; // are tracked stk-ptrs contiguous ?
 
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
     trackedStackPtrsContig = false;
 #elif defined(TARGET_ARM)
     // On arm due to prespilling of arguments, tracked stk-ptrs may not be contiguous
@@ -2938,6 +2944,8 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #pragma warning(push)
 #pragma warning(disable : 21000) // Suppress PREFast warning about overly large function
 #endif
+
+#ifndef TARGET_LOONGARCH64
 void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbered, RegState* regState)
 {
 #ifdef DEBUG
@@ -4228,6 +4236,8 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
         noway_assert(regArgMaskLiveSave != regArgMaskLive); // if it doesn't change, we have an infinite loop
     }
 }
+#endif // !TARGET_LOONGARCH64
+
 #ifdef _PREFAST_
 #pragma warning(pop)
 #endif
@@ -4251,6 +4261,11 @@ void CodeGen::genEnregisterIncomingStackArgs()
     assert(compiler->compGeneratingProlog);
 
     unsigned varNum = 0;
+
+#ifdef TARGET_LOONGARCH64
+    int       tmp_offset = 0;
+    regNumber tmp_reg    = REG_NA;
+#endif
 
     for (LclVarDsc *varDsc = compiler->lvaTable; varNum < compiler->lvaCount; varNum++, varDsc++)
     {
@@ -4298,8 +4313,38 @@ void CodeGen::genEnregisterIncomingStackArgs()
         assert(regNum != REG_STK);
 
         var_types regType = varDsc->GetStackSlotHomeType();
+#ifdef TARGET_LOONGARCH64
+        {
+            bool FPbased;
+            int  base = compiler->lvaFrameAddress(varNum, &FPbased);
 
+            if (emitter::isValidSimm12(base))
+            {
+                GetEmitter()->emitIns_R_S(ins_Load(regType), emitTypeSize(regType), regNum, varNum, 0);
+            }
+            else
+            {
+                if (tmp_reg == REG_NA)
+                {
+                    regNumber reg2 = FPbased ? REG_FPBASE : REG_SPBASE;
+                    tmp_offset     = base;
+                    tmp_reg        = REG_R21;
+
+                    GetEmitter()->emitIns_I_la(EA_PTRSIZE, REG_R21, base);
+                    GetEmitter()->emitIns_R_R_R(INS_add_d, EA_PTRSIZE, REG_R21, REG_R21, reg2);
+                    GetEmitter()->emitIns_R_S(ins_Load(regType), emitTypeSize(regType), regNum, varNum, -8);
+                }
+                else
+                {
+                    int baseOffset = -(base - tmp_offset) - 8;
+                    GetEmitter()->emitIns_R_S(ins_Load(regType), emitTypeSize(regType), regNum, varNum, baseOffset);
+                }
+            }
+        }
+#else // !TARGET_LOONGARCH64
         GetEmitter()->emitIns_R_S(ins_Load(regType), emitTypeSize(regType), regNum, varNum, 0);
+#endif // !TARGET_LOONGARCH64
+
         regSet.verifyRegUsed(regNum);
 #ifdef USING_SCOPE_INFO
         psiMoveToReg(varNum);
@@ -4600,6 +4645,9 @@ void CodeGen::genZeroInitFltRegs(const regMaskTP& initFltRegs, const regMaskTP& 
 #elif defined(TARGET_ARM64)
                 // We will just zero out the entire vector register. This sets it to a double/float zero value
                 GetEmitter()->emitIns_R_I(INS_movi, EA_16BYTE, reg, 0x00, INS_OPTS_16B);
+#elif defined(TARGET_LOONGARCH64)
+                // We will just zero out the entire vector register. This sets it to a double/float zero value
+                GetEmitter()->emitIns_R_R(INS_movgr2fr_d, EA_8BYTE, reg, REG_R0);
 #else // TARGET*
 #error Unsupported or unset target architecture
 #endif
@@ -4635,6 +4683,8 @@ void CodeGen::genZeroInitFltRegs(const regMaskTP& initFltRegs, const regMaskTP& 
 #elif defined(TARGET_ARM64)
                 // We will just zero out the entire vector register. This sets it to a double/float zero value
                 GetEmitter()->emitIns_R_I(INS_movi, EA_16BYTE, reg, 0x00, INS_OPTS_16B);
+#elif defined(TARGET_LOONGARCH64)
+                GetEmitter()->emitIns_R_R(INS_movgr2fr_d, EA_8BYTE, reg, REG_R0);
 #else // TARGET*
 #error Unsupported or unset target architecture
 #endif
@@ -4650,6 +4700,8 @@ regNumber CodeGen::genGetZeroReg(regNumber initReg, bool* pInitRegZeroed)
 {
 #ifdef TARGET_ARM64
     return REG_ZR;
+#elif defined(TARGET_LOONGARCH64)
+    return REG_R0;
 #else  // !TARGET_ARM64
     if (*pInitRegZeroed == false)
     {
@@ -5057,11 +5109,14 @@ void CodeGen::genReportGenericContextArg(regNumber initReg, bool* pInitRegZeroed
     // ARM's emitIns_R_R_I automatically uses the reserved register if necessary.
     GetEmitter()->emitIns_R_R_I(ins_Store(TYP_I_IMPL), EA_PTRSIZE, reg, genFramePointerReg(),
                                 compiler->lvaCachedGenericContextArgOffset());
-#else  // !ARM64 !ARM
+#elif defined(TARGET_LOONGARCH64)
+    genInstrWithConstant(ins_Store(TYP_I_IMPL), EA_PTRSIZE, reg, genFramePointerReg(),
+                         compiler->lvaCachedGenericContextArgOffset(), REG_R21);
+#else  // !ARM64 !ARM !LOONGARCH64
     // mov [ebp-lvaCachedGenericContextArgOffset()], reg
     GetEmitter()->emitIns_AR_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, reg, genFramePointerReg(),
                                compiler->lvaCachedGenericContextArgOffset());
-#endif // !ARM64 !ARM
+#endif // !ARM64 !ARM !LOONGARCH64
 }
 
 /*****************************************************************************
@@ -5444,6 +5499,23 @@ void CodeGen::genFinalizeFrame()
     maskCalleeRegsPushed &= ~RBM_FLT_CALLEE_SAVED;
 #endif // defined(TARGET_XARCH)
 
+#ifdef TARGET_LOONGARCH64
+    if (isFramePointerUsed())
+    {
+        // For a FP based frame we have to push/pop the FP register
+        //
+        maskCalleeRegsPushed |= RBM_FPBASE;
+
+        // This assert check that we are not using REG_FP
+        // as both the frame pointer and as a codegen register
+        //
+        assert(!regSet.rsRegsModified(RBM_FPBASE));
+    }
+
+    // we always push RA.  See genPushCalleeSavedRegisters
+    maskCalleeRegsPushed |= RBM_RA;
+#endif // TARGET_LOONGARCH64
+
     compiler->compCalleeRegsPushed = genCountBits(maskCalleeRegsPushed);
 
 #ifdef DEBUG
@@ -5566,10 +5638,10 @@ void CodeGen::genFnProlog()
         instGen(INS_nop);
         instGen(INS_BREAKPOINT);
 
-#ifdef TARGET_ARMARCH
+#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64)
         // Avoid asserts in the unwind info because these instructions aren't accounted for.
         compiler->unwindPadding();
-#endif // TARGET_ARMARCH
+#endif // TARGET_ARMARCH || TARGET_LOONGARCH64
     }
 #endif // DEBUG
 
@@ -5975,14 +6047,16 @@ void CodeGen::genFnProlog()
     }
 #endif // TARGET_XARCH
 
-#ifdef TARGET_ARM64
+#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
     genPushCalleeSavedRegisters(initReg, &initRegZeroed);
-#else  // !TARGET_ARM64
+
+#else // !TARGET_ARM64 || !TARGET_LOONGARCH64
+
     if (!isOSRx64Root)
     {
         genPushCalleeSavedRegisters();
     }
-#endif // !TARGET_ARM64
+#endif // !TARGET_ARM64 || !TARGET_LOONGARCH64
 
 #ifdef TARGET_ARM
     bool needToEstablishFP        = false;
@@ -6013,7 +6087,7 @@ void CodeGen::genFnProlog()
     //-------------------------------------------------------------------------
     CLANG_FORMAT_COMMENT_ANCHOR;
 
-#ifndef TARGET_ARM64
+#if !defined(TARGET_ARM64) && !defined(TARGET_LOONGARCH64)
     regMaskTP maskStackAlloc = RBM_NONE;
 
 #ifdef TARGET_ARM
@@ -6026,7 +6100,7 @@ void CodeGen::genFnProlog()
         genAllocLclFrame(compiler->compLclFrameSize + extraFrameSize, initReg, &initRegZeroed,
                          intRegState.rsCalleeRegArgMaskLiveIn);
     }
-#endif // !TARGET_ARM64
+#endif // !TARGET_ARM64 && !TARGET_LOONGARCH64
 
 #ifdef TARGET_AMD64
     // For x64 OSR we have to finish saving int callee saves.
@@ -6201,6 +6275,13 @@ void CodeGen::genFnProlog()
     {
         compiler->lvaUpdateArgsWithInitialReg();
 
+#if defined(TARGET_LOONGARCH64)
+        if (intRegState.rsCalleeRegArgMaskLiveIn || floatRegState.rsCalleeRegArgMaskLiveIn)
+        {
+            initRegZeroed = false;
+            genFnPrologCalleeRegArgs();
+        }
+#else
         auto assignIncomingRegisterArgs = [this, initReg, &initRegZeroed](RegState* regState) {
             if (regState->rsCalleeRegArgMaskLiveIn)
             {
@@ -6236,6 +6317,8 @@ void CodeGen::genFnProlog()
 #else
         assignIncomingRegisterArgs(&intRegState);
 #endif
+
+#endif // TARGET_LOONGARCH64
 
         // Home the incoming arguments.
         genEnregisterIncomingStackArgs();
@@ -6564,7 +6647,7 @@ bool Compiler::IsMultiRegReturnedType(CORINFO_CLASS_HANDLE hClass, CorInfoCallCo
     structPassingKind howToReturnStruct;
     var_types         returnType = getReturnTypeForStruct(hClass, callConv, &howToReturnStruct);
 
-#ifdef TARGET_ARM64
+#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
     return (varTypeIsStruct(returnType) && (howToReturnStruct != SPK_PrimitiveType));
 #else
     return (varTypeIsStruct(returnType));
@@ -6672,7 +6755,7 @@ unsigned Compiler::GetHfaCount(CORINFO_CLASS_HANDLE hClass)
 //
 unsigned CodeGen::getFirstArgWithStackSlot()
 {
-#if defined(UNIX_AMD64_ABI) || defined(TARGET_ARMARCH)
+#if defined(UNIX_AMD64_ABI) || defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64)
     unsigned baseVarNum = 0;
     // Iterate over all the lvParam variables in the Lcl var table until we find the first one
     // that's passed on the stack.
@@ -7834,9 +7917,9 @@ void CodeGen::genReturn(GenTree* treeNode)
             // exit point where it is actually dead.
             genConsumeReg(op1);
 
-#if defined(TARGET_ARM64)
+#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
             genSimpleReturn(treeNode);
-#else // !TARGET_ARM64
+#else // !TARGET_ARM64 || !TARGET_LOONGARCH64
 #if defined(TARGET_X86)
             if (varTypeUsesFloatReg(treeNode))
             {
@@ -7864,7 +7947,7 @@ void CodeGen::genReturn(GenTree* treeNode)
                 regNumber retReg = varTypeUsesFloatReg(treeNode) ? REG_FLOATRET : REG_INTRET;
                 inst_Mov_Extend(targetType, /* srcInReg */ true, retReg, op1->GetRegNum(), /* canSkip */ true);
             }
-#endif // !TARGET_ARM64
+#endif // !TARGET_ARM64 || !TARGET_LOONGARCH64
         }
     }
 
@@ -8058,6 +8141,22 @@ void CodeGen::genStructReturn(GenTree* treeNode)
         GenTreeLclVar* lclNode = actualOp1->AsLclVar();
         LclVarDsc*     varDsc  = compiler->lvaGetDesc(lclNode);
         assert(varDsc->lvIsMultiRegRet);
+#ifdef TARGET_LOONGARCH64
+        // On LoongArch64, for a struct like "{ int, double }", "retTypeDesc" will be "{ TYP_INT, TYP_DOUBLE }",
+        // i. e. not include the padding for the first field, and so the general loop below won't work.
+        var_types type  = retTypeDesc.GetReturnRegType(0);
+        regNumber toReg = retTypeDesc.GetABIReturnReg(0);
+        GetEmitter()->emitIns_R_S(ins_Load(type), emitTypeSize(type), toReg, lclNode->GetLclNum(), 0);
+        if (regCount > 1)
+        {
+            assert(regCount == 2);
+            int offset = genTypeSize(type);
+            type       = retTypeDesc.GetReturnRegType(1);
+            offset     = (int)((unsigned int)offset < genTypeSize(type) ? genTypeSize(type) : offset);
+            toReg      = retTypeDesc.GetABIReturnReg(1);
+            GetEmitter()->emitIns_R_S(ins_Load(type), emitTypeSize(type), toReg, lclNode->GetLclNum(), offset);
+        }
+#else  // !TARGET_LOONGARCH64
         int offset = 0;
         for (unsigned i = 0; i < regCount; ++i)
         {
@@ -8066,6 +8165,7 @@ void CodeGen::genStructReturn(GenTree* treeNode)
             GetEmitter()->emitIns_R_S(ins_Load(type), emitTypeSize(type), toReg, lclNode->GetLclNum(), offset);
             offset += genTypeSize(type);
         }
+#endif // !TARGET_LOONGARCH64
     }
     else
     {

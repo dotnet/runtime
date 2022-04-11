@@ -256,6 +256,16 @@ bool Compiler::rpMustCreateEBPFrame(INDEBUG(const char** wbReason))
     }
 #endif // TARGET_ARM64
 
+#ifdef TARGET_LOONGARCH64
+    // TODO-LOONGARCH64-NYI: This is temporary: force a frame pointer-based frame until genFnProlog
+    // can handle non-frame pointer frames.
+    if (!result)
+    {
+        INDEBUG(reason = "Temporary LOONGARCH64 force frame pointer");
+        result = true;
+    }
+#endif // TARGET_LOONGARCH64
+
 #ifdef DEBUG
     if ((result == true) && (wbReason != nullptr))
     {
