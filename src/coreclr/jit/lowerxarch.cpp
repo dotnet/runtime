@@ -4149,8 +4149,8 @@ GenTree* Lowering::TryLowerXorOpToGetMaskUpToLowestSetBit(GenTreeOp* xorNode)
         return nullptr;
     }
 
-     // Subsequent nodes may rely on CPU flags set by these nodes in which case we cannot remove them
-    if (((xorNode->gtFlags & GTF_SET_FLAGS) != 0) || ((negOp->gtFlags & GTF_SET_FLAGS) !=0) ||
+    // Subsequent nodes may rely on CPU flags set by these nodes in which case we cannot remove them
+    if (((xorNode->gtFlags & GTF_SET_FLAGS) != 0) || ((negOp->gtFlags & GTF_SET_FLAGS) != 0) ||
         ((negNode->gtFlags & GTF_SET_FLAGS) != 0))
     {
         return nullptr;
