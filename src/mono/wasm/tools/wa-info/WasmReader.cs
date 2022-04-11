@@ -549,7 +549,8 @@ namespace WebAssemblyInfo
 
         void ReadSIMDInstruction(ref Instruction instruction)
         {
-            instruction.SIMDOpcode = (SIMDOpcode)ReadI32();
+            instruction.SIMDOpcode = (SIMDOpcode)ReadU32();
+            //Console.WriteLine($"SIMD opcode: {instruction.SIMDOpcode}");
 
             switch (instruction.SIMDOpcode)
             {
