@@ -26,6 +26,19 @@ namespace System.Numerics.Tests
         }
 
         [Fact]
+        public static void LargeNegativeBigIntegerShiftTest()
+        {
+            // Create a very large negative BigInteger
+            BigInteger bigInt = new BigInteger(-1) << int.MaxValue;
+            Assert.Equal(2147483647, bigInt.GetBitLength());
+
+            // Right shift the BigInteger and ensure the operation behaves as expected
+            BigInteger shiftedBigInt = bigInt >> 1;
+            Assert.Equal(2147483646, shiftedBigInt.GetBitLength());
+            Assert.True(shiftedBigInt != new BigInteger(-1));
+        }
+
+        [Fact]
         public static void RunRightShiftTests()
         {
             byte[] tempByteArray1 = new byte[0];
