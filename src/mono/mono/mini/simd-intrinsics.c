@@ -3740,11 +3740,6 @@ static SimdIntrinsic wasmbase_methods [] = {
 	{SN_Splat},
 };
 
-static SimdIntrinsic wasm_vector128_methods [] = {
-	{SN_Create},
-};
-
-
 static const IntrinGroup supported_wasm_intrinsics [] = {
 	{ "WasmBase", 0, wasmbase_methods, sizeof (wasmbase_methods) },
 };
@@ -3758,15 +3753,16 @@ emit_wasmbase_intrinsics (
 {
 	switch (id) {
 		case SN_Constant:
-			MonoInst* inst = emit_simd_ins_for_sig (cfg, klass, OP_WASM_SIMD_V128_CONST, 0, arg0_type, fsig, args);
-			return inst;
-		case SN_Splat:
+			return emit_simd_ins_for_sig (cfg, klass, OP_WASM_SIMD_V128_CONST, 0, arg0_type, fsig, args);
+		case SN_Splat: {
 			MonoType *etype = get_vector_t_elem_type (fsig->ret);
 			g_assert (fsig->param_count == 1 && mono_metadata_type_equal (fsig->params [0], etype));
 			return emit_simd_ins (cfg, klass, type_to_expand_op (etype), args [0]->dreg, -1);
-		case SN_ExtractLane:
+		}
+		case SN_ExtractLane: {
 			int extract_op = type_to_xextract_op (arg0_type);
 			return emit_simd_ins_for_sig (cfg, klass, extract_op, -1, arg0_type, fsig, args);
+		}
 	}
 	g_assert_not_reached ();
 
