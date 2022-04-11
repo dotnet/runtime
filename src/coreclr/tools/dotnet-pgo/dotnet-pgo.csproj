@@ -60,5 +60,8 @@
     <ProjectReference Include="../aot/ILCompiler.Reflection.ReadyToRun/ILCompiler.Reflection.ReadyToRun.csproj" />
     <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent" Version="$(TraceEventVersion)" />
     <PackageReference Include="System.Reflection.Metadata" Version="$(SystemReflectionMetadataVersion)" />
+    <PackageReference Include="NETStandard.Library">
+      <Version>$(NetStandardLibraryVersion)</Version>
+    </PackageReference>
   </ItemGroup>
 </Project>
