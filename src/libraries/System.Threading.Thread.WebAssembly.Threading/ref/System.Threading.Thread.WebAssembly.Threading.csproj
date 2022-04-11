@@ -14,10 +14,7 @@
     <!-- Place this assembly in the nuget ref folder -->
     <BuildOutputTargetFolder>ref</BuildOutputTargetFolder>
     <DefineConstants>$(DefineConstants);FEATURE_WASM_THREADS</DefineConstants>
-    <IsPackable>true</IsPackable>
-    <PackageDescription>Exposes Threading APIs from System.Runtime for WebAssembly projects</PackageDescription>
-    <PackageId>$(MSBuildProjectName)</PackageId>
-    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <IsPackable>false</IsPackable>
     <DisablePackageBaselineValidation>true</DisablePackageBaselineValidation>
   </PropertyGroup>
   <ItemGroup>
