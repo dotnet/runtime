@@ -873,8 +873,13 @@ namespace System.ServiceProcess
                 {
                     char** argsAsPtr = (char**)argPointer.ToPointer();
 
-                    //Lets read the arguments
-                    // the first arg is always the service name. We don't want to pass that in.
+                    // The first arg is always the service name. We don't want to pass that in,
+                    // but we can use it to set the service name on ourselves if we don't already know it.
+                    if (string.IsNullOrEmpty(_serviceName))
+                    {
+                         _serviceName = Marshal.PtrToStringUni((IntPtr)(*argsAsPtr))!;
+                    }
+
                     args = new string[argCount - 1];
 
                     for (int index = 0; index < args.Length; ++index)
