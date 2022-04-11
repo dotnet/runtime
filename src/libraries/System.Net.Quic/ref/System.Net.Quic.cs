@@ -29,8 +29,6 @@ namespace System.Net.Quic
         public void Dispose() { }
         public int GetRemoteAvailableBidirectionalStreamCount() { throw null; }
         public int GetRemoteAvailableUnidirectionalStreamCount() { throw null; }
-        public System.Net.Quic.QuicStream OpenBidirectionalStream() { throw null; }
-        public System.Net.Quic.QuicStream OpenUnidirectionalStream() { throw null; }
         public System.Threading.Tasks.ValueTask<System.Net.Quic.QuicStream> OpenBidirectionalStreamAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public System.Threading.Tasks.ValueTask<System.Net.Quic.QuicStream> OpenUnidirectionalStreamAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public System.Security.Cryptography.X509Certificates.X509Certificate? RemoteCertificate { get { throw null; } }

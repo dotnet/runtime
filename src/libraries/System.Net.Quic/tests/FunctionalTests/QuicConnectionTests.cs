@@ -42,7 +42,7 @@ namespace System.Net.Quic.Tests
 
         private static async Task<QuicStream> OpenAndUseStreamAsync(QuicConnection c)
         {
-            QuicStream s = c.OpenBidirectionalStream();
+            QuicStream s = await c.OpenBidirectionalStreamAsync();
 
             // This will pend
             await s.ReadAsync(new byte[1]);
@@ -199,7 +199,7 @@ namespace System.Net.Quic.Tests
             await RunClientServer(
                 async clientConnection =>
                 {
-                    using QuicStream clientStream = clientConnection.OpenBidirectionalStream();
+                    using QuicStream clientStream = await clientConnection.OpenBidirectionalStreamAsync();
                     await DoWrites(clientStream, writesBeforeClose);
 
                     // Wait for peer to receive data
@@ -246,7 +246,7 @@ namespace System.Net.Quic.Tests
             await RunClientServer(
                 async clientConnection =>
                 {
-                    using QuicStream clientStream = clientConnection.OpenBidirectionalStream();
+                    using QuicStream clientStream = await clientConnection.OpenBidirectionalStreamAsync();
                     await DoWrites(clientStream, writesBeforeClose);
 
                     // Wait for peer to receive data

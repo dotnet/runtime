@@ -582,32 +582,6 @@ namespace System.Net.Quic.Implementations.MsQuic
             return new ValueTask(tcs.Task.WaitAsync(cancellationToken));
         }
 
-        private QuicStreamProvider OpenStream(QUIC_STREAM_OPEN_FLAGS flags)
-        {
-            ThrowIfDisposed();
-            if (!Connected)
-            {
-                throw new InvalidOperationException(SR.net_quic_not_connected);
-            }
-
-            var stream = new MsQuicStream(_state, flags);
-
-            try
-            {
-                stream.StartAsync(QUIC_STREAM_START_FLAGS.FAIL_BLOCKED | QUIC_STREAM_START_FLAGS.SHUTDOWN_ON_FAIL | QUIC_STREAM_START_FLAGS.INDICATE_PEER_ACCEPT, default).AsTask().GetAwaiter().GetResult();
-            }
-            catch
-            {
-                stream.Dispose();
-                throw;
-            }
-
-            return stream;
-        }
-
-        internal override QuicStreamProvider OpenUnidirectionalStream() => OpenStream(QUIC_STREAM_OPEN_FLAGS.UNIDIRECTIONAL);
-        internal override QuicStreamProvider OpenBidirectionalStream() => OpenStream(QUIC_STREAM_OPEN_FLAGS.NONE);
-
         private async ValueTask<QuicStreamProvider> OpenStreamAsync(QUIC_STREAM_OPEN_FLAGS flags, CancellationToken cancellationToken)
         {
             ThrowIfDisposed();
