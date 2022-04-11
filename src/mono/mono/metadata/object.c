@@ -4841,6 +4841,20 @@ mono_runtime_try_invoke_span (MonoMethod *method, void *obj, MonoSpanOfObjects *
 			g_assert (box_exc == NULL);
 			mono_error_assert_ok (error);
 		}
+
+		if (has_byref_nullables) {
+			/*
+			 * The runtime invoke wrapper already converted byref nullables back,
+			 * and stored them in pa, we just need to copy them back to the
+			 * managed array.
+			 */
+			for (i = 0; i < params_length; i++) {
+				MonoType *t = sig->params [i];
+
+				if (m_type_is_byref (t) && t->type == MONO_TYPE_GENERICINST && mono_class_is_nullable (mono_class_from_mono_type_internal (t)))
+					mono_span_setref (params_span, i, pa [i]);
+			}
+		}
 	}
 	goto exit;
 exit_null:

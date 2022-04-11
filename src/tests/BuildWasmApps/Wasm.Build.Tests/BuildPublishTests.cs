@@ -21,8 +21,8 @@ namespace Wasm.Build.Tests
         }
 
         [Theory]
-        [BuildAndRun(aot: false, host: RunHost.V8, config: "Release")]
-        [BuildAndRun(aot: false, host: RunHost.V8, config: "Debug")]
+        [BuildAndRun(host: RunHost.V8, aot: false, config: "Release")]
+        [BuildAndRun(host: RunHost.V8, aot: false, config: "Debug")]
         public void BuildThenPublishNoAOT(BuildArgs buildArgs, RunHost host, string id)
         {
             string projectName = $"build_publish_{buildArgs.Config}";
@@ -71,8 +71,8 @@ namespace Wasm.Build.Tests
         }
 
         [Theory]
-        [BuildAndRun(aot: true, host: RunHost.V8, config: "Release")]
-        [BuildAndRun(aot: true, host: RunHost.V8, config: "Debug")]
+        [BuildAndRun(host: RunHost.V8, aot: true, config: "Release")]
+        [BuildAndRun(host: RunHost.V8, aot: true, config: "Debug")]
         public void BuildThenPublishWithAOT(BuildArgs buildArgs, RunHost host, string id)
         {
             string projectName = $"build_publish_{buildArgs.Config}";

@@ -206,9 +206,12 @@ namespace System.Text.Json.Serialization.Metadata
         internal virtual void Configure()
         {
             JsonConverter converter = PropertyInfoForTypeInfo.ConverterBase;
+            Debug.Assert(PropertyInfoForTypeInfo.ConverterStrategy == PropertyInfoForTypeInfo.ConverterBase.ConverterStrategy,
+                $"ConverterStrategy from PropertyInfoForTypeInfo.ConverterStrategy ({PropertyInfoForTypeInfo.ConverterStrategy}) does not match converter's ({PropertyInfoForTypeInfo.ConverterBase.ConverterStrategy})");
+
             converter.ConfigureJsonTypeInfo(this, Options);
             PropertyInfoForTypeInfo.DeclaringTypeNumberHandling = NumberHandling;
-            PropertyInfoForTypeInfo.Configure();
+            PropertyInfoForTypeInfo.EnsureConfigured();
 
             // Source gen currently when initializes properties
             // also assigns JsonPropertyInfo's JsonTypeInfo which causes SO if there are any
@@ -216,13 +219,15 @@ namespace System.Text.Json.Serialization.Metadata
             // This is a no-op for ReflectionJsonTypeInfo
             LateAddProperties();
 
+            DataExtensionProperty?.EnsureConfigured();
+
             if (converter.ConverterStrategy == ConverterStrategy.Object && PropertyCache != null)
             {
                 foreach (var jsonPropertyInfoKv in PropertyCache.List)
                 {
                     JsonPropertyInfo jsonPropertyInfo = jsonPropertyInfoKv.Value!;
                     jsonPropertyInfo.DeclaringTypeNumberHandling = NumberHandling;
-                    jsonPropertyInfo.Configure();
+                    jsonPropertyInfo.EnsureConfigured();
                 }
 
                 if (converter.ConstructorIsParameterized)
@@ -231,6 +236,43 @@ namespace System.Text.Json.Serialization.Metadata
                 }
             }
         }
+
+#if DEBUG
+        internal string GetDebugInfo()
+        {
+            ConverterStrategy strat = PropertyInfoForTypeInfo.ConverterStrategy;
+            string jtiTypeName = GetType().Name;
+            string typeName = Type.FullName!;
+            bool propCacheInitialized = PropertyCache != null;
+
+            StringBuilder sb = new();
+            sb.AppendLine($"{jtiTypeName} {{");
+            sb.AppendLine($"  GetType: {jtiTypeName},");
+            sb.AppendLine($"  Type: {typeName},");
+            sb.AppendLine($"  ConverterStrategy: {strat},");
+            sb.AppendLine($"  IsConfigured: {_isConfigured},");
+            sb.AppendLine($"  HasPropertyCache: {propCacheInitialized},");
+
+            if (propCacheInitialized)
+            {
+                sb.AppendLine("  Properties: {");
+                foreach (var property in PropertyCache!.List)
+                {
+                    JsonPropertyInfo pi = property.Value!;
+                    sb.AppendLine($"    {property.Key}: {{");
+                    sb.AppendLine($"      Ignored: {pi.IsIgnored},");
+                    sb.AppendLine($"      ShouldSerialize: {pi.ShouldSerialize},");
+                    sb.AppendLine($"      ShouldDeserialize: {pi.ShouldDeserialize},");
+                    sb.AppendLine("    },");
+                }
+
+                sb.AppendLine("  },");
+            }
+
+            sb.AppendLine("}");
+            return sb.ToString();
+        }
+#endif
 
         internal virtual void LateAddProperties() { }
 
@@ -246,14 +288,14 @@ namespace System.Text.Json.Serialization.Metadata
             string memberName = jsonPropertyInfo.ClrName!;
 
             // The JsonPropertyNameAttribute or naming policy resulted in a collision.
-            if (!propertyCache!.TryAdd(jsonPropertyInfo.NameAsString, jsonPropertyInfo))
+            if (!propertyCache!.TryAdd(jsonPropertyInfo.Name, jsonPropertyInfo))
             {
-                JsonPropertyInfo other = propertyCache[jsonPropertyInfo.NameAsString]!;
+                JsonPropertyInfo other = propertyCache[jsonPropertyInfo.Name]!;
 
                 if (other.IsIgnored)
                 {
                     // Overwrite previously cached property since it has [JsonIgnore].
-                    propertyCache[jsonPropertyInfo.NameAsString] = jsonPropertyInfo;
+                    propertyCache[jsonPropertyInfo.Name] = jsonPropertyInfo;
                 }
                 else if (
                     // Does the current property have `JsonIgnoreAttribute`?
@@ -353,18 +395,18 @@ namespace System.Text.Json.Serialization.Metadata
                         ThrowHelper.ThrowInvalidOperationException_MultiplePropertiesBindToConstructorParameters(
                             Type,
                             parameterInfo.Name!,
-                            matchingEntry.JsonPropertyInfo.NameAsString,
+                            matchingEntry.JsonPropertyInfo.Name,
                             matchingEntry.DuplicateName);
                     }
 
                     Debug.Assert(matchingEntry.JsonPropertyInfo != null);
                     JsonPropertyInfo jsonPropertyInfo = matchingEntry.JsonPropertyInfo;
                     JsonParameterInfo jsonParameterInfo = CreateConstructorParameter(parameterInfo, jsonPropertyInfo, sourceGenMode, Options);
-                    parameterCache.Add(jsonPropertyInfo.NameAsString, jsonParameterInfo);
+                    parameterCache.Add(jsonPropertyInfo.Name, jsonParameterInfo);
                 }
                 // It is invalid for the extension data property to bind with a constructor argument.
                 else if (DataExtensionProperty != null &&
-                    StringComparer.OrdinalIgnoreCase.Equals(paramToCheck.Name, DataExtensionProperty.NameAsString))
+                    StringComparer.OrdinalIgnoreCase.Equals(paramToCheck.Name, DataExtensionProperty.Name))
                 {
                     ThrowHelper.ThrowInvalidOperationException_ExtensionDataCannotBindToCtorParam(DataExtensionProperty);
                 }

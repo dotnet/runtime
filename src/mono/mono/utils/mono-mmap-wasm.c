@@ -10,9 +10,6 @@
 #if HAVE_SYS_MMAN_H
 #include <sys/mman.h>
 #endif
-#ifdef HAVE_SYS_SYSCTL_H
-#include <sys/sysctl.h>
-#endif
 #include <signal.h>
 #include <fcntl.h>
 #include <string.h>

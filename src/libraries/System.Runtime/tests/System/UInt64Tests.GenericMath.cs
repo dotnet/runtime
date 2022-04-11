@@ -56,6 +56,17 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void op_CheckedAdditionTest()
+        {
+            Assert.Equal((ulong)0x0000000000000001, AdditionOperatorsHelper<ulong, ulong, ulong>.op_CheckedAddition((ulong)0x0000000000000000, 1));
+            Assert.Equal((ulong)0x0000000000000002, AdditionOperatorsHelper<ulong, ulong, ulong>.op_CheckedAddition((ulong)0x0000000000000001, 1));
+            Assert.Equal((ulong)0x8000000000000000, AdditionOperatorsHelper<ulong, ulong, ulong>.op_CheckedAddition((ulong)0x7FFFFFFFFFFFFFFF, 1));
+            Assert.Equal((ulong)0x8000000000000001, AdditionOperatorsHelper<ulong, ulong, ulong>.op_CheckedAddition((ulong)0x8000000000000000, 1));
+
+            Assert.Throws<OverflowException>(() => AdditionOperatorsHelper<ulong, ulong, ulong>.op_CheckedAddition((ulong)0xFFFFFFFFFFFFFFFF, 1));
+        }
+
+        [Fact]
         public static void LeadingZeroCountTest()
         {
             Assert.Equal((ulong)0x0000000000000040, BinaryIntegerHelper<ulong>.LeadingZeroCount((ulong)0x0000000000000000));
@@ -216,6 +227,17 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void op_CheckedDecrementTest()
+        {
+            Assert.Equal((ulong)0x0000000000000000, DecrementOperatorsHelper<ulong>.op_CheckedDecrement((ulong)0x0000000000000001));
+            Assert.Equal((ulong)0x7FFFFFFFFFFFFFFE, DecrementOperatorsHelper<ulong>.op_CheckedDecrement((ulong)0x7FFFFFFFFFFFFFFF));
+            Assert.Equal((ulong)0x7FFFFFFFFFFFFFFF, DecrementOperatorsHelper<ulong>.op_CheckedDecrement((ulong)0x8000000000000000));
+            Assert.Equal((ulong)0xFFFFFFFFFFFFFFFE, DecrementOperatorsHelper<ulong>.op_CheckedDecrement((ulong)0xFFFFFFFFFFFFFFFF));
+
+            Assert.Throws<OverflowException>(() => DecrementOperatorsHelper<ulong>.op_CheckedDecrement((ulong)0x0000000000000000));
+        }
+
+        [Fact]
         public static void op_DivisionTest()
         {
             Assert.Equal((ulong)0x0000000000000000, DivisionOperatorsHelper<ulong, ulong, ulong>.op_Division((ulong)0x0000000000000000, 2));
@@ -223,6 +245,20 @@ namespace System.Tests
             Assert.Equal((ulong)0x3FFFFFFFFFFFFFFF, DivisionOperatorsHelper<ulong, ulong, ulong>.op_Division((ulong)0x7FFFFFFFFFFFFFFF, 2));
             Assert.Equal((ulong)0x4000000000000000, DivisionOperatorsHelper<ulong, ulong, ulong>.op_Division((ulong)0x8000000000000000, 2));
             Assert.Equal((ulong)0x7FFFFFFFFFFFFFFF, DivisionOperatorsHelper<ulong, ulong, ulong>.op_Division((ulong)0xFFFFFFFFFFFFFFFF, 2));
+
+            Assert.Throws<DivideByZeroException>(() => DivisionOperatorsHelper<ulong, ulong, ulong>.op_Division((ulong)0x0000000000000001, 0));
+        }
+
+        [Fact]
+        public static void op_CheckedDivisionTest()
+        {
+            Assert.Equal((ulong)0x0000000000000000, DivisionOperatorsHelper<ulong, ulong, ulong>.op_CheckedDivision((ulong)0x0000000000000000, 2));
+            Assert.Equal((ulong)0x0000000000000000, DivisionOperatorsHelper<ulong, ulong, ulong>.op_CheckedDivision((ulong)0x0000000000000001, 2));
+            Assert.Equal((ulong)0x3FFFFFFFFFFFFFFF, DivisionOperatorsHelper<ulong, ulong, ulong>.op_CheckedDivision((ulong)0x7FFFFFFFFFFFFFFF, 2));
+            Assert.Equal((ulong)0x4000000000000000, DivisionOperatorsHelper<ulong, ulong, ulong>.op_CheckedDivision((ulong)0x8000000000000000, 2));
+            Assert.Equal((ulong)0x7FFFFFFFFFFFFFFF, DivisionOperatorsHelper<ulong, ulong, ulong>.op_CheckedDivision((ulong)0xFFFFFFFFFFFFFFFF, 2));
+
+            Assert.Throws<DivideByZeroException>(() => DivisionOperatorsHelper<ulong, ulong, ulong>.op_CheckedDivision((ulong)0x0000000000000001, 0));
         }
 
         [Fact]
@@ -256,6 +292,17 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void op_CheckedIncrementTest()
+        {
+            Assert.Equal((ulong)0x0000000000000001, IncrementOperatorsHelper<ulong>.op_CheckedIncrement((ulong)0x0000000000000000));
+            Assert.Equal((ulong)0x0000000000000002, IncrementOperatorsHelper<ulong>.op_CheckedIncrement((ulong)0x0000000000000001));
+            Assert.Equal((ulong)0x8000000000000000, IncrementOperatorsHelper<ulong>.op_CheckedIncrement((ulong)0x7FFFFFFFFFFFFFFF));
+            Assert.Equal((ulong)0x8000000000000001, IncrementOperatorsHelper<ulong>.op_CheckedIncrement((ulong)0x8000000000000000));
+
+            Assert.Throws<OverflowException>(() => IncrementOperatorsHelper<ulong>.op_CheckedIncrement((ulong)0xFFFFFFFFFFFFFFFF));
+        }
+
+        [Fact]
         public static void op_ModulusTest()
         {
             Assert.Equal((ulong)0x0000000000000000, ModulusOperatorsHelper<ulong, ulong, ulong>.op_Modulus((ulong)0x0000000000000000, 2));
@@ -263,6 +310,8 @@ namespace System.Tests
             Assert.Equal((ulong)0x0000000000000001, ModulusOperatorsHelper<ulong, ulong, ulong>.op_Modulus((ulong)0x7FFFFFFFFFFFFFFF, 2));
             Assert.Equal((ulong)0x0000000000000000, ModulusOperatorsHelper<ulong, ulong, ulong>.op_Modulus((ulong)0x8000000000000000, 2));
             Assert.Equal((ulong)0x0000000000000001, ModulusOperatorsHelper<ulong, ulong, ulong>.op_Modulus((ulong)0xFFFFFFFFFFFFFFFF, 2));
+
+            Assert.Throws<DivideByZeroException>(() => ModulusOperatorsHelper<ulong, ulong, ulong>.op_Modulus((ulong)0x0000000000000001, 0));
         }
 
         [Fact]
@@ -274,6 +323,17 @@ namespace System.Tests
             Assert.Equal((ulong)0x0000000000000000, MultiplyOperatorsHelper<ulong, ulong, ulong>.op_Multiply((ulong)0x8000000000000000, 2));
             Assert.Equal((ulong)0xFFFFFFFFFFFFFFFE, MultiplyOperatorsHelper<ulong, ulong, ulong>.op_Multiply((ulong)0xFFFFFFFFFFFFFFFF, 2));
         }
+        [Fact]
+        public static void op_CheckedMultiplyTest()
+        {
+            Assert.Equal((ulong)0x0000000000000000, MultiplyOperatorsHelper<ulong, ulong, ulong>.op_CheckedMultiply((ulong)0x0000000000000000, 2));
+            Assert.Equal((ulong)0x0000000000000002, MultiplyOperatorsHelper<ulong, ulong, ulong>.op_CheckedMultiply((ulong)0x0000000000000001, 2));
+            Assert.Equal((ulong)0xFFFFFFFFFFFFFFFE, MultiplyOperatorsHelper<ulong, ulong, ulong>.op_CheckedMultiply((ulong)0x7FFFFFFFFFFFFFFF, 2));
+
+            Assert.Throws<OverflowException>(() => MultiplyOperatorsHelper<ulong, ulong, ulong>.op_CheckedMultiply((ulong)0x8000000000000000, 2));
+            Assert.Throws<OverflowException>(() => MultiplyOperatorsHelper<ulong, ulong, ulong>.op_CheckedMultiply((ulong)0xFFFFFFFFFFFFFFFF, 2));
+        }
+
 
         [Fact]
         public static void AbsTest()
@@ -1003,7 +1063,6 @@ namespace System.Tests
         }
 
         [Fact]
-
         public static void op_LeftShiftTest()
         {
             Assert.Equal((ulong)0x0000000000000000, ShiftOperatorsHelper<ulong, ulong>.op_LeftShift((ulong)0x0000000000000000, 1));
@@ -1034,6 +1093,17 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void op_CheckedSubtractionTest()
+        {
+            Assert.Equal((ulong)0x0000000000000000, SubtractionOperatorsHelper<ulong, ulong, ulong>.op_CheckedSubtraction((ulong)0x0000000000000001, 1));
+            Assert.Equal((ulong)0x7FFFFFFFFFFFFFFE, SubtractionOperatorsHelper<ulong, ulong, ulong>.op_CheckedSubtraction((ulong)0x7FFFFFFFFFFFFFFF, 1));
+            Assert.Equal((ulong)0x7FFFFFFFFFFFFFFF, SubtractionOperatorsHelper<ulong, ulong, ulong>.op_CheckedSubtraction((ulong)0x8000000000000000, 1));
+            Assert.Equal((ulong)0xFFFFFFFFFFFFFFFE, SubtractionOperatorsHelper<ulong, ulong, ulong>.op_CheckedSubtraction((ulong)0xFFFFFFFFFFFFFFFF, 1));
+
+            Assert.Throws<OverflowException>(() => SubtractionOperatorsHelper<ulong, ulong, ulong>.op_CheckedSubtraction((ulong)0x0000000000000000, 1));
+        }
+
+        [Fact]
         public static void op_UnaryNegationTest()
         {
             Assert.Equal((ulong)0x0000000000000000, UnaryNegationOperatorsHelper<ulong, ulong>.op_UnaryNegation((ulong)0x0000000000000000));
@@ -1041,6 +1111,17 @@ namespace System.Tests
             Assert.Equal((ulong)0x8000000000000001, UnaryNegationOperatorsHelper<ulong, ulong>.op_UnaryNegation((ulong)0x7FFFFFFFFFFFFFFF));
             Assert.Equal((ulong)0x8000000000000000, UnaryNegationOperatorsHelper<ulong, ulong>.op_UnaryNegation((ulong)0x8000000000000000));
             Assert.Equal((ulong)0x0000000000000001, UnaryNegationOperatorsHelper<ulong, ulong>.op_UnaryNegation((ulong)0xFFFFFFFFFFFFFFFF));
+        }
+
+        [Fact]
+        public static void op_CheckedUnaryNegationTest()
+        {
+            Assert.Equal((ulong)0x0000000000000000, UnaryNegationOperatorsHelper<ulong, ulong>.op_CheckedUnaryNegation((ulong)0x0000000000000000));
+
+            Assert.Throws<OverflowException>(() => UnaryNegationOperatorsHelper<ulong, ulong>.op_CheckedUnaryNegation((ulong)0x0000000000000001));
+            Assert.Throws<OverflowException>(() => UnaryNegationOperatorsHelper<ulong, ulong>.op_CheckedUnaryNegation((ulong)0x7FFFFFFFFFFFFFFF));
+            Assert.Throws<OverflowException>(() => UnaryNegationOperatorsHelper<ulong, ulong>.op_CheckedUnaryNegation((ulong)0x8000000000000000));
+            Assert.Throws<OverflowException>(() => UnaryNegationOperatorsHelper<ulong, ulong>.op_CheckedUnaryNegation((ulong)0xFFFFFFFFFFFFFFFF));
         }
 
         [Fact]

@@ -56,6 +56,17 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void op_CheckedAdditionTest()
+        {
+            Assert.Equal((ushort)0x0001, AdditionOperatorsHelper<ushort, ushort, ushort>.op_CheckedAddition((ushort)0x0000, (ushort)1));
+            Assert.Equal((ushort)0x0002, AdditionOperatorsHelper<ushort, ushort, ushort>.op_CheckedAddition((ushort)0x0001, (ushort)1));
+            Assert.Equal((ushort)0x8000, AdditionOperatorsHelper<ushort, ushort, ushort>.op_CheckedAddition((ushort)0x7FFF, (ushort)1));
+            Assert.Equal((ushort)0x8001, AdditionOperatorsHelper<ushort, ushort, ushort>.op_CheckedAddition((ushort)0x8000, (ushort)1));
+
+            Assert.Throws<OverflowException>(() => AdditionOperatorsHelper<ushort, ushort, ushort>.op_CheckedAddition((ushort)0xFFFF, (ushort)1));
+        }
+
+        [Fact]
         public static void LeadingZeroCountTest()
         {
             Assert.Equal((ushort)0x0010, BinaryIntegerHelper<ushort>.LeadingZeroCount((ushort)0x0000));
@@ -216,6 +227,17 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void op_CheckedDecrementTest()
+        {
+            Assert.Equal((ushort)0x0000, DecrementOperatorsHelper<ushort>.op_CheckedDecrement((ushort)0x0001));
+            Assert.Equal((ushort)0x7FFE, DecrementOperatorsHelper<ushort>.op_CheckedDecrement((ushort)0x7FFF));
+            Assert.Equal((ushort)0x7FFF, DecrementOperatorsHelper<ushort>.op_CheckedDecrement((ushort)0x8000));
+            Assert.Equal((ushort)0xFFFE, DecrementOperatorsHelper<ushort>.op_CheckedDecrement((ushort)0xFFFF));
+
+            Assert.Throws<OverflowException>(() => DecrementOperatorsHelper<ushort>.op_CheckedDecrement((ushort)0x0000));
+        }
+
+        [Fact]
         public static void op_DivisionTest()
         {
             Assert.Equal((ushort)0x0000, DivisionOperatorsHelper<ushort, ushort, ushort>.op_Division((ushort)0x0000, (ushort)2));
@@ -223,6 +245,20 @@ namespace System.Tests
             Assert.Equal((ushort)0x3FFF, DivisionOperatorsHelper<ushort, ushort, ushort>.op_Division((ushort)0x7FFF, (ushort)2));
             Assert.Equal((ushort)0x4000, DivisionOperatorsHelper<ushort, ushort, ushort>.op_Division((ushort)0x8000, (ushort)2));
             Assert.Equal((ushort)0x7FFF, DivisionOperatorsHelper<ushort, ushort, ushort>.op_Division((ushort)0xFFFF, (ushort)2));
+
+            Assert.Throws<DivideByZeroException>(() => DivisionOperatorsHelper<ushort, ushort, ushort>.op_Division((ushort)0x0001, (ushort)0));
+        }
+
+        [Fact]
+        public static void op_CheckedDivisionTest()
+        {
+            Assert.Equal((ushort)0x0000, DivisionOperatorsHelper<ushort, ushort, ushort>.op_CheckedDivision((ushort)0x0000, (ushort)2));
+            Assert.Equal((ushort)0x0000, DivisionOperatorsHelper<ushort, ushort, ushort>.op_CheckedDivision((ushort)0x0001, (ushort)2));
+            Assert.Equal((ushort)0x3FFF, DivisionOperatorsHelper<ushort, ushort, ushort>.op_CheckedDivision((ushort)0x7FFF, (ushort)2));
+            Assert.Equal((ushort)0x4000, DivisionOperatorsHelper<ushort, ushort, ushort>.op_CheckedDivision((ushort)0x8000, (ushort)2));
+            Assert.Equal((ushort)0x7FFF, DivisionOperatorsHelper<ushort, ushort, ushort>.op_CheckedDivision((ushort)0xFFFF, (ushort)2));
+
+            Assert.Throws<DivideByZeroException>(() => DivisionOperatorsHelper<ushort, ushort, ushort>.op_CheckedDivision((ushort)0x0001, (ushort)0));
         }
 
         [Fact]
@@ -256,6 +292,17 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void op_CheckedIncrementTest()
+        {
+            Assert.Equal((ushort)0x0001, IncrementOperatorsHelper<ushort>.op_CheckedIncrement((ushort)0x0000));
+            Assert.Equal((ushort)0x0002, IncrementOperatorsHelper<ushort>.op_CheckedIncrement((ushort)0x0001));
+            Assert.Equal((ushort)0x8000, IncrementOperatorsHelper<ushort>.op_CheckedIncrement((ushort)0x7FFF));
+            Assert.Equal((ushort)0x8001, IncrementOperatorsHelper<ushort>.op_CheckedIncrement((ushort)0x8000));
+
+            Assert.Throws<OverflowException>(() => IncrementOperatorsHelper<ushort>.op_CheckedIncrement((ushort)0xFFFF));
+        }
+
+        [Fact]
         public static void op_ModulusTest()
         {
             Assert.Equal((ushort)0x0000, ModulusOperatorsHelper<ushort, ushort, ushort>.op_Modulus((ushort)0x0000, (ushort)2));
@@ -263,6 +310,8 @@ namespace System.Tests
             Assert.Equal((ushort)0x0001, ModulusOperatorsHelper<ushort, ushort, ushort>.op_Modulus((ushort)0x7FFF, (ushort)2));
             Assert.Equal((ushort)0x0000, ModulusOperatorsHelper<ushort, ushort, ushort>.op_Modulus((ushort)0x8000, (ushort)2));
             Assert.Equal((ushort)0x0001, ModulusOperatorsHelper<ushort, ushort, ushort>.op_Modulus((ushort)0xFFFF, (ushort)2));
+
+            Assert.Throws<DivideByZeroException>(() => ModulusOperatorsHelper<ushort, ushort, ushort>.op_Modulus((ushort)0x0001, (ushort)0));
         }
 
         [Fact]
@@ -273,6 +322,17 @@ namespace System.Tests
             Assert.Equal((ushort)0xFFFE, MultiplyOperatorsHelper<ushort, ushort, ushort>.op_Multiply((ushort)0x7FFF, (ushort)2));
             Assert.Equal((ushort)0x0000, MultiplyOperatorsHelper<ushort, ushort, ushort>.op_Multiply((ushort)0x8000, (ushort)2));
             Assert.Equal((ushort)0xFFFE, MultiplyOperatorsHelper<ushort, ushort, ushort>.op_Multiply((ushort)0xFFFF, (ushort)2));
+        }
+
+        [Fact]
+        public static void op_CheckedMultiplyTest()
+        {
+            Assert.Equal((ushort)0x0000, MultiplyOperatorsHelper<ushort, ushort, ushort>.op_CheckedMultiply((ushort)0x0000, (ushort)2));
+            Assert.Equal((ushort)0x0002, MultiplyOperatorsHelper<ushort, ushort, ushort>.op_CheckedMultiply((ushort)0x0001, (ushort)2));
+            Assert.Equal((ushort)0xFFFE, MultiplyOperatorsHelper<ushort, ushort, ushort>.op_CheckedMultiply((ushort)0x7FFF, (ushort)2));
+
+            Assert.Throws<OverflowException>(() => MultiplyOperatorsHelper<ushort, ushort, ushort>.op_CheckedMultiply((ushort)0x8000, (ushort)2));
+            Assert.Throws<OverflowException>(() => MultiplyOperatorsHelper<ushort, ushort, ushort>.op_CheckedMultiply((ushort)0xFFFF, (ushort)2));
         }
 
         [Fact]
@@ -1003,7 +1063,6 @@ namespace System.Tests
         }
 
         [Fact]
-
         public static void op_LeftShiftTest()
         {
             Assert.Equal((ushort)0x0000, ShiftOperatorsHelper<ushort, ushort>.op_LeftShift((ushort)0x0000, 1));
@@ -1034,6 +1093,17 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void op_CheckedSubtractionTest()
+        {
+            Assert.Equal((ushort)0x0000, SubtractionOperatorsHelper<ushort, ushort, ushort>.op_CheckedSubtraction((ushort)0x0001, (ushort)1));
+            Assert.Equal((ushort)0x7FFE, SubtractionOperatorsHelper<ushort, ushort, ushort>.op_CheckedSubtraction((ushort)0x7FFF, (ushort)1));
+            Assert.Equal((ushort)0x7FFF, SubtractionOperatorsHelper<ushort, ushort, ushort>.op_CheckedSubtraction((ushort)0x8000, (ushort)1));
+            Assert.Equal((ushort)0xFFFE, SubtractionOperatorsHelper<ushort, ushort, ushort>.op_CheckedSubtraction((ushort)0xFFFF, (ushort)1));
+
+            Assert.Throws<OverflowException>(() => SubtractionOperatorsHelper<ushort, ushort, ushort>.op_CheckedSubtraction((ushort)0x0000, (ushort)1));
+        }
+
+        [Fact]
         public static void op_UnaryNegationTest()
         {
             Assert.Equal((ushort)0x0000, UnaryNegationOperatorsHelper<ushort, ushort>.op_UnaryNegation((ushort)0x0000));
@@ -1041,6 +1111,17 @@ namespace System.Tests
             Assert.Equal((ushort)0x8001, UnaryNegationOperatorsHelper<ushort, ushort>.op_UnaryNegation((ushort)0x7FFF));
             Assert.Equal((ushort)0x8000, UnaryNegationOperatorsHelper<ushort, ushort>.op_UnaryNegation((ushort)0x8000));
             Assert.Equal((ushort)0x0001, UnaryNegationOperatorsHelper<ushort, ushort>.op_UnaryNegation((ushort)0xFFFF));
+        }
+
+        [Fact]
+        public static void op_CheckedUnaryNegationTest()
+        {
+            Assert.Equal((ushort)0x0000, UnaryNegationOperatorsHelper<ushort, ushort>.op_CheckedUnaryNegation((ushort)0x0000));
+
+            Assert.Throws<OverflowException>(() => UnaryNegationOperatorsHelper<ushort, ushort>.op_CheckedUnaryNegation((ushort)0x0001));
+            Assert.Throws<OverflowException>(() => UnaryNegationOperatorsHelper<ushort, ushort>.op_CheckedUnaryNegation((ushort)0x7FFF));
+            Assert.Throws<OverflowException>(() => UnaryNegationOperatorsHelper<ushort, ushort>.op_CheckedUnaryNegation((ushort)0x8000));
+            Assert.Throws<OverflowException>(() => UnaryNegationOperatorsHelper<ushort, ushort>.op_CheckedUnaryNegation((ushort)0xFFFF));
         }
 
         [Fact]
