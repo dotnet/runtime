@@ -4,11 +4,5 @@
     <RuntimeIdentifier>$(OutputRid)</RuntimeIdentifier>
   </PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="NETStandard.Library">
-      <Version>$(NetStandardLibraryVersion)</Version>
-    </PackageReference>
-  </ItemGroup>
-
   <Import Project="ILCompiler.props" />
 </Project>
