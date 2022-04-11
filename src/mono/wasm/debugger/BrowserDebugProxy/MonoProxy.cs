@@ -13,6 +13,7 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Net.Http;
+using BrowserDebugProxy;
 
 namespace Microsoft.WebAssembly.Diagnostics
 {
@@ -469,7 +470,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         if (!DotnetObjectId.TryParse(args?["objectId"], out DotnetObjectId objectId))
                             break;
 
-                        var valueOrError = await RuntimeGetPropertiesInternal(id, objectId, args, token, true);
+                        var valueOrError = await RuntimeGetObjectMembers(id, objectId, args, token, true);
                         if (valueOrError.IsError)
                         {
                             logger.LogDebug($"Runtime.getProperties: {valueOrError.Error}");
@@ -656,7 +657,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             switch (objectId.Scheme)
             {
                 case "object":
-                case "methodId":
+                case "method":
                     args["details"] = await context.SdbAgent.GetObjectProxy(objectId.Value, token);
                     break;
                 case "valuetype":
@@ -700,7 +701,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 byte[] newBytes = Convert.FromBase64String(res.Value?["result"]?["value"]?["value"]?.Value<string>());
                 var retDebuggerCmdReader = new MonoBinaryReader(newBytes);
                 retDebuggerCmdReader.ReadByte(); //number of objects returned.
-                var obj = await context.SdbAgent.CreateJObjectForVariableValue(retDebuggerCmdReader, "ret", false, -1, false, token);
+                var obj = await context.SdbAgent.CreateJObjectForVariableValue(retDebuggerCmdReader, "ret", token);
                 /*JTokenType? res_value_type = res.Value?["result"]?["value"]?.Type;*/
                 res = Result.OkFromObject(new { result = obj["value"]});
                 SendResponse(id, res, token);
@@ -731,83 +732,71 @@ namespace Microsoft.WebAssembly.Diagnostics
             return true;
         }
 
-        internal async Task<ValueOrError<JToken>> RuntimeGetPropertiesInternal(SessionId id, DotnetObjectId objectId, JToken args, CancellationToken token, bool sortByAccessLevel = false)
+        internal async Task<ValueOrError<GetMembersResult>> RuntimeGetObjectMembers(SessionId id, DotnetObjectId objectId, JToken args, CancellationToken token, bool sortByAccessLevel = false)
         {
             var context = GetContext(id);
-            var accessorPropertiesOnly = false;
-            GetObjectCommandOptions objectValuesOpt = GetObjectCommandOptions.WithProperties;
+            //var accessorPropertiesOnly = false;
+            GetObjectCommandOptions getObjectOptions = GetObjectCommandOptions.WithProperties;
             if (args != null)
             {
                 if (args["accessorPropertiesOnly"] != null && args["accessorPropertiesOnly"].Value<bool>())
                 {
-                    objectValuesOpt |= GetObjectCommandOptions.AccessorPropertiesOnly;
-                    accessorPropertiesOnly = true;
+                    getObjectOptions |= GetObjectCommandOptions.AccessorPropertiesOnly;
+                    //accessorPropertiesOnly = true;
                 }
                 if (args["ownProperties"] != null && args["ownProperties"].Value<bool>())
                 {
-                    objectValuesOpt |= GetObjectCommandOptions.OwnProperties;
+                    getObjectOptions |= GetObjectCommandOptions.OwnProperties;
                 }
             }
-            try {
+            // Console.WriteLine ($"* RuntimeGetPropertiesInternal: {objectId}");
+            try
+            {
                 switch (objectId.Scheme)
                 {
                     case "scope":
-                    {
                         Result resScope = await GetScopeProperties(id, objectId.Value, token);
                         return resScope.IsOk
-                            ? ValueOrError<JToken>.WithValue(sortByAccessLevel ? resScope.Value : resScope.Value?["result"])
-                            : ValueOrError<JToken>.WithError(resScope);
-                    }
+                            ? ValueOrError<GetMembersResult>.WithValue(new GetMembersResult(resScope.Value, IsFlattened: false))
+                            : ValueOrError<GetMembersResult>.WithError(resScope);
                     case "valuetype":
-                    {
                         var valType = context.SdbAgent.GetValueTypeClass(objectId.Value);
                         if (valType == null)
-                            return ValueOrError<JToken>.WithError($"Internal Error: No valuetype found for {objectId}.");
-                        var resValue = await valType.GetValues(context.SdbAgent, accessorPropertiesOnly, token);
+                            return ValueOrError<GetMembersResult>.WithError($"Internal Error: No valuetype found for {objectId}.");
+                        var resValue = await valType.GetMemberValues(context.SdbAgent, getObjectOptions, sortByAccessLevel, token);
                         return resValue switch
                         {
-                            null => ValueOrError<JToken>.WithError($"Could not get properties for {objectId}"),
-                            _ => ValueOrError<JToken>.WithValue(sortByAccessLevel ? JObject.FromObject(new { result = resValue }) : resValue)
+                            null => ValueOrError<GetMembersResult>.WithError($"Could not get properties for {objectId}"),
+                            _ => ValueOrError<GetMembersResult>.WithValue(resValue)
                         };
-                    }
                     case "array":
-                    {
                         var resArr = await context.SdbAgent.GetArrayValues(objectId.Value, token);
-                        return ValueOrError<JToken>.WithValue(sortByAccessLevel ? JObject.FromObject(new { result = resArr }) : resArr);
-                    }
-                    case "methodId":
-                    {
-                        var resMethod = await context.SdbAgent.InvokeMethodInObject(objectId, objectId.SubValue, null, token);
-                        return ValueOrError<JToken>.WithValue(sortByAccessLevel ? JObject.FromObject(new { result = new JArray(resMethod) }) : new JArray(resMethod));
-                    }
+                        return ValueOrError<GetMembersResult>.WithValue(GetMembersResult.FromValues(resArr));
+                    case "method":
+                        var resMethod = await context.SdbAgent.InvokeMethod(objectId, token);
+                        return ValueOrError<GetMembersResult>.WithValue(GetMembersResult.FromValues(new JArray(resMethod)));
                     case "object":
-                    {
-                        var resObj = await context.SdbAgent.GetObjectValues(objectId.Value, objectValuesOpt, token, sortByAccessLevel);
-                        return ValueOrError<JToken>.WithValue(sortByAccessLevel ? resObj[0] : resObj);
-                    }
+                        var resObj = await MemberObjectsExplorer.GetObjectMemberValues(context.SdbAgent, objectId.Value, getObjectOptions, token, sortByAccessLevel);
+                        return ValueOrError<GetMembersResult>.WithValue(resObj);
                     case "pointer":
-                    {
                         var resPointer = new JArray { await context.SdbAgent.GetPointerContent(objectId.Value, token) };
-                        return ValueOrError<JToken>.WithValue(sortByAccessLevel ? JObject.FromObject(new { result = resPointer }) : resPointer);
-                    }
+                        return ValueOrError<GetMembersResult>.WithValue(GetMembersResult.FromValues(resPointer));
                     case "cfo_res":
-                    {
                         Result res = await SendMonoCommand(id, MonoCommands.GetDetails(RuntimeId, objectId.Value, args), token);
                         string value_json_str = res.Value["result"]?["value"]?["__value_as_json_string__"]?.Value<string>();
                         if (res.IsOk && value_json_str == null)
-                            return ValueOrError<JToken>.WithError($"Internal error: Could not find expected __value_as_json_string__ field in the result: {res}");
+                            return ValueOrError<GetMembersResult>.WithError($"Internal error: Could not find expected __value_as_json_string__ field in the result: {res}");
 
                         return value_json_str != null
-                                    ? ValueOrError<JToken>.WithValue(sortByAccessLevel ? JObject.FromObject(new { result = JArray.Parse(value_json_str) }) : JArray.Parse(value_json_str))
-                                    : ValueOrError<JToken>.WithError(res);
-                    }
+                                    ? ValueOrError<GetMembersResult>.WithValue(GetMembersResult.FromValues(JArray.Parse(value_json_str)))
+                                    : ValueOrError<GetMembersResult>.WithError(res);
                     default:
-                        return ValueOrError<JToken>.WithError($"RuntimeGetProperties: unknown object id scheme: {objectId.Scheme}");
+                        return ValueOrError<GetMembersResult>.WithError($"RuntimeGetProperties: unknown object id scheme: {objectId.Scheme}");
                 }
             }
             catch (Exception ex)
             {
-                return ValueOrError<JToken>.WithError($"RuntimeGetProperties: Failed to get properties for {objectId}: {ex}");
+                return ValueOrError<GetMembersResult>.WithError($"RuntimeGetProperties: Failed to get properties for {objectId}: {ex}");
             }
         }
 
@@ -1074,7 +1063,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                         string reason = "exception";
                         int object_id = retDebuggerCmdReader.ReadInt32();
                         var caught = retDebuggerCmdReader.ReadByte();
-                        var exceptionObject = await context.SdbAgent.GetObjectValues(object_id, GetObjectCommandOptions.WithProperties | GetObjectCommandOptions.OwnProperties, token);
+                        var exceptionObject = await MemberObjectsExplorer.GetObjectMemberValues(
+                            context.SdbAgent, object_id, GetObjectCommandOptions.WithProperties | GetObjectCommandOptions.OwnProperties, token);
                         var exceptionObjectMessage = exceptionObject.FirstOrDefault(attr => attr["name"].Value<string>().Equals("_message"));
                         var data = JObject.FromObject(new
                         {
