@@ -12517,8 +12517,6 @@ compile_asm (MonoAotCompile *acfg)
 #define AS_OPTIONS "--64"
 #elif defined(TARGET_POWERPC64)
 #define AS_OPTIONS "-a64 -mppc64"
-#elif defined(sparc) && TARGET_SIZEOF_VOID_P == 8
-#define AS_OPTIONS "-xarch=v9"
 #elif defined(TARGET_X86) && defined(TARGET_MACH)
 #define AS_OPTIONS "-arch i386"
 #elif defined(TARGET_X86) && !defined(TARGET_MACH)
@@ -12543,10 +12541,7 @@ compile_asm (MonoAotCompile *acfg)
 #define AS_OBJECT_FILE_SUFFIX "o"
 #endif
 
-#if defined(sparc)
-#define LD_NAME "ld"
-#define LD_OPTIONS "-shared -G -Bsymbolic"
-#elif defined(__ppc__) && defined(TARGET_MACH)
+#if defined(__ppc__) && defined(TARGET_MACH)
 #define LD_NAME "gcc"
 #define LD_OPTIONS "-dynamiclib -Wl,-Bsymbolic"
 #elif defined(TARGET_AMD64) && defined(TARGET_MACH)

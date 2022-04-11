@@ -177,6 +177,9 @@
     <PlatformManifestFileEntry Include="mono-aot-cross" IsNative="true" />
     <PlatformManifestFileEntry Include="mono-aot-cross.exe" IsNative="true" />
     <PlatformManifestFileEntry Include="opt" IsNative="true" />
+    <PlatformManifestFileEntry Include="dbgshim.dll" IsNative="true" />
+    <PlatformManifestFileEntry Include="libdbgshim.so" IsNative="true" />
+    <PlatformManifestFileEntry Include="libdbgshim.dylib" IsNative="true" />
     <!-- Mono components specific files -->
     <PlatformManifestFileEntry Include="libmono-component-diagnostics_tracing.dll" IsNative="true" />
     <PlatformManifestFileEntry Include="libmono-component-diagnostics_tracing.so" IsNative="true" />

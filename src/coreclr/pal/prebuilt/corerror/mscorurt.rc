@@ -268,7 +268,7 @@ BEGIN
 	MSG_FOR_URT_HR(CORDBG_E_CANNOT_RESOLVE_ASSEMBLY) "We failed to resolve assembly given an AssemblyRef token. Assembly may be not loaded yet or not a valid token."
 	MSG_FOR_URT_HR(CORDBG_E_MUST_BE_IN_LOAD_MODULE) "Must be in context of LoadModule callback to perform requested operation."
 	MSG_FOR_URT_HR(CORDBG_E_CANNOT_BE_ON_ATTACH) "Requested operation cannot be performed during an attach operation."
-	MSG_FOR_URT_HR(CORDBG_E_NGEN_NOT_SUPPORTED) "NGEN must be supported to perform the requested operation."
+	MSG_FOR_URT_HR(CORDBG_E_NGEN_NOT_SUPPORTED) "NGEN is not supported."
 	MSG_FOR_URT_HR(CORDBG_E_ILLEGAL_SHUTDOWN_ORDER) "Trying to shutdown out of order."
 	MSG_FOR_URT_HR(CORDBG_E_CANNOT_DEBUG_FIBER_PROCESS) "Debugging fiber mode managed process is not supported."
 	MSG_FOR_URT_HR(CORDBG_E_MUST_BE_IN_CREATE_PROCESS) "Must be in context of CreateProcess callback to perform requested operation."
@@ -328,6 +328,5 @@ BEGIN
 	MSG_FOR_URT_HR(CLR_E_GC_BAD_AFFINITY_CONFIG_FORMAT) "GCHeapAffinitizeRanges configuration string has invalid format."
 	MSG_FOR_URT_HR(CLR_E_GC_BAD_HARD_LIMIT) "GC heap hard limit configuration is invalid."
 	MSG_FOR_URT_HR(CLR_E_GC_LARGE_PAGE_MISSING_HARD_LIMIT) "GC large page support requires hard limit settings."
-	MSG_FOR_URT_HR(CLR_E_CROSSGEN_NO_IBC_DATA_FOUND) "Cannot compile using the PartialNgen flag because no IBC data was found."
 	MSG_FOR_URT_HR(COR_E_BADIMAGEFORMAT) "The format of a DLL or executable being loaded is invalid."
 END
