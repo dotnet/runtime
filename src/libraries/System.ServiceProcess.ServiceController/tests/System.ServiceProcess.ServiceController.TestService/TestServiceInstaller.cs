@@ -106,14 +106,14 @@ namespace System.ServiceProcess.Tests
                     {
                         if (svc.Status != ServiceControllerStatus.Running)
                         {
-                            TestService.DebugTrace($"TestServiceInstaller: instructing ServiceController to start service {ServiceName}");
+                            TestService.DebugTrace($"TestServiceInstaller: instructing ServiceController to start service '{ServiceName}'");
                             svc.Start();
                             if (!ServiceName.StartsWith("PropagateExceptionFromOnStart"))
                                 svc.WaitForStatus(ServiceControllerStatus.Running, TimeSpan.FromSeconds(240));
                         }
                         else
                         {
-                            TestService.DebugTrace($"TestServiceInstaller: service {ServiceName} already running");
+                            TestService.DebugTrace($"TestServiceInstaller: service '{ServiceName}' already running");
                         }
                     }
                 }
