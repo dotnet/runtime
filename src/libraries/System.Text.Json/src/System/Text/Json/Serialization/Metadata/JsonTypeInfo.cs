@@ -191,21 +191,24 @@ namespace System.Text.Json.Serialization.Metadata
             }
         }
 
-        private bool _isConfigured;
+        internal bool IsConfigured { get; private set; }
 
         internal void EnsureConfigured()
         {
-            if (_isConfigured)
+            if (IsConfigured)
                 return;
 
             Configure();
 
-            _isConfigured = true;
+            IsConfigured = true;
         }
 
         internal virtual void Configure()
         {
             JsonConverter converter = PropertyInfoForTypeInfo.ConverterBase;
+            Debug.Assert(PropertyInfoForTypeInfo.ConverterStrategy == PropertyInfoForTypeInfo.ConverterBase.ConverterStrategy,
+                $"ConverterStrategy from PropertyInfoForTypeInfo.ConverterStrategy ({PropertyInfoForTypeInfo.ConverterStrategy}) does not match converter's ({PropertyInfoForTypeInfo.ConverterBase.ConverterStrategy})");
+
             converter.ConfigureJsonTypeInfo(this, Options);
             PropertyInfoForTypeInfo.DeclaringTypeNumberHandling = NumberHandling;
             PropertyInfoForTypeInfo.EnsureConfigured();

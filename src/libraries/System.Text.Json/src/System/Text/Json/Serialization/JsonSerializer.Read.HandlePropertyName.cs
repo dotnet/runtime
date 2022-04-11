@@ -24,7 +24,18 @@ namespace System.Text.Json
             out bool useExtensionProperty,
             bool createExtensionProperty = true)
         {
-            Debug.Assert(state.Current.JsonTypeInfo.PropertyInfoForTypeInfo.ConverterStrategy == ConverterStrategy.Object);
+#if DEBUG
+            ConverterStrategy strat = state.Current.JsonTypeInfo.PropertyInfoForTypeInfo.ConverterStrategy;
+            string propName = JsonHelpers.Utf8GetString(unescapedPropertyName);
+            string objTypeName = obj.GetType().FullName!;
+            string jtiTypeName = state.Current.JsonTypeInfo.GetType().Name;
+            string typeName = state.Current.JsonTypeInfo.Type.GetType().FullName!;
+            bool isConfigured = state.Current.JsonTypeInfo.IsConfigured;
+            bool propCacacheInitialized = state.Current.JsonTypeInfo.PropertyCache != null;
+
+            Debug.Assert(strat == ConverterStrategy.Object,
+                $"ConverterStrategy is {strat}. propertyName = {propName}; obj.GetType() => {objTypeName}; JsonTypeInfo[{jtiTypeName}].Type = {typeName}; IsConfigured = {isConfigured}; HasPropertyCache = {propCacacheInitialized}");
+#endif
 
             useExtensionProperty = false;
 
