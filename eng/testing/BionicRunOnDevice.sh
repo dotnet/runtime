@@ -59,4 +59,4 @@ if [ -d "$_RuntimeDir/openssl" ]; then
 	ls -lh $_RuntimeDir/openssl/prefab/modules/ssl/libs/android.$_thisArchAndroid
 fi
 cd $currentDirectory
-$runtimeExe exec --runtimeconfig ${currentTest}.runtimeconfig.json --depsfile ${currentTest}.deps.json xunit.console.dll ${currentTest}.dll -xml testResults.xml -nologo -nocolor -notrait category=IgnoreForCI -notrait category=OuterLoop
+$runtimeExe exec --runtimeconfig ${currentTest}.runtimeconfig.json --depsfile ${currentTest}.deps.json xunit.console.dll ${currentTest}.dll -xml testResults.xml -nologo -nocolor -notrait category=IgnoreForCI -notrait category=OuterLoop -notrait category=failing
