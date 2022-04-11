@@ -83,7 +83,7 @@ namespace System.Net.Http.Tests
         }
 
         [Fact]
-        public void Accept_UseAddMethodWithInvalidValue_InvalidValueRecognized()
+        public void Accept_UseAddMethodWithInvalidValue_InvalidValueRecognizedAndNotRemoved()
         {
             // Add a valid media-type with an invalid quality value
             headers.TryAddWithoutValidation("Accept", "text/plain; q=a"); // invalid quality
@@ -102,7 +102,7 @@ namespace System.Net.Http.Tests
             headers.TryAddWithoutValidation("Accept", "text/plain; charset=iso-8859-1; q=1.0,\r\n */xml; charset=utf-8; q=0.5,,,");
 
             Assert.Equal(0, headers.Accept.Count);
-            Assert.False(headers.Contains("Accept"));
+            Assert.True(headers.Contains("Accept"));
         }
 
         [Fact]
@@ -133,7 +133,7 @@ namespace System.Net.Http.Tests
         }
 
         [Fact]
-        public void AcceptCharset_UseAddMethodWithInvalidValue_InvalidValueRecognized()
+        public void AcceptCharset_UseAddMethodWithInvalidValue_InvalidValueRecognizedAndNotRemoved()
         {
             headers.TryAddWithoutValidation("Accept-Charset", "iso-8859-5 utf-8"); // no separator
             Assert.Equal(0, headers.AcceptCharset.Count);
@@ -149,7 +149,7 @@ namespace System.Net.Http.Tests
             headers.Clear();
             headers.TryAddWithoutValidation("Accept-Charset", "iso-8859-5, \r\n utf-8; q=0.300");
             Assert.Equal(0, headers.AcceptCharset.Count);
-            Assert.False(headers.Contains("Accept-Charset"));
+            Assert.True(headers.Contains("Accept-Charset"));
         }
 
         [Fact]

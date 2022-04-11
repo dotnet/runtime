@@ -356,7 +356,7 @@ namespace System.Net.Http.Tests
 
         [Theory]
         [MemberData(nameof(HeaderValuesWithNewLines))]
-        public void TryAddWithoutValidation_AddValueContainingNewLine_Rejected(string headerValue)
+        public void TryAddWithoutValidation_AddValueContainingNewLine_NotRejected(string headerValue)
         {
             var headers = new HttpRequestHeaders();
 
@@ -368,11 +368,11 @@ namespace System.Net.Http.Tests
             Assert.Equal(1, headers.NonValidated.Count);
             Assert.Equal(headerValue, headers.NonValidated["foo"].ToString());
 
-            Assert.False(headers.Contains("foo"));
-            Assert.Equal(0, headers.Count());
+            Assert.True(headers.Contains("foo"));
+            Assert.Equal(1, headers.Count());
 
-            // Accessing the header forces parsing and the invalid value is removed
-            Assert.Equal(0, headers.NonValidated.Count);
+            // Accessing the header forces parsing and the invalid value is not removed
+            Assert.Equal(1, headers.NonValidated.Count);
 
 
             headers.Clear();
@@ -384,14 +384,14 @@ namespace System.Net.Http.Tests
             Assert.Equal(new[] { "valid", headerValue }, values);
 
             Assert.Equal(1, headers.Count());
-            Assert.Equal(1, headers.First().Value.Count());
+            Assert.Equal(2, headers.First().Value.Count());
             Assert.Equal("valid", headers.First().Value.First());
 
-            // Accessing the header forces parsing and the invalid value is removed
+            // Accessing the header forces parsing and the invalid value is not removed
             Assert.Equal(1, headers.NonValidated.Count);
             values = headers.NonValidated["foo"];
-            Assert.Equal(1, values.Count);
-            Assert.Equal("valid", values.ToString());
+            Assert.Equal(2, values.Count);
+            Assert.Equal(headerValue, headers.First().Value.Last());
         }
 
         [Fact]
@@ -1006,7 +1006,7 @@ namespace System.Net.Http.Tests
         }
 
         [Fact]
-        public void RemoveParsedValue_FirstAddNewlineCharsValueThenCallRemoveParsedValue_HeaderRemoved()
+        public void RemoveParsedValue_FirstAddNewlineCharsValueThenCallRemoveParsedValue_HeaderNotRemoved()
         {
             MockHeaders headers = new MockHeaders();
 
@@ -1017,11 +1017,11 @@ namespace System.Net.Http.Tests
 
             headers.RemoveParsedValue(headers.Descriptor, "");
 
-            Assert.False(headers.Contains(headers.Descriptor), "Store should not have an entry for 'knownHeader'.");
+            Assert.True(headers.Contains(headers.Descriptor));
         }
 
         [Fact]
-        public void RemoveParsedValue_FirstAddNewlineCharsValueThenAddValidValueThenCallAddParsedValue_HeaderRemoved()
+        public void RemoveParsedValue_FirstAddNewlineCharsValueThenAddValidValueThenCallAddParsedValue_HeaderNotRemoved()
         {
             MockHeaders headers = new MockHeaders();
 
@@ -1033,7 +1033,7 @@ namespace System.Net.Http.Tests
 
             headers.RemoveParsedValue(headers.Descriptor, parsedPrefix + "1");
 
-            Assert.False(headers.Contains(headers.Descriptor), "Store should not have an entry for 'knownHeader'.");
+            Assert.True(headers.Contains(headers.Descriptor));
         }
 
         [Fact]
@@ -1404,7 +1404,7 @@ namespace System.Net.Http.Tests
         }
 
         [Fact]
-        public void GetSingleParsedValue_AddInvalidValueToHeader_HeaderGetsRemovedAndNullReturned()
+        public void GetSingleParsedValue_AddInvalidValueToHeader_HeaderNotRemovedAndNullReturned()
         {
             MockHeaders headers = new MockHeaders();
             headers.TryAddWithoutValidation(headers.Descriptor, invalidHeaderValue + "\r\ninvalid");
@@ -1413,7 +1413,7 @@ namespace System.Net.Http.Tests
 
             object storeValue = headers.GetSingleParsedValue(headers.Descriptor);
             Assert.Null(storeValue);
-            Assert.False(headers.Contains(headers.Descriptor));
+            Assert.True(headers.Contains(headers.Descriptor));
         }
 
         [Fact]
@@ -1426,7 +1426,7 @@ namespace System.Net.Http.Tests
 
             Assert.Equal(0, headers.Parser.TryParseValueCallCount);
             Assert.Null(headers.GetSingleParsedValue(headers.Descriptor));
-            Assert.Equal(0, headers.Count());
+            Assert.Equal(1, headers.Count());
             Assert.Equal(1, headers.Parser.TryParseValueCallCount);
         }
 
@@ -1635,15 +1635,15 @@ namespace System.Net.Http.Tests
         }
 
         [Fact]
-        public void Contains_AddValuesWithNewlineChars_HeadersGetRemovedWhenCallingContains()
+        public void Contains_AddValuesWithNewlineChars_HeadersNotRemovedWhenCallingContains()
         {
             MockHeaders headers = new MockHeaders();
 
             headers.TryAddWithoutValidation(headers.Descriptor, invalidHeaderValue + "\r\ninvalid");
             headers.TryAddWithoutValidation("custom", "invalid\r\nvalue");
 
-            Assert.False(headers.Contains(headers.Descriptor), "Store should not have an entry for 'knownHeader'.");
-            Assert.False(headers.Contains("custom"), "Store should not have an entry for 'custom'.");
+            Assert.True(headers.Contains(headers.Descriptor));
+            Assert.True(headers.Contains("custom"));
         }
 
         [Fact]
@@ -1736,7 +1736,7 @@ namespace System.Net.Http.Tests
         }
 
         [Fact]
-        public void GetEnumerator_InvalidValueBetweenValidHeaders_EnumeratorReturnsAllValidValuesAndRemovesInvalidValue()
+        public void GetEnumerator_InvalidValueBetweenValidHeaders_EnumeratorReturnsAllValidValuesAndDoesNotRemoveInvalidValue()
         {
             MockHeaders headers = new MockHeaders();
             headers.TryAddWithoutValidation("foo", "fooValue");
@@ -1749,8 +1749,8 @@ namespace System.Net.Http.Tests
             Assert.Equal("fooValue", Assert.Single(Assert.Contains("foo", dict)));
             Assert.Equal("barValue", Assert.Single(Assert.Contains("bar", dict)));
 
-            Assert.Equal(2, headers.Count);
-            Assert.False(headers.NonValidated.Contains("invalid"));
+            Assert.Equal(3, headers.Count);
+            Assert.True(headers.NonValidated.Contains("invalid"));
         }
 
         [Fact]
@@ -1832,8 +1832,8 @@ namespace System.Net.Http.Tests
             headers.AddParsedValue(headers.Descriptor, parsedPrefix + "1");
 
             Assert.True(headers.Contains(headers.Descriptor), "Store should have an entry for 'knownHeader'.");
-            Assert.Equal(1, headers.GetValues(headers.Descriptor).Count());
-            Assert.Equal(parsedPrefix + "1", headers.GetValues(headers.Descriptor).First());
+            Assert.Equal(2, headers.GetValues(headers.Descriptor).Count());
+            Assert.Equal(parsedPrefix + "1", headers.GetValues(headers.Descriptor).Last());
         }
 
         [Fact]
@@ -1850,9 +1850,9 @@ namespace System.Net.Http.Tests
             headers.AddParsedValue(headers.Descriptor, parsedPrefix + "1");
 
             Assert.True(headers.Contains(headers.Descriptor), "Store should have an entry for 'knownHeader'.");
-            Assert.Equal(2, headers.GetValues(headers.Descriptor).Count());
-            Assert.Equal(parsedPrefix + "0", headers.GetValues(headers.Descriptor).ElementAt(0));
-            Assert.Equal(parsedPrefix + "1", headers.GetValues(headers.Descriptor).ElementAt(1));
+            Assert.Equal(3, headers.GetValues(headers.Descriptor).Count());
+            Assert.Equal(parsedPrefix + "0", headers.GetValues(headers.Descriptor).ElementAt(1));
+            Assert.Equal(parsedPrefix + "1", headers.GetValues(headers.Descriptor).ElementAt(2));
         }
 
         [Fact]
@@ -2137,7 +2137,7 @@ namespace System.Net.Http.Tests
         }
 
         [Fact]
-        public void AddHeaders_SourceHasInvalidHeaderValues_InvalidHeadersRemovedFromSourceAndNotCopiedToDestination()
+        public void AddHeaders_SourceHasInvalidHeaderValues_InvalidHeadersNotRemovedFromSourceAndCopiedToDestination()
         {
             MockHeaders source = new MockHeaders();
             source.TryAddWithoutValidation(known1Header, invalidHeaderValue + "\r\ninvalid");
@@ -2146,12 +2146,12 @@ namespace System.Net.Http.Tests
             MockHeaders destination = new MockHeaders();
             destination.AddHeaders(source);
 
-            Assert.Equal(0, source.Count());
-            Assert.False(source.Contains(known1Header), "source contains 'known' header.");
-            Assert.False(source.Contains("custom"), "source contains 'custom' header.");
-            Assert.Equal(0, destination.Count());
-            Assert.False(destination.Contains(known1Header), "destination contains 'known' header.");
-            Assert.False(destination.Contains("custom"), "destination contains 'custom' header.");
+            Assert.Equal(2, source.Count());
+            Assert.True(source.Contains(known1Header));
+            Assert.True(source.Contains("custom"));
+            Assert.Equal(2, destination.Count());
+            Assert.True(destination.Contains(known1Header));
+            Assert.True(destination.Contains("custom"));
         }
 
         [Fact]
@@ -2368,9 +2368,9 @@ namespace System.Net.Http.Tests
             Assert.True(headers.NonValidated.Contains("invalid"));
             Assert.Equal(3, headers.NonValidated.Count);
 
-            Assert.Equal(new[] { "1", "valid" }, headers.Select(pair => pair.Key).OrderBy(i => i));
+            Assert.Equal(new[] { "1", "invalid", "valid" }, headers.Select(pair => pair.Key).OrderBy(i => i));
 
-            Assert.Equal(2, headers.NonValidated.Count);
+            Assert.Equal(3, headers.NonValidated.Count);
 
             headers.Clear();
 
