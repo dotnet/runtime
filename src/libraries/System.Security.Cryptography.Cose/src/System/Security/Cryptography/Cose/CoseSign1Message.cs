@@ -45,7 +45,15 @@ namespace System.Security.Cryptography.Cose
         }
 
         [UnsupportedOSPlatform("browser")]
-        internal static byte[] SignCore(ReadOnlySpan<byte> contentBytes, Stream? contentStream, AsymmetricAlgorithm key, HashAlgorithmName hashAlgorithm, KeyType keyType, CoseHeaderMap? protectedHeaders, CoseHeaderMap? unprotectedHeaders, bool isDetached)
+        internal static byte[] SignCore(
+            ReadOnlySpan<byte> contentBytes,
+            Stream? contentStream,
+            AsymmetricAlgorithm key,
+            HashAlgorithmName hashAlgorithm,
+            KeyType keyType,
+            CoseHeaderMap? protectedHeaders,
+            CoseHeaderMap? unprotectedHeaders,
+            bool isDetached)
         {
             Debug.Assert(contentStream == null || (isDetached == true && contentBytes.Length == 0));
 
@@ -149,7 +157,17 @@ namespace System.Security.Cryptography.Cose
         }
 
         [UnsupportedOSPlatform("browser")]
-        private static int CreateCoseSign1Message(ReadOnlySpan<byte> contentBytes, Stream? contentStream, Span<byte> buffer, AsymmetricAlgorithm key, HashAlgorithmName hashAlgorithm, CoseHeaderMap? protectedHeaders, CoseHeaderMap? unprotectedHeaders, bool isDetached, int? algHeaderValueToSlip, KeyType keyType)
+        private static int CreateCoseSign1Message(
+            ReadOnlySpan<byte> contentBytes,
+            Stream? contentStream,
+            Span<byte> buffer,
+            AsymmetricAlgorithm key,
+            HashAlgorithmName hashAlgorithm,
+            CoseHeaderMap? protectedHeaders,
+            CoseHeaderMap? unprotectedHeaders,
+            bool isDetached,
+            int? algHeaderValueToSlip,
+            KeyType keyType)
         {
             var writer = new CborWriter();
             writer.WriteTag(Sign1Tag);
@@ -180,7 +198,16 @@ namespace System.Security.Cryptography.Cose
         }
 
         [UnsupportedOSPlatform("browser")]
-        private static async Task<int> CreateCoseSign1MessageAsync(Stream content, byte[] buffer, AsymmetricAlgorithm key, HashAlgorithmName hashAlgorithm, CoseHeaderMap? protectedHeaders, CoseHeaderMap? unprotectedHeaders, CancellationToken cancellationToken, int? algHeaderValueToSlip, KeyType keyType)
+        private static async Task<int> CreateCoseSign1MessageAsync(
+            Stream content,
+            byte[] buffer,
+            AsymmetricAlgorithm key,
+            HashAlgorithmName hashAlgorithm,
+            CoseHeaderMap? protectedHeaders,
+            CoseHeaderMap? unprotectedHeaders,
+            CancellationToken cancellationToken,
+            int? algHeaderValueToSlip,
+            KeyType keyType)
         {
             var writer = new CborWriter();
             writer.WriteTag(Sign1Tag);
@@ -385,15 +412,12 @@ namespace System.Security.Cryptography.Cose
                 int bufferLength = ComputeToBeSignedEncodedSize(SigStructureCoxtextSign1, _protectedHeaderAsBstr, ReadOnlySpan<byte>.Empty);
                 byte[] buffer = ArrayPool<byte>.Shared.Rent(bufferLength);
 
-                try
-                {
-                    await AppendToBeSignedAsync(buffer, hasher, SigStructureCoxtextSign1, _protectedHeaderAsBstr, content, hashAlgorithm, cancellationToken).ConfigureAwait(false);
-                    return VerifyHash(key, hasher, hashAlgorithm, keyType);
-                }
-                finally
-                {
-                    ArrayPool<byte>.Shared.Return(buffer, clearArray: true);
-                }
+                await AppendToBeSignedAsync(buffer, hasher, SigStructureCoxtextSign1, _protectedHeaderAsBstr, content, hashAlgorithm, cancellationToken).ConfigureAwait(false);
+                bool retVal = VerifyHash(key, hasher, hashAlgorithm, keyType);
+
+                ArrayPool<byte>.Shared.Return(buffer, clearArray: true);
+
+                return retVal;
             }
         }
 

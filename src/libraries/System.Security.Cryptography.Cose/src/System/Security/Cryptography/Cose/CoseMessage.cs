@@ -235,22 +235,16 @@ namespace System.Security.Cryptography.Cose
             // content
             byte[] contentBuffer = ArrayPool<byte>.Shared.Rent(4096);
             int bytesRead;
-
-            try
-            {
 #if NETSTANDARD2_0 || NETFRAMEWORK
-                while ((bytesRead = await content.ReadAsync(contentBuffer, 0, contentBuffer.Length, cancellationToken).ConfigureAwait(false)) > 0)
+            while ((bytesRead = await content.ReadAsync(contentBuffer, 0, contentBuffer.Length, cancellationToken).ConfigureAwait(false)) > 0)
 #else
-                while ((bytesRead = await content.ReadAsync(contentBuffer, cancellationToken).ConfigureAwait(false)) > 0)
+            while ((bytesRead = await content.ReadAsync(contentBuffer, cancellationToken).ConfigureAwait(false)) > 0)
 #endif
-                {
-                    hasher.AppendData(contentBuffer, 0, bytesRead);
-                }
-            }
-            finally
             {
-                ArrayPool<byte>.Shared.Return(contentBuffer, clearArray:true);
+                hasher.AppendData(contentBuffer, 0, bytesRead);
             }
+
+            ArrayPool<byte>.Shared.Return(contentBuffer, clearArray: true);
         }
 
         internal static int CreateToBeSigned(Span<byte> destination, string context, ReadOnlySpan<byte> encodedProtectedHeader, ReadOnlySpan<byte> content)
