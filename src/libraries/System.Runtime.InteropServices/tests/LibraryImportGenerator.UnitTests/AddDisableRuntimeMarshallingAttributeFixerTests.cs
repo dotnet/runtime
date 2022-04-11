@@ -102,6 +102,9 @@ using System.Reflection;
         private static async Task VerifyCodeFixAsync(string source, string? propertiesFile, string? expectedPropertiesFile, DiagnosticResult diagnostic)
         {
             var test = new Test();
+            // We don't care about validating the settings for the MockAnalyzer and we're also hitting failures on Mono
+            // with this check in this case, so skip the check for now.
+            test.TestBehaviors = TestBehaviors.SkipGeneratedCodeCheck;
             test.TestCode = source;
             test.FixedCode = source;
             test.BatchFixedCode = source;
