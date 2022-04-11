@@ -241,23 +241,13 @@ namespace System
         /// <paramref name="microsecond"/> is less than 0 or greater than 900.
         /// </exception>
         public DateTimeOffset(int year, int month, int day, int hour, int minute, int second, int millisecond, int microsecond, TimeSpan offset)
+        : this(year, month, day, hour, minute, second, millisecond, offset)
         {
-            _offsetMinutes = ValidateOffset(offset);
-
-            int originalSecond = second;
-            if (second == 60 && DateTime.s_systemSupportsLeapSeconds)
-            {
-                // Reset the leap second to 59 for now and then we'll validate it after getting the final UTC time.
-                second = 59;
-            }
-
-            _dateTime = ValidateDate(new DateTime(year, month, day, hour, minute, second, millisecond, microsecond), offset);
-
-            if (originalSecond == 60 &&
-               !DateTime.IsValidTimeWithLeapSeconds(_dateTime.Year, _dateTime.Month, _dateTime.Day, _dateTime.Hour, _dateTime.Minute, DateTimeKind.Utc))
+            if ((uint)microsecond >= DateTime.MicrosecondsPerMillisecond)
             {
                 throw new ArgumentOutOfRangeException(null, SR.ArgumentOutOfRange_BadHourMinuteSecond);
             }
+            _dateTime = _dateTime.AddMicroseconds(microsecond);
         }
 
         /// <summary>
