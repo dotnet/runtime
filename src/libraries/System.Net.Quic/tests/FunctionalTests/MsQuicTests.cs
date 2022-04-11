@@ -415,7 +415,6 @@ namespace System.Net.Quic.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/67302")]
         public async Task WaitForAvailableBidirectionStreamsAsyncWorks()
         {
             QuicListenerOptions listenerOptions = CreateQuicListenerOptions();

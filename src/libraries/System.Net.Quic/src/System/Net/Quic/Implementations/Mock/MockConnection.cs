@@ -230,6 +230,52 @@ namespace System.Net.Quic.Implementations.Mock
             return OpenStream(streamId, true);
         }
 
+        internal async override ValueTask<QuicStreamProvider> OpenUnidirectionalStreamAsync(CancellationToken cancellationToken)
+        {
+            PeerStreamLimit? streamLimit = RemoteStreamLimit;
+            if (streamLimit is null)
+            {
+                throw new InvalidOperationException("Not connected");
+            }
+
+            while (!streamLimit.Unidirectional.TryIncrement())
+            {
+                await WaitForAvailableUnidirectionalStreamsAsync(cancellationToken).ConfigureAwait(false);
+            }
+
+            long streamId;
+            lock (_syncObject)
+            {
+                streamId = _nextOutboundUnidirectionalStream;
+                _nextOutboundUnidirectionalStream += 4;
+            }
+
+            return OpenStream(streamId, false);
+        }
+
+        internal async override ValueTask<QuicStreamProvider> OpenBidirectionalStreamAsync(CancellationToken cancellationToken)
+        {
+            PeerStreamLimit? streamLimit = RemoteStreamLimit;
+            if (streamLimit is null)
+            {
+                throw new InvalidOperationException("Not connected");
+            }
+
+            while (!streamLimit.Bidirectional.TryIncrement())
+            {
+                await WaitForAvailableBidirectionalStreamsAsync(cancellationToken).ConfigureAwait(false);
+            }
+
+            long streamId;
+            lock (_syncObject)
+            {
+                streamId = _nextOutboundBidirectionalStream;
+                _nextOutboundBidirectionalStream += 4;
+            }
+
+            return OpenStream(streamId, true);
+        }
+
         internal MockStream OpenStream(long streamId, bool bidirectional)
         {
             CheckDisposed();

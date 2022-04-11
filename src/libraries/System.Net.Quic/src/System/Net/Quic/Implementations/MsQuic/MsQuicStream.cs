@@ -76,6 +76,9 @@ namespace System.Net.Quic.Implementations.MsQuic
             // Set once writes have been shutdown.
             public readonly TaskCompletionSource ShutdownWriteCompletionSource = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
 
+            // Set once stream has been started and within peer's advertised stream limits
+            public readonly TaskCompletionSource StartCompletionSource = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
             public ShutdownState ShutdownState;
             // The value makes sure that we release the handles only once.
             public int ShutdownDone;
@@ -182,10 +185,6 @@ namespace System.Net.Quic.Implementations.MsQuic
                 }
 
                 QuicExceptionHelpers.ThrowIfFailed(status, "Failed to open stream to peer.");
-
-                Debug.Assert(!Monitor.IsEntered(_state), "!Monitor.IsEntered(_state)");
-                status = MsQuicApi.Api.StreamStartDelegate(_state.Handle, QUIC_STREAM_START_FLAGS.FAIL_BLOCKED | QUIC_STREAM_START_FLAGS.SHUTDOWN_ON_FAIL);
-                QuicExceptionHelpers.ThrowIfFailed(status, "Could not start stream.");
             }
             catch
             {
@@ -888,6 +887,31 @@ namespace System.Net.Quic.Implementations.MsQuic
             QuicExceptionHelpers.ThrowIfFailed(status, "StreamReceiveSetEnabled failed.");
         }
 
+        internal async ValueTask StartAsync(QUIC_STREAM_START_FLAGS flags, CancellationToken cancellationToken)
+        {
+            Debug.Assert(!Monitor.IsEntered(_state));
+
+            try
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                using CancellationTokenRegistration registration = cancellationToken.UnsafeRegister(static (s, token) =>
+                {
+                    ((State)s!).StartCompletionSource.TrySetCanceled(token);
+                }, _state);
+
+                uint status = MsQuicApi.Api.StreamStartDelegate(_state.Handle, flags);
+                QuicExceptionHelpers.ThrowIfFailed(status, "Could not start stream.");
+
+                await _state.StartCompletionSource.Task.ConfigureAwait(false);
+            }
+            catch
+            {
+                _state.Handle?.Dispose();
+                _state.StateGCHandle.Free();
+                throw;
+            }
+        }
+
         /// <summary>
         /// Callback calls for a single instance of a stream are serialized by msquic.
         /// They happen on a msquic thread and shouldn't take too long to not to block msquic.
@@ -944,6 +968,8 @@ namespace System.Net.Quic.Implementations.MsQuic
                     // Shutdown for both sending and receiving is completed.
                     case QUIC_STREAM_EVENT_TYPE.SHUTDOWN_COMPLETE:
                         return HandleEventShutdownComplete(state, ref evt);
+                    case QUIC_STREAM_EVENT_TYPE.PEER_ACCEPTED:
+                        return HandleEventPeerAccepted(state);
                     default:
                         return MsQuicStatusCodes.Success;
                 }
@@ -1111,6 +1137,14 @@ namespace System.Net.Quic.Implementations.MsQuic
         {
             // Store the start status code and check it when propagating shutdown event, which we'll get since we set SHUTDOWN_ON_FAIL in StreamStart.
             state.StartStatus = evt.Data.StartComplete.Status;
+            if (state.StartStatus != MsQuicStatusCodes.Success)
+            {
+                state.StartCompletionSource.TrySetException(ExceptionDispatchInfo.SetCurrentStackTrace(new QuicException($"Stream start failed with {MsQuicStatusCodes.GetError(state.StartStatus)}")));
+            }
+            else if ((evt.Data.StartComplete.PeerAccepted & 1) != 0)
+            {
+                state.StartCompletionSource.TrySetResult();
+            }
             return MsQuicStatusCodes.Success;
         }
 
@@ -1220,6 +1254,12 @@ namespace System.Net.Quic.Implementations.MsQuic
                 state.Cleanup();
             }
 
+            return MsQuicStatusCodes.Success;
+        }
+
+        private static uint HandleEventPeerAccepted(State state)
+        {
+            state.StartCompletionSource.TrySetResult();
             return MsQuicStatusCodes.Success;
         }
 

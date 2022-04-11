@@ -213,6 +213,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         SEND_SHUTDOWN_COMPLETE = 6,
         SHUTDOWN_COMPLETE = 7,
         IDEAL_SEND_BUFFER_SIZE = 8,
+        PEER_ACCEPTED = 9
     }
 
 #if SOCKADDR_HAS_LENGTH
