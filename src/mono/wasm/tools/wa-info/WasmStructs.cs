@@ -245,9 +245,16 @@ namespace WebAssemblyInfo
         public UInt32 Count;
         public ValueType Type;
 
+        public string ToString(int idx)
+        {
+            string varName = idx == -1 ? null : $" ${idx}";
+            string count = Count == 1 ? null : $" {Count}";
+            return $"local{varName}{count} {Type}";
+        }
+
         public override string ToString()
         {
-            return $"local {Count} {Type}";
+            return ToString(-1);
         }
     }
 
@@ -277,7 +284,7 @@ namespace WebAssemblyInfo
                 Locals[j].Count = reader.ReadU32();
                 reader.ReadValueType(ref Locals[j].Type);
 
-                //Console.WriteLine($"    locals count: {funcsCode[i].Locals[j].Count} type: {funcsCode[i].Locals[j].Type}");
+                // Console.WriteLine($"    locals {j} count: {Locals[j].Count} type: {Locals[j].Type}");
             }
 
             // read expr
@@ -300,14 +307,14 @@ namespace WebAssemblyInfo
             return true;
         }
 
-        public string ToString(WasmReader? reader)
+        public string ToString(WasmReader? reader, int startIdx)
         {
             EnsureCodeReaded(reader);
 
             StringBuilder sb = new();
 
             foreach (LocalsBlock lb in Locals)
-                sb.AppendLine(lb.ToString().Indent(" "));
+                sb.AppendLine(lb.ToString(startIdx++).Indent(" "));
 
             foreach (var instruction in Instructions)
                 sb.AppendLine(instruction.ToString(reader).Indent(" "));
@@ -317,7 +324,7 @@ namespace WebAssemblyInfo
 
         public override string ToString()
         {
-            return ToString(null);
+            return ToString(null, 0);
         }
     }
 

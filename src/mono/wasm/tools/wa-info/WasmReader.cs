@@ -1192,7 +1192,8 @@ namespace WebAssemblyInfo
                 return;
 
             //Console.WriteLine($"read func {name}");
-            Console.WriteLine($"{prefix}{functionTypes[functions[idx].TypeIdx].ToString(name)}\n{funcsCode[idx].ToString(this).Indent(prefix)}");
+            var type = functionTypes[functions[idx].TypeIdx];
+            Console.WriteLine($"{prefix}{type.ToString(name)}\n{funcsCode[idx].ToString(this, type.Parameters.Types.Length).Indent(prefix)}");
         }
 
         protected void PrintFunction(UInt32 idx, string? name, object? _ = null)
