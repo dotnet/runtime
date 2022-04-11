@@ -82,27 +82,7 @@ internal static partial class Interop
                 SERVICE_WIN32_OWN_PROCESS |
                 SERVICE_WIN32_SHARE_PROCESS;
 
-            //internal const int SERVICE_USER_SERVICE = 0x00000040;
-            //internal const int SERVICE_USERSERVICE_INSTANCE = 0x00000080;
-
-            //internal const int SERVICE_USER_SHARE_PROCESS =
-            //    SERVICE_USER_SERVICE |
-            //    SERVICE_WIN32_SHARE_PROCESS;
-            //internal const int SERVICE_USER_OWN_PROCESS =
-            //    SERVICE_USER_SERVICE |
-            //    SERVICE_WIN32_OWN_PROCESS;
-
             internal const int SERVICE_INTERACTIVE_PROCESS = 0x00000100;
-            //internal const int SERVICE_PKG_PROCESS = 0x00000200;
-
-            // internal const int SERVICE_TYPE_ALL =
-            //    SERVICE_WIN32 |
-            //    SERVICE_ADAPTER |
-            //    SERVICE_DRIVER |
-            //    SERVICE_INTERACTIVE_PROCESS;
-            //    SERVICE_USER_SERVICE |
-            //    SERVICE_USERSERVICE_INSTANCE |
-            //    SERVICE_PKG_SERVICE;
         }
 
         internal static partial class ServiceAccessOptions

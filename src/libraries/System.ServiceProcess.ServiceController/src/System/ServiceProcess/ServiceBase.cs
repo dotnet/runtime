@@ -871,7 +871,7 @@ namespace System.ServiceProcess
 
                 if (argCount > 0)
                 {
-                    char** argsAsPtr = (char**)argPointer.ToPointer();
+                    char** argsAsPtr = (char**)argPointer;
 
                     // The first arg is always the service name. We don't want to pass that in,
                     // but we can use it to set the service name on ourselves if we don't already know it.
