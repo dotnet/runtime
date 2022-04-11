@@ -7,6 +7,7 @@ using System.Formats.Cbor;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace System.Security.Cryptography.Cose
@@ -183,22 +184,45 @@ namespace System.Security.Cryptography.Cose
             return reader.ReadByteString();
         }
 
-        // TODO: reanme appendtobesigned
-        internal static void CreateHashedToBeSigned(Span<byte> buffer, IncrementalHash hasher, string context, ReadOnlySpan<byte> encodedProtectedHeader, ReadOnlySpan<byte> content, HashAlgorithmName hashAlgorithm)
+        internal static void AppendToBeSigned(Span<byte> buffer, IncrementalHash hasher, string context, ReadOnlySpan<byte> encodedProtectedHeader, ReadOnlySpan<byte> contentBytes, Stream? contentStream, HashAlgorithmName hashAlgorithm)
         {
             int bytesWritten = CreateToBeSigned(buffer, context, encodedProtectedHeader, ReadOnlySpan<byte>.Empty);
             bytesWritten -= 1; // Trim the empty bstr content, it is just a placeholder.
 
             hasher.AppendData(buffer.Slice(0, bytesWritten));
 
-            // content length
-            CoseHelpers.WriteByteStringLength(hasher, (ulong)content.Length);
+            if (contentStream == null)
+            {
+                // content length
+                CoseHelpers.WriteByteStringLength(hasher, (ulong)contentBytes.Length);
 
-            //content
-            hasher.AppendData(content);
+                //content
+                hasher.AppendData(contentBytes);
+            }
+            else
+            {
+                // content length
+                CoseHelpers.WriteByteStringLength(hasher, (ulong)(contentStream.Length - contentStream.Position));
+
+                //content
+                byte[] contentBuffer = ArrayPool<byte>.Shared.Rent(4096);
+                int bytesRead;
+
+                try
+                {
+                    while ((bytesRead = contentStream.Read(contentBuffer, 0, contentBuffer.Length)) > 0)
+                    {
+                        hasher.AppendData(contentBuffer, 0, bytesRead);
+                    }
+                }
+                finally
+                {
+                    ArrayPool<byte>.Shared.Return(contentBuffer, clearArray: true);
+                }
+            }
         }
 
-        internal static async Task CreateHashedToBeSignedAsync(byte[] buffer, IncrementalHash hasher, string context, ReadOnlyMemory<byte> encodedProtectedHeader, Stream content, HashAlgorithmName hashAlgorithm)
+        internal static async Task AppendToBeSignedAsync(byte[] buffer, IncrementalHash hasher, string context, ReadOnlyMemory<byte> encodedProtectedHeader, Stream content, HashAlgorithmName hashAlgorithm, CancellationToken cancellationToken)
         {
             int bytesWritten = CreateToBeSigned(buffer, context, encodedProtectedHeader.Span, ReadOnlySpan<byte>.Empty);
             bytesWritten -= 1; // Trim the empty bstr content, it is just a placeholder.
@@ -215,9 +239,9 @@ namespace System.Security.Cryptography.Cose
             try
             {
 #if NETSTANDARD2_0 || NETFRAMEWORK
-                while ((bytesRead = await content.ReadAsync(contentBuffer, 0, contentBuffer.Length).ConfigureAwait(false)) > 0)
+                while ((bytesRead = await content.ReadAsync(contentBuffer, 0, contentBuffer.Length, cancellationToken).ConfigureAwait(false)) > 0)
 #else
-                while ((bytesRead = await content.ReadAsync(contentBuffer).ConfigureAwait(false)) > 0)
+                while ((bytesRead = await content.ReadAsync(contentBuffer, cancellationToken).ConfigureAwait(false)) > 0)
 #endif
                 {
                     hasher.AppendData(contentBuffer, 0, bytesRead);
