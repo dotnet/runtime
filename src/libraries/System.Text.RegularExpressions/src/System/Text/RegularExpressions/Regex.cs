@@ -74,6 +74,8 @@ namespace System.Text.RegularExpressions
             // if no options are ever used.
         }
 
+        [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
+            Justification = "Native AOT does not use compiled Regex")]
         internal Regex(string pattern, RegexOptions options, TimeSpan matchTimeout, CultureInfo? culture)
         {
             // Validate arguments.
@@ -201,6 +203,7 @@ namespace System.Text.RegularExpressions
         /// Regex constructor, we don't load RegexCompiler and its reflection classes when
         /// instantiating a non-compiled regex.
         /// </summary>
+        [RequiresDynamicCode("The native code for Regex compilation might not be available at runtime.")]
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static RegexRunnerFactory? Compile(string pattern, RegexTree regexTree, RegexOptions options, bool hasTimeout) =>
             RegexCompiler.Compile(pattern, regexTree, options, hasTimeout);
