@@ -31,10 +31,10 @@ namespace System.Text.Json
             string jtiTypeName = state.Current.JsonTypeInfo.GetType().Name;
             string typeName = state.Current.JsonTypeInfo.Type.GetType().FullName!;
             bool isConfigured = state.Current.JsonTypeInfo.IsConfigured;
-            bool propCacacheInitialized = state.Current.JsonTypeInfo.PropertyCache != null;
+            bool propCacheInitialized = state.Current.JsonTypeInfo.PropertyCache != null;
 
             Debug.Assert(strat == ConverterStrategy.Object,
-                $"ConverterStrategy is {strat}. propertyName = {propName}; obj.GetType() => {objTypeName}; JsonTypeInfo[{jtiTypeName}].Type = {typeName}; IsConfigured = {isConfigured}; HasPropertyCache = {propCacacheInitialized}");
+                $"ConverterStrategy is {strat}. propertyName = {propName}; obj.GetType() => {objTypeName}; JsonTypeInfo[{jtiTypeName}].Type = {typeName}; IsConfigured = {isConfigured}; HasPropertyCache = {propCacheInitialized}");
 #endif
 
             useExtensionProperty = false;
