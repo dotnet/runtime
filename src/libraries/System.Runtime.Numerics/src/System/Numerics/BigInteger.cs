@@ -2204,7 +2204,7 @@ namespace System.Numerics
 
             if (negx)
             {
-                if (shift >= ((long) kcbitUint * xd.Length))
+                if (shift >= ((long)kcbitUint * xd.Length))
                 {
                     result = MinusOne;
                     goto exit;
