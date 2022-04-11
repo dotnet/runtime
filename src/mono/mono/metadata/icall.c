@@ -3260,6 +3260,7 @@ ves_icall_System_IO_Stream_HasOverriddenBeginEndRead (MonoObjectHandle stream, M
 	// slots can still be -1 and it means Linker removed the methods from the base class (Stream)
 	// in this case we can safely assume the methods are not overridden
 	// otherwise - check vtable
+	mono_class_setup_vtable (curr_klass);
 	MonoMethod **curr_klass_vtable = m_class_get_vtable (curr_klass);
 	gboolean begin_read_is_overriden = io_stream_begin_read_slot != -1 && curr_klass_vtable [io_stream_begin_read_slot]->klass != base_klass;
 	gboolean end_read_is_overriden = io_stream_end_read_slot != -1 && curr_klass_vtable [io_stream_end_read_slot]->klass != base_klass;
@@ -3280,6 +3281,7 @@ ves_icall_System_IO_Stream_HasOverriddenBeginEndWrite (MonoObjectHandle stream, 
 	// slots can still be -1 and it means Linker removed the methods from the base class (Stream)
 	// in this case we can safely assume the methods are not overridden
 	// otherwise - check vtable
+	mono_class_setup_vtable (curr_klass);
 	MonoMethod **curr_klass_vtable = m_class_get_vtable (curr_klass);
 	gboolean begin_write_is_overriden = io_stream_begin_write_slot != -1 && curr_klass_vtable [io_stream_begin_write_slot]->klass != base_klass;
 	gboolean end_write_is_overriden = io_stream_end_write_slot != -1 && curr_klass_vtable [io_stream_end_write_slot]->klass != base_klass;
