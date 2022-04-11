@@ -10,14 +10,19 @@
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <DisablePackageBaselineValidation>true</DisablePackageBaselineValidation>
     <IsPackable>true</IsPackable>
-    <NoWarn>$(NoWarn);NU5131</NoWarn>
+    <!-- XXX FIXME: NU5128 suppresses a really scary message about missing net7.0 dependencies -->
+    <NoWarn>$(NoWarn);NU5128;NU5131</NoWarn>
     <!-- Place assemblies in the nuget ref folder -->
     <BuildOutputTargetFolder>ref</BuildOutputTargetFolder>
+    <!-- XXX FIXME: the rest of these props affect the NoTargets SDK in some way.  I want to be able to reference this project from another .csproj -->
+    <NoTargetsDoNotReferenceOutputAssemblies>false</NoTargetsDoNotReferenceOutputAssemblies>
+    <DisableImplicitFrameworkReferences>false</DisableImplicitFrameworkReferences>
+    <GenerateDependencyFile>true</GenerateDependencyFile>
   </PropertyGroup>
 
   <ItemGroup>
     <!-- ProjectReference Include="..\..\System.Runtime\ref\System.Runtime.csproj" PrivateAssets="all" -->
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Threading.Thread.WebAssembly.Threading\ref\System.Threading.Thread.WebAssembly.Threading.csproj" PrivateAssets="all" Pack="true" Private="true" IncludeReferenceAssemblyInPackage="true" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Threading.Thread.WebAssembly.Threading\ref\System.Threading.Thread.WebAssembly.Threading.csproj" IncludeAssets="all" Pack="true" Private="true" IncludeReferenceAssemblyInPackage="true" />
   </ItemGroup>
 
   <Target Name="_ExperimentalUpdateFileVersion"
