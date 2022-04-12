@@ -137,7 +137,7 @@ namespace System.IO.Pipes
                 cancellationToken.ThrowIfCancellationRequested();
 
                 // Determine how long we should wait in this connection attempt
-                int waitTime = timeout - elapsed;
+                int waitTime = timeout == Timeout.Infinite ? CancellationCheckInterval : timeout - elapsed;
                 if (cancellationToken.CanBeCanceled && waitTime > CancellationCheckInterval)
                 {
                     waitTime = CancellationCheckInterval;

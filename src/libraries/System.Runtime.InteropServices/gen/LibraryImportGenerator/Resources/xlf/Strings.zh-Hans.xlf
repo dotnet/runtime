@@ -83,8 +83,8 @@
         <note />
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedMessageValue">
-        <source>The specified value '{0}' for '{1}' is not supported by source-generated P/Invokes. If the specified configuration is required, use a regular `DllImport` instead.</source>
-        <target state="translated">源生成的 P/Invoke 不支持为“{1}”指定的值“{0}”。如果需要指定的配置，请改用常规的 “DllImport”。</target>
+        <source>The specified value '{0}' for '{1}' is not supported by source-generated P/Invokes. If the specified value is required, use a regular `DllImport` instead.</source>
+        <target state="needs-review-translation">源生成的 P/Invoke 不支持为“{1}”指定的值“{0}”。如果需要指定的配置，请改用常规的 “DllImport”。</target>
         <note />
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedTitle">
@@ -208,8 +208,8 @@
         <note />
       </trans-unit>
       <trans-unit id="InTwoStageMarshallingRequiresToNativeValueMessage">
-        <source>The marshaller type '{0}' supports marshalling in the 'In' direction with the 'TwoStageMarshalling' feature must provide a 'ToNativeValue' instance method that returns the native value</source>
-        <target state="translated">封送程序类型“{0}”支持使用 “TwoStageMarshalling” 功能在 “In” 方向进行封送，必须提供返回本机值的 “ToNativeValue” 实例方法</target>
+        <source>A marshaller type '{0}' that supports marshalling in the 'In' direction with the 'TwoStageMarshalling' feature must provide a 'ToNativeValue' instance method that returns the native value</source>
+        <target state="needs-review-translation">封送程序类型“{0}”支持使用 “TwoStageMarshalling” 功能在 “In” 方向进行封送，必须提供返回本机值的 “ToNativeValue” 实例方法</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidAttributedMethodContainingTypeMissingModifiersMessage">

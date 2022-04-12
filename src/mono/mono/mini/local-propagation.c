@@ -66,7 +66,7 @@ compute_magic_unsigned (guint32 divisor) {
 	int p;
 
 	magu.addition = 0;
-	nc = -1 - (-divisor) % divisor;
+	nc = -1 - (-(gint32)divisor) % divisor;
 	p = 31;
 	q1 = 0x80000000 / nc;
 	r1 = 0x80000000 - q1 * nc;
@@ -840,8 +840,8 @@ reg_is_softreg (int reg, const char spec)
 static gboolean
 mono_is_simd_accessor (MonoInst *ins)
 {
-	switch (ins->opcode) {
 #ifdef MONO_ARCH_SIMD_INTRINSICS
+	switch (ins->opcode) {
 	case OP_INSERT_I1:
 	case OP_INSERT_I2:
 	case OP_INSERT_I4:
@@ -855,10 +855,12 @@ mono_is_simd_accessor (MonoInst *ins)
 	case OP_INSERTX_R8_SLOW:
 	case OP_INSERTX_I8_SLOW:
 		return TRUE;
-#endif
 	default:
 		return FALSE;
 	}
+#else
+	return FALSE;
+#endif
 }
 
 /**
@@ -962,12 +964,12 @@ mono_local_deadce (MonoCompile *cfg)
 					MONO_INS_HAS_NO_SIDE_EFFECT (ins)) {
 					/* Happens with CMOV instructions */
 					if (prev_f && prev_f->opcode == OP_ICOMPARE_IMM) {
-						MonoInst *prev = prev_f;
+						MonoInst *prev_ins = prev_f;
 						/*
 						 * Can't use DELETE_INS since that would interfere with the
 						 * FOR_EACH_INS loop.
 						 */
-						NULLIFY_INS (prev);
+						NULLIFY_INS (prev_ins);
 					}
 					//printf ("DEADCE: "); mono_print_ins (ins);
 					MONO_DELETE_INS (bb, ins);

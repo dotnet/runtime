@@ -520,14 +520,13 @@ namespace System.Collections.Concurrent
 
         /// <summary>Takes an item from the <see cref="System.Collections.Concurrent.BlockingCollection{T}"/>.</summary>
         /// <returns>The item removed from the collection.</returns>
-        /// <exception cref="System.OperationCanceledException">The <see
-        /// cref="System.Collections.Concurrent.BlockingCollection{T}"/> is empty and has been marked
-        /// as complete with regards to additions.</exception>
         /// <exception cref="System.ObjectDisposedException">The <see
         /// cref="System.Collections.Concurrent.BlockingCollection{T}"/> has been disposed.</exception>
         /// <exception cref="System.InvalidOperationException">The underlying collection was modified
         /// outside of this <see
-        /// cref="System.Collections.Concurrent.BlockingCollection{T}"/> instance.</exception>
+        /// cref="System.Collections.Concurrent.BlockingCollection{T}"/> instance, or the <see
+        /// cref="System.Collections.Concurrent.BlockingCollection{T}"/> is empty and has been marked
+        /// as complete with regards to additions.</exception>
         /// <remarks>A call to <see cref="Take()"/> may block until an item is available to be removed.</remarks>
         public T Take()
         {
@@ -543,15 +542,15 @@ namespace System.Collections.Concurrent
 
         /// <summary>Takes an item from the <see cref="System.Collections.Concurrent.BlockingCollection{T}"/>.</summary>
         /// <returns>The item removed from the collection.</returns>
-        /// <exception cref="System.OperationCanceledException">If the <see cref="CancellationToken"/> is
-        /// canceled or the <see
-        /// cref="System.Collections.Concurrent.BlockingCollection{T}"/> is empty and has been marked
-        /// as complete with regards to additions.</exception>
+        /// <exception cref="OperationCanceledException">If the <see cref="CancellationToken"/> is
+        /// canceled.</exception>
         /// <exception cref="System.ObjectDisposedException">The <see
         /// cref="System.Collections.Concurrent.BlockingCollection{T}"/> has been disposed.</exception>
         /// <exception cref="System.InvalidOperationException">The underlying collection was modified
         /// outside of this <see
-        /// cref="System.Collections.Concurrent.BlockingCollection{T}"/> instance.</exception>
+        /// cref="System.Collections.Concurrent.BlockingCollection{T}"/> instance, or the <see
+        /// cref="System.Collections.Concurrent.BlockingCollection{T}"/> is empty and has been marked
+        /// as complete with regards to additions.</exception>
         /// <remarks>A call to <see cref="Take(CancellationToken)"/> may block until an item is available to be removed.</remarks>
         public T Take(CancellationToken cancellationToken)
         {

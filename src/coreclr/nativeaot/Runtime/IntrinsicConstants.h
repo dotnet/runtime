@@ -40,7 +40,8 @@ enum ARM64IntrinsicConstants
     ARM64IntrinsicConstants_Sha256 = 0x0100,
     ARM64IntrinsicConstants_Atomics = 0x0200,
     ARM64IntrinsicConstants_Vector64 = 0x0400,
-    ARM64IntrinsicConstants_Vector128 = 0x0800
+    ARM64IntrinsicConstants_Vector128 = 0x0800,
+    ARM64IntrinsicConstants_Rcpc = 0x1000
 };
 #endif //HOST_ARM64
 

@@ -206,6 +206,9 @@ namespace System.Text.Json.Serialization.Metadata
         internal virtual void Configure()
         {
             JsonConverter converter = PropertyInfoForTypeInfo.ConverterBase;
+            Debug.Assert(PropertyInfoForTypeInfo.ConverterStrategy == PropertyInfoForTypeInfo.ConverterBase.ConverterStrategy,
+                $"ConverterStrategy from PropertyInfoForTypeInfo.ConverterStrategy ({PropertyInfoForTypeInfo.ConverterStrategy}) does not match converter's ({PropertyInfoForTypeInfo.ConverterBase.ConverterStrategy})");
+
             converter.ConfigureJsonTypeInfo(this, Options);
             PropertyInfoForTypeInfo.DeclaringTypeNumberHandling = NumberHandling;
             PropertyInfoForTypeInfo.EnsureConfigured();
@@ -233,6 +236,43 @@ namespace System.Text.Json.Serialization.Metadata
                 }
             }
         }
+
+#if DEBUG
+        internal string GetDebugInfo()
+        {
+            ConverterStrategy strat = PropertyInfoForTypeInfo.ConverterStrategy;
+            string jtiTypeName = GetType().Name;
+            string typeName = Type.FullName!;
+            bool propCacheInitialized = PropertyCache != null;
+
+            StringBuilder sb = new();
+            sb.AppendLine($"{jtiTypeName} {{");
+            sb.AppendLine($"  GetType: {jtiTypeName},");
+            sb.AppendLine($"  Type: {typeName},");
+            sb.AppendLine($"  ConverterStrategy: {strat},");
+            sb.AppendLine($"  IsConfigured: {_isConfigured},");
+            sb.AppendLine($"  HasPropertyCache: {propCacheInitialized},");
+
+            if (propCacheInitialized)
+            {
+                sb.AppendLine("  Properties: {");
+                foreach (var property in PropertyCache!.List)
+                {
+                    JsonPropertyInfo pi = property.Value!;
+                    sb.AppendLine($"    {property.Key}: {{");
+                    sb.AppendLine($"      Ignored: {pi.IsIgnored},");
+                    sb.AppendLine($"      ShouldSerialize: {pi.ShouldSerialize},");
+                    sb.AppendLine($"      ShouldDeserialize: {pi.ShouldDeserialize},");
+                    sb.AppendLine("    },");
+                }
+
+                sb.AppendLine("  },");
+            }
+
+            sb.AppendLine("}");
+            return sb.ToString();
+        }
+#endif
 
         internal virtual void LateAddProperties() { }
 

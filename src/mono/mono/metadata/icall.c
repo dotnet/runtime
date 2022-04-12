@@ -2240,7 +2240,7 @@ ves_icall_RuntimeFieldInfo_GetRawConstantValue (MonoReflectionFieldHandle rfield
 		goto invalid_operation;
 
 	if (image_is_dynamic (m_class_get_image (m_field_get_parent (field)))) {
-		MonoClass *klass = m_field_get_parent (field);
+		klass = m_field_get_parent (field);
 		int fidx = field - m_class_get_fields (klass);
 		MonoFieldDefaultValue *def_values = mono_class_get_field_def_values (klass);
 
@@ -2273,8 +2273,6 @@ ves_icall_RuntimeFieldInfo_GetRawConstantValue (MonoReflectionFieldHandle rfield
 	case MONO_TYPE_U8:
 	case MONO_TYPE_I8:
 	case MONO_TYPE_R8: {
-		MonoType *t;
-
 		/* boxed value type */
 		t = g_new0 (MonoType, 1);
 		t->type = def_type;
@@ -6181,7 +6179,7 @@ ves_icall_System_ArgIterator_IntGetNextArg (MonoArgIterator *iter, MonoTypedRef 
 	res->type = iter->sig->params [i];
 	res->klass = mono_class_from_mono_type_internal (res->type);
 	arg_size = mono_type_stack_size (res->type, &align);
-#if defined(__arm__) || defined(__mips__)
+#if defined(__arm__)
 	iter->args = (guint8*)(((gsize)iter->args + (align) - 1) & ~(align - 1));
 #endif
 	res->value = iter->args;
@@ -6215,7 +6213,7 @@ ves_icall_System_ArgIterator_IntGetNextArgWithType (MonoArgIterator *iter, MonoT
 		res->klass = mono_class_from_mono_type_internal (res->type);
 		/* FIXME: endianess issue... */
 		arg_size = mono_type_stack_size (res->type, &align);
-#if defined(__arm__) || defined(__mips__)
+#if defined(__arm__)
 		iter->args = (guint8*)(((gsize)iter->args + (align) - 1) & ~(align - 1));
 #endif
 		res->value = iter->args;

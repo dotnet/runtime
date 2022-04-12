@@ -925,7 +925,7 @@ static char*
 emit_class_dwarf_info (MonoDwarfWriter *w, MonoClass *klass, gboolean vtype)
 {
 	char *die, *pointer_die, *reference_die;
-	char *full_name, *p;
+	char *full_name;
 	gpointer iter;
 	MonoClassField *field;
 	const char *fdie;
@@ -963,7 +963,7 @@ emit_class_dwarf_info (MonoDwarfWriter *w, MonoClass *klass, gboolean vtype)
 	 * gdb doesn't support namespaces for non-C++ dwarf objects, so use _
 	 * to separate components.
 	 */
-	for (p = full_name; *p; p ++)
+	for (char *p = full_name; *p; p ++)
 		if (*p == '.')
 			*p = '_';
 
@@ -1338,10 +1338,10 @@ token_handler (MonoDisHelper *dh, MonoMethod *method, guint32 token)
 		if (method->wrapper_type) {
 			cmethod = (MonoMethod *)data;
 		} else {
-			ERROR_DECL (error);
 			cmethod = mono_get_method_checked (m_class_get_image (method->klass), token, NULL, NULL, error);
 			if (!cmethod)
 				g_error ("Could not load method due to %s", mono_error_get_message (error)); /* FIXME don't swallow the error */
+			mono_error_assert_ok (error);
 		}
 		desc = mono_method_full_name (cmethod, TRUE);
 		res = g_strdup_printf ("<%s>", desc);
@@ -1657,7 +1657,6 @@ emit_line_number_info (MonoDwarfWriter *w, MonoMethod *method,
 		/* No debug info, XDEBUG mode */
 		char *name, *dis;
 		const guint8 *ip = header->code;
-		int prev_line, prev_native_offset;
 		int *il_to_line;
 
 		/*
@@ -1680,7 +1679,7 @@ emit_line_number_info (MonoDwarfWriter *w, MonoMethod *method,
 
 		// FIXME: Optimize this
 		while (ip < header->code + header->code_size) {
-			int il_offset = ip - header->code;
+			il_offset = ip - header->code;
 
 			/* Emit IL */
 			w->il_file_line_index ++;

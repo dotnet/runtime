@@ -38,28 +38,23 @@ namespace System.Text.RegularExpressions
         /// </summary>
         public TimeSpan MatchTimeout => internalMatchTimeout;
 
-        /// <summary>
-        /// Specifies the default RegEx matching timeout value (i.e. the timeout that will be used if no
-        /// explicit timeout is specified).
-        /// The default is queried from the current <code>AppDomain</code>.
-        /// If the AddDomain's data value for that key is not a <code>TimeSpan</code> value or if it is outside the
-        /// valid range, an exception is thrown.
-        /// If the AddDomain's data value for that key is <code>null</code>, a fallback value is returned.
-        /// </summary>
-        /// <returns>The default RegEx matching timeout for this AppDomain</returns>
+        /// <summary>Gets the default matching timeout value.</summary>
+        /// <remarks>
+        /// The default is queried from <code>AppContext</code>. If the AppContext's data value for that key is
+        /// not a <code>TimeSpan</code> value or if it is outside the valid range, an exception is thrown.
+        /// If the AppContext's data value for that key is <code>null</code>, an infinite timeout is returned.
+        /// </remarks>
         private static TimeSpan InitDefaultMatchTimeout()
         {
-            // Query AppDomain
-            AppDomain ad = AppDomain.CurrentDomain;
-            object? defaultMatchTimeoutObj = ad.GetData(DefaultMatchTimeout_ConfigKeyName);
+            object? defaultTimeout = AppContext.GetData(DefaultMatchTimeout_ConfigKeyName);
 
             // If no default is specified, use fallback
-            if (defaultMatchTimeoutObj is null)
+            if (defaultTimeout is null)
             {
                 return InfiniteMatchTimeout;
             }
 
-            if (defaultMatchTimeoutObj is TimeSpan defaultMatchTimeOut)
+            if (defaultTimeout is TimeSpan defaultMatchTimeOut)
             {
                 // If default timeout is outside the valid range, throw. It will result in a TypeInitializationException:
                 try
@@ -74,7 +69,7 @@ namespace System.Text.RegularExpressions
                 return defaultMatchTimeOut;
             }
 
-            throw new InvalidCastException(SR.Format(SR.IllegalDefaultRegexMatchTimeoutInAppDomain, DefaultMatchTimeout_ConfigKeyName, defaultMatchTimeoutObj));
+            throw new InvalidCastException(SR.Format(SR.IllegalDefaultRegexMatchTimeoutInAppDomain, DefaultMatchTimeout_ConfigKeyName, defaultTimeout));
         }
     }
 }
