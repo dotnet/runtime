@@ -21,7 +21,6 @@ trigger:
 
 variables:
   - template: /eng/pipelines/common/variables.yml
-
   - name: _wasmCollectHelixLogsScript
     value: >-
       test "$_commandExitCode" -eq 0 || (

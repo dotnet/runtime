@@ -156,6 +156,12 @@
   <data name="Sign1AlgDoesNotMatchWithTheOnesSupportedByTypeOfKey" xml:space="preserve">
     <value>COSE algorithm '{0}' doesn't match with the supported algorithms of '{1}'.</value>
   </data>
+  <data name="Sign1ArgumentStreamNotReadable" xml:space="preserve">
+    <value>Stream was not readable.</value>
+  </data>
+  <data name="Sign1ArgumentStreamNotSeekable" xml:space="preserve">
+    <value>Stream does not support seeking.</value>
+  </data>
   <data name="Sign1SignAlgMustBeProtected" xml:space="preserve">
     <value>If specified, Algorithm (alg) must be a protected header.</value>
   </data>
@@ -168,11 +174,11 @@
   <data name="Sign1SignUnsupportedHashAlgorithm" xml:space="preserve">
     <value>Unsuppoerted hash algorithm '{0}'.</value>
   </data>
-  <data name="Sign1SignUnsupportedKey" xml:space="preserve">
-    <value>Unsupported key '{0}'.</value>
-  </data>
   <data name="Sign1UnknownCoseAlgorithm" xml:space="preserve">
     <value>COSE algorithm '{0}' is unknown.</value>
+  </data>
+  <data name="Sign1UnsupportedKey" xml:space="preserve">
+    <value>Unsupported key '{0}'.</value>
   </data>
   <data name="Sign1VerifyAlgHeaderWasIncorrect" xml:space="preserve">
     <value>Algorithm header CBOR type was incorrect, expected int or tstr.</value>

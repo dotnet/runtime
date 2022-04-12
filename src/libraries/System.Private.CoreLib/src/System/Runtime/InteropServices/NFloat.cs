@@ -680,7 +680,7 @@ namespace System.Runtime.InteropServices
         /// <param name="format">A numeric format string.</param>
         /// <returns>The string representation of the value of this instance as specified by <paramref name="format" />.</returns>
         /// <exception cref="FormatException"><paramref name="format" /> is invalid.</exception>
-        public string ToString(string? format) => _value.ToString(format);
+        public string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format) => _value.ToString(format);
 
         /// <summary>Converts the numeric value of this instance to its equivalent string representation using the specified culture-specific format information.</summary>
         /// <param name="provider">An object that supplies culture-specific formatting information.</param>
@@ -692,7 +692,7 @@ namespace System.Runtime.InteropServices
         /// <param name="provider">An object that supplies culture-specific formatting information.</param>
         /// <returns>The string representation of the value of this instance as specified by <paramref name="format" /> and <paramref name="provider" />.</returns>
         /// <exception cref="FormatException"><paramref name="format" /> is invalid.</exception>
-        public string ToString(string? format, IFormatProvider? provider) => _value.ToString(format, provider);
+        public string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format, IFormatProvider? provider) => _value.ToString(format, provider);
 
         /// <summary>Tries to format the value of the current instance into the provided span of characters.</summary>
         /// <param name="destination">The span in which to write this instance's value formatted as a span of characters.</param>
@@ -700,6 +700,6 @@ namespace System.Runtime.InteropServices
         /// <param name="format">A span containing the characters that represent a standard or custom format string that defines the acceptable format for <paramref name="destination" />.</param>
         /// <param name="provider">An optional object that supplies culture-specific formatting information for <paramref name="destination" />.</param>
         /// <returns><c>true</c> if the formatting was successful; otherwise, <c>false</c>.</returns>
-        public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format = default, IFormatProvider? provider = null) => _value.TryFormat(destination, out charsWritten, format, provider);
+        public bool TryFormat(Span<char> destination, out int charsWritten, [StringSyntax(StringSyntaxAttribute.NumericFormat)] ReadOnlySpan<char> format = default, IFormatProvider? provider = null) => _value.TryFormat(destination, out charsWritten, format, provider);
     }
 }

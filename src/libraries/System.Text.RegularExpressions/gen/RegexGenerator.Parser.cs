@@ -205,7 +205,7 @@ namespace System.Text.RegularExpressions.Generator
                 methodSyntax.Modifiers.ToString(),
                 pattern,
                 regexOptions,
-                matchTimeout ?? Timeout.Infinite,
+                matchTimeout,
                 regexTree);
 
             RegexType current = regexType;
@@ -233,7 +233,7 @@ namespace System.Text.RegularExpressions.Generator
         }
 
         /// <summary>A regex method.</summary>
-        internal sealed record RegexMethod(RegexType DeclaringType, MethodDeclarationSyntax MethodSyntax, string MethodName, string Modifiers, string Pattern, RegexOptions Options, int MatchTimeout, RegexTree Tree)
+        internal sealed record RegexMethod(RegexType DeclaringType, MethodDeclarationSyntax MethodSyntax, string MethodName, string Modifiers, string Pattern, RegexOptions Options, int? MatchTimeout, RegexTree Tree)
         {
             public string GeneratedName { get; set; }
             public bool IsDuplicate { get; set; }

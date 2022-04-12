@@ -6018,11 +6018,17 @@ ves_icall_System_Environment_Exit (int result)
 void
 ves_icall_System_Environment_FailFast (MonoStringHandle message, MonoExceptionHandle exception, MonoStringHandle errorSource, MonoError *error)
 {
-	if (MONO_HANDLE_IS_NULL (message)) {
+	if (MONO_HANDLE_IS_NULL (errorSource)) {
 		g_warning ("Process terminated.");
 	} else {
+		char *errorSourceMsg = mono_string_handle_to_utf8 (errorSource, error);
+		g_warning ("Process terminated. %s", errorSourceMsg);
+		g_free (errorSourceMsg);
+	}
+
+	if (!MONO_HANDLE_IS_NULL (message)) {
 		char *msg = mono_string_handle_to_utf8 (message, error);
-		g_warning ("Process terminated due to \"%s\"", msg);
+		g_warning (msg);
 		g_free (msg);
 	}
 
@@ -6175,7 +6181,7 @@ ves_icall_System_ArgIterator_IntGetNextArg (MonoArgIterator *iter, MonoTypedRef 
 	res->type = iter->sig->params [i];
 	res->klass = mono_class_from_mono_type_internal (res->type);
 	arg_size = mono_type_stack_size (res->type, &align);
-#if defined(__arm__) || defined(__mips__)
+#if defined(__arm__)
 	iter->args = (guint8*)(((gsize)iter->args + (align) - 1) & ~(align - 1));
 #endif
 	res->value = iter->args;
@@ -6209,7 +6215,7 @@ ves_icall_System_ArgIterator_IntGetNextArgWithType (MonoArgIterator *iter, MonoT
 		res->klass = mono_class_from_mono_type_internal (res->type);
 		/* FIXME: endianess issue... */
 		arg_size = mono_type_stack_size (res->type, &align);
-#if defined(__arm__) || defined(__mips__)
+#if defined(__arm__)
 		iter->args = (guint8*)(((gsize)iter->args + (align) - 1) & ~(align - 1));
 #endif
 		res->value = iter->args;

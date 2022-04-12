@@ -17,14 +17,17 @@ namespace System.Text.Json
         /// Also sets state.Current.JsonPropertyInfo to a non-null value.
         /// </summary>
         internal static JsonPropertyInfo LookupProperty(
-            object obj,
+            object? obj,
             ReadOnlySpan<byte> unescapedPropertyName,
             ref ReadStack state,
             JsonSerializerOptions options,
             out bool useExtensionProperty,
             bool createExtensionProperty = true)
         {
-            Debug.Assert(state.Current.JsonTypeInfo.PropertyInfoForTypeInfo.ConverterStrategy == ConverterStrategy.Object);
+#if DEBUG
+            Debug.Assert(state.Current.JsonTypeInfo.PropertyInfoForTypeInfo.ConverterStrategy == ConverterStrategy.Object,
+                GetLookupPropertyDebugInfo(obj, unescapedPropertyName, ref state));
+#endif
 
             useExtensionProperty = false;
 
@@ -49,6 +52,7 @@ namespace System.Text.Json
 
                     if (createExtensionProperty)
                     {
+                        Debug.Assert(obj != null, "obj is null");
                         CreateDataExtensionProperty(obj, dataExtProperty, options);
                     }
 
@@ -61,6 +65,16 @@ namespace System.Text.Json
             state.Current.NumberHandling = jsonPropertyInfo.EffectiveNumberHandling;
             return jsonPropertyInfo;
         }
+
+#if DEBUG
+        private static string GetLookupPropertyDebugInfo(object? obj, ReadOnlySpan<byte> unescapedPropertyName, ref ReadStack state)
+        {
+            JsonTypeInfo jti = state.Current.JsonTypeInfo;
+            string objTypeName = obj?.GetType().FullName ?? "<null>";
+            string propertyName = JsonHelpers.Utf8GetString(unescapedPropertyName);
+            return $"ConverterStrategy is {jti.PropertyInfoForTypeInfo.ConverterStrategy}. propertyName = {propertyName}; obj.GetType() => {objTypeName}; DebugInfo={jti.GetDebugInfo()}";
+        }
+#endif
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static ReadOnlySpan<byte> GetPropertyName(

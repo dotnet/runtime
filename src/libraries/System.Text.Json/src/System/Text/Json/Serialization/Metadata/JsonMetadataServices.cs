@@ -81,19 +81,7 @@ namespace System.Text.Json.Serialization.Metadata
         public static JsonTypeInfo<T> CreateValueInfo<T>(JsonSerializerOptions options, JsonConverter converter)
         {
             JsonTypeInfo<T> info = new SourceGenJsonTypeInfo<T>(converter, options);
-            info.PropertyInfoForTypeInfo = CreateJsonPropertyInfoForClassInfo(typeof(T), info, converter, options);
             return info;
-        }
-
-        internal static JsonPropertyInfo CreateJsonPropertyInfoForClassInfo(
-            Type type,
-            JsonTypeInfo typeInfo,
-            JsonConverter converter,
-            JsonSerializerOptions options)
-        {
-            JsonPropertyInfo propertyInfo = converter.CreateJsonPropertyInfo();
-            propertyInfo.InitializeForTypeInfo(type, typeInfo, converter, options);
-            return propertyInfo;
         }
     }
 }

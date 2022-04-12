@@ -183,7 +183,11 @@ mono_llvm_build_cmpxchg (LLVMBuilderRef builder, LLVMValueRef ptr, LLVMValueRef 
 {
 	AtomicCmpXchgInst *ins;
 
+#if LLVM_API_VERSION >= 1300
+	ins = unwrap(builder)->CreateAtomicCmpXchg (unwrap(ptr), unwrap (cmp), unwrap (val), MaybeAlign (), SequentiallyConsistent, SequentiallyConsistent);
+#else
 	ins = unwrap(builder)->CreateAtomicCmpXchg (unwrap(ptr), unwrap (cmp), unwrap (val), SequentiallyConsistent, SequentiallyConsistent);
+#endif
 	return wrap (ins);
 }
 
@@ -211,7 +215,11 @@ mono_llvm_build_atomic_rmw (LLVMBuilderRef builder, AtomicRMWOp op, LLVMValueRef
 		break;
 	}
 
+#if LLVM_API_VERSION >= 1300
+	ins = unwrap (builder)->CreateAtomicRMW (aop, unwrap (ptr), unwrap (val), MaybeAlign (), SequentiallyConsistent);
+#else
 	ins = unwrap (builder)->CreateAtomicRMW (aop, unwrap (ptr), unwrap (val), SequentiallyConsistent);
+#endif
 	return wrap (ins);
 }
 
@@ -713,10 +721,18 @@ mono_llvm_inline_asm (LLVMBuilderRef builder, LLVMTypeRef type,
 {
 	const auto asmstr_len = strlen (asmstr);
 	const auto constraints_len = strlen (constraints);
+#if LLVM_API_VERSION >= 1300
+	const auto asmval = LLVMGetInlineAsm (type,
+		const_cast<char *>(asmstr), asmstr_len,
+		const_cast<char *>(constraints), constraints_len,
+		(flags & LLVM_ASM_SIDE_EFFECT) != 0, (flags & LLVM_ASM_ALIGN_STACK) != 0,
+										  LLVMInlineAsmDialectATT, TRUE);
+#else
 	const auto asmval = LLVMGetInlineAsm (type,
 		const_cast<char *>(asmstr), asmstr_len,
 		const_cast<char *>(constraints), constraints_len,
 		(flags & LLVM_ASM_SIDE_EFFECT) != 0, (flags & LLVM_ASM_ALIGN_STACK) != 0,
 		LLVMInlineAsmDialectATT);
+#endif
 	return LLVMBuildCall2 (builder, type, asmval, args, num_args, name);
 }

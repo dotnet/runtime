@@ -83,8 +83,8 @@
         <note />
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedMessageValue">
-        <source>The specified value '{0}' for '{1}' is not supported by source-generated P/Invokes. If the specified configuration is required, use a regular `DllImport` instead.</source>
-        <target state="translated">La valeur de « {0} » spécifiée pour « {1} » n’est pas prise en charge par les P/Invok générés par la source. Si la configuration spécifiée est requise, utilisez plutôt un « DllImport » normal.</target>
+        <source>The specified value '{0}' for '{1}' is not supported by source-generated P/Invokes. If the specified value is required, use a regular `DllImport` instead.</source>
+        <target state="needs-review-translation">La valeur de « {0} » spécifiée pour « {1} » n’est pas prise en charge par les P/Invok générés par la source. Si la configuration spécifiée est requise, utilisez plutôt un « DllImport » normal.</target>
         <note />
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedTitle">
@@ -208,8 +208,8 @@
         <note />
       </trans-unit>
       <trans-unit id="InTwoStageMarshallingRequiresToNativeValueMessage">
-        <source>The marshaller type '{0}' supports marshalling in the 'In' direction with the 'TwoStageMarshalling' feature must provide a 'ToNativeValue' instance method that returns the native value</source>
-        <target state="translated">Le type de marshaleur « {0}' prend en charge le marshaling dans le sens « In » avec la fonctionnalité « TwoStageMarshalling » doit fournir une méthode d’instance « ToNativeValue » qui retourne la valeur native</target>
+        <source>A marshaller type '{0}' that supports marshalling in the 'In' direction with the 'TwoStageMarshalling' feature must provide a 'ToNativeValue' instance method that returns the native value</source>
+        <target state="needs-review-translation">Le type de marshaleur « {0}' prend en charge le marshaling dans le sens « In » avec la fonctionnalité « TwoStageMarshalling » doit fournir une méthode d’instance « ToNativeValue » qui retourne la valeur native</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidAttributedMethodContainingTypeMissingModifiersMessage">

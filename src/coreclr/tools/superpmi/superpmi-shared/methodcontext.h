@@ -66,6 +66,8 @@ static_assert((int)EXTRA_JIT_FLAGS::HAS_DYNAMIC_PROFILE == (int)CORJIT_FLAGS::Co
 
 class MethodContext
 {
+    friend class CompileResult;
+
 public:
     MethodContext();
 

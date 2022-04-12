@@ -56,19 +56,15 @@
     <Compile Include="System\Text\RegularExpressions\RegexLWCGCompiler.cs" />
     <!-- RegexOptions.NonBacktracking -->
     <Compile Include="System\Text\RegularExpressions\Symbolic\BDD.cs" />
-    <Compile Include="System\Text\RegularExpressions\Symbolic\BDDAlgebra.cs" />
     <Compile Include="System\Text\RegularExpressions\Symbolic\BDDRangeConverter.cs" />
-    <Compile Include="System\Text\RegularExpressions\Symbolic\BooleanClassifier.cs" />
     <Compile Include="System\Text\RegularExpressions\Symbolic\BitVector.cs" />
-    <Compile Include="System\Text\RegularExpressions\Symbolic\BitVector64Algebra.cs" />
-    <Compile Include="System\Text\RegularExpressions\Symbolic\BitVectorAlgebra.cs" />
+    <Compile Include="System\Text\RegularExpressions\Symbolic\BitVectorSolver.cs" />
     <Compile Include="System\Text\RegularExpressions\Symbolic\CharKind.cs" />
     <Compile Include="System\Text\RegularExpressions\Symbolic\CharSetSolver.cs" />
     <Compile Include="System\Text\RegularExpressions\Symbolic\DerivativeEffect.cs" />
     <Compile Include="System\Text\RegularExpressions\Symbolic\DgmlWriter.cs" />
     <Compile Include="System\Text\RegularExpressions\Symbolic\DfaMatchingState.cs" />
-    <Compile Include="System\Text\RegularExpressions\Symbolic\IBooleanAlgebra.cs" />
-    <Compile Include="System\Text\RegularExpressions\Symbolic\ICharAlgebra.cs" />
+    <Compile Include="System\Text\RegularExpressions\Symbolic\ISolver.cs" />
     <Compile Include="System\Text\RegularExpressions\Symbolic\MintermClassifier.cs" />
     <Compile Include="System\Text\RegularExpressions\Symbolic\MintermGenerator.cs" />
     <Compile Include="System\Text\RegularExpressions\Symbolic\RegexNodeConverter.cs" />
@@ -85,12 +81,12 @@
     <Compile Include="System\Text\RegularExpressions\Symbolic\SymbolicRegexSet.cs" />
     <Compile Include="System\Text\RegularExpressions\Symbolic\TransitionRegex.cs" />
     <Compile Include="System\Text\RegularExpressions\Symbolic\TransitionRegexKind.cs" />
+    <Compile Include="System\Text\RegularExpressions\Symbolic\UInt64Solver.cs" />
     <Compile Include="System\Text\RegularExpressions\Symbolic\UnicodeCategoryConditions.cs" />
     <Compile Include="System\Text\RegularExpressions\Symbolic\UnicodeCategoryRanges.cs" />
     <Compile Include="System\Text\RegularExpressions\Symbolic\UnicodeCategoryRangesGenerator.cs" />
     <!-- Common or Common-branched source files -->
     <Compile Include="$(CommonPath)System\HexConverter.cs" Link="Common\System\HexConverter.cs" />
-    <Compile Include="$(CommonPath)System\NotImplemented.cs" Link="Common\System\NotImplemented.cs" />
     <Compile Include="$(CommonPath)System\Obsoletions.cs" Link="Common\System\Obsoletions.cs" />
     <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs" Link="Common\System\Text\ValueStringBuilder.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Collections\Generic\ValueListBuilder.cs" Link="Common\System\Collections\Generic\ValueListBuilder.cs" />
