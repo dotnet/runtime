@@ -195,7 +195,7 @@
           Inputs="%(NETStandardCompatError.Identity)"
           Outputs="unused">
     <PropertyGroup>
-      <_NETStandardCompatErrorFilePath>$(BaseIntermediateOutputPath)netstandardcompaterrors\%(NETStandardCompatError.Identity)\$(PackageId).targets</_NETStandardCompatErrorFilePath>
+      <_NETStandardCompatErrorFilePath>$(BaseIntermediateOutputPath)netstandardcompaterror_%(NETStandardCompatError.Identity).targets</_NETStandardCompatErrorFilePath>
       <_NETStandardCompatErrorFileTarget>NETStandardCompatError_$(PackageId.Replace('.', '_'))_$([System.String]::new('%(NETStandardCompatError.Supported)').Replace('.', '_'))</_NETStandardCompatErrorFileTarget>
       <_NETStandardCompatErrorFileContent>
 <![CDATA[<Project InitialTargets="$(_NETStandardCompatErrorFileTarget)">
@@ -205,7 +205,7 @@
   </Target>
 </Project>]]>
       </_NETStandardCompatErrorFileContent>
-      <_NETStandardCompatErrorPlaceholderFilePackagePath>buildTransitive\%(NETStandardCompatError.Supported)</_NETStandardCompatErrorPlaceholderFilePackagePath>
+      <_NETStandardCompatErrorPlaceholderFilePackagePath>buildTransitive$([System.IO.Path]::DirectorySeparatorChar)%(NETStandardCompatError.Supported)</_NETStandardCompatErrorPlaceholderFilePackagePath>
     </PropertyGroup>
 
     <WriteLinesToFile File="$(_NETStandardCompatErrorFilePath)"
@@ -219,14 +219,14 @@
       <_PackageBuildFile PackagePathWithoutFilename="$([System.IO.Path]::GetDirectoryName('%(Identity)'))" />
 
       <None Include="$(_NETStandardCompatErrorFilePath)"
-            PackagePath="buildTransitive\%(NETStandardCompatError.Identity)\"
+            PackagePath="buildTransitive\%(NETStandardCompatError.Identity)\$(PackageId).targets"
             Pack="true" />
       <!-- Add the placeholder file to the supported target framework buildTransitive folder, if it's empty. -->
       <None Include="$(PlaceholderFile)"
-            PackagePath="$(_NETStandardCompatErrorPlaceholderFilePackagePath)\"
+            PackagePath="$(_NETStandardCompatErrorPlaceholderFilePackagePath)\$(PackageId).targets"
             Pack="true"
-            Condition="('@(_PackageBuildFile)' == '' or
-                        !@(_PackageBuildFile->AnyHaveMetadataValue('PackagePathWithoutFilename', '$(_NETStandardCompatErrorPlaceholderFilePackagePath)')))" />
+            Condition="'@(_PackageBuildFile)' == '' or
+                       !@(_PackageBuildFile->AnyHaveMetadataValue('PackagePathWithoutFilename', '$(_NETStandardCompatErrorPlaceholderFilePackagePath)'))" />
     </ItemGroup>
   </Target>
 
