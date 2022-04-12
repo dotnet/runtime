@@ -1003,6 +1003,8 @@ public:
 
                 break;
             }
+            case ICorJitInfo::PgoInstrumentationKind::None:
+                break;
             default:
                 assert(!"Unexpected PGO instrumentation data type");
                 break;
