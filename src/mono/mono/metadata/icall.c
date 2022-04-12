@@ -2240,7 +2240,7 @@ ves_icall_RuntimeFieldInfo_GetRawConstantValue (MonoReflectionFieldHandle rfield
 		goto invalid_operation;
 
 	if (image_is_dynamic (m_class_get_image (m_field_get_parent (field)))) {
-		MonoClass *klass = m_field_get_parent (field);
+		klass = m_field_get_parent (field);
 		int fidx = field - m_class_get_fields (klass);
 		MonoFieldDefaultValue *def_values = mono_class_get_field_def_values (klass);
 
@@ -2273,8 +2273,6 @@ ves_icall_RuntimeFieldInfo_GetRawConstantValue (MonoReflectionFieldHandle rfield
 	case MONO_TYPE_U8:
 	case MONO_TYPE_I8:
 	case MONO_TYPE_R8: {
-		MonoType *t;
-
 		/* boxed value type */
 		t = g_new0 (MonoType, 1);
 		t->type = def_type;

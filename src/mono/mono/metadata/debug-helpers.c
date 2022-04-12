@@ -755,17 +755,17 @@ dis_one (GString *str, MonoDisHelper *dh, MonoMethod *method, const unsigned cha
 			g_string_append_printf (str, "%d", sval);
 		break;
 	case MonoInlineSwitch: {
-		const unsigned char *end;
+		const unsigned char *sval_end;
 		sval = read32 (ip);
 		ip += 4;
-		end = ip + sval * 4;
+		sval_end = ip + sval * 4;
 		g_string_append_c (str, '(');
 		for (i = 0; i < sval; ++i) {
 			if (i > 0)
 				g_string_append (str, ", ");
 			label = read32 (ip);
 			if (dh->label_target)
-				g_string_append_printf (str, dh->label_target, end + label - il_code);
+				g_string_append_printf (str, dh->label_target, sval_end + label - il_code);
 			else
 				g_string_append_printf (str, "%d", label);
 			ip += 4;
