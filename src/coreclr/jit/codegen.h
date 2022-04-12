@@ -1265,6 +1265,7 @@ protected:
     void genCodeForIndir(GenTreeIndir* tree);
     void genCodeForNegNot(GenTree* tree);
     void genCodeForBswap(GenTree* tree);
+    bool genCanOmitNormalizationForBswap16(GenTree* tree);
     void genCodeForLclVar(GenTreeLclVar* tree);
     void genCodeForLclFld(GenTreeLclFld* tree);
     void genCodeForStoreLclFld(GenTreeLclFld* tree);
