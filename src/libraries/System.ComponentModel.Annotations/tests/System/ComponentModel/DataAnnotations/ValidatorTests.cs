@@ -173,7 +173,7 @@ namespace System.ComponentModel.DataAnnotations.Tests
                 StringLength = "222",
                 AnnotatedSubsection = new AnnotatedSubsection
                 {
-                    IntRange2 = 100 // out of range
+                    IntRange2 = 100 // Really out of range
                 }
             };
         
@@ -184,6 +184,7 @@ namespace System.ComponentModel.DataAnnotations.Tests
             Assert.Equal(1, validationResults.Count);
 
             Assert.Equal("Really out of range.", validationResults.Single().ErrorMessage);
+            Assert.Equal("AnnotatedSubsection.IntRange2", validationResults.Single().MemberNames.Single());
 
         }
 
@@ -205,6 +206,8 @@ namespace System.ComponentModel.DataAnnotations.Tests
             Assert.Equal(1, validationResults.Count);
 
             Assert.Equal("The AnnotatedSubsection field is required.", validationResults.Single().ErrorMessage);
+            Assert.Equal("AnnotatedSubsection", validationResults.Single().MemberNames.Single());
+
         }
 
         [Fact]
@@ -237,7 +240,7 @@ namespace System.ComponentModel.DataAnnotations.Tests
                 StringLength = "222",
                 AnnotatedSubsection = new AnnotatedSubsection
                 {
-                    IntRange2 = 100 // out of range
+                    IntRange2 = 100 // really out of range
                 }
             };
 
@@ -247,8 +250,12 @@ namespace System.ComponentModel.DataAnnotations.Tests
             Assert.False(Validator.TryValidateObject(thingToValidate, context, validationResults, true));
             Assert.Equal(2, validationResults.Count);
 
+            Assert.Equal("IntRange", validationResults.ElementAt(0).MemberNames.Single());
             Assert.Equal("Out of range.", validationResults.ElementAt(0).ErrorMessage);
+
+            Assert.Equal("AnnotatedSubsection.IntRange2", validationResults.ElementAt(1).MemberNames.Single());
             Assert.Equal("Really out of range.", validationResults.ElementAt(1).ErrorMessage);
+
         }
 
         [Fact]
@@ -281,9 +288,18 @@ namespace System.ComponentModel.DataAnnotations.Tests
             Assert.Equal(4, validationResults.Count);
 
             Assert.Equal("Out of range.", validationResults.ElementAt(0).ErrorMessage);
+            Assert.Equal("IntRange", validationResults.ElementAt(0).MemberNames.Single());
+
             Assert.Equal("Really out of range.", validationResults.ElementAt(1).ErrorMessage);
+            Assert.Equal("AnnotatedSubsection.IntRange2", validationResults.ElementAt(1).MemberNames.Single());
+
             Assert.Equal("Really really out of range.", validationResults.ElementAt(2).ErrorMessage);
+            Assert.Equal("AnnotatedSubsection.ComplexListItem.IntRange3", validationResults.ElementAt(2).MemberNames.Single());
+
             Assert.Equal("The RequiredString field is required.", validationResults.ElementAt(3).ErrorMessage);
+            Assert.Equal("AnnotatedSubsection.ComplexListItem.RequiredString", validationResults.ElementAt(3).MemberNames.Single());
+
+
         }
 
         [Fact]

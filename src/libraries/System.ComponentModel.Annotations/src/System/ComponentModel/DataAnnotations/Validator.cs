@@ -61,7 +61,7 @@ namespace System.ComponentModel.DataAnnotations
 
             var attributes = _store.GetPropertyValidationAttributes(validationContext);
 
-            foreach (var err in GetValidationErrors(value, validationContext, attributes, breakOnFirstError))
+            foreach (var err in GetValidationErrors(value, validationContext, attributes, breakOnFirstError, new List<string>(), -1))
             {
                 result = false;
 
@@ -132,8 +132,11 @@ namespace System.ComponentModel.DataAnnotations
         ///     <see cref="ValidationContext.ObjectInstance" />on <paramref name="validationContext" />.
         /// </exception>
         [RequiresUnreferencedCode(ValidationContext.InstanceTypeNotStaticallyDiscovered)]
-        public static bool TryValidateObject(object instance!!, ValidationContext validationContext,
-            ICollection<ValidationResult>? validationResults, bool validateAllProperties)
+        public static bool TryValidateObject(
+            object instance!!,
+            ValidationContext validationContext,
+            ICollection<ValidationResult>? validationResults,
+            bool validateAllProperties)
         {
             if (validationContext != null && instance != validationContext.ObjectInstance)
             {
@@ -143,7 +146,7 @@ namespace System.ComponentModel.DataAnnotations
             var result = true;
             var breakOnFirstError = (validationResults == null);
 
-            foreach (ValidationError err in GetObjectValidationErrors(instance, validationContext!, validateAllProperties, breakOnFirstError))
+            foreach (ValidationError err in GetObjectValidationErrors(instance, validationContext!, validateAllProperties, breakOnFirstError, new List<string>()))
             {
                 result = false;
 
@@ -190,7 +193,7 @@ namespace System.ComponentModel.DataAnnotations
 
             foreach (
                 var err in
-                    GetValidationErrors(value, validationContext, validationAttributes, breakOnFirstError))
+                    GetValidationErrors(value, validationContext, validationAttributes, breakOnFirstError, new List<string>()))
             {
                 result = false;
 
@@ -219,7 +222,7 @@ namespace System.ComponentModel.DataAnnotations
 
             var attributes = _store.GetPropertyValidationAttributes(validationContext);
 
-            List<ValidationError> errors = GetValidationErrors(value, validationContext, attributes, false);
+            List<ValidationError> errors = GetValidationErrors(value, validationContext, attributes, false, new List<string>());
             if (errors.Count > 0)
             {
                 errors[0].ThrowValidationException();
@@ -279,7 +282,7 @@ namespace System.ComponentModel.DataAnnotations
                 throw new ArgumentException(SR.Validator_InstanceMustMatchValidationContextInstance, nameof(instance));
             }
 
-            List<ValidationError> errors = GetObjectValidationErrors(instance, validationContext, validateAllProperties, false);
+            List<ValidationError> errors = GetObjectValidationErrors(instance, validationContext, validateAllProperties, false, new List<string>());
             if (errors.Count > 0)
             {
                 errors[0].ThrowValidationException();
@@ -306,7 +309,7 @@ namespace System.ComponentModel.DataAnnotations
         public static void ValidateValue(object value, ValidationContext validationContext!!,
             IEnumerable<ValidationAttribute> validationAttributes!!)
         {
-            List<ValidationError> errors = GetValidationErrors(value, validationContext, validationAttributes, false);
+            List<ValidationError> errors = GetValidationErrors(value, validationContext, validationAttributes, false, new List<string>());
             if (errors.Count > 0)
             {
                 errors[0].ThrowValidationException();
@@ -381,6 +384,7 @@ namespace System.ComponentModel.DataAnnotations
         /// <param name="validationContext">Describes the object type.</param>
         /// <param name="validateAllProperties">if <c>true</c> also validates all properties.</param>
         /// <param name="breakOnFirstError">Whether to break on the first error or validate everything.</param>
+        /// <param name="parentNames"></param>
         /// <returns>
         ///     A collection of validation errors that result from validating the <paramref name="instance" /> with
         ///     the given <paramref name="validationContext" />.
@@ -392,15 +396,19 @@ namespace System.ComponentModel.DataAnnotations
         ///     <see cref="ValidationContext.ObjectInstance" /> on <paramref name="validationContext" />.
         /// </exception>
         [RequiresUnreferencedCode(ValidationContext.InstanceTypeNotStaticallyDiscovered)]
-        private static List<ValidationError> GetObjectValidationErrors(object instance,
-            ValidationContext validationContext!!, bool validateAllProperties, bool breakOnFirstError)
+        private static List<ValidationError> GetObjectValidationErrors(
+            object instance,
+            ValidationContext validationContext!!,
+            bool validateAllProperties,
+            bool breakOnFirstError,
+            List<string> parentNames)
         {
             Debug.Assert(instance != null);
 
             // Step 1: Validate the object properties' validation attributes
             var errors = new List<ValidationError>();
             errors.AddRange(GetObjectPropertyValidationErrors(instance, validationContext, validateAllProperties,
-                breakOnFirstError));
+                breakOnFirstError, parentNames));
 
             // We only proceed to Step 2 if there are no errors
             if (errors.Count > 0)
@@ -410,7 +418,7 @@ namespace System.ComponentModel.DataAnnotations
 
             // Step 2: Validate the object's validation attributes
             var attributes = _store.GetTypeValidationAttributes(validationContext);
-            errors.AddRange(GetValidationErrors(instance, validationContext, attributes, breakOnFirstError));
+            errors.AddRange(GetValidationErrors(instance, validationContext, attributes, breakOnFirstError, parentNames));
 
             // We only proceed to Step 3 if there are no errors
             if (errors.Count > 0)
@@ -448,10 +456,11 @@ namespace System.ComponentModel.DataAnnotations
         ///     ones marked with <see cref="RequiredAttribute" /> are not null.
         /// </param>
         /// <param name="breakOnFirstError">Whether to break on the first error or validate everything.</param>
+        /// <param name="parentNames">The name of the parent, or null if this is a top level item.</param>
         /// <returns>A list of <see cref="ValidationError" /> instances.</returns>
         [RequiresUnreferencedCode(ValidationContext.InstanceTypeNotStaticallyDiscovered)]
         private static IEnumerable<ValidationError> GetObjectPropertyValidationErrors(object instance,
-            ValidationContext validationContext, bool validateAllProperties, bool breakOnFirstError)
+            ValidationContext validationContext, bool validateAllProperties, bool breakOnFirstError, List<string> parentNames)
         {
             var properties = GetPropertyValues(instance, validationContext);
             var errors = new List<ValidationError>();
@@ -465,35 +474,47 @@ namespace System.ComponentModel.DataAnnotations
 
                 if (validateAllProperties)
                 {
+                    var newNames = new List<string>(parentNames!);
+                    newNames.Add(validationContext.ObjectType.Name);
                     // validate all validation attributes on this property
                     if (attributes.Count != 0)
                     {
-                        errors.AddRange(
-                            GetValidationErrors(propertyValue, property.Key, attributes, breakOnFirstError));
+                        List<ValidationError> validationErrors = GetValidationErrors(propertyValue, property.Key, attributes, breakOnFirstError, newNames);
+                        errors.AddRange(validationErrors);
                     }
 
                     if (propertyValue != null)
                     {
                         if (propertyValue is not string && propertyValue is IEnumerable items)
                         {
+                            //                            newNames.Add(validationContext.ObjectType.Name);
+                            int index = 0;
                             foreach (object? eachItem in items)
                             {
-                                IEnumerable<ValidationError> e = GetObjectPropertyValidationErrors(
+                                IEnumerable<ValidationError> propertyErrors = GetObjectPropertyValidationErrors(
                                     eachItem,
                                     CreateValidationContext(eachItem, validationContext),
                                     validateAllProperties,
-                                    breakOnFirstError);
+                                    breakOnFirstError,
+                                    newNames);
+
+                                //                                TryAddPrefixToMemberNames()
+                                IEnumerable<ValidationError> e = propertyErrors;
 
                                 errors.AddRange(e);
+
+                                index++;
                             }
                         }
                         else
                         {
-                            IEnumerable<ValidationError> subErrors = GetObjectPropertyValidationErrors(
+                            IEnumerable<ValidationError> propertyErrors = GetObjectPropertyValidationErrors(
                                 propertyValue,
                                 CreateValidationContext(propertyValue, validationContext),
                                 validateAllProperties,
-                                breakOnFirstError);
+                                breakOnFirstError,
+                                newNames);
+                            IEnumerable<ValidationError> subErrors = propertyErrors;
 
                             errors.AddRange(subErrors);
                         }
@@ -501,6 +522,9 @@ namespace System.ComponentModel.DataAnnotations
                 }
                 else
                 {
+                    var newNames = parentNames ?? new List<string>();
+                    newNames.Add(validationContext.ObjectType.Name);
+
                     // only validate the first Required attribute
                     foreach (ValidationAttribute attribute in attributes)
                     {
@@ -511,7 +535,9 @@ namespace System.ComponentModel.DataAnnotations
                             var validationResult = reqAttr.GetValidationResult(propertyValue, property.Key);
                             if (validationResult != ValidationResult.Success)
                             {
-                                errors.Add(new ValidationError(reqAttr, propertyValue, validationResult!));
+                                validationResult = TryAddPrefixToMemberNames(validationResult!, newNames, -1);
+                                ValidationError validationError = new ValidationError(reqAttr, propertyValue, validationResult!);
+                                errors.Add(validationError);
                             }
                             break;
                         }
@@ -526,6 +552,7 @@ namespace System.ComponentModel.DataAnnotations
 
             return errors;
         }
+
 
         /// <summary>
         ///     Retrieves the property values for the given instance.
@@ -569,10 +596,13 @@ namespace System.ComponentModel.DataAnnotations
         ///     Whether or not to break on the first validation failure.  A
         ///     <see cref="RequiredAttribute" /> failure will always abort with that sole failure.
         /// </param>
+        /// <param name="parentNames"></param>
+        /// <param name="index"></param>
         /// <returns>The collection of validation errors.</returns>
         /// <exception cref="ArgumentNullException">When <paramref name="validationContext" /> is null.</exception>
         private static List<ValidationError> GetValidationErrors(object? value,
-            ValidationContext validationContext!!, IEnumerable<ValidationAttribute> attributes, bool breakOnFirstError)
+            ValidationContext validationContext, IEnumerable<ValidationAttribute> attributes, bool breakOnFirstError,
+            List<string> parentNames, int index = -1)
         {
             var errors = new List<ValidationError>();
             ValidationError? validationError;
@@ -584,7 +614,7 @@ namespace System.ComponentModel.DataAnnotations
                 required = attribute as RequiredAttribute;
                 if (required is not null)
                 {
-                    if (!TryValidate(value, validationContext, required, out validationError))
+                    if (!TryValidate(value, validationContext, required, out validationError, parentNames, index))
                     {
                         errors.Add(validationError);
                         return errors;
@@ -598,7 +628,7 @@ namespace System.ComponentModel.DataAnnotations
             {
                 if (attr != required)
                 {
-                    if (!TryValidate(value, validationContext, attr, out validationError))
+                    if (!TryValidate(value, validationContext, attr, out validationError, parentNames, index))
                     {
                         errors.Add(validationError);
 
@@ -624,22 +654,54 @@ namespace System.ComponentModel.DataAnnotations
         ///     The validation error that occurs during validation.  Will be <c>null</c> when the return
         ///     value is <c>true</c>.
         /// </param>
+        /// <param name="parentNames">The names of the parents and grandparents, or null if for the top level item.</param>
+        /// <param name="index"></param>
         /// <returns><c>true</c> if the value is valid.</returns>
         /// <exception cref="ArgumentNullException">When <paramref name="validationContext" /> is null.</exception>
-        private static bool TryValidate(object? value, ValidationContext validationContext, ValidationAttribute attribute,
-            [NotNullWhen(false)] out ValidationError? validationError)
+        private static bool TryValidate(
+            object? value,
+            ValidationContext validationContext,
+            ValidationAttribute attribute,
+            [NotNullWhen(false)] out ValidationError? validationError,
+            List<string> parentNames,
+            int index = -1)
         {
             Debug.Assert(validationContext != null);
 
-            var validationResult = attribute.GetValidationResult(value, validationContext);
+            ValidationResult? validationResult = attribute.GetValidationResult(value, validationContext);
             if (validationResult != ValidationResult.Success)
             {
+                // todo: create a new validation result and prefix member names
+                validationResult = TryAddPrefixToMemberNames(validationResult!, parentNames, index);
+                //var v = new ValidationResult(validationResult.ErrorMessage, v)
+                //validationResult.MemberNames
                 validationError = new ValidationError(attribute, value, validationResult!);
                 return false;
             }
 
             validationError = null;
             return true;
+        }
+
+        private static ValidationResult TryAddPrefixToMemberNames(ValidationResult validationResult, List<string> parentNames, int index)
+        {
+            if (parentNames.Count == 0)
+            {
+                return validationResult;
+            }
+
+            string prefix = string.Join(".", parentNames.Skip(1));
+            if (index != -1)
+            {
+                prefix += $"[{index}]";
+            }
+
+            if (string.IsNullOrEmpty(prefix))
+            {
+                return validationResult;
+            }
+
+            return new ValidationResult(validationResult.ErrorMessage, validationResult.MemberNames.Select(m => $"{prefix}.{m}"));
         }
 
         /// <summary>
