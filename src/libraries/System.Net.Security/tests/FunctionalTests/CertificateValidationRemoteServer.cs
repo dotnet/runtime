@@ -22,6 +22,12 @@ namespace System.Net.Security.Tests
         [InlineData(true)]
         public async Task CertificateValidationRemoteServer_EndToEnd_Ok(bool useAsync)
         {
+            if (PlatformDetection.IsWindows7)
+            {
+                //[ActiveIssue("https://github.com/dotnet/runtime/issues/67687")]
+                throw new SkipTestException("Unstable on Windows 7");
+            }
+
             using (var client = new TcpClient(AddressFamily.InterNetwork))
             {
                 try
