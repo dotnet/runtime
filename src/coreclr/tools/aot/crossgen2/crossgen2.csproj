@@ -54,12 +54,8 @@
 
   <Target Name="PrintAssetsJson" Condition="'$(DotNetBuildFromSource)' == 'true'" 
     BeforeTargets="ResolvePackageAssets">
-    <ReadLinesFromFile File="$(ProjectAssetsFile)">
-      <Output TaskParameter="Lines" ItemName="_LinesFromFile" />
-    </ReadLinesFromFile>
-
     <Message Importance="high" Text="FileContents: $(ProjectAssetsFile)" />
-    <Message Importance="high" Text="$([MSBuild]::Escape('%(_LinesFromFile.Identity)'))" />
+    <Exec Command="cat $(ProjectAssetsFile)" />
   </Target>
 
   <Target Name="PrintAssetsJson2" Condition="'$(DotNetBuildFromSource)' == 'true'" 
@@ -69,6 +65,6 @@
     </ReadLinesFromFile>
 
     <Message Importance="high" Text="FileContents: $(ProjectAssetsFile)" />
-    <Message Importance="high" Text="$([MSBuild]::Escape('%(_LinesFromFile.Identity)'))" />
+    <Exec Command="cat $(ProjectAssetsFile)" />
   </Target>
 </Project>
