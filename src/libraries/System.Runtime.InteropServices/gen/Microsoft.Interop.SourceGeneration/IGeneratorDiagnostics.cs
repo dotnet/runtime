@@ -95,17 +95,6 @@ namespace Microsoft.Interop
     public interface IGeneratorDiagnostics
     {
         /// <summary>
-        /// Report diagnostic for marshalling of a parameter/return that is not supported
-        /// </summary>
-        /// <param name="method">Method with the parameter/return</param>
-        /// <param name="info">Type info for the parameter/return</param>
-        /// <param name="notSupportedDetails">[Optional] Specific reason for lack of support</param>
-        void ReportMarshallingNotSupported(
-            MethodDeclarationSyntax method,
-            TypePositionInfo info,
-            string? notSupportedDetails);
-
-        /// <summary>
         /// Report diagnostic for configuration that is not supported by the DLL import source generator
         /// </summary>
         /// <param name="attributeData">Attribute specifying the unsupported configuration</param>
