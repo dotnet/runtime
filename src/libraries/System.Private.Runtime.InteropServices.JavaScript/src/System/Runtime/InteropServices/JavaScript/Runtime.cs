@@ -37,7 +37,7 @@ namespace System.Runtime.InteropServices.JavaScript
             Interop.Runtime.DumpAotProfileData(ref buf, len, extraArg);
         }
 
-        public static bool IsSimpleArray(object a)
+        public static bool IsSimpleArrayRef(ref object a)
         {
             return a is System.Array arr && arr.Rank == 1 && arr.GetLowerBound(0) == 0;
         }
@@ -100,7 +100,7 @@ namespace System.Runtime.InteropServices.JavaScript
             FIRST = BUFFER_TOO_SMALL
         }
 
-        public static string GetCallSignature(IntPtr _methodHandle, object? objForRuntimeType)
+        public static string GetCallSignatureRef(IntPtr _methodHandle, in object? objForRuntimeType)
         {
             var methodHandle = GetMethodHandleFromIntPtr(_methodHandle);
 
@@ -296,12 +296,12 @@ namespace System.Runtime.InteropServices.JavaScript
             return null;
         }
 
-        public static string ObjectToString(object o)
+        public static string ObjectToStringRef(ref object o)
         {
             return o.ToString() ?? string.Empty;
         }
 
-        public static double GetDateValue(object dtv!!)
+        public static double GetDateValueRef(ref object dtv!!)
         {
             if (!(dtv is DateTime dt))
                 throw new InvalidCastException(SR.Format(SR.UnableCastObjectToType, dtv.GetType(), typeof(DateTime)));
@@ -312,15 +312,17 @@ namespace System.Runtime.InteropServices.JavaScript
             return new DateTimeOffset(dt).ToUnixTimeMilliseconds();
         }
 
-        public static DateTime CreateDateTime(double ticks)
+        // HACK: We need to implicitly box by using an 'object' out-param.
+        // Note that the return value would have been boxed on the C#->JS transition anyway.
+        public static void CreateDateTimeRef(double ticks, out object result)
         {
             DateTimeOffset unixTime = DateTimeOffset.FromUnixTimeMilliseconds((long)ticks);
-            return unixTime.DateTime;
+            result = unixTime.DateTime;
         }
 
-        public static Uri CreateUri(string uri)
+        public static void CreateUriRef(string uri, out Uri result)
         {
-            return new Uri(uri);
+            result = new Uri(uri);
         }
 
         public static void CancelPromise(IntPtr promiseJSHandle)
@@ -332,7 +334,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
         public static Task<object> WebSocketOpen(string uri, object[]? subProtocols, Delegate onClosed, out JSObject webSocket, out IntPtr promiseJSHandle)
         {
-            var res = Interop.Runtime.WebSocketOpen(uri, subProtocols, onClosed, out IntPtr webSocketJSHandle, out promiseJSHandle, out int exception);
+            Interop.Runtime.WebSocketOpenRef(uri, subProtocols, onClosed, out IntPtr webSocketJSHandle, out promiseJSHandle, out int exception, out object res);
             if (exception != 0)
                 throw new JSException((string)res);
             webSocket = new JSObject((IntPtr)webSocketJSHandle);
@@ -344,7 +346,7 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             fixed (byte* messagePtr = buffer.Array)
             {
-                var res = Interop.Runtime.WebSocketSend(webSocket.JSHandle, (IntPtr)messagePtr, buffer.Offset, buffer.Count, messageType, endOfMessage, out promiseJSHandle, out int exception);
+                Interop.Runtime.WebSocketSend(webSocket.JSHandle, (IntPtr)messagePtr, buffer.Offset, buffer.Count, messageType, endOfMessage, out promiseJSHandle, out int exception, out object res);
                 if (exception != 0)
                     throw new JSException((string)res);
 
@@ -362,7 +364,7 @@ namespace System.Runtime.InteropServices.JavaScript
             fixed (int* responsePtr = response)
             fixed (byte* bufferPtr = buffer.Array)
             {
-                var res = Interop.Runtime.WebSocketReceive(webSocket.JSHandle, (IntPtr)bufferPtr, buffer.Offset, buffer.Count, (IntPtr)responsePtr, out promiseJSHandle, out int exception);
+                Interop.Runtime.WebSocketReceive(webSocket.JSHandle, (IntPtr)bufferPtr, buffer.Offset, buffer.Count, (IntPtr)responsePtr, out promiseJSHandle, out int exception, out object res);
                 if (exception != 0)
                     throw new JSException((string)res);
                 if (res == null)
@@ -375,7 +377,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
         public static Task<object>? WebSocketClose(JSObject webSocket, int code, string? reason, bool waitForCloseReceived, out IntPtr promiseJSHandle)
         {
-            var res = Interop.Runtime.WebSocketClose(webSocket.JSHandle, code, reason, waitForCloseReceived, out promiseJSHandle, out int exception);
+            Interop.Runtime.WebSocketCloseRef(webSocket.JSHandle, code, reason, waitForCloseReceived, out promiseJSHandle, out int exception, out object res);
             if (exception != 0)
                 throw new JSException((string)res);
 
@@ -388,7 +390,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
         public static void WebSocketAbort(JSObject webSocket)
         {
-            var res = Interop.Runtime.WebSocketAbort(webSocket.JSHandle, out int exception);
+            Interop.Runtime.WebSocketAbort(webSocket.JSHandle, out int exception, out string res);
             if (exception != 0)
                 throw new JSException(res);
         }

@@ -8,6 +8,7 @@ namespace System.Reflection.Tests
     public class ConstructorInfoInvokeArrayTests
     {
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/67457", TestRuntimes.Mono)]
         public void Invoke_SZArrayConstructor()
         {
             Type type = Type.GetType("System.Object[]");
@@ -18,7 +19,10 @@ namespace System.Reflection.Tests
             int[] blength = new int[] { -100, -9, -1 };
             for (int j = 0; j < blength.Length; j++)
             {
-                Assert.Throws<OverflowException>(() => constructor.Invoke(new object[] { blength[j] }));
+                Exception ex = Assert.Throws<TargetInvocationException>(() => constructor.Invoke(
+                    new object[] { blength[j] }));
+
+                Assert.IsType<OverflowException>(ex.InnerException);
             }
 
             int[] glength = new int[] { 0, 1, 2, 3, 5, 10, 99, 65535 };
@@ -52,7 +56,10 @@ namespace System.Reflection.Tests
                             int[] invalidLengths = new int[] { -100, -9, -1 };
                             for (int j = 0; j < invalidLengths.Length; j++)
                             {
-                                Assert.Throws<OverflowException>(() => constructors[i].Invoke(new object[] { invalidLengths[j] }));
+                                Exception ex = Assert.Throws<TargetInvocationException>(() => constructors[i].Invoke(
+                                    new object[] { invalidLengths[j] }));
+
+                                Assert.IsType<OverflowException>(ex.InnerException);
                             }
 
                             int[] validLengths = new int[] { 0, 1, 2, 3, 5, 10, 99 };
@@ -75,7 +82,10 @@ namespace System.Reflection.Tests
                             int[] invalidLengths = new int[] { -100, -9, -1 };
                             for (int j = 0; j < invalidLengths.Length; j++)
                             {
-                                Assert.Throws<OverflowException>(() => constructors[i].Invoke(new object[] { invalidLowerBounds[j], invalidLengths[j] }));
+                                Exception ex = Assert.Throws<TargetInvocationException>(() => constructors[i].Invoke(
+                                    new object[] { invalidLowerBounds[j], invalidLengths[j] }));
+
+                                Assert.IsType<OverflowException>(ex.InnerException);
                             }
 
                             int[] validLowerBounds = new int[] { 0, 1, -1, 2, -3, 5, -10, 99, 100 };
@@ -99,6 +109,7 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/67457", TestRuntimes.Mono)]
         public void Invoke_2DArrayConstructor()
         {
             Type type = Type.GetType("System.Int32[,]", false);
@@ -117,7 +128,10 @@ namespace System.Reflection.Tests
 
                             for (int j = 0; j < invalidLengths1.Length; j++)
                             {
-                                Assert.Throws<OverflowException>(() => constructors[i].Invoke(new object[] { invalidLengths1[j], invalidLengths2[j] }));
+                                Exception ex = Assert.Throws<TargetInvocationException>(() => constructors[i].Invoke(
+                                    new object[] { invalidLengths1[j], invalidLengths2[j] }));
+
+                                Assert.IsType<OverflowException>(ex.InnerException);
                             }
 
                             int[] validLengths1 = new int[] { 0, 0, 1, 1, 2, 1, 2, 10, 17, 99 };
@@ -150,7 +164,10 @@ namespace System.Reflection.Tests
 
                             for (int j = 0; j < invalidLengths3.Length; j++)
                             {
-                                Assert.Throws<OverflowException>(() => constructors[i].Invoke(new object[] { invalidLowerBounds1[j], invalidLengths3[j], invalidLowerBounds2[j], invalidLengths4[j] }));
+                                Exception ex = Assert.Throws<TargetInvocationException>(() => constructors[i].Invoke(
+                                    new object[] { invalidLowerBounds1[j], invalidLengths3[j], invalidLowerBounds2[j], invalidLengths4[j] }));
+
+                                Assert.IsType<OverflowException>(ex.InnerException);
                             }
 
                             int baseNum = 3;
@@ -230,6 +247,7 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/67457", TestRuntimes.Mono)]
         public void Invoke_JaggedArrayConstructor()
         {
             Type type = Type.GetType("System.String[][]");
@@ -245,7 +263,10 @@ namespace System.Reflection.Tests
                             int[] invalidLengths = new int[] { -11, -10, -99 };
                             for (int j = 0; j < invalidLengths.Length; j++)
                             {
-                                Assert.Throws<OverflowException>(() => constructors[i].Invoke(new object[] { invalidLengths[j] }));
+                                Exception ex = Assert.Throws<TargetInvocationException>(() => constructors[i].Invoke(
+                                    new object[] { invalidLengths[j] }));
+
+                                Assert.IsType<OverflowException>(ex.InnerException);
                             }
 
                             int[] validLengths = new int[] { 0, 1, 2, 10, 17, 99 };
@@ -264,7 +285,10 @@ namespace System.Reflection.Tests
                             int[] invalidLengths2 = new int[] { -33, 0, -33, -1 };
                             for (int j = 0; j < invalidLengths1.Length; j++)
                             {
-                                Assert.Throws<OverflowException>(() => constructors[i].Invoke(new object[] { invalidLengths1[j], invalidLengths2[j] }));
+                                Exception ex = Assert.Throws<TargetInvocationException>(() => constructors[i].Invoke(
+                                     new object[] { invalidLengths1[j], invalidLengths2[j] }));
+
+                                Assert.IsType<OverflowException>(ex.InnerException);
                             }
 
                             int[] validLengths1 = new int[] { 0, 0, 0, 1, 1, 2, 1, 2, 10, 17, 500 };

@@ -314,7 +314,7 @@ namespace System.Xml
 
         internal static byte[] FromBinHexString(string s!!, bool allowOddCount)
         {
-            return BinHexDecoder.Decode(s.ToCharArray(), allowOddCount);
+            return BinHexDecoder.Decode(s.AsSpan(), allowOddCount);
         }
 
         internal static string ToBinHexString(byte[] inArray!!)

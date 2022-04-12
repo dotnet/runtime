@@ -13,46 +13,48 @@
 #include <mono/metadata/object.h>
 #include <mono/jit/jit.h>
 
+#include "gc-common.h"
+
 //JS funcs
 extern MonoObject* mono_wasm_invoke_js_with_args (int js_handle, MonoString *method, MonoArray *args, int *is_exception);
-extern MonoObject* mono_wasm_get_object_property (int js_handle, MonoString *propertyName, int *is_exception);
-extern MonoObject* mono_wasm_get_by_index (int js_handle, int property_index, int *is_exception);
-extern MonoObject* mono_wasm_set_object_property (int js_handle, MonoString *propertyName, MonoObject *value, int createIfNotExist, int hasOwnProperty, int *is_exception);
-extern MonoObject* mono_wasm_set_by_index (int js_handle, int property_index, MonoObject *value, int *is_exception);
-extern MonoObject* mono_wasm_get_global_object (MonoString *global_name, int *is_exception);
-extern void* mono_wasm_release_cs_owned_object (int js_handle);
-extern MonoObject* mono_wasm_create_cs_owned_object (MonoString *core_name, MonoArray *args, int *is_exception);
-extern MonoObject* mono_wasm_typed_array_to_array (int js_handle, int *is_exception);
-extern MonoObject* mono_wasm_typed_array_copy_to (int js_handle, int ptr, int begin, int end, int bytes_per_element, int *is_exception);
-extern MonoObject* mono_wasm_typed_array_from (int ptr, int begin, int end, int bytes_per_element, int type, int *is_exception);
-extern MonoObject* mono_wasm_typed_array_copy_from (int js_handle, int ptr, int begin, int end, int bytes_per_element, int *is_exception);
+extern void mono_wasm_get_object_property_ref (int js_handle, MonoString **propertyName, int *is_exception, MonoObject **result);
+extern void mono_wasm_get_by_index_ref (int js_handle, int property_index, int *is_exception, MonoObject **result);
+extern void mono_wasm_set_object_property_ref (int js_handle, MonoString **propertyName, MonoObject **value, int createIfNotExist, int hasOwnProperty, int *is_exception, MonoObject **result);
+extern void mono_wasm_set_by_index_ref (int js_handle, int property_index, MonoObject **value, int *is_exception, MonoObject **result);
+extern void mono_wasm_get_global_object_ref (MonoString **global_name, int *is_exception, MonoObject **result);
+extern void mono_wasm_release_cs_owned_object (int js_handle);
+extern void mono_wasm_create_cs_owned_object_ref (MonoString **core_name, MonoArray **args, int *is_exception, MonoObject** result);
+extern void mono_wasm_typed_array_to_array_ref (int js_handle, int *is_exception, MonoObject **result);
+extern void mono_wasm_typed_array_copy_to_ref (int js_handle, int ptr, int begin, int end, int bytes_per_element, int *is_exception, MonoObject** result);
+extern void mono_wasm_typed_array_from_ref (int ptr, int begin, int end, int bytes_per_element, int type, int *is_exception, MonoObject** result);
+extern void mono_wasm_typed_array_copy_from_ref (int js_handle, int ptr, int begin, int end, int bytes_per_element, int *is_exception, MonoObject** result);
 extern MonoString* mono_wasm_cancel_promise (int thenable_js_handle, int *is_exception);
-extern MonoObject* mono_wasm_web_socket_open (MonoString *uri, MonoArray *subProtocols, MonoDelegate *on_close, int *web_socket_js_handle, int *thenable_js_handle, int *is_exception);
-extern MonoObject* mono_wasm_web_socket_send (int webSocket_js_handle, void* buffer_ptr, int offset, int length, int message_type, int end_of_message, int *thenable_js_handle, int *is_exception);
-extern MonoObject* mono_wasm_web_socket_receive (int webSocket_js_handle, void* buffer_ptr, int offset, int length, void* response_ptr, int *thenable_js_handle, int *is_exception);
-extern MonoObject* mono_wasm_web_socket_close (int webSocket_js_handle, int code, MonoString * reason, int wait_for_close_received, int *thenable_js_handle, int *is_exception);
-extern MonoString* mono_wasm_web_socket_abort (int webSocket_js_handle, int *is_exception);
+extern void mono_wasm_web_socket_open_ref (MonoString **uri, MonoArray **subProtocols, MonoDelegate **on_close, int *web_socket_js_handle, int *thenable_js_handle, int *is_exception, MonoObject **result);
+extern void mono_wasm_web_socket_send (int webSocket_js_handle, void* buffer_ptr, int offset, int length, int message_type, int end_of_message, int *thenable_js_handle, int *is_exception, MonoObject **result);
+extern void mono_wasm_web_socket_receive (int webSocket_js_handle, void* buffer_ptr, int offset, int length, void* response_ptr, int *thenable_js_handle, int *is_exception, MonoObject **result);
+extern void mono_wasm_web_socket_close_ref (int webSocket_js_handle, int code, MonoString **reason, int wait_for_close_received, int *thenable_js_handle, int *is_exception, MonoObject **result);
+extern void mono_wasm_web_socket_abort (int webSocket_js_handle, int *is_exception, MonoString **result);
 extern MonoObject* mono_wasm_compile_function (MonoString *str, int *is_exception);
 
 void core_initialize_internals ()
 {
 	mono_add_internal_call ("Interop/Runtime::InvokeJSWithArgs", mono_wasm_invoke_js_with_args);
-	mono_add_internal_call ("Interop/Runtime::GetObjectProperty", mono_wasm_get_object_property);
-	mono_add_internal_call ("Interop/Runtime::GetByIndex", mono_wasm_get_by_index);
-	mono_add_internal_call ("Interop/Runtime::SetObjectProperty", mono_wasm_set_object_property);
-	mono_add_internal_call ("Interop/Runtime::SetByIndex", mono_wasm_set_by_index);
-	mono_add_internal_call ("Interop/Runtime::GetGlobalObject", mono_wasm_get_global_object);
-	mono_add_internal_call ("Interop/Runtime::CreateCSOwnedObject", mono_wasm_create_cs_owned_object);
+	mono_add_internal_call ("Interop/Runtime::GetObjectPropertyRef", mono_wasm_get_object_property_ref);
+	mono_add_internal_call ("Interop/Runtime::GetByIndexRef", mono_wasm_get_by_index_ref);
+	mono_add_internal_call ("Interop/Runtime::SetObjectPropertyRef", mono_wasm_set_object_property_ref);
+	mono_add_internal_call ("Interop/Runtime::SetByIndexRef", mono_wasm_set_by_index_ref);
+	mono_add_internal_call ("Interop/Runtime::GetGlobalObjectRef", mono_wasm_get_global_object_ref);
+	mono_add_internal_call ("Interop/Runtime::CreateCSOwnedObjectRef", mono_wasm_create_cs_owned_object_ref);
 	mono_add_internal_call ("Interop/Runtime::ReleaseCSOwnedObject", mono_wasm_release_cs_owned_object);
-	mono_add_internal_call ("Interop/Runtime::TypedArrayToArray", mono_wasm_typed_array_to_array);
-	mono_add_internal_call ("Interop/Runtime::TypedArrayCopyTo", mono_wasm_typed_array_copy_to);
-	mono_add_internal_call ("Interop/Runtime::TypedArrayFrom", mono_wasm_typed_array_from);
-	mono_add_internal_call ("Interop/Runtime::TypedArrayCopyFrom", mono_wasm_typed_array_copy_from);
+	mono_add_internal_call ("Interop/Runtime::TypedArrayToArrayRef", mono_wasm_typed_array_to_array_ref);
+	mono_add_internal_call ("Interop/Runtime::TypedArrayCopyToRef", mono_wasm_typed_array_copy_to_ref);
+	mono_add_internal_call ("Interop/Runtime::TypedArrayFromRef", mono_wasm_typed_array_from_ref);
+	mono_add_internal_call ("Interop/Runtime::TypedArrayCopyFromRef", mono_wasm_typed_array_copy_from_ref);
 	mono_add_internal_call ("Interop/Runtime::CompileFunction", mono_wasm_compile_function);
-	mono_add_internal_call ("Interop/Runtime::WebSocketOpen", mono_wasm_web_socket_open);
+	mono_add_internal_call ("Interop/Runtime::WebSocketOpenRef", mono_wasm_web_socket_open_ref);
 	mono_add_internal_call ("Interop/Runtime::WebSocketSend", mono_wasm_web_socket_send);
 	mono_add_internal_call ("Interop/Runtime::WebSocketReceive", mono_wasm_web_socket_receive);
-	mono_add_internal_call ("Interop/Runtime::WebSocketClose", mono_wasm_web_socket_close);
+	mono_add_internal_call ("Interop/Runtime::WebSocketCloseRef", mono_wasm_web_socket_close_ref);
 	mono_add_internal_call ("Interop/Runtime::WebSocketAbort", mono_wasm_web_socket_abort);
 	mono_add_internal_call ("Interop/Runtime::CancelPromise", mono_wasm_cancel_promise);
 }
@@ -66,7 +68,8 @@ void core_initialize_internals ()
 // Uint32Array		| uint32_t	| uint (unsigned integer)
 // Float32Array		| float		| float
 // Float64Array		| double	| double
-// typed array marshaling
+// typed array marshalling
+// Keep in sync with driver.c
 #define MARSHAL_ARRAY_BYTE 10
 #define MARSHAL_ARRAY_UBYTE 11
 #define MARSHAL_ARRAY_UBYTE_C 12 // alias of MARSHAL_ARRAY_UBYTE
@@ -77,10 +80,11 @@ void core_initialize_internals ()
 #define MARSHAL_ARRAY_FLOAT 17
 #define MARSHAL_ARRAY_DOUBLE 18
 
-EMSCRIPTEN_KEEPALIVE MonoArray*
-mono_wasm_typed_array_new (char *arr, int length, int size, int type)
+EMSCRIPTEN_KEEPALIVE void
+mono_wasm_typed_array_new_ref (char *arr, int length, int size, int type, PPVOLATILE(MonoArray) result)
 {
-	MonoClass *typeClass = mono_get_byte_class(); // default is Byte
+	MONO_ENTER_GC_UNSAFE;
+	MonoClass * typeClass = mono_get_byte_class(); // default is Byte
 	switch (type) {
 	case MARSHAL_ARRAY_BYTE:
 		typeClass = mono_get_sbyte_class();
@@ -103,44 +107,62 @@ mono_wasm_typed_array_new (char *arr, int length, int size, int type)
 	case MARSHAL_ARRAY_DOUBLE:
 		typeClass = mono_get_double_class();
 		break;
+	case MARSHAL_ARRAY_UBYTE:
+	case MARSHAL_ARRAY_UBYTE_C:
+		typeClass = mono_get_byte_class();
+		break;
+	default:
+		printf ("Invalid marshal type %d in mono_wasm_typed_array_new", type);
+		abort();
 	}
 
-	MonoArray *buffer;
+	PVOLATILE(MonoArray) buffer;
 
 	buffer = mono_array_new (mono_get_root_domain(), typeClass, length);
 	memcpy(mono_array_addr_with_size(buffer, sizeof(char), 0), arr, length * size);
 
-	return buffer;
+	store_volatile((PPVOLATILE(MonoObject))result, (MonoObject *)buffer);
+	MONO_EXIT_GC_UNSAFE;
 }
 
+// TODO: Remove - no longer used? If not, convert to ref
 EMSCRIPTEN_KEEPALIVE int
-mono_wasm_unbox_enum (MonoObject *obj)
+mono_wasm_unbox_enum (PVOLATILE(MonoObject) obj)
 {
 	if (!obj)
 		return 0;
-	
-	MonoType *type = mono_class_get_type (mono_object_get_class(obj));
 
-	void *ptr = mono_object_unbox (obj);
+	int result = 0;
+	MONO_ENTER_GC_UNSAFE;
+	PVOLATILE(MonoType) type = mono_class_get_type (mono_object_get_class(obj));
+
+	PVOLATILE(void) ptr = mono_object_unbox (obj);
 	switch (mono_type_get_type(mono_type_get_underlying_type (type))) {
 	case MONO_TYPE_I1:
 	case MONO_TYPE_U1:
-		return *(unsigned char*)ptr;
+		result = *(unsigned char*)ptr;
+		break;
 	case MONO_TYPE_I2:
-		return *(short*)ptr;
+		result = *(short*)ptr;
+		break;
 	case MONO_TYPE_U2:
-		return *(unsigned short*)ptr;
+		result = *(unsigned short*)ptr;
+		break;
 	case MONO_TYPE_I4:
-		return *(int*)ptr;
+		result = *(int*)ptr;
+		break;
 	case MONO_TYPE_U4:
-		return *(unsigned int*)ptr;
+		result = *(unsigned int*)ptr;
+		break;
 	// WASM doesn't support returning longs to JS
 	// case MONO_TYPE_I8:
 	// case MONO_TYPE_U8:
 	default:
 		printf ("Invalid type %d to mono_unbox_enum\n", mono_type_get_type(mono_type_get_underlying_type (type)));
-		return 0;
+		break;
 	}
+	MONO_EXIT_GC_UNSAFE;
+	return result;
 }
 
 
