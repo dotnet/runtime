@@ -6,7 +6,11 @@
         When the below is removed, also update the test project to enable ILAsm roundtrip testing.
       -->
     <ILAsmToolPath>$(ArtifactsBinDir)/coreclr/$(OSPlatformConfig)</ILAsmToolPath>
-    <ILAsmToolPath Condition="'$(TargetOS)' == 'AnyOS'">$(ArtifactsBinDir)/coreclr/$(_hostOS).$(TargetArchitecture).$(Configuration)</ILAsmToolPath>
+
+    <!-- This override is for the AnyOS build of managed libraries. When this is detected we defer to the host OS value
+        and also to the Release build as that is what is used for the AnyOS build leg.
+      -->
+    <ILAsmToolPath Condition="'$(TargetOS)' == 'AnyOS'">$(ArtifactsBinDir)/coreclr/$(_hostOS).$(TargetArchitecture).Release</ILAsmToolPath>
     <MonoAotIncompatible>true</MonoAotIncompatible>
   </PropertyGroup>
   <ItemGroup>
