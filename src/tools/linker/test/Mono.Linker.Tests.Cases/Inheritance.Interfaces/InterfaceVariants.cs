@@ -1,191 +1,40 @@
-// Copyright (c) .NET Foundation and contributors. All rights reserved.
+﻿// Copyright (c) .NET Foundation and contributors. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
 using System.Collections;
-using System.Diagnostics.CodeAnalysis;
-using System.Runtime.Serialization;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
+using Mono.Linker.Tests.Cases.Expectations.Helpers;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
-using Mono.Linker.Tests.Cases.Libraries.Dependencies;
+using Mono.Linker.Tests.Cases.Inheritance.Interfaces.Dependencies;
 
-namespace Mono.Linker.Tests.Cases.Libraries
+namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces
 {
 	[SetupCompileBefore ("copylibrary.dll", new[] { "Dependencies/CopyLibrary.cs" })]
 	[SetupLinkerAction ("copy", "copylibrary")]
-	[SetupLinkerArgument ("-a", "test.exe", "library")]
-	[SetupLinkerArgument ("--enable-opt", "ipconstprop")]
-	[VerifyMetadataNames]
-	public class RootLibrary
+	public class InterfaceVariants
 	{
-		private int field;
-
-		[Kept]
-		public RootLibrary ()
-		{
-		}
-
-		[Kept]
 		public static void Main ()
 		{
-			var t = typeof (SerializationTestPrivate);
-			t = typeof (SerializationTestNested.SerializationTestPrivate);
-		}
+			Type t = typeof (UninstantiatedPublicClassWithInterface);
+			t = typeof (UninstantiatedPublicClassWithImplicitlyImplementedInterface);
+			t = typeof (UninstantiatedPublicClassWithPrivateInterface);
 
-		[Kept]
-		public void UnusedPublicMethod ()
-		{
-		}
+			UninstantiatedPublicClassWithInterface.InternalStaticInterfaceMethodUsed ();
+			InstantiatedClassWithInterfaces.InternalStaticInterfaceMethodUsed ();
 
-		[Kept]
-		protected void UnusedProtectedMethod ()
-		{
-		}
+			// Use all public interfaces - they're marked as public only to denote them as "used"
+			typeof (IPublicInterface).RequiresPublicMethods ();
+			typeof (IPublicStaticInterface).RequiresPublicMethods ();
 
-		[Kept]
-		protected internal void UnusedProtectedInternalMethod ()
-		{
-		}
-
-		protected private void UnusedProtectedPrivateMethod ()
-		{
-		}
-
-		internal void UnusedInternalMethod ()
-		{
-		}
-
-		private void UnusedPrivateMethod ()
-		{
-		}
-
-		[Kept]
-		[KeptAttributeAttribute (typeof (DynamicDependencyAttribute))]
-		[DynamicDependency (nameof (MethodWithDynamicDependencyTarget))]
-		public void MethodWithDynamicDependency ()
-		{
-		}
-
-		[Kept]
-		private void MethodWithDynamicDependencyTarget ()
-		{
-		}
-
-		[Kept]
-		public class SerializationTest
-		{
-			[Kept]
-			private SerializationTest (SerializationInfo info, StreamingContext context)
-			{
-			}
-		}
-
-		[Kept]
-		private class SerializationTestPrivate
-		{
-			[Kept]
-			private SerializationTestPrivate (SerializationInfo info, StreamingContext context)
-			{
-			}
-
-			public void NotUsed ()
-			{
-			}
-
-			[Kept]
-			[OnSerializing]
-			[KeptAttributeAttribute (typeof (OnSerializingAttribute))]
-			private void OnSerializingMethod (StreamingContext context)
-			{
-			}
-
-			[Kept]
-			[OnSerialized]
-			[KeptAttributeAttribute (typeof (OnSerializedAttribute))]
-			private void OnSerializedMethod (StreamingContext context)
-			{
-			}
-
-			[Kept]
-			[OnDeserializing]
-			[KeptAttributeAttribute (typeof (OnDeserializingAttribute))]
-			private void OnDeserializingMethod (StreamingContext context)
-			{
-			}
-
-			[Kept]
-			[OnDeserialized]
-			[KeptAttributeAttribute (typeof (OnDeserializedAttribute))]
-			private void OnDeserializedMethod (StreamingContext context)
-			{
-			}
-		}
-
-		[Kept]
-		private class SerializationTestNested
-		{
-			internal class SerializationTestPrivate
-			{
-				[Kept]
-				private SerializationTestPrivate (SerializationInfo info, StreamingContext context)
-				{
-				}
-
-				public void NotUsed ()
-				{
-				}
-			}
-
-			public void NotUsed ()
-			{
-			}
-		}
-
-		[Kept]
-		public class SubstitutionsTest
-		{
-			private static bool FalseProp { get { return false; } }
-
-			[Kept]
-			[ExpectBodyModified]
-			public SubstitutionsTest ()
-			{
-				if (FalseProp)
-					LocalMethod ();
-			}
-
-			private void LocalMethod ()
-			{
-			}
-		}
-
-		[Kept]
-		[KeptInterface (typeof (I))]
-		public class IfaceClass : I
-		{
-			[Kept]
-			public IfaceClass ()
-			{
-			}
-
-			[Kept]
-			public override string ToString ()
-			{
-				return "test";
-			}
-		}
-
-		[Kept]
-		public interface I
-		{
+			var a = new InstantiatedClassWithInterfaces ();
 		}
 
 		[Kept]
 		[KeptInterface (typeof (IEnumerator))]
 		[KeptInterface (typeof (IPublicInterface))]
 		[KeptInterface (typeof (IPublicStaticInterface))]
-		[KeptInterface (typeof (IInternalInterface))]
-		[KeptInterface (typeof (IInternalStaticInterface))]
+		[KeptInterface (typeof (IInternalStaticInterfaceWithUsedMethod))] // https://github.com/dotnet/linker/issues/2733
 		[KeptInterface (typeof (ICopyLibraryInterface))]
 		[KeptInterface (typeof (ICopyLibraryStaticInterface))]
 		public class UninstantiatedPublicClassWithInterface :
@@ -193,6 +42,7 @@ namespace Mono.Linker.Tests.Cases.Libraries
 			IPublicStaticInterface,
 			IInternalInterface,
 			IInternalStaticInterface,
+			IInternalStaticInterfaceWithUsedMethod,
 			IEnumerator,
 			ICopyLibraryInterface,
 			ICopyLibraryStaticInterface
@@ -211,21 +61,27 @@ namespace Mono.Linker.Tests.Cases.Libraries
 			[Kept]
 			static void IPublicStaticInterface.ExplicitImplementationPublicStaticInterfaceMethod () { }
 
-			[Kept]
 			public void InternalInterfaceMethod () { }
 
 			void IInternalInterface.ExplicitImplementationInternalInterfaceMethod () { }
 
-			[Kept]
 			public static void InternalStaticInterfaceMethod () { }
 
 			static void IInternalStaticInterface.ExplicitImplementationInternalStaticInterfaceMethod () { }
 
 			[Kept]
+			public static void InternalStaticInterfaceMethodUsed () { }
+
+			[Kept]
+			[ExpectBodyModified]
 			bool IEnumerator.MoveNext () { throw new PlatformNotSupportedException (); }
 
 			[Kept]
-			object IEnumerator.Current { [Kept] get { throw new PlatformNotSupportedException (); } }
+			object IEnumerator.Current {
+				[Kept]
+				[ExpectBodyModified]
+				get { throw new PlatformNotSupportedException (); }
+			}
 
 			[Kept]
 			void IEnumerator.Reset () { }
@@ -244,18 +100,18 @@ namespace Mono.Linker.Tests.Cases.Libraries
 		}
 
 		[Kept]
-		[KeptInterface (typeof (IInternalInterface))]
 		[KeptInterface (typeof (IFormattable))]
 		public class UninstantiatedPublicClassWithImplicitlyImplementedInterface : IInternalInterface, IFormattable
 		{
 			internal UninstantiatedPublicClassWithImplicitlyImplementedInterface () { }
 
-			[Kept]
 			public void InternalInterfaceMethod () { }
 
 			void IInternalInterface.ExplicitImplementationInternalInterfaceMethod () { }
 
 			[Kept]
+			[ExpectBodyModified]
+			[ExpectLocalsModified]
 			public string ToString (string format, IFormatProvider formatProvider)
 			{
 				return "formatted string";
@@ -266,8 +122,7 @@ namespace Mono.Linker.Tests.Cases.Libraries
 		[KeptInterface (typeof (IEnumerator))]
 		[KeptInterface (typeof (IPublicInterface))]
 		[KeptInterface (typeof (IPublicStaticInterface))]
-		[KeptInterface (typeof (IInternalInterface))]
-		[KeptInterface (typeof (IInternalStaticInterface))]
+		[KeptInterface (typeof (IInternalStaticInterfaceWithUsedMethod))] // https://github.com/dotnet/linker/issues/2733
 		[KeptInterface (typeof (ICopyLibraryInterface))]
 		[KeptInterface (typeof (ICopyLibraryStaticInterface))]
 		public class InstantiatedClassWithInterfaces :
@@ -275,6 +130,7 @@ namespace Mono.Linker.Tests.Cases.Libraries
 			IPublicStaticInterface,
 			IInternalInterface,
 			IInternalStaticInterface,
+			IInternalStaticInterfaceWithUsedMethod,
 			IEnumerator,
 			ICopyLibraryInterface,
 			ICopyLibraryStaticInterface
@@ -294,15 +150,16 @@ namespace Mono.Linker.Tests.Cases.Libraries
 			[Kept]
 			static void IPublicStaticInterface.ExplicitImplementationPublicStaticInterfaceMethod () { }
 
-			[Kept]
 			public void InternalInterfaceMethod () { }
 
 			void IInternalInterface.ExplicitImplementationInternalInterfaceMethod () { }
 
-			[Kept]
 			public static void InternalStaticInterfaceMethod () { }
 
 			static void IInternalStaticInterface.ExplicitImplementationInternalStaticInterfaceMethod () { }
+
+			[Kept]
+			public static void InternalStaticInterfaceMethodUsed () { }
 
 			[Kept]
 			bool IEnumerator.MoveNext () { throw new PlatformNotSupportedException (); }
@@ -327,7 +184,6 @@ namespace Mono.Linker.Tests.Cases.Libraries
 		}
 
 		[Kept]
-		[KeptInterface (typeof (IPrivateInterface))]
 		public class UninstantiatedPublicClassWithPrivateInterface : IPrivateInterface
 		{
 			internal UninstantiatedPublicClassWithPrivateInterface () { }
@@ -355,7 +211,6 @@ namespace Mono.Linker.Tests.Cases.Libraries
 			static abstract void ExplicitImplementationPublicStaticInterfaceMethod ();
 		}
 
-		[Kept]
 		internal interface IInternalInterface
 		{
 			void InternalInterfaceMethod ();
@@ -363,30 +218,25 @@ namespace Mono.Linker.Tests.Cases.Libraries
 			void ExplicitImplementationInternalInterfaceMethod ();
 		}
 
-		[Kept]
 		internal interface IInternalStaticInterface
 		{
-			[Kept] // https://github.com/dotnet/linker/issues/2733
 			static abstract void InternalStaticInterfaceMethod ();
 
 			static abstract void ExplicitImplementationInternalStaticInterfaceMethod ();
 		}
 
+		// The interface methods themselves are not used, but the implentation of these methods is
+		// https://github.com/dotnet/linker/issues/2733
 		[Kept]
+		internal interface IInternalStaticInterfaceWithUsedMethod
+		{
+			[Kept] // https://github.com/dotnet/linker/issues/2733
+			static abstract void InternalStaticInterfaceMethodUsed ();
+		}
+
 		private interface IPrivateInterface
 		{
 			void PrivateInterfaceMethod ();
-		}
-	}
-
-	internal class RootLibrary_Internal
-	{
-		protected RootLibrary_Internal (SerializationInfo info, StreamingContext context)
-		{
-		}
-
-		internal void Unused ()
-		{
 		}
 	}
 }

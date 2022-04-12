@@ -21,5 +21,11 @@ namespace ILLink.RoslynAnalyzer.Tests.Inheritance
 			return RunTest (allowMissingWarnings: true);
 		}
 
+		[Fact]
+		public Task InterfaceVariants ()
+		{
+			return RunTest (allowMissingWarnings: true);
+		}
+
 	}
 }
