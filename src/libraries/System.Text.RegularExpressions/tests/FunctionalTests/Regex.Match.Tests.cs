@@ -1048,6 +1048,7 @@ namespace System.Text.RegularExpressions.Tests
             Assert.Throws<RegexMatchTimeoutException>(() => r.Match(input));
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/67886")]
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [MemberData(nameof(RegexHelpers.AvailableEngines_MemberData), MemberType = typeof(RegexHelpers))]
         public void Match_InstanceMethods_DefaultTimeout_Throws(RegexEngine engine)
