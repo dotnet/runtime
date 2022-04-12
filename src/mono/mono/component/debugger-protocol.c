@@ -14,8 +14,8 @@ static int32_t packet_id = 0;
 int
 m_dbgprot_buffer_add_command_header (MdbgProtBuffer *data, int command_set, int command, MdbgProtBuffer *out)
 {
-	g_assert (command_set <= G_MAXUINT8);
-	g_assert (command <= G_MAXUINT8);
+	g_assert (command_set <= UINT8_MAX);
+	g_assert (command <= UINT8_MAX);
 	int id = dbg_rt_atomic_inc_int32_t ((volatile int32_t *)&packet_id);
 
 	uint32_t len = (uint32_t)(data->p - data->buf + HEADER_LENGTH);
