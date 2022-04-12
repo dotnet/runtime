@@ -246,8 +246,8 @@
 
 <HRESULT NumericValue="0x80131047">
 	<SymbolicName>FUSION_E_INVALID_NAME</SymbolicName>
-	<Message>"The given assembly name or codebase was invalid."</Message>
-	<Comment> The given assembly name or codebase was invalid. </Comment>
+	<Message>"The given assembly name was invalid."</Message>
+	<Comment> The given assembly name was invalid. </Comment>
 </HRESULT>
 
 <HRESULT NumericValue="0x80131048">
