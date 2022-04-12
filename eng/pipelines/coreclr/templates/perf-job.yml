@@ -21,6 +21,7 @@ parameters:
   iOSLlvmBuild: 'False'
   skipLiveLibrariesDownload: false
   collectHelixLogsScript: ''
+  timeoutInMinutes: 320
 
 ### Perf job
 
@@ -50,6 +51,7 @@ jobs:
     pgoRunType: ${{ parameters.pgoRunType }}
     javascriptEngine: ${{ parameters.javascriptEngine }}
     iosLlvmBuild: ${{ parameters.iosLlvmBuild }}
+    timeoutInMintues: ${{ parameters.timeoutInMinutes }}
 
     ${{ if and(eq(parameters.runtimeType, 'wasm'), eq(parameters.codeGenType, 'aot')) }}:
       helixTypeSuffix: '/wasm/aot'
