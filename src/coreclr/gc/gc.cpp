@@ -32149,6 +32149,15 @@ void gc_heap::walk_relocation (void* profiling_context, record_surv_fn fn)
     {
         generation* condemned_gen = generation_of (i);
         heap_segment*  current_heap_segment = heap_segment_rw (generation_start_segment (condemned_gen));
+#ifdef USE_REGIONS
+        while (current_heap_segment && heap_segment_swept_in_plan (current_heap_segment))
+        {
+            // TODO: Walk the heap segment and report the plugs.
+            current_heap_segment = heap_segment_next_rw (current_heap_segment);
+        }
+        if (!current_heap_segment)
+            continue;
+#endif // USE_REGIONS
         uint8_t*  start_address = get_soh_start_object (current_heap_segment, condemned_gen);
         size_t  current_brick = brick_of (start_address);
 
@@ -32176,9 +32185,16 @@ void gc_heap::walk_relocation (void* profiling_context, record_surv_fn fn)
                             &args);
                     args.last_plug = 0;
                 }
-                if (heap_segment_next_rw (current_heap_segment))
+                current_heap_segment = heap_segment_next_rw (current_heap_segment);
+#ifdef USE_REGIONS
+                while (current_heap_segment && heap_segment_swept_in_plan (current_heap_segment))
                 {
+                    // TODO: Walk the heap segment and report the plugs.
                     current_heap_segment = heap_segment_next_rw (current_heap_segment);
+                }
+#endif // USE_REGIONS
+                if (current_heap_segment)
+                {
                     current_brick = brick_of (heap_segment_mem (current_heap_segment));
                     end_brick = brick_of (heap_segment_allocated (current_heap_segment)-1);
                     continue;
