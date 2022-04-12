@@ -203,7 +203,7 @@ namespace System.Text.RegularExpressions
         /// Regex constructor, we don't load RegexCompiler and its reflection classes when
         /// instantiating a non-compiled regex.
         /// </summary>
-        [RequiresDynamicCode("The native code for Regex compilation might not be available at runtime.")]
+        [RequiresDynamicCode("Compiling a RegEx requires dynamic code.")]
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static RegexRunnerFactory? Compile(string pattern, RegexTree regexTree, RegexOptions options, bool hasTimeout) =>
             RegexCompiler.Compile(pattern, regexTree, options, hasTimeout);

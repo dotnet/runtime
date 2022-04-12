@@ -31,7 +31,7 @@ namespace System.Text.RegularExpressions
         private static int s_regexCount;
 
         /// <summary>The top-level driver. Initializes everything then calls the Generate* methods.</summary>
-        [RequiresDynamicCode("The native code for Regex compilation might not be available at runtime.")]
+        [RequiresDynamicCode("Compiling a RegEx requires dynamic code.")]
         public RegexRunnerFactory? FactoryInstanceFromCode(string pattern, RegexTree regexTree, RegexOptions options, bool hasTimeout)
         {
             if (!regexTree.Root.SupportsCompilation(out _))
@@ -67,7 +67,7 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>Begins the definition of a new method (no args) with a specified return value.</summary>
-        [RequiresDynamicCode("The native code for Regex compilation might not be available at runtime.")]
+        [RequiresDynamicCode("Compiling a RegEx requires dynamic code.")]
         private DynamicMethod DefineDynamicMethod(string methname, Type? returntype, Type hostType, Type[] paramTypes)
         {
             // We're claiming that these are static methods, but really they are instance methods.
