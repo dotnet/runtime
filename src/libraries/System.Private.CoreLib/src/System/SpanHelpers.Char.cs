@@ -717,8 +717,6 @@ namespace System
                     if (lengthToExamine > 0)
                     {
                         Vector128<ushort> values = Vector128.Create((ushort)value);
-                        int matchedLane = 0;
-
                         do
                         {
                             Debug.Assert(lengthToExamine >= Vector128<ushort>.Count);
@@ -726,15 +724,14 @@ namespace System
                             Vector128<ushort> search = LoadVector128(ref searchSpace, offset);
                             Vector128<ushort> compareResult = AdvSimd.CompareEqual(values, search);
 
-                            if (!TryFindFirstMatchedLane(compareResult, ref matchedLane))
+                            if (compareResult == Vector128<ushort>.Zero)
                             {
-                                // Zero flags set so no matches
                                 offset += Vector128<ushort>.Count;
                                 lengthToExamine -= Vector128<ushort>.Count;
                                 continue;
                             }
 
-                            return (int)(offset + matchedLane);
+                            return (int)(offset + FindFirstMatchedLane(compareResult));
                         } while (lengthToExamine > 0);
                     }
 
@@ -2001,21 +1998,17 @@ namespace System
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool TryFindFirstMatchedLane(Vector128<ushort> compareResult, ref int matchedLane)
+        private static int FindFirstMatchedLane(Vector128<ushort> compareResult)
         {
             Debug.Assert(AdvSimd.Arm64.IsSupported);
 
             Vector128<byte> pairwiseSelectedLane = AdvSimd.Arm64.AddPairwise(compareResult.AsByte(), compareResult.AsByte());
             ulong selectedLanes = pairwiseSelectedLane.AsUInt64().ToScalar();
-            if (selectedLanes == 0)
-            {
-                // all lanes are zero, so nothing matched.
-                return false;
-            }
 
-            // Find the first lane that is set inside compareResult.
-            matchedLane = BitOperations.TrailingZeroCount(selectedLanes) >> 3;
-            return true;
+            // It should be handled by compareResult != Vector.Zero
+            Debug.Assert(selectedLanes != 0);
+
+            return BitOperations.TrailingZeroCount(selectedLanes) >> 3;
         }
     }
 }
