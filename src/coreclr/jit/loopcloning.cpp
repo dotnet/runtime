@@ -1022,15 +1022,15 @@ bool Compiler::optDeriveLoopCloningConditions(unsigned loopNum, LoopCloneContext
     JITDUMP("------------------------------------------------------------\n");
     JITDUMP("Deriving cloning conditions for " FMT_LP "\n", loopNum);
 
-    LoopDsc*                         loop     = &optLoopTable[loopNum];
-    JitExpandArrayStack<LcOptInfo*>* optInfos = context->GetLoopOptInfo(loopNum);
+    LoopDsc*                         loop             = &optLoopTable[loopNum];
+    JitExpandArrayStack<LcOptInfo*>* optInfos         = context->GetLoopOptInfo(loopNum);
     bool                             isIncreasingLoop = GenTree::StaticOperIs(loop->lpTestOper(), GT_LT, GT_LE);
 
     if (GenTree::StaticOperIs(loop->lpTestOper(), GT_LT, GT_LE, GT_GT, GT_GE))
     {
         LC_Ident ident;
 
-       // Init conditions
+        // Init conditions
         if (loop->lpFlags & LPFLG_CONST_INIT)
         {
             // Only allowing non-negative const init at this time.
@@ -1067,7 +1067,7 @@ bool Compiler::optDeriveLoopCloningConditions(unsigned loopNum, LoopCloneContext
             else
             {
                 // For decreasing loop, the init value needs to be checked against the array length
-                ident = LC_Ident(initLcl, LC_Ident::Var);
+                ident  = LC_Ident(initLcl, LC_Ident::Var);
                 geZero = LC_Condition(GT_GE, LC_Expr(ident), LC_Expr(LC_Ident(0, LC_Ident::Const)));
             }
             context->EnsureConditions(loopNum)->Push(geZero);
@@ -1644,7 +1644,7 @@ bool Compiler::optIsLoopClonable(unsigned loopInd)
         return false;
     }
 
-    bool isLessThanLimitCheck = GenTree::StaticOperIs(loop.lpTestOper(), GT_LT, GT_LE);
+    bool isLessThanLimitCheck    = GenTree::StaticOperIs(loop.lpTestOper(), GT_LT, GT_LE);
     bool isGreaterThanLimitCheck = GenTree::StaticOperIs(loop.lpTestOper(), GT_GT, GT_GE);
 
     // Increasing loop is the one that has "+=" increament operation and "< or <=" limit check.
@@ -1655,12 +1655,12 @@ bool Compiler::optIsLoopClonable(unsigned loopInd)
     bool isDecreasingLoop = (isGreaterThanLimitCheck && ((loop.lpIterOper() == GT_SUB) ||
                                                          ((loop.lpIterOper() == GT_ADD) && (loop.lpIterConst() < 0))));
 
-    //TODO-CQ: Handle other loops like:
+    // TODO-CQ: Handle other loops like:
     // - The ones whose limit operator is "==" or "!="
     // - The incrementing operator is multiple and divide
     // - The ones that are inverted are not handled here for cases like "i *= 2" because
     //   they are converted to "i + i".
-    //bool isOtherLoop = (loop.lpIterOper() == GT_DIV) || (loop.lpIterOper() == GT_MUL);
+    // bool isOtherLoop = (loop.lpIterOper() == GT_DIV) || (loop.lpIterOper() == GT_MUL);
     if (!(isIncreasingLoop || isDecreasingLoop))
     {
         JITDUMP("Loop cloning: rejecting loop " FMT_LP
