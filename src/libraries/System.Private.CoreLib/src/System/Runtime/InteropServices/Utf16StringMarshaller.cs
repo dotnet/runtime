@@ -15,7 +15,6 @@ namespace System.Runtime.InteropServices
     {
         private ushort* _allocated;
         private readonly Span<ushort> _span;
-        private bool _isNullString;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Utf16StringMarshaller"/>.
@@ -38,20 +37,19 @@ namespace System.Runtime.InteropServices
         /// </remarks>
         public Utf16StringMarshaller(string str, Span<ushort> buffer)
         {
-            _isNullString = false;
             _allocated = null;
             if (str is null)
             {
-                _isNullString = true;
                 _span = default;
+                return;
             }
-            else if ((str.Length + 1) < buffer.Length)
+
+            // + 1 for null terminator
+            if (buffer.Length >= str.Length + 1)
             {
                 _span = buffer;
                 str.CopyTo(MemoryMarshal.Cast<ushort, char>(buffer));
-                // Supplied memory is in an undefined state so ensure
-                // there is a trailing null in the buffer.
-                _span[str.Length] = '\0';
+                _span[str.Length] = '\0'; // null-terminate
             }
             else
             {
@@ -86,11 +84,7 @@ namespace System.Runtime.InteropServices
         /// <remarks>
         /// <seealso cref="CustomTypeMarshallerFeatures.TwoStageMarshalling"/>
         /// </remarks>
-        public void FromNativeValue(ushort* value)
-        {
-            _allocated = value;
-            _isNullString = value == null;
-        }
+        public void FromNativeValue(ushort* value) => _allocated = value;
 
         /// <summary>
         /// Returns the managed string.
@@ -98,16 +92,7 @@ namespace System.Runtime.InteropServices
         /// <remarks>
         /// <seealso cref="CustomTypeMarshallerDirection.Out"/>
         /// </remarks>
-        public string? ToManaged()
-        {
-            if (_isNullString)
-                return null;
-
-            if (_allocated != null)
-                return new string((char*)_allocated);
-
-            return MemoryMarshal.Cast<ushort, char>(_span).ToString();
-        }
+        public string? ToManaged() => _allocated == null ? null : new string((char*)_allocated);
 
         /// <summary>
         /// Frees native resources.
