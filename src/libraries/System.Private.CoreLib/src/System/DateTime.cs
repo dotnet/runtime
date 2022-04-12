@@ -261,8 +261,21 @@ namespace System
         /// you can use the corresponding <see cref="DateTimeOffset"/> constructor.
         /// </remarks>
         public DateTime(int year, int month, int day, int hour, int minute, int second, int millisecond, Calendar calendar!!, DateTimeKind kind)
-            : this(year, month, day, hour, minute, second, millisecond, 0, calendar, kind)
         {
+            if ((uint)millisecond >= MillisPerSecond) ThrowMillisecondOutOfRange();
+            if ((uint)kind > (uint)DateTimeKind.Local) ThrowInvalidKind();
+
+            if (second != 60 || !s_systemSupportsLeapSeconds)
+            {
+                ulong ticks = calendar.ToDateTime(year, month, day, hour, minute, second, millisecond).UTicks;
+                _dateData = ticks | ((ulong)kind << KindShift);
+            }
+            else
+            {
+                // if we have a leap second, then we adjust it to 59 so that DateTime will consider it the last in the specified minute.
+                this = new DateTime(year, month, day, hour, minute, 59, millisecond, calendar, kind);
+                ValidateLeapSecond();
+            }
         }
 
         // Constructs a DateTime from a given year, month, day, hour,
@@ -364,10 +377,8 @@ namespace System
         /// For applications in which portability of date and time data or a limited degree of time zone awareness is important,
         /// you can use the corresponding <see cref="DateTimeOffset"/> constructor.
         /// </remarks>
-        public DateTime(int year, int month, int day, int hour, int minute, int second, int millisecond)
-        {
+        public DateTime(int year, int month, int day, int hour, int minute, int second, int millisecond) =>
             _dateData = Init(year, month, day, hour, minute, second, millisecond);
-        }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DateTime"/> structure to the specified year, month, day, hour, minute, second,
@@ -422,10 +433,8 @@ namespace System
         /// For applications in which portability of date and time data or a limited degree of time zone awareness is important,
         /// you can use the corresponding <see cref="DateTimeOffset"/> constructor.
         /// </remarks>
-        public DateTime(int year, int month, int day, int hour, int minute, int second, int millisecond, DateTimeKind kind)
-        {
+        public DateTime(int year, int month, int day, int hour, int minute, int second, int millisecond, DateTimeKind kind) =>
             _dateData = Init(year, month, day, hour, minute, second, millisecond, kind);
-        }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DateTime"/> structure to the specified year, month, day, hour, minute, second,
@@ -478,8 +487,17 @@ namespace System
         /// you can use the corresponding <see cref="DateTimeOffset"/> constructor.
         /// </remarks>
         public DateTime(int year, int month, int day, int hour, int minute, int second, int millisecond, Calendar calendar!!)
-            : this(year, month, day, hour, minute, second, millisecond, 0, calendar)
         {
+            if (second != 60 || !s_systemSupportsLeapSeconds)
+            {
+                _dateData = calendar.ToDateTime(year, month, day, hour, minute, second, millisecond).UTicks;
+            }
+            else
+            {
+                // if we have a leap second, then we adjust it to 59 so that DateTime will consider it the last in the specified minute.
+                this = new DateTime(year, month, day, hour, minute, 59, millisecond, calendar);
+                ValidateLeapSecond();
+            }
         }
 
         /// <summary>
@@ -665,13 +683,8 @@ namespace System
         /// you can use the corresponding <see cref="DateTimeOffset"/> constructor.
         /// </remarks>
         public DateTime(int year, int month, int day, int hour, int minute, int second, int millisecond, int microsecond, Calendar calendar!!)
-        : this(year, month, day, hour, minute, second, millisecond, microsecond, calendar, DateTimeKind.Unspecified)
+            : this(year, month, day, hour, minute, second, millisecond, microsecond, calendar, DateTimeKind.Unspecified)
         {
-            if (microsecond is < 0 or >= MicrosecondsPerMillisecond)
-            {
-                ThrowMicrosecondOutOfRange();
-            }
-            _dateData = new DateTime(_dateData).AddMicroseconds(microsecond)._dateData;
         }
 
         /// <summary>
@@ -737,24 +750,13 @@ namespace System
         /// you can use the corresponding <see cref="DateTimeOffset"/> constructor.
         /// </remarks>
         public DateTime(int year, int month, int day, int hour, int minute, int second, int millisecond, int microsecond, Calendar calendar!!, DateTimeKind kind)
+            : this(year, month, day, hour, minute, second, millisecond, calendar, kind)
         {
-            if (second != 60 || !s_systemSupportsLeapSeconds)
+            if (microsecond is < 0 or >= MicrosecondsPerMillisecond)
             {
-                if (microsecond is < 0 or >= MicrosecondsPerMillisecond)
-                {
-                    ThrowMicrosecondOutOfRange();
-                }
-
-                var dateTime = calendar.ToDateTime(year, month, day, hour, minute, second, millisecond);
-                dateTime = dateTime.AddMicroseconds(microsecond);
-                _dateData = dateTime.UTicks | ((ulong)kind << KindShift);
+                ThrowMicrosecondOutOfRange();
             }
-            else
-            {
-                // if we have a leap second, then we adjust it to 59 so that DateTime will consider it the last in the specified minute.
-                this = new DateTime(year, month, day, hour, minute, 59, millisecond, microsecond, calendar);
-                ValidateLeapSecond();
-            }
+            _dateData = new DateTime(_dateData).AddMicroseconds(microsecond)._dateData;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

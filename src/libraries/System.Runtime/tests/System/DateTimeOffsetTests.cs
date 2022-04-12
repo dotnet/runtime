@@ -14,7 +14,7 @@ namespace System.Tests
         [Fact]
         public static void MaxValue()
         {
-            VerifyDateTimeOffset(DateTimeOffset.MaxValue, 9999, 12, 31, 23, 59, 59, 999, 999, TimeSpan.Zero);
+            VerifyDateTimeOffset(DateTimeOffset.MaxValue, 9999, 12, 31, 23, 59, 59, 999, 999, TimeSpan.Zero, 900);
         }
 
         [Fact]
@@ -36,7 +36,7 @@ namespace System.Tests
             var dateTimeOffset = new DateTimeOffset(new DateTime(2012, 6, 11, 0, 0, 0, 0, DateTimeKind.Utc));
             VerifyDateTimeOffset(dateTimeOffset, 2012, 6, 11, 0, 0, 0, 0, 0, TimeSpan.Zero);
 
-            dateTimeOffset = new DateTimeOffset(new DateTime(1986, 8, 15, 10, 20, 5, 4, DateTimeKind.Local));
+            dateTimeOffset = new DateTimeOffset(new DateTime(1986, 8, 15, 10, 20, 5, 4, 3, DateTimeKind.Local));
             VerifyDateTimeOffset(dateTimeOffset, 1986, 8, 15, 10, 20, 5, 4, 3, null);
 
             DateTimeOffset today = new DateTimeOffset(DateTime.Today);
@@ -81,7 +81,7 @@ namespace System.Tests
             VerifyDateTimeOffset(dateTimeOffset, 1, 1, 1, 0, 0, 0, 0, 0, TimeSpan.FromHours(-14));
 
             dateTimeOffset = new DateTimeOffset(DateTime.MaxValue, TimeSpan.FromHours(14));
-            VerifyDateTimeOffset(dateTimeOffset, 9999, 12, 31, 23, 59, 59, 999, 999, TimeSpan.FromHours(14));
+            VerifyDateTimeOffset(dateTimeOffset, 9999, 12, 31, 23, 59, 59, 999, 999, TimeSpan.FromHours(14), 900);
 
             dateTimeOffset = new DateTimeOffset(new DateTime(2012, 12, 31, 13, 50, 10), TimeSpan.Zero);
             VerifyDateTimeOffset(dateTimeOffset, 2012, 12, 31, 13, 50, 10, 0, 0, TimeSpan.Zero);
@@ -1138,7 +1138,7 @@ namespace System.Tests
             Assert.Equal(default(DateTimeOffset), dateTimeOffset);
         }
 
-        private static void VerifyDateTimeOffset(DateTimeOffset dateTimeOffset, int year, int month, int day, int hour, int minute, int second, int millisecond, int microsecond, TimeSpan? offset)
+        private static void VerifyDateTimeOffset(DateTimeOffset dateTimeOffset, int year, int month, int day, int hour, int minute, int second, int millisecond, int microsecond, TimeSpan? offset, int nanosecond = 0)
         {
             Assert.Equal(year, dateTimeOffset.Year);
             Assert.Equal(month, dateTimeOffset.Month);
@@ -1148,7 +1148,7 @@ namespace System.Tests
             Assert.Equal(second, dateTimeOffset.Second);
             Assert.Equal(millisecond, dateTimeOffset.Millisecond);
             Assert.Equal(microsecond, dateTimeOffset.Microsecond);
-            Assert.Equal(0, dateTimeOffset.Nanosecond);
+            Assert.Equal(nanosecond, dateTimeOffset.Nanosecond);
 
             if (offset.HasValue)
             {
