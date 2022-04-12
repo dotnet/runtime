@@ -9618,7 +9618,7 @@ bool CodeGen::genCanOmitNormalizationForBswap16(GenTree* tree)
     }
 
     GenTreeCast* cast = tree->gtNext->AsCast();
-    if (cast->gtOverflow())
+    if (cast->gtOverflow() || (cast->CastOp() != tree))
     {
         return false;
     }
