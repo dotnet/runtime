@@ -11282,7 +11282,7 @@ namespace System.Runtime.CompilerServices
         public const string RequiredMembers = "RequiredMembers";
         public CompilerFeatureRequiredAttribute(string featureName) { }
         public string FeatureName { get { throw null; } }
-        public bool IsOptional { get { throw null; } set { } }
+        public bool IsOptional { get { throw null; } init { } }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.All, Inherited=true)]
     public sealed partial class CompilerGeneratedAttribute : System.Attribute
