@@ -14,6 +14,8 @@ namespace System.Threading.RateLimiting
 
         public static NoopLimiter Instance { get; } = new NoopLimiter();
 
+        public override TimeSpan? IdleDuration => null;
+
         public override int GetAvailablePermits() => int.MaxValue;
 
         protected override RateLimitLease AcquireCore(int permitCount) => _lease;

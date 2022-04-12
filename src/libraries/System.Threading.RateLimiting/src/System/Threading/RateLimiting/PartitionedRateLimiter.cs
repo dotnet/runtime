@@ -159,9 +159,12 @@ namespace System.Threading.RateLimiting
                 foreach (KeyValuePair<TKey, Lazy<RateLimiter>> kvp in limiter._limiters)
                 {
                     // Check IsValueCreated to avoid potentially blocking inside the lock if the Lazy hasn't been initialized yet
-                    if (kvp.Value.IsValueCreated && kvp.Value.Value is TokenBucketRateLimiter tokenBucketLimiter)
+                    if (kvp.Value.IsValueCreated)
                     {
-                        tokenBucketLimiter.TryReplenish();
+                        if (kvp.Value.Value is ReplenishingRateLimiter replenishingLimiter)
+                        {
+                            replenishingLimiter.TryReplenish();
+                        }
                     }
                 }
             }

@@ -376,6 +376,8 @@ namespace System.Threading.RateLimiting.Tests
             public int DisposeCallCount => _disposeCallCount;
             public int DisposeAsyncCallCount => _disposeAsyncCallCount;
 
+            public override TimeSpan? IdleDuration => throw new NotImplementedException();
+
             public override int GetAvailablePermits()
             {
                 Interlocked.Increment(ref _getAvailablePermitsCallCount);
