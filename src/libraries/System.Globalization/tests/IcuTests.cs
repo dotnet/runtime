@@ -17,26 +17,25 @@ namespace System.Globalization.Tests
         [ConditionalFact(nameof(IsIcuCompatiblePlatform))]
         public static void IcuShouldBeUsedByDefault()
         {
-            if (PlatformDetection.IsNotWindows)
+            Type globalizationMode = Type.GetType("System.Globalization.GlobalizationMode");
+            MethodInfo methodInfo = globalizationMode?.GetProperty("UseNls", BindingFlags.NonPublic | BindingFlags.Static)?.GetMethod;
+
+            if (methodInfo != null)
             {
+                // When it's present
+                Assert.False((bool)methodInfo.Invoke(null, null));
+            }
+            else
+            {
+                // When it's trimmed
                 Type cultureDataType = Type.GetType("System.Globalization.CultureData");
                 Assert.NotNull(cultureDataType);
 
-                MethodInfo methodInfo = cultureDataType.GetMethod("NlsGetCultureDataFromRegionName", BindingFlags.NonPublic | BindingFlags.Static);
+                methodInfo = cultureDataType.GetMethod("NlsGetCultureDataFromRegionName", BindingFlags.NonPublic | BindingFlags.Static);
                 Assert.Null(methodInfo);
 
                 methodInfo = cultureDataType.GetMethod("IcuGetCultureDataFromRegionName", BindingFlags.NonPublic | BindingFlags.Static);
                 Assert.NotNull(methodInfo);
-            }
-            else
-            {
-                Type globalizationMode = Type.GetType("System.Globalization.GlobalizationMode");
-                Assert.NotNull(globalizationMode);
-
-                MethodInfo methodInfo = globalizationMode.GetProperty("UseNls", BindingFlags.NonPublic | BindingFlags.Static)?.GetMethod;
-                Assert.NotNull(methodInfo);
-
-                Assert.False((bool)methodInfo.Invoke(null, null));
             }
         }
 
