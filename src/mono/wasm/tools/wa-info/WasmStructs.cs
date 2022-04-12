@@ -114,11 +114,27 @@ namespace WebAssemblyInfo
                                 sb.Append($"{SIMDImmByteArray[i]:x2}");
                             optional = sb.ToString();
                             break;
+                        case SIMDOpcode.V128_Load8_Lane:
+                        case SIMDOpcode.V128_Load16_Lane:
+                        case SIMDOpcode.V128_Load32_Lane:
+                        case SIMDOpcode.V128_Load64_Lane:
+                        case SIMDOpcode.V128_Store8_Lane:
+                        case SIMDOpcode.V128_Store16_Lane:
+                        case SIMDOpcode.V128_Store32_Lane:
+                        case SIMDOpcode.V128_Store64_Lane:
+                        case SIMDOpcode.I8x16_Extract_Lane_S:
+                        case SIMDOpcode.I8x16_Extract_Lane_U:
                         case SIMDOpcode.I8x16_Replace_Lane:
+                        case SIMDOpcode.I16x8_Extract_Lane_S:
+                        case SIMDOpcode.I16x8_Extract_Lane_U:
                         case SIMDOpcode.I16x8_Replace_Lane:
+                        case SIMDOpcode.I32x4_Extract_Lane:
                         case SIMDOpcode.I32x4_Replace_Lane:
+                        case SIMDOpcode.I64x2_Extract_Lane:
                         case SIMDOpcode.I64x2_Replace_Lane:
+                        case SIMDOpcode.F32x4_Extract_Lane:
                         case SIMDOpcode.F32x4_Replace_Lane:
+                        case SIMDOpcode.F64x2_Extract_Lane:
                         case SIMDOpcode.F64x2_Replace_Lane:
                             optional = $" {SIMDImmLaneIdx}";
                             break;
