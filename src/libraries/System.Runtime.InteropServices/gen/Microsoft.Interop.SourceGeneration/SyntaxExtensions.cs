@@ -29,5 +29,16 @@ namespace Microsoft.Interop
             }
             return fixedStatement.WithStatement(SyntaxFactory.Block(fixedStatement.Statement, childStatement));
         }
+
+        public static SyntaxTokenList AddToModifiers(this SyntaxTokenList modifiers, SyntaxKind modifierToAdd)
+        {
+            if (modifiers.IndexOf(modifierToAdd) >= 0)
+                return modifiers;
+
+            int idx = modifiers.IndexOf(SyntaxKind.PartialKeyword);
+            return idx >= 0
+                ? modifiers.Insert(idx, SyntaxFactory.Token(modifierToAdd))
+                : modifiers.Add(SyntaxFactory.Token(modifierToAdd));
+        }
     }
 }

@@ -13,16 +13,6 @@ namespace Microsoft.Interop
     internal static class Comparers
     {
         /// <summary>
-        /// Comparer for the set of all of the generated stubs and diagnostics generated for each of them.
-        /// </summary>
-        public static readonly IEqualityComparer<ImmutableArray<(string, ImmutableArray<Diagnostic>)>> GeneratedSourceSet = new ImmutableArraySequenceEqualComparer<(string, ImmutableArray<Diagnostic>)>(new CustomValueTupleElementComparer<string, ImmutableArray<Diagnostic>>(EqualityComparer<string>.Default, new ImmutableArraySequenceEqualComparer<Diagnostic>(EqualityComparer<Diagnostic>.Default)));
-
-        /// <summary>
-        /// Comparer for an individual generated stub source as a string and the generated diagnostics for the stub.
-        /// </summary>
-        public static readonly IEqualityComparer<(string, ImmutableArray<Diagnostic>)> GeneratedSource = new CustomValueTupleElementComparer<string, ImmutableArray<Diagnostic>>(EqualityComparer<string>.Default, new ImmutableArraySequenceEqualComparer<Diagnostic>(EqualityComparer<Diagnostic>.Default));
-
-        /// <summary>
         /// Comparer for an individual generated stub source as a syntax tree and the generated diagnostics for the stub.
         /// </summary>
         public static readonly IEqualityComparer<(MemberDeclarationSyntax Syntax, ImmutableArray<Diagnostic> Diagnostics)> GeneratedSyntax = new CustomValueTupleElementComparer<MemberDeclarationSyntax, ImmutableArray<Diagnostic>>(SyntaxEquivalentComparer.Instance, new ImmutableArraySequenceEqualComparer<Diagnostic>(EqualityComparer<Diagnostic>.Default));
@@ -56,23 +46,6 @@ namespace Microsoft.Interop
         }
 
         public int GetHashCode(ImmutableArray<T> obj)
-        {
-            throw new UnreachableException();
-        }
-    }
-
-    internal class SyntaxEquivalentComparer : IEqualityComparer<SyntaxNode>
-    {
-        public static readonly SyntaxEquivalentComparer Instance = new();
-
-        private SyntaxEquivalentComparer() { }
-
-        public bool Equals(SyntaxNode x, SyntaxNode y)
-        {
-            return x.IsEquivalentTo(y);
-        }
-
-        public int GetHashCode(SyntaxNode obj)
         {
             throw new UnreachableException();
         }
