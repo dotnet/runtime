@@ -3,7 +3,7 @@
     <Python>python3</Python>
     <HelixPreCommands>$(HelixPreCommands);chmod +x $HELIX_WORKITEM_PAYLOAD/SOD/SizeOnDisk</HelixPreCommands>
 
-    <PublishArgs>--has-workload --msbuild "/p:_TrimmerDumpDependencies=true" --msbuild-static AdditionalMonoLinkerOptions=%27&quot;%24(AdditionalMonoLinkerOptions) --dump-dependencies&quot;%27</PublishArgs>
+    <PublishArgs>--has-workload --readonly-dotnet --msbuild "/p:_TrimmerDumpDependencies=true" --msbuild-static AdditionalMonoLinkerOptions=%27&quot;%24(AdditionalMonoLinkerOptions) --dump-dependencies&quot;%27</PublishArgs>
     <PublishCommand>$(Python) pre.py publish $(PublishArgs)</PublishCommand>
   </PropertyGroup>
 
