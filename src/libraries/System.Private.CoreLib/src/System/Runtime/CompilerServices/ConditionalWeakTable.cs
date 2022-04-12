@@ -89,6 +89,30 @@ namespace System.Runtime.CompilerServices
             }
         }
 
+        /// <summary>Adds a key to the table if it doesn't already exist.</summary>
+        /// <param name="key">The key to add.</param>
+        /// <param name="value">The key's property value.</param>
+        /// <returns>true if the key/value pair was added; false if the table already contained the key.</returns>
+        public bool TryAdd(TKey key, TValue value) // TODO: Expose in ref assembly https://github.com/dotnet/runtime/issues/29368
+        {
+            if (key is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.key);
+            }
+
+            lock (_lock)
+            {
+                int entryIndex = _container.FindEntry(key, out _);
+                if (entryIndex != -1)
+                {
+                    return false;
+                }
+
+                CreateEntry(key, value);
+                return true;
+            }
+        }
+
         /// <summary>Adds the key and value if the key doesn't exist, or updates the existing key's value if it does exist.</summary>
         /// <param name="key">key to add or update. May not be null.</param>
         /// <param name="value">value to associate with key.</param>

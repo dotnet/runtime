@@ -72,6 +72,7 @@ jobs:
         runKind: micro_mono
         runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
         logicalmachine: 'perfa64'
+        timeoutInMinutes: 500 
 
   # build mono on wasm
   - template: /eng/pipelines/common/platform-matrix.yml
@@ -172,6 +173,7 @@ jobs:
         runKind: micro_mono
         runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
         logicalmachine: 'perftiger'
+        timeoutInMinutes: 500 
 
 # run coreclr Linux arm64 microbenchmarks perf job
   - template: /eng/pipelines/common/platform-matrix.yml
@@ -189,6 +191,7 @@ jobs:
         runKind: micro
         runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
         logicalmachine: 'perfa64'
+        timeoutInMinutes: 500 
 
 # run coreclr Windows arm64 microbenchmarks perf job
   - template: /eng/pipelines/common/platform-matrix.yml

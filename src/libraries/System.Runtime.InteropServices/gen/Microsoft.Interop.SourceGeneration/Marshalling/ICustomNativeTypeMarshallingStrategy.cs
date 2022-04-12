@@ -252,11 +252,13 @@ namespace Microsoft.Interop
     internal sealed class StackallocOptimizationMarshalling : ICustomNativeTypeMarshallingStrategy
     {
         private readonly ICustomNativeTypeMarshallingStrategy _innerMarshaller;
+        private readonly TypeSyntax _bufferElementType;
         private readonly int _bufferSize;
 
-        public StackallocOptimizationMarshalling(ICustomNativeTypeMarshallingStrategy innerMarshaller, int bufferSize)
+        public StackallocOptimizationMarshalling(ICustomNativeTypeMarshallingStrategy innerMarshaller, TypeSyntax bufferElementType, int bufferSize)
         {
             _innerMarshaller = innerMarshaller;
+            _bufferElementType = bufferElementType;
             _bufferSize = bufferSize;
         }
 
@@ -274,16 +276,16 @@ namespace Microsoft.Interop
         {
             if (StackAllocOptimizationValid(info, context))
             {
-                // byte* <managedIdentifier>__stackptr = stackalloc byte[<_bufferSize>];
+                // <bufferElementType>* <managedIdentifier>__stackptr = stackalloc <bufferElementType>[<_bufferSize>];
                 yield return LocalDeclarationStatement(
                 VariableDeclaration(
-                    PointerType(PredefinedType(Token(SyntaxKind.ByteKeyword))),
+                    PointerType(_bufferElementType),
                     SingletonSeparatedList(
                         VariableDeclarator(GetStackAllocPointerIdentifier(info, context))
                             .WithInitializer(EqualsValueClause(
                                 StackAllocArrayCreationExpression(
                                         ArrayType(
-                                            PredefinedType(Token(SyntaxKind.ByteKeyword)),
+                                            _bufferElementType,
                                             SingletonList(ArrayRankSpecifier(SingletonSeparatedList<ExpressionSyntax>(
                                                 LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(_bufferSize))
                                             ))))))))));
@@ -332,7 +334,7 @@ namespace Microsoft.Interop
                     ObjectCreationExpression(
                         GenericName(Identifier(TypeNames.System_Span),
                             TypeArgumentList(SingletonSeparatedList<TypeSyntax>(
-                                PredefinedType(Token(SyntaxKind.ByteKeyword))))))
+                                _bufferElementType))))
                     .WithArgumentList(
                         ArgumentList(SeparatedList(new ArgumentSyntax[]
                         {

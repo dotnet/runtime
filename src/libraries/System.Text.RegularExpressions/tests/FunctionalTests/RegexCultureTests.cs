@@ -106,7 +106,7 @@ namespace System.Text.RegularExpressions.Tests
         /// </summary>
         [Theory]
         [MemberData(nameof(TurkishI_Is_Differently_LowerUpperCased_In_Turkish_Culture_TestData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/56407", TestPlatforms.Android)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/37069", TestPlatforms.Android)]
         public void TurkishI_Is_Differently_LowerUpperCased_In_Turkish_Culture(int length, RegexOptions options)
         {
             var turkish = new CultureInfo("tr-TR");
@@ -117,12 +117,17 @@ namespace System.Text.RegularExpressions.Tests
 
             // same input and regex does match so far so good
             Assert.All(cultInvariantRegex, rex => Assert.True(rex.IsMatch(input)));
-
-            // [ActiveIssue("https://github.com/dotnet/runtime/issues/58958")]
-            // when the Regex was created with a turkish locale the lower cased turkish version will
-            // no longer match the input string which contains upper and lower case iiiis hence even the input string
-            // will no longer match
-            Assert.All(turkishRegex, rex => Assert.False(rex.IsMatch(input)));
+            if (PlatformDetection.IsNetFramework)
+            {
+                // If running in .NET Framework, when the Regex was created with a turkish locale the lower cased turkish version will
+                // no longer match the input string which contains upper and lower case iiiis hence even the input string
+                // will no longer match. For more info, check https://github.com/dotnet/runtime/issues/58958
+                Assert.All(turkishRegex, rex => Assert.False(rex.IsMatch(input)));
+            }
+            else
+            {
+                Assert.All(turkishRegex, rex => Assert.True(rex.IsMatch(input)));
+            }
 
             // Now comes the tricky part depending on the use locale in ToUpper the results differ
             // Hence the regular expression will not match if different locales were used
@@ -186,7 +191,6 @@ namespace System.Text.RegularExpressions.Tests
             Assert.True(turkishRegex.IsMatch(input.ToUpper(turkish)));
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/58958")]
         [Theory]
         [MemberData(nameof(RegexHelpers.AvailableEngines_MemberData), MemberType = typeof(RegexHelpers))]
         public async Task TurkishCulture_Handling_Of_IgnoreCase(RegexEngine engine)
@@ -208,15 +212,10 @@ namespace System.Text.RegularExpressions.Tests
             {
                 yield return new object[] { engine, "I\u0131\u0130i", RegexOptions.None, "I\u0131\u0130i" };
                 yield return new object[] { engine, "I\u0131\u0130i", RegexOptions.IgnoreCase, "I\u0131\u0130i" };
-                if (!RegexHelpers.IsNonBacktracking(engine))
-                {
-                    yield return new object[] { engine, "I\u0131\u0130i", RegexOptions.IgnoreCase | RegexOptions.ECMAScript, "" };
-                }
             }
         }
 
         [Theory]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60568", TestPlatforms.Android)]
         [MemberData(nameof(TurkishCulture_MatchesWordChar_MemberData))]
         public async Task TurkishCulture_MatchesWordChar(RegexEngine engine, string input, RegexOptions options, string expectedResult)
         {
@@ -313,8 +312,6 @@ namespace System.Text.RegularExpressions.Tests
         public static IEnumerable<object[]> Match_In_Different_Cultures_CriticalCases_TestData() =>
             Match_In_Different_Cultures_CriticalCases_TestData_For(RegexEngine.Interpreter).Union(Match_In_Different_Cultures_CriticalCases_TestData_For(RegexEngine.Compiled));
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60899", TestPlatforms.Browser)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60697", TestPlatforms.iOS | TestPlatforms.tvOS)]
         [Theory]
         [MemberData(nameof(Match_In_Different_Cultures_TestData))]
         public async Task Match_In_Different_Cultures(string pattern, RegexOptions options, RegexEngine engine, CultureInfo culture, string input, string match_expected)
@@ -324,8 +321,9 @@ namespace System.Text.RegularExpressions.Tests
             Assert.Equal(match_expected, match.Value);
         }
 
-        [ActiveIssue("Incorrect treatment of IgnoreCase in Turkish and Invariant cultures, https://github.com/dotnet/runtime/issues/58956, https://github.com/dotnet/runtime/issues/58958 ")]
         [Theory]
+        // .NET Framework doesn't use the Regex Casing table for case equivalences.
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         [MemberData(nameof(Match_In_Different_Cultures_CriticalCases_TestData))]
         public async Task Match_In_Different_Cultures_CriticalCases(string pattern, RegexOptions options, RegexEngine engine, CultureInfo culture, string input, string match_expected)
         {
@@ -334,8 +332,9 @@ namespace System.Text.RegularExpressions.Tests
             Assert.Equal(match_expected, match.Value);
         }
 
-        [ActiveIssue("Incorrect result of match in complied mode in Invariant culture, https://github.com/dotnet/runtime/issues/58956")]
         [Fact]
+        // .NET Framework doesn't use the Regex Casing table for case equivalences.
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public void Match_InvariantCulture_None_vs_Compiled()
         {
             string pattern = "(?i:iI+)";
@@ -347,13 +346,11 @@ namespace System.Text.RegularExpressions.Tests
 
         private const char Turkish_I_withDot = '\u0130';
         private const char Turkish_i_withoutDot = '\u0131';
-        private const char Kelvin_sign = '\u212A';
 
         /// <summary>
         /// This test is to make sure that the generated IgnoreCaseRelation table for NonBacktracking does not need to be updated.
         /// It would need to be updated/regenerated if this test fails.
         /// </summary>
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60753")]
         [OuterLoop("May take several seconds due to large number of cultures tested")]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         [Fact]
@@ -415,7 +412,6 @@ namespace System.Text.RegularExpressions.Tests
         /// <summary>
         /// This test currently only works correctly in NonBacktracking mode.
         /// </summary>
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60753")]
         [OuterLoop("May take tens of seconds")]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Doesn't support NonBacktracking")]
         [Theory]

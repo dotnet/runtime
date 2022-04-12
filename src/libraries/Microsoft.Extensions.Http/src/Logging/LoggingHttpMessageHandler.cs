@@ -16,7 +16,7 @@ namespace Microsoft.Extensions.Http.Logging
     public class LoggingHttpMessageHandler : DelegatingHandler
     {
         private ILogger _logger;
-        private readonly HttpClientFactoryOptions _options;
+        private readonly HttpClientFactoryOptions? _options;
 
         private static readonly Func<string, bool> _shouldNotRedactHeaderValue = (header) => false;
 
@@ -72,13 +72,13 @@ namespace Microsoft.Extensions.Http.Logging
 
             private static readonly LogDefineOptions _skipEnabledCheckLogDefineOptions = new LogDefineOptions() { SkipEnabledCheck = true };
 
-            private static readonly Action<ILogger, HttpMethod, string, Exception> _requestStart = LoggerMessage.Define<HttpMethod, string>(
+            private static readonly Action<ILogger, HttpMethod, string?, Exception?> _requestStart = LoggerMessage.Define<HttpMethod, string?>(
                 LogLevel.Information,
                 EventIds.RequestStart,
                 "Sending HTTP request {HttpMethod} {Uri}",
                 _skipEnabledCheckLogDefineOptions);
 
-            private static readonly Action<ILogger, double, int, Exception> _requestEnd = LoggerMessage.Define<double, int>(
+            private static readonly Action<ILogger, double, int, Exception?> _requestEnd = LoggerMessage.Define<double, int>(
                 LogLevel.Information,
                 EventIds.RequestEnd,
                 "Received HTTP response headers after {ElapsedMilliseconds}ms - {StatusCode}");

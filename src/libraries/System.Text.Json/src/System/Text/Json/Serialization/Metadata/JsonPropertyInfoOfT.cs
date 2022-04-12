@@ -43,78 +43,85 @@ namespace System.Text.Json.Serialization.Metadata
             bool isVirtual,
             JsonConverter converter,
             JsonIgnoreCondition? ignoreCondition,
-            JsonNumberHandling? parentTypeNumberHandling,
-            JsonSerializerOptions options)
+            JsonSerializerOptions options,
+            JsonTypeInfo? jsonTypeInfo = null)
         {
-            base.Initialize(
-                parentClassType,
-                declaredPropertyType,
-                converterStrategy,
-                memberInfo,
-                isVirtual,
-                converter,
-                ignoreCondition,
-                parentTypeNumberHandling,
-                options);
+            Debug.Assert(converter != null);
 
-            switch (memberInfo)
+            PropertyType = declaredPropertyType;
+            ConverterStrategy = converterStrategy;
+            if (jsonTypeInfo != null)
             {
-                case PropertyInfo propertyInfo:
-                    {
-                        bool useNonPublicAccessors = GetAttribute<JsonIncludeAttribute>(propertyInfo) != null;
-
-                        MethodInfo? getMethod = propertyInfo.GetMethod;
-                        if (getMethod != null && (getMethod.IsPublic || useNonPublicAccessors))
-                        {
-                            HasGetter = true;
-                            Get = options.MemberAccessorStrategy.CreatePropertyGetter<T>(propertyInfo);
-                        }
-
-                        MethodInfo? setMethod = propertyInfo.SetMethod;
-                        if (setMethod != null && (setMethod.IsPublic || useNonPublicAccessors))
-                        {
-                            HasSetter = true;
-                            Set = options.MemberAccessorStrategy.CreatePropertySetter<T>(propertyInfo);
-                        }
-
-                        MemberType = MemberTypes.Property;
-
-                        break;
-                    }
-
-                case FieldInfo fieldInfo:
-                    {
-                        Debug.Assert(fieldInfo.IsPublic);
-
-                        HasGetter = true;
-                        Get = options.MemberAccessorStrategy.CreateFieldGetter<T>(fieldInfo);
-
-                        if (!fieldInfo.IsInitOnly)
-                        {
-                            HasSetter = true;
-                            Set = options.MemberAccessorStrategy.CreateFieldSetter<T>(fieldInfo);
-                        }
-
-                        MemberType = MemberTypes.Field;
-
-                        break;
-                    }
-
-                default:
-                    {
-                        IsForTypeInfo = true;
-                        HasGetter = true;
-                        HasSetter = true;
-
-                        break;
-                    }
+                JsonTypeInfo = jsonTypeInfo;
             }
 
-            _converterIsExternalAndPolymorphic = !converter.IsInternalConverter && PropertyType != converter.TypeToConvert;
-            PropertyTypeCanBeNull = PropertyType.CanBeNull();
-            _propertyTypeEqualsTypeToConvert = typeof(T) == PropertyType;
+            ConverterBase = converter;
+            Options = options;
+            DeclaringType = parentClassType;
+            MemberInfo = memberInfo;
+            IsVirtual = isVirtual;
+            IgnoreCondition = ignoreCondition;
 
-            GetPolicies(ignoreCondition, parentTypeNumberHandling);
+            if (memberInfo != null)
+            {
+                switch (memberInfo)
+                {
+                    case PropertyInfo propertyInfo:
+                        {
+                            bool useNonPublicAccessors = GetAttribute<JsonIncludeAttribute>(propertyInfo) != null;
+
+                            MethodInfo? getMethod = propertyInfo.GetMethod;
+                            if (getMethod != null && (getMethod.IsPublic || useNonPublicAccessors))
+                            {
+                                HasGetter = true;
+                                Get = options.MemberAccessorStrategy.CreatePropertyGetter<T>(propertyInfo);
+                            }
+
+                            MethodInfo? setMethod = propertyInfo.SetMethod;
+                            if (setMethod != null && (setMethod.IsPublic || useNonPublicAccessors))
+                            {
+                                HasSetter = true;
+                                Set = options.MemberAccessorStrategy.CreatePropertySetter<T>(propertyInfo);
+                            }
+
+                            MemberType = MemberTypes.Property;
+
+                            break;
+                        }
+
+                    case FieldInfo fieldInfo:
+                        {
+                            Debug.Assert(fieldInfo.IsPublic);
+
+                            HasGetter = true;
+                            Get = options.MemberAccessorStrategy.CreateFieldGetter<T>(fieldInfo);
+
+                            if (!fieldInfo.IsInitOnly)
+                            {
+                                HasSetter = true;
+                                Set = options.MemberAccessorStrategy.CreateFieldSetter<T>(fieldInfo);
+                            }
+
+                            MemberType = MemberTypes.Field;
+
+                            break;
+                        }
+
+                    default:
+                        {
+                            Debug.Fail($"Invalid memberInfo type: {memberInfo.GetType().FullName}");
+                            break;
+                        }
+                }
+
+                GetPolicies();
+            }
+            else
+            {
+                IsForTypeInfo = true;
+                HasGetter = true;
+                HasSetter = true;
+            }
         }
 
         internal void InitializeForSourceGen(JsonSerializerOptions options, JsonPropertyInfoValues<T> propertyInfo)
@@ -125,23 +132,21 @@ namespace System.Text.Json.Serialization.Metadata
             // Property name settings.
             if (propertyInfo.JsonPropertyName != null)
             {
-                NameAsString = propertyInfo.JsonPropertyName;
+                Name = propertyInfo.JsonPropertyName;
             }
             else if (options.PropertyNamingPolicy == null)
             {
-                NameAsString = ClrName;
+                Name = ClrName;
             }
             else
             {
-                NameAsString = options.PropertyNamingPolicy.ConvertName(ClrName);
-                if (NameAsString == null)
+                Name = options.PropertyNamingPolicy.ConvertName(ClrName);
+                if (Name == null)
                 {
                     ThrowHelper.ThrowInvalidOperationException_SerializerPropertyNameNull(DeclaringType, this);
                 }
             }
 
-            NameAsUtf8Bytes ??= Encoding.UTF8.GetBytes(NameAsString!);
-            EscapedNameSection ??= JsonHelpers.GetEscapedPropertyNameSection(NameAsUtf8Bytes, Options.Encoder);
             SrcGen_IsPublic = propertyInfo.IsPublic;
             SrcGen_HasJsonInclude = propertyInfo.HasJsonInclude;
             SrcGen_IsExtensionData = propertyInfo.IsExtensionData;
@@ -178,40 +183,20 @@ namespace System.Text.Json.Serialization.Metadata
                 DeclaringType = declaringType;
                 IgnoreCondition = propertyInfo.IgnoreCondition;
                 MemberType = propertyInfo.IsProperty ? MemberTypes.Property : MemberTypes.Field;
-
-                _converterIsExternalAndPolymorphic = !ConverterBase.IsInternalConverter && PropertyType != ConverterBase.TypeToConvert;
-                PropertyTypeCanBeNull = typeof(T).CanBeNull();
-                _propertyTypeEqualsTypeToConvert = ConverterBase.TypeToConvert == typeof(T);
                 ConverterStrategy = Converter!.ConverterStrategy;
-                DetermineIgnoreCondition(IgnoreCondition);
-                // TODO: this method needs to also take the number handling option for the declaring type.
-                DetermineNumberHandlingForProperty(propertyInfo.NumberHandling, declaringTypeNumberHandling: null);
-                DetermineSerializationCapabilities(IgnoreCondition);
+                NumberHandling = propertyInfo.NumberHandling;
             }
         }
 
-        /// <summary>
-        /// Create a <see cref="JsonPropertyInfo"/> for a given Type.
-        /// See <seealso cref="JsonTypeInfo.PropertyInfoForTypeInfo"/>.
-        /// </summary>
-        internal override void InitializeForTypeInfo(
-            Type declaredType,
-            JsonTypeInfo runtimeTypeInfo,
-            JsonConverter converter,
-            JsonSerializerOptions options)
+        internal override void Configure()
         {
-            PropertyType = declaredType;
-            ConverterStrategy = converter.ConverterStrategy;
-            JsonTypeInfo = runtimeTypeInfo;
-            ConverterBase = converter;
-            Options = options;
-            IsForTypeInfo = true;
-            HasGetter = true;
-            HasSetter = true;
-            // TODO (perf): can we pre-compute some of these values during source gen?
-            _converterIsExternalAndPolymorphic = !converter.IsInternalConverter && declaredType != converter.TypeToConvert;
-            PropertyTypeCanBeNull = declaredType.CanBeNull();
-            _propertyTypeEqualsTypeToConvert = typeof(T) == declaredType;
+            base.Configure();
+
+            if (!IsForTypeInfo && !IsIgnored)
+            {
+                _converterIsExternalAndPolymorphic = !ConverterBase.IsInternalConverter && PropertyType != ConverterBase.TypeToConvert;
+                _propertyTypeEqualsTypeToConvert = typeof(T) == PropertyType;
+            }
         }
 
         internal override JsonConverter ConverterBase

@@ -11,7 +11,6 @@ namespace System.Xml.Serialization
     using System.Reflection;
     using System.Text;
     using System.Xml;
-    using System.Xml.Extensions;
     using System.Xml.Schema;
 
     // These classes provide a higher level view on reflection specific to

@@ -309,6 +309,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\FormatException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\FormattableString.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Function.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\GC.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\GCMemoryInfo.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Gen2GcCallback.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\Calendar.cs" />
@@ -579,6 +580,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\BindingFlags.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\CallingConventions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\ConstructorInfo.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\ConstructorInvoker.cs" Condition="'$(TargetsCoreRT)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\CorElementType.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\CustomAttributeData.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\CustomAttributeExtensions.cs" />
@@ -603,6 +605,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\EventInfo.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\ExceptionHandlingClause.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\ExceptionHandlingClauseOptions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\FieldAccessor.cs" Condition="'$(TargetsCoreRT)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\FieldAttributes.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\FieldInfo.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\GenericParameterAttributes.cs" />
@@ -612,6 +615,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\IntrospectionExtensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\InvalidFilterCriteriaException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\InvocationFlags.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\InvokeUtils.cs" Condition="'$(TargetsCoreRT)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\IReflect.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\IReflectableType.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\LocalVariableInfo.cs" />
@@ -625,6 +629,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\MethodImplAttributes.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\MethodInfo.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\MethodInfo.Internal.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\MethodInvoker.cs" Condition="'$(TargetsCoreRT)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Missing.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Module.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\ModuleResolveEventHandler.cs" />
@@ -2372,26 +2377,38 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="$(MSBuildThisFileDirectory)System\IAdditionOperators.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\IAdditiveIdentity.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\IBitwiseOperators.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\IComparisonOperators.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\IDecrementOperators.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\IDivisionOperators.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\IEqualityOperators.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\IFloatingPoint.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\IIncrementOperators.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\IInteger.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\IMinMaxValue.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\IModulusOperators.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\IMultiplicativeIdentity.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\IMultiplyOperators.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\INumber.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\IParseable.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\IShiftOperators.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\ISpanParseable.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\ISubtractionOperators.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\IUnaryNegationOperators.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\IUnaryPlusOperators.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IParsable.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\ISpanParsable.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\IAdditionOperators.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\IAdditiveIdentity.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\IBinaryFloatingPointIeee754.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\IBinaryInteger.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\IBinaryNumber.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\IBitwiseOperators.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\IComparisonOperators.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\IDecrementOperators.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\IDivisionOperators.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\IEqualityOperators.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\IExponentialFunctions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\IFloatingPoint.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\IFloatingPointIeee754.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\IHyperbolicFunctions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\IIncrementOperators.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\ILogarithmicFunctions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\IMinMaxValue.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\IModulusOperators.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\IMultiplicativeIdentity.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\IMultiplyOperators.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\INumber.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\INumberBase.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\IPowerFunctions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\IRootFunctions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\IShiftOperators.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\ISignedNumber.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\ISubtractionOperators.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\ITrigonometricFunctions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\IUnaryNegationOperators.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\IUnaryPlusOperators.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\IUnsignedNumber.cs" />
   </ItemGroup>
 </Project>

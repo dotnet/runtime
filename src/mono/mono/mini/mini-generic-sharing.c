@@ -702,6 +702,7 @@ inflate_info (MonoMemoryManager *mem_manager, MonoRuntimeGenericContextInfoTempl
 		g_assert (is_ok (error));
 		return isig;
 	}
+	case MONO_RGCTX_INFO_VIRT_METHOD:
 	case MONO_RGCTX_INFO_VIRT_METHOD_CODE:
 	case MONO_RGCTX_INFO_VIRT_METHOD_BOX_TYPE: {
 		MonoJumpInfoVirtMethod *info = (MonoJumpInfoVirtMethod *)data;
@@ -2250,6 +2251,7 @@ instantiate_info (MonoMemoryManager *mem_manager, MonoRuntimeGenericContextInfoT
 
 		return mini_get_interp_callbacks ()->create_method_pointer_llvmonly (m, FALSE, error);
 	}
+	case MONO_RGCTX_INFO_VIRT_METHOD:
 	case MONO_RGCTX_INFO_VIRT_METHOD_CODE: {
 		MonoJumpInfoVirtMethod *info = (MonoJumpInfoVirtMethod *)data;
 		MonoClass *iface_class = info->method->klass;
@@ -2270,10 +2272,24 @@ instantiate_info (MonoMemoryManager *mem_manager, MonoRuntimeGenericContextInfoT
 		g_assert (m_class_get_vtable (info->klass));
 		method = m_class_get_vtable (info->klass) [ioffset + slot];
 
-		method = mono_class_inflate_generic_method_checked (method, context, error);
-		return_val_if_nok (error, NULL);
 
-		if (mono_llvm_only) {
+		if (info->method->is_inflated) {
+			MonoGenericContext *method_ctx = mono_method_get_context (info->method);
+			if (method_ctx->method_inst != NULL) {
+				MonoGenericContext tmp_context;
+				tmp_context.class_inst = NULL;
+				tmp_context.method_inst = method_ctx->method_inst;
+
+				// The resolved virtual method can be generic, in which case we need to inflate
+				// it with the type parameters that we are calling with.
+				method = mono_class_inflate_generic_method_checked (method, &tmp_context, error);
+				return_val_if_nok (error, NULL);
+			}
+		}
+
+		if (oti->info_type == MONO_RGCTX_INFO_VIRT_METHOD) {
+			return method;
+		} else if (mono_llvm_only) {
  			gpointer arg = NULL;
 			addr = mini_llvmonly_load_method (method, FALSE, FALSE, &arg, error);
 
@@ -2668,6 +2684,7 @@ mono_rgctx_info_type_to_str (MonoRgctxInfoType type)
 	case MONO_RGCTX_INFO_BZERO: return "BZERO";
 	case MONO_RGCTX_INFO_NULLABLE_CLASS_BOX: return "NULLABLE_CLASS_BOX";
 	case MONO_RGCTX_INFO_NULLABLE_CLASS_UNBOX: return "NULLABLE_CLASS_UNBOX";
+	case MONO_RGCTX_INFO_VIRT_METHOD: return "VIRT_METHOD";
 	case MONO_RGCTX_INFO_VIRT_METHOD_CODE: return "VIRT_METHOD_CODE";
 	case MONO_RGCTX_INFO_VIRT_METHOD_BOX_TYPE: return "VIRT_METHOD_BOX_TYPE";
 	case MONO_RGCTX_INFO_DELEGATE_TRAMP_INFO: return "DELEGATE_TRAMP_INFO";
@@ -2773,6 +2790,7 @@ info_equal (gpointer data1, gpointer data2, MonoRgctxInfoType info_type)
 	case MONO_RGCTX_INFO_SIG_GSHAREDVT_IN_TRAMPOLINE_CALLI:
 	case MONO_RGCTX_INFO_SIG_GSHAREDVT_OUT_TRAMPOLINE_CALLI:
 		return data1 == data2;
+	case MONO_RGCTX_INFO_VIRT_METHOD:
 	case MONO_RGCTX_INFO_VIRT_METHOD_CODE:
 	case MONO_RGCTX_INFO_VIRT_METHOD_BOX_TYPE: {
 		MonoJumpInfoVirtMethod *info1 = (MonoJumpInfoVirtMethod *)data1;
@@ -2835,6 +2853,7 @@ mini_rgctx_info_type_to_patch_info_type (MonoRgctxInfoType info_type)
 		return MONO_PATCH_INFO_METHOD;
 	case MONO_RGCTX_INFO_DELEGATE_TRAMP_INFO:
 		return MONO_PATCH_INFO_DELEGATE_TRAMPOLINE;
+	case MONO_RGCTX_INFO_VIRT_METHOD:
 	case MONO_RGCTX_INFO_VIRT_METHOD_CODE:
 	case MONO_RGCTX_INFO_VIRT_METHOD_BOX_TYPE:
 		return MONO_PATCH_INFO_VIRT_METHOD;

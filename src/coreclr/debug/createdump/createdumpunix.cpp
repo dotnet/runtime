@@ -19,11 +19,11 @@ CreateDump(const char* dumpPathTemplate, int pid, const char* dumpType, MINIDUMP
     {
         goto exit;
     }
-    printf("Gathering state for process %d %s\n", pid, crashInfo->Name().c_str());
+    printf_status("Gathering state for process %d %s\n", pid, crashInfo->Name().c_str());
 
     if (signal != 0 || crashThread != 0)
     {
-        printf("Crashing thread %08x signal %08x\n", crashThread, signal);
+        printf_status("Crashing thread %08x signal %08x\n", crashThread, signal);
     }
 
     // Suspend all the threads in the target process and build the list of threads
@@ -52,7 +52,7 @@ CreateDump(const char* dumpPathTemplate, int pid, const char* dumpType, MINIDUMP
     {
         goto exit;
     }
-    fprintf(stdout, "Writing %s to file %s\n", dumpType, dumpPath.c_str());
+    printf_status("Writing %s to file %s\n", dumpType, dumpPath.c_str());
 
     // Write the actual dump file
     if (!dumpWriter.OpenDump(dumpPath.c_str()))
@@ -61,7 +61,7 @@ CreateDump(const char* dumpPathTemplate, int pid, const char* dumpType, MINIDUMP
     }
     if (!dumpWriter.WriteDump())
     {
-        fprintf(stderr, "Writing dump FAILED\n");
+        printf_error( "Writing dump FAILED\n");
 
         // Delete the partial dump file on error
         remove(dumpPath.c_str());

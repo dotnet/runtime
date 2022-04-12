@@ -219,10 +219,6 @@ inline bool AddressIsBreakpoint(CORDB_ADDRESS_TYPE *address)
     return *address == CORDbg_BREAK_INSTRUCTION;
 }
 
-inline BOOL IsRunningOnWin95() {
-    return false;
-}
-
 inline void SetSSFlag(DT_CONTEXT *pContext)
 {
     _ASSERTE(pContext != NULL);

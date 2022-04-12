@@ -337,8 +337,8 @@ namespace System.Text.Json.Serialization
                             break;
 
                         case ReferenceHandlingStrategy.Preserve:
-                            bool canHaveIdMetata = polymorphicConverter?.CanHaveIdMetadata ?? CanHaveIdMetadata;
-                            if (canHaveIdMetata && JsonSerializer.TryGetReferenceForValue(value, ref state, writer))
+                            bool canHaveMetadata = polymorphicConverter?.CanHaveMetadata ?? CanHaveMetadata;
+                            if (canHaveMetadata && JsonSerializer.TryGetReferenceForValue(value, ref state, writer))
                             {
                                 // We found a repeating reference and wrote the relevant metadata; serialization complete.
                                 return true;

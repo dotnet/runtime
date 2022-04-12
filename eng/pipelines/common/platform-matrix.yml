@@ -303,7 +303,7 @@ jobs:
       targetRid: browser-wasm
       platform: Browser_wasm
       container:
-        image: ubuntu-18.04-webassembly-20220118141522-180197c
+        image: ubuntu-18.04-webassembly-20220317214646-1ad56e8
         registry: mcr
       jobParameters:
         hostedOs: Linux

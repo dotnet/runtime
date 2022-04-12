@@ -370,10 +370,9 @@ public:
         }
         CONTRACTL_END;
 
-        GCX_COOP();
-        CrstHolder holder(&m_mapCrst);
+        CrstHolder holder(&s_mapCrst);
 
-        auto lambda = [&](OBJECTREF obj, MethodDesc *lambdaInlinee, MethodDesc *lambdaInliner)
+        auto lambda = [&](LoaderAllocator *loaderAllocatorOfInliner, MethodDesc *lambdaInlinee, MethodDesc *lambdaInliner)
         {
             _ASSERTE(lambdaInlinee == inlinee);
 
@@ -383,10 +382,18 @@ public:
         m_map.VisitValuesOfKey(inlinee, lambda);
     }
 
+    static void StaticInitialize()
+    {
+        WRAPPER_NO_CONTRACT;
+        s_mapCrst.Init(CrstJitInlineTrackingMap);
+    }
+
+    static CrstBase *GetMapCrst() { return &s_mapCrst; }
+
 private:
     BOOL InliningExistsDontTakeLock(MethodDesc *inliner, MethodDesc *inlinee);
 
-    Crst m_mapCrst;
+    static CrstStatic s_mapCrst;
     InliningInfoTrackerHash m_map;
 };
 
