@@ -56,6 +56,7 @@ namespace System.Net.Security.Tests
 
         [Theory]
         [MemberData(nameof(ProtocolMismatchData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/65098")]
         public async Task ClientAsyncAuthenticate_MismatchProtocols_Fails(
             SslProtocols clientProtocol,
             SslProtocols serverProtocol,
@@ -143,16 +144,18 @@ namespace System.Net.Security.Tests
                 try
                 {
                     Task clientTask = client.AuthenticateAsClientAsync(new SslClientAuthenticationOptions
-                        {
-                            EnabledSslProtocols = clientSslProtocols,
-                            RemoteCertificateValidationCallback = AllowAnyServerCertificate,
-                            TargetHost = serverName });
-                    serverTask = server.AuthenticateAsServerAsync( new SslServerAuthenticationOptions
-                        {
-                            EncryptionPolicy = encryptionPolicy,
-                            EnabledSslProtocols = serverSslProtocols,
-                            ServerCertificate = TestConfiguration.ServerCertificate,
-                            CertificateRevocationCheckMode = X509RevocationMode.NoCheck });
+                    {
+                        EnabledSslProtocols = clientSslProtocols,
+                        RemoteCertificateValidationCallback = AllowAnyServerCertificate,
+                        TargetHost = serverName
+                    });
+                    serverTask = server.AuthenticateAsServerAsync(new SslServerAuthenticationOptions
+                    {
+                        EncryptionPolicy = encryptionPolicy,
+                        EnabledSslProtocols = serverSslProtocols,
+                        ServerCertificate = TestConfiguration.ServerCertificate,
+                        CertificateRevocationCheckMode = X509RevocationMode.NoCheck
+                    });
 
                     await clientTask.WaitAsync(TestConfiguration.PassingTestTimeout);
 
