@@ -265,7 +265,7 @@ namespace ILCompiler
         {
             bool canConstructPerWholeProgramAnalysis = _devirtualizationManager == null ? true : _devirtualizationManager.CanConstructType(type);
             bool creationAllowed = DependencyAnalysis.ConstructedEETypeNode.CreationAllowed(type);
-            return canConstructPerWholeProgramAnalysis & creationAllowed
+            return (canConstructPerWholeProgramAnalysis && creationAllowed)
                 ? ReadyToRunHelperId.TypeHandle
                 : ReadyToRunHelperId.NecessaryTypeHandle;
         }
