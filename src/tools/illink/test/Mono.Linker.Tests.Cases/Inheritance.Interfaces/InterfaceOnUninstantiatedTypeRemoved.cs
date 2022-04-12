@@ -3,7 +3,6 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces
 {
-	[SetupLinkerArgument ("--disable-opt", "unusedinterfaces")]
 	public class InterfaceOnUninstantiatedTypeRemoved
 	{
 		public static void Main ()
