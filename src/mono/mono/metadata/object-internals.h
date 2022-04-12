@@ -148,17 +148,10 @@ mono_array_new_cached_handle_function (MonoClass *aclass, int size, MonoError *e
 #define mono_array_new_cached_handle(eclass, size, error) \
 	mono_array_new_cached_handle_function (mono_array_class_get_cached (eclass), (size), (error))
 
-#ifdef MONO_BIG_ARRAYS
-typedef uint64_t mono_array_size_t;
-typedef int64_t mono_array_lower_bound_t;
-#define MONO_ARRAY_MAX_INDEX G_MAXINT64
-#define MONO_ARRAY_MAX_SIZE  G_MAXUINT64
-#else
 typedef uint32_t mono_array_size_t;
 typedef int32_t mono_array_lower_bound_t;
 #define MONO_ARRAY_MAX_INDEX ((int32_t) 0x7fffffff)
 #define MONO_ARRAY_MAX_SIZE  ((uint32_t) 0xffffffff)
-#endif
 
 typedef struct {
 	mono_array_size_t length;
@@ -178,7 +171,7 @@ struct _MonoArray {
 /* match the layout of the managed definition of Span<T> */
 #define MONO_DEFINE_SPAN_OF_T(name, type)	\
 	typedef struct {	\
-		type* _pointer;	\
+		type* _reference;	\
 		uint32_t _length;	\
 	} name;
 
@@ -287,9 +280,9 @@ mono_handle_array_get_bounds_dim (MonoArrayHandle arr, gint32 dim, MonoArrayBoun
 
 #define mono_span_length(span) (span->_length)
 
-#define mono_span_get(span,type,idx) (type)(!span->_pointer ? (type)0 : span->_pointer[idx])
+#define mono_span_get(span,type,idx) (type)(!span->_reference ? (type)0 : span->_reference[idx])
 
-#define mono_span_addr(span,type,idx) (type*)(span->_pointer + idx)
+#define mono_span_addr(span,type,idx) (type*)(span->_reference + idx)
 
 #define mono_span_setref(span,index,value)	\
 	do {	\
@@ -303,10 +296,10 @@ mono_span_create_from_object_array (MonoArray *arr) {
 	MonoSpanOfObjects span;
 	if (arr != NULL) {
 		span._length = (int32_t)mono_array_length_internal (arr);
-		span._pointer = mono_array_addr_fast (arr, MonoObject*, 0);
+		span._reference = mono_array_addr_fast (arr, MonoObject*, 0);
 	} else {
 		span._length = 0;
-		span._pointer = NULL;
+		span._reference = NULL;
 	}
 	return span;
 }
@@ -2129,12 +2122,12 @@ mono_gc_wbarrier_object_copy_internal (MonoObject* obj, MonoObject *src);
 MONO_COMPONENT_API char *
 mono_runtime_get_managed_cmd_line (void);
 
-char *
-mono_runtime_get_cmd_line (int argc, char **argv);
-
 #ifdef HOST_WASM
 int
 mono_string_instance_is_interned (MonoString *str);
 #endif
+
+gpointer
+mono_method_get_unmanaged_wrapper_ftnptr_internal (MonoMethod *method, gboolean only_unmanaged_callers_only, MonoError *error);
 
 #endif /* __MONO_OBJECT_INTERNALS_H__ */

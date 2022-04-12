@@ -362,7 +362,7 @@ namespace System
         //  a user, or that was copied & pasted from a document. That is, we do not
         //  expect already encoded URI to be supplied.
         //
-        public Uri(string uriString!!)
+        public Uri([StringSyntax(StringSyntaxAttribute.Uri)] string uriString!!)
         {
             CreateThis(uriString, false, UriKind.Absolute);
             DebugSetLeftCtor();
@@ -374,7 +374,7 @@ namespace System
         //  Uri constructor. Assumes that input string is canonically escaped
         //
         [Obsolete("This constructor has been deprecated; the dontEscape parameter is always false. Use Uri(string) instead.")]
-        public Uri(string uriString!!, bool dontEscape)
+        public Uri([StringSyntax(StringSyntaxAttribute.Uri)] string uriString!!, bool dontEscape)
         {
             CreateThis(uriString, dontEscape, UriKind.Absolute);
             DebugSetLeftCtor();
@@ -399,7 +399,7 @@ namespace System
         //
         // Uri(string, UriKind);
         //
-        public Uri(string uriString!!, UriKind uriKind)
+        public Uri([StringSyntax(StringSyntaxAttribute.Uri, "uriKind")] string uriString!!, UriKind uriKind)
         {
             CreateThis(uriString, false, uriKind);
             DebugSetLeftCtor();
@@ -410,7 +410,7 @@ namespace System
         /// </summary>
         /// <param name="uriString">A string that identifies the resource to be represented by the <see cref="Uri"/> instance.</param>
         /// <param name="creationOptions">Options that control how the <seealso cref="Uri"/> is created and behaves.</param>
-        public Uri(string uriString!!, in UriCreationOptions creationOptions)
+        public Uri([StringSyntax(StringSyntaxAttribute.Uri)] string uriString!!, in UriCreationOptions creationOptions)
         {
             CreateThis(uriString, false, UriKind.Absolute, in creationOptions);
             DebugSetLeftCtor();
@@ -3055,7 +3055,7 @@ namespace System
         }
 
         // Cut trailing spaces
-        private void GetLengthWithoutTrailingSpaces(string str, ref int length, int idx)
+        private static void GetLengthWithoutTrailingSpaces(string str, ref int length, int idx)
         {
             // to avoid dereferencing ref length parameter for every update
             int local = length;
@@ -4207,7 +4207,7 @@ namespace System
             return end;
         }
 
-        private unsafe void CheckAuthorityHelperHandleDnsIri(char* pString, int start, int end,
+        private static unsafe void CheckAuthorityHelperHandleDnsIri(char* pString, int start, int end,
             bool hasUnicode, ref Flags flags,
             ref bool justNormalized, ref string? newHost, ref ParsingError err)
         {
@@ -5153,7 +5153,7 @@ namespace System
         //  UTF-8 sequences (e.g. %C4%D2 == 'Latin capital Ligature Ij')
         //
         /// <internalonly/>
-        [Obsolete("Uri.Unescape has been deprecated. Use GetComponents() or static UnescapeDataString() to unescape a Uri component or a string.")]
+        [Obsolete("Uri.Unescape has been deprecated. Use GetComponents() or Uri.UnescapeDataString() to unescape a Uri component or a string.")]
         protected virtual string Unescape(string path)
         {
             // This method is dangerous since it gives path unescaping control

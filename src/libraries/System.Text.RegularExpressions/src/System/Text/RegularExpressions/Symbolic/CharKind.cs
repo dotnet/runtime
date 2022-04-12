@@ -11,8 +11,8 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <summary>All characters other than those in the four other kinds.</summary>
         internal const uint General = 0;
 
-        /// <summary>Start or Stop of input (bit 0 is 1)</summary>
-        internal const uint StartStop = 1;
+        /// <summary>Beginning or End of input (bit 0 is 1)</summary>
+        internal const uint BeginningEnd = 1;
 
         /// <summary>New line character (\n) (bit 1 is 1)</summary>
         internal const uint Newline = 2;
@@ -37,7 +37,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
         internal static string DescribePrev(uint i) => i switch
         {
-            StartStop => @"\A",
+            BeginningEnd => @"\A",
             Newline => @"\n",
             NewLineS => @"\A\n",
             WordLetter => @"\w",

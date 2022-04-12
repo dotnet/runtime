@@ -97,14 +97,6 @@ g_setenv(const gchar *variable, const gchar *value, gboolean overwrite)
 	return res;
 }
 
-void
-g_unsetenv(const gchar *variable)
-{
-	pthread_mutex_lock (&env_lock);
-	unsetenv(variable);
-	pthread_mutex_unlock (&env_lock);
-}
-
 gchar*
 g_win32_getlocale(void)
 {

@@ -26,19 +26,19 @@ namespace System.Drawing.Printing
             return lib;
         }
 
-        [GeneratedDllImport(LibraryName)]
+        [LibraryImport(LibraryName)]
         internal static partial int cupsGetDests(ref IntPtr dests);
 
-        [GeneratedDllImport(LibraryName)]
+        [LibraryImport(LibraryName)]
         internal static partial void cupsFreeDests(int num_dests, IntPtr dests);
 
-        [GeneratedDllImport(LibraryName)]
+        [LibraryImport(LibraryName)]
         internal static partial IntPtr cupsTempFd(sbyte[] sb, int len);
 
-        [GeneratedDllImport(LibraryName)]
+        [LibraryImport(LibraryName)]
         internal static partial IntPtr cupsGetDefault();
 
-        [GeneratedDllImport(LibraryName)]
+        [LibraryImport(LibraryName)]
         internal static partial int cupsPrintFile(
             [MarshalAs(UnmanagedType.LPUTF8Str)] string printer,
             [MarshalAs(UnmanagedType.LPUTF8Str)] string filename,
@@ -46,22 +46,22 @@ namespace System.Drawing.Printing
             int num_options,
             IntPtr options);
 
-        [GeneratedDllImport(LibraryName)]
+        [LibraryImport(LibraryName)]
         internal static partial IntPtr cupsGetPPD([MarshalAs(UnmanagedType.LPUTF8Str)] string printer);
 
-        [GeneratedDllImport(LibraryName)]
+        [LibraryImport(LibraryName)]
         internal static partial IntPtr ppdOpenFile([MarshalAs(UnmanagedType.LPUTF8Str)] string filename);
 
-        [GeneratedDllImport(LibraryName)]
+        [LibraryImport(LibraryName)]
         internal static partial IntPtr ppdFindOption(IntPtr ppd_file, [MarshalAs(UnmanagedType.LPUTF8Str)] string keyword);
 
-        [GeneratedDllImport(LibraryName)]
+        [LibraryImport(LibraryName)]
         internal static partial void ppdClose(IntPtr ppd);
 
-        [GeneratedDllImport(LibraryName)]
+        [LibraryImport(LibraryName)]
         internal static partial int cupsParseOptions([MarshalAs(UnmanagedType.LPUTF8Str)] string arg, int number_of_options, ref IntPtr options);
 
-        [GeneratedDllImport(LibraryName)]
+        [LibraryImport(LibraryName)]
         internal static partial void cupsFreeOptions(int number_options, IntPtr options);
     }
 }

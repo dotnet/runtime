@@ -61,7 +61,6 @@ namespace System.Net
                 internalBuffer);
         }
 
-        [EditorBrowsable(EditorBrowsableState.Never)]
         public Task<HttpListenerWebSocketContext> AcceptWebSocketAsync(string? subProtocol,
             int receiveBufferSize,
             TimeSpan keepAliveInterval,

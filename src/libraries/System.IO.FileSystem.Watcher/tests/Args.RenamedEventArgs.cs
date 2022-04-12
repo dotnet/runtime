@@ -68,16 +68,6 @@ namespace System.IO.Tests
         }
 
         [Theory]
-        [PlatformSpecific(TestPlatforms.Windows)]
-        [InlineData("C:", "foo.txt", "bar.txt")]
-        public static void RenamedEventArgs_ctor_OldFullPath_DirectoryIsRelativePathFromCurrentDirectoryInGivenDrive(string directory, string name, string oldName)
-        {
-            RenamedEventArgs args = new RenamedEventArgs(WatcherChangeTypes.All, directory, name, oldName);
-
-            Assert.Equal(Path.Combine(Directory.GetCurrentDirectory(), oldName), args.OldFullPath);
-        }
-
-        [Theory]
         [InlineData("bar", "", "")]
         [InlineData("bar", null, null)]
         [InlineData("bar", "foo.txt", null)]

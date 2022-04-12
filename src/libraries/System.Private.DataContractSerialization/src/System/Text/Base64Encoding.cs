@@ -41,13 +41,13 @@ namespace System.Text
             return charCount / 4 * 3;
         }
 
-        private bool IsValidLeadBytes(int v1, int v2, int v3, int v4)
+        private static bool IsValidLeadBytes(int v1, int v2, int v3, int v4)
         {
             // First two chars of a four char base64 sequence can't be ==, and must be valid
             return ((v1 | v2) < 64) && ((v3 | v4) != 0xFF);
         }
 
-        private bool IsValidTailBytes(int v3, int v4)
+        private static bool IsValidTailBytes(int v3, int v4)
         {
             // If the third char is = then the fourth char must be =
             return !(v3 == 64 && v4 != 64);

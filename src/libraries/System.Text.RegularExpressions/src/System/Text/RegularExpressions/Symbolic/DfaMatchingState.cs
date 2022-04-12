@@ -9,24 +9,21 @@ using System.Net;
 namespace System.Text.RegularExpressions.Symbolic
 {
     /// <summary>Captures a state of a DFA explored during matching.</summary>
-    internal sealed class DfaMatchingState<T> where T : notnull
+    internal sealed class DfaMatchingState<TSet> where TSet : IComparable<TSet>
     {
-        internal DfaMatchingState(SymbolicRegexNode<T> node, uint prevCharKind)
+        internal DfaMatchingState(SymbolicRegexNode<TSet> node, uint prevCharKind)
         {
             Node = node;
             PrevCharKind = prevCharKind;
         }
 
-        internal SymbolicRegexNode<T> Node { get; }
+        internal SymbolicRegexNode<TSet> Node { get; }
 
         internal uint PrevCharKind { get; }
 
         internal int Id { get; set; }
 
         internal bool IsInitialState { get; set; }
-
-        /// <summary>State is lazy</summary>
-        internal bool IsLazy => Node._info.IsLazy;
 
         /// <summary>This is a deadend state</summary>
         internal bool IsDeadend => Node.IsNothing;
@@ -58,23 +55,23 @@ namespace System.Text.RegularExpressions.Symbolic
         internal bool StartsWithLineAnchor => Node._info.StartsWithLineAnchor;
 
         /// <summary>
-        /// Translates a minterm predicate to a character kind, which is a general categorization of characters used
+        /// Translates a minterm set to a character kind, which is a general categorization of characters used
         /// for cheaply deciding the nullability of anchors.
         /// </summary>
         /// <remarks>
-        /// A False predicate is handled as a special case to indicate the very last \n.
+        /// An empty set is handled as a special case to indicate the very last \n.
         /// </remarks>
         /// <param name="minterm">the minterm to translate</param>
         /// <returns>the character kind of the minterm</returns>
-        private uint GetNextCharKind(ref T minterm)
+        private uint GetNextCharKind(ref TSet minterm)
         {
-            ICharAlgebra<T> alg = Node._builder._solver;
-            T wordLetterPredicate = Node._builder._wordLetterPredicateForAnchors;
-            T newLinePredicate = Node._builder._newLinePredicate;
+            ISolver<TSet> solver = Node._builder._solver;
+            TSet wordLetterPredicate = Node._builder._wordLetterForBoundariesSet;
+            TSet newLinePredicate = Node._builder._newLineSet;
 
             // minterm == solver.False is used to represent the very last \n
             uint nextCharKind = CharKind.General;
-            if (alg.False.Equals(minterm))
+            if (solver.Empty.Equals(minterm))
             {
                 nextCharKind = CharKind.NewLineS;
                 minterm = newLinePredicate;
@@ -84,11 +81,11 @@ namespace System.Text.RegularExpressions.Symbolic
                 // If the previous state was the start state, mark this as the very FIRST \n.
                 // Essentially, this looks the same as the very last \n and is used to nullify
                 // rev(\Z) in the conext of a reversed automaton.
-                nextCharKind = PrevCharKind == CharKind.StartStop ?
+                nextCharKind = PrevCharKind == CharKind.BeginningEnd ?
                     CharKind.NewLineS :
                     CharKind.Newline;
             }
-            else if (alg.IsSatisfiable(alg.And(wordLetterPredicate, minterm)))
+            else if (!solver.IsEmpty(solver.And(wordLetterPredicate, minterm)))
             {
                 nextCharKind = CharKind.WordLetter;
             }
@@ -100,7 +97,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// If <paramref name="minterm"/> is False this means that this is \n and it is the last character of the input.
         /// </summary>
         /// <param name="minterm">minterm corresponding to some input character or False corresponding to last \n</param>
-        internal DfaMatchingState<T> Next(T minterm)
+        internal DfaMatchingState<TSet> Next(TSet minterm)
         {
             uint nextCharKind = GetNextCharKind(ref minterm);
 
@@ -108,7 +105,7 @@ namespace System.Text.RegularExpressions.Symbolic
             uint context = CharKind.Context(PrevCharKind, nextCharKind);
 
             // Compute the derivative of the node for the given context
-            SymbolicRegexNode<T> derivative = Node.CreateDerivativeWithEffects(eager: true).TransitionOrdered(minterm, context);
+            SymbolicRegexNode<TSet> derivative = Node.CreateDerivative(minterm, context);
 
             // nextCharKind will be the PrevCharKind of the target state
             // use an existing state instead if one exists already
@@ -121,7 +118,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// </summary>
         /// <param name="minterm">minterm corresponding to some input character or False corresponding to last \n</param>
         /// <returns>an enumeration of the transitions as pairs of the target state and a list of effects to be applied</returns>
-        internal List<(DfaMatchingState<T> derivative, List<DerivativeEffect> effects)> AntimirovEagerNextWithEffects(T minterm)
+        internal List<(DfaMatchingState<TSet> State, DerivativeEffect[] Effects)> NfaNextWithEffects(TSet minterm)
         {
             uint nextCharKind = GetNextCharKind(ref minterm);
 
@@ -129,16 +126,15 @@ namespace System.Text.RegularExpressions.Symbolic
             uint context = CharKind.Context(PrevCharKind, nextCharKind);
 
             // Compute the transitions for the given context
-            IEnumerable<(SymbolicRegexNode<T>, List<DerivativeEffect>)> derivativesAndEffects =
-                Node.CreateDerivativeWithEffects(eager: true).TransitionsWithEffects(minterm, context);
+            List<(SymbolicRegexNode<TSet>, DerivativeEffect[])> nodesAndEffects = Node.CreateNfaDerivativeWithEffects(minterm, context);
 
-            var list = new List<(DfaMatchingState<T> derivative, List<DerivativeEffect> effects)>();
-            foreach ((SymbolicRegexNode<T> derivative, List<DerivativeEffect> effects) in derivativesAndEffects)
+            var list = new List<(DfaMatchingState<TSet> State, DerivativeEffect[] Effects)>();
+            foreach ((SymbolicRegexNode<TSet> node, DerivativeEffect[]? effects) in nodesAndEffects)
             {
                 // nextCharKind will be the PrevCharKind of the target state
                 // use an existing state instead if one exists already
                 // otherwise create a new new id for it
-                list.Add((Node._builder.CreateState(derivative, nextCharKind, capturing: true), effects));
+                list.Add((Node._builder.CreateState(node, nextCharKind, capturing: true), effects));
             }
             return list;
         }
@@ -146,13 +142,13 @@ namespace System.Text.RegularExpressions.Symbolic
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal bool IsNullable(uint nextCharKind)
         {
-            Debug.Assert(nextCharKind is 0 or CharKind.StartStop or CharKind.Newline or CharKind.WordLetter or CharKind.NewLineS);
+            Debug.Assert(nextCharKind is 0 or CharKind.BeginningEnd or CharKind.Newline or CharKind.WordLetter or CharKind.NewLineS);
             uint context = CharKind.Context(PrevCharKind, nextCharKind);
             return Node.IsNullableFor(context);
         }
 
         public override bool Equals(object? obj) =>
-            obj is DfaMatchingState<T> s && PrevCharKind == s.PrevCharKind && Node.Equals(s.Node);
+            obj is DfaMatchingState<TSet> s && PrevCharKind == s.PrevCharKind && Node.Equals(s.Node);
 
         public override int GetHashCode() => (PrevCharKind, Node).GetHashCode();
 

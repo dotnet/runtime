@@ -1188,6 +1188,7 @@ namespace System.Net.Http
             }
 #pragma warning restore 0618
 
+#pragma warning disable SYSLIB0039 // TLS 1.0 and 1.1 are obsolete
             if ((sslProtocols & SslProtocols.Tls) != 0)
             {
                 optionData |= Interop.WinHttp.WINHTTP_FLAG_SECURE_PROTOCOL_TLS1;
@@ -1197,6 +1198,7 @@ namespace System.Net.Http
             {
                 optionData |= Interop.WinHttp.WINHTTP_FLAG_SECURE_PROTOCOL_TLS1_1;
             }
+#pragma warning restore SYSLIB0039
 
             if ((sslProtocols & SslProtocols.Tls12) != 0)
             {
@@ -1582,7 +1584,7 @@ namespace System.Net.Http
             }
         }
 
-        private void HandleAsyncException(WinHttpRequestState state, Exception ex)
+        private static void HandleAsyncException(WinHttpRequestState state, Exception ex)
         {
             Debug.Assert(state.Tcs != null);
             if (state.CancellationToken.IsCancellationRequested)
@@ -1701,7 +1703,7 @@ namespace System.Net.Http
             return state.LifecycleAwaitable;
         }
 
-        private async Task InternalSendRequestBodyAsync(WinHttpRequestState state, WinHttpChunkMode chunkedModeForSend)
+        private static async Task InternalSendRequestBodyAsync(WinHttpRequestState state, WinHttpChunkMode chunkedModeForSend)
         {
             Debug.Assert(state.RequestMessage != null);
             Debug.Assert(state.RequestMessage.Content != null);

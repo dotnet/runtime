@@ -4,6 +4,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)</TargetFrameworks>
     <Nullable>enable</Nullable>
+    <EnableRegexGenerator>true</EnableRegexGenerator>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonPath)System\Text\StringBuilderCache.cs" Link="Common\System\StringBuilderCache.cs" />
@@ -513,7 +514,6 @@
     <Compile Include="System\Xml\Serialization\TypeExtensions.cs" />
     <Compile Include="System\Xml\Serialization\PrimitiveXmlSerializers.cs" />
     <Compile Include="System\Xml\Serialization\Configuration\DateTimeSerializationSection.cs" />
-    <Compile Include="System\Xml\Extensions\ExtensionMethods.cs" />
     <Compile Include="System\Xml\Serialization\Globals.cs" />
   </ItemGroup>
   <!-- Embedded DTD files -->

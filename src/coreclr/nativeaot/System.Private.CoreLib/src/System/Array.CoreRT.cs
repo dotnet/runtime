@@ -51,7 +51,7 @@ namespace System
         {
             get
             {
-                return this.EETypePtr.BaseSize == SZARRAY_BASE_SIZE;
+                return this.GetEETypePtr().BaseSize == SZARRAY_BASE_SIZE;
             }
         }
 
@@ -63,145 +63,38 @@ namespace System
             return EETypePtr.EETypePtrOf<Array>().ToPointer();
         }
 
-        [RequiresDynamicCode("The native code for the array might not be available at runtime.")]
-        public static Array CreateInstance(Type elementType, int length)
+        [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
+        private static unsafe Array InternalCreate(RuntimeType elementType, int rank, int* pLengths, int* pLowerBounds)
         {
-            if (elementType is null)
-                throw new ArgumentNullException(nameof(elementType));
-
-            return CreateSzArray(elementType, length);
-        }
-
-        [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
-            Justification = "MDArrays of Rank != 1 can be created because they don't implement generic interfaces.")]
-        public static unsafe Array CreateInstance(Type elementType, int length1, int length2)
-        {
-            if (elementType is null)
-                throw new ArgumentNullException(nameof(elementType));
-            if (length1 < 0)
-                throw new ArgumentOutOfRangeException(nameof(length1));
-            if (length2 < 0)
-                throw new ArgumentOutOfRangeException(nameof(length2));
-
-            Type arrayType = GetArrayTypeFromElementType(elementType, true, 2);
-            int* pLengths = stackalloc int[2];
-            pLengths[0] = length1;
-            pLengths[1] = length2;
-            return NewMultiDimArray(arrayType.TypeHandle.ToEETypePtr(), pLengths, 2);
-        }
-
-        [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
-            Justification = "MDArrays of Rank != 1 can be created because they don't implement generic interfaces.")]
-        public static unsafe Array CreateInstance(Type elementType, int length1, int length2, int length3)
-        {
-            if (elementType is null)
-                throw new ArgumentNullException(nameof(elementType));
-            if (length1 < 0)
-                throw new ArgumentOutOfRangeException(nameof(length1));
-            if (length2 < 0)
-                throw new ArgumentOutOfRangeException(nameof(length2));
-            if (length3 < 0)
-                throw new ArgumentOutOfRangeException(nameof(length3));
-
-            Type arrayType = GetArrayTypeFromElementType(elementType, true, 3);
-            int* pLengths = stackalloc int[3];
-            pLengths[0] = length1;
-            pLengths[1] = length2;
-            pLengths[2] = length3;
-            return NewMultiDimArray(arrayType.TypeHandle.ToEETypePtr(), pLengths, 3);
-        }
-
-        [RequiresDynamicCode("The native code for the array might not be available at runtime.")]
-        public static Array CreateInstance(Type elementType, params int[] lengths)
-        {
-            if (elementType is null)
-                throw new ArgumentNullException(nameof(elementType));
-            if (lengths is null)
-                throw new ArgumentNullException(nameof(lengths));
-            if (lengths.Length == 0)
-                throw new ArgumentException(SR.Arg_NeedAtLeast1Rank);
-
-            // Check to make sure the lengths are all positive. Note that we check this here to give
-            // a good exception message if they are not; however we check this again inside the execution
-            // engine's low level allocation function after having made a copy of the array to prevent a
-            // malicious caller from mutating the array after this check.
-            for (int i = 0; i < lengths.Length; i++)
-                if (lengths[i] < 0)
-                    ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.lengths, i, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
-
-            if (lengths.Length == 1)
-            {
-                int length = lengths[0];
-                return CreateSzArray(elementType, length);
-            }
-            else
-            {
-                return CreateMultiDimArray(elementType, lengths, null);
-            }
-        }
-
-        [RequiresDynamicCode("The native code for the array might not be available at runtime.")]
-        public static Array CreateInstance(Type elementType, int[] lengths, int[] lowerBounds)
-        {
-            if (elementType is null)
-                throw new ArgumentNullException(nameof(elementType));
-            if (lengths is null)
-                throw new ArgumentNullException(nameof(lengths));
-            if (lowerBounds is null)
-                throw new ArgumentNullException(nameof(lowerBounds));
-            if (lengths.Length != lowerBounds.Length)
-                throw new ArgumentException(SR.Arg_RanksAndBounds);
-            if (lengths.Length == 0)
-                throw new ArgumentException(SR.Arg_NeedAtLeast1Rank);
-
-            return CreateMultiDimArray(elementType, lengths, lowerBounds);
-        }
-
-        [RequiresDynamicCode("The native code for the array might not be available at runtime.")]
-        private static Array CreateSzArray(Type elementType, int length)
-        {
-            // Though our callers already validated length once, this parameter is passed via arrays, so we must check it again
-            // in case a malicious caller modified the array after the check.
-            if (length < 0)
-                throw new ArgumentOutOfRangeException(nameof(length));
-
-            Type arrayType = GetArrayTypeFromElementType(elementType, false, 1);
-            return RuntimeImports.RhNewArray(arrayType.TypeHandle.ToEETypePtr(), length);
-        }
-
-        [RequiresDynamicCode("The native code for the array might not be available at runtime.")]
-        private static Array CreateMultiDimArray(Type elementType, int[] lengths, int[] lowerBounds)
-        {
-            Debug.Assert(lengths != null);
-            Debug.Assert(lowerBounds == null || lowerBounds.Length == lengths.Length);
-
-            for (int i = 0; i < lengths.Length; i++)
-            {
-                if (lengths[i] < 0)
-                    throw new ArgumentOutOfRangeException("lengths[" + i + "]", SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
-
-            int rank = lengths.Length;
-            Type arrayType = GetArrayTypeFromElementType(elementType, true, rank);
-            return RuntimeAugments.NewMultiDimArray(arrayType.TypeHandle, lengths, lowerBounds);
-        }
-
-        [RequiresDynamicCode("The native code for the array might not be available at runtime.")]
-        private static Type GetArrayTypeFromElementType(Type elementType, bool multiDim, int rank)
-        {
-            elementType = elementType.UnderlyingSystemType;
             ValidateElementType(elementType);
 
-            if (multiDim)
-                return elementType.MakeArrayType(rank);
+            if (pLowerBounds != null)
+            {
+                for (int i = 0; i < rank; i++)
+                {
+                    if (pLowerBounds[i] != 0)
+                        throw new PlatformNotSupportedException(SR.PlatformNotSupported_NonZeroLowerBound);
+                }
+            }
+
+            if (rank == 1)
+            {
+                return RuntimeImports.RhNewArray(elementType.MakeArrayType().TypeHandle.ToEETypePtr(), pLengths[0]);
+
+            }
             else
-                return elementType.MakeArrayType();
+            {
+                // Create a local copy of the lenghts that cannot be motified by the caller
+                int* pImmutableLengths = stackalloc int[rank];
+                for (int i = 0; i < rank; i++)
+                    pImmutableLengths[i] = pLengths[i];
+
+                return NewMultiDimArray(elementType.MakeArrayType(rank).TypeHandle.ToEETypePtr(), pImmutableLengths, rank);
+            }
         }
 
         private static void ValidateElementType(Type elementType)
         {
-            if (elementType is not RuntimeType)
-                throw new ArgumentException(SR.Arg_MustBeType, nameof(elementType));
             while (elementType.IsArray)
             {
                 elementType = elementType.GetElementType()!;
@@ -246,8 +139,8 @@ namespace System
             if (destinationArray is null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.destinationArray);
 
-            EETypePtr eeType = sourceArray.EETypePtr;
-            if (eeType.FastEquals(destinationArray.EETypePtr) &&
+            EETypePtr eeType = sourceArray.GetEETypePtr();
+            if (eeType.FastEquals(destinationArray.GetEETypePtr()) &&
                 eeType.IsSzArray &&
                 (uint)length <= sourceArray.NativeLength &&
                 (uint)length <= destinationArray.NativeLength)
@@ -273,8 +166,8 @@ namespace System
         {
             if (sourceArray != null && destinationArray != null)
             {
-                EETypePtr eeType = sourceArray.EETypePtr;
-                if (eeType.FastEquals(destinationArray.EETypePtr) &&
+                EETypePtr eeType = sourceArray.GetEETypePtr();
+                if (eeType.FastEquals(destinationArray.GetEETypePtr()) &&
                     eeType.IsSzArray &&
                     length >= 0 && sourceIndex >= 0 && destinationIndex >= 0 &&
                     (uint)(sourceIndex + length) <= sourceArray.NativeLength &&
@@ -376,7 +269,7 @@ namespace System
                 }
                 else if (sourceElementEEType.IsPrimitive && destinationElementEEType.IsPrimitive)
                 {
-                    if (RuntimeImports.AreTypesAssignable(sourceArray.EETypePtr, destinationArray.EETypePtr))
+                    if (RuntimeImports.AreTypesAssignable(sourceArray.GetEETypePtr(), destinationArray.GetEETypePtr()))
                     {
                         // If we're okay casting between these two, we're also okay blitting the values over
                         CopyImplValueTypeArrayNoInnerGcRefs(sourceArray, sourceIndex, destinationArray, destinationIndex, length);
@@ -529,7 +422,7 @@ namespace System
                     }
                     else
                     {
-                        EETypePtr eeType = boxedValue.EETypePtr;
+                        EETypePtr eeType = boxedValue.GetEETypePtr();
                         if (!(RuntimeImports.AreTypesAssignable(eeType, destinationElementEEType)))
                             throw new InvalidCastException(SR.InvalidCast_DownCastArrayElement);
                     }
@@ -546,10 +439,10 @@ namespace System
         //
         private static unsafe void CopyImplValueTypeArrayWithInnerGcRefs(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length, bool reliable)
         {
-            Debug.Assert(RuntimeImports.AreTypesEquivalent(sourceArray.EETypePtr, destinationArray.EETypePtr));
+            Debug.Assert(RuntimeImports.AreTypesEquivalent(sourceArray.GetEETypePtr(), destinationArray.GetEETypePtr()));
             Debug.Assert(sourceArray.ElementEEType.IsValueType);
 
-            EETypePtr sourceElementEEType = sourceArray.EETypePtr.ArrayElementType;
+            EETypePtr sourceElementEEType = sourceArray.GetEETypePtr().ArrayElementType;
             bool reverseCopy = ((object)sourceArray == (object)destinationArray) && (sourceIndex < destinationIndex);
 
             // Copy scenario: ValueType-array to value-type array with embedded gc-refs.
@@ -910,7 +803,7 @@ namespace System
             if (array == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
 
-            EETypePtr eeType = array.EETypePtr;
+            EETypePtr eeType = array.GetEETypePtr();
             nuint totalByteLength = eeType.ComponentSize * array.NativeLength;
             ref byte pStart = ref MemoryMarshal.GetArrayDataReference(array);
 
@@ -933,7 +826,7 @@ namespace System
             ref byte p = ref Unsafe.As<RawArrayData>(array).Data;
             int lowerBound = 0;
 
-            EETypePtr eeType = array.EETypePtr;
+            EETypePtr eeType = array.GetEETypePtr();
             if (!eeType.IsSzArray)
             {
                 int rank = eeType.ArrayRank;
@@ -977,7 +870,7 @@ namespace System
         {
             get
             {
-                return this.EETypePtr.ArrayRank;
+                return this.GetEETypePtr().ArrayRank;
             }
         }
 
@@ -1125,11 +1018,11 @@ namespace System
             if (pElementEEType.IsValueType)
             {
                 // Unlike most callers of InvokeUtils.ChangeType(), Array.SetValue() does *not* permit conversion from a primitive to an Enum.
-                if (value != null && !(value.EETypePtr == pElementEEType) && pElementEEType.IsEnum)
+                if (value != null && !(value.GetEETypePtr() == pElementEEType) && pElementEEType.IsEnum)
                     throw new InvalidCastException(SR.Format(SR.Arg_ObjObjEx, value.GetType(), Type.GetTypeFromHandle(new RuntimeTypeHandle(pElementEEType))));
 
                 value = InvokeUtils.CheckArgument(value, pElementEEType, InvokeUtils.CheckArgumentSemantics.ArraySet, binderBundle: null);
-                Debug.Assert(value == null || RuntimeImports.AreTypesAssignable(value.EETypePtr, pElementEEType));
+                Debug.Assert(value == null || RuntimeImports.AreTypesAssignable(value.GetEETypePtr(), pElementEEType));
 
                 RuntimeImports.RhUnbox(value, ref element, pElementEEType);
             }
@@ -1155,7 +1048,7 @@ namespace System
         {
             get
             {
-                return this.EETypePtr.ArrayElementType;
+                return this.GetEETypePtr().ArrayElementType;
             }
         }
 
@@ -1166,7 +1059,7 @@ namespace System
 
         internal bool IsValueOfElementType(object o)
         {
-            return ElementEEType.Equals(o.EETypePtr);
+            return ElementEEType.Equals(o.GetEETypePtr());
         }
 
         //
@@ -1176,7 +1069,7 @@ namespace System
         {
             get
             {
-                return EETypePtr.ComponentSize;
+                return this.GetEETypePtr().ComponentSize;
             }
         }
 
@@ -1253,14 +1146,16 @@ namespace System
             return false;
         }
 
-        public void Dispose()
-        {
-        }
-
         public object Clone()
         {
             return MemberwiseClone();
         }
+
+#pragma warning disable CA1822 // https://github.com/dotnet/roslyn-analyzers/issues/5911
+        public void Dispose()
+        {
+        }
+#pragma warning restore CA1822
     }
 
     //

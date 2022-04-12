@@ -90,8 +90,7 @@ PCODE MethodDesc::DoBackpatch(MethodTable * pMT, MethodTable *pDispatchingMT, BO
 
     // Only take the lock if the method is versionable with vtable slot backpatch, for recording slots and synchronizing with
     // backpatching slots
-    MethodDescBackpatchInfoTracker::ConditionalLockHolderForGCCoop slotBackpatchLockHolder(
-        isVersionableWithVtableSlotBackpatch);
+    MethodDescBackpatchInfoTracker::ConditionalLockHolder slotBackpatchLockHolder(isVersionableWithVtableSlotBackpatch);
 
     // Get the method entry point inside the lock above to synchronize with backpatching in
     // MethodDesc::BackpatchEntryPointSlots()
@@ -388,18 +387,14 @@ PCODE MethodDesc::PrepareILBasedCode(PrepareCodeConfig* pConfig)
                 DynamicMethodDesc* stubMethodDesc = this->AsDynamicMethodDesc();
                 if (stubMethodDesc->IsILStub() && stubMethodDesc->IsPInvokeStub())
                 {
-                    ILStubResolver* pStubResolver = stubMethodDesc->GetILStubResolver();
-                    if (pStubResolver->GetStubType() == ILStubResolver::CLRToNativeInteropStub)
+                    MethodDesc* pTargetMD = stubMethodDesc->GetILStubResolver()->GetStubTargetMethodDesc();
+                    if (pTargetMD != NULL)
                     {
-                        MethodDesc* pTargetMD = stubMethodDesc->GetILStubResolver()->GetStubTargetMethodDesc();
-                        if (pTargetMD != NULL)
+                        pCode = pTargetMD->GetPrecompiledR2RCode(pConfig);
+                        if (pCode != NULL)
                         {
-                            pCode = pTargetMD->GetPrecompiledR2RCode(pConfig);
-                            if (pCode != NULL)
-                            {
-                                LOG_USING_R2R_CODE(this);
-                                pConfig->SetNativeCode(pCode, &pCode);
-                            }
+                            LOG_USING_R2R_CODE(this);
+                            pConfig->SetNativeCode(pCode, &pCode);
                         }
                     }
                 }
@@ -1682,7 +1677,7 @@ Stub * MakeUnboxingStubWorker(MethodDesc *pMD)
 
         sl.EmitComputedInstantiatingMethodStub(pUnboxedMD, &portableShuffle[0], NULL);
 
-        pstub = sl.Link(pMD->GetLoaderAllocator()->GetStubHeap());
+        pstub = sl.Link(pMD->GetLoaderAllocator()->GetStubHeap(), NEWSTUB_FL_INSTANTIATING_METHOD);
     }
     else
 #endif
@@ -1755,7 +1750,7 @@ Stub * MakeInstantiatingStubWorker(MethodDesc *pMD)
         _ASSERTE(pSharedMD != NULL && pSharedMD != pMD);
         sl.EmitComputedInstantiatingMethodStub(pSharedMD, &portableShuffle[0], extraArg);
 
-        pstub = sl.Link(pMD->GetLoaderAllocator()->GetStubHeap());
+        pstub = sl.Link(pMD->GetLoaderAllocator()->GetStubHeap(), NEWSTUB_FL_INSTANTIATING_METHOD);
     }
     else
 #endif

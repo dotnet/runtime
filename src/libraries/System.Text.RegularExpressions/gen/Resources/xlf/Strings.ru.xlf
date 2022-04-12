@@ -118,8 +118,8 @@
         <note />
       </trans-unit>
       <trans-unit id="InvalidLangVersionMessage">
-        <source>C# LangVersion of 10 or greater is required</source>
-        <target state="translated">Требуется C# LangVersion 10 или выше</target>
+        <source>C# LangVersion of 11 or greater is required</source>
+        <target state="translated">Требуется C# LangVersion 11 или выше</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidRegexArgumentsMessage">
@@ -228,8 +228,8 @@
         <note />
       </trans-unit>
       <trans-unit id="RegexMethodMustHaveValidSignatureMessage">
-        <source>Regex method must be partial, parameterless, non-generic, and return Regex</source>
-        <target state="translated">Метод Regex должен быть частичным, без параметров, неуниверсальным и возвращать регулярное выражение</target>
+        <source>RegexGenerator method must be partial, parameterless, non-generic, non-abstract, and return Regex</source>
+        <target state="translated">Метод RegexGenerator должен быть частичным, без параметров, неуниверсальным, неабстрактным и возвращать регулярное выражение</target>
         <note />
       </trans-unit>
       <trans-unit id="ReplacementError">

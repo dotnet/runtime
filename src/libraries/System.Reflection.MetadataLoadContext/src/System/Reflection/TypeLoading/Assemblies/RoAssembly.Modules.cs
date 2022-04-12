@@ -17,7 +17,7 @@ namespace System.Reflection.TypeLoading
         public sealed override Module? GetModule(string name) => GetRoModule(name);
         public sealed override Module[] GetModules(bool getResourceModules) => ComputeRoModules(getResourceModules).CloneArray<Module>();
 
-#if NET5_0_OR_GREATER
+#if NETCOREAPP
         [RequiresAssemblyFiles(ThrowingMessageInRAF)]
 #endif
         public sealed override FileStream? GetFile(string name)
@@ -28,7 +28,7 @@ namespace System.Reflection.TypeLoading
             return new FileStream(m.FullyQualifiedName, FileMode.Open, FileAccess.Read, FileShare.Read);
         }
 
-#if NET5_0_OR_GREATER
+#if NETCOREAPP
         [RequiresAssemblyFiles(ThrowingMessageInRAF)]
 #endif
         public sealed override FileStream[] GetFiles(bool getResourceModules)

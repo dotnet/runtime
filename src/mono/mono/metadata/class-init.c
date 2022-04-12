@@ -21,6 +21,7 @@
 #include <mono/metadata/abi-details.h>
 #include <mono/metadata/tokentype.h>
 #include <mono/metadata/marshal.h>
+#include <mono/metadata/metadata-update.h>
 #include <mono/utils/checked-build.h>
 #include <mono/utils/mono-counters.h>
 #include <mono/utils/mono-error-internals.h>
@@ -652,6 +653,15 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token, MonoError 
 			mono_class_set_field_count (klass, field_last - first_field_idx);
 		if (cols [MONO_TYPEDEF_METHOD_LIST] <= table_info_get_rows (&image->tables [MONO_TABLE_METHOD]))
 			mono_class_set_method_count (klass, method_last - first_method_idx);
+	} else if (G_UNLIKELY (cols [MONO_TYPEDEF_FIELD_LIST] == 0 && cols [MONO_TYPEDEF_METHOD_LIST] == 0 && image->has_updates)) {
+		uint32_t first_field_idx, first_method_idx, field_count, method_count;
+		if (mono_metadata_update_get_typedef_skeleton (image, type_token, &first_method_idx, &method_count, &first_field_idx, &field_count)) {
+			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_METADATA_UPDATE, "Creating class '%s.%s' from skeleton (first_method_idx = 0x%08x, count = 0x%08x, first_field_idx = 0x%08x, count=0x%08x)", nspace, name, first_method_idx, method_count, first_field_idx, field_count);
+			mono_class_set_first_field_idx (klass, first_field_idx - 1);
+			mono_class_set_first_method_idx (klass, first_method_idx - 1);
+			mono_class_set_field_count (klass, field_count);
+			mono_class_set_method_count (klass, method_count);
+		}
 	}
 
 	/* reserve space to store vector pointer in arrays */
@@ -685,15 +695,14 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token, MonoError 
 		return NULL;
 	}
 
-	if (klass->image->assembly_name && !strcmp (klass->image->assembly_name, "Mono.Simd") && !strcmp (nspace, "Mono.Simd")) {
-		if (!strncmp (name, "Vector", 6))
-			klass->simd_type = !strcmp (name + 6, "2d") || !strcmp (name + 6, "2ul") || !strcmp (name + 6, "2l") || !strcmp (name + 6, "4f") || !strcmp (name + 6, "4ui") || !strcmp (name + 6, "4i") || !strcmp (name + 6, "8s") || !strcmp (name + 6, "8us") || !strcmp (name + 6, "16b") || !strcmp (name + 6, "16sb");
-	} else if (klass->image->assembly_name && !strcmp (klass->image->assembly_name, "System.Numerics") && !strcmp (nspace, "System.Numerics")) {
+#if 0  // FIXME this causes an issue when AOT compiling using llvm: 
+	if (mono_is_corlib_image (klass->image) && !strcmp (nspace, "System.Numerics")) {
 		/* The JIT can't handle SIMD types with != 16 size yet */
 		//if (!strcmp (name, "Vector2") || !strcmp (name, "Vector3") || !strcmp (name, "Vector4"))
 		if (!strcmp (name, "Vector4"))
 			klass->simd_type = 1;
 	}
+#endif
 
 	// compute is_byreflike
 	if (m_class_is_valuetype (klass))
@@ -868,13 +877,6 @@ mono_class_create_generic_inst (MonoGenericClass *gclass)
 	klass->enumtype = gklass->enumtype;
 	klass->valuetype = gklass->valuetype;
 
-	if (gklass->image->assembly_name && !strcmp (gklass->image->assembly_name, "System.Numerics.Vectors") && !strcmp (gklass->name_space, "System.Numerics") && !strcmp (gklass->name, "Vector`1")) {
-		g_assert (gclass->context.class_inst);
-		g_assert (gclass->context.class_inst->type_argc > 0);
-		if (mono_type_is_primitive (gclass->context.class_inst->type_argv [0]))
-			klass->simd_type = 1;
-	}
-
 	if (mono_is_corlib_image (gklass->image) &&
 		(!strcmp (gklass->name, "Vector`1") || !strcmp (gklass->name, "Vector64`1") || !strcmp (gklass->name, "Vector128`1") || !strcmp (gklass->name, "Vector256`1"))) {
 		MonoType *etype = gclass->context.class_inst->type_argv [0];
@@ -1019,7 +1021,7 @@ mono_class_create_bounded_array (MonoClass *eclass, guint32 rank, gboolean bound
 	MonoClass *klass, *cached, *k;
 	MonoClass *parent = NULL;
 	GSList *list, *rootlist = NULL;
-	int nsize;
+	size_t nsize;
 	char *name;
 	MonoMemoryManager *mm;
 
@@ -1739,12 +1741,12 @@ mono_class_interface_match (const uint8_t *bitmap, int id)
 static char*
 concat_two_strings_with_zero (MonoImage *image, const char *s1, const char *s2)
 {
-	int null_length = strlen ("(null)");
-	int len = (s1 ? strlen (s1) : null_length) + (s2 ? strlen (s2) : null_length) + 2;
-	char *s = (char *)mono_image_alloc (image, len);
+	size_t null_length = strlen ("(null)");
+	size_t len = (s1 ? strlen (s1) : null_length) + (s2 ? strlen (s2) : null_length) + 2;
+	char *s = (char *)mono_image_alloc (image, (int)len);
 	int result;
 
-	result = g_snprintf (s, len, "%s%c%s", s1 ? s1 : "(null)", '\0', s2 ? s2 : "(null)");
+	result = g_snprintf (s, (glong)len, "%s%c%s", s1 ? s1 : "(null)", '\0', s2 ? s2 : "(null)");
 	g_assert (result == len - 1);
 
 	return s;
@@ -1951,6 +1953,11 @@ validate_struct_fields_overlaps (guint8 *layout_check, int layout_size, MonoClas
 		// try to call mono_class_setup_fields which is what we're doing already
 		field = &m_class_get_fields (klass) [i];
 		field_offset = field_offsets [i];
+		/*
+		 * metadata-update: adding fields to existing structs isn't supported; when a brand
+		 * new struct is added in an update, the fields will be in m_class_get_fields.  so
+		 * nothing new to do here.
+		 */
 
 		if (!field)
 			continue;
@@ -2475,6 +2482,7 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 	// - Disallow on structs/static fields/nonref fields
 	gboolean has_weak_fields = FALSE;
 
+#ifdef ENABLE_WEAK_ATTR
 	if (mono_class_has_static_metadata (klass)) {
 		for (MonoClass *p = klass; p != NULL; p = p->parent) {
 			gpointer iter = NULL;
@@ -2489,6 +2497,7 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 			}
 		}
 	}
+#endif
 
 	/*
 	 * Check that any fields of IsByRefLike type are instance
@@ -2701,7 +2710,7 @@ generic_array_methods (MonoClass *klass)
 
 		generic_array_method_info [i].array_method = m;
 
-		name = (gchar *)mono_image_alloc (mono_defaults.corlib, strlen (iname) + strlen (mname) + 1);
+		name = (gchar *)mono_image_alloc (mono_defaults.corlib, (guint)(strlen (iname) + strlen (mname) + 1));
 		strcpy (name, iname);
 		strcpy (name + strlen (iname), mname);
 		generic_array_method_info [i].name = name;

@@ -49,12 +49,6 @@
 #include "mini-runtime.h"
 #include "aot-runtime.h"
 
-#ifdef MONO_XEN_OPT
-static gboolean optimize_for_xen = TRUE;
-#else
-#define optimize_for_xen 0
-#endif
-
 static GENERATE_TRY_GET_CLASS_WITH_CACHE (math, "System", "Math")
 
 
@@ -400,15 +394,16 @@ collect_field_info_nested (MonoClass *klass, GArray *fields_array, int offset, g
 		while ((field = mono_class_get_fields_internal (klass, &iter))) {
 			if (field->type->attrs & FIELD_ATTRIBUTE_STATIC)
 				continue;
+			g_assert (!m_field_is_from_update (field));
 			if (MONO_TYPE_ISSTRUCT (field->type)) {
-				collect_field_info_nested (mono_class_from_mono_type_internal (field->type), fields_array, field->offset - MONO_ABI_SIZEOF (MonoObject), pinvoke, unicode);
+				collect_field_info_nested (mono_class_from_mono_type_internal (field->type), fields_array, m_field_get_offset (field) - MONO_ABI_SIZEOF (MonoObject), pinvoke, unicode);
 			} else {
 				int align;
 				StructFieldInfo f;
 
 				f.type = field->type;
 				f.size = mono_type_size (field->type, &align);
-				f.offset = field->offset - MONO_ABI_SIZEOF (MonoObject) + offset;
+				f.offset = m_field_get_offset (field) - MONO_ABI_SIZEOF (MonoObject) + offset;
 
 				g_array_append_val (fields_array, f);
 			}
@@ -1543,7 +1538,7 @@ mono_arch_compute_omit_fp (MonoCompile *cfg)
 {
 	MonoMethodSignature *sig;
 	MonoMethodHeader *header;
-	int i, locals_size;
+	int i;
 	CallInfo *cinfo;
 
 	if (cfg->arch.omit_fp_computed)
@@ -1590,14 +1585,6 @@ mono_arch_compute_omit_fp (MonoCompile *cfg)
 			 */
 			cfg->arch.omit_fp = FALSE;
 		}
-	}
-
-	locals_size = 0;
-	for (i = cfg->locals_start; i < cfg->num_varinfo; i++) {
-		MonoInst *ins = cfg->varinfo [i];
-		int ialign;
-
-		locals_size += mono_type_size (ins->inst_vtype, &ialign);
 	}
 }
 
@@ -1759,7 +1746,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 		offset = 0;
 	}
 
-	cfg->arch.saved_iregs = cfg->used_int_regs;
+	cfg->arch.saved_iregs = (guint32)cfg->used_int_regs;
 	if (cfg->method->save_lmf) {
 		/* Save all callee-saved registers normally (except RBP, if not already used), and restore them when unwinding through an LMF */
 		guint32 iregs_to_save = AMD64_CALLEE_SAVED_REGS & ~(1<<AMD64_RBP);
@@ -3134,9 +3121,6 @@ emit_call (MonoCompile *cfg, MonoCallInst *call, guint8 *code, MonoJitICallId ji
 #ifdef MONO_ARCH_NOMAP32BIT
 		near_call = FALSE;
 #endif
-		/* The 64bit XEN kernel does not honour the MAP_32BIT flag. (#522894) */
-		if (optimize_for_xen)
-			near_call = FALSE;
 
 		if (cfg->compile_aot) {
 			near_call = TRUE;
@@ -4419,14 +4403,8 @@ mono_amd64_emit_tls_get (guint8* code, int dreg, int tls_offset)
 	x86_prefix (code, X86_GS_PREFIX);
 	amd64_mov_reg_mem (code, dreg, tls_gs_offset + (tls_offset * 8), 8);
 #else
-	if (optimize_for_xen) {
-		x86_prefix (code, X86_FS_PREFIX);
-		amd64_mov_reg_mem (code, dreg, 0, 8);
-		amd64_mov_reg_membase (code, dreg, dreg, tls_offset, 8);
-	} else {
-		x86_prefix (code, X86_FS_PREFIX);
-		amd64_mov_reg_mem (code, dreg, tls_offset, 8);
-	}
+	x86_prefix (code, X86_FS_PREFIX);
+	amd64_mov_reg_mem (code, dreg, tls_offset, 8);
 #endif
 	return code;
 }
@@ -4440,7 +4418,6 @@ mono_amd64_emit_tls_set (guint8 *code, int sreg, int tls_offset)
 	x86_prefix (code, X86_GS_PREFIX);
 	amd64_mov_mem_reg (code, tls_gs_offset + (tls_offset * 8), sreg, 8);
 #else
-	g_assert (!optimize_for_xen);
 	x86_prefix (code, X86_FS_PREFIX);
 	amd64_mov_mem_reg (code, tls_offset, sreg, 8);
 #endif
@@ -5410,8 +5387,12 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				amd64_mov_reg_reg (code, ins->dreg, ins->sreg1, sizeof (target_mgreg_t));
 			break;
 		case OP_AMD64_SET_XMMREG_R4: {
-			if (ins->dreg != ins->sreg1)
-				amd64_sse_movss_reg_reg (code, ins->dreg, ins->sreg1);
+			if (cfg->r4fp) {
+				if (ins->dreg != ins->sreg1)
+					amd64_sse_movss_reg_reg (code, ins->dreg, ins->sreg1);
+			} else {
+				amd64_sse_cvtsd2ss_reg_reg (code, ins->dreg, ins->sreg1);
+			}
 			break;
 		}
 		case OP_AMD64_SET_XMMREG_R8: {
@@ -5920,7 +5901,10 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			float f = *(float *)ins->inst_p0;
 
 			if ((f == 0.0) && (mono_signbit (f) == 0)) {
-				amd64_sse_xorps_reg_reg (code, ins->dreg, ins->dreg);
+				if (cfg->r4fp)
+					amd64_sse_xorps_reg_reg (code, ins->dreg, ins->dreg);
+				else
+					amd64_sse_xorpd_reg_reg (code, ins->dreg, ins->dreg);
 			} else {
 				if (cfg->compile_aot && cfg->code_exec_only) {
 					mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_R4_GOT, ins->inst_p0);
@@ -5930,6 +5914,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 					mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_R4, ins->inst_p0);
 					amd64_sse_movss_reg_membase (code, ins->dreg, AMD64_RIP, 0);
 				}
+				if (!cfg->r4fp)
+					amd64_sse_cvtss2sd_reg_reg (code, ins->dreg, ins->dreg);
 			}
 			break;
 		}
@@ -5940,25 +5926,51 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			amd64_sse_movsd_reg_membase (code, ins->dreg, ins->inst_basereg, ins->inst_offset);
 			break;
 		case OP_STORER4_MEMBASE_REG:
-			amd64_sse_movss_membase_reg (code, ins->inst_destbasereg, ins->inst_offset, ins->sreg1);
+			if (cfg->r4fp) {
+				amd64_sse_movss_membase_reg (code, ins->inst_destbasereg, ins->inst_offset, ins->sreg1);
+			} else {
+				/* This requires a double->single conversion */
+				amd64_sse_cvtsd2ss_reg_reg (code, MONO_ARCH_FP_SCRATCH_REG, ins->sreg1);
+				amd64_sse_movss_membase_reg (code, ins->inst_destbasereg, ins->inst_offset, MONO_ARCH_FP_SCRATCH_REG);
+			}
 			break;
 		case OP_LOADR4_MEMBASE:
-			amd64_sse_movss_reg_membase (code, ins->dreg, ins->inst_basereg, ins->inst_offset);
+			if (cfg->r4fp) {
+				amd64_sse_movss_reg_membase (code, ins->dreg, ins->inst_basereg, ins->inst_offset);
+			} else {
+				amd64_sse_movss_reg_membase (code, ins->dreg, ins->inst_basereg, ins->inst_offset);
+				amd64_sse_cvtss2sd_reg_reg (code, ins->dreg, ins->dreg);
+			}
 			break;
 		case OP_ICONV_TO_R4:
-			amd64_sse_cvtsi2ss_reg_reg_size (code, ins->dreg, ins->sreg1, 4);
+			if (cfg->r4fp) {
+				amd64_sse_cvtsi2ss_reg_reg_size (code, ins->dreg, ins->sreg1, 4);
+			} else {
+				amd64_sse_cvtsi2ss_reg_reg_size (code, ins->dreg, ins->sreg1, 4);
+				amd64_sse_cvtss2sd_reg_reg (code, ins->dreg, ins->dreg);
+			}
 			break;
 		case OP_ICONV_TO_R8:
 			amd64_sse_cvtsi2sd_reg_reg_size (code, ins->dreg, ins->sreg1, 4);
 			break;
 		case OP_LCONV_TO_R4:
-			amd64_sse_cvtsi2ss_reg_reg (code, ins->dreg, ins->sreg1);
+			if (cfg->r4fp) {
+				amd64_sse_cvtsi2ss_reg_reg (code, ins->dreg, ins->sreg1);
+			} else {
+				amd64_sse_cvtsi2ss_reg_reg (code, ins->dreg, ins->sreg1);
+				amd64_sse_cvtss2sd_reg_reg (code, ins->dreg, ins->dreg);
+			}
 			break;
 		case OP_LCONV_TO_R8:
 			amd64_sse_cvtsi2sd_reg_reg (code, ins->dreg, ins->sreg1);
 			break;
 		case OP_FCONV_TO_R4:
-			amd64_sse_cvtsd2ss_reg_reg (code, ins->dreg, ins->sreg1);
+			if (cfg->r4fp) {
+				amd64_sse_cvtsd2ss_reg_reg (code, ins->dreg, ins->sreg1);
+			} else {
+				amd64_sse_cvtsd2ss_reg_reg (code, ins->dreg, ins->sreg1);
+				amd64_sse_cvtss2sd_reg_reg (code, ins->dreg, ins->dreg);
+			}
 			break;
 		case OP_FCONV_TO_I1:
 			code = emit_float_to_int (cfg, code, ins->dreg, ins->sreg1, 1, TRUE);
@@ -5978,7 +5990,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_FCONV_TO_I4:
 			code = emit_float_to_int (cfg, code, ins->dreg, ins->sreg1, 4, TRUE);
 			break;
-		case OP_FCONV_TO_I:
 		case OP_FCONV_TO_I8:
 			code = emit_float_to_int (cfg, code, ins->dreg, ins->sreg1, 8, TRUE);
 			break;
@@ -6007,7 +6018,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			amd64_sse_cvtss2si_reg_reg (code, ins->dreg, ins->sreg1);
 			break;
 		case OP_RCONV_TO_I8:
-		case OP_RCONV_TO_I:
 			amd64_sse_cvtss2si_reg_reg_size (code, ins->dreg, ins->sreg1, 8);
 			break;
 		case OP_RCONV_TO_R8:
@@ -6066,10 +6076,17 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				amd64_sse_movss_reg_reg (code, ins->dreg, ins->sreg1);
 			break;
 		case OP_MOVE_F_TO_I4:
-			amd64_movd_reg_xreg_size (code, ins->dreg, ins->sreg1, 8);
+			if (cfg->r4fp) {
+				amd64_movd_reg_xreg_size (code, ins->dreg, ins->sreg1, 8);
+			} else {
+				amd64_sse_cvtsd2ss_reg_reg (code, MONO_ARCH_FP_SCRATCH_REG, ins->sreg1);
+				amd64_movd_reg_xreg_size (code, ins->dreg, MONO_ARCH_FP_SCRATCH_REG, 8);
+			}
 			break;
 		case OP_MOVE_I4_TO_F:
 			amd64_movd_xreg_reg_size (code, ins->dreg, ins->sreg1, 8);
+			if (!cfg->r4fp)
+				amd64_sse_cvtss2sd_reg_reg (code, ins->dreg, ins->dreg);
 			break;
 		case OP_MOVE_F_TO_I8:
 			amd64_movd_reg_xreg_size (code, ins->dreg, ins->sreg1, 8);
@@ -6601,7 +6618,12 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		}
 		case OP_ATOMIC_LOAD_R4: {
-			amd64_sse_movss_reg_membase (code, ins->dreg, ins->inst_basereg, ins->inst_offset);
+			if (cfg->r4fp) {
+				amd64_sse_movss_reg_membase (code, ins->dreg, ins->inst_basereg, ins->inst_offset);
+			} else {
+				amd64_sse_movss_reg_membase (code, ins->dreg, ins->inst_basereg, ins->inst_offset);
+				amd64_sse_cvtss2sd_reg_reg (code, ins->dreg, ins->dreg);
+			}
 			break;
 		}
 		case OP_ATOMIC_LOAD_R8: {
@@ -6644,7 +6666,13 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		}
 		case OP_ATOMIC_STORE_R4: {
-			amd64_sse_movss_membase_reg (code, ins->inst_destbasereg, ins->inst_offset, ins->sreg1);
+			if (cfg->r4fp) {
+				amd64_sse_movss_membase_reg (code, ins->inst_destbasereg, ins->inst_offset, ins->sreg1);
+			} else {
+				amd64_sse_cvtsd2ss_reg_reg (code, MONO_ARCH_FP_SCRATCH_REG, ins->sreg1);
+				amd64_sse_movss_membase_reg (code, ins->inst_destbasereg, ins->inst_offset, MONO_ARCH_FP_SCRATCH_REG);
+			}
+
 			if (ins->backend.memory_barrier_kind == MONO_MEMORY_BARRIER_SEQ)
 				x86_mfence (code);
 			break;
@@ -7236,21 +7264,33 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_INSERTX_R4_SLOW:
 			switch (ins->inst_c0) {
 			case 0:
-				amd64_sse_movss_reg_reg (code, ins->dreg, ins->sreg2);
+				if (cfg->r4fp)
+					amd64_sse_movss_reg_reg (code, ins->dreg, ins->sreg2);
+				else
+					amd64_sse_cvtsd2ss_reg_reg (code, ins->dreg, ins->sreg2);
 				break;
 			case 1:
 				amd64_sse_pshufd_reg_reg_imm (code, ins->dreg, ins->dreg, mono_simd_shuffle_mask(1, 0, 2, 3));
-				amd64_sse_movss_reg_reg (code, ins->dreg, ins->sreg2);
+				if (cfg->r4fp)
+					amd64_sse_movss_reg_reg (code, ins->dreg, ins->sreg2);
+				else
+					amd64_sse_cvtsd2ss_reg_reg (code, ins->dreg, ins->sreg2);
 				amd64_sse_pshufd_reg_reg_imm (code, ins->dreg, ins->dreg, mono_simd_shuffle_mask(1, 0, 2, 3));
 				break;
 			case 2:
 				amd64_sse_pshufd_reg_reg_imm (code, ins->dreg, ins->dreg, mono_simd_shuffle_mask(2, 1, 0, 3));
-				amd64_sse_movss_reg_reg (code, ins->dreg, ins->sreg2);
+				if (cfg->r4fp)
+					amd64_sse_movss_reg_reg (code, ins->dreg, ins->sreg2);
+				else
+					amd64_sse_cvtsd2ss_reg_reg (code, ins->dreg, ins->sreg2);
 				amd64_sse_pshufd_reg_reg_imm (code, ins->dreg, ins->dreg, mono_simd_shuffle_mask(2, 1, 0, 3));
 				break;
 			case 3:
 				amd64_sse_pshufd_reg_reg_imm (code, ins->dreg, ins->dreg, mono_simd_shuffle_mask(3, 1, 2, 0));
-				amd64_sse_movss_reg_reg (code, ins->dreg, ins->sreg2);
+				if (cfg->r4fp)
+					amd64_sse_movss_reg_reg (code, ins->dreg, ins->sreg2);
+				else
+					amd64_sse_cvtsd2ss_reg_reg (code, ins->dreg, ins->sreg2);
 				amd64_sse_pshufd_reg_reg_imm (code, ins->dreg, ins->dreg, mono_simd_shuffle_mask(3, 1, 2, 0));
 				break;
 			}
@@ -7294,6 +7334,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_ICONV_TO_R4_RAW:
 			amd64_movd_xreg_reg_size (code, ins->dreg, ins->sreg1, 4);
+			if (!cfg->r4fp)
+			  amd64_sse_cvtss2sd_reg_reg (code, ins->dreg, ins->dreg);
 			break;
 
 		case OP_FCONV_TO_R8_X:
@@ -7332,7 +7374,12 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			amd64_sse_pshufd_reg_reg_imm (code, ins->dreg, ins->dreg, 0x44);
 			break;
 		case OP_EXPAND_R4:
-			amd64_sse_movsd_reg_reg (code, ins->dreg, ins->sreg1);
+			if (cfg->r4fp) {
+				amd64_sse_movsd_reg_reg (code, ins->dreg, ins->sreg1);
+			} else {
+				amd64_sse_movsd_reg_reg (code, ins->dreg, ins->sreg1);
+				amd64_sse_cvtsd2ss_reg_reg (code, ins->dreg, ins->dreg);
+			}
 			amd64_sse_pshufd_reg_reg_imm (code, ins->dreg, ins->dreg, 0);
 			break;
 		case OP_EXPAND_R8:
@@ -8056,11 +8103,7 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	for (i = 0; i < AMD64_NREG; ++i) {
 		if (AMD64_IS_CALLEE_SAVED_REG (i) && (cfg->arch.saved_iregs & (1 << i))) {
 			/* Restore only used_int_regs, not arch.saved_iregs */
-#if defined(MONO_SUPPORT_TASKLETS)
-			int restore_reg = 1;
-#else
 			int restore_reg = (cfg->used_int_regs & (1 << i));
-#endif
 			if (restore_reg) {
 				amd64_mov_reg_membase (code, i, cfg->frame_reg, save_area_offset, 8);
 				mono_emit_unwind_op_same_value (cfg, code, i);
@@ -8604,9 +8647,6 @@ mono_arch_get_delegate_virtual_invoke_impl (MonoMethodSignature *sig, MonoMethod
 void
 mono_arch_finish_init (void)
 {
-#if !defined(HOST_WIN32) && defined(MONO_XEN_OPT)
-	optimize_for_xen = access ("/proc/xen", F_OK) == 0;
-#endif
 }
 
 #define CMP_SIZE (6 + 1)

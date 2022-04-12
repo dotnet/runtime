@@ -10,13 +10,13 @@ namespace System.Net
             // First, check for absence of separators and spaces.
             if (IsInvalidMethodOrHeaderString(name))
             {
-                throw new ArgumentException(SR.net_WebHeaderInvalidHeaderChars, nameof(name));
+                throw new ArgumentException(string.Format(SR.net_WebHeaderInvalidHeaderChars, name), nameof(name));
             }
 
             // Second, check for non CTL ASCII-7 characters (32-126).
             if (ContainsNonAsciiChars(name))
             {
-                throw new ArgumentException(SR.net_WebHeaderInvalidHeaderChars, nameof(name));
+                throw new ArgumentException(string.Format(SR.net_WebHeaderInvalidHeaderChars, name), nameof(name));
             }
             return name;
         }

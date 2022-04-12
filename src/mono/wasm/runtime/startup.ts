@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { AllAssetEntryTypes, assert, AssetEntry, CharPtrNull, DotnetModule, GlobalizationMode, MonoConfig, MonoConfigError, wasm_type_symbol } from "./types";
+import { AllAssetEntryTypes, assert, AssetEntry, CharPtrNull, DotnetModule, GlobalizationMode, MonoConfig, MonoConfigError, wasm_type_symbol, MonoObject } from "./types";
 import { ENVIRONMENT_IS_ESM, ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, INTERNAL, locateFile, Module, MONO, requirePromise, runtimeHelpers } from "./imports";
 import cwraps from "./cwraps";
 import { mono_wasm_raise_debug_event, mono_wasm_runtime_ready } from "./debug";
@@ -14,6 +14,7 @@ import { find_corlib_class } from "./class-loader";
 import { VoidPtr, CharPtr } from "./types/emscripten";
 import { DotnetPublicAPI } from "./exports";
 import { mono_on_abort } from "./run";
+import { mono_wasm_new_root } from "./roots";
 
 export let runtime_is_initialized_resolve: Function;
 export let runtime_is_initialized_reject: Function;
@@ -42,7 +43,7 @@ export function configure_emscripten_startup(module: DotnetModule, exportedAPI: 
         module.postRun = [module.postRun];
     }
 
-    // when user set configSrc or config, we are running our default startup sequence. 
+    // when user set configSrc or config, we are running our default startup sequence.
     if (module.configSrc || module.config) {
         // execution order == [0] ==
         // - default or user Module.instantiateWasm (will start downloading dotnet.wasm)
@@ -150,10 +151,16 @@ export function mono_wasm_setenv(name: string, value: string): void {
 }
 
 export function mono_wasm_set_runtime_options(options: string[]): void {
+    if (!Array.isArray(options))
+        throw new Error("Expected runtime_options to be an array of strings");
+
     const argv = Module._malloc(options.length * 4);
     let aindex = 0;
     for (let i = 0; i < options.length; ++i) {
-        Module.setValue(<any>argv + (aindex * 4), cwraps.mono_wasm_strdup(options[i]), "i32");
+        const option = options[i];
+        if (typeof (option) !== "string")
+            throw new Error("Expected runtime_options to be an array of strings");
+        Module.setValue(<any>argv + (aindex * 4), cwraps.mono_wasm_strdup(option), "i32");
         aindex += 1;
     }
     cwraps.mono_wasm_parse_runtime_options(options.length, argv);
@@ -237,8 +244,17 @@ function _handle_fetched_asset(asset: AssetEntry, url?: string) {
 }
 
 function _apply_configuration_from_args(config: MonoConfig) {
-    for (const k in (config.environment_variables || {}))
-        mono_wasm_setenv(k, config.environment_variables![k]);
+    const envars = (config.environment_variables || {});
+    if (typeof (envars) !== "object")
+        throw new Error("Expected config.environment_variables to be unset or a dictionary-style object");
+
+    for (const k in envars) {
+        const v = envars![k];
+        if (typeof (v) === "string")
+            mono_wasm_setenv(k, v);
+        else
+            throw new Error(`Expected environment variable '${k}' to be a string but it was ${typeof v}: '${v}'`);
+    }
 
     if (config.runtime_options)
         mono_wasm_set_runtime_options(config.runtime_options);
@@ -251,6 +267,8 @@ function _apply_configuration_from_args(config: MonoConfig) {
 }
 
 function finalize_startup(config: MonoConfig | MonoConfigError | undefined): void {
+    const globalThisAny = globalThis as any;
+
     try {
         if (!config || config.isError) {
             return;
@@ -260,6 +278,23 @@ function finalize_startup(config: MonoConfig | MonoConfigError | undefined): voi
         }
 
         const moduleExt = Module as DotnetModule;
+
+        if(!Module.disableDotnet6Compatibility && Module.exports){
+            // Export emscripten defined in module through EXPORTED_RUNTIME_METHODS
+            // Useful to export IDBFS or other similar types generally exposed as 
+            // global types when emscripten is not modularized.
+            for (let i = 0; i < Module.exports.length; ++i) {
+                const exportName = Module.exports[i];
+                const exportValue = (<any>Module)[exportName];
+
+                if(exportValue) {
+                    globalThisAny[exportName] = exportValue;
+                }
+                else{
+                    console.warn(`MONO_WASM: The exported symbol ${exportName} could not be found in the emscripten module`);
+                }
+            }
+        }
 
         try {
             _apply_configuration_from_args(config);
@@ -336,18 +371,7 @@ export function bindings_lazy_init(): void {
     (<any>ArrayBuffer.prototype)[wasm_type_symbol] = 2;
     (<any>DataView.prototype)[wasm_type_symbol] = 3;
     (<any>Function.prototype)[wasm_type_symbol] = 4;
-    (<any>Map.prototype)[wasm_type_symbol] = 5;
-    if (typeof SharedArrayBuffer !== "undefined")
-        (<any>SharedArrayBuffer.prototype)[wasm_type_symbol] = 6;
-    (<any>Int8Array.prototype)[wasm_type_symbol] = 10;
     (<any>Uint8Array.prototype)[wasm_type_symbol] = 11;
-    (<any>Uint8ClampedArray.prototype)[wasm_type_symbol] = 12;
-    (<any>Int16Array.prototype)[wasm_type_symbol] = 13;
-    (<any>Uint16Array.prototype)[wasm_type_symbol] = 14;
-    (<any>Int32Array.prototype)[wasm_type_symbol] = 15;
-    (<any>Uint32Array.prototype)[wasm_type_symbol] = 16;
-    (<any>Float32Array.prototype)[wasm_type_symbol] = 17;
-    (<any>Float64Array.prototype)[wasm_type_symbol] = 18;
 
     runtimeHelpers._box_buffer_size = 65536;
     runtimeHelpers._unbox_buffer_size = 65536;
@@ -380,11 +404,14 @@ export function bindings_lazy_init(): void {
     if (!runtimeHelpers.wasm_runtime_class)
         throw "Can't find " + binding_fqn_class + " class";
 
-    runtimeHelpers.get_call_sig = get_method("GetCallSignature");
-    if (!runtimeHelpers.get_call_sig)
-        throw "Can't find GetCallSignature method";
+    runtimeHelpers.get_call_sig_ref = get_method("GetCallSignatureRef");
+    if (!runtimeHelpers.get_call_sig_ref)
+        throw "Can't find GetCallSignatureRef method";
 
     _create_primitive_converters();
+
+    runtimeHelpers._box_root = mono_wasm_new_root<MonoObject>();
+    runtimeHelpers._null_root = mono_wasm_new_root<MonoObject>();
 }
 
 // Initializes the runtime and loads assemblies, debug information, and other files.

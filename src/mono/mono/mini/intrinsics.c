@@ -91,10 +91,6 @@ mini_emit_inst_for_ctor (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignat
 		return ins;
 	}
 
-	ins = mono_emit_native_types_intrinsics (cfg, cmethod, fsig, args);
-	if (ins)
-		return ins;
-
 	if (!(cfg->opt & MONO_OPT_INTRINS))
 		return NULL;
 
@@ -115,7 +111,7 @@ llvm_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 	MonoInst *ins = NULL;
 	int opcode = 0;
 	// Convert Math and MathF methods into LLVM intrinsics, e.g. MathF.Sin -> @llvm.sin.f32
-	if (in_corlib && !strcmp (m_class_get_name (cmethod->klass), "MathF")) {
+	if (in_corlib && !strcmp (m_class_get_name (cmethod->klass), "MathF") && cfg->r4fp) {
 		// (float)
 		if (fsig->param_count == 1 && fsig->params [0]->type == MONO_TYPE_R4) {
 			if (!strcmp (cmethod->name, "Ceiling")) {
@@ -331,7 +327,7 @@ emit_span_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature
 {
 	MonoInst *ins;
 
-	MonoClassField *ptr_field = mono_class_get_field_from_name_full (cmethod->klass, "_pointer", NULL);
+	MonoClassField *ptr_field = mono_class_get_field_from_name_full (cmethod->klass, "_reference", NULL);
 	if (!ptr_field)
 		/* Portable Span<T> */
 		return NULL;
@@ -348,7 +344,7 @@ emit_span_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature
 			return NULL;
 
 		int span_reg = args [0]->dreg;
-		/* Load _pointer.Value */
+		/* Load _reference.Value */
 		int base_reg = alloc_preg (cfg);
 		EMIT_NEW_LOAD_MEMBASE (cfg, ins, OP_LOAD_MEMBASE, base_reg, span_reg, ptr_field->offset - MONO_ABI_SIZEOF (MonoObject));
 		/* Similar to mini_emit_ldelema_1_ins () */
@@ -913,50 +909,6 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			ins->type = STACK_I4;
 			return ins;
 		}
-
-#ifndef MONO_BIG_ARRAYS
-		/*
-		 * This is an inline version of GetLength/GetLowerBound(0) used frequently in
-		 * Array methods.
-		 */
-		else if (((strcmp (cmethod->name, "GetLength") == 0 && fsig->param_count + fsig->hasthis == 2) ||
-		         (strcmp (cmethod->name, "GetLowerBound") == 0 && fsig->param_count + fsig->hasthis == 2)) &&
-		         args [1]->opcode == OP_ICONST && args [1]->inst_c0 == 0) {
-			int dreg = alloc_ireg (cfg);
-			int bounds_reg = alloc_ireg_mp (cfg);
-			MonoBasicBlock *end_bb, *szarray_bb;
-			gboolean get_length = strcmp (cmethod->name, "GetLength") == 0;
-
-			NEW_BBLOCK (cfg, end_bb);
-			NEW_BBLOCK (cfg, szarray_bb);
-
-			EMIT_NEW_LOAD_MEMBASE_FAULT (cfg, ins, OP_LOAD_MEMBASE, bounds_reg,
-										 args [0]->dreg, MONO_STRUCT_OFFSET (MonoArray, bounds));
-			MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, bounds_reg, 0);
-			MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_IBEQ, szarray_bb);
-			/* Non-szarray case */
-			if (get_length)
-				EMIT_NEW_LOAD_MEMBASE (cfg, ins, OP_LOADI4_MEMBASE, dreg,
-									   bounds_reg, MONO_STRUCT_OFFSET (MonoArrayBounds, length));
-			else
-				EMIT_NEW_LOAD_MEMBASE (cfg, ins, OP_LOADI4_MEMBASE, dreg,
-									   bounds_reg, MONO_STRUCT_OFFSET (MonoArrayBounds, lower_bound));
-			MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_BR, end_bb);
-			MONO_START_BB (cfg, szarray_bb);
-			/* Szarray case */
-			if (get_length)
-				EMIT_NEW_LOAD_MEMBASE (cfg, ins, OP_LOADI4_MEMBASE, dreg,
-									   args [0]->dreg, MONO_STRUCT_OFFSET (MonoArray, max_length));
-			else
-				MONO_EMIT_NEW_ICONST (cfg, dreg, 0);
-			MONO_START_BB (cfg, end_bb);
-
-			EMIT_NEW_UNALU (cfg, ins, OP_MOVE, dreg, dreg);
-			ins->type = STACK_I4;
-
-			return ins;
-		}
-#endif
 
  		if (cmethod->name [0] != 'g')
  			return NULL;
@@ -2186,10 +2138,6 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			}
 		}
 	}
-
-	ins = mono_emit_native_types_intrinsics (cfg, cmethod, fsig, args);
-	if (ins)
-		return ins;
 
 	if (COMPILE_LLVM (cfg)) {
 		ins = llvm_emit_inst_for_method (cfg, cmethod, fsig, args, in_corlib);

@@ -242,8 +242,6 @@ namespace System
     internal static partial class Number
     {
         internal const int DecimalPrecision = 29; // Decimal.DecCalc also uses this value
-        internal const string PreviewFeatureMessage = "Generic Math is in preview.";
-        internal const string PreviewFeatureUrl = "https://aka.ms/dotnet-warnings/generic-math-preview";
 
         // SinglePrecision and DoublePrecision represent the maximum number of digits required
         // to guarantee that any given Single or Double can roundtrip. Some numbers may require
@@ -355,7 +353,7 @@ namespace System
         {
             byte* buffer = number.GetDigitsPointer();
             number.DigitsCount = DecimalPrecision;
-            number.IsNegative = d.IsNegative;
+            number.IsNegative = decimal.IsNegative(d);
 
             byte* p = buffer + DecimalPrecision;
             while ((d.Mid | d.High) != 0)

@@ -363,7 +363,7 @@ namespace System.IO.Tests
             Assert.Throws<ArgumentOutOfRangeException>(() => Create(GetTestFilePath(), -100));
         }
     }
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+
     public class File_Create_str_i_fo : File_Create_str_i
     {
         public override FileStream Create(string path)

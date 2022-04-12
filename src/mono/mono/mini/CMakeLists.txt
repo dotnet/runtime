@@ -12,13 +12,13 @@ include_directories(
   ${PROJECT_SOURCE_DIR}/../sgen)
 
 if(HOST_DARWIN)
-  set(OS_LIBS "-framework CoreFoundation" "-framework Foundation")
+  set(OS_LIBS "-framework CoreFoundation" "-framework Foundation" "-lcompression")
 
   if(CMAKE_SYSTEM_VARIANT STREQUAL "MacCatalyst")
     set(OS_LIBS ${OS_LIBS} "-lobjc" "-lc++")
   endif()
 elseif(HOST_IOS)
-set(OS_LIBS "-framework CoreFoundation" "-lobjc" "-lc++")
+set(OS_LIBS "-framework CoreFoundation" "-lcompression" "-lobjc" "-lc++")
 elseif(HOST_ANDROID)
 set(OS_LIBS m dl log)
 elseif(HOST_LINUX)
@@ -126,7 +126,6 @@ set(mini_common_sources
     mini-generic-sharing.c
     simd-methods.h
     simd-intrinsics.c
-    mini-native-types.c
     mini-unwind.h
     unwind.c
     image-writer.h
@@ -287,7 +286,7 @@ endif()
 if(ENABLE_LLVM)
 set(llvm_runtime_sources
     llvm-runtime.cpp)
-elseif(ENABLE_LLVM_RUNTIME)
+elseif(ENABLE_LLVM_RUNTIME AND NOT HOST_WASM)
 set(llvm_runtime_sources
     llvm-runtime.cpp)
 else()
@@ -339,7 +338,7 @@ if(NOT DISABLE_SHARED_LIBS)
     # to avoid a conflict we rename the import library with the .import.lib suffix
     set_target_properties(monosgen-shared PROPERTIES IMPORT_SUFFIX ".import.lib")
   endif()
-  target_link_libraries(monosgen-shared PRIVATE ${OS_LIBS} ${ICONV_LIB} ${LLVM_LIBS} ${ICU_LIBS} ${Z_LIBS})
+  target_link_libraries(monosgen-shared PRIVATE ${OS_LIBS} ${LLVM_LIBS} ${ICU_LIBS} ${Z_LIBS})
   if(ICU_LDFLAGS)
     set_property(TARGET monosgen-shared APPEND_STRING PROPERTY LINK_FLAGS " ${ICU_LDFLAGS}")
   endif()
@@ -390,7 +389,7 @@ if(NOT DISABLE_SHARED_LIBS)
         add_library(${frameworkconfig} SHARED $<TARGET_OBJECTS:monosgen-objects>)
         target_compile_definitions(${frameworkconfig} PRIVATE -DMONO_DLL_EXPORT)
         target_sources(${frameworkconfig} PRIVATE $<TARGET_OBJECTS:eglib_objects>)
-        target_link_libraries(${frameworkconfig} PRIVATE ${OS_LIBS} ${ICONV_LIB} ${LLVM_LIBS} ${ICU_LIBS} ${Z_LIBS})
+        target_link_libraries(${frameworkconfig} PRIVATE ${OS_LIBS} ${LLVM_LIBS} ${ICU_LIBS} ${Z_LIBS})
         if(ICU_LDFLAGS)
           set_property(TARGET ${frameworkconfig} APPEND_STRING PROPERTY LINK_FLAGS " ${ICU_LDFLAGS}")
         endif()
@@ -411,6 +410,18 @@ if(NOT DISABLE_SHARED_LIBS)
       endforeach()
     endif()
   endif()
+endif()
+
+if(HOST_WASM)
+# Add two static libs containing llvm-runtime.cpp compiled for JS based/WASM EH
+# This is the only source file which contains a c++ throw or catch
+add_library(mono-wasm-eh-js STATIC llvm-runtime.cpp)
+target_link_libraries (mono-wasm-eh-js PRIVATE monoapi)
+install(TARGETS mono-wasm-eh-js LIBRARY)
+add_library(mono-wasm-eh-wasm STATIC llvm-runtime.cpp)
+target_link_libraries (mono-wasm-eh-wasm PRIVATE monoapi)
+set_target_properties(mono-wasm-eh-wasm PROPERTIES COMPILE_FLAGS "-fwasm-exceptions")
+install(TARGETS mono-wasm-eh-wasm LIBRARY)
 endif()
 
 find_package(Python3 COMPONENTS Interpreter)
@@ -464,7 +475,7 @@ if(NOT DISABLE_EXECUTABLES)
   if(MONO_CROSS_COMPILE_EXECUTABLE_NAME)
     set_target_properties(mono-sgen PROPERTIES OUTPUT_NAME mono-aot-cross)
   endif()
-  target_link_libraries(mono-sgen PRIVATE monoapi monosgen-static ${OS_LIBS} ${ICONV_LIB} ${LLVM_LIBS} ${ICU_LIBS} ${Z_LIBS})
+  target_link_libraries(mono-sgen PRIVATE monoapi monosgen-static ${OS_LIBS} ${LLVM_LIBS} ${ICU_LIBS} ${Z_LIBS})
   if(NOT DISABLE_COMPONENTS AND STATIC_COMPONENTS AND NOT DISABLE_LINK_STATIC_COMPONENTS)
     # if components are built statically, link them into runtime.
     target_sources(mono-sgen PRIVATE "${mono-components-objects}")

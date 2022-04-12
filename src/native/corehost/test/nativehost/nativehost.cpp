@@ -410,6 +410,37 @@ int main(const int argc, const pal::char_t *argv[])
 
         return success ? EXIT_SUCCESS : EXIT_FAILURE;
     }
+    else if (pal::strcmp(command, _X("ijwhost")) == 0)
+    {
+        // args: ... <ijw_library_path> <entry_point>
+        if (argc < 4)
+        {
+            std::cerr << "Invalid arguments" << std::endl;
+            return -1;
+        }
+
+        const pal::string_t ijw_library_path = argv[2];
+        std::vector<char> entry_point_name = tostr(argv[3]);
+
+        pal::dll_t ijw_library;
+        if (!pal::load_library(&ijw_library_path, &ijw_library))
+        {
+            std::cout << "Failed to load library: " << tostr(ijw_library_path).data() << std::endl;
+            return EXIT_FAILURE;
+        }
+
+        // Test is assuming __cdecl, no arguments, and void return for simplicity
+        typedef void(__cdecl *entry_point_fn)();
+        entry_point_fn entry_point = reinterpret_cast<entry_point_fn>(pal::get_symbol(ijw_library, entry_point_name.data()));
+        if (entry_point == nullptr)
+        {
+            std::cout << "Failed to find entry point: " << entry_point_name.data() << std::endl;
+            return EXIT_FAILURE;
+        }
+
+        entry_point();
+        return EXIT_SUCCESS;
+    }
 #endif
     else if (pal::strcmp(command, _X("get_native_search_directories")) == 0)
     {

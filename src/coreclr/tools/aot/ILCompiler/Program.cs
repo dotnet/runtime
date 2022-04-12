@@ -607,7 +607,6 @@ namespace ILCompiler
                 }
             }
 
-            _rootedAssemblies = new List<string>(_rootedAssemblies.Select(a => ILLinkify(a)));
             _conditionallyRootedAssemblies = new List<string>(_conditionallyRootedAssemblies.Select(a => ILLinkify(a)));
             _trimmedAssemblies = new List<string>(_trimmedAssemblies.Select(a => ILLinkify(a)));
 
@@ -626,10 +625,16 @@ namespace ILCompiler
             // Root whatever assemblies were specified on the command line
             foreach (var rootedAssembly in _rootedAssemblies)
             {
+                // For compatibility with IL Linker, the parameter could be a file name or an assembly name.
+                // This is the logic IL Linker uses to decide how to interpret the string. Really.
+                EcmaModule module = File.Exists(rootedAssembly)
+                    ? typeSystemContext.GetModuleFromPath(rootedAssembly)
+                    : typeSystemContext.GetModuleForSimpleName(rootedAssembly);
+
                 // We only root the module type. The rest will fall out because we treat _rootedAssemblies
                 // same as conditionally rooted ones and here we're fulfilling the condition ("something is used").
                 compilationRoots.Add(
-                    new GenericRootProvider<ModuleDesc>(typeSystemContext.GetModuleForSimpleName(rootedAssembly),
+                    new GenericRootProvider<ModuleDesc>(module,
                     (ModuleDesc module, IRootingServiceProvider rooter) => rooter.AddCompilationRoot(module.GetGlobalModuleType(), "Command line root")));
             }
 
@@ -742,7 +747,8 @@ namespace ILCompiler
                     .UseCompilationRoots(compilationRoots)
                     .UseMetadataManager(metadataManager)
                     .UseParallelism(_parallelism)
-                    .UseInteropStubManager(interopStubManager);
+                    .UseInteropStubManager(interopStubManager)
+                    .UseLogger(logger);
 
                 if (_scanDgmlLogFileName != null)
                     scannerBuilder.UseDependencyTracking(_generateFullScanDgmlLog ? DependencyTrackingLevel.All : DependencyTrackingLevel.First);
@@ -845,9 +851,19 @@ namespace ILCompiler
                 // Check that methods and types generated during compilation are a subset of method and types scanned
                 bool scanningFail = false;
                 DiffCompilationResults(ref scanningFail, compilationResults.CompiledMethodBodies, scanResults.CompiledMethodBodies,
-                    "Methods", "compiled", "scanned", method => !(method.GetTypicalMethodDefinition() is EcmaMethod) || method.Name == "ThrowPlatformNotSupportedException" || method.Name == "ThrowArgumentOutOfRangeException");
+                    "Methods", "compiled", "scanned", method => !(method.GetTypicalMethodDefinition() is EcmaMethod) || IsRelatedToInvalidInput(method));
                 DiffCompilationResults(ref scanningFail, compilationResults.ConstructedEETypes, scanResults.ConstructedEETypes,
                     "EETypes", "compiled", "scanned", type => !(type.GetTypeDefinition() is EcmaType));
+
+                static bool IsRelatedToInvalidInput(MethodDesc method)
+                {
+                    // RyuJIT is more sensitive to invalid input and might detect cases that the scanner didn't have trouble with.
+                    // If we find logic related to compiling fallback method bodies (methods that just throw) that got compiled
+                    // but not scanned, it's usually fine. If it wasn't fine, we would probably crash before getting here.
+                    return method.OwningType is MetadataType mdType
+                        && mdType.Module == method.Context.SystemModule
+                        && (mdType.Name.EndsWith("Exception") || mdType.Namespace.StartsWith("Internal.Runtime"));
+                }
 
                 // If optimizations are enabled, the results will for sure not match in the other direction due to inlining, etc.
                 // But there's at least some value in checking the scanner doesn't expand the universe too much in debug.

@@ -22,7 +22,6 @@
 #include <math.h>
 #include <locale.h>
 
-#include <mono/utils/gc_wrapper.h>
 #include <mono/utils/mono-math.h>
 #include <mono/utils/mono-counters.h>
 #include <mono/utils/mono-logger-internals.h>
@@ -92,8 +91,6 @@ struct FrameClauseArgs {
 	 * frame further down the stack.
 	 */
 	const guint16 *end_at_ip;
-	/* When exiting this clause we also exit the frame */
-	int exit_clause;
 	/* Frame that is executing this clause */
 	InterpFrame *exec_frame;
 };
@@ -429,6 +426,14 @@ interp_free_context (gpointer ctx)
 	g_free (context);
 }
 
+/* Continue unwinding if there is an exception that needs to be handled in an AOTed frame above us */
+static void
+check_pending_unwind (ThreadContext *context)
+{
+	if (context->has_resume_state && !context->handler_frame)
+		mono_llvm_cpp_throw_exception ();
+}
+
 void
 mono_interp_error_cleanup (MonoError* error)
 {
@@ -747,7 +752,6 @@ get_virtual_method_fast (InterpMethod *imethod, MonoVTable *vtable, int offset)
 static int
 stackval_size (MonoType *type, gboolean pinvoke)
 {
-	type = mini_native_type_replace_type (type);
 	if (m_type_is_byref (type))
 		return MINT_STACK_SLOT_SIZE;
 	switch (type->type) {
@@ -811,7 +815,6 @@ stackval_size (MonoType *type, gboolean pinvoke)
 static int
 stackval_from_data (MonoType *type, stackval *result, const void *data, gboolean pinvoke)
 {
-	type = mini_native_type_replace_type (type);
 	if (m_type_is_byref (type)) {
 		result->data.p = *(gpointer*)data;
 		return MINT_STACK_SLOT_SIZE;
@@ -898,7 +901,6 @@ stackval_from_data (MonoType *type, stackval *result, const void *data, gboolean
 static int
 stackval_to_data (MonoType *type, stackval *val, void *data, gboolean pinvoke)
 {
-	type = mini_native_type_replace_type (type);
 	if (m_type_is_byref (type)) {
 		gpointer *p = (gpointer*)data;
 		*p = val->data.p;
@@ -1039,6 +1041,7 @@ interp_throw (ThreadContext *context, MonoException *ex, InterpFrame *frame, con
 	 */
 	frame->state.ip = ip + 1;
 
+	// This LMF is pop'ed by the EH machinery before resuming
 	interp_push_lmf (&ext, frame);
 
 	if (mono_object_isinst_checked ((MonoObject *) ex, mono_defaults.exception_class, error)) {
@@ -1062,8 +1065,6 @@ interp_throw (ThreadContext *context, MonoException *ex, InterpFrame *frame, con
 	 */
 
 	mono_handle_exception (&ctx, (MonoObject*)ex);
-
-	interp_pop_lmf (&ext);
 
 	if (MONO_CONTEXT_GET_IP (&ctx) != 0) {
 		/* We need to unwind into non-interpreter code */
@@ -2118,6 +2119,8 @@ interp_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObject 
 
 	context->stack_pointer = (guchar*)sp;
 
+	check_pending_unwind (context);
+
 	if (context->has_resume_state) {
 		/*
 		 * This can happen on wasm where native frames cannot be skipped during EH.
@@ -2220,10 +2223,12 @@ interp_entry (InterpEntryData *data)
 	if (rmethod->needs_thread_attach)
 		mono_threads_detach_coop (orig_domain, &attach_cookie);
 
+	check_pending_unwind (context);
+
 	if (mono_llvm_only) {
 		if (context->has_resume_state)
 			/* The exception will be handled in a frame above us */
-			mono_llvm_reraise_exception ((MonoException*)mono_gchandle_get_target_internal (context->exc_gchandle));
+			mono_llvm_cpp_throw_exception ();
 	} else {
 		g_assert (!context->has_resume_state);
 	}
@@ -2641,9 +2646,20 @@ do_jit_call (ThreadContext *context, stackval *ret_sp, stackval *sp, InterpFrame
 			 * This happens when interp_entry calls mono_llvm_reraise_exception ().
 			 */
 			return;
-		MonoObject *obj = mono_llvm_load_exception ();
+		MonoJitTlsData *jit_tls = mono_get_jit_tls ();
+		if (jit_tls->resume_state.il_state) {
+			/*
+			 * This c++ exception is going to be caught by an AOTed frame above us.
+			 * We can't rethrow here, since that will skip the cleanup of the
+			 * interpreter stack space etc. So instruct the interpreter to unwind.
+			 */
+			context->has_resume_state = TRUE;
+			context->handler_frame = NULL;
+			return;
+		}
+		MonoObject *obj = mini_llvmonly_load_exception ();
 		g_assert (obj);
-		mono_llvm_clear_exception ();
+		mini_llvmonly_clear_exception ();
 		mono_error_set_exception_instance (error, (MonoException*)obj);
 		return;
 	}
@@ -2958,6 +2974,8 @@ interp_entry_from_trampoline (gpointer ccontext_untyped, gpointer rmethod_untype
 	if (rmethod->needs_thread_attach)
 		mono_threads_detach_coop (orig_domain, &attach_cookie);
 
+	check_pending_unwind (context);
+
 	/* Write back the return value */
 	/* 'frame' is still valid */
 	mono_arch_set_native_call_context_ret (ccontext, &frame, sig, retp);
@@ -2996,8 +3014,10 @@ interp_compile_interp_method (MonoMethod *method, MonoError *error)
 	InterpMethod *imethod = mono_interp_get_imethod (method, error);
 	return_val_if_nok (error, NULL);
 
-	mono_interp_transform_method (imethod, get_context (), error);
-	return_val_if_nok (error, NULL);
+	if (!imethod->transformed) {
+		mono_interp_transform_method (imethod, get_context (), error);
+		return_val_if_nok (error, NULL);
+	}
 
 	return imethod->jinfo;
 }
@@ -3757,7 +3777,7 @@ main_loop:
 						del_imethod = mono_interp_get_imethod (mono_marshal_get_native_wrapper (del_imethod->method, FALSE, FALSE), error);
 						mono_error_assert_ok (error);
 						del->interp_invoke_impl = del_imethod;
-					} else if (del_imethod->method->flags & METHOD_ATTRIBUTE_VIRTUAL && !del->target && !m_class_is_valuetype (del_imethod->method->klass)) {
+					} else if ((m_method_is_virtual (del_imethod->method) && !m_method_is_static (del_imethod->method)) && !del->target && !m_class_is_valuetype (del_imethod->method->klass)) {
 						// 'this' is passed dynamically, we need to recompute the target method
 						// with each call
 						del_imethod = get_virtual_method (del_imethod, LOCAL_VAR (call_args_offset + MINT_STACK_SLOT_SIZE, MonoObject*)->vtable);
@@ -5270,7 +5290,9 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_LDOBJ_VT) {
 			guint16 size = ip [3];
-			memcpy (locals + ip [1], LOCAL_VAR (ip [2], gpointer), size);
+			gpointer srcAddr = LOCAL_VAR (ip [2], gpointer);
+			NULL_CHECK (srcAddr);
+			memcpy (locals + ip [1], srcAddr, size);
 			ip += 4;
 			MINT_IN_BREAK;
 		}
@@ -6369,7 +6391,15 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			ip += 3;
 			MINT_IN_BREAK;
 		}
-		MINT_IN_CASE(MINT_CKFINITE) {
+		MINT_IN_CASE(MINT_CKFINITE_R4) {
+			float val = LOCAL_VAR (ip [2], float);
+			if (!mono_isfinite (val))
+				THROW_EX (interp_get_exception_arithmetic (frame, ip), ip);
+			LOCAL_VAR (ip [1], float) = val;
+			ip += 3;
+			MINT_IN_BREAK;
+		}
+		MINT_IN_CASE(MINT_CKFINITE_R8) {
 			double val = LOCAL_VAR (ip [2], double);
 			if (!mono_isfinite (val))
 				THROW_EX (interp_get_exception_arithmetic (frame, ip), ip);
@@ -7269,6 +7299,8 @@ interp_parse_options (const char *options)
  * interp_set_resume_state:
  *
  *   Set the state the interpeter will continue to execute from after execution returns to the interpreter.
+ * If INTERP_FRAME is NULL, that means the exception is caught in an AOTed frame and the interpreter needs to
+ * unwind back to AOT code.
  */
 static void
 interp_set_resume_state (MonoJitTlsData *jit_tls, MonoObject *ex, MonoJitExceptionInfo *ei, MonoInterpFrameHandle interp_frame, gpointer handler_ip)
@@ -7286,8 +7318,10 @@ interp_set_resume_state (MonoJitTlsData *jit_tls, MonoObject *ex, MonoJitExcepti
 		mono_gchandle_free_internal (context->exc_gchandle);
 	context->exc_gchandle = mono_gchandle_new_internal ((MonoObject*)ex, FALSE);
 	/* Ditto */
-	if (ei)
-		*(MonoObject**)(frame_locals (context->handler_frame) + ei->exvar_offset) = ex;
+	if (context->handler_frame) {
+		if (ei)
+			*(MonoObject**)(frame_locals (context->handler_frame) + ei->exvar_offset) = ex;
+	}
 	context->handler_ip = (const guint16*)handler_ip;
 }
 
@@ -7323,7 +7357,6 @@ interp_run_finally (StackFrameInfo *frame, int clause_index, gpointer handler_ip
 	memset (&clause_args, 0, sizeof (FrameClauseArgs));
 	clause_args.start_with_ip = (const guint16*)handler_ip;
 	clause_args.end_at_ip = (const guint16*)handler_ip_end;
-	clause_args.exit_clause = clause_index;
 	clause_args.exec_frame = iframe;
 
 	state_ip = iframe->state.ip;
@@ -7339,6 +7372,9 @@ interp_run_finally (StackFrameInfo *frame, int clause_index, gpointer handler_ip
 
 	iframe->next_free = next_free;
 	iframe->state.ip = state_ip;
+
+	check_pending_unwind (context);
+
 	if (context->has_resume_state) {
 		return TRUE;
 	} else {
@@ -7390,22 +7426,25 @@ interp_run_filter (StackFrameInfo *frame, MonoException *ex, int clause_index, g
 
 	context->stack_pointer = (guchar*)child_frame.stack;
 
+	check_pending_unwind (context);
+
 	/* ENDFILTER stores the result into child_frame->retval */
 	return retval.data.i ? TRUE : FALSE;
 }
 
+/* Returns TRUE if there is a pending exception */
 static gboolean
-interp_run_finally_with_il_state (gpointer il_state_ptr, int clause_index, gpointer handler_ip, gpointer handler_ip_end)
+interp_run_clause_with_il_state (gpointer il_state_ptr, int clause_index, gpointer handler_ip, gpointer handler_ip_end,
+								 MonoObject *ex, gboolean *filtered, MonoExceptionEnum clause_type)
 {
 	MonoMethodILState *il_state = (MonoMethodILState*)il_state_ptr;
 	MonoMethodSignature *sig;
 	ThreadContext *context = get_context ();
+	stackval *orig_sp;
 	stackval *sp, *sp_args;
 	InterpMethod *imethod;
 	FrameClauseArgs clause_args;
 	ERROR_DECL (error);
-
-	// FIXME: Optimize this ? Its only used during EH
 
 	sig = mono_method_signature_internal (il_state->method);
 	g_assert (sig);
@@ -7413,9 +7452,15 @@ interp_run_finally_with_il_state (gpointer il_state_ptr, int clause_index, gpoin
 	imethod = mono_interp_get_imethod (il_state->method, error);
 	mono_error_assert_ok (error);
 
-	sp_args = sp = (stackval*)context->stack_pointer;
+	orig_sp = sp_args = sp = (stackval*)context->stack_pointer;
+
+	gpointer ret_addr = NULL;
 
 	int findex = 0;
+	if (sig->ret->type != MONO_TYPE_VOID) {
+		ret_addr = il_state->data [findex];
+		findex ++;
+	}
 	if (sig->hasthis) {
 		if (il_state->data [findex])
 			sp_args->data.p = *(gpointer*)il_state->data [findex];
@@ -7451,7 +7496,7 @@ interp_run_finally_with_il_state (gpointer il_state_ptr, int clause_index, gpoin
 	if (header->num_locals)
 		memset (frame_locals (&frame) + imethod->local_offsets [0], 0, imethod->locals_size);
 	/* Copy locals from il_state */
-	int locals_start = sig->hasthis + sig->param_count;
+	int locals_start = findex;
 	for (int i = 0; i < header->num_locals; ++i) {
 		if (il_state->data [locals_start + i])
 			stackval_from_data (header->locals [i], (stackval*)(frame_locals (&frame) + imethod->local_offsets [i]), il_state->data [locals_start + i], FALSE);
@@ -7459,24 +7504,33 @@ interp_run_finally_with_il_state (gpointer il_state_ptr, int clause_index, gpoin
 
 	memset (&clause_args, 0, sizeof (FrameClauseArgs));
 	clause_args.start_with_ip = (const guint16*)handler_ip;
-	clause_args.end_at_ip = (const guint16*)handler_ip_end;
-	clause_args.exit_clause = clause_index;
+	if (clause_type == MONO_EXCEPTION_CLAUSE_NONE || clause_type == MONO_EXCEPTION_CLAUSE_FILTER)
+		clause_args.end_at_ip = (const guint16*)clause_args.start_with_ip + 0xffffff;
+	else
+		clause_args.end_at_ip = (const guint16*)handler_ip_end;
 	clause_args.exec_frame = &frame;
 
-	// this informs MINT_ENDFINALLY to return to EH
-	*(guint16**)(frame_locals (&frame) + imethod->clause_data_offsets [clause_index]) = NULL;
+	if (clause_type == MONO_EXCEPTION_CLAUSE_NONE || clause_type == MONO_EXCEPTION_CLAUSE_FILTER)
+		*(MonoObject**)(frame_locals (&frame) + imethod->jinfo->clauses [clause_index].exvar_offset) = ex;
+	else
+		// this informs MINT_ENDFINALLY to return to EH
+		*(guint16**)(frame_locals (&frame) + imethod->clause_data_offsets [clause_index]) = NULL;
+
+	/* Set in mono_handle_exception () */
+	context->has_resume_state = FALSE;
 
 	interp_exec_method (&frame, context, &clause_args);
 
 	/* Write back args */
 	sp_args = sp;
 	findex = 0;
+	if (sig->ret->type != MONO_TYPE_VOID)
+		findex ++;
 	if (sig->hasthis) {
 		// FIXME: This
 		sp_args++;
 		findex ++;
 	}
-	findex = sig->hasthis ? 1 : 0;
 	for (int i = 0; i < sig->param_count; ++i) {
 		if (il_state->data [findex]) {
 			int size = stackval_to_data (sig->params [i], sp_args, il_state->data [findex], FALSE);
@@ -7494,11 +7548,19 @@ interp_run_finally_with_il_state (gpointer il_state_ptr, int clause_index, gpoin
 	}
 	mono_metadata_free_mh (header);
 
-	// FIXME: Restore stack ?
-	if (context->has_resume_state)
-		return TRUE;
-	else
-		return FALSE;
+	if (clause_type == MONO_EXCEPTION_CLAUSE_NONE && ret_addr) {
+		stackval_to_data (sig->ret, frame.retval, ret_addr, FALSE);
+	} else if (clause_type == MONO_EXCEPTION_CLAUSE_FILTER) {
+		g_assert (filtered);
+		*filtered = frame.retval->data.i;
+	}
+
+	memset (orig_sp, 0, (guint8*)context->stack_pointer - (guint8*)orig_sp);
+	context->stack_pointer = (guchar*)orig_sp;
+
+	check_pending_unwind (context);
+
+	return context->has_resume_state;
 }
 
 typedef struct {

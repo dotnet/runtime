@@ -112,7 +112,7 @@ namespace ILCompiler
             return _devirtualizationManager.CanConstructType(type);
         }
 
-        public DelegateCreationInfo GetDelegateCtor(TypeDesc delegateType, MethodDesc target, bool followVirtualDispatch)
+        public DelegateCreationInfo GetDelegateCtor(TypeDesc delegateType, MethodDesc target, TypeDesc constrainedType, bool followVirtualDispatch)
         {
             // If we're creating a delegate to a virtual method that cannot be overriden, devirtualize.
             // This is not just an optimization - it's required for correctness in the presence of sealed
@@ -123,7 +123,7 @@ namespace ILCompiler
             if (followVirtualDispatch)
                 target = MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(target);
 
-            return DelegateCreationInfo.Create(delegateType, target, NodeFactory, followVirtualDispatch);
+            return DelegateCreationInfo.Create(delegateType, target, constrainedType, NodeFactory, followVirtualDispatch);
         }
 
         /// <summary>
@@ -252,6 +252,10 @@ namespace ILCompiler
                 case ReadyToRunHelperId.FieldHandle:
                     return ((FieldDesc)targetOfLookup).OwningType.IsRuntimeDeterminedSubtype;
 
+                case ReadyToRunHelperId.ConstrainedDirectCall:
+                    return ((ConstrainedCallInfo)targetOfLookup).Method.IsRuntimeDeterminedExactMethod
+                        || ((ConstrainedCallInfo)targetOfLookup).ConstrainedType.IsRuntimeDeterminedSubtype;
+
                 default:
                     throw new NotImplementedException();
             }
@@ -289,9 +293,9 @@ namespace ILCompiler
             switch (lookupKind)
             {
                 case ReadyToRunHelperId.TypeHandle:
-                    return NodeFactory.ConstructedTypeSymbol((TypeDesc)targetOfLookup);
+                    return NodeFactory.ConstructedTypeSymbol(WithoutFunctionPointerType((TypeDesc)targetOfLookup));
                 case ReadyToRunHelperId.NecessaryTypeHandle:
-                    return NecessaryTypeSymbolIfPossible((TypeDesc)targetOfLookup);
+                    return NecessaryTypeSymbolIfPossible(WithoutFunctionPointerType((TypeDesc)targetOfLookup));
                 case ReadyToRunHelperId.TypeHandleForCasting:
                     {
                         var type = (TypeDesc)targetOfLookup;
@@ -414,6 +418,10 @@ namespace ILCompiler
             // Fixed lookup not possible - use helper.
             return GenericDictionaryLookup.CreateHelperLookup(contextSource, lookupKind, targetOfLookup);
         }
+
+        // CoreCLR compat - referring to function pointer types handled as IntPtr. No MethodTable for function pointers for now.
+        private static TypeDesc WithoutFunctionPointerType(TypeDesc type)
+            => type.IsFunctionPointer ? type.Context.GetWellKnownType(WellKnownType.IntPtr) : type;
 
         public bool IsFatPointerCandidate(MethodDesc containingMethod, MethodSignature signature)
         {
@@ -642,5 +650,13 @@ namespace ILCompiler
                 }
             }
         }
+    }
+
+    public sealed class ConstrainedCallInfo
+    {
+        public readonly TypeDesc ConstrainedType;
+        public readonly MethodDesc Method;
+        public ConstrainedCallInfo(TypeDesc constrainedType, MethodDesc method)
+            => (ConstrainedType, Method) = (constrainedType, method);
     }
 }

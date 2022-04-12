@@ -8,7 +8,7 @@
 }
 
 .assembly extern mscorlib { }
-.assembly 'filter' { }
+.assembly 'filter_seh_Boxing' { }
 .assembly extern xunit.core {}
 .namespace SinCalc
 {

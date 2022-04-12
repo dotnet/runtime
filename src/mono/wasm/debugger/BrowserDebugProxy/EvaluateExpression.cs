@@ -213,7 +213,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 }
             }
 
-            private string ConvertJSToCSharpLocalVariableAssignment(string idName, JToken variable)
+            private static string ConvertJSToCSharpLocalVariableAssignment(string idName, JToken variable)
             {
                 string typeRet;
                 object valueRet;
@@ -231,6 +231,12 @@ namespace Microsoft.WebAssembly.Diagnostics
                         typeRet = "string";
                         break;
                     }
+                    case "symbol":
+                     {
+                         valueRet = $"'{value?.Value<char>()}'";
+                         typeRet = "char";
+                         break;
+                     }
                     case "number":
                         //casting to double and back to string would loose precision; so casting straight to string
                         valueRet = value?.Value<string>();
@@ -424,6 +430,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                 return new { type = "object", subtype = "null", className = type?.ToString(), description = type?.ToString() };
             if (v is string s)
                 return new { type = "string", value = s, description = s };
+            if (v is char c)
+                return new { type = "symbol", value = c, description = $"{(int)c} '{c}'" };
             if (NumericTypes.Contains(v.GetType()))
                 return new { type = "number", value = v, description = Convert.ToDouble(v).ToString(CultureInfo.InvariantCulture) };
             if (v is JObject)

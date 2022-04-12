@@ -196,7 +196,7 @@ namespace System.IO.Compression.Tests
             return expectedPermissions;
         }
 
-        [GeneratedDllImport("libc", StringMarshalling = StringMarshalling.Utf8, SetLastError = true)]
+        [LibraryImport("libc", StringMarshalling = StringMarshalling.Utf8, SetLastError = true)]
         private static partial int mkfifo(string path, int mode);
     }
 }

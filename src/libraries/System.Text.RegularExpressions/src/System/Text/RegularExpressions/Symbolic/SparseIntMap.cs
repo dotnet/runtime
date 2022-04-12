@@ -11,18 +11,9 @@ namespace System.Text.RegularExpressions.Symbolic
     internal sealed class SparseIntMap<T> where T : struct
     {
         private const int InitialCapacity = 16;
+
         private readonly List<KeyValuePair<int, T>> _dense = new();
         private int[] _sparse = new int[InitialCapacity];
-
-        private void Grow(int maxValue)
-        {
-            int newLength = maxValue + 1;
-            Debug.Assert(newLength > _sparse.Length);
-            // At least double the size to amortize memory allocations
-            newLength = Math.Max(2 * _sparse.Length, newLength);
-            Array.Resize(ref _sparse, newLength);
-            // Using GC.AllocateUninitializedArray<int>(newLength) and copying would also be valid
-        }
 
         /// <summary>Remove all entries. Does not decrease capacity.</summary>
         public void Clear() => _dense.Clear();
@@ -33,8 +24,11 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <summary>Get the internal list of entries. Do not modify.</summary>
         public List<KeyValuePair<int, T>> Values => _dense;
 
-        /// <summary>Return the index of the entry with the key, or -1 if none exists.</summary>
-        public int Find(int key)
+        /// <summary>Find or add an entry matching the key.</summary>
+        /// <param name="key">the key to find or add</param>
+        /// <param name="index">will be set to the index of the matching entry</param>
+        /// <returns>whether a new entry was added</returns>
+        public bool Add(int key, out int index)
         {
             int[] sparse = _sparse;
             if ((uint)key < (uint)sparse.Length)
@@ -44,37 +38,20 @@ namespace System.Text.RegularExpressions.Symbolic
                 if (idx < dense.Count)
                 {
                     int entryKey = dense[idx].Key;
-                    Debug.Assert(entryKey < _sparse.Length);
+                    Debug.Assert(entryKey < sparse.Length);
                     if (key == entryKey)
                     {
-                        return idx;
+                        index = idx;
+                        return false;
                     }
                 }
+
+                sparse[key] = index = _dense.Count;
+                dense.Add(new KeyValuePair<int, T>(key, default));
+                return true;
             }
 
-            return -1;
-        }
-
-        /// <summary>Find or add an entry matching the key.</summary>
-        /// <param name="key">the key to find or add</param>
-        /// <param name="index">will be set to the index of the matching entry</param>
-        /// <returns>whether a new entry was added</returns>
-        public bool Add(int key, out int index)
-        {
-            index = Find(key);
-            if (index >= 0)
-            {
-                return false;
-            }
-
-            if (key >= _sparse.Length)
-            {
-                Grow(key);
-            }
-            index = _dense.Count;
-            _sparse[key] = index;
-            _dense.Add(new KeyValuePair<int, T>(key, default(T)));
-            return true;
+            return GrowAndAdd(key, out index);
         }
 
         /// <summary>Find or add an entry matching a key and then set the value of the entry.</summary>
@@ -91,6 +68,20 @@ namespace System.Text.RegularExpressions.Symbolic
             Debug.Assert(0 <= index && index < _dense.Count);
             Debug.Assert(_dense[index].Key == key);
             _dense[index] = new KeyValuePair<int, T>(key, value);
+        }
+
+        private bool GrowAndAdd(int key, out int index)
+        {
+            int newLength = key + 1;
+            Debug.Assert(newLength > _sparse.Length);
+
+            // At least double the size to amortize memory allocations
+            newLength = Math.Max(2 * _sparse.Length, newLength);
+            Array.Resize(ref _sparse, newLength);
+
+            _sparse[key] = index = _dense.Count;
+            _dense.Add(new KeyValuePair<int, T>(key, default));
+            return true;
         }
     }
 }

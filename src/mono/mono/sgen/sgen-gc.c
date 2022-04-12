@@ -1636,7 +1636,7 @@ workers_finish_callback (void)
 		psj->scan_job.gc_thread_gray_queue = NULL;
 		psj->job_index = i;
 		psj->job_split_count = split_count;
-		psj->data = num_major_sections / split_count;
+		psj->data = (int)(num_major_sections / split_count);
 		sgen_workers_enqueue_job (GENERATION_OLD, &psj->scan_job.job, TRUE);
 	}
 
@@ -1678,7 +1678,7 @@ enqueue_scan_remembered_set_jobs (SgenGrayQueue *gc_thread_gray_queue, SgenObjec
 		psj->scan_job.gc_thread_gray_queue = gc_thread_gray_queue;
 		psj->job_index = i;
 		psj->job_split_count = split_count;
-		psj->data = num_major_sections / split_count;
+		psj->data = (int)(num_major_sections / split_count);
 		sgen_workers_enqueue_deferred_job (GENERATION_NURSERY, &psj->scan_job.job, is_parallel);
 
 		psj = (ParallelScanJob*)sgen_thread_pool_job_alloc ("scan LOS remsets", job_scan_los_card_table, sizeof (ParallelScanJob));
@@ -1707,7 +1707,7 @@ sgen_iterate_all_block_ranges (sgen_cardtable_block_callback callback, gboolean 
 		pjob = (ParallelIterateBlockRangesJob*)sgen_thread_pool_job_alloc ("iterate major block ranges", job_major_collector_iterate_block_ranges, sizeof (ParallelIterateBlockRangesJob));
 		pjob->job_index = i;
 		pjob->job_split_count = split_count;
-		pjob->data = num_major_sections / split_count;
+		pjob->data = (int)(num_major_sections / split_count);
 		pjob->callback = callback;
 		sgen_workers_enqueue_deferred_job (GENERATION_NURSERY, &pjob->job, is_parallel);
 
@@ -2207,7 +2207,7 @@ major_copy_or_mark_from_roots (SgenGrayQueue *gc_thread_gray_queue, size_t *old_
 			psj->scan_job.gc_thread_gray_queue = gc_thread_gray_queue;
 			psj->job_index = i;
 			psj->job_split_count = split_count;
-			psj->data = num_major_sections / split_count;
+			psj->data = (int)(num_major_sections / split_count);
 			sgen_workers_enqueue_job (GENERATION_OLD, &psj->scan_job.job, parallel);
 
 			psj = (ParallelScanJob*)sgen_thread_pool_job_alloc ("scan LOS mod union cardtable", job_scan_los_mod_union_card_table, sizeof (ParallelScanJob));

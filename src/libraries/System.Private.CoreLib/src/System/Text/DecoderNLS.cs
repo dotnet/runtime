@@ -205,11 +205,11 @@ namespace System.Text
         }
 
         internal ReadOnlySpan<byte> GetLeftoverData() =>
-            MemoryMarshal.AsBytes(new ReadOnlySpan<int>(ref _leftoverBytes, 1)).Slice(0, _leftoverByteCount);
+            MemoryMarshal.AsBytes(new ReadOnlySpan<int>(in _leftoverBytes)).Slice(0, _leftoverByteCount);
 
         internal void SetLeftoverData(ReadOnlySpan<byte> bytes)
         {
-            bytes.CopyTo(MemoryMarshal.AsBytes(new Span<int>(ref _leftoverBytes, 1)));
+            bytes.CopyTo(MemoryMarshal.AsBytes(new Span<int>(ref _leftoverBytes)));
             _leftoverByteCount = bytes.Length;
         }
 

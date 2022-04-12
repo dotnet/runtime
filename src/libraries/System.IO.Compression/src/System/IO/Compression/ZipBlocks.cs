@@ -554,7 +554,7 @@ namespace System.IO.Compression
         public uint OffsetOfStartOfCentralDirectoryWithRespectToTheStartingDiskNumber;
         public byte[] ArchiveComment;
 
-        public static void WriteBlock(Stream stream, long numberOfEntries, long startOfCentralDirectory, long sizeOfCentralDirectory, byte[]? archiveComment)
+        public static void WriteBlock(Stream stream, long numberOfEntries, long startOfCentralDirectory, long sizeOfCentralDirectory, byte[] archiveComment)
         {
             BinaryWriter writer = new BinaryWriter(stream);
 
@@ -574,10 +574,10 @@ namespace System.IO.Compression
             writer.Write(startOfCentralDirectoryTruncated);
 
             // Should be valid because of how we read archiveComment in TryReadBlock:
-            Debug.Assert((archiveComment == null) || (archiveComment.Length <= ZipFileCommentMaxLength));
+            Debug.Assert(archiveComment.Length <= ZipFileCommentMaxLength);
 
-            writer.Write(archiveComment != null ? (ushort)archiveComment.Length : (ushort)0); // zip file comment length
-            if (archiveComment != null)
+            writer.Write((ushort)archiveComment.Length); // zip file comment length
+            if (archiveComment.Length > 0)
                 writer.Write(archiveComment);
         }
 

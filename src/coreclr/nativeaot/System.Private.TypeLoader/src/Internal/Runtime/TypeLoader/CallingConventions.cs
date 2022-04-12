@@ -110,6 +110,7 @@ namespace Internal.Runtime.CallConverter
                 return (uint)IntPtr.Size;
         }
 
+#pragma warning disable CA1822
         public bool RequiresAlign8()
         {
 #if !TARGET_ARM
@@ -151,6 +152,7 @@ namespace Internal.Runtime.CallConverter
 #endif
             return CorElementType.ELEMENT_TYPE_R4;
         }
+#pragma warning restore CA1822
 
         public CorElementType GetCorElementType()
         {

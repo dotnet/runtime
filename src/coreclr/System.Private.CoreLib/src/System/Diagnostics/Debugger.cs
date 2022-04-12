@@ -51,7 +51,8 @@ namespace System.Diagnostics
             }
         }
 
-        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "DebugDebugger_Launch")]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "DebugDebugger_Launch")]
+        [return: MarshalAs(UnmanagedType.Bool)]
         private static partial bool LaunchInternal();
 
         // Returns whether or not a debugger is attached to the process.
@@ -77,7 +78,7 @@ namespace System.Diagnostics
         // report the message depending on its settings.
         public static void Log(int level, string? category, string? message) => LogInternal(level, category, message);
 
-        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "DebugDebugger_Log", StringMarshalling = StringMarshalling.Utf16)]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "DebugDebugger_Log", StringMarshalling = StringMarshalling.Utf16)]
         private static partial void LogInternal(int level, string? category, string? message);
 
         // Checks to see if an attached debugger has logging enabled

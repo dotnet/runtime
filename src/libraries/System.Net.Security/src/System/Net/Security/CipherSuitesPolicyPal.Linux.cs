@@ -80,12 +80,14 @@ namespace System.Net.Security
             // if TLS 1.3 was explicitly requested the underlying code will throw
             // if default option (SslProtocols.None) is used we will opt-out of TLS 1.3
 
+#pragma warning disable SYSLIB0040 // NoEncryption and AllowNoEncryption are obsolete
             if (encryptionPolicy == EncryptionPolicy.NoEncryption)
             {
                 // TLS 1.3 uses different ciphersuite restrictions than previous versions.
                 // It has no equivalent to a NoEncryption option.
                 return true;
             }
+#pragma warning restore SYSLIB0040
 
             if (policy == null)
             {
@@ -141,10 +143,12 @@ namespace System.Net.Security
                 return CipherListFromEncryptionPolicy(encryptionPolicy);
             }
 
+#pragma warning disable SYSLIB0040 // NoEncryption and AllowNoEncryption are obsolete
             if (encryptionPolicy == EncryptionPolicy.NoEncryption)
             {
                 throw new PlatformNotSupportedException(SR.net_ssl_ciphersuites_policy_not_supported);
             }
+#pragma warning restore SYSLIB0040
 
             return policy.Pal._cipherSuites;
         }
@@ -160,10 +164,12 @@ namespace System.Net.Security
                 return null;
             }
 
+#pragma warning disable SYSLIB0040 // NoEncryption and AllowNoEncryption are obsolete
             if (encryptionPolicy == EncryptionPolicy.NoEncryption)
             {
                 throw new PlatformNotSupportedException(SR.net_ssl_ciphersuites_policy_not_supported);
             }
+#pragma warning restore SYSLIB0040
 
             return policy.Pal._tls13CipherSuites;
         }
@@ -174,10 +180,12 @@ namespace System.Net.Security
             {
                 case EncryptionPolicy.RequireEncryption:
                     return null;
+#pragma warning disable SYSLIB0040 // NoEncryption and AllowNoEncryption are obsolete
                 case EncryptionPolicy.AllowNoEncryption:
                     return AllowNoEncryptionDefault;
                 case EncryptionPolicy.NoEncryption:
                     return NoEncryptionDefault;
+#pragma warning restore SYSLIB0040
                 default:
                     Debug.Fail($"Unknown EncryptionPolicy value ({policy})");
                     return null;

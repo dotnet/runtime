@@ -701,6 +701,12 @@ int LinearScan::BuildNode(GenTree* tree)
                     assert(cast->isContained() && (cns == 0));
                     BuildUse(cast->CastOp());
                 }
+                else if (index->OperIs(GT_CAST) && index->isContained())
+                {
+                    GenTreeCast* cast = index->AsCast();
+                    assert(cast->isContained() && (cns == 0));
+                    BuildUse(cast->CastOp());
+                }
                 else
                 {
                     BuildUse(index);
@@ -919,7 +925,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
 
     if (HWIntrinsicInfo::IsMultiReg(intrin.id))
     {
-        dstCount = intrinsicTree->GetMultiRegCount();
+        dstCount = intrinsicTree->GetMultiRegCount(compiler);
     }
     else if (intrinsicTree->IsValue())
     {

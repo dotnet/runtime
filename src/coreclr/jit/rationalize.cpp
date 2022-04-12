@@ -119,12 +119,6 @@ void Rationalizer::RewriteIndir(LIR::Use& use)
 void Rationalizer::RewriteSIMDIndir(LIR::Use& use)
 {
 #ifdef FEATURE_SIMD
-    // No lowering is needed for non-SIMD nodes, so early out if SIMD types are not supported.
-    if (!comp->supportSIMDTypes())
-    {
-        return;
-    }
-
     GenTreeIndir* indir = use.Def()->AsIndir();
     assert(indir->OperIs(GT_IND));
     var_types simdType = indir->TypeGet();
@@ -453,11 +447,18 @@ void Rationalizer::RewriteAssignment(LIR::Use& use)
 
         case GT_CLS_VAR:
         {
+            bool isVolatile = (location->gtFlags & GTF_CLS_VAR_VOLATILE) != 0;
+
+            location->gtFlags &= ~GTF_CLS_VAR_VOLATILE;
             location->SetOper(GT_CLS_VAR_ADDR);
             location->gtType = TYP_BYREF;
 
             assignment->SetOper(GT_STOREIND);
             assignment->AsStoreInd()->SetRMWStatusDefault();
+            if (isVolatile)
+            {
+                assignment->gtFlags |= GTF_IND_VOLATILE;
+            }
 
             // TODO: JIT dump
         }
@@ -594,7 +595,8 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
             break;
 
         case GT_BOX:
-            // GT_BOX at this level just passes through so get rid of it
+        case GT_ARR_ADDR:
+            // BOX/ARR_ADDR at this level are just NOPs.
             use.ReplaceWith(node->gtGetOp1());
             BlockRange().Remove(node);
             break;
@@ -691,7 +693,12 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
             if (!isLHSOfAssignment)
             {
                 GenTree* ind = comp->gtNewOperNode(GT_IND, node->TypeGet(), node);
+                if ((node->gtFlags & GTF_CLS_VAR_VOLATILE) != 0)
+                {
+                    ind->gtFlags |= GTF_IND_VOLATILE;
+                }
 
+                node->gtFlags &= ~GTF_CLS_VAR_VOLATILE;
                 node->SetOper(GT_CLS_VAR_ADDR);
                 node->gtType = TYP_BYREF;
 
@@ -712,7 +719,6 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
 #ifdef FEATURE_SIMD
         case GT_SIMD:
         {
-            noway_assert(comp->supportSIMDTypes());
             GenTreeSIMD* simdNode = node->AsSIMD();
             unsigned     simdSize = simdNode->GetSimdSize();
             var_types    simdType = comp->getSIMDTypeForSize(simdSize);
@@ -777,8 +783,6 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
             {
                 break;
             }
-
-            noway_assert(comp->supportSIMDTypes());
 
             // TODO-1stClassStructs: This should be handled more generally for enregistered or promoted
             // structs that are passed or returned in a different register type than their enregistered

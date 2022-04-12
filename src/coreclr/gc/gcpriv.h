@@ -51,8 +51,8 @@ inline void FATAL_GC_ERROR()
 //
 // This means any empty regions can be freely used for any generation. For
 // Server GC we will balance regions between heaps.
-// For now disable regions outside of StandAlone GC builds
-#if defined (HOST_64BIT) && defined (BUILD_AS_STANDALONE)
+// For now disable regions for StandAlone GC, NativeAOT and MacOS builds
+#if defined (HOST_64BIT) && !defined (BUILD_AS_STANDALONE) && !defined(__APPLE__) && !defined(FEATURE_REDHAWK)
 #define USE_REGIONS
 #endif //HOST_64BIT && BUILD_AS_STANDALONE
 
@@ -1036,7 +1036,8 @@ enum msl_take_state
     mt_alloc_large_cant,
     mt_try_alloc,
     mt_try_budget,
-    mt_try_servo_budget
+    mt_try_servo_budget,
+    mt_decommit_step
 };
 
 enum msl_enter_state
@@ -1188,6 +1189,7 @@ public:
     void print (int hn, const char* msg="", int* ages=nullptr);
     static void print (region_free_list free_list[count_free_region_kinds], int hn, const char* msg="", int* ages=nullptr);
     void sort_by_committed_and_age();
+    static bool is_on_free_list (heap_segment* region, region_free_list free_list[count_free_region_kinds]);
 };
 #endif
 
@@ -2012,10 +2014,10 @@ protected:
     void reset_heap_segment_pages (heap_segment* seg);
     PER_HEAP
     void decommit_heap_segment_pages (heap_segment* seg, size_t extra_space);
-#if defined(MULTIPLE_HEAPS) && !defined(USE_REGIONS)
+#if defined(MULTIPLE_HEAPS)
     PER_HEAP
     size_t decommit_ephemeral_segment_pages_step ();
-#endif //MULTIPLE_HEAPS && !USE_REGIONS
+#endif //MULTIPLE_HEAPS
     PER_HEAP
     size_t decommit_heap_segment_pages_worker (heap_segment* seg, uint8_t *new_committed);
     PER_HEAP_ISOLATED
@@ -2025,7 +2027,7 @@ protected:
     PER_HEAP_ISOLATED
     bool virtual_alloc_commit_for_heap (void* addr, size_t size, int h_number);
     PER_HEAP_ISOLATED
-    bool virtual_commit (void* address, size_t size, gc_oh_num oh, int h_number=-1, bool* hard_limit_exceeded_p=NULL);
+    bool virtual_commit (void* address, size_t size, gc_oh_num oh, int h_number=-1, bool* hard_limit_exceeded_p=NULL); 
     PER_HEAP_ISOLATED
     bool virtual_decommit (void* address, size_t size, gc_oh_num oh, int h_number=-1);
     PER_HEAP_ISOLATED
@@ -5596,9 +5598,7 @@ public:
     size_t          saved_desired_allocation;
 #endif // _DEBUG
 #endif //MULTIPLE_HEAPS
-#if !defined(MULTIPLE_HEAPS) || !defined(USE_REGIONS)
     uint8_t*        decommit_target;
-#endif //!MULTIPLE_HEAPS || !USE_REGIONS
     uint8_t*        plan_allocated;
     // In the plan phase we change the allocated for a seg but we need this
     // value to correctly calculate how much space we can reclaim in
@@ -5897,13 +5897,11 @@ uint8_t*& heap_segment_committed (heap_segment* inst)
 {
   return inst->committed;
 }
-#if !defined(MULTIPLE_HEAPS) || !defined(USE_REGIONS)
 inline
 uint8_t*& heap_segment_decommit_target (heap_segment* inst)
 {
     return inst->decommit_target;
 }
-#endif //!MULTIPLE_HEAPS || !USE_REGIONS
 inline
 uint8_t*& heap_segment_used (heap_segment* inst)
 {

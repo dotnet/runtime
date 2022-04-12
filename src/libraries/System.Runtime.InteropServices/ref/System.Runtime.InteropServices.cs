@@ -149,11 +149,7 @@ namespace System.Runtime.InteropServices
     public enum ClassInterfaceType
     {
         None = 0,
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("Support for IDispatch may be unavailable in future releases.")]
         AutoDispatch = 1,
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("Support for IDispatch may be unavailable in future releases.")]
         AutoDual = 2,
     }
     [System.CLSCompliantAttribute(false)]
@@ -327,6 +323,41 @@ namespace System.Runtime.InteropServices
         NotHandled = 1,
         Failed = 2,
     }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Struct)]
+    public sealed partial class CustomTypeMarshallerAttribute : System.Attribute
+    {
+        public CustomTypeMarshallerAttribute(System.Type managedType, System.Runtime.InteropServices.CustomTypeMarshallerKind marshallerKind = System.Runtime.InteropServices.CustomTypeMarshallerKind.Value) { }
+        public System.Type ManagedType { get { throw null; } }
+        public System.Runtime.InteropServices.CustomTypeMarshallerKind MarshallerKind { get { throw null; } }
+        public int BufferSize { get { throw null; } set { } }
+        public System.Runtime.InteropServices.CustomTypeMarshallerDirection Direction { get { throw null; } set { } }
+        public System.Runtime.InteropServices.CustomTypeMarshallerFeatures Features { get { throw null; } set { } }
+        public struct GenericPlaceholder
+        {
+        }
+    }
+    [System.FlagsAttribute]
+    public enum CustomTypeMarshallerDirection
+    {
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        None = 0,
+        In = 0x1,
+        Out = 0x2,
+        Ref = In | Out,
+    }
+    [System.FlagsAttribute]
+    public enum CustomTypeMarshallerFeatures
+    {
+        None = 0,
+        UnmanagedResources = 0x1,
+        CallerAllocatedBuffer = 0x2,
+        TwoStageMarshalling = 0x4
+    }
+    public enum CustomTypeMarshallerKind
+    {
+        Value,
+        LinearCollection
+    }
     [System.AttributeUsageAttribute(System.AttributeTargets.Module, Inherited=false)]
     public sealed partial class DefaultCharSetAttribute : System.Attribute
     {
@@ -484,6 +515,16 @@ namespace System.Runtime.InteropServices
         public LCIDConversionAttribute(int lcid) { }
         public int Value { get { throw null; } }
     }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Method, AllowMultiple = false, Inherited=false)]
+    public sealed partial class LibraryImportAttribute : System.Attribute
+    {
+        public LibraryImportAttribute(string libraryName) { }
+        public string LibraryName { get { throw null; } }
+        public string? EntryPoint { get { throw null; } set { } }
+        public bool SetLastError { get { throw null; } set { }}
+        public System.Runtime.InteropServices.StringMarshalling StringMarshalling { get { throw null; } set { } }
+        public System.Type? StringMarshallingCustomType { get { throw null; } set { } }
+    }
     [System.AttributeUsageAttribute(System.AttributeTargets.Method, Inherited=false, AllowMultiple=false)]
     public sealed partial class ManagedToNativeComInteropStubAttribute : System.Attribute
     {
@@ -533,6 +574,7 @@ namespace System.Runtime.InteropServices
         public static object? CreateWrapperOfType(object? o, System.Type t) { throw null; }
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public static TWrapper CreateWrapperOfType<T, TWrapper>(T? o) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("Marshalling code for the object might not be available. Use the DestroyStructure<T> overload instead.")]
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public static void DestroyStructure(System.IntPtr ptr, System.Type structuretype) { }
         public static void DestroyStructure<T>(System.IntPtr ptr) { }
@@ -553,6 +595,7 @@ namespace System.Runtime.InteropServices
         public static System.IntPtr GetComInterfaceForObject<T, TInterface>([System.Diagnostics.CodeAnalysis.DisallowNullAttribute] T o) { throw null; }
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public static object? GetComObjectData(object obj, object key) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("Marshalling code for the delegate might not be available. Use the GetDelegateForFunctionPointer<TDelegate> overload instead.")]
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public static System.Delegate GetDelegateForFunctionPointer(System.IntPtr ptr, System.Type t) { throw null; }
         public static TDelegate GetDelegateForFunctionPointer<TDelegate>(System.IntPtr ptr) { throw null; }
@@ -564,6 +607,7 @@ namespace System.Runtime.InteropServices
         public static System.Exception? GetExceptionForHR(int errorCode) { throw null; }
         public static System.Exception? GetExceptionForHR(int errorCode, System.IntPtr errorInfo) { throw null; }
         public static System.IntPtr GetExceptionPointers() { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("Marshalling code for the delegate might not be available. Use the GetFunctionPointerForDelegate<TDelegate> overload instead.")]
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public static System.IntPtr GetFunctionPointerForDelegate(System.Delegate d) { throw null; }
         public static System.IntPtr GetFunctionPointerForDelegate<TDelegate>(TDelegate d) where TDelegate : notnull { throw null; }
@@ -624,8 +668,10 @@ namespace System.Runtime.InteropServices
         public static string PtrToStringUni(System.IntPtr ptr, int len) { throw null; }
         public static string? PtrToStringUTF8(System.IntPtr ptr) { throw null; }
         public static string PtrToStringUTF8(System.IntPtr ptr, int byteLen) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("Marshalling code for the object might not be available")]
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public static void PtrToStructure(System.IntPtr ptr, object structure) { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("Marshalling code for the object might not be available")]
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public static object? PtrToStructure(System.IntPtr ptr, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicConstructors| System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] System.Type structureType) { throw null; }
         public static T? PtrToStructure<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicConstructors | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)]T>(System.IntPtr ptr) { throw null; }
@@ -633,26 +679,31 @@ namespace System.Runtime.InteropServices
         public static int QueryInterface(System.IntPtr pUnk, ref System.Guid iid, out System.IntPtr ppv) { throw null; }
         public static byte ReadByte(System.IntPtr ptr) { throw null; }
         public static byte ReadByte(System.IntPtr ptr, int ofs) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("Marshalling code for the object might not be available")]
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         [System.ObsoleteAttribute("ReadByte(Object, Int32) may be unavailable in future releases.")]
         public static byte ReadByte(object ptr, int ofs) { throw null; }
         public static short ReadInt16(System.IntPtr ptr) { throw null; }
         public static short ReadInt16(System.IntPtr ptr, int ofs) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("Marshalling code for the object might not be available")]
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         [System.ObsoleteAttribute("ReadInt16(Object, Int32) may be unavailable in future releases.")]
         public static short ReadInt16(object ptr, int ofs) { throw null; }
         public static int ReadInt32(System.IntPtr ptr) { throw null; }
         public static int ReadInt32(System.IntPtr ptr, int ofs) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("Marshalling code for the object might not be available")]
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         [System.ObsoleteAttribute("ReadInt32(Object, Int32) may be unavailable in future releases.")]
         public static int ReadInt32(object ptr, int ofs) { throw null; }
         public static long ReadInt64(System.IntPtr ptr) { throw null; }
         public static long ReadInt64(System.IntPtr ptr, int ofs) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("Marshalling code for the object might not be available")]
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         [System.ObsoleteAttribute("ReadInt64(Object, Int32) may be unavailable in future releases.")]
         public static long ReadInt64(object ptr, int ofs) { throw null; }
         public static System.IntPtr ReadIntPtr(System.IntPtr ptr) { throw null; }
         public static System.IntPtr ReadIntPtr(System.IntPtr ptr, int ofs) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("Marshalling code for the object might not be available")]
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         [System.ObsoleteAttribute("ReadIntPtr(Object, Int32) may be unavailable in future releases.")]
         public static System.IntPtr ReadIntPtr(object ptr, int ofs) { throw null; }
@@ -670,8 +721,10 @@ namespace System.Runtime.InteropServices
         public static bool SetComObjectData(object obj, object key, object? data) { throw null; }
         public static void SetLastPInvokeError(int error) { throw null; }
         public static void SetLastSystemError(int error) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("Marshalling code for the object might not be available. Use the SizeOf<T> overload instead.")]
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public static int SizeOf(object structure) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("Marshalling code for the object might not be available. Use the SizeOf<T> overload instead.")]
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public static int SizeOf(System.Type t) { throw null; }
         public static int SizeOf<T>() { throw null; }
@@ -684,6 +737,7 @@ namespace System.Runtime.InteropServices
         public static System.IntPtr StringToHGlobalAnsi(string? s) { throw null; }
         public static System.IntPtr StringToHGlobalAuto(string? s) { throw null; }
         public static System.IntPtr StringToHGlobalUni(string? s) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("Marshalling code for the object might not be available. Use the StructureToPtr<T> overload instead.")]
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public static void StructureToPtr(object structure, System.IntPtr ptr, bool fDeleteOld) { }
         public static void StructureToPtr<T>([System.Diagnostics.CodeAnalysis.DisallowNullAttribute] T structure, System.IntPtr ptr, bool fDeleteOld) { }
@@ -694,6 +748,7 @@ namespace System.Runtime.InteropServices
         public static System.IntPtr UnsafeAddrOfPinnedArrayElement<T>(T[] arr, int index) { throw null; }
         public static void WriteByte(System.IntPtr ptr, byte val) { }
         public static void WriteByte(System.IntPtr ptr, int ofs, byte val) { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("Marshalling code for the object might not be available")]
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         [System.ObsoleteAttribute("WriteByte(Object, Int32, Byte) may be unavailable in future releases.")]
         public static void WriteByte(object ptr, int ofs, byte val) { }
@@ -701,24 +756,29 @@ namespace System.Runtime.InteropServices
         public static void WriteInt16(System.IntPtr ptr, short val) { }
         public static void WriteInt16(System.IntPtr ptr, int ofs, char val) { }
         public static void WriteInt16(System.IntPtr ptr, int ofs, short val) { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("Marshalling code for the object might not be available")]
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         [System.ObsoleteAttribute("WriteInt16(Object, Int32, Char) may be unavailable in future releases.")]
         public static void WriteInt16(object ptr, int ofs, char val) { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("Marshalling code for the object might not be available")]
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         [System.ObsoleteAttribute("WriteInt16(Object, Int32, Int16) may be unavailable in future releases.")]
         public static void WriteInt16(object ptr, int ofs, short val) { }
         public static void WriteInt32(System.IntPtr ptr, int val) { }
         public static void WriteInt32(System.IntPtr ptr, int ofs, int val) { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("Marshalling code for the object might not be available")]
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         [System.ObsoleteAttribute("WriteInt32(Object, Int32, Int32) may be unavailable in future releases.")]
         public static void WriteInt32(object ptr, int ofs, int val) { }
         public static void WriteInt64(System.IntPtr ptr, int ofs, long val) { }
         public static void WriteInt64(System.IntPtr ptr, long val) { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("Marshalling code for the object might not be available")]
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         [System.ObsoleteAttribute("WriteInt64(Object, Int32, Int64) may be unavailable in future releases.")]
         public static void WriteInt64(object ptr, int ofs, long val) { }
         public static void WriteIntPtr(System.IntPtr ptr, int ofs, System.IntPtr val) { }
         public static void WriteIntPtr(System.IntPtr ptr, System.IntPtr val) { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("Marshalling code for the object might not be available")]
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         [System.ObsoleteAttribute("WriteIntPtr(Object, Int32, IntPtr) may be unavailable in future releases.")]
         public static void WriteIntPtr(object ptr, int ofs, System.IntPtr val) { }
@@ -752,9 +812,21 @@ namespace System.Runtime.InteropServices
         public MarshalDirectiveException(string? message) { }
         public MarshalDirectiveException(string? message, System.Exception? inner) { }
     }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Parameter | System.AttributeTargets.ReturnValue, AllowMultiple = true)]
+    public sealed partial class MarshalUsingAttribute : System.Attribute
+    {
+        public MarshalUsingAttribute() { }
+        public MarshalUsingAttribute(System.Type nativeType) { }
+        public System.Type? NativeType { get { throw null; } }
+        public string CountElementName { get { throw null; } set { } }
+        public int ConstantElementCount { get { throw null; } set { } }
+        public int ElementIndirectionDepth { get { throw null; } set { } }
+        public const string ReturnsCountValue = "return-value";
+    }
     public static partial class NativeLibrary
     {
         public static void Free(System.IntPtr handle) { }
+        public static System.IntPtr GetMainProgramHandle() { throw null; }
         public static System.IntPtr GetExport(System.IntPtr handle, string name) { throw null; }
         public static System.IntPtr Load(string libraryPath) { throw null; }
         public static System.IntPtr Load(string libraryName, System.Reflection.Assembly assembly, System.Runtime.InteropServices.DllImportSearchPath? searchPath) { throw null; }
@@ -762,6 +834,12 @@ namespace System.Runtime.InteropServices
         public static bool TryGetExport(System.IntPtr handle, string name, out System.IntPtr address) { throw null; }
         public static bool TryLoad(string libraryPath, out System.IntPtr handle) { throw null; }
         public static bool TryLoad(string libraryName, System.Reflection.Assembly assembly, System.Runtime.InteropServices.DllImportSearchPath? searchPath, out System.IntPtr handle) { throw null; }
+    }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Struct | System.AttributeTargets.Class | System.AttributeTargets.Enum | System.AttributeTargets.Delegate)]
+    public sealed partial class NativeMarshallingAttribute : System.Attribute
+    {
+        public NativeMarshallingAttribute(System.Type nativeType) { }
+        public System.Type NativeType { get { throw null; } }
     }
     public static unsafe partial class NativeMemory
     {
@@ -870,9 +948,9 @@ namespace System.Runtime.InteropServices
         public static System.Runtime.InteropServices.NFloat Parse(string s, System.IFormatProvider? provider) { throw null; }
         public override string ToString() { throw null; }
         public string ToString(System.IFormatProvider? provider) { throw null; }
-        public string ToString(string? format) { throw null; }
-        public string ToString(string? format, System.IFormatProvider? provider) { throw null; }
-        public bool TryFormat(System.Span<char> destination, out int charsWritten, System.ReadOnlySpan<char> format = default(System.ReadOnlySpan<char>), System.IFormatProvider? provider = null) { throw null; }
+        public string ToString([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] string? format) { throw null; }
+        public string ToString([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] string? format, System.IFormatProvider? provider) { throw null; }
+        public bool TryFormat(System.Span<char> destination, out int charsWritten, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] System.ReadOnlySpan<char> format = default(System.ReadOnlySpan<char>), System.IFormatProvider? provider = null) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.Runtime.InteropServices.NFloat result) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> s, out System.Runtime.InteropServices.NFloat result) { throw null; }
         public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.Runtime.InteropServices.NFloat result) { throw null; }
@@ -974,6 +1052,12 @@ namespace System.Runtime.InteropServices
     public partial class StandardOleMarshalObject : System.MarshalByRefObject
     {
         protected StandardOleMarshalObject() { }
+    }
+    public enum StringMarshalling
+    {
+        Custom = 0,
+        Utf8 = 1,
+        Utf16 = 2,
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Delegate | System.AttributeTargets.Enum | System.AttributeTargets.Interface | System.AttributeTargets.Struct, AllowMultiple=false, Inherited=false)]
     public sealed partial class TypeIdentifierAttribute : System.Attribute
@@ -1419,6 +1503,7 @@ namespace System.Runtime.InteropServices.ComTypes
         void EnumConnectionPoints(out System.Runtime.InteropServices.ComTypes.IEnumConnectionPoints ppEnum);
         void FindConnectionPoint(ref System.Guid riid, out System.Runtime.InteropServices.ComTypes.IConnectionPoint? ppCP);
     }
+    [System.CLSCompliantAttribute(false)]
     [System.Runtime.InteropServices.InterfaceTypeAttribute(System.Runtime.InteropServices.ComInterfaceType.InterfaceIsIUnknown)]
     public partial interface IDataObject
     {

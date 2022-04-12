@@ -540,13 +540,14 @@ namespace System.Drawing
         }
 
         [EditorBrowsable(EditorBrowsableState.Never)]
+        [Obsolete(Obsoletions.GetContextInfoMessage, DiagnosticId = Obsoletions.GetContextInfoDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         [SupportedOSPlatform("windows")]
         public object GetContextInfo()
         {
             throw new NotImplementedException();
         }
 
-#if NETCOREAPP3_1_OR_GREATER
+#if NETCOREAPP
         [EditorBrowsable(EditorBrowsableState.Never)]
         [SupportedOSPlatform("windows")]
         public void GetContextInfo(out PointF offset)
@@ -562,7 +563,7 @@ namespace System.Drawing
         }
 #endif
 
-        private void CheckErrorStatus(int status)
+        private static void CheckErrorStatus(int status)
         {
             Gdip.CheckStatus(status);
         }

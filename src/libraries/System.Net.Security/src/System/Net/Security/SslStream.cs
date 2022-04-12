@@ -19,9 +19,11 @@ namespace System.Net.Security
         RequireEncryption = 0,
 
         // Add null ciphers to current system defaults
+        [System.ObsoleteAttribute(Obsoletions.EncryptionPolicyMessage, DiagnosticId = Obsoletions.EncryptionPolicyDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         AllowNoEncryption,
 
         // Request null ciphers only
+        [System.ObsoleteAttribute(Obsoletions.EncryptionPolicyMessage, DiagnosticId = Obsoletions.EncryptionPolicyDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         NoEncryption
     }
 
@@ -211,10 +213,12 @@ namespace System.Net.Security
             LocalCertificateSelectionCallback? userCertificateSelectionCallback, EncryptionPolicy encryptionPolicy)
             : base(innerStream, leaveInnerStreamOpen)
         {
+#pragma warning disable SYSLIB0040 // NoEncryption and AllowNoEncryption are obsolete
             if (encryptionPolicy != EncryptionPolicy.RequireEncryption && encryptionPolicy != EncryptionPolicy.AllowNoEncryption && encryptionPolicy != EncryptionPolicy.NoEncryption)
             {
                 throw new ArgumentException(SR.Format(SR.net_invalid_enum, "EncryptionPolicy"), nameof(encryptionPolicy));
             }
+#pragma warning restore SYSLIB0040
 
             _userCertificateValidationCallback = userCertificateValidationCallback;
             _userCertificateSelectionCallback = userCertificateSelectionCallback;
@@ -373,7 +377,7 @@ namespace System.Net.Security
 
         internal IAsyncResult BeginShutdown(AsyncCallback? asyncCallback, object? asyncState) => TaskToApm.Begin(ShutdownAsync(), asyncCallback, asyncState);
 
-        internal void EndShutdown(IAsyncResult asyncResult) => TaskToApm.End(asyncResult);
+        internal static void EndShutdown(IAsyncResult asyncResult) => TaskToApm.End(asyncResult);
 
         public TransportContext TransportContext => new SslStreamContext(this);
 
@@ -455,8 +459,8 @@ namespace System.Net.Security
         {
             SslClientAuthenticationOptions options = new SslClientAuthenticationOptions()
             {
-                TargetHost =  targetHost,
-                ClientCertificates =  clientCertificates,
+                TargetHost = targetHost,
+                ClientCertificates = clientCertificates,
                 EnabledSslProtocols = enabledSslProtocols,
                 CertificateRevocationCheckMode = checkCertificateRevocation ? X509RevocationMode.Online : X509RevocationMode.NoCheck,
                 EncryptionPolicy = _encryptionPolicy,
@@ -600,6 +604,7 @@ namespace System.Net.Security
             }
 #pragma warning restore
 
+#pragma warning disable SYSLIB0039 // TLS 1.0 and 1.1 are obsolete
             if ((proto & SslProtocols.Tls) != 0)
             {
                 ret |= SslProtocols.Tls;
@@ -609,6 +614,7 @@ namespace System.Net.Security
             {
                 ret |= SslProtocols.Tls11;
             }
+#pragma warning restore SYSLIB0039
 
             if ((proto & SslProtocols.Tls12) != 0)
             {

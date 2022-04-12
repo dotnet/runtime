@@ -7,7 +7,6 @@ parameters:
   container: ''
   pool: ''
   platform: ''
-  runtimeFlavorDisplayName: ''
   shouldContinueOnError: false
   dependOnEvaluatePaths: false
   jobParameters: {}
@@ -24,7 +23,6 @@ jobs:
     platform: ${{ parameters.platform }}
     shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
     dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths}}
-    runtimeFlavorDisplayName: ${{ parameters.runtimeFlavorDisplayName }}
     helixQueues:
 
     # Linux arm
@@ -64,14 +62,14 @@ jobs:
           - (Centos.8.Amd64.Open)Ubuntu.1804.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:centos-8-helix-20201229003624-c1bf759
           - RedHat.7.Amd64.Open
           - SLES.15.Amd64.Open
-          - (Fedora.34.Amd64.Open)Ubuntu.1804.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:fedora-34-helix-20210913123654-4f64125
+          - (Fedora.34.Amd64.Open)Ubuntu.1804.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:fedora-34-helix-20220331150839-4f64125
           - (Ubuntu.2110.Amd64.Open)Ubuntu.1804.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-21.10-helix-amd64-20211116135132-0f8d97e
           - (Debian.10.Amd64.Open)Ubuntu.1804.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-10-helix-amd64-bfcd90a-20200121150006
         - ${{ if or(ne(parameters.jobParameters.testScope, 'outerloop'), ne(parameters.jobParameters.runtimeFlavor, 'mono')) }}:
           - ${{ if or(eq(parameters.jobParameters.isExtraPlatforms, true), eq(parameters.jobParameters.includeAllPlatforms, true)) }}:
             - (Centos.8.Amd64.Open)Ubuntu.1604.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:centos-8-helix-20201229003624-c1bf759
             - SLES.15.Amd64.Open
-            - (Fedora.34.Amd64.Open)ubuntu.1604.amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:fedora-34-helix-20210913123654-4f64125
+            - (Fedora.34.Amd64.Open)ubuntu.1604.amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:fedora-34-helix-20220331150839-4f64125
             - (Ubuntu.2110.Amd64.Open)ubuntu.1604.amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-21.04-helix-amd64-20210922170909-34a2d72
             - (Debian.11.Amd64.Open)Ubuntu.1804.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-11-helix-amd64-20210304164428-5a7c380
             - (Mariner.1.0.Amd64.Open)ubuntu.1604.amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:cbl-mariner-1.0-helix-20210528192219-92bf620
@@ -125,27 +123,26 @@ jobs:
       - ${{ if notIn(parameters.jobParameters.framework, 'net48') }}:
         # libraries on mono outerloop
         - ${{ if and(eq(parameters.jobParameters.testScope, 'outerloop'), eq(parameters.jobParameters.runtimeFlavor, 'mono')) }}:
-          - Windows.81.Amd64.Open
           - Windows.Amd64.Server2022.Open
         # libraries on coreclr (outerloop and innerloop), or libraries on mono innerloop
         - ${{ if or(ne(parameters.jobParameters.testScope, 'outerloop'), ne(parameters.jobParameters.runtimeFlavor, 'mono')) }}:
           - ${{ if or(eq(parameters.jobParameters.isExtraPlatforms, true), eq(parameters.jobParameters.includeAllPlatforms, true)) }}:
-            - Windows.10.Amd64.ServerRS5.Open
+            - Windows.Amd64.Server2022.Open
             - ${{ if ne(parameters.jobParameters.testScope, 'outerloop') }}:
-              - Windows.Amd64.Server2022.Open
-              - (Windows.Server.Core.1909.Amd64.Open)windows.10.amd64.server20h2.open@mcr.microsoft.com/dotnet-buildtools/prereqs:windowsservercore-2004-helix-amd64-20200904200251-272704c
+              - (Windows.Server.Core.2004.Amd64.Open)windows.10.amd64.server20h2.open@mcr.microsoft.com/dotnet-buildtools/prereqs:windowsservercore-2004-helix-amd64-20200904200251-272704c
           - ${{ if or(ne(parameters.jobParameters.isExtraPlatforms, true), eq(parameters.jobParameters.includeAllPlatforms, true)) }}:
             - Windows.81.Amd64.Open
-            - Windows.10.Amd64.Server19H1.ES.Open
+            - Windows.10.Amd64.Server2022.ES.Open
             - Windows.11.Amd64.ClientPre.Open
             - ${{ if eq(parameters.jobParameters.testScope, 'outerloop') }}:
-              - (Windows.Server.Core.1909.Amd64.Open)windows.10.amd64.server20h2.open@mcr.microsoft.com/dotnet-buildtools/prereqs:windowsservercore-2004-helix-amd64-20200904200251-272704c
+              - (Windows.Server.Core.2004.Amd64.Open)windows.10.amd64.server20h2.open@mcr.microsoft.com/dotnet-buildtools/prereqs:windowsservercore-2004-helix-amd64-20200904200251-272704c
             - ${{ if ne(parameters.jobParameters.runtimeFlavor, 'mono') }}:
               - (Windows.Nano.1809.Amd64.Open)windows.10.amd64.serverrs5.open@mcr.microsoft.com/dotnet-buildtools/prereqs:nanoserver-1809-helix-amd64-08e8e40-20200107182504
 
       # .NETFramework
       - ${{ if eq(parameters.jobParameters.framework, 'net48') }}:
-        - Windows.10.Amd64.Client21H1.Open
+        - Windows.11.Amd64.ClientPre.Open
+
 
     # windows x86
     - ${{ if eq(parameters.platform, 'windows_x86') }}:
@@ -154,14 +151,14 @@ jobs:
         # mono outerloop
         - ${{ if and(eq(parameters.jobParameters.testScope, 'outerloop'), eq(parameters.jobParameters.runtimeFlavor, 'mono')) }}:
           - Windows.7.Amd64.Open
-          - Windows.10.Amd64.ServerRS5.Open
+          - Windows.11.Amd64.ClientPre.Open
         # libraries on coreclr (outerloop and innerloop), or libraries on mono innerloop
         - ${{ if or(ne(parameters.jobParameters.testScope, 'outerloop'), ne(parameters.jobParameters.runtimeFlavor, 'mono')) }}:
           - ${{ if or(eq(parameters.jobParameters.isExtraPlatforms, true), eq(parameters.jobParameters.includeAllPlatforms, true)) }}:
-            - Windows.10.Amd64.ServerRS5.Open
+            - Windows.11.Amd64.ClientPre.Open
             - Windows.Amd64.Server2022.Open
           - ${{ if or(ne(parameters.jobParameters.isExtraPlatforms, true), eq(parameters.jobParameters.includeAllPlatforms, true)) }}:
-            - Windows.10.Amd64.Server19H1.ES.Open
+            - Windows.10.Amd64.Server2022.ES.Open
             - Windows.7.Amd64.Open
 
       # .NETFramework
@@ -182,6 +179,6 @@ jobs:
 
     # WebAssembly windows
     - ${{ if eq(parameters.platform, 'Browser_wasm_win') }}:
-      - (Windows.Server.Core.1909.Amd64.Open)windows.10.amd64.server20h2.open@mcr.microsoft.com/dotnet-buildtools/prereqs:windowsservercore-2004-helix-webassembly-amd64-20210702131541-6837048
+      - (Windows.Amd64.Server2022.Open)windows.amd64.server2022.open@mcr.microsoft.com/dotnet-buildtools/prereqs:windowsservercore-ltsc2022-helix-webassembly-20220317203903-1ad56e8
 
     ${{ insert }}: ${{ parameters.jobParameters }}

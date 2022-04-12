@@ -36,10 +36,6 @@ namespace System.Net.Http
         private const string Response = "response";
         private const string Stale = "stale";
 
-        // Define alphanumeric characters for cnonce
-        // 48='0', 65='A', 97='a'
-        private static readonly int[] s_alphaNumChooser = new int[] { 48, 65, 97 };
-
         public static async Task<string?> GetDigestTokenForCredential(NetworkCredential credential, HttpRequestMessage request, DigestResponse digestResponse)
         {
             StringBuilder sb = StringBuilderCache.Acquire();
@@ -210,19 +206,15 @@ namespace System.Net.Http
         private static string GetRandomAlphaNumericString()
         {
             const int Length = 16;
-            Span<byte> randomNumbers = stackalloc byte[Length * 2];
-            RandomNumberGenerator.Fill(randomNumbers);
+            const string CharacterSet = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
-            StringBuilder sb = StringBuilderCache.Acquire(Length);
-            for (int i = 0; i < randomNumbers.Length;)
+            return string.Create<object?>(Length, null, static (destination, _) =>
             {
-                // Get a random digit 0-9, a random alphabet in a-z, or a random alphabeta in A-Z
-                int rangeIndex = randomNumbers[i++] % 3;
-                int value = randomNumbers[i++] % (rangeIndex == 0 ? 10 : 26);
-                sb.Append((char)(s_alphaNumChooser[rangeIndex] + value));
-            }
-
-            return StringBuilderCache.GetStringAndRelease(sb);
+                for (int i = 0; i < destination.Length; i++)
+                {
+                    destination[i] = CharacterSet[RandomNumberGenerator.GetInt32(CharacterSet.Length)];
+                }
+            });
         }
 
         private static string ComputeHash(string data, string algorithm)
@@ -271,7 +263,7 @@ namespace System.Net.Http
                     key.Equals(Opaque, StringComparison.OrdinalIgnoreCase) || key.Equals(Qop, StringComparison.OrdinalIgnoreCase);
             }
 
-            private string? GetNextKey(string data, int currentIndex, out int parsedIndex)
+            private static string? GetNextKey(string data, int currentIndex, out int parsedIndex)
             {
                 // Skip leading space or tab.
                 while (currentIndex < data.Length && CharIsSpaceOrTab(data[currentIndex]))
@@ -326,7 +318,7 @@ namespace System.Net.Http
                 return data.Substring(start, length);
             }
 
-            private string? GetNextValue(string data, int currentIndex, bool expectQuotes, out int parsedIndex)
+            private static string? GetNextValue(string data, int currentIndex, bool expectQuotes, out int parsedIndex)
             {
                 Debug.Assert(currentIndex < data.Length && !CharIsSpaceOrTab(data[currentIndex]));
 

@@ -48,6 +48,7 @@
     <Compile Include="System\Runtime\InteropServices\IDispatchImplAttributeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\InterfaceTypeAttributeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\LCIDConversionAttributeTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\LibraryImportAttributeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\MarshalAsAttributeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\Copy\ByteArrayTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\Copy\CharArrayTests.cs" />

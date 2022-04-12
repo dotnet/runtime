@@ -67,7 +67,119 @@ namespace System
             Debug.Assert(array != null);
         }
 
-        [RequiresDynamicCode("The native code for the array might not be available at runtime.")]
+        [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
+        public static unsafe Array CreateInstance(Type elementType, int length)
+        {
+            if (elementType is null)
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.elementType);
+            if (length < 0)
+                ThrowHelper.ThrowLengthArgumentOutOfRange_ArgumentOutOfRange_NeedNonNegNum();
+
+            RuntimeType? t = elementType.UnderlyingSystemType as RuntimeType;
+            if (t == null)
+                ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_MustBeType, ExceptionArgument.elementType);
+
+            return InternalCreate(t, 1, &length, null);
+        }
+
+        [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
+            Justification = "MDArrays of Rank != 1 can be created because they don't implement generic interfaces.")]
+        public static unsafe Array CreateInstance(Type elementType, int length1, int length2)
+        {
+            if (elementType is null)
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.elementType);
+            if (length1 < 0)
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.length1, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
+            if (length2 < 0)
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.length2, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
+
+            RuntimeType? t = elementType.UnderlyingSystemType as RuntimeType;
+            if (t == null)
+                ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_MustBeType, ExceptionArgument.elementType);
+
+            int* pLengths = stackalloc int[] { length1, length2 };
+            return InternalCreate(t, 2, pLengths, null);
+        }
+
+        [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
+            Justification = "MDArrays of Rank != 1 can be created because they don't implement generic interfaces.")]
+        public static unsafe Array CreateInstance(Type elementType, int length1, int length2, int length3)
+        {
+            if (elementType is null)
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.elementType);
+            if (length1 < 0)
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.length1, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
+            if (length2 < 0)
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.length2, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
+            if (length3 < 0)
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.length3, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
+
+            RuntimeType? t = elementType.UnderlyingSystemType as RuntimeType;
+            if (t == null)
+                ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_MustBeType, ExceptionArgument.elementType);
+
+            int* pLengths = stackalloc int[3] { length1, length2, length3 };
+            return InternalCreate(t, 3, pLengths, null);
+        }
+
+        [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
+        public static unsafe Array CreateInstance(Type elementType, params int[] lengths)
+        {
+            if (elementType is null)
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.elementType);
+            if (lengths == null)
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.lengths);
+            if (lengths.Length == 0)
+                ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_NeedAtLeast1Rank);
+
+            RuntimeType? t = elementType.UnderlyingSystemType as RuntimeType;
+            if (t == null)
+                ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_MustBeType, ExceptionArgument.elementType);
+
+            // Check to make sure the lengths are all non-negative. Note that we check this here to give
+            // a good exception message if they are not; however we check this again inside the execution
+            // engine's low level allocation function after having made a copy of the array to prevent a
+            // malicious caller from mutating the array after this check.
+            for (int i = 0; i < lengths.Length; i++)
+                if (lengths[i] < 0)
+                    ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.lengths, i, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
+
+            fixed (int* pLengths = &lengths[0])
+                return InternalCreate(t, lengths.Length, pLengths, null);
+        }
+
+        [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
+        public static unsafe Array CreateInstance(Type elementType, int[] lengths, int[] lowerBounds)
+        {
+            if (elementType == null)
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.elementType);
+            if (lengths == null)
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.lengths);
+            if (lowerBounds == null)
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.lowerBounds);
+            if (lengths.Length != lowerBounds.Length)
+                ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_RanksAndBounds);
+            if (lengths.Length == 0)
+                ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_NeedAtLeast1Rank);
+
+            RuntimeType? t = elementType.UnderlyingSystemType as RuntimeType;
+            if (t == null)
+                ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_MustBeType, ExceptionArgument.elementType);
+
+            // Check to make sure the lengths are all non-negative. Note that we check this here to give
+            // a good exception message if they are not; however we check this again inside the execution
+            // engine's low level allocation function after having made a copy of the array to prevent a
+            // malicious caller from mutating the array after this check.
+            for (int i = 0; i < lengths.Length; i++)
+                if (lengths[i] < 0)
+                    ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.lengths, i, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
+
+            fixed (int* pLengths = &lengths[0])
+            fixed (int* pLowerBounds = &lowerBounds[0])
+                return InternalCreate(t, lengths.Length, pLengths, pLowerBounds);
+        }
+
+        [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
         public static Array CreateInstance(Type elementType, params long[] lengths)
         {
             if (lengths == null)
@@ -127,12 +239,12 @@ namespace System
             return InternalGetValue(GetFlattenedIndex(new ReadOnlySpan<int>(indices)));
         }
 
-        public unsafe object? GetValue(int index)
+        public object? GetValue(int index)
         {
             if (Rank != 1)
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_Need1DArray);
 
-            return InternalGetValue(GetFlattenedIndex(new ReadOnlySpan<int>(&index, 1)));
+            return InternalGetValue(GetFlattenedIndex(new ReadOnlySpan<int>(in index)));
         }
 
         public object? GetValue(int index1, int index2)
@@ -151,12 +263,12 @@ namespace System
             return InternalGetValue(GetFlattenedIndex(stackalloc int[] { index1, index2, index3 }));
         }
 
-        public unsafe void SetValue(object? value, int index)
+        public void SetValue(object? value, int index)
         {
             if (Rank != 1)
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_Need1DArray);
 
-            InternalSetValue(value, GetFlattenedIndex(new ReadOnlySpan<int>(&index, 1)));
+            InternalSetValue(value, GetFlattenedIndex(new ReadOnlySpan<int>(in index)));
         }
 
         public void SetValue(object? value, int index1, int index2)

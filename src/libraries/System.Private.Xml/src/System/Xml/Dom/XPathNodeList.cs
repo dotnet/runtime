@@ -33,7 +33,7 @@ namespace System.Xml
             }
         }
 
-        private XmlNode? GetNode(XPathNavigator n)
+        private static XmlNode? GetNode(XPathNavigator n)
         {
             IHasXmlNode iHasNode = (IHasXmlNode)n;
             return iHasNode.GetNode();

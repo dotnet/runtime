@@ -22,6 +22,7 @@ export let locateFile: Function;
 export let quit: Function;
 export let ExitStatus: ExitStatusError;
 export let requirePromise: Promise<Function>;
+export let readFile: Function;
 
 export interface ExitStatusError {
     new(status: number): any;

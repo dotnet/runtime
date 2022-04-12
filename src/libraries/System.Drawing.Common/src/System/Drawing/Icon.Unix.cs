@@ -344,7 +344,7 @@ namespace System.Drawing
             return new Icon(handle);
         }
 
-        private void SaveIconImage(BinaryWriter writer, IconImage ii)
+        private static void SaveIconImage(BinaryWriter writer, IconImage ii)
         {
             BitmapInfoHeader bih = ii.iconHeader;
             writer.Write(bih.biSize);
@@ -371,12 +371,12 @@ namespace System.Drawing
             writer.Write(ii.iconAND!);
         }
 
-        private void SaveIconDump(BinaryWriter writer, IconDump id)
+        private static void SaveIconDump(BinaryWriter writer, IconDump id)
         {
             writer.Write(id.data!);
         }
 
-        private void SaveIconDirEntry(BinaryWriter writer, IconDirEntry ide, uint offset)
+        private static void SaveIconDirEntry(BinaryWriter writer, IconDirEntry ide, uint offset)
         {
             writer.Write(ide.width);
             writer.Write(ide.height);

@@ -6,6 +6,10 @@
 
   <ItemGroup>
     <Compile Include="Microsoft.Extensions.Caching.Abstractions.cs" />
+    <Compile Include="Microsoft.Extensions.Caching.Abstractions.net6.0.cs" Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net6.0'))" />
+    <Compile Include="Microsoft.Extensions.Caching.Abstractions.Typeforwards.netcoreapp.cs" Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'"/>
+    <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\IsExternalInit.cs" Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'"
+          Link="Common\System\Runtime\CompilerServices\IsExternalInit.cs" />
     <ProjectReference Include="..\..\Microsoft.Extensions.Primitives\ref\Microsoft.Extensions.Primitives.csproj" />
   </ItemGroup>
 

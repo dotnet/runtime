@@ -56,6 +56,7 @@ enum NamedIntrinsic : unsigned short
     NI_System_Threading_Thread_get_CurrentThread,
     NI_System_Threading_Thread_get_ManagedThreadId,
     NI_System_Type_get_IsValueType,
+    NI_System_Type_get_IsByRefLike,
     NI_System_Type_IsAssignableFrom,
     NI_System_Type_IsAssignableTo,
     NI_System_Type_op_Equality,
@@ -79,17 +80,26 @@ enum NamedIntrinsic : unsigned short
     NI_System_ByReference_get_Value,
     NI_System_Activator_AllocatorOf,
     NI_System_Activator_DefaultConstructorOf,
-    NI_System_Object_MethodTableOf,
     NI_System_EETypePtr_EETypePtrOf,
+
+    NI_Internal_Runtime_MethodTable_Of,
 
     NI_System_Runtime_CompilerServices_RuntimeHelpers_CreateSpan,
     NI_System_Runtime_CompilerServices_RuntimeHelpers_InitializeArray,
     NI_System_Runtime_CompilerServices_RuntimeHelpers_IsKnownConstant,
 
+    NI_System_String_Equals,
     NI_System_String_get_Chars,
     NI_System_String_get_Length,
+    NI_System_String_op_Implicit,
+    NI_System_String_StartsWith,
     NI_System_Span_get_Item,
     NI_System_ReadOnlySpan_get_Item,
+
+    NI_System_MemoryExtensions_AsSpan,
+    NI_System_MemoryExtensions_Equals,
+    NI_System_MemoryExtensions_SequenceEqual,
+    NI_System_MemoryExtensions_StartsWith,
 
     // These are used by HWIntrinsics but are defined more generally
     // to allow dead code optimization and handle the recursion case

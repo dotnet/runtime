@@ -603,6 +603,7 @@ void RangeCheck::MergeEdgeAssertions(ValueNum normalLclVN, ASSERT_VALARG_TP asse
         Limit      limit(Limit::keUndef);
         genTreeOps cmpOper             = GT_NONE;
         bool       isConstantAssertion = false;
+        bool       isUnsigned          = false;
 
         // Current assertion is of the form (i < len - cns) != 0
         if (curAssertion->IsCheckedBoundArithBound())
@@ -658,7 +659,7 @@ void RangeCheck::MergeEdgeAssertions(ValueNum normalLclVN, ASSERT_VALARG_TP asse
             }
         }
         // Current assertion is of the form (i < 100) != 0
-        else if (curAssertion->IsConstantBound())
+        else if (curAssertion->IsConstantBound() || curAssertion->IsConstantBoundUnsigned())
         {
             ValueNumStore::ConstantBoundInfo info;
 
@@ -671,8 +672,9 @@ void RangeCheck::MergeEdgeAssertions(ValueNum normalLclVN, ASSERT_VALARG_TP asse
                 continue;
             }
 
-            limit   = Limit(Limit::keConstant, info.constVal);
-            cmpOper = (genTreeOps)info.cmpOper;
+            limit      = Limit(Limit::keConstant, info.constVal);
+            cmpOper    = (genTreeOps)info.cmpOper;
+            isUnsigned = info.isUnsigned;
         }
         // Current assertion is of the form i == 100
         else if (curAssertion->IsConstantInt32Assertion())
@@ -828,11 +830,16 @@ void RangeCheck::MergeEdgeAssertions(ValueNum normalLclVN, ASSERT_VALARG_TP asse
             case GT_LT:
             case GT_LE:
                 pRange->uLimit = limit;
+                if (isUnsigned)
+                {
+                    pRange->lLimit = Limit(Limit::keConstant, 0);
+                }
                 break;
 
             case GT_GT:
             case GT_GE:
                 pRange->lLimit = limit;
+                // it doesn't matter if it's isUnsigned or not here - it's not negative anyway.
                 break;
 
             case GT_EQ:

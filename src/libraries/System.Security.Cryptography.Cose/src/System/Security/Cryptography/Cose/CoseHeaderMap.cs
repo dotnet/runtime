@@ -12,6 +12,8 @@ namespace System.Security.Cryptography.Cose
     public sealed class CoseHeaderMap : IEnumerable<(CoseHeaderLabel Label, ReadOnlyMemory<byte> EncodedValue)>
     {
         private static readonly byte[] s_emptyBstrEncoded = new byte[] { 0x40 };
+        private static readonly CoseHeaderMap s_emptyMap = new CoseHeaderMap(isReadOnly: true);
+
         public bool IsReadOnly { get; internal set; }
 
         private readonly Dictionary<CoseHeaderLabel, ReadOnlyMemory<byte>> _headerParameters = new Dictionary<CoseHeaderLabel, ReadOnlyMemory<byte>>();
@@ -115,7 +117,7 @@ namespace System.Security.Cryptography.Cose
             }
         }
 
-        private void ValidateHeaderValue(CoseHeaderLabel label, CborReaderState? state, ReadOnlyMemory<byte>? encodedValue)
+        private static void ValidateHeaderValue(CoseHeaderLabel label, CborReaderState? state, ReadOnlyMemory<byte>? encodedValue)
         {
             if (state != null)
             {
@@ -190,16 +192,18 @@ namespace System.Security.Cryptography.Cose
             }
         }
 
-        internal byte[] Encode(bool mustReturnEmptyBstrIfEmpty = false, int? algHeaderValueToSlip = null)
+        internal static int Encode(CoseHeaderMap? map, Span<byte> destination, bool mustReturnEmptyBstrIfEmpty = false, int? algHeaderValueToSlip = null)
         {
+            map ??= s_emptyMap;
             bool shouldSlipAlgHeader = algHeaderValueToSlip.HasValue;
 
-            if (_headerParameters.Count == 0 && mustReturnEmptyBstrIfEmpty && !shouldSlipAlgHeader)
+            if (map._headerParameters.Count == 0 && mustReturnEmptyBstrIfEmpty && !shouldSlipAlgHeader)
             {
-                return s_emptyBstrEncoded;
+                s_emptyBstrEncoded.CopyTo(destination);
+                return s_emptyBstrEncoded.Length;
             }
 
-            int mapLength = _headerParameters.Count;
+            int mapLength = map._headerParameters.Count;
             if (shouldSlipAlgHeader)
             {
                 mapLength++;
@@ -210,14 +214,13 @@ namespace System.Security.Cryptography.Cose
 
             if (shouldSlipAlgHeader)
             {
-                Debug.Assert(!TryGetEncodedValue(CoseHeaderLabel.Algorithm, out _));
+                Debug.Assert(!map.TryGetEncodedValue(CoseHeaderLabel.Algorithm, out _));
                 writer.WriteInt32(KnownHeaders.Alg);
                 writer.WriteInt32(algHeaderValueToSlip!.Value);
             }
 
-            foreach ((CoseHeaderLabel Label, ReadOnlyMemory<byte> EncodedValue) header in this)
+            foreach ((CoseHeaderLabel label, ReadOnlyMemory<byte> encodedValue) in map)
             {
-                CoseHeaderLabel label = header.Label;
                 if (label.LabelAsString == null)
                 {
                     writer.WriteInt32(label.LabelAsInt32);
@@ -226,10 +229,36 @@ namespace System.Security.Cryptography.Cose
                 {
                     writer.WriteTextString(label.LabelAsString);
                 }
-                writer.WriteEncodedValue(header.EncodedValue.Span);
+                writer.WriteEncodedValue(encodedValue.Span);
             }
             writer.WriteEndMap();
-            return writer.Encode();
+
+            return writer.Encode(destination);
+        }
+
+        internal static int ComputeEncodedSize(CoseHeaderMap? map, int? algHeaderValueToSlip = null)
+        {
+            map ??= s_emptyMap;
+
+            // encoded map length => map length + (label + value)*
+            int encodedSize = 0;
+            int mapLength = map._headerParameters.Count;
+
+            if (algHeaderValueToSlip != null)
+            {
+                mapLength += 1;
+                encodedSize += CoseHeaderLabel.Algorithm.EncodedSize;
+                encodedSize += CoseHelpers.GetIntegerEncodedSize(algHeaderValueToSlip.Value);
+            }
+
+            encodedSize += CoseHelpers.GetIntegerEncodedSize(mapLength);
+
+            foreach ((CoseHeaderLabel label, ReadOnlyMemory<byte> encodedValue) in map)
+            {
+                encodedSize += label.EncodedSize + encodedValue.Length;
+            }
+
+            return encodedSize;
         }
 
         public Enumerator GetEnumerator() => new Enumerator(_headerParameters.GetEnumerator());

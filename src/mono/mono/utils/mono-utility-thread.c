@@ -90,7 +90,7 @@ mono_utility_thread_launch (size_t payload_size, MonoUtilityThreadCallbacks *cal
 	thread->callbacks = *callbacks;
 
 	mono_lock_free_queue_init (&thread->work_queue);
-	mono_lock_free_allocator_init_size_class (&thread->message_size_class, entry_size, thread->message_block_size);
+	mono_lock_free_allocator_init_size_class (&thread->message_size_class, (unsigned int)entry_size, (unsigned int)thread->message_block_size);
 	mono_lock_free_allocator_init_allocator (&thread->message_allocator, &thread->message_size_class, accountType);
 	mono_os_sem_init (&thread->work_queue_sem, 0);
 	mono_atomic_store_i32 (&thread->run_thread, 1);

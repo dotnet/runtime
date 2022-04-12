@@ -145,7 +145,8 @@ namespace System
         private const int PRODUCT_HOME_PREMIUM = 0x00000003;
         private const int PRODUCT_HOME_PREMIUM_N = 0x0000001A;
 
-        [GeneratedDllImport("kernel32.dll", SetLastError = false)]
+        [LibraryImport("kernel32.dll", SetLastError = false)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         private static partial bool GetProductInfo(
             int dwOSMajorVersion,
             int dwOSMinorVersion,
@@ -154,7 +155,7 @@ namespace System
             out int pdwReturnedProductType
         );
 
-        [GeneratedDllImport("kernel32.dll")]
+        [LibraryImport("kernel32.dll")]
         private static partial int GetCurrentApplicationUserModelId(ref uint applicationUserModelIdLength, byte[] applicationUserModelId);
 
         private static volatile Version s_windowsVersionObject;

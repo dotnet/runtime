@@ -98,6 +98,11 @@ namespace System.Diagnostics
         public string? StatusDescription => _statusDescription;
 
         /// <summary>
+        /// Gets whether the parent context was created from remote propagation.
+        /// </summary>
+        public bool HasRemoteParent { get; private set; }
+
+        /// <summary>
         /// Sets the status code and description on the current activity object.
         /// </summary>
         /// <param name="code">The status code</param>
@@ -1075,6 +1080,7 @@ namespace System.Diagnostics
 
                 activity.ActivityTraceFlags = parentContext.TraceFlags;
                 activity._parentTraceFlags = (byte) parentContext.TraceFlags;
+                activity.HasRemoteParent = parentContext.IsRemote;
             }
 
             activity.IsAllDataRequested = request == ActivitySamplingResult.AllData || request == ActivitySamplingResult.AllDataAndRecorded;
@@ -1195,6 +1201,7 @@ namespace System.Diagnostics
             return id.Substring(rootStart, rootEnd - rootStart);
         }
 
+#pragma warning disable CA1822
         private string AppendSuffix(string parentId, string suffix, char delimiter)
         {
 #if DEBUG
@@ -1221,6 +1228,8 @@ namespace System.Diagnostics
             string overflowSuffix = ((int)GetRandomNumber()).ToString("x8");
             return parentId.Substring(0, trimPosition) + overflowSuffix + '#';
         }
+#pragma warning restore CA1822
+
 #if ALLOW_PARTIALLY_TRUSTED_CALLERS
         [System.Security.SecuritySafeCriticalAttribute]
 #endif

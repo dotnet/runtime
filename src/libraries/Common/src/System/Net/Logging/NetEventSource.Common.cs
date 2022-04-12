@@ -68,6 +68,7 @@ namespace System.Net
         private const int AssociateEventId = 3;
         private const int InfoEventId = 4;
         private const int ErrorEventId = 5;
+        private const int VerboseEventId = 6;
         private const int DumpArrayEventId = 7;
 
         // These events are implemented in NetEventSource.Security.cs.
@@ -156,7 +157,7 @@ namespace System.Net
         {
             DebugValidateArg(thisOrContextObject);
             DebugValidateArg(formattableString);
-            if (Log.IsEnabled()) Log.ErrorMessage(IdOf(thisOrContextObject), memberName, Format(formattableString));
+            if (Log.IsEnabled()) Log.VerboseMessage(IdOf(thisOrContextObject), memberName, Format(formattableString));
         }
 
         /// <summary>Logs an info at verbose mode.</summary>
@@ -171,9 +172,9 @@ namespace System.Net
             if (Log.IsEnabled()) Log.VerboseMessage(IdOf(thisOrContextObject), memberName, Format(message).ToString());
         }
 
-        [Event(ErrorEventId, Level = EventLevel.Verbose, Keywords = Keywords.Default)]
+        [Event(VerboseEventId, Level = EventLevel.Verbose, Keywords = Keywords.Default)]
         private void VerboseMessage(string thisOrContextObject, string? memberName, string? message) =>
-            WriteEvent(ErrorEventId, thisOrContextObject, memberName ?? MissingMember, message);
+            WriteEvent(VerboseEventId, thisOrContextObject, memberName ?? MissingMember, message);
         #endregion
 
         #region DumpBuffer

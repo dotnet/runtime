@@ -449,3 +449,13 @@ interface ISOSDacInterface11 : IUnknown
     HRESULT IsTrackedType(CLRDATA_ADDRESS objAddr, BOOL* isTrackedType, BOOL* hasTaggedMemory);
     HRESULT GetTaggedMemory(CLRDATA_ADDRESS objAddr, CLRDATA_ADDRESS* taggedMemory, size_t* taggedMemorySizeInBytes);
 }
+
+[
+    object,
+    local,
+    uuid(1b93bacc-8ca4-432d-943a-3e6e7ec0b0a3)
+]
+interface ISOSDacInterface12 : IUnknown
+{
+    HRESULT GetGlobalAllocationContext(CLRDATA_ADDRESS* allocPtr, CLRDATA_ADDRESS* allocLimit);
+}

@@ -642,7 +642,8 @@ namespace Internal.JitInterface
             methodInfo->ILCode = (byte*)GetPin(ilCode);
             methodInfo->ILCodeSize = (uint)ilCode.Length;
             methodInfo->maxStack = (uint)methodIL.MaxStack;
-            methodInfo->EHcount = (uint)methodIL.GetExceptionRegions().Length;
+            var exceptionRegions = methodIL.GetExceptionRegions();
+            methodInfo->EHcount = (uint)exceptionRegions.Length;
             methodInfo->options = methodIL.IsInitLocals ? CorInfoOptions.CORINFO_OPT_INIT_LOCALS : (CorInfoOptions)0;
 
             if (method.AcquiresInstMethodTableFromThis())
@@ -660,6 +661,24 @@ namespace Internal.JitInterface
             methodInfo->regionKind = CorInfoRegionKind.CORINFO_REGION_NONE;
             Get_CORINFO_SIG_INFO(method, sig: &methodInfo->args, methodIL);
             Get_CORINFO_SIG_INFO(methodIL.GetLocals(), &methodInfo->locals);
+
+#if READYTORUN
+            if ((methodInfo->options & CorInfoOptions.CORINFO_GENERICS_CTXT_MASK) != 0)
+            {
+                foreach (var region in exceptionRegions)
+                {
+                    if (region.Kind == ILExceptionRegionKind.Catch)
+                    {
+                        TypeDesc catchType = (TypeDesc)methodIL.GetObject(region.ClassToken);
+                        if (catchType.IsCanonicalSubtype(CanonicalFormKind.Any))
+                        {
+                            methodInfo->options |= CorInfoOptions.CORINFO_GENERICS_CTXT_KEEP_ALIVE;
+                            break;
+                        }
+                    }
+                }
+            }
+#endif
 
             return true;
         }
@@ -1653,14 +1672,23 @@ namespace Internal.JitInterface
             var typeOrMethodContext = (pResolvedToken.tokenContext == contextFromMethodBeingCompiled()) ?
                 MethodBeingCompiled : HandleToObject((IntPtr)pResolvedToken.tokenContext);
 
-            object result = ResolveTokenInScope(methodIL, typeOrMethodContext, pResolvedToken.token);
+            object result = GetRuntimeDeterminedObjectForToken(methodIL, typeOrMethodContext, pResolvedToken.token);
+            if (pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_Newarr)
+                result = ((TypeDesc)result).MakeArrayType();
+
+            return result;
+        }
+
+        private object GetRuntimeDeterminedObjectForToken(MethodILScope methodIL, object typeOrMethodContext, mdToken token)
+        {
+            object result = ResolveTokenInScope(methodIL, typeOrMethodContext, token);
 
             if (result is MethodDesc method)
             {
                 if (method.IsSharedByGenericInstantiations)
                 {
                     MethodDesc sharedMethod = methodIL.OwningMethod.GetSharedRuntimeFormMethodTarget();
-                    result = ResolveTokenWithSubstitution(methodIL, pResolvedToken.token, sharedMethod.OwningType.Instantiation, sharedMethod.Instantiation);
+                    result = ResolveTokenWithSubstitution(methodIL, token, sharedMethod.OwningType.Instantiation, sharedMethod.Instantiation);
                     Debug.Assert(((MethodDesc)result).IsRuntimeDeterminedExactMethod);
                 }
             }
@@ -1669,7 +1697,7 @@ namespace Internal.JitInterface
                 if (field.OwningType.IsCanonicalSubtype(CanonicalFormKind.Any))
                 {
                     MethodDesc sharedMethod = methodIL.OwningMethod.GetSharedRuntimeFormMethodTarget();
-                    result = ResolveTokenWithSubstitution(methodIL, pResolvedToken.token, sharedMethod.OwningType.Instantiation, sharedMethod.Instantiation);
+                    result = ResolveTokenWithSubstitution(methodIL, token, sharedMethod.OwningType.Instantiation, sharedMethod.Instantiation);
                     Debug.Assert(((FieldDesc)result).OwningType.IsRuntimeDeterminedSubtype);
                 }
             }
@@ -1679,16 +1707,13 @@ namespace Internal.JitInterface
                 if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
                 {
                     MethodDesc sharedMethod = methodIL.OwningMethod.GetSharedRuntimeFormMethodTarget();
-                    result = ResolveTokenWithSubstitution(methodIL, pResolvedToken.token, sharedMethod.OwningType.Instantiation, sharedMethod.Instantiation);
+                    result = ResolveTokenWithSubstitution(methodIL, token, sharedMethod.OwningType.Instantiation, sharedMethod.Instantiation);
                     Debug.Assert(((TypeDesc)result).IsRuntimeDeterminedSubtype ||
                         /* If the resolved type is not runtime determined there's a chance we went down this path
                            because there was a literal typeof(__Canon) in the compiled IL - check for that
                            by resolving the token in the definition. */
-                        ((TypeDesc)methodIL.GetMethodILScopeDefinition().GetObject((int)pResolvedToken.token)).IsCanonicalDefinitionType(CanonicalFormKind.Any));
+                        ((TypeDesc)methodIL.GetMethodILScopeDefinition().GetObject((int)token)).IsCanonicalDefinitionType(CanonicalFormKind.Any));
                 }
-
-                if (pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_Newarr)
-                    result = ((TypeDesc)result).MakeArrayType();
             }
 
             return result;
@@ -1909,14 +1934,21 @@ namespace Internal.JitInterface
             if (pnBufLen > 0)
             {
                 char* buffer = *ppBuf;
-                for (int i = 0; i < Math.Min(name.Length, pnBufLen); i++)
+                int lengthToCopy = Math.Min(name.Length, pnBufLen);
+                for (int i = 0; i < lengthToCopy; i++)
                     buffer[i] = name[i];
                 if (name.Length < pnBufLen)
+                {
                     buffer[name.Length] = (char)0;
+                }
                 else
+                {
                     buffer[pnBufLen - 1] = (char)0;
-                pnBufLen -= length;
-                *ppBuf = buffer + length;
+                    lengthToCopy -= 1;
+                }
+
+                pnBufLen -= lengthToCopy;
+                *ppBuf = buffer + lengthToCopy;
             }
 
             return length;
@@ -2009,7 +2041,7 @@ namespace Internal.JitInterface
             if (!_compilation.CompilationModuleGroup.VersionsWithType(type))
             {
                 // Prevent the JIT from drilling into types outside of the current versioning bubble
-                result |= CorInfoFlag.CORINFO_FLG_DONT_PROMOTE;
+                result |= CorInfoFlag.CORINFO_FLG_DONT_DIG_FIELDS;
                 result &= ~CorInfoFlag.CORINFO_FLG_BEFOREFIELDINIT;
             }
 #endif
@@ -3725,17 +3757,11 @@ namespace Internal.JitInterface
                 case TargetArchitecture.X64:
                 case TargetArchitecture.X86:
                     Debug.Assert(InstructionSet.X86_SSE2 == InstructionSet.X64_SSE2);
-                    if (_compilation.InstructionSetSupport.IsInstructionSetSupported(InstructionSet.X86_SSE2))
-                    {
-                        flags.Set(CorJitFlag.CORJIT_FLAG_FEATURE_SIMD);
-                    }
+                    Debug.Assert(_compilation.InstructionSetSupport.IsInstructionSetSupported(InstructionSet.X86_SSE2));
                     break;
 
                 case TargetArchitecture.ARM64:
-                    if (_compilation.InstructionSetSupport.IsInstructionSetSupported(InstructionSet.ARM64_AdvSimd))
-                    {
-                        flags.Set(CorJitFlag.CORJIT_FLAG_FEATURE_SIMD);
-                    }
+                    Debug.Assert(_compilation.InstructionSetSupport.IsInstructionSetSupported(InstructionSet.ARM64_AdvSimd));
                     break;
             }
 
