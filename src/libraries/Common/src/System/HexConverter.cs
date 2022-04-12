@@ -92,9 +92,6 @@ namespace System
 #if SYSTEM_PRIVATE_CORELIB
         private static void EncodeToUtf16_Vector128(ReadOnlySpan<byte> bytes, Span<char> chars, Casing casing)
         {
-            Debug.Assert(bytes.Length >= 4);
-            nuint pos = 0;
-
             Vector128<byte> shuffleMask = Vector128.Create(
                 0xFF, 0xFF, 0, 0xFF, 0xFF, 0xFF, 1, 0xFF,
                 0xFF, 0xFF, 2, 0xFF, 0xFF, 0xFF, 3, 0xFF);
@@ -109,7 +106,12 @@ namespace System
                                  (byte)'8', (byte)'9', (byte)'a', (byte)'b',
                                  (byte)'c', (byte)'d', (byte)'e', (byte)'f');
 
+            nuint pos = 0;
+            Debug.Assert(bytes.Length >= 4);
 
+            // it's used to ensure we can process the trailing elements in the same SIMD loop (with possible overlap)
+            // but we won't double compute for any evenly divisible by 4 length since we
+            // compare pos > lengthSubVector128 rather than pos >= lengthSubVector128
             nuint lengthSubVector128 = (nuint)bytes.Length - (nuint)Vector128<int>.Count;
             do
             {
@@ -120,8 +122,18 @@ namespace System
                 // TODO: Remove once cross-platform Shuffle is landed
                 // https://github.com/dotnet/runtime/issues/63331
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                static Vector128<byte> Shuffle(Vector128<byte> value, Vector128<byte> mask) =>
-                    Ssse3.IsSupported ? Ssse3.Shuffle(value, mask) : AdvSimd.Arm64.VectorTableLookup(value, mask);
+                static Vector128<byte> Shuffle(Vector128<byte> value, Vector128<byte> mask)
+                {
+                    if (Ssse3.IsSupported)
+                    {
+                        return Ssse3.Shuffle(value, mask);
+                    }
+                    else if (!AdvSimd.Arm64.IsSupported)
+                    {
+                        ThrowHelper.ThrowNotSupportedException();
+                    }
+                    return AdvSimd.Arm64.VectorTableLookup(value, mask);
+                }
 
                 // Calculate nibbles
                 Vector128<byte> lowNibbles = Shuffle(
@@ -143,19 +155,21 @@ namespace System
                 // to ascii hex '0', so clear them out.
                 hex &= Vector128.Create((ushort)0xFF).AsByte();
 
-                // Save to "chars" at pos*2 offset
-                Unsafe.WriteUnaligned(
-                    ref Unsafe.As<char, byte>(
-                        ref Unsafe.Add(ref MemoryMarshal.GetReference(chars), pos * 2)), hex);
+                ref byte destRef = ref Unsafe.As<char, byte>(ref MemoryMarshal.GetReference(chars));
+                hex.StoreUnsafe(ref destRef, pos * 2);
 
                 pos += (nuint)Vector128<int>.Count;
 
                 if (pos == (nuint)bytes.Length)
+                {
                     return;
+                }
 
                 // Overlap with the current chunk for trailing elements
                 if (pos > lengthSubVector128)
+                {
                     pos = lengthSubVector128;
+                }
 
             } while (true);
         }
