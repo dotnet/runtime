@@ -1067,11 +1067,6 @@ Range RangeCheck::ComputeRangeForLocalDef(BasicBlock*          block,
     LclSsaVarDsc* ssaDef = GetSsaDefAsg(lcl);
     if (ssaDef == nullptr)
     {
-        LclVarDsc* varDsc = m_pCompiler->lvaGetDesc(lcl->GetLclNum());
-        if (varDsc->lvIsParam && (lcl->GetSsaNum() == SsaConfig::FIRST_SSA_NUM))
-        {
-            return GetRangeFromType(varDsc->TypeGet());
-        }
         return Range(Limit(Limit::keUnknown));
     }
 #ifdef DEBUG
