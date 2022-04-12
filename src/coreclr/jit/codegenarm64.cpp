@@ -10046,7 +10046,7 @@ void CodeGen::instGen_MemoryBarrier(BarrierKind barrierKind)
 }
 
 //-----------------------------------------------------------------------------------
-// genCodeForMadd: Emit a madd/msub (Multiply-Add) instruction
+// genCodeForMadd: Emit a madd (Multiply-Add) instruction
 //
 // Arguments:
 //     tree - GT_MADD tree where op1 or op2 is GT_ADD
@@ -10087,6 +10087,31 @@ void CodeGen::genCodeForMadd(GenTreeOp* tree)
 
     GetEmitter()->emitIns_R_R_R_R(useMsub ? INS_msub : INS_madd, emitActualTypeSize(tree), tree->GetRegNum(),
                                   a->GetRegNum(), b->GetRegNum(), c->GetRegNum());
+    genProduceReg(tree);
+}
+
+//-----------------------------------------------------------------------------------
+// genCodeForMsub: Emit a msub (Multiply-Subtract) instruction
+//
+// Arguments:
+//     tree - GT_MSUB tree where op2 is GT_MUL
+//
+void CodeGen::genCodeForMsub(GenTreeOp* tree)
+{
+    assert(tree->OperIs(GT_MSUB) && varTypeIsIntegral(tree) && !(tree->gtFlags & GTF_SET_FLAGS));
+    genConsumeOperands(tree);
+
+    assert(tree->gtGetOp2()->OperIs(GT_MUL));
+    assert(tree->gtGetOp2()->isContained());
+
+    GenTree* a = tree->gtGetOp1();
+    GenTree* b = tree->gtGetOp2()->gtGetOp1();
+    GenTree* c = tree->gtGetOp2()->gtGetOp2();
+
+    // d = a - b * c
+    // MSUB d, b, c, a
+    GetEmitter()->emitIns_R_R_R_R(INS_msub, emitActualTypeSize(tree), tree->GetRegNum(), b->GetRegNum(), c->GetRegNum(),
+                                  a->GetRegNum());
     genProduceReg(tree);
 }
 
