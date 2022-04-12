@@ -1928,11 +1928,17 @@ namespace System.Diagnostics.Tests
 
             enumerator = a.EnumerateTagObjects();
 
+            List<KeyValuePair<string, object>> values = new();
+
             Assert.True(enumerator.MoveNext());
             Assert.Equal(new KeyValuePair<string, object?>("key1", "value1"), enumerator.Current);
+            values.Add(enumerator.Current);
             Assert.True(enumerator.MoveNext());
             Assert.Equal(new KeyValuePair<string, object?>("key2", "value2"), enumerator.Current);
+            values.Add(enumerator.Current);
             Assert.False(enumerator.MoveNext());
+
+            Assert.Equal(a.TagObjects, values);
         }
 
         [Fact]
@@ -1950,11 +1956,17 @@ namespace System.Diagnostics.Tests
 
             enumerator = a.EnumerateEvents();
 
+            List<ActivityEvent> values = new();
+
             Assert.True(enumerator.MoveNext());
             Assert.Equal("event1", enumerator.Current.Name);
+            values.Add(enumerator.Current);
             Assert.True(enumerator.MoveNext());
             Assert.Equal("event2", enumerator.Current.Name);
+            values.Add(enumerator.Current);
             Assert.False(enumerator.MoveNext());
+
+            Assert.Equal(a.Events, values);
         }
 
         [Fact]
@@ -1992,11 +2004,17 @@ namespace System.Diagnostics.Tests
 
             enumerator = a.EnumerateLinks();
 
+            List<ActivityLink> values = new();
+
             Assert.True(enumerator.MoveNext());
             Assert.Equal(context1.TraceId, enumerator.Current.Context.TraceId);
+            values.Add(enumerator.Current);
             Assert.True(enumerator.MoveNext());
             Assert.Equal(context2.TraceId, enumerator.Current.Context.TraceId);
+            values.Add(enumerator.Current);
             Assert.False(enumerator.MoveNext());
+
+            Assert.Equal(a.Links, values);
         }
 
         public void Dispose()
