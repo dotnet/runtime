@@ -73,15 +73,11 @@ namespace System.Diagnostics
         public System.Diagnostics.Activity.Enumerator<ActivityEvent> EnumerateEvents() { throw null; }
         public System.Diagnostics.Activity.Enumerator<ActivityLink> EnumerateLinks() { throw null; }
 
-        public struct Enumerator<T> : System.Collections.Generic.IEnumerator<T>
+        public struct Enumerator<T>
         {
             public readonly System.Diagnostics.Activity.Enumerator<T> GetEnumerator() { throw null; }
             public readonly ref T Current { get { throw null; } }
-            T System.Collections.Generic.IEnumerator<T>.Current { get { throw null; } }
-            object? System.Collections.IEnumerator.Current { get { throw null; } }
             public bool MoveNext() { throw null; }
-            void System.Collections.IEnumerator.Reset() { }
-            public readonly void Dispose() { }
         }
     }
     public class ActivityTagsCollection : System.Collections.Generic.IDictionary<string, object?>

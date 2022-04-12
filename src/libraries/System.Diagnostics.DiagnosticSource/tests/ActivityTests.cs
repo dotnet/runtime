@@ -1913,6 +1913,92 @@ namespace System.Diagnostics.Tests
             }).Dispose();
         }
 
+        [Fact]
+        public void EnumerateTagObjectsTest()
+        {
+            Activity a = new Activity("Root");
+
+            var enumerator = a.EnumerateTagObjects();
+
+            Assert.False(enumerator.MoveNext());
+            Assert.False(enumerator.GetEnumerator().MoveNext());
+
+            a.SetTag("key1", "value1");
+            a.SetTag("key2", "value2");
+
+            enumerator = a.EnumerateTagObjects();
+
+            Assert.True(enumerator.MoveNext());
+            Assert.Equal(new KeyValuePair<string, object?>("key1", "value1"), enumerator.Current);
+            Assert.True(enumerator.MoveNext());
+            Assert.Equal(new KeyValuePair<string, object?>("key2", "value2"), enumerator.Current);
+            Assert.False(enumerator.MoveNext());
+        }
+
+        [Fact]
+        public void EnumerateEventsTest()
+        {
+            Activity a = new Activity("Root");
+
+            var enumerator = a.EnumerateEvents();
+
+            Assert.False(enumerator.MoveNext());
+            Assert.False(enumerator.GetEnumerator().MoveNext());
+
+            a.AddEvent(new ActivityEvent("event1"));
+            a.AddEvent(new ActivityEvent("event2"));
+
+            enumerator = a.EnumerateEvents();
+
+            Assert.True(enumerator.MoveNext());
+            Assert.Equal("event1", enumerator.Current.Name);
+            Assert.True(enumerator.MoveNext());
+            Assert.Equal("event2", enumerator.Current.Name);
+            Assert.False(enumerator.MoveNext());
+        }
+
+        [Fact]
+        public void EnumerateLinksTest()
+        {
+            Activity? a = new Activity("Root");
+
+            Assert.NotNull(a);
+
+            var enumerator = a.EnumerateLinks();
+
+            Assert.False(enumerator.MoveNext());
+            Assert.False(enumerator.GetEnumerator().MoveNext());
+
+            using ActivitySource source = new ActivitySource("test");
+
+            using ActivityListener listener = new ActivityListener()
+            {
+                ShouldListenTo = (source) => true,
+                Sample = (ref ActivityCreationOptions<ActivityContext> options) => ActivitySamplingResult.AllDataAndRecorded
+            };
+
+            ActivitySource.AddActivityListener(listener);
+
+            var context1 = new ActivityContext(ActivityTraceId.CreateRandom(), default, ActivityTraceFlags.None);
+            var context2 = new ActivityContext(ActivityTraceId.CreateRandom(), default, ActivityTraceFlags.None);
+
+            a = source.CreateActivity(
+                name: "Root",
+                kind: ActivityKind.Internal,
+                parentContext: default,
+                links: new[] { new ActivityLink(context1), new ActivityLink(context2) });
+
+            Assert.NotNull(a);
+
+            enumerator = a.EnumerateLinks();
+
+            Assert.True(enumerator.MoveNext());
+            Assert.Equal(context1.TraceId, enumerator.Current.Context.TraceId);
+            Assert.True(enumerator.MoveNext());
+            Assert.Equal(context2.TraceId, enumerator.Current.Context.TraceId);
+            Assert.False(enumerator.MoveNext());
+        }
+
         public void Dispose()
         {
             Activity.Current = null;

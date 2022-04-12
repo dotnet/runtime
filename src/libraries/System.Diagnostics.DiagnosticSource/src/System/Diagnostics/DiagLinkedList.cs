@@ -146,8 +146,45 @@ namespace System.Diagnostics
             }
         }
 
-        public Activity.Enumerator<T> GetEnumerator() => new Activity.Enumerator<T>(_first);
+        public DiagEnumerator<T> GetEnumerator() => new DiagEnumerator<T>(_first);
         IEnumerator<T> IEnumerable<T>.GetEnumerator() => GetEnumerator();
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+    }
+
+    internal struct DiagEnumerator<T> : IEnumerator<T>
+    {
+        private static readonly DiagNode<T> s_Empty = new DiagNode<T>(default!);
+
+        private DiagNode<T>? _nextNode;
+        private DiagNode<T> _currentNode;
+
+        public DiagEnumerator(DiagNode<T>? head)
+        {
+            _nextNode = head;
+            _currentNode = s_Empty;
+        }
+
+        public T Current => _currentNode.Value;
+
+        object? IEnumerator.Current => Current;
+
+        public bool MoveNext()
+        {
+            if (_nextNode == null)
+            {
+                _currentNode = s_Empty;
+                return false;
+            }
+
+            _currentNode = _nextNode;
+            _nextNode = _nextNode.Next;
+            return true;
+        }
+
+        public void Reset() => throw new NotSupportedException();
+
+        public void Dispose()
+        {
+        }
     }
 }

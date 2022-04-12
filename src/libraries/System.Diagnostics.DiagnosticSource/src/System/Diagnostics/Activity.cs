@@ -35,9 +35,9 @@ namespace System.Diagnostics
     {
 #pragma warning disable CA1825 // Array.Empty<T>() doesn't exist in all configurations
         private static readonly IEnumerable<KeyValuePair<string, string?>> s_emptyBaggageTags = new KeyValuePair<string, string?>[0];
-        private static readonly TagsLinkedList s_emptyTagObjects = new TagsLinkedList(Array.Empty<KeyValuePair<string, object?>>());
-        private static readonly DiagLinkedList<ActivityLink> s_emptyLinks = new DiagLinkedList<ActivityLink>();
-        private static readonly DiagLinkedList<ActivityEvent> s_emptyEvents = new DiagLinkedList<ActivityEvent>();
+        private static readonly IEnumerable<KeyValuePair<string, object?>> s_emptyTagObjects = new KeyValuePair<string, object?>[0];
+        private static readonly IEnumerable<ActivityLink> s_emptyLinks = new ActivityLink[0];
+        private static readonly IEnumerable<ActivityEvent> s_emptyEvents = new ActivityEvent[0];
 #pragma warning restore CA1825
         private static readonly ActivitySource s_defaultSource = new ActivitySource(string.Empty);
 
@@ -358,11 +358,23 @@ namespace System.Diagnostics
             }
         }
 
-        public Enumerator<KeyValuePair<string, object?>> EnumerateTagObjects() => (_tags ?? s_emptyTagObjects).GetEnumerator();
+        /// <summary>
+        /// Enumerate the tags attached to this Activity object.
+        /// </summary>
+        /// <returns><see cref="Enumerator{T}"/>.</returns>
+        public Enumerator<KeyValuePair<string, object?>> EnumerateTagObjects() => new Enumerator<KeyValuePair<string, object?>>(_tags?.First);
 
-        public Enumerator<ActivityEvent> EnumerateEvents() => (_events ?? s_emptyEvents).GetEnumerator();
+        /// <summary>
+        /// Enumerate the <see cref="ActivityEvent" /> objects attached to this Activity object.
+        /// </summary>
+        /// <returns><see cref="Enumerator{T}"/>.</returns>
+        public Enumerator<ActivityEvent> EnumerateEvents() => new Enumerator<ActivityEvent>(_events?.First);
 
-        public Enumerator<ActivityLink> EnumerateLinks() => (_links ?? s_emptyLinks).GetEnumerator();
+        /// <summary>
+        /// Enumerate the <see cref="ActivityLink" /> objects attached to this Activity object.
+        /// </summary>
+        /// <returns><see cref="Enumerator{T}"/>.</returns>
+        public Enumerator<ActivityLink> EnumerateLinks() => new Enumerator<ActivityLink>(_links?.First);
 
         /// <summary>
         /// Returns the value of the key-value pair added to the activity with <see cref="AddBaggage(string, string)"/>.
@@ -1345,7 +1357,11 @@ namespace System.Diagnostics
             private set => _state = (_state & ~State.FormatFlags) | (State)((byte)value & (byte)State.FormatFlags);
         }
 
-        public struct Enumerator<T> : IEnumerator<T>
+        /// <summary>
+        /// Enumerates the data stored on an Activity object.
+        /// </summary>
+        /// <typeparam name="T">Type being enumerated.</typeparam>
+        public struct Enumerator<T>
         {
             private static readonly DiagNode<T> s_Empty = new DiagNode<T>(default!);
 
@@ -1358,14 +1374,23 @@ namespace System.Diagnostics
                 _currentNode = s_Empty;
             }
 
+            /// <summary>
+            /// Returns an enumerator that iterates through the data stored on an Activity object.
+            /// </summary>
+            /// <returns><see cref="Enumerator{T}"/>.</returns>
             public readonly Enumerator<T> GetEnumerator() => this;
 
+            /// <summary>
+            /// Gets the element at the current position of the enumerator.
+            /// </summary>
             public readonly ref T Current => ref _currentNode.Value;
 
-            T IEnumerator<T>.Current => Current;
-
-            object? IEnumerator.Current => Current;
-
+            /// <summary>
+            /// Advances the enumerator to the next element of the data.
+            /// </summary>
+            /// <returns><see langword="true"/> if the enumerator was successfully advanced to the
+            /// next element; <see langword="false"/> if the enumerator has passed the end of the
+            /// collection.</returns>
             public bool MoveNext()
             {
                 if (_nextNode == null)
@@ -1377,12 +1402,6 @@ namespace System.Diagnostics
                 _currentNode = _nextNode;
                 _nextNode = _nextNode.Next;
                 return true;
-            }
-
-            void IEnumerator.Reset() => throw new NotSupportedException();
-
-            public readonly void Dispose()
-            {
             }
         }
 
@@ -1462,7 +1481,7 @@ namespace System.Diagnostics
                 }
             }
 
-            public Enumerator<KeyValuePair<string, string?>> GetEnumerator() => new Enumerator<KeyValuePair<string, string?>>(_first);
+            public DiagEnumerator<KeyValuePair<string, string?>> GetEnumerator() => new DiagEnumerator<KeyValuePair<string, string?>>(_first);
             IEnumerator<KeyValuePair<string, string?>> IEnumerable<KeyValuePair<string, string?>>.GetEnumerator() => GetEnumerator();
             IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
         }
@@ -1486,6 +1505,8 @@ namespace System.Diagnostics
                     _last = _last.Next;
                 }
             }
+
+            public DiagNode<KeyValuePair<string, object?>>? First => _first;
 
             public TagsLinkedList(IEnumerable<KeyValuePair<string, object?>> list) => Add(list);
 
@@ -1623,7 +1644,7 @@ namespace System.Diagnostics
                 }
             }
 
-            public Enumerator<KeyValuePair<string, object?>> GetEnumerator() => new Enumerator<KeyValuePair<string, object?>>(_first);
+            public DiagEnumerator<KeyValuePair<string, object?>> GetEnumerator() => new DiagEnumerator<KeyValuePair<string, object?>>(_first);
             IEnumerator<KeyValuePair<string, object?>> IEnumerable<KeyValuePair<string, object?>>.GetEnumerator() => GetEnumerator();
             IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
