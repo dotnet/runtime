@@ -136,6 +136,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             catch
             {
                 _state.StateGCHandle.Free();
+                // don't free the streamHandle, it will be freed by the caller
                 throw;
             }
 
@@ -147,6 +148,38 @@ namespace System.Net.Quic.Implementations.MsQuic
                     $"{TraceId()} Inbound {(flags.HasFlag(QUIC_STREAM_OPEN_FLAGS.UNIDIRECTIONAL) ? "uni" : "bi")}directional stream created " +
                         $"in connection {_state.ConnectionState.TraceId}.");
             }
+        }
+
+        internal static async ValueTask<MsQuicStream> CreateOutbound(MsQuicConnection.State connectionState, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var stream = new MsQuicStream(connectionState, flags);
+            State state = stream._state;
+
+            try
+            {
+                Debug.Assert(!Monitor.IsEntered(state));
+
+                cancellationToken.ThrowIfCancellationRequested();
+                using CancellationTokenRegistration registration = cancellationToken.UnsafeRegister(static (s, token) =>
+                {
+                    ((State)s!).StartCompletionSource.TrySetException(new OperationCanceledException(token));
+                }, state);
+
+                // Fire of start of the stream
+                uint status = MsQuicApi.Api.StreamStartDelegate(state.Handle, QUIC_STREAM_START_FLAGS.SHUTDOWN_ON_FAIL | QUIC_STREAM_START_FLAGS.INDICATE_PEER_ACCEPT);
+                QuicExceptionHelpers.ThrowIfFailed(status, "Could not start stream.");
+
+                // wait unit start completes.
+                await state.StartCompletionSource.Task.ConfigureAwait(false);
+            }
+            catch
+            {
+                stream.Dispose();
+                throw;
+            }
+
+            return stream;
         }
 
         // outbound.
@@ -889,22 +922,6 @@ namespace System.Net.Quic.Implementations.MsQuic
             Debug.Assert(!Monitor.IsEntered(_state), "!Monitor.IsEntered(_state)");
             uint status = MsQuicApi.Api.StreamReceiveSetEnabledDelegate(_state.Handle, enabled: true);
             QuicExceptionHelpers.ThrowIfFailed(status, "StreamReceiveSetEnabled failed.");
-        }
-
-        internal async ValueTask StartAsync(QUIC_STREAM_START_FLAGS flags, CancellationToken cancellationToken)
-        {
-            Debug.Assert(!Monitor.IsEntered(_state));
-
-            cancellationToken.ThrowIfCancellationRequested();
-            using CancellationTokenRegistration registration = cancellationToken.UnsafeRegister(static (s, token) =>
-            {
-                ((State)s!).StartCompletionSource.TrySetException(new OperationCanceledException(token));
-            }, _state);
-
-            uint status = MsQuicApi.Api.StreamStartDelegate(_state.Handle, flags);
-            QuicExceptionHelpers.ThrowIfFailed(status, "Could not start stream.");
-
-            await _state.StartCompletionSource.Task.ConfigureAwait(false);
         }
 
         /// <summary>
