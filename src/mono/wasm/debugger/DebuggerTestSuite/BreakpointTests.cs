@@ -214,18 +214,18 @@ namespace DebuggerTests
 
         [Theory]
         [InlineData("c == 15", 78, 3, 78, 11)]
-        [InlineData("c == 17", 78, 3, 79, 3)]
-        [InlineData("g == 17", 78, 3, 79, 3)]
+        [InlineData("c == 17", 78, 3, 79, 11)]
+        [InlineData("g == 17", 78, 3, 79, 11)]
         [InlineData("true", 78, 3, 78, 11)]
         [InlineData("\"false\"", 78, 3, 78, 11)]
         [InlineData("\"true\"", 78, 3, 78, 11)]
         [InlineData("5", 78, 3, 78, 11)]
-        [InlineData("p", 78, 3, 79, 3)]
-        [InlineData("0.0", 78, 3, 79, 3)]
+        [InlineData("p", 78, 3, 79, 11)]
+        [InlineData("0.0", 78, 3, 79, 11)]
         public async Task JSConditionalBreakpoint(string condition, int line_bp, int column_bp, int line_expected, int column_expected)
         {
             await SetBreakpoint("/debugger-driver.html", line_bp, column_bp, condition: condition);
-            await SetBreakpoint("/debugger-driver.html", 79, 3);
+            await SetBreakpoint("/debugger-driver.html", 79, 11);
 
             await EvaluateAndCheck(
                 "window.setTimeout(function() { conditional_breakpoint_test(5, 10, null); }, 1);",

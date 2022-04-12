@@ -12,14 +12,20 @@ namespace System.Text.RegularExpressions
     internal sealed class RegexInterpreterFactory : RegexRunnerFactory
     {
         private readonly RegexInterpreterCode _code;
+        private readonly TextInfo? _textInfo;
 
-        public RegexInterpreterFactory(RegexTree tree, CultureInfo culture) =>
+        public RegexInterpreterFactory(RegexTree tree)
+        {
+            // We use the TextInfo field from the tree's culture which will only be set to an actual culture if the
+            // tree contains IgnoreCase backreferences. If the tree doesn't have IgnoreCase backreferences, then we keep _textInfo as null.
+            _textInfo = tree.Culture?.TextInfo;
             // Generate and store the RegexInterpretedCode for the RegexTree and the specified culture
-            _code = RegexWriter.Write(tree, culture);
+            _code = RegexWriter.Write(tree);
+        }
 
         protected internal override RegexRunner CreateInstance() =>
             // Create a new interpreter instance.
-            new RegexInterpreter(_code, RegexParser.GetTargetCulture(_code.Options));
+            new RegexInterpreter(_code, _textInfo);
     }
 
     /// <summary>Executes a block of regular expression codes while consuming input.</summary>
@@ -28,20 +34,18 @@ namespace System.Text.RegularExpressions
         private const int LoopTimeoutCheckCount = 2048; // conservative value to provide reasonably-accurate timeout handling.
 
         private readonly RegexInterpreterCode _code;
-        private readonly TextInfo _textInfo;
+        private readonly TextInfo? _textInfo;
 
         private RegexOpcode _operator;
         private int _codepos;
         private bool _rightToLeft;
-        private bool _caseInsensitive;
 
-        public RegexInterpreter(RegexInterpreterCode code, CultureInfo culture)
+        public RegexInterpreter(RegexInterpreterCode code, TextInfo? textInfo)
         {
             Debug.Assert(code != null, "code must not be null.");
-            Debug.Assert(culture != null, "culture must not be null.");
 
             _code = code;
-            _textInfo = culture.TextInfo;
+            _textInfo = textInfo;
         }
 
         protected override void InitTrackCount() => runtrackcount = _code.TrackCount;
@@ -159,8 +163,7 @@ namespace System.Text.RegularExpressions
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void SetOperator(RegexOpcode op)
         {
-            _operator = op & ~(RegexOpcode.RightToLeft | RegexOpcode.CaseInsensitive);
-            _caseInsensitive = (op & RegexOpcode.CaseInsensitive) != 0;
+            _operator = op & ~RegexOpcode.RightToLeft;
             _rightToLeft = (op & RegexOpcode.RightToLeft) != 0;
         }
 
@@ -215,8 +218,7 @@ namespace System.Text.RegularExpressions
         private char Forwardcharnext(ReadOnlySpan<char> inputSpan)
         {
             int i = _rightToLeft ? --runtextpos : runtextpos++;
-            char ch = inputSpan[i];
-            return _caseInsensitive ? _textInfo.ToLower(ch) : ch;
+            return inputSpan[i];
         }
 
         private bool MatchString(string str, ReadOnlySpan<char> inputSpan)
@@ -243,25 +245,11 @@ namespace System.Text.RegularExpressions
                 pos = runtextpos;
             }
 
-            if (!_caseInsensitive)
+            while (c != 0)
             {
-                while (c != 0)
+                if (str[--c] != inputSpan[--pos])
                 {
-                    if (str[--c] != inputSpan[--pos])
-                    {
-                        return false;
-                    }
-                }
-            }
-            else
-            {
-                TextInfo ti = _textInfo;
-                while (c != 0)
-                {
-                    if (str[--c] != ti.ToLower(inputSpan[--pos]))
-                    {
-                        return false;
-                    }
+                    return false;
                 }
             }
 
@@ -275,7 +263,7 @@ namespace System.Text.RegularExpressions
             return true;
         }
 
-        private bool MatchRef(int index, int length, ReadOnlySpan<char> inputSpan)
+        private bool MatchRef(int index, int length, ReadOnlySpan<char> inputSpan, bool caseInsensitive)
         {
             int pos;
             if (!_rightToLeft)
@@ -300,7 +288,7 @@ namespace System.Text.RegularExpressions
             int cmpos = index + length;
             int c = length;
 
-            if (!_caseInsensitive)
+            if (!caseInsensitive)
             {
                 while (c-- != 0)
                 {
@@ -312,6 +300,7 @@ namespace System.Text.RegularExpressions
             }
             else
             {
+                Debug.Assert(_textInfo != null, "If the pattern has backreferences and is IgnoreCase, then _textInfo must not be null.");
                 TextInfo ti = _textInfo;
                 while (c-- != 0)
                 {
@@ -865,11 +854,12 @@ namespace System.Text.RegularExpressions
                         continue;
 
                     case RegexOpcode.Backreference:
+                    case RegexOpcode.Backreference | RegexOpcode.CaseInsensitive:
                         {
                             int capnum = Operand(0);
                             if (IsMatched(capnum))
                             {
-                                if (!MatchRef(MatchIndex(capnum), MatchLength(capnum), inputSpan))
+                                if (!MatchRef(MatchIndex(capnum), MatchLength(capnum), inputSpan, (_operator & RegexOpcode.CaseInsensitive) != 0))
                                 {
                                     break;
                                 }
@@ -985,9 +975,9 @@ namespace System.Text.RegularExpressions
                             char ch = (char)Operand(0);
                             int i;
 
-                            if (!_rightToLeft && !_caseInsensitive)
+                            if (!_rightToLeft)
                             {
-                                // We're left-to-right and case-sensitive, so we can employ the vectorized IndexOf
+                                // We're left-to-right, so we can employ the vectorized IndexOf
                                 // to search for the character.
                                 i = inputSpan.Slice(runtextpos, len).IndexOf(ch);
                                 if (i == -1)

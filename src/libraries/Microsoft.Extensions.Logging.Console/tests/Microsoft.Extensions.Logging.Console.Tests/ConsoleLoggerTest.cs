@@ -45,32 +45,30 @@ namespace Microsoft.Extensions.Logging.Console.Test
             var errorSink = new ConsoleSink();
             var console = new TestConsole(sink);
             var errorConsole = new TestConsole(errorSink);
-            var consoleLoggerProcessor = new TestLoggerProcessor();
-            consoleLoggerProcessor.Console = console;
-            consoleLoggerProcessor.ErrorConsole = errorConsole;
+            var consoleLoggerProcessor = new TestLoggerProcessor(console, errorConsole);
 
-            var logger = new ConsoleLogger(_loggerName, consoleLoggerProcessor);
-            logger.ScopeProvider = new LoggerExternalScopeProvider();
-            logger.Options = options ?? new ConsoleLoggerOptions();
             var formatters = new ConcurrentDictionary<string, ConsoleFormatter>(GetFormatters().ToDictionary(f => f.Name));
 
+            ConsoleFormatter? formatter = null;
+            var loggerOptions = options ?? new ConsoleLoggerOptions();
             Func<LogLevel, string> levelAsString;
             int writesPerMsg;
-            switch (logger.Options.Format)
+            switch (loggerOptions.Format)
             {
                 case ConsoleLoggerFormat.Default:
                     levelAsString = LogLevelAsStringDefault;
                     writesPerMsg = 2;
-                    logger.Formatter = formatters[ConsoleFormatterNames.Simple];
+                    formatter = formatters[ConsoleFormatterNames.Simple];
                     break;
                 case ConsoleLoggerFormat.Systemd:
                     levelAsString = GetSyslogSeverityString;
                     writesPerMsg = 1;
-                    logger.Formatter = formatters[ConsoleFormatterNames.Systemd];
+                    formatter = formatters[ConsoleFormatterNames.Systemd];
                     break;
                 default:
-                    throw new ArgumentOutOfRangeException(nameof(logger.Options.Format));
+                    throw new ArgumentOutOfRangeException(nameof(loggerOptions.Format));
             }
+            var logger = new ConsoleLogger(_loggerName, consoleLoggerProcessor, formatter, new LoggerExternalScopeProvider(), loggerOptions);
 
             UpdateFormatterOptions(logger.Formatter, logger.Options);
             VerifyDeprecatedPropertiesUsedOnNullFormatterName(logger);
@@ -1115,14 +1113,11 @@ namespace Microsoft.Extensions.Logging.Console.Test
             // Arrange
             var sink = new ConsoleSink();
             var console = new TestConsole(sink);
-            var processor = new ConsoleLoggerProcessor();
-            processor.Console = console;
+            var processor = new ConsoleLoggerProcessor(console, null!);
             var formatters = new ConcurrentDictionary<string, ConsoleFormatter>(GetFormatters().ToDictionary(f => f.Name));
 
-            var logger = new ConsoleLogger(_loggerName, loggerProcessor: processor);
-            logger.Options = new ConsoleLoggerOptions();
+            var logger = new ConsoleLogger(_loggerName, loggerProcessor: processor, formatters[ConsoleFormatterNames.Simple], null, new ConsoleLoggerOptions());
             Assert.Null(logger.Options.FormatterName);
-            logger.Formatter = formatters[ConsoleFormatterNames.Simple];
             UpdateFormatterOptions(logger.Formatter, logger.Options);
             // Act
             processor.Dispose();
@@ -1374,7 +1369,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
 
     internal class TestLoggerProcessor : ConsoleLoggerProcessor
     {
-        public TestLoggerProcessor()
+        public TestLoggerProcessor(IConsole console, IConsole errorConsole) : base(console, errorConsole)
         {
         }
 

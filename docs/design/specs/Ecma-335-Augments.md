@@ -15,6 +15,7 @@ This is a list of additions and edits to be made in ECMA-335 specifications. It 
 - [Unsigned data conversion with overflow detection](#unsigned-data-conversion-with-overflow-detection)
 - [Ref field support](#ref-fields)
 - [Rules for IL rewriters](#rules-for-il-rewriters)
+- [Checked user-defined operators](#checked-user-defined-operators)
 
 ## Signatures
 
@@ -1000,3 +1001,15 @@ There are apis such as `System.Runtime.CompilerServices.RuntimeHelpers.CreateSpa
 2. That in the presence of IL rewriters that the RVA remains aligned. This section descibes metadata which will be processed by IL rewriters in order to maintain the required alignment.
 
 In order to maintain alignment, if the field needs alignment to be preserved, the field must be of a type locally defined within the module which has a Pack (§II.10.7) value of the desired alignment. Unlike other uses of the .pack directive, in this circumstance the .pack specifies a minimum alignment.
+
+## Checked user-defined operators
+
+Section "I.10.3.1 Unary operators" of ECMA-335 adds *op_CheckedIncrement*, *op_CheckedDecrement*, *op_CheckedUnaryNegation* as the names for methods implementing checked `++`, `--` and `-` unary operators.
+
+Section "I.10.3.2 Binary operators" of ECMA-335 adds *op_CheckedAddition*, *op_CheckedSubtraction*,
+*op_CheckedMultiply*, *op_CheckedDivision* as the names for methods implementing checked `+`, `-`, `*`, and `/` binary operators.
+
+Section "I.10.3.3 Conversion operators" of ECMA-335 adds *op_CheckedExplicit* as the name for a method
+implementing checked explicit conversion operator.
+
+A checked user-defined operator is expected to throw an exception when the result of an operation is too large to represent in the destination type. What does it mean to be too large actually depends on the nature of the destination type. Typically the exception thrown is a System.OverflowException.

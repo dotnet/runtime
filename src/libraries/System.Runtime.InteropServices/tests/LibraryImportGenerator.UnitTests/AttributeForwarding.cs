@@ -297,6 +297,7 @@ struct Native
         }
 
         [Fact]
+        [OuterLoop("Uses the network for downlevel ref packs")]
         public async Task InOutAttributes_Forwarded_To_ForwardedParameter()
         {
             // This code is invalid configuration from the source generator's perspective.
@@ -336,6 +337,7 @@ partial class C
         }
 
         [Fact]
+        [OuterLoop("Uses the network for downlevel ref packs")]
         public async Task MarshalAsAttribute_Forwarded_To_ForwardedParameter()
         {
             string source = @"

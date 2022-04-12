@@ -20,13 +20,13 @@ namespace System.Text.Json
         {
             if (state.NewReferenceId != null)
             {
-                Debug.Assert(jsonConverter.CanHaveIdMetadata);
+                Debug.Assert(jsonConverter.CanHaveMetadata);
                 writer.WriteString(s_metadataId, state.NewReferenceId);
                 state.NewReferenceId = null;
                 return MetadataPropertyName.Id;
             }
 
-            return MetadataPropertyName.NoMetadata;
+            return MetadataPropertyName.None;
         }
 
         internal static MetadataPropertyName WriteReferenceForCollection(
@@ -36,7 +36,7 @@ namespace System.Text.Json
         {
             if (state.NewReferenceId != null)
             {
-                Debug.Assert(jsonConverter.CanHaveIdMetadata);
+                Debug.Assert(jsonConverter.CanHaveMetadata);
                 writer.WriteStartObject();
                 writer.WriteString(s_metadataId, state.NewReferenceId);
                 writer.WriteStartArray(s_metadataValues);
@@ -46,7 +46,7 @@ namespace System.Text.Json
 
             // If the jsonConverter supports immutable enumerables or value type collections, don't write any metadata
             writer.WriteStartArray();
-            return MetadataPropertyName.NoMetadata;
+            return MetadataPropertyName.None;
         }
 
         /// <summary>

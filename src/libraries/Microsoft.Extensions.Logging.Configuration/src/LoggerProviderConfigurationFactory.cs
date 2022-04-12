@@ -16,15 +16,10 @@ namespace Microsoft.Extensions.Logging.Configuration
             _configurations = configurations;
         }
 
-        public IConfiguration GetConfiguration(Type providerType)
+        public IConfiguration GetConfiguration(Type providerType!!)
         {
-            if (providerType == null)
-            {
-                throw new ArgumentNullException(nameof(providerType));
-            }
-
-            string fullName = providerType.FullName;
-            string alias = ProviderAliasUtilities.GetAlias(providerType);
+            string fullName = providerType.FullName!;
+            string? alias = ProviderAliasUtilities.GetAlias(providerType);
             var configurationBuilder = new ConfigurationBuilder();
             foreach (LoggingConfiguration configuration in _configurations)
             {

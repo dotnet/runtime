@@ -51,7 +51,7 @@ namespace System
         {
             get
             {
-                return this.EETypePtr.BaseSize == SZARRAY_BASE_SIZE;
+                return this.GetEETypePtr().BaseSize == SZARRAY_BASE_SIZE;
             }
         }
 
@@ -139,8 +139,8 @@ namespace System
             if (destinationArray is null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.destinationArray);
 
-            EETypePtr eeType = sourceArray.EETypePtr;
-            if (eeType.FastEquals(destinationArray.EETypePtr) &&
+            EETypePtr eeType = sourceArray.GetEETypePtr();
+            if (eeType.FastEquals(destinationArray.GetEETypePtr()) &&
                 eeType.IsSzArray &&
                 (uint)length <= sourceArray.NativeLength &&
                 (uint)length <= destinationArray.NativeLength)
@@ -166,8 +166,8 @@ namespace System
         {
             if (sourceArray != null && destinationArray != null)
             {
-                EETypePtr eeType = sourceArray.EETypePtr;
-                if (eeType.FastEquals(destinationArray.EETypePtr) &&
+                EETypePtr eeType = sourceArray.GetEETypePtr();
+                if (eeType.FastEquals(destinationArray.GetEETypePtr()) &&
                     eeType.IsSzArray &&
                     length >= 0 && sourceIndex >= 0 && destinationIndex >= 0 &&
                     (uint)(sourceIndex + length) <= sourceArray.NativeLength &&
@@ -269,7 +269,7 @@ namespace System
                 }
                 else if (sourceElementEEType.IsPrimitive && destinationElementEEType.IsPrimitive)
                 {
-                    if (RuntimeImports.AreTypesAssignable(sourceArray.EETypePtr, destinationArray.EETypePtr))
+                    if (RuntimeImports.AreTypesAssignable(sourceArray.GetEETypePtr(), destinationArray.GetEETypePtr()))
                     {
                         // If we're okay casting between these two, we're also okay blitting the values over
                         CopyImplValueTypeArrayNoInnerGcRefs(sourceArray, sourceIndex, destinationArray, destinationIndex, length);
@@ -422,7 +422,7 @@ namespace System
                     }
                     else
                     {
-                        EETypePtr eeType = boxedValue.EETypePtr;
+                        EETypePtr eeType = boxedValue.GetEETypePtr();
                         if (!(RuntimeImports.AreTypesAssignable(eeType, destinationElementEEType)))
                             throw new InvalidCastException(SR.InvalidCast_DownCastArrayElement);
                     }
@@ -439,10 +439,10 @@ namespace System
         //
         private static unsafe void CopyImplValueTypeArrayWithInnerGcRefs(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length, bool reliable)
         {
-            Debug.Assert(RuntimeImports.AreTypesEquivalent(sourceArray.EETypePtr, destinationArray.EETypePtr));
+            Debug.Assert(RuntimeImports.AreTypesEquivalent(sourceArray.GetEETypePtr(), destinationArray.GetEETypePtr()));
             Debug.Assert(sourceArray.ElementEEType.IsValueType);
 
-            EETypePtr sourceElementEEType = sourceArray.EETypePtr.ArrayElementType;
+            EETypePtr sourceElementEEType = sourceArray.GetEETypePtr().ArrayElementType;
             bool reverseCopy = ((object)sourceArray == (object)destinationArray) && (sourceIndex < destinationIndex);
 
             // Copy scenario: ValueType-array to value-type array with embedded gc-refs.
@@ -803,7 +803,7 @@ namespace System
             if (array == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
 
-            EETypePtr eeType = array.EETypePtr;
+            EETypePtr eeType = array.GetEETypePtr();
             nuint totalByteLength = eeType.ComponentSize * array.NativeLength;
             ref byte pStart = ref MemoryMarshal.GetArrayDataReference(array);
 
@@ -826,7 +826,7 @@ namespace System
             ref byte p = ref Unsafe.As<RawArrayData>(array).Data;
             int lowerBound = 0;
 
-            EETypePtr eeType = array.EETypePtr;
+            EETypePtr eeType = array.GetEETypePtr();
             if (!eeType.IsSzArray)
             {
                 int rank = eeType.ArrayRank;
@@ -870,7 +870,7 @@ namespace System
         {
             get
             {
-                return this.EETypePtr.ArrayRank;
+                return this.GetEETypePtr().ArrayRank;
             }
         }
 
@@ -1018,11 +1018,11 @@ namespace System
             if (pElementEEType.IsValueType)
             {
                 // Unlike most callers of InvokeUtils.ChangeType(), Array.SetValue() does *not* permit conversion from a primitive to an Enum.
-                if (value != null && !(value.EETypePtr == pElementEEType) && pElementEEType.IsEnum)
+                if (value != null && !(value.GetEETypePtr() == pElementEEType) && pElementEEType.IsEnum)
                     throw new InvalidCastException(SR.Format(SR.Arg_ObjObjEx, value.GetType(), Type.GetTypeFromHandle(new RuntimeTypeHandle(pElementEEType))));
 
                 value = InvokeUtils.CheckArgument(value, pElementEEType, InvokeUtils.CheckArgumentSemantics.ArraySet, binderBundle: null);
-                Debug.Assert(value == null || RuntimeImports.AreTypesAssignable(value.EETypePtr, pElementEEType));
+                Debug.Assert(value == null || RuntimeImports.AreTypesAssignable(value.GetEETypePtr(), pElementEEType));
 
                 RuntimeImports.RhUnbox(value, ref element, pElementEEType);
             }
@@ -1048,7 +1048,7 @@ namespace System
         {
             get
             {
-                return this.EETypePtr.ArrayElementType;
+                return this.GetEETypePtr().ArrayElementType;
             }
         }
 
@@ -1059,7 +1059,7 @@ namespace System
 
         internal bool IsValueOfElementType(object o)
         {
-            return ElementEEType.Equals(o.EETypePtr);
+            return ElementEEType.Equals(o.GetEETypePtr());
         }
 
         //
@@ -1069,7 +1069,7 @@ namespace System
         {
             get
             {
-                return EETypePtr.ComponentSize;
+                return this.GetEETypePtr().ComponentSize;
             }
         }
 

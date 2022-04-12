@@ -127,7 +127,16 @@ namespace System.Text.Json.SourceGeneration.Tests
             if (DefaultContext.JsonSourceGenerationMode == JsonSourceGenerationMode.Serialization)
             {
                 // Deserialization not supported in fast path serialization only mode
-                Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize(json, DefaultContext.ValueTupleStringInt32Boolean));
+                // but if there are no fields we won't throw because we throw on the property lookup
+                if (isIncludeFieldsEnabled)
+                {
+                    Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize(json, DefaultContext.ValueTupleStringInt32Boolean));
+                }
+                else
+                {
+                    (string, int, bool) obj = JsonSerializer.Deserialize(json, DefaultContext.ValueTupleStringInt32Boolean);
+                    Assert.Equal(default((string, int, bool)), obj);
+                }
             }
             else
             {
@@ -910,16 +919,11 @@ namespace System.Text.Json.SourceGeneration.Tests
 
             string json = JsonSerializer.Serialize(instance, DefaultContext.TypeWithDerivedAttribute);
             JsonTestHelper.AssertJsonEqual(@"{}", json);
-            if (DefaultContext.JsonSourceGenerationMode == JsonSourceGenerationMode.Serialization)
-            {
-                // Deserialization not supported in fast path serialization only mode
-                Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize(json, DefaultContext.TypeWithDerivedAttribute));
-            }
-            else
-            {
-                instance = JsonSerializer.Deserialize(json, DefaultContext.TypeWithDerivedAttribute);
-                Assert.NotNull(instance);
-            }
+
+            // Deserialization not supported in fast path serialization only mode
+            // but we can deserialize empty types as we throw only when looking up properties and there are no properties here.
+            instance = JsonSerializer.Deserialize(json, DefaultContext.TypeWithDerivedAttribute);
+            Assert.NotNull(instance);
         }
     }
 }

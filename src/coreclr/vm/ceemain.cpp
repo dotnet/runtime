@@ -666,6 +666,7 @@ void EEStartupHelper()
         Thread::StaticInitialize();
         ThreadpoolMgr::StaticInitialize();
 
+        JITInlineTrackingMap::StaticInitialize();
         MethodDescBackpatchInfoTracker::StaticInitialize();
         CodeVersionManager::StaticInitialize();
         TieredCompilationManager::StaticInitialize();

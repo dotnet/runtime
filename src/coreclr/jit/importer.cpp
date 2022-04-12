@@ -2111,7 +2111,7 @@ GenTree* Compiler::impReadyToRunLookupToTree(CORINFO_CONST_LOOKUP* pLookup,
 //
 bool Compiler::impIsCastHelperEligibleForClassProbe(GenTree* tree)
 {
-    if (!opts.jitFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR) || (JitConfig.JitCastProfiling() != 1))
+    if (!opts.jitFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR) || (JitConfig.JitProfileCasts() != 1))
     {
         return false;
     }
@@ -2138,21 +2138,22 @@ bool Compiler::impIsCastHelperEligibleForClassProbe(GenTree* tree)
 // Returns:
 //    true if the tree is a cast helper with potential profile data
 //
-bool Compiler::impIsCastHelperMayHaveProfileData(GenTree* tree)
+bool Compiler::impIsCastHelperMayHaveProfileData(CorInfoHelpFunc helper)
 {
-    if (!opts.jitFlags->IsSet(JitFlags::JIT_FLAG_BBOPT) || (JitConfig.JitCastProfiling() != 1))
+    if (JitConfig.JitConsumeProfileForCasts() == 0)
     {
         return false;
     }
 
-    if (tree->IsCall() && tree->AsCall()->gtCallType == CT_HELPER)
+    if (!opts.jitFlags->IsSet(JitFlags::JIT_FLAG_BBOPT))
     {
-        const CorInfoHelpFunc helper = eeGetHelperNum(tree->AsCall()->gtCallMethHnd);
-        if ((helper == CORINFO_HELP_ISINSTANCEOFINTERFACE) || (helper == CORINFO_HELP_ISINSTANCEOFCLASS) ||
-            (helper == CORINFO_HELP_CHKCASTCLASS) || (helper == CORINFO_HELP_CHKCASTINTERFACE))
-        {
-            return true;
-        }
+        return false;
+    }
+
+    if ((helper == CORINFO_HELP_ISINSTANCEOFINTERFACE) || (helper == CORINFO_HELP_ISINSTANCEOFCLASS) ||
+        (helper == CORINFO_HELP_CHKCASTCLASS) || (helper == CORINFO_HELP_CHKCASTINTERFACE))
+    {
+        return true;
     }
     return false;
 }
@@ -3867,11 +3868,11 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             mustExpand |= IsTargetAbi(CORINFO_CORERT_ABI);
             break;
 
+        case NI_Internal_Runtime_MethodTable_Of:
         case NI_System_ByReference_ctor:
         case NI_System_ByReference_get_Value:
         case NI_System_Activator_AllocatorOf:
         case NI_System_Activator_DefaultConstructorOf:
-        case NI_System_Object_MethodTableOf:
         case NI_System_EETypePtr_EETypePtrOf:
             mustExpand = true;
             break;
@@ -4036,9 +4037,9 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 break;
             }
 
+            case NI_Internal_Runtime_MethodTable_Of:
             case NI_System_Activator_AllocatorOf:
             case NI_System_Activator_DefaultConstructorOf:
-            case NI_System_Object_MethodTableOf:
             case NI_System_EETypePtr_EETypePtrOf:
             {
                 assert(IsTargetAbi(CORINFO_CORERT_ABI)); // Only CoreRT supports it.
@@ -4079,7 +4080,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 // For Span<T>
                 //   Comma
                 //     BoundsCheck(index, s->_length)
-                //     s->_pointer + index * sizeof(T)
+                //     s->_reference + index * sizeof(T)
                 //
                 // For ReadOnlySpan<T> -- same expansion, as it now returns a readonly ref
                 //
@@ -4281,14 +4282,16 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             }
 
             case NI_System_Type_get_IsValueType:
+            case NI_System_Type_get_IsByRefLike:
             {
                 // Optimize
                 //
                 //   call Type.GetTypeFromHandle (which is replaced with CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE)
-                //   call Type.IsValueType
+                //   call Type.IsXXX
                 //
                 // to `true` or `false`
-                // e.g. `typeof(int).IsValueType` => `true`
+                // e.g., `typeof(int).IsValueType` => `true`
+                // e.g., `typeof(Span<int>).IsByRefLike` => `true`
                 if (impStackTop().val->IsCall())
                 {
                     GenTreeCall* call = impStackTop().val->AsCall();
@@ -4297,12 +4300,24 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                         CORINFO_CLASS_HANDLE hClass = gtGetHelperArgClassHandle(call->gtCallArgs->GetNode());
                         if (hClass != NO_CLASS_HANDLE)
                         {
-                            retNode =
-                                gtNewIconNode((eeIsValueClass(hClass) &&
-                                               // pointers are not value types (e.g. typeof(int*).IsValueType is false)
-                                               info.compCompHnd->asCorInfoType(hClass) != CORINFO_TYPE_PTR)
-                                                  ? 1
-                                                  : 0);
+                            switch (ni)
+                            {
+                                case NI_System_Type_get_IsValueType:
+                                    retNode = gtNewIconNode(
+                                        (eeIsValueClass(hClass) &&
+                                         // pointers are not value types (e.g. typeof(int*).IsValueType is false)
+                                         info.compCompHnd->asCorInfoType(hClass) != CORINFO_TYPE_PTR)
+                                            ? 1
+                                            : 0);
+                                    break;
+                                case NI_System_Type_get_IsByRefLike:
+                                    retNode = gtNewIconNode(
+                                        (info.compCompHnd->getClassAttribs(hClass) & CORINFO_FLG_BYREF_LIKE) ? 1 : 0);
+                                    break;
+                                default:
+                                    NO_WAY("Intrinsic not supported in this path.");
+                            }
+
                             impPopStack(); // drop CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE call
                         }
                     }
@@ -5232,10 +5247,6 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
             {
                 result = NI_System_Object_GetType;
             }
-            else if (strcmp(methodName, "MethodTableOf") == 0)
-            {
-                result = NI_System_Object_MethodTableOf;
-            }
         }
         else if (strcmp(className, "RuntimeTypeHandle") == 0)
         {
@@ -5249,6 +5260,10 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
             if (strcmp(methodName, "get_IsValueType") == 0)
             {
                 result = NI_System_Type_get_IsValueType;
+            }
+            else if (strcmp(methodName, "get_IsByRefLike") == 0)
+            {
+                result = NI_System_Type_get_IsByRefLike;
             }
             else if (strcmp(methodName, "IsAssignableFrom") == 0)
             {
@@ -5332,6 +5347,16 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
             if (strcmp(methodName, "EETypePtrOf") == 0)
             {
                 result = NI_System_EETypePtr_EETypePtrOf;
+            }
+        }
+    }
+    else if (strcmp(namespaceName, "Internal.Runtime") == 0)
+    {
+        if (strcmp(className, "MethodTable") == 0)
+        {
+            if (strcmp(methodName, "Of") == 0)
+            {
+                result = NI_Internal_Runtime_MethodTable_Of;
             }
         }
     }
@@ -8540,7 +8565,7 @@ bool Compiler::impTailCallRetTypeCompatible(bool                     allowWideni
         return true;
     }
 
-#if defined(TARGET_AMD64) || defined(TARGET_ARMARCH)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
     // Jit64 compat:
     if (callerRetType == TYP_VOID)
     {
@@ -8570,7 +8595,7 @@ bool Compiler::impTailCallRetTypeCompatible(bool                     allowWideni
     {
         return (varTypeIsIntegral(calleeRetType) || isCalleeRetTypMBEnreg) && (callerRetTypeSize == calleeRetTypeSize);
     }
-#endif // TARGET_AMD64 || TARGET_ARMARCH
+#endif // TARGET_AMD64 || TARGET_ARM64 || TARGET_LOONGARCH64
 
     return false;
 }
@@ -10379,7 +10404,7 @@ GenTree* Compiler::impFixupStructReturnType(GenTree*                 op,
         return impAssignMultiRegTypeToVar(op, retClsHnd DEBUGARG(unmgdCallConv));
     }
 
-#elif FEATURE_MULTIREG_RET && defined(TARGET_ARM64)
+#elif FEATURE_MULTIREG_RET && (defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64))
 
     // Is method returning a multi-reg struct?
     if (IsMultiRegReturnedType(retClsHnd, unmgdCallConv))
@@ -10418,7 +10443,7 @@ GenTree* Compiler::impFixupStructReturnType(GenTree*                 op,
         return impAssignMultiRegTypeToVar(op, retClsHnd DEBUGARG(unmgdCallConv));
     }
 
-#endif //  FEATURE_MULTIREG_RET && TARGET_ARM64
+#endif //  FEATURE_MULTIREG_RET && (TARGET_ARM64 || TARGET_LOONGARCH64)
 
     if (!op->IsCall() || !op->AsCall()->TreatAsHasRetBufArg(this))
     {
@@ -11603,7 +11628,7 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
         // not worth creating an untracked local variable
         shouldExpandInline = false;
     }
-    else if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR) && (JitConfig.JitCastProfiling() == 1))
+    else if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR) && (JitConfig.JitProfileCasts() == 1))
     {
         // Optimizations are enabled but we're still instrumenting (including casts)
         if (isCastClass && !impIsClassExact(pResolvedToken->hClass))
@@ -11616,7 +11641,10 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
 
     // Pessimistically assume the jit cannot expand this as an inline test
     bool                  canExpandInline = false;
+    bool                  partialExpand   = false;
     const CorInfoHelpFunc helper          = info.compCompHnd->getCastingHelper(pResolvedToken, isCastClass);
+
+    GenTree* exactCls = nullptr;
 
     // Legality check.
     //
@@ -11635,6 +11663,61 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
             {
                 // If the class is exact, the jit can expand the IsInst check inline.
                 canExpandInline = impIsClassExact(pResolvedToken->hClass);
+            }
+        }
+
+        // Check if this cast helper have some profile data
+        if (impIsCastHelperMayHaveProfileData(helper))
+        {
+            bool              doRandomDevirt   = false;
+            const int         maxLikelyClasses = 32;
+            int               likelyClassCount = 0;
+            LikelyClassRecord likelyClasses[maxLikelyClasses];
+#ifdef DEBUG
+            // Optional stress mode to pick a random known class, rather than
+            // the most likely known class.
+            doRandomDevirt = JitConfig.JitRandomGuardedDevirtualization() != 0;
+
+            if (doRandomDevirt)
+            {
+                // Reuse the random inliner's random state.
+                CLRRandom* const random =
+                    impInlineRoot()->m_inlineStrategy->GetRandom(JitConfig.JitRandomGuardedDevirtualization());
+                likelyClasses[0].clsHandle = getRandomClass(fgPgoSchema, fgPgoSchemaCount, fgPgoData, ilOffset, random);
+                likelyClasses[0].likelihood = 100;
+                if (likelyClasses[0].clsHandle != NO_CLASS_HANDLE)
+                {
+                    likelyClassCount = 1;
+                }
+            }
+            else
+#endif
+            {
+                likelyClassCount = getLikelyClasses(likelyClasses, maxLikelyClasses, fgPgoSchema, fgPgoSchemaCount,
+                                                    fgPgoData, ilOffset);
+            }
+
+            if (likelyClassCount > 0)
+            {
+                LikelyClassRecord    likelyClass = likelyClasses[0];
+                CORINFO_CLASS_HANDLE likelyCls   = likelyClass.clsHandle;
+
+                if ((likelyCls != NO_CLASS_HANDLE) &&
+                    (likelyClass.likelihood > (UINT32)JitConfig.JitGuardedDevirtualizationChainLikelihood()))
+                {
+                    if ((info.compCompHnd->compareTypesForCast(likelyCls, pResolvedToken->hClass) ==
+                         TypeCompareState::Must))
+                    {
+                        assert((info.compCompHnd->getClassAttribs(likelyCls) &
+                                (CORINFO_FLG_INTERFACE | CORINFO_FLG_ABSTRACT)) == 0);
+                        JITDUMP("Adding \"is %s (%X)\" check as a fast path for %s using PGO data.\n",
+                                eeGetClassName(likelyCls), likelyCls, isCastClass ? "castclass" : "isinst");
+
+                        canExpandInline = true;
+                        partialExpand   = true;
+                        exactCls        = gtNewIconEmbClsHndNode(likelyCls);
+                    }
+                }
             }
         }
     }
@@ -11688,13 +11771,13 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
     //
 
     GenTree* op2Var = op2;
-    if (isCastClass)
+    if (isCastClass && !partialExpand)
     {
         op2Var                                                  = fgInsertCommaFormTemp(&op2);
         lvaTable[op2Var->AsLclVarCommon()->GetLclNum()].lvIsCSE = true;
     }
     temp   = gtNewMethodTableLookup(temp);
-    condMT = gtNewOperNode(GT_NE, TYP_INT, temp, op2);
+    condMT = gtNewOperNode(GT_NE, TYP_INT, temp, exactCls != nullptr ? exactCls : op2);
 
     GenTree* condNull;
     //
@@ -11719,7 +11802,12 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
         //
         const CorInfoHelpFunc specialHelper = CORINFO_HELP_CHKCASTCLASS_SPECIAL;
 
-        condTrue = gtNewHelperCallNode(specialHelper, TYP_REF, gtNewCallArgs(op2Var, gtClone(op1)));
+        condTrue =
+            gtNewHelperCallNode(specialHelper, TYP_REF, gtNewCallArgs(partialExpand ? op2 : op2Var, gtClone(op1)));
+    }
+    else if (partialExpand)
+    {
+        condTrue = gtNewHelperCallNode(helper, TYP_REF, gtNewCallArgs(op2, gtClone(op1)));
     }
     else
     {
@@ -14071,6 +14159,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 }
 
                 op1 = impPopStack().val;
+
                 impBashVarAddrsToI(op1);
 
                 // Casts from floating point types must not have GTF_UNSIGNED set.
@@ -17379,7 +17468,7 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
                     }
                 }
                 else
-#elif defined(TARGET_ARM64)
+#elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
                 ReturnTypeDesc retTypeDesc;
                 retTypeDesc.InitializeStructReturnType(this, retClsHnd, info.compCallConv);
                 unsigned retRegCount = retTypeDesc.GetReturnRegCount();
@@ -20747,6 +20836,9 @@ bool Compiler::IsTargetIntrinsic(NamedIntrinsic intrinsicName)
         default:
             return false;
     }
+#elif defined(TARGET_LOONGARCH64)
+    // TODO-LoongArch64: add some instrinsics.
+    return false;
 #else
     // TODO: This portion of logic is not implemented for other arch.
     // The reason for returning true is that on all other arch the only intrinsic

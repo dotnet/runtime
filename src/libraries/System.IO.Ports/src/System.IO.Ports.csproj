@@ -152,13 +152,12 @@ System.IO.Ports.SerialPort</PackageDescription>
     <Reference Include="System.Net.Primitives" />
     <Reference Include="System.Net.Sockets" Condition="'$(TargetPlatformIdentifier)' == 'Unix'" />
     <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.CompilerServices.Unsafe" />
     <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Runtime.InteropServices.RuntimeInformation" Condition="'$(TargetPlatformIdentifier)' == 'Unix'" />
     <Reference Include="System.Text.Encoding.Extensions" />
     <Reference Include="System.Threading" />
-    <Reference Include="System.Threading.Thread" />
     <Reference Include="System.Threading.Overlapped" />
+    <Reference Include="System.Threading.Thread" />
     <Reference Include="System.Threading.ThreadPool" />
   </ItemGroup>
 
@@ -167,10 +166,5 @@ System.IO.Ports.SerialPort</PackageDescription>
     <ProjectReference Include="..\pkg\runtime.native.$(MSBuildProjectName).proj" BuildReference="false" />
     <!-- Make the runtime specific packages non transitive so that they aren't flowing into other projects. -->
     <ProjectReference Include="..\pkg\runtime.*.runtime.native.$(MSBuildProjectName).proj" BuildReference="false" PrivateAssets="all" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETStandard'">
-    <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
-    <PackageReference Include="Microsoft.Win32.Registry" Version="$(MicrosoftWin32RegistryVersion)" />
   </ItemGroup>
 </Project>

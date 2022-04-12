@@ -102,11 +102,8 @@ class Compiler;
 // Declare global operator new overloads that use the compiler's arena allocator
 //
 
-// I wanted to make the second argument optional, with default = CMK_Unknown, but that
-// caused these to be ambiguous with the global placement new operators.
-void* __cdecl operator new(size_t n, Compiler* context, CompMemKind cmk);
-void* __cdecl operator new[](size_t n, Compiler* context, CompMemKind cmk);
-void* __cdecl operator new(size_t n, void* p, const jitstd::placement_t& syntax_difference);
+void* operator new(size_t n, Compiler* context, CompMemKind cmk);
+void* operator new[](size_t n, Compiler* context, CompMemKind cmk);
 
 // Requires the definitions of "operator new" so including "LoopCloning.h" after the definitions.
 #include "loopcloning.h"
@@ -481,9 +478,15 @@ public:
 
     unsigned char lvIsTemp : 1; // Short-lifetime compiler temp
 
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
     unsigned char lvIsImplicitByRef : 1; // Set if the argument is an implicit byref.
-#endif                                   // defined(TARGET_AMD64) || defined(TARGET_ARM64)
+#endif // defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+
+#if defined(TARGET_LOONGARCH64)
+    unsigned char lvIs4Field1 : 1; // Set if the 1st field is int or float within struct for LA-ABI64.
+    unsigned char lvIs4Field2 : 1; // Set if the 2nd field is int or float within struct for LA-ABI64.
+    unsigned char lvIsSplit : 1;   // Set if the argument is splited.
+#endif                             // defined(TARGET_LOONGARCH64)
 
     unsigned char lvIsBoolean : 1; // set if variable is boolean
     unsigned char lvSingleDef : 1; // variable has a single def
@@ -1014,7 +1017,7 @@ public:
         }
 #endif
         assert(m_layout != nullptr);
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
         assert(varTypeIsStruct(TypeGet()) || (lvIsImplicitByRef && (TypeGet() == TYP_BYREF)));
 #else
         assert(varTypeIsStruct(TypeGet()));
@@ -1125,7 +1128,7 @@ public:
 
     var_types GetRegisterType() const;
 
-    var_types GetActualRegisterType() const;
+    var_types GetStackSlotHomeType() const;
 
     bool IsEnregisterableType() const
     {
@@ -1377,27 +1380,6 @@ public:
 
 LinearScanInterface* getLinearScanAllocator(Compiler* comp);
 
-// Information about arrays: their element type and size, and the offset of the first element.
-// We label GT_IND's that are array indices with GTF_IND_ARR_INDEX, and, for such nodes,
-// associate an array info via the map retrieved by GetArrayInfoMap().  This information is used,
-// for example, in value numbering of array index expressions.
-struct ArrayInfo
-{
-    var_types            m_elemType;
-    CORINFO_CLASS_HANDLE m_elemStructType;
-    unsigned             m_elemSize;
-    unsigned             m_elemOffset;
-
-    ArrayInfo() : m_elemType(TYP_UNDEF), m_elemStructType(nullptr), m_elemSize(0), m_elemOffset(0)
-    {
-    }
-
-    ArrayInfo(var_types elemType, unsigned elemSize, unsigned elemOffset, CORINFO_CLASS_HANDLE elemStructType)
-        : m_elemType(elemType), m_elemStructType(elemStructType), m_elemSize(elemSize), m_elemOffset(elemOffset)
-    {
-    }
-};
-
 // This enumeration names the phases into which we divide compilation.  The phases should completely
 // partition a compilation.
 enum Phases
@@ -1644,7 +1626,7 @@ struct FuncInfoDsc
     emitLocation* coldStartLoc; // locations for the cold section, if there is one.
     emitLocation* coldEndLoc;
 
-#elif defined(TARGET_ARMARCH)
+#elif defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64)
 
     UnwindInfo  uwi;     // Unwind information for this function/funclet's hot  section
     UnwindInfo* uwiCold; // Unwind information for this function/funclet's cold section
@@ -1659,7 +1641,7 @@ struct FuncInfoDsc
     emitLocation* coldStartLoc; // locations for the cold section, if there is one.
     emitLocation* coldEndLoc;
 
-#endif // TARGET_ARMARCH
+#endif // TARGET_ARMARCH || TARGET_LOONGARCH64
 
 #if defined(FEATURE_CFI_SUPPORT)
     jitstd::vector<CFI_CODE>* cfiCodes;
@@ -1690,6 +1672,12 @@ public:
     unsigned numRegs; // Count of number of registers that this argument uses.
                       // Note that on ARM, if we have a double hfa, this reflects the number
                       // of DOUBLE registers.
+#ifdef TARGET_LOONGARCH64
+    // For LoongArch64's ABI, the struct which has float field(s) and no more than two fields
+    // may be passed by float register(s).
+    // e.g  `struct {int a; float b;}` passed by an integer register and a float register.
+    var_types structFloatFieldType[2];
+#endif
 
 #if defined(UNIX_AMD64_ABI)
     // Unix amd64 will split floating point types and integer types in structs
@@ -2179,7 +2167,7 @@ public:
     // register numbers.
     void SetMultiRegNums()
     {
-#if FEATURE_MULTIREG_ARGS && !defined(UNIX_AMD64_ABI)
+#if FEATURE_MULTIREG_ARGS && !defined(UNIX_AMD64_ABI) && !defined(TARGET_LOONGARCH64)
         if (numRegs == 1)
         {
             return;
@@ -2200,7 +2188,7 @@ public:
             argReg = (regNumber)(argReg + regSize);
             setRegNum(regIndex, argReg);
         }
-#endif // FEATURE_MULTIREG_ARGS && !defined(UNIX_AMD64_ABI)
+#endif // FEATURE_MULTIREG_ARGS && !defined(UNIX_AMD64_ABI) && !defined(TARGET_LOONGARCH64)
     }
 
 #ifdef DEBUG
@@ -2317,6 +2305,20 @@ public:
                              const unsigned                                                   structFloatRegs,
                              const SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR* const structDescPtr = nullptr);
 #endif // UNIX_AMD64_ABI
+
+#if defined(TARGET_LOONGARCH64)
+    fgArgTabEntry* AddRegArg(unsigned          argNum,
+                             GenTree*          node,
+                             GenTreeCall::Use* use,
+                             regNumber         regNum,
+                             unsigned          numRegs,
+                             unsigned          byteSize,
+                             unsigned          byteAlignment,
+                             bool              isStruct,
+                             bool              isFloatHfa, /* unused */
+                             bool              isVararg,
+                             const regNumber   nextOtherRegNum);
+#endif
 
     fgArgTabEntry* AddStkArg(unsigned          argNum,
                              GenTree*          node,
@@ -4078,7 +4080,7 @@ public:
     // For ARM64, this is structs larger than 16 bytes that are passed by reference.
     bool lvaIsImplicitByRefLocal(unsigned varNum)
     {
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
         LclVarDsc* varDsc = lvaGetDesc(varNum);
         if (varDsc->lvIsImplicitByRef)
         {
@@ -4087,7 +4089,7 @@ public:
             assert(varTypeIsStruct(varDsc) || (varDsc->lvType == TYP_BYREF));
             return true;
         }
-#endif // defined(TARGET_AMD64) || defined(TARGET_ARM64)
+#endif // defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
         return false;
     }
 
@@ -4174,6 +4176,8 @@ public:
         bool ShouldPromoteStructVar(unsigned lclNum);
         void PromoteStructVar(unsigned lclNum);
         void SortStructFields();
+
+        bool CanConstructAndPromoteField(lvaStructPromotionInfo* structPromotionInfo);
 
         lvaStructFieldInfo GetFieldInfo(CORINFO_FIELD_HANDLE fieldHnd, BYTE ordinal);
         bool TryPromoteStructField(lvaStructFieldInfo& outerFieldInfo);
@@ -4660,7 +4664,7 @@ public:
                                            CORINFO_LOOKUP_KIND*    pGenericLookupKind = nullptr);
 
     bool impIsCastHelperEligibleForClassProbe(GenTree* tree);
-    bool impIsCastHelperMayHaveProfileData(GenTree* tree);
+    bool impIsCastHelperMayHaveProfileData(CorInfoHelpFunc helper);
 
     GenTree* impCastClassOrIsInstToTree(
         GenTree* op1, GenTree* op2, CORINFO_RESOLVED_TOKEN* pResolvedToken, bool isCastClass, IL_OFFSET ilOffset);
@@ -5603,6 +5607,8 @@ public:
 
     // Does value-numbering for an intrinsic tree.
     void fgValueNumberIntrinsic(GenTree* tree);
+
+    void fgValueNumberArrIndexAddr(GenTreeArrAddr* arrAddr);
 
 #ifdef FEATURE_SIMD
     // Does value-numbering for a GT_SIMD tree
@@ -8107,8 +8113,9 @@ public:
     };
 
     bool optIsStackLocalInvariant(unsigned loopNum, unsigned lclNum);
-    bool optExtractArrIndex(GenTree* tree, ArrIndex* result, unsigned lhsNum);
-    bool optReconstructArrIndex(GenTree* tree, ArrIndex* result, unsigned lhsNum);
+    bool optExtractArrIndex(GenTree* tree, ArrIndex* result, unsigned lhsNum, bool* topLevelIsFinal);
+    bool optReconstructArrIndexHelp(GenTree* tree, ArrIndex* result, unsigned lhsNum, bool* topLevelIsFinal);
+    bool optReconstructArrIndex(GenTree* tree, ArrIndex* result);
     bool optIdentifyLoopOptInfo(unsigned loopNum, LoopCloneContext* context);
     static fgWalkPreFn optCanOptimizeByLoopCloningVisitor;
     fgWalkResult optCanOptimizeByLoopCloning(GenTree* tree, LoopCloneVisitorInfo* info);
@@ -8342,6 +8349,9 @@ public:
 #elif defined(TARGET_ARM64)
             reg     = REG_R11;
             regMask = RBM_R11;
+#elif defined(TARGET_LOONGARCH64)
+            reg     = REG_T8;
+            regMask = RBM_T8;
 #else
 #error Unsupported or unset target architecture
 #endif
@@ -8750,6 +8760,15 @@ public:
     void unwindReturn(regNumber reg);                                             // ret lr
 #endif                                                                            // defined(TARGET_ARM64)
 
+#if defined(TARGET_LOONGARCH64)
+    void unwindNop();
+    void unwindPadding(); // Generate a sequence of unwind NOP codes representing instructions between the last
+                          // instruction and the current location.
+    void unwindSaveReg(regNumber reg, int offset);
+    void unwindSaveRegPair(regNumber reg1, regNumber reg2, int offset);
+    void unwindReturn(regNumber reg);
+#endif // defined(TARGET_LOONGARCH64)
+
     //
     // Private "helper" functions for the unwind implementation.
     //
@@ -8835,9 +8854,13 @@ private:
         CORINFO_InstructionSet minimumIsa = InstructionSet_SSE2;
 #elif defined(TARGET_ARM64)
         CORINFO_InstructionSet minimumIsa = InstructionSet_AdvSimd;
+#elif defined(TARGET_LOONGARCH64)
+        // TODO: supporting SIMD feature for LoongArch64.
+        assert(!"unimplemented yet on LA");
+        CORINFO_InstructionSet minimumIsa = 0;
 #else
 #error Unsupported platform
-#endif // !TARGET_XARCH && !TARGET_ARM64
+#endif // !TARGET_XARCH && !TARGET_ARM64 && !TARGET_LOONGARCH64
 
         return compOpportunisticallyDependsOn(minimumIsa);
 #else
@@ -10290,6 +10313,8 @@ public:
 #define CPU_ARM 0x0300   // The generic ARM CPU
 #define CPU_ARM64 0x0400 // The generic ARM64 CPU
 
+#define CPU_LOONGARCH64 0x0800 // The generic LOONGARCH64 CPU
+
         unsigned genCPU; // What CPU are we running on
 
         // Number of class profile probes in this method
@@ -10815,7 +10840,7 @@ protected:
     void compSetProcessor();
     void compInitDebuggingInfo();
     void compSetOptimizationLevel();
-#ifdef TARGET_ARMARCH
+#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64)
     bool compRsvdRegCheck(FrameLayoutState curState);
 #endif
     void compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFlags* compileFlags);
@@ -11220,52 +11245,6 @@ public:
     // CoreRT. Such case is handled same as the default case.
     void fgAddFieldSeqForZeroOffset(GenTree* op1, FieldSeqNode* fieldSeq);
 
-    typedef JitHashTable<const GenTree*, JitPtrKeyFuncs<GenTree>, ArrayInfo> NodeToArrayInfoMap;
-    NodeToArrayInfoMap* m_arrayInfoMap;
-
-    NodeToArrayInfoMap* GetArrayInfoMap()
-    {
-        Compiler* compRoot = impInlineRoot();
-        if (compRoot->m_arrayInfoMap == nullptr)
-        {
-            // Create a CompAllocator that labels sub-structure with CMK_ArrayInfoMap, and use that for allocation.
-            CompAllocator ialloc(getAllocator(CMK_ArrayInfoMap));
-            compRoot->m_arrayInfoMap = new (ialloc) NodeToArrayInfoMap(ialloc);
-        }
-        return compRoot->m_arrayInfoMap;
-    }
-
-    //-----------------------------------------------------------------------------------------------------------------
-    // Compiler::TryGetArrayInfo:
-    //    Given an indirection node, checks to see whether or not that indirection represents an array access, and
-    //    if so returns information about the array.
-    //
-    // Arguments:
-    //    indir           - The `GT_IND` node.
-    //    arrayInfo (out) - Information about the accessed array if this function returns true. Undefined otherwise.
-    //
-    // Returns:
-    //    True if the `GT_IND` node represents an array access; false otherwise.
-    bool TryGetArrayInfo(GenTreeIndir* indir, ArrayInfo* arrayInfo)
-    {
-        if ((indir->gtFlags & GTF_IND_ARR_INDEX) == 0)
-        {
-            return false;
-        }
-
-        if (indir->gtOp1->OperIs(GT_INDEX_ADDR))
-        {
-            GenTreeIndexAddr* const indexAddr = indir->gtOp1->AsIndexAddr();
-            *arrayInfo = ArrayInfo(indexAddr->gtElemType, indexAddr->gtElemSize, indexAddr->gtElemOffset,
-                                   indexAddr->gtStructElemClass);
-            return true;
-        }
-
-        bool found = GetArrayInfoMap()->Lookup(indir, arrayInfo);
-        assert(found);
-        return true;
-    }
-
     NodeToUnsignedMap* m_memorySsaMap[MemoryKindCount];
 
     // In some cases, we want to assign intermediate SSA #'s to memory states, and know what nodes create those memory
@@ -11283,8 +11262,8 @@ public:
         Compiler* compRoot = impInlineRoot();
         if (compRoot->m_memorySsaMap[memoryKind] == nullptr)
         {
-            // Create a CompAllocator that labels sub-structure with CMK_ArrayInfoMap, and use that for allocation.
-            CompAllocator ialloc(getAllocator(CMK_ArrayInfoMap));
+            // Create a CompAllocator that labels sub-structure with CMK_MemorySsaMap, and use that for allocation.
+            CompAllocator ialloc(getAllocator(CMK_MemorySsaMap));
             compRoot->m_memorySsaMap[memoryKind] = new (ialloc) NodeToUnsignedMap(ialloc);
         }
         return compRoot->m_memorySsaMap[memoryKind];
@@ -11552,6 +11531,7 @@ public:
             case GT_RETURN:
             case GT_RETFILT:
             case GT_RUNTIMELOOKUP:
+            case GT_ARR_ADDR:
             case GT_KEEPALIVE:
             case GT_INC_SATURATE:
             {
@@ -12211,6 +12191,13 @@ const instruction INS_ABS  = INS_fabs;
 const instruction INS_SQRT = INS_fsqrt;
 
 #endif // TARGET_ARM64
+
+#ifdef TARGET_LOONGARCH64
+const instruction INS_BREAKPOINT = INS_break;
+const instruction INS_MULADD     = INS_fmadd_d; // NOTE: default is double.
+const instruction INS_ABS        = INS_fabs_d;  // NOTE: default is double.
+const instruction INS_SQRT       = INS_fsqrt_d; // NOTE: default is double.
+#endif                                          // TARGET_LOONGARCH64
 
 /*****************************************************************************/
 

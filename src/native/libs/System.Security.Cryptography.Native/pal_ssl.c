@@ -17,6 +17,8 @@ c_static_assert(PAL_SSL_ERROR_WANT_READ == SSL_ERROR_WANT_READ);
 c_static_assert(PAL_SSL_ERROR_WANT_WRITE == SSL_ERROR_WANT_WRITE);
 c_static_assert(PAL_SSL_ERROR_SYSCALL == SSL_ERROR_SYSCALL);
 c_static_assert(PAL_SSL_ERROR_ZERO_RETURN == SSL_ERROR_ZERO_RETURN);
+c_static_assert(SSL_CTRL_SET_TLSEXT_STATUS_REQ_TYPE == 65);
+c_static_assert(TLSEXT_STATUSTYPE_ocsp == 1);
 
 #define DOTNET_DEFAULT_CIPHERSTRING \
     "ECDHE-ECDSA-AES256-GCM-SHA384:" \
@@ -233,6 +235,12 @@ SSL_CTX* CryptoNative_SslCtxCreate(const SSL_METHOD* method)
                 SSL_CTX_free(ctx);
                 return NULL;
             }
+        }
+
+        // Opportunistically request the server present a stapled OCSP response.
+        if (SSL_CTX_ctrl(ctx, SSL_CTRL_SET_TLSEXT_STATUS_REQ_TYPE, TLSEXT_STATUSTYPE_ocsp, NULL) != 1)
+        {
+            ERR_clear_error();
         }
     }
 
@@ -559,8 +567,26 @@ int32_t CryptoNative_IsSslStateOK(SSL* ssl)
 
 X509* CryptoNative_SslGetPeerCertificate(SSL* ssl)
 {
+    const uint8_t* data = NULL;
+    long len = SSL_get_tlsext_status_ocsp_resp(ssl, &data);
+    X509* cert = SSL_get1_peer_certificate(ssl);
+
+    if (len > 0 && cert != NULL)
+    {
+        OCSP_RESPONSE* ocspResp = d2i_OCSP_RESPONSE(NULL, &data, len);
+
+        if (ocspResp == NULL)
+        {
+            ERR_clear_error();
+        }
+        else
+        {
+            X509_set_ex_data(cert, g_x509_ocsp_index, ocspResp);
+        }
+    }
+
     // No error queue impact.
-    return SSL_get1_peer_certificate(ssl);
+    return cert;
 }
 
 X509Stack* CryptoNative_SslGetPeerCertChain(SSL* ssl)
