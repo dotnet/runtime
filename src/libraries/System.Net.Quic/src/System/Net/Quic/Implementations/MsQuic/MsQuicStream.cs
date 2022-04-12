@@ -150,7 +150,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             }
         }
 
-        internal static async ValueTask<MsQuicStream> CreateOutbound(MsQuicConnection.State connectionState, CancellationToken cancellationToken)
+        internal static async ValueTask<MsQuicStream> CreateOutbound(MsQuicConnection.State connectionState, QUIC_STREAM_OPEN_FLAGS flags, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
             var stream = new MsQuicStream(connectionState, flags);
