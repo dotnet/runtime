@@ -20,7 +20,7 @@ namespace System.Runtime.InteropServices
         /// Initializes a new instance of the <see cref="Utf16StringMarshaller"/>.
         /// </summary>
         /// <param name="str">The string to marshal.</param>
-        public Utf16StringMarshaller(string str)
+        public Utf16StringMarshaller(string? str)
             : this(str, default)
         {
         }
@@ -35,7 +35,7 @@ namespace System.Runtime.InteropServices
         /// on the managed heap or it should be pinned.
         /// <seealso cref="CustomTypeMarshallerFeatures.CallerAllocatedBuffer"/>
         /// </remarks>
-        public Utf16StringMarshaller(string str, Span<ushort> buffer)
+        public Utf16StringMarshaller(string? str, Span<ushort> buffer)
         {
             _allocated = null;
             if (str is null)

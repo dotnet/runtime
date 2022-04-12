@@ -20,7 +20,7 @@ namespace System.Runtime.InteropServices
         /// Initializes a new instance of the <see cref="AnsiStringMarshaller"/>.
         /// </summary>
         /// <param name="str">The string to marshal.</param>
-        public AnsiStringMarshaller(string str)
+        public AnsiStringMarshaller(string? str)
             : this(str, default)
         { }
 
@@ -34,7 +34,7 @@ namespace System.Runtime.InteropServices
         /// on the managed heap or it should be pinned.
         /// <seealso cref="CustomTypeMarshallerFeatures.CallerAllocatedBuffer"/>
         /// </remarks>
-        public AnsiStringMarshaller(string str, Span<byte> buffer)
+        public AnsiStringMarshaller(string? str, Span<byte> buffer)
         {
             _allocated = null;
             if (str is null)
