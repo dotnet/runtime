@@ -100,9 +100,12 @@ jobs:
       - ${{ if eq(parameters.osGroup, 'windows') }}:
         - AdditionalHelixPreCommands: $(HelixPreCommandWindows)
         - AdditionalHelixPostCommands: $(HelixPostCommandsWindows)
-      - ${{ if ne(parameters.osGroup, 'windows') }}:
+      - ${{ if and(ne(parameters.osGroup, 'windows'), ne(parameters.osGroup, 'OSX')) }}:
         - AdditionalHelixPreCommands: $(HelixPreCommandLinux)
         - AdditionalHelixPostCommands: $(HelixPostCommandsLinux)
+      - ${{ if eq(parameters.osGroup, 'OSX') }}:
+        - AdditionalHelixPreCommands: $(HelixPreCommandOSX)
+        - AdditionalHelixPostCommands: $(HelixPostCommandOSX)
 
     - ${{ if ne(parameters.runtimeType, 'wasm') }}:
       - ExtraSetupArguments: --install-dir $(PayloadDirectory)/dotnet
