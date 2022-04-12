@@ -127,7 +127,7 @@
     <ItemGroup Condition="'$(NeedsToRunOnBrowser)' == 'true'">
       <HelixCorrelationPayload Include="chromium" Uri="$(ChromiumUrl)" />
       <HelixCorrelationPayload Include="chromedriver" Uri="$(ChromeDriverUrl)" />
-      <HelixCorrelationPayload Condition="'$(WindowsShell)' != 'true'" Include="$(TestArchiveRoot)firefox.zip" Destination="firefox" AsArchive='true' />
+      <HelixCorrelationPayload Condition="'$(WindowsShell)' != 'true' and '$(IsWasmDebuggerTests)' == 'true'" Include="$(TestArchiveRoot)firefox.zip" Destination="firefox" AsArchive='true' />
     </ItemGroup>
 
     <ItemGroup Condition="'$(NeedsEMSDK)' == 'true'">
@@ -240,7 +240,7 @@
   </Target>
   
   <Target Name="DownloadFirefoxToSendToHelix"
-          Condition="!Exists($(FirefoxForHelixPayload))">
+          Condition="!Exists($(FirefoxForHelixPayload)) and '$(IsWasmDebuggerTests)' == 'true'">
     <DownloadFile SourceUrl="$(FirefoxUrl)" DestinationFolder="$(FirefoxForHelixPayload)" SkipUnchangedFiles="true">
       <Output TaskParameter="DownloadedFile" PropertyName="_DownloadedFile" />
     </DownloadFile>

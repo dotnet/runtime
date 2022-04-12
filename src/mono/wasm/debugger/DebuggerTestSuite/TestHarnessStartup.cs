@@ -84,7 +84,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 process.StartInfo.Arguments = "firefox";
                 process.Start();
                 process.WaitForExit();// Waits here for the process to exit.
-
+                Thread.Sleep(1000);
                 DirectoryInfo di = null;
                 string baseDir = Path.GetDirectoryName(psi.FileName);                
                 if (File.Exists("/tmp/profile/prefs.js"))
