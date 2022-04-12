@@ -4439,6 +4439,10 @@ struct GenTreeCall final : public GenTree
     bool HasMultiRegRetVal() const
     {
 #ifdef FEATURE_MULTIREG_RET
+#if defined(TARGET_LOONGARCH64)
+        return (gtType == TYP_STRUCT) && (gtReturnTypeDesc.GetReturnRegCount() > 1);
+#else
+
 #if defined(TARGET_X86) || defined(TARGET_ARM)
         if (varTypeIsLong(gtType))
         {
@@ -4452,6 +4456,8 @@ struct GenTreeCall final : public GenTree
         }
         // Now it is a struct that is returned in registers.
         return GetReturnTypeDesc()->IsMultiRegRetType();
+#endif
+
 #else  // !FEATURE_MULTIREG_RET
         return false;
 #endif // !FEATURE_MULTIREG_RET
@@ -5788,7 +5794,8 @@ public:
         , m_elemType(elemType)
         , m_firstElemOffset(firstElemOffset)
     {
-        assert(addr->TypeIs(TYP_BYREF));
+        // Temporarily disable this assert. Tracking: https://github.com/dotnet/runtime/issues/67600
+        // assert(addr->TypeIs(TYP_BYREF) || addr->IsIntegralConst(0));
         assert(((elemType == TYP_STRUCT) && (elemClassHandle != NO_CLASS_HANDLE)) ||
                (elemClassHandle == NO_CLASS_HANDLE));
 
@@ -5876,8 +5883,16 @@ struct GenTreeBoundsChk : public GenTreeOp
     BasicBlock*     gtIndRngFailBB; // Basic block to jump to for index-out-of-range
     SpecialCodeKind gtThrowKind;    // Kind of throw block to branch to on failure
 
+    // Store some information about the array element type that was in the GT_INDEX node before morphing.
+    // Note that this information is also stored in the m_arrayInfoMap of the morphed IND node (that
+    // is marked with GTF_IND_ARR_INDEX), but that can be hard to find.
+    var_types gtInxType; // Save the GT_INDEX type
+
     GenTreeBoundsChk(GenTree* index, GenTree* length, SpecialCodeKind kind)
-        : GenTreeOp(GT_BOUNDS_CHECK, TYP_VOID, index, length), gtIndRngFailBB(nullptr), gtThrowKind(kind)
+        : GenTreeOp(GT_BOUNDS_CHECK, TYP_VOID, index, length)
+        , gtIndRngFailBB(nullptr)
+        , gtThrowKind(kind)
+        , gtInxType(TYP_UNKNOWN)
     {
         gtFlags |= GTF_EXCEPT;
     }

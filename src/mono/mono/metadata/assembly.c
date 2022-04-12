@@ -784,75 +784,6 @@ mono_assembly_decref (MonoAssembly *assembly)
 	return mono_atomic_dec_i32 (&assembly->ref_count);
 }
 
-/*
- * CAUTION: This table must be kept in sync with
- *          ivkm/reflect/Fusion.cs
- */
-
-#define SILVERLIGHT_KEY "7cec85d7bea7798e"
-#define WINFX_KEY "31bf3856ad364e35"
-#define ECMA_KEY "b77a5c561934e089"
-#define MSFINAL_KEY "b03f5f7f11d50a3a"
-#define COMPACTFRAMEWORK_KEY "969db8053d3322ac"
-
-typedef struct {
-	const char *name;
-	const char *from;
-	const char *to;
-} KeyRemapEntry;
-
-static KeyRemapEntry key_remap_table[] = {
-	{ "CustomMarshalers", COMPACTFRAMEWORK_KEY, MSFINAL_KEY },
-	{ "Microsoft.CSharp", WINFX_KEY, MSFINAL_KEY },
-	{ "Microsoft.VisualBasic", COMPACTFRAMEWORK_KEY, MSFINAL_KEY },
-	{ "System", SILVERLIGHT_KEY, ECMA_KEY },
-	{ "System", COMPACTFRAMEWORK_KEY, ECMA_KEY },
-	{ "System.ComponentModel.Composition", WINFX_KEY, ECMA_KEY },
-	{ "System.ComponentModel.DataAnnotations", "ddd0da4d3e678217", WINFX_KEY },
-	{ "System.Core", SILVERLIGHT_KEY, ECMA_KEY },
-	{ "System.Core", COMPACTFRAMEWORK_KEY, ECMA_KEY },
-	{ "System.Data", COMPACTFRAMEWORK_KEY, ECMA_KEY },
-	{ "System.Data.DataSetExtensions", COMPACTFRAMEWORK_KEY, ECMA_KEY },
-	{ "System.Drawing", COMPACTFRAMEWORK_KEY, MSFINAL_KEY },
-	{ "System.Messaging", COMPACTFRAMEWORK_KEY, MSFINAL_KEY },
-	// FIXME: MS uses MSFINAL_KEY for .NET 4.5
-	{ "System.Net", SILVERLIGHT_KEY, MSFINAL_KEY },
-	{ "System.Numerics", WINFX_KEY, ECMA_KEY },
-	{ "System.Runtime.Serialization", SILVERLIGHT_KEY, ECMA_KEY },
-	{ "System.Runtime.Serialization", COMPACTFRAMEWORK_KEY, ECMA_KEY },
-	{ "System.ServiceModel", WINFX_KEY, ECMA_KEY },
-	{ "System.ServiceModel", COMPACTFRAMEWORK_KEY, ECMA_KEY },
-	{ "System.ServiceModel.Web", SILVERLIGHT_KEY, WINFX_KEY },
-	{ "System.Web.Services", COMPACTFRAMEWORK_KEY, MSFINAL_KEY },
-	{ "System.Windows", SILVERLIGHT_KEY, MSFINAL_KEY },
-	{ "System.Windows.Forms", COMPACTFRAMEWORK_KEY, ECMA_KEY },
-	{ "System.Xml", SILVERLIGHT_KEY, ECMA_KEY },
-	{ "System.Xml", COMPACTFRAMEWORK_KEY, ECMA_KEY },
-	{ "System.Xml.Linq", WINFX_KEY, ECMA_KEY },
-	{ "System.Xml.Linq", COMPACTFRAMEWORK_KEY, ECMA_KEY },
-	{ "System.Xml.Serialization", WINFX_KEY, ECMA_KEY }
-};
-
-static void
-remap_keys (MonoAssemblyName *aname)
-{
-	int i;
-	for (i = 0; i < G_N_ELEMENTS (key_remap_table); i++) {
-		const KeyRemapEntry *entry = &key_remap_table [i];
-
-		if (strcmp (aname->name, entry->name) ||
-		    !mono_public_tokens_are_equal (aname->public_key_token, (const unsigned char*) entry->from))
-			continue;
-
-		memcpy (aname->public_key_token, entry->to, MONO_PUBLIC_KEY_TOKEN_LENGTH);
-
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY,
-			    "Remapped public key token of retargetable assembly %s from %s to %s",
-			    aname->name, entry->from, entry->to);
-		return;
-	}
-}
-
 static MonoAssemblyName *
 mono_assembly_remap_version (MonoAssemblyName *aname, MonoAssemblyName *dest_aname)
 {
@@ -878,8 +809,6 @@ mono_assembly_remap_version (MonoAssemblyName *aname, MonoAssemblyName *dest_ana
 		/* Remap assembly name */
 		if (!strcmp (aname->name, "System.Net"))
 			dest_aname->name = g_strdup ("System");
-
-		remap_keys (dest_aname);
 
 		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY,
 					"The request to load the retargetable assembly %s v%d.%d.%d.%d was remapped to %s v%d.%d.%d.%d",

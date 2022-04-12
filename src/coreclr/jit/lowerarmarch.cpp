@@ -194,11 +194,9 @@ void Lowering::LowerStoreLoc(GenTreeLclVarCommon* storeLoc)
                 }
             }
 
-            // A local stack slot is at least 4 bytes in size, regardless of
-            // what the local var is typed as, so auto-promote it here
-            // unless it is a field of a promoted struct
-            // TODO-CQ: if the field is promoted shouldn't we also be able to do this?
-            if (!varDsc->lvIsStructField)
+            // TODO-CQ: if the field is promoted independently shouldn't we
+            // also be able to do this?
+            if (!varDsc->lvIsStructField && (varDsc->GetStackSlotHomeType() == TYP_INT))
             {
                 storeLoc->gtType = TYP_INT;
                 con->SetIconValue(ival);
@@ -2068,6 +2066,18 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 
             default:
                 unreached();
+        }
+    }
+    else if ((intrin.id == NI_AdvSimd_LoadVector128) || (intrin.id == NI_AdvSimd_LoadVector64))
+    {
+        assert(intrin.numOperands == 1);
+        assert(HWIntrinsicInfo::lookupCategory(intrin.id) == HW_Category_MemoryLoad);
+
+        GenTree* addr = node->Op(1);
+        if (TryCreateAddrMode(addr, true, node) && IsSafeToContainMem(node, addr))
+        {
+            assert(addr->OperIs(GT_LEA));
+            MakeSrcContained(node, addr);
         }
     }
 }

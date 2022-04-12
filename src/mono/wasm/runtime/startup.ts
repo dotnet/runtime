@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { AllAssetEntryTypes, assert, AssetEntry, CharPtrNull, DotnetModule, GlobalizationMode, MonoConfig, MonoConfigError, wasm_type_symbol } from "./types";
+import { AllAssetEntryTypes, assert, AssetEntry, CharPtrNull, DotnetModule, GlobalizationMode, MonoConfig, MonoConfigError, wasm_type_symbol, MonoObject } from "./types";
 import { ENVIRONMENT_IS_ESM, ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, INTERNAL, locateFile, Module, MONO, requirePromise, runtimeHelpers } from "./imports";
 import cwraps from "./cwraps";
 import { mono_wasm_raise_debug_event, mono_wasm_runtime_ready } from "./debug";
@@ -14,6 +14,7 @@ import { find_corlib_class } from "./class-loader";
 import { VoidPtr, CharPtr } from "./types/emscripten";
 import { DotnetPublicAPI } from "./exports";
 import { mono_on_abort } from "./run";
+import { mono_wasm_new_root } from "./roots";
 
 export let runtime_is_initialized_resolve: Function;
 export let runtime_is_initialized_reject: Function;
@@ -403,11 +404,14 @@ export function bindings_lazy_init(): void {
     if (!runtimeHelpers.wasm_runtime_class)
         throw "Can't find " + binding_fqn_class + " class";
 
-    runtimeHelpers.get_call_sig = get_method("GetCallSignature");
-    if (!runtimeHelpers.get_call_sig)
-        throw "Can't find GetCallSignature method";
+    runtimeHelpers.get_call_sig_ref = get_method("GetCallSignatureRef");
+    if (!runtimeHelpers.get_call_sig_ref)
+        throw "Can't find GetCallSignatureRef method";
 
     _create_primitive_converters();
+
+    runtimeHelpers._box_root = mono_wasm_new_root<MonoObject>();
+    runtimeHelpers._null_root = mono_wasm_new_root<MonoObject>();
 }
 
 // Initializes the runtime and loads assemblies, debug information, and other files.

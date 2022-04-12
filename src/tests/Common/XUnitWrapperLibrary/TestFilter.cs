@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 namespace XUnitWrapperLibrary;
 
@@ -47,6 +48,11 @@ public class TestFilter
             }
             return stringToSearch == Filter;
         }
+            
+        public override string ToString()
+        {
+            return $"{Kind}{(Substring ? "~" : "=")}{Filter}";
+        }
     }
 
     public sealed class AndClause : ISearchClause
@@ -61,6 +67,11 @@ public class TestFilter
         }
 
         public bool IsMatch(string fullyQualifiedName, string displayName, string[] traits) => _left.IsMatch(fullyQualifiedName, displayName, traits) && _right.IsMatch(fullyQualifiedName, displayName, traits);
+  
+        public override string ToString()
+        {
+            return $"({_left}) && ({_right})";
+        }
     }
 
     public sealed class OrClause : ISearchClause
@@ -75,6 +86,11 @@ public class TestFilter
         }
 
         public bool IsMatch(string fullyQualifiedName, string displayName, string[] traits) => _left.IsMatch(fullyQualifiedName, displayName, traits) || _right.IsMatch(fullyQualifiedName, displayName, traits);
+    
+        public override string ToString()
+        {
+            return $"({_left}) || ({_right})";
+        }
     }
 
     public sealed class NotClause : ISearchClause
@@ -87,6 +103,11 @@ public class TestFilter
         }
 
         public bool IsMatch(string fullyQualifiedName, string displayName, string[] traits) => !_inner.IsMatch(fullyQualifiedName, displayName, traits);
+    
+        public override string ToString()
+        {
+            return $"!({_inner})";
+        }
     }
 
     private readonly ISearchClause? _filter;
@@ -133,6 +154,17 @@ public class TestFilter
     public static HashSet<string> LoadTestExclusionList()
     {
         HashSet<string> output = new ();
+
+        // Try reading the exclusion list as a base64-encoded semicolon-delimited string as a commmand-line arg.
+        string[] arguments = Environment.GetCommandLineArgs();
+        string? testExclusionListArg = arguments.FirstOrDefault(arg => arg.StartsWith("--exclusion-list="));
+        if (testExclusionListArg is not null)
+        {
+            string testExclusionListPathFromCommandLine = testExclusionListArg.Substring("--exclusion-list=".Length);
+            output.UnionWith(File.ReadAllLines(testExclusionListPathFromCommandLine));
+        }
+
+        // Try reading the exclusion list as a line-delimited file.
         string? testExclusionListPath = Environment.GetEnvironmentVariable("TestExclusionListPath");
         if (!string.IsNullOrEmpty(testExclusionListPath))
         {

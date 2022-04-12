@@ -58,9 +58,6 @@
 #elif defined(__x86_64__) || defined(_M_X64) || defined(TARGET_AMD64)
 #define CONFIG_CPU "x86-64"
 #define CONFIG_WORDSIZE "64"
-#elif defined(sparc) || defined(__sparc__)
-#define CONFIG_CPU "sparc"
-#define CONFIG_WORDSIZE "32"
 #elif defined(__ppc64__) || defined(__powerpc64__) || defined(_ARCH_64) || defined(TARGET_POWERPC)
 #define CONFIG_WORDSIZE "64"
 #ifdef __mono_ppc_ilp32__
@@ -83,9 +80,6 @@
 #elif defined(__aarch64__) || defined(TARGET_ARM64)
 #define CONFIG_CPU "armv8"
 #define CONFIG_WORDSIZE "64"
-#elif defined(mips) || defined(__mips) || defined(_mips)
-#define CONFIG_CPU "mips"
-#define CONFIG_WORDSIZE "32"
 #elif defined (TARGET_RISCV32)
 #define CONFIG_CPU "riscv32"
 #define CONFIG_WORDSIZE "32"

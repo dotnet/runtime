@@ -1015,6 +1015,78 @@ bool GenTreeCall::IsPure(Compiler* compiler) const
            compiler->s_helperCallProperties.IsPure(compiler->eeGetHelperNum(gtCallMethHnd));
 }
 
+//------------------------------------------------------------------------------
+// getArrayLengthFromAllocation: Return the array length for an array allocation
+//                               helper call.
+//
+// Arguments:
+//    tree           - The array allocation helper call.
+//    block          - tree's basic block.
+//
+// Return Value:
+//    Return the array length node.
+
+GenTree* Compiler::getArrayLengthFromAllocation(GenTree* tree DEBUGARG(BasicBlock* block))
+{
+    assert(tree != nullptr);
+
+    GenTree* arrayLength = nullptr;
+
+    if (tree->OperGet() == GT_CALL)
+    {
+        GenTreeCall* call = tree->AsCall();
+        if (call->fgArgInfo == nullptr)
+        {
+            // Currently this function is only profitable during the late stages
+            // so we avoid complicating below code to access the early args.
+            return nullptr;
+        }
+
+        if (call->gtCallType == CT_HELPER)
+        {
+            switch (eeGetHelperNum(call->gtCallMethHnd))
+            {
+                case CORINFO_HELP_NEWARR_1_DIRECT:
+                case CORINFO_HELP_NEWARR_1_OBJ:
+                case CORINFO_HELP_NEWARR_1_VC:
+                case CORINFO_HELP_NEWARR_1_ALIGN8:
+                {
+                    // This is an array allocation site. Grab the array length node.
+                    arrayLength = gtArgEntryByArgNum(call, 1)->GetNode();
+                    break;
+                }
+
+                case CORINFO_HELP_READYTORUN_NEWARR_1:
+                {
+                    // On arm when compiling on certain platforms for ready to run, a handle will be
+                    // inserted before the length. To handle this case, we will grab the last argument
+                    // as that's always the length. See fgInitArgInfo for where the handle is inserted.
+                    int arrLenArgNum = call->fgArgInfo->ArgCount() - 1;
+                    arrayLength      = gtArgEntryByArgNum(call, arrLenArgNum)->GetNode();
+                    break;
+                }
+
+                default:
+                    break;
+            }
+#ifdef DEBUG
+            if ((arrayLength != nullptr) && (block != nullptr))
+            {
+                optCheckFlagsAreSet(OMF_HAS_NEWARRAY, "OMF_HAS_NEWARRAY", BBF_HAS_NEWARRAY, "BBF_HAS_NEWARRAY", tree,
+                                    block);
+            }
+#endif
+        }
+    }
+
+    if (arrayLength != nullptr)
+    {
+        arrayLength = arrayLength->OperIsPutArg() ? arrayLength->gtGetOp1() : arrayLength;
+    }
+
+    return arrayLength;
+}
+
 //-------------------------------------------------------------------------
 // HasSideEffects:
 //    Returns true if this call has any side effects. All non-helpers are considered to have side-effects. Only helpers
@@ -1050,6 +1122,21 @@ bool GenTreeCall::HasSideEffects(Compiler* compiler, bool ignoreExceptions, bool
     if (!ignoreCctors && helperProperties.MayRunCctor(helper))
     {
         return true;
+    }
+
+    // Consider array allocators side-effect free for constant length (if it's not negative and fits into i32)
+    if (helperProperties.IsAllocator(helper))
+    {
+        GenTree* arrLen = compiler->getArrayLengthFromAllocation((GenTree*)this DEBUGARG(nullptr));
+        // if arrLen is nullptr it means it wasn't an array allocator
+        if ((arrLen != nullptr) && arrLen->IsIntCnsFitsInI32())
+        {
+            ssize_t cns = arrLen->AsIntConCommon()->IconValue();
+            if ((cns >= 0) && (cns <= CORINFO_Array_MaxLength))
+            {
+                return false;
+            }
+        }
     }
 
     // If we also care about exceptions then check if the helper can throw
@@ -3190,6 +3277,27 @@ bool Compiler::gtMarkAddrMode(GenTree* addr, int* pCostEx, int* pCostSz, var_typ
                 *pCostSz += 4;
             }
         }
+#elif defined(TARGET_LOONGARCH64)
+        if (base)
+        {
+            *pCostEx += base->GetCostEx();
+            *pCostSz += base->GetCostSz();
+        }
+
+        if (idx)
+        {
+            *pCostEx += idx->GetCostEx();
+            *pCostSz += idx->GetCostSz();
+        }
+        if (cns != 0)
+        {
+            if (!emitter::isValidSimm12(cns))
+            {
+                // TODO-LoongArch64-CQ: tune for LoongArch64.
+                *pCostEx += 1;
+                *pCostSz += 4;
+            }
+        }
 #else
 #error "Unknown TARGET"
 #endif
@@ -3604,13 +3712,24 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
             }
                 goto COMMON_CNS;
 
+#elif defined(TARGET_LOONGARCH64)
+            // TODO-LoongArch64-CQ: tune the costs.
+            case GT_CNS_STR:
+                costEx = IND_COST_EX + 2;
+                costSz = 4;
+                goto COMMON_CNS;
+
+            case GT_CNS_LNG:
+            case GT_CNS_INT:
+                costEx = 1;
+                costSz = 4;
+                goto COMMON_CNS;
 #else
             case GT_CNS_STR:
             case GT_CNS_LNG:
             case GT_CNS_INT:
 #error "Unknown TARGET"
 #endif
-
             COMMON_CNS:
                 /*
                     Note that some code below depends on constants always getting
@@ -3666,6 +3785,10 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                     costEx = IND_COST_EX;
                     costSz = 4;
                 }
+#elif defined(TARGET_LOONGARCH64)
+                // TODO-LoongArch64-CQ: tune the costs.
+                costEx = 2;
+                costSz = 8;
 #else
 #error "Unknown TARGET"
 #endif
@@ -3839,6 +3962,10 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                         costEx = IND_COST_EX * 2;
                         costSz = 6;
                     }
+#elif defined(TARGET_LOONGARCH64)
+                    // TODO-LoongArch64-CQ: tune the costs.
+                    costEx = 1;
+                    costSz = 4;
 #else
 #error "Unknown TARGET"
 #endif
@@ -6878,7 +7005,7 @@ bool GenTreeOp::UsesDivideByConstOptimized(Compiler* comp)
     }
 
 // TODO-ARM-CQ: Currently there's no GT_MULHI for ARM32
-#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
     if (!comp->opts.MinOpts() && ((divisorValue >= 3) || !isSignedDivide))
     {
         // All checks pass we can perform the division operation using a reciprocal multiply.
@@ -7664,6 +7791,7 @@ GenTree* Compiler::gtCloneExpr(
                     GenTreeBoundsChk(tree->AsBoundsChk()->GetIndex(), tree->AsBoundsChk()->GetArrayLength(),
                                      tree->AsBoundsChk()->gtThrowKind);
                 copy->AsBoundsChk()->gtIndRngFailBB = tree->AsBoundsChk()->gtIndRngFailBB;
+                copy->AsBoundsChk()->gtInxType      = tree->AsBoundsChk()->gtInxType;
                 break;
 
             case GT_LEA:
@@ -13735,7 +13863,6 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
         case TYP_INT:
 
             assert(tree->TypeIs(TYP_INT) || varTypeIsGC(tree) || tree->OperIs(GT_MKREFANY));
-
             // No GC pointer types should be folded here...
             assert(!varTypeIsGC(op1->TypeGet()) && !varTypeIsGC(op2->TypeGet()));
 
@@ -21763,6 +21890,44 @@ void ReturnTypeDesc::InitializeStructReturnType(Compiler*                comp,
                 m_regType[i] = comp->getJitGCType(gcPtrs[i]);
             }
 
+#elif defined(TARGET_LOONGARCH64)
+            assert((structSize >= TARGET_POINTER_SIZE) && (structSize <= (2 * TARGET_POINTER_SIZE)));
+
+            uint32_t floatFieldFlags = comp->info.compCompHnd->getLoongArch64PassStructInRegisterFlags(retClsHnd);
+            BYTE     gcPtrs[2]       = {TYPE_GC_NONE, TYPE_GC_NONE};
+            comp->info.compCompHnd->getClassGClayout(retClsHnd, &gcPtrs[0]);
+
+            if (floatFieldFlags & STRUCT_FLOAT_FIELD_ONLY_TWO)
+            {
+                comp->compFloatingPointUsed = true;
+                assert((structSize > 8) == ((floatFieldFlags & STRUCT_HAS_8BYTES_FIELDS_MASK) > 0));
+                m_regType[0] = (floatFieldFlags & STRUCT_FIRST_FIELD_SIZE_IS8) ? TYP_DOUBLE : TYP_FLOAT;
+                m_regType[1] = (floatFieldFlags & STRUCT_SECOND_FIELD_SIZE_IS8) ? TYP_DOUBLE : TYP_FLOAT;
+            }
+            else if (floatFieldFlags & STRUCT_FLOAT_FIELD_FIRST)
+            {
+                comp->compFloatingPointUsed = true;
+                assert((structSize > 8) == ((floatFieldFlags & STRUCT_HAS_8BYTES_FIELDS_MASK) > 0));
+                m_regType[0] = (floatFieldFlags & STRUCT_FIRST_FIELD_SIZE_IS8) ? TYP_DOUBLE : TYP_FLOAT;
+                m_regType[1] =
+                    (floatFieldFlags & STRUCT_SECOND_FIELD_SIZE_IS8) ? comp->getJitGCType(gcPtrs[1]) : TYP_INT;
+            }
+            else if (floatFieldFlags & STRUCT_FLOAT_FIELD_SECOND)
+            {
+                comp->compFloatingPointUsed = true;
+                assert((structSize > 8) == ((floatFieldFlags & STRUCT_HAS_8BYTES_FIELDS_MASK) > 0));
+                m_regType[0] =
+                    (floatFieldFlags & STRUCT_FIRST_FIELD_SIZE_IS8) ? comp->getJitGCType(gcPtrs[0]) : TYP_INT;
+                m_regType[1] = (floatFieldFlags & STRUCT_SECOND_FIELD_SIZE_IS8) ? TYP_DOUBLE : TYP_FLOAT;
+            }
+            else
+            {
+                for (unsigned i = 0; i < 2; ++i)
+                {
+                    m_regType[i] = comp->getJitGCType(gcPtrs[i]);
+                }
+            }
+
 #elif defined(TARGET_X86)
 
             // an 8-byte struct returned using two registers
@@ -21951,6 +22116,27 @@ regNumber ReturnTypeDesc::GetABIReturnReg(unsigned idx) const
     {
         noway_assert(idx < 4);                                   // Up to 4 return registers for HFA's
         resultReg = (regNumber)((unsigned)(REG_FLOATRET) + idx); // V0, V1, V2 or V3
+    }
+
+#elif defined(TARGET_LOONGARCH64)
+    var_types regType = GetReturnRegType(idx);
+    if (idx == 0)
+    {
+        resultReg = varTypeIsIntegralOrI(regType) ? REG_INTRET : REG_FLOATRET; // A0 or F0
+    }
+    else
+    {
+        noway_assert(idx == 1); // Up to 2 return registers for two-float-field structs
+
+        // If the first return register is from the same register file, return the one next to it.
+        if (varTypeIsIntegralOrI(regType))
+        {
+            resultReg = varTypeIsIntegralOrI(GetReturnRegType(0)) ? REG_INTRET_1 : REG_INTRET; // A0 or A1
+        }
+        else // varTypeUsesFloatReg(regType)
+        {
+            resultReg = varTypeIsIntegralOrI(GetReturnRegType(0)) ? REG_FLOATRET : REG_FLOATRET_1; // F0 or F1
+        }
     }
 
 #endif // TARGET_XXX

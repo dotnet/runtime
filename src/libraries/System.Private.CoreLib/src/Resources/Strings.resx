@@ -636,9 +636,6 @@
   <data name="Arg_NotSupportedException" xml:space="preserve">
     <value>Specified method is not supported.</value>
   </data>
-  <data name="Arg_NullIndex" xml:space="preserve">
-    <value>Arrays indexes must be set to an object instance.</value>
-  </data>
   <data name="Arg_NullReferenceException" xml:space="preserve">
     <value>Object reference not set to an instance of an object.</value>
   </data>
@@ -1105,7 +1102,7 @@
     <value>Target array type is not compatible with the type of items in the collection.</value>
   </data>
   <data name="InvalidAssemblyName" xml:space="preserve">
-    <value>The given assembly name or codebase was invalid.</value>
+    <value>The given assembly name was invalid.</value>
   </data>
   <data name="Argument_InvalidCalendar" xml:space="preserve">
     <value>Not a valid calendar for the given culture.</value>

@@ -4,6 +4,7 @@
 namespace System.Xml.Schema
 {
     using System;
+    using System.Diagnostics.CodeAnalysis;
     using System.Threading;
     using System.Collections;
     using System.Xml.Schema;
@@ -91,7 +92,7 @@ namespace System.Xml.Schema
         /// If the given schema references other namespaces, the schemas for those other
         /// namespaces are NOT automatically loaded.
         /// </summary>
-        public XmlSchema? Add(string? ns, string uri)
+        public XmlSchema? Add(string? ns, [StringSyntax(StringSyntaxAttribute.Uri)] string uri)
         {
             if (uri == null || uri.Length == 0)
                 throw new ArgumentNullException(nameof(uri));

@@ -327,7 +327,7 @@ emit_span_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature
 {
 	MonoInst *ins;
 
-	MonoClassField *ptr_field = mono_class_get_field_from_name_full (cmethod->klass, "_pointer", NULL);
+	MonoClassField *ptr_field = mono_class_get_field_from_name_full (cmethod->klass, "_reference", NULL);
 	if (!ptr_field)
 		/* Portable Span<T> */
 		return NULL;
@@ -344,7 +344,7 @@ emit_span_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature
 			return NULL;
 
 		int span_reg = args [0]->dreg;
-		/* Load _pointer.Value */
+		/* Load _reference.Value */
 		int base_reg = alloc_preg (cfg);
 		EMIT_NEW_LOAD_MEMBASE (cfg, ins, OP_LOAD_MEMBASE, base_reg, span_reg, ptr_field->offset - MONO_ABI_SIZEOF (MonoObject));
 		/* Similar to mini_emit_ldelema_1_ins () */
