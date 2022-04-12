@@ -12,6 +12,7 @@
       -->
     <ILAsmToolPath Condition="'$(TargetOS)' == 'AnyOS'">$(ArtifactsBinDir)/coreclr/$(_hostOS).$(TargetArchitecture).Release</ILAsmToolPath>
     <MonoAotIncompatible>true</MonoAotIncompatible>
+    <DisableProjectBuild Condition="'$(RuntimeFlavor)' == 'Mono'">true</DisableProjectBuild>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="InvalidCSharp.il" />
