@@ -460,8 +460,12 @@ namespace System
             if (IsWindows)
             {
                 // TLS 1.1 and 1.2 can work on Windows7 but it is not enabled by default.
-                bool defaultProtocolSupport = !IsWindows7;
-                return GetProtocolSupportFromWindowsRegistry(SslProtocols.Tls11, defaultProtocolSupport);
+                if (IsWindows7)
+                {
+                    return GetProtocolSupportFromWindowsRegistry(SslProtocols.Tls11, false, true);
+                }
+
+                return GetProtocolSupportFromWindowsRegistry(SslProtocols.Tls11, true);
             }
             else if (IsOSXLike || IsAndroid)
             {
