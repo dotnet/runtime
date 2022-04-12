@@ -10,6 +10,9 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json;
 using System.Net.Sockets;
+using System.Diagnostics;
+using System.IO;
+using System.Reflection;
 
 namespace Microsoft.WebAssembly.Diagnostics;
 
@@ -24,6 +27,41 @@ class FirefoxInspectorClient : InspectorClient
     {
     }
 
+    public void CleanAndKillFirefox()
+    {
+        Process process = new Process();
+        process.StartInfo.FileName = "pkill";
+        process.StartInfo.Arguments = "firefox";
+        process.Start();
+        process.WaitForExit();// Waits here for the process to exit.
+        DirectoryInfo di = null;
+        string baseDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);                
+        if (File.Exists("/tmp/profile/prefs.js"))
+            di = new DirectoryInfo("/tmp/profile");
+        else if (File.Exists(Path.Combine(baseDir, "..", "..", "firefox", "profile", "prefs.js")))
+            di = new DirectoryInfo($"{Path.Combine(baseDir, "..", "..", "firefox", "profile")}");
+        if (di != null)
+        {
+            Console.WriteLine($"Erasing Files - {di.FullName}");
+            foreach (FileInfo file in di.EnumerateFiles())
+            {
+                if (file.Name != "prefs.js")
+                    file.Delete(); 
+            }
+            foreach (DirectoryInfo dir in di.EnumerateDirectories())
+                dir.Delete(true); 
+        }
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            CleanAndKillFirefox();
+            socket.Dispose();
+        }
+        base.Dispose(disposing);
+    }
     public override async Task Connect(
             Uri uri,
             Func<string, JObject, CancellationToken, Task> onEvent,
