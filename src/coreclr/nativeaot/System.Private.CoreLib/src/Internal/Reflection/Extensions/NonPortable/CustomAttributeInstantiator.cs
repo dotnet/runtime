@@ -68,8 +68,7 @@ namespace Internal.Reflection.Extensions.NonPortable
             //
             // Found the right constructor. Instantiate the Attribute.
             //
-            Debug.Assert(matchingParameters != null);
-            int arity = matchingParameters.Length;
+            int arity = matchingParameters!.Length;
             object?[] invokeArguments = new object[arity];
             for (int i = 0; i < arity; i++)
             {

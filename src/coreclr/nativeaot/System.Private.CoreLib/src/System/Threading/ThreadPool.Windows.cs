@@ -59,8 +59,7 @@ namespace System.Threading
         {
             var wrapper = ThreadPoolCallbackWrapper.Enter();
             GCHandle handle = (GCHandle)context;
-            RegisteredWaitHandle? registeredWaitHandle = (RegisteredWaitHandle?)handle.Target;
-            Debug.Assert(registeredWaitHandle != null);
+            RegisteredWaitHandle registeredWaitHandle = (RegisteredWaitHandle)handle.Target!;
             Debug.Assert((handle == registeredWaitHandle._gcHandle) && (wait == registeredWaitHandle._tpWait));
 
             bool timedOut = (waitResult == (uint)Interop.Kernel32.WAIT_TIMEOUT);

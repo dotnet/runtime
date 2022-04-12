@@ -96,19 +96,17 @@ namespace System.Threading
                     dataArray = newDataArray;
                 }
 
-                Debug.Assert(dataArray != null);
-
                 // If we haven't stored this object in the array yet, do so now.  Then we need to make another pass through
                 // the loop, in case another thread resized the array before we made this update.
                 if (s_dataArray[dataIndex] == null)
                 {
                     // Full fence so this write can't move past subsequent reads.
-                    Interlocked.Exchange(ref dataArray[dataIndex], data);
+                    Interlocked.Exchange(ref dataArray![dataIndex], data);
                     continue;
                 }
 
                 // We're already in the array, so we're done.
-                Debug.Assert(dataArray[dataIndex] == data);
+                Debug.Assert(dataArray![dataIndex] == data);
                 overlapped->_dataIndex = dataIndex;
                 return overlapped;
             }
