@@ -104,6 +104,7 @@ namespace System.Threading
              bool executeOnlyOnce,
              bool flowExecutionContext)
         {
+            Thread.ThrowIfNoThreadStart();
             RegisteredWaitHandle registeredHandle = new RegisteredWaitHandle(
                 waitObject,
                 new _ThreadPoolWaitOrTimerCallback(callBack, state, flowExecutionContext),

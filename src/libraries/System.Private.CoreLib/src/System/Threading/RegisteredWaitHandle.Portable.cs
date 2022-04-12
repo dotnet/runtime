@@ -15,6 +15,7 @@ namespace System.Threading
         internal RegisteredWaitHandle(WaitHandle waitHandle, _ThreadPoolWaitOrTimerCallback callbackHelper,
             int millisecondsTimeout, bool repeating)
         {
+            Thread.ThrowIfNoThreadStart();
             Handle = waitHandle.SafeWaitHandle;
             Callback = callbackHelper;
             TimeoutDurationMs = millisecondsTimeout;
