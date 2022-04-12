@@ -11275,14 +11275,14 @@ namespace System.Runtime.CompilerServices
         public CompilationRelaxationsAttribute(System.Runtime.CompilerServices.CompilationRelaxations relaxations) { }
         public int CompilationRelaxations { get { throw null; } }
     }
-    [System.AttributeUsage(System.AttributeTargets.All, AllowMultiple = true, Inherited = false)]
-    public sealed class CompilerFeatureRequiredAttribute : System.Attribute
+    [System.AttributeUsageAttribute(System.AttributeTargets.All, AllowMultiple=true, Inherited=false)]
+    public sealed partial class CompilerFeatureRequiredAttribute : System.Attribute
     {
-        public CompilerFeatureRequiredAttribute(string featureName) { }
-        public string FeatureName { get { throw null; } }
-        public bool IsOptional { get { throw null; } init { throw null; } }
         public const string RefStructs = "RefStructs";
         public const string RequiredMembers = "RequiredMembers";
+        public CompilerFeatureRequiredAttribute(string featureName) { }
+        public string FeatureName { get { throw null; } }
+        public bool IsOptional { get { throw null; } set { } }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.All, Inherited=true)]
     public sealed partial class CompilerGeneratedAttribute : System.Attribute
