@@ -1,6 +1,7 @@
 import { ExitStatus, INTERNAL, Module, quit } from "./imports";
 import { mono_call_assembly_entry_point } from "./method-calls";
 import { mono_wasm_set_main_args, runtime_is_initialized_reject } from "./startup";
+import { MonoWasmCrypto } from "./types";
 
 export async function mono_run_main_and_exit(main_assembly_name: string, args: string[]): Promise<void> {
     try {
@@ -39,3 +40,5 @@ function set_exit_code(exit_code: number, reason?: any) {
     }
     quit(exit_code, reason);
 }
+
+export var mono_wasm_crypto: MonoWasmCrypto;

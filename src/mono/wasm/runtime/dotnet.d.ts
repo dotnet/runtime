@@ -204,10 +204,14 @@ declare type CoverageProfilerOptions = {
     write_at?: string;
     send_to?: string;
 };
+declare type LibraryChannel = {
+    create: (msg_char_len: number) => LibraryChannel;
+}
 declare type DotnetModuleConfig = {
     disableDotnet6Compatibility?: boolean;
     config?: MonoConfig | MonoConfigError;
     configSrc?: string;
+    channel: LibraryChannel,
     onConfigLoaded?: (config: MonoConfig) => Promise<void>;
     onDotnetReady?: () => void;
     imports?: DotnetModuleConfigImports;
@@ -234,6 +238,10 @@ declare type DotnetModuleConfigImports = {
     };
     url?: any;
 };
+declare type MonoWasmCrypto = {
+    channel: LibraryChannel;
+    worker: Worker;
+}
 
 declare function mono_wasm_runtime_ready(): void;
 
@@ -307,6 +315,8 @@ declare function getF64(offset: _MemOffset): number;
 declare function mono_run_main_and_exit(main_assembly_name: string, args: string[]): Promise<void>;
 declare function mono_run_main(main_assembly_name: string, args: string[]): Promise<number>;
 
+declare var mono_wasm_crypto: MonoWasmCrypto;
+
 declare const MONO: {
     mono_wasm_setenv: typeof mono_wasm_setenv;
     mono_wasm_load_bytes_into_heap: typeof mono_wasm_load_bytes_into_heap;
@@ -323,6 +333,7 @@ declare const MONO: {
     mono_run_main_and_exit: typeof mono_run_main_and_exit;
     mono_wasm_add_assembly: (name: string, data: VoidPtr, size: number) => number;
     mono_wasm_load_runtime: (unused: string, debug_level: number) => void;
+    mono_wasm_crypto: typeof mono_wasm_crypto;
     config: MonoConfig | MonoConfigError;
     loaded_files: string[];
     setI8: typeof setI8;

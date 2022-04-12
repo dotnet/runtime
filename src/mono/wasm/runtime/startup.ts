@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { AllAssetEntryTypes, assert, AssetEntry, CharPtrNull, DotnetModule, GlobalizationMode, MonoConfig, MonoConfigError, wasm_type_symbol, MonoObject } from "./types";
-import { ENVIRONMENT_IS_ESM, ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, INTERNAL, locateFile, Module, MONO, requirePromise, runtimeHelpers } from "./imports";
+import { ENVIRONMENT_IS_ESM, ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, ENVIRONMENT_IS_WEB, INTERNAL, locateFile, Module, MONO, requirePromise, runtimeHelpers } from "./imports";
 import cwraps from "./cwraps";
 import { mono_wasm_raise_debug_event, mono_wasm_runtime_ready } from "./debug";
 import { mono_wasm_globalization_init, mono_wasm_load_icu_data } from "./icu";
@@ -302,7 +302,7 @@ function finalize_startup(config: MonoConfig | MonoConfigError | undefined): voi
 
         const moduleExt = Module as DotnetModule;
 
-        if(!Module.disableDotnet6Compatibility && Module.exports){
+        if (!Module.disableDotnet6Compatibility && Module.exports){
             // Export emscripten defined in module through EXPORTED_RUNTIME_METHODS
             // Useful to export IDBFS or other similar types generally exposed as 
             // global types when emscripten is not modularized.
@@ -373,6 +373,20 @@ function finalize_startup(config: MonoConfig | MonoConfigError | undefined): voi
                 runtime_is_initialized_reject(err);
                 throw err;
             }
+        }
+
+        console.debug ("MONO_WASM: Initialize WebWorkers");
+
+        if (ENVIRONMENT_IS_WEB) {
+            const chan = Module.channel.create(1024);
+            const worker = new Worker("dotnet-crypto-worker.ts");
+            worker.postMessage({
+                comm_buff: chan.get_comm_buffer(),
+                msg_buf: chan.get_msg_buffer(),
+                msg_char_len: chan.get_msg_len()
+            });
+            MONO.mono_wasm_crypto.channel = chan;
+            MONO.mono_wasm_crypto = worker;
         }
 
         runtime_is_initialized_resolve();

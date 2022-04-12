@@ -181,6 +181,9 @@ export type DotnetModuleConfig = {
 
     config?: MonoConfig | MonoConfigError,
     configSrc?: string,
+
+    channel: LibraryChannel,
+
     onConfigLoaded?: (config: MonoConfig) => Promise<void>;
     onDotnetReady?: () => void;
 
@@ -260,4 +263,9 @@ export const enum MarshalError {
     NULL_TYPE_POINTER = 514,
     UNSUPPORTED_TYPE = 515,
     FIRST = BUFFER_TOO_SMALL
+}
+
+export type MonoWasmCrypto = {
+    channel: LibraryChannel,
+    worker: Worker,
 }

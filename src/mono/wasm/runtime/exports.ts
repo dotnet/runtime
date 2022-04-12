@@ -66,7 +66,7 @@ import {
 import { create_weak_ref } from "./weak-ref";
 import { fetch_like, readAsync_like } from "./polyfills";
 import { EmscriptenModule } from "./types/emscripten";
-import { mono_run_main, mono_run_main_and_exit } from "./run";
+import { mono_run_main, mono_run_main_and_exit, mono_wasm_crypto } from "./run";
 
 const MONO = {
     // current "public" MONO API
@@ -83,6 +83,7 @@ const MONO = {
     mono_wasm_release_roots,
     mono_run_main,
     mono_run_main_and_exit,
+    mono_wasm_crypto,
 
     // for Blazor's future!
     mono_wasm_add_assembly: cwraps.mono_wasm_add_assembly,
