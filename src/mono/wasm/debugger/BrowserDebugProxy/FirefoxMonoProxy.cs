@@ -107,21 +107,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         {
             ide = ideClient;
             browser = new TcpClient();
-            for (int i = 0; i < 10; i++)
-            {
-                try
-                {
-                    await browser.ConnectAsync("127.0.0.1", portBrowser);
-                    break;
-                }
-                catch (Exception)
-                {
-                    Console.WriteLine("retrying");
-                    await Task.Delay(1000);
-                }
-            }
-            if (!browser.Connected)
-                throw new Exception("Cannot connect to browser");
+            await browser.ConnectAsync("127.0.0.1", portBrowser);
             queues.Add(new DevToolsQueueFirefox(this.ide));
             queues.Add(new DevToolsQueueFirefox(this.browser));
 
