@@ -271,8 +271,6 @@ extern "C"{
 /* interface __MIDL_itf_corprof_0000_0000 */
 /* [local] */ 
 
-#define CorDB_CONTROL_Profiling         "Cor_Enable_Profiling"
-#define CorDB_CONTROL_ProfilingL       L"Cor_Enable_Profiling"
 #if 0
 typedef LONG32 mdToken;
 

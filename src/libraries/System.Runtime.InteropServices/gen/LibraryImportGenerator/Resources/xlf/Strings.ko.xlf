@@ -83,8 +83,8 @@
         <note />
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedMessageValue">
-        <source>The specified value '{0}' for '{1}' is not supported by source-generated P/Invokes. If the specified configuration is required, use a regular `DllImport` instead.</source>
-        <target state="translated">'{1}'에 대해 지정된 값 '{0}'은(는) 소스 생성 P/Invoke에서 지원되지 않습니다. 지정된 구성이 필요한 경우 일반 'DllImport'를 대신 사용하세요.</target>
+        <source>The specified value '{0}' for '{1}' is not supported by source-generated P/Invokes. If the specified value is required, use a regular `DllImport` instead.</source>
+        <target state="needs-review-translation">'{1}'에 대해 지정된 값 '{0}'은(는) 소스 생성 P/Invoke에서 지원되지 않습니다. 지정된 구성이 필요한 경우 일반 'DllImport'를 대신 사용하세요.</target>
         <note />
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedTitle">
@@ -208,8 +208,8 @@
         <note />
       </trans-unit>
       <trans-unit id="InTwoStageMarshallingRequiresToNativeValueMessage">
-        <source>The marshaller type '{0}' supports marshalling in the 'In' direction with the 'TwoStageMarshalling' feature must provide a 'ToNativeValue' instance method that returns the native value</source>
-        <target state="translated">마샬러 형식 '{0}'은(는) 'TwoStageMarshalling' 기능을 사용하여 'In' 방향의 마샬링을 지원하며 네이티브 값을 반환하는 'ToNativeValue' 인스턴스 메서드를 제공해야 합니다.</target>
+        <source>A marshaller type '{0}' that supports marshalling in the 'In' direction with the 'TwoStageMarshalling' feature must provide a 'ToNativeValue' instance method that returns the native value</source>
+        <target state="needs-review-translation">마샬러 형식 '{0}'은(는) 'TwoStageMarshalling' 기능을 사용하여 'In' 방향의 마샬링을 지원하며 네이티브 값을 반환하는 'ToNativeValue' 인스턴스 메서드를 제공해야 합니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidAttributedMethodContainingTypeMissingModifiersMessage">

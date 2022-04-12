@@ -1,13 +1,8 @@
 ; Licensed to the .NET Foundation under one or more agreements.
 ; The .NET Foundation licenses this file to you under the MIT license.
 
-; ==++==
-;
-
-;
-; ==--==
 ; ***********************************************************************
-; File: JitHelpers_Slow.asm, see history in jithelp.asm
+; File: JitHelpers_Slow.asm
 ;
 ; Notes: These are ASM routinues which we believe to be cold in normal
 ;        AMD64 scenarios, mainly because they have other versions which
