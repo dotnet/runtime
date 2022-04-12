@@ -8,15 +8,7 @@
 
 #ifdef FEATURE_PGO
 
-inline bool AddTypeHandleToUnknownTypeHandleMask(INT_PTR typeHandle, uint32_t *unknownTypeHandleMask)
-{
-    uint32_t bitMask = (uint32_t)(1 << (typeHandle - UNKNOWN_TYPEHANDLE_MIN));
-    bool result = (bitMask & *unknownTypeHandleMask) == 0;
-    *unknownTypeHandleMask |= bitMask;
-    return result;
-}
-
-inline INT_PTR HashToPgoUnknownTypeHandle(uint32_t hash)
+inline INT_PTR HashToPgoUnknownHandle(uint32_t hash)
 {
     // Map from a 32bit hash to the 32 different unknown type handle values
     return (hash & 0x1F) + 1;
@@ -53,6 +45,7 @@ inline uint32_t InstrumentationKindToSize(ICorJitInfo::PgoInstrumentationKind ki
         case ICorJitInfo::PgoInstrumentationKind::EightByte:
             return 8;
         case ICorJitInfo::PgoInstrumentationKind::TypeHandle:
+        case ICorJitInfo::PgoInstrumentationKind::MethodHandle:
             return TARGET_POINTER_SIZE;
         default:
             _ASSERTE(FALSE);
@@ -242,6 +235,7 @@ bool ReadInstrumentationData(const uint8_t *pByte, size_t cbDataMax, SchemaAndDa
     bool done = false;
     int64_t lastDataValue = 0;
     int64_t lastTypeDataValue = 0;
+    int64_t lastMethodDataValue = 0;
     int32_t dataCountToRead = 0;
     
     ReadCompressedInts(pByte, cbDataMax, [&](int64_t curValue)
@@ -267,8 +261,16 @@ bool ReadInstrumentationData(const uint8_t *pByte, size_t cbDataMax, SchemaAndDa
                     return false;
                 }
                 break;
+            case ICorJitInfo::PgoInstrumentationKind::MethodHandle:
+                lastMethodDataValue += curValue;
+
+                if (!handler(schemaHandler.GetSchema(), lastMethodDataValue, schemaHandler.GetSchema().Count - dataCountToRead))
+                {
+                    return false;
+                }
+                break;
             default:
-                assert(false);
+                assert(!"Unexpected PGO instrumentation data type");
                 break;
             }
             dataCountToRead--;

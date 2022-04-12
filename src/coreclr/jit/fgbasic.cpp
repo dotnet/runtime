@@ -180,6 +180,7 @@ void Compiler::fgInit()
     fgPgoBlockCounts             = 0;
     fgPgoEdgeCounts              = 0;
     fgPgoClassProfiles           = 0;
+    fgPgoMethodProfiles          = 0;
     fgPgoInlineePgo              = 0;
     fgPgoInlineeNoPgo            = 0;
     fgPgoInlineeNoPgoSingleBlock = 0;

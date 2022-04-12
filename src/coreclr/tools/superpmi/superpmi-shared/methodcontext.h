@@ -52,7 +52,8 @@ enum EXTRA_JIT_FLAGS
     HAS_CLASS_PROFILE = 61,
     HAS_LIKELY_CLASS = 60,
     HAS_STATIC_PROFILE = 59,
-    HAS_DYNAMIC_PROFILE = 58
+    HAS_DYNAMIC_PROFILE = 58,
+    HAS_METHOD_PROFILE = 57,
 };
 
 // Asserts to catch changes in corjit flags definitions.
@@ -105,7 +106,7 @@ public:
     int dumpMethodIdentityInfoToBuffer(char* buff, int len, bool ignoreMethodName = false, CORINFO_METHOD_INFO* optInfo = nullptr, unsigned optFlags = 0);
     int dumpMethodMD5HashToBuffer(char* buff, int len, bool ignoreMethodName = false, CORINFO_METHOD_INFO* optInfo = nullptr, unsigned optFlags = 0);
 
-    bool hasPgoData(bool& hasEdgeProfile, bool& hasClassProfile, bool& hasLikelyClass, ICorJitInfo::PgoSource& pgoSource);
+    bool hasPgoData(bool& hasEdgeProfile, bool& hasClassProfile, bool& hasMethodProfile, bool& hasLikelyClass, ICorJitInfo::PgoSource& pgoSource);
 
     void recGlobalContext(const MethodContext& other);
 

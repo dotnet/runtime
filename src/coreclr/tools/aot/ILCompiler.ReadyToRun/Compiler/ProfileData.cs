@@ -111,7 +111,7 @@ namespace ILCompiler
                         // Actually merge
                         schemaElemMergerArray[0] = dataToMerge.SchemaData;
                         schemaElemMergerArray[1] = data.SchemaData;
-                        mergedSchemaData = PgoProcessor.Merge<TypeSystemEntityOrUnknown>(schemaElemMergerArray);
+                        mergedSchemaData = PgoProcessor.Merge<TypeSystemEntityOrUnknown, TypeSystemEntityOrUnknown>(schemaElemMergerArray);
                     }
                     mergedProfileData[data.Method] = new MethodProfileData(data.Method, dataToMerge.Flags | data.Flags, data.ExclusiveWeight + dataToMerge.ExclusiveWeight, mergedCallWeights, dataToMerge.ScenarioMask | data.ScenarioMask, mergedSchemaData);
                 }
