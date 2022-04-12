@@ -6,14 +6,43 @@ Build with `/p:WasmEnableThreads=true`
 
 **TODO**: Have two options - one for limited threading support for the runtime internals, and another to fully enable threading for user apps.
 
+## Libraries feature defines ##
 
-## Preprocessor defines ##
+We use the `FeatureWasmThreads` property in the libraries projects to conditionallyie define
+`FEATURE_WASM_THREADS` which is used to affect how the libraries are built for the multi-threaded
+runtime.
+
+**TODO** add a separate feature property for WebAssembly EventPipe diagnostics.
+
+### Ref asssemblies ###
+
+For ref assemblies that have APIs that are related to threading, we use
+`[UnsupportedOSPlatform("browser")]` under a `FEATURE_WASM_THREADS` define to mark APIs that are not
+supported with the single-threaded runtime.  Each such ref assembly (for example
+`System.Threading.Thread`) is defined in two places: `src/libraries/System.Threading.Thread/ref` for
+the single-threaded ref assemblies, and
+`src/libraries/System.Threading.Thread.WebAssembly.Threading/ref/` for the multi-threaded ref
+assemblies.  By default users compile against the single-threaded ref assemblies, but by adding a
+`PackageReference` to `Microsoft.NET.WebAssembly.Threading`, they get the multi-threaded ref
+assemblies.
+
+### Implementation assemblies ###
+
+The implementation (in `System.Private.CoreLib`) we check
+`System.Threading.Thread.IsThreadStartSupported` or call
+`System.Threading.Thread.ThrowIfNoThreadStart()` to guard code paths that depends on
+multi-threading.  The property is a boolean constant that will allow the IL trimmer or the
+JIT/interpreter/AOT to drop the multi-threaded implementation in the single-threaded CoreLib.
+
+The implementation should not use `[UnsupportedOSPlatform("browser")]`
+
+## Native runtime preprocessor defines ##
 
 In `src/mono/mono`, `DISABLE_THREADS` is _not_ defined if threading is enabled.
 
-If `src/mono/mono`, `__EMSCRIPTEN_THREADS__` _is_ defined if threading is enabled.
+If `src/mono/wasm`, `__EMSCRIPTEN_THREADS__` _is_ defined if threading is enabled.
 
-**TODO**: Add a define if threading is fully enabled for user apps.
+**TODO**: Add a define if threading is only enabled internally, not for user apps.
 
 ## Browser thread, main thread ##
 
