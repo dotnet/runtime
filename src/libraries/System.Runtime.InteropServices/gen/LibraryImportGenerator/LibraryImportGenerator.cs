@@ -112,13 +112,7 @@ namespace Microsoft.Interop
                 .WithComparer(Comparers.GeneratedSyntax)
                 .WithTrackingName(StepNames.GenerateSingleStub);
 
-            context.RegisterSourceOutput(generateSingleStub, (context, stubInfo) =>
-            {
-                foreach (Diagnostic diagnostic in stubInfo.Item2)
-                {
-                    context.ReportDiagnostic(diagnostic);
-                }
-            });
+            context.RegisterDiagnostics(generateSingleStub.SelectMany((stubInfo, ct) => stubInfo.Item2));
 
             context.RegisterConcatenatedSyntaxOutputs(generateSingleStub.Select((data, ct) => data.Item1), "LibraryImports.g.cs");
         }
@@ -220,76 +214,27 @@ namespace Microsoft.Interop
                 return null;
             }
 
-            // Default values for these properties are based on the
-            // documented semanatics of DllImportAttribute:
-            //   - https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.dllimportattribute
-            InteropAttributeMember userDefinedValues = InteropAttributeMember.None;
-            string? entryPoint = null;
-            bool setLastError = false;
-
-            StringMarshalling stringMarshalling = StringMarshalling.Custom;
-            INamedTypeSymbol? stringMarshallingCustomType = null;
-
-            // All other data on attribute is defined as NamedArguments.
-            foreach (KeyValuePair<string, TypedConstant> namedArg in attrData.NamedArguments)
-            {
-                switch (namedArg.Key)
-                {
-                    default:
-                        // This should never occur in a released build,
-                        // but can happen when evolving the ecosystem.
-                        // Return null here to indicate invalid attribute data.
-                        Debug.WriteLine($"An unknown member '{namedArg.Key}' was found on {attrData.AttributeClass}");
-                        return null;
-                    case nameof(LibraryImportData.EntryPoint):
-                        if (namedArg.Value.Value is not string)
-                        {
-                            return null;
-                        }
-                        entryPoint = (string)namedArg.Value.Value!;
-                        break;
-                    case nameof(LibraryImportData.SetLastError):
-                        userDefinedValues |= InteropAttributeMember.SetLastError;
-                        if (namedArg.Value.Value is not bool)
-                        {
-                            return null;
-                        }
-                        setLastError = (bool)namedArg.Value.Value!;
-                        break;
-                    case nameof(LibraryImportData.StringMarshalling):
-                        userDefinedValues |= InteropAttributeMember.StringMarshalling;
-                        // TypedConstant's Value property only contains primitive values.
-                        if (namedArg.Value.Value is not int)
-                        {
-                            return null;
-                        }
-                        // A boxed primitive can be unboxed to an enum with the same underlying type.
-                        stringMarshalling = (StringMarshalling)namedArg.Value.Value!;
-                        break;
-                    case nameof(LibraryImportData.StringMarshallingCustomType):
-                        userDefinedValues |= InteropAttributeMember.StringMarshallingCustomType;
-                        if (namedArg.Value.Value is not INamedTypeSymbol)
-                        {
-                            return null;
-                        }
-                        stringMarshallingCustomType = (INamedTypeSymbol)namedArg.Value.Value;
-                        break;
-                }
-            }
-
             if (attrData.ConstructorArguments.Length == 0)
             {
                 return null;
             }
 
+            ImmutableDictionary<string, TypedConstant> namedArguments = ImmutableDictionary.CreateRange(attrData.NamedArguments);
+
+            string? entryPoint = null;
+            if (namedArguments.TryGetValue(nameof(LibraryImportData.EntryPoint), out TypedConstant entryPointValue))
+            {
+                if (entryPointValue.Value is not string)
+                {
+                    return null;
+                }
+                entryPoint = (string)entryPointValue.Value!;
+            }
+
             return new LibraryImportData(attrData.ConstructorArguments[0].Value!.ToString())
             {
-                IsUserDefined = userDefinedValues,
                 EntryPoint = entryPoint,
-                SetLastError = setLastError,
-                StringMarshalling = stringMarshalling,
-                StringMarshallingCustomType = stringMarshallingCustomType,
-            };
+            }.WithValuesFromNamedArguments(namedArguments);
         }
 
         private static IncrementalStubGenerationContext CalculateStubInformation(

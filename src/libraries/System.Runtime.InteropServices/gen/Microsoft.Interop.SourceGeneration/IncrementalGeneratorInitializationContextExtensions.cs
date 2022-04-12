@@ -47,6 +47,14 @@ namespace Microsoft.Interop
             }
         }
 
+        public static void RegisterDiagnostics(this IncrementalGeneratorInitializationContext context, IncrementalValuesProvider<Diagnostic> diagnostics)
+        {
+            context.RegisterSourceOutput(diagnostics, (context, diagnostic) =>
+            {
+                context.ReportDiagnostic(diagnostic);
+            });
+        }
+
         public static void RegisterConcatenatedSyntaxOutputs<TNode>(this IncrementalGeneratorInitializationContext context, IncrementalValuesProvider<TNode> nodes, string fileName)
             where TNode : SyntaxNode
         {
