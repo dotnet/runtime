@@ -3352,20 +3352,37 @@ BOOL AppDomain::AddFileToCache(AssemblySpec* pSpec, PEAssembly * pPEAssembly, BO
     }
     CONTRACTL_END;
 
-    GCX_PREEMP();
-    DomainCacheCrstHolderForGCCoop holder(this);
-
-    // !!! suppress exceptions
-    if(!m_AssemblyCache.StorePEAssembly(pSpec, pPEAssembly) && !fAllowFailure)
     {
-        // TODO: Disabling the below assertion as currently we experience
-        // inconsistency on resolving the Microsoft.Office.Interop.MSProject.dll
-        // This causes below assertion to fire and crashes the VS. This issue
-        // is being tracked with Dev10 Bug 658555. Brought back it when this bug
-        // is fixed.
-        // _ASSERTE(FALSE);
+        GCX_PREEMP();
+        DomainCacheCrstHolderForGCCoop holder(this);
 
-        EEFileLoadException::Throw(pSpec, FUSION_E_CACHEFILE_FAILED, NULL);
+        // !!! suppress exceptions
+        if(!m_AssemblyCache.StorePEAssembly(pSpec, pPEAssembly) && !fAllowFailure)
+        {
+            // TODO: Disabling the below assertion as currently we experience
+            // inconsistency on resolving the Microsoft.Office.Interop.MSProject.dll
+            // This causes below assertion to fire and crashes the VS. This issue
+            // is being tracked with Dev10 Bug 658555. Brought back it when this bug
+            // is fixed.
+            // _ASSERTE(FALSE);
+
+            EEFileLoadException::Throw(pSpec, FUSION_E_CACHEFILE_FAILED, NULL);
+        }
+    }
+
+    DomainAssembly *pParentAssembly = pSpec->GetParentAssembly();
+    BINDER_SPACE::Assembly *pBinderSpaceAssembly = pPEAssembly->GetHostAssembly();
+    DomainAssembly *pResultAssembly = pBinderSpaceAssembly->GetDomainAssembly();
+    if ((pParentAssembly != NULL) && (pResultAssembly != NULL))
+    {
+        LoaderAllocator *pParentAssemblyLoaderAllocator = pParentAssembly->GetLoaderAllocator();
+        LoaderAllocator *pResultAssemblyLoaderAllocator = pResultAssembly->GetLoaderAllocator();
+        _ASSERTE(pParentAssemblyLoaderAllocator);
+        _ASSERTE(pResultAssemblyLoaderAllocator);
+        if (pResultAssemblyLoaderAllocator->IsCollectible())
+        {
+            pParentAssemblyLoaderAllocator->EnsureReference(pResultAssemblyLoaderAllocator);
+        }
     }
 
     return TRUE;

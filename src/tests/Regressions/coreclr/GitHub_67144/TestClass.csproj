@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <CLRTestKind>BuildOnly</CLRTestKind>
+  </PropertyGroup>
+
+  <ItemGroup>
+   <Compile Include="Class1.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="TestInterface.csproj" />
+  </ItemGroup>
+
+</Project>
