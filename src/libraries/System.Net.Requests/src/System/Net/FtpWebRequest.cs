@@ -960,7 +960,7 @@ namespace System.Net
             {
                 var client = new Socket(SocketType.Stream, ProtocolType.Tcp);
                 await client.ConnectAsync(_uri.Host, _uri.Port).ConfigureAwait(false);
-                result = new FtpControlStream(new NetworkStream(client, true));
+                result = new FtpControlStream(new NetworkStream(client, ownsSocket: true));
             }
             catch (Exception e)
             {
@@ -975,7 +975,7 @@ namespace System.Net
             string hostname = _uri.Host;
             int port = _uri.Port;
 
-            var client = new Socket(SocketType.Stream, ProtocolType.Tcp); ;
+            var client = new Socket(SocketType.Stream, ProtocolType.Tcp);
 
             try
             {
@@ -986,7 +986,7 @@ namespace System.Net
                 throw TranslateConnectException(e);
             }
 
-            return new FtpControlStream(new NetworkStream(client, true));
+            return new FtpControlStream(new NetworkStream(client, ownsSocket: true));
         }
 
         private Stream? TimedSubmitRequestHelper(bool isAsync)
