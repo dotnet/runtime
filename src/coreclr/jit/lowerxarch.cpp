@@ -4109,7 +4109,7 @@ GenTree* Lowering::TryLowerAndOpToAndNot(GenTreeOp* andNode)
 }
 
 //----------------------------------------------------------------------------------------------
-// Lowering::TryLowerXorOpToGetMaskUpToLowestSetBit: Lowers a tree XOR(X, NOT(X)) to
+// Lowering::TryLowerXorOpToGetMaskUpToLowestSetBit: Lowers a tree XOR(X, ADD(X, -1)) to
 // HWIntrinsic::GetMaskUpToLowestSetBit
 //
 // Arguments:
@@ -4124,34 +4124,33 @@ GenTree* Lowering::TryLowerXorOpToGetMaskUpToLowestSetBit(GenTreeOp* xorNode)
 {
     assert(xorNode->OperIs(GT_XOR) && varTypeIsIntegral(xorNode));
 
-    GenTree* opNode  = nullptr;
-    GenTree* negNode = nullptr;
-    if (xorNode->gtGetOp1()->OperIs(GT_NEG))
-    {
-        negNode = xorNode->gtGetOp1();
-        opNode  = xorNode->gtGetOp2();
-    }
-    else if (xorNode->gtGetOp2()->OperIs(GT_NEG))
-    {
-        negNode = xorNode->gtGetOp2();
-        opNode  = xorNode->gtGetOp1();
-    }
-
-    if (opNode == nullptr)
+    GenTree* op1 = xorNode->gtGetOp1();
+    if (!op1->OperIs(GT_LCL_VAR) || comp->lvaGetDesc(op1->AsLclVar())->IsAddressExposed())
     {
         return nullptr;
     }
 
-    GenTree* negOp = negNode->AsUnOp()->gtGetOp1();
-    if (!negOp->OperIs(GT_LCL_VAR) || !opNode->OperIs(GT_LCL_VAR) ||
-        (negOp->AsLclVar()->GetLclNum() != opNode->AsLclVar()->GetLclNum()))
+    GenTree* op2 = xorNode->gtGetOp2();
+    if (!op2->OperIs(GT_ADD))
+    {
+        return nullptr;
+    }
+
+    GenTree* addOp2 = op2->gtGetOp2();
+    if (!addOp2->IsIntegralConst(-1))
+    {
+        return nullptr;
+    }
+
+    GenTree* addOp1 = op2->gtGetOp1();
+    if (!addOp1->OperIs(GT_LCL_VAR) || (addOp1->AsLclVar()->GetLclNum() != op1->AsLclVar()->GetLclNum()))
     {
         return nullptr;
     }
 
     // Subsequent nodes may rely on CPU flags set by these nodes in which case we cannot remove them
-    if (((xorNode->gtFlags & GTF_SET_FLAGS) != 0) || ((negOp->gtFlags & GTF_SET_FLAGS) != 0) ||
-        ((negNode->gtFlags & GTF_SET_FLAGS) != 0))
+    if (((addOp2->gtFlags & GTF_SET_FLAGS) != 0) || ((op2->gtFlags & GTF_SET_FLAGS) != 0) ||
+        ((xorNode->gtFlags & GTF_SET_FLAGS) != 0))
     {
         return nullptr;
     }
@@ -4176,9 +4175,9 @@ GenTree* Lowering::TryLowerXorOpToGetMaskUpToLowestSetBit(GenTreeOp* xorNode)
         return nullptr;
     }
 
-    GenTreeHWIntrinsic* blsmskNode = comp->gtNewScalarHWIntrinsicNode(xorNode->TypeGet(), opNode, intrinsic);
+    GenTreeHWIntrinsic* blsmskNode = comp->gtNewScalarHWIntrinsicNode(xorNode->TypeGet(), op1, intrinsic);
 
-    JITDUMP("Lower: optimize XOR(X, NEG(X)))\n");
+    JITDUMP("Lower: optimize XOR(X, ADD(X, -1)))\n");
     DISPNODE(xorNode);
     JITDUMP("to:\n");
     DISPNODE(blsmskNode);
@@ -4187,8 +4186,9 @@ GenTree* Lowering::TryLowerXorOpToGetMaskUpToLowestSetBit(GenTreeOp* xorNode)
 
     BlockRange().InsertBefore(xorNode, blsmskNode);
     BlockRange().Remove(xorNode);
-    BlockRange().Remove(negNode);
-    BlockRange().Remove(negOp);
+    BlockRange().Remove(op2);
+    BlockRange().Remove(addOp1);
+    BlockRange().Remove(addOp2);
 
     ContainCheckHWIntrinsic(blsmskNode);
 
