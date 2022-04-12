@@ -6,6 +6,7 @@
         When the below is removed, also update the test project to enable ILAsm roundtrip testing.
       -->
     <ILAsmToolPath>$(ArtifactsBinDir)/coreclr/$(OSPlatformConfig)</ILAsmToolPath>
+    <ILAsmToolPath Condition="'$(TargetOS)' == 'AnyOS'">$(ArtifactsBinDir)/coreclr/$(_hostOS).$(TargetArchitecture).$(Configuration)</ILAsmToolPath>
     <MonoAotIncompatible>true</MonoAotIncompatible>
   </PropertyGroup>
   <ItemGroup>
