@@ -284,7 +284,7 @@ namespace LibraryImportGenerator.UnitTests
                 yield return new object[] { code, TestTargetFramework.Framework, false };
             }
 
-            // Confirm that all unsupported target frameworks fallback to a forwarder.
+            // Confirm that all unsupported target frameworks fall back to a forwarder.
             {
                 string code = CodeSnippets.BasicParametersAndModifiers<byte[]>(CodeSnippets.LibraryImportAttributeDeclaration);
                 yield return new object[] { code, TestTargetFramework.Net5, true };
@@ -293,9 +293,18 @@ namespace LibraryImportGenerator.UnitTests
                 yield return new object[] { code, TestTargetFramework.Framework, true };
             }
 
-            // Confirm that all unsupported target frameworks fallback to a forwarder.
+            // Confirm that all unsupported target frameworks fall back to a forwarder.
             {
                 string code = CodeSnippets.BasicParametersAndModifiersWithStringMarshalling<string>(StringMarshalling.Utf16, CodeSnippets.LibraryImportAttributeDeclaration);
+                yield return new object[] { code, TestTargetFramework.Net5, true };
+                yield return new object[] { code, TestTargetFramework.Core, true };
+                yield return new object[] { code, TestTargetFramework.Standard, true };
+                yield return new object[] { code, TestTargetFramework.Framework, true };
+            }
+
+            // Confirm that if support is missing for any type (like arrays), we fall back to a forwarder even if other types are supported.
+            {
+                string code = CodeSnippets.BasicReturnAndParameterByValue("System.Runtime.InteropServices.SafeHandle", "int[]", CodeSnippets.LibraryImportAttributeDeclaration);
                 yield return new object[] { code, TestTargetFramework.Net5, true };
                 yield return new object[] { code, TestTargetFramework.Core, true };
                 yield return new object[] { code, TestTargetFramework.Standard, true };
