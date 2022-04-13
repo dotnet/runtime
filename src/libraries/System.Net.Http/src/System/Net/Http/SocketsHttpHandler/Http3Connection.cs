@@ -181,42 +181,19 @@ namespace System.Net.Http
                 {
                     if (_connection != null)
                     {
-                        ValueTask<QuicStream> openTask;
-                        bool synchronous = false;
+                        if (HttpTelemetry.Log.IsEnabled() && queueStartingTimestamp == 0 && _connection.GetRemoteAvailableBidirectionalStreamCount() == 0)
+                        {
+                            // the call below will almost certainly block, measure waiting time for telemetry purposes
+                            queueStartingTimestamp = Stopwatch.GetTimestamp();
+                        }
 
-                        // unfortunately, the compiler cannot infer that the task is consumed only once
-#pragma warning disable CA2012 // ValueTasks instances should only be consumed once
+                        quicStream = await _connection.OpenBidirectionalStreamAsync(cancellationToken).ConfigureAwait(false);
+                        requestStream = new Http3RequestStream(request, this, quicStream);
+
                         lock (SyncObj)
                         {
-                            openTask = _connection.OpenBidirectionalStreamAsync(cancellationToken);
-
-                            if (openTask.IsCompleted)
-                            {
-                                // hot path for synchronous completion: finish while still holding the lock
-                                synchronous = true;
-                                quicStream = openTask.Result;
-                                requestStream = new Http3RequestStream(request, this, quicStream);
-                                _activeRequests.Add(quicStream, requestStream);
-                            }
+                            _activeRequests.Add(quicStream, requestStream);
                         }
-
-                        if (!synchronous)
-                        {
-                            // cold path: waiting until a stream is available
-                            if (HttpTelemetry.Log.IsEnabled() && queueStartingTimestamp == 0)
-                            {
-                                queueStartingTimestamp = Stopwatch.GetTimestamp();
-                            }
-
-                            quicStream = await openTask.ConfigureAwait(false);
-                            requestStream = new Http3RequestStream(request, this, quicStream);
-
-                            lock (SyncObj)
-                            {
-                                _activeRequests.Add(quicStream, requestStream);
-                            }
-                        }
-#pragma warning restore CA2021
                     }
                 }
                 finally

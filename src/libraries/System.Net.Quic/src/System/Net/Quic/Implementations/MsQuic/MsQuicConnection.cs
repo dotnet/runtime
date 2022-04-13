@@ -582,7 +582,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             return new ValueTask(tcs.Task.WaitAsync(cancellationToken));
         }
 
-        private async ValueTask<QuicStreamProvider> OpenStreamAsync(QUIC_STREAM_OPEN_FLAGS flags, CancellationToken cancellationToken)
+        private ValueTask<QuicStreamProvider> OpenStreamAsync(QUIC_STREAM_OPEN_FLAGS flags, CancellationToken cancellationToken)
         {
             ThrowIfDisposed();
             if (!Connected)
@@ -590,7 +590,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                 throw new InvalidOperationException(SR.net_quic_not_connected);
             }
 
-            return await MsQuicStream.CreateOutbound(_state, flags, cancellationToken).ConfigureAwait(false);
+            return MsQuicStream.CreateOutbound(_state, flags, cancellationToken);
         }
 
         internal override ValueTask<QuicStreamProvider> OpenUnidirectionalStreamAsync(CancellationToken cancellationToken = default) => OpenStreamAsync(QUIC_STREAM_OPEN_FLAGS.UNIDIRECTIONAL, cancellationToken);

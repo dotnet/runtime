@@ -150,7 +150,8 @@ namespace System.Net.Quic.Implementations.MsQuic
             }
         }
 
-        internal static async ValueTask<MsQuicStream> CreateOutbound(MsQuicConnection.State connectionState, QUIC_STREAM_OPEN_FLAGS flags, CancellationToken cancellationToken)
+        // return QuicStreamProvider to avoid async/await state machine on the caller's side just to perform the cast
+        internal static async ValueTask<QuicStreamProvider> CreateOutbound(MsQuicConnection.State connectionState, QUIC_STREAM_OPEN_FLAGS flags, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
             var stream = new MsQuicStream(connectionState, flags);
