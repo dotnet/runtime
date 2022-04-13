@@ -8,7 +8,7 @@
     <DefineConstants Condition="'$(RunInFirefox)'!='1'">$(DefineConstants);RUN_IN_CHROME</DefineConstants>
     <VersionsPropsFile>$(MSBuildThisFileDirectory)..\..\BrowsersForTesting.props</VersionsPropsFile>
     <BrowserHost Condition="$([MSBuild]::IsOSPlatform('windows'))">windows</BrowserHost>
-    <InstallChromeForDebuggerTests Condition="'$(InstallChromeForDebuggerTests)' == '' and '$(ContinuousIntegrationBuild)' != 'true' and Exists('/.dockerenv')">true</InstallChromeForDebuggerTests>
+    <InstallChromeForDebuggerTests Condition="'$(InstallChromeForDebuggerTests)' == '' and '$(RunInFirefox)' != '1' and '$(ContinuousIntegrationBuild)' != 'true' and Exists('/.dockerenv')">true</InstallChromeForDebuggerTests>
     <InstallFirefoxForDebuggerTests Condition="'$(RunInFirefox)'=='1' and '$(InstallFirefoxForDebuggerTests)' == '' and '$(ContinuousIntegrationBuild)' != 'true' and Exists('/.dockerenv')">true</InstallFirefoxForDebuggerTests>
   </PropertyGroup>
 
@@ -18,7 +18,7 @@
     <ChromeDir>$(ArtifactsBinDir)DebuggerTestSuite\chrome\</ChromeDir>
     <BrowserStampDir>$(ArtifactsBinDir)DebuggerTestSuite\</BrowserStampDir>
     <ChromeStampFile>$(BrowserStampDir).install-chrome-$(ChromiumRevision).stamp</ChromeStampFile>
-    <FirefoxDir>$(ArtifactsBinDir)DebuggerTestSuite\firefox\</FirefoxDir>    
+    <FirefoxDir>$(ArtifactsBinDir)DebuggerTestSuite\firefox\</FirefoxDir>
     <FirefoxStampFile>$(BrowserStampDir).install-firefox-$(FirefoxRevision).stamp</FirefoxStampFile>
   </PropertyGroup>
 
