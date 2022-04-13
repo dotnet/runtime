@@ -12,6 +12,9 @@ using Xunit;
 
 namespace System.Net.NameResolution.Tests
 {
+    [CollectionDefinition(nameof(DisableParallelization), DisableParallelization = true)]
+    public class DisableParallelization { }
+
     public class GetHostEntryTest
     {
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
@@ -81,7 +84,7 @@ namespace System.Net.NameResolution.Tests
         [ConditionalTheory(nameof(GetHostEntryWorks))]
         [InlineData("")]
         [InlineData(TestSettings.LocalHost)]
-        public async Task Dns_GetHostEntryAsync_HostString_Ok(string hostName)    
+        public async Task Dns_GetHostEntryAsync_HostString_Ok(string hostName)
         {
             await TestGetHostEntryAsync(() => Dns.GetHostEntryAsync(hostName));
         }
@@ -122,7 +125,7 @@ namespace System.Net.NameResolution.Tests
                 {
                     Assert.NotEqual(AddressFamily.InterNetworkV6, address.AddressFamily);
                 }
-            }   
+            }
         }
 
         [ConditionalTheory(nameof(GetHostEntry_DisableIPv6_Condition))]
@@ -309,13 +312,21 @@ namespace System.Net.NameResolution.Tests
             OperationCanceledException oce = await Assert.ThrowsAnyAsync<OperationCanceledException>(() => Dns.GetHostEntryAsync(TestSettings.LocalHost, cts.Token));
             Assert.Equal(cts.Token, oce.CancellationToken);
         }
+    }
 
+    // Cancellation tests are sequential to reduce the chance of timing issues.
+    [Collection(nameof(DisableParallelization))]
+    public class GetHostEntryTest_Cancellation
+    {
         [OuterLoop]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/43816")] // Race condition outlined below.
         [ActiveIssue("https://github.com/dotnet/runtime/issues/33378", TestPlatforms.AnyUnix)] // Cancellation of an outstanding getaddrinfo is not supported on *nix.
         [Fact]
         public async Task DnsGetHostEntry_PostCancelledToken_Throws()
         {
+            // Windows 7 name resolution is synchronous and does not respect cancellation.
+            if (PlatformDetection.IsWindows7)
+                return;
+
             using var cts = new CancellationTokenSource();
 
             Task task = Dns.GetHostEntryAsync(TestSettings.UncachedHost, cts.Token);
