@@ -14200,6 +14200,13 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
             CorInfoHelpFunc corInfoHelpFunc = MapReadyToRunHelper((ReadyToRunHelper)helperNum);
             if (corInfoHelpFunc != CORINFO_HELP_UNDEF)
             {
+#ifdef OSX_ARM64_ABI
+                if (corInfoHelpFunc == CORINFO_HELP_NEW_MDARR)
+                {
+                    STRESS_LOG(LF_ZAP, LL_WARNING, "CORINFO_HELP_NEW_MDARR is not supported on osx-arm64\n");
+                    return FALSE;
+                }
+#endif // OSX_ARM64_ABI
                 result = (size_t)CEEJitInfo::getHelperFtnStatic(corInfoHelpFunc);
             }
             else

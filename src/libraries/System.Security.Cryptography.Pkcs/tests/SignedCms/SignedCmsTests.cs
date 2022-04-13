@@ -1602,6 +1602,15 @@ namespace System.Security.Cryptography.Pkcs.Tests
             signers[0].CheckHash();
         }
 
+        [Fact]
+        public static void Decode_CanDecodeWithAttributeCertificate()
+        {
+            SignedCms cms = new SignedCms();
+            cms.Decode(SignedDocuments.TstWithAttributeCertificate);
+            Assert.Equal(2, cms.Certificates.Count);
+            cms.CheckSignature(verifySignatureOnly: true);
+        }
+
         private static void CheckNoSignature(byte[] encoded, bool badOid=false)
         {
             SignedCms cms = new SignedCms();
