@@ -1378,6 +1378,7 @@ namespace System.Diagnostics
             /// Returns an enumerator that iterates through the data stored on an Activity object.
             /// </summary>
             /// <returns><see cref="Enumerator{T}"/>.</returns>
+            [ComponentModel.EditorBrowsable(ComponentModel.EditorBrowsableState.Never)] // Only here to make foreach work
             public readonly Enumerator<T> GetEnumerator() => this;
 
             /// <summary>
