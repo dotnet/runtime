@@ -740,12 +740,7 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
 {
     bool hasStructRegArg = false;
 
-    unsigned argCount = 0;
-
-    for (CallArg& arg : Args())
-    {
-        argCount++;
-    }
+    unsigned argCount = CountArgs();
 
     for (CallArg& arg : Args())
     {
@@ -766,7 +761,7 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
         else if (arg.AbiInfo.IsSplit())
         {
             hasStructRegArg = true;
-            assert(m_hasStackArgs == true);
+            assert(m_hasStackArgs);
         }
 #endif       // FEATURE_ARG_SPLIT
         else // we have a register argument, next we look for a struct type.
@@ -1537,13 +1532,13 @@ GenTree* CallArgs::MakeTmpArgNode(Compiler* comp, CallArg* arg)
 //        node. Some stack arguments may also require this pattern, for example
 //        if a later argument trashes the outgoing arg area by requiring a
 //        call.
-//        If the argument does not otherwise need to be evaluated into a temp ,
+//        If the argument does not otherwise need to be evaluated into a temp,
 //        we create just a placeholder GT_ARGPLACE for the early list and move
 //        it into the late list.
 //
 //   3. Early: <any node>, Late: no node
-//        Arguments that are passed on stack and that do not need early
-//        evaluation do not require any late node.
+//        Arguments that are passed on stack and that do not need an explicit
+//        assignment in the early node list do not require any late node.
 //
 void CallArgs::EvalArgsToTemps(Compiler* comp, GenTreeCall* call)
 {
