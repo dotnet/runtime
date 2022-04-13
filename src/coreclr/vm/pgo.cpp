@@ -6,8 +6,8 @@
 #include "pgo.h"
 #include "versionresilienthashcode.h"
 #include "typestring.h"
-#pragma optimize("", off)
 #include "pgo_formatprocessing.h"
+
 #ifdef FEATURE_PGO
 
 // Data structure for holding pgo data
