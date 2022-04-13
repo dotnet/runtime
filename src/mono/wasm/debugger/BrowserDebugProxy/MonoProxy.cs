@@ -475,11 +475,14 @@ namespace Microsoft.WebAssembly.Diagnostics
                         {
                             logger.LogDebug($"Runtime.getProperties: {valueOrError.Error}");
                             SendResponse(id, valueOrError.Error.Value, token);
+                            return true;
                         }
-                        else
+                        if (valueOrError.Value.JObject == null)
                         {
-                            SendResponse(id, Result.OkFromObject(valueOrError.Value), token);
+                            SendResponse(id, Result.Err($"Failed to get properties for '{objectId}'"), token);
+                            return true;
                         }
+                        SendResponse(id, Result.OkFromObject(valueOrError.Value.JObject), token);
                         return true;
                     }
 
@@ -656,8 +659,12 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
             switch (objectId.Scheme)
             {
-                case "object":
                 case "method":
+                    // FIXME:
+                    Console.WriteLine($"IN GetMethodProxy: UNFINISHED METHOD {objectId}");
+                    args["details"] = await context.SdbAgent.GetMethodProxy(objectId.ValueAsJson, token);
+                    break;
+                case "object":
                     args["details"] = await context.SdbAgent.GetObjectProxy(objectId.Value, token);
                     break;
                 case "valuetype":
@@ -673,12 +680,11 @@ namespace Microsoft.WebAssembly.Diagnostics
                     args["details"] = await context.SdbAgent.GetArrayValuesProxy(objectId.Value, token);
                     break;
                 case "cfo_res":
-                {
+                    // FIXME: RunOnCFOValueTypeResult
                     Result cfo_res = await SendMonoCommand(id, MonoCommands.CallFunctionOn(RuntimeId, args), token);
                     cfo_res = Result.OkFromObject(new { result = cfo_res.Value?["result"]?["value"]});
                     SendResponse(id, cfo_res, token);
                     return true;
-                }
                 case "scope":
                 {
                     SendResponse(id,
@@ -749,7 +755,6 @@ namespace Microsoft.WebAssembly.Diagnostics
                     getObjectOptions |= GetObjectCommandOptions.OwnProperties;
                 }
             }
-            // Console.WriteLine ($"* RuntimeGetPropertiesInternal: {objectId}");
             try
             {
                 switch (objectId.Scheme)
@@ -757,7 +762,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                     case "scope":
                         Result resScope = await GetScopeProperties(id, objectId.Value, token);
                         return resScope.IsOk
-                            ? ValueOrError<GetMembersResult>.WithValue(new GetMembersResult(resScope.Value, IsFlattened: false))
+                            ? ValueOrError<GetMembersResult>.WithValue(
+                                new GetMembersResult((JArray)resScope.Value?["result"], IsFlattened: false))
                             : ValueOrError<GetMembersResult>.WithError(resScope);
                     case "valuetype":
                         var valType = context.SdbAgent.GetValueTypeClass(objectId.Value);
@@ -776,7 +782,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         var resMethod = await context.SdbAgent.InvokeMethod(objectId, token);
                         return ValueOrError<GetMembersResult>.WithValue(GetMembersResult.FromValues(new JArray(resMethod)));
                     case "object":
-                        var resObj = await MemberObjectsExplorer.GetObjectMemberValues(context.SdbAgent, objectId.Value, getObjectOptions, token, sortByAccessLevel);
+                        var resObj = await MemberObjectsExplorer.GetObjectMemberValues(context.SdbAgent, objectId.Value, getObjectOptions, token, sortByAccessLevel, includeStatic: true);
                         return ValueOrError<GetMembersResult>.WithValue(resObj);
                     case "pointer":
                         var resPointer = new JArray { await context.SdbAgent.GetPointerContent(objectId.Value, token) };

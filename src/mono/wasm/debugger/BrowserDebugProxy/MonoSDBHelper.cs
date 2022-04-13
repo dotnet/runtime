@@ -1414,9 +1414,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                     GetObjectCommandOptions.WithProperties | GetObjectCommandOptions.ForDebuggerDisplayAttribute,
                     token);
                 // FIXME: flatten, it's flattened already
-                members.Flatten();
                 // JArray objectValues = new JArray(members.JObject);
-                JArray objectValues = new JArray(members.Result);
+                JArray objectValues = new JArray(members.Flatten());
 
                 var thisObj = CreateJObject<string>(value: "", type: "object", description: "", writable: false, objectId: dotnetObjectId.ToString());
                 thisObj["name"] = "this";
@@ -2168,8 +2167,9 @@ namespace Microsoft.WebAssembly.Diagnostics
                 logger.LogDebug($"** StackFrameGetValues calling GetObjectMemberValues");
                 // infinite loop again?
                 GetMembersResult asyncProxyMembers = await MemberObjectsExplorer.GetObjectMemberValues(this, objectId, GetObjectCommandOptions.WithProperties, token);
+                //Console.WriteLine($"asyncProxyMembers: {asyncProxyMembers}");
                 var asyncLocals = await GetHoistedLocalVariables(objectId, asyncProxyMembers.Flatten(), token);
-                // //Console.WriteLine ($"** StackFrameGetValues returning {asyncLocals}");
+                //Console.WriteLine($"** StackFrameGetValues returning {asyncLocals}");
                 return asyncLocals;
             }
 
@@ -2277,13 +2277,14 @@ namespace Microsoft.WebAssembly.Diagnostics
         // FIXME: support valuetypes
         public async Task<GetMembersResult> GetValuesFromDebuggerProxyAttribute(int objectId, int typeId, CancellationToken token)
         {
-            // logger.LogInformation($"GetValuesFromDebuggerProxyAttribute: ENTER");
+            //Console.WriteLine($"GetValuesFromDebuggerProxyAttribute: ENTER");
             try
             {
                 int methodId = await FindDebuggerProxyConstructorIdFor(typeId, token);
                 if (methodId == -1)
                 {
-                    // logger.LogInformation($"GetValuesFromDebuggerProxyAttribute: could not find proxy constructor id for objectId {objectId}");
+                    //Console.WriteLine($"GetValuesFromDebuggerProxyAttribute: could not find proxy constructor id for objectId {objectId}");
+                    logger.LogInformation($"GetValuesFromDebuggerProxyAttribute: could not find proxy constructor id for objectId {objectId}");
                     return null;
                 }
 
@@ -2306,7 +2307,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                 }
 
                 var retMethod = await InvokeMethod(ctorArgsWriter.GetParameterBuffer(), methodId, token);
-                // logger.LogInformation($"* GetValuesFromDebuggerProxyAttribute got from InvokeMethod: {retMethod}");
+                //Console.WriteLine($"* GetValuesFromDebuggerProxyAttribute got from InvokeMethod: {retMethod}");
+                logger.LogInformation($"* GetValuesFromDebuggerProxyAttribute got from InvokeMethod: {retMethod}");
                 if (!DotnetObjectId.TryParse(retMethod?["value"]?["objectId"]?.Value<string>(), out DotnetObjectId dotnetObjectId))
                     throw new Exception($"Invoking .ctor ({methodId}) for DebuggerTypeProxy on type {typeId} returned {retMethod}");
 
@@ -2314,11 +2316,12 @@ namespace Microsoft.WebAssembly.Diagnostics
                                                                             GetObjectCommandOptions.WithProperties | GetObjectCommandOptions.ForDebuggerProxyAttribute,
                                                                             token);
 
-                // logger.LogInformation($"* GetValuesFromDebuggerProxyAttribute returning for obj: {objectId} {members}");
+                //Console.WriteLine($"* GetValuesFromDebuggerProxyAttribute returning for obj: {objectId} {members}");
                 return members;
             }
             catch (Exception e)
             {
+                Console.WriteLine($"Could not evaluate DebuggerTypeProxyAttribute of type {await GetTypeName(typeId, token)} - {e}");
                 logger.LogInformation($"Could not evaluate DebuggerTypeProxyAttribute of type {await GetTypeName(typeId, token)} - {e}");
             }
 
@@ -2335,6 +2338,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
                 var methodId = -1;
                 var parmCount = getCAttrsRetReader.ReadInt32();
+                // why are we breaking after the first loop? Why this logic was changed?
                 for (int j = 0; j < parmCount; j++)
                 {
                     var monoTypeId = getCAttrsRetReader.ReadByte();
@@ -2398,10 +2402,21 @@ namespace Microsoft.WebAssembly.Diagnostics
                     ? MemberObjectsExplorer.GetValueTypeMemberValues(this, dotnetObjectId.Value, getObjectOptions, token)
                     : MemberObjectsExplorer.GetObjectMemberValues(this, dotnetObjectId.Value, getObjectOptions, token);
 
+
+        public async Task<JObject> GetMethodProxy(JObject objectId, CancellationToken token)
+        {
+            var containerId = objectId["containerId"].Value<int>();
+            var methodId = objectId["methodId"].Value<int>();
+            var isValueType = objectId["isValueType"].Value<bool>();
+            return await InvokeMethod(containerId, methodId, isValueType, token);
+        }
+
         public async Task<JArray> GetObjectProxy(int objectId, CancellationToken token)
         {
+            //Console.WriteLine($"-- GetObjectProxy");
             GetMembersResult members = await MemberObjectsExplorer.GetObjectMemberValues(this, objectId, GetObjectCommandOptions.WithSetter, token);
             // FIXME: will this mean that the result object won't get gc'ed?
+            //Console.WriteLine($"-- GetObjectProxy members: {members}");
             JArray ret = members.Flatten();// originally: members.Flatten().Result; // why?
             var typeIds = await GetTypeIdsForObject(objectId, true, token);
             foreach (var typeId in typeIds)

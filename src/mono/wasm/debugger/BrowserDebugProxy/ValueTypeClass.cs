@@ -178,48 +178,30 @@ namespace BrowserDebugProxy
         // FIXME: this is flattening
         public async Task<GetMembersResult> GetMemberValues(MonoSDBHelper sdbHelper, GetObjectCommandOptions getObjectOptions, bool sortByAccessLevel, CancellationToken token)
         {
-            // Console.WriteLine ($"---------  ValueTypeClass.GetMemberValues: {getObjectOptions}, sort: {sortByAccessLevel}, propertiesExpanded: {propertiesExpanded}");
             // 1
-            // if (properties == null)
             if (!propertiesExpanded)
             {
                 await ExpandPropertyValues(sdbHelper, token);
                 propertiesExpanded = true;
             }
-            // Console.WriteLine($"_combined: for {ClassName} {_combinedResult}");
 
             // 2
             GetMembersResult result = null;
             if (!getObjectOptions.HasFlag(GetObjectCommandOptions.ForDebuggerDisplayAttribute))
             {
-                // Console.WriteLine ($"\tget values from proxy");
                 // FIXME: cache?
                 result = await sdbHelper.GetValuesFromDebuggerProxyAttribute(Id.Value, TypeId, token);
+                if (result != null)
+                    Console.WriteLine($"Investigate GetValuesFromDebuggerProxyAttribute\n{result}. There was a change of logic from loop to one iteration");
             }
 
             if (result == null && getObjectOptions.HasFlag(GetObjectCommandOptions.AccessorPropertiesOnly))
             {
-                // Console.WriteLine ($"\tget only properties");
-                // 3 - just properties -- though GetObjectMEmbers seems to be ignoring this!
+                // 3 - just properties
                 result = _combinedResult.Clone();
-                List<JToken> toRemove = new();
-                foreach (JToken jt in result)
-                {
-                    if (jt is not JObject obj || obj["get"] != null)
-                        continue;
-
-                    // if (obj["isBackingField"]?.Value<bool>() is var isBackingField
-                    //     && isBackingField.GetValueOrDefault(false) == false)
-                    // returning backing fields as fields, instead of properties
-                    {
-                        toRemove.Add(jt);
-                    }
-                }
-                foreach (var jt in toRemove)
-                {
-                    // Console.WriteLine ($"\tremoving: {jt}");
-                    jt.Remove();
-                }
+                RemovePropertiesFrom(result.Result);
+                RemovePropertiesFrom(result.PrivateMembers);
+                RemovePropertiesFrom(result.OtherMembers);
             }
 
             if (result == null)
@@ -229,11 +211,25 @@ namespace BrowserDebugProxy
             }
 
             return result;
+
+            static void RemovePropertiesFrom(JArray collection)
+            {
+                List<JToken> toRemove = new();
+                foreach (JToken jt in collection)
+                {
+                    if (jt is not JObject obj || obj["get"] != null)
+                        continue;
+                    toRemove.Add(jt);
+                }
+                foreach (var jt in toRemove)
+                {
+                    collection.Remove(jt);
+                }
+            }
         }
 
         public async Task ExpandPropertyValues(MonoSDBHelper sdbHelper, CancellationToken token)
         {
-            // Console.WriteLine ($"-- ExpandPropertyValues: fields: {fields}");
 
             using var commandParamsWriter = new MonoBinaryWriter();
             commandParamsWriter.Write(TypeId);
@@ -260,13 +256,13 @@ namespace BrowserDebugProxy
                     ClassName,
                     Buffer,
                     autoExpand,
-                    Id.ToString(),
+                    Id,
                     isValueType: true,
                     isOwn: i == 0,
                     token,
                     allMembers, null);
 
-                foreach (JObject v in res)
+                foreach (JObject v in res.Flatten())
                     allMembers[v["name"].Value<string>()] = v;
             }
 
