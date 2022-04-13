@@ -32,7 +32,7 @@ if (CLR_CMAKE_HOST_WIN32)
   endfunction()
 
   # 4365 - signed/unsigned mismatch
-  add_compile_options(/wd4365)
+  add_compile_options(/wd4365 /wd4679)
 
   # IJW
   add_compile_options(/clr:netcore)
