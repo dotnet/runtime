@@ -9,7 +9,8 @@ Commonly Used Types:
 System.IO.Pipelines.Pipe
 System.IO.Pipelines.PipeWriter
 System.IO.Pipelines.PipeReader</PackageDescription>
-    <ServicingVersion>2</ServicingVersion>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <ServicingVersion>3</ServicingVersion>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs"
