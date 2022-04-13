@@ -36,7 +36,6 @@
       <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set DEBUGGER_TEST_PATH=%25cd%25/debugger-test" />
     </ItemGroup>
 
-    <ItemGroup>
     <ItemGroup Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(RunInFirefox)' != '1'">
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export BROWSER_PATH_FOR_DEBUGGER_TESTS=$HELIX_CORRELATION_PAYLOAD/chrome-linux/chrome" />
       <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set BROWSER_PATH_FOR_DEBUGGER_TESTS=%HELIX_CORRELATION_PAYLOAD%\chrome-win\chrome.exe" />
