@@ -999,16 +999,21 @@ namespace System
                 Vector<ushort> equals;
                 Vector<ushort> results;
 
-                do
-                {
-                    original = Unsafe.ReadUnaligned<Vector<ushort>>(ref Unsafe.As<ushort, byte>(ref Unsafe.Add(ref pSrc, i)));
-                    equals = Vector.Equals(original, oldChars);
-                    results = Vector.ConditionalSelect(equals, newChars, original);
-                    Unsafe.WriteUnaligned(ref Unsafe.As<ushort, byte>(ref Unsafe.Add(ref pDst, i)), results);
+                nint lengthToExamine = (nint)(uint)(remainingLength - Vector<ushort>.Count);
 
-                    i += Vector<ushort>.Count;
+                if (lengthToExamine > 0)
+                {
+                    do
+                    {
+                        original = Unsafe.ReadUnaligned<Vector<ushort>>(ref Unsafe.As<ushort, byte>(ref Unsafe.Add(ref pSrc, i)));
+                        equals = Vector.Equals(original, oldChars);
+                        results = Vector.ConditionalSelect(equals, newChars, original);
+                        Unsafe.WriteUnaligned(ref Unsafe.As<ushort, byte>(ref Unsafe.Add(ref pDst, i)), results);
+
+                        i += Vector<ushort>.Count;
+                    }
+                    while (i < lengthToExamine);
                 }
-                while (i <= (nint)(uint)(remainingLength - Vector<ushort>.Count));
 
                 // There are [0, Vector<ushort>.Count) elements remaining now.
                 // As the operation is idempotent, and we know that in total there are at least Vector<ushort>.Count
