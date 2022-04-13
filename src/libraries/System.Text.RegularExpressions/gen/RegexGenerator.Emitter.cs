@@ -421,17 +421,23 @@ namespace System.Text.RegularExpressions.Generator
             }
             else
             {
-                // Emit the general purpose scan loop, with timeouts.
+                // Emit the general purpose scan loop, with (possible) timeouts.
                 needsTryFind = needsTryMatch = true;
                 writer.WriteLine("// Search until we can't find a valid starting position, we find a match, or we reach the end of the input.");
                 using (EmitBlock(writer, "while (TryFindNextPossibleStartingPosition(inputSpan))"))
                 {
-                    writer.WriteLine("base.CheckTimeout();");
+                    using (rm.MatchTimeout is null ? EmitBlock(writer, $"if ({HelpersTypeName}.{HasDefaultTimeoutFieldName})") : default)
+                    {
+                        writer.WriteLine("base.CheckTimeout();");
+                    }
+                    writer.WriteLine();
+
                     using (EmitBlock(writer, $"if (TryMatchAtCurrentPosition(inputSpan) || base.runtextpos == {(!rtl ? "inputSpan.Length" : "0")})"))
                     {
                         writer.WriteLine("return;");
                     }
                     writer.WriteLine();
+
                     writer.WriteLine($"base.runtextpos{(!rtl ? "++" : "--")};");
                 }
             }
