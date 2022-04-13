@@ -21,7 +21,7 @@ using namespace CorUnix;
 
 #if HAVE_MACH_EXCEPTIONS
 
-#if defined(HOST_AMD64)
+#if defined(HOST_64BIT)
 #define MACH_EH_TYPE(x) mach_##x
 #else
 #define MACH_EH_TYPE(x) x
