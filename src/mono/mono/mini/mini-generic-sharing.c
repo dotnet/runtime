@@ -2244,7 +2244,7 @@ instantiate_info (MonoMemoryManager *mem_manager, MonoRuntimeGenericContextInfoT
 	case MONO_RGCTX_INFO_INTERP_METHOD: {
 		MonoMethod *m = (MonoMethod*)data;
 
-		return mini_get_interp_callbacks ()->get_interp_method (m, error);
+		return mini_get_interp_callbacks ()->get_interp_method (m);
 	}
 	case MONO_RGCTX_INFO_LLVMONLY_INTERP_ENTRY: {
 		MonoMethod *m = (MonoMethod*)data;

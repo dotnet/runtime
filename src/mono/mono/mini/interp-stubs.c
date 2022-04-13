@@ -240,7 +240,7 @@ stub_entry_llvmonly (gpointer res, gpointer *args, gpointer imethod)
 }
 
 static gpointer
-stub_get_interp_method (MonoMethod *method, MonoError *error)
+stub_get_interp_method (MonoMethod *method)
 {
 	g_assert_not_reached ();
 	return NULL;

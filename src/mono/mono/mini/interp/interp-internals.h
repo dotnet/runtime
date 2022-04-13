@@ -265,7 +265,7 @@ void
 mono_interp_transform_init (void);
 
 InterpMethod *
-mono_interp_get_imethod (MonoMethod *method, MonoError *error);
+mono_interp_get_imethod (MonoMethod *method);
 
 void
 mono_interp_print_code (InterpMethod *imethod);
