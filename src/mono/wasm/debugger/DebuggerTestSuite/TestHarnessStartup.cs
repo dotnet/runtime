@@ -5,6 +5,7 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Net.Http;
+using System.Net.WebSockets;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -92,6 +93,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
 
             var tcs = new TaskCompletionSource<string>();
+            WebSocket ideSocket = null;
 
             var proc = Process.Start(psi);
             await Task.Delay(1000);
@@ -153,18 +155,21 @@ namespace Microsoft.WebAssembly.Diagnostics
 #if RUN_IN_CHROME
                 var proxy = new DebuggerProxy(proxyLoggerFactory, null, loggerId: test_id);
                 var browserUri = new Uri(con_str);
-                var ideSocket = await context.WebSockets.AcceptWebSocketAsync().ConfigureAwait(false);
+                ideSocket = await context.WebSockets.AcceptWebSocketAsync().ConfigureAwait(false);
 
                 await proxy.Run(browserUri, ideSocket).ConfigureAwait(false);
 #else
-                var ideSocket = await context.WebSockets.AcceptWebSocketAsync();
+                ideSocket = await context.WebSockets.AcceptWebSocketAsync();
                 var proxyFirefox = new FirefoxProxyServer(proxyLoggerFactory, 6000);
                 await proxyFirefox.RunForTests(6002, ideSocket);
 #endif
             }
             catch (Exception e)
             {
-                Logger.LogError($"{message_prefix} got exception {e}");
+                Logger.LogDebug($"{message_prefix} got exception {e}");
+                ideSocket?.Abort();
+                ideSocket?.Dispose();
+                throw;
             }
             finally
             {

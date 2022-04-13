@@ -51,6 +51,7 @@ public class FirefoxProxyServer
         catch (Exception)
         {
             _server.Stop();
+            newClient.Dispose();
             throw;
         }
         _server.Stop();
