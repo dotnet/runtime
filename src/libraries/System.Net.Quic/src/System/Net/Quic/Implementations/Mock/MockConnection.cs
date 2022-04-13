@@ -162,28 +162,6 @@ namespace System.Net.Quic.Implementations.Mock
             return ValueTask.CompletedTask;
         }
 
-        internal override ValueTask WaitForAvailableUnidirectionalStreamsAsync(CancellationToken cancellationToken = default)
-        {
-            PeerStreamLimit? streamLimit = RemoteStreamLimit;
-            if (streamLimit is null)
-            {
-                throw new InvalidOperationException("Not connected");
-            }
-
-            return streamLimit.Unidirectional.WaitForAvailableStreams(cancellationToken);
-        }
-
-        internal override ValueTask WaitForAvailableBidirectionalStreamsAsync(CancellationToken cancellationToken = default)
-        {
-            PeerStreamLimit? streamLimit = RemoteStreamLimit;
-            if (streamLimit is null)
-            {
-                throw new InvalidOperationException("Not connected");
-            }
-
-            return streamLimit.Bidirectional.WaitForAvailableStreams(cancellationToken);
-        }
-
         internal async override ValueTask<QuicStreamProvider> OpenUnidirectionalStreamAsync(CancellationToken cancellationToken)
         {
             PeerStreamLimit? streamLimit = RemoteStreamLimit;
@@ -194,7 +172,7 @@ namespace System.Net.Quic.Implementations.Mock
 
             while (!streamLimit.Unidirectional.TryIncrement())
             {
-                await WaitForAvailableUnidirectionalStreamsAsync(cancellationToken).ConfigureAwait(false);
+                await streamLimit.Unidirectional.WaitForAvailableStreams(cancellationToken).ConfigureAwait(false);
             }
 
             long streamId;
@@ -217,7 +195,7 @@ namespace System.Net.Quic.Implementations.Mock
 
             while (!streamLimit.Bidirectional.TryIncrement())
             {
-                await WaitForAvailableBidirectionalStreamsAsync(cancellationToken).ConfigureAwait(false);
+                await streamLimit.Bidirectional.WaitForAvailableStreams(cancellationToken).ConfigureAwait(false);
             }
 
             long streamId;
