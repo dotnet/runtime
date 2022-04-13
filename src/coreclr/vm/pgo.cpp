@@ -6,8 +6,8 @@
 #include "pgo.h"
 #include "versionresilienthashcode.h"
 #include "typestring.h"
+#pragma optimize("", off)
 #include "pgo_formatprocessing.h"
-
 #ifdef FEATURE_PGO
 
 // Data structure for holding pgo data
@@ -121,6 +121,7 @@ public:
 
         auto lambda = [&](int64_t thWritten)
         {
+            if (thWritten == DEFAULT_UNKNOWN_TYPEHANDLE) return (intptr_t)0;
             if (thWritten != 0)
             {
                 TypeHandle th = *(TypeHandle*)&thWritten;
@@ -129,6 +130,7 @@ public:
                     typeHandlesEncountered.Append(th);
                 }
             }
+            return thWritten;
         };
 
         if (!writer.AppendDataFromLastSchema(lambda))
@@ -140,6 +142,7 @@ public:
     }
 };
 
+#ifndef DACCESS_COMPILE
 void PgoManager::WritePgoData()
 {
     if (ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context, JitInstrumentationDataVerbose))
@@ -233,13 +236,15 @@ void PgoManager::WritePgoData()
                         break;
                     case ICorJitInfo::PgoInstrumentationKind::TypeHandle:
                         {
-                            TypeHandle th = *(TypeHandle*)(data + entryOffset);
-                            if (th.IsNull())
+                            intptr_t typehandleData = *(intptr_t*)(data + entryOffset);
+                            TypeHandle th = TypeHandle::FromPtr((void*)typehandleData);
+                            if (th.IsNull() || (typehandleData == DEFAULT_UNKNOWN_TYPEHANDLE))
                             {
                                 fprintf(pgoDataFile, s_TypeHandle, "NULL");
                             }
                             else
                             {
+                                fflush(pgoDataFile);
                                 StackSString ss;
                                 StackScratchBuffer nameBuffer;
                                 TypeString::AppendType(ss, th, TypeString::FormatNamespace | TypeString::FormatFullInst | TypeString::FormatAssembly);
@@ -272,6 +277,7 @@ void PgoManager::WritePgoData()
     fprintf(pgoDataFile, s_FileTrailerString);
     fclose(pgoDataFile);
 }
+#endif // DACCESS_COMPILE
 
 void ReadLineAndDiscard(FILE* file)
 {
