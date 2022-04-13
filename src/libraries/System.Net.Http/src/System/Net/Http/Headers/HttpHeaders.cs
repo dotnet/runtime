@@ -726,11 +726,12 @@ namespace System.Net.Http.Headers
                 else
                 {
                     string? rawValue = info.RawValue as string;
-                    Debug.Assert(rawValue is string);
+                    Debug.Assert(rawValue is not null);
                     ParseSingleRawHeaderValue(info, descriptor, rawValue);
                 }
 
                 // At this point all values are either in info.ParsedValue, info.InvalidValue. Reset RawValue.
+                Debug.Assert(info.ParsedAndInvalidValues is not null);
                 info.RawValue = null;
             }
         }
