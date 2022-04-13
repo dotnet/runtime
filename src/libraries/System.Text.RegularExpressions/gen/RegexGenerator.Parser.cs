@@ -180,9 +180,11 @@ namespace System.Text.RegularExpressions.Generator
 
             // Parse the input pattern
             RegexTree regexTree;
+            AnalysisResults analysis;
             try
             {
                 regexTree = RegexParser.Parse(pattern, regexOptions | RegexOptions.Compiled, culture); // make sure Compiled is included to get all optimizations applied to it
+                analysis = RegexTreeAnalyzer.Analyze(regexTree);
             }
             catch (Exception e)
             {
@@ -206,7 +208,8 @@ namespace System.Text.RegularExpressions.Generator
                 pattern,
                 regexOptions,
                 matchTimeout,
-                regexTree);
+                regexTree,
+                analysis);
 
             RegexType current = regexType;
             var parent = typeDec.Parent as TypeDeclarationSyntax;
@@ -233,7 +236,7 @@ namespace System.Text.RegularExpressions.Generator
         }
 
         /// <summary>A regex method.</summary>
-        internal sealed record RegexMethod(RegexType DeclaringType, MethodDeclarationSyntax MethodSyntax, string MethodName, string Modifiers, string Pattern, RegexOptions Options, int? MatchTimeout, RegexTree Tree)
+        internal sealed record RegexMethod(RegexType DeclaringType, MethodDeclarationSyntax MethodSyntax, string MethodName, string Modifiers, string Pattern, RegexOptions Options, int? MatchTimeout, RegexTree Tree, AnalysisResults Analysis)
         {
             public string GeneratedName { get; set; }
             public bool IsDuplicate { get; set; }
