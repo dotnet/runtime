@@ -623,7 +623,7 @@ namespace System
 
             ulong newTicks = (ticks & TicksMask) + (ulong)(microsecond * TicksPerMicrosecond);
 
-            if (newTicks > MaxTicks) ThrowDateArithmetic(0);
+            Debug.Assert(newTicks <= MaxTicks);
             _dateData = newTicks | (ticks & FlagsMask);
         }
 
