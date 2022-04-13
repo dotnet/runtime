@@ -129,6 +129,7 @@
     <!-- Runtime-Assets dependencies -->
     <SystemRuntimeNumericsTestDataVersion>7.0.0-beta.22214.1</SystemRuntimeNumericsTestDataVersion>
     <SystemComponentModelTypeConverterTestDataVersion>7.0.0-beta.22214.1</SystemComponentModelTypeConverterTestDataVersion>
+    <SystemFormatsTarTestDataVersion>7.0.0-beta.22214.1</SystemFormatsTarTestDataVersion>
     <SystemDrawingCommonTestDataVersion>7.0.0-beta.22214.1</SystemDrawingCommonTestDataVersion>
     <SystemIOCompressionTestDataVersion>7.0.0-beta.22214.1</SystemIOCompressionTestDataVersion>
     <SystemIOPackagingTestDataVersion>7.0.0-beta.22214.1</SystemIOPackagingTestDataVersion>

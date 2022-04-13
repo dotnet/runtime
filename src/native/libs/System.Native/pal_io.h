@@ -541,6 +541,35 @@ PALEXPORT int32_t SystemNative_Link(const char* source, const char* linkTarget);
 PALEXPORT int32_t SystemNative_SymLink(const char* target, const char* linkPath);
 
 /**
+ * Given the major and minor device IDs, combines these to produce a device ID, and returns it.
+ */
+PALEXPORT uint64_t SystemNative_MakeDev(uint32_t major, uint32_t minor);
+
+/**
+ * Given a device IDs, extracts the major component and returns it.
+ */
+PALEXPORT uint32_t SystemNative_Major(uint64_t dev);
+
+/**
+ * Given a device IDs, extracts the minor component and returns it.
+ */
+PALEXPORT uint32_t SystemNative_Minor(uint64_t dev);
+
+/**
+ * Creates a special or ordinary file.
+ *
+ * Returns 0 on success; otherwise, returns -1 and errno is set.
+ */
+PALEXPORT int32_t SystemNative_MkNod(const char* pathName, int32_t mode, uint32_t major, uint32_t minor);
+
+/**
+ * Creates a FIFO special file (named pipe).
+ *
+ * Returns 0 on success; otherwise, returns -1 and errno is set.
+ */
+PALEXPORT int32_t SystemNative_MkFifo(const char* pathName, int32_t mode);
+
+/**
  * Creates a file name that adheres to the specified template, creates the file on disk with
  * 0600 permissions, and returns an open r/w File Descriptor on the file.
  *

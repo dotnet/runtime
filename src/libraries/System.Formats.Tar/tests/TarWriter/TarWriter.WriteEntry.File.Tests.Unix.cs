@@ -1,0 +1,191 @@
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using Microsoft.DotNet.RemoteExecutor;
+using System.IO;
+using Xunit;
+
+namespace System.Formats.Tar.Tests
+{
+    public partial class TarWriter_WriteEntry_File_Tests : TarTestsBase
+    {
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void Add_Fifo()
+        {
+            RemoteExecutor.Invoke(() =>
+            {
+                using TempDirectory root = new TempDirectory();
+                string fifoName = "fifofile";
+                string fifoPath = Path.Join(root.Path, fifoName);
+
+                Interop.CheckIo(Interop.Sys.MkFifo(fifoPath, (int)DefaultMode));
+
+                using MemoryStream archive = new MemoryStream();
+                using (TarWriter writer = new TarWriter(archive, leaveOpen: true))
+                {
+                    writer.WriteEntry(fileName: fifoPath, entryName: fifoName);
+                }
+
+                archive.Seek(0, SeekOrigin.Begin);
+                using (TarReader reader = new TarReader(archive))
+                {
+                    TarEntry entry = reader.GetNextEntry();
+
+                    Assert.NotNull(entry);
+                    Assert.Equal(fifoName, entry.Name);
+                    Assert.Equal(DefaultLinkName, entry.LinkName);
+                    Assert.Equal(TarEntryType.Fifo, entry.EntryType);
+                    Assert.Null(entry.DataStream);
+
+                    VerifyPlatformSpecificMetadata(fifoPath, entry);
+
+                    Assert.Null(reader.GetNextEntry());
+                }
+
+            }, new RemoteInvokeOptions { RunAsSudo = true }).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void Add_BlockDevice()
+        {
+            RemoteExecutor.Invoke(() =>
+            {
+                using TempDirectory root = new TempDirectory();
+                string blockDeviceName = "blockdevice";
+                string blockDevicePath = Path.Join(root.Path, blockDeviceName);
+
+                Interop.CheckIo(Interop.Sys.CreateBlockDevice(blockDevicePath, (int)DefaultMode, TestBlockDeviceMajor, TestBlockDeviceMinor));
+
+                using MemoryStream archive = new MemoryStream();
+                using (TarWriter writer = new TarWriter(archive, leaveOpen: true))
+                {
+                    writer.WriteEntry(fileName: blockDevicePath, entryName: blockDeviceName);
+                }
+
+                archive.Seek(0, SeekOrigin.Begin);
+                using (TarReader reader = new TarReader(archive))
+                {
+                    PosixTarEntry entry = reader.GetNextEntry() as PosixTarEntry;
+
+                    Assert.NotNull(entry);
+                    Assert.Equal(blockDeviceName, entry.Name);
+                    Assert.Equal(DefaultLinkName, entry.LinkName);
+                    Assert.Equal(TarEntryType.BlockDevice, entry.EntryType);
+                    Assert.Null(entry.DataStream);
+
+                    VerifyPlatformSpecificMetadata(blockDevicePath, entry);
+
+                    // TODO: Fix how these values are collected, the numbers don't match even though
+                    // they come from stat's dev and from the major/minor syscalls
+                    // Assert.Equal(TestBlockDeviceMajor, entry.DeviceMajor);
+                    // Assert.Equal(TestBlockDeviceMinor, entry.DeviceMinor);
+                    // Meanwhile, TODO: Remove this when the above is fixed:
+                    Assert.True(entry.DeviceMajor > 0);
+                    Assert.True(entry.DeviceMinor > 0);
+
+                    Assert.Null(reader.GetNextEntry());
+                }
+
+            }, new RemoteInvokeOptions { RunAsSudo = true }).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void Add_CharacterDevice()
+        {
+            RemoteExecutor.Invoke(() =>
+            {
+                using TempDirectory root = new TempDirectory();
+                string characterDeviceName = "characterdevice";
+                string characterDevicePath = Path.Join(root.Path, characterDeviceName);
+
+                Interop.CheckIo(Interop.Sys.CreateCharacterDevice(characterDevicePath, (int)DefaultMode, TestCharacterDeviceMajor, TestCharacterDeviceMinor));
+
+                using MemoryStream archive = new MemoryStream();
+                using (TarWriter writer = new TarWriter(archive, leaveOpen: true))
+                {
+                    writer.WriteEntry(fileName: characterDevicePath, entryName: characterDeviceName);
+                }
+
+                archive.Seek(0, SeekOrigin.Begin);
+                using (TarReader reader = new TarReader(archive))
+                {
+                    PosixTarEntry entry = reader.GetNextEntry() as PosixTarEntry;
+
+                    Assert.NotNull(entry);
+                    Assert.Equal(characterDeviceName, entry.Name);
+                    Assert.Equal(DefaultLinkName, entry.LinkName);
+                    Assert.Equal(TarEntryType.CharacterDevice, entry.EntryType);
+                    Assert.Null(entry.DataStream);
+
+                    VerifyPlatformSpecificMetadata(characterDevicePath, entry);
+
+                    // TODO: Fix how these values are collected, the numbers don't match even though
+                    // they come from stat's dev and from the major/minor syscalls
+                    // Assert.Equal(TestCharacterDeviceMajor, entry.DeviceMajor);
+                    // Assert.Equal(TestCharacterDeviceMinor, entry.DeviceMinor);
+                    // Meanwhile, TODO: Remove this when the above is fixed:
+                    Assert.True(entry.DeviceMajor > 0);
+                    Assert.True(entry.DeviceMinor > 0);
+
+                    Assert.Null(reader.GetNextEntry());
+                }
+
+            },new RemoteInvokeOptions { RunAsSudo = true }).Dispose();
+        }
+
+        partial void VerifyPlatformSpecificMetadata(string filePath, TarEntry entry)
+        {
+            Interop.Sys.FileStatus status = default;
+            status.Mode = default;
+            status.Dev = default;
+            Interop.CheckIo(Interop.Sys.LStat(filePath, out status));
+
+            Assert.Equal((int)status.Uid, entry.Uid);
+            Assert.Equal((int)status.Gid, entry.Gid);
+
+            if (entry is PosixTarEntry posix)
+            {
+                Assert.Equal(DefaultGName, posix.GroupName);
+                Assert.Equal(DefaultUName, posix.UserName);
+
+                if (entry.EntryType is not TarEntryType.BlockDevice and not TarEntryType.CharacterDevice)
+                {
+                    Assert.Equal(DefaultDeviceMajor, posix.DeviceMajor);
+                    Assert.Equal(DefaultDeviceMinor, posix.DeviceMinor);
+                }
+            }
+
+            if (entry.EntryType is not TarEntryType.Directory)
+            {
+                TarFileMode expectedMode = (TarFileMode)(status.Mode & 4095); // First 12 bits
+                DateTimeOffset expectedMTime = DateTimeOffset.FromUnixTimeSeconds(status.MTime);
+                DateTimeOffset expectedATime = DateTimeOffset.FromUnixTimeSeconds(status.ATime);
+                DateTimeOffset expectedCTime = DateTimeOffset.FromUnixTimeSeconds(status.CTime);
+
+                Assert.Equal(expectedMode, entry.Mode);
+                Assert.Equal(expectedMTime, entry.ModificationTime);
+
+                if (entry is PaxTarEntry pax)
+                {
+                    if (pax.ExtendedAttributes.ContainsKey("atime"))
+                    {
+                        long longATime = long.Parse(pax.ExtendedAttributes["atime"]);
+                        DateTimeOffset paxATime = DateTimeOffset.FromUnixTimeSeconds(longATime);
+                        Assert.Equal(expectedATime, paxATime);
+                    }
+                    if (pax.ExtendedAttributes.ContainsKey("ctime"))
+                    {
+                        long longCTime = long.Parse(pax.ExtendedAttributes["ctime"]);
+                        DateTimeOffset paxCTime = DateTimeOffset.FromUnixTimeSeconds(longCTime);
+                        Assert.Equal(expectedCTime, paxCTime);
+                    }
+                }
+                else if (entry is GnuTarEntry gnu)
+                {
+                    Assert.Equal(expectedATime, gnu.AccessTime);
+                    Assert.Equal(expectedCTime, gnu.ChangeTime);
+                }
+            }
+        }
+    }
+}

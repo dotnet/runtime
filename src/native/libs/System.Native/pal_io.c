@@ -22,6 +22,7 @@
 #include <sys/file.h>
 #include <sys/ioctl.h>
 #include <sys/socket.h>
+#include <sys/sysmacros.h>
 #include <sys/uio.h>
 #include <syslog.h>
 #include <termios.h>
@@ -763,6 +764,41 @@ int32_t SystemNative_SymLink(const char* target, const char* linkPath)
 {
     int32_t result;
     while ((result = symlink(target, linkPath)) < 0 && errno == EINTR);
+    return result;
+}
+
+uint64_t SystemNative_MakeDev(uint32_t major, uint32_t minor)
+{
+    return (uint64_t)makedev(major, minor);
+}
+
+uint32_t SystemNative_Major(uint64_t dev)
+{
+    return major((dev_t)dev);
+}
+
+uint32_t SystemNative_Minor(uint64_t dev)
+{
+    return minor((dev_t)dev);
+}
+
+int32_t SystemNative_MkNod(const char* pathName, int32_t mode, uint32_t major, uint32_t minor)
+{
+    dev_t dev = makedev(major, minor);
+    if (errno > 0)
+    {
+        return -1;
+    }
+
+    int32_t result;
+    while ((result = mknod(pathName, (mode_t)mode, dev)) < 0 && errno == EINTR);
+    return result;
+}
+
+int32_t SystemNative_MkFifo(const char* pathName, int32_t mode)
+{
+    int32_t result;
+    while ((result = mkfifo(pathName, (mode_t)mode)) < 0 && errno == EINTR);
     return result;
 }
 

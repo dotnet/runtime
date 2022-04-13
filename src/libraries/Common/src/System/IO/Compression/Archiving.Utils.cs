@@ -7,9 +7,11 @@ using System.Diagnostics;
 
 namespace System.IO.Compression
 {
-    internal static partial class ZipFileUtils
+    internal static partial class ArchivingUtils
     {
-        // Per the .ZIP File Format Specification 4.4.17.1 all slashes should be forward slashes
+        // To ensure tar files remain compatible with Unix,
+        // and per the ZIP File Format Specification 4.4.17.1,
+        // all slashes should be forward slashes.
         private const char PathSeparatorChar = '/';
         private const string PathSeparatorString = "/";
 
