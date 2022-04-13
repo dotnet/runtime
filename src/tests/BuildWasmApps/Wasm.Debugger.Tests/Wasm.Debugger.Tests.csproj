@@ -37,22 +37,20 @@
     </ItemGroup>
 
     <ItemGroup>
-      <RunScriptCommands Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(OS)' != 'Windows_NT' and '$(RunInFirefox)'!='1'"
-                         Include="export BROWSER_PATH_FOR_DEBUGGER_TESTS=$HELIX_CORRELATION_PAYLOAD/chrome-linux/chrome" />
-      <RunScriptCommands Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(OS)' == 'Windows_NT' and '$(RunInFirefox)'!='1'"
-                         Include="set BROWSER_PATH_FOR_DEBUGGER_TESTS=%HELIX_CORRELATION_PAYLOAD%\chrome-win\chrome.exe" />
-      <RunScriptCommands Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(OS)' != 'Windows_NT' and '$(RunInFirefox)'=='1'"
-                         Include="export BROWSER_PATH_FOR_DEBUGGER_TESTS=$HELIX_CORRELATION_PAYLOAD/firefox/firefox/firefox/firefox" />
-      <RunScriptCommands Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(OS)' != 'Windows_NT' and '$(RunInFirefox)'=='1'"
-                         Include="rm -rf /tmp/profile" />                         
-      <RunScriptCommands Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(OS)' != 'Windows_NT' and '$(RunInFirefox)'=='1'"
-                         Include="mkdir /tmp/profile" />
-      <RunScriptCommands Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(OS)' != 'Windows_NT' and '$(RunInFirefox)'=='1'"
-                         Include="echo 'user_pref(&quot;devtools.chrome.enabled&quot;, true)%3B' >> /tmp/profile/prefs.js" />
-      <RunScriptCommands Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(OS)' != 'Windows_NT' and '$(RunInFirefox)'=='1'"
-                         Include="echo 'user_pref(&quot;devtools.debugger.remote-enabled&quot;, true)%3B' >> /tmp/profile/prefs.js" />                         
-      <RunScriptCommands Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(OS)' != 'Windows_NT' and '$(RunInFirefox)'=='1'"
-                         Include="echo 'user_pref(&quot;devtools.debugger.prompt-connection&quot;, false)%3B' >> /tmp/profile/prefs.js" />
+    <ItemGroup Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(RunInFirefox)' != '1'">
+      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export BROWSER_PATH_FOR_DEBUGGER_TESTS=$HELIX_CORRELATION_PAYLOAD/chrome-linux/chrome" />
+      <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set BROWSER_PATH_FOR_DEBUGGER_TESTS=%HELIX_CORRELATION_PAYLOAD%\chrome-win\chrome.exe" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(RunInFirefox)' == '1'">
+      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export BROWSER_PATH_FOR_DEBUGGER_TESTS=$HELIX_CORRELATION_PAYLOAD/firefox/firefox/firefox/firefox" />
+      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="rm -rf /tmp/profile" />
+      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="mkdir /tmp/profile" />
+      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="echo 'user_pref(&quot;devtools.chrome.enabled&quot;, true)%3B' >> /tmp/profile/prefs.js" />
+      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="echo 'user_pref(&quot;devtools.debugger.remote-enabled&quot;, true)%3B' >> /tmp/profile/prefs.js" />
+      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="echo 'user_pref(&quot;devtools.debugger.prompt-connection&quot;, false)%3B' >> /tmp/profile/prefs.js" />
+    </ItemGroup>
+
     </ItemGroup>
 
     <PropertyGroup>
