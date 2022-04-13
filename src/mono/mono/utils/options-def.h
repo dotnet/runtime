@@ -60,6 +60,7 @@ DEFINE_BOOL_READONLY(readonly_flag, "readonly-flag", FALSE, "Example")
 #endif
 */
 
+DEFINE_BOOL(aot_lazy_assembly_load, "aot-lazy-assembly-load", FALSE, "Load assemblies referenced by AOT images lazily")
 /* Cleanup */
 #undef DEFINE_OPTION_FULL
 #undef DEFINE_OPTION_READONLY
