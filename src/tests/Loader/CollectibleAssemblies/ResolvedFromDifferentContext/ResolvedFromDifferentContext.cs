@@ -1,6 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+// When an assembly A1 from an unloadable AssemblyLoadContext 1 is referenced
+// by another assembly A2 from an unloadable AssemblyLoadContext 2, e.g.
+// when a class from A2 implements an interface from A1 and there are no
+// instances of types from A1 and the managed assembly type and the related
+// AssemblyLoadContext is gone too, the AssemblyLoadContext 1 cannot
+// get collected, it would result in later crashes, null references
+// etc.
+
 using System;
 using System.Runtime.Loader;
 using System.Reflection;

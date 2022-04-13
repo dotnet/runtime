@@ -6,7 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-   <Compile Include="Class1.cs" />
+   <Compile Include="Class.cs" />
   </ItemGroup>
 
   <ItemGroup>

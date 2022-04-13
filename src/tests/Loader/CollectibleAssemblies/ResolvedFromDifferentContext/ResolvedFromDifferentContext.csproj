@@ -4,6 +4,6 @@
     <CLRTestPriority>1</CLRTestPriority>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="test67144.cs" />
+    <Compile Include="ResolvedFromDifferentContext.cs" />
   </ItemGroup>
 </Project>

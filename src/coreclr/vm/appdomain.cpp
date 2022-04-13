@@ -3372,6 +3372,7 @@ BOOL AppDomain::AddFileToCache(AssemblySpec* pSpec, PEAssembly * pPEAssembly, BO
 
     DomainAssembly *pParentAssembly = pSpec->GetParentAssembly();
     BINDER_SPACE::Assembly *pBinderSpaceAssembly = pPEAssembly->GetHostAssembly();
+    _ASSERTE(pBinderSpaceAssembly != NULL);
     DomainAssembly *pResultAssembly = pBinderSpaceAssembly->GetDomainAssembly();
     if ((pParentAssembly != NULL) && (pResultAssembly != NULL))
     {

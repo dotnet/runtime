@@ -1,4 +1,4 @@
-﻿using TestInterface;
+using TestInterface;
 
 namespace TestClass
 {

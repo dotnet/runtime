@@ -6,7 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-   <Compile Include="Interface1.cs" />
+   <Compile Include="Interface.cs" />
   </ItemGroup>
 
 </Project>
