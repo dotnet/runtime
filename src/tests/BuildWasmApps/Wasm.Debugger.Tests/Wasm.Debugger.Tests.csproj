@@ -51,8 +51,6 @@
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="echo 'user_pref(&quot;devtools.debugger.prompt-connection&quot;, false)%3B' >> /tmp/profile/prefs.js" />
     </ItemGroup>
 
-    </ItemGroup>
-
     <PropertyGroup>
       <_DotnetCommand Condition="'$(OS)' != 'Windows_NT'">dotnet</_DotnetCommand>
       <_DotnetCommand Condition="'$(OS)' == 'Windows_NT'">dotnet.exe</_DotnetCommand>
