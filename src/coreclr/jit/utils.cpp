@@ -1285,7 +1285,6 @@ void HelperCallProperties::init()
             case CORINFO_HELP_NEWSFAST_FINALIZE:
             case CORINFO_HELP_NEWSFAST_ALIGN8_FINALIZE:
             case CORINFO_HELP_READYTORUN_NEW:
-            case CORINFO_HELP_BOX:
 
                 isAllocator   = true;
                 nonNullReturn = true;
@@ -1300,6 +1299,7 @@ void HelperCallProperties::init()
             case CORINFO_HELP_NEWARR_1_DIRECT:
             case CORINFO_HELP_NEWARR_1_OBJ:
             case CORINFO_HELP_READYTORUN_NEWARR_1:
+            case CORINFO_HELP_BOX:
 
                 isAllocator   = true;
                 nonNullReturn = true;
