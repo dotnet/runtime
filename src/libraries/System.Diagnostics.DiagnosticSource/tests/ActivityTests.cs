@@ -172,7 +172,8 @@ namespace System.Diagnostics.Tests
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestBaggageWithChainedActivities()
         {
-            RemoteExecutor.Invoke(() => {
+            RemoteExecutor.Invoke(() =>
+            {
                 Activity a1 = new Activity("a1");
                 a1.Start();
 
@@ -763,7 +764,7 @@ namespace System.Diagnostics.Tests
             {
                 Activity activity = new Activity("activity15");
                 activity.Start();
-                 Assert.Equal(ActivityIdFormat.Hierarchical, activity.IdFormat);
+                Assert.Equal(ActivityIdFormat.Hierarchical, activity.IdFormat);
             }, new RemoteInvokeOptions() { StartInfo = psi }).Dispose();
         }
 
@@ -1611,7 +1612,7 @@ namespace System.Diagnostics.Tests
                 Assert.Equal(tags[i].Value, tagObjects[i].Value);
             }
 
-            activity.AddTag("s4", (object) null);
+            activity.AddTag("s4", (object)null);
             Assert.Equal(4, activity.Tags.Count());
             Assert.Equal(4, activity.TagObjects.Count());
             tags = activity.Tags.ToArray();
@@ -1732,9 +1733,9 @@ namespace System.Diagnostics.Tests
 
 
         [Theory]
-        [InlineData("key1", null, true,  1)]
+        [InlineData("key1", null, true, 1)]
         [InlineData("key2", null, false, 0)]
-        [InlineData("key3", "v1", true,  1)]
+        [InlineData("key3", "v1", true, 1)]
         [InlineData("key4", "v2", false, 1)]
         public void TestInsertingFirstTag(string key, object value, bool add, int resultCount)
         {
@@ -1829,8 +1830,8 @@ namespace System.Diagnostics.Tests
             Assert.Equal(ActivityStatusCode.Error, a.Status);
             Assert.Equal("Another Error Code Description", a.StatusDescription);
 
-            a.SetStatus((ActivityStatusCode) 100, "Another Error Code Description");
-            Assert.Equal((ActivityStatusCode) 100, a.Status);
+            a.SetStatus((ActivityStatusCode)100, "Another Error Code Description");
+            Assert.Equal((ActivityStatusCode)100, a.Status);
             Assert.Null(a.StatusDescription);
         }
 
@@ -2032,7 +2033,7 @@ namespace System.Diagnostics.Tests
             RemoteExecutor.Invoke(() =>
             {
                 Random random = new Random();
-                byte [] traceIdBytes = new byte[16];
+                byte[] traceIdBytes = new byte[16];
 
                 Activity.TraceIdGenerator = () =>
                 {
@@ -2052,6 +2053,128 @@ namespace System.Diagnostics.Tests
                     a.Stop();
                 }
             }).Dispose();
+        }
+
+        [Fact]
+        public void EnumerateTagObjectsTest()
+        {
+            Activity a = new Activity("Root");
+
+            var enumerator = a.EnumerateTagObjects();
+
+            Assert.False(enumerator.MoveNext());
+            Assert.False(enumerator.GetEnumerator().MoveNext());
+
+            a.SetTag("key1", "value1");
+            a.SetTag("key2", "value2");
+
+            enumerator = a.EnumerateTagObjects();
+
+            List<KeyValuePair<string, object>> values = new();
+
+            Assert.True(enumerator.MoveNext());
+            Assert.Equal(new KeyValuePair<string, object?>("key1", "value1"), enumerator.Current);
+            values.Add(enumerator.Current);
+            Assert.True(enumerator.MoveNext());
+            Assert.Equal(new KeyValuePair<string, object?>("key2", "value2"), enumerator.Current);
+            values.Add(enumerator.Current);
+            Assert.False(enumerator.MoveNext());
+
+            Assert.Equal(a.TagObjects, values);
+
+            foreach (ref readonly KeyValuePair<string, object?> tag in a.EnumerateTagObjects())
+            {
+                Assert.Equal(values[0], tag);
+                values.RemoveAt(0);
+            }
+        }
+
+        [Fact]
+        public void EnumerateEventsTest()
+        {
+            Activity a = new Activity("Root");
+
+            var enumerator = a.EnumerateEvents();
+
+            Assert.False(enumerator.MoveNext());
+            Assert.False(enumerator.GetEnumerator().MoveNext());
+
+            a.AddEvent(new ActivityEvent("event1"));
+            a.AddEvent(new ActivityEvent("event2"));
+
+            enumerator = a.EnumerateEvents();
+
+            List<ActivityEvent> values = new();
+
+            Assert.True(enumerator.MoveNext());
+            Assert.Equal("event1", enumerator.Current.Name);
+            values.Add(enumerator.Current);
+            Assert.True(enumerator.MoveNext());
+            Assert.Equal("event2", enumerator.Current.Name);
+            values.Add(enumerator.Current);
+            Assert.False(enumerator.MoveNext());
+
+            Assert.Equal(a.Events, values);
+
+            foreach (ref readonly ActivityEvent activityEvent in a.EnumerateEvents())
+            {
+                Assert.Equal(values[0], activityEvent);
+                values.RemoveAt(0);
+            }
+        }
+
+        [Fact]
+        public void EnumerateLinksTest()
+        {
+            Activity? a = new Activity("Root");
+
+            Assert.NotNull(a);
+
+            var enumerator = a.EnumerateLinks();
+
+            Assert.False(enumerator.MoveNext());
+            Assert.False(enumerator.GetEnumerator().MoveNext());
+
+            using ActivitySource source = new ActivitySource("test");
+
+            using ActivityListener listener = new ActivityListener()
+            {
+                ShouldListenTo = (source) => true,
+                Sample = (ref ActivityCreationOptions<ActivityContext> options) => ActivitySamplingResult.AllDataAndRecorded
+            };
+
+            ActivitySource.AddActivityListener(listener);
+
+            var context1 = new ActivityContext(ActivityTraceId.CreateRandom(), default, ActivityTraceFlags.None);
+            var context2 = new ActivityContext(ActivityTraceId.CreateRandom(), default, ActivityTraceFlags.None);
+
+            a = source.CreateActivity(
+                name: "Root",
+                kind: ActivityKind.Internal,
+                parentContext: default,
+                links: new[] { new ActivityLink(context1), new ActivityLink(context2) });
+
+            Assert.NotNull(a);
+
+            enumerator = a.EnumerateLinks();
+
+            List<ActivityLink> values = new();
+
+            Assert.True(enumerator.MoveNext());
+            Assert.Equal(context1.TraceId, enumerator.Current.Context.TraceId);
+            values.Add(enumerator.Current);
+            Assert.True(enumerator.MoveNext());
+            Assert.Equal(context2.TraceId, enumerator.Current.Context.TraceId);
+            values.Add(enumerator.Current);
+            Assert.False(enumerator.MoveNext());
+
+            Assert.Equal(a.Links, values);
+
+            foreach (ref readonly ActivityLink activityLink in a.EnumerateLinks())
+            {
+                Assert.Equal(values[0], activityLink);
+                values.RemoveAt(0);
+            }
         }
 
         public void Dispose()

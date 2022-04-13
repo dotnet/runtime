@@ -69,7 +69,18 @@ namespace System.Diagnostics
         protected virtual void Dispose(bool disposing) { throw null; }
         public void SetCustomProperty(string propertyName, object? propertyValue) { throw null; }
         public object? GetCustomProperty(string propertyName) { throw null; }
-        public ActivityContext Context { get { throw null; } }
+        public System.Diagnostics.ActivityContext Context { get { throw null; } }
+        public System.Diagnostics.Activity.Enumerator<System.Collections.Generic.KeyValuePair<string, object?>> EnumerateTagObjects() { throw null; }
+        public System.Diagnostics.Activity.Enumerator<ActivityEvent> EnumerateEvents() { throw null; }
+        public System.Diagnostics.Activity.Enumerator<ActivityLink> EnumerateLinks() { throw null; }
+
+        public struct Enumerator<T>
+        {
+            [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+            public readonly System.Diagnostics.Activity.Enumerator<T> GetEnumerator() { throw null; }
+            public readonly ref T Current { get { throw null; } }
+            public bool MoveNext() { throw null; }
+        }
     }
     public readonly struct ActivityChangedEventArgs
     {
