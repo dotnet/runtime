@@ -953,7 +953,7 @@ namespace DebuggerTests
         [InlineData("EvaluateBrowsableProperties", "TestEvaluatePropertiesRootHidden", "testPropertiesRootHidden", 10)]
         [InlineData("EvaluateBrowsableStaticProperties", "TestEvaluateFieldsRootHidden", "testFieldsRootHidden", 10)]
         [InlineData("EvaluateBrowsableStaticProperties", "TestEvaluatePropertiesRootHidden", "testPropertiesRootHidden", 10)]
-        // [InlineData("EvaluateBrowsableCustomProperties", "TestEvaluatePropertiesRootHidden", "testPropertiesRootHidden", 5, true)]
+        [InlineData("EvaluateBrowsableCustomProperties", "TestEvaluatePropertiesRootHidden", "testPropertiesRootHidden", 5, true)]
         public async Task EvaluateBrowsableRootHidden(string outerClassName, string className, string localVarName, int breakLine, bool isCustomGetter = false) => await CheckInspectLocalsAtBreakpointSite(
             $"DebuggerTests.{outerClassName}", "Evaluate", breakLine, "Evaluate",
             $"window.setTimeout(function() {{ invoke_static_method ('[debugger-test] DebuggerTests.{outerClassName}:Evaluate'); 1 }})",

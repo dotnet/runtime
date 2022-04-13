@@ -121,6 +121,7 @@ namespace BrowserDebugProxy
             // FIXME: test for valuetype collection
             if (rootObjectId.Scheme is "object" or "valuetype")
             {
+                // it does not work, SendDebuggerAgentCommand fails
                 GetMembersResult members = await GetObjectMemberValues(sdbHelper, rootObjectId.Value, getCommandOptions, token);
                 //Console.WriteLine ($"GetObjectMemberValues on that returned: {members}");
 
@@ -202,7 +203,7 @@ namespace BrowserDebugProxy
                 string namePrefix = field.Name;
                 string containerTypeName = await sdbHelper.GetTypeName(containerTypeId, token);
                 namePrefix = GetNamePrefixForValues(field.Name, containerTypeName, isOwn, fieldState);
-                
+
                 var enumeratedValues = await GetRootHiddenChildren(sdbHelper, fieldValue, namePrefix, getCommandOptions, token);
                 if (enumeratedValues != null)
                     fieldValues.AddRange(enumeratedValues);
