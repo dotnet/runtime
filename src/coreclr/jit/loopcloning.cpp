@@ -1648,12 +1648,13 @@ bool Compiler::optIsLoopClonable(unsigned loopInd)
     bool isGreaterThanLimitCheck = GenTree::StaticOperIs(loop.lpTestOper(), GT_GT, GT_GE);
 
     // Increasing loop is the one that has "+=" increament operation and "< or <=" limit check.
-    bool isIncreasingLoop = (isLessThanLimitCheck && (loop.lpIterOper() == GT_ADD));
+    bool isIncreasingLoop = (isLessThanLimitCheck && (((loop.lpIterOper() == GT_ADD) && (loop.lpIterConst() > 0)) ||
+                                                      ((loop.lpIterOper() == GT_SUB) && (loop.lpIterConst() < 0))));
 
     // Increasing loop is the one that has "-=" decrement operation and "> or >=" limit check. If the operation is "+=",
     // make sure the constant is negative to give an effect of decrementing the iterator.
-    bool isDecreasingLoop = (isGreaterThanLimitCheck && ((loop.lpIterOper() == GT_SUB) ||
-                                                         ((loop.lpIterOper() == GT_ADD) && (loop.lpIterConst() < 0))));
+    bool isDecreasingLoop = (isGreaterThanLimitCheck && (((loop.lpIterOper() == GT_ADD) && (loop.lpIterConst() < 0)) ||
+                                                         ((loop.lpIterOper() == GT_SUB) && (loop.lpIterConst() > 0))));
 
     // TODO-CQ: Handle other loops like:
     // - The ones whose limit operator is "==" or "!="
