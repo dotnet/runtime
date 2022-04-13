@@ -25,12 +25,12 @@ namespace System.Runtime.CompilerServices
         public bool IsOptional { get; init; }
 
         /// <summary>
-        /// The <see cref="FeatureName"/> used for the ref struct C# feature.
+        /// The <see cref="FeatureName"/> used for the ref structs C# feature.
         /// </summary>
         public const string RefStructs = nameof(RefStructs);
 
         /// <summary>
-        /// The <see cref="FeatureName"/> used for the required member C# feature.
+        /// The <see cref="FeatureName"/> used for the required members C# feature.
         /// </summary>
         public const string RequiredMembers = nameof(RequiredMembers);
     }
