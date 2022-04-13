@@ -1882,7 +1882,7 @@ emit_r8const (MonoCompile *cfg, guint8* code, int dreg, double *p)
 			x86_alu_reg_imm (code, X86_ADD, X86_ESP, 8);
 		} else {
 			mono_add_patch_info (cfg, code - cfg->native_code + X86_SSE_REG_MEM_OFFSET, MONO_PATCH_INFO_R8, p);
-			x86_sse_movsd_reg_mem (code, dreg, NULL);
+			x86_sse_movsd_reg_mem (code, dreg, (gsize)NULL);
 		}
 	}
 	return code;
@@ -1903,7 +1903,7 @@ emit_r4const (MonoCompile *cfg, guint8* code, int dreg, float *p)
 			x86_alu_reg_imm (code, X86_ADD, X86_ESP, 4);
 		} else {
 			mono_add_patch_info (cfg, code - cfg->native_code + X86_SSE_REG_MEM_OFFSET, MONO_PATCH_INFO_R4, p);
-			x86_sse_movss_reg_mem (code, dreg, NULL);
+			x86_sse_movss_reg_mem (code, dreg, (gsize)NULL);
 		}
 	}
 	return code;
