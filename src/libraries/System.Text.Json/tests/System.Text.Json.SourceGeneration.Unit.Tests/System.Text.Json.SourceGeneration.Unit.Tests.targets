@@ -2,18 +2,12 @@
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
-    <!-- Remove once polymorphism is out of preview. -->
-    <EnablePreviewFeatures>true</EnablePreviewFeatures>
-    <GenerateRequiresPreviewFeaturesAttribute>true</GenerateRequiresPreviewFeaturesAttribute>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.CodeAnalysis" Version="$(RoslynApiVersion)" />
-    <ProjectReference Include="..\..\src\System.Text.Json.csproj" />
-  </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
-    <Compile Include="$(CoreLibSharedDir)System\Runtime\Versioning\RequiresPreviewFeaturesAttribute.cs" Link="System\Runtime\Versioning\RequiresPreviewFeaturesAttribute.cs" />
+    <ProjectReference Include="..\..\src\System.Text.Json.csproj" />
   </ItemGroup>
 
   <ItemGroup>

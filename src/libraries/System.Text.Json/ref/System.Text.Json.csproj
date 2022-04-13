@@ -5,7 +5,7 @@
     <IncludeInternalObsoleteAttribute>true</IncludeInternalObsoleteAttribute>
     <!-- Remove once polymoprhism is out of preview. -->
     <EnablePreviewFeatures>true</EnablePreviewFeatures>
-    <GenerateRequiresPreviewFeaturesAttribute>true</GenerateRequiresPreviewFeaturesAttribute>
+    <GenerateRequiresPreviewFeaturesAttribute>false</GenerateRequiresPreviewFeaturesAttribute>
   </PropertyGroup>
 
   <ItemGroup>
