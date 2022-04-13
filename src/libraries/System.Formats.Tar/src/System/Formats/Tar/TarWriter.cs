@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 namespace System.Formats.Tar
 {
     /// <summary>
-    /// Class that can write a tar archive into a stream.
+    /// Writes a tar archive into a stream.
     /// </summary>
     public sealed partial class TarWriter : IDisposable, IAsyncDisposable
     {

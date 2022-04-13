@@ -7,7 +7,7 @@ using System.Diagnostics;
 namespace System.Formats.Tar
 {
     /// <summary>
-    /// Class that represents a tar entry from an archive of the PAX format.
+    /// Represents a tar entry from an archive of the PAX format.
     /// </summary>
     public sealed class PaxTarEntry : PosixTarEntry
     {

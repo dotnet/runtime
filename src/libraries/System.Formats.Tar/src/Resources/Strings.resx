@@ -226,7 +226,7 @@
     <value>The archive is malformed. It contains two extended attributes entries in a row.</value>
   </data>
   <data name="TarPaxFormatExpected" xml:space="preserve">
-    <value>A Pax format was expected, but could not be reliably determined for entry '{0}'.</value>
+    <value>A PAX format was expected, but could not be reliably determined for entry '{0}'.</value>
   </data>
   <data name="TarPosixFormatExpected" xml:space="preserve">
     <value>A POSIX format was expected (Ustar or PAX), but could not be reliably determined for entry '{0}'.</value>
@@ -241,7 +241,7 @@
     <value>The archive has more than one global extended attributes entry.</value>
   </data>
   <data name="TarUnsupportedFile" xml:space="preserve">
-    <value>The file '0' is not supported for tar archiving.</value>
+    <value>The file '{0}' is not supported for tar archiving.</value>
   </data>
   <data name="UnauthorizedAccess_IODenied_NoPathName" xml:space="preserve">
     <value>Access to the path is denied.</value>

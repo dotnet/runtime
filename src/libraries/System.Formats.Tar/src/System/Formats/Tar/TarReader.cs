@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 namespace System.Formats.Tar
 {
     /// <summary>
-    /// Class that can read a tar archive from a stream.
+    /// Reads a tar archive from a stream.
     /// </summary>
     public sealed class TarReader : IDisposable, IAsyncDisposable
     {

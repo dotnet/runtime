@@ -4,7 +4,7 @@
 namespace System.Formats.Tar
 {
     /// <summary>
-    /// Class that represents a tar entry from an archive of the Gnu format.
+    /// Represents a tar entry from an archive of the GNU format.
     /// </summary>
     /// <remarks>Even though the <see cref="TarFormat.Gnu"/> format is not POSIX compatible, it implements and supports the Unix-specific fields that were defined in the POSIX IEEE P1003.1 standard from 1988: <c>devmajor</c>, <c>devminor</c>, <c>gname</c> and <c>uname</c>.</remarks>
     public sealed class GnuTarEntry : PosixTarEntry
@@ -31,7 +31,6 @@ namespace System.Formats.Tar
         public GnuTarEntry(TarEntryType entryType, string entryName !!)
             : base(entryType, entryName, TarFormat.Gnu)
         {
-            // TODO: Validate not creating LongLink or LongPath
         }
 
         /// <summary>

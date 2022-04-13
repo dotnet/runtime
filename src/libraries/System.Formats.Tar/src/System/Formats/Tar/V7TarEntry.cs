@@ -4,7 +4,7 @@
 namespace System.Formats.Tar
 {
     /// <summary>
-    /// Class that represents a tar entry from an archive of the V7 format.
+    /// Represents a tar entry from an archive of the V7 format.
     /// </summary>
     public sealed class V7TarEntry : TarEntry
     {

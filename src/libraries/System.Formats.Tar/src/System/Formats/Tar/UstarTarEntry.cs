@@ -4,7 +4,7 @@
 namespace System.Formats.Tar
 {
     /// <summary>
-    /// Class that represents a tar entry from an archive of the Ustar format.
+    /// Represents a tar entry from an archive of the Ustar format.
     /// </summary>
     public sealed class UstarTarEntry : PosixTarEntry
     {
