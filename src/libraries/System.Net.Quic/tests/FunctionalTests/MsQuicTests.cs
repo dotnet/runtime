@@ -391,42 +391,6 @@ namespace System.Net.Quic.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
-        public async Task WaitForAvailableStreamsAsyncWorks(bool unidirectional)
-        {
-            ValueTask WaitForAvailableStreamsAsync(QuicConnection connection) => unidirectional
-                ? connection.WaitForAvailableUnidirectionalStreamsAsync()
-                : connection.WaitForAvailableBidirectionalStreamsAsync();
-
-            ValueTask<QuicStream> OpenStreamAsync(QuicConnection connection) => unidirectional
-                ? connection.OpenUnidirectionalStreamAsync()
-                : connection.OpenBidirectionalStreamAsync();
-
-            QuicListenerOptions listenerOptions = CreateQuicListenerOptions();
-            listenerOptions.MaxUnidirectionalStreams = 1;
-            listenerOptions.MaxBidirectionalStreams = 1;
-            (QuicConnection clientConnection, QuicConnection serverConnection) = await CreateConnectedQuicConnection(null, listenerOptions);
-
-            // No stream opened yet, should return immediately.
-            Assert.True(WaitForAvailableStreamsAsync(clientConnection).IsCompletedSuccessfully);
-
-            // Open one stream, should wait till it closes.
-            QuicStream stream = await OpenStreamAsync(clientConnection);
-            ValueTask waitTask = WaitForAvailableStreamsAsync(clientConnection);
-            Assert.False(waitTask.IsCompleted);
-
-            // Close the streams, the waitTask should finish as a result.
-            stream.Dispose();
-            QuicStream newStream = await serverConnection.AcceptStreamAsync();
-            newStream.Dispose();
-
-            await waitTask.AsTask().WaitAsync(TimeSpan.FromSeconds(10));
-            clientConnection.Dispose();
-            serverConnection.Dispose();
-        }
-
-        [Theory]
-        [InlineData(false)]
-        [InlineData(true)]
         public async Task OpenStreamAsync_BlocksUntilAvailable(bool unidirectional)
         {
             ValueTask<QuicStream> OpenStreamAsync(QuicConnection connection) => unidirectional
