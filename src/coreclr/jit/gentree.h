@@ -4367,7 +4367,7 @@ public:
     CallArg* InsertInstParam(Compiler* comp, GenTree* node);
     CallArg* InsertAfterThisOrFirst(Compiler* comp, GenTree* node, WellKnownArg wellKnownArg = WellKnownArg::None);
     void PushLateBack(CallArg* arg);
-    bool Remove(CallArg* arg);
+    void Remove(CallArg* arg);
 
     template <typename CopyNodeFunc>
     void InternalCopyFrom(Compiler* comp, CallArgs* other, CopyNodeFunc copyFunc);
@@ -4738,13 +4738,13 @@ struct GenTreeCall final : public GenTree
     // Returns true if the ABI dictates that this call should get a ret buf
     // arg. This may be out of sync with gtArgs.HasRetBuffer during import
     // until we actually create the ret buffer.
-    bool ShouldGetRetBufArg() const
+    bool ShouldHaveRetBufArg() const
     {
         return (gtCallMoreFlags & GTF_CALL_M_RETBUFFARG) != 0;
     }
 
     //-------------------------------------------------------------------------
-    // TreatAsShouldGetRetBufArg:
+    // TreatAsShouldHaveRetBufArg:
     //
     // Arguments:
     //     compiler, the compiler instance so that we can call eeGetHelperNum
@@ -4757,10 +4757,10 @@ struct GenTreeCall final : public GenTree
     //
     // Notes:
     //     On ARM64 marking the method with the GTF_CALL_M_RETBUFFARG flag
-    //     will make ShouldGetRetBufArg() return true, but will also force the
+    //     will make ShouldHaveRetBufArg() return true, but will also force the
     //     use of register x8 to pass the RetBuf argument.
     //
-    bool TreatAsShouldGetRetBufArg(Compiler* compiler) const;
+    bool TreatAsShouldHaveRetBufArg(Compiler* compiler) const;
 
     //-----------------------------------------------------------------------------------------
     // HasMultiRegRetVal: whether the call node returns its value in multiple return registers.
@@ -4785,7 +4785,7 @@ struct GenTreeCall final : public GenTree
         }
 #endif
 
-        if (!varTypeIsStruct(gtType) || ShouldGetRetBufArg())
+        if (!varTypeIsStruct(gtType) || ShouldHaveRetBufArg())
         {
             return false;
         }

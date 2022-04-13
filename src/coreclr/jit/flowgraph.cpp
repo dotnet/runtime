@@ -1055,6 +1055,7 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
     CORINFO_METHOD_HANDLE methHnd = call->gtCallMethHnd;
     CORINFO_CLASS_HANDLE  clsHnd  = info.compCompHnd->getMethodClass(methHnd);
 
+    assert(call->gtArgs.HasThisPointer());
     assert(call->gtArgs.CountArgs() == 3);
     GenTree* targetMethod = call->gtArgs.GetArgByIndex(2)->GetEarlyNode();
     noway_assert(targetMethod->TypeGet() == TYP_I_IMPL);
@@ -1141,7 +1142,7 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
             {
                 JITDUMP("optimized\n");
 
-                GenTree*       thisPointer       = call->gtArgs.GetArgByIndex(0)->GetEarlyNode();
+                GenTree*       thisPointer       = call->gtArgs.GetThisArg()->GetEarlyNode();
                 GenTree*       targetObjPointers = call->gtArgs.GetArgByIndex(1)->GetEarlyNode();
                 CORINFO_LOOKUP pLookup;
                 info.compCompHnd->getReadyToRunDelegateCtorHelper(&ldftnToken->m_token, ldftnToken->m_tokenConstraint,

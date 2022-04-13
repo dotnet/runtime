@@ -1412,7 +1412,7 @@ CallArg* CallArgs::GetThisArg()
 //   Some jit helpers may have "out buffers" that are _not_ classified as the
 //   ret buffer. These are normal arguments that function similarly to ret
 //   buffers, but they do not have the special ABI treatment of ret buffers.
-//   See `GenTreeCall::TreatAsShouldGetRetBufArg` for more details.
+//   See `GenTreeCall::TreatAsShouldHaveRetBufArg` for more details.
 //
 CallArg* CallArgs::GetRetBufferArg()
 {
@@ -1788,6 +1788,7 @@ CallArg* CallArgs::InsertAfterThisOrFirst(Compiler* comp, GenTree* node, WellKno
 // Remarks:
 //   This function should only be used if adding arguments after the call has
 //   already been morphed.
+//
 void CallArgs::PushLateBack(CallArg* arg)
 {
     CallArg** slot = &m_lateHead;
@@ -1808,7 +1809,7 @@ void CallArgs::PushLateBack(CallArg* arg)
 //   was not called yet or that `CallArgs::ResetFinalArgsAndABIInfo` has been
 //   called prior to this.
 //
-bool CallArgs::Remove(CallArg* arg)
+void CallArgs::Remove(CallArg* arg)
 {
     assert(!m_abiInformationDetermined && !m_argsComplete);
 
@@ -1819,13 +1820,13 @@ bool CallArgs::Remove(CallArg* arg)
         {
             *slot = arg->GetNext();
             RemovedWellKnownArg(arg->GetWellKnownArg());
-            return true;
+            return;
         }
 
         slot = &(*slot)->NextRef();
     }
 
-    return false;
+    assert(!"Did not find arg to remove in CallArgs::Remove");
 }
 
 //---------------------------------------------------------------
@@ -2073,7 +2074,7 @@ int GenTreeCall::GetNonStandardAddedArgCount(Compiler* compiler) const
 }
 
 //-------------------------------------------------------------------------
-// TreatAsShouldGetRetBufArg:
+// TreatAsShouldHaveRetBufArg:
 //
 // Arguments:
 //     compiler, the compiler instance so that we can call eeGetHelperNum
@@ -2093,9 +2094,9 @@ int GenTreeCall::GetNonStandardAddedArgCount(Compiler* compiler) const
 //     aren't actually defined to return a struct, so they don't expect
 //     their RetBuf to be passed in x8, instead they  expect it in x0.
 //
-bool GenTreeCall::TreatAsShouldGetRetBufArg(Compiler* compiler) const
+bool GenTreeCall::TreatAsShouldHaveRetBufArg(Compiler* compiler) const
 {
-    if (ShouldGetRetBufArg())
+    if (ShouldHaveRetBufArg())
     {
         return true;
     }
@@ -2120,7 +2121,7 @@ bool GenTreeCall::TreatAsShouldGetRetBufArg(Compiler* compiler) const
         }
         else
         {
-            assert(!"Unexpected JIT helper in TreatAsShouldGetRetBufArg");
+            assert(!"Unexpected JIT helper in TreatAsShouldHaveRetBufArg");
         }
     }
     return false;

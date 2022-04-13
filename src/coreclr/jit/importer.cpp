@@ -811,12 +811,12 @@ void Compiler::impAssignTempGen(unsigned             tmpNum,
 //             also to record exact receiving argument types that may be needed for ABI
 //             purposes later.
 //             Can be nullptr for certain helpers.
-//   argList - The `CallArgs` to pop argument into.
+//   call    - The call to pop arguments into.
 //
-void Compiler::impPopCallArgs(unsigned count, CORINFO_SIG_INFO* sig, CallArgs* argList)
+void Compiler::impPopCallArgs(unsigned count, CORINFO_SIG_INFO* sig, GenTreeCall* call)
 {
     assert(sig == nullptr || count == sig->numArgs);
-    assert(argList->IsEmpty());
+    assert(call->gtArgs.IsEmpty());
 
     while (count--)
     {
@@ -863,7 +863,8 @@ void Compiler::impPopCallArgs(unsigned count, CORINFO_SIG_INFO* sig, CallArgs* a
         }
 
         // NOTE: we defer bashing the type for I_IMPL to fgMorphArgs
-        argList->PushFront(this, temp);
+        call->gtArgs.PushFront(this, temp);
+        call->gtFlags |= temp->gtFlags & GTF_GLOB_EFFECT;
     }
 
     if (sig != nullptr)
@@ -881,7 +882,7 @@ void Compiler::impPopCallArgs(unsigned count, CORINFO_SIG_INFO* sig, CallArgs* a
 
         CORINFO_ARG_LIST_HANDLE sigArgs = sig->args;
         unsigned                index   = 0;
-        for (CallArg& arg : argList->Args())
+        for (CallArg& arg : call->gtArgs.Args())
         {
             if (index >= sig->numArgs)
                 break;
@@ -1057,14 +1058,14 @@ bool Compiler::impCheckImplicitArgumentCoercion(var_types sigType, var_types nod
 
 void Compiler::impPopReverseCallArgs(unsigned          count,
                                      CORINFO_SIG_INFO* sig,
-                                     CallArgs*         argList,
+                                     GenTreeCall*      call,
                                      unsigned          skipReverseCount)
 {
     assert(skipReverseCount <= count);
 
-    impPopCallArgs(count, sig, argList);
+    impPopCallArgs(count, sig, call);
 
-    argList->Reverse(skipReverseCount, count - skipReverseCount);
+    call->gtArgs.Reverse(skipReverseCount, count - skipReverseCount);
 }
 
 //------------------------------------------------------------------------
@@ -1214,7 +1215,7 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
     if (src->gtOper == GT_CALL)
     {
         GenTreeCall* srcCall = src->AsCall();
-        if (srcCall->TreatAsShouldGetRetBufArg(this))
+        if (srcCall->TreatAsShouldHaveRetBufArg(this))
         {
             // Case of call returning a struct via hidden retbuf arg
             CLANG_FORMAT_COMMENT_ANCHOR;
@@ -1224,7 +1225,7 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
             // not be marked as the ret buff arg since it always follow the
             // normal ABI for parameters.
             WellKnownArg wellKnownArgType =
-                srcCall->ShouldGetRetBufArg() ? WellKnownArg::RetBuffer : WellKnownArg::None;
+                srcCall->ShouldHaveRetBufArg() ? WellKnownArg::RetBuffer : WellKnownArg::None;
 
 #if !defined(TARGET_ARM)
             // Unmanaged instance methods on Windows or Unix X86 need the retbuf arg after the first (this) parameter
@@ -1368,7 +1369,7 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
         GenTreeCall* call = src->AsRetExpr()->gtInlineCandidate->AsCall();
         noway_assert(call->gtOper == GT_CALL);
 
-        if (call->ShouldGetRetBufArg())
+        if (call->ShouldHaveRetBufArg())
         {
             // insert the return value buffer into the argument list as first byref parameter after 'this'
             call->gtArgs.InsertAfterThisOrFirst(this, destAddr, WellKnownArg::RetBuffer);
@@ -7265,7 +7266,7 @@ void Compiler::impImportAndPushBox(CORINFO_RESOLVED_TOKEN* pResolvedToken)
         {
             GenTreeCall* const call = exprToBox->AsRetExpr()->gtInlineCandidate->AsCall();
 
-            if (call->ShouldGetRetBufArg())
+            if (call->ShouldHaveRetBufArg())
             {
                 JITDUMP("Must insert newobj stmts for box before call [%06u]\n", dspTreeID(call));
 
@@ -7922,7 +7923,7 @@ void Compiler::impPopArgsForUnmanagedCall(GenTreeCall* call, CORINFO_SIG_INFO* s
     /* The argument list is now "clean" - no out-of-order side effects
      * Pop the argument list in reverse order */
 
-    impPopReverseCallArgs(sig->numArgs, sig, &call->gtArgs, sig->numArgs - argsToReverse);
+    impPopReverseCallArgs(sig->numArgs, sig, call, sig->numArgs - argsToReverse);
 
     if (call->gtCallMoreFlags & GTF_CALL_M_UNMGD_THISCALL)
     {
@@ -7934,7 +7935,6 @@ void Compiler::impPopArgsForUnmanagedCall(GenTreeCall* call, CORINFO_SIG_INFO* s
     for (CallArg& arg : call->gtArgs.Args())
     {
         GenTree* argNode = arg.GetEarlyNode();
-        call->gtFlags |= argNode->gtFlags & GTF_GLOB_EFFECT;
 
         // We should not be passing gc typed args to an unmanaged call.
         if (varTypeIsGC(argNode->TypeGet()))
@@ -8975,7 +8975,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                 // take the call now....
                 call = gtNewIndCallNode(nullptr, callRetTyp, di);
 
-                impPopCallArgs(sig->numArgs, sig, &call->AsCall()->gtArgs);
+                impPopCallArgs(sig->numArgs, sig, call->AsCall());
 
                 GenTree* thisPtr = impPopStack().val;
                 thisPtr          = impTransformThis(thisPtr, pConstrainedResolvedToken, callInfo->thisTransform);
@@ -9463,7 +9463,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
     //-------------------------------------------------------------------------
     // The main group of arguments
 
-    impPopCallArgs(sig->numArgs, sig, &call->AsCall()->gtArgs);
+    impPopCallArgs(sig->numArgs, sig, call->AsCall());
     if (extraArg != nullptr)
     {
         if (Target::g_tgtArgOrder == Target::ARG_ORDER_R2L)
@@ -9474,11 +9474,8 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
         {
             call->AsCall()->gtArgs.PushBack(this, extraArg, extraArgKind);
         }
-    }
 
-    for (CallArg& arg : call->AsCall()->gtArgs.Args())
-    {
-        call->gtFlags |= arg.GetEarlyNode()->gtFlags & GTF_GLOB_EFFECT;
+        call->gtFlags |= extraArg->gtFlags & GTF_GLOB_EFFECT;
     }
 
     //-------------------------------------------------------------------------
@@ -10353,7 +10350,7 @@ GenTree* Compiler::impFixupStructReturnType(GenTree*                 op,
 
 #endif //  FEATURE_MULTIREG_RET && (TARGET_ARM64 || TARGET_LOONGARCH64)
 
-    if (!op->IsCall() || !op->AsCall()->TreatAsShouldGetRetBufArg(this))
+    if (!op->IsCall() || !op->AsCall()->TreatAsShouldHaveRetBufArg(this))
     {
         // Don't retype `struct` as a primitive type in `ret` instruction.
         return op;
@@ -13215,7 +13212,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 // Else call a helper function to do the assignment
                 op1 = gtNewHelperCallNode(CORINFO_HELP_ARRADDR_ST, TYP_VOID);
-                impPopCallArgs(3, nullptr, &op1->AsCall()->gtArgs);
+                impPopCallArgs(3, nullptr, op1->AsCall());
                 goto SPILL_APPEND;
 
             case CEE_STELEM_I1:
@@ -17376,7 +17373,7 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
 
                 if (retRegCount != 0)
                 {
-                    assert(!iciCall->ShouldGetRetBufArg());
+                    assert(!iciCall->ShouldHaveRetBufArg());
                     assert(retRegCount >= 2);
                     if (fgNeedReturnSpillTemp())
                     {
@@ -17400,7 +17397,7 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
 
                 if (retRegCount != 0)
                 {
-                    assert(!iciCall->ShouldGetRetBufArg());
+                    assert(!iciCall->ShouldHaveRetBufArg());
                     assert(retRegCount == MAX_RET_REG_COUNT);
                     if (fgNeedReturnSpillTemp())
                     {

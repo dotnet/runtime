@@ -3894,11 +3894,11 @@ private:
                 ((opcode >= CEE_STLOC_0) && (opcode <= CEE_STLOC_3)));
     }
 
-    void impPopCallArgs(unsigned count, CORINFO_SIG_INFO* sig, CallArgs* argList);
+    void impPopCallArgs(unsigned count, CORINFO_SIG_INFO* sig, GenTreeCall* call);
 
     bool impCheckImplicitArgumentCoercion(var_types sigType, var_types nodeType) const;
 
-    void impPopReverseCallArgs(unsigned count, CORINFO_SIG_INFO* sig, CallArgs* argList, unsigned skipReverseCount = 0);
+    void impPopReverseCallArgs(unsigned count, CORINFO_SIG_INFO* sig, GenTreeCall* call, unsigned skipReverseCount = 0);
 
     //---------------- Spilling the importer stack ----------------------------
 
