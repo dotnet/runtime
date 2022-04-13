@@ -876,14 +876,18 @@ namespace DebuggerTests
                     {
                         list = TGetter("list", TObject("System.Collections.Generic.List<int>", description: "Count = 2")),
                         array = TGetter("array", TObject("int[]", description: "int[2]")),
-                        text = TGetter("text", TString("text"))
+                        text = TGetter("text", TString("text")),
+                        nullNone = TGetter("nullNone", TObject("bool[]", is_null: true)),
+                        valueTypeEnum = TGetter("valueTypeEnum", TEnum("DebuggerTests.EvaluateBrowsableProperties.SampleEnum", "yes"))
                     }, "testNoneProps#1");
                 else
                     await CheckProps(testNoneProps, new
                     {
                         list = TObject("System.Collections.Generic.List<int>", description: "Count = 2"),
                         array = TObject("int[]", description: "int[2]"),
-                        text = TString("text")
+                        text = TString("text"),
+                        nullNone = TObject("bool[]", is_null: true),
+                        valueTypeEnum = TEnum("DebuggerTests.EvaluateBrowsableProperties.SampleEnum", "yes")
                     }, "testNoneProps#1");
            });
 
@@ -929,14 +933,18 @@ namespace DebuggerTests
                     {
                         listCollapsed = TGetter("listCollapsed", TObject("System.Collections.Generic.List<int>", description: "Count = 2")),
                         arrayCollapsed = TGetter("arrayCollapsed", TObject("int[]", description: "int[2]")),
-                        textCollapsed = TGetter("textCollapsed", TString("textCollapsed"))
+                        textCollapsed = TGetter("textCollapsed", TString("textCollapsed")),
+                        nullCollapsed = TGetter("nullCollapsed", TObject("bool[]", is_null: true)),
+                        valueTypeEnumCollapsed = TGetter("valueTypeEnumCollapsed", TEnum("DebuggerTests.EvaluateBrowsableProperties.SampleEnum", "yes"))
                     }, "testCollapsedProps#1");
                 else
                     await CheckProps(testCollapsedProps, new
                     {
                         listCollapsed = TObject("System.Collections.Generic.List<int>", description: "Count = 2"),
                         arrayCollapsed = TObject("int[]", description: "int[2]"),
-                        textCollapsed = TString("textCollapsed")
+                        textCollapsed = TString("textCollapsed"),
+                        nullCollapsed = TObject("bool[]", is_null: true),
+                        valueTypeEnumCollapsed = TEnum("DebuggerTests.EvaluateBrowsableProperties.SampleEnum", "yes")
                     }, "testCollapsedProps#1");
            });
 
@@ -945,7 +953,7 @@ namespace DebuggerTests
         [InlineData("EvaluateBrowsableProperties", "TestEvaluatePropertiesRootHidden", "testPropertiesRootHidden", 10)]
         [InlineData("EvaluateBrowsableStaticProperties", "TestEvaluateFieldsRootHidden", "testFieldsRootHidden", 10)]
         [InlineData("EvaluateBrowsableStaticProperties", "TestEvaluatePropertiesRootHidden", "testPropertiesRootHidden", 10)]
-        [InlineData("EvaluateBrowsableCustomProperties", "TestEvaluatePropertiesRootHidden", "testPropertiesRootHidden", 5, true)]
+        // [InlineData("EvaluateBrowsableCustomProperties", "TestEvaluatePropertiesRootHidden", "testPropertiesRootHidden", 5, true)]
         public async Task EvaluateBrowsableRootHidden(string outerClassName, string className, string localVarName, int breakLine, bool isCustomGetter = false) => await CheckInspectLocalsAtBreakpointSite(
             $"DebuggerTests.{outerClassName}", "Evaluate", breakLine, "Evaluate",
             $"window.setTimeout(function() {{ invoke_static_method ('[debugger-test] DebuggerTests.{outerClassName}:Evaluate'); 1 }})",
