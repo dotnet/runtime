@@ -442,6 +442,22 @@ void *JIT_TrialAlloc::GenBox(Flags flags)
     // jne              noAlloc
     sl.X86EmitCondJump(noAlloc, X86CondCode::kJNE);
 
+    // Save the MethodTable ptr
+    sl.X86EmitPushReg(kECX);
+
+    // Check whether the object is ByRefLike
+    // test [ecx]MethodTable.m_dwFlags,MethodTable::enum_flag_IsByRefLike
+    sl.X86EmitOffsetModRM(0xf7, (X86Reg)0x0, kECX, offsetof(MethodTable, m_dwFlags));
+    sl.Emit32(MethodTable::enum_flag_IsByRefLike);
+
+    // Restore the MethodTable ptr in ecx
+    sl.X86EmitPopReg(kECX);
+
+    CodeLabel *isByRefLikeLabel = sl.NewCodeLabel();
+
+    // jne              isByRefLikeLabel
+    sl.X86EmitCondJump(isByRefLikeLabel, X86CondCode::kJNE);
+
     // Emit the main body of the trial allocator
     EmitCore(&sl, noLock, noAlloc, flags);
 
@@ -527,7 +543,8 @@ void *JIT_TrialAlloc::GenBox(Flags flags)
 
     sl.X86EmitReturn(0);
 
-    // Come here in case of no space
+    // Come here in case of no space or if ByRefLike
+    sl.EmitLabel(isByRefLikeLabel);
     sl.EmitLabel(noAlloc);
 
     // Release the lock in the uniprocessor case
