@@ -2675,6 +2675,18 @@ namespace System.Text.RegularExpressions
                 return false;
             }
 
+            if (HasCaseInsensitiveBackReferences(this))
+            {
+                // For case-insensitive patterns, we use our internal Regex case equivalence table when doing character comparisons.
+                // Most of the use of this table is done at Regex construction time by substituting all characters that are involved in
+                // case conversions into sets that contain all possible characters that could match. That said, there is still one case
+                // where you may need to do case-insensitive comparisons at match time which is the case for backreferences. For that reason
+                // and given the Regex case equivalence table is internal and can't be called by the source generated emitted type, if
+                // the pattern contains case-insensitive backreferences then we won't try to create a source generated Regex-derived type.
+                reason = "the expression contains case-insensitive backreferences which are not supported by the source generator";
+                return false;
+            }
+
             if (ExceedsMaxDepthAllowedDepth(this, allowedDepth: 40))
             {
                 // For the source generator, deep RegexNode trees can result in emitting C# code that exceeds C# compiler
@@ -2690,6 +2702,25 @@ namespace System.Text.RegularExpressions
             // Supported.
             reason = null;
             return true;
+
+            static bool HasCaseInsensitiveBackReferences(RegexNode node)
+            {
+                if (node.Kind is RegexNodeKind.Backreference && (node.Options & RegexOptions.IgnoreCase) != 0)
+                {
+                    return true;
+                }
+
+                int childCount = node.ChildCount();
+                for (int i = 0; i < childCount; i++)
+                {
+                    if (HasCaseInsensitiveBackReferences(node.Child(i)))
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
 
             static bool ExceedsMaxDepthAllowedDepth(RegexNode node, int allowedDepth)
             {

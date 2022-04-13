@@ -9,14 +9,14 @@ namespace System.Text.RegularExpressions
     {
         private readonly ScanDelegate _scanMethod;
         /// <summary>This field will only be set if the pattern contains backreferences and has RegexOptions.IgnoreCase</summary>
-        private readonly TextInfo? _textInfo;
+        private readonly CultureInfo? _culture;
 
         internal delegate void ScanDelegate(RegexRunner runner, ReadOnlySpan<char> text);
 
         public CompiledRegexRunner(ScanDelegate scan, CultureInfo? culture)
         {
             _scanMethod = scan;
-            _textInfo = culture?.TextInfo;
+            _culture = culture;
         }
 
         protected internal override void Scan(ReadOnlySpan<char> text)

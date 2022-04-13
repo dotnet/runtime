@@ -1630,38 +1630,14 @@ namespace System.Text.RegularExpressions.Generator
                     additionalDeclarations.Add("int matchLength = 0;");
                     writer.WriteLine($"matchLength = base.MatchLength({capnum});");
 
-                    bool caseInsensitive = (node.Options & RegexOptions.IgnoreCase) != 0;
-
                     if ((node.Options & RegexOptions.RightToLeft) == 0)
                     {
-                        if (!caseInsensitive)
+                        // Validate that the remaining length of the slice is sufficient
+                        // to possibly match, and then do a SequenceEqual against the matched text.
+                        writer.WriteLine($"if ({sliceSpan}.Length < matchLength || ");
+                        using (EmitBlock(writer, $"    !inputSpan.Slice(base.MatchIndex({capnum}), matchLength).SequenceEqual({sliceSpan}.Slice(0, matchLength)))"))
                         {
-                            // If we're case-sensitive, we can simply validate that the remaining length of the slice is sufficient
-                            // to possibly match, and then do a SequenceEqual against the matched text.
-                            writer.WriteLine($"if ({sliceSpan}.Length < matchLength || ");
-                            using (EmitBlock(writer, $"    !inputSpan.Slice(base.MatchIndex({capnum}), matchLength).SequenceEqual({sliceSpan}.Slice(0, matchLength)))"))
-                            {
-                                Goto(doneLabel);
-                            }
-                        }
-                        else
-                        {
-                            // For case-insensitive, we have to walk each character individually.
-                            using (EmitBlock(writer, $"if ({sliceSpan}.Length < matchLength)"))
-                            {
-                                Goto(doneLabel);
-                            }
-                            writer.WriteLine();
-
-                            additionalDeclarations.Add("int matchIndex = 0;");
-                            writer.WriteLine($"matchIndex = base.MatchIndex({capnum});");
-                            using (EmitBlock(writer, $"for (int i = 0; i < matchLength; i++)"))
-                            {
-                                using (EmitBlock(writer, $"if (_textInfo.ToLower(inputSpan[matchIndex + i]) != _textInfo.ToLower({sliceSpan}[i]))"))
-                                {
-                                    Goto(doneLabel);
-                                }
-                            }
+                            Goto(doneLabel);
                         }
 
                         writer.WriteLine();
@@ -1680,9 +1656,7 @@ namespace System.Text.RegularExpressions.Generator
                         writer.WriteLine($"matchIndex = base.MatchIndex({capnum});");
                         using (EmitBlock(writer, $"for (int i = 0; i < matchLength; i++)"))
                         {
-                            using (EmitBlock(writer, caseInsensitive ?
-                                $"if (_textInfo.ToLower(inputSpan[matchIndex + i]) != _textInfo.ToLower(inputSpan[pos - matchLength + i]))" :
-                                $"if (inputSpan[matchIndex + i] != inputSpan[pos - matchLength + i])"))
+                            using (EmitBlock(writer, $"if (inputSpan[matchIndex + i] != inputSpan[pos - matchLength + i])"))
                             {
                                 Goto(doneLabel);
                             }
