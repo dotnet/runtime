@@ -50,16 +50,6 @@
              Include="$(CoreLibSharedDir)System\Runtime\InteropServices\LibraryImportAttribute.cs" />
     <Compile Condition="'$(NetCoreAppCurrentTargetFrameworkMoniker)' != '$(TargetFrameworkMoniker)'"
              Include="$(CoreLibSharedDir)System\Runtime\InteropServices\StringMarshalling.cs" />
-
-    <!-- Only add the following files if we are on the latest TFM (that is, net7) and the project is SPCL or has references to System.Runtime.CompilerServices.Unsafe and System.Memory -->
-    <Compile Condition="'$(NetCoreAppCurrentTargetFrameworkMoniker)' == '$(TargetFrameworkMoniker)'
-                        and (
-                          '$(MSBuildProjectName)' == 'System.Private.CoreLib'
-                          or '$(EnableLibraryImportGenerator)' == 'true'
-                          or ('@(Reference)' != ''
-                            and @(Reference->AnyHaveMetadataValue('Identity', 'System.Memory')))
-                          or ('@(ProjectReference)' != ''
-                            and @(ProjectReference->AnyHaveMetadataValue('Identity', '$(CoreLibProject)'))))" Include="$(LibrariesProjectRoot)Common\src\System\Runtime\InteropServices\ArrayMarshaller.cs" />
   </ItemGroup>
 
   <ItemGroup>
