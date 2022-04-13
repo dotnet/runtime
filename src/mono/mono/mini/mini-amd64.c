@@ -8108,7 +8108,7 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	for (i = 0; i < AMD64_NREG; ++i) {
 		if (AMD64_IS_CALLEE_SAVED_REG (i) && (cfg->arch.saved_iregs & (1 << i))) {
 			/* Restore only used_int_regs, not arch.saved_iregs */
-			int restore_reg = (cfg->used_int_regs & (1 << i));
+			size_t restore_reg = (cfg->used_int_regs & (size_t)(1 << i));
 			if (restore_reg) {
 				amd64_mov_reg_membase (code, i, cfg->frame_reg, save_area_offset, 8);
 				mono_emit_unwind_op_same_value (cfg, code, i);

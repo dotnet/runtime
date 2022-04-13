@@ -241,7 +241,7 @@ mono_array_handle_length (MonoArrayHandle arr)
 // in order to mimic non-_internal but without the GC mode transitions, or at least,
 // to avoid the runtime using the embedding API, whether or not it has GC mode transitions.
 static inline char*
-mono_array_addr_with_size_internal (MonoArray *array, int size, uintptr_t idx)
+mono_array_addr_with_size_internal (MonoArray *array, size_t size, uintptr_t idx)
 {
 	return mono_array_addr_with_size_fast (array, size, idx);
 }

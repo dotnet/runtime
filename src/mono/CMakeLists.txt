@@ -264,6 +264,7 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
   set(INTERNAL_ZLIB 1)
   set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>") # statically link VC runtime library
   add_compile_options(/W4)   # set warning level 4
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/WX>) # treat warnings as errors
   add_compile_options(/EHsc) # set exception handling behavior
   add_compile_options(/FC)   # use full pathnames in diagnostics
   add_link_options(/STACK:0x800000)  # set stack size to 8MB (default is 1MB)
