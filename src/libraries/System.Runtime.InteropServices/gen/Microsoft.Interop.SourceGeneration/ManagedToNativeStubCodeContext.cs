@@ -18,26 +18,14 @@ namespace Microsoft.Interop
 
         public bool StubIsBasicForwarder { get; init; }
 
-        /// <summary>
-        /// Identifier for managed return value
-        /// </summary>
-        public const string ReturnIdentifier = "__retVal";
-
-        /// <summary>
-        /// Identifier for native return value
-        /// </summary>
-        /// <remarks>Same as the managed identifier by default</remarks>
-        private string ReturnNativeIdentifier { get; }
-
         private const string InvokeReturnIdentifier = "__invokeRetVal";
+        private readonly string _returnIdentifier;
+        private readonly string _nativeReturnIdentifier;
 
-        public ManagedToNativeStubCodeContext(BoundGenerator managedReturn)
+        public ManagedToNativeStubCodeContext(string returnIdentifier, string nativeReturnIdentifier)
         {
-            ReturnNativeIdentifier = ReturnIdentifier;
-            if (managedReturn.Generator.UsesNativeIdentifier(managedReturn.TypeInfo, this))
-            {
-                ReturnNativeIdentifier = $"{ReturnIdentifier}{GeneratedNativeIdentifierSuffix}";
-            }
+            _returnIdentifier = returnIdentifier;
+            _nativeReturnIdentifier = nativeReturnIdentifier;
         }
 
         public override (string managed, string native) GetIdentifiers(TypePositionInfo info)
@@ -46,7 +34,7 @@ namespace Microsoft.Interop
             // for both the managed and native values since there is no name in the signature for the return value.
             if (info.IsManagedReturnPosition)
             {
-                return (ReturnIdentifier, ReturnNativeIdentifier);
+                return (_returnIdentifier, _nativeReturnIdentifier);
             }
             // If the info is in the native return position but is not in the managed return position,
             // then that means that the stub is introducing an additional info for the return position.

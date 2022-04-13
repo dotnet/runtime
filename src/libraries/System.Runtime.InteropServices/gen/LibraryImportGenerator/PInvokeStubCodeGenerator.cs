@@ -33,6 +33,10 @@ namespace Microsoft.Interop
 
         public bool StubIsBasicForwarder { get; }
 
+        /// <summary>
+        /// Identifier for managed return value
+        /// </summary>
+        private const string ReturnIdentifier = "__retVal";
         private const string LastErrorIdentifier = "__lastError";
         private const string InvokeSucceededIdentifier = "__invokeSucceeded";
 
@@ -65,7 +69,15 @@ namespace Microsoft.Interop
                 SupportsTargetFramework = true;
             }
 
+
+            _context = new ManagedToNativeStubCodeContext(ReturnIdentifier, ReturnIdentifier);
             _marshallers = new BoundGenerators(argTypes, CreateGenerator);
+
+            if (_marshallers.ManagedReturnMarshaller.Generator.UsesNativeIdentifier(_marshallers.ManagedReturnMarshaller.TypeInfo, _context))
+            {
+                // If we need a different native return identifier, then recreate the context with the correct identifier before we generate any code.
+                _context = new ManagedToNativeStubCodeContext(ReturnIdentifier, $"{ReturnIdentifier}{StubCodeContext.GeneratedNativeIdentifierSuffix}");
+            }
 
             bool noMarshallingNeeded = true;
 
@@ -82,8 +94,6 @@ namespace Microsoft.Interop
             StubIsBasicForwarder = !setLastError
                 && _marshallers.ManagedNativeSameReturn // If the managed return has native return position, then it's the return for both.
                 && noMarshallingNeeded;
-
-            _context = new ManagedToNativeStubCodeContext(_marshallers.ManagedReturnMarshaller);
 
             IMarshallingGenerator CreateGenerator(TypePositionInfo p)
             {
