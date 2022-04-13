@@ -496,29 +496,25 @@ namespace System.Text.RegularExpressions.Generator
                     // Emit the code for whatever find mode has been determined.
                     switch (regexTree.FindOptimizations.FindMode)
                     {
-                        case FindNextStartingPositionMode.LeadingPrefix_LeftToRight:
-                            Debug.Assert(!string.IsNullOrEmpty(regexTree.FindOptimizations.LeadingPrefix));
-                            EmitIndexOf_LeftToRight(regexTree.FindOptimizations.LeadingPrefix);
+                        case FindNextStartingPositionMode.LeadingString_LeftToRight:
+                        case FindNextStartingPositionMode.FixedDistanceString_LeftToRight:
+                            EmitIndexOf_LeftToRight();
                             break;
 
-                        case FindNextStartingPositionMode.LeadingPrefix_RightToLeft:
-                            Debug.Assert(!string.IsNullOrEmpty(regexTree.FindOptimizations.LeadingPrefix));
-                            EmitIndexOf_RightToLeft(regexTree.FindOptimizations.LeadingPrefix);
+                        case FindNextStartingPositionMode.LeadingString_RightToLeft:
+                            EmitIndexOf_RightToLeft();
                             break;
 
                         case FindNextStartingPositionMode.LeadingSet_LeftToRight:
-                        case FindNextStartingPositionMode.FixedSets_LeftToRight:
-                            Debug.Assert(regexTree.FindOptimizations.FixedDistanceSets is { Count: > 0 });
+                        case FindNextStartingPositionMode.FixedDistanceSets_LeftToRight:
                             EmitFixedSet_LeftToRight();
                             break;
 
                         case FindNextStartingPositionMode.LeadingSet_RightToLeft:
-                            Debug.Assert(regexTree.FindOptimizations.FixedDistanceSets is { Count: > 0 });
                             EmitFixedSet_RightToLeft();
                             break;
 
                         case FindNextStartingPositionMode.LiteralAfterLoop_LeftToRight:
-                            Debug.Assert(regexTree.FindOptimizations.LiteralAfterLoop is not null);
                             EmitLiteralAfterAtomicLoop();
                             break;
 
@@ -718,12 +714,40 @@ namespace System.Text.RegularExpressions.Generator
                 return false;
             }
 
-            // Emits a case-sensitive prefix search for a string at the beginning of the pattern.
-            void EmitIndexOf_LeftToRight(string prefix)
+            // Emits a case-sensitive left-to-right search for a substring.
+            void EmitIndexOf_LeftToRight()
             {
-                writer.WriteLine($"// The pattern begins with a literal {Literal(prefix)}. Find the next occurrence.");
+                RegexFindOptimizations opts = regexTree.FindOptimizations;
+
+                string substring = "";
+                string offset = "";
+                string offsetDescription = "at the beginning of the pattern";
+
+                switch (opts.FindMode)
+                {
+                    case FindNextStartingPositionMode.LeadingString_LeftToRight:
+                        substring = regexTree.FindOptimizations.LeadingPrefix;
+                        Debug.Assert(!string.IsNullOrEmpty(substring));
+                        break;
+
+                    case FindNextStartingPositionMode.FixedDistanceString_LeftToRight:
+                        Debug.Assert(!string.IsNullOrEmpty(regexTree.FindOptimizations.FixedDistanceLiteral.String));
+                        substring = regexTree.FindOptimizations.FixedDistanceLiteral.String;
+                        if (regexTree.FindOptimizations.FixedDistanceLiteral is { Distance: > 0 } literal)
+                        {
+                            offset = $" + {literal.Distance}";
+                            offsetDescription = $" at index {literal.Distance} in the pattern";
+                        }
+                        break;
+
+                    default:
+                        Debug.Fail($"Unexpected mode: {opts.FindMode}");
+                        break;
+                }
+
+                writer.WriteLine($"// The pattern has the literal {Literal(substring)} {offsetDescription}. Find the next occurrence.");
                 writer.WriteLine($"// If it can't be found, there's no match.");
-                writer.WriteLine($"int i = inputSpan.Slice(pos).IndexOf({Literal(prefix)});");
+                writer.WriteLine($"int i = inputSpan.Slice(pos{offset}).IndexOf({Literal(substring)});");
                 using (EmitBlock(writer, "if (i >= 0)"))
                 {
                     writer.WriteLine("base.runtextpos = pos + i;");
@@ -731,9 +755,11 @@ namespace System.Text.RegularExpressions.Generator
                 }
             }
 
-            // Emits a case-sensitive right-to-left prefix search for a string at the beginning of the pattern.
-            void EmitIndexOf_RightToLeft(string prefix)
+            // Emits a case-sensitive right-to-left search for a substring.
+            void EmitIndexOf_RightToLeft()
             {
+                string prefix = regexTree.FindOptimizations.LeadingPrefix;
+
                 writer.WriteLine($"// The pattern begins with a literal {Literal(prefix)}. Find the next occurrence right-to-left.");
                 writer.WriteLine($"// If it can't be found, there's no match.");
                 writer.WriteLine($"pos = inputSpan.Slice(0, pos).LastIndexOf({Literal(prefix)});");
@@ -748,6 +774,8 @@ namespace System.Text.RegularExpressions.Generator
             // and potentially other sets at other fixed positions in the pattern.
             void EmitFixedSet_LeftToRight()
             {
+                Debug.Assert(regexTree.FindOptimizations.FixedDistanceSets is { Count: > 0 });
+
                 List<(char[]? Chars, string Set, int Distance)>? sets = regexTree.FindOptimizations.FixedDistanceSets;
                 (char[]? Chars, string Set, int Distance) primarySet = sets![0];
                 const int MaxSets = 4;
@@ -871,6 +899,8 @@ namespace System.Text.RegularExpressions.Generator
             // (Currently that position will always be a distance of 0, meaning the start of the pattern itself.)
             void EmitFixedSet_RightToLeft()
             {
+                Debug.Assert(regexTree.FindOptimizations.FixedDistanceSets is { Count: > 0 });
+
                 (char[]? Chars, string Set, int Distance) set = regexTree.FindOptimizations.FixedDistanceSets![0];
                 Debug.Assert(set.Distance == 0);
 
