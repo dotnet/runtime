@@ -506,7 +506,7 @@ buffer_manager_allocate_buffer_for_thread (
 	new_buffer = ep_buffer_alloc (buffer_size, ep_thread_session_state_get_thread (thread_session_state), sequence_number);
 	ep_raise_error_if_nok (new_buffer != NULL);
 
-	// Allocating a buffer requires us to take the lock.
+	// Adding a buffer to the buffer list requires us to take the lock.
 	EP_SPIN_LOCK_ENTER (&buffer_manager->rt_lock, section1)
 		thread_buffer_list = ep_thread_session_state_get_buffer_list (thread_session_state);
 		if (thread_buffer_list == NULL) {
