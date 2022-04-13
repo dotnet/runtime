@@ -752,7 +752,7 @@ namespace System
         public DateTime(int year, int month, int day, int hour, int minute, int second, int millisecond, int microsecond, Calendar calendar!!, DateTimeKind kind)
             : this(year, month, day, hour, minute, second, millisecond, calendar, kind)
         {
-            if (microsecond is < 0 or >= MicrosecondsPerMillisecond)
+            if ((uint)microsecond >= MicrosecondsPerMillisecond)
             {
                 ThrowMicrosecondOutOfRange();
             }
