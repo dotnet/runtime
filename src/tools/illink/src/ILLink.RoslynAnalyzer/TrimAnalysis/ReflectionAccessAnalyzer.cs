@@ -80,8 +80,8 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 
 		internal static void GetReflectionAccessDiagnosticsForMethod (in DiagnosticContext diagnosticContext, IMethodSymbol methodSymbol)
 		{
-			if (methodSymbol.TryGetRequiresUnreferencedCodeAttribute (out var requiresAttributeData))
-				ReportRequiresUnreferencedCodeDiagnostic (diagnosticContext, requiresAttributeData, methodSymbol);
+			if (methodSymbol.TryGetRequiresUnreferencedCodeAttribute (out var requiresUnreferencedCodeAttributeData))
+				ReportRequiresUnreferencedCodeDiagnostic (diagnosticContext, requiresUnreferencedCodeAttributeData, methodSymbol);
 
 			if (!methodSymbol.IsStatic && methodSymbol.GetDynamicallyAccessedMemberTypes () != DynamicallyAccessedMemberTypes.None)
 				diagnosticContext.AddDiagnostic (DiagnosticId.DynamicallyAccessedMembersMethodAccessedViaReflection, methodSymbol.GetDisplayName ());
@@ -117,8 +117,8 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 
 		static void GetDiagnosticsForField (in DiagnosticContext diagnosticContext, IFieldSymbol fieldSymbol)
 		{
-			if (fieldSymbol.TryGetRequiresUnreferencedCodeAttribute (out var requiresAttributeData))
-				ReportRequiresUnreferencedCodeDiagnostic (diagnosticContext, requiresAttributeData, fieldSymbol);
+			if (fieldSymbol.TryGetRequiresUnreferencedCodeAttribute (out var requiresUnreferencedCodeAttributeData))
+				ReportRequiresUnreferencedCodeDiagnostic (diagnosticContext, requiresUnreferencedCodeAttributeData, fieldSymbol);
 
 			if (fieldSymbol.GetDynamicallyAccessedMemberTypes () != DynamicallyAccessedMemberTypes.None)
 				diagnosticContext.AddDiagnostic (DiagnosticId.DynamicallyAccessedMembersFieldAccessedViaReflection, fieldSymbol.GetDisplayName ());
