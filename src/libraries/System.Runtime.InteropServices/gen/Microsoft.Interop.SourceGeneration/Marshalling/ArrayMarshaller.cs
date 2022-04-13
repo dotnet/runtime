@@ -82,7 +82,7 @@ namespace Microsoft.Interop
         {
             (string managedIdentifer, string nativeIdentifier) = context.GetIdentifiers(info);
             string byRefIdentifier = $"__byref_{managedIdentifer}";
-            TypeSyntax arrayElementType = _elementType;
+            TypeSyntax arrayElementType = _elementType is PointerTypeSyntax ? PredefinedType(Token(SyntaxKind.ByteKeyword)) : _elementType;
             if (context.CurrentStage == StubCodeContext.Stage.Marshal)
             {
                 // [COMPAT] We use explicit byref calculations here instead of just using a fixed statement
