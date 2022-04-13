@@ -4251,6 +4251,9 @@ namespace System.Text.RegularExpressions.Generator
                 // For atomic, skip the node if we'll instead render the atomic label as part of rendering the child.
                 RegexNodeKind.Atomic when node.Child(0).Kind is RegexNodeKind.Loop or RegexNodeKind.Lazyloop or RegexNodeKind.Alternate => true,
 
+                // Skip nodes that are implementation details with no visible behavioral impact.
+                RegexNodeKind.UpdateBumpalong => true,
+
                 // Don't skip anything else.
                 _ => false,
             };
