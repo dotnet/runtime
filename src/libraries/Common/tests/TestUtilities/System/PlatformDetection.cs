@@ -441,14 +441,16 @@ namespace System
 
         private static bool GetTls10Support()
         {
-            // on Windows, macOS, and Android TLS1.0/1.1 are supported.
+            // on macOS and Android TLS 1.0 is supported.
             if (IsOSXLike || IsAndroid)
             {
                 return true;
             }
+
+            // Windows depend on registry, enabled by default on all supported versions.
             if (IsWindows)
             {
-                return GetProtocolSupportFromWindowsRegistry(SslProtocols.Tls, true);
+                return GetProtocolSupportFromWindowsRegistry(SslProtocols.Tls, defaultProtocolSupport: true);
             }
 
             return OpenSslGetTlsSupport(SslProtocols.Tls);
@@ -456,17 +458,18 @@ namespace System
 
         private static bool GetTls11Support()
         {
-            // on Windows, macOS, and Android TLS1.0/1.1 are supported.            
             if (IsWindows)
             {
-                // TLS 1.1 and 1.2 can work on Windows7 but it is not enabled by default.
+                // TLS 1.1 can work on Windows 7 but it is disabled by default.
                 if (IsWindows7)
                 {
-                    return GetProtocolSupportFromWindowsRegistry(SslProtocols.Tls11, false, true);
+                    return GetProtocolSupportFromWindowsRegistry(SslProtocols.Tls11, defaultProtocolSupport: false, disabledByDefault: true);
                 }
 
-                return GetProtocolSupportFromWindowsRegistry(SslProtocols.Tls11, true);
+                // It is enabled on other versions unless explicitly disabled.
+                return GetProtocolSupportFromWindowsRegistry(SslProtocols.Tls11, defaultProtocolSupport: true);
             }
+            // on macOS and Android TLS 1.1 is supported.
             else if (IsOSXLike || IsAndroid)
             {
                 return true;
@@ -479,13 +482,14 @@ namespace System
         {
             if (IsWindows)
             {
-                // TLS 1.1 and 1.2 can work on Windows7 but it is not enabled by default.
+                // TLS 1.2 can work on Windows 7 but it is disabled by default.
                 if (IsWindows7)
                 {
-                    return GetProtocolSupportFromWindowsRegistry(SslProtocols.Tls12, false, true);
+                    return GetProtocolSupportFromWindowsRegistry(SslProtocols.Tls12, defaultProtocolSupport: false, disabledByDefault: true);
                 }
 
-                return GetProtocolSupportFromWindowsRegistry(SslProtocols.Tls12, true);
+                // It is enabled on other versions unless explicitly disabled.
+                return GetProtocolSupportFromWindowsRegistry(SslProtocols.Tls12, defaultProtocolSupport: true);
             }
 
             return true;
