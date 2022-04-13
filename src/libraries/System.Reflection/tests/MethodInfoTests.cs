@@ -709,32 +709,31 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
-        public void ValueTypeMembers()
+        public void ValueTypeMembers_WithOverrides()
         {
-            ValueTypeWithOverrides valueTypeWithOverrides = default;
-            valueTypeWithOverrides.Id = 1;
+            ValueTypeWithOverrides obj = new() { Id = 1 };
 
             // ToString is overridden.
-            Assert.Equal("Hello", (string)GetMethod<ValueTypeWithOverrides>(nameof(ValueTypeWithOverrides.ToString)).
-                Invoke(valueTypeWithOverrides, null));
+            Assert.Equal("Hello", (string)GetMethod(typeof(ValueTypeWithOverrides), nameof(ValueTypeWithOverrides.ToString)).
+                Invoke(obj, null));
 
             // Ensure a normal method works.
-            Assert.Equal(1, (int)GetMethod<ValueTypeWithOverrides>(nameof(ValueTypeWithOverrides.GetId)).
-                Invoke(valueTypeWithOverrides, null));
+            Assert.Equal(1, (int)GetMethod(typeof(ValueTypeWithOverrides), nameof(ValueTypeWithOverrides.GetId)).
+                Invoke(obj, null));
+        }
 
-            ValueTypeWithoutOverrides valueTypeWithoutOverrides = default;
-            valueTypeWithoutOverrides.Id = 1;
+        [Fact]
+        public void ValueTypeMembers_WithoutOverrides()
+        {
+            ValueTypeWithoutOverrides obj = new() { Id = 1 };
 
             // ToString is not overridden.
-            Assert.Equal(typeof(ValueTypeWithoutOverrides).ToString(), (string)GetMethod<ValueTypeWithoutOverrides>(nameof(ValueTypeWithoutOverrides.ToString)).
-                Invoke(valueTypeWithoutOverrides, null ));
+            Assert.Equal(typeof(ValueTypeWithoutOverrides).ToString(), (string)GetMethod(typeof(ValueTypeWithoutOverrides), nameof(ValueTypeWithoutOverrides.ToString)).
+                Invoke(obj, null));
 
             // Ensure a normal method works.
-            Assert.Equal(1, (int)GetMethod<ValueTypeWithoutOverrides>(nameof(ValueTypeWithoutOverrides.GetId)).
-                Invoke(valueTypeWithOverrides, null));
-
-            static MethodInfo GetMethod<T>(string name) => typeof(T).GetMethod(
-                name, BindingFlags.Public | BindingFlags.Instance)!;
+            Assert.Equal(1, (int)GetMethod(typeof(ValueTypeWithoutOverrides), nameof(ValueTypeWithoutOverrides.GetId)).
+                Invoke(obj, null));
         }
 
         //Methods for Reflection Metadata
