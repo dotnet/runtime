@@ -8161,6 +8161,7 @@ GenTree* Compiler::gtCloneExpr(
                                  gtCloneExpr(tree->AsBoundsChk()->gtArrLen, addFlags, deepVarNum, deepVarVal),
                                  tree->AsBoundsChk()->gtThrowKind);
             copy->AsBoundsChk()->gtIndRngFailBB = tree->AsBoundsChk()->gtIndRngFailBB;
+            copy->AsBoundsChk()->gtInxType      = tree->AsBoundsChk()->gtInxType;
             break;
 
         case GT_STORE_DYN_BLK:
