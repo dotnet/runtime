@@ -6,6 +6,8 @@
     <Nullable>enable</Nullable>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent);netcoreapp3.1-windows;netcoreapp3.1;netstandard2.1-windows;netstandard2.1;netstandard2.0-windows;netstandard2.0;net461-windows</TargetFrameworks>
     <IsPackable>true</IsPackable>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <ServicingVersion>1</ServicingVersion>
     <PackageDescription>Provides support for PKCS and CMS algorithms.
 
 Commonly Used Types:
@@ -489,6 +491,10 @@ System.Security.Cryptography.Pkcs.EnvelopedCms</PackageDescription>
     <AsnXml Include="System\Security\Cryptography\Pkcs\Asn1\MessageImprint.xml" />
     <Compile Include="System\Security\Cryptography\Pkcs\Asn1\MessageImprint.xml.cs">
       <DependentUpon>System\Security\Cryptography\Pkcs\Asn1\MessageImprint.xml</DependentUpon>
+    </Compile>
+    <AsnXml Include="System\Security\Cryptography\Pkcs\Asn1\OtherCertificateFormat.xml" />
+    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\OtherCertificateFormat.xml.cs">
+      <DependentUpon>System\Security\Cryptography\Pkcs\Asn1\OtherCertificateFormat.xml</DependentUpon>
     </Compile>
     <Compile Include="System\Security\Cryptography\Pkcs\Asn1\PkiFailureInfo.cs" />
     <Compile Include="System\Security\Cryptography\Pkcs\Asn1\PkiStatus.cs" />
