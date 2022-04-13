@@ -503,8 +503,9 @@ CONFIG_INTEGER(JitProfileCasts, W("JitProfileCasts"), 0)                     // 
 CONFIG_INTEGER(JitConsumeProfileForCasts, W("JitConsumeProfileForCasts"), 0) // Consume profile data (if any) for
                                                                              // castclass/isinst
 
-CONFIG_INTEGER(JitClassProfiling, W("JitClassProfiling"), 1)         // Profile virtual and interface calls
-CONFIG_INTEGER(JitEdgeProfiling, W("JitEdgeProfiling"), 1)           // Profile edges instead of blocks
+CONFIG_INTEGER(JitClassProfiling, W("JitClassProfiling"), 1)   // Profile virtual and interface calls
+CONFIG_INTEGER(JitMethodProfiling, W("JitMethodProfiling"), 0) // Profile resolved delegate and vtable call targets
+CONFIG_INTEGER(JitEdgeProfiling, W("JitEdgeProfiling"), 1)     // Profile edges instead of blocks
 CONFIG_INTEGER(JitCollect64BitCounts, W("JitCollect64BitCounts"), 0) // Collect counts as 64-bit values.
 
 // Profile consumption options

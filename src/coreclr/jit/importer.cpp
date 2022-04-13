@@ -9627,6 +9627,8 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
         }
     }
 
+    impConsiderCallProbe(call->AsCall(), rawILOffset);
+
     //-------------------------------------------------------------------------
     // The "this" pointer for "newobj"
 
@@ -10059,7 +10061,7 @@ DONE_CALL:
                 // important devirtualizations, we'll want to allow both a class probe and a captured context.
                 //
                 if (origCall->IsVirtual() && (origCall->gtCallType != CT_INDIRECT) && (exactContextHnd != nullptr) &&
-                    (origCall->gtClassProfileCandidateInfo == nullptr))
+                    (origCall->gtHandleHistogramProfileCandidateInfo == nullptr))
                 {
                     JITDUMP("\nSaving context %p for call [%06u]\n", exactContextHnd, dspTreeID(origCall));
                     origCall->gtCallMoreFlags |= GTF_CALL_M_LATE_DEVIRT;
@@ -11737,11 +11739,11 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
         GenTreeCall* call = gtNewHelperCallNode(helper, TYP_REF, gtNewCallArgs(op2, op1));
         if (impIsCastHelperEligibleForClassProbe(call) && !impIsClassExact(pResolvedToken->hClass))
         {
-            ClassProfileCandidateInfo* pInfo  = new (this, CMK_Inlining) ClassProfileCandidateInfo;
-            pInfo->ilOffset                   = ilOffset;
-            pInfo->probeIndex                 = info.compClassProbeCount++;
-            call->gtClassProfileCandidateInfo = pInfo;
-            compCurBB->bbFlags |= BBF_HAS_CLASS_PROFILE;
+            HandleHistogramProfileCandidateInfo* pInfo  = new (this, CMK_Inlining) HandleHistogramProfileCandidateInfo;
+            pInfo->ilOffset                             = ilOffset;
+            pInfo->probeIndex                           = info.compHandleHistogramProbeCount++;
+            call->gtHandleHistogramProfileCandidateInfo = pInfo;
+            compCurBB->bbFlags |= BBF_HAS_HISTOGRAM_PROFILE;
         }
         return call;
     }
@@ -20976,45 +20978,6 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     //
     assert(call->IsVirtual());
 
-    // Possibly instrument. Note for OSR+PGO we will instrument when
-    // optimizing and (currently) won't devirtualize. We may want
-    // to revisit -- if we can devirtualize we should be able to
-    // suppress the probe.
-    //
-    // We strip BBINSTR from inlinees currently, so we'll only
-    // do this for the root method calls.
-    //
-    if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR))
-    {
-        assert(opts.OptimizationDisabled() || opts.IsOSR());
-        assert(!compIsForInlining());
-
-        // During importation, optionally flag this block as one that
-        // contains calls requiring class profiling. Ideally perhaps
-        // we'd just keep track of the calls themselves, so we don't
-        // have to search for them later.
-        //
-        if ((call->gtCallType != CT_INDIRECT) && opts.jitFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR) &&
-            !opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT) && (JitConfig.JitClassProfiling() > 0) &&
-            !isLateDevirtualization)
-        {
-            JITDUMP("\n ... marking [%06u] in " FMT_BB " for class profile instrumentation\n", dspTreeID(call),
-                    compCurBB->bbNum);
-            ClassProfileCandidateInfo* pInfo = new (this, CMK_Inlining) ClassProfileCandidateInfo;
-
-            // Record some info needed for the class profiling probe.
-            //
-            pInfo->ilOffset                   = ilOffset;
-            pInfo->probeIndex                 = info.compClassProbeCount++;
-            call->gtClassProfileCandidateInfo = pInfo;
-
-            // Flag block as needing scrutiny
-            //
-            compCurBB->bbFlags |= BBF_HAS_CLASS_PROFILE;
-        }
-        return;
-    }
-
     // Bail if optimizations are disabled.
     if (opts.OptimizationDisabled())
     {
@@ -21680,6 +21643,84 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
         call->setEntryPoint(derivedCallInfo.codePointerLookup.constLookup);
     }
 #endif // FEATURE_READYTORUN
+}
+
+void Compiler::impConsiderCallProbe(GenTreeCall* call, IL_OFFSET ilOffset)
+{
+    // Possibly instrument. Note for OSR+PGO we will instrument when
+    // optimizing and (currently) won't devirtualize. We may want
+    // to revisit -- if we can devirtualize we should be able to
+    // suppress the probe.
+    //
+    // We strip BBINSTR from inlinees currently, so we'll only
+    // do this for the root method calls.
+    //
+    if (!opts.jitFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR))
+    {
+        return;
+    }
+
+    assert(opts.OptimizationDisabled() || opts.IsOSR());
+    assert(!compIsForInlining());
+
+    // During importation, optionally flag this block as one that
+    // contains calls requiring class profiling. Ideally perhaps
+    // we'd just keep track of the calls themselves, so we don't
+    // have to search for them later.
+    //
+    if ((compClassifyGDVProbeType(call) != GDVProbeType::None))
+    {
+        JITDUMP("\n ... marking [%06u] in " FMT_BB " for method/class profile instrumentation\n", dspTreeID(call),
+                compCurBB->bbNum);
+        HandleHistogramProfileCandidateInfo* pInfo = new (this, CMK_Inlining) HandleHistogramProfileCandidateInfo;
+
+        // Record some info needed for the class profiling probe.
+        //
+        pInfo->ilOffset                             = ilOffset;
+        pInfo->probeIndex                           = info.compHandleHistogramProbeCount++;
+        call->gtHandleHistogramProfileCandidateInfo = pInfo;
+
+        // Flag block as needing scrutiny
+        //
+        compCurBB->bbFlags |= BBF_HAS_HISTOGRAM_PROFILE;
+    }
+}
+
+Compiler::GDVProbeType Compiler::compClassifyGDVProbeType(GenTreeCall* call)
+{
+    if (call->gtCallType == CT_INDIRECT)
+    {
+        return GDVProbeType::None;
+    }
+
+    if (!opts.jitFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR) || opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT))
+    {
+        return GDVProbeType::None;
+    }
+
+    bool createTypeHistogram =
+        (JitConfig.JitClassProfiling() > 0) &&
+        (call->IsVirtualStub() || call->IsVirtualVtable() || impIsCastHelperEligibleForClassProbe(call));
+
+    bool createMethodHistogram =
+        (JitConfig.JitMethodProfiling() > 0) && (call->IsVirtualVtable() || call->IsDelegateInvoke());
+
+    if (createTypeHistogram && createMethodHistogram)
+    {
+        return GDVProbeType::MethodAndClassProfile;
+    }
+
+    if (createTypeHistogram)
+    {
+        return GDVProbeType::ClassProfile;
+    }
+
+    if (createMethodHistogram)
+    {
+        return GDVProbeType::MethodProfile;
+    }
+
+    return GDVProbeType::None;
 }
 
 //------------------------------------------------------------------------

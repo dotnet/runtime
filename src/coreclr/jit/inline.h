@@ -547,10 +547,10 @@ private:
     bool                  m_Reported;
 };
 
-// ClassProfileCandidateInfo provides information about
+// HandleHistogramProfileCandidateInfo provides information about
 // profiling an indirect or virtual call.
 //
-struct ClassProfileCandidateInfo
+struct HandleHistogramProfileCandidateInfo
 {
     IL_OFFSET ilOffset;
     unsigned  probeIndex;
@@ -559,7 +559,7 @@ struct ClassProfileCandidateInfo
 // GuardedDevirtualizationCandidateInfo provides information about
 // a potential target of a virtual or interface call.
 //
-struct GuardedDevirtualizationCandidateInfo : ClassProfileCandidateInfo
+struct GuardedDevirtualizationCandidateInfo : HandleHistogramProfileCandidateInfo
 {
     CORINFO_CLASS_HANDLE  guardedClassHandle;
     CORINFO_METHOD_HANDLE guardedMethodHandle;

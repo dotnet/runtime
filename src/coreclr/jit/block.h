@@ -546,7 +546,7 @@ enum BasicBlockFlags : unsigned __int64
     BBF_BACKWARD_JUMP_TARGET = MAKE_BBFLAG(35), // Block is a target of a backward jump
 
     BBF_PATCHPOINT           = MAKE_BBFLAG(36), // Block is a patchpoint
-    BBF_HAS_CLASS_PROFILE    = MAKE_BBFLAG(37), // BB contains a call needing a class profile
+    BBF_HAS_HISTOGRAM_PROFILE    = MAKE_BBFLAG(37), // BB contains a call needing a class profile
     BBF_PARTIAL_COMPILATION_PATCHPOINT  = MAKE_BBFLAG(38), // Block is a partial compilation patchpoint
     BBF_HAS_ALIGN            = MAKE_BBFLAG(39), // BB ends with 'align' instruction
     BBF_TAILCALL_SUCCESSOR   = MAKE_BBFLAG(40), // BB has pred that has potential tail call
@@ -582,7 +582,7 @@ enum BasicBlockFlags : unsigned __int64
     // TODO: Should BBF_RUN_RARELY be added to BBF_SPLIT_GAINED ?
 
     BBF_SPLIT_GAINED = BBF_DONT_REMOVE | BBF_HAS_JMP | BBF_BACKWARD_JUMP | BBF_HAS_IDX_LEN | BBF_HAS_NEWARRAY | BBF_PROF_WEIGHT | \
-                       BBF_HAS_NEWOBJ | BBF_KEEP_BBJ_ALWAYS | BBF_CLONED_FINALLY_END | BBF_HAS_NULLCHECK | BBF_HAS_CLASS_PROFILE,
+                       BBF_HAS_NEWOBJ | BBF_KEEP_BBJ_ALWAYS | BBF_CLONED_FINALLY_END | BBF_HAS_NULLCHECK | BBF_HAS_HISTOGRAM_PROFILE,
 };
 
 inline constexpr BasicBlockFlags operator ~(BasicBlockFlags a)
@@ -918,8 +918,8 @@ struct BasicBlock : private LIR::Range
     };
 
     union {
-        unsigned bbStkTempsOut;      // base# for output stack temps
-        int      bbClassSchemaIndex; // schema index for class instrumentation
+        unsigned bbStkTempsOut;          // base# for output stack temps
+        int      bbHistogramSchemaIndex; // schema index for histogram instrumentation
     };
 
 #define MAX_XCPTN_INDEX (USHRT_MAX - 1)
