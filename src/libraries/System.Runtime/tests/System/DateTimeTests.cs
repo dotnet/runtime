@@ -174,6 +174,27 @@ namespace System.Tests
             VerifyDateTime(dateTime, year, month, day, hour, minute, second, millisecond, microsecond, DateTimeKind.Local);
         }
 
+        public static IEnumerable<object[]> Ctor_Int_Int_Int_Int_Int_Int_Int_Int_Int_WithNanoseconds_TestData()
+        {
+            yield return new object[] { 1986, 8, 15, 10, 20, 5, 600, 300, 0 };
+            yield return new object[] { 1986, 2, 28, 10, 20, 5, 600, 300, 100 };
+            yield return new object[] { 1986, 12, 31, 10, 20, 5, 600, 300, 200 };
+            yield return new object[] { 2000, 2, 28, 10, 20, 5, 600, 300, 300 };
+            yield return new object[] { 2000, 2, 29, 10, 20, 5, 600, 300, 400 };
+            yield return new object[] { 2000, 12, 31, 10, 20, 5, 600, 300, 500 };
+            yield return new object[] { 1900, 2, 28, 10, 20, 5, 600, 300, 600 };
+            yield return new object[] { 1900, 12, 31, 10, 20, 5, 600, 300, 900 };
+        }
+
+        [Theory]
+        [MemberData(nameof(Ctor_Int_Int_Int_Int_Int_Int_Int_Int_Int_WithNanoseconds_TestData))]
+        public void Ctor_Int_Int_Int_Int_Int_Int_Int_Int_Int_WithNanoseconds(int year, int month, int day, int hour, int minute, int second, int millisecond, int microsecond, int nanosecond)
+        {
+            var dateTime = new DateTime(year, month, day, hour, minute, second, millisecond, microsecond);
+            dateTime = dateTime.AddTicks(nanosecond / 100);
+            VerifyDateTime(dateTime, year, month, day, hour, minute, second, millisecond, microsecond, nanosecond, DateTimeKind.Unspecified);
+        }
+
         [Theory]
         [InlineData(0)]
         [InlineData(10000)]
@@ -1841,6 +1862,13 @@ namespace System.Tests
         {
             VerifyDateTime(dateTime, year, month, day, hour, minute, second, millisecond, kind);
             Assert.Equal(microsecond, dateTime.Microsecond);
+        }
+
+        private static void VerifyDateTime(DateTime dateTime, int year, int month, int day, int hour, int minute,
+            int second, int millisecond, int microsecond, int nanosecond, DateTimeKind kind)
+        {
+            VerifyDateTime(dateTime, year, month, day, hour, minute, second, millisecond, microsecond, kind);
+            Assert.Equal(nanosecond, dateTime.Nanosecond);
         }
 
         private class MyFormatter : IFormatProvider

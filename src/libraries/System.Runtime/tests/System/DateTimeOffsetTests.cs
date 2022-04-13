@@ -1205,6 +1205,14 @@ namespace System.Tests
             VerifyDateTimeOffset(dateTimeOffset, 1, 1, 1, 0, 0, 0, 0, 0, TimeSpan.Zero);
         }
 
+
+        [Fact]
+        public static void Ctor_Calendar_TimeSpan_Microseconds()
+        {
+            var dateTimeOffset = new DateTimeOffset(1, 1, 1, 0, 0, 0, 0, 123, new GregorianCalendar(), TimeSpan.Zero);
+            VerifyDateTimeOffset(dateTimeOffset, 1, 1, 1, 0, 0, 0, 0, 123, TimeSpan.Zero);
+        }
+
         public static IEnumerable<object[]> ToString_MatchesExpected_MemberData()
         {
             // Randomly generated data on .NET Framework with:
