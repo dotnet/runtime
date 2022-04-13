@@ -75,6 +75,7 @@ namespace System.Diagnostics
 
         public struct Enumerator<T>
         {
+            [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
             public readonly System.Diagnostics.Activity.Enumerator<T> GetEnumerator() { throw null; }
             public readonly ref T Current { get { throw null; } }
             public bool MoveNext() { throw null; }
