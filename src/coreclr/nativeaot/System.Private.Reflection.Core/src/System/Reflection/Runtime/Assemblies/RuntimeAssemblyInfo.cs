@@ -66,6 +66,14 @@ namespace System.Reflection.Runtime.Assemblies
             }
         }
 
+        public sealed override Module GetModule(string name)
+        {
+            if (name == ManifestModule.ScopeName)
+                return ManifestModule;
+
+            return null;
+        }
+
         [RequiresUnreferencedCode("Types might be removed")]
         public sealed override Type GetType(string name, bool throwOnError, bool ignoreCase)
         {
@@ -286,13 +294,13 @@ namespace System.Reflection.Runtime.Assemblies
         [RequiresAssemblyFiles(ThrowingMessageInRAF)]
         public sealed override FileStream GetFile(string name)
         {
-            throw new PlatformNotSupportedException();
+            throw new FileNotFoundException();
         }
 
         [RequiresAssemblyFiles(ThrowingMessageInRAF)]
         public sealed override FileStream[] GetFiles(bool getResourceModules)
         {
-            throw new PlatformNotSupportedException();
+            throw new FileNotFoundException();
         }
 
         public sealed override SecurityRuleSet SecurityRuleSet

@@ -194,12 +194,18 @@
   <ItemGroup Condition="'$(TargetOS)' == 'Android' and '$(TargetArchitecture)' == 'x64' and '$(RunDisabledAndroidTests)' != 'true'">
     <!-- Test flakiness on x64 https://github.com/dotnet/runtime/issues/49937 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Threading\tests\System.Threading.Tests.csproj" />
+
+    <!-- Out of memory https://github.com/dotnet/runtime/issues/62547 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Security.Cryptography\tests\System.Security.Cryptography.Tests.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetOS)' == 'Android' and '$(TargetArchitecture)' == 'x86' and '$(RunDisabledAndroidTests)' != 'true'">
     <!-- Crashes only on x86 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Primitives\tests\Microsoft.Extensions.Primitives.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.Extensions\tests\System.Runtime.Extensions.Tests.csproj" />
+
+    <!-- Out of memory https://github.com/dotnet/runtime/issues/62547 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Security.Cryptography\tests\System.Security.Cryptography.Tests.csproj" />
 
     <!-- https://github.com/dotnet/runtime/issues/50493 -->
     <ProjectExclusions Include="$(RepoRoot)\src\tests\FunctionalTests\Android\Device_Emulator\AOT\Android.Device_Emulator.Aot.Test.csproj" />

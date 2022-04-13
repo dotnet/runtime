@@ -221,8 +221,10 @@ GTNODE(MUL_LONG         , GenTreeOp          ,1,GTK_BINOP|DBK_NOTHIR)
 GTNODE(AND_NOT          , GenTreeOp          ,0,GTK_BINOP|DBK_NOTHIR)
 
 #ifdef TARGET_ARM64
-GTNODE(MADD             , GenTreeOp          ,0,GTK_BINOP|DBK_NOTHIR) // Generates the Multiply-Add instruction (madd/msub) In the future, we might consider
+GTNODE(MADD             , GenTreeOp          ,0,GTK_BINOP|DBK_NOTHIR) // Generates the Multiply-Add instruction. In the future, we might consider
                                                                       // enabling it for both armarch and xarch for floating-point MADD "unsafe" math.
+GTNODE(MSUB             , GenTreeOp          ,0,GTK_BINOP|DBK_NOTHIR) // Generates the Multiply-Subtract instruction. In the future, we might consider
+                                                                      // enabling it for both armarch and xarch for floating-point MSUB "unsafe" math.
 GTNODE(ADDEX,             GenTreeOp          ,0,GTK_BINOP|DBK_NOTHIR) // Add with sign/zero extension.
 GTNODE(BFIZ             , GenTreeOp          ,0,GTK_BINOP|DBK_NOTHIR) // Bitfield Insert in Zero.
 #endif

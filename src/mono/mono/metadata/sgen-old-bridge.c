@@ -701,7 +701,7 @@ processing_build_callback_data (int generation)
 
 	dyn_array_scc_init (&sccs);
 	for (i = 0; i < hash_table.num_entries; ++i) {
-		HashEntry *entry = all_entries [i];
+		entry = all_entries [i];
 		if (entry->scc_index < 0) {
 			int index = dyn_array_scc_size (&sccs);
 			current_scc = dyn_array_scc_add (&sccs);
@@ -733,26 +733,26 @@ processing_build_callback_data (int generation)
 	if (bridge_accounting_enabled) {
 		for (i = hash_table.num_entries - 1; i >= 0; --i) {
 			double w;
-			HashEntryWithAccounting *entry = (HashEntryWithAccounting*)all_entries [i];
+			HashEntryWithAccounting *entry_acc = (HashEntryWithAccounting*)all_entries [i];
 
-			entry->weight += (double)sgen_safe_object_get_size (entry->entry.obj);
-			w = entry->weight / dyn_array_ptr_size (&entry->entry.srcs);
-			for (j = 0; j < dyn_array_ptr_size (&entry->entry.srcs); ++j) {
-				HashEntryWithAccounting *other = (HashEntryWithAccounting *)dyn_array_ptr_get (&entry->entry.srcs, j);
+			entry_acc->weight += (double)sgen_safe_object_get_size (entry_acc->entry.obj);
+			w = entry_acc->weight / dyn_array_ptr_size (&entry_acc->entry.srcs);
+			for (j = 0; j < dyn_array_ptr_size (&entry_acc->entry.srcs); ++j) {
+				HashEntryWithAccounting *other = (HashEntryWithAccounting *)dyn_array_ptr_get (&entry_acc->entry.srcs, j);
 				other->weight += w;
 			}
 		}
 		for (i = 0; i < hash_table.num_entries; ++i) {
-			HashEntryWithAccounting *entry = (HashEntryWithAccounting*)all_entries [i];
-			if (entry->entry.is_bridge) {
-				MonoClass *klass = SGEN_LOAD_VTABLE (entry->entry.obj)->klass;
-				mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_GC, "OBJECT %s::%s (%p) weight %f", m_class_get_name_space (klass), m_class_get_name (klass), entry->entry.obj, entry->weight);
+			HashEntryWithAccounting *entry_acc = (HashEntryWithAccounting*)all_entries [i];
+			if (entry_acc->entry.is_bridge) {
+				MonoClass *klass = SGEN_LOAD_VTABLE (entry_acc->entry.obj)->klass;
+				mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_GC, "OBJECT %s::%s (%p) weight %f", m_class_get_name_space (klass), m_class_get_name (klass), entry_acc->entry.obj, entry_acc->weight);
 			}
 		}
 	}
 
 	for (i = 0; i < hash_table.num_entries; ++i) {
-		HashEntry *entry = all_entries [i];
+		entry = all_entries [i];
 		second_pass_links += dyn_array_ptr_size (&entry->srcs);
 	}
 

@@ -9,7 +9,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Xml.Extensions;
 using System.Xml.Schema;
 
 // UnconditionalSuppressMessage that specify a Target need to be at the assembly or module level for now. Also,
@@ -1634,7 +1633,6 @@ namespace System.Xml.Serialization
                 }
 
                 var allMembersList = new List<Member>(mappings.Length);
-                var allMemberMappingList = new List<MemberMapping>(mappings.Length);
 
                 for (int i = 0; i < mappings.Length; i++)
                 {
@@ -1775,7 +1773,6 @@ namespace System.Xml.Serialization
                         }
                     }
 
-                    allMemberMappingList.Add(mapping);
                     allMembersList.Add(member);
 
                     if (mapping == anyElement)
