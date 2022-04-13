@@ -7,6 +7,7 @@
   <ItemGroup>
     <Compile Include="System\Collections\HashtableExtensions.cs" />
     <Compile Include="System\Collections\Generic\ValueListBuilder.Pop.cs" />
+    <Compile Include="System\Text\RegularExpressions\ValueMatch.cs" />
     <Compile Include="System\Threading\StackHelper.cs" />
     <Compile Include="System\Text\SegmentStringBuilder.cs" />
     <Compile Include="System\Text\RegularExpressions\Capture.cs" />
@@ -23,6 +24,7 @@
     <Compile Include="System\Text\RegularExpressions\Regex.Match.cs" />
     <Compile Include="System\Text\RegularExpressions\Regex.Replace.cs" />
     <Compile Include="System\Text\RegularExpressions\Regex.Split.cs" />
+    <Compile Include="System\Text\RegularExpressions\Regex.EnumerateMatches.cs" />
     <Compile Include="System\Text\RegularExpressions\Regex.Timeout.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexCaseBehavior.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexCaseEquivalences.Data.cs" />

@@ -13,7 +13,7 @@ using Xunit;
 
 namespace System.Text.RegularExpressions.Tests
 {
-    public class RegexMatchTests
+    public partial class RegexMatchTests
     {
         public static IEnumerable<object[]> Match_MemberData()
         {
