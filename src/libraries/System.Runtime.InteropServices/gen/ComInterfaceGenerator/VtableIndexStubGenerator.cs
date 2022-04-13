@@ -1,0 +1,415 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using System;
+using System.Collections.Generic;
+using System.Collections.Immutable;
+using System.Diagnostics;
+using System.Linq;
+using System.Runtime.InteropServices;
+using System.Text;
+using System.Threading;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
+using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
+
+[assembly: System.Resources.NeutralResourcesLanguage("en-US")]
+
+namespace Microsoft.Interop
+{
+    [Generator]
+    public sealed class VtableIndexStubGenerator : IIncrementalGenerator
+    {
+        internal sealed record IncrementalStubGenerationContext(
+            StubEnvironment Environment,
+            SignatureContext SignatureContext,
+            ContainingSyntaxContext ContainingSyntaxContext,
+            ImmutableArray<FunctionPointerUnmanagedCallingConventionSyntax> CallingConvention,
+            VirtualMethodIndexData VtableIndexData,
+            IMarshallingGeneratorFactory GeneratorFactory,
+            ManagedTypeInfo TypeKeyType,
+            ManagedTypeInfo TypeKeyOwner,
+            ImmutableArray<Diagnostic> Diagnostics)
+        {
+            public bool Equals(IncrementalStubGenerationContext? other)
+            {
+                return other is not null
+                    && StubEnvironment.AreCompilationSettingsEqual(Environment, other.Environment)
+                    && SignatureContext.Equals(other.SignatureContext)
+                    && ContainingSyntaxContext.Equals(other.ContainingSyntaxContext)
+                    && VtableIndexData.Equals(other.VtableIndexData)
+                    && CallingConvention.SequenceEqual(other.CallingConvention, (IEqualityComparer<FunctionPointerUnmanagedCallingConventionSyntax>)SyntaxEquivalentComparer.Instance)
+                    && Diagnostics.SequenceEqual(other.Diagnostics);
+            }
+
+            public override int GetHashCode()
+            {
+                throw new UnreachableException();
+            }
+        }
+
+        public static class StepNames
+        {
+            public const string CalculateStubInformation = nameof(CalculateStubInformation);
+            public const string GenerateSingleStub = nameof(GenerateSingleStub);
+        }
+
+        public void Initialize(IncrementalGeneratorInitializationContext context)
+        {
+            var attributedMethods = context.SyntaxProvider
+                .CreateSyntaxProvider(
+                    static (node, ct) => ShouldVisitNode(node),
+                    static (context, ct) =>
+                    {
+                        MethodDeclarationSyntax syntax = (MethodDeclarationSyntax)context.Node;
+                        if (context.SemanticModel.GetDeclaredSymbol(syntax, ct) is IMethodSymbol methodSymbol
+                            && methodSymbol.GetAttributes().Any(static attribute => attribute.AttributeClass?.ToDisplayString() == TypeNames.LibraryImportAttribute))
+                        {
+                            return new { Syntax = syntax, Symbol = methodSymbol };
+                        }
+
+                        return null;
+                    })
+                .Where(
+                    static modelData => modelData is not null);
+
+            var methodsWithDiagnostics = attributedMethods.Select(static (data, ct) =>
+            {
+                Diagnostic? diagnostic = GetDiagnosticIfInvalidMethodForGeneration(data.Syntax, data.Symbol);
+                return new { Syntax = data.Syntax, Symbol = data.Symbol, Diagnostic = diagnostic };
+            });
+
+            var methodsToGenerate = methodsWithDiagnostics.Where(static data => data.Diagnostic is null);
+            var invalidMethodDiagnostics = methodsWithDiagnostics.Where(static data => data.Diagnostic is not null);
+
+            context.RegisterSourceOutput(invalidMethodDiagnostics, static (context, invalidMethod) =>
+            {
+                context.ReportDiagnostic(invalidMethod.Diagnostic);
+            });
+
+            IncrementalValuesProvider<(MemberDeclarationSyntax, ImmutableArray<Diagnostic>)> generateSingleStub = methodsToGenerate
+                .Combine(context.CreateStubEnvironmentProvider())
+                .Select(static (data, ct) => new
+                {
+                    data.Left.Syntax,
+                    data.Left.Symbol,
+                    Environment = data.Right
+                })
+                .Select(
+                    static (data, ct) => (data.Syntax, StubContext: CalculateStubInformation(data.Syntax, data.Symbol, data.Environment, ct))
+                )
+                .WithComparer(Comparers.CalculatedContextWithSyntax)
+                .WithTrackingName(StepNames.CalculateStubInformation)
+                .Select(
+                    static (data, ct) => GenerateSource(data.StubContext, data.Syntax)
+                )
+                .WithComparer(Comparers.GeneratedSyntax)
+                .WithTrackingName(StepNames.GenerateSingleStub);
+
+            context.RegisterDiagnostics(generateSingleStub.SelectMany((stubInfo, ct) => stubInfo.Item2));
+
+            context.RegisterConcatenatedSyntaxOutputs(generateSingleStub.Select((data, ct) => data.Item1), "LibraryImports.g.cs");
+        }
+
+        private static ImmutableArray<FunctionPointerUnmanagedCallingConventionSyntax> GenerateCallConvSyntaxFromAttributes(AttributeData? suppressGCTransitionAttribute, AttributeData? unmanagedCallConvAttribute)
+        {
+            const string CallConvsField = "CallConvs";
+            ImmutableArray<FunctionPointerUnmanagedCallingConventionSyntax>.Builder callingConventions = ImmutableArray.CreateBuilder<FunctionPointerUnmanagedCallingConventionSyntax>();
+
+            if (suppressGCTransitionAttribute is not null)
+            {
+                callingConventions.Add(FunctionPointerUnmanagedCallingConvention(Identifier("SuppressGCTransition")));
+            }
+            if (unmanagedCallConvAttribute is not null)
+            {
+                foreach (KeyValuePair<string, TypedConstant> arg in unmanagedCallConvAttribute.NamedArguments)
+                {
+                    if (arg.Key == CallConvsField)
+                    {
+                        foreach (TypedConstant callConv in arg.Value.Values)
+                        {
+                            ITypeSymbol callConvSymbol = (ITypeSymbol)callConv.Value!;
+                            if (callConvSymbol.Name.StartsWith("CallConv"))
+                            {
+                                callingConventions.Add(FunctionPointerUnmanagedCallingConvention(Identifier(callConvSymbol.Name.Substring("CallConv".Length))));
+                            }
+                        }
+                    }
+                }
+            }
+            return callingConventions.ToImmutable();
+        }
+
+        private static SyntaxTokenList StripTriviaFromModifiers(SyntaxTokenList tokenList)
+        {
+            SyntaxToken[] strippedTokens = new SyntaxToken[tokenList.Count];
+            for (int i = 0; i < tokenList.Count; i++)
+            {
+                strippedTokens[i] = tokenList[i].WithoutTrivia();
+            }
+            return new SyntaxTokenList(strippedTokens);
+        }
+
+        private static SyntaxTokenList AddToModifiers(SyntaxTokenList modifiers, SyntaxKind modifierToAdd)
+        {
+            if (modifiers.IndexOf(modifierToAdd) >= 0)
+                return modifiers;
+
+            int idx = modifiers.IndexOf(SyntaxKind.PartialKeyword);
+            return idx >= 0
+                ? modifiers.Insert(idx, Token(modifierToAdd))
+                : modifiers.Add(Token(modifierToAdd));
+        }
+
+        private static TypeDeclarationSyntax CreateTypeDeclarationWithoutTrivia(TypeDeclarationSyntax typeDeclaration)
+        {
+            return TypeDeclaration(
+                typeDeclaration.Kind(),
+                typeDeclaration.Identifier)
+                .WithTypeParameterList(typeDeclaration.TypeParameterList)
+                .WithModifiers(StripTriviaFromModifiers(typeDeclaration.Modifiers));
+        }
+
+
+        private static MemberDeclarationSyntax PrintGeneratedSource(
+            MethodDeclarationSyntax userDeclaredMethod,
+            SignatureContext stub,
+            BlockSyntax stubCode)
+        {
+            // Create stub function
+            return MethodDeclaration(stub.StubReturnType, userDeclaredMethod.Identifier)
+                .AddAttributeLists(stub.AdditionalAttributes.ToArray())
+                .WithModifiers(StripTriviaFromModifiers(userDeclaredMethod.Modifiers))
+                .WithParameterList(ParameterList(SeparatedList(stub.StubParameters)))
+                .WithBody(stubCode);
+        }
+
+        private static TargetFramework DetermineTargetFramework(Compilation compilation, out Version version)
+        {
+            IAssemblySymbol systemAssembly = compilation.GetSpecialType(SpecialType.System_Object).ContainingAssembly;
+            version = systemAssembly.Identity.Version;
+
+            return systemAssembly.Identity.Name switch
+            {
+                // .NET Framework
+                "mscorlib" => TargetFramework.Framework,
+                // .NET Standard
+                "netstandard" => TargetFramework.Standard,
+                // .NET Core (when version < 5.0) or .NET
+                "System.Runtime" or "System.Private.CoreLib" =>
+                    (version.Major < 5) ? TargetFramework.Core : TargetFramework.Net,
+                _ => TargetFramework.Unknown,
+            };
+        }
+
+        private static VirtualMethodIndexData? ProcessVirtualMethodIndexAttribute(AttributeData attrData)
+        {
+            // Found the LibraryImport, but it has an error so report the error.
+            // This is most likely an issue with targeting an incorrect TFM.
+            if (attrData.AttributeClass?.TypeKind is null or TypeKind.Error)
+            {
+                return null;
+            }
+
+            var namedArguments = ImmutableDictionary.CreateRange(attrData.NamedArguments);
+
+            var data = new VirtualMethodIndexData();
+
+            return data.WithValuesFromNamedArguments(namedArguments);
+        }
+
+        private static IncrementalStubGenerationContext CalculateStubInformation(MethodDeclarationSyntax syntax, IMethodSymbol symbol, StubEnvironment environment, CancellationToken ct)
+        {
+            ct.ThrowIfCancellationRequested();
+            INamedTypeSymbol? lcidConversionAttrType = environment.Compilation.GetTypeByMetadataName(TypeNames.LCIDConversionAttribute);
+            INamedTypeSymbol? suppressGCTransitionAttrType = environment.Compilation.GetTypeByMetadataName(TypeNames.SuppressGCTransitionAttribute);
+            INamedTypeSymbol? unmanagedCallConvAttrType = environment.Compilation.GetTypeByMetadataName(TypeNames.UnmanagedCallConvAttribute);
+            // Get any attributes of interest on the method
+            AttributeData? generatedDllImportAttr = null;
+            AttributeData? lcidConversionAttr = null;
+            AttributeData? suppressGCTransitionAttribute = null;
+            AttributeData? unmanagedCallConvAttribute = null;
+            foreach (AttributeData attr in symbol.GetAttributes())
+            {
+                if (attr.AttributeClass is not null
+                    && attr.AttributeClass.ToDisplayString() == TypeNames.LibraryImportAttribute)
+                {
+                    generatedDllImportAttr = attr;
+                }
+                else if (lcidConversionAttrType is not null && SymbolEqualityComparer.Default.Equals(attr.AttributeClass, lcidConversionAttrType))
+                {
+                    lcidConversionAttr = attr;
+                }
+                else if (suppressGCTransitionAttrType is not null && SymbolEqualityComparer.Default.Equals(attr.AttributeClass, suppressGCTransitionAttrType))
+                {
+                    suppressGCTransitionAttribute = attr;
+                }
+                else if (unmanagedCallConvAttrType is not null && SymbolEqualityComparer.Default.Equals(attr.AttributeClass, unmanagedCallConvAttrType))
+                {
+                    unmanagedCallConvAttribute = attr;
+                }
+            }
+
+            Debug.Assert(generatedDllImportAttr is not null);
+
+            var generatorDiagnostics = new GeneratorDiagnostics();
+
+            // Process the LibraryImport attribute
+            VirtualMethodIndexData? virtualMethodIndexData = ProcessVirtualMethodIndexAttribute(generatedDllImportAttr!);
+
+            if (virtualMethodIndexData is null)
+            {
+                generatorDiagnostics.ReportConfigurationNotSupported(generatedDllImportAttr!, "Invalid syntax");
+                virtualMethodIndexData = new VirtualMethodIndexData();
+            }
+
+            if (virtualMethodIndexData.IsUserDefined.HasFlag(InteropAttributeMember.StringMarshalling))
+            {
+                // User specified StringMarshalling.Custom without specifying StringMarshallingCustomType
+                if (virtualMethodIndexData.StringMarshalling == StringMarshalling.Custom && virtualMethodIndexData.StringMarshallingCustomType is null)
+                {
+                    generatorDiagnostics.ReportInvalidStringMarshallingConfiguration(
+                        generatedDllImportAttr, symbol.Name, SR.InvalidStringMarshallingConfigurationMissingCustomType);
+                }
+
+                // User specified something other than StringMarshalling.Custom while specifying StringMarshallingCustomType
+                if (virtualMethodIndexData.StringMarshalling != StringMarshalling.Custom && virtualMethodIndexData.StringMarshallingCustomType is not null)
+                {
+                    generatorDiagnostics.ReportInvalidStringMarshallingConfiguration(
+                        generatedDllImportAttr, symbol.Name, SR.InvalidStringMarshallingConfigurationNotCustom);
+                }
+            }
+
+            if (lcidConversionAttr is not null)
+            {
+                // Using LCIDConversion with LibraryImport is not supported
+                generatorDiagnostics.ReportConfigurationNotSupported(lcidConversionAttr, nameof(TypeNames.LCIDConversionAttribute));
+            }
+
+            // Create the stub.
+            var signatureContext = SignatureContext.Create(symbol, virtualMethodIndexData, environment, generatorDiagnostics, typeof(VtableIndexStubGenerator).Assembly);
+
+            var containingSyntaxContext = new ContainingSyntaxContext(syntax);
+
+            ImmutableArray<FunctionPointerUnmanagedCallingConventionSyntax> callConv = GenerateCallConvSyntaxFromAttributes(suppressGCTransitionAttribute, unmanagedCallConvAttribute);
+
+            var typeKeyOwner = ManagedTypeInfo.CreateTypeInfoForTypeSymbol(symbol.ContainingType);
+            ManagedTypeInfo typeKeyType = SpecialTypeInfo.Byte;
+
+            var typeKeyField = symbol.ContainingType.GetMembers("TypeKey").OfType<IFieldSymbol>().FirstOrDefault(f => f.IsStatic);
+            if (typeKeyField is null)
+            {
+                // Report invalid configuration
+            }
+            else
+            {
+                typeKeyType = ManagedTypeInfo.CreateTypeInfoForTypeSymbol(typeKeyField.Type);
+            }
+
+            return new IncrementalStubGenerationContext(
+                environment,
+                signatureContext,
+                containingSyntaxContext,
+                callConv,
+                virtualMethodIndexData,
+                GetMarshallingGeneratorFactory(environment),
+                typeKeyType,
+                typeKeyOwner,
+                generatorDiagnostics.Diagnostics.ToImmutableArray());
+        }
+
+        private static IMarshallingGeneratorFactory GetMarshallingGeneratorFactory(StubEnvironment env)
+        {
+            InteropGenerationOptions options = new(UseMarshalType: true);
+            IMarshallingGeneratorFactory generatorFactory;
+
+            generatorFactory = new UnsupportedMarshallingFactory();
+
+            generatorFactory = new MarshalAsMarshallingGeneratorFactory(options, generatorFactory);
+
+            IAssemblySymbol coreLibraryAssembly = env.Compilation.GetSpecialType(SpecialType.System_Object).ContainingAssembly;
+            ITypeSymbol? disabledRuntimeMarshallingAttributeType = coreLibraryAssembly.GetTypeByMetadataName(TypeNames.System_Runtime_CompilerServices_DisableRuntimeMarshallingAttribute);
+            bool runtimeMarshallingDisabled = disabledRuntimeMarshallingAttributeType is not null
+                && env.Compilation.Assembly.GetAttributes().Any(attr => SymbolEqualityComparer.Default.Equals(attr.AttributeClass, disabledRuntimeMarshallingAttributeType));
+
+            IMarshallingGeneratorFactory elementFactory = new AttributedMarshallingModelGeneratorFactory(generatorFactory, new AttributedMarshallingModelOptions(runtimeMarshallingDisabled));
+            // We don't need to include the later generator factories for collection elements
+            // as the later generator factories only apply to parameters.
+            generatorFactory = new AttributedMarshallingModelGeneratorFactory(generatorFactory, elementFactory, new AttributedMarshallingModelOptions(runtimeMarshallingDisabled));
+
+            generatorFactory = new ByValueContentsMarshalKindValidator(generatorFactory);
+            return generatorFactory;
+        }
+
+        private static (MemberDeclarationSyntax, ImmutableArray<Diagnostic>) GenerateSource(
+            IncrementalStubGenerationContext methodStub,
+            MethodDeclarationSyntax originalSyntax)
+        {
+            var diagnostics = new GeneratorDiagnostics();
+
+            // Generate stub code
+            var stubGenerator = new ManagedToNativeVTableMethodGenerator(
+                methodStub.Environment,
+                methodStub.SignatureContext.ElementTypeInformation,
+                methodStub.VtableIndexData.SetLastError,
+                methodStub.VtableIndexData.ImplicitThisParameter,
+                (elementInfo, ex) =>
+                {
+                    diagnostics.ReportMarshallingNotSupported(originalSyntax, elementInfo, ex.NotSupportedDetails);
+                },
+                methodStub.GeneratorFactory);
+
+            BlockSyntax code = stubGenerator.GenerateStubBody(
+                methodStub.VtableIndexData.Index,
+                methodStub.CallingConvention,
+                methodStub.TypeKeyOwner.Syntax,
+                methodStub.TypeKeyType);
+
+            return (methodStub.ContainingSyntaxContext.WrapMemberInContainingSyntaxWithUnsafeModifier(PrintGeneratedSource(originalSyntax, methodStub.SignatureContext, code)), methodStub.Diagnostics.AddRange(diagnostics.Diagnostics));
+        }
+
+        private static bool ShouldVisitNode(SyntaxNode syntaxNode)
+        {
+            // We only support C# method declarations.
+            if (syntaxNode.Language != LanguageNames.CSharp
+                || !syntaxNode.IsKind(SyntaxKind.MethodDeclaration))
+            {
+                return false;
+            }
+
+            // Filter out methods with no attributes early.
+            return ((MethodDeclarationSyntax)syntaxNode).AttributeLists.Count > 0;
+        }
+
+        private static Diagnostic? GetDiagnosticIfInvalidMethodForGeneration(MethodDeclarationSyntax methodSyntax, IMethodSymbol method)
+        {
+            // Verify the method has no generic types or defined implementation
+            // and is marked static and partial.
+            if (methodSyntax.TypeParameterList is not null
+                || methodSyntax.Body is not null
+                || !methodSyntax.Modifiers.Any(SyntaxKind.StaticKeyword)
+                || !methodSyntax.Modifiers.Any(SyntaxKind.PartialKeyword))
+            {
+                return Diagnostic.Create(GeneratorDiagnostics.InvalidAttributedMethodSignature, methodSyntax.Identifier.GetLocation(), method.Name);
+            }
+
+            // Verify that the types the method is declared in are marked partial.
+            for (SyntaxNode? parentNode = methodSyntax.Parent; parentNode is TypeDeclarationSyntax typeDecl; parentNode = parentNode.Parent)
+            {
+                if (!typeDecl.Modifiers.Any(SyntaxKind.PartialKeyword))
+                {
+                    return Diagnostic.Create(GeneratorDiagnostics.InvalidAttributedMethodContainingTypeMissingModifiers, methodSyntax.Identifier.GetLocation(), method.Name, typeDecl.Identifier);
+                }
+            }
+
+            // Verify the method does not have a ref return
+            if (method.ReturnsByRef || method.ReturnsByRefReadonly)
+            {
+                return Diagnostic.Create(GeneratorDiagnostics.ReturnConfigurationNotSupported, methodSyntax.Identifier.GetLocation(), "ref return", method.ToDisplayString());
+            }
+
+            return null;
+        }
+    }
+}

@@ -54,6 +54,7 @@ namespace Microsoft.Interop
         public static readonly SpecialTypeInfo Byte = new("byte", "byte", SpecialType.System_Byte);
         public static readonly SpecialTypeInfo Int32 = new("int", "int", SpecialType.System_Int32);
         public static readonly SpecialTypeInfo Void = new("void", "void", SpecialType.System_Void);
+        public static readonly SpecialTypeInfo IntPtr = new("System.IntPtr", "System.IntPtr", SpecialType.System_IntPtr);
 
         public bool Equals(SpecialTypeInfo? other)
         {
