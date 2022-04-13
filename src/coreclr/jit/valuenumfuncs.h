@@ -136,7 +136,6 @@ ValueNumFuncDef(JitNewArr, 3, false, true, false)
 ValueNumFuncDef(JitNewMdArr, 4, false, true, false)
 ValueNumFuncDef(JitReadyToRunNew, 2, false, true, false)
 ValueNumFuncDef(JitReadyToRunNewArr, 3, false, true, false)
-ValueNumFuncDef(BoxSlow, 3, false, false, false)
 ValueNumFuncDef(Box, 3, false, false, false)
 ValueNumFuncDef(BoxNullable, 3, false, false, false)
 

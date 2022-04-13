@@ -9706,7 +9706,6 @@ void Compiler::fgValueNumberHelperCallFunc(GenTreeCall* call, VNFunc vnf, ValueN
         }
         break;
 
-        case VNF_BoxSlow:
         case VNF_Box:
         case VNF_BoxNullable:
         {
@@ -10297,9 +10296,6 @@ VNFunc Compiler::fgValueNumberJitHelperMethodVNFunc(CorInfoHelpFunc helpFunc)
             break;
 
         case CORINFO_HELP_BOX_SLOW:
-            vnf = VNF_BoxSlow;
-            break;
-
         case CORINFO_HELP_BOX:
             vnf = VNF_Box;
             break;
