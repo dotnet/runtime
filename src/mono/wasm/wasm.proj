@@ -24,6 +24,7 @@
     <_EmccCompileRspPath>$(NativeBinDir)src\emcc-compile.rsp</_EmccCompileRspPath>
     <_EmccLinkRspPath>$(NativeBinDir)src\emcc-link.rsp</_EmccLinkRspPath>
     <WasmNativeStrip Condition="'$(ContinuousIntegrationBuild)' == 'true'">false</WasmNativeStrip>
+    <SystemCryptoNativeDir>$(RepoRoot)\src\native\libs\System.Security.Cryptography.Native.Browser</SystemCryptoNativeDir>
   </PropertyGroup>
 
   <Target Name="CheckEnv">
@@ -185,7 +186,7 @@
     </ItemGroup>
     <PropertyGroup>
       <PInvokeTableFile>$(ArtifactsObjDir)wasm/pinvoke-table.h</PInvokeTableFile>
-      <CMakeConfigurationEmccFlags Condition="'$(Configuration)' == 'Debug'">-g4 -Os -s -DDEBUG=1 -DENABLE_AOT_PROFILER=1</CMakeConfigurationEmccFlags>
+      <CMakeConfigurationEmccFlags Condition="'$(Configuration)' == 'Debug'">-g -Os -s -DDEBUG=1 -DENABLE_AOT_PROFILER=1</CMakeConfigurationEmccFlags>
       <CMakeConfigurationEmccFlags Condition="'$(Configuration)' == 'Release'">-Oz</CMakeConfigurationEmccFlags>
 
       <CMakeConfigurationLinkFlags Condition="'$(Configuration)' == 'Debug'"  >$(CMakeConfigurationEmccFlags)</CMakeConfigurationLinkFlags>
@@ -224,7 +225,8 @@
     <Copy SourceFiles="runtime/driver.c;
                        runtime/pinvoke.c;
                        runtime/corebindings.c;
-                       $(SharedNativeRoot)libs\System.Native\pal_random.lib.js;"
+                       $(SharedNativeRoot)libs\System.Native\pal_random.lib.js;
+                       $(SystemCryptoNativeDir)\pal_crypto_webworker.js;"
           DestinationFolder="$(NativeBinDir)src"
           SkipUnchangedFiles="true" />
 

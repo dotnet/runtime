@@ -83,7 +83,6 @@ const MONO = {
     mono_wasm_release_roots,
     mono_run_main,
     mono_run_main_and_exit,
-    mono_wasm_crypto,
 
     // for Blazor's future!
     mono_wasm_add_assembly: cwraps.mono_wasm_add_assembly,
@@ -391,10 +390,7 @@ const INTERNAL: any = {
     mono_wasm_runtime_is_ready: runtimeHelpers.mono_wasm_runtime_is_ready,
 
     // used for browser crypto
-    mono_wasm_crypto: {
-        channel: null,
-        worker: null
-    },
+    mono_wasm_crypto,
 };
 
 

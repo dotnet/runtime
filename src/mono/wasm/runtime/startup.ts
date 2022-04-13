@@ -15,6 +15,7 @@ import { VoidPtr, CharPtr } from "./types/emscripten";
 import { DotnetPublicAPI } from "./exports";
 import { mono_on_abort } from "./run";
 import { mono_wasm_new_root } from "./roots";
+import { LibraryChannel } from "./library-channel";
 
 export let runtime_is_initialized_resolve: Function;
 export let runtime_is_initialized_reject: Function;
@@ -378,7 +379,7 @@ function finalize_startup(config: MonoConfig | MonoConfigError | undefined): voi
         console.debug ("MONO_WASM: Initialize WebWorkers");
 
         if (ENVIRONMENT_IS_WEB) {
-            const chan = Module.channel.create(1024);
+            const chan = LibraryChannel.create(1024);
             const worker = new Worker("dotnet-crypto-worker.ts");
             worker.postMessage({
                 comm_buff: chan.get_comm_buffer(),

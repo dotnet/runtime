@@ -3,6 +3,7 @@
 
 import { bind_runtime_method } from "./method-binding";
 import { CharPtr, EmscriptenModule, ManagedPointer, NativePointer, VoidPtr } from "./types/emscripten";
+import { LibraryChannel } from "./library-channel";
 
 export type GCHandle = {
     __brand: "GCHandle"

@@ -185,7 +185,6 @@
         $(LibrariesNativeArtifactsPath)dotnet.wasm;
         $(LibrariesNativeArtifactsPath)dotnet.js.symbols;
         $(LibrariesNativeArtifactsPath)dotnet.timezones.blat;
-        $(LibrariesNativeArtifactsPath)dotnet_crypto_worker.js;
         $(LibrariesNativeArtifactsPath)*.dat;"
         IsNative="true" />
       <LibrariesRuntimeFiles Condition="'$(TargetOS)' == 'Browser'"

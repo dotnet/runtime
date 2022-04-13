@@ -125,6 +125,35 @@ interface WasmRoot<T extends MonoObject> {
     toString(): string;
 }
 
+declare class LibraryChannel {
+    msg_char_len: number;
+    comm_buf: SharedArrayBuffer;
+    msg_buf: SharedArrayBuffer;
+    comm: Int32Array;
+    msg: Uint16Array;
+    get STATE_IDX(): number;
+    get MSG_SIZE_IDX(): number;
+    get COMM_LAST_IDX(): number;
+    get STATE_SHUTDOWN(): number;
+    get STATE_IDLE(): number;
+    get STATE_REQ(): number;
+    get STATE_RESP(): number;
+    get STATE_REQ_P(): number;
+    get STATE_RESP_P(): number;
+    get STATE_AWAIT(): number;
+    constructor(msg_char_len: number);
+    get_msg_len(): number;
+    get_msg_buffer(): SharedArrayBuffer;
+    get_comm_buffer(): SharedArrayBuffer;
+    send_msg(msg: string): string;
+    shutdown(): void;
+    _send_request(msg: string): void;
+    _write_to_msg(input: string, start: number, input_len: number): number;
+    _read_response(): string;
+    _read_from_msg(begin: number, end: number): string;
+    create(msg_char_len: number): LibraryChannel;
+}
+
 interface MonoObject extends ManagedPointer {
     __brandMonoObject: "MonoObject";
 }
@@ -204,14 +233,11 @@ declare type CoverageProfilerOptions = {
     write_at?: string;
     send_to?: string;
 };
-declare type LibraryChannel = {
-    create: (msg_char_len: number) => LibraryChannel;
-}
 declare type DotnetModuleConfig = {
     disableDotnet6Compatibility?: boolean;
     config?: MonoConfig | MonoConfigError;
     configSrc?: string;
-    channel: LibraryChannel,
+    channel: LibraryChannel;
     onConfigLoaded?: (config: MonoConfig) => Promise<void>;
     onDotnetReady?: () => void;
     imports?: DotnetModuleConfigImports;
@@ -238,10 +264,6 @@ declare type DotnetModuleConfigImports = {
     };
     url?: any;
 };
-declare type MonoWasmCrypto = {
-    channel: LibraryChannel;
-    worker: Worker;
-}
 
 declare function mono_wasm_runtime_ready(): void;
 
@@ -315,8 +337,6 @@ declare function getF64(offset: _MemOffset): number;
 declare function mono_run_main_and_exit(main_assembly_name: string, args: string[]): Promise<void>;
 declare function mono_run_main(main_assembly_name: string, args: string[]): Promise<number>;
 
-declare var mono_wasm_crypto: MonoWasmCrypto;
-
 declare const MONO: {
     mono_wasm_setenv: typeof mono_wasm_setenv;
     mono_wasm_load_bytes_into_heap: typeof mono_wasm_load_bytes_into_heap;
@@ -333,7 +353,6 @@ declare const MONO: {
     mono_run_main_and_exit: typeof mono_run_main_and_exit;
     mono_wasm_add_assembly: (name: string, data: VoidPtr, size: number) => number;
     mono_wasm_load_runtime: (unused: string, debug_level: number) => void;
-    mono_wasm_crypto: typeof mono_wasm_crypto;
     config: MonoConfig | MonoConfigError;
     loaded_files: string[];
     setI8: typeof setI8;

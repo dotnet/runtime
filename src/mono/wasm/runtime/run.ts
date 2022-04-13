@@ -41,4 +41,4 @@ function set_exit_code(exit_code: number, reason?: any) {
     quit(exit_code, reason);
 }
 
-export var mono_wasm_crypto: MonoWasmCrypto;
+export let mono_wasm_crypto: MonoWasmCrypto;

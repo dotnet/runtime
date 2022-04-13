@@ -32,18 +32,18 @@ class ChannelWorker {
             Atomics.wait(this.comm, this.STATE_IDX, this.STATE_IDLE);
 
             // Read in request
-            var req = this._read_request();
-            // console.log("Request: " + req);
-            if (req === this.STATE_SHUTDOWN)
+            const req = this._read_request();
+            if (req === this.STATE_SHUTDOWN) {
                 break;
+            }
 
-            var resp = null;
+            let resp = null;
             try {
                 // Perform async action based on request
                 resp = await async_call(req);
             }
             catch (err) {
-                console.log("Request error: " + err);
+                console.error("Request error: " + err);
                 resp = JSON.stringify(err);
             }
 
@@ -53,11 +53,11 @@ class ChannelWorker {
     }
 
     _read_request() {
-        var request = "";
+        let request = "";
         for (;;) {
             // Get the current state and message size
-            var state = Atomics.load(this.comm, this.STATE_IDX);
-            var size_to_read = Atomics.load(this.comm, this.MSG_SIZE_IDX);
+            const state = Atomics.load(this.comm, this.STATE_IDX);
+            const size_to_read = Atomics.load(this.comm, this.MSG_SIZE_IDX);
 
             // Append the latest part of the message.
             request += this._read_from_msg(0, size_to_read);
@@ -89,13 +89,13 @@ class ChannelWorker {
         if (Atomics.load(this.comm, this.STATE_IDX) !== this.STATE_REQ)
             throw "WORKER: Invalid sync communication channel state.";
 
-        var state; // State machine variable
+        let state; // State machine variable
         const msg_len = msg.length;
-        var msg_written = 0;
+        let msg_written = 0;
 
         for (;;) {
             // Write the message and return how much was written.
-            var wrote = this._write_to_msg(msg, msg_written, msg_len);
+            const wrote = this._write_to_msg(msg, msg_written, msg_len);
             msg_written += wrote;
 
             // Indicate how much was written to the this.msg buffer.
@@ -118,8 +118,8 @@ class ChannelWorker {
     }
 
     _write_to_msg(input: string, start: number, input_len: number) {
-        var mi = 0;
-        var ii = start;
+        let mi = 0;
+        let ii = start;
         while (mi < this.msg_char_len && ii < input_len) {
             this.msg[mi] = input.charCodeAt(ii);
             ii++; // Next character
@@ -131,10 +131,10 @@ class ChannelWorker {
     static create(comm_buf: number[], msg_buf: number[], msg_char_len: number) {
         return new ChannelWorker(comm_buf, msg_buf, msg_char_len);
     }
-};
+}
 
 async function call_digest(type: number, data: BufferSource) {
-    var digest_type = "";
+    let digest_type = "";
     switch(type) {
         case 0: digest_type = "SHA-1"; break;
         case 1: digest_type = "SHA-256"; break;
@@ -146,7 +146,7 @@ async function call_digest(type: number, data: BufferSource) {
 
     // The 'crypto' API is not available in non-browser
     // environments (for example, v8 server).
-    var digest = await crypto.subtle.digest(digest_type, data);
+    const digest = await crypto.subtle.digest(digest_type, data);
     return Array.from(new Uint8Array(digest));
 }
 
@@ -155,21 +155,21 @@ async function async_call(msg: string) {
     const req = JSON.parse(msg);
 
     if (req.func === "digest") {
-        var digestArr = await call_digest(req.type, new Uint8Array(req.data));
+        const digestArr = await call_digest(req.type, new Uint8Array(req.data));
         return JSON.stringify(digestArr);
     } else {
         throw "CRYPTO: Unknown request: " + req.func;
     }
 }
 
-var s_channel;
+let s_channel: ChannelWorker;
 
 // Initialize WebWorker
 onmessage = function (p: any) {
-    var data = p;
+    let data = p;
     if (p.data !== undefined) {
         data = p.data;
     }
     s_channel = ChannelWorker.create(data.comm_buf, data.msg_buf, data.msg_char_len);
     s_channel.await_request(async_call);
-}
+};

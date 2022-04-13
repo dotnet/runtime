@@ -7,7 +7,7 @@ namespace System.Security.Cryptography
 {
     internal static partial class HashProviderDispenser
     {
-        internal static readonly bool CanUseSubtleCryptoImpl = Interop.BrowserCrypto.CanUseSimpleDigestHash();
+        internal static readonly bool CanUseSubtleCryptoImpl = Interop.BrowserCrypto.CanUseSimpleDigestHash() == 1;
 
         public static HashProvider CreateHashProvider(string hashAlgorithmId)
         {

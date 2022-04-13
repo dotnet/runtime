@@ -12,7 +12,7 @@ extern int32_t dotnet_browser_simple_digest_hash(
     uint8_t* output_buffer,
     int32_t output_len);
 
-extern int32_t dotnet_browser_can_use_simple_digest_hash();
+extern int32_t dotnet_browser_can_use_simple_digest_hash(void);
 
 int32_t SystemCryptoNativeBrowser_SimpleDigestHash(
     enum simple_digest ver,
@@ -24,7 +24,7 @@ int32_t SystemCryptoNativeBrowser_SimpleDigestHash(
     return dotnet_browser_simple_digest_hash(ver, input_buffer, input_len, output_buffer, output_len);
 }
 
-int32_t SystemCryptoNativeBrowser_CanUseSimpleDigestHash()
+int32_t SystemCryptoNativeBrowser_CanUseSimpleDigestHash(void)
 {
     return dotnet_browser_can_use_simple_digest_hash();
 }

@@ -20,4 +20,4 @@ PALEXPORT int32_t SystemCryptoNativeBrowser_SimpleDigestHash(
     uint8_t* output_buffer,
     int32_t output_len);
 
-PALEXPORT int32_t SystemCryptoNativeBrowser_CanUseSimpleDigestHash();
+PALEXPORT int32_t SystemCryptoNativeBrowser_CanUseSimpleDigestHash(void);
