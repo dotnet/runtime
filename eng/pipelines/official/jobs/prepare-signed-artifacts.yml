@@ -24,7 +24,9 @@ jobs:
     - group: AzureDevOps-Artifact-Feeds-Pats
 
   steps:
-  - template: /eng/pipelines/common/clone-checkout-bundle-step.yml
+  - checkout: self
+    clean: true
+    fetchDepth: 20
 
   - ${{ if ne(variables['System.TeamProject'], 'public') }}:
     - task: PowerShell@2

@@ -37,11 +37,6 @@ stages:
 - stage: Build
   jobs:
   #
-  # Checkout repository
-  #
-  - template: /eng/pipelines/common/checkout-job.yml
-
-  #
   # Build CoreCLR
   #
   - template: /eng/pipelines/common/platform-matrix.yml

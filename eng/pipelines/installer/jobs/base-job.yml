@@ -10,6 +10,7 @@ parameters:
   container: ''
   buildSteps: []
   dependsOn: []
+  dependOnEvaluatePaths: false
   variables: []
   name: ''
   displayName: ''
@@ -335,7 +336,8 @@ jobs:
         /p:BuildFullPlatformManifest=true
 
   dependsOn:
-  - checkout
+  - ${{ if eq(parameters.dependOnEvaluatePaths, true) }}:
+    - evaluate_paths
   - ${{ parameters.dependsOn }}
   - ${{ if ne(parameters.liveRuntimeBuildConfig, '') }}:
     - ${{ format('{0}_{1}_product_build_{2}{3}_{4}_{5}',
@@ -393,7 +395,9 @@ jobs:
         continueOnError: false
         condition: and(succeeded(), in(variables['SignType'], 'real', 'test'))
 
-  - template: /eng/pipelines/common/clone-checkout-bundle-step.yml
+  - checkout: self
+    clean: true
+    fetchDepth: $(checkoutFetchDepth)
 
   # Download and extract artifacts for earlier subsets.
   - task: DownloadBuildArtifacts@0

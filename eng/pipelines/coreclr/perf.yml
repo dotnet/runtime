@@ -22,10 +22,7 @@ trigger:
 pr: none
 
 jobs:
-#
-# Checkout repository
-#
-- template: /eng/pipelines/common/checkout-job.yml
+
 
 # build coreclr and libraries
 - template: /eng/pipelines/common/platform-matrix.yml
@@ -141,4 +138,3 @@ jobs:
       liveLibrariesBuildConfig: Release
       projectFile: crossgen_perf.proj
       runKind: crossgen_scenarios
-
