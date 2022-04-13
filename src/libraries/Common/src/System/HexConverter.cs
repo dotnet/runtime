@@ -156,7 +156,7 @@ namespace System
                 hex &= Vector128.Create((ushort)0xFF).AsByte();
 
                 ref byte destRef = ref Unsafe.As<char, byte>(ref MemoryMarshal.GetReference(chars));
-                hex.StoreUnsafe(ref destRef, pos * 2);
+                hex.StoreUnsafe(ref destRef, pos * 4);
 
                 pos += (nuint)Vector128<int>.Count;
 
