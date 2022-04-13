@@ -154,7 +154,7 @@ namespace Microsoft.Interop
 
                 invokeStatement = Block(clearLastError, invokeStatement, getLastError);
             }
-            invokeStatement = statements.Pin.CastArray<FixedStatementSyntax>().NestFixedStatements(invokeStatement);
+            invokeStatement = statements.Pin.NestFixedStatements(invokeStatement);
 
             tryStatements.Add(invokeStatement);
             // <invokeSucceeded> = true;
