@@ -213,13 +213,18 @@ void PEImageLayout::ApplyBaseRelocations()
             // Restore the protection
             if (dwOldProtection != 0)
             {
+#if defined(__APPLE__) && defined(HOST_ARM64)
                 BOOL bExecRegion = (dwOldProtection & (PAGE_EXECUTE | PAGE_EXECUTE_READ |
                     PAGE_EXECUTE_READWRITE | PAGE_EXECUTE_WRITECOPY)) != 0;
 
+                // Disable writing on Apple Silicon
+                if (bExecRegion)
+                    PAL_JitWriteProtect(false);
+#else
                 if (!ClrVirtualProtect(pWriteableRegion, cbWriteableRegion,
                                        dwOldProtection, &dwOldProtection))
                     ThrowLastError();
-
+#endif // __APPLE__ && HOST_ARM64
                 dwOldProtection = 0;
             }
 
@@ -238,14 +243,21 @@ void PEImageLayout::ApplyBaseRelocations()
 #if defined(TARGET_UNIX) && !defined(CROSSGEN_COMPILE)
                 if (((pSection->Characteristics & VAL32(IMAGE_SCN_MEM_EXECUTE)) != 0))
                 {
+#if defined(__APPLE__) && defined(HOST_ARM64)
+                    // Enable writing on Apple Silicon
+                    PAL_JitWriteProtect(true);
+#else
                     // On SELinux, we cannot change protection that doesn't have execute access rights
                     // to one that has it, so we need to set the protection to RWX instead of RW
                     dwNewProtection = PAGE_EXECUTE_READWRITE;
+#endif // __APPLE__ && HOST_ARM64
                 }
 #endif // TARGET_UNIX && !CROSSGEN_COMPILE
+#if !(defined(__APPLE__) && defined(HOST_ARM64))
                 if (!ClrVirtualProtect(pWriteableRegion, cbWriteableRegion,
                                        dwNewProtection, &dwOldProtection))
                     ThrowLastError();
+#endif // !(__APPLE__ && HOST_ARM64)
 #ifdef TARGET_UNIX
                 dwOldProtection = SectionCharacteristicsToPageProtection(pSection->Characteristics);
 #endif // TARGET_UNIX
@@ -307,13 +319,19 @@ void PEImageLayout::ApplyBaseRelocations()
 #ifndef CROSSGEN_COMPILE
     if (dwOldProtection != 0)
     {
+#if defined(__APPLE__) && defined(HOST_ARM64)
         BOOL bExecRegion = (dwOldProtection & (PAGE_EXECUTE | PAGE_EXECUTE_READ |
             PAGE_EXECUTE_READWRITE | PAGE_EXECUTE_WRITECOPY)) != 0;
 
+        // Disable writing on Apple Silicon
+        if (bExecRegion)
+            PAL_JitWriteProtect(false);
+#else
         // Restore the protection
         if (!ClrVirtualProtect(pWriteableRegion, cbWriteableRegion,
                                dwOldProtection, &dwOldProtection))
             ThrowLastError();
+#endif // __APPLE__ && HOST_ARM64
     }
 #ifdef TARGET_UNIX
     PAL_LOADMarkSectionAsNotNeeded((void*)dir);
