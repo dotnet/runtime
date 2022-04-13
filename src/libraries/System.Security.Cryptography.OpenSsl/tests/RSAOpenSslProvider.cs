@@ -5,6 +5,8 @@ namespace System.Security.Cryptography.Rsa.Tests
 {
     public class RSAOpenSslProvider : IRSAProvider
     {
+        private bool? _supportsSha1Signatures;
+
         public RSA Create() => new RSAOpenSsl();
 
         public RSA Create(int keySize) => new RSAOpenSsl(keySize);
@@ -16,6 +18,41 @@ namespace System.Security.Cryptography.Rsa.Tests
         public bool SupportsSha2Oaep => true;
 
         public bool SupportsPss => true;
+
+        public bool SupportsSha1Signatures
+        {
+            get
+            {
+                if (!_supportsSha1Signatures.HasValue)
+                {
+                    if (OperatingSystem.IsLinux())
+                    {
+                        RSA rsa = Create();
+
+                        try
+                        {
+                            rsa.SignData(Array.Empty<byte>(), HashAlgorithmName.SHA1, RSASignaturePadding.Pkcs1);
+                            _supportsSha1Signatures = true;
+                        }
+                        catch (CryptographicException)
+                        {
+                            _supportsSha1Signatures = false;
+                        }
+                        finally
+                        {
+                            rsa.Dispose();
+                        }
+                    }
+                    else
+                    {
+                        // Currently all non-Linux OSes support RSA-SHA1.
+                        _supportsSha1Signatures = true;
+                    }
+                }
+
+                return _supportsSha1Signatures.Value;
+            }
+        }
     }
 
     public partial class RSAFactory

@@ -18,6 +18,8 @@ namespace System.Security.Cryptography.Rsa.Tests
         public bool SupportsSha2Oaep => false;
 
         public bool SupportsPss => false;
+
+        public bool SupportsSha1Signatures => true;
     }
 
     public partial class RSAFactory

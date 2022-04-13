@@ -8,6 +8,7 @@ namespace System.Security.Cryptography.Rsa.Tests
     public class DefaultRSAProvider : IRSAProvider
     {
         private bool? _supports384PrivateKey;
+        private bool? _supportsSha1Signatures;
 
         public RSA Create() => RSA.Create();
 
@@ -35,6 +36,41 @@ namespace System.Security.Cryptography.Rsa.Tests
                 }
 
                 return _supports384PrivateKey.Value;
+            }
+        }
+
+        public bool SupportsSha1Signatures
+        {
+            get
+            {
+                if (!_supportsSha1Signatures.HasValue)
+                {
+                    if (OperatingSystem.IsLinux())
+                    {
+                        RSA rsa = Create();
+
+                        try
+                        {
+                            rsa.SignData(Array.Empty<byte>(), HashAlgorithmName.SHA1, RSASignaturePadding.Pkcs1);
+                            _supportsSha1Signatures = true;
+                        }
+                        catch (CryptographicException)
+                        {
+                            _supportsSha1Signatures = false;
+                        }
+                        finally
+                        {
+                            rsa.Dispose();
+                        }
+                    }
+                    else
+                    {
+                        // Currently all non-Linux OSes support RSA-SHA1.
+                        _supportsSha1Signatures = true;
+                    }
+                }
+
+                return _supportsSha1Signatures.Value;
             }
         }
 
