@@ -4602,7 +4602,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 if ((retNode == nullptr) && (pConstrainedResolvedToken != nullptr) &&
                     (constraintCallThisTransform == CORINFO_BOX_THIS))
                 {
-                    // Ensure this is one of the is simple box cases (in particular, rule out nullables).
+                    // Ensure this is one of the simple box cases (in particular, rule out nullables).
                     const CorInfoHelpFunc boxHelper = info.compCompHnd->getBoxHelper(pConstrainedResolvedToken->hClass);
                     const bool            isSafeToOptimize = (boxHelper == CORINFO_HELP_BOX);
 
@@ -7046,7 +7046,9 @@ int Compiler::impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                 if (canOptimize)
                 {
                     CorInfoHelpFunc boxHelper = info.compCompHnd->getBoxHelper(pResolvedToken->hClass);
-                    if (boxHelper == CORINFO_HELP_BOX)
+
+                    // The fast and slow boxing helpers are both convertable to constants.
+                    if (boxHelper == CORINFO_HELP_BOX || boxHelper == CORINFO_HELP_BOX_SLOW)
                     {
                         JITDUMP("\n Importing BOX; BR_TRUE/FALSE as %sconstant\n",
                                 treeToNullcheck == nullptr ? "" : "nullcheck+");
@@ -7090,7 +7092,9 @@ int Compiler::impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                             if (!(impStackTop().val->gtFlags & GTF_SIDE_EFFECT))
                             {
                                 CorInfoHelpFunc boxHelper = info.compCompHnd->getBoxHelper(pResolvedToken->hClass);
-                                if (boxHelper == CORINFO_HELP_BOX)
+
+                                // The fast and slow boxing helpers are both convertable to constants.
+                                if (boxHelper == CORINFO_HELP_BOX || boxHelper == CORINFO_HELP_BOX_SLOW)
                                 {
                                     CORINFO_RESOLVED_TOKEN isInstResolvedToken;
 
@@ -7252,7 +7256,6 @@ void Compiler::impImportAndPushBox(CORINFO_RESOLVED_TOKEN* pResolvedToken)
 
     // Look at what helper we should use.
     CorInfoHelpFunc boxHelper = info.compCompHnd->getBoxHelper(pResolvedToken->hClass);
-    bool            byRefLike = !!(info.compCompHnd->getClassAttribs(pResolvedToken->hClass) & CORINFO_FLG_BYREF_LIKE);
 
     // Determine what expansion to prefer.
     //
@@ -7264,12 +7267,12 @@ void Compiler::impImportAndPushBox(CORINFO_RESOLVED_TOKEN* pResolvedToken)
     //
     // Currently primitive type boxes always get inline expanded. We may
     // want to do the same for small structs if they don't come from
-    // calls, don't have GC pointers and aren't ByRefLike, since explicitly copying such
+    // calls and don't have GC pointers, since explicitly copying such
     // structs is cheap.
     JITDUMP("\nCompiler::impImportAndPushBox -- handling BOX(value class) via");
     bool canExpandInline = (boxHelper == CORINFO_HELP_BOX);
     bool optForSize      = !exprToBox->IsCall() && (operCls != nullptr) && opts.OptimizationDisabled();
-    bool expandInline    = canExpandInline && !optForSize && !byRefLike;
+    bool expandInline    = canExpandInline && !optForSize;
 
     if (expandInline)
     {
@@ -7480,8 +7483,7 @@ void Compiler::impImportAndPushBox(CORINFO_RESOLVED_TOKEN* pResolvedToken)
     else
     {
         // Don't optimize, just call the helper and be done with it.
-        JITDUMP(" helper call because: %s\n",
-                canExpandInline ? (byRefLike ? "byreflike" : "optimizing for size") : "nullable");
+        JITDUMP(" helper call because: %s\n", canExpandInline ? "optimizing for size" : "box slow/nullable");
         assert(operCls != nullptr);
 
         // Ensure that the value class is restored

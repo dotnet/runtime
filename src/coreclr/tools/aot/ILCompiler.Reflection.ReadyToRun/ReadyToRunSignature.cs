@@ -14,7 +14,7 @@ using Internal.ReadyToRunConstants;
 namespace ILCompiler.Reflection.ReadyToRun
 {
     /// <summary>
-    /// This represents all possible signatures that is 
+    /// This represents all possible signatures that is
     /// </summary>
     public abstract class ReadyToRunSignature
     {
@@ -1704,6 +1704,10 @@ namespace ILCompiler.Reflection.ReadyToRun
 
                 case ReadyToRunHelper.GetRuntimeFieldHandle:
                     builder.Append("GET_RUNTIME_FIELD_HANDLE");
+                    break;
+
+                case ReadyToRunHelper.Box_Slow:
+                    builder.Append("BOX_SLOW");
                     break;
 
                 case ReadyToRunHelper.Box:

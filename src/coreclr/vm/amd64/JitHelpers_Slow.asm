@@ -211,10 +211,6 @@ NESTED_ENTRY JIT_BoxFastUP, _TEXT
         test    dword ptr [rax + OFFSETOF__MethodTableWriteableData__m_dwFlags], MethodTableWriteableData__enum_flag_Unrestored
         jnz     JIT_Box
 
-        ; Check whether the object IsByRefLike
-        test    dword ptr [rcx + OFFSETOF__MethodTable__m_dwFlags], MethodTable__enum_flag_IsByRefLike
-        jnz     JIT_Box
-
         mov     r8d, [rcx + OFFSET__MethodTable__m_BaseSize]
 
         ; m_BaseSize is guaranteed to be a multiple of 8.

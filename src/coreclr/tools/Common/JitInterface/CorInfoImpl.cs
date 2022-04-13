@@ -2358,7 +2358,13 @@ namespace Internal.JitInterface
         {
             var type = HandleToObject(cls);
 
-            return type.IsNullable ? CorInfoHelpFunc.CORINFO_HELP_BOX_NULLABLE : CorInfoHelpFunc.CORINFO_HELP_BOX;
+            if (type.IsNullable)
+                return CorInfoHelpFunc.CORINFO_HELP_BOX_NULLABLE;
+
+            if (type.IsByRefLike)
+                return CorInfoHelpFunc.CORINFO_HELP_BOX_SLOW;
+
+            return CorInfoHelpFunc.CORINFO_HELP_BOX;
         }
 
         private CorInfoHelpFunc getUnBoxHelper(CORINFO_CLASS_STRUCT_* cls)

@@ -91,6 +91,10 @@ namespace System.Runtime
                 dataAdjustedForNullable = ref Unsafe.Add(ref data, pEEType->NullableValueOffset);
                 pEEType = pEEType->NullableType;
             }
+            else if (pEEType->IsByRefLike)
+            {
+                throw pEEType->GetClasslibException(ExceptionIDs.InvalidProgram);
+            }
 
             object result;
 #if FEATURE_64BIT_ALIGNMENT

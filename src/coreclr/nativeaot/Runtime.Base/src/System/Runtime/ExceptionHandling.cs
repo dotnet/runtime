@@ -369,6 +369,9 @@ namespace System.Runtime
                 case ExceptionIDs.InvalidCast:
                     return new InvalidCastException();
 
+                case ExceptionIDs.InvalidProgram:
+                    return new InvalidProgramException();
+
                 default:
                     Debug.Assert(false, "unexpected ExceptionID");
                     FallbackFailFast(RhFailFastReason.InternalError, null);

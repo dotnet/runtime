@@ -16,7 +16,7 @@
 
 // Keep these in sync with src/coreclr/tools/Common/Internal/Runtime/ModuleHeaders.cs
 #define READYTORUN_MAJOR_VERSION 0x0006
-#define READYTORUN_MINOR_VERSION 0x0000
+#define READYTORUN_MINOR_VERSION 0x0001
 
 #define MINIMUM_READYTORUN_MAJOR_VERSION 0x006
 
@@ -26,6 +26,7 @@
 //     R2R 3.0 is not backward compatible with 2.x.
 // R2R Version 6.0 changes managed layout for sequential types with any unmanaged non-blittable fields.
 //     R2R 6.0 is not backward compatible with 5.x or earlier.
+// R2R Version 6.1 adds new JIT helper for slow boxing.
 
 struct READYTORUN_CORE_HEADER
 {
@@ -291,7 +292,7 @@ enum ReadyToRunHelper
     READYTORUN_HELPER_GetRuntimeTypeHandle      = 0x54,
     READYTORUN_HELPER_GetRuntimeMethodHandle    = 0x55,
     READYTORUN_HELPER_GetRuntimeFieldHandle     = 0x56,
-
+    READYTORUN_HELPER_Box_Slow                  = 0x57,
     READYTORUN_HELPER_Box                       = 0x58,
     READYTORUN_HELPER_Box_Nullable              = 0x59,
     READYTORUN_HELPER_Unbox                     = 0x5A,

@@ -6013,10 +6013,14 @@ CorInfoHelpFunc CEEInfo::getBoxHelper(CORINFO_CLASS_HANDLE clsHnd)
     }
     else
     {
-        if(VMClsHnd.IsTypeDesc())
+        if (VMClsHnd.IsTypeDesc())
             COMPlusThrow(kInvalidOperationException,W("InvalidOperation_TypeCannotBeBoxed"));
 
-        result = CORINFO_HELP_BOX;
+        // The CORINFO_HELP_BOX_SLOW is designed to handle failure cases at run-time.
+        // CORINFO_HELP_BOX is always the fastest path when success is assumed.
+        result = VMClsHnd.IsByRefLike()
+            ? CORINFO_HELP_BOX_SLOW
+            : CORINFO_HELP_BOX;
     }
 
     EE_TO_JIT_TRANSITION();
