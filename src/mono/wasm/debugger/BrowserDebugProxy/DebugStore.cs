@@ -139,13 +139,9 @@ namespace Microsoft.WebAssembly.Diagnostics
         }
 
         public bool CompareRequest(JObject req)
-        {
-            if (this.request["url"].Value<string>() == req["url"].Value<string>() &&
+          => this.request["url"].Value<string>() == req["url"].Value<string>() &&
                 this.request["lineNumber"].Value<int>() == req["lineNumber"].Value<int>() &&
-                this.request["columnNumber"].Value<int>() == req["columnNumber"].Value<int>())
-                return true;
-            return false;
-        }
+                this.request["columnNumber"].Value<int>() == req["columnNumber"].Value<int>();
 
         public void UpdateCondition(string condition)
         {
