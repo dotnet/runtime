@@ -353,7 +353,7 @@ namespace System
         {
             byte* buffer = number.GetDigitsPointer();
             number.DigitsCount = DecimalPrecision;
-            number.IsNegative = d.IsNegative;
+            number.IsNegative = decimal.IsNegative(d);
 
             byte* p = buffer + DecimalPrecision;
             while ((d.Mid | d.High) != 0)

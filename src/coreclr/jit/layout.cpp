@@ -334,10 +334,11 @@ ClassLayout* ClassLayout::Create(Compiler* compiler, CORINFO_CLASS_HANDLE classH
         size = compiler->info.compCompHnd->getHeapClassSize(classHandle);
     }
 
-    INDEBUG(const char* className = compiler->info.compCompHnd->getClassName(classHandle);)
+    INDEBUG(const char* className = compiler->eeGetClassName(classHandle);)
+    INDEBUG(const char16_t* shortClassName = compiler->eeGetShortClassName(classHandle);)
 
-    ClassLayout* layout =
-        new (compiler, CMK_ClassLayout) ClassLayout(classHandle, isValueClass, size DEBUGARG(className));
+    ClassLayout* layout = new (compiler, CMK_ClassLayout)
+        ClassLayout(classHandle, isValueClass, size DEBUGARG(className) DEBUGARG(shortClassName));
     layout->InitializeGCPtrs(compiler);
     return layout;
 }

@@ -24,7 +24,7 @@ parameters:
   tieringTest: ''
   longRunningGcTests: ''
   gcSimulatorTests: ''
-  runtimeFlavorDisplayName: 'CoreCLR'
+  runtimeFlavor: 'CoreCLR'
   runtimeVariant: ''
   shouldContinueOnError: false
 
@@ -57,7 +57,7 @@ steps:
       _PALTestsDir: ${{ parameters.runPALTestsDir }}
       _TimeoutPerTestCollectionInMinutes: ${{ parameters.timeoutPerTestCollectionInMinutes }}
       _TimeoutPerTestInMinutes: ${{ parameters.timeoutPerTestInMinutes }}
-      runtimeFlavorDisplayName: ${{ parameters.runtimeFlavorDisplayName }}
+      RuntimeFlavor: ${{ parameters.runtimeFlavor }}
       _RuntimeVariant: ${{ parameters.runtimeVariant }}
       ${{ if eq(parameters.publishTestResults, 'true') }}:
         SYSTEM_ACCESSTOKEN: $(System.AccessToken)

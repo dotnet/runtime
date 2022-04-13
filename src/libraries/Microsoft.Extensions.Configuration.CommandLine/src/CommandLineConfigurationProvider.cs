@@ -91,7 +91,6 @@ namespace Microsoft.Extensions.Configuration.CommandLine
                             key = currentArg.Substring(keyStartIndex);
                         }
 
-                        string previousKey = enumerator.Current;
                         if (!enumerator.MoveNext())
                         {
                             // ignore missing values
@@ -131,7 +130,7 @@ namespace Microsoft.Extensions.Configuration.CommandLine
             Data = data;
         }
 
-        private Dictionary<string, string> GetValidatedSwitchMappingsCopy(IDictionary<string, string> switchMappings)
+        private static Dictionary<string, string> GetValidatedSwitchMappingsCopy(IDictionary<string, string> switchMappings)
         {
             // The dictionary passed in might be constructed with a case-sensitive comparer
             // However, the keys in configuration providers are all case-insensitive

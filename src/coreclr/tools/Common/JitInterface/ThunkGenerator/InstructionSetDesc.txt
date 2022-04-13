@@ -114,6 +114,7 @@ instructionset64bit,ARM64 ,Dp
 instructionset64bit,ARM64 ,Rdm
 instructionset64bit,ARM64 ,Sha1
 instructionset64bit,ARM64 ,Sha256
+instructionset     ,ARM64 ,          ,        ,   ,Rcpc     ,
 
 vectorinstructionset,ARM64,Vector64
 vectorinstructionset,ARM64,Vector128

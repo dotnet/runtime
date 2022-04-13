@@ -554,7 +554,7 @@ namespace System.Net
         }
 
         // Return number of cookies removed from the collection.
-        private int ExpireCollection(CookieCollection cc)
+        private static int ExpireCollection(CookieCollection cc)
         {
             lock (cc)
             {

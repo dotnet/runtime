@@ -67,13 +67,15 @@ namespace System.Text.RegularExpressions
             RegexTree tree = Init(pattern, RegexOptions.None, s_defaultMatchTimeout, ref culture);
 
             // Create the interpreter factory.
-            factory = new RegexInterpreterFactory(tree, culture);
+            factory = new RegexInterpreterFactory(tree);
 
             // NOTE: This overload _does not_ delegate to the one that takes options, in order
             // to avoid unnecessarily rooting the support for RegexOptions.NonBacktracking/Compiler
             // if no options are ever used.
         }
 
+        [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
+            Justification = "Compiled Regex is only used when RuntimeFeature.IsDynamicCodeCompiled is true. Workaround https://github.com/dotnet/linker/issues/2715.")]
         internal Regex(string pattern, RegexOptions options, TimeSpan matchTimeout, CultureInfo? culture)
         {
             // Validate arguments.
@@ -101,7 +103,7 @@ namespace System.Text.RegularExpressions
                 }
 
                 // If no factory was created, fall back to creating one for the interpreter.
-                factory ??= new RegexInterpreterFactory(tree, culture);
+                factory ??= new RegexInterpreterFactory(tree);
             }
         }
 
@@ -201,6 +203,7 @@ namespace System.Text.RegularExpressions
         /// Regex constructor, we don't load RegexCompiler and its reflection classes when
         /// instantiating a non-compiled regex.
         /// </summary>
+        [RequiresDynamicCode("Compiling a RegEx requires dynamic code.")]
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static RegexRunnerFactory? Compile(string pattern, RegexTree regexTree, RegexOptions options, bool hasTimeout) =>
             RegexCompiler.Compile(pattern, regexTree, options, hasTimeout);

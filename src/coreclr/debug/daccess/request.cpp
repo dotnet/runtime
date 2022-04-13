@@ -3447,7 +3447,7 @@ ClrDataAccess::TraverseLoaderHeap(CLRDATA_ADDRESS loaderHeapAddr, VISITHEAP pFun
 
     SOSDacEnter();
 
-    LoaderHeap *pLoaderHeap = PTR_LoaderHeap(TO_TADDR(loaderHeapAddr));
+    ExplicitControlLoaderHeap *pLoaderHeap = PTR_ExplicitControlLoaderHeap(TO_TADDR(loaderHeapAddr));
     PTR_LoaderHeapBlock block = pLoaderHeap->m_pFirstBlock;
     while (block.IsValid())
     {

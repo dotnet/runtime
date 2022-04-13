@@ -486,7 +486,7 @@ void EEPolicy::LogFatalError(UINT exitCode, UINT_PTR address, LPCWSTR pszMessage
                 if(!ssErrorFormat.LoadResource(CCompRC::Optional, IDS_ER_UNMANAGEDFAILFASTMSG ))
                     ssErrorFormat.Set(W("at IP 0x%x (0x%x) with exit code 0x%x."));
                 SmallStackSString addressString;
-                addressString.Printf(W("%p"), pExceptionInfo? (UINT_PTR)pExceptionInfo->ExceptionRecord->ExceptionAddress : address);
+                addressString.Printf(W("%p"), pExceptionInfo? (PVOID)pExceptionInfo->ExceptionRecord->ExceptionAddress : (PVOID)address);
 
                 // We should always have the reference to the runtime's instance
                 _ASSERTE(GetClrModuleBase() != NULL);

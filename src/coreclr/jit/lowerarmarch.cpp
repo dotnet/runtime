@@ -194,11 +194,9 @@ void Lowering::LowerStoreLoc(GenTreeLclVarCommon* storeLoc)
                 }
             }
 
-            // A local stack slot is at least 4 bytes in size, regardless of
-            // what the local var is typed as, so auto-promote it here
-            // unless it is a field of a promoted struct
-            // TODO-CQ: if the field is promoted shouldn't we also be able to do this?
-            if (!varDsc->lvIsStructField)
+            // TODO-CQ: if the field is promoted independently shouldn't we
+            // also be able to do this?
+            if (!varDsc->lvIsStructField && (varDsc->GetStackSlotHomeType() == TYP_INT))
             {
                 storeLoc->gtType = TYP_INT;
                 con->SetIconValue(ival);
@@ -611,28 +609,6 @@ void Lowering::LowerRotate(GenTree* tree)
     }
     ContainCheckShiftRotate(tree->AsOp());
 }
-
-#ifdef FEATURE_SIMD
-//----------------------------------------------------------------------------------------------
-// Lowering::LowerSIMD: Perform containment analysis for a SIMD intrinsic node.
-//
-//  Arguments:
-//     simdNode - The SIMD intrinsic node.
-//
-void Lowering::LowerSIMD(GenTreeSIMD* simdNode)
-{
-    assert(simdNode->gtType != TYP_SIMD32);
-
-    if (simdNode->TypeGet() == TYP_SIMD12)
-    {
-        // GT_SIMD node requiring to produce TYP_SIMD12 in fact
-        // produces a TYP_SIMD16 result
-        simdNode->gtType = TYP_SIMD16;
-    }
-
-    ContainCheckSIMD(simdNode);
-}
-#endif // FEATURE_SIMD
 
 #ifdef FEATURE_HW_INTRINSICS
 
@@ -1633,43 +1609,59 @@ void Lowering::ContainCheckBinary(GenTreeOp* node)
     CheckImmedAndMakeContained(node, op2);
 
 #ifdef TARGET_ARM64
-    // Find "a * b + c" or "c + a * b" in order to emit MADD/MSUB
-    if (comp->opts.OptimizationEnabled() && varTypeIsIntegral(node) && !node->isContained() && node->OperIs(GT_ADD) &&
-        !node->gtOverflow() && (op1->OperIs(GT_MUL) || op2->OperIs(GT_MUL)))
+    if (comp->opts.OptimizationEnabled() && varTypeIsIntegral(node) && !node->isContained())
     {
-        GenTree* mul;
-        GenTree* c;
-        if (op1->OperIs(GT_MUL))
+        // Find "a * b + c" or "c + a * b" in order to emit MADD/MSUB
+        if (node->OperIs(GT_ADD) && !node->gtOverflow() && (op1->OperIs(GT_MUL) || op2->OperIs(GT_MUL)))
         {
-            mul = op1;
-            c   = op2;
-        }
-        else
-        {
-            mul = op2;
-            c   = op1;
-        }
-
-        GenTree* a = mul->gtGetOp1();
-        GenTree* b = mul->gtGetOp2();
-
-        if (!mul->isContained() && !mul->gtOverflow() && !a->isContained() && !b->isContained() && !c->isContained() &&
-            varTypeIsIntegral(mul))
-        {
-            if (a->OperIs(GT_NEG) && !a->gtGetOp1()->isContained() && !a->gtGetOp1()->IsRegOptional())
+            GenTree* mul;
+            GenTree* c;
+            if (op1->OperIs(GT_MUL))
             {
-                // "-a * b + c" to MSUB
-                MakeSrcContained(mul, a);
+                mul = op1;
+                c   = op2;
             }
-            if (b->OperIs(GT_NEG) && !b->gtGetOp1()->isContained())
+            else
             {
-                // "a * -b + c" to MSUB
-                MakeSrcContained(mul, b);
+                mul = op2;
+                c   = op1;
             }
-            // If both 'a' and 'b' are GT_NEG - MADD will be emitted.
 
-            node->ChangeOper(GT_MADD);
-            MakeSrcContained(node, mul);
+            GenTree* a = mul->gtGetOp1();
+            GenTree* b = mul->gtGetOp2();
+
+            if (!mul->isContained() && !mul->gtOverflow() && !a->isContained() && !b->isContained() &&
+                !c->isContained() && varTypeIsIntegral(mul))
+            {
+                if (a->OperIs(GT_NEG) && !a->gtGetOp1()->isContained() && !a->gtGetOp1()->IsRegOptional())
+                {
+                    // "-a * b + c" to MSUB
+                    MakeSrcContained(mul, a);
+                }
+                if (b->OperIs(GT_NEG) && !b->gtGetOp1()->isContained())
+                {
+                    // "a * -b + c" to MSUB
+                    MakeSrcContained(mul, b);
+                }
+                // If both 'a' and 'b' are GT_NEG - MADD will be emitted.
+
+                node->ChangeOper(GT_MADD);
+                MakeSrcContained(node, mul);
+            }
+        }
+        // Find "a - b * c" in order to emit MSUB
+        else if (node->OperIs(GT_SUB) && !node->gtOverflow() && op2->OperIs(GT_MUL) && !op2->isContained() &&
+                 !op2->gtOverflow() && varTypeIsIntegral(op2))
+        {
+            GenTree* a = op1;
+            GenTree* b = op2->gtGetOp1();
+            GenTree* c = op2->gtGetOp2();
+
+            if (!a->isContained() && !b->isContained() && !c->isContained())
+            {
+                node->ChangeOper(GT_MSUB);
+                MakeSrcContained(node, op2);
+            }
         }
     }
 
@@ -2090,6 +2082,18 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 
             default:
                 unreached();
+        }
+    }
+    else if ((intrin.id == NI_AdvSimd_LoadVector128) || (intrin.id == NI_AdvSimd_LoadVector64))
+    {
+        assert(intrin.numOperands == 1);
+        assert(HWIntrinsicInfo::lookupCategory(intrin.id) == HW_Category_MemoryLoad);
+
+        GenTree* addr = node->Op(1);
+        if (TryCreateAddrMode(addr, true, node) && IsSafeToContainMem(node, addr))
+        {
+            assert(addr->OperIs(GT_LEA));
+            MakeSrcContained(node, addr);
         }
     }
 }

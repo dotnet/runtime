@@ -1361,7 +1361,7 @@ namespace System.Xml.Schema
             return false;
         }
 
-        internal string GetTargetNamespace(XmlSchema schema)
+        internal static string GetTargetNamespace(XmlSchema schema)
         {
             return schema.TargetNamespace == null ? string.Empty : schema.TargetNamespace;
         }

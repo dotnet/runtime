@@ -1043,6 +1043,82 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
                 exception.Message);
         }
 
+        [Fact]
+        public void DoesNotReadPropertiesUnnecessarily()
+        {
+            ConfigurationBuilder configurationBuilder = new();
+            configurationBuilder.AddInMemoryCollection(new Dictionary<string, string>
+            {
+                { nameof(ClassWithReadOnlyPropertyThatThrows.Safe), "value" },
+                { nameof(ClassWithReadOnlyPropertyThatThrows.StringThrows), "value" },
+                { $"{nameof(ClassWithReadOnlyPropertyThatThrows.EnumerableThrows)}:0", "0" },
+            });
+            IConfiguration config = configurationBuilder.Build();
+
+            ClassWithReadOnlyPropertyThatThrows bound = config.Get<ClassWithReadOnlyPropertyThatThrows>();
+            Assert.Equal("value", bound.Safe);
+        }
+
+        /// <summary>
+        /// Binding to mutable structs is important to support properties
+        /// like JsonConsoleFormatterOptions.JsonWriterOptions.
+        /// </summary>
+        [Fact]
+        public void CanBindNestedStructProperties()
+        {
+            ConfigurationBuilder configurationBuilder = new();
+            configurationBuilder.AddInMemoryCollection(new Dictionary<string, string>
+            {
+                { "ReadWriteNestedStruct:String", "s" },
+                { "ReadWriteNestedStruct:DeeplyNested:Int32", "100" },
+                { "ReadWriteNestedStruct:DeeplyNested:Boolean", "true" },
+            });
+            IConfiguration config = configurationBuilder.Build();
+
+            StructWithNestedStructs bound = config.Get<StructWithNestedStructs>();
+            Assert.Equal("s", bound.ReadWriteNestedStruct.String);
+            Assert.Equal(100, bound.ReadWriteNestedStruct.DeeplyNested.Int32);
+            Assert.True(bound.ReadWriteNestedStruct.DeeplyNested.Boolean);
+        }
+
+        [Fact]
+        public void IgnoresReadOnlyNestedStructProperties()
+        {
+            ConfigurationBuilder configurationBuilder = new();
+            configurationBuilder.AddInMemoryCollection(new Dictionary<string, string>
+            {
+                { "ReadOnlyNestedStruct:String", "s" },
+                { "ReadOnlyNestedStruct:DeeplyNested:Int32", "100" },
+                { "ReadOnlyNestedStruct:DeeplyNested:Boolean", "true" },
+            });
+            IConfiguration config = configurationBuilder.Build();
+
+            StructWithNestedStructs bound = config.Get<StructWithNestedStructs>();
+            Assert.Null(bound.ReadOnlyNestedStruct.String);
+            Assert.Equal(0, bound.ReadWriteNestedStruct.DeeplyNested.Int32);
+            Assert.False(bound.ReadWriteNestedStruct.DeeplyNested.Boolean);
+        }
+
+        [Fact]
+        public void CanBindNullableNestedStructProperties()
+        {
+            ConfigurationBuilder configurationBuilder = new();
+            configurationBuilder.AddInMemoryCollection(new Dictionary<string, string>
+            {
+                { "NullableNestedStruct:String", "s" },
+                { "NullableNestedStruct:DeeplyNested:Int32", "100" },
+                { "NullableNestedStruct:DeeplyNested:Boolean", "true" },
+            });
+            IConfiguration config = configurationBuilder.Build();
+
+            StructWithNestedStructs bound = config.Get<StructWithNestedStructs>();
+            Assert.NotNull(bound.NullableNestedStruct);
+            Assert.Equal("s", bound.NullableNestedStruct.Value.String);
+            Assert.Equal(100, bound.NullableNestedStruct.Value.DeeplyNested.Int32);
+            Assert.True(bound.NullableNestedStruct.Value.DeeplyNested.Boolean);
+        }
+
+
         private interface ISomeInterface
         {
         }
@@ -1083,6 +1159,36 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             public ThrowsWhenActivated ThrowsWhenActivatedProperty { get; set; }
 
             public NestedOptions1 NestedOptionsProperty { get; set; }
+        }
+
+        private class ClassWithReadOnlyPropertyThatThrows
+        {
+            public string StringThrows => throw new InvalidOperationException(nameof(StringThrows));
+
+            public IEnumerable<int> EnumerableThrows => throw new InvalidOperationException(nameof(EnumerableThrows));
+
+            public string Safe { get; set; }
+        }
+
+        private struct StructWithNestedStructs
+        {
+            public Nested ReadWriteNestedStruct { get; set; }
+
+            public Nested ReadOnlyNestedStruct { get; }
+
+            public Nested? NullableNestedStruct { get; set; }
+
+            public struct Nested
+            {
+                public string String { get; set; }
+                public DeeplyNested DeeplyNested { get; set; }
+            }
+
+            public struct DeeplyNested
+            {
+                public int Int32 { get; set; }
+                public bool Boolean { get; set; }
+            }
         }
     }
 }

@@ -628,7 +628,7 @@ namespace System.Xml
             }
         }
 
-        private int ToBase16(byte[] chars, int offset, uint value)
+        private static int ToBase16(byte[] chars, int offset, uint value)
         {
             int count = 0;
             do

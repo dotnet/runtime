@@ -4,6 +4,7 @@
 
 #include "common.h"
 
+#include "ecall.h"
 #include "eetwain.h"
 #include "dbginterface.h"
 #include "gcenv.h"
@@ -4412,7 +4413,27 @@ void promoteVarArgs(PTR_BYTE argsStart, PTR_VASigCookie varArgSig, GCCONTEXT* ct
     }
 }
 
-INDEBUG(void* forceStack1;)
+#ifndef DACCESS_COMPILE
+FCIMPL1(void, GCReporting::Register, GCFrame* frame)
+{
+    FCALL_CONTRACT;
+
+    // Construct a GCFrame.
+    _ASSERTE(frame != NULL);
+    frame->Push(GetThread());
+}
+FCIMPLEND
+
+FCIMPL1(void, GCReporting::Unregister, GCFrame* frame)
+{
+    FCALL_CONTRACT;
+
+    // Destroy the GCFrame.
+    _ASSERTE(frame != NULL);
+    frame->Pop();
+}
+FCIMPLEND
+#endif // !DACCESS_COMPILE
 
 #ifndef USE_GC_INFO_DECODER
 

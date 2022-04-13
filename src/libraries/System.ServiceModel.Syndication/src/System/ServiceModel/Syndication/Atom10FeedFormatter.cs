@@ -354,7 +354,7 @@ namespace System.ServiceModel.Syndication
             return true;
         }
 
-        internal void WriteContentTo(XmlWriter writer, string elementName, SyndicationContent content)
+        internal static void WriteContentTo(XmlWriter writer, string elementName, SyndicationContent content)
         {
             if (content != null)
             {
@@ -362,7 +362,7 @@ namespace System.ServiceModel.Syndication
             }
         }
 
-        internal void WriteElement(XmlWriter writer, string elementName, string value)
+        internal static void WriteElement(XmlWriter writer, string elementName, string value)
         {
             if (value != null)
             {
@@ -388,7 +388,7 @@ namespace System.ServiceModel.Syndication
             }
         }
 
-        internal void WriteFeedLastUpdatedTimeTo(XmlWriter writer, DateTimeOffset lastUpdatedTime, bool isRequired)
+        internal static void WriteFeedLastUpdatedTimeTo(XmlWriter writer, DateTimeOffset lastUpdatedTime, bool isRequired)
         {
             if (lastUpdatedTime == DateTimeOffset.MinValue && isRequired)
             {
@@ -423,7 +423,7 @@ namespace System.ServiceModel.Syndication
             }
         }
 
-        internal void WriteItemLastUpdatedTimeTo(XmlWriter writer, DateTimeOffset lastUpdatedTime)
+        internal static void WriteItemLastUpdatedTimeTo(XmlWriter writer, DateTimeOffset lastUpdatedTime)
         {
             if (lastUpdatedTime == DateTimeOffset.MinValue)
             {
@@ -434,7 +434,7 @@ namespace System.ServiceModel.Syndication
                 AsString(lastUpdatedTime));
         }
 
-        internal void WriteLink(XmlWriter writer, SyndicationLink link, Uri baseUri)
+        internal static void WriteLink(XmlWriter writer, SyndicationLink link, Uri baseUri)
         {
             writer.WriteStartElement(Atom10Constants.LinkTag, Atom10Constants.Atom10Namespace);
             Uri baseUriToWrite = FeedUtils.GetBaseUriToWrite(baseUri, link.BaseUri);
@@ -561,7 +561,7 @@ namespace System.ServiceModel.Syndication
             return result;
         }
 
-        private string AsString(DateTimeOffset dateTime)
+        private static string AsString(DateTimeOffset dateTime)
         {
             if (dateTime.Offset == TimeSpan.Zero)
             {

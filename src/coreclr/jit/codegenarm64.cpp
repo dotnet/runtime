@@ -5233,6 +5233,12 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_R_R(INS_stlrb, EA_4BYTE, REG_R5, REG_R14);
     theEmitter->emitIns_R_R(INS_stlrh, EA_4BYTE, REG_R3, REG_R15);
 
+    // ldapr Rt, [reg]
+    theEmitter->emitIns_R_R(INS_ldapr, EA_8BYTE, REG_R9, REG_R8);
+    theEmitter->emitIns_R_R(INS_ldapr, EA_4BYTE, REG_R7, REG_R10);
+    theEmitter->emitIns_R_R(INS_ldaprb, EA_4BYTE, REG_R5, REG_R11);
+    theEmitter->emitIns_R_R(INS_ldaprh, EA_4BYTE, REG_R5, REG_R12);
+
     // ldaxr Rt, [reg]
     theEmitter->emitIns_R_R(INS_ldaxr, EA_8BYTE, REG_R9, REG_R8);
     theEmitter->emitIns_R_R(INS_ldaxr, EA_4BYTE, REG_R7, REG_R10);
@@ -10040,7 +10046,7 @@ void CodeGen::instGen_MemoryBarrier(BarrierKind barrierKind)
 }
 
 //-----------------------------------------------------------------------------------
-// genCodeForMadd: Emit a madd/msub (Multiply-Add) instruction
+// genCodeForMadd: Emit a madd (Multiply-Add) instruction
 //
 // Arguments:
 //     tree - GT_MADD tree where op1 or op2 is GT_ADD
@@ -10084,6 +10090,31 @@ void CodeGen::genCodeForMadd(GenTreeOp* tree)
     genProduceReg(tree);
 }
 
+//-----------------------------------------------------------------------------------
+// genCodeForMsub: Emit a msub (Multiply-Subtract) instruction
+//
+// Arguments:
+//     tree - GT_MSUB tree where op2 is GT_MUL
+//
+void CodeGen::genCodeForMsub(GenTreeOp* tree)
+{
+    assert(tree->OperIs(GT_MSUB) && varTypeIsIntegral(tree) && !(tree->gtFlags & GTF_SET_FLAGS));
+    genConsumeOperands(tree);
+
+    assert(tree->gtGetOp2()->OperIs(GT_MUL));
+    assert(tree->gtGetOp2()->isContained());
+
+    GenTree* a = tree->gtGetOp1();
+    GenTree* b = tree->gtGetOp2()->gtGetOp1();
+    GenTree* c = tree->gtGetOp2()->gtGetOp2();
+
+    // d = a - b * c
+    // MSUB d, b, c, a
+    GetEmitter()->emitIns_R_R_R_R(INS_msub, emitActualTypeSize(tree), tree->GetRegNum(), b->GetRegNum(), c->GetRegNum(),
+                                  a->GetRegNum());
+    genProduceReg(tree);
+}
+
 //------------------------------------------------------------------------
 // genCodeForBfiz: Generates the code sequence for a GenTree node that
 // represents a bitfield insert in zero with sign/zero extension.
@@ -10120,7 +10151,7 @@ void CodeGen::genCodeForBfiz(GenTreeOp* tree)
 //
 void CodeGen::genCodeForAddEx(GenTreeOp* tree)
 {
-    assert(tree->OperIs(GT_ADDEX) && !(tree->gtFlags & GTF_SET_FLAGS));
+    assert(tree->OperIs(GT_ADDEX));
     genConsumeOperands(tree);
 
     GenTree* op;
@@ -10146,13 +10177,15 @@ void CodeGen::genCodeForAddEx(GenTreeOp* tree)
         GenTreeCast* cast = containedOp->AsCast();
         assert(varTypeIsLong(cast->CastToType()));
         insOpts opts = cast->IsUnsigned() ? INS_OPTS_UXTW : INS_OPTS_SXTW;
-        GetEmitter()->emitIns_R_R_R(INS_add, emitActualTypeSize(tree), dstReg, op1Reg, op2Reg, opts);
+        GetEmitter()->emitIns_R_R_R(tree->gtSetFlags() ? INS_adds : INS_add, emitActualTypeSize(tree), dstReg, op1Reg,
+                                    op2Reg, opts);
     }
     else
     {
         assert(containedOp->OperIs(GT_LSH));
         ssize_t cns = containedOp->gtGetOp2()->AsIntCon()->IconValue();
-        GetEmitter()->emitIns_R_R_R_I(INS_add, emitActualTypeSize(tree), dstReg, op1Reg, op2Reg, cns, INS_OPTS_LSL);
+        GetEmitter()->emitIns_R_R_R_I(tree->gtSetFlags() ? INS_adds : INS_add, emitActualTypeSize(tree), dstReg, op1Reg,
+                                      op2Reg, cns, INS_OPTS_LSL);
     }
     genProduceReg(tree);
 }
