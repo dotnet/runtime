@@ -2754,37 +2754,3 @@ emit_struct_free (MonoMethodBuilder *mb, MonoClass *klass, int struct_var)
 	mono_mb_emit_ldloc (mb, struct_var);
 	mono_mb_emit_icall (mb, mono_struct_delete_old);
 }
-
-static void
-emit_thread_interrupt_checkpoint_call (MonoMethodBuilder *mb, MonoJitICallId checkpoint_icall_id)
-{
-	int pos_noabort, pos_noex;
-
-	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
-	mono_mb_emit_byte (mb, CEE_MONO_LDPTR_INT_REQ_FLAG);
-	mono_mb_emit_no_nullcheck (mb);
-	mono_mb_emit_byte (mb, CEE_LDIND_U4);
-	pos_noabort = mono_mb_emit_branch (mb, CEE_BRFALSE);
-
-	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
-	mono_mb_emit_byte (mb, CEE_MONO_NOT_TAKEN);
-
-	mono_mb_emit_icall_id (mb, checkpoint_icall_id);
-	/* Throw the exception returned by the checkpoint function, if any */
-	mono_mb_emit_byte (mb, CEE_DUP);
-	pos_noex = mono_mb_emit_branch (mb, CEE_BRFALSE);
-
-	mono_mb_emit_byte (mb, CEE_DUP);
-	mono_mb_emit_ldflda (mb, MONO_STRUCT_OFFSET (MonoException, caught_in_unmanaged));
-	mono_mb_emit_byte (mb, CEE_LDC_I4_1);
-	mono_mb_emit_no_nullcheck (mb);
-	mono_mb_emit_byte (mb, CEE_STIND_I4);
-
-	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
-	mono_mb_emit_byte (mb, CEE_MONO_RETHROW);
-
-	mono_mb_patch_branch (mb, pos_noex);
-	mono_mb_emit_byte (mb, CEE_POP);
-
-	mono_mb_patch_branch (mb, pos_noabort);
-}
