@@ -223,6 +223,21 @@ namespace System.ServiceProcess.Tests
             testService.DeleteTestServices();
         }
 
+        [ConditionalFact(nameof(IsElevatedAndSupportsEventLogs))]
+        public void NoServiceNameOnServiceBase()
+        {
+            // When installing a service, you must supply a non empty name.
+            // When a service starts itself (using StartServiceCtrlDispatcher) it's legal to pass an empty string for the name.
+            string serviceName = "NoServiceNameOnServiceBase";
+            var testService = new TestServiceProvider(serviceName);
+
+            // Ensure it has successfully written to the event log,
+            // indicating it figured out its own name.
+            Assert.True(EventLog.SourceExists(serviceName));
+
+            testService.DeleteTestServices();
+        }
+
         private ServiceController ConnectToServer()
         {
             TestServiceProvider.DebugTrace("ServiceBaseTests.ConnectToServer: connecting");

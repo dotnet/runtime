@@ -83,8 +83,8 @@
         <note />
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedMessageValue">
-        <source>The specified value '{0}' for '{1}' is not supported by source-generated P/Invokes. If the specified configuration is required, use a regular `DllImport` instead.</source>
-        <target state="translated">Der angegebene Wert \"{0}\" für \"{1}\" wird von quellgenerierten P/Invokes nicht unterstützt. Wenn die angegebene Konfiguration erforderlich ist, verwenden Sie stattdessen einen regulären \"DllImport\".</target>
+        <source>The specified value '{0}' for '{1}' is not supported by source-generated P/Invokes. If the specified value is required, use a regular `DllImport` instead.</source>
+        <target state="needs-review-translation">Der angegebene Wert \"{0}\" für \"{1}\" wird von quellgenerierten P/Invokes nicht unterstützt. Wenn die angegebene Konfiguration erforderlich ist, verwenden Sie stattdessen einen regulären \"DllImport\".</target>
         <note />
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedTitle">
@@ -208,8 +208,8 @@
         <note />
       </trans-unit>
       <trans-unit id="InTwoStageMarshallingRequiresToNativeValueMessage">
-        <source>The marshaller type '{0}' supports marshalling in the 'In' direction with the 'TwoStageMarshalling' feature must provide a 'ToNativeValue' instance method that returns the native value</source>
-        <target state="translated">Der Marshallertyp \"{0}\" unterstützt das Marshalling in der Richtung \"In\" mit der Funktion \"TwoStageMarshalling\" muss eine ToNativeValue-Instanzmethode bereitstellen, die den nativen Wert zurückgibt.</target>
+        <source>A marshaller type '{0}' that supports marshalling in the 'In' direction with the 'TwoStageMarshalling' feature must provide a 'ToNativeValue' instance method that returns the native value</source>
+        <target state="needs-review-translation">Der Marshallertyp \"{0}\" unterstützt das Marshalling in der Richtung \"In\" mit der Funktion \"TwoStageMarshalling\" muss eine ToNativeValue-Instanzmethode bereitstellen, die den nativen Wert zurückgibt.</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidAttributedMethodContainingTypeMissingModifiersMessage">

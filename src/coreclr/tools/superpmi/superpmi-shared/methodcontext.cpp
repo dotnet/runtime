@@ -2343,13 +2343,9 @@ void* MethodContext::repGetHelperFtn(CorInfoHelpFunc ftnNum, void** ppIndirectio
 // Return Value:
 //    True if there is a helper function associated with the given target address; false otherwise.
 //
-// Assumptions:
-//    Only the lower 32 bits of the method address are necessary to identify the method.
-//
 // Notes:
-//    - See notes for fndGetFunctionEntryPoint for a more in-depth discussion of why we only match on the
-//      lower 32 bits of the target address.
-//    - This might not work correctly with method contexts recorded via NGen compilation.
+//    - This might not work correctly with method contexts recorded via NGen compilation; it doesn't compare
+//      the ppIndirection value.
 //
 bool MethodContext::fndGetHelperFtn(void* functionAddress, CorInfoHelpFunc* pResult)
 {
@@ -2487,7 +2483,7 @@ void MethodContext::repGetFunctionEntryPoint(CORINFO_METHOD_HANDLE ftn,
 //                    handle associated with the given target address, it will be written to here.
 //
 // Return Value:
-//    True if there is a helper function associated with the given target address; false otherwise.
+//    True if there is a function associated with the given target address; false otherwise.
 //
 // Assumptions:
 //    - The given method address does not point to a jump stub.

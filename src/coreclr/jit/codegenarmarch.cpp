@@ -1884,17 +1884,21 @@ void CodeGen::genCodeForIndir(GenTreeIndir* tree)
         bool addrIsInReg   = tree->Addr()->isUsedFromReg();
         bool addrIsAligned = ((tree->gtFlags & GTF_IND_UNALIGNED) == 0);
 
+        // on arm64-v8.3+ we can use ldap* instructions with acquire/release semantics to avoid
+        // full memory barriers if mixed with STLR
+        bool hasRcpc = compiler->compOpportunisticallyDependsOn(InstructionSet_Rcpc);
+
         if ((ins == INS_ldrb) && addrIsInReg)
         {
-            ins = INS_ldarb;
+            ins = hasRcpc ? INS_ldaprb : INS_ldarb;
         }
         else if ((ins == INS_ldrh) && addrIsInReg && addrIsAligned)
         {
-            ins = INS_ldarh;
+            ins = hasRcpc ? INS_ldaprh : INS_ldarh;
         }
         else if ((ins == INS_ldr) && addrIsInReg && addrIsAligned && genIsValidIntReg(targetReg))
         {
-            ins = INS_ldar;
+            ins = hasRcpc ? INS_ldapr : INS_ldar;
         }
         else
 #endif // TARGET_ARM64
