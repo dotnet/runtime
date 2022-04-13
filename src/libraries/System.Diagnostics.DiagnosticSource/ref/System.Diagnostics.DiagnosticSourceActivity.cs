@@ -16,6 +16,7 @@ namespace System.Diagnostics
             get { throw null; }
             set { }
         }
+        public static event System.EventHandler<System.Diagnostics.ActivityChangedEventArgs>? CurrentChanged { add { } remove { } }
         public static System.Diagnostics.ActivityIdFormat DefaultIdFormat { get { throw null; } set { } }
         public System.TimeSpan Duration { get { throw null; } }
         public static bool ForceDefaultIdFormat { get { throw null; } set { } }
@@ -69,6 +70,11 @@ namespace System.Diagnostics
         public void SetCustomProperty(string propertyName, object? propertyValue) { throw null; }
         public object? GetCustomProperty(string propertyName) { throw null; }
         public ActivityContext Context { get { throw null; } }
+    }
+    public readonly struct ActivityChangedEventArgs
+    {
+        public System.Diagnostics.Activity? Previous { get { throw null; } init { throw null; } }
+        public System.Diagnostics.Activity? Current { get { throw null; } init { throw null; } }
     }
     public class ActivityTagsCollection : System.Collections.Generic.IDictionary<string, object?>
     {

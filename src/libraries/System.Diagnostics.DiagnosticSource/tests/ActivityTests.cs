@@ -1886,6 +1886,147 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void ActivityCurrentEventTest()
+        {
+            RemoteExecutor.Invoke(() =>
+            {
+                int count = 0;
+                Activity? previous = null;
+                Activity? current = null;
+
+                Assert.Null(Activity.Current);
+
+                //
+                // No Event handler is registered yet.
+                //
+
+                using (Activity a1 = new Activity("a1"))
+                {
+                    a1.Start();
+                    Assert.Equal(0, count);
+                } // a1 stops here
+                Assert.Equal(0, count);
+
+                Activity.CurrentChanged += CurrentChanged1;
+
+                //
+                // One Event handler is registered.
+                //
+
+                using (Activity a1 = new Activity("a1"))
+                {
+                    current = a1;
+                    a1.Start();
+                    Assert.Equal(1, count);
+                    using (Activity a2 = new Activity("a2"))
+                    {
+                        previous = a1;
+                        current = a2;
+                        a2.Start();
+                        Assert.Equal(2, count);
+                        previous = a2;
+                        current = a1;
+                    } // a2 stops here
+                    Assert.Equal(3, count);
+
+                    previous = a1;
+                    current = null;
+                } // a1 stops here
+                Assert.Equal(4, count);
+
+                Activity.CurrentChanged += CurrentChanged2;
+
+                //
+                // Two Event handlers are registered.
+                //
+
+                previous = null;
+                using (Activity a1 = new Activity("a1"))
+                {
+                    current = a1;
+                    a1.Start();
+                    Assert.Equal(6, count);
+                    using (Activity a2 = new Activity("a2"))
+                    {
+                        previous = a1;
+                        current = a2;
+                        a2.Start();
+                        Assert.Equal(8, count);
+                        previous = a2;
+                        current = a1;
+                    } // a2 stops here
+                    Assert.Equal(10, count);
+
+                    previous = a1;
+                    current = null;
+                } // a1 stops here
+                Assert.Equal(12, count);
+
+                Activity.CurrentChanged -= CurrentChanged1;
+
+                //
+                // One Event handler is registered after we removed the second handler.
+                //
+
+                previous = null;
+                using (Activity a1 = new Activity("a1"))
+                {
+                    current = a1;
+                    a1.Start();
+                    Assert.Equal(13, count);
+                    using (Activity a2 = new Activity("a2"))
+                    {
+                        previous = a1;
+                        current = a2;
+                        a2.Start();
+                        Assert.Equal(14, count);
+                        previous = a2;
+                        current = a1;
+                    } // a2 stops here
+                    Assert.Equal(15, count);
+
+                    previous = a1;
+                    current = null;
+                } // a1 stops here
+                Assert.Equal(16, count);
+
+                Activity.CurrentChanged -= CurrentChanged2;
+
+                //
+                // No Event handler is registered after we removed the remaining handler.
+                //
+
+                using (Activity a1 = new Activity("a1"))
+                {
+                    a1.Start();
+                    Assert.Equal(16, count);
+                    using (Activity a2 = new Activity("a2"))
+                    {
+                        a2.Start();
+                        Assert.Equal(16, count);
+                    } // a2 stops here
+                    Assert.Equal(16, count);
+                } // a1 stops here
+                Assert.Equal(16, count);
+
+                //
+                // Event Handlers
+                //
+
+                void CurrentChanged1(object? sender, ActivityChangedEventArgs e)
+                {
+                    count++;
+                    Assert.Null(sender);
+                    Assert.Equal(e.Current, Activity.Current);
+                    Assert.Equal(previous, e.Previous);
+                    Assert.Equal(current, e.Current);
+                }
+
+                void CurrentChanged2(object? sender, ActivityChangedEventArgs e) => CurrentChanged1(sender, e);
+            }).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TraceIdCustomGenerationTest()
         {
             RemoteExecutor.Invoke(() =>
