@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Text;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -28,6 +29,22 @@ namespace Microsoft.Interop
                 return fixedStatement.WithStatement(block.AddStatements(childStatement));
             }
             return fixedStatement.WithStatement(SyntaxFactory.Block(fixedStatement.Statement, childStatement));
+        }
+
+        public static StatementSyntax NestFixedStatements(this ImmutableArray<FixedStatementSyntax> fixedStatements, StatementSyntax innerStatement)
+        {
+            StatementSyntax nestedStatement = innerStatement;
+            if (!fixedStatements.IsEmpty)
+            {
+                int i = fixedStatements.Length - 1;
+                nestedStatement = fixedStatements[i].AddStatementWithoutEmptyStatements(SyntaxFactory.Block(nestedStatement));
+                i--;
+                for (; i >= 0; i--)
+                {
+                    nestedStatement = fixedStatements[i].AddStatementWithoutEmptyStatements(nestedStatement);
+                }
+            }
+            return nestedStatement;
         }
 
         public static SyntaxTokenList AddToModifiers(this SyntaxTokenList modifiers, SyntaxKind modifierToAdd)

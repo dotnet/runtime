@@ -6,7 +6,7 @@ using System.Collections.Generic;
 
 namespace Microsoft.Interop
 {
-    public abstract class StubCodeContext
+    public abstract record StubCodeContext
     {
         /// <summary>
         /// Code generation stage
@@ -64,7 +64,7 @@ namespace Microsoft.Interop
             GuaranteedUnmarshal
         }
 
-        public Stage CurrentStage { get; set; } = Stage.Invalid;
+        public Stage CurrentStage { get; init; } = Stage.Invalid;
 
         /// <summary>
         /// The stub emits code that runs in a single stack frame and the frame spans over the native context.
@@ -89,7 +89,7 @@ namespace Microsoft.Interop
         /// <summary>
         /// If this context is a nested context, return the parent context. Otherwise, return <c>null</c>.
         /// </summary>
-        public StubCodeContext? ParentContext { get; protected set; }
+        public StubCodeContext? ParentContext { get; protected init; }
 
         public const string GeneratedNativeIdentifierSuffix = "_gen_native";
 
