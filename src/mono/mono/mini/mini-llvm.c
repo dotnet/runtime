@@ -528,7 +528,7 @@ const_int64 (int64_t v)
 static LLVMValueRef
 md_string (const char *s)
 {
-	return LLVMMDString (s, strlen (s));
+	return LLVMMDString (s, (unsigned int)strlen (s));
 }
 
 /*
@@ -2014,7 +2014,7 @@ get_aotconst_module (MonoLLVMModule *module, LLVMBuilderRef builder, MonoJumpInf
 		// FIXME:
 		LLVMSetAlignment (v, 8);
 
-		addr = create_address (module, v, type);
+		addr = create_address (module, v, const_var_type);
 		g_hash_table_insert (module->aotconst_vars, GINT_TO_POINTER (got_offset), addr);
 	}
 
@@ -2335,12 +2335,6 @@ get_most_deep_clause (MonoCompile *cfg, EmitContext *ctx, MonoBasicBlock *bb)
 	}
 
 	return NULL;
-}
-
-static LLVMValueRef
-md_string (const char *s)
-{
-	return LLVMMDString (s, (unsigned int)strlen (s));
 }
 
 static void
@@ -12115,7 +12109,7 @@ after_codegen_1:
 			missing_method_sig = LLVMFunctionType1 (LLVMVoidType (), ctx->module->ptr_type, FALSE);
 		LLVMValueRef callee = get_callee (ctx, missing_method_sig, MONO_PATCH_INFO_JIT_ICALL_ADDR, GUINT_TO_POINTER (MONO_JIT_ICALL_mini_llvmonly_throw_aot_failed_exception));
 		LLVMValueRef args [] = { convert (ctx, name_var, ctx->module->ptr_type) };
-		LLVMBuildCall2 (ctx->builder, sig, callee, args, 1, "");
+		LLVMBuildCall2 (ctx->builder, missing_method_sig, callee, args, 1, "");
 		LLVMBuildUnreachable (ctx->builder);
 	}
 
