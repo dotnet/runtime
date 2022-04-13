@@ -134,7 +134,7 @@ ClrDataAccess::ServerGCHeapDetails(CLRDATA_ADDRESS heapAddr, DacpGcHeapDetails *
     detailsData->card_table = (CLRDATA_ADDRESS)pHeap->card_table;
     detailsData->mark_array = (CLRDATA_ADDRESS)pHeap->mark_array;
     detailsData->next_sweep_obj = (CLRDATA_ADDRESS)pHeap->next_sweep_obj;
-    if (IsRegionGCEnabled())
+    if (IsRegion())
     {
         // with regions, we don't have these variables anymore
         // use special value -1 in saved_sweep_ephemeral_seg to signal the region case
@@ -306,7 +306,7 @@ HRESULT DacHeapWalker::InitHeapDataSvr(HeapData *&pHeaps, size_t &pCount)
     for (int i = 0; i < heaps; ++i)
     {
         // Basic heap info.
-        TADDR heapAddress = HeapTableIndex(g_gcDacGlobals->g_heaps, i);    
+        TADDR heapAddress = HeapTableIndex(g_gcDacGlobals->g_heaps, i);
         dac_gc_heap heap = LoadGcHeapData(heapAddress);
         dac_gc_heap* pHeap = &heap;
         dac_generation gen0 = ServerGenerationTableIndex(heapAddress, 0);

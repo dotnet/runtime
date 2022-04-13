@@ -2791,7 +2791,7 @@ ClrDataAccess::GetGCHeapStaticData(struct DacpGcHeapDetails *detailsData)
     detailsData->card_table = PTR_CDADDR(g_card_table);
     detailsData->mark_array = (CLRDATA_ADDRESS)*g_gcDacGlobals->mark_array;
     detailsData->next_sweep_obj = (CLRDATA_ADDRESS)*g_gcDacGlobals->next_sweep_obj;
-    if (IsRegionGCEnabled())
+    if (IsRegion())
     {
         // with regions, we don't have these variables anymore
         // use special value -1 in saved_sweep_ephemeral_seg to signal the region case
