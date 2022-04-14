@@ -125,7 +125,6 @@
   <ItemGroup Condition="'$(TargetOS)' == 'Android' and '$(RunDisabledAndroidTests)' != 'true'">
     <!-- Tests time out intermittently -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Hosting\tests\UnitTests\Microsoft.Extensions.Hosting.Unit.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Security\tests\FunctionalTests\System.Net.Security.Tests.csproj" />
 
     <!-- Tests crash -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Globalization\tests\Invariant\Invariant.Tests.csproj" />
