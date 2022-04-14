@@ -242,11 +242,10 @@
     <Copy SourceFiles="@(_EmSdkFiles)" DestinationFolder="$(EmSdkDirForHelixPayload)\%(RecursiveDir)" />
   </Target>
 
-  <Target Name="DownloadFirefoxToSendToHelix"
-          Condition="!Exists($(FirefoxForHelixPayload)) and '$(IsWasmDebuggerTests)' == 'true'">
-    <DownloadFile SourceUrl="$(FirefoxUrl)" DestinationFolder="$(FirefoxForHelixPayload)" SkipUnchangedFiles="true">
+  <Target Name="DownloadFirefoxToSendToHelix" Condition="!Exists($(FirefoxForHelixPayload)) and '$(DebuggerHost)' == 'firefox'">
+    <DownloadFile SourceUrl="$(FirefoxUrl)" DestinationFolder="$(TestArchiveRoot)" SkipUnchangedFiles="true">
       <Output TaskParameter="DownloadedFile" PropertyName="_DownloadedFile" />
     </DownloadFile>
-    <Exec Command="tar -xf $(_DownloadedFile) -C $(TestArchiveRoot) &amp;&amp; rm $(_DownloadedFile) &amp;&amp; cd $(TestArchiveRoot) &amp;&amp; zip -r firefox.zip firefox"/>
+    <Exec Command="tar -xf $(_DownloadedFile) -C $(TestArchiveRoot) &amp;&amp; rm $(_DownloadedFile) &amp;&amp; cd $(TestArchiveRoot) &amp;&amp; zip -q -r firefox.zip firefox"/>
   </Target>
 </Project>

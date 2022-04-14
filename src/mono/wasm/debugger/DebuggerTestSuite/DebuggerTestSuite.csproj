@@ -5,12 +5,12 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <RunAnalyzers>false</RunAnalyzers>
     <IsTestProject>true</IsTestProject>
-    <DefineConstants Condition="'$(RunInFirefox)'!='1'">$(DefineConstants);RUN_IN_CHROME</DefineConstants>
+    <DebuggerHost Condition="'$(DebuggerHost)' == ''">chrome</DebuggerHost>
+    <DefineConstants Condition="'$(DebuggerHost)' == 'chrome'">$(DefineConstants);RUN_IN_CHROME</DefineConstants>
     <VersionsPropsFile>$(MSBuildThisFileDirectory)..\..\BrowsersForTesting.props</VersionsPropsFile>
     <BrowserHost Condition="$([MSBuild]::IsOSPlatform('windows'))">windows</BrowserHost>
-    <RunInFirefox>1</RunInFirefox>
-    <InstallChromeForDebuggerTests Condition="'$(InstallChromeForDebuggerTests)' == '' and '$(RunInFirefox)' != '1' and '$(ContinuousIntegrationBuild)' != 'true' and Exists('/.dockerenv')">true</InstallChromeForDebuggerTests>
-    <InstallFirefoxForDebuggerTests Condition="'$(RunInFirefox)'=='1' and '$(InstallFirefoxForDebuggerTests)' == '' and '$(ContinuousIntegrationBuild)' != 'true' and Exists('/.dockerenv')">true</InstallFirefoxForDebuggerTests>
+    <InstallChromeForDebuggerTests Condition="'$(InstallChromeForDebuggerTests)' == '' and '$(DebuggerHost)' == 'chrome' and '$(ContinuousIntegrationBuild)' != 'true' and Exists('/.dockerenv')">true</InstallChromeForDebuggerTests>
+    <InstallFirefoxForDebuggerTests Condition="'$(DebuggerHost)' == 'firefox' and '$(InstallFirefoxForDebuggerTests)' == '' and '$(ContinuousIntegrationBuild)' != 'true' and Exists('/.dockerenv')">true</InstallFirefoxForDebuggerTests>
   </PropertyGroup>
 
   <Import Project="$(VersionsPropsFile)" />

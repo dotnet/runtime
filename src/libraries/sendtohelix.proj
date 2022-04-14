@@ -88,10 +88,10 @@
     </ItemGroup>
 
     <ItemGroup Condition="'@(_Scenarios -> AnyHaveMetadataValue('Identity', 'wasmdebuggertests'))' == 'true'">
-      <_DebuggerHost Include="$(_DebuggerHosts.Split('/'))" />
+      <_DebuggerHostsItem Include="$(_DebuggerHosts.Split('/'))" />
 
       <_WasmDebuggerTestsProjectsToBuild Include="$(PerScenarioProjectFile)">
-        <AdditionalProperties>$(_PropertiesToPass);Scenario=WasmDebuggerTests;TestArchiveRuntimeFile=$(TestArchiveRuntimeFile);DebuggerHost=%(_DebuggerHost.Identity)</AdditionalProperties>
+        <AdditionalProperties>$(_PropertiesToPass);Scenario=WasmDebuggerTests;TestArchiveRuntimeFile=$(TestArchiveRuntimeFile);DebuggerHost=%(_DebuggerHostsItem.Identity)</AdditionalProperties>
       </_WasmDebuggerTestsProjectsToBuild>
     </ItemGroup>
 

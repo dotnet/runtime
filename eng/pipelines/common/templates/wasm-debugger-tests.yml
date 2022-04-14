@@ -22,16 +22,11 @@ jobs:
         value: $[ dependencies.evaluate_paths.outputs['SetPathVars_allwasm.containsChange'] ]
       - name: alwaysRunVar
         value: ${{ parameters.alwaysRun }}
-      - name: debuggerBrowserArg
-        ${{ if eq(parameters.browser, 'firefox') }}:
-          value: '/p:RunInFirefox=1'
-        ${{ if ne(parameters.browser, 'firefox') }}:
-          value: ''
     jobParameters:
       testGroup: innerloop
       isExtraPlatforms: ${{ parameters.isExtraPlatformsBuild }}
       nameSuffix: Mono_DebuggerTests_${{ parameters.browser }}
-      buildArgs: -s mono+libs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:TestWasmDebuggerTests=true /p:TestAssemblies=false /p:BrowserHost=$(_hostedOs)  $(debuggerBrowserArg)
+      buildArgs: -s mono+libs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:TestWasmDebuggerTests=true /p:TestAssemblies=false /p:BrowserHost=$(_hostedOs)  -p:DebuggerHost=${{ parameters.browser }}
       timeoutInMinutes: 180
       condition: >-
         or(
