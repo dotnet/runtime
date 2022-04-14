@@ -58,7 +58,7 @@
       <BuildScript>$([MSBuild]::NormalizePath('$(MSBuildThisFileDirectory)', 'build.sh'))</BuildScript>
 
       <_CoreHostUnixTargetOS>$(TargetOS)</_CoreHostUnixTargetOS>
-      <_CoreHostUnixTargetOS Condition="'$(RuntimeOS)' == 'linux-bionic'">$(RuntimeOS)</_CoreHostUnixTargetOS>
+      <_CoreHostUnixTargetOS Condition="$(OutputRid.StartsWith('linux-bionic'))">linux-bionic</_CoreHostUnixTargetOS>
       <BuildArgs>$(Configuration) $(TargetArchitecture) -apphostver "$(AppHostVersion)" -hostver "$(HostVersion)" -fxrver "$(HostResolverVersion)" -policyver "$(HostPolicyVersion)" -commithash "$([MSBuild]::ValueOrDefault('$(SourceRevisionId)', 'N/A'))" -os $(_CoreHostUnixTargetOS)</BuildArgs>
       <BuildArgs>$(BuildArgs) -cmakeargs "-DVERSION_FILE_PATH=$(NativeVersionFile)"</BuildArgs>
       <BuildArgs Condition="'$(ConfigureOnly)' == 'true'">$(BuildArgs) -configureonly</BuildArgs>

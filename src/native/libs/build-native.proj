@@ -5,7 +5,7 @@
     <NativeVersionFile Condition="'$(TargetOS)' != 'windows'">$(ArtifactsObjDir)_version.c</NativeVersionFile>
     <AssemblyName>.NET Runtime</AssemblyName>
     <_BuildNativeTargetOS>$(TargetOS)</_BuildNativeTargetOS>
-    <_BuildNativeTargetOS Condition="'$(RuntimeOS)' == 'Linux-bionic'">$(RuntimeOS)</_BuildNativeTargetOS>
+    <_BuildNativeTargetOS Condition="$(OutputRid.StartsWith('linux-bionic'))">linux-bionic</_BuildNativeTargetOS>
     <_BuildNativeArgs>$(TargetArchitecture) $(Configuration) outconfig $(NetCoreAppCurrent)-$(TargetOS)-$(Configuration)-$(TargetArchitecture) -os $(_BuildNativeTargetOS)</_BuildNativeArgs>
     <_BuildNativeArgs Condition="'$(OfficialBuildId)' != ''">$(_BuildNativeArgs) /p:OfficialBuildId="$(OfficialBuildId)"</_BuildNativeArgs>
   </PropertyGroup>
