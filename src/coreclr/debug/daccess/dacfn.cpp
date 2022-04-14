@@ -1149,7 +1149,7 @@ PWSTR    DacGetVtNameW(TADDR targetVtable)
     TADDR *targStart = targ;
     for (ULONG i = 0; i < sizeof(g_dacHostVtPtrs) / sizeof(PVOID); i++)
     {
-        if (targetVtable == (*targ + DacGlobalBase()))
+        if (targetVtable == (*targ))
         {
             pszRet = (PWSTR) *(g_dacVtStrings + (targ - targStart));
             break;
@@ -1176,7 +1176,7 @@ DacGetTargetVtForHostVt(LPCVOID vtHost, bool throwEx)
     {
         if (*host == vtHost)
         {
-            return *targ + DacGlobalBase();
+            return *targ;
         }
 
         host++;

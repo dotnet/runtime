@@ -675,8 +675,7 @@ StubManager::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 {
     SUPPORTS_DAC;
     // Report the global list head.
-    DacEnumMemoryRegion(DacGlobalBase() +
-                        g_dacGlobals.StubManager__g_pFirstManager,
+    DacEnumMemoryRegion(g_dacGlobals.StubManager__g_pFirstManager,
                         sizeof(TADDR));
 
     //

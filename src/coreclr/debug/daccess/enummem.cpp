@@ -182,7 +182,7 @@ HRESULT ClrDataAccess::EnumMemCLRStatic(IN CLRDataEnumMemoryFlags flags)
     // global pointers.
     //
 #define DEFINE_DACVAR(size_type, id, var) \
-    ReportMem(m_globalBase + g_dacGlobals.id, sizeof(size_type));
+    ReportMem(g_dacGlobals.id, sizeof(size_type));
 
     ULONG64 dacTableAddress;
     HRESULT hr = GetDacTableAddress(m_pTarget, m_globalBase, &dacTableAddress);
@@ -205,22 +205,22 @@ HRESULT ClrDataAccess::EnumMemCLRStatic(IN CLRDataEnumMemoryFlags flags)
     }
     EX_END_CATCH(RethrowCancelExceptions)
 
-    CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED ( ReportMem(m_globalBase + g_dacGlobals.dac__g_pStressLog, sizeof(StressLog *)); )
+    CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED ( ReportMem(g_dacGlobals.dac__g_pStressLog, sizeof(StressLog *)); )
 
     EX_TRY
     {
         // These two static pointers are pointed to static data of byte[]
         // then run constructor in place
         //
-        ReportMem(m_globalBase + g_dacGlobals.SystemDomain__m_pSystemDomain, sizeof(SystemDomain));
+        ReportMem(g_dacGlobals.SystemDomain__m_pSystemDomain, sizeof(SystemDomain));
 
         // We need IGCHeap pointer to make EEVersion work
-        ReportMem(m_globalBase + g_dacGlobals.dac__g_pGCHeap, sizeof(IGCHeap *));
+        ReportMem(g_dacGlobals.dac__g_pGCHeap, sizeof(IGCHeap *));
 
         // see synblk.cpp, the pointer is pointed to a static byte[]
         SyncBlockCache::s_pSyncBlockCache.EnumMem();
 
-        ReportMem(m_globalBase + g_dacGlobals.dac__g_FCDynamicallyAssignedImplementations,
+        ReportMem(g_dacGlobals.dac__g_FCDynamicallyAssignedImplementations,
                   sizeof(TADDR)*ECall::NUM_DYNAMICALLY_ASSIGNED_FCALL_IMPLEMENTATIONS);
 
         ReportMem(g_gcDacGlobals.GetAddr(), sizeof(GcDacVars));
