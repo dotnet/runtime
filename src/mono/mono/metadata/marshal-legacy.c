@@ -1938,8 +1938,6 @@ emit_marshal_object_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 		/* Set src */
 		mono_mb_emit_ldarg (mb, argnum);
 		if (m_type_is_byref (t)) {
-			int pos2;
-
 			/* Check for NULL and raise an exception */
 			pos2 = mono_mb_emit_branch (mb, CEE_BRTRUE);
 

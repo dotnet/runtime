@@ -230,8 +230,6 @@ mono_marshal_shared_emit_object_to_ptr_conv (MonoMethodBuilder *mb, MonoType *ty
 	case MONO_MARSHAL_CONV_STR_BSTR:
 	case MONO_MARSHAL_CONV_STR_ANSIBSTR:
 	case MONO_MARSHAL_CONV_STR_TBSTR: {
-		int pos;
-
 		/* free space if free == true */
 		mono_mb_emit_ldloc (mb, 2);
 		pos = mono_mb_emit_short_branch (mb, CEE_BRFALSE_S);
