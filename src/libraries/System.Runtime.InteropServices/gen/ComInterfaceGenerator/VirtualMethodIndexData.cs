@@ -13,6 +13,6 @@ namespace Microsoft.Interop
     internal sealed record VirtualMethodIndexData : InteropAttributeData
     {
         public int Index { get; init; }
-        public bool ImplicitThisParameter { get; init; }
+        public bool ImplicitThisParameter { get; init; } = true;
     }
 }

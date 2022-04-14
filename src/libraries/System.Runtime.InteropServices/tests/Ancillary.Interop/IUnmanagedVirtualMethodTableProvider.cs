@@ -25,15 +25,6 @@ namespace System.Runtime.InteropServices
             thisPointer = ThisPointer;
             virtualMethodTable = VirtualMethodTable;
         }
-
-        public void Deconstruct(out ReadOnlySpan<IntPtr> virtualMethodTable)
-        {
-            if (ThisPointer != IntPtr.Zero)
-            {
-                throw new InvalidOperationException();
-            }
-            virtualMethodTable = VirtualMethodTable;
-        }
     }
 
     public interface IUnmanagedVirtualMethodTableProvider<T> where T : IEquatable<T>

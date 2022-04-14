@@ -226,16 +226,16 @@ namespace Microsoft.Interop
             INamedTypeSymbol? suppressGCTransitionAttrType = environment.Compilation.GetTypeByMetadataName(TypeNames.SuppressGCTransitionAttribute);
             INamedTypeSymbol? unmanagedCallConvAttrType = environment.Compilation.GetTypeByMetadataName(TypeNames.UnmanagedCallConvAttribute);
             // Get any attributes of interest on the method
-            AttributeData? generatedDllImportAttr = null;
+            AttributeData? virtualMethodIndexAttr = null;
             AttributeData? lcidConversionAttr = null;
             AttributeData? suppressGCTransitionAttribute = null;
             AttributeData? unmanagedCallConvAttribute = null;
             foreach (AttributeData attr in symbol.GetAttributes())
             {
                 if (attr.AttributeClass is not null
-                    && attr.AttributeClass.ToDisplayString() == TypeNames.LibraryImportAttribute)
+                    && attr.AttributeClass.ToDisplayString() == TypeNames.VirtualMethodIndexAttribute)
                 {
-                    generatedDllImportAttr = attr;
+                    virtualMethodIndexAttr = attr;
                 }
                 else if (lcidConversionAttrType is not null && SymbolEqualityComparer.Default.Equals(attr.AttributeClass, lcidConversionAttrType))
                 {
@@ -251,16 +251,16 @@ namespace Microsoft.Interop
                 }
             }
 
-            Debug.Assert(generatedDllImportAttr is not null);
+            Debug.Assert(virtualMethodIndexAttr is not null);
 
             var generatorDiagnostics = new GeneratorDiagnostics();
 
             // Process the LibraryImport attribute
-            VirtualMethodIndexData? virtualMethodIndexData = ProcessVirtualMethodIndexAttribute(generatedDllImportAttr!);
+            VirtualMethodIndexData? virtualMethodIndexData = ProcessVirtualMethodIndexAttribute(virtualMethodIndexAttr!);
 
             if (virtualMethodIndexData is null)
             {
-                generatorDiagnostics.ReportConfigurationNotSupported(generatedDllImportAttr!, "Invalid syntax");
+                generatorDiagnostics.ReportConfigurationNotSupported(virtualMethodIndexAttr!, "Invalid syntax");
                 virtualMethodIndexData = new VirtualMethodIndexData();
             }
 
@@ -270,14 +270,14 @@ namespace Microsoft.Interop
                 if (virtualMethodIndexData.StringMarshalling == StringMarshalling.Custom && virtualMethodIndexData.StringMarshallingCustomType is null)
                 {
                     generatorDiagnostics.ReportInvalidStringMarshallingConfiguration(
-                        generatedDllImportAttr, symbol.Name, SR.InvalidStringMarshallingConfigurationMissingCustomType);
+                        virtualMethodIndexAttr, symbol.Name, SR.InvalidStringMarshallingConfigurationMissingCustomType);
                 }
 
                 // User specified something other than StringMarshalling.Custom while specifying StringMarshallingCustomType
                 if (virtualMethodIndexData.StringMarshalling != StringMarshalling.Custom && virtualMethodIndexData.StringMarshallingCustomType is not null)
                 {
                     generatorDiagnostics.ReportInvalidStringMarshallingConfiguration(
-                        generatedDllImportAttr, symbol.Name, SR.InvalidStringMarshallingConfigurationNotCustom);
+                        virtualMethodIndexAttr, symbol.Name, SR.InvalidStringMarshallingConfigurationNotCustom);
                 }
             }
 
@@ -297,7 +297,7 @@ namespace Microsoft.Interop
             var typeKeyOwner = ManagedTypeInfo.CreateTypeInfoForTypeSymbol(symbol.ContainingType);
             ManagedTypeInfo typeKeyType = SpecialTypeInfo.Byte;
 
-            var typeKeyField = symbol.ContainingType.GetMembers("TypeKey").OfType<IFieldSymbol>().FirstOrDefault(f => f.IsStatic);
+            IFieldSymbol? typeKeyField = symbol.ContainingType.GetMembers("TypeKey").OfType<IFieldSymbol>().FirstOrDefault(f => f.IsStatic);
             if (typeKeyField is null)
             {
                 // Report invalid configuration
