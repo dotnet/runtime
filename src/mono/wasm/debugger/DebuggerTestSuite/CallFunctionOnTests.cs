@@ -291,18 +291,24 @@ namespace DebuggerTests
             roundtrip: roundtrip,
             test_fn: async (result) =>
            {
-                // WHY?
-               // the order of sending requests makes a difference. Why? When we first ask about obj_accessors then obj_own does not have fields
 
-               // 1st:
-               //////////////////////////////////
+               // getProperties (own=false)
+               var obj_accessors = await cli.SendCommand("Runtime.getProperties", JObject.FromObject(new
+               {
+                   objectId = result.Value["result"]["objectId"].Value<string>(),
+                   accessorPropertiesOnly = true,
+                   ownProperties = false
+               }), token);
+               AssertEqual(0, obj_accessors.Value["result"].Count(), "obj_accessors-count");
+
+               // getProperties (own=true)
+               // isOwn = true, accessorPropertiesOnly = false
                var obj_own = await cli.SendCommand("Runtime.getProperties", JObject.FromObject(new
                {
                    objectId = result.Value["result"]["objectId"].Value<string>(),
                    accessorPropertiesOnly = false,
                    ownProperties = true
                }), token);
-            //    Console.WriteLine($"obj_own: {obj_own}");
 
                var obj_own_val = obj_own.Value["result"];
                var dt = new DateTime(2020, 1, 2, 3, 4, 5);
@@ -311,21 +317,6 @@ namespace DebuggerTests
                    dt = TDateTime(dt),
                    gs = TValueType("Math.GenericStruct<System.DateTime>")
                }, $"obj_own-props");
-
-               //////////////////////////////////
-
-
-               // 2nd:
-               /////////////////////////////////
-               var obj_accessors = await cli.SendCommand("Runtime.getProperties", JObject.FromObject(new
-               {
-                   objectId = result.Value["result"]["objectId"].Value<string>(),
-                   accessorPropertiesOnly = true,
-                   ownProperties = false
-               }), token);
-               AssertEqual(0, obj_accessors.Value["result"].Count(), "obj_accessors-count");
-            //    Console.WriteLine($"obj_accessors: {obj_accessors}");
-                /////////////////////////////////////
 
                var gs_props = await GetObjectOnLocals(obj_own_val, "gs");
                await CheckProps(gs_props, new
