@@ -97,7 +97,7 @@ namespace System.Diagnostics.Metrics
             _listener.SetMeasurementEventCallback<short>((i, m, l, c) => ((InstrumentState)c!).Update((double)m, l));
             _listener.SetMeasurementEventCallback<byte>((i, m, l, c) => ((InstrumentState)c!).Update((double)m, l));
             _listener.SetMeasurementEventCallback<decimal>((i, m, l, c) => ((InstrumentState)c!).Update((double)m, l));
-            _listener.SetMeasurementEventCallback<uint>((i, m, l, c) => ((InstrumentState)c!).Update((uint)m, l));
+            _listener.SetMeasurementEventCallback<uint>((i, m, l, c) => ((InstrumentState)c!).Update((double)m, l));
         }
 
         public void Include(string meterName)
