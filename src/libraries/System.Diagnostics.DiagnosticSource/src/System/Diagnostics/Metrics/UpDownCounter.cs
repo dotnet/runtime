@@ -10,7 +10,7 @@ namespace System.Diagnostics.Metrics
     /// UpDownCounter may be used in scenarios like reporting the change in active requests or queue size.
     /// </summary>
     /// <remarks>
-    /// This class supports only the following generic parameter types: <see cref="byte" />, <see cref="short" />, <see cref="int" />, <see cref="long" />, <see cref="float" />, <see cref="double" />, and <see cref="decimal" />
+    /// This class supports only the following generic parameter types: <see cref="byte" />, <see cref="short" />, <see cref="int" />, <see cref="long" />, <see cref="float" />, <see cref="double" />, <see cref="decimal" />, and <see cref="uint"/>
     /// </remarks>
 #if ALLOW_PARTIALLY_TRUSTED_CALLERS
     [System.Security.SecuritySafeCriticalAttribute]

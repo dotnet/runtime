@@ -35,6 +35,7 @@ namespace System.Diagnostics.Metrics
         private MeasurementCallback<float>   _floatMeasurementCallback   = (instrument, measurement, tags, state) => { /* no-op */ };
         private MeasurementCallback<double>  _doubleMeasurementCallback  = (instrument, measurement, tags, state) => { /* no-op */ };
         private MeasurementCallback<decimal> _decimalMeasurementCallback = (instrument, measurement, tags, state) => { /* no-op */ };
+        private MeasurementCallback<uint>    _uintMeasurementCallback = (instrument, measurement, tags, state) => { /* no-op */ };
 
         /// <summary>
         /// Creates a MeterListener object.
@@ -144,6 +145,10 @@ namespace System.Diagnostics.Metrics
             else if (measurementCallback is MeasurementCallback<long> longCallback)
             {
                 _longMeasurementCallback = (measurementCallback is null) ? ((instrument, measurement, tags, state) => { /* no-op */}) : longCallback;
+            }
+            else if (measurementCallback is MeasurementCallback<uint> uintCallback)
+            {
+                _uintMeasurementCallback = (measurementCallback is null) ? ((instrument, measurement, tags, state) => { /* no-op */}) : uintCallback;
             }
             else
             {
@@ -286,6 +291,10 @@ namespace System.Diagnostics.Metrics
             if (typeof(T) == typeof(decimal))
             {
                 _decimalMeasurementCallback(instrument, (decimal)(object)measurement, tags, state);
+            }
+            if (typeof(T) == typeof(uint))
+            {
+                _uintMeasurementCallback(instrument, (uint)(object)measurement, tags, state);
             }
         }
     }
