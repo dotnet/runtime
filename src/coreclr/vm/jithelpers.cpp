@@ -5498,10 +5498,18 @@ HCIMPL4(void, JIT_MethodProfile32, Object *obj, CORINFO_METHOD_HANDLE baseMethod
         // without the use of reflection.
         //
         DELEGATEREF del = (DELEGATEREF)objRef;
-        if (del->GetInvocationCount() == 0 && del->GetMethodPtrAux() == NULL)
+        if (del->GetInvocationCount() == 0)
         {
-            PCODE code = del->GetMethodPtr();
-            pMD = NonVirtualEntry2MethodDesc(code);
+            PCODE code = del->GetMethodPtrAux();
+            if (code != NULL)
+            {
+                pMD = MethodTable::GetMethodDescForSlotAddress(code);
+            }
+            else
+            {
+                code = del->GetMethodPtr();
+                pMD = NonVirtualEntry2MethodDesc(code);
+            }
         }
 
         if (pMD == NULL)
@@ -5638,10 +5646,18 @@ HCIMPL4(void, JIT_MethodProfile64, Object *obj, CORINFO_METHOD_HANDLE baseMethod
         // without the use of reflection.
         //
         DELEGATEREF del = (DELEGATEREF)objRef;
-        if (del->GetInvocationCount() == 0 && del->GetMethodPtrAux() == NULL)
+        if (del->GetInvocationCount() == 0)
         {
-            PCODE code = del->GetMethodPtr();
-            pMD = NonVirtualEntry2MethodDesc(code);
+            PCODE code = del->GetMethodPtrAux();
+            if (code != NULL)
+            {
+                pMD = MethodTable::GetMethodDescForSlotAddress(code);
+            }
+            else
+            {
+                code = del->GetMethodPtr();
+                pMD = NonVirtualEntry2MethodDesc(code);
+            }
         }
 
         if (pMD == NULL)
