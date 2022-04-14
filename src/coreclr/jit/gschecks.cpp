@@ -52,17 +52,24 @@ void Compiler::gsCopyShadowParams()
         return;
     }
 
-    // Allocate array for shadow param info
-    gsShadowVarInfo = new (this, CMK_Unknown) ShadowParamVarInfo[lvaCount]();
-
     // Find groups of variables assigned to each other, and also
     // tracks variables which are dereferenced and marks them as ptrs.
     // Look for assignments to *p, and ptrs passed to functions
-    if (gsFindVulnerableParams())
+    //
+    if (!gsFindVulnerableParams())
     {
-        // Replace vulnerable params by shadow copies.
-        gsParamsToShadows();
+        // There are no vulnerable params.
+        //
+        return;
     }
+
+    // Allocate array for shadow param info
+    //
+    gsShadowVarInfo = new (this, CMK_Unknown) ShadowParamVarInfo[lvaCount]();
+
+    // Replace vulnerable params by shadow copies.
+    //
+    gsParamsToShadows();
 }
 
 // This struct tracks how a tree is being used
