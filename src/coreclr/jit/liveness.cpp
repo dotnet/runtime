@@ -1988,25 +1988,45 @@ void Compiler::fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALAR
                         if (blockRange.TryGetUse(node, &addrUse) &&
                             (addrUse.User()->OperIs(GT_STOREIND, GT_STORE_BLK, GT_STORE_OBJ)))
                         {
-                            // Remove the store. DCE will iteratively clean up any ununsed operands.
                             GenTreeIndir* const store = addrUse.User()->AsIndir();
 
-                            JITDUMP("Removing dead indirect store:\n");
-                            DISPNODE(store);
+                            // If this is a zero init of an explicit zero init gc local
+                            // that has at least one other reference, we will keep the zero init.
+                            //
+                            const LclVarDsc& varDsc              = lvaTable[node->AsLclVarCommon()->GetLclNum()];
+                            const bool       isExplicitInitLocal = varDsc.lvHasExplicitInit;
+                            const bool       isReferencedLocal   = varDsc.lvRefCnt() > 1;
+                            const bool       isZeroInit          = store->OperIsInitBlkOp();
+                            const bool       isGCInit            = varDsc.HasGCPtr();
 
-                            assert(store->Addr() == node);
-                            blockRange.Delete(this, block, node);
-
-                            GenTree* data =
-                                store->OperIs(GT_STOREIND) ? store->AsStoreInd()->Data() : store->AsBlk()->Data();
-                            data->SetUnusedValue();
-
-                            if (data->isIndir())
+                            if (isExplicitInitLocal && isReferencedLocal && isZeroInit && isGCInit)
                             {
-                                Lowering::TransformUnusedIndirection(data->AsIndir(), this, block);
+                                // Yes, we'd better keep it around.
+                                //
+                                JITDUMP("Keeping dead indirect store -- explicit zero init of gc type\n");
+                                DISPNODE(store);
                             }
+                            else
+                            {
+                                // Remove the store. DCE will iteratively clean up any ununsed operands.
+                                //
+                                JITDUMP("Removing dead indirect store:\n");
+                                DISPNODE(store);
 
-                            fgRemoveDeadStoreLIR(store, block);
+                                assert(store->Addr() == node);
+                                blockRange.Delete(this, block, node);
+
+                                GenTree* data =
+                                    store->OperIs(GT_STOREIND) ? store->AsStoreInd()->Data() : store->AsBlk()->Data();
+                                data->SetUnusedValue();
+
+                                if (data->isIndir())
+                                {
+                                    Lowering::TransformUnusedIndirection(data->AsIndir(), this, block);
+                                }
+
+                                fgRemoveDeadStoreLIR(store, block);
+                            }
                         }
                     }
                 }
