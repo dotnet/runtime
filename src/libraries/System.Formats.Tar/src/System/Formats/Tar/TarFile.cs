@@ -117,6 +117,9 @@ namespace System.Formats.Tar
         /// <param name="source">The stream containing the tar archive.</param>
         /// <param name="destinationDirectoryName">The path of the destination directory where the filesystem entries should be extracted.</param>
         /// <param name="overwriteFiles"><see langword="true"/> to overwrite files and directories in <paramref name="destinationDirectoryName"/>; <see langword="false"/> to avoid overwriting, and throw if any files or directories are found with existing names.</param>
+        /// <remarks><para>Files of type <see cref="TarEntryType.BlockDevice"/>, <see cref="TarEntryType.CharacterDevice"/> or <see cref="TarEntryType.Fifo"/> can only be extracted in Unix platforms.</para>
+        /// <para>Elevation is required to extract a <see cref="TarEntryType.BlockDevice"/> or <see cref="TarEntryType.CharacterDevice"/> to disk.</para></remarks>
+        /// <exception cref="UnauthorizedAccessException">Operation not permitted due to insufficient permissions.</exception>
         public static void ExtractToDirectory(Stream source, string destinationDirectoryName, bool overwriteFiles)
         {
             throw new NotImplementedException();
@@ -130,6 +133,9 @@ namespace System.Formats.Tar
         /// <param name="overwriteFiles"><see langword="true"/> to overwrite files and directories in <paramref name="destinationDirectoryName"/>; <see langword="false"/> to avoid overwriting, and throw if any files or directories are found with existing names.</param>
         /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.</param>
         /// <returns>A task that represents the asynchronous extraction operation.</returns>
+        /// <remarks><para>Files of type <see cref="TarEntryType.BlockDevice"/>, <see cref="TarEntryType.CharacterDevice"/> or <see cref="TarEntryType.Fifo"/> can only be extracted in Unix platforms.</para>
+        /// <para>Elevation is required to extract a <see cref="TarEntryType.BlockDevice"/> or <see cref="TarEntryType.CharacterDevice"/> to disk.</para></remarks>
+        /// <exception cref="UnauthorizedAccessException">Operation not permitted due to insufficient permissions.</exception>
         public static Task ExtractToDirectoryAsync(Stream source, string destinationDirectoryName, bool overwriteFiles, CancellationToken cancellationToken = default)
         {
             throw new NotImplementedException();
@@ -141,6 +147,9 @@ namespace System.Formats.Tar
         /// <param name="sourceFileName">The path of the tar file to extract.</param>
         /// <param name="destinationDirectoryName">The path of the destination directory where the filesystem entries should be extracted.</param>
         /// <param name="overwriteFiles"><see langword="true"/> to overwrite files and directories in <paramref name="destinationDirectoryName"/>; <see langword="false"/> to avoid overwriting, and throw if any files or directories are found with existing names.</param>
+        /// <remarks><para>Files of type <see cref="TarEntryType.BlockDevice"/>, <see cref="TarEntryType.CharacterDevice"/> or <see cref="TarEntryType.Fifo"/> can only be extracted in Unix platforms.</para>
+        /// <para>Elevation is required to extract a <see cref="TarEntryType.BlockDevice"/> or <see cref="TarEntryType.CharacterDevice"/> to disk.</para></remarks>
+        /// <exception cref="UnauthorizedAccessException">Operation not permitted due to insufficient permissions.</exception>
         public static void ExtractToDirectory(string sourceFileName, string destinationDirectoryName, bool overwriteFiles)
         {
             ArgumentException.ThrowIfNullOrEmpty(sourceFileName);
@@ -175,6 +184,9 @@ namespace System.Formats.Tar
         /// <param name="overwriteFiles"><see langword="true"/> to overwrite files and directories in <paramref name="destinationDirectoryName"/>; <see langword="false"/> to avoid overwriting, and throw if any files or directories are found with existing names.</param>
         /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.</param>
         /// <returns>A task that represents the asynchronous extraction operation.</returns>
+        /// <remarks><para>Files of type <see cref="TarEntryType.BlockDevice"/>, <see cref="TarEntryType.CharacterDevice"/> or <see cref="TarEntryType.Fifo"/> can only be extracted in Unix platforms.</para>
+        /// <para>Elevation is required to extract a <see cref="TarEntryType.BlockDevice"/> or <see cref="TarEntryType.CharacterDevice"/> to disk.</para></remarks>
+        /// <exception cref="UnauthorizedAccessException">Operation not permitted due to insufficient permissions.</exception>
         public static Task ExtractToDirectoryAsync(string sourceFileName, string destinationDirectoryName, bool overwriteFiles, CancellationToken cancellationToken = default)
         {
             throw new NotImplementedException();

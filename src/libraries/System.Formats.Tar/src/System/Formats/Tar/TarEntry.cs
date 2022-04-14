@@ -160,6 +160,8 @@ namespace System.Formats.Tar
         /// </summary>
         /// <param name="destinationFileName">The path to the destination file.</param>
         /// <param name="overwrite"><see langword="true"/> if this method should overwrite any existing filesystem object located in the <paramref name="destinationFileName"/> path; <see langword="false"/> to prevent overwriting.</param>
+        /// <remarks><para>Files of type <see cref="TarEntryType.BlockDevice"/>, <see cref="TarEntryType.CharacterDevice"/> or <see cref="TarEntryType.Fifo"/> can only be extracted in Unix platforms.</para>
+        /// <para>Elevation is required to extract a <see cref="TarEntryType.BlockDevice"/> or <see cref="TarEntryType.CharacterDevice"/> to disk.</para></remarks>
         /// <exception cref="ArgumentException"><paramref name="destinationFileName"/> is <see langword="null"/> or empty.</exception>
         /// <exception cref="IOException"><para>The parent directory of <paramref name="destinationFileName"/> does not exist.</para>
         /// <para>-or-</para>
@@ -169,6 +171,7 @@ namespace System.Formats.Tar
         /// <para>-or-</para>
         /// <para>An I/O problem occurred.</para></exception>
         /// <exception cref="NotSupportedException">Attempted to extract an unsupported entry type.</exception>
+        /// <exception cref="UnauthorizedAccessException">Operation not permitted due to insufficient permissions.</exception>
         public void ExtractToFile(string destinationFileName, bool overwrite)
         {
             ArgumentException.ThrowIfNullOrEmpty(destinationFileName);
@@ -257,6 +260,25 @@ namespace System.Formats.Tar
             }
         }
 
+        /// <summary>
+        /// Asynchronously extracts the current entry to the filesystem.
+        /// </summary>
+        /// <param name="destinationFileName">The path to the destination file.</param>
+        /// <param name="overwrite"><see langword="true"/> if this method should overwrite any existing filesystem object located in the <paramref name="destinationFileName"/> path; <see langword="false"/> to prevent overwriting.</param>
+        /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.</param>
+        /// <returns>A task that represents the asynchronous extraction operation.</returns>
+        /// <remarks><para>Files of type <see cref="TarEntryType.BlockDevice"/>, <see cref="TarEntryType.CharacterDevice"/> or <see cref="TarEntryType.Fifo"/> can only be extracted in Unix platforms.</para>
+        /// <para>Elevation is required to extract a <see cref="TarEntryType.BlockDevice"/> or <see cref="TarEntryType.CharacterDevice"/> to disk.</para></remarks>
+        /// <exception cref="ArgumentException"><paramref name="destinationFileName"/> is <see langword="null"/> or empty.</exception>
+        /// <exception cref="IOException"><para>The parent directory of <paramref name="destinationFileName"/> does not exist.</para>
+        /// <para>-or-</para>
+        /// <para><paramref name="overwrite"/> is <see langword="false"/> and a file already exists in <paramref name="destinationFileName"/>.</para>
+        /// <para>-or-</para>
+        /// <para>A directory exists with the same name as <paramref name="destinationFileName"/>.</para>
+        /// <para>-or-</para>
+        /// <para>An I/O problem occurred.</para></exception>
+        /// <exception cref="NotSupportedException">Attempted to extract an unsupported entry type.</exception>
+        /// <exception cref="UnauthorizedAccessException">Operation not permitted due to insufficient permissions.</exception>
         public Task ExtractToFileAsync(string destinationFileName, bool overwrite, CancellationToken cancellationToken = default)
         {
             throw new NotImplementedException();
