@@ -31,22 +31,23 @@ public class FirefoxProxyServer
         Console.WriteLine($"Now listening on: 127.0.0.1:{port} for Firefox debugging");
         while (true)
         {
-            TcpClient newClient = await _server.AcceptTcpClientAsync();
+            TcpClient ideClient = await _server.AcceptTcpClientAsync();
+            Console.WriteLine ($"IDE connected to the proxy");
             var monoProxy = new FirefoxMonoProxy(loggerFactory, portBrowser);
-            await monoProxy.Run(newClient);
+            await monoProxy.Run(ideClient: ideClient);
         }
     }
 
-    public async Task RunForTests(int port, WebSocket socketForDebuggerTests)
+    public async Task RunForTests(int proxyPort, WebSocket ideWebSocket)
     {
-        var _server = new TcpListener(IPAddress.Parse("127.0.0.1"), port);
+        var _server = new TcpListener(IPAddress.Parse("127.0.0.1"), proxyPort);
         _server.Start();
-        port = ((IPEndPoint)_server.LocalEndpoint).Port;
-        Console.WriteLine($"Now listening on: 127.0.0.1:{port} for Firefox debugging");
+        proxyPort = ((IPEndPoint)_server.LocalEndpoint).Port;
+        Console.WriteLine($"Now listening on: 127.0.0.1:{proxyPort} for Firefox debugging");
         TcpClient newClient = await _server.AcceptTcpClientAsync();
         try {
             var monoProxy = new FirefoxMonoProxy(loggerFactory, portBrowser);
-            await monoProxy.Run(newClient, socketForDebuggerTests);
+            await monoProxy.Run(ideWebSocket: ideWebSocket);
         }
         catch (Exception)
         {

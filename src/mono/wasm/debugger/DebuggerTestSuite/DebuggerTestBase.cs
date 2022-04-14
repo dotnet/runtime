@@ -986,7 +986,6 @@ namespace DebuggerTests
                     }
                 }
             }
-            Console.WriteLine(locals);
             return locals;
         }
 

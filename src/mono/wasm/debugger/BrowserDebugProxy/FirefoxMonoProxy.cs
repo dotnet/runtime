@@ -18,7 +18,7 @@ namespace Microsoft.WebAssembly.Diagnostics;
 
 internal class FirefoxMonoProxy : MonoProxy
 {
-    private int portBrowser;
+    private readonly int portBrowser;
     private TcpClient ide;
     private TcpClient browser;
 
@@ -66,13 +66,21 @@ internal class FirefoxMonoProxy : MonoProxy
         }
     }
 
-    public async Task Run(TcpClient ideClient, WebSocket socketForDebuggerTests = null)
+    public async Task Run(TcpClient ideClient = null, WebSocket ideWebSocket = null)
     {
+        if (ideClient is null && ideWebSocket is null)
+            throw new ArgumentException($"Both {nameof(ideClient)}, and {nameof(ideWebSocket)} cannot be null");
+        if (ideClient is not null && ideWebSocket is not null)
+            throw new ArgumentException($"Both {nameof(ideClient)}, and {nameof(ideWebSocket)} cannot be non-null");
+
         ide = ideClient;
         browser = new TcpClient();
         logger.LogDebug($"Run: Connecting to 127.0.0.1:{portBrowser}");
         await browser.ConnectAsync("127.0.0.1", portBrowser);
-        queues.Add(new DevToolsQueueFirefox(this.ide));
+        if (ide != null)
+            queues.Add(new DevToolsQueueFirefox(this.ide));
+        else if (ideWebSocket != null)
+            queues.Add(new DevToolsQueue(ideWebSocket));
         queues.Add(new DevToolsQueueFirefox(this.browser));
 
         var x = new CancellationTokenSource();
@@ -80,13 +88,14 @@ internal class FirefoxMonoProxy : MonoProxy
         List<Task> pending_ops = new();
 
         pending_ops.Add(ReadOne(browser, x.Token));
-        pending_ops.Add(ReadOne(ide, x.Token));
+        if (ideWebSocket != null)
+            pending_ops.Add(ReadOne(ideWebSocket, x.Token));
+        else if (ide != null)
+            pending_ops.Add(ReadOne(ide, x.Token));
         pending_ops.Add(side_exception.Task);
         pending_ops.Add(client_initiated_close.Task);
         Task<bool> readerTask = _channelReader.WaitToReadAsync(x.Token).AsTask();
         pending_ops.Add(readerTask);
-        if (socketForDebuggerTests != null)
-            pending_ops.Add(base.ReadOne(socketForDebuggerTests, x.Token));
 
         try
         {

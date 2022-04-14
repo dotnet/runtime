@@ -267,10 +267,10 @@ namespace Microsoft.WebAssembly.Diagnostics
         // , HttpContext context)
         public async Task Run(Uri browserUri, WebSocket ideSocket)
         {
-            Log("debug", $"DevToolsProxy: Starting on {browserUri}");
+            Log("debug", $"DevToolsProxy: Starting for browser at {browserUri}");
             using (this.ide = ideSocket)
             {
-                Log("verbose", $"DevToolsProxy: IDE waiting for connection on {browserUri}");
+                Log("verbose", $"DevToolsProxy: Proxy waiting for connection to the browser at {browserUri}");
                 queues.Add(new DevToolsQueue(this.ide));
                 using (this.browser = new ClientWebSocket())
                 {
@@ -278,7 +278,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     await this.browser.ConnectAsync(browserUri, CancellationToken.None);
                     queues.Add(new DevToolsQueue(this.browser));
 
-                    Log("verbose", $"DevToolsProxy: Client connected on {browserUri}");
+                    Log("verbose", $"DevToolsProxy: Proxy connected to the browser at {browserUri}");
                     var x = new CancellationTokenSource();
 
                     List<Task> pending_ops = new();
