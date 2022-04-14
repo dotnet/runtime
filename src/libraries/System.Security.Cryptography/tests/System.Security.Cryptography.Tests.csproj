@@ -28,6 +28,8 @@
              Link="ProductionCode\Common\System\Net\MultiArrayBuffer.cs" />
     <Compile Include="$(CommonPath)System\Net\StreamBuffer.cs"
              Link="ProductionCode\Common\System\Net\StreamBuffer.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\SignatureSupport.cs"
+             Link="CommonTest\System\Security\Cryptography\SignatureSupport.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\AES\AesCipherTests.Data.cs"
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\AES\AesCipherTests.Data.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\AES\AesCipherTests.cs"

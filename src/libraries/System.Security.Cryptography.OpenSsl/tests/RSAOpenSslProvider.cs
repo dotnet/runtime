@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Security.Cryptography.Tests;
+
 namespace System.Security.Cryptography.Rsa.Tests
 {
     public class RSAOpenSslProvider : IRSAProvider
@@ -19,40 +21,7 @@ namespace System.Security.Cryptography.Rsa.Tests
 
         public bool SupportsPss => true;
 
-        public bool SupportsSha1Signatures
-        {
-            get
-            {
-                if (!_supportsSha1Signatures.HasValue)
-                {
-                    if (OperatingSystem.IsLinux())
-                    {
-                        RSA rsa = Create();
-
-                        try
-                        {
-                            rsa.SignData(Array.Empty<byte>(), HashAlgorithmName.SHA1, RSASignaturePadding.Pkcs1);
-                            _supportsSha1Signatures = true;
-                        }
-                        catch (CryptographicException)
-                        {
-                            _supportsSha1Signatures = false;
-                        }
-                        finally
-                        {
-                            rsa.Dispose();
-                        }
-                    }
-                    else
-                    {
-                        // Currently all non-Linux OSes support RSA-SHA1.
-                        _supportsSha1Signatures = true;
-                    }
-                }
-
-                return _supportsSha1Signatures.Value;
-            }
-        }
+        public bool SupportsSha1Signatures => _supportsSha1Signatures ??= SignatureSupport.CanProduceSha1Signature(Create());
     }
 
     public partial class RSAFactory

@@ -12,6 +12,8 @@
     <Compile Include="RSACryptoServiceProviderProvider.cs" />
     <Compile Include="RSACryptoServiceProviderTests.cs" />
     <Compile Include="ShimHelpers.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\SignatureSupport.cs"
+             Link="CommonTest\System\Security\Cryptography\SignatureSupport.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\ByteUtils.cs"
              Link="CommonTest\System\Security\Cryptography\ByteUtils.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\CryptoUtils.cs"

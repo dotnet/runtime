@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Security.Cryptography.Tests;
 using System.Security.Cryptography.Rsa.Tests;
 using Xunit;
 
@@ -8,6 +9,8 @@ namespace System.Security.Cryptography.Csp.Tests
 {
     public class RSACryptoServiceProviderTests
     {
+        public static bool IsSha1Supported { get; } = SignatureSupport.CanProduceSha1Signature(new RSACryptoServiceProvider());
+
         const int PROV_RSA_FULL = 1;
         const int PROV_RSA_AES = 24;
 
@@ -305,7 +308,7 @@ namespace System.Security.Cryptography.Csp.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(nameof(IsSha1Supported))]
         public static void SignHash_DefaultAlgorithm_Success()
         {
             byte[] hashVal = SHA1.HashData(TestData.HelloBytes);
@@ -317,7 +320,7 @@ namespace System.Security.Cryptography.Csp.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(nameof(IsSha1Supported))]
         public static void VerifyHash_DefaultAlgorithm_Success()
         {
             byte[] hashVal = SHA1.HashData(TestData.HelloBytes);
@@ -352,7 +355,7 @@ namespace System.Security.Cryptography.Csp.Tests
         {
             using (var rsa = new RSACryptoServiceProvider())
             {
-                Assert.Throws<CryptographicException>(() => rsa.SignData(TestData.HelloBytes, HashAlgorithmName.SHA1, RSASignaturePadding.Pss));
+                Assert.Throws<CryptographicException>(() => rsa.SignData(TestData.HelloBytes, HashAlgorithmName.SHA256, RSASignaturePadding.Pss));
             }
         }
 
@@ -361,8 +364,8 @@ namespace System.Security.Cryptography.Csp.Tests
         {
             using (var rsa = new RSACryptoServiceProvider())
             {
-                byte[] sig = rsa.SignData(TestData.HelloBytes, "SHA1");
-                Assert.Throws<CryptographicException>(() => rsa.VerifyData(TestData.HelloBytes, sig, HashAlgorithmName.SHA1, RSASignaturePadding.Pss));
+                byte[] sig = rsa.SignData(TestData.HelloBytes, "SHA256");
+                Assert.Throws<CryptographicException>(() => rsa.VerifyData(TestData.HelloBytes, sig, HashAlgorithmName.SHA256, RSASignaturePadding.Pss));
             }
         }
 
@@ -378,15 +381,15 @@ namespace System.Security.Cryptography.Csp.Tests
         [Fact]
         public static void SignData_VerifyHash_CaseInsensitive_Success()
         {
-            byte[] hashVal = SHA1.HashData(TestData.HelloBytes);
+            byte[] hashVal = SHA256.HashData(TestData.HelloBytes);
 
             using (var rsa = new RSACryptoServiceProvider())
             {
-                byte[] signVal = rsa.SignData(TestData.HelloBytes, "SHA1");
-                Assert.True(rsa.VerifyHash(hashVal, "SHA1", signVal));
+                byte[] signVal = rsa.SignData(TestData.HelloBytes, "SHA256");
+                Assert.True(rsa.VerifyHash(hashVal, "SHA256", signVal));
 
-                signVal = rsa.SignData(TestData.HelloBytes, "sha1");
-                Assert.True(rsa.VerifyHash(hashVal, "sha1", signVal));
+                signVal = rsa.SignData(TestData.HelloBytes, "sha256");
+                Assert.True(rsa.VerifyHash(hashVal, "sha256", signVal));
             }
         }
 
