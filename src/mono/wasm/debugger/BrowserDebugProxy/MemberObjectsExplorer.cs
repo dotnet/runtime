@@ -263,7 +263,7 @@ namespace BrowserDebugProxy
             bool isOwn,
             CancellationToken token,
             IDictionary<string, JObject> allMembers,
-            IReadOnlyList<FieldTypeClass> fields,
+            IReadOnlyList<FieldTypeClass> fields = null,
             bool includeStatic = false)
         {
             using var retDebuggerCmdReader = await sdbHelper.GetTypePropertiesReader(typeId, token);
@@ -297,7 +297,6 @@ namespace BrowserDebugProxy
                 // here to detect that.. or have access to the FieldTypeClasses
                 if (allMembers.TryGetValue(propName, out JObject backingField))
                 {
-                    //Console.WriteLine ($"\tFound {propName} property is allMembers: {backingField}");
                     if (backingField["__isBackingField"]?.Value<bool>() == true)
                     {
                         // FIXME: this should be checked only for this type - add a typeID to it?
@@ -324,12 +323,13 @@ namespace BrowserDebugProxy
                         }
                     }
 
-                    // derived type already had a member by this name
+                    // derived type already had a member of this name
                     continue;
                 }
-                else if (fields?.Where(f => f.Name == propName && f.IsBackingField)?.Any() == true)
+                else if (fields?.FirstOrDefault(f => f.Name == propName && f.IsBackingField) != null)
                 {
-                    //Console.WriteLine ($"\t* {propName} is a backing field.. not adding the corresponding getter");
+                    // no test for it or never happens; either find a testcase or remove
+                    //Console.WriteLine($"\t* {propName} is a backing field.. not adding the corresponding getter");
                 }
                 else
                 {
@@ -340,9 +340,7 @@ namespace BrowserDebugProxy
                     else
                         propRet = GetNotAutoExpandableObject(getMethodId, propName);
 
-                    if (isOwn)
-                        propRet["isOwn"] = true;
-
+                    propRet["isOwn"] = isOwn;
                     propRet["__section"] = getterAttrs switch
                     {
                         MethodAttributes.Private => "private",
@@ -353,7 +351,8 @@ namespace BrowserDebugProxy
 
                     string namePrefix = GetNamePrefixForValues(propName, containerTypeName, isOwn, state);
                     var expandedMembers = await GetExpandedMemberValues(sdbHelper, returnTypeName, namePrefix, propRet, state, token);
-                    ret.Result.AddRange(expandedMembers);
+                    foreach (var member in expandedMembers)
+                        ret.Add(member as JObject);
                 }
             }
             return ret;
@@ -415,7 +414,6 @@ namespace BrowserDebugProxy
             }
 
             // 3. GetProperties
-
             DotnetObjectId id = new DotnetObjectId("object", objectId);
             using var commandParamsObjWriter = new MonoBinaryWriter();
             commandParamsObjWriter.WriteObj(id, sdbHelper);
@@ -427,7 +425,7 @@ namespace BrowserDebugProxy
             {
                 int typeId = typeIdsIncludingParents[i];
                 string typeName = await sdbHelper.GetTypeName(typeId, token);
-                // 0th id is for the object itself, and then its parents
+                // 0th id is for the object itself, and then its ancestors
                 bool isOwn = i == 0;
                 IReadOnlyList<FieldTypeClass> thisTypeFields = await sdbHelper.GetTypeFields(typeId, token);
                 if (!includeStatic)
@@ -435,8 +433,6 @@ namespace BrowserDebugProxy
 
                 // case:
                 // derived type overrides with an automatic property with a getter
-
-                // if (!getCommandOptions.HasFlag(GetObjectCommandOptions.AccessorPropertiesOnly) && thisTypeFields.Count > 0)
                 if (thisTypeFields.Count > 0)
                 {
                     var allFields = await GetExpandedFieldValues(sdbHelper, objectId, typeId, thisTypeFields, getCommandType, isOwn: isOwn, token);
@@ -446,9 +442,7 @@ namespace BrowserDebugProxy
                         foreach (var f in allFields)
                             f["__hidden"] = true;
                     }
-                    // AddOnlyNewValuesByNameTo(new JArray(allFields.Where(f => f["__isBackingField"]?.Value<bool>() == true)), allMembers);
-                    // else
-                    AddOnlyNewValuesByNameTo(allFields, allMembers);
+                    AddOnlyNewValuesByNameTo(allFields, allMembers, isOwn);
                 }
 
                 // skip loading properties if not necessary
@@ -469,7 +463,7 @@ namespace BrowserDebugProxy
                     thisTypeFields);
 
                 // TODO: merge with GetNonAuto*
-                AddOnlyNewValuesByNameTo(props.Result, allMembers);
+                AddOnlyNewValuesByNameTo(props.Flatten(), allMembers, isOwn);
 
                 // ownProperties
                 // Note: ownProperties should mean that we return members of the klass itself,
@@ -480,22 +474,18 @@ namespace BrowserDebugProxy
                 /*if (accessorPropertiesOnly)
                     break;*/
             }
-
-            // FIXME: SplitMemberValuesByProtectionLevel needs ProtectionLevel, and Name
+            // inherited private fields/props should not be visible, skip them
+            //var legitimateMembers = allMembers.Where(kvp => !(kvp.Value["isOwn"]?.Value<bool>() != true && kvp.Value["__section"]?.Value<string>() == "private")).Select(kvp => kvp.Value);
             return GetMembersResult.FromValues(allMembers.Values, sortByAccessLevel);
 
-            static void AddOnlyNewValuesByNameTo(JArray namedValues, IDictionary<string, JObject> valuesDict)//, IDictionary<string, FieldTypeClass> fields)
+            static void AddOnlyNewValuesByNameTo(JArray namedValues, IDictionary<string, JObject> valuesDict, bool isOwn)
             {
                 foreach (var item in namedValues)
                 {
                     var key = item["name"]?.Value<string>();
                     if (key != null)
                     {
-                        if (!valuesDict.TryAdd(key, item as JObject))
-                        {
-                            //Console.WriteLine($"- AddOnlyNewValuesByNameTo: skipping {key}");
-                            //Logger.LogDebug($"- AddOnlyNewValuesByNameTo: skipping {key} = {item}");
-                        }
+                        valuesDict.TryAdd(key, item as JObject);
                     }
                 }
             }
@@ -606,7 +596,7 @@ namespace BrowserDebugProxy
 
         internal JToken FirstOrDefault(Func<JToken, bool> p) => Result.FirstOrDefault(p) ?? PrivateMembers.FirstOrDefault(p) ?? OtherMembers.FirstOrDefault(p);
 
-        internal void Add(JObject thisObj) => Result.Add(thisObj);
+        internal void Add(JObject thisObj) => Split(thisObj);
 
         internal JArray Flatten()
         {

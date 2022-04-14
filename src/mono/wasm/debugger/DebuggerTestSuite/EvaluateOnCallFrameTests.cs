@@ -1006,46 +1006,6 @@ namespace DebuggerTests
            });
 
         [Fact]
-        public async Task EvaluateProtectionLevels() =>  await CheckInspectLocalsAtBreakpointSite(
-            "DebuggerTests.GetPropertiesTests.DerivedClass", "InstanceMethod", 1, "InstanceMethod",
-            "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.GetPropertiesTests.DerivedClass:run'); })",
-            wait_for_event_fn: async (pause_location) =>
-            {
-                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
-                var (obj, _) = await EvaluateOnCallFrame(id, "this");
-                var (pub, internalAndProtected, priv) = await GetPropertiesSortedByProtectionLevels(obj["objectId"]?.Value<string>());
-
-                await CheckProps(pub, new
-                {
-                    a = TNumber(4),
-                    Base_AutoStringPropertyForOverrideWithField = TString("DerivedClass#Base_AutoStringPropertyForOverrideWithField"),
-                    Base_GetterForOverrideWithField = TString("DerivedClass#Base_GetterForOverrideWithField"),
-                    BaseBase_MemberForOverride = TString("DerivedClass#BaseBase_MemberForOverride"),
-                    DateTime = TGetter("DateTime", TDateTime(new DateTime(2200, 5, 6, 7, 18, 9))),
-                    _DTProp = TGetter("_DTProp", TDateTime(new DateTime(2200, 5, 6, 7, 8, 9))),
-                    FirstName = TGetter("FirstName", TString("DerivedClass#FirstName")),
-                    _base_dateTime = TGetter("_base_dateTime", TDateTime(new DateTime(2134, 5, 7, 1, 9, 2))),
-                    LastName = TGetter("LastName", TString("BaseClass#LastName"))
-                }, "public");
-
-                await CheckProps(internalAndProtected, new
-                {
-                    base_num = TNumber(5)
-                }, "internalAndProtected");
-
-                await CheckProps(priv, new
-                {
-                    _stringField = TString("DerivedClass#_stringField"),
-                    _dateTime = TDateTime(new DateTime(2020, 7, 6, 5, 4, 3)),
-                    AutoStringProperty = TString("DerivedClass#AutoStringProperty"),
-                    StringPropertyForOverrideWithAutoProperty = TString("DerivedClass#StringPropertyForOverrideWithAutoProperty"),
-                    _base_name = TString("private_name"),
-                    Base_AutoStringProperty = TString("base#Base_AutoStringProperty"),
-                    DateTimeForOverride = TGetter("DateTimeForOverride", TDateTime(new DateTime(2190, 9, 7, 5, 3, 2)))
-                }, "private");
-           });
-
-        [Fact]
         public async Task StructureGetters() =>  await CheckInspectLocalsAtBreakpointSite(
             "DebuggerTests.StructureGetters", "Evaluate", 2, "Evaluate",
             "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.StructureGetters:Evaluate'); })",

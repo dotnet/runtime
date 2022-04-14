@@ -260,7 +260,7 @@ namespace BrowserDebugProxy
                     isValueType: true,
                     isOwn: i == 0,
                     token,
-                    allMembers, null);
+                    allMembers);
 
                 foreach (JObject v in res.Flatten())
                     allMembers[v["name"].Value<string>()] = v;
