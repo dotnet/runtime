@@ -57,6 +57,20 @@ GenTree* Compiler::fgMorphCastIntoHelper(GenTree* tree, int helper, GenTree* ope
  *  the given argument list.
  */
 
+//------------------------------------------------------------------------
+// fgMorphIntoHelperCall:
+//   Morph a node into a helper call, specifying up to two args and whether to
+//   call fgMorphArgs after.
+//
+// Parameters:
+//   tree       - The node that is changed. This must be a large node.
+//   helper     - The helper.
+//   morphArgs  - Whether to call fgMorphArgs after adding the args.
+//   arg1, arg2 - Optional arguments to add to the call.
+//
+// Return value:
+//   The call (which is the same as `tree`).
+//
 GenTree* Compiler::fgMorphIntoHelperCall(GenTree* tree, int helper, bool morphArgs, GenTree* arg1, GenTree* arg2)
 {
     // The helper call ought to be semantically equivalent to the original node, so preserve its VN.
@@ -1093,7 +1107,13 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
 //------------------------------------------------------------------------
 // SortArgs: Sort arguments into a better passing order.
 //
-void CallArgs::SortArgs(Compiler* comp, GenTreeCall* call)
+// Parameters:
+//   comp       - The compiler object.
+//   call       - The call that contains this CallArgs instance.
+//   sortedArgs - A table of at least `CountArgs()` entries where the sorted
+//                arguments are written into.
+//
+void CallArgs::SortArgs(Compiler* comp, GenTreeCall* call, CallArg** sortedArgs)
 {
     assert(m_argsComplete);
 
@@ -1111,31 +1131,23 @@ void CallArgs::SortArgs(Compiler* comp, GenTreeCall* call)
     // more complex arguments before the simpler arguments. We use the late
     // list to keep the sorted result at this point, and the ordering ends up
     // looking like:
-    //     +------------------------------------+  <--- end
+    //     +------------------------------------+  <--- end of sortedArgs
     //     |          constants                 |
     //     +------------------------------------+
     //     |    local var / local field         |
     //     +------------------------------------+
     //     | remaining arguments sorted by cost |
     //     +------------------------------------+
-    //     | temps (argTable[].needTmp = true)  |
+    //     | temps (CallArg::m_needTmp == true) |
     //     +------------------------------------+
     //     |  args with calls (GTF_CALL)        |
-    //     +------------------------------------+  <--- m_lateHead
+    //     +------------------------------------+  <--- start of sortedArgs
     //
 
-    unsigned  argCount = CountArgs();
-    CallArg*  table[32];
-    CallArg** argTable = table;
-    if (argCount > 32)
-    {
-        argTable = new (comp, CMK_CallArgs) CallArg*[argCount];
-    }
-
-    argCount = 0;
+    unsigned argCount = 0;
     for (CallArg& arg : Args())
     {
-        argTable[argCount++] = &arg;
+        sortedArgs[argCount++] = &arg;
     }
 
     // Set the beginning and end for the new argument table
@@ -1153,7 +1165,7 @@ void CallArgs::SortArgs(Compiler* comp, GenTreeCall* call)
     {
         curInx--;
 
-        CallArg* arg = argTable[curInx];
+        CallArg* arg = sortedArgs[curInx];
 
         if (arg->AbiInfo.GetRegNum() != REG_STK)
         {
@@ -1180,8 +1192,8 @@ void CallArgs::SortArgs(Compiler* comp, GenTreeCall* call)
                 //
                 if (curInx != endTab)
                 {
-                    argTable[curInx] = argTable[endTab];
-                    argTable[endTab] = arg;
+                    sortedArgs[curInx] = sortedArgs[endTab];
+                    sortedArgs[endTab] = arg;
                 }
 
                 endTab--;
@@ -1197,7 +1209,7 @@ void CallArgs::SortArgs(Compiler* comp, GenTreeCall* call)
         //
         for (curInx = begTab; curInx <= endTab; curInx++)
         {
-            CallArg* arg = argTable[curInx];
+            CallArg* arg = sortedArgs[curInx];
 
             // Skip any already processed args
             //
@@ -1215,8 +1227,8 @@ void CallArgs::SortArgs(Compiler* comp, GenTreeCall* call)
                     //
                     if (curInx != begTab)
                     {
-                        argTable[curInx] = argTable[begTab];
-                        argTable[begTab] = arg;
+                        sortedArgs[curInx] = sortedArgs[begTab];
+                        sortedArgs[begTab] = arg;
                     }
 
                     begTab++;
@@ -1237,7 +1249,7 @@ void CallArgs::SortArgs(Compiler* comp, GenTreeCall* call)
         //
         for (curInx = begTab; curInx <= endTab; curInx++)
         {
-            CallArg* arg = argTable[curInx];
+            CallArg* arg = sortedArgs[curInx];
 
             // Skip any already processed args
             //
@@ -1251,8 +1263,8 @@ void CallArgs::SortArgs(Compiler* comp, GenTreeCall* call)
                     //
                     if (curInx != begTab)
                     {
-                        argTable[curInx] = argTable[begTab];
-                        argTable[begTab] = arg;
+                        sortedArgs[curInx] = sortedArgs[begTab];
+                        sortedArgs[begTab] = arg;
                     }
 
                     begTab++;
@@ -1273,7 +1285,7 @@ void CallArgs::SortArgs(Compiler* comp, GenTreeCall* call)
         {
             curInx--;
 
-            CallArg* arg = argTable[curInx];
+            CallArg* arg = sortedArgs[curInx];
 
             // Skip any already processed args
             //
@@ -1291,8 +1303,8 @@ void CallArgs::SortArgs(Compiler* comp, GenTreeCall* call)
                     //
                     if (curInx != endTab)
                     {
-                        argTable[curInx] = argTable[endTab];
-                        argTable[endTab] = arg;
+                        sortedArgs[curInx] = sortedArgs[endTab];
+                        sortedArgs[endTab] = arg;
                     }
 
                     endTab--;
@@ -1317,7 +1329,7 @@ void CallArgs::SortArgs(Compiler* comp, GenTreeCall* call)
         //
         for (curInx = begTab; curInx <= endTab; curInx++)
         {
-            CallArg* arg = argTable[curInx];
+            CallArg* arg = sortedArgs[curInx];
 
             // Skip any already processed args
             //
@@ -1370,8 +1382,8 @@ void CallArgs::SortArgs(Compiler* comp, GenTreeCall* call)
         //
         if (expensiveArgIndex != begTab)
         {
-            argTable[expensiveArgIndex] = argTable[begTab];
-            argTable[begTab]            = expensiveArg;
+            sortedArgs[expensiveArgIndex] = sortedArgs[begTab];
+            sortedArgs[begTab]            = expensiveArg;
         }
 
         begTab++;
@@ -1384,15 +1396,6 @@ void CallArgs::SortArgs(Compiler* comp, GenTreeCall* call)
     // and regArgsRemaining should be zero
     assert(begTab == (endTab + 1));
     assert(argsRemaining == 0);
-
-    CallArg** tail = &m_lateHead;
-    for (unsigned i = 0; i < argCount; i++)
-    {
-        *tail = argTable[i];
-        tail  = &(*tail)->LateNextRef();
-    }
-
-    m_argsSorted = true;
 }
 
 //------------------------------------------------------------------------------
@@ -1542,13 +1545,18 @@ GenTree* CallArgs::MakeTmpArgNode(Compiler* comp, CallArg* arg)
 //
 void CallArgs::EvalArgsToTemps(Compiler* comp, GenTreeCall* call)
 {
-    assert(m_argsSorted);
+    CallArg*  inlineTable[32];
+    size_t    numArgs = call->gtArgs.CountArgs();
+    CallArg** sortedArgs =
+        numArgs <= ARRAY_SIZE(inlineTable) ? inlineTable : new (comp, CMK_CallArgs) CallArg*[numArgs];
+    SortArgs(comp, call, sortedArgs);
 
     unsigned regArgInx = 0;
-    // Now go through the argument table and perform the necessary evaluation into temps.
-    // SortArgs stored the sorted result in the late list.
-    for (CallArg& arg : LateArgs())
+    // Now go through the sorted argument table and perform the necessary evaluation into temps.
+    CallArg** lateTail = &m_lateHead;
+    for (size_t i = 0; i < numArgs; i++)
     {
+        CallArg& arg = *(sortedArgs[i]);
         assert(arg.GetLateNode() == nullptr);
 
         GenTree* argx     = arg.GetEarlyNode();
@@ -1557,7 +1565,7 @@ void CallArgs::EvalArgsToTemps(Compiler* comp, GenTreeCall* call)
 
 #if !FEATURE_FIXED_OUT_ARGS
         // Only ever set for FEATURE_FIXED_OUT_ARGS
-        assert(arg.m_needPlace == false);
+        assert(!arg.m_needPlace);
 
         // On x86 and other archs that use push instructions to pass arguments:
         //   Only the register arguments need to be replaced with placeholder nodes.
@@ -1790,21 +1798,8 @@ void CallArgs::EvalArgsToTemps(Compiler* comp, GenTreeCall* call)
         }
 
         arg.SetLateNode(defArg);
-    }
-
-    // We used the late list to store sorted nodes. However not all arg may
-    // need to get late nodes, so unlink the arguments that do not.
-    CallArg** link = &m_lateHead;
-    while (*link != nullptr)
-    {
-        if ((*link)->GetLateNode() == nullptr)
-        {
-            *link = (*link)->GetLateNext();
-        }
-        else
-        {
-            link = &(*link)->LateNextRef();
-        }
+        *lateTail = &arg;
+        lateTail  = &arg.LateNextRef();
     }
 
 #ifdef DEBUG
@@ -1910,6 +1905,7 @@ GenTree* Compiler::fgInsertCommaFormTemp(GenTree** ppTree, CORINFO_CLASS_HANDLE 
     return new (this, GT_LCL_VAR) GenTreeLclVar(GT_LCL_VAR, subTree->TypeGet(), lclNum);
 }
 
+//------------------------------------------------------------------------
 // AddFinalArgsAndDetermineABIInfo:
 //   Add final arguments and determine the argument ABI information.
 //
@@ -3085,12 +3081,23 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
     m_abiInformationDetermined = true;
 }
 
+//------------------------------------------------------------------------
+// OutgoingArgsStackSize:
+//   Compute the number of bytes allocated on the stack for arguments to this call.
+//
+// Remarks:
+//   Note that even with no arguments, some ABIs may still allocate stack
+//   space, which will be returned by this function.
+//
 unsigned CallArgs::OutgoingArgsStackSize() const
 {
     unsigned aligned = Compiler::GetOutgoingArgByteSize(m_nextStackByteOffset);
     return max(aligned, MIN_ARG_AREA_FOR_CALL);
 }
 
+//------------------------------------------------------------------------
+// CountArgs: Count the number of arguments.
+//
 unsigned CallArgs::CountArgs()
 {
     unsigned numArgs = 0;
@@ -3187,9 +3194,18 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
             // We may want to force 'this' into a temp because we want to use
             // it to expand the call target in morph so that CSE can pick it
             // up.
-            if (!reMorphing && call->IsExpandedEarly() && call->IsVirtualVtable() && !argx->OperIsLocal())
+            if (call->IsExpandedEarly() && call->IsVirtualVtable() && !argx->OperIsLocal())
             {
-                call->gtArgs.SetNeedsTemp(&arg);
+                if (!reMorphing)
+                {
+                    call->gtArgs.SetNeedsTemp(&arg);
+                }
+                else
+                {
+                    // Should have been converted to a temp the first time
+                    // around.
+                    assert(arg.IsTemp());
+                }
             }
         }
 
@@ -3656,8 +3672,6 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
     if (!reMorphing && (call->gtArgs.HasRegArgs() || call->gtArgs.NeedsTemps()))
     {
         // Do the 'defer or eval to temp' analysis.
-
-        call->gtArgs.SortArgs(this, call);
         call->gtArgs.EvalArgsToTemps(this, call);
     }
 
@@ -3757,7 +3771,6 @@ void Compiler::fgMorphMultiregStructArgs(GenTreeCall* call)
                 // Did we replace 'argx' with a new tree?
                 if (newArgx != argx)
                 {
-                    // link the new arg node into either the late arg list or the gtCallArgs list
                     if (isLateArg)
                     {
                         arg.SetLateNode(newArgx);
@@ -8653,9 +8666,9 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
         // Transform it into a null check.
 
         assert(call->gtArgs.CountArgs() >= 1);
-        GenTree* thisPtr = call->gtArgs.GetArgByIndex(0)->GetNode();
+        GenTree* objPtr = call->gtArgs.GetArgByIndex(0)->GetNode();
 
-        GenTree* nullCheck = gtNewNullCheck(thisPtr, compCurBB);
+        GenTree* nullCheck = gtNewNullCheck(objPtr, compCurBB);
 
         return fgMorphTree(nullCheck);
     }

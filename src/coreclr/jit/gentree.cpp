@@ -1333,7 +1333,6 @@ CallArgs::CallArgs()
     , m_hasRegArgs(false)
     , m_hasStackArgs(false)
     , m_argsComplete(false)
-    , m_argsSorted(false)
     , m_needsTemps(false)
 #ifdef UNIX_X86_ABI
     , m_alignmentDone(false)
@@ -8716,7 +8715,6 @@ void CallArgs::InternalCopyFrom(Compiler* comp, CallArgs* other, CopyNodeFunc co
     m_hasRegArgs               = other->m_hasRegArgs;
     m_hasStackArgs             = other->m_hasStackArgs;
     m_argsComplete             = other->m_argsComplete;
-    m_argsSorted               = other->m_argsSorted;
     m_needsTemps               = other->m_needsTemps;
 
     // Unix x86 flags related to stack alignment intentionally not copied as

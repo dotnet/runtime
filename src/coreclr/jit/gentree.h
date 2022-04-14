@@ -4328,7 +4328,6 @@ class CallArgs
     // True if we have one or more stack arguments.
     bool m_hasStackArgs : 1;
     bool m_argsComplete : 1;
-    bool m_argsSorted : 1;
     // One or more arguments must be copied to a temp by EvalArgsToTemps.
     bool m_needsTemps : 1;
 #ifdef UNIX_X86_ABI
@@ -4383,7 +4382,7 @@ public:
     void AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call);
 
     void ArgsComplete(Compiler* comp, GenTreeCall* call);
-    void SortArgs(Compiler* comp, GenTreeCall* call);
+    void SortArgs(Compiler* comp, GenTreeCall* call, CallArg** sortedArgs);
     void EvalArgsToTemps(Compiler* comp, GenTreeCall* call);
     void SetNeedsTemp(CallArg* arg);
     bool IsNonStandard(Compiler* comp, GenTreeCall* call, CallArg* arg);
