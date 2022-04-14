@@ -38,6 +38,8 @@ namespace System.Formats.Tar.Tests
         // The metadata of the entries inside the asset archives are all set to these values
         protected const int AssetGid = 3579;
         protected const int AssetUid = 7913;
+        protected const string AssetBlockDeviceFileName = "blockdev";
+        protected const string AssetCharacterDeviceFileName = "chardev";
         protected const int AssetBlockDeviceMajor = 71;
         protected const int AssetBlockDeviceMinor = 53;
         protected const int AssetCharacterDeviceMajor = 49;

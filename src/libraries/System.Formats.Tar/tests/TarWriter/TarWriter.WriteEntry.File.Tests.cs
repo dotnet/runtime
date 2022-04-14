@@ -25,18 +25,44 @@ namespace System.Formats.Tar.Tests
             using MemoryStream archiveStream = new MemoryStream();
             using TarWriter writer = new TarWriter(archiveStream);
 
-            Assert.Throws<ArgumentException>(() => writer.WriteEntry(null, "entryName"));
+            Assert.Throws<ArgumentNullException>(() => writer.WriteEntry(null, "entryName"));
             Assert.Throws<ArgumentException>(() => writer.WriteEntry(string.Empty, "entryName"));
         }
 
         [Fact]
         public void EntryName_NullOrEmpty()
         {
-            using MemoryStream archiveStream = new MemoryStream();
-            using TarWriter writer = new TarWriter(archiveStream);
+            using TempDirectory root = new TempDirectory();
 
-            Assert.Throws<ArgumentException>(() => writer.WriteEntry("fileName", null));
-            Assert.Throws<ArgumentException>(() => writer.WriteEntry("fileName", string.Empty));
+            string file1Name = "file1.txt";
+            string file2Name = "file2.txt";
+
+            string file1Path = Path.Join(root.Path, file1Name);
+            string file2Path = Path.Join(root.Path, file2Name);
+
+            File.Create(file1Path).Dispose();
+            File.Create(file2Path).Dispose();
+
+            using MemoryStream archiveStream = new MemoryStream();
+            using (TarWriter writer = new TarWriter(archiveStream, leaveOpen: true))
+            {
+                writer.WriteEntry(file1Path, null);
+                writer.WriteEntry(file2Path, string.Empty);
+            }
+
+            archiveStream.Seek(0, SeekOrigin.Begin);
+            using (TarReader reader = new TarReader(archiveStream))
+            {
+                TarEntry first = reader.GetNextEntry();
+                Assert.NotNull(first);
+                Assert.Equal(file1Name, first.Name);
+
+                TarEntry second = reader.GetNextEntry();
+                Assert.NotNull(second);
+                Assert.Equal(file2Name, second.Name);
+
+                Assert.Null(reader.GetNextEntry());
+            }
         }
 
         [Fact]
