@@ -74,4 +74,8 @@ mono_marshal_shared_emit_struct_free (MonoMethodBuilder *mb, MonoClass *klass, i
 void
 mono_marshal_shared_emit_thread_interrupt_checkpoint_call (MonoMethodBuilder *mb, MonoJitICallId checkpoint_icall_id);
 
+void
+mono_marshal_shared_emit_object_to_ptr_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv conv, MonoMarshalSpec *mspec);
+
+
 #endif /* _MONO_METADATA_MARHSAL_SHARED_H_ */

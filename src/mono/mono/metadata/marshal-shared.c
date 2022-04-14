@@ -203,8 +203,8 @@ mono_marshal_shared_mb_emit_exception_marshal_directive (MonoMethodBuilder *mb, 
 	mono_mb_emit_exception_full (mb, "System.Runtime.InteropServices", "MarshalDirectiveException", s);
 }
 
-static void
-mono_marshal_emit_object_to_ptr_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv conv, MonoMarshalSpec *mspec)
+void
+mono_marshal_shared_emit_object_to_ptr_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv conv, MonoMarshalSpec *mspec)
 {
 	int pos;
 	int stind_op;
@@ -1196,7 +1196,7 @@ mono_marshal_shared_emit_struct_conv_full (MonoMethodBuilder *mb, MonoClass *kla
 			if (to_object)
 				mono_marshal_shared_emit_ptr_to_object_conv (mb, ftype, conv, info->fields [i].mspec);
 			else
-				mono_marshal_emit_object_to_ptr_conv (mb, ftype, conv, info->fields [i].mspec);
+				mono_marshal_shared_emit_object_to_ptr_conv (mb, ftype, conv, info->fields [i].mspec);
 
 			/* restore the old src pointer */
 			mono_mb_emit_ldloc (mb, src_var);
