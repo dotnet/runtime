@@ -76,10 +76,6 @@ static GENERATE_GET_CLASS_WITH_CACHE (date_time, "System", "DateTime");
 static GENERATE_TRY_GET_CLASS_WITH_CACHE (icustom_marshaler, "System.Runtime.InteropServices", "ICustomMarshaler");
 static GENERATE_TRY_GET_CLASS_WITH_CACHE (marshal, "System.Runtime.InteropServices", "Marshal");
 
-/* MonoMethod pointers to SafeHandle::DangerousAddRef and ::DangerousRelease */
-static MonoMethod *sh_dangerous_add_ref;
-static MonoMethod *sh_dangerous_release;
-
 // FIXME Consolidate the multiple functions named get_method_nofail.
 static MonoMethod*
 get_method_nofail (MonoClass *klass, const char *method_name, int num_params, int flags)
