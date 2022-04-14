@@ -181,7 +181,7 @@ namespace BrowserDebugProxy
             // 1
             if (!propertiesExpanded)
             {
-                await ExpandPropertyValues(sdbHelper, token);
+                await ExpandPropertyValues(sdbHelper, sortByAccessLevel, token);
                 propertiesExpanded = true;
             }
 
@@ -197,7 +197,7 @@ namespace BrowserDebugProxy
 
             if (result == null && getObjectOptions.HasFlag(GetObjectCommandOptions.AccessorPropertiesOnly))
             {
-                // 3 - just properties
+                // 3 - just properties, skip fields
                 result = _combinedResult.Clone();
                 RemovePropertiesFrom(result.Result);
                 RemovePropertiesFrom(result.PrivateMembers);
@@ -228,7 +228,7 @@ namespace BrowserDebugProxy
             }
         }
 
-        public async Task ExpandPropertyValues(MonoSDBHelper sdbHelper, CancellationToken token)
+        public async Task ExpandPropertyValues(MonoSDBHelper sdbHelper, bool splitMembersByAccessLevel, CancellationToken token)
         {
 
             using var commandParamsWriter = new MonoBinaryWriter();
@@ -250,7 +250,7 @@ namespace BrowserDebugProxy
             for (int i = 0; i < typesToGetProperties.Count; i++)
             {
                 //FIXME: change GetNonAutomaticPropertyValues to return a jobject instead
-                GetMembersResult res = await MemberObjectsExplorer.GetNonAutomaticPropertyValues(
+                var res = await MemberObjectsExplorer.GetNonAutomaticPropertyValues(
                     sdbHelper,
                     typesToGetProperties[i],
                     ClassName,
@@ -261,12 +261,11 @@ namespace BrowserDebugProxy
                     isOwn: i == 0,
                     token,
                     allMembers);
-
-                foreach (JObject v in res.Flatten())
-                    allMembers[v["name"].Value<string>()] = v;
+                foreach (var kvp in res)
+                    allMembers[kvp.Key] = kvp.Value;
             }
 
-            _combinedResult = GetMembersResult.FromValues(allMembers.Values, splitMembersByAccessLevel: true);
+            _combinedResult = GetMembersResult.FromValues(allMembers.Values, splitMembersByAccessLevel);
         }
 
         private static bool ShouldAutoExpand(string className)

@@ -741,14 +741,12 @@ namespace Microsoft.WebAssembly.Diagnostics
         internal async Task<ValueOrError<GetMembersResult>> RuntimeGetObjectMembers(SessionId id, DotnetObjectId objectId, JToken args, CancellationToken token, bool sortByAccessLevel = false)
         {
             var context = GetContext(id);
-            //var accessorPropertiesOnly = false;
             GetObjectCommandOptions getObjectOptions = GetObjectCommandOptions.WithProperties;
             if (args != null)
             {
                 if (args["accessorPropertiesOnly"] != null && args["accessorPropertiesOnly"].Value<bool>())
                 {
                     getObjectOptions |= GetObjectCommandOptions.AccessorPropertiesOnly;
-                    //accessorPropertiesOnly = true;
                 }
                 if (args["ownProperties"] != null && args["ownProperties"].Value<bool>())
                 {
@@ -769,7 +767,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         var valType = context.SdbAgent.GetValueTypeClass(objectId.Value);
                         if (valType == null)
                             return ValueOrError<GetMembersResult>.WithError($"Internal Error: No valuetype found for {objectId}.");
-                        var resValue = await valType.GetMemberValues(context.SdbAgent, getObjectOptions, sortByAccessLevel, token);
+                        var resValue = await valType.GetMemberValues(context.SdbAgent, getObjectOptions, sortByAccessLevel, token); // but not here
                         return resValue switch
                         {
                             null => ValueOrError<GetMembersResult>.WithError($"Could not get properties for {objectId}"),

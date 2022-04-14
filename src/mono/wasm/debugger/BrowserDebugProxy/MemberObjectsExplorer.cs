@@ -252,7 +252,7 @@ namespace BrowserDebugProxy
             }
         }
 
-        public static async Task<GetMembersResult> GetNonAutomaticPropertyValues(
+        public static async Task<IDictionary<string, JObject>> GetNonAutomaticPropertyValues(
             MonoSDBHelper sdbHelper,
             int typeId,
             string containerTypeName,
@@ -352,10 +352,16 @@ namespace BrowserDebugProxy
                     string namePrefix = GetNamePrefixForValues(propName, containerTypeName, isOwn, state);
                     var expandedMembers = await GetExpandedMemberValues(sdbHelper, returnTypeName, namePrefix, propRet, state, token);
                     foreach (var member in expandedMembers)
-                        ret.Add(member as JObject);
+                    {
+                        var key = member["name"]?.Value<string>();
+                        if (key != null)
+                        {
+                            allMembers.TryAdd(key, member as JObject);
+                        }
+                    }
                 }
             }
-            return ret;
+            return allMembers;
 
             JObject GetNotAutoExpandableObject(int methodId, string propertyName)
             {
@@ -431,8 +437,6 @@ namespace BrowserDebugProxy
                 if (!includeStatic)
                     thisTypeFields = thisTypeFields.Where(f => !f.Attributes.HasFlag(FieldAttributes.Static)).ToList();
 
-                // case:
-                // derived type overrides with an automatic property with a getter
                 if (thisTypeFields.Count > 0)
                 {
                     var allFields = await GetExpandedFieldValues(sdbHelper, objectId, typeId, thisTypeFields, getCommandType, isOwn: isOwn, token);
@@ -449,7 +453,7 @@ namespace BrowserDebugProxy
                 if (!getCommandType.HasFlag(GetObjectCommandOptions.WithProperties))
                     return GetMembersResult.FromValues(allMembers.Values, sortByAccessLevel);
 
-                GetMembersResult props = await GetNonAutomaticPropertyValues(
+                allMembers = (Dictionary<string, JObject>)await GetNonAutomaticPropertyValues(
                     sdbHelper,
                     typeId,
                     typeName,
@@ -462,9 +466,6 @@ namespace BrowserDebugProxy
                     allMembers,
                     thisTypeFields);
 
-                // TODO: merge with GetNonAuto*
-                AddOnlyNewValuesByNameTo(props.Flatten(), allMembers, isOwn);
-
                 // ownProperties
                 // Note: ownProperties should mean that we return members of the klass itself,
                 // but we are going to ignore that here, because otherwise vscode/chrome don't
@@ -474,8 +475,6 @@ namespace BrowserDebugProxy
                 /*if (accessorPropertiesOnly)
                     break;*/
             }
-            // inherited private fields/props should not be visible, skip them
-            //var legitimateMembers = allMembers.Where(kvp => !(kvp.Value["isOwn"]?.Value<bool>() != true && kvp.Value["__section"]?.Value<string>() == "private")).Select(kvp => kvp.Value);
             return GetMembersResult.FromValues(allMembers.Values, sortByAccessLevel);
 
             static void AddOnlyNewValuesByNameTo(JArray namedValues, IDictionary<string, JObject> valuesDict, bool isOwn)

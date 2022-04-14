@@ -411,7 +411,7 @@ namespace DebuggerTests
          public static TheoryData<Dictionary<string, JObject>, Dictionary<string, JObject>, Dictionary<string, JObject>, string> GetDataForProtectionLevels()
         {
             var data = new TheoryData<Dictionary<string, JObject>, Dictionary<string, JObject>, Dictionary<string, JObject>, string>();
-            // object DerivedClass 23 elements:
+            // object DerivedClass; should be 23 elements:
             var public_props = new Dictionary<string, JObject>()
             {
                 //  own
