@@ -42,8 +42,9 @@ namespace System.Formats.Tar
 
             if ((entryType is TarEntryType.BlockDevice or TarEntryType.CharacterDevice) && status.Dev > 0)
             {
-                entry._header._devMajor = (int)Interop.Sys.GetDevMajor((ulong)status.Dev);
-                entry._header._devMinor = (int)Interop.Sys.GetDevMinor((ulong)status.Dev);
+                Interop.Sys.GetDeviceIdentifiers((ulong)status.Dev, out uint major, out uint minor);
+                entry._header._devMajor = (int)major;
+                entry._header._devMinor = (int)minor;
             }
 
             entry._header._mTime = DateTimeOffset.FromUnixTimeSeconds(status.MTime);
@@ -55,6 +56,7 @@ namespace System.Formats.Tar
             entry.Uid = (int)status.Uid;
             entry.Gid = (int)status.Gid;
 
+            // TODO: Add these p/invokes
             entry._header._uName = "";// Interop.Sys.GetUName();
             entry._header._gName = "";// Interop.Sys.GetGName();
 

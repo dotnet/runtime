@@ -772,14 +772,11 @@ uint64_t SystemNative_MakeDev(uint32_t major, uint32_t minor)
     return (uint64_t)makedev(major, minor);
 }
 
-uint32_t SystemNative_Major(uint64_t dev)
+void SystemNative_GetDeviceIdentifiers(uint64_t dev, uint32_t* major, uint32_t* minor)
 {
-    return major((dev_t)dev);
-}
-
-uint32_t SystemNative_Minor(uint64_t dev)
-{
-    return minor((dev_t)dev);
+    dev_t castedDev = (dev_t)dev;
+    *major = major(castedDev);
+    *minor = minor(castedDev);
 }
 
 int32_t SystemNative_MkNod(const char* pathName, int32_t mode, uint32_t major, uint32_t minor)

@@ -25,10 +25,7 @@ internal static partial class Interop
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_MakeDev", SetLastError = true)]
         internal static partial ulong MakeDev(uint major, uint minor);
 
-        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_Major", SetLastError = true)]
-        internal static partial uint GetDevMajor(ulong dev);
-
-        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_Minor", SetLastError = true)]
-        internal static partial uint GetDevMinor(ulong dev);
+        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetDeviceIdentifiers", SetLastError = true)]
+        internal static partial void GetDeviceIdentifiers(ulong dev, out uint major, out uint minor);
     }
 }

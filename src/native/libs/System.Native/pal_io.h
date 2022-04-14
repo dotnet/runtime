@@ -546,14 +546,9 @@ PALEXPORT int32_t SystemNative_SymLink(const char* target, const char* linkPath)
 PALEXPORT uint64_t SystemNative_MakeDev(uint32_t major, uint32_t minor);
 
 /**
- * Given a device IDs, extracts the major component and returns it.
+ * Given a device ID, extracts the major and components and returns them.
  */
-PALEXPORT uint32_t SystemNative_Major(uint64_t dev);
-
-/**
- * Given a device IDs, extracts the minor component and returns it.
- */
-PALEXPORT uint32_t SystemNative_Minor(uint64_t dev);
+PALEXPORT void SystemNative_GetDeviceIdentifiers(uint64_t dev, uint32_t* major, uint32_t* minor);
 
 /**
  * Creates a special or ordinary file.
