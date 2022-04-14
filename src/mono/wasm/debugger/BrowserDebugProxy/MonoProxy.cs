@@ -767,7 +767,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         var valType = context.SdbAgent.GetValueTypeClass(objectId.Value);
                         if (valType == null)
                             return ValueOrError<GetMembersResult>.WithError($"Internal Error: No valuetype found for {objectId}.");
-                        var resValue = await valType.GetMemberValues(context.SdbAgent, getObjectOptions, sortByAccessLevel, token); // but not here
+                        var resValue = await valType.GetMemberValues(context.SdbAgent, getObjectOptions, sortByAccessLevel, token);
                         return resValue switch
                         {
                             null => ValueOrError<GetMembersResult>.WithError($"Could not get properties for {objectId}"),

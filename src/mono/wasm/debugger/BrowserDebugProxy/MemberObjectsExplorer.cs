@@ -564,7 +564,12 @@ namespace BrowserDebugProxy
             }
         }
 
-        public GetMembersResult Clone() => new GetMembersResult() { Result = Result, PrivateMembers = PrivateMembers, OtherMembers = OtherMembers };
+        public GetMembersResult Clone() => new GetMembersResult()
+        {
+            Result = (JArray)Result.DeepClone(),
+            PrivateMembers = (JArray)PrivateMembers.DeepClone(),
+            OtherMembers = (JArray)OtherMembers.DeepClone()
+        };
 
         public IEnumerator GetEnumerator() => Flatten().GetEnumerator();
 
