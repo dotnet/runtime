@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppMinimum);netstandard2.1;netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
@@ -16,6 +16,8 @@ Microsoft.Extensions.DependencyInjection.IServiceCollection</PackageDescription>
   <ItemGroup>
     <Compile Include="$(CommonPath)Extensions\ParameterDefaultValue\ParameterDefaultValue.cs"
              Link="Common\src\Extensions\ParameterDefaultValue\ParameterDefaultValue.cs" />
+    <Compile Include="$(CommonPath)System\ThrowHelper.cs"
+             Link="Common\System\ThrowHelper.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">

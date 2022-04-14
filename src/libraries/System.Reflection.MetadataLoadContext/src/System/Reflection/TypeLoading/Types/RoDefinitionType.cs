@@ -85,8 +85,11 @@ namespace System.Reflection.TypeLoading
         internal abstract IEnumerable<RoType> SpecializeInterfaces(RoType[] instantiation);
 
         [RequiresUnreferencedCode("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]
-        public sealed override Type MakeGenericType(params Type[] typeArguments!!)
+        public sealed override Type MakeGenericType(params Type[] typeArguments)
         {
+            if (typeArguments is null)
+                throw new ArgumentNullException(nameof(typeArguments));
+
             if (!IsGenericTypeDefinition)
                 throw new InvalidOperationException(SR.Format(SR.Arg_NotGenericTypeDefinition, this));
 

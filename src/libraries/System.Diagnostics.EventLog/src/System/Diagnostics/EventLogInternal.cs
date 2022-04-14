@@ -109,8 +109,10 @@ namespace System.Diagnostics
         {
         }
 
-        public EventLogInternal(string logName!!, string machineName, string source, EventLog parent)
+        public EventLogInternal(string logName, string machineName, string source, EventLog parent)
         {
+            ArgumentNullException.ThrowIfNull(logName);
+
             if (!ValidLogName(logName, true))
                 throw new ArgumentException(SR.BadLogName);
 
@@ -1311,8 +1313,10 @@ namespace System.Diagnostics
             InternalWriteEvent((uint)eventID, (ushort)category, type, new string[] { message }, rawData, currentMachineName);
         }
 
-        public void WriteEvent(EventInstance instance!!, byte[] data, params object[] values)
+        public void WriteEvent(EventInstance instance, byte[] data, params object[] values)
         {
+            ArgumentNullException.ThrowIfNull(instance);
+
             if (Source.Length == 0)
                 throw new ArgumentException(SR.NeedSourceToWrite);
 

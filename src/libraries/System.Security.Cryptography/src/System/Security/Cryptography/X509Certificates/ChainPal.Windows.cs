@@ -18,8 +18,10 @@ namespace System.Security.Cryptography.X509Certificates
 
         internal static partial IChainPal FromHandle(IntPtr chainContext)
         {
-            if (chainContext == IntPtr.Zero)
-                throw new ArgumentNullException(nameof(chainContext));
+            unsafe
+            {
+                ArgumentNullException.ThrowIfNull((void*)chainContext, nameof(chainContext));
+            }
 
             SafeX509ChainHandle certChainHandle = Interop.Crypt32.CertDuplicateCertificateChain(chainContext);
             if (certChainHandle == null || certChainHandle.IsInvalid)

@@ -19,8 +19,10 @@ namespace Microsoft.Extensions.DependencyModel
 
         private readonly IDictionary<string, string> _stringPool = new Dictionary<string, string>();
 
-        public DependencyContext Read(Stream stream!!)
+        public DependencyContext Read(Stream stream)
         {
+            ThrowHelper.ThrowIfNull(stream);
+
             ArraySegment<byte> buffer = ReadToEnd(stream);
             try
             {

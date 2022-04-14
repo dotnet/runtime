@@ -13,13 +13,16 @@ namespace Microsoft.Extensions.Hosting.Internal
         private readonly Func<HostBuilderContext>? _contextResolver;
         private Func<HostBuilderContext, IServiceProviderFactory<TContainerBuilder>>? _factoryResolver;
 
-        public ServiceFactoryAdapter(IServiceProviderFactory<TContainerBuilder> serviceProviderFactory!!)
+        public ServiceFactoryAdapter(IServiceProviderFactory<TContainerBuilder> serviceProviderFactory)
         {
-            _serviceProviderFactory = serviceProviderFactory;
+            _serviceProviderFactory = serviceProviderFactory ?? throw new ArgumentNullException(nameof(serviceProviderFactory));
         }
 
-        public ServiceFactoryAdapter(Func<HostBuilderContext> contextResolver!!, Func<HostBuilderContext, IServiceProviderFactory<TContainerBuilder>> factoryResolver!!)
+        public ServiceFactoryAdapter(Func<HostBuilderContext> contextResolver, Func<HostBuilderContext, IServiceProviderFactory<TContainerBuilder>> factoryResolver)
         {
+            ThrowHelper.ThrowIfNull(contextResolver);
+            ThrowHelper.ThrowIfNull(factoryResolver);
+
             _contextResolver = contextResolver;
             _factoryResolver = factoryResolver;
         }

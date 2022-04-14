@@ -175,8 +175,10 @@ namespace System.Text
         // dstEncoding, and the returned value is a new byte array
         // containing the result of the conversion.
         //
-        public static byte[] Convert(Encoding srcEncoding, Encoding dstEncoding, byte[] bytes!!)
+        public static byte[] Convert(Encoding srcEncoding, Encoding dstEncoding, byte[] bytes)
         {
+            ArgumentNullException.ThrowIfNull(bytes);
+
             return Convert(srcEncoding, dstEncoding, bytes, 0, bytes.Length);
         }
 
@@ -185,9 +187,13 @@ namespace System.Text
         // index index from srcEncoding to dstEncoding, and
         // returns a new byte array containing the result of the conversion.
         //
-        public static byte[] Convert(Encoding srcEncoding!!, Encoding dstEncoding!!,
-            byte[] bytes!!, int index, int count)
+        public static byte[] Convert(Encoding srcEncoding, Encoding dstEncoding,
+            byte[] bytes, int index, int count)
         {
+            ArgumentNullException.ThrowIfNull(srcEncoding);
+            ArgumentNullException.ThrowIfNull(dstEncoding);
+            ArgumentNullException.ThrowIfNull(bytes);
+
             return dstEncoding.GetBytes(srcEncoding.GetChars(bytes, index, count));
         }
 
@@ -522,8 +528,10 @@ namespace System.Text
         // Returns the number of bytes required to encode the given character
         // array.
         //
-        public virtual int GetByteCount(char[] chars!!)
+        public virtual int GetByteCount(char[] chars)
         {
+            ArgumentNullException.ThrowIfNull(chars);
+
             return GetByteCount(chars, 0, chars.Length);
         }
 
@@ -545,8 +553,10 @@ namespace System.Text
 
         // Returns the number of bytes required to encode a string range.
         //
-        public int GetByteCount(string s!!, int index, int count)
+        public int GetByteCount(string s, int index, int count)
         {
+            ArgumentNullException.ThrowIfNull(s);
+
             if (index < 0)
                 throw new ArgumentOutOfRangeException(nameof(index),
                       SR.ArgumentOutOfRange_NeedNonNegNum);
@@ -571,8 +581,10 @@ namespace System.Text
         // which is really slow, so this method should be avoided if you're calling
         // a 3rd party encoding.
         [CLSCompliant(false)]
-        public virtual unsafe int GetByteCount(char* chars!!, int count)
+        public virtual unsafe int GetByteCount(char* chars, int count)
         {
+            ArgumentNullException.ThrowIfNull(chars);
+
             // Validate input parameters
             if (count < 0)
                 throw new ArgumentOutOfRangeException(nameof(count),
@@ -594,8 +606,10 @@ namespace System.Text
         // Returns a byte array containing the encoded representation of the given
         // character array.
         //
-        public virtual byte[] GetBytes(char[] chars!!)
+        public virtual byte[] GetBytes(char[] chars)
         {
+            ArgumentNullException.ThrowIfNull(chars);
+
             return GetBytes(chars, 0, chars.Length);
         }
 
@@ -624,8 +638,10 @@ namespace System.Text
         // Returns a byte array containing the encoded representation of the given
         // string.
         //
-        public virtual byte[] GetBytes(string s!!)
+        public virtual byte[] GetBytes(string s)
         {
+            ArgumentNullException.ThrowIfNull(s);
+
             int byteCount = GetByteCount(s);
             byte[] bytes = new byte[byteCount];
             int bytesReceived = GetBytes(s, 0, s.Length, bytes, 0);
@@ -636,8 +652,10 @@ namespace System.Text
         // Returns a byte array containing the encoded representation of the given
         // string range.
         //
-        public byte[] GetBytes(string s!!, int index, int count)
+        public byte[] GetBytes(string s, int index, int count)
         {
+            ArgumentNullException.ThrowIfNull(s);
+
             if (index < 0)
                 throw new ArgumentOutOfRangeException(nameof(index),
                       SR.ArgumentOutOfRange_NeedNonNegNum);
@@ -696,9 +714,12 @@ namespace System.Text
         // when we copy the buffer so that we don't overflow byteCount either.
 
         [CLSCompliant(false)]
-        public virtual unsafe int GetBytes(char* chars!!, int charCount,
-                                              byte* bytes!!, int byteCount)
+        public virtual unsafe int GetBytes(char* chars, int charCount,
+                                              byte* bytes, int byteCount)
         {
+            ArgumentNullException.ThrowIfNull(chars);
+            ArgumentNullException.ThrowIfNull(bytes);
+
             // Validate input parameters
             if (charCount < 0 || byteCount < 0)
                 throw new ArgumentOutOfRangeException(charCount < 0 ? nameof(charCount) : nameof(byteCount),
@@ -741,8 +762,10 @@ namespace System.Text
         // Returns the number of characters produced by decoding the given byte
         // array.
         //
-        public virtual int GetCharCount(byte[] bytes!!)
+        public virtual int GetCharCount(byte[] bytes)
         {
+            ArgumentNullException.ThrowIfNull(bytes);
+
             return GetCharCount(bytes, 0, bytes.Length);
         }
 
@@ -754,8 +777,10 @@ namespace System.Text
         // We expect this to be the workhorse for NLS Encodings, but for existing
         // ones we need a working (if slow) default implementation)
         [CLSCompliant(false)]
-        public virtual unsafe int GetCharCount(byte* bytes!!, int count)
+        public virtual unsafe int GetCharCount(byte* bytes, int count)
         {
+            ArgumentNullException.ThrowIfNull(bytes);
+
             // Validate input parameters
             if (count < 0)
                 throw new ArgumentOutOfRangeException(nameof(count),
@@ -777,8 +802,10 @@ namespace System.Text
         // Returns a character array containing the decoded representation of a
         // given byte array.
         //
-        public virtual char[] GetChars(byte[] bytes!!)
+        public virtual char[] GetChars(byte[] bytes)
         {
+            ArgumentNullException.ThrowIfNull(bytes);
+
             return GetChars(bytes, 0, bytes.Length);
         }
 
@@ -823,9 +850,12 @@ namespace System.Text
         // when we copy the buffer so that we don't overflow charCount either.
 
         [CLSCompliant(false)]
-        public virtual unsafe int GetChars(byte* bytes!!, int byteCount,
-                                              char* chars!!, int charCount)
+        public virtual unsafe int GetChars(byte* bytes, int byteCount,
+                                              char* chars, int charCount)
         {
+            ArgumentNullException.ThrowIfNull(bytes);
+            ArgumentNullException.ThrowIfNull(chars);
+
             // Validate input parameters
             if (byteCount < 0 || charCount < 0)
                 throw new ArgumentOutOfRangeException(byteCount < 0 ? nameof(byteCount) : nameof(charCount),
@@ -866,8 +896,10 @@ namespace System.Text
         }
 
         [CLSCompliant(false)]
-        public unsafe string GetString(byte* bytes!!, int byteCount)
+        public unsafe string GetString(byte* bytes, int byteCount)
         {
+            ArgumentNullException.ThrowIfNull(bytes);
+
             if (byteCount < 0)
                 throw new ArgumentOutOfRangeException(nameof(byteCount), SR.ArgumentOutOfRange_NeedNonNegNum);
 
@@ -959,8 +991,10 @@ namespace System.Text
         // Returns a string containing the decoded representation of a given byte
         // array.
         //
-        public virtual string GetString(byte[] bytes!!)
+        public virtual string GetString(byte[] bytes)
         {
+            ArgumentNullException.ThrowIfNull(bytes);
+
             return GetString(bytes, 0, bytes.Length);
         }
 
@@ -1038,8 +1072,12 @@ namespace System.Text
         /// is full-duplex, the returned <see cref="Stream"/> will be as well. However, the returned <see cref="Stream"/>
         /// is not seekable, even if <paramref name="innerStream"/>'s <see cref="Stream.CanSeek"/> property returns <see langword="true"/>.
         /// </remarks>
-        public static Stream CreateTranscodingStream(Stream innerStream!!, Encoding innerStreamEncoding!!, Encoding outerStreamEncoding!!, bool leaveOpen = false)
+        public static Stream CreateTranscodingStream(Stream innerStream, Encoding innerStreamEncoding, Encoding outerStreamEncoding, bool leaveOpen = false)
         {
+            ArgumentNullException.ThrowIfNull(innerStream);
+            ArgumentNullException.ThrowIfNull(innerStreamEncoding);
+            ArgumentNullException.ThrowIfNull(outerStreamEncoding);
+
             // We can't entirely optimize away the case where innerStreamEncoding == outerStreamEncoding. For example,
             // the Encoding might perform a lossy conversion when it sees invalid data, so we still need to call it
             // to perform basic validation. It's also possible that somebody subclassed one of the built-in types

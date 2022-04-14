@@ -68,8 +68,7 @@ namespace System.Security.Cryptography
 
         public int TransformBlock(byte[] inputBuffer, int inputOffset, int inputCount, byte[] outputBuffer, int outputOffset)
         {
-            if (inputBuffer == null)
-                throw new ArgumentNullException(nameof(inputBuffer));
+            ArgumentNullException.ThrowIfNull(inputBuffer);
             if (inputOffset < 0)
                 throw new ArgumentOutOfRangeException(nameof(inputOffset));
             if (inputOffset > inputBuffer.Length)
@@ -80,8 +79,8 @@ namespace System.Security.Cryptography
                 throw new ArgumentOutOfRangeException(nameof(inputCount), SR.Cryptography_MustTransformWholeBlock);
             if (inputCount > inputBuffer.Length - inputOffset)
                 throw new ArgumentOutOfRangeException(nameof(inputCount), SR.Argument_InvalidOffLen);
-            if (outputBuffer == null)
-                throw new ArgumentNullException(nameof(outputBuffer));
+
+            ArgumentNullException.ThrowIfNull(outputBuffer);
             if (outputOffset > outputBuffer.Length)
                 throw new ArgumentOutOfRangeException(nameof(outputOffset));
             if (inputCount > outputBuffer.Length - outputOffset)
@@ -92,8 +91,10 @@ namespace System.Security.Cryptography
             return numBytesWritten;
         }
 
-        public byte[] TransformFinalBlock(byte[] inputBuffer!!, int inputOffset, int inputCount)
+        public byte[] TransformFinalBlock(byte[] inputBuffer, int inputOffset, int inputCount)
         {
+            ArgumentNullException.ThrowIfNull(inputBuffer);
+
             if (inputOffset < 0)
                 throw new ArgumentOutOfRangeException(nameof(inputOffset));
             if (inputCount < 0)

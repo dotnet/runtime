@@ -476,8 +476,10 @@ namespace System.Xml
             return readCount;
         }
 
-        public override int ReadElementContentAsBase64(byte[] buffer!!, int index, int count)
+        public override int ReadElementContentAsBase64(byte[] buffer, int index, int count)
         {
+            ArgumentNullException.ThrowIfNull(buffer);
+
             // check arguments
             if (count < 0)
             {
@@ -533,8 +535,10 @@ namespace System.Xml
             return readCount;
         }
 
-        public override int ReadElementContentAsBinHex(byte[] buffer!!, int index, int count)
+        public override int ReadElementContentAsBinHex(byte[] buffer, int index, int count)
         {
+            ArgumentNullException.ThrowIfNull(buffer);
+
             // check arguments
             if (count < 0)
             {

@@ -82,8 +82,10 @@ namespace System.Text
         // EncodingNLS, UTF7Encoding, UTF8Encoding, UTF32Encoding, ASCIIEncoding, UnicodeEncoding
         // parent method is safe
 
-        public override unsafe int GetByteCount(char[] chars!!, int index, int count)
+        public override unsafe int GetByteCount(char[] chars, int index, int count)
         {
+            ArgumentNullException.ThrowIfNull(chars);
+
             // Validate input parameters
             if (index < 0 || count < 0)
                 throw new ArgumentOutOfRangeException(index < 0 ? nameof(index) : nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
@@ -122,8 +124,10 @@ namespace System.Text
         // EncodingNLS, UTF7Encoding, UTF8Encoding, UTF32Encoding, ASCIIEncoding, UnicodeEncoding
 
         [CLSCompliant(false)]
-        public override unsafe int GetByteCount(char* chars!!, int count)
+        public override unsafe int GetByteCount(char* chars, int count)
         {
+            ArgumentNullException.ThrowIfNull(chars);
+
             // Validate Parameters
             if (count < 0)
                 throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
@@ -137,9 +141,12 @@ namespace System.Text
         // So if you fix this, fix the others.  Currently those include:
         // EncodingNLS, UTF7Encoding, UTF8Encoding, UTF32Encoding, ASCIIEncoding, UnicodeEncoding
 
-        public override unsafe int GetBytes(string s!!, int charIndex, int charCount,
-                                            byte[] bytes!!, int byteIndex)
+        public override unsafe int GetBytes(string s, int charIndex, int charCount,
+                                            byte[] bytes, int byteIndex)
         {
+            ArgumentNullException.ThrowIfNull(s);
+            ArgumentNullException.ThrowIfNull(bytes);
+
             if (charIndex < 0 || charCount < 0)
                 throw new ArgumentOutOfRangeException(charIndex < 0 ? nameof(charIndex) : nameof(charCount), SR.ArgumentOutOfRange_NeedNonNegNum);
 
@@ -169,9 +176,12 @@ namespace System.Text
         // EncodingNLS, UTF7Encoding, UTF8Encoding, UTF32Encoding, ASCIIEncoding, UnicodeEncoding
         // parent method is safe
 
-        public override unsafe int GetBytes(char[] chars!!, int charIndex, int charCount,
-                                            byte[] bytes!!, int byteIndex)
+        public override unsafe int GetBytes(char[] chars, int charIndex, int charCount,
+                                            byte[] bytes, int byteIndex)
         {
+            ArgumentNullException.ThrowIfNull(chars);
+            ArgumentNullException.ThrowIfNull(bytes);
+
             // Validate parameters
             if (charIndex < 0 || charCount < 0)
                 throw new ArgumentOutOfRangeException(charIndex < 0 ? nameof(charIndex) : nameof(charCount), SR.ArgumentOutOfRange_NeedNonNegNum);
@@ -199,8 +209,11 @@ namespace System.Text
         // EncodingNLS, UTF7Encoding, UTF8Encoding, UTF32Encoding, ASCIIEncoding, UnicodeEncoding
 
         [CLSCompliant(false)]
-        public override unsafe int GetBytes(char* chars!!, int charCount, byte* bytes!!, int byteCount)
+        public override unsafe int GetBytes(char* chars, int charCount, byte* bytes, int byteCount)
         {
+            ArgumentNullException.ThrowIfNull(chars);
+            ArgumentNullException.ThrowIfNull(bytes);
+
             // Validate Parameters
             if (charCount < 0 || byteCount < 0)
                 throw new ArgumentOutOfRangeException(charCount < 0 ? nameof(charCount) : nameof(byteCount), SR.ArgumentOutOfRange_NeedNonNegNum);
@@ -216,8 +229,10 @@ namespace System.Text
         // EncodingNLS, UTF7Encoding, UTF8Encoding, UTF32Encoding, ASCIIEncoding, UnicodeEncoding
         // parent method is safe
 
-        public override unsafe int GetCharCount(byte[] bytes!!, int index, int count)
+        public override unsafe int GetCharCount(byte[] bytes, int index, int count)
         {
+            ArgumentNullException.ThrowIfNull(bytes);
+
             // Validate Parameters
             if (index < 0 || count < 0)
                 throw new ArgumentOutOfRangeException(index < 0 ? nameof(index) : nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
@@ -239,8 +254,10 @@ namespace System.Text
         // EncodingNLS, UTF7Encoding, UTF8Encoding, UTF32Encoding, ASCIIEncoding, UnicodeEncoding
 
         [CLSCompliant(false)]
-        public override unsafe int GetCharCount(byte* bytes!!, int count)
+        public override unsafe int GetCharCount(byte* bytes, int count)
         {
+            ArgumentNullException.ThrowIfNull(bytes);
+
             // Validate Parameters
             if (count < 0)
                 throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
@@ -253,9 +270,12 @@ namespace System.Text
         // EncodingNLS, UTF7Encoding, UTF8Encoding, UTF32Encoding, ASCIIEncoding, UnicodeEncoding
         // parent method is safe
 
-        public override unsafe int GetChars(byte[] bytes!!, int byteIndex, int byteCount,
-                                            char[] chars!!, int charIndex)
+        public override unsafe int GetChars(byte[] bytes, int byteIndex, int byteCount,
+                                            char[] chars, int charIndex)
         {
+            ArgumentNullException.ThrowIfNull(bytes);
+            ArgumentNullException.ThrowIfNull(chars);
+
             // Validate Parameters
             if (byteIndex < 0 || byteCount < 0)
                 throw new ArgumentOutOfRangeException(byteIndex < 0 ? nameof(byteIndex) : nameof(byteCount), SR.ArgumentOutOfRange_NeedNonNegNum);
@@ -283,8 +303,11 @@ namespace System.Text
         // EncodingNLS, UTF7Encoding, UTF8Encoding, UTF32Encoding, ASCIIEncoding, UnicodeEncoding
 
         [CLSCompliant(false)]
-        public override unsafe int GetChars(byte* bytes!!, int byteCount, char* chars!!, int charCount)
+        public override unsafe int GetChars(byte* bytes, int byteCount, char* chars, int charCount)
         {
+            ArgumentNullException.ThrowIfNull(bytes);
+            ArgumentNullException.ThrowIfNull(chars);
+
             // Validate Parameters
             if (charCount < 0 || byteCount < 0)
                 throw new ArgumentOutOfRangeException(charCount < 0 ? nameof(charCount) : nameof(byteCount), SR.ArgumentOutOfRange_NeedNonNegNum);
@@ -300,8 +323,10 @@ namespace System.Text
         // EncodingNLS, UTF7Encoding, UTF8Encoding, UTF32Encoding, ASCIIEncoding, UnicodeEncoding
         // parent method is safe
 
-        public override unsafe string GetString(byte[] bytes!!, int index, int count)
+        public override unsafe string GetString(byte[] bytes, int index, int count)
         {
+            ArgumentNullException.ThrowIfNull(bytes);
+
             // Validate Parameters
             if (index < 0 || count < 0)
                 throw new ArgumentOutOfRangeException(index < 0 ? nameof(index) : nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);

@@ -84,8 +84,10 @@ namespace System.Net.Sockets
 
         // Creates a new instance of the UdpClient class that communicates on the
         // specified end point.
-        public UdpClient(IPEndPoint localEP!!)
+        public UdpClient(IPEndPoint localEP)
         {
+            ArgumentNullException.ThrowIfNull(localEP);
+
             // IPv6 Changes: Set the AddressFamily of this object before
             //               creating the client socket.
             _family = localEP.AddressFamily;

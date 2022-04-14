@@ -62,8 +62,10 @@ namespace System.Net
             return sb.ToString();
         }
 
-        public static void HtmlEncode(string? value, TextWriter output!!)
+        public static void HtmlEncode(string? value, TextWriter output)
         {
+            ArgumentNullException.ThrowIfNull(output);
+
             if (string.IsNullOrEmpty(value))
             {
                 output.Write(value);
@@ -201,8 +203,10 @@ namespace System.Net
             return sb.ToString();
         }
 
-        public static void HtmlDecode(string? value, TextWriter output!!)
+        public static void HtmlDecode(string? value, TextWriter output)
         {
+            ArgumentNullException.ThrowIfNull(output);
+
             if (string.IsNullOrEmpty(value))
             {
                 output.Write(value);

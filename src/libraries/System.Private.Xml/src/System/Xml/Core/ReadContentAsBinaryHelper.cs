@@ -60,8 +60,10 @@ namespace System.Xml
 
         // Internal methods
 
-        internal int ReadContentAsBase64(byte[] buffer!!, int index, int count)
+        internal int ReadContentAsBase64(byte[] buffer, int index, int count)
         {
+            ArgumentNullException.ThrowIfNull(buffer);
+
             // check arguments
             if (count < 0)
             {
@@ -112,8 +114,10 @@ namespace System.Xml
             return ReadContentAsBinary(buffer, index, count);
         }
 
-        internal int ReadContentAsBinHex(byte[] buffer!!, int index, int count)
+        internal int ReadContentAsBinHex(byte[] buffer, int index, int count)
         {
+            ArgumentNullException.ThrowIfNull(buffer);
+
             // check arguments
             if (count < 0)
             {
@@ -164,8 +168,10 @@ namespace System.Xml
             return ReadContentAsBinary(buffer, index, count);
         }
 
-        internal int ReadElementContentAsBase64(byte[] buffer!!, int index, int count)
+        internal int ReadElementContentAsBase64(byte[] buffer, int index, int count)
         {
+            ArgumentNullException.ThrowIfNull(buffer);
+
             // check arguments
             if (count < 0)
             {
@@ -216,8 +222,10 @@ namespace System.Xml
             return ReadElementContentAsBinary(buffer, index, count);
         }
 
-        internal int ReadElementContentAsBinHex(byte[] buffer!!, int index, int count)
+        internal int ReadElementContentAsBinHex(byte[] buffer, int index, int count)
         {
+            ArgumentNullException.ThrowIfNull(buffer);
+
             // check arguments
             if (count < 0)
             {

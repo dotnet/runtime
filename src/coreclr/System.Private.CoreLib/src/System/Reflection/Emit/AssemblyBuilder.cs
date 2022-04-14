@@ -36,12 +36,14 @@ namespace System.Reflection.Emit
 
         #region Constructor
 
-        internal AssemblyBuilder(AssemblyName name!!,
+        internal AssemblyBuilder(AssemblyName name,
                                  AssemblyBuilderAccess access,
                                  Assembly? callingAssembly,
                                  AssemblyLoadContext? assemblyLoadContext,
                                  IEnumerable<CustomAttributeBuilder>? assemblyAttributes)
         {
+            ArgumentNullException.ThrowIfNull(name);
+
             if (access != AssemblyBuilderAccess.Run && access != AssemblyBuilderAccess.RunAndCollect)
             {
                 throw new ArgumentException(SR.Format(SR.Arg_EnumIllegalVal, (int)access), nameof(access));
@@ -274,8 +276,11 @@ namespace System.Reflection.Emit
         /// <summary>
         /// Use this function if client decides to form the custom attribute blob themselves.
         /// </summary>
-        public void SetCustomAttribute(ConstructorInfo con!!, byte[] binaryAttribute!!)
+        public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
         {
+            ArgumentNullException.ThrowIfNull(con);
+            ArgumentNullException.ThrowIfNull(binaryAttribute);
+
             lock (SyncRoot)
             {
                 TypeBuilder.DefineCustomAttribute(
@@ -289,8 +294,10 @@ namespace System.Reflection.Emit
         /// <summary>
         /// Use this function if client wishes to build CustomAttribute using CustomAttributeBuilder.
         /// </summary>
-        public void SetCustomAttribute(CustomAttributeBuilder customBuilder!!)
+        public void SetCustomAttribute(CustomAttributeBuilder customBuilder)
         {
+            ArgumentNullException.ThrowIfNull(customBuilder);
+
             lock (SyncRoot)
             {
                 customBuilder.CreateCustomAttribute(_manifestModuleBuilder, AssemblyDefToken);

@@ -96,8 +96,10 @@ namespace System.Text
         // unfortunately for existing overrides, it has to call the [] version,
         // which is really slow, so avoid this method if you might be calling external encodings.
         [CLSCompliant(false)]
-        public virtual unsafe int GetByteCount(char* chars!!, int count, bool flush)
+        public virtual unsafe int GetByteCount(char* chars, int count, bool flush)
         {
+            ArgumentNullException.ThrowIfNull(chars);
+
             // Validate input parameters
             if (count < 0)
                 throw new ArgumentOutOfRangeException(nameof(count),
@@ -159,9 +161,12 @@ namespace System.Text
         // could easily overflow our output buffer.  Therefore we do an extra test
         // when we copy the buffer so that we don't overflow byteCount either.
         [CLSCompliant(false)]
-        public virtual unsafe int GetBytes(char* chars!!, int charCount,
-                                           byte* bytes!!, int byteCount, bool flush)
+        public virtual unsafe int GetBytes(char* chars, int charCount,
+                                           byte* bytes, int byteCount, bool flush)
         {
+            ArgumentNullException.ThrowIfNull(chars);
+            ArgumentNullException.ThrowIfNull(bytes);
+
             // Validate input parameters
             if (charCount < 0 || byteCount < 0)
                 throw new ArgumentOutOfRangeException(charCount < 0 ? nameof(charCount) : nameof(byteCount),
@@ -219,10 +224,13 @@ namespace System.Text
         // Note that if all of the input chars are not consumed, then we'll do a /2, which means
         // that its likely that we didn't consume as many chars as we could have.  For some
         // applications this could be slow.  (Like trying to exactly fill an output buffer from a bigger stream)
-        public virtual void Convert(char[] chars!!, int charIndex, int charCount,
-                                    byte[] bytes!!, int byteIndex, int byteCount, bool flush,
+        public virtual void Convert(char[] chars, int charIndex, int charCount,
+                                    byte[] bytes, int byteIndex, int byteCount, bool flush,
                                     out int charsUsed, out int bytesUsed, out bool completed)
         {
+            ArgumentNullException.ThrowIfNull(chars);
+            ArgumentNullException.ThrowIfNull(bytes);
+
             // Validate parameters
             if (charIndex < 0 || charCount < 0)
                 throw new ArgumentOutOfRangeException(charIndex < 0 ? nameof(charIndex) : nameof(charCount),
@@ -272,10 +280,13 @@ namespace System.Text
         // that its likely that we didn't consume as many chars as we could have.  For some
         // applications this could be slow.  (Like trying to exactly fill an output buffer from a bigger stream)
         [CLSCompliant(false)]
-        public virtual unsafe void Convert(char* chars!!, int charCount,
-                                           byte* bytes!!, int byteCount, bool flush,
+        public virtual unsafe void Convert(char* chars, int charCount,
+                                           byte* bytes, int byteCount, bool flush,
                                            out int charsUsed, out int bytesUsed, out bool completed)
         {
+            ArgumentNullException.ThrowIfNull(chars);
+            ArgumentNullException.ThrowIfNull(bytes);
+
             // Validate input parameters
             if (charCount < 0 || byteCount < 0)
                 throw new ArgumentOutOfRangeException(charCount < 0 ? nameof(charCount) : nameof(byteCount),

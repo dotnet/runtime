@@ -45,8 +45,10 @@ namespace System.Net.Sockets
         }
 
         // Initializes a new instance of the System.Net.Sockets.TcpClient class with the specified end point.
-        public TcpClient(IPEndPoint localEP!!)
+        public TcpClient(IPEndPoint localEP)
         {
+            ArgumentNullException.ThrowIfNull(localEP);
+
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, localEP);
             _family = localEP.AddressFamily; // set before calling CreateSocket
             InitializeClientSocket();
@@ -55,8 +57,10 @@ namespace System.Net.Sockets
 
         // Initializes a new instance of the System.Net.Sockets.TcpClient class and connects to the specified port on
         // the specified host.
-        public TcpClient(string hostname!!, int port)
+        public TcpClient(string hostname, int port)
         {
+            ArgumentNullException.ThrowIfNull(hostname);
+
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, hostname);
             if (!TcpValidationHelpers.ValidatePortNumber(port))
             {

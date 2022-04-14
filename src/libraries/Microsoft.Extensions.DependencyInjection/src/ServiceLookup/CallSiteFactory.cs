@@ -529,8 +529,13 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             _callSiteCache[new ServiceCacheKey(type, DefaultSlot)] = serviceCallSite;
         }
 
-        public bool IsService(Type serviceType!!)
+        public bool IsService(Type serviceType)
         {
+            if (serviceType is null)
+            {
+                throw new ArgumentNullException(nameof(serviceType));
+            }
+
             // Querying for an open generic should return false (they aren't resolvable)
             if (serviceType.IsGenericTypeDefinition)
             {

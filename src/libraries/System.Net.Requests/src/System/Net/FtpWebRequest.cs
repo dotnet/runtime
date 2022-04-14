@@ -683,8 +683,10 @@ namespace System.Net
         /// <summary>
         /// <para>Returns result of query for the Response of an FTP request [async version]</para>
         /// </summary>
-        public override WebResponse EndGetResponse(IAsyncResult asyncResult!!)
+        public override WebResponse EndGetResponse(IAsyncResult asyncResult)
         {
+            ArgumentNullException.ThrowIfNull(asyncResult);
+
             try
             {
                 // parameter validation
@@ -803,8 +805,10 @@ namespace System.Net
             return asyncResult;
         }
 
-        public override Stream EndGetRequestStream(IAsyncResult asyncResult!!)
+        public override Stream EndGetRequestStream(IAsyncResult asyncResult)
         {
+            ArgumentNullException.ThrowIfNull(asyncResult);
+
             Stream? requestStream;
             try
             {

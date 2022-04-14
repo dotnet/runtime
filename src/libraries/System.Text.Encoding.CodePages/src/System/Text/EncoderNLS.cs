@@ -79,9 +79,12 @@ namespace System.Text
                 m_fallbackBuffer.Reset();
         }
 
-        public override unsafe int GetByteCount(char[] chars!!, int index, int count, bool flush)
+        public override unsafe int GetByteCount(char[] chars, int index, int count, bool flush)
         {
             // Validate input parameters
+            if (chars is null)
+                throw new ArgumentNullException(nameof(chars));
+
             if (index < 0 || count < 0)
                 throw new ArgumentOutOfRangeException((index < 0 ? nameof(index) : nameof(count)), SR.ArgumentOutOfRange_NeedNonNegNum);
 
@@ -101,9 +104,12 @@ namespace System.Text
             return result;
         }
 
-        public override unsafe int GetByteCount(char* chars!!, int count, bool flush)
+        public override unsafe int GetByteCount(char* chars, int count, bool flush)
         {
             // Validate input parameters
+            if (chars is null)
+                throw new ArgumentNullException(nameof(chars));
+
             if (count < 0)
                 throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
 
@@ -112,10 +118,16 @@ namespace System.Text
             return m_encoding.GetByteCount(chars, count, this);
         }
 
-        public override unsafe int GetBytes(char[] chars!!, int charIndex, int charCount,
-                                            byte[] bytes!!, int byteIndex, bool flush)
+        public override unsafe int GetBytes(char[] chars, int charIndex, int charCount,
+                                            byte[] bytes, int byteIndex, bool flush)
         {
             // Validate parameters
+            if (chars is null)
+                throw new ArgumentNullException(nameof(chars));
+
+            if (bytes is null)
+                throw new ArgumentNullException(nameof(bytes));
+
             if (charIndex < 0 || charCount < 0)
                 throw new ArgumentOutOfRangeException((charIndex < 0 ? nameof(charIndex) : nameof(charCount)), SR.ArgumentOutOfRange_NeedNonNegNum);
 
@@ -139,9 +151,15 @@ namespace System.Text
                 return GetBytes(pChars + charIndex, charCount, pBytes + byteIndex, byteCount, flush);
         }
 
-        public override unsafe int GetBytes(char* chars!!, int charCount, byte* bytes!!, int byteCount, bool flush)
+        public override unsafe int GetBytes(char* chars, int charCount, byte* bytes, int byteCount, bool flush)
         {
             // Validate parameters
+            if (chars is null)
+                throw new ArgumentNullException(nameof(chars));
+
+            if (bytes is null)
+                throw new ArgumentNullException(nameof(bytes));
+
             if (byteCount < 0 || charCount < 0)
                 throw new ArgumentOutOfRangeException((byteCount < 0 ? nameof(byteCount) : nameof(charCount)), SR.ArgumentOutOfRange_NeedNonNegNum);
 
@@ -152,11 +170,17 @@ namespace System.Text
 
         // This method is used when your output buffer might not be large enough for the entire result.
         // Just call the pointer version.  (This gets bytes)
-        public override unsafe void Convert(char[] chars!!, int charIndex, int charCount,
-                                            byte[] bytes!!, int byteIndex, int byteCount, bool flush,
+        public override unsafe void Convert(char[] chars, int charIndex, int charCount,
+                                            byte[] bytes, int byteIndex, int byteCount, bool flush,
                                             out int charsUsed, out int bytesUsed, out bool completed)
         {
             // Validate parameters
+            if (chars is null)
+                throw new ArgumentNullException(nameof(chars));
+
+            if (bytes is null)
+                throw new ArgumentNullException(nameof(bytes));
+
             if (charIndex < 0 || charCount < 0)
                 throw new ArgumentOutOfRangeException((charIndex < 0 ? nameof(charIndex) : nameof(charCount)), SR.ArgumentOutOfRange_NeedNonNegNum);
 
@@ -188,11 +212,17 @@ namespace System.Text
 
         // This is the version that uses pointers.  We call the base encoding worker function
         // after setting our appropriate internal variables.  This is getting bytes
-        public override unsafe void Convert(char* chars!!, int charCount,
-                                            byte* bytes!!, int byteCount, bool flush,
+        public override unsafe void Convert(char* chars, int charCount,
+                                            byte* bytes, int byteCount, bool flush,
                                             out int charsUsed, out int bytesUsed, out bool completed)
         {
             // Validate input parameters
+            if (chars is null)
+                throw new ArgumentNullException(nameof(chars));
+
+            if (bytes is null)
+                throw new ArgumentNullException(nameof(bytes));
+
             if (charCount < 0 || byteCount < 0)
                 throw new ArgumentOutOfRangeException((charCount < 0 ? nameof(charCount) : nameof(byteCount)), SR.ArgumentOutOfRange_NeedNonNegNum);
 

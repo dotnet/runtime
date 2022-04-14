@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
@@ -21,16 +21,43 @@ namespace System.Security.Cryptography.Cose
             : base(protectedHeader, unprotectedHeader, content, signature, protectedHeaderAsBstr) { }
 
         [UnsupportedOSPlatform("browser")]
-        public static byte[] Sign(byte[] content!!, AsymmetricAlgorithm key!!, HashAlgorithmName hashAlgorithm, CoseHeaderMap? protectedHeaders = null, CoseHeaderMap? unprotectedHeaders = null, bool isDetached = false)
-            => SignCore(content.AsSpan(), null, key, hashAlgorithm, GetKeyType(key), protectedHeaders, unprotectedHeaders, isDetached);
-
-        [UnsupportedOSPlatform("browser")]
-        public static byte[] Sign(ReadOnlySpan<byte> content, AsymmetricAlgorithm key!!, HashAlgorithmName hashAlgorithm, CoseHeaderMap? protectedHeaders = null, CoseHeaderMap? unprotectedHeaders = null, bool isDetached = false)
-            => SignCore(content, null, key, hashAlgorithm, GetKeyType(key), protectedHeaders, unprotectedHeaders, isDetached);
-
-        [UnsupportedOSPlatform("browser")]
-        public static byte[] Sign(Stream detachedContent!!, AsymmetricAlgorithm key!!, HashAlgorithmName hashAlgorithm, CoseHeaderMap? protectedHeaders = null, CoseHeaderMap? unprotectedHeaders = null)
+        public static byte[] Sign(byte[] content, AsymmetricAlgorithm key, HashAlgorithmName hashAlgorithm, CoseHeaderMap? protectedHeaders = null, CoseHeaderMap? unprotectedHeaders = null, bool isDetached = false)
         {
+            if (content is null)
+            {
+                throw new ArgumentNullException(nameof(content));
+            }
+            if (key is null)
+            {
+                throw new ArgumentNullException(nameof(key));
+            }
+
+            return SignCore(content.AsSpan(), null, key, hashAlgorithm, GetKeyType(key), protectedHeaders, unprotectedHeaders, isDetached);
+        }
+
+        [UnsupportedOSPlatform("browser")]
+        public static byte[] Sign(ReadOnlySpan<byte> content, AsymmetricAlgorithm key, HashAlgorithmName hashAlgorithm, CoseHeaderMap? protectedHeaders = null, CoseHeaderMap? unprotectedHeaders = null, bool isDetached = false)
+        {
+            if (key is null)
+            {
+                throw new ArgumentNullException(nameof(key));
+            }
+
+            return SignCore(content, null, key, hashAlgorithm, GetKeyType(key), protectedHeaders, unprotectedHeaders, isDetached);
+        }
+
+        [UnsupportedOSPlatform("browser")]
+        public static byte[] Sign(Stream detachedContent, AsymmetricAlgorithm key, HashAlgorithmName hashAlgorithm, CoseHeaderMap? protectedHeaders = null, CoseHeaderMap? unprotectedHeaders = null)
+        {
+            if (detachedContent is null)
+            {
+                throw new ArgumentNullException(nameof(detachedContent));
+            }
+            if (key is null)
+            {
+                throw new ArgumentNullException(nameof(key));
+            }
+
             if (!detachedContent.CanRead)
             {
                 throw new ArgumentException(SR.Sign1ArgumentStreamNotReadable, nameof(detachedContent));
@@ -80,13 +107,22 @@ namespace System.Security.Cryptography.Cose
 
         [UnsupportedOSPlatform("browser")]
         public static Task<byte[]> SignAsync(
-            Stream detachedContent!!,
-            AsymmetricAlgorithm key!!,
+            Stream detachedContent,
+            AsymmetricAlgorithm key,
             HashAlgorithmName hashAlgorithm,
             CoseHeaderMap? protectedHeaders = null,
             CoseHeaderMap? unprotectedHeaders = null,
             CancellationToken cancellationToken = default)
         {
+            if (detachedContent is null)
+            {
+                throw new ArgumentNullException(nameof(detachedContent));
+            }
+            if (key is null)
+            {
+                throw new ArgumentNullException(nameof(key));
+            }
+
             if (!detachedContent.CanRead)
             {
                 throw new ArgumentException(SR.Sign1ArgumentStreamNotReadable, nameof(detachedContent));
@@ -127,13 +163,18 @@ namespace System.Security.Cryptography.Cose
         public static bool TrySign(
             ReadOnlySpan<byte> content,
             Span<byte> destination,
-            AsymmetricAlgorithm key!!,
+            AsymmetricAlgorithm key,
             HashAlgorithmName hashAlgorithm,
             out int bytesWritten,
             CoseHeaderMap? protectedHeaders = null,
             CoseHeaderMap? unprotectedHeaders = null,
             bool isDetached = false)
         {
+            if (key is null)
+            {
+                throw new ArgumentNullException(nameof(key));
+            }
+
             KeyType keyType = GetKeyType(key);
             ValidateBeforeSign(protectedHeaders, unprotectedHeaders, keyType, hashAlgorithm, out int? algHeaderValueToSlip);
 
@@ -277,8 +318,13 @@ namespace System.Security.Cryptography.Cose
         }
 
         [UnsupportedOSPlatform("browser")]
-        public bool Verify(AsymmetricAlgorithm key!!)
+        public bool Verify(AsymmetricAlgorithm key)
         {
+            if (key is null)
+            {
+                throw new ArgumentNullException(nameof(key));
+            }
+
             if (_content == null)
             {
                 throw new CryptographicException(SR.Sign1VerifyContentWasDetached);
@@ -288,8 +334,17 @@ namespace System.Security.Cryptography.Cose
         }
 
         [UnsupportedOSPlatform("browser")]
-        public bool Verify(AsymmetricAlgorithm key!!, byte[] content!!)
+        public bool Verify(AsymmetricAlgorithm key, byte[] content)
         {
+            if (key is null)
+            {
+                throw new ArgumentNullException(nameof(key));
+            }
+            if (content is null)
+            {
+                throw new ArgumentNullException(nameof(content));
+            }
+
             if (_content != null)
             {
                 throw new CryptographicException(SR.Sign1VerifyContentWasEmbedded);
@@ -299,8 +354,13 @@ namespace System.Security.Cryptography.Cose
         }
 
         [UnsupportedOSPlatform("browser")]
-        public bool Verify(AsymmetricAlgorithm key!!, ReadOnlySpan<byte> content)
+        public bool Verify(AsymmetricAlgorithm key, ReadOnlySpan<byte> content)
         {
+            if (key is null)
+            {
+                throw new ArgumentNullException(nameof(key));
+            }
+
             if (_content != null)
             {
                 throw new CryptographicException(SR.Sign1VerifyContentWasEmbedded);
@@ -310,8 +370,17 @@ namespace System.Security.Cryptography.Cose
         }
 
         [UnsupportedOSPlatform("browser")]
-        public bool Verify(AsymmetricAlgorithm key!!, Stream detachedContent!!)
+        public bool Verify(AsymmetricAlgorithm key, Stream detachedContent)
         {
+            if (key is null)
+            {
+                throw new ArgumentNullException(nameof(key));
+            }
+            if (detachedContent is null)
+            {
+                throw new ArgumentNullException(nameof(detachedContent));
+            }
+
             if (_content != null)
             {
                 throw new CryptographicException(SR.Sign1VerifyContentWasEmbedded);
@@ -372,8 +441,17 @@ namespace System.Security.Cryptography.Cose
         }
 
         [UnsupportedOSPlatform("browser")]
-        public Task<bool> VerifyAsync(AsymmetricAlgorithm key!!, Stream detachedContent!!, CancellationToken cancellationToken = default)
+        public Task<bool> VerifyAsync(AsymmetricAlgorithm key, Stream detachedContent, CancellationToken cancellationToken = default)
         {
+            if (key is null)
+            {
+                throw new ArgumentNullException(nameof(key));
+            }
+            if (detachedContent is null)
+            {
+                throw new ArgumentNullException(nameof(detachedContent));
+            }
+
             if (_content != null)
             {
                 throw new CryptographicException(SR.Sign1VerifyContentWasEmbedded);

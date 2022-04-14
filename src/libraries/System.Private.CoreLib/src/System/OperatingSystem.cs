@@ -87,8 +87,10 @@ namespace System
         /// Indicates whether the current application is running on the specified platform.
         /// </summary>
         /// <param name="platform">Case-insensitive platform name. Examples: Browser, Linux, FreeBSD, Android, iOS, macOS, tvOS, watchOS, Windows.</param>
-        public static bool IsOSPlatform(string platform!!)
+        public static bool IsOSPlatform(string platform)
         {
+            ArgumentNullException.ThrowIfNull(platform);
+
 #if TARGET_BROWSER
             return platform.Equals("BROWSER", StringComparison.OrdinalIgnoreCase);
 #elif TARGET_WINDOWS

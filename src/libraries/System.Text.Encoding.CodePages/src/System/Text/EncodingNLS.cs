@@ -45,8 +45,11 @@ namespace System.Text
         // All of our public Encodings that don't use EncodingNLS must have this (including EncodingNLS)
         // So if you fix this, fix the others.
         // parent method is safe
-        public override unsafe int GetByteCount(char[] chars!!, int index, int count)
+        public override unsafe int GetByteCount(char[] chars, int index, int count)
         {
+            if (chars is null)
+                throw new ArgumentNullException(nameof(chars));
+
             // Validate input parameters
             if (index < 0 || count < 0)
                 throw new ArgumentOutOfRangeException((index < 0 ? nameof(index) : nameof(count)), SR.ArgumentOutOfRange_NeedNonNegNum);
@@ -66,16 +69,22 @@ namespace System.Text
         // All of our public Encodings that don't use EncodingNLS must have this (including EncodingNLS)
         // So if you fix this, fix the others.
         // parent method is safe
-        public override unsafe int GetByteCount(string s!!)
+        public override unsafe int GetByteCount(string s)
         {
+            if (s is null)
+                throw new ArgumentNullException(nameof(s));
+
             fixed (char* pChars = s)
                 return GetByteCount(pChars, s.Length, null);
         }
 
         // All of our public Encodings that don't use EncodingNLS must have this (including EncodingNLS)
         // So if you fix this, fix the others.
-        public override unsafe int GetByteCount(char* chars!!, int count)
+        public override unsafe int GetByteCount(char* chars, int count)
         {
+            if (chars is null)
+                throw new ArgumentNullException(nameof(chars));
+
             // Validate Parameters
             if (count < 0)
                 throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
@@ -88,9 +97,15 @@ namespace System.Text
         // All of our public Encodings that don't use EncodingNLS must have this (including EncodingNLS)
         // So if you fix this, fix the others.
 
-        public override unsafe int GetBytes(string s!!, int charIndex, int charCount,
-                                            byte[] bytes!!, int byteIndex)
+        public override unsafe int GetBytes(string s, int charIndex, int charCount,
+                                            byte[] bytes, int byteIndex)
         {
+            if (s is null)
+                throw new ArgumentNullException(nameof(s));
+
+            if (bytes is null)
+                throw new ArgumentNullException(nameof(bytes));
+
             if (charIndex < 0 || charCount < 0)
                 throw new ArgumentOutOfRangeException((charIndex < 0 ? nameof(charIndex) : nameof(charCount)), SR.ArgumentOutOfRange_NeedNonNegNum);
 
@@ -124,9 +139,15 @@ namespace System.Text
         // All of our public Encodings that don't use EncodingNLS must have this (including EncodingNLS)
         // So if you fix this, fix the others.
         // parent method is safe
-        public override unsafe int GetBytes(char[] chars!!, int charIndex, int charCount,
-                                            byte[] bytes!!, int byteIndex)
+        public override unsafe int GetBytes(char[] chars, int charIndex, int charCount,
+                                            byte[] bytes, int byteIndex)
         {
+            if (chars is null)
+                throw new ArgumentNullException(nameof(chars));
+
+            if (bytes is null)
+                throw new ArgumentNullException(nameof(bytes));
+
             // Validate parameters
             if (charIndex < 0 || charCount < 0)
                 throw new ArgumentOutOfRangeException((charIndex < 0 ? nameof(charIndex) : nameof(charCount)), SR.ArgumentOutOfRange_NeedNonNegNum);
@@ -157,8 +178,14 @@ namespace System.Text
 
         // All of our public Encodings that don't use EncodingNLS must have this (including EncodingNLS)
         // So if you fix this, fix the others.
-        public override unsafe int GetBytes(char* chars!!, int charCount, byte* bytes!!, int byteCount)
+        public override unsafe int GetBytes(char* chars, int charCount, byte* bytes, int byteCount)
         {
+            if (chars is null)
+                throw new ArgumentNullException(nameof(chars));
+
+            if (bytes is null)
+                throw new ArgumentNullException(nameof(bytes));
+
             // Validate Parameters
             if (charCount < 0 || byteCount < 0)
                 throw new ArgumentOutOfRangeException((charCount < 0 ? nameof(charCount) : nameof(byteCount)), SR.ArgumentOutOfRange_NeedNonNegNum);
@@ -172,8 +199,11 @@ namespace System.Text
         // All of our public Encodings that don't use EncodingNLS must have this (including EncodingNLS)
         // So if you fix this, fix the others.
         // parent method is safe
-        public override unsafe int GetCharCount(byte[] bytes!!, int index, int count)
+        public override unsafe int GetCharCount(byte[] bytes, int index, int count)
         {
+            if (bytes is null)
+                throw new ArgumentNullException(nameof(bytes));
+
             // Validate Parameters
             if (index < 0 || count < 0)
                 throw new ArgumentOutOfRangeException((index < 0 ? nameof(index) : nameof(count)), SR.ArgumentOutOfRange_NeedNonNegNum);
@@ -192,8 +222,11 @@ namespace System.Text
 
         // All of our public Encodings that don't use EncodingNLS must have this (including EncodingNLS)
         // So if you fix this, fix the others.
-        public override unsafe int GetCharCount(byte* bytes!!, int count)
+        public override unsafe int GetCharCount(byte* bytes, int count)
         {
+            if (bytes is null)
+                throw new ArgumentNullException(nameof(bytes));
+
             // Validate Parameters
             if (count < 0)
                 throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
@@ -204,9 +237,15 @@ namespace System.Text
         // All of our public Encodings that don't use EncodingNLS must have this (including EncodingNLS)
         // So if you fix this, fix the others.
         // parent method is safe
-        public override unsafe int GetChars(byte[] bytes!!, int byteIndex, int byteCount,
-                                            char[] chars!!, int charIndex)
+        public override unsafe int GetChars(byte[] bytes, int byteIndex, int byteCount,
+                                            char[] chars, int charIndex)
         {
+            if (bytes is null)
+                throw new ArgumentNullException(nameof(bytes));
+
+            if (chars is null)
+                throw new ArgumentNullException(nameof(chars));
+
             // Validate Parameters
             if (byteIndex < 0 || byteCount < 0)
                 throw new ArgumentOutOfRangeException((byteIndex < 0 ? nameof(byteIndex) : nameof(byteCount)), SR.ArgumentOutOfRange_NeedNonNegNum);
@@ -237,8 +276,14 @@ namespace System.Text
 
         // All of our public Encodings that don't use EncodingNLS must have this (including EncodingNLS)
         // So if you fix this, fix the others.
-        public unsafe override int GetChars(byte* bytes!!, int byteCount, char* chars!!, int charCount)
+        public unsafe override int GetChars(byte* bytes, int byteCount, char* chars, int charCount)
         {
+            if (bytes is null)
+                throw new ArgumentNullException(nameof(bytes));
+
+            if (chars is null)
+                throw new ArgumentNullException(nameof(chars));
+
             // Validate Parameters
             if (charCount < 0 || byteCount < 0)
                 throw new ArgumentOutOfRangeException((charCount < 0 ? nameof(charCount) : nameof(byteCount)), SR.ArgumentOutOfRange_NeedNonNegNum);
@@ -252,8 +297,11 @@ namespace System.Text
         // All of our public Encodings that don't use EncodingNLS must have this (including EncodingNLS)
         // So if you fix this, fix the others.
         // parent method is safe
-        public override unsafe string GetString(byte[] bytes!!, int index, int count)
+        public override unsafe string GetString(byte[] bytes, int index, int count)
         {
+            if (bytes is null)
+                throw new ArgumentNullException(nameof(bytes));
+
             // Validate Parameters
             if (index < 0 || count < 0)
                 throw new ArgumentOutOfRangeException((index < 0 ? nameof(index) : nameof(count)), SR.ArgumentOutOfRange_NeedNonNegNum);

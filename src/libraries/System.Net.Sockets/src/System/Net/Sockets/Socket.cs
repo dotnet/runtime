@@ -232,9 +232,17 @@ namespace System.Net.Sockets
             }
         }
 
-        private static SafeSocketHandle ValidateHandle(SafeSocketHandle handle!!) =>
-            handle.IsInvalid ? throw new ArgumentException(SR.Arg_InvalidHandle, nameof(handle)) :
-            handle;
+        private static SafeSocketHandle ValidateHandle(SafeSocketHandle handle)
+        {
+            ArgumentNullException.ThrowIfNull(handle);
+
+            if (handle.IsInvalid)
+            {
+                throw new ArgumentException(SR.Arg_InvalidHandle, nameof(handle));
+            }
+
+            return handle;
+        }
 
         //
         // Properties
@@ -2736,8 +2744,10 @@ namespace System.Net.Sockets
             return pending;
         }
 
-        public static bool ConnectAsync(SocketType socketType, ProtocolType protocolType, SocketAsyncEventArgs e!!)
+        public static bool ConnectAsync(SocketType socketType, ProtocolType protocolType, SocketAsyncEventArgs e)
         {
+            ArgumentNullException.ThrowIfNull(e);
+
             if (e.HasMultipleBuffers)
             {
                 throw new ArgumentException(SR.net_multibuffernotsupported, nameof(e));
@@ -2778,8 +2788,10 @@ namespace System.Net.Sockets
         /// <summary>Binds an unbound socket to "any" if necessary to support a connect.</summary>
         partial void WildcardBindForConnectIfNecessary(AddressFamily addressFamily);
 
-        public static void CancelConnectAsync(SocketAsyncEventArgs e!!)
+        public static void CancelConnectAsync(SocketAsyncEventArgs e)
         {
+            ArgumentNullException.ThrowIfNull(e);
+
             e.CancelConnectAsync();
         }
 

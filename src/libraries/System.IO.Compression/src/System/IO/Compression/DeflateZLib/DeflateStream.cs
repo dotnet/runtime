@@ -49,8 +49,10 @@ namespace System.IO.Compression
         /// Internal constructor to check stream validity and call the correct initialization function depending on
         /// the value of the CompressionMode given.
         /// </summary>
-        internal DeflateStream(Stream stream!!, CompressionMode mode, bool leaveOpen, int windowBits, long uncompressedSize = -1)
+        internal DeflateStream(Stream stream, CompressionMode mode, bool leaveOpen, int windowBits, long uncompressedSize = -1)
         {
+            ArgumentNullException.ThrowIfNull(stream);
+
             switch (mode)
             {
                 case CompressionMode.Decompress:
@@ -75,8 +77,10 @@ namespace System.IO.Compression
         /// <summary>
         /// Internal constructor to specify the compressionlevel as well as the windowbits
         /// </summary>
-        internal DeflateStream(Stream stream!!, CompressionLevel compressionLevel, bool leaveOpen, int windowBits)
+        internal DeflateStream(Stream stream, CompressionLevel compressionLevel, bool leaveOpen, int windowBits)
         {
+            ArgumentNullException.ThrowIfNull(stream);
+
             InitializeDeflater(stream, leaveOpen, windowBits, compressionLevel);
         }
 
