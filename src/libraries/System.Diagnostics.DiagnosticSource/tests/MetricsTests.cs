@@ -294,7 +294,7 @@ namespace System.Diagnostics.Metrics.Tests
                 InstrumentMeasurementAggregationValidation(counter7, (value, tags) => { counter7.Add(value, tags); } );
 
                 UpDownCounter<uint> upDownCounter7 = meter.CreateUpDownCounter<uint>("uintUpDownCounter");
-                InstrumentMeasurementAggregationValidation(upDownCounter7, (value, tags) => { upDownCounter7.Add(value, tags); }, true);
+                InstrumentMeasurementAggregationValidation(upDownCounter7, (value, tags) => { upDownCounter7.Add(value, tags); }, allowNegative: false);
 
                 Histogram<byte> histogram = meter.CreateHistogram<byte>("byteHistogram");
                 InstrumentMeasurementAggregationValidation(histogram, (value, tags) => { histogram.Record(value, tags); } );
