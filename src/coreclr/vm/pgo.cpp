@@ -102,6 +102,7 @@ class SchemaWriterFunctor
 public:
     StackSArray<uint8_t> byteData;
     StackSArray<TypeHandle> typeHandlesEncountered;
+    StackSArray<MethodDesc*> methodsEncountered;
 private:
     const PgoManager::HeaderList *pgoData;
     SArrayByteWriterFunctor byteWriter;
@@ -119,7 +120,7 @@ public:
         if (!writer.AppendSchema(schema))
             return false;
 
-        auto lambda = [&](int64_t thWritten)
+        auto thProcessor = [&](intptr_t thWritten)
         {
             if (thWritten != 0)
             {
@@ -131,7 +132,16 @@ public:
             }
         };
 
-        if (!writer.AppendDataFromLastSchema(lambda))
+        auto mhProcessor = [&](intptr_t mhWritten)
+        {
+            if (mhWritten == 0 || ICorJitInfo::IsUnknownHandle(mhWritten))
+                return;
+
+            MethodDesc* pMD = reinterpret_cast<MethodDesc*>(mhWritten);
+            methodsEncountered.Append(pMD);
+        };
+
+        if (!writer.AppendDataFromLastSchema(thProcessor, mhProcessor))
         {
             return false;
         }
@@ -151,7 +161,11 @@ void PgoManager::WritePgoData()
             {
                 if (!schemaWriter.writer.Finish())
                     return false;
-                ETW::MethodLog::LogMethodInstrumentationData(pgoData->header.method, schemaWriter.byteData.GetCount(), schemaWriter.byteData.GetElements(), schemaWriter.typeHandlesEncountered.GetElements(), schemaWriter.typeHandlesEncountered.GetCount());
+                ETW::MethodLog::LogMethodInstrumentationData(
+                    pgoData->header.method,
+                    schemaWriter.byteData.GetCount(), schemaWriter.byteData.GetElements(),
+                    schemaWriter.typeHandlesEncountered.GetElements(), schemaWriter.typeHandlesEncountered.GetCount(),
+                    schemaWriter.methodsEncountered.GetElements(), schemaWriter.methodsEncountered.GetCount());
             }
 
             return true;
