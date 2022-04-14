@@ -21,7 +21,7 @@ namespace DebuggerTests;
 public class DebuggerTestFirefox : DebuggerTestBase
 {
     protected new static bool RunningOnChrome { get { return false; } }
-    
+
     internal FirefoxInspectorClient client;
     public DebuggerTestFirefox(string driver = "debugger-driver.html"):base(driver)
     {
@@ -60,27 +60,6 @@ public class DebuggerTestFirefox : DebuggerTestBase
             //"/usr/bin/chromium-browser",
         };
         return ret;
-    }
-
-    internal override string InitParms()
-    {
-        string baseDir = Path.GetDirectoryName(GetBrowserPath());
-        if (File.Exists("/tmp/profile/prefs.js"))
-            return $"-profile \"/tmp/profile\" -headless -private -start-debugger-server ";
-        if (File.Exists(Path.Combine(baseDir, "..", "profile", "prefs.js")))
-            return $"-profile \"{Path.Combine(baseDir, "..", "profile")}\" -headless -private -start-debugger-server ";
-        return $"-headless -private -start-debugger-server ";
-    }
-
-    internal override string UrlToRemoteDebugging()
-    {
-        return "http://localhost:6000";
-    }
-
-    internal override async Task<string> ExtractConnUrl (string str, ILogger<TestHarnessProxy> logger)
-    {
-        await Task.CompletedTask;
-        return UrlToRemoteDebugging();
     }
 
     public override async Task InitializeAsync()
@@ -153,11 +132,11 @@ public class DebuggerTestFirefox : DebuggerTestBase
 
     internal override async Task<Result> SetBreakpoint(string url_key, int line, int column, bool expect_ok = true, bool use_regex = false, string condition = "")
     {
-        var bp1_req = JObject.FromObject(new { 
+        var bp1_req = JObject.FromObject(new {
                 type = "setBreakpoint",
-                location = JObject.FromObject(new { 
+                location = JObject.FromObject(new {
                    line = line + 1,
-                   column, 
+                   column,
                    sourceUrl = dicFileToUrl[url_key]
                 }),
                 to = client.BreakpointActorId
@@ -178,7 +157,7 @@ public class DebuggerTestFirefox : DebuggerTestBase
                 text = expression,
                 options = new { eager = true, mapped = new { @await = true } }
             });
-        
+
         return await SendCommandAndCheck(
                     o,
                     "evaluateJSAsync", script_loc, line, column, function_name,
@@ -235,8 +214,8 @@ public class DebuggerTestFirefox : DebuggerTestBase
             });
             callFrames.Add(callFrame);
         }
-        return JObject.FromObject(new 
-                { 
+        return JObject.FromObject(new
+                {
                     callFrames,
                     reason = "other"
                 });
@@ -250,7 +229,7 @@ public class DebuggerTestFirefox : DebuggerTestBase
             case "Debugger.resume":
                 return await StepAndCheck(StepKind.Resume, script_loc, line, column, function_name, wait_for_event_fn, locals_fn);
             case "Debugger.stepInto":
-                return await StepAndCheck(StepKind.Into, script_loc, line, column, function_name, wait_for_event_fn, locals_fn);                
+                return await StepAndCheck(StepKind.Into, script_loc, line, column, function_name, wait_for_event_fn, locals_fn);
         }
         var res = await cli.SendCommand(method, args, token);
         if (!res.IsOk)
@@ -411,7 +390,7 @@ public class DebuggerTestFirefox : DebuggerTestBase
     Func<JObject, Task> wait_for_event_fn = null, Func<JToken, Task> locals_fn = null, int times = 1)
     {
         JObject resumeLimit = null;
-        
+
         if (kind != StepKind.Resume)
         {
             resumeLimit = JObject.FromObject(new
@@ -450,23 +429,23 @@ public class DebuggerTestFirefox : DebuggerTestBase
         var m_column = res.Value["result"]["value"]["column"].Value<int>();
 
 
-        var bp1_req = JObject.FromObject(new { 
+        var bp1_req = JObject.FromObject(new {
                 type = "setBreakpoint",
-                location = JObject.FromObject(new { 
+                location = JObject.FromObject(new {
                    line = m_line + lineOffset + 1,
-                   column = col, 
+                   column = col,
                    sourceUrl = m_url
                 }),
                 to = client.BreakpointActorId
             });
-        
+
         if (condition != "")
             bp1_req["options"] = JObject.FromObject(new { condition });
 
         var bp1_res = await cli.SendCommand("setBreakpoint", bp1_req, token);
         Assert.True(bp1_res.IsOk);
 
-        var arr = new JArray(JObject.FromObject(new { 
+        var arr = new JArray(JObject.FromObject(new {
                 lineNumber = m_line + lineOffset,
                 columnNumber = -1
             }));
@@ -506,7 +485,7 @@ public class DebuggerTestFirefox : DebuggerTestBase
 
         return (null, res);
     }
-    
+
     internal override bool SkipProperty(string propertyName)
     {
         if (propertyName == "isEnum")

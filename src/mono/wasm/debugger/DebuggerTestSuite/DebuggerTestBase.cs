@@ -68,7 +68,7 @@ namespace DebuggerTests
 
         public int Id { get; init; }
 
-        protected static string DebuggerTestAppPath
+        public static string DebuggerTestAppPath
         {
             get
             {
@@ -162,59 +162,9 @@ namespace DebuggerTests
             }
         }
 
-        internal virtual string InitParms()
-        {
-            var str = "--headless --disable-gpu --lang=en-US --incognito --remote-debugging-port=";
-            if (File.Exists("/.dockerenv"))
-            {
-                Console.WriteLine ("Detected a container, disabling sandboxing for debugger tests.");
-                str = "--no-sandbox " + str;
-            }
-            return str;
-        }
-
         internal virtual string UrlToRemoteDebugging()
         {
             return "http://localhost:0";
-        }
-
-        internal virtual async Task<string> ExtractConnUrl (string str, ILogger<TestHarnessProxy> logger)
-        {
-            var client = new HttpClient();
-            var start = DateTime.Now;
-            JArray obj = null;
-
-            while (true)
-            {
-                // Unfortunately it does look like we have to wait
-                // for a bit after getting the response but before
-                // making the list request.  We get an empty result
-                // if we make the request too soon.
-                await Task.Delay(100);
-
-                var res = await client.GetStringAsync(new Uri(new Uri(str), "/json/list"));
-                logger.LogTrace("res is {0}", res);
-
-                if (!String.IsNullOrEmpty(res))
-                {
-                    // Sometimes we seem to get an empty array `[ ]`
-                    obj = JArray.Parse(res);
-                    if (obj != null && obj.Count >= 1)
-                        break;
-                }
-
-                var elapsed = DateTime.Now - start;
-                if (elapsed.Milliseconds > 5000)
-                {
-                    logger.LogError($"Unable to get DevTools /json/list response in {elapsed.Seconds} seconds, stopping");
-                    return null;
-                }
-            }
-
-            var wsURl = obj[0]?["webSocketDebuggerUrl"]?.Value<string>();
-            logger.LogTrace(">>> {0}", wsURl);
-
-            return wsURl;
         }
 
         static string s_testLogPath = null;
@@ -244,8 +194,8 @@ namespace DebuggerTests
             insp = new Inspector(Id);
             cli = insp.Client;
             scripts = SubscribeToScripts(insp);
-            Func<string, ILogger<TestHarnessProxy>, Task<string>> extractConnUrl = ExtractConnUrl;
-            startTask = TestHarnessProxy.Start(GetBrowserPath(), DebuggerTestAppPath, driver, InitParms(), UrlToRemoteDebugging(), extractConnUrl);
+            // Func<string, ILogger<TestHarnessProxy>, Task<string>> extractConnUrl = ExtractConnUrl;
+            startTask = TestHarnessProxy.Start(GetBrowserPath(), DebuggerTestAppPath, driver, UrlToRemoteDebugging());
         }
 
         public virtual async Task InitializeAsync()
@@ -486,7 +436,7 @@ namespace DebuggerTests
             CheckNumber(members, "Minute", exp_dt.Minute);
             CheckNumber(members, "Second", exp_dt.Second);
         }
-        
+
         internal virtual async Task CheckDateTimeGetter(JToken value, DateTime expected, string label = "")
         {
             var res = await InvokeGetter(JObject.FromObject(new { value = value }), "Date");
@@ -1285,7 +1235,7 @@ namespace DebuggerTests
         internal static JObject TBool(bool value) => JObject.FromObject(new { type = "boolean", value = @value, description = @value ? "true" : "false" });
 
         internal static JObject TSymbol(string value) => JObject.FromObject(new { type = "symbol", value = @value, description = @value });
-        
+
         internal static JObject TChar(char value) => JObject.FromObject(new { type = "symbol", value = @value, description = $"{(int)value} '{@value}'" });
 
         /*

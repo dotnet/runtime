@@ -4,9 +4,6 @@
 using System;
 using System.Diagnostics;
 using System.IO;
-using System.Net.Http;
-using System.Net.WebSockets;
-using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
@@ -20,12 +17,12 @@ using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json.Linq;
+using DebuggerTests;
 
 namespace Microsoft.WebAssembly.Diagnostics
 {
     public class TestHarnessStartup
     {
-        static Regex parseConnection = new Regex(@"listening on (ws?s://[^\s]*)");
         public TestHarnessStartup(IConfiguration configuration)
         {
             Configuration = configuration;
@@ -77,110 +74,6 @@ namespace Microsoft.WebAssembly.Diagnostics
             catch (Exception e) { Logger.LogError(e, "webserver: SendNodeList failed"); }
         }
 
-        public async Task LaunchAndServe(ProcessStartInfo psi,
-                                         HttpContext context,
-                                         Func<string, ILogger<TestHarnessProxy>, Task<string>> extract_conn_url,
-                                         Uri devToolsUrl,
-                                         string test_id,
-                                         string message_prefix,
-                                         int get_con_url_timeout_ms=20000)
-        {
-
-            if (!context.WebSockets.IsWebSocketRequest)
-            {
-                context.Response.StatusCode = 400;
-                return;
-            }
-
-            var tcs = new TaskCompletionSource<string>();
-            WebSocket ideSocket = null;
-
-            var proc = Process.Start(psi);
-            await Task.Delay(1000);
-            try
-            {
-                proc.ErrorDataReceived += (sender, e) =>
-                {
-                    var str = e.Data;
-                    Logger.LogTrace($"{message_prefix} browser-stderr: {str}");
-
-                    if (tcs.Task.IsCompleted)
-                        return;
-
-                    if (!string.IsNullOrEmpty(str))
-                    {
-                        //for running debugger tests on firefox
-                        if (str == "[GFX1-]: RenderCompositorSWGL failed mapping default framebuffer, no dt")
-                            tcs.TrySetResult("6000");
-                        var match = parseConnection.Match(str);
-                        if (match.Success)
-                        {
-                            tcs.TrySetResult(match.Groups[1].Captures[0].Value);
-                        }
-                    }
-                };
-
-                proc.OutputDataReceived += (sender, e) =>
-                {
-                    Logger.LogTrace($"{message_prefix} browser-stdout: {e.Data}");
-                };
-
-                proc.BeginErrorReadLine();
-                proc.BeginOutputReadLine();
-                string line;
-                if (await Task.WhenAny(tcs.Task, Task.Delay(10000)) != tcs.Task)
-                {
-                    if (devToolsUrl.Port != 0)
-                    {
-                        tcs.TrySetResult(devToolsUrl.ToString());
-                    }
-                    else
-                    {
-                        Logger.LogError($"{message_prefix} Timed out after {get_con_url_timeout_ms/1000}s waiting for a connection string from {psi.FileName}");
-                        return;
-                    }
-                }
-                line = await tcs.Task;
-                var con_str = extract_conn_url != null ? await extract_conn_url(line, Logger) : line;
-
-                Logger.LogInformation($"{message_prefix} launching proxy for {con_str}");
-                string logFilePath = Path.Combine(DebuggerTests.DebuggerTestBase.TestLogPath, $"{test_id}-proxy.log");
-                File.Delete(logFilePath);
-
-                var proxyLoggerFactory = LoggerFactory.Create(
-                    builder => builder
-                        .AddFile(logFilePath, minimumLevel: LogLevel.Debug)
-                        .AddFilter(null, LogLevel.Trace));
-
-#if RUN_IN_CHROME
-                var proxy = new DebuggerProxy(proxyLoggerFactory, null, loggerId: test_id);
-                var browserUri = new Uri(con_str);
-                ideSocket = await context.WebSockets.AcceptWebSocketAsync().ConfigureAwait(false);
-
-                await proxy.Run(browserUri, ideSocket).ConfigureAwait(false);
-#else
-                ideSocket = await context.WebSockets.AcceptWebSocketAsync();
-                var proxyFirefox = new FirefoxProxyServer(proxyLoggerFactory, 6000);
-                await proxyFirefox.RunForTests(6002, ideSocket);
-#endif
-            }
-            catch (Exception e)
-            {
-                Logger.LogDebug($"{message_prefix} got exception {e}");
-                ideSocket?.Abort();
-                ideSocket?.Dispose();
-                throw;
-            }
-            finally
-            {
-                proc.CancelErrorRead();
-                proc.CancelOutputRead();
-                proc.Kill();
-                proc.WaitForExit();
-                proc.Close();
-            }
-        }
-
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IOptionsMonitor<TestHarnessOptions> optionsAccessor, IWebHostEnvironment env, ILogger<TestHarnessProxy> logger, ILoggerFactory loggerFactory)
         {
@@ -218,13 +111,19 @@ namespace Microsoft.WebAssembly.Diagnostics
                     Logger.LogInformation($"{message_prefix} New test request for test id {test_id}");
                     try
                     {
-                        var psi = new ProcessStartInfo();
-                        psi.Arguments = $"{options.BrowserParms}{devToolsUrl.Port} http://{TestHarnessProxy.Endpoint.Authority}/{options.PagePath}";
-                        psi.UseShellExecute = false;
-                        psi.FileName = options.BrowserPath;
-                        psi.RedirectStandardError = true;
-                        psi.RedirectStandardOutput = true;
-                        await LaunchAndServe(psi, context, options.ExtractConnUrl, devToolsUrl, test_id, message_prefix).ConfigureAwait(false);
+#if RUN_IN_CHROME
+                        BrowserBase browser = new ChromeBrowser(Logger);
+                        int port = options.DevToolsUrl.Port;
+#else
+                        BrowserBase browser = new FirefoxBrowser(Logger);
+                        int port = 6000;
+#endif
+                        await browser.Launch(context,
+                                             options.BrowserPath,
+                                             $"http://{TestHarnessProxy.Endpoint.Authority}/{options.PagePath}",
+                                             port,
+                                             test_id,
+                                             message_prefix);
                     }
                     catch (Exception ex)
                     {
@@ -255,7 +154,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                     router.MapGet("json/version", SendNodeVersion);
                     router.MapGet("launch-done-and-connect", async context =>
                     {
-                        await LaunchAndServe(psi, context, null, null, null, null);
+                        await Task.CompletedTask;
+                        // await LaunchAndServe(psi, context, null, null, null, null);
                     });
                 });
             }

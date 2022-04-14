@@ -107,6 +107,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         {
             ide = ideClient;
             browser = new TcpClient();
+            logger.LogDebug($"Run: Connecting to 127.0.0.1:{portBrowser}");
             await browser.ConnectAsync("127.0.0.1", portBrowser);
             queues.Add(new DevToolsQueueFirefox(this.ide));
             queues.Add(new DevToolsQueueFirefox(this.browser));
