@@ -2722,8 +2722,8 @@ mono_assembly_load_corlib ()
 		case MONO_IMAGE_MISSING_ASSEMBLYREF:
 			g_print ("Missing assembly reference in " MONO_ASSEMBLY_CORLIB_NAME ".dll\n");
 			break;
-		case MONO_IMAGE_OK:
-			/* to suppress compiler warning */
+		default:
+			g_assertf(0, "Unexpected status %d while loading " MONO_ASSEMBLY_CORLIB_NAME ".dll", status);
 			break;
 		}
 
