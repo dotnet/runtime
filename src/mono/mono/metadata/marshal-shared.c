@@ -115,8 +115,6 @@ mono_mb_emit_auto_layout_exception (MonoMethodBuilder *mb, MonoClass *klass)
 	mono_marshal_shared_mb_emit_exception_marshal_directive (mb, msg);
 }
 
-static gboolean cb_inited = FALSE;
-
 void
 emit_string_free_icall (MonoMethodBuilder *mb, MonoMarshalConv conv)
 {
