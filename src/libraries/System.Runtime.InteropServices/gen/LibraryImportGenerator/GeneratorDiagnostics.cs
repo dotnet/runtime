@@ -5,6 +5,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Diagnostics;
 
 namespace Microsoft.Interop
@@ -215,7 +216,8 @@ namespace Microsoft.Interop
         public void ReportMarshallingNotSupported(
             MethodSignatureDiagnosticLocations diagnosticLocations,
             TypePositionInfo info,
-            string? notSupportedDetails)
+            string? notSupportedDetails,
+            ImmutableDictionary<string, string> diagnosticProperties)
         {
             Location diagnosticLocation = Location.None;
             string elementName = string.Empty;
@@ -240,6 +242,7 @@ namespace Microsoft.Interop
                     _diagnostics.Add(
                         diagnosticLocation.CreateDiagnostic(
                             GeneratorDiagnostics.ReturnTypeNotSupportedWithDetails,
+                            diagnosticProperties,
                             notSupportedDetails!,
                             elementName));
                 }
@@ -248,6 +251,7 @@ namespace Microsoft.Interop
                     _diagnostics.Add(
                         diagnosticLocation.CreateDiagnostic(
                             GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails,
+                            diagnosticProperties,
                             notSupportedDetails!,
                             elementName));
                 }
@@ -262,6 +266,7 @@ namespace Microsoft.Interop
                     _diagnostics.Add(
                         diagnosticLocation.CreateDiagnostic(
                             GeneratorDiagnostics.ReturnConfigurationNotSupported,
+                            diagnosticProperties,
                             nameof(System.Runtime.InteropServices.MarshalAsAttribute),
                             elementName));
                 }
@@ -270,6 +275,7 @@ namespace Microsoft.Interop
                     _diagnostics.Add(
                         diagnosticLocation.CreateDiagnostic(
                             GeneratorDiagnostics.ParameterConfigurationNotSupported,
+                            diagnosticProperties,
                             nameof(System.Runtime.InteropServices.MarshalAsAttribute),
                             elementName));
                 }
@@ -282,6 +288,7 @@ namespace Microsoft.Interop
                     _diagnostics.Add(
                         diagnosticLocation.CreateDiagnostic(
                             GeneratorDiagnostics.ReturnTypeNotSupported,
+                            diagnosticProperties,
                             info.ManagedType.DiagnosticFormattedName,
                             elementName));
                 }
@@ -290,6 +297,7 @@ namespace Microsoft.Interop
                     _diagnostics.Add(
                         diagnosticLocation.CreateDiagnostic(
                             GeneratorDiagnostics.ParameterTypeNotSupported,
+                            diagnosticProperties,
                             info.ManagedType.DiagnosticFormattedName,
                             elementName));
                 }

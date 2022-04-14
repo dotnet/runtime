@@ -75,7 +75,7 @@ namespace Microsoft.Interop
             }
 
             return firstLocation is null ?
-                Diagnostic.Create(descriptor, Location.None, args) :
+                Diagnostic.Create(descriptor, Location.None, properties: properties, args) :
                 Diagnostic.Create(descriptor, firstLocation, additionalLocations, properties, args);
         }
 
@@ -87,6 +87,19 @@ namespace Microsoft.Interop
             return Diagnostic.Create(
                 descriptor,
                 location: location.IsInSource ? location : Location.None,
+                messageArgs: args);
+        }
+
+        public static Diagnostic CreateDiagnostic(
+            this Location location,
+            DiagnosticDescriptor descriptor,
+            ImmutableDictionary<string, string> properties,
+            params object[] args)
+        {
+            return Diagnostic.Create(
+                descriptor,
+                location: location.IsInSource ? location : Location.None,
+                properties: properties,
                 messageArgs: args);
         }
     }
@@ -115,5 +128,10 @@ namespace Microsoft.Interop
     {
         public static void ReportConfigurationNotSupported(this IGeneratorDiagnostics diagnostics, AttributeData attributeData, string configurationName)
             => diagnostics.ReportConfigurationNotSupported(attributeData, configurationName, null);
+    }
+
+    public class GeneratorDiagnosticProperties
+    {
+        public const string AddDisableRuntimeMarshallingAttribute = nameof(AddDisableRuntimeMarshallingAttribute);
     }
 }

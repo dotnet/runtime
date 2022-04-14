@@ -442,10 +442,12 @@ mono_domain_try_type_resolve_name (MonoAssembly *assembly, MonoStringHandle name
 	if (assembly) {
 		assembly_handle = mono_assembly_get_object_handle (assembly, error);
 		goto_if_nok (error, return_null);
+	} else {
+		assembly_handle = MONO_HANDLE_CAST (MonoReflectionAssembly, NULL_HANDLE);
 	}
 
 	gpointer args [2];
-	args [0] = assembly ? MONO_HANDLE_RAW (assembly_handle) : NULL;
+	args [0] = MONO_HANDLE_RAW (assembly_handle);
 	args [1] = MONO_HANDLE_RAW (name);
 	ret = mono_runtime_try_invoke_handle (method, NULL_HANDLE, args, error);
 	goto_if_nok (error, return_null);
@@ -504,10 +506,12 @@ mono_try_assembly_resolve_handle (MonoAssemblyLoadContext *alc, MonoStringHandle
 	if (requesting) {
 		requesting_handle = mono_assembly_get_object_handle (requesting, error);
 		goto_if_nok (error, leave);
+	} else {
+		requesting_handle = MONO_HANDLE_CAST (MonoReflectionAssembly, NULL_HANDLE);
 	}
 
 	gpointer params [2];
-	params [0] = requesting ? MONO_HANDLE_RAW (requesting_handle) : NULL;
+	params [0] = MONO_HANDLE_RAW (requesting_handle);
 	params [1] = MONO_HANDLE_RAW (fname);
 	MonoReflectionAssemblyHandle result;
 	result = MONO_HANDLE_CAST (MonoReflectionAssembly, mono_runtime_try_invoke_handle (method, NULL_HANDLE, params, error));

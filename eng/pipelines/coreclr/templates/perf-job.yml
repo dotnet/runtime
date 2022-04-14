@@ -21,6 +21,7 @@ parameters:
   iOSLlvmBuild: 'False'
   skipLiveLibrariesDownload: false
   collectHelixLogsScript: ''
+  timeoutInMinutes: 320
 
 ### Perf job
 
@@ -50,6 +51,7 @@ jobs:
     pgoRunType: ${{ parameters.pgoRunType }}
     javascriptEngine: ${{ parameters.javascriptEngine }}
     iosLlvmBuild: ${{ parameters.iosLlvmBuild }}
+    timeoutInMintues: ${{ parameters.timeoutInMinutes }}
 
     ${{ if and(eq(parameters.runtimeType, 'wasm'), eq(parameters.codeGenType, 'aot')) }}:
       helixTypeSuffix: '/wasm/aot'
@@ -86,9 +88,9 @@ jobs:
       ${{ if and(eq(parameters.runtimeType, 'mono'), ne(parameters.codeGenType, 'AOT')) }}:
         extraSetupParameters: --architecture ${{ parameters.archType }} --monodotnet $(Build.SourcesDirectory)/.dotnet-mono
       ${{ if and(eq(parameters.runtimeType, 'wasm'), ne(parameters.codeGenType, 'AOT')) }}:
-        extraSetupParameters: --architecture ${{ parameters.archType }} --wasm $(librariesDownloadDir)/bin/wasm --javascriptengine ${{ parameters.javascriptEngine }}
+        extraSetupParameters: --architecture ${{ parameters.archType }} --wasmbundle $(librariesDownloadDir)/bin/wasm --javascriptengine ${{ parameters.javascriptEngine }}
       ${{ if and(eq(parameters.runtimeType, 'wasm'), eq(parameters.codeGenType, 'AOT')) }}:
-        extraSetupParameters: --architecture ${{ parameters.archType }} --wasm $(librariesDownloadDir)/bin/wasm --wasmaot --javascriptengine ${{ parameters.javascriptEngine }}
+        extraSetupParameters: --architecture ${{ parameters.archType }} --wasmbundle $(librariesDownloadDir)/bin/wasm --wasmaot --javascriptengine ${{ parameters.javascriptEngine }}
       ${{ if and(eq(parameters.codeGenType, 'AOT'), ne(parameters.runtimeType, 'wasm')) }}:
         extraSetupParameters: --architecture ${{ parameters.archType }} --monoaot $(librariesDownloadDir)/bin/aot
       ${{ if and(eq(parameters.runtimeType, 'coreclr'), ne(parameters.osSubGroup, '_musl')) }}:
@@ -98,7 +100,7 @@ jobs:
     ${{ if eq(parameters.runtimeType, 'AndroidMono') }}:
       extraSetupParameters: -Architecture ${{ parameters.archType }} -AndroidMono
     ${{ if eq(parameters.runtimeType, 'iosMono') }}:
-      extraSetupParameters: -Architecture ${{ parameters.archType }} -iOSMono -iOSLlvmBuild:$${{ parameters.iOSLlvmBuild }}
+      extraSetupParameters: --architecture ${{ parameters.archType }} --iosmono --iosllvmbuild ${{ parameters.iOSLlvmBuild }}
 
     variables: ${{ parameters.variables }}
 
@@ -146,9 +148,11 @@ jobs:
           displayName: BrowserWasm
 
       - script: >-
-          mkdir -p $(librariesDownloadDir)/bin/wasm/data &&
-          cp -r $(librariesDownloadDir)/BrowserWasm/staging/dotnet-workload $(librariesDownloadDir)/bin/wasm &&
-          cp src/mono/wasm/test-main.js $(librariesDownloadDir)/bin/wasm/data/test-main.js &&
+          mkdir -p $(librariesDownloadDir)/bin/wasm/wasm-data &&
+          mkdir -p $(librariesDownloadDir)/bin/wasm/dotnet &&
+          cp -r $(librariesDownloadDir)/BrowserWasm/staging/dotnet-workload/* $(librariesDownloadDir)/bin/wasm/dotnet &&
+          cp src/mono/wasm/test-main.js $(librariesDownloadDir)/bin/wasm/wasm-data/test-main.js &&
+          find $(librariesDownloadDir)/bin/wasm -type d &&
           find $(librariesDownloadDir)/bin/wasm -type f -exec chmod 664 {} \;
         displayName: "Create wasm directory (Linux)"
 

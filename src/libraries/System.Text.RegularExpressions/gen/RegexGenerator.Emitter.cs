@@ -71,9 +71,19 @@ namespace System.Text.RegularExpressions.Generator
             writer.WriteLine($"internal sealed class {rm.GeneratedName} : Regex");
             writer.WriteLine($"{{");
             writer.WriteLine($"    /// <summary>Cached, thread-safe singleton instance.</summary>");
-            writer.WriteLine($"    internal static readonly Regex Instance = new({Literal(rm.Pattern)}, {Literal(rm.Options)}, {GetTimeoutExpression(rm.MatchTimeout)});");
+            writer.Write($"    internal static readonly Regex Instance = ");
+            writer.WriteLine(
+                rm.MatchTimeout is not null ? $"new({Literal(rm.Pattern)}, {Literal(rm.Options)}, {GetTimeoutExpression(rm.MatchTimeout.Value)});" :
+                rm.Options != 0 ? $"new({Literal(rm.Pattern)}, {Literal(rm.Options)});" :
+                $"new({Literal(rm.Pattern)});");
             writer.WriteLine($"}}");
         }
+
+        /// <summary>Name of the helper type field that indicates the process-wide default timeout.</summary>
+        private const string DefaultTimeoutFieldName = "s_defaultTimeout";
+
+        /// <summary>Name of the helper type field that indicates whether <see cref="DefaultTimeoutFieldName"/> is non-infinite.</summary>
+        private const string HasDefaultTimeoutFieldName = "s_hasTimeout";
 
         /// <summary>Emits the Regex-derived type for a method whose RunnerFactory implementation was generated into <paramref name="runnerFactoryImplementation"/>.</summary>
         private static void EmitRegexDerivedImplementation(
@@ -90,7 +100,15 @@ namespace System.Text.RegularExpressions.Generator
             writer.WriteLine($"    {{");
             writer.WriteLine($"        base.pattern = {Literal(rm.Pattern)};");
             writer.WriteLine($"        base.roptions = {Literal(rm.Options)};");
-            writer.WriteLine($"        base.internalMatchTimeout = {GetTimeoutExpression(rm.MatchTimeout)};");
+            if (rm.MatchTimeout is not null)
+            {
+                writer.WriteLine($"        base.internalMatchTimeout = {GetTimeoutExpression(rm.MatchTimeout.Value)};");
+            }
+            else
+            {
+                writer.WriteLine($"        ValidateMatchTimeout({HelpersTypeName}.{DefaultTimeoutFieldName});");
+                writer.WriteLine($"        base.internalMatchTimeout = {HelpersTypeName}.{DefaultTimeoutFieldName};");
+            }
             writer.WriteLine($"        base.factory = new RunnerFactory();");
             if (rm.Tree.CaptureNumberSparseMapping is not null)
             {
@@ -181,6 +199,26 @@ namespace System.Text.RegularExpressions.Generator
                         break;
                 }
                 writer.WriteLine();
+            }
+            if (rm.MatchTimeout is null)
+            {
+                // We need to emit timeout checks for everything other than the developer explicitly setting Timeout.Infinite.
+                // In the common case where a timeout isn't specified, we need to at run-time check whether a process-wide
+                // default timeout has been specified, so we emit a static readonly TimeSpan to store the default value
+                // and a static readonly bool to store whether that value is non-infinite (the latter enables the JIT
+                // to remove all timeout checks as part of tiering if the default is infinite).
+                const string DefaultTimeoutHelpers = nameof(DefaultTimeoutHelpers);
+                if (!requiredHelpers.ContainsKey(DefaultTimeoutHelpers))
+                {
+                    requiredHelpers.Add(DefaultTimeoutHelpers, new string[]
+                    {
+                        $"/// <summary>Default timeout value set in <see cref=\"AppContext\"/>, or <see cref=\"Regex.InfiniteMatchTimeout\"/> if none was set.</summary>",
+                        $"internal static readonly TimeSpan {DefaultTimeoutFieldName} = AppContext.GetData(\"REGEX_DEFAULT_MATCH_TIMEOUT\") is TimeSpan timeout ? timeout : Regex.InfiniteMatchTimeout;",
+                        $"",
+                        $"/// <summary>Whether <see cref=\"{DefaultTimeoutFieldName}\"/> is non-infinite.</summary>",
+                        $"internal static readonly bool {HasDefaultTimeoutFieldName} = {DefaultTimeoutFieldName} != Timeout.InfiniteTimeSpan;",
+                    });
+                }
             }
             writer.WriteLine($"        /// <summary>Scan the <paramref name=\"inputSpan\"/> starting from base.runtextstart for the next match.</summary>");
             writer.WriteLine($"        /// <param name=\"inputSpan\">The text being scanned by the regular expression.</param>");
@@ -383,17 +421,23 @@ namespace System.Text.RegularExpressions.Generator
             }
             else
             {
-                // Emit the general purpose scan loop, with timeouts.
+                // Emit the general purpose scan loop, with (possible) timeouts.
                 needsTryFind = needsTryMatch = true;
                 writer.WriteLine("// Search until we can't find a valid starting position, we find a match, or we reach the end of the input.");
                 using (EmitBlock(writer, "while (TryFindNextPossibleStartingPosition(inputSpan))"))
                 {
-                    writer.WriteLine("base.CheckTimeout();");
+                    using (rm.MatchTimeout is null ? EmitBlock(writer, $"if ({HelpersTypeName}.{HasDefaultTimeoutFieldName})") : default)
+                    {
+                        writer.WriteLine("base.CheckTimeout();");
+                    }
+                    writer.WriteLine();
+
                     using (EmitBlock(writer, $"if (TryMatchAtCurrentPosition(inputSpan) || base.runtextpos == {(!rtl ? "inputSpan.Length" : "0")})"))
                     {
                         writer.WriteLine("return;");
                     }
                     writer.WriteLine();
+
                     writer.WriteLine($"base.runtextpos{(!rtl ? "++" : "--")};");
                 }
             }
@@ -452,29 +496,25 @@ namespace System.Text.RegularExpressions.Generator
                     // Emit the code for whatever find mode has been determined.
                     switch (regexTree.FindOptimizations.FindMode)
                     {
-                        case FindNextStartingPositionMode.LeadingPrefix_LeftToRight:
-                            Debug.Assert(!string.IsNullOrEmpty(regexTree.FindOptimizations.LeadingPrefix));
-                            EmitIndexOf_LeftToRight(regexTree.FindOptimizations.LeadingPrefix);
+                        case FindNextStartingPositionMode.LeadingString_LeftToRight:
+                        case FindNextStartingPositionMode.FixedDistanceString_LeftToRight:
+                            EmitIndexOf_LeftToRight();
                             break;
 
-                        case FindNextStartingPositionMode.LeadingPrefix_RightToLeft:
-                            Debug.Assert(!string.IsNullOrEmpty(regexTree.FindOptimizations.LeadingPrefix));
-                            EmitIndexOf_RightToLeft(regexTree.FindOptimizations.LeadingPrefix);
+                        case FindNextStartingPositionMode.LeadingString_RightToLeft:
+                            EmitIndexOf_RightToLeft();
                             break;
 
                         case FindNextStartingPositionMode.LeadingSet_LeftToRight:
-                        case FindNextStartingPositionMode.FixedSets_LeftToRight:
-                            Debug.Assert(regexTree.FindOptimizations.FixedDistanceSets is { Count: > 0 });
+                        case FindNextStartingPositionMode.FixedDistanceSets_LeftToRight:
                             EmitFixedSet_LeftToRight();
                             break;
 
                         case FindNextStartingPositionMode.LeadingSet_RightToLeft:
-                            Debug.Assert(regexTree.FindOptimizations.FixedDistanceSets is { Count: > 0 });
                             EmitFixedSet_RightToLeft();
                             break;
 
                         case FindNextStartingPositionMode.LiteralAfterLoop_LeftToRight:
-                            Debug.Assert(regexTree.FindOptimizations.LiteralAfterLoop is not null);
                             EmitLiteralAfterAtomicLoop();
                             break;
 
@@ -674,12 +714,40 @@ namespace System.Text.RegularExpressions.Generator
                 return false;
             }
 
-            // Emits a case-sensitive prefix search for a string at the beginning of the pattern.
-            void EmitIndexOf_LeftToRight(string prefix)
+            // Emits a case-sensitive left-to-right search for a substring.
+            void EmitIndexOf_LeftToRight()
             {
-                writer.WriteLine($"// The pattern begins with a literal {Literal(prefix)}. Find the next occurrence.");
+                RegexFindOptimizations opts = regexTree.FindOptimizations;
+
+                string substring = "";
+                string offset = "";
+                string offsetDescription = "at the beginning of the pattern";
+
+                switch (opts.FindMode)
+                {
+                    case FindNextStartingPositionMode.LeadingString_LeftToRight:
+                        substring = regexTree.FindOptimizations.LeadingPrefix;
+                        Debug.Assert(!string.IsNullOrEmpty(substring));
+                        break;
+
+                    case FindNextStartingPositionMode.FixedDistanceString_LeftToRight:
+                        Debug.Assert(!string.IsNullOrEmpty(regexTree.FindOptimizations.FixedDistanceLiteral.String));
+                        substring = regexTree.FindOptimizations.FixedDistanceLiteral.String;
+                        if (regexTree.FindOptimizations.FixedDistanceLiteral is { Distance: > 0 } literal)
+                        {
+                            offset = $" + {literal.Distance}";
+                            offsetDescription = $" at index {literal.Distance} in the pattern";
+                        }
+                        break;
+
+                    default:
+                        Debug.Fail($"Unexpected mode: {opts.FindMode}");
+                        break;
+                }
+
+                writer.WriteLine($"// The pattern has the literal {Literal(substring)} {offsetDescription}. Find the next occurrence.");
                 writer.WriteLine($"// If it can't be found, there's no match.");
-                writer.WriteLine($"int i = inputSpan.Slice(pos).IndexOf({Literal(prefix)});");
+                writer.WriteLine($"int i = inputSpan.Slice(pos{offset}).IndexOf({Literal(substring)});");
                 using (EmitBlock(writer, "if (i >= 0)"))
                 {
                     writer.WriteLine("base.runtextpos = pos + i;");
@@ -687,9 +755,11 @@ namespace System.Text.RegularExpressions.Generator
                 }
             }
 
-            // Emits a case-sensitive right-to-left prefix search for a string at the beginning of the pattern.
-            void EmitIndexOf_RightToLeft(string prefix)
+            // Emits a case-sensitive right-to-left search for a substring.
+            void EmitIndexOf_RightToLeft()
             {
+                string prefix = regexTree.FindOptimizations.LeadingPrefix;
+
                 writer.WriteLine($"// The pattern begins with a literal {Literal(prefix)}. Find the next occurrence right-to-left.");
                 writer.WriteLine($"// If it can't be found, there's no match.");
                 writer.WriteLine($"pos = inputSpan.Slice(0, pos).LastIndexOf({Literal(prefix)});");
@@ -704,6 +774,8 @@ namespace System.Text.RegularExpressions.Generator
             // and potentially other sets at other fixed positions in the pattern.
             void EmitFixedSet_LeftToRight()
             {
+                Debug.Assert(regexTree.FindOptimizations.FixedDistanceSets is { Count: > 0 });
+
                 List<(char[]? Chars, string Set, int Distance)>? sets = regexTree.FindOptimizations.FixedDistanceSets;
                 (char[]? Chars, string Set, int Distance) primarySet = sets![0];
                 const int MaxSets = 4;
@@ -827,6 +899,8 @@ namespace System.Text.RegularExpressions.Generator
             // (Currently that position will always be a distance of 0, meaning the start of the pattern itself.)
             void EmitFixedSet_RightToLeft()
             {
+                Debug.Assert(regexTree.FindOptimizations.FixedDistanceSets is { Count: > 0 });
+
                 (char[]? Chars, string Set, int Distance) set = regexTree.FindOptimizations.FixedDistanceSets![0];
                 Debug.Assert(set.Distance == 0);
 
@@ -993,7 +1067,12 @@ namespace System.Text.RegularExpressions.Generator
             string sliceSpan = "slice";
             writer.WriteLine("int pos = base.runtextpos;");
             writer.WriteLine($"int matchStart = pos;");
-            bool hasTimeout = EmitLoopTimeoutCounterIfNeeded(writer, rm);
+            if (rm.MatchTimeout != Timeout.Infinite)
+            {
+                // Either an explicit timeout was set, or the timeout was left null and the default process-wide
+                // timeout value needs to be consulted at run-time.  Either way, the code for timeouts needs to be emitted.
+                writer.WriteLine("int loopTimeoutCounter = 0;");
+            }
             writer.Flush();
             int additionalDeclarationsPosition = ((StringWriter)writer.InnerWriter).GetStringBuilder().Length;
             int additionalDeclarationsIndent = writer.Indent;
@@ -3002,7 +3081,7 @@ namespace System.Text.RegularExpressions.Generator
 
                 // Iteration body
                 MarkLabel(body, emitSemicolon: false);
-                EmitTimeoutCheck(writer, hasTimeout);
+                EmitTimeoutCheckIfNeeded();
 
                 // We need to store the starting pos and crawl position so that it may
                 // be backtracked through later.  This needs to be the starting position from
@@ -3164,7 +3243,7 @@ namespace System.Text.RegularExpressions.Generator
                     TransferSliceStaticPosToPos(); // we don't use static position with rtl
                     using (EmitBlock(writer, $"for (int i = 0; i < {iterations}; i++)"))
                     {
-                        EmitTimeoutCheck(writer, hasTimeout);
+                        EmitTimeoutCheckIfNeeded();
                         EmitSingleChar(node);
                     }
                 }
@@ -3208,7 +3287,7 @@ namespace System.Text.RegularExpressions.Generator
                     writer.WriteLine($"ReadOnlySpan<char> {repeaterSpan} = {sliceSpan}.Slice({sliceStaticPos}, {iterations});");
                     using (EmitBlock(writer, $"for (int i = 0; i < {repeaterSpan}.Length; i++)"))
                     {
-                        EmitTimeoutCheck(writer, hasTimeout);
+                        EmitTimeoutCheckIfNeeded();
 
                         string tmpTextSpanLocal = sliceSpan; // we want EmitSingleChar to refer to this temporary
                         int tmpSliceStaticPos = sliceStaticPos;
@@ -3269,7 +3348,7 @@ namespace System.Text.RegularExpressions.Generator
                     string maxClause = maxIterations != int.MaxValue ? $"{CountIsLessThan(iterationLocal, maxIterations)} && " : "";
                     using (EmitBlock(writer, $"while ({maxClause}pos > {iterationLocal} && {expr})"))
                     {
-                        EmitTimeoutCheck(writer, hasTimeout);
+                        EmitTimeoutCheckIfNeeded();
                         writer.WriteLine($"{iterationLocal}++;");
                     }
                     writer.WriteLine();
@@ -3362,7 +3441,7 @@ namespace System.Text.RegularExpressions.Generator
                     string maxClause = maxIterations != int.MaxValue ? $"{CountIsLessThan(iterationLocal, maxIterations)} && " : "";
                     using (EmitBlock(writer, $"while ({maxClause}(uint){iterationLocal} < (uint){sliceSpan}.Length && {expr})"))
                     {
-                        EmitTimeoutCheck(writer, hasTimeout);
+                        EmitTimeoutCheckIfNeeded();
                         writer.WriteLine($"{iterationLocal}++;");
                     }
                     writer.WriteLine();
@@ -3494,7 +3573,7 @@ namespace System.Text.RegularExpressions.Generator
 
                 // Iteration body
                 MarkLabel(body, emitSemicolon: false);
-                EmitTimeoutCheck(writer, hasTimeout);
+                EmitTimeoutCheckIfNeeded();
 
                 // We need to store the starting pos and crawl position so that it may
                 // be backtracked through later.  This needs to be the starting position from
@@ -3740,33 +3819,38 @@ namespace System.Text.RegularExpressions.Generator
             static string FormatN(string format, int count) =>
                 string.Concat(from i in Enumerable.Range(0, count)
                               select string.Format(format, i));
-        }
 
-        private static bool EmitLoopTimeoutCounterIfNeeded(IndentedTextWriter writer, RegexMethod rm)
-        {
-            if (rm.MatchTimeout != Timeout.Infinite)
+            /// <summary>Emits a timeout check.</summary>
+            void EmitTimeoutCheckIfNeeded()
             {
-                writer.WriteLine("int loopTimeoutCounter = 0;");
-                return true;
-            }
-
-            return false;
-        }
-
-        /// <summary>Emits a timeout check.</summary>
-        private static void EmitTimeoutCheck(IndentedTextWriter writer, bool hasTimeout)
-        {
-            const int LoopTimeoutCheckCount = 2048; // A conservative value to guarantee the correct timeout handling.
-            if (hasTimeout)
-            {
-                // Increment counter for each loop iteration.
-                // Emit code to check the timeout every 2048th iteration.
-                using (EmitBlock(writer, $"if (++loopTimeoutCounter == {LoopTimeoutCheckCount})"))
+                // If the match timeout was explicitly set to infinite, then no timeout code needs to be emitted.
+                if (rm.MatchTimeout != Timeout.Infinite)
                 {
-                    writer.WriteLine("loopTimeoutCounter = 0;");
-                    writer.WriteLine("base.CheckTimeout();");
+                    // Increment counter for each loop iteration. Emit code to check the timeout every 2048th iteration.
+                    const int IterationsPerTimeoutCheck = 2048; // A conservative value to guarantee the correct timeout handling.
+                    if (!requiredHelpers.ContainsKey(nameof(IterationsPerTimeoutCheck)))
+                    {
+                        requiredHelpers.Add(nameof(IterationsPerTimeoutCheck), new string[]
+                        {
+                            $"/// <summary>Number of iterations through loops at which point a timeout check should be performed.</summary>",
+                            $"internal const int {nameof(IterationsPerTimeoutCheck)} = {IterationsPerTimeoutCheck};"
+                        });
+                    }
+
+                    // If the timeout was explicitly set to non-infinite, then we always want to do the timeout check count tracking
+                    // and actual timeout checks now and then.  If, however, the timeout was left null, we only want to do the timeout
+                    // checks if they've been enabled by an AppContext switch being set before any of the regex code was used.
+                    // Whether these checks are needed are stored into a static readonly bool on the helpers class, such that
+                    // tiered-up code can eliminate the whole block in the vast majority case where the AppContext switch isn't set.
+                    using (EmitBlock(writer, rm.MatchTimeout is null ?
+                        $"if ({HelpersTypeName}.{HasDefaultTimeoutFieldName} && ++loopTimeoutCounter == {HelpersTypeName}.{nameof(IterationsPerTimeoutCheck)})" :
+                        $"if (++loopTimeoutCounter == {HelpersTypeName}.{nameof(IterationsPerTimeoutCheck)})"))
+                    {
+                        writer.WriteLine("loopTimeoutCounter = 0;");
+                        writer.WriteLine("base.CheckTimeout();");
+                    }
+                    writer.WriteLine();
                 }
-                writer.WriteLine();
             }
         }
 
@@ -4166,6 +4250,9 @@ namespace System.Text.RegularExpressions.Generator
 
                 // For atomic, skip the node if we'll instead render the atomic label as part of rendering the child.
                 RegexNodeKind.Atomic when node.Child(0).Kind is RegexNodeKind.Loop or RegexNodeKind.Lazyloop or RegexNodeKind.Alternate => true,
+
+                // Skip nodes that are implementation details with no visible behavioral impact.
+                RegexNodeKind.UpdateBumpalong => true,
 
                 // Don't skip anything else.
                 _ => false,

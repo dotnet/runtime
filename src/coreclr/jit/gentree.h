@@ -2075,6 +2075,8 @@ public:
 
     inline bool IsIntegralConst() const;
 
+    inline bool IsIntegralConstPow2() const;
+
     inline bool IsIntegralConstUnsignedPow2() const;
 
     inline bool IsIntegralConstAbsPow2() const;
@@ -8452,6 +8454,24 @@ inline bool GenTree::IsIntegralConst() const
 #else  // !TARGET_64BIT
     return ((gtOper == GT_CNS_INT) || (gtOper == GT_CNS_LNG));
 #endif // !TARGET_64BIT
+}
+
+//-------------------------------------------------------------------------
+// IsIntegralConstPow2: Determines whether an integral constant is
+//                      the power of 2.
+//
+// Return Value:
+//     Returns true if the GenTree's integral constant
+//     is the power of 2.
+//
+inline bool GenTree::IsIntegralConstPow2() const
+{
+    if (IsIntegralConst())
+    {
+        return isPow2(AsIntConCommon()->IntegralValue());
+    }
+
+    return false;
 }
 
 //-------------------------------------------------------------------------

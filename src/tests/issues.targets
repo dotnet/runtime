@@ -522,6 +522,9 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M13-RTM/b91248/b91248/*">
             <Issue>https://github.com/dotnet/runtime/issues/12979</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_56953/Runtime_56953/*">
+            <Issue>https://github.com/dotnet/runtime/issues/67870</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/PREFIX/unaligned/4/arglist_Target_ARM/*">
             <Issue>https://github.com/dotnet/runtime/issues/12979</Issue>
         </ExcludeList>
@@ -1867,6 +1870,12 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/refany/lcs_il_r/**">
             <Issue>https://github.com/dotnet/runtime/issues/34196</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/tailcall/compat_i4_u_il_d/**">
+            <Issue>https://github.com/dotnet/runtime/issues/67756</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/tailcall/compat_i4_u_il_r/**">
+            <Issue>https://github.com/dotnet/runtime/issues/67756</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)JIT/Methodical/tailcall_v4/hijacking/**">
             <Issue>needs triage</Issue>
@@ -4007,6 +4016,8 @@
             <FilteredExcludeList
                 Include="$([System.IO.Path]::GetRelativePath('$(XunitTestBinBase)', '%(ExcludeList.FullPath)'))"
                 Condition="'%(ExcludeList.Extension)' == '.dll'" />
+            <FilteredExcludeList Include="$([System.IO.Path]::ChangeExtension('$([System.IO.Path]::GetRelativePath('$(XunitTestBinBase)', '%(ExcludeList.RootDir)%(ExcludeList.Directory)%(ExcludeList.FileName)'))', '.cmd'))"
+                Condition="'%(ExcludeList.Extension)' == '.OutOfProcessTest'" />
       </ItemGroup>
     </Target>
 </Project>

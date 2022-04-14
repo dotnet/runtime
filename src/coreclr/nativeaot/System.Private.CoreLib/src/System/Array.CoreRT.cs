@@ -1234,7 +1234,7 @@ namespace System
                 }
                 catch (IndexOutOfRangeException)
                 {
-                    ThrowHelper.ThrowArgumentOutOfRange_IndexException();
+                    ThrowHelper.ThrowArgumentOutOfRange_IndexMustBeLessException();
                     return default; // unreachable
                 }
             }
@@ -1246,7 +1246,7 @@ namespace System
                 }
                 catch (IndexOutOfRangeException)
                 {
-                    ThrowHelper.ThrowArgumentOutOfRange_IndexException();
+                    ThrowHelper.ThrowArgumentOutOfRange_IndexMustBeLessException();
                 }
             }
         }

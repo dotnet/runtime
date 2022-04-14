@@ -52,8 +52,8 @@ void Lowering::MakeSrcContained(GenTree* parentNode, GenTree* childNode) const
 
         if (!isSafeToContainMem)
         {
-            JITDUMP("** Unsafe mem containment of [%06u] in [%06u}, comp->dspTreeID(childNode), "
-                    "comp->dspTreeID(parentNode)\n");
+            JITDUMP("** Unsafe mem containment of [%06u] in [%06u}\n", comp->dspTreeID(childNode),
+                    comp->dspTreeID(parentNode));
             assert(isSafeToContainMem);
         }
     }
@@ -5861,6 +5861,10 @@ GenTree* Lowering::LowerConstIntDivOrMod(GenTree* node)
     assert(!"unreachable: integral GT_DIV/GT_MOD should get morphed into helper calls");
 #endif // USE_HELPERS_FOR_INT_DIV
 #if defined(TARGET_ARM64)
+    if (divMod->OperIs(GT_MOD) && divisor->IsIntegralConstPow2())
+    {
+        return LowerModPow2(node);
+    }
     assert(node->OperGet() != GT_MOD);
 #endif // TARGET_ARM64
 
