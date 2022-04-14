@@ -205,7 +205,7 @@ mono_marshal_shared_mb_emit_exception_marshal_directive (MonoMethodBuilder *mb, 
 	mono_mb_emit_exception_full (mb, "System.Runtime.InteropServices", "MarshalDirectiveException", s);
 }
 
-void
+static void
 mono_marshal_emit_object_to_ptr_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv conv, MonoMarshalSpec *mspec)
 {
 	int pos;
