@@ -231,7 +231,7 @@ namespace System.IO.Tests
         /// <param name="expectedPath">Optional. Adds path verification to all expected events.</param>
         public static void ExpectNoEvent(FileSystemWatcher watcher, WatcherChangeTypes unExpectedEvents, Action action, Action cleanup = null, string expectedPath = null, int timeout = WaitForExpectedEventTimeout)
         {
-            bool result = ExecuteAndVerifyEvents(watcher, unExpectedEvents, action, false, new string[] { expectedPath }, timeout);
+            bool result = ExecuteAndVerifyEvents(watcher, unExpectedEvents, action, false, expectedPath == null ? null : new string[] { expectedPath }, timeout);
             Assert.False(result, "Expected Event occured");
 
             if (cleanup != null)
