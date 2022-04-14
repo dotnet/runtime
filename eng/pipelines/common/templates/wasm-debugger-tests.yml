@@ -23,9 +23,9 @@ jobs:
       - name: alwaysRunVar
         value: ${{ parameters.alwaysRun }}
       - name: debuggerBrowserArg
-        ${{ if eq(parameters.browser, 'firefox') }:
+        ${{ if eq(parameters.browser, 'firefox') }}:
           value: '/p:RunInFirefox=1'
-        ${{ if ne(parameters.browser, 'firefox') }:
+        ${{ if ne(parameters.browser, 'firefox') }}:
           value: ''
     jobParameters:
       testGroup: innerloop
