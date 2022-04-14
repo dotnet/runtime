@@ -81,7 +81,7 @@ namespace System.Numerics
 
             if ((index < 0) || ((values.Length - index) < Count))
             {
-                ThrowHelper.ThrowArgumentOutOfRange_IndexException();
+                ThrowHelper.ThrowArgumentOutOfRange_IndexMustBeLessOrEqualException();
             }
 
             this = Unsafe.ReadUnaligned<Vector<T>>(ref Unsafe.As<T, byte>(ref values[index]));
@@ -536,7 +536,7 @@ namespace System.Numerics
 
             if ((uint)startIndex >= (uint)destination.Length)
             {
-                ThrowHelper.ThrowStartIndexArgumentOutOfRange_ArgumentOutOfRange_Index();
+                ThrowHelper.ThrowStartIndexArgumentOutOfRange_ArgumentOutOfRange_IndexMustBeLess();
             }
 
             if ((destination.Length - startIndex) < Count)
