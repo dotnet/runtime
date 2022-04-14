@@ -111,13 +111,20 @@ namespace Microsoft.WebAssembly.Diagnostics
                     Logger.LogInformation($"{message_prefix} New test request for test id {test_id}");
                     try
                     {
-#if RUN_IN_CHROME
-                        BrowserBase browser = new ChromeBrowser(Logger);
-                        int port = options.DevToolsUrl.Port;
-#else
-                        BrowserBase browser = new FirefoxBrowser(Logger);
-                        int port = 6000;
-#endif
+                        BrowserBase browser;
+                        int port;
+
+                        if (DebuggerTestBase.RunningOnChrome)
+                        {
+                            browser = new ChromeBrowser(Logger);
+                            port = options.DevToolsUrl.Port;
+                        }
+                        else
+                        {
+                            browser = new FirefoxBrowser(Logger);
+                            port = 6000;
+                        }
+
                         await browser.Launch(context,
                                              options.BrowserPath,
                                              $"http://{TestHarnessProxy.Endpoint.Authority}/{options.PagePath}",

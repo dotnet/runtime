@@ -29,7 +29,11 @@ namespace DebuggerTests
 
     public class DebuggerTestBase : IAsyncLifetime
     {
-        protected static bool RunningOnChrome { get { return true; } }
+#if RUN_IN_CHROME
+        public static bool RunningOnChrome { get { return true; } }
+#else
+        public static bool RunningOnChrome { get { return false; } }
+#endif
 
         internal InspectorClient cli;
         internal Inspector insp;
@@ -162,10 +166,7 @@ namespace DebuggerTests
             }
         }
 
-        internal virtual string UrlToRemoteDebugging()
-        {
-            return "http://localhost:0";
-        }
+        internal virtual string UrlToRemoteDebugging() => "http://localhost:0";
 
         static string s_testLogPath = null;
         public static string TestLogPath
@@ -194,7 +195,6 @@ namespace DebuggerTests
             insp = new Inspector(Id);
             cli = insp.Client;
             scripts = SubscribeToScripts(insp);
-            // Func<string, ILogger<TestHarnessProxy>, Task<string>> extractConnUrl = ExtractConnUrl;
             startTask = TestHarnessProxy.Start(GetBrowserPath(), DebuggerTestAppPath, driver, UrlToRemoteDebugging());
         }
 

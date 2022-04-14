@@ -54,11 +54,12 @@ namespace DebuggerTests
                                 options.TimestampFormat = "[HH:mm:ss] ";
                             })
                            .AddFilter(null, LogLevel.Trace));
-#if RUN_IN_CHROME
-            Client = new InspectorClient(_loggerFactory.CreateLogger($"{nameof(InspectorClient)}-{Id}"));
-#else
-            Client = new FirefoxInspectorClient(_loggerFactory.CreateLogger($"{nameof(InspectorClient)}-{Id}"));
-#endif
+
+            ILogger? logger = _loggerFactory.CreateLogger($"{nameof(InspectorClient)}-{Id}");
+            if (DebuggerTestBase.RunningOnChrome)
+                Client = new InspectorClient(logger);
+            else
+                Client = new FirefoxInspectorClient(logger);
             _logger = _loggerFactory.CreateLogger($"{nameof(Inspector)}-{Id}");
         }
 
@@ -244,7 +245,7 @@ namespace DebuggerTests
                         FailAllWaiters();
                         break;
                 };
-            }; 
+            };
         }
 
         public async Task OpenSessionAsync(Func<InspectorClient, CancellationToken, List<(string, Task<Result>)>> getInitCmds, TimeSpan span)
