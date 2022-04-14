@@ -767,7 +767,7 @@ namespace DebuggerTests
             }
         }
 
-        internal async Task CheckProps(JToken actual, object exp_o, string label, int num_fields = -1)
+        internal async Task CheckProps(JToken actual, object exp_o, string label, int num_fields = -1, bool skip_num_fields_check = false)
         {
             if (exp_o.GetType().IsArray || exp_o is JArray)
             {
@@ -796,8 +796,11 @@ namespace DebuggerTests
             if (exp == null)
                 exp = JObject.FromObject(exp_o);
 
-            num_fields = num_fields < 0 ? exp.Values<JToken>().Count() : num_fields;
-            Assert.True(num_fields == actual.Count(), $"[{label}] Number of fields don't match, Expected: {num_fields}, Actual: {actual.Count()}");
+            if (!skip_num_fields_check)
+            {
+                num_fields = num_fields < 0 ? exp.Values<JToken>().Count() : num_fields;
+                Assert.True(num_fields == actual.Count(), $"[{label}] Number of fields don't match, Expected: {num_fields}, Actual: {actual.Count()}");
+            }
 
             foreach (var kvp in exp)
             {
@@ -897,7 +900,7 @@ namespace DebuggerTests
         }
 
         // Find an object with @name, *fetch* the object, and check against @o
-        internal async Task<JToken> CompareObjectPropertiesFor(JToken locals, string name, object o, string label = null, int num_fields = -1)
+        internal async Task<JToken> CompareObjectPropertiesFor(JToken locals, string name, object o, string label = null, int num_fields = -1, bool skip_num_fields_check = false)
         {
             if (label == null)
                 label = name;
@@ -905,7 +908,7 @@ namespace DebuggerTests
             try
             {
                 if (o != null)
-                    await CheckProps(props, o, label, num_fields);
+                    await CheckProps(props, o, label, num_fields, skip_num_fields_check);
                 return props;
             }
             catch
