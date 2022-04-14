@@ -1527,6 +1527,10 @@ namespace System
         public DateTime(int year, int month, int day, int hour, int minute, int second, int millisecond, System.DateTimeKind kind) { throw null; }
         public DateTime(int year, int month, int day, int hour, int minute, int second, int millisecond, System.Globalization.Calendar calendar) { throw null; }
         public DateTime(int year, int month, int day, int hour, int minute, int second, int millisecond, System.Globalization.Calendar calendar, System.DateTimeKind kind) { throw null; }
+        public DateTime(int year, int month, int day, int hour, int minute, int second, int millisecond, int microsecond) { throw null; }
+        public DateTime(int year, int month, int day, int hour, int minute, int second, int millisecond, int microsecond, System.DateTimeKind kind) { throw null; }
+        public DateTime(int year, int month, int day, int hour, int minute, int second, int millisecond, int microsecond, System.Globalization.Calendar calendar) { throw null; }
+        public DateTime(int year, int month, int day, int hour, int minute, int second, int millisecond, int microsecond, System.Globalization.Calendar calendar, System.DateTimeKind kind) { throw null; }
         public DateTime(long ticks) { throw null; }
         public DateTime(long ticks, System.DateTimeKind kind) { throw null; }
         public System.DateTime Date { get { throw null; } }
@@ -1535,9 +1539,11 @@ namespace System
         public int DayOfYear { get { throw null; } }
         public int Hour { get { throw null; } }
         public System.DateTimeKind Kind { get { throw null; } }
+        public int Microsecond { get { throw null; } }
         public int Millisecond { get { throw null; } }
         public int Minute { get { throw null; } }
         public int Month { get { throw null; } }
+        public int Nanosecond { get { throw null; } }
         public static System.DateTime Now { get { throw null; } }
         public int Second { get { throw null; } }
         static System.TimeSpan System.Numerics.IAdditiveIdentity<System.DateTime,System.TimeSpan>.AdditiveIdentity { get { throw null; } }
@@ -1551,6 +1557,7 @@ namespace System
         public System.DateTime Add(System.TimeSpan value) { throw null; }
         public System.DateTime AddDays(double value) { throw null; }
         public System.DateTime AddHours(double value) { throw null; }
+        public System.DateTime AddMicroseconds(double value) { throw null; }
         public System.DateTime AddMilliseconds(double value) { throw null; }
         public System.DateTime AddMinutes(double value) { throw null; }
         public System.DateTime AddMonths(int months) { throw null; }
@@ -1658,6 +1665,8 @@ namespace System
         public DateTimeOffset(System.DateTime dateTime) { throw null; }
         public DateTimeOffset(System.DateTime dateTime, System.TimeSpan offset) { throw null; }
         public DateTimeOffset(int year, int month, int day, int hour, int minute, int second, int millisecond, System.Globalization.Calendar calendar, System.TimeSpan offset) { throw null; }
+        public DateTimeOffset(int year, int month, int day, int hour, int minute, int second, int millisecond, int microsecond, System.Globalization.Calendar calendar, System.TimeSpan offset) { throw null; }
+        public DateTimeOffset(int year, int month, int day, int hour, int minute, int second, int millisecond, int microsecond, System.TimeSpan offset) { throw null; }
         public DateTimeOffset(int year, int month, int day, int hour, int minute, int second, int millisecond, System.TimeSpan offset) { throw null; }
         public DateTimeOffset(int year, int month, int day, int hour, int minute, int second, System.TimeSpan offset) { throw null; }
         public DateTimeOffset(long ticks, System.TimeSpan offset) { throw null; }
@@ -1668,9 +1677,11 @@ namespace System
         public int DayOfYear { get { throw null; } }
         public int Hour { get { throw null; } }
         public System.DateTime LocalDateTime { get { throw null; } }
+        public int Microsecond { get { throw null; } }
         public int Millisecond { get { throw null; } }
         public int Minute { get { throw null; } }
         public int Month { get { throw null; } }
+        public int Nanosecond { get { throw null; } }
         public static System.DateTimeOffset Now { get { throw null; } }
         public System.TimeSpan Offset { get { throw null; } }
         public int Second { get { throw null; } }
@@ -1686,6 +1697,7 @@ namespace System
         public System.DateTimeOffset Add(System.TimeSpan timeSpan) { throw null; }
         public System.DateTimeOffset AddDays(double days) { throw null; }
         public System.DateTimeOffset AddHours(double hours) { throw null; }
+        public System.DateTimeOffset AddMicroseconds(double microseconds) { throw null; }
         public System.DateTimeOffset AddMilliseconds(double milliseconds) { throw null; }
         public System.DateTimeOffset AddMinutes(double minutes) { throw null; }
         public System.DateTimeOffset AddMonths(int months) { throw null; }
@@ -4622,12 +4634,15 @@ namespace System
         public TimeOnly(int hour, int minute) { throw null; }
         public TimeOnly(int hour, int minute, int second) { throw null; }
         public TimeOnly(int hour, int minute, int second, int millisecond) { throw null; }
+        public TimeOnly(int hour, int minute, int second, int millisecond, int microsecond) { throw null; }
         public TimeOnly(long ticks) { throw null; }
         public int Hour { get { throw null; } }
         public static System.TimeOnly MaxValue { get { throw null; } }
+        public int Microsecond { get { throw null; } }
         public int Millisecond { get { throw null; } }
         public int Minute { get { throw null; } }
         public static System.TimeOnly MinValue { get { throw null; } }
+        public int Nanosecond { get { throw null; } }
         public int Second { get { throw null; } }
         public long Ticks { get { throw null; } }
         public System.TimeOnly Add(System.TimeSpan value) { throw null; }
@@ -4699,8 +4714,10 @@ namespace System
         private readonly int _dummyPrimitive;
         public static readonly System.TimeSpan MaxValue;
         public static readonly System.TimeSpan MinValue;
+        public const long NanosecondsPerTick = (long)100;
         public const long TicksPerDay = (long)864000000000;
         public const long TicksPerHour = (long)36000000000;
+        public const long TicksPerMicrosecond = (long)10;
         public const long TicksPerMillisecond = (long)10000;
         public const long TicksPerMinute = (long)600000000;
         public const long TicksPerSecond = (long)10000000;
@@ -4708,11 +4725,14 @@ namespace System
         public TimeSpan(int hours, int minutes, int seconds) { throw null; }
         public TimeSpan(int days, int hours, int minutes, int seconds) { throw null; }
         public TimeSpan(int days, int hours, int minutes, int seconds, int milliseconds) { throw null; }
+        public TimeSpan(int days, int hours, int minutes, int seconds, int milliseconds, int microseconds) { throw null; }
         public TimeSpan(long ticks) { throw null; }
         public int Days { get { throw null; } }
         public int Hours { get { throw null; } }
+        public int Microseconds { get { throw null; } }
         public int Milliseconds { get { throw null; } }
         public int Minutes { get { throw null; } }
+        public int Nanoseconds { get { throw null; } }
         public int Seconds { get { throw null; } }
         static System.TimeSpan System.Numerics.IAdditiveIdentity<System.TimeSpan,System.TimeSpan>.AdditiveIdentity { get { throw null; } }
         static System.TimeSpan System.Numerics.IMinMaxValue<System.TimeSpan>.MaxValue { get { throw null; } }
@@ -4721,8 +4741,10 @@ namespace System
         public long Ticks { get { throw null; } }
         public double TotalDays { get { throw null; } }
         public double TotalHours { get { throw null; } }
+        public double TotalMicroseconds { get { throw null; } }
         public double TotalMilliseconds { get { throw null; } }
         public double TotalMinutes { get { throw null; } }
+        public double TotalNanoseconds { get { throw null; } }
         public double TotalSeconds { get { throw null; } }
         public System.TimeSpan Add(System.TimeSpan ts) { throw null; }
         public static int Compare(System.TimeSpan t1, System.TimeSpan t2) { throw null; }
@@ -4736,6 +4758,7 @@ namespace System
         public static bool Equals(System.TimeSpan t1, System.TimeSpan t2) { throw null; }
         public static System.TimeSpan FromDays(double value) { throw null; }
         public static System.TimeSpan FromHours(double value) { throw null; }
+        public static System.TimeSpan FromMicroseconds(double value) { throw null; }
         public static System.TimeSpan FromMilliseconds(double value) { throw null; }
         public static System.TimeSpan FromMinutes(double value) { throw null; }
         public static System.TimeSpan FromSeconds(double value) { throw null; }
