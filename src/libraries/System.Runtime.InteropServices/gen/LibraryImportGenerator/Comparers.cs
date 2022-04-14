@@ -16,11 +16,6 @@ namespace Microsoft.Interop
         /// Comparer for an individual generated stub source as a syntax tree and the generated diagnostics for the stub.
         /// </summary>
         public static readonly IEqualityComparer<(MemberDeclarationSyntax Syntax, ImmutableArray<Diagnostic> Diagnostics)> GeneratedSyntax = new CustomValueTupleElementComparer<MemberDeclarationSyntax, ImmutableArray<Diagnostic>>(SyntaxEquivalentComparer.Instance, new ImmutableArraySequenceEqualComparer<Diagnostic>(EqualityComparer<Diagnostic>.Default));
-
-        /// <summary>
-        /// Comparer for the context used to generate a stub and the original user-provided syntax that triggered stub creation.
-        /// </summary>
-        public static readonly IEqualityComparer<(MethodDeclarationSyntax Syntax, LibraryImportGenerator.IncrementalStubGenerationContext StubContext)> CalculatedContextWithSyntax = new CustomValueTupleElementComparer<MethodDeclarationSyntax, LibraryImportGenerator.IncrementalStubGenerationContext>(SyntaxEquivalentComparer.Instance, EqualityComparer<LibraryImportGenerator.IncrementalStubGenerationContext>.Default);
     }
 
     /// <summary>

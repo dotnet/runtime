@@ -21,10 +21,13 @@ namespace Microsoft.Interop
     [Generator]
     public sealed class LibraryImportGenerator : IIncrementalGenerator
     {
+
         internal sealed record IncrementalStubGenerationContext(
             StubEnvironment Environment,
             SignatureContext SignatureContext,
             ContainingSyntaxContext ContainingSyntaxContext,
+            ContainingSyntax StubMethodSyntaxTemplate,
+            MethodSignatureDiagnosticLocations DiagnosticLocation,
             ImmutableArray<AttributeSyntax> ForwardedAttributes,
             LibraryImportData LibraryImportData,
             MarshallingGeneratorFactoryKey<(TargetFramework, Version, LibraryImportGeneratorOptions)> GeneratorFactoryKey,
@@ -36,7 +39,9 @@ namespace Microsoft.Interop
                     && StubEnvironment.AreCompilationSettingsEqual(Environment, other.Environment)
                     && SignatureContext.Equals(other.SignatureContext)
                     && ContainingSyntaxContext.Equals(other.ContainingSyntaxContext)
+                    && StubMethodSyntaxTemplate.Equals(other.StubMethodSyntaxTemplate)
                     && LibraryImportData.Equals(other.LibraryImportData)
+                    && DiagnosticLocation.Equals(DiagnosticLocation)
                     && ForwardedAttributes.SequenceEqual(other.ForwardedAttributes, (IEqualityComparer<AttributeSyntax>)SyntaxEquivalentComparer.Instance)
                     && GeneratorFactoryKey.Equals(other.GeneratorFactoryKey)
                     && Diagnostics.SequenceEqual(other.Diagnostics);
@@ -101,13 +106,12 @@ namespace Microsoft.Interop
                     Options = data.Right
                 })
                 .Select(
-                    static (data, ct) => (data.Syntax, StubContext: CalculateStubInformation(data.Syntax, data.Symbol, data.Environment, data.Options, ct))
+                    static (data, ct) => CalculateStubInformation(data.Syntax, data.Symbol, data.Environment, data.Options, ct)
                 )
-                .WithComparer(Comparers.CalculatedContextWithSyntax)
                 .WithTrackingName(StepNames.CalculateStubInformation)
                 .Combine(stubOptions)
                 .Select(
-                    static (data, ct) => GenerateSource(data.Left.StubContext, data.Left.Syntax, data.Right)
+                    static (data, ct) => GenerateSource(data.Left, data.Right)
                 )
                 .WithComparer(Comparers.GeneratedSyntax)
                 .WithTrackingName(StepNames.GenerateSingleStub);
@@ -175,7 +179,7 @@ namespace Microsoft.Interop
         }
 
         private static MemberDeclarationSyntax PrintGeneratedSource(
-            MethodDeclarationSyntax userDeclaredMethod,
+            ContainingSyntax userDeclaredMethod,
             SignatureContext stub,
             BlockSyntax stubCode)
         {
@@ -321,11 +325,15 @@ namespace Microsoft.Interop
 
             var containingTypeContext = new ContainingSyntaxContext(originalSyntax);
 
+            var methodSyntaxTemplate = new ContainingSyntax(originalSyntax.Modifiers.StripTriviaFromTokens(), SyntaxKind.MethodDeclaration, originalSyntax.Identifier, originalSyntax.TypeParameterList);
+
             List<AttributeSyntax> additionalAttributes = GenerateSyntaxForForwardedAttributes(suppressGCTransitionAttribute, unmanagedCallConvAttribute, defaultDllImportSearchPathsAttribute);
             return new IncrementalStubGenerationContext(
                 environment,
                 signatureContext,
                 containingTypeContext,
+                methodSyntaxTemplate,
+                new MethodSignatureDiagnosticLocations(originalSyntax),
                 additionalAttributes.ToImmutableArray(),
                 libraryImportData,
                 CreateGeneratorFactory(environment, options),
@@ -376,13 +384,12 @@ namespace Microsoft.Interop
 
         private static (MemberDeclarationSyntax, ImmutableArray<Diagnostic>) GenerateSource(
             IncrementalStubGenerationContext pinvokeStub,
-            MethodDeclarationSyntax originalSyntax,
             LibraryImportGeneratorOptions options)
         {
             var diagnostics = new GeneratorDiagnostics();
             if (options.GenerateForwarders)
             {
-                return (PrintForwarderStub(originalSyntax, pinvokeStub, diagnostics), pinvokeStub.Diagnostics.AddRange(diagnostics.Diagnostics));
+                return (PrintForwarderStub(pinvokeStub.StubMethodSyntaxTemplate, pinvokeStub, diagnostics), pinvokeStub.Diagnostics.AddRange(diagnostics.Diagnostics));
             }
 
             // Generate stub code
@@ -392,7 +399,7 @@ namespace Microsoft.Interop
                 pinvokeStub.LibraryImportData.SetLastError && !options.GenerateForwarders,
                 (elementInfo, ex) =>
                 {
-                    diagnostics.ReportMarshallingNotSupported(originalSyntax, elementInfo, ex.NotSupportedDetails);
+                    diagnostics.ReportMarshallingNotSupported(pinvokeStub.DiagnosticLocation, elementInfo, ex.NotSupportedDetails);
                 },
                 pinvokeStub.GeneratorFactoryKey.GeneratorFactory);
 
@@ -401,7 +408,7 @@ namespace Microsoft.Interop
             if (stubGenerator.StubIsBasicForwarder
                 || !stubGenerator.SupportsTargetFramework)
             {
-                return (PrintForwarderStub(originalSyntax, pinvokeStub, diagnostics), pinvokeStub.Diagnostics.AddRange(diagnostics.Diagnostics));
+                return (PrintForwarderStub(pinvokeStub.StubMethodSyntaxTemplate, pinvokeStub, diagnostics), pinvokeStub.Diagnostics.AddRange(diagnostics.Diagnostics));
             }
 
             ImmutableArray<AttributeSyntax> forwardedAttributes = pinvokeStub.ForwardedAttributes;
@@ -415,7 +422,7 @@ namespace Microsoft.Interop
                 options,
                 pinvokeStub.LibraryImportData,
                 innerPInvokeName,
-                originalSyntax.Identifier.Text);
+                pinvokeStub.StubMethodSyntaxTemplate.Identifier.Text);
 
             if (!forwardedAttributes.IsEmpty)
             {
@@ -428,10 +435,10 @@ namespace Microsoft.Interop
                 Comment("//"));
             code = code.AddStatements(dllImport);
 
-            return (pinvokeStub.ContainingSyntaxContext.WrapMemberInContainingSyntaxWithUnsafeModifier(PrintGeneratedSource(originalSyntax, pinvokeStub.SignatureContext, code)), pinvokeStub.Diagnostics.AddRange(diagnostics.Diagnostics));
+            return (pinvokeStub.ContainingSyntaxContext.WrapMemberInContainingSyntaxWithUnsafeModifier(PrintGeneratedSource(pinvokeStub.StubMethodSyntaxTemplate, pinvokeStub.SignatureContext, code)), pinvokeStub.Diagnostics.AddRange(diagnostics.Diagnostics));
         }
 
-        private static MemberDeclarationSyntax PrintForwarderStub(MethodDeclarationSyntax userDeclaredMethod, IncrementalStubGenerationContext stub, GeneratorDiagnostics diagnostics)
+        private static MemberDeclarationSyntax PrintForwarderStub(ContainingSyntax userDeclaredMethod, IncrementalStubGenerationContext stub, GeneratorDiagnostics diagnostics)
         {
             LibraryImportData pinvokeData = stub.LibraryImportData with { EntryPoint = stub.LibraryImportData.EntryPoint ?? userDeclaredMethod.Identifier.ValueText };
 
@@ -439,7 +446,7 @@ namespace Microsoft.Interop
                 && pinvokeData.StringMarshalling != StringMarshalling.Utf16)
             {
                 diagnostics.ReportCannotForwardToDllImport(
-                    userDeclaredMethod,
+                    stub.DiagnosticLocation,
                     $"{nameof(TypeNames.LibraryImportAttribute)}{Type.Delimiter}{nameof(StringMarshalling)}",
                     $"{nameof(StringMarshalling)}{Type.Delimiter}{pinvokeData.StringMarshalling}");
 
@@ -449,7 +456,7 @@ namespace Microsoft.Interop
             if (pinvokeData.IsUserDefined.HasFlag(InteropAttributeMember.StringMarshallingCustomType))
             {
                 diagnostics.ReportCannotForwardToDllImport(
-                    userDeclaredMethod,
+                    stub.DiagnosticLocation,
                     $"{nameof(TypeNames.LibraryImportAttribute)}{Type.Delimiter}{nameof(InteropAttributeMember.StringMarshallingCustomType)}");
 
                 pinvokeData = pinvokeData with { IsUserDefined = pinvokeData.IsUserDefined & ~InteropAttributeMember.StringMarshallingCustomType };

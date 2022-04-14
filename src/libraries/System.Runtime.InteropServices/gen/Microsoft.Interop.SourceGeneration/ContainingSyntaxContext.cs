@@ -12,9 +12,9 @@ using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
 namespace Microsoft.Interop
 {
-    public readonly record struct ContainingTypeInfo(SyntaxTokenList Modifiers, SyntaxKind TypeKind, SyntaxToken Identifier, TypeParameterListSyntax? TypeParameters)
+    public readonly record struct ContainingSyntax(SyntaxTokenList Modifiers, SyntaxKind TypeKind, SyntaxToken Identifier, TypeParameterListSyntax? TypeParameters)
     {
-        public bool Equals(ContainingTypeInfo other)
+        public bool Equals(ContainingSyntax other)
         {
             return Modifiers.SequenceEqual(other.Modifiers, SyntaxEquivalentComparer.Instance)
                 && TypeKind == other.TypeKind
@@ -25,34 +25,31 @@ namespace Microsoft.Interop
         public override int GetHashCode() => throw new UnreachableException();
     }
 
-    public sealed record ContainingSyntaxContext(ImmutableArray<ContainingTypeInfo> ContainingTypes, string? ContainingNamespace)
+    public sealed record ContainingSyntaxContext(ImmutableArray<ContainingSyntax> ContainingSyntax, string? ContainingNamespace)
     {
         public ContainingSyntaxContext(MemberDeclarationSyntax memberDeclaration)
             : this(GetContainingTypes(memberDeclaration), GetContainingNamespace(memberDeclaration))
         {
         }
 
-        private static ImmutableArray<ContainingTypeInfo> GetContainingTypes(MemberDeclarationSyntax memberDeclaration)
+        public ContainingSyntaxContext AddContainingSyntax(ContainingSyntax nestedType)
         {
-            ImmutableArray<ContainingTypeInfo>.Builder containingTypeInfoBuilder = ImmutableArray.CreateBuilder<ContainingTypeInfo>();
+            return this with { ContainingSyntax = ContainingSyntax.Add(nestedType) };
+        }
+
+        private static ImmutableArray<ContainingSyntax> GetContainingTypes(MemberDeclarationSyntax memberDeclaration)
+        {
+            ImmutableArray<ContainingSyntax>.Builder containingTypeInfoBuilder = ImmutableArray.CreateBuilder<ContainingSyntax>();
             for (SyntaxNode? parent = memberDeclaration.Parent; parent is TypeDeclarationSyntax typeDeclaration; parent = parent.Parent)
             {
 
-                containingTypeInfoBuilder.Add(new ContainingTypeInfo(StripTriviaFromModifiers(typeDeclaration.Modifiers), typeDeclaration.Kind(), typeDeclaration.Identifier.WithoutTrivia(),
+                containingTypeInfoBuilder.Add(new ContainingSyntax(typeDeclaration.Modifiers.StripTriviaFromTokens(), typeDeclaration.Kind(), typeDeclaration.Identifier.WithoutTrivia(),
                     typeDeclaration.TypeParameterList));
             }
 
             return containingTypeInfoBuilder.ToImmutable();
 
-            static SyntaxTokenList StripTriviaFromModifiers(SyntaxTokenList tokenList)
-            {
-                SyntaxToken[] strippedTokens = new SyntaxToken[tokenList.Count];
-                for (int i = 0; i < tokenList.Count; i++)
-                {
-                    strippedTokens[i] = tokenList[i].WithoutTrivia();
-                }
-                return new SyntaxTokenList(strippedTokens);
-            }
+
         }
 
         private static string GetContainingNamespace(MemberDeclarationSyntax memberDeclaration)
@@ -76,7 +73,7 @@ namespace Microsoft.Interop
 
         public bool Equals(ContainingSyntaxContext other)
         {
-            return ContainingTypes.SequenceEqual(other.ContainingTypes)
+            return ContainingSyntax.SequenceEqual(other.ContainingSyntax)
                 && ContainingNamespace == other.ContainingNamespace;
         }
 
@@ -86,7 +83,7 @@ namespace Microsoft.Interop
         {
             bool addedUnsafe = false;
             MemberDeclarationSyntax wrappedMember = member;
-            foreach (var containingType in ContainingTypes)
+            foreach (var containingType in ContainingSyntax)
             {
                 TypeDeclarationSyntax type = TypeDeclaration(containingType.TypeKind, containingType.Identifier)
                     .WithModifiers(containingType.Modifiers)

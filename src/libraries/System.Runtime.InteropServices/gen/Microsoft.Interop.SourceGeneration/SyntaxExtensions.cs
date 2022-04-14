@@ -47,6 +47,16 @@ namespace Microsoft.Interop
             return nestedStatement;
         }
 
+        public static SyntaxTokenList StripTriviaFromTokens(this SyntaxTokenList tokenList)
+        {
+            SyntaxToken[] strippedTokens = new SyntaxToken[tokenList.Count];
+            for (int i = 0; i < tokenList.Count; i++)
+            {
+                strippedTokens[i] = tokenList[i].WithoutTrivia();
+            }
+            return new SyntaxTokenList(strippedTokens);
+        }
+
         public static SyntaxTokenList AddToModifiers(this SyntaxTokenList modifiers, SyntaxKind modifierToAdd)
         {
             if (modifiers.IndexOf(modifierToAdd) >= 0)
