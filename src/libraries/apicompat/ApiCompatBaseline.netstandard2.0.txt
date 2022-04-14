@@ -2,7 +2,6 @@ Compat issues with assembly mscorlib:
 TypeCannotChangeClassification : Type 'System.RuntimeArgumentHandle' is a 'ref struct' in the implementation but is a 'struct' in the contract.
 TypeCannotChangeClassification : Type 'System.TypedReference' is a 'ref struct' in the implementation but is a 'struct' in the contract.
 CannotRemoveAttribute : Attribute 'System.Runtime.InteropServices.DispIdAttribute' exists on 'System.Collections.IEnumerable.GetEnumerator()' in the contract but not the implementation.
-EnumValuesMustMatch : Enum value 'System.Reflection.GenericParameterAttributes System.Reflection.GenericParameterAttributes.SpecialConstraintMask' is (System.Int32)60 in the implementation but (System.Int32)28 in the contract.
 CannotRemoveAttribute : Attribute 'System.Runtime.ExceptionServices.HandleProcessCorruptedStateExceptionsAttribute' exists on 'System.Security.SecureString.AppendChar(System.Char)' in the contract but not the implementation.
 CannotRemoveAttribute : Attribute 'System.Runtime.ExceptionServices.HandleProcessCorruptedStateExceptionsAttribute' exists on 'System.Security.SecureString.InsertAt(System.Int32, System.Char)' in the contract but not the implementation.
 CannotRemoveAttribute : Attribute 'System.Runtime.ExceptionServices.HandleProcessCorruptedStateExceptionsAttribute' exists on 'System.Security.SecureString.RemoveAt(System.Int32)' in the contract but not the implementation.
@@ -36,7 +35,6 @@ CannotSealType : Type 'System.Linq.EnumerableExecutor' is effectively (has a pri
 MembersMustExist : Member 'protected void System.Linq.EnumerableExecutor..ctor()' does not exist in the implementation but it does exist in the contract.
 CannotSealType : Type 'System.Linq.EnumerableQuery' is effectively (has a private constructor) sealed in the implementation but not sealed in the contract.
 MembersMustExist : Member 'protected void System.Linq.EnumerableQuery..ctor()' does not exist in the implementation but it does exist in the contract.
-EnumValuesMustMatch : Enum value 'System.Reflection.GenericParameterAttributes System.Reflection.GenericParameterAttributes.SpecialConstraintMask' is (System.Int32)60 in the implementation but (System.Int32)28 in the contract.
 CannotRemoveAttribute : Attribute 'System.Runtime.ExceptionServices.HandleProcessCorruptedStateExceptionsAttribute' exists on 'System.Security.SecureString.AppendChar(System.Char)' in the contract but not the implementation.
 CannotRemoveAttribute : Attribute 'System.Runtime.ExceptionServices.HandleProcessCorruptedStateExceptionsAttribute' exists on 'System.Security.SecureString.InsertAt(System.Int32, System.Char)' in the contract but not the implementation.
 CannotRemoveAttribute : Attribute 'System.Runtime.ExceptionServices.HandleProcessCorruptedStateExceptionsAttribute' exists on 'System.Security.SecureString.RemoveAt(System.Int32)' in the contract but not the implementation.
@@ -106,8 +104,6 @@ CannotSealType : Type 'System.Linq.EnumerableExecutor' is effectively (has a pri
 MembersMustExist : Member 'protected void System.Linq.EnumerableExecutor..ctor()' does not exist in the implementation but it does exist in the contract.
 CannotSealType : Type 'System.Linq.EnumerableQuery' is effectively (has a private constructor) sealed in the implementation but not sealed in the contract.
 MembersMustExist : Member 'protected void System.Linq.EnumerableQuery..ctor()' does not exist in the implementation but it does exist in the contract.
-Compat issues with assembly System.Reflection.Primitives:
-EnumValuesMustMatch : Enum value 'System.Reflection.GenericParameterAttributes System.Reflection.GenericParameterAttributes.SpecialConstraintMask' is (System.Int32)60 in the implementation but (System.Int32)28 in the contract.
 Compat issues with assembly System.Runtime:
 CannotRemoveAttribute : Attribute 'System.Runtime.InteropServices.DispIdAttribute' exists on 'System.Collections.IEnumerable.GetEnumerator()' in the contract but not the implementation.
 Compat issues with assembly System.Security.SecureString:
@@ -134,4 +130,4 @@ CannotSealType : Type 'System.Xml.Schema.XmlSchemaGroupBase' is effectively (has
 MembersMustExist : Member 'protected void System.Xml.Schema.XmlSchemaGroupBase..ctor()' does not exist in the implementation but it does exist in the contract.
 CannotMakeMemberNonVirtual : Member 'public System.Xml.Schema.XmlSchemaObjectCollection System.Xml.Schema.XmlSchemaGroupBase.Items' is non-virtual in the implementation but is virtual in the contract.
 CannotMakeMemberNonVirtual : Member 'public System.Xml.Schema.XmlSchemaObjectCollection System.Xml.Schema.XmlSchemaGroupBase.Items.get()' is non-virtual in the implementation but is virtual in the contract.
-Total Issues: 122
+Total Issues: 119

@@ -1,5 +1,4 @@
 Compat issues with assembly mscorlib:
-EnumValuesMustMatch : Enum value 'System.Reflection.GenericParameterAttributes System.Reflection.GenericParameterAttributes.SpecialConstraintMask' is (System.Int32)60 in the implementation but (System.Int32)28 in the contract.
 CannotRemoveAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatformAttribute' exists on 'System.Security.Cryptography.Aes' in the contract but not the implementation.
 CannotRemoveAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatformAttribute' exists on 'System.Security.Cryptography.AsymmetricKeyExchangeDeformatter' in the contract but not the implementation.
 CannotRemoveAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatformAttribute' exists on 'System.Security.Cryptography.AsymmetricKeyExchangeFormatter' in the contract but not the implementation.
@@ -44,7 +43,6 @@ CannotRemoveAttribute : Attribute 'System.Runtime.CompilerServices.IsReadOnlyAtt
 CannotRemoveAttribute : Attribute 'System.Runtime.CompilerServices.IsReadOnlyAttribute' exists on 'System.Numerics.Vector<T>.ToString(System.String, System.IFormatProvider)' in the contract but not the implementation.
 CannotRemoveAttribute : Attribute 'System.Runtime.CompilerServices.IsReadOnlyAttribute' exists on 'System.Numerics.Vector<T>.TryCopyTo(System.Span<System.Byte>)' in the contract but not the implementation.
 CannotRemoveAttribute : Attribute 'System.Runtime.CompilerServices.IsReadOnlyAttribute' exists on 'System.Numerics.Vector<T>.TryCopyTo(System.Span<T>)' in the contract but not the implementation.
-EnumValuesMustMatch : Enum value 'System.Reflection.GenericParameterAttributes System.Reflection.GenericParameterAttributes.SpecialConstraintMask' is (System.Int32)60 in the implementation but (System.Int32)28 in the contract.
 CannotRemoveAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatformAttribute' exists on 'System.Security.Cryptography.Aes' in the contract but not the implementation.
 CannotRemoveAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatformAttribute' exists on 'System.Security.Cryptography.AsymmetricKeyExchangeDeformatter' in the contract but not the implementation.
 CannotRemoveAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatformAttribute' exists on 'System.Security.Cryptography.AsymmetricKeyExchangeFormatter' in the contract but not the implementation.
@@ -107,10 +105,6 @@ CannotRemoveAttribute : Attribute 'System.Runtime.CompilerServices.IsReadOnlyAtt
 CannotRemoveAttribute : Attribute 'System.Runtime.CompilerServices.IsReadOnlyAttribute' exists on 'System.Numerics.Vector<T>.ToString(System.String, System.IFormatProvider)' in the contract but not the implementation.
 CannotRemoveAttribute : Attribute 'System.Runtime.CompilerServices.IsReadOnlyAttribute' exists on 'System.Numerics.Vector<T>.TryCopyTo(System.Span<System.Byte>)' in the contract but not the implementation.
 CannotRemoveAttribute : Attribute 'System.Runtime.CompilerServices.IsReadOnlyAttribute' exists on 'System.Numerics.Vector<T>.TryCopyTo(System.Span<T>)' in the contract but not the implementation.
-Compat issues with assembly System.Reflection.Primitives:
-EnumValuesMustMatch : Enum value 'System.Reflection.GenericParameterAttributes System.Reflection.GenericParameterAttributes.SpecialConstraintMask' is (System.Int32)60 in the implementation but (System.Int32)28 in the contract.
-Compat issues with assembly System.Runtime:
-EnumValuesMustMatch : Enum value 'System.Reflection.GenericParameterAttributes System.Reflection.GenericParameterAttributes.SpecialConstraintMask' is (System.Int32)60 in the implementation but (System.Int32)28 in the contract.
 Compat issues with assembly System.Runtime.Intrinsics:
 MembersMustExist : Member 'public System.Runtime.Intrinsics.Vector128<U> System.Runtime.Intrinsics.Vector128.As<T, U>(System.Runtime.Intrinsics.Vector128<T>)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'public System.Runtime.Intrinsics.Vector256<U> System.Runtime.Intrinsics.Vector256.As<T, U>(System.Runtime.Intrinsics.Vector256<T>)' does not exist in the implementation but it does exist in the contract.
@@ -150,4 +144,4 @@ CannotRemoveAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatfo
 CannotRemoveAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatformAttribute' exists on 'System.Security.Cryptography.TripleDES' in the contract but not the implementation.
 Compat issues with assembly System.Security.Cryptography.X509Certificates:
 CannotChangeAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatformAttribute' on 'System.Security.Cryptography.X509Certificates.PublicKey.GetDSAPublicKey()' changed from '[UnsupportedOSPlatformAttribute("ios")]' in the contract to '[UnsupportedOSPlatformAttribute("browser")]' in the implementation.
-Total Issues: 140
+Total Issues: 136
