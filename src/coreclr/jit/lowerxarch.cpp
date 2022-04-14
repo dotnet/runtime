@@ -1301,28 +1301,17 @@ void Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cmpOp)
 
             if (simdSize == 32)
             {
-                // With AVX2 we use testz(xor(v1, v2))
-                cmpIntrinsic = NI_AVX2_Xor;
-                mskIntrinsic = NI_AVX_TestZ;
-                cmpJitType   = simdBaseJitType;
+                cmpIntrinsic = NI_AVX2_CompareEqual;
+                mskIntrinsic = NI_AVX2_MoveMask;
                 mskConstant  = -1;
             }
             else
             {
                 assert(simdSize == 16);
 
-                mskConstant = 0xFFFF;
-                if (comp->compOpportunisticallyDependsOn(InstructionSet_SSE41))
-                {
-                    // With SSE41 we use testz(xor(v1, v2))
-                    cmpIntrinsic = NI_SSE2_Xor;
-                    mskIntrinsic = NI_SSE41_TestZ;
-                }
-                else
-                {
-                    cmpIntrinsic = NI_SSE2_CompareEqual;
-                    mskIntrinsic = NI_SSE2_MoveMask;
-                }
+                cmpIntrinsic = NI_SSE2_CompareEqual;
+                mskIntrinsic = NI_SSE2_MoveMask;
+                mskConstant  = 0xFFFF;
             }
             break;
         }
@@ -1334,30 +1323,27 @@ void Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cmpOp)
 
             if (simdSize == 32)
             {
-                // With AVX2 we use testz(xor(v1, v2))
-                cmpIntrinsic = NI_AVX2_Xor;
+                cmpIntrinsic = NI_AVX2_CompareEqual;
                 cmpJitType   = simdBaseJitType;
-                mskIntrinsic = NI_AVX_TestZ;
+                mskIntrinsic = NI_AVX2_MoveMask;
                 mskConstant  = -1;
             }
             else
             {
                 assert(simdSize == 16);
-                mskConstant = 0xFFFF;
 
                 if (comp->compOpportunisticallyDependsOn(InstructionSet_SSE41))
                 {
-                    // With SSE41 we use testz(xor(v1, v2))
-                    mskIntrinsic = NI_SSE41_TestZ;
-                    cmpIntrinsic = NI_SSE2_Xor;
+                    cmpIntrinsic = NI_SSE41_CompareEqual;
                     cmpJitType   = simdBaseJitType;
                 }
                 else
                 {
-                    mskIntrinsic = NI_SSE2_MoveMask;
                     cmpIntrinsic = NI_SSE2_CompareEqual;
                     cmpJitType   = CORINFO_TYPE_UINT;
                 }
+                mskIntrinsic = NI_SSE2_MoveMask;
+                mskConstant  = 0xFFFF;
             }
             break;
         }
@@ -1426,23 +1412,6 @@ void Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cmpOp)
     GenTree* cmp = comp->gtNewSimdHWIntrinsicNode(simdType, op1, op2, cmpIntrinsic, cmpJitType, simdSize);
     BlockRange().InsertBefore(node, cmp);
     LowerNode(cmp);
-
-    // TestZ(Xor(v1, v2)) is smaller
-    if ((mskIntrinsic == NI_SSE41_TestZ) || (mskIntrinsic == NI_AVX_TestZ))
-    {
-        // Save cmp's result into a temp
-        node->Op(1) = cmp;
-        LIR::Use cmpUse(BlockRange(), &node->Op(1), node);
-        ReplaceWithLclVar(cmpUse);
-        GenTree* cmpClone = comp->gtClone(node->Op(1));
-        BlockRange().InsertAfter(node->Op(1), cmpClone);
-
-        // Emit vptest(cmp, cmpClone)
-        node->Op(2) = cmpClone;
-        node->ChangeHWIntrinsicId(mskIntrinsic);
-        LowerHWIntrinsicCC(node, mskIntrinsic == NI_SSE41_TestZ ? NI_SSE41_PTEST : NI_AVX_PTEST, cmpCnd);
-        return;
-    }
 
     GenTree* msk = comp->gtNewSimdHWIntrinsicNode(TYP_INT, cmp, mskIntrinsic, mskJitType, simdSize);
     BlockRange().InsertAfter(cmp, msk);

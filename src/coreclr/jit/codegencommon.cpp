@@ -3272,10 +3272,10 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
         }
         C_ASSERT((char)MAX_REG_ARG == MAX_REG_ARG);
         assert(slots < INT8_MAX);
-        for (char i = 1; i < slots; i++)
+        for (int i = 1; i < slots; i++)
         {
             regArgTab[regArgNum + i].varNum = varNum;
-            regArgTab[regArgNum + i].slot   = i + 1;
+            regArgTab[regArgNum + i].slot   = static_cast<char>(i + 1);
         }
 #endif // TARGET_ARM
 
