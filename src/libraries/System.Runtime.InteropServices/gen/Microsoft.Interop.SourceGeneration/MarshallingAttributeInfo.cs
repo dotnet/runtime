@@ -90,6 +90,8 @@ namespace Microsoft.Interop
         UnmanagedType UnmanagedType,
         CharEncoding CharEncoding) : MarshallingInfoStringSupport(CharEncoding)
     {
+        // UnmanagedType.LPUTF8Str is not in netstandard2.0, so we define a constant for the value here.
+        // See https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.unmanagedtype
         internal const UnmanagedType UnmanagedType_LPUTF8Str = (UnmanagedType)0x30;
     }
 
