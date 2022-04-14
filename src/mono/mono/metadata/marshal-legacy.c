@@ -2637,7 +2637,7 @@ mono_marshal_ilgen_legacy_init (void)
 }
 
 static gboolean legacy_cb_inited = FALSE;
-static MonoMarshalCallbacksLegacy legacy_marshal_cb;
+static MonoMarshalCallbacksLegacy legacy_marshal_cb_static;
 MonoMarshalCallbacksLegacy* get_marshal_legacy_cb (void)
 {
 	if (G_UNLIKELY (!legacy_cb_inited)) {
@@ -2647,7 +2647,7 @@ MonoMarshalCallbacksLegacy* get_marshal_legacy_cb (void)
 		mono_marshal_noilgen_legacy_init ();
 #endif
 	}
-	return &legacy_marshal_cb;
+	return &legacy_marshal_cb_static;
 }
 
 
@@ -2656,7 +2656,7 @@ mono_install_marshal_callbacks_legacy (MonoMarshalCallbacksLegacy *cb)
 {
 	g_assert (!legacy_cb_inited);
 	g_assert (cb->version == MONO_MARSHAL_CALLBACKS_VERSION);
-	memcpy (&legacy_marshal_cb, cb, sizeof (MonoMarshalCallbacksLegacy));
+	memcpy (&legacy_marshal_cb_static, cb, sizeof (MonoMarshalCallbacksLegacy));
 	legacy_cb_inited = TRUE;
 }
 
