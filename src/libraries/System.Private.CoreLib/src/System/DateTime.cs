@@ -897,7 +897,7 @@ namespace System
         /// whose value is the result of this operation.
         ///
         /// The fractional part of value is the fractional part of a microsecond.
-        /// For example, 4.5 is equivalent to 4 microseconds and 50 ticks, where one microseconds = 10 ticks.
+        /// For example, 4.5 is equivalent to 4 microseconds and 50 ticks, where one microsecond = 10 ticks.
         ///
         /// The value parameter is rounded to the nearest integer.
         /// </remarks>
