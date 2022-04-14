@@ -30,7 +30,7 @@ jobs:
     jobParameters:
       testGroup: innerloop
       isExtraPlatforms: ${{ parameters.isExtraPlatformsBuild }}
-      nameSuffix: Mono_DebuggerTests
+      nameSuffix: Mono_DebuggerTests_${{ parameters.browser }}
       buildArgs: -s mono+libs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:TestWasmDebuggerTests=true /p:TestAssemblies=false /p:BrowserHost=$(_hostedOs)  variables['debuggerBrowserArg']
       timeoutInMinutes: 180
       condition: >-
@@ -42,7 +42,7 @@ jobs:
       extraStepsTemplate: /eng/pipelines/libraries/helix.yml
       extraStepsParameters:
         creator: dotnet-bot
-        testRunNamePrefixSuffix: Mono_$(_BuildConfig)
+        testRunNamePrefixSuffix: Mono_${{ parameters.browser }}_$(_BuildConfig)
         extraHelixArguments: /p:BrowserHost=$(_hostedOs)
         scenarios:
         - wasmdebuggertests
