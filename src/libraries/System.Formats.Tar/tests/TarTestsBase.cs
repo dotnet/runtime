@@ -45,6 +45,7 @@ namespace System.Formats.Tar.Tests
         protected const int AssetCharacterDeviceMajor = 49;
         protected const int AssetCharacterDeviceMinor = 86;
         protected const TarFileMode AssetMode = TarFileMode.UserRead | TarFileMode.UserWrite | TarFileMode.UserExecute | TarFileMode.GroupRead | TarFileMode.OtherRead;
+        protected const TarFileMode AssetSpecialFileMode = TarFileMode.UserRead | TarFileMode.UserWrite | TarFileMode.GroupRead | TarFileMode.OtherRead;
         protected const TarFileMode AssetSymbolicLinkMode = TarFileMode.OtherExecute | TarFileMode.OtherWrite | TarFileMode.OtherRead | TarFileMode.GroupExecute | TarFileMode.GroupWrite | TarFileMode.GroupRead | TarFileMode.UserExecute | TarFileMode.UserWrite | TarFileMode.UserRead;
         protected const string AssetGName = "devdiv";
         protected const string AssetUName = "dotnet";

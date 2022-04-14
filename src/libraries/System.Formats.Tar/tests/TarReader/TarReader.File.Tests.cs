@@ -658,7 +658,7 @@ namespace System.Formats.Tar.Tests
             Assert.Equal(AssetGid, blockDevice.Gid);
             Assert.Equal(0, blockDevice.Length);
             Assert.Equal(DefaultLinkName, blockDevice.LinkName);
-            Assert.Equal(AssetMode, blockDevice.Mode);
+            Assert.Equal(AssetSpecialFileMode, blockDevice.Mode);
             Assert.True(blockDevice.ModificationTime > DateTimeOffset.UnixEpoch);
             Assert.Equal(expectedFileName, blockDevice.Name);
             Assert.Equal(AssetUid, blockDevice.Uid);
@@ -694,7 +694,7 @@ namespace System.Formats.Tar.Tests
             Assert.Equal(AssetGid, characterDevice.Gid);
             Assert.Equal(0, characterDevice.Length);
             Assert.Equal(DefaultLinkName, characterDevice.LinkName);
-            Assert.Equal(AssetMode, characterDevice.Mode);
+            Assert.Equal(AssetSpecialFileMode, characterDevice.Mode);
             Assert.True(characterDevice.ModificationTime > DateTimeOffset.UnixEpoch);
             Assert.Equal(expectedFileName, characterDevice.Name);
             Assert.Equal(AssetUid, characterDevice.Uid);
@@ -731,7 +731,7 @@ namespace System.Formats.Tar.Tests
             Assert.Equal(AssetGid, fifo.Gid);
             Assert.Equal(0, fifo.Length);
             Assert.Equal(DefaultLinkName, fifo.LinkName);
-            Assert.Equal(AssetMode, fifo.Mode);
+            Assert.Equal(AssetSpecialFileMode, fifo.Mode);
             Assert.True(fifo.ModificationTime > DateTimeOffset.UnixEpoch);
             Assert.Equal(expectedFileName, fifo.Name);
             Assert.Equal(AssetUid, fifo.Uid);
