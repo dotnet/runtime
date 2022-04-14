@@ -568,7 +568,7 @@ public:
                     logicalDataToWrite = *(volatile intptr_t*)pData;
 
                     // As there could be tearing otherwise, inform the caller of exactly what value was written.
-                    logicalDataToWrite = thProcessor(logicalDataToWrite);
+                    thProcessor(logicalDataToWrite);
 
                     bool returnValue = WriteCompressedIntToBytes(logicalDataToWrite - lastTypeDataWritten, byteWriter);
                     lastTypeDataWritten = logicalDataToWrite;

@@ -121,7 +121,8 @@ public:
 
         auto lambda = [&](int64_t thWritten)
         {
-            if (ICorJitInfo::IsUnknownTypeHandle(thWritten)) return (intptr_t)0;
+            if (ICorJitInfo::IsUnknownTypeHandle(thWritten)) return;
+
             if (thWritten != 0)
             {
                 TypeHandle th = *(TypeHandle*)&thWritten;
@@ -130,7 +131,7 @@ public:
                     typeHandlesEncountered.Append(th);
                 }
             }
-            return thWritten;
+            return;
         };
 
         if (!writer.AppendDataFromLastSchema(lambda))
