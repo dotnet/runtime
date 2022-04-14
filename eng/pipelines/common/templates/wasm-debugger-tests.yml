@@ -1,7 +1,7 @@
 parameters:
   alwaysRun: false
   isExtraPlatformsBuild: false
-  browsers: ['chrome']
+  browser: 'chrome'
   platforms: []
 
 jobs:
@@ -30,8 +30,8 @@ jobs:
     jobParameters:
       testGroup: innerloop
       isExtraPlatforms: ${{ parameters.isExtraPlatformsBuild }}
-      nameSuffix: Mono_DebuggerTests
-      buildArgs: -s mono+libs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:TestWasmDebuggerTests=true /p:TestAssemblies=false /p:BrowserHost=$(_hostedOs)  $(debuggerBrowserArg) -p:_DebuggerHosts=${{ join('/', parameters.browsers) }}
+      nameSuffix: Mono_DebuggerTests_${{ parameters.browser }}
+      buildArgs: -s mono+libs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:TestWasmDebuggerTests=true /p:TestAssemblies=false /p:BrowserHost=$(_hostedOs)  $(debuggerBrowserArg)
       timeoutInMinutes: 180
       condition: >-
         or(
@@ -43,6 +43,6 @@ jobs:
       extraStepsParameters:
         creator: dotnet-bot
         testRunNamePrefixSuffix: Mono_${{ parameters.browser }}_$(_BuildConfig)
-        extraHelixArguments: /p:BrowserHost=$(_hostedOs)
+        extraHelixArguments: /p:BrowserHost=$(_hostedOs) -p:_DebuggerHosts=${{ parameters.browser }}
         scenarios:
         - wasmdebuggertests

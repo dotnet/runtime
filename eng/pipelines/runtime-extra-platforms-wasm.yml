@@ -122,6 +122,5 @@ jobs:
     parameters:
       platforms:
         - Browser_wasm_firefox
-      browsers:
-      - firefox
+      browser: firefox
       alwaysRun: ${{ parameters.isWasmOnlyBuild }}

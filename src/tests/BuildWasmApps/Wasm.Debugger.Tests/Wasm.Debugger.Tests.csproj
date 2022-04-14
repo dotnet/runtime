@@ -42,7 +42,7 @@
     </ItemGroup>
 
     <ItemGroup Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(RunInFirefox)' == '1'">
-      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export BROWSER_PATH_FOR_DEBUGGER_TESTS=$HELIX_CORRELATION_PAYLOAD/firefox/firefox/firefox/firefox" />
+      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export BROWSER_PATH_FOR_DEBUGGER_TESTS=$HELIX_CORRELATION_PAYLOAD/firefox/firefox" />
     </ItemGroup>
 
     <PropertyGroup>
