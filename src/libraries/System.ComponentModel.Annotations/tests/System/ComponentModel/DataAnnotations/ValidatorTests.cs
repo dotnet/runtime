@@ -217,7 +217,7 @@ namespace System.ComponentModel.DataAnnotations.Tests
             Assert.Equal(1, validationResults.Count);
 
             Assert.Equal("The RequiredString field is required.", validationResults.Single().ErrorMessage);
-            Assert.Equal("AnnotatedSubsection.ComplexListItem[0].RequiredString", validationResults.Single().MemberNames.Single());
+            Assert.Equal("AnnotatedSubsection.ComplexItems[0].RequiredString", validationResults.Single().MemberNames.Single());
 
         }
 
@@ -340,19 +340,19 @@ namespace System.ComponentModel.DataAnnotations.Tests
             Assert.Equal("AnnotatedSubsection.IntRange2", validationResults[1].MemberNames.Single());
 
             Assert.Equal("Really really out of range.", validationResults[2].ErrorMessage);
-            Assert.Equal("AnnotatedSubsection.ComplexListItem[0].IntRange3", validationResults[2].MemberNames.Single());
+            Assert.Equal("AnnotatedSubsection.ComplexItems[0].IntRange3", validationResults[2].MemberNames.Single());
 
             Assert.Equal("The RequiredString field is required.", validationResults[3].ErrorMessage);
-            Assert.Equal("AnnotatedSubsection.ComplexListItem[0].RequiredString", validationResults[3].MemberNames.Single());
+            Assert.Equal("AnnotatedSubsection.ComplexItems[0].RequiredString", validationResults[3].MemberNames.Single());
 
             Assert.Equal("Really really out of range.", validationResults[4].ErrorMessage);
-            Assert.Equal("AnnotatedSubsection.ComplexListItem[1].IntRange3", validationResults[4].MemberNames.Single());
+            Assert.Equal("AnnotatedSubsection.ComplexItems[1].IntRange3", validationResults[4].MemberNames.Single());
 
             Assert.Equal("Really really out of range.", validationResults[5].ErrorMessage);
-            Assert.Equal("AnnotatedSubsection.ComplexListItem[0].MoreComplexItems[0]", validationResults[5].MemberNames.Single());
+            Assert.Equal("AnnotatedSubsection.ComplexItems[1].MoreComplexItems[0].IntRange3", validationResults[5].MemberNames.Single());
 
             Assert.Equal("The RequiredString field is required.", validationResults[6].ErrorMessage);
-            Assert.Equal("AnnotatedSubsection.ComplexListItem[0].RequiredString", validationResults[6].MemberNames.Single());
+            Assert.Equal("AnnotatedSubsection.ComplexItems[1].MoreComplexItems[0].RequiredString", validationResults[6].MemberNames.Single());
 
         }
 
