@@ -217,9 +217,11 @@ struct escapeMapping_t
 // clang-format off
 static escapeMapping_t s_EscapeFileMapping[] =
 {
-    {':', "="},
-    {'<', "["},
-    {'>', "]"},
+    {' ', "_"},
+    {':', "_"},
+    {',', "_"},
+    {'<', "~lt~"},
+    {'>', "~gt~"},
     {';', "~semi~"},
     {'|', "~bar~"},
     {'&', "~amp~"},
@@ -431,7 +433,7 @@ void Compiler::fgDumpTree(FILE* fgxFile, GenTree* const tree)
 // Return Value:
 //    Opens a file to which a flowgraph can be dumped, whose name is based on the current
 //    config vales.
-
+//
 FILE* Compiler::fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, PhasePosition pos, LPCWSTR type)
 {
     FILE*       fgxFile;
@@ -441,7 +443,6 @@ FILE* Compiler::fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, PhasePositi
     LPCWSTR     filename         = nullptr;
     LPCWSTR     pathname         = nullptr;
     const char* escapedString;
-    bool        createDuplicateFgxFiles = true;
 
     if (fgBBcount <= 1)
     {
@@ -525,7 +526,6 @@ FILE* Compiler::fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, PhasePositi
     {
         if (fgFirstBB->hasProfileWeight())
         {
-            createDuplicateFgxFiles = true;
             goto ONE_FILE_PER_METHOD;
         }
         else
@@ -536,9 +536,7 @@ FILE* Compiler::fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, PhasePositi
     if (wcscmp(filename, W("hot")) == 0)
     {
         if (info.compMethodInfo->regionKind == CORINFO_REGION_HOT)
-
         {
-            createDuplicateFgxFiles = true;
             goto ONE_FILE_PER_METHOD;
         }
         else
@@ -550,7 +548,6 @@ FILE* Compiler::fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, PhasePositi
     {
         if (info.compMethodInfo->regionKind == CORINFO_REGION_COLD)
         {
-            createDuplicateFgxFiles = true;
             goto ONE_FILE_PER_METHOD;
         }
         else
@@ -562,7 +559,6 @@ FILE* Compiler::fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, PhasePositi
     {
         if (info.compMethodInfo->regionKind == CORINFO_REGION_JIT)
         {
-            createDuplicateFgxFiles = true;
             goto ONE_FILE_PER_METHOD;
         }
         else
@@ -572,15 +568,38 @@ FILE* Compiler::fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, PhasePositi
     }
     else if (wcscmp(filename, W("all")) == 0)
     {
-        createDuplicateFgxFiles = true;
 
     ONE_FILE_PER_METHOD:;
 
-        escapedString = fgProcessEscapes(info.compFullName, s_EscapeFileMapping);
+#define FILENAME_PATTERN W("%S-%S-%s-%S.%s")
+#define FILENAME_PATTERN_WITH_NUMBER W("%S-%S-%s-%S~%d.%s")
 
-        const char* tierName = compGetTieringName(true);
-        size_t      wCharCount =
-            strlen(escapedString) + wcslen(phaseName) + 1 + strlen("~999") + wcslen(type) + strlen(tierName) + 1;
+        const size_t MaxFileNameLength = MAX_PATH_FNAME - 20 /* give us some extra buffer */;
+
+        escapedString           = fgProcessEscapes(info.compFullName, s_EscapeFileMapping);
+        size_t escapedStringLen = strlen(escapedString);
+
+        static const char* phasePositionStrings[] = {"pre", "post"};
+        assert((unsigned)pos < ArrLen(phasePositionStrings));
+        const char*  phasePositionString    = phasePositionStrings[(unsigned)pos];
+        const size_t phasePositionStringLen = strlen(phasePositionString);
+        const char*  tierName               = compGetTieringName(true);
+        size_t       wCharCount = escapedStringLen + 1 + strlen(phasePositionString) + 1 + wcslen(phaseName) + 1 +
+                            strlen(tierName) + strlen("~999") + 1 + wcslen(type) + 1;
+
+        if (wCharCount > MaxFileNameLength)
+        {
+            // Crop the escapedString.
+            wCharCount -= escapedStringLen;
+            size_t newEscapedStringLen = MaxFileNameLength - wCharCount;
+            char*  newEscapedString    = getAllocator(CMK_DebugOnly).allocate<char>(newEscapedStringLen + 1);
+            strncpy_s(newEscapedString, newEscapedStringLen + 1, escapedString, newEscapedStringLen);
+            newEscapedString[newEscapedStringLen] = '\0';
+            escapedString                         = newEscapedString;
+            escapedStringLen                      = newEscapedStringLen;
+            wCharCount += escapedStringLen;
+        }
+
         if (pathname != nullptr)
         {
             wCharCount += wcslen(pathname) + 1;
@@ -589,48 +608,42 @@ FILE* Compiler::fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, PhasePositi
 
         if (pathname != nullptr)
         {
-            swprintf_s((LPWSTR)filename, wCharCount, W("%s\\%S-%s-%S.%s"), pathname, escapedString, phaseName, tierName,
-                       type);
+            swprintf_s((LPWSTR)filename, wCharCount, W("%s\\") FILENAME_PATTERN, pathname, escapedString,
+                       phasePositionString, phaseName, tierName, type);
         }
         else
         {
-            swprintf_s((LPWSTR)filename, wCharCount, W("%S.%s"), escapedString, type);
+            swprintf_s((LPWSTR)filename, wCharCount, FILENAME_PATTERN, escapedString, phasePositionString, phaseName,
+                       tierName, type);
         }
-        fgxFile = _wfopen(filename, W("r")); // Check if this file already exists
-        if (fgxFile != nullptr)
+        fgxFile = _wfopen(filename, W("wx")); // Open the file for writing only only if it doesn't already exist
+        if (fgxFile == nullptr)
         {
-            // For Generic methods we will have both hot and cold versions
-            if (createDuplicateFgxFiles == false)
-            {
-                fclose(fgxFile);
-                return nullptr;
-            }
-            // Yes, this filename already exists, so create a different one by appending ~2, ~3, etc...
+            // This filename already exists, so create a different one by appending ~2, ~3, etc...
             for (int i = 2; i < 1000; i++)
             {
-                fclose(fgxFile);
                 if (pathname != nullptr)
                 {
-                    swprintf_s((LPWSTR)filename, wCharCount, W("%s\\%S~%d.%s"), pathname, escapedString, i, type);
+                    swprintf_s((LPWSTR)filename, wCharCount, W("%s\\") FILENAME_PATTERN_WITH_NUMBER, pathname,
+                               escapedString, phasePositionString, phaseName, tierName, i, type);
                 }
                 else
                 {
-                    swprintf_s((LPWSTR)filename, wCharCount, W("%S~%d.%s"), escapedString, i, type);
+                    swprintf_s((LPWSTR)filename, wCharCount, FILENAME_PATTERN_WITH_NUMBER, escapedString,
+                               phasePositionString, phaseName, tierName, i, type);
                 }
-                fgxFile = _wfopen(filename, W("r")); // Check if this file exists
-                if (fgxFile == nullptr)
+                fgxFile = _wfopen(filename, W("wx")); // Open the file for writing only only if it doesn't already exist
+                if (fgxFile != nullptr)
                 {
                     break;
                 }
             }
             // If we have already created 1000 files with this name then just fail
-            if (fgxFile != nullptr)
+            if (fgxFile == nullptr)
             {
-                fclose(fgxFile);
                 return nullptr;
             }
         }
-        fgxFile      = _wfopen(filename, W("a+"));
         *wbDontClose = false;
     }
     else if (wcscmp(filename, W("stdout")) == 0)
