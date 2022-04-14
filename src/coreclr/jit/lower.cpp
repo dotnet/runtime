@@ -52,8 +52,8 @@ void Lowering::MakeSrcContained(GenTree* parentNode, GenTree* childNode) const
 
         if (!isSafeToContainMem)
         {
-            JITDUMP("** Unsafe mem containment of [%06u] in [%06u}, comp->dspTreeID(childNode), "
-                    "comp->dspTreeID(parentNode)\n");
+            JITDUMP("** Unsafe mem containment of [%06u] in [%06u}\n", comp->dspTreeID(childNode),
+                    comp->dspTreeID(parentNode));
             assert(isSafeToContainMem);
         }
     }

@@ -9134,7 +9134,7 @@ Compiler::LoopDsc* dFindLoop(unsigned loopNum)
 
     if (loopNum >= comp->optLoopCount)
     {
-        printf("loopNum %u out of range\n");
+        printf("loopNum %u out of range\n", loopNum);
         return nullptr;
     }
 
