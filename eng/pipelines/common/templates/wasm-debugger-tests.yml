@@ -38,6 +38,6 @@ jobs:
       extraStepsParameters:
         creator: dotnet-bot
         testRunNamePrefixSuffix: Mono_${{ parameters.browser }}_$(_BuildConfig)
-        extraHelixArguments: /p:BrowserHost=$(_hostedOs) -p:_DebuggerHosts=${{ parameters.browser }}
+        extraHelixArguments: /p:BrowserHost=$(_hostedOs) /p:_DebuggerHosts=${{ parameters.browser }}
         scenarios:
         - wasmdebuggertests
