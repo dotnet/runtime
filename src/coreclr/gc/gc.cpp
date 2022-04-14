@@ -32221,24 +32221,23 @@ heap_segment* gc_heap::walk_relocation_sip (heap_segment* current_heap_segment, 
         uint8_t* plug_start = nullptr;
         while (obj < end)
         {
-            uint8_t* next_obj = obj + Align (size (obj));
-            BOOL isFree = ((CObjectHeader*)obj)->IsFree();
-            if (plug_start == nullptr)
+            if (((CObjectHeader*)obj)->IsFree())
             {
-                if (!isFree)
-                {
-                    plug_start = obj;
-                }
-            }
-            else
-            {
-                if (isFree)
+                if (plug_start)
                 {
                     fn (plug_start, obj, 0, profiling_context, false, false);
                     plug_start = nullptr;
                 }
             }
-            obj = next_obj;
+            else
+            {
+                if (!plug_start) 
+                {
+                    plug_start = obj;
+                }
+            }
+
+            obj += Align (size (obj));
         }
         if (plug_start)
         {
