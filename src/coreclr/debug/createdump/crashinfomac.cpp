@@ -259,7 +259,7 @@ void CrashInfo::VisitModule(MachOModule& module)
                 TRACE("TryLookupSymbol(g_dacTable) FAILED\n");
             }
         }
-        else
+        else if (g_checkForSingleFile)
         {
             uint64_t symbolOffset;
             if (module.TryLookupSymbol("DotNetRuntimeInfo", &symbolOffset))

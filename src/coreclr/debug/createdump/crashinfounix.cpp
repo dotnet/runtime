@@ -296,7 +296,7 @@ CrashInfo::VisitModule(uint64_t baseAddress, std::string& moduleName)
                 }
             }
         }
-        else
+        else if (g_checkForSingleFile)
         {
             if (PopulateForSymbolLookup(baseAddress))
             {

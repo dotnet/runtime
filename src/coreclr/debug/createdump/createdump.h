@@ -10,6 +10,7 @@ extern bool g_diagnostics;
 extern bool g_diagnosticsVerbose;
 
 #ifdef HOST_UNIX
+extern bool g_checkForSingleFile;
 extern void trace_printf(const char* format, ...);
 extern void trace_verbose_printf(const char* format, ...);
 #define TRACE(args...) trace_printf(args)
