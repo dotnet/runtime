@@ -121,7 +121,7 @@ public:
 
         auto lambda = [&](int64_t thWritten)
         {
-            if (thWritten == DEFAULT_UNKNOWN_TYPEHANDLE) return (intptr_t)0;
+            if (ICorJitInfo::IsUnknownTypeHandle(thWritten)) return (intptr_t)0;
             if (thWritten != 0)
             {
                 TypeHandle th = *(TypeHandle*)&thWritten;
@@ -238,13 +238,16 @@ void PgoManager::WritePgoData()
                         {
                             intptr_t typehandleData = *(intptr_t*)(data + entryOffset);
                             TypeHandle th = TypeHandle::FromPtr((void*)typehandleData);
-                            if (th.IsNull() || (typehandleData == DEFAULT_UNKNOWN_TYPEHANDLE))
+                            if (th.IsNull())
                             {
                                 fprintf(pgoDataFile, s_TypeHandle, "NULL");
                             }
+                            else if (ICorJitInfo::IsUnknownTypeHandle(typehandleData))
+                            {
+                                fprintf(pgoDataFile, s_TypeHandle, "UNKNOWN");
+                            }
                             else
                             {
-                                fflush(pgoDataFile);
                                 StackSString ss;
                                 StackScratchBuffer nameBuffer;
                                 TypeString::AppendType(ss, th, TypeString::FormatNamespace | TypeString::FormatFullInst | TypeString::FormatAssembly);
@@ -465,7 +468,7 @@ void PgoManager::ReadPgoData()
 
                             TypeHandle th;
                             INT_PTR ptrVal = 0;
-                            if (strcmp(typeString, "NULL") != 0)
+                            if ((strcmp(typeString, "NULL") != 0) || (strcmp(typeString, "UNKNOWN") != 0))
                             {
                                 // As early type loading is likely problematic, simply drop the string into the data, and fix it up later
                                 void* tempString = malloc(endOfString);
