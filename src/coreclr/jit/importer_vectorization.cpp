@@ -677,8 +677,9 @@ GenTree* Compiler::impStringEqualsOrStartsWith(bool startsWith, CORINFO_SIG_INFO
         needsNullcheck = false;
     }
 
-    int             cnsLength = -1;
-    const char16_t* str       = nullptr;
+    constexpr int maxStrSize      = 64;
+    int           cnsLength       = -1;
+    char16_t      str[maxStrSize] = {};
     if (cnsStr->IsStringEmptyField())
     {
         // check for fake "" first
@@ -687,8 +688,8 @@ GenTree* Compiler::impStringEqualsOrStartsWith(bool startsWith, CORINFO_SIG_INFO
     }
     else
     {
-        str = info.compCompHnd->getStringLiteral(cnsStr->gtScpHnd, cnsStr->gtSconCPX, &cnsLength);
-        if ((cnsLength < 0) || (str == nullptr))
+        cnsLength = info.compCompHnd->getStringLiteral(cnsStr->gtScpHnd, cnsStr->gtSconCPX, str, maxStrSize);
+        if ((cnsLength < 0) || (cnsLength > maxStrSize))
         {
             // We were unable to get the literal (e.g. dynamic context)
             return nullptr;
@@ -815,8 +816,9 @@ GenTree* Compiler::impSpanEqualsOrStartsWith(bool startsWith, CORINFO_SIG_INFO* 
         spanObj = op1;
     }
 
-    int             cnsLength = -1;
-    const char16_t* str       = nullptr;
+    constexpr int maxStrSize      = 64;
+    int           cnsLength       = -1;
+    char16_t      str[maxStrSize] = {};
     if (cnsStr->IsStringEmptyField())
     {
         // check for fake "" first
@@ -825,8 +827,8 @@ GenTree* Compiler::impSpanEqualsOrStartsWith(bool startsWith, CORINFO_SIG_INFO* 
     }
     else
     {
-        str = info.compCompHnd->getStringLiteral(cnsStr->gtScpHnd, cnsStr->gtSconCPX, &cnsLength);
-        if (cnsLength < 0 || str == nullptr)
+        cnsLength = info.compCompHnd->getStringLiteral(cnsStr->gtScpHnd, cnsStr->gtSconCPX, str, maxStrSize);
+        if ((cnsLength < 0) || (cnsLength > maxStrSize))
         {
             // We were unable to get the literal (e.g. dynamic context)
             return nullptr;

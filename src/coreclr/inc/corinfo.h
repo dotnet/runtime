@@ -2240,10 +2240,11 @@ public:
 
     // Returns string length and content (can be null for dynamic context)
     // for given metaTOK and module, length `-1` means input is incorrect
-    virtual const char16_t * getStringLiteral (
+    virtual int getStringLiteral (
             CORINFO_MODULE_HANDLE       module,     /* IN  */
             unsigned                    metaTOK,    /* IN  */
-            int*                        length      /* OUT */
+            char16_t*                   buffer,     /* OUT */
+            int                         bufferSize  /* IN  */
             ) = 0;
 
     /**********************************************************************************/

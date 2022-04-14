@@ -1249,7 +1249,7 @@ LCGMethodResolver::GetStringLiteralLength(mdToken metaTok)
 //
 STRINGREF
 LCGMethodResolver::GetStringLiteral(
-    mdToken token)
+    mdToken metaTok)
 {
     CONTRACTL {
         THROWS;
@@ -1264,7 +1264,7 @@ LCGMethodResolver::GetStringLiteral(
 
     ARG_SLOT args[] = {
         ObjToArgSlot(resolver),
-        token,
+        metaTok,
     };
     return getStringLiteral.Call_RetSTRINGREF(args);
 }

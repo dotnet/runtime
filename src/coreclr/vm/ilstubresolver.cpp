@@ -111,6 +111,13 @@ int ILStubResolver::GetStringLiteralLength(mdToken metaTok)
     return -1;
 }
 
+STRINGREF ILStubResolver::GetStringLiteral(mdToken metaTok)
+{
+    STANDARD_VM_CONTRACT;
+    _ASSERTE(FALSE);
+    return NULL;
+}
+
 void ILStubResolver::ResolveToken(mdToken token, TypeHandle * pTH, MethodDesc ** ppMD, FieldDesc ** ppFD)
 {
     STANDARD_VM_CONTRACT;

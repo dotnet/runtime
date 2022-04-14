@@ -78,6 +78,7 @@ public:
     virtual OBJECTHANDLE ConstructStringLiteral(mdToken metaTok) = 0;
     virtual BOOL IsValidStringRef(mdToken metaTok) = 0;
     virtual int GetStringLiteralLength(mdToken metaTok) = 0;
+    virtual STRINGREF GetStringLiteral(mdToken metaTok) = 0;
     virtual void ResolveToken(mdToken token, TypeHandle * pTH, MethodDesc ** ppMD, FieldDesc ** ppFD) = 0;
     virtual SigPointer ResolveSignature(mdToken token) = 0;
     virtual SigPointer ResolveSignatureForVarArg(mdToken token) = 0;
@@ -138,7 +139,7 @@ public:
     void SetManagedResolver(OBJECTHANDLE obj) { LIMITED_METHOD_CONTRACT; m_managedResolver = obj; }
     void * GetRecordCodePointer()  { LIMITED_METHOD_CONTRACT; return m_recordCodePointer; }
 
-    STRINGREF GetStringLiteral(mdToken token);
+    STRINGREF GetStringLiteral(mdToken metaTok);
     STRINGREF * GetOrInternString(STRINGREF *pString);
     void AddToUsedIndCellList(BYTE * indcell);
 #ifdef FEATURE_PGO

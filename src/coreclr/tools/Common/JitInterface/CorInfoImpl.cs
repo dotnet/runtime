@@ -1875,12 +1875,17 @@ namespace Internal.JitInterface
         private bool isValidStringRef(CORINFO_MODULE_STRUCT_* module, uint metaTOK)
         { throw new NotImplementedException("isValidStringRef"); }
 
-        private char* getStringLiteral(CORINFO_MODULE_STRUCT_* module, uint metaTOK, ref int length)
+        private int getStringLiteral(CORINFO_MODULE_STRUCT_* module, uint metaTOK, char* buffer, int size)
         {
             MethodILScope methodIL = HandleToObject(module);
             string s = (string)methodIL.GetObject((int)metaTOK);
-            length = (int)s.Length;
-            return (char*)GetPin(s);
+
+            char* ptr = (char*)GetPin(s);
+            for (int i = 0; i < Math.Min(size, s.Length); i++)
+            {
+                buffer[i] = ptr[i];
+            }
+            return (int)s.Length;
         }
 
         private CorInfoType asCorInfoType(CORINFO_CLASS_STRUCT_* cls)

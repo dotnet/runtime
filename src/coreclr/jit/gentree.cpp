@@ -6157,8 +6157,9 @@ GenTreeIntCon* Compiler::gtNewStringLiteralLength(GenTreeStrCon* node)
         return gtNewIconNode(0);
     }
 
-    int             length = -1;
-    const char16_t* str    = info.compCompHnd->getStringLiteral(node->gtScpHnd, node->gtSconCPX, &length);
+    constexpr int maxStrSize      = 1024;
+    char16_t      str[maxStrSize] = {};
+    int           length = info.compCompHnd->getStringLiteral(node->gtScpHnd, node->gtSconCPX, str, maxStrSize);
     if (length >= 0)
     {
         GenTreeIntCon* iconNode = gtNewIconNode(length);

@@ -661,10 +661,11 @@ bool CEEInfo::isValidStringRef (
     return result;
 }
 
-const char16_t* CEEInfo::getStringLiteral (
+int CEEInfo::getStringLiteral (
         CORINFO_MODULE_HANDLE       moduleHnd,
         mdToken                     metaTOK,
-        int*                        length)
+        char16_t*                   buffer,
+        int                         bufferSize)
 {
     CONTRACTL{
         THROWS;
@@ -674,13 +675,26 @@ const char16_t* CEEInfo::getStringLiteral (
 
     Module* module = GetModule(moduleHnd);
 
-    const char16_t* result = nullptr;
+    int result = -1;
 
     JIT_TO_EE_TRANSITION();
 
     if (IsDynamicScope(moduleHnd))
     {
-        *length = GetDynamicResolver(moduleHnd)->GetStringLiteralLength(metaTOK);
+        GCX_COOP();
+        STRINGREF strRef = GetDynamicResolver(moduleHnd)->GetStringLiteral(metaTOK);
+        if (strRef == NULL)
+        {
+            result = -1;
+        }
+        else
+        {
+            GCPROTECT_BEGIN(strRef);
+            StringObject* strObj = STRINGREFToObject(strRef);
+            result = (int)strObj->GetStringLength();
+            memcpyNoGCRefs(buffer, strObj->GetBuffer(), min(bufferSize, result) * sizeof(wchar_t));
+            GCPROTECT_END();
+        }
     }
     else
     {
@@ -689,12 +703,13 @@ const char16_t* CEEInfo::getStringLiteral (
         if (!FAILED((module)->GetMDImport()->GetUserString(metaTOK, &dwCharCount, NULL, &pString)))
         {
             // For string.Empty pString will be null
-            *length = dwCharCount;
-            result = (const char16_t *)pString;
+            _ASSERTE(dwCharCount >= 0 && dwCharCount <= INT_MAX);
+            result = dwCharCount;
+            memcpy(buffer, pString, min(bufferSize, (int)dwCharCount) * sizeof(char16_t));
         }
         else
         {
-            *length = -1;
+            result = -1;
         }
     }
 
