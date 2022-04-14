@@ -16,7 +16,6 @@ namespace DebuggerTests;
 
 internal class FirefoxBrowser : BrowserBase
 {
-    private static readonly Lazy<string> s_profilePath = new(() => GetProfilePath());
 
     public FirefoxBrowser(ILogger logger) : base(logger)
     {
@@ -30,7 +29,7 @@ internal class FirefoxBrowser : BrowserBase
                                       string message_prefix,
                                       int browser_ready_timeout_ms = 20000)
     {
-        string args = $"-profile {s_profilePath.Value} -headless -private -start-debugger-server {remoteDebuggingPort}";
+        string args = $"-profile {GetProfilePath()} -headless -private -start-debugger-server {remoteDebuggingPort}";
         ProcessStartInfo? psi = GetProcessStartInfo(browserPath, args, url);
         (Process proc, string line) = await LaunchBrowser(
                                 psi,
