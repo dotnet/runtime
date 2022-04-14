@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <OutputType>Library</OutputType>
-    <CLRTestKind>BuildOnly</CLRTestKind>
+    <CLRTestKind>SharedLibrary</CLRTestKind>
   </PropertyGroup>
 
   <ItemGroup>
