@@ -66,7 +66,6 @@ internal abstract class BrowserBase
                 logger.LogError($"{message_prefix} Timed out after {browser_ready_timeout_ms/1000}s waiting for the browser to be ready: {psi.FileName}");
                 return (proc, null);
             }
-            logger.LogInformation($"it completed: {browserReadyTCS.Task.Status}");
 
             return (proc, await browserReadyTCS.Task);
         }
