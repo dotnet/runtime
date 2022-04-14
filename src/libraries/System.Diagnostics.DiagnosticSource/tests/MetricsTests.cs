@@ -290,6 +290,12 @@ namespace System.Diagnostics.Metrics.Tests
                 UpDownCounter<decimal> upDownCounter6 = meter.CreateUpDownCounter<decimal>("decimalUpDownCounter");
                 InstrumentMeasurementAggregationValidation(upDownCounter6, (value, tags) => { upDownCounter6.Add(value, tags); }, true);
 
+                Counter<uint> counter7 = meter.CreateCounter<uint>("uintCounter");
+                InstrumentMeasurementAggregationValidation(counter7, (value, tags) => { counter7.Add(value, tags); } );
+
+                UpDownCounter<uint> upDownCounter7 = meter.CreateUpDownCounter<uint>("uintUpDownCounter");
+                InstrumentMeasurementAggregationValidation(upDownCounter7, (value, tags) => { upDownCounter7.Add(value, tags); }, true);
+
                 Histogram<byte> histogram = meter.CreateHistogram<byte>("byteHistogram");
                 InstrumentMeasurementAggregationValidation(histogram, (value, tags) => { histogram.Record(value, tags); } );
 
@@ -310,6 +316,9 @@ namespace System.Diagnostics.Metrics.Tests
 
                 Histogram<decimal> histogram6 = meter.CreateHistogram<decimal>("decimalHistogram");
                 InstrumentMeasurementAggregationValidation(histogram6, (value, tags) => { histogram6.Record(value, tags); } );
+
+                Histogram<uint> histogram7 = meter.CreateHistogram<uint>("uintHistogram");
+                InstrumentMeasurementAggregationValidation(histogram7, (value, tags) => { histogram7.Record(value, tags); } );
 
             }).Dispose();
         }
@@ -338,6 +347,8 @@ namespace System.Diagnostics.Metrics.Tests
                 ObservableInstrumentMeasurementAggregationValidation(observableCounter5, new Measurement<double>[] { new Measurement<double>(1e6)});
                 ObservableCounter<decimal> observableCounter6 = meter.CreateObservableCounter<decimal>("decimalObservableCounter", () => 1.5E6m);
                 ObservableInstrumentMeasurementAggregationValidation(observableCounter6, new Measurement<decimal>[] { new Measurement<decimal>(1.5E6m)});
+                ObservableCounter<uint> observableCounter21 = meter.CreateObservableCounter<uint>("uintObservableCounter", () => 1_000_000);
+                ObservableInstrumentMeasurementAggregationValidation(observableCounter21, new Measurement<uint>[] { new Measurement<uint>(1_000_000)});
 
                 //
                 // CreateObservableUpDownCounter using Func<T>
@@ -356,6 +367,8 @@ namespace System.Diagnostics.Metrics.Tests
                 ObservableInstrumentMeasurementAggregationValidation(observableUpDownCounter5, new Measurement<double>[] { new Measurement<double>(-3.14)});
                 ObservableUpDownCounter<decimal> observableUpDownCounter6 = meter.CreateObservableUpDownCounter<decimal>("doubleObservableUpDownCounter", () => -32222.14m);
                 ObservableInstrumentMeasurementAggregationValidation(observableUpDownCounter6, new Measurement<decimal>[] { new Measurement<decimal>(-32222.14m)});
+                ObservableUpDownCounter<uint> observableUpDownCounter21 = meter.CreateObservableUpDownCounter<uint>("uintObservableUpDownCounter", () => 1000);
+                ObservableInstrumentMeasurementAggregationValidation(observableUpDownCounter21, new Measurement<uint>[] { new Measurement<uint>(1000)});
 
                 //
                 // CreateObservableGauge using Func<T>
@@ -374,6 +387,8 @@ namespace System.Diagnostics.Metrics.Tests
                 ObservableInstrumentMeasurementAggregationValidation(observableGauge5, new Measurement<double>[] { new Measurement<double>(1e5)});
                 ObservableGauge<decimal> observableGauge6 = meter.CreateObservableGauge<decimal>("decimalObservableGauge", () => 2.5E7m);
                 ObservableInstrumentMeasurementAggregationValidation(observableGauge6, new Measurement<decimal>[] { new Measurement<decimal>(2.5E7m)});
+                ObservableGauge<uint> observableGauge21 = meter.CreateObservableGauge<uint>("uintObservableGauge", () => 2_123_456);
+                ObservableInstrumentMeasurementAggregationValidation(observableGauge21, new Measurement<uint>[] { new Measurement<uint>(2_123_456)});
 
                 //
                 // CreateObservableCounter using Func<Measurement<T>>
