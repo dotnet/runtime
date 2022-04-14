@@ -189,6 +189,39 @@ namespace System.ComponentModel.DataAnnotations.Tests
         }
 
         [Fact]
+        public void Recursive_fails_if_nested_property_in_list_is_invalid()
+        {
+            var thingToValidate = new TopLevelWithComplexProperties
+            {
+                IntRange = 4,
+                Required = "aaa",
+                StringLength = "222",
+                AnnotatedSubsection = new AnnotatedSubsection
+                {
+                    IntRange2 = 5,
+                    ComplexItems = new List<ComplexListItem>
+                    {
+                        new ComplexListItem
+                        {
+                            IntRange3 = 150,
+                            RequiredString = null
+                        }
+                    }
+                }
+            };
+        
+            var context = new ValidationContext(thingToValidate);
+            var validationResults = new List<ValidationResult>();
+
+            Assert.False(Validator.TryValidateObject(thingToValidate, context, validationResults, true));
+            Assert.Equal(1, validationResults.Count);
+
+            Assert.Equal("The RequiredString field is required.", validationResults.Single().ErrorMessage);
+            Assert.Equal("AnnotatedSubsection.ComplexListItem[0].RequiredString", validationResults.Single().MemberNames.Single());
+
+        }
+
+        [Fact]
         public void Recursive_fails_if_required_complex_property_is_null()
         {
             var thingToValidate = new TopLevelWithComplexProperties
@@ -250,11 +283,11 @@ namespace System.ComponentModel.DataAnnotations.Tests
             Assert.False(Validator.TryValidateObject(thingToValidate, context, validationResults, true));
             Assert.Equal(2, validationResults.Count);
 
-            Assert.Equal("IntRange", validationResults.ElementAt(0).MemberNames.Single());
-            Assert.Equal("Out of range.", validationResults.ElementAt(0).ErrorMessage);
+            Assert.Equal("IntRange", validationResults[0].MemberNames.Single());
+            Assert.Equal("Out of range.", validationResults[0].ErrorMessage);
 
-            Assert.Equal("AnnotatedSubsection.IntRange2", validationResults.ElementAt(1).MemberNames.Single());
-            Assert.Equal("Really out of range.", validationResults.ElementAt(1).ErrorMessage);
+            Assert.Equal("AnnotatedSubsection.IntRange2", validationResults[1].MemberNames.Single());
+            Assert.Equal("Really out of range.", validationResults[1].ErrorMessage);
 
         }
 
@@ -275,6 +308,19 @@ namespace System.ComponentModel.DataAnnotations.Tests
                         {
                             IntRange3 = 42, // really really out of range
                             RequiredString = null // RequiredString is missing
+                        },
+                        new ComplexListItem
+                        {
+                            IntRange3 = 42, // really really out of range
+                            RequiredString = "i'm ok",
+                            MoreComplexItems = new List<ComplexListItem>
+                            {
+                                new ComplexListItem
+                                {
+                                    IntRange3 = 42, // really really out of range
+                                    RequiredString = null // RequiredString is missing
+                                },
+                            }
                         }
                     }
                     
@@ -285,20 +331,28 @@ namespace System.ComponentModel.DataAnnotations.Tests
             var validationResults = new List<ValidationResult>();
 
             Assert.False(Validator.TryValidateObject(thingToValidate, context, validationResults, true));
-            Assert.Equal(4, validationResults.Count);
+            Assert.Equal(7, validationResults.Count);
 
-            Assert.Equal("Out of range.", validationResults.ElementAt(0).ErrorMessage);
-            Assert.Equal("IntRange", validationResults.ElementAt(0).MemberNames.Single());
+            Assert.Equal("Out of range.", validationResults[0].ErrorMessage);
+            Assert.Equal("IntRange", validationResults[0].MemberNames.Single());
 
-            Assert.Equal("Really out of range.", validationResults.ElementAt(1).ErrorMessage);
-            Assert.Equal("AnnotatedSubsection.IntRange2", validationResults.ElementAt(1).MemberNames.Single());
+            Assert.Equal("Really out of range.", validationResults[1].ErrorMessage);
+            Assert.Equal("AnnotatedSubsection.IntRange2", validationResults[1].MemberNames.Single());
 
-            Assert.Equal("Really really out of range.", validationResults.ElementAt(2).ErrorMessage);
-            Assert.Equal("AnnotatedSubsection.ComplexListItem.IntRange3", validationResults.ElementAt(2).MemberNames.Single());
+            Assert.Equal("Really really out of range.", validationResults[2].ErrorMessage);
+            Assert.Equal("AnnotatedSubsection.ComplexListItem[0].IntRange3", validationResults[2].MemberNames.Single());
 
-            Assert.Equal("The RequiredString field is required.", validationResults.ElementAt(3).ErrorMessage);
-            Assert.Equal("AnnotatedSubsection.ComplexListItem.RequiredString", validationResults.ElementAt(3).MemberNames.Single());
+            Assert.Equal("The RequiredString field is required.", validationResults[3].ErrorMessage);
+            Assert.Equal("AnnotatedSubsection.ComplexListItem[0].RequiredString", validationResults[3].MemberNames.Single());
 
+            Assert.Equal("Really really out of range.", validationResults[4].ErrorMessage);
+            Assert.Equal("AnnotatedSubsection.ComplexListItem[1].IntRange3", validationResults[4].MemberNames.Single());
+
+            Assert.Equal("Really really out of range.", validationResults[5].ErrorMessage);
+            Assert.Equal("AnnotatedSubsection.ComplexListItem[0].MoreComplexItems[0]", validationResults[5].MemberNames.Single());
+
+            Assert.Equal("The RequiredString field is required.", validationResults[6].ErrorMessage);
+            Assert.Equal("AnnotatedSubsection.ComplexListItem[0].RequiredString", validationResults[6].MemberNames.Single());
 
         }
 
@@ -326,10 +380,10 @@ namespace System.ComponentModel.DataAnnotations.Tests
             Assert.False(Validator.TryValidateObject(thingToValidate, context, validationResults, true));
             Assert.Equal(4, validationResults.Count);
 
-            Assert.Equal("Out of range.", validationResults.ElementAt(0).ErrorMessage);
-            Assert.Equal("Really out of range.", validationResults.ElementAt(1).ErrorMessage);
-            Assert.Equal("Really really out of range.", validationResults.ElementAt(2).ErrorMessage);
-            Assert.Equal("The RequiredString field is required.", validationResults.ElementAt(3).ErrorMessage);
+            Assert.Equal("Out of range.", validationResults[0].ErrorMessage);
+            Assert.Equal("Really out of range.", validationResults[1].ErrorMessage);
+            Assert.Equal("Really really out of range.", validationResults[2].ErrorMessage);
+            Assert.Equal("The RequiredString field is required.", validationResults[3].ErrorMessage);
         }
 
         [Fact]
@@ -347,7 +401,7 @@ namespace System.ComponentModel.DataAnnotations.Tests
             Assert.False(Validator.TryValidateObject(thingToValidate, context, validationResults, true));
             Assert.Equal(1, validationResults.Count);
 
-            Assert.Equal("The RequiredStrings field is required.", validationResults.ElementAt(0).ErrorMessage);
+            Assert.Equal("The RequiredStrings field is required.", validationResults[0].ErrorMessage);
         }
 
         [Fact]
@@ -1580,6 +1634,9 @@ namespace System.ComponentModel.DataAnnotations.Tests
 
             [Required]
             public string RequiredString { get; set; }
+
+            public List<ComplexListItem> MoreComplexItems { get; set; }
+            
         }
         
         [ValidClass]
