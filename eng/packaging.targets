@@ -223,7 +223,7 @@
             Pack="true" />
       <!-- Add the placeholder file to the supported target framework buildTransitive folder, if it's empty. -->
       <None Include="$(PlaceholderFile)"
-            PackagePath="$(_NETStandardCompatErrorPlaceholderFilePackagePath)\$(PackageId).targets"
+            PackagePath="$(_NETStandardCompatErrorPlaceholderFilePackagePath)\"
             Pack="true"
             Condition="'@(_PackageBuildFile)' == '' or
                        !@(_PackageBuildFile->AnyHaveMetadataValue('PackagePathWithoutFilename', '$(_NETStandardCompatErrorPlaceholderFilePackagePath)'))" />

@@ -188,6 +188,145 @@ namespace System
             }
         }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="DateTimeOffset"/> structure using the
+        /// specified <paramref name="year"/>, <paramref name="month"/>, <paramref name="day"/>, <paramref name="hour"/>, <paramref name="minute"/>,
+        /// <paramref name="second"/>, <paramref name="millisecond"/>, <paramref name="microsecond"/> and <paramref name="offset"/>.
+        /// </summary>
+        /// <param name="year">The year (1 through 9999).</param>
+        /// <param name="month">The month (1 through 12).</param>
+        /// <param name="day">The day (1 through the number of days in <paramref name="month"/>).</param>
+        /// <param name="hour">The hours (0 through 23).</param>
+        /// <param name="minute">The minutes (0 through 59).</param>
+        /// <param name="second">The seconds (0 through 59).</param>
+        /// <param name="millisecond">The milliseconds (0 through 999).</param>
+        /// <param name="microsecond">The microseconds (0 through 999).</param>
+        /// <param name="offset">The time's offset from Coordinated Universal Time (UTC).</param>
+        /// <exception cref="ArgumentException">
+        /// <paramref name="offset"/> does not represent whole minutes.
+        /// </exception>
+        /// <remarks>
+        /// This constructor interprets <paramref name="year"/>, <paramref name="month"/> and <paramref name="day"/> as a year, month and day
+        /// in the Gregorian calendar. To instantiate a <see cref="DateTimeOffset"/> value by using the year, month and day in another calendar, call
+        /// the <see cref="DateTimeOffset(int, int, int, int, int, int, int, int, Calendar, TimeSpan)"/> constructor.
+        /// </remarks>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <paramref name="year"/> is less than 1 or greater than 9999.
+        ///
+        /// -or-
+        ///
+        /// <paramref name="month"/> is less than 1 or greater than 12.
+        ///
+        /// -or-
+        ///
+        /// <paramref name="day"/> is less than 1 or greater than the number of days in <paramref name="month"/>.
+        ///
+        /// -or-
+        ///
+        /// <paramref name="hour"/> is less than 0 or greater than 23.
+        ///
+        /// -or-
+        ///
+        /// <paramref name="minute"/> is less than 0 or greater than 59.
+        ///
+        /// -or-
+        ///
+        /// <paramref name="second"/> is less than 0 or greater than 59.
+        ///
+        /// -or-
+        ///
+        /// <paramref name="millisecond"/> is less than 0 or greater than 999.
+        /// -or-
+        ///
+        /// <paramref name="microsecond"/> is less than 0 or greater than 900.
+        /// </exception>
+        public DateTimeOffset(int year, int month, int day, int hour, int minute, int second, int millisecond, int microsecond, TimeSpan offset)
+            : this(year, month, day, hour, minute, second, millisecond, offset)
+        {
+            if ((uint)microsecond >= DateTime.MicrosecondsPerMillisecond)
+            {
+                throw new ArgumentOutOfRangeException(nameof(microsecond), SR.ArgumentOutOfRange_BadHourMinuteSecond);
+            }
+            _dateTime = _dateTime.AddMicroseconds(microsecond);
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="DateTimeOffset"/> structure using the
+        /// specified <paramref name="year"/>, <paramref name="month"/>, <paramref name="day"/>, <paramref name="hour"/>, <paramref name="minute"/>,
+        /// <paramref name="second"/>, <paramref name="millisecond"/>, <paramref name="microsecond"/> and <paramref name="offset"/>.
+        /// </summary>
+        /// <param name="year">The year (1 through 9999).</param>
+        /// <param name="month">The month (1 through 12).</param>
+        /// <param name="day">The day (1 through the number of days in <paramref name="month"/>).</param>
+        /// <param name="hour">The hours (0 through 23).</param>
+        /// <param name="minute">The minutes (0 through 59).</param>
+        /// <param name="second">The seconds (0 through 59).</param>
+        /// <param name="millisecond">The milliseconds (0 through 999).</param>
+        /// <param name="microsecond">The microseconds (0 through 999).</param>
+        /// <param name="calendar">The calendar that is used to interpret <paramref name="year"/>, <paramref name="month"/>, and <paramref name="day"/>.</param>
+        /// <param name="offset">The time's offset from Coordinated Universal Time (UTC).</param>
+        /// <remarks>
+        /// This constructor interprets <paramref name="year"/>, <paramref name="month"/> and <paramref name="day"/> as a year, month and day
+        /// in the Gregorian calendar. To instantiate a <see cref="DateTimeOffset"/> value by using the year, month and day in another calendar, call
+        /// the <see cref="DateTimeOffset(int, int, int, int, int, int, int, int, Calendar, TimeSpan)"/> constructor.
+        /// </remarks>
+        /// <exception cref="ArgumentException">
+        /// <paramref name="offset"/> does not represent whole minutes.
+        /// </exception>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <paramref name="year"/> is not in the range supported by <paramref name="calendar"/>.
+        ///
+        /// -or-
+        ///
+        /// <paramref name="month"/> is less than 1 or greater than the number of months in <paramref name="calendar"/>.
+        ///
+        /// -or-
+        ///
+        /// <paramref name="day"/> is less than 1 or greater than the number of days in <paramref name="month"/>.
+        ///
+        /// -or-
+        ///
+        /// <paramref name="hour"/> is less than 0 or greater than 23.
+        ///
+        /// -or-
+        ///
+        /// <paramref name="minute"/> is less than 0 or greater than 59.
+        ///
+        /// -or-
+        ///
+        /// <paramref name="second"/> is less than 0 or greater than 59.
+        ///
+        /// -or-
+        ///
+        /// <paramref name="millisecond"/> is less than 0 or greater than 999.
+        ///
+        /// -or-
+        ///
+        /// <paramref name="microsecond"/> is less than 0 or greater than 900.
+        ///
+        /// -or-
+        ///
+        /// <paramref name="offset"/> is less than -14 hours or greater than 14 hours.
+        ///
+        /// -or-
+        ///
+        /// The <paramref name="year"/>, <paramref name="month"/>, and <paramref name="day"/> parameters
+        /// cannot be represented as a date and time value.
+        ///
+        /// -or-
+        ///
+        /// The <see cref="UtcDateTime"/> property is earlier than <see cref="MinValue"/> or later than <see cref="MaxValue"/>.
+        /// </exception>
+        public DateTimeOffset(int year, int month, int day, int hour, int minute, int second, int millisecond, int microsecond, Calendar calendar, TimeSpan offset)
+        : this(year, month, day, hour, minute, second, millisecond, calendar, offset)
+        {
+            if ((uint)microsecond >= DateTime.MicrosecondsPerMillisecond)
+            {
+                throw new ArgumentOutOfRangeException(nameof(microsecond), SR.ArgumentOutOfRange_BadHourMinuteSecond);
+            }
+            _dateTime = _dateTime.AddMicroseconds(microsecond);
+        }
+
         // Returns a DateTimeOffset representing the current date and time. The
         // resolution of the returned value depends on the system timer.
         public static DateTimeOffset Now => ToLocalTime(DateTime.UtcNow, true);
@@ -256,6 +395,26 @@ namespace System
         //
         public int Millisecond => ClockDateTime.Millisecond;
 
+        /// <summary>
+        /// Gets the microsecond component of the time represented by the current <see cref="DateTimeOffset"/> object.
+        /// </summary>
+        /// <remarks>
+        /// If you rely on properties such as <see cref="Now"/> or <see cref="UtcNow"/> to accurately track the number of elapsed microseconds,
+        /// the precision of the time's microseconds component depends on the resolution of the system clock.
+        /// On Windows NT 3.5 and later, and Windows Vista operating systems, the clock's resolution is approximately 10000-15000 microseconds.
+        /// </remarks>
+        public int Microsecond => ClockDateTime.Microsecond;
+
+        /// <summary>
+        /// Gets the nanosecond component of the time represented by the current <see cref="DateTimeOffset"/> object.
+        /// </summary>
+        /// <remarks>
+        /// If you rely on properties such as <see cref="Now"/> or <see cref="UtcNow"/> to accurately track the number of elapsed nanosecond,
+        /// the precision of the time's nanosecond component depends on the resolution of the system clock.
+        /// On Windows NT 3.5 and later, and Windows Vista operating systems, the clock's resolution is approximately 10000000-15000000 nanoseconds.
+        /// </remarks>
+        public int Nanosecond => ClockDateTime.Nanosecond;
+
         // Returns the minute part of this DateTimeOffset. The returned value is
         // an integer between 0 and 59.
         //
@@ -323,6 +482,33 @@ namespace System
         //
         public DateTimeOffset AddMilliseconds(double milliseconds) =>
             new DateTimeOffset(ClockDateTime.AddMilliseconds(milliseconds), Offset);
+
+        /// <summary>
+        /// Returns a new <see cref="DateTimeOffset"/> object that adds a specified number of microseconds to the value of this instance.
+        /// </summary>
+        /// <param name="microseconds">A number of whole and fractional microseconds. The number can be negative or positive.</param>
+        /// <returns>
+        /// An object whose value is the sum of the date and time represented by the current <see cref="DateTimeOffset"/> object and the number
+        /// of whole microseconds represented by <paramref name="microseconds"/>.
+        /// </returns>
+        /// <remarks>
+        /// The fractional part of value is the fractional part of a microsecond.
+        /// For example, 4.5 is equivalent to 4 microseconds and 50 ticks, where one microseconds = 10 ticks.
+        /// However, <paramref name="microseconds"/> is rounded to the nearest microsecond; all values of .5 or greater are rounded up.
+        ///
+        /// Because a <see cref="DateTimeOffset"/> object does not represent the date and time in a specific time zone,
+        /// the <see cref="AddMicroseconds"/> method does not consider a particular time zone's adjustment rules
+        /// when it performs date and time arithmetic.
+        /// </remarks>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// The resulting <see cref="DateTimeOffset"/> value is less than <see cref="MinValue"/>
+        ///
+        /// -or-
+        ///
+        /// The resulting <see cref="DateTimeOffset"/> value is greater than <see cref="MaxValue"/>
+        /// </exception>
+        public DateTimeOffset AddMicroseconds(double microseconds) =>
+            new DateTimeOffset(ClockDateTime.AddMicroseconds(microseconds), Offset);
 
         // Returns the DateTimeOffset resulting from adding a fractional number of
         // minutes to this DateTimeOffset. The result is computed by rounding the

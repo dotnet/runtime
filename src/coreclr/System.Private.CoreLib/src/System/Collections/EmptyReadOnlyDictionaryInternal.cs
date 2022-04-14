@@ -42,7 +42,7 @@ namespace System.Collections
                 throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_NeedNonNegNum);
 
             if (array.Length - index < this.Count)
-                throw new ArgumentException(SR.ArgumentOutOfRange_Index, nameof(index));
+                throw new ArgumentException(SR.ArgumentOutOfRange_IndexMustBeLessOrEqual, nameof(index));
 
             // the actual copy is a NOP
         }
