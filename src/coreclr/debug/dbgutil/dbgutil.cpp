@@ -15,9 +15,8 @@
 #include "corerror.h"
 #include <assert.h>
 #include <stdio.h>
-#include "crosscomp.h"
-#include "pedecoder.h"
-#include "pedecoder.inl"
+#include "corhlpr.h"
+#define DACCESS_TABLE_SYMBOL "g_dacTable"
 
 #ifdef HOST_WINDOWS
 

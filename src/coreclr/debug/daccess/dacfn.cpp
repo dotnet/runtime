@@ -1145,11 +1145,11 @@ PWSTR    DacGetVtNameW(TADDR targetVtable)
 {
     PWSTR pszRet = NULL;
 
-    ULONGLONG *targ = &g_dacGlobals.EEJitManager__vtAddr;
-    ULONGLONG *targStart = targ;
+    TADDR *targ = &g_dacGlobals.EEJitManager__vtAddr;
+    TADDR *targStart = targ;
     for (ULONG i = 0; i < sizeof(g_dacHostVtPtrs) / sizeof(PVOID); i++)
     {
-        if (targetVtable == (*targ))
+        if (targetVtable == (*targ + DacGlobalBase()))
         {
             pszRet = (PWSTR) *(g_dacVtStrings + (targ - targStart));
             break;
@@ -1164,7 +1164,7 @@ TADDR
 DacGetTargetVtForHostVt(LPCVOID vtHost, bool throwEx)
 {
     PVOID* host;
-    ULONGLONG* targ;
+    TADDR* targ;
     ULONG i;
 
     // The host vtable table exactly parallels the
@@ -1176,7 +1176,7 @@ DacGetTargetVtForHostVt(LPCVOID vtHost, bool throwEx)
     {
         if (*host == vtHost)
         {
-            return *targ;
+            return *targ + DacGlobalBase();
         }
 
         host++;

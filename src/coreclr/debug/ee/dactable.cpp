@@ -68,26 +68,29 @@ struct is_type_template_instantiation<U<T>, U>
 #undef VPTR_CLASS
 #undef VPTR_MULTI_CLASS
 
+// __ImageBase will always be the base of the RVAs in whatever PE this file is compiled into.
+extern "C" BYTE __ImageBase;
+
 // Re-export the static dac table as the global g_dacTable symbol.
 // This allows us to not have to change how any of the "friend struct" relationships with the DAC table work
 // while also still statically initializing the dac table.
 #pragma comment(linker, "/EXPORT:g_dacTable=?s_dacGlobals@_DacGlobals@@0U1@B")
 const DacGlobals _DacGlobals::s_dacGlobals = 
 {
-#define DEFINE_DACVAR(size, id, var)                   PTR_TO_TADDR(&var),
-#define DEFINE_DACVAR_VOLATILE(size, id, var)          PTR_TO_TADDR(&var.m_val),
-#define DEFINE_DACVAR_NO_DUMP(size, id, var)           PTR_TO_TADDR(&var),
+#define DEFINE_DACVAR(size, id, var)                   PTR_TO_TADDR(&var) - PTR_TO_TADDR(&__ImageBase),
+#define DEFINE_DACVAR_VOLATILE(size, id, var)          PTR_TO_TADDR(&var.m_val) - PTR_TO_TADDR(&__ImageBase),
+#define DEFINE_DACVAR_NO_DUMP(size, id, var)           PTR_TO_TADDR(&var) - PTR_TO_TADDR(&__ImageBase),
 #include "dacvars.h"
 #undef DEFINE_DACVAR
 #undef DEFINE_DACVAR_VOLATILE
 #undef DEFINE_DACVAR_NO_DUMP
-#define DEFINE_DACGFN(func) PTR_TO_TADDR(&func),
-#define DEFINE_DACGFN_STATIC(class, func) PTR_TO_TADDR(&class::func),
+#define DEFINE_DACGFN(func) PTR_TO_TADDR(&func) - PTR_TO_TADDR(&__ImageBase),
+#define DEFINE_DACGFN_STATIC(class, func) PTR_TO_TADDR(&class::func) - PTR_TO_TADDR(&__ImageBase),
 #include "gfunc_list.h"
 #undef DEFINE_DACGFN
 #undef DEFINE_DACGFN_STATIC
-#define VPTR_CLASS(type) PTR_TO_TADDR(&vtable_ ## type),
-#define VPTR_MULTI_CLASS(type, keyBase) PTR_TO_TADDR(&vtable_ ## type ## _ ## keyBase),
+#define VPTR_CLASS(type) PTR_TO_TADDR(&vtable_ ## type) - PTR_TO_TADDR(&__ImageBase),
+#define VPTR_MULTI_CLASS(type, keyBase) PTR_TO_TADDR(&vtable_ ## type ## _ ## keyBase) - PTR_TO_TADDR(&__ImageBase),
 #include "vptr_list.h"
 };
 
@@ -111,6 +114,7 @@ DLLEXPORT DacGlobals g_DacTable;
 
 void DacGlobals::Initialize()
 {
+    TADDR baseAddress = PTR_TO_TADDR(PAL_GetSymbolModuleBase((void *)DacGlobals::Initialize));
     
 #define DEFINE_DACVAR(size, id, var) static_assert(!is_type_template_instantiation<decltype(var), Volatile>::m_value, "DAC variables defined with DEFINE_DACVAR must not be instantiations of Volatile<T>.");
 #define DEFINE_DACVAR_NODUMP(size, id, var) static_assert(!is_type_template_instantiation<decltype(var), Volatile>::m_value, "DAC variables defined with DEFINE_DACVAR_NODUMP must not be instantiations of Volatile<T>.");
@@ -120,9 +124,9 @@ void DacGlobals::Initialize()
 #undef DEFINE_DACVAR_NODUMP
 #undef DEFINE_DACVAR
 
-#define DEFINE_DACVAR(size, id, var)                   id = PTR_TO_TADDR(&var);
-#define DEFINE_DACVAR_VOLATILE(size, id, var)          id = PTR_TO_TADDR(&var.m_val);
-#define DEFINE_DACVAR_NO_DUMP(size, id, var)           id = PTR_TO_TADDR(&var);
+#define DEFINE_DACVAR(size, id, var)                   id = PTR_TO_TADDR(&var) - baseAddress;
+#define DEFINE_DACVAR_VOLATILE(size, id, var)          id = PTR_TO_TADDR(&var.m_val) - baseAddress;
+#define DEFINE_DACVAR_NO_DUMP(size, id, var)           id = PTR_TO_TADDR(&var) - baseAddress;
 #undef DEFINE_DACVAR_VOLATILE
 #undef DEFINE_DACVAR_NODUMP
 #undef DEFINE_DACVAR
@@ -130,8 +134,8 @@ void DacGlobals::Initialize()
 #undef DEFINE_DACVAR
 #undef DEFINE_DACVAR_VOLATILE
 #undef DEFINE_DACVAR_NO_DUMP
-#define DEFINE_DACGFN(func) PTR_TO_TADDR(&func),
-#define DEFINE_DACGFN_STATIC(class, func) PTR_TO_TADDR(&class::func),
+#define DEFINE_DACGFN(func) id = PTR_TO_TADDR(&func)  - baseAddress;
+#define DEFINE_DACGFN_STATIC(class, func) id = PTR_TO_TADDR(&class::func)  - baseAddress;
 #include "gfunc_list.h"
 #undef DEFINE_DACGFN
 #undef DEFINE_DACGFN_STATIC
@@ -139,13 +143,13 @@ void DacGlobals::Initialize()
     { \
         void *pBuf = _alloca(sizeof(name)); \
         name *dummy = new (pBuf) name(0); \
-        name##__vtAddr = PTR_TO_TADDR(*((PVOID*)dummy)); \
+        name##__vtAddr = PTR_TO_TADDR(*((PVOID*)dummy)) - baseAddress; \
     }
 #define VPTR_MULTI_CLASS(name, keyBase) \
     { \
         void *pBuf = _alloca(sizeof(name)); \
         name *dummy = new (pBuf) name(0); \
-        name##__##keyBase##__mvtAddr = PTR_TO_TADDR(*((PVOID*)dummy)); \
+        name##__##keyBase##__mvtAddr = PTR_TO_TADDR(*((PVOID*)dummy)) - baseAddress; \
     }
 #include <vptr_list.h>
 #undef VPTR_CLASS
