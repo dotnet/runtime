@@ -1165,11 +1165,11 @@ emit_marshal_string_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 				break;
 			}
 
-			MONO_STATIC_POINTER_INIT (MonoMethod, m)
+			MONO_STATIC_POINTER_INIT (MonoMethod, method)
 
-				m = mono_marshal_shared_get_method_nofail (mono_defaults.string_class, "get_Length", -1, 0);
+				method = mono_marshal_shared_get_method_nofail (mono_defaults.string_class, "get_Length", -1, 0);
 
-			MONO_STATIC_POINTER_INIT_END (MonoMethod, m)
+			MONO_STATIC_POINTER_INIT_END (MonoMethod, method)
 
 			/*
 			 * Have to allocate a new string with the same length as the original, and
@@ -1180,7 +1180,7 @@ emit_marshal_string_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 			mono_mb_emit_ldloc (mb, conv_arg);
 			mono_mb_emit_ldarg (mb, argnum);
 			mono_mb_emit_byte (mb, CEE_LDIND_I);
-			mono_mb_emit_managed_call (mb, m, NULL);
+			mono_mb_emit_managed_call (mb, method, NULL);
 			mono_mb_emit_icall (mb, mono_string_new_len_wrapper);
 			mono_mb_emit_byte (mb, CEE_STIND_REF);
 		} else if (m_type_is_byref (t) && (t->attrs & PARAM_ATTRIBUTE_OUT || !(t->attrs & PARAM_ATTRIBUTE_IN))) {

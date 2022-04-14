@@ -738,71 +738,107 @@ mono_marshal_shared_conv_to_icall(MonoMarshalConv conv, int *ind_store_type)
 void
 mono_marshal_shared_emit_ptr_to_object_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv conv, MonoMarshalSpec *mspec)
 {
+	int pos;
+	int stind_op;
+
 	switch (conv) {
 	case MONO_MARSHAL_CONV_BOOL_I4:
 		mono_mb_emit_ldloc (mb, 1);
 		mono_mb_emit_ldloc (mb, 0);
-		mono_mb_emit_byte (mb, CEE_LDIND_I4);
-		mono_mb_emit_byte (mb, CEE_BRFALSE_S);
-		mono_mb_emit_byte (mb, 3);
-		mono_mb_emit_byte (mb, CEE_LDC_I4_1);
-		mono_mb_emit_byte (mb, CEE_BR_S);
-		mono_mb_emit_byte (mb, 1);
-		mono_mb_emit_byte (mb, CEE_LDC_I4_0);
-		mono_mb_emit_byte (mb, CEE_STIND_I1);
+		mono_mb_emit_byte (mb, CEE_LDIND_U1);
+		mono_mb_emit_byte (mb, CEE_STIND_I4);
 		break;
 	case MONO_MARSHAL_CONV_BOOL_VARIANTBOOL:
 		mono_mb_emit_ldloc (mb, 1);
 		mono_mb_emit_ldloc (mb, 0);
-		mono_mb_emit_byte (mb, CEE_LDIND_I2);
-		mono_mb_emit_byte (mb, CEE_BRFALSE_S);
-		mono_mb_emit_byte (mb, 3);
-		mono_mb_emit_byte (mb, CEE_LDC_I4_1);
-		mono_mb_emit_byte (mb, CEE_BR_S);
-		mono_mb_emit_byte (mb, 1);
-		mono_mb_emit_byte (mb, CEE_LDC_I4_0);
-		mono_mb_emit_byte (mb, CEE_STIND_I1);
+		mono_mb_emit_byte (mb, CEE_LDIND_U1);
+		mono_mb_emit_byte (mb, CEE_NEG);
+		mono_mb_emit_byte (mb, CEE_STIND_I2);
 		break;
+	case MONO_MARSHAL_CONV_STR_UTF8STR:
+	case MONO_MARSHAL_CONV_STR_LPWSTR:
+	case MONO_MARSHAL_CONV_STR_LPSTR:
+	case MONO_MARSHAL_CONV_STR_LPTSTR:
+	case MONO_MARSHAL_CONV_STR_BSTR:
+	case MONO_MARSHAL_CONV_STR_ANSIBSTR:
+	case MONO_MARSHAL_CONV_STR_TBSTR: {
+		/* free space if free == true */
+		mono_mb_emit_ldloc (mb, 2);
+		pos = mono_mb_emit_short_branch (mb, CEE_BRFALSE_S);
+		mono_mb_emit_ldloc (mb, 1);
+		mono_mb_emit_byte (mb, CEE_LDIND_I);
+		mono_mb_emit_icall (mb, g_free); // aka monoeg_g_free
+		mono_mb_patch_short_branch (mb, pos);
+
+		mono_mb_emit_ldloc (mb, 1);
+		mono_mb_emit_ldloc (mb, 0);
+		mono_mb_emit_byte (mb, CEE_LDIND_REF);
+		mono_mb_emit_icall_id (mb, mono_marshal_shared_conv_to_icall (conv, &stind_op));
+		mono_mb_emit_byte (mb, stind_op);
+		break;
+	}
+	case MONO_MARSHAL_CONV_ARRAY_SAVEARRAY:
+	case MONO_MARSHAL_CONV_ARRAY_LPARRAY:
+	case MONO_MARSHAL_CONV_DEL_FTN:
+		mono_mb_emit_ldloc (mb, 1);
+		mono_mb_emit_ldloc (mb, 0);
+		mono_mb_emit_byte (mb, CEE_LDIND_REF);
+		mono_mb_emit_icall_id (mb, mono_marshal_shared_conv_to_icall (conv, &stind_op));
+		mono_mb_emit_byte (mb, stind_op);
+		break;
+	case MONO_MARSHAL_CONV_STR_BYVALSTR:
+	case MONO_MARSHAL_CONV_STR_BYVALWSTR: {
+		g_assert (mspec);
+
+		mono_mb_emit_ldloc (mb, 1); /* dst */
+		mono_mb_emit_ldloc (mb, 0);
+		mono_mb_emit_byte (mb, CEE_LDIND_REF); /* src String */
+		mono_mb_emit_icon (mb, mspec->data.array_data.num_elem);
+		mono_mb_emit_icall_id (mb, mono_marshal_shared_conv_to_icall (conv, NULL));
+		break;
+	}
 	case MONO_MARSHAL_CONV_ARRAY_BYVALARRAY: {
 		MonoClass *eklass = NULL;
 		int esize;
 
 		if (type->type == MONO_TYPE_SZARRAY) {
 			eklass = type->data.klass;
+		} else if (type->type == MONO_TYPE_ARRAY) {
+			eklass = type->data.array->eklass;
+			g_assert(m_class_is_blittable (eklass));
 		} else {
 			g_assert_not_reached ();
 		}
 
-		esize = mono_class_native_size (eklass, NULL);
+		if (m_class_is_valuetype (eklass))
+			esize = mono_class_native_size (eklass, NULL);
+		else
+			esize = TARGET_SIZEOF_VOID_P;
 
-		/* create a new array */
-		mono_mb_emit_ldloc (mb, 1);
-		mono_mb_emit_icon (mb, mspec->data.array_data.num_elem);
-		mono_mb_emit_op (mb, CEE_NEWARR, eklass);
-		mono_mb_emit_byte (mb, CEE_STIND_REF);
+		mono_mb_emit_ldloc (mb, 0);
+		mono_mb_emit_byte (mb, CEE_LDIND_REF);
+		pos = mono_mb_emit_branch (mb, CEE_BRFALSE);
 
 		if (m_class_is_blittable (eklass)) {
-			/* copy the elements */
 			mono_mb_emit_ldloc (mb, 1);
-			mono_mb_emit_byte (mb, CEE_LDIND_I);
-			mono_mb_emit_icon (mb, MONO_STRUCT_OFFSET (MonoArray, vector));
-			mono_mb_emit_byte (mb, CEE_ADD);
 			mono_mb_emit_ldloc (mb, 0);
+			mono_mb_emit_byte (mb, CEE_LDIND_REF);
+			mono_mb_emit_ldflda (mb, MONO_STRUCT_OFFSET (MonoArray, vector));
 			mono_mb_emit_icon (mb, mspec->data.array_data.num_elem * esize);
 			mono_mb_emit_byte (mb, CEE_PREFIX1);
 			mono_mb_emit_byte (mb, CEE_CPBLK);
-		}
-		else {
+		} else {
 			int array_var, src_var, dst_var, index_var;
 			guint32 label2, label3;
 
 			MonoType *int_type = mono_get_int_type ();
-			array_var = mono_mb_add_local (mb, mono_get_object_type ());
+			MonoType *object_type = mono_get_object_type ();
+			array_var = mono_mb_add_local (mb, object_type);
 			src_var = mono_mb_add_local (mb, int_type);
 			dst_var = mono_mb_add_local (mb, int_type);
 
 			/* set array_var */
-			mono_mb_emit_ldloc (mb, 1);
+			mono_mb_emit_ldloc (mb, 0);
 			mono_mb_emit_byte (mb, CEE_LDIND_REF);
 			mono_mb_emit_stloc (mb, array_var);
 
@@ -825,16 +861,16 @@ mono_marshal_shared_emit_ptr_to_object_conv (MonoMethodBuilder *mb, MonoType *ty
 			mono_mb_emit_byte (mb, CEE_LDLEN);
 			label3 = mono_mb_emit_branch (mb, CEE_BGE);
 
-			/* src is already set */
-
-			/* Set dst */
+			/* Set src */
 			mono_mb_emit_ldloc (mb, array_var);
 			mono_mb_emit_ldloc (mb, index_var);
 			mono_mb_emit_op (mb, CEE_LDELEMA, eklass);
-			mono_mb_emit_stloc (mb, 1);
+			mono_mb_emit_stloc (mb, 0);
+
+			/* dst is already set */
 
 			/* Do the conversion */
-			mono_marshal_shared_emit_struct_conv (mb, eklass, TRUE);
+			mono_marshal_shared_emit_struct_conv (mb, eklass, FALSE);
 
 			/* Loop footer */
 			mono_mb_emit_add_to_local (mb, index_var, 1);
@@ -850,79 +886,33 @@ mono_marshal_shared_emit_ptr_to_object_conv (MonoMethodBuilder *mb, MonoType *ty
 			mono_mb_emit_ldloc (mb, dst_var);
 			mono_mb_emit_stloc (mb, 1);
 		}
+
+		mono_mb_patch_branch (mb, pos);
 		break;
 	}
 	case MONO_MARSHAL_CONV_ARRAY_BYVALCHARARRAY: {
-		MonoClass *eclass = mono_defaults.char_class;
-
-		/* create a new array */
-		mono_mb_emit_ldloc (mb, 1);
-		mono_mb_emit_icon (mb, mspec->data.array_data.num_elem);
-		mono_mb_emit_op (mb, CEE_NEWARR, eclass);
-		mono_mb_emit_byte (mb, CEE_STIND_REF);
-
-		mono_mb_emit_ldloc (mb, 1);
+		mono_mb_emit_ldloc (mb, 0);
 		mono_mb_emit_byte (mb, CEE_LDIND_REF);
-		mono_mb_emit_ldloc (mb, 0);
-		mono_mb_emit_icon (mb, mspec->data.array_data.num_elem);
-		mono_mb_emit_icall (mb, mono_byvalarray_to_byte_array);
-		break;
-	}
-	case MONO_MARSHAL_CONV_STR_BYVALSTR:
-		if (mspec && mspec->native == MONO_NATIVE_BYVALTSTR && mspec->data.array_data.num_elem) {
-			mono_mb_emit_ldloc (mb, 1);
-			mono_mb_emit_ldloc (mb, 0);
-			mono_mb_emit_icon (mb, mspec->data.array_data.num_elem);
-			mono_mb_emit_icall (mb, mono_string_from_byvalstr);
-		} else {
-			mono_mb_emit_ldloc (mb, 1);
-			mono_mb_emit_ldloc (mb, 0);
-			mono_mb_emit_icall (mb, ves_icall_string_new_wrapper);
-		}
-		mono_mb_emit_byte (mb, CEE_STIND_REF);
-		break;
-	case MONO_MARSHAL_CONV_STR_BYVALWSTR:
-		if (mspec && mspec->native == MONO_NATIVE_BYVALTSTR && mspec->data.array_data.num_elem) {
-			mono_mb_emit_ldloc (mb, 1);
-			mono_mb_emit_ldloc (mb, 0);
-			mono_mb_emit_icon (mb, mspec->data.array_data.num_elem);
-			mono_mb_emit_icall (mb, mono_string_from_byvalwstr);
-		} else {
-			mono_mb_emit_ldloc (mb, 1);
-			mono_mb_emit_ldloc (mb, 0);
-			mono_mb_emit_icall (mb, ves_icall_mono_string_from_utf16);
-		}
-		mono_mb_emit_byte (mb, CEE_STIND_REF);
-		break;
+		pos = mono_mb_emit_short_branch (mb, CEE_BRFALSE_S);
 
-	case MONO_MARSHAL_CONV_STR_ANSIBSTR:
-	case MONO_MARSHAL_CONV_STR_TBSTR:
-	case MONO_MARSHAL_CONV_STR_UTF8STR:
-	case MONO_MARSHAL_CONV_STR_LPWSTR:
-	case MONO_MARSHAL_CONV_STR_LPSTR:
-	case MONO_MARSHAL_CONV_STR_LPTSTR:
-	case MONO_MARSHAL_CONV_STR_BSTR: {
 		mono_mb_emit_ldloc (mb, 1);
 		mono_mb_emit_ldloc (mb, 0);
-		mono_mb_emit_byte (mb, CEE_LDIND_I);
-		mono_mb_emit_icall_id (mb, mono_marshal_shared_conv_to_icall(mono_marshal_shared_conv_str_inverse   (conv), NULL));
-		mono_mb_emit_byte (mb, CEE_STIND_REF);
+		mono_mb_emit_byte (mb, CEE_LDIND_REF);
+		mono_mb_emit_icon (mb, mspec->data.array_data.num_elem);
+		mono_mb_emit_icall (mb, mono_array_to_byte_byvalarray);
+		mono_mb_patch_short_branch (mb, pos);
 		break;
 	}
-
 	case MONO_MARSHAL_CONV_OBJECT_STRUCT: {
-		MonoClass *klass = mono_class_from_mono_type_internal (type);
 		int src_var, dst_var;
 
 		MonoType *int_type = mono_get_int_type ();
 		src_var = mono_mb_add_local (mb, int_type);
 		dst_var = mono_mb_add_local (mb, int_type);
 
-		/* *dst = new object */
-		mono_mb_emit_ldloc (mb, 1);
-		mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
-		mono_mb_emit_op (mb, CEE_MONO_NEWOBJ, klass);
-		mono_mb_emit_byte (mb, CEE_STIND_REF);
+		mono_mb_emit_ldloc (mb, 0);
+		mono_mb_emit_byte (mb, CEE_LDIND_I);
+		pos = mono_mb_emit_branch (mb, CEE_BRFALSE);
 
 		/* save the old src pointer */
 		mono_mb_emit_ldloc (mb, 0);
@@ -931,14 +921,14 @@ mono_marshal_shared_emit_ptr_to_object_conv (MonoMethodBuilder *mb, MonoType *ty
 		mono_mb_emit_ldloc (mb, 1);
 		mono_mb_emit_stloc (mb, dst_var);
 
-		/* dst = pointer to newly created object data */
-		mono_mb_emit_ldloc (mb, 1);
+		/* src = pointer to object data */
+		mono_mb_emit_ldloc (mb, 0);
 		mono_mb_emit_byte (mb, CEE_LDIND_I);
 		mono_mb_emit_icon (mb, MONO_ABI_SIZEOF (MonoObject));
 		mono_mb_emit_byte (mb, CEE_ADD);
-		mono_mb_emit_stloc (mb, 1);
+		mono_mb_emit_stloc (mb, 0);
 
-		mono_marshal_shared_emit_struct_conv (mb, klass, TRUE);
+		mono_marshal_shared_emit_struct_conv (mb, mono_class_from_mono_type_internal (type), FALSE);
 
 		/* restore the old src pointer */
 		mono_mb_emit_ldloc (mb, src_var);
@@ -946,64 +936,48 @@ mono_marshal_shared_emit_ptr_to_object_conv (MonoMethodBuilder *mb, MonoType *ty
 		/* restore the old dst pointer */
 		mono_mb_emit_ldloc (mb, dst_var);
 		mono_mb_emit_stloc (mb, 1);
-		break;
-	}
-	case MONO_MARSHAL_CONV_DEL_FTN: {
-		MonoClass *klass = mono_class_from_mono_type_internal (type);
 
-		mono_mb_emit_ldloc (mb, 1);
-		mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
-		mono_mb_emit_op (mb, CEE_MONO_CLASSCONST, klass);
-		mono_mb_emit_ldloc (mb, 0);
-		mono_mb_emit_byte (mb, CEE_LDIND_I);
-		mono_mb_emit_icall (mb, mono_ftnptr_to_delegate);
-		mono_mb_emit_byte (mb, CEE_STIND_REF);
-		break;
-	}
-	case MONO_MARSHAL_CONV_ARRAY_LPARRAY: {
-		char *msg = g_strdup_printf ("Structure field of type %s can't be marshalled as LPArray", m_class_get_name (mono_class_from_mono_type_internal (type)));
-		mono_marshal_shared_mb_emit_exception_marshal_directive (mb, msg);
+		mono_mb_patch_branch (mb, pos);
 		break;
 	}
 
 #ifndef DISABLE_COM
 	case MONO_MARSHAL_CONV_OBJECT_INTERFACE:
-	case MONO_MARSHAL_CONV_OBJECT_IUNKNOWN:
 	case MONO_MARSHAL_CONV_OBJECT_IDISPATCH:
-		mono_cominterop_emit_ptr_to_object_conv (mb, type, conv, mspec);
+	case MONO_MARSHAL_CONV_OBJECT_IUNKNOWN:
+		mono_cominterop_emit_object_to_ptr_conv (mb, type, conv, mspec);
 		break;
 #endif /* DISABLE_COM */
 
 	case MONO_MARSHAL_CONV_SAFEHANDLE: {
-		/*
-		 * Passing SafeHandles as ref does not allow the unmanaged code
-		 * to change the SafeHandle value.   If the value is changed,
-		 * we should issue a diagnostic exception (NotSupportedException)
-		 * that informs the user that changes to handles in unmanaged code
-		 * is not supported.
-		 *
-		 * Since we currently have no access to the original
-		 * SafeHandle that was used during the marshalling,
-		 * for now we just ignore this, and ignore/discard any
-		 * changes that might have happened to the handle.
-		 */
+		mono_mb_emit_ldloc (mb, 0);
+		mono_mb_emit_byte (mb, CEE_LDIND_I);
+		pos = mono_mb_emit_branch (mb, CEE_BRTRUE);
+		mono_mb_emit_exception (mb, "ArgumentNullException", NULL);
+		mono_mb_patch_branch (mb, pos);
+
+		/* Pull the handle field from SafeHandle */
+		mono_mb_emit_ldloc (mb, 1);
+		mono_mb_emit_ldloc (mb, 0);
+		mono_mb_emit_byte (mb, CEE_LDIND_I);
+		mono_mb_emit_ldflda (mb, MONO_STRUCT_OFFSET (MonoSafeHandle, handle));
+		mono_mb_emit_byte (mb, CEE_LDIND_I);
+		mono_mb_emit_byte (mb, CEE_STIND_I);
 		break;
 	}
 
 	case MONO_MARSHAL_CONV_HANDLEREF: {
-		/*
-		 * Passing HandleRefs in a struct that is ref()ed does not
-		 * copy the values back to the HandleRef
-		 */
+		mono_mb_emit_ldloc (mb, 1);
+		mono_mb_emit_ldloc (mb, 0);
+		mono_mb_emit_icon (mb, MONO_STRUCT_OFFSET (MonoHandleRef, handle));
+		mono_mb_emit_byte (mb, CEE_ADD);
+		mono_mb_emit_byte (mb, CEE_LDIND_I);
+		mono_mb_emit_byte (mb, CEE_STIND_I);
 		break;
 	}
 
-	case MONO_MARSHAL_CONV_ARRAY_SAVEARRAY:
 	default: {
-		char *msg = g_strdup_printf ("marshaling conversion %d not implemented", conv);
-
-		mono_marshal_shared_mb_emit_exception_marshal_directive (mb, msg);
-		break;
+		g_error ("marshalling conversion %d not implemented", conv);
 	}
 	}
 }
