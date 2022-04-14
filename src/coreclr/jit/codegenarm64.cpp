@@ -3834,9 +3834,9 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
         genConsumeOperands(tree);
 
         // At this point, we should not have any interference.
-        // That is, 'data' must not be in REG_WRITE_BARRIER_DST_BYREF,
+        // That is, 'data' must not be in REG_WRITE_BARRIER_DST,
         //  as that is where 'addr' must go.
-        noway_assert(data->GetRegNum() != REG_WRITE_BARRIER_DST_BYREF);
+        noway_assert(data->GetRegNum() != REG_WRITE_BARRIER_DST);
 
         // 'addr' goes into x14 (REG_WRITE_BARRIER_DST)
         genCopyRegIfNeeded(addr, REG_WRITE_BARRIER_DST);
