@@ -117,7 +117,7 @@ namespace System.Diagnostics.Metrics
         {
             Type type = typeof(T);
             if (type != typeof(byte)   && type != typeof(short) && type != typeof(int) && type != typeof(long) &&
-                type != typeof(double) && type != typeof(float) && type != typeof(decimal))
+                type != typeof(double) && type != typeof(float) && type != typeof(decimal) && type != typeof(uint))
             {
                 throw new InvalidOperationException(SR.Format(SR.UnsupportedType, type));
             }
