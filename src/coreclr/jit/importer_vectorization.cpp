@@ -679,9 +679,8 @@ GenTree* Compiler::impStringEqualsOrStartsWith(bool startsWith, CORINFO_SIG_INFO
         needsNullcheck = false;
     }
 
-    constexpr int maxStrSize      = 64;
-    int           cnsLength       = -1;
-    char16_t      str[maxStrSize] = {};
+    int      cnsLength                  = -1;
+    char16_t str[MaxPossibleUnrollSize] = {};
     if (cnsStr->IsStringEmptyField())
     {
         // check for fake "" first
@@ -690,8 +689,8 @@ GenTree* Compiler::impStringEqualsOrStartsWith(bool startsWith, CORINFO_SIG_INFO
     }
     else
     {
-        cnsLength = info.compCompHnd->getStringLiteral(cnsStr->gtScpHnd, cnsStr->gtSconCPX, str, maxStrSize);
-        if ((cnsLength < 0) || (cnsLength > maxStrSize))
+        cnsLength = info.compCompHnd->getStringLiteral(cnsStr->gtScpHnd, cnsStr->gtSconCPX, str, MaxPossibleUnrollSize);
+        if ((cnsLength < 0) || (cnsLength > MaxPossibleUnrollSize))
         {
             // We were unable to get the literal (e.g. dynamic context)
             return nullptr;
@@ -818,9 +817,8 @@ GenTree* Compiler::impSpanEqualsOrStartsWith(bool startsWith, CORINFO_SIG_INFO* 
         spanObj = op1;
     }
 
-    constexpr int maxStrSize                 = 64;
-    int           cnsLength                  = -1;
-    char16_t      str[MaxPossibleUnrollSize] = {};
+    int      cnsLength                  = -1;
+    char16_t str[MaxPossibleUnrollSize] = {};
     if (cnsStr->IsStringEmptyField())
     {
         // check for fake "" first
