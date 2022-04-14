@@ -329,6 +329,10 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
         case GT_BFIZ:
             genCodeForBfiz(treeNode->AsOp());
             break;
+
+        case GT_CSNEG_MI:
+            genCodeForCond(treeNode->AsOp());
+            break;
 #endif // TARGET_ARM64
 
         case GT_JMP:
@@ -550,14 +554,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 
         default:
         {
-#ifdef DEBUG
-            char message[256];
-            _snprintf_s(message, ArrLen(message), _TRUNCATE, "NYI: Unimplemented node type %s",
-                        GenTree::OpName(treeNode->OperGet()));
-            NYIRAW(message);
-#else
-            NYI("unimplemented node");
-#endif
+            unreached();
         }
         break;
     }

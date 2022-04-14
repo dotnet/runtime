@@ -9335,21 +9335,14 @@ regMaskTP emitter::emitGetGCRegsKilledByNoGCCall(CorInfoHelpFunc helper)
     regMaskTP result;
     switch (helper)
     {
+        case CORINFO_HELP_ASSIGN_REF:
+        case CORINFO_HELP_CHECKED_ASSIGN_REF:
+            result = RBM_CALLEE_GCTRASH_WRITEBARRIER;
+            break;
+
         case CORINFO_HELP_ASSIGN_BYREF:
-#if defined(TARGET_X86)
-            // This helper only trashes ECX.
-            result = RBM_ECX;
-            break;
-#elif defined(TARGET_AMD64)
-            // This uses and defs RDI and RSI.
-            result = RBM_CALLEE_TRASH_NOGC & ~(RBM_RDI | RBM_RSI);
-            break;
-#elif defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64)
             result = RBM_CALLEE_GCTRASH_WRITEBARRIER_BYREF;
             break;
-#else
-            assert(!"unknown arch");
-#endif
 
 #if !defined(TARGET_LOONGARCH64)
         case CORINFO_HELP_PROF_FCN_ENTER:
@@ -9369,13 +9362,6 @@ regMaskTP emitter::emitGetGCRegsKilledByNoGCCall(CorInfoHelpFunc helper)
             result = RBM_PROFILER_TAILCALL_TRASH;
             break;
 #endif // !defined(TARGET_LOONGARCH64)
-
-#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64)
-        case CORINFO_HELP_ASSIGN_REF:
-        case CORINFO_HELP_CHECKED_ASSIGN_REF:
-            result = RBM_CALLEE_GCTRASH_WRITEBARRIER;
-            break;
-#endif // defined(TARGET_ARMARCH)
 
 #if defined(TARGET_X86)
         case CORINFO_HELP_INIT_PINVOKE_FRAME:

@@ -227,6 +227,7 @@ GTNODE(MSUB             , GenTreeOp          ,0,GTK_BINOP|DBK_NOTHIR) // Generat
                                                                       // enabling it for both armarch and xarch for floating-point MSUB "unsafe" math.
 GTNODE(ADDEX,             GenTreeOp          ,0,GTK_BINOP|DBK_NOTHIR) // Add with sign/zero extension.
 GTNODE(BFIZ             , GenTreeOp          ,0,GTK_BINOP|DBK_NOTHIR) // Bitfield Insert in Zero.
+GTNODE(CSNEG_MI         , GenTreeOp          ,0,GTK_BINOP|DBK_NOTHIR) // Conditional select, negate, minus result
 #endif
 
 //-----------------------------------------------------------------------------

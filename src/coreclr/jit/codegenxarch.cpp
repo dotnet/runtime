@@ -5026,14 +5026,14 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
         }
 
         // At this point, we should not have any interference.
-        // That is, 'data' must not be in REG_ARG_0, as that is where 'addr' must go.
-        noway_assert(data->GetRegNum() != REG_ARG_0);
+        // That is, 'data' must not be in REG_WRITE_BARRIER_DST, as that is where 'addr' must go.
+        noway_assert(data->GetRegNum() != REG_WRITE_BARRIER_DST);
 
-        // addr goes in REG_ARG_0
-        genCopyRegIfNeeded(addr, REG_ARG_0);
+        // addr goes in REG_WRITE_BARRIER_DST
+        genCopyRegIfNeeded(addr, REG_WRITE_BARRIER_DST);
 
-        // data goes in REG_ARG_1
-        genCopyRegIfNeeded(data, REG_ARG_1);
+        // data goes in REG_WRITE_BARRIER_SRC
+        genCopyRegIfNeeded(data, REG_WRITE_BARRIER_SRC);
 
         genGCWriteBarrier(tree, writeBarrierForm);
     }
@@ -5266,14 +5266,14 @@ bool CodeGen::genEmitOptimizedGCWriteBarrier(GCInfo::WriteBarrierForm writeBarri
     noway_assert(regToHelper[1][REG_EDI] == CORINFO_HELP_CHECKED_ASSIGN_REF_EDI);
 
     regNumber reg = data->GetRegNum();
-    noway_assert((reg != REG_ESP) && (reg != REG_WRITE_BARRIER));
+    noway_assert((reg != REG_ESP) && (reg != REG_OPTIMIZED_WRITE_BARRIER_DST));
 
     // Generate the following code:
     //            lea     edx, addr
     //            call    write_barrier_helper_reg
 
-    // addr goes in REG_ARG_0
-    genCopyRegIfNeeded(addr, REG_WRITE_BARRIER);
+    // addr goes in REG_OPTIMIZED_WRITE_BARRIER_DST
+    genCopyRegIfNeeded(addr, REG_OPTIMIZED_WRITE_BARRIER_DST);
 
     unsigned tgtAnywhere = 0;
     if (writeBarrierForm != GCInfo::WBF_BarrierUnchecked)
