@@ -1434,6 +1434,11 @@ namespace System.Text.RegularExpressions
             return ranges;
         }
 
+        /// <summary>Cache of character class strings for single ASCII characters.</summary>
+        private static readonly string[] s_asciiStrings = new string[128];
+        /// <summary>Cache of character class strings for pairs of upper/lower-case ASCII letters.</summary>
+        private static readonly string[] s_asciiLetterPairStrings = new string[26];
+
         /// <summary>Creates a set string for a single character.</summary>
         /// <param name="c">The character for which to create the set.</param>
         /// <returns>The create set string.</returns>
@@ -1450,44 +1455,32 @@ namespace System.Text.RegularExpressions
             }
 #endif
 
-            // If there aren't any chars, just return an empty class.
-            if (chars.Length == 0)
+            switch (chars.Length)
             {
-                return EmptyClass;
-            }
+                case 0:
+                    // If there aren't any chars, just return an empty class.
+                    return EmptyClass;
 
-            if (chars.Length == 2)
-            {
-                switch (chars[0], chars[1])
-                {
-                    case ('A', 'a'): case ('a', 'A'): return "\0\x0004\0ABab";
-                    case ('B', 'b'): case ('b', 'B'): return "\0\x0004\0BCbc";
-                    case ('C', 'c'): case ('c', 'C'): return "\0\x0004\0CDcd";
-                    case ('D', 'd'): case ('d', 'D'): return "\0\x0004\0DEde";
-                    case ('E', 'e'): case ('e', 'E'): return "\0\x0004\0EFef";
-                    case ('F', 'f'): case ('f', 'F'): return "\0\x0004\0FGfg";
-                    case ('G', 'g'): case ('g', 'G'): return "\0\x0004\0GHgh";
-                    case ('H', 'h'): case ('h', 'H'): return "\0\x0004\0HIhi";
-                    // 'I' and 'i' are missing since depending on the cultuure they may
-                    // have additional mappings.
-                    case ('J', 'j'): case ('j', 'J'): return "\0\x0004\0JKjk";
-                    // 'K' and 'k' are missing since their mapping also includes Kelvin K.
-                    case ('L', 'l'): case ('l', 'L'): return "\0\x0004\0LMlm";
-                    case ('M', 'm'): case ('m', 'M'): return "\0\x0004\0MNmn";
-                    case ('N', 'n'): case ('n', 'N'): return "\0\x0004\0NOno";
-                    case ('O', 'o'): case ('o', 'O'): return "\0\x0004\0OPop";
-                    case ('P', 'p'): case ('p', 'P'): return "\0\x0004\0PQpq";
-                    case ('Q', 'q'): case ('q', 'Q'): return "\0\x0004\0QRqr";
-                    case ('R', 'r'): case ('r', 'R'): return "\0\x0004\0RSrs";
-                    case ('S', 's'): case ('s', 'S'): return "\0\x0004\0STst";
-                    case ('T', 't'): case ('t', 'T'): return "\0\x0004\0TUtu";
-                    case ('U', 'u'): case ('u', 'U'): return "\0\x0004\0UVuv";
-                    case ('V', 'v'): case ('v', 'V'): return "\0\x0004\0VWvw";
-                    case ('W', 'w'): case ('w', 'W'): return "\0\x0004\0WXwx";
-                    case ('X', 'x'): case ('x', 'X'): return "\0\x0004\0XYxy";
-                    case ('Y', 'y'): case ('y', 'Y'): return "\0\x0004\0YZyz";
-                    case ('Z', 'z'): case ('z', 'Z'): return "\0\x0004\0Z[z{";
-                }
+                case 1:
+                    // Special-case ASCII characters to avoid the computation/allocation in this very common case.
+                    if (chars[0] < 128)
+                    {
+                        string[] asciiStrings = s_asciiStrings;
+                        if (chars[0] < asciiStrings.Length)
+                        {
+                            return asciiStrings[chars[0]] ??= $"\0\u0002\0{chars[0]}{(char)(chars[0] + 1)}";
+                        }
+                    }
+                    break;
+
+                case 2:
+                    // Special-case cased ASCII letter pairs to avoid the computation/allocation in this very common case.
+                    int masked0 = chars[0] | 0x20;
+                    if ((uint)(masked0 - 'a') <= 'z' - 'a' && masked0 == (chars[1] | 0x20))
+                    {
+                        return s_asciiLetterPairStrings[masked0 - 'a'] ??= $"\0\u0004\0{(char)(masked0 & ~0x20)}{(char)((masked0 & ~0x20) + 1)}{(char)masked0}{(char)(masked0 + 1)}";
+                    }
+                    break;
             }
 
             // Count how many characters there actually are.  All but the very last possible
@@ -1514,8 +1507,8 @@ namespace System.Text.RegularExpressions
 
                     // Fill in the set string
                     span[FlagsIndex] = (char)0;
-                    span[CategoryLengthIndex] = (char)0;
                     span[SetLengthIndex] = (char)(span.Length - SetStartIndex);
+                    span[CategoryLengthIndex] = (char)0;
                     int i = SetStartIndex;
                     foreach (char c in chars)
                     {

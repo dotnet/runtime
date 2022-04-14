@@ -226,49 +226,6 @@ namespace System.Text.RegularExpressions
                 }
             }
 
-            // Finally, try to move the "best" results to be earlier.  "best" here are ones we're able to search
-            // for the fastest and that have the best chance of matching as few false positives as possible.
-            results.Sort((s1, s2) =>
-            {
-                if (s1.Chars is not null && s2.Chars is not null)
-                {
-                    // Then of the ones that are the same length, prefer those with less frequent values.  The frequency is
-                    // only an approximation, used as a tie-breaker when we'd otherwise effectively be picking randomly.  True
-                    // frequencies will vary widely based on the actual data being searched, the language of the data, etc.
-                    int c = SumFrequencies(s1.Chars).CompareTo(SumFrequencies(s2.Chars));
-                    if (c != 0)
-                    {
-                        return c;
-                    }
-
-                    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                    static float SumFrequencies(char[] chars)
-                    {
-                        float sum = 0;
-                        foreach (char c in chars)
-                        {
-                            // Lookup each character in the table.  For values > 255, this will end up truncating
-                            // and thus we'll get skew in the data.  It's already a gross approximation, though,
-                            // and it is primarily meant for disambiguation of ASCII letters.
-                            sum += s_frequency[(byte)c];
-                        }
-                        return sum;
-                    }
-                }
-                else if (s1.Chars is not null)
-                {
-                    // If s1 has chars and s2 doesn't, then s1 has fewer chars.
-                    return -1;
-                }
-                else if (s2.Chars is not null)
-                {
-                    // If s2 has chars and s1 doesn't, then s2 has fewer chars.
-                    return 1;
-                }
-
-                return s1.Distance.CompareTo(s2.Distance);
-            });
-
             return results;
 
             // Starting from the specified root node, populates results with any characters at a fixed distance
@@ -477,6 +434,51 @@ namespace System.Text.RegularExpressions
                 }
             }
         }
+
+        /// <summary>Sorts a set of fixed-distance set results from best to worst quality.</summary>
+        public static void SortFixedDistanceSetsByQuality(List<(char[]? Chars, string Set, int Distance)> results) =>
+            // Finally, try to move the "best" results to be earlier.  "best" here are ones we're able to search
+            // for the fastest and that have the best chance of matching as few false positives as possible.
+            results.Sort((s1, s2) =>
+            {
+                if (s1.Chars is not null && s2.Chars is not null)
+                {
+                    // Then of the ones that are the same length, prefer those with less frequent values.  The frequency is
+                    // only an approximation, used as a tie-breaker when we'd otherwise effectively be picking randomly.  True
+                    // frequencies will vary widely based on the actual data being searched, the language of the data, etc.
+                    int c = SumFrequencies(s1.Chars).CompareTo(SumFrequencies(s2.Chars));
+                    if (c != 0)
+                    {
+                        return c;
+                    }
+
+                    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                    static float SumFrequencies(char[] chars)
+                    {
+                        float sum = 0;
+                        foreach (char c in chars)
+                        {
+                            // Lookup each character in the table.  For values > 255, this will end up truncating
+                            // and thus we'll get skew in the data.  It's already a gross approximation, though,
+                            // and it is primarily meant for disambiguation of ASCII letters.
+                            sum += s_frequency[(byte)c];
+                        }
+                        return sum;
+                    }
+                }
+                else if (s1.Chars is not null)
+                {
+                    // If s1 has chars and s2 doesn't, then s1 has fewer chars.
+                    return -1;
+                }
+                else if (s2.Chars is not null)
+                {
+                    // If s2 has chars and s1 doesn't, then s2 has fewer chars.
+                    return 1;
+                }
+
+                return s1.Distance.CompareTo(s2.Distance);
+            });
 
         /// <summary>
         /// Computes a character class for the first character in tree.  This uses a more robust algorithm

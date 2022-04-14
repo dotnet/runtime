@@ -100,5 +100,14 @@ namespace System.Threading.RateLimiting.Test
 
         [Fact]
         public abstract Task DisposeAsyncReleasesQueuedAcquires();
+
+        [Fact]
+        public abstract void NullIdleDurationWhenActive();
+
+        [Fact]
+        public abstract Task IdleDurationUpdatesWhenIdle();
+
+        [Fact]
+        public abstract void IdleDurationUpdatesWhenChangingFromActive();
     }
 }

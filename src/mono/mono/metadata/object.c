@@ -1911,6 +1911,7 @@ alloc_vtable (MonoClass *klass, size_t vtable_size, size_t imt_table_bytes)
 	 * address bits.  The IMT has an odd number of entries, however, so on 32 bits the
 	 * alignment will be off.  In that case we allocate 4 more bytes and skip over them.
 	 */
+MONO_DISABLE_WARNING(4127) /* conditional expression is constant */
 	if (sizeof (gpointer) == 4 && (imt_table_bytes & 7)) {
 		g_assert ((imt_table_bytes & 7) == 4);
 		vtable_size += 4;
@@ -1918,6 +1919,7 @@ alloc_vtable (MonoClass *klass, size_t vtable_size, size_t imt_table_bytes)
 	} else {
 		alloc_offset = 0;
 	}
+MONO_RESTORE_WARNING
 
 	return (gpointer*) ((char*)m_class_alloc0 (klass, (guint)vtable_size) + alloc_offset);
 }

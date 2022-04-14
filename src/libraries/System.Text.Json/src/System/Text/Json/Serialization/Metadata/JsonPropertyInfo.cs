@@ -501,7 +501,8 @@ namespace System.Text.Json.Serialization.Metadata
             set
             {
                 // Used by JsonMetadataServices.
-                Debug.Assert(_jsonTypeInfo == null);
+                // This could potentially be double initialized
+                Debug.Assert(_jsonTypeInfo == null || _jsonTypeInfo == value);
                 _jsonTypeInfo = value;
             }
         }

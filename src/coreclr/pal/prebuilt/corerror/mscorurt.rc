@@ -26,7 +26,7 @@ BEGIN
 	MSG_FOR_URT_HR(FUSION_E_ASM_MODULE_MISSING) "A module specified in the manifest was not found."
 	MSG_FOR_URT_HR(FUSION_E_PRIVATE_ASM_DISALLOWED) "A strongly-named assembly is required."
 	MSG_FOR_URT_HR(FUSION_E_SIGNATURE_CHECK_FAILED) "Strong name signature could not be verified.  The assembly may have been tampered with, or it was delay signed but not fully signed with the correct private key."
-	MSG_FOR_URT_HR(FUSION_E_INVALID_NAME) "The given assembly name or codebase was invalid."
+	MSG_FOR_URT_HR(FUSION_E_INVALID_NAME) "The given assembly name was invalid."
 	MSG_FOR_URT_HR(FUSION_E_CODE_DOWNLOAD_DISABLED) "HTTP download of assemblies has been disabled for this appdomain."
 	MSG_FOR_URT_HR(FUSION_E_HOST_GAC_ASM_MISMATCH) "Assembly in host store has a different signature than assembly in GAC."
 	MSG_FOR_URT_HR(FUSION_E_LOADFROM_BLOCKED) "LoadFrom(), LoadFile(), Load(byte[]) and LoadModule() have been disabled by the host."
