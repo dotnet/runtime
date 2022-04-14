@@ -202,7 +202,7 @@ namespace Microsoft.Interop
         /// <param name="info">Type info for the parameter/return</param>
         /// <param name="notSupportedDetails">[Optional] Specific reason for lack of support</param>
         public void ReportMarshallingNotSupported(
-            MethodDeclarationSyntax method,
+            MethodSignatureDiagnosticLocations method,
             TypePositionInfo info,
             string? notSupportedDetails)
         {
@@ -211,15 +211,14 @@ namespace Microsoft.Interop
 
             if (info.IsManagedReturnPosition)
             {
-                diagnosticLocation = Location.Create(method.SyntaxTree, method.Identifier.Span);
-                elementName = method.Identifier.ValueText;
+                diagnosticLocation = method.FallbackLocation;
+                elementName = method.MethodIdentifier;
             }
             else
             {
-                Debug.Assert(info.ManagedIndex <= method.ParameterList.Parameters.Count);
-                ParameterSyntax param = method.ParameterList.Parameters[info.ManagedIndex];
-                diagnosticLocation = Location.Create(param.SyntaxTree, param.Identifier.Span);
-                elementName = param.Identifier.ValueText;
+                Debug.Assert(info.ManagedIndex <= method.ManagedParameterLocations.Length);
+                diagnosticLocation = method.ManagedParameterLocations[info.ManagedIndex];
+                elementName = info.InstanceIdentifier;
             }
 
             if (!string.IsNullOrEmpty(notSupportedDetails))

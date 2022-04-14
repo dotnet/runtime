@@ -38,7 +38,6 @@ namespace Microsoft.Interop
         // Error code representing success. This maps to S_OK for Windows HRESULT semantics and 0 for POSIX errno semantics.
         private const int SuccessErrorCode = 0;
         private readonly bool _setLastError;
-        private readonly bool _implicitThis;
         private readonly BoundGenerators _marshallers;
 
         private readonly ManagedToNativeStubCodeContext _context;
@@ -52,7 +51,6 @@ namespace Microsoft.Interop
             IMarshallingGeneratorFactory generatorFactory)
         {
             _setLastError = setLastError;
-            _implicitThis = implicitThis;
             if (implicitThis)
             {
                 ImmutableArray<TypePositionInfo>.Builder newArgTypes = ImmutableArray.CreateBuilder<TypePositionInfo>(argTypes.Length + 1);

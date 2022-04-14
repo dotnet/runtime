@@ -25,6 +25,8 @@ namespace Microsoft.Interop
             StubEnvironment Environment,
             SignatureContext SignatureContext,
             ContainingSyntaxContext ContainingSyntaxContext,
+            ContainingSyntax StubMethodSyntaxTemplate,
+            MethodSignatureDiagnosticLocations DiagnosticLocation,
             ImmutableArray<FunctionPointerUnmanagedCallingConventionSyntax> CallingConvention,
             VirtualMethodIndexData VtableIndexData,
             IMarshallingGeneratorFactory GeneratorFactory,
@@ -97,12 +99,11 @@ namespace Microsoft.Interop
                     Environment = data.Right
                 })
                 .Select(
-                    static (data, ct) => (data.Syntax, StubContext: CalculateStubInformation(data.Syntax, data.Symbol, data.Environment, ct))
+                    static (data, ct) => CalculateStubInformation(data.Syntax, data.Symbol, data.Environment, ct)
                 )
-                .WithComparer(Comparers.CalculatedContextWithSyntax)
                 .WithTrackingName(StepNames.CalculateStubInformation)
                 .Select(
-                    static (data, ct) => GenerateSource(data.StubContext, data.Syntax)
+                    static (data, ct) => GenerateSource(data)
                 )
                 .WithComparer(Comparers.GeneratedSyntax)
                 .WithTrackingName(StepNames.GenerateSingleStub);
@@ -173,7 +174,7 @@ namespace Microsoft.Interop
 
 
         private static MemberDeclarationSyntax PrintGeneratedSource(
-            MethodDeclarationSyntax userDeclaredMethod,
+            ContainingSyntax userDeclaredMethod,
             SignatureContext stub,
             BlockSyntax stubCode)
         {
@@ -216,7 +217,42 @@ namespace Microsoft.Interop
 
             var data = new VirtualMethodIndexData();
 
-            return data.WithValuesFromNamedArguments(namedArguments);
+            CustomTypeMarshallerDirection direction = CustomTypeMarshallerDirection.Ref;
+            int index = -1;
+            bool implicitThis = true;
+            if (namedArguments.TryGetValue(nameof(VirtualMethodIndexData.Direction), out TypedConstant directionValue))
+            {
+                // TypedConstant's Value property only contains primitive values.
+                if (directionValue.Value is not int)
+                {
+                    return null;
+                }
+                // A boxed primitive can be unboxed to an enum with the same underlying type.
+                direction = (CustomTypeMarshallerDirection)directionValue.Value!;
+            }
+            if (namedArguments.TryGetValue(nameof(VirtualMethodIndexData.Index), out TypedConstant indexValue))
+            {
+                if (directionValue.Value is not int)
+                {
+                    return null;
+                }
+                index = (int)indexValue.Value!;
+            }
+            if (namedArguments.TryGetValue(nameof(VirtualMethodIndexData.ImplicitThisParameter), out TypedConstant implicitThisValue))
+            {
+                if (directionValue.Value is not bool)
+                {
+                    return null;
+                }
+                implicitThis = (bool)implicitThisValue.Value!;
+            }
+
+            return data.WithValuesFromNamedArguments(namedArguments) with
+            {
+                Direction = direction,
+                Index = index,
+                ImplicitThisParameter = implicitThis
+            };
         }
 
         private static IncrementalStubGenerationContext CalculateStubInformation(MethodDeclarationSyntax syntax, IMethodSymbol symbol, StubEnvironment environment, CancellationToken ct)
@@ -281,16 +317,33 @@ namespace Microsoft.Interop
                 }
             }
 
+            if (virtualMethodIndexData.Index < 0)
+            {
+                // Report missing or invalid index
+            }
+
+            if (!virtualMethodIndexData.ImplicitThisParameter && virtualMethodIndexData.Direction.HasFlag(CustomTypeMarshallerDirection.Out))
+            {
+                // Report invalid configuration
+            }
+
             if (lcidConversionAttr is not null)
             {
-                // Using LCIDConversion with LibraryImport is not supported
+                // Using LCIDConversion with source-generated interop is not supported
                 generatorDiagnostics.ReportConfigurationNotSupported(lcidConversionAttr, nameof(TypeNames.LCIDConversionAttribute));
             }
 
             // Create the stub.
             var signatureContext = SignatureContext.Create(symbol, virtualMethodIndexData, environment, generatorDiagnostics, typeof(VtableIndexStubGenerator).Assembly);
 
-            var containingSyntaxContext = new ContainingSyntaxContext(syntax);
+            var containingSyntaxContext = new ContainingSyntaxContext(syntax)
+                .AddContainingSyntax(
+                    new ContainingSyntax(
+                        TokenList(Token(SyntaxKind.PartialKeyword)),
+                        SyntaxKind.InterfaceDeclaration,
+                        Identifier("Native"),
+                        null));
+            var methodSyntaxTemplate = new ContainingSyntax(syntax.Modifiers.StripTriviaFromTokens(), SyntaxKind.MethodDeclaration, syntax.Identifier, syntax.TypeParameterList);
 
             ImmutableArray<FunctionPointerUnmanagedCallingConventionSyntax> callConv = GenerateCallConvSyntaxFromAttributes(suppressGCTransitionAttribute, unmanagedCallConvAttribute);
 
@@ -311,6 +364,8 @@ namespace Microsoft.Interop
                 environment,
                 signatureContext,
                 containingSyntaxContext,
+                methodSyntaxTemplate,
+                new MethodSignatureDiagnosticLocations(syntax),
                 callConv,
                 virtualMethodIndexData,
                 GetMarshallingGeneratorFactory(environment),
@@ -343,8 +398,7 @@ namespace Microsoft.Interop
         }
 
         private static (MemberDeclarationSyntax, ImmutableArray<Diagnostic>) GenerateSource(
-            IncrementalStubGenerationContext methodStub,
-            MethodDeclarationSyntax originalSyntax)
+            IncrementalStubGenerationContext methodStub)
         {
             var diagnostics = new GeneratorDiagnostics();
 
@@ -356,7 +410,7 @@ namespace Microsoft.Interop
                 methodStub.VtableIndexData.ImplicitThisParameter,
                 (elementInfo, ex) =>
                 {
-                    diagnostics.ReportMarshallingNotSupported(originalSyntax, elementInfo, ex.NotSupportedDetails);
+                    diagnostics.ReportMarshallingNotSupported(methodStub.DiagnosticLocation, elementInfo, ex.NotSupportedDetails);
                 },
                 methodStub.GeneratorFactory);
 
@@ -366,7 +420,7 @@ namespace Microsoft.Interop
                 methodStub.TypeKeyOwner.Syntax,
                 methodStub.TypeKeyType);
 
-            return (methodStub.ContainingSyntaxContext.WrapMemberInContainingSyntaxWithUnsafeModifier(PrintGeneratedSource(originalSyntax, methodStub.SignatureContext, code)), methodStub.Diagnostics.AddRange(diagnostics.Diagnostics));
+            return (methodStub.ContainingSyntaxContext.WrapMemberInContainingSyntaxWithUnsafeModifier(PrintGeneratedSource(methodStub.StubMethodSyntaxTemplate, methodStub.SignatureContext, code)), methodStub.Diagnostics.AddRange(diagnostics.Diagnostics));
         }
 
         private static bool ShouldVisitNode(SyntaxNode syntaxNode)
