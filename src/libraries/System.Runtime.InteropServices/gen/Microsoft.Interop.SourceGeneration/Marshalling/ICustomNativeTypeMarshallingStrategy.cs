@@ -712,7 +712,7 @@ namespace Microsoft.Interop
                                             new[]
                                             {
                                                 PredefinedType(Token(SyntaxKind.ByteKeyword)),
-                                                _elementType is PointerTypeSyntax ? MarshallerHelpers.SystemIntPtrType : _elementType
+                                                _elementType
                                             })))))
                         .AddArgumentListArguments(
                             Argument(
@@ -760,7 +760,7 @@ namespace Microsoft.Interop
                                                 new[]
                                                 {
                                                     PredefinedType(Token(SyntaxKind.ByteKeyword)),
-                                                    _elementType is PointerTypeSyntax ? MarshallerHelpers.SystemIntPtrType : _elementType
+                                                    _elementType
                                                 })))))
                             .AddArgumentListArguments(
                                 Argument(

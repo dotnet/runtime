@@ -82,7 +82,11 @@ namespace Microsoft.Interop
         {
             (string managedIdentifer, string nativeIdentifier) = context.GetIdentifiers(info);
             string byRefIdentifier = $"__byref_{managedIdentifer}";
-            TypeSyntax arrayElementType = _elementType is PointerTypeSyntax ? PredefinedType(Token(SyntaxKind.ByteKeyword)) : _elementType;
+
+            // The element type here is used only for refs/pointers. In the pointer array case, we use byte as the basic placeholder type,
+            // since we can't use pointer types in generic type parameters.
+            bool isPointerArray = info.ManagedType is SzArrayType arrayType && arrayType.ElementTypeInfo is PointerTypeInfo;
+            TypeSyntax arrayElementType = isPointerArray ? PredefinedType(Token(SyntaxKind.ByteKeyword)) : _elementType;
             if (context.CurrentStage == StubCodeContext.Stage.Marshal)
             {
                 // [COMPAT] We use explicit byref calculations here instead of just using a fixed statement
