@@ -7323,12 +7323,14 @@ void Compiler::optHoistCandidate(GenTree* tree, BasicBlock* treeBb, unsigned lnu
         return;
     }
 
-    if (hoistCtxt->GetHoistedInCurLoop(this)->Lookup(tree->gtVNPair.GetLiberal()))
-    {
-        JITDUMP("   ... already hoisted same VN in current\n");
-        // already hoisted this expression in the current loop, so don't hoist this expression.
-        return;
-    }
+    //TODO: Below code was applicable because we were first hoisting the outer loop and then the inner loop
+    // But if we start from inner and go outer, then we should continue hoisting things from this loop to the parent loop.
+    //if (hoistCtxt->GetHoistedInCurLoop(this)->Lookup(tree->gtVNPair.GetLiberal()))
+    //{
+    //    JITDUMP("   ... already hoisted same VN in current\n");
+    //    // already hoisted this expression in the current loop, so don't hoist this expression.
+    //    return;
+    //}
 
     // Create a loop pre-header in which to put the hoisted code.
     fgCreateLoopPreHeader(lnum);
@@ -7364,7 +7366,7 @@ void Compiler::optHoistCandidate(GenTree* tree, BasicBlock* treeBb, unsigned lnu
     }
 
     // Record the hoisted expression in hoistCtxt
-    hoistCtxt->GetHoistedInCurLoop(this)->Set(tree->gtVNPair.GetLiberal(), true);
+    //hoistCtxt->GetHoistedInCurLoop(this)->Set(tree->gtVNPair.GetLiberal(), true);
 }
 
 bool Compiler::optVNIsLoopInvariant(ValueNum vn, unsigned lnum, VNSet* loopVnInvariantCache)
