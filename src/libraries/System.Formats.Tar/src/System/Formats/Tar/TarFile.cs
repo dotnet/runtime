@@ -143,15 +143,8 @@ namespace System.Formats.Tar
         /// <param name="overwriteFiles"><see langword="true"/> to overwrite files and directories in <paramref name="destinationDirectoryName"/>; <see langword="false"/> to avoid overwriting, and throw if any files or directories are found with existing names.</param>
         public static void ExtractToDirectory(string sourceFileName, string destinationDirectoryName, bool overwriteFiles)
         {
-            if (string.IsNullOrEmpty(sourceFileName))
-            {
-                throw new ArgumentException(string.Format(SR.Argument_NotNullOrEmpty, nameof(sourceFileName)));
-            }
-
-            if (string.IsNullOrEmpty(destinationDirectoryName))
-            {
-                throw new ArgumentException(string.Format(SR.Argument_NotNullOrEmpty, nameof(destinationDirectoryName)));
-            }
+            ArgumentException.ThrowIfNullOrEmpty(sourceFileName);
+            ArgumentException.ThrowIfNullOrEmpty(destinationDirectoryName);
 
             FileStreamOptions fileStreamOptions = new()
             {

@@ -15,10 +15,7 @@ namespace System.Formats.Tar
         internal PaxTarEntry(TarHeader header, TarReader readerOfOrigin)
             : base(header, readerOfOrigin)
         {
-            if (_header._extendedAttributes == null)
-            {
-                _header._extendedAttributes = new Dictionary<string, string>();
-            }
+            _header._extendedAttributes ??= new Dictionary<string, string>();
         }
 
         /// <summary>
@@ -36,7 +33,7 @@ namespace System.Formats.Tar
         /// Use the <see cref="PaxTarEntry(TarEntryType, string, IEnumerable{KeyValuePair{string, string}})"/> constructor to include additional extended attributes when creating the entry.
         /// </remarks>
         // TODO: Document which are the default extended attributes that are always included in a pax entry.
-        public PaxTarEntry(TarEntryType entryType, string entryName !!)
+        public PaxTarEntry(TarEntryType entryType, string entryName!!)
             : base(entryType, entryName, TarFormat.Pax) // Base constructor validates entry type
         {
         }
@@ -58,13 +55,9 @@ namespace System.Formats.Tar
         /// The specified <paramref name="extendedAttributes"/> get appended to the default attributes, unless the specified enumeration overrides any of them.
         /// </remarks>
         // TODO: Document which are the default extended attributes that are always included in a pax entry.
-        public PaxTarEntry(TarEntryType entryType, string entryName, IEnumerable<KeyValuePair<string, string>> extendedAttributes)
+        public PaxTarEntry(TarEntryType entryType, string entryName, IEnumerable<KeyValuePair<string, string>> extendedAttributes!!)
             : base(entryType, entryName, TarFormat.Pax) // Base constructor vaildates entry type
         {
-            if (extendedAttributes == null)
-            {
-                throw new ArgumentNullException(nameof(extendedAttributes));
-            }
             _header.ReplaceNormalAttributesWithExtended(extendedAttributes);
         }
 

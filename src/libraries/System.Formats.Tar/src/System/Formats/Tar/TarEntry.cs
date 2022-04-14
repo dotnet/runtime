@@ -30,10 +30,7 @@ namespace System.Formats.Tar
         // Constructor called when creating a new 'TarEntry*' instance that can be passed to a TarWriter.
         internal TarEntry(TarEntryType entryType, string entryName, TarFormat format)
         {
-            if (string.IsNullOrWhiteSpace(entryName))
-            {
-                throw new ArgumentException(SR.Argument_NotNullOrEmpty, entryName);
-            }
+            ArgumentException.ThrowIfNullOrEmpty(entryName);
 
             // Throws if format is unknown or out of range
             TarHelpers.VerifyEntryTypeIsSupported(entryType, format);
@@ -142,10 +139,7 @@ namespace System.Formats.Tar
             get => _header._name;
             set
             {
-                if (string.IsNullOrEmpty(value))
-                {
-                    throw new ArgumentException(SR.Argument_NotNullOrEmpty, nameof(value));
-                }
+                ArgumentException.ThrowIfNullOrEmpty(value);
                 // TODO: Validate valid pathname
                 _header._name = value;
             }
@@ -177,10 +171,7 @@ namespace System.Formats.Tar
         /// <exception cref="NotSupportedException">Attempted to extract an unsupported entry type.</exception>
         public void ExtractToFile(string destinationFileName, bool overwrite)
         {
-            if (string.IsNullOrEmpty(destinationFileName))
-            {
-                throw new ArgumentException(string.Format(SR.Argument_NotNullOrEmpty, nameof(destinationFileName)));
-            }
+            ArgumentException.ThrowIfNullOrEmpty(destinationFileName);
 
             string? directoryPath = Path.GetDirectoryName(destinationFileName);
             // If the destination contains a directory segment, need to check that it exists
@@ -204,7 +195,7 @@ namespace System.Formats.Tar
                     // Rely on FileStream's ctor for further checking destinationFileName parameter
                     FileMode fileMode = overwrite ? FileMode.Create : FileMode.CreateNew;
 
-                    using (FileStream fs = new(destinationFileName, fileMode, FileAccess.Write, FileShare.None, bufferSize: 0x1000, useAsync: false))
+                    using (FileStream fs = new(destinationFileName, fileMode, FileAccess.Write, FileShare.None))
                     {
                         if (DataStream != null)
                         {
@@ -256,6 +247,7 @@ namespace System.Formats.Tar
                 case TarEntryType.LongLink:
                     Debug.Assert(false, $"Metadata entry type should not be visible: '{EntryType}'");
                     break;
+
                 case TarEntryType.MultiVolume:
                 case TarEntryType.RenamedOrSymlinked:
                 case TarEntryType.SparseFile:
@@ -304,10 +296,7 @@ namespace System.Formats.Tar
                     _readerOfOrigin = null;
                 }
 
-                if (_header._dataStream != null)
-                {
-                    _header._dataStream.Dispose();
-                }
+                _header._dataStream?.Dispose();
 
                 _header._dataStream = value;
             }

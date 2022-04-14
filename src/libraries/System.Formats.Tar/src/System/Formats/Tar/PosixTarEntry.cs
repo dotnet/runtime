@@ -80,10 +80,7 @@ namespace System.Formats.Tar
             get => _header._gName;
             set
             {
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
+                ArgumentNullException.ThrowIfNull(value);
                 _header._gName = value;
             }
         }
@@ -98,10 +95,7 @@ namespace System.Formats.Tar
             get => _header._uName;
             set
             {
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
+                ArgumentNullException.ThrowIfNull(value);
                 _header._uName = value;
             }
         }

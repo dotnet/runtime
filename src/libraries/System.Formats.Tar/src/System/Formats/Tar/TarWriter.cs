@@ -104,17 +104,14 @@ namespace System.Formats.Tar
         {
             ThrowIfDisposed();
 
-            if (string.IsNullOrEmpty(fileName))
-            {
-                throw new ArgumentException(string.Format(SR.Argument_NotNullOrEmpty, nameof(fileName)));
-            }
+            ArgumentException.ThrowIfNullOrEmpty(fileName);
+
+            string fullPath = Path.GetFullPath(fileName);
 
             if (string.IsNullOrEmpty(entryName))
             {
-                throw new ArgumentException(string.Format(SR.Argument_NotNullOrEmpty, nameof(entryName)));
+                entryName = Path.GetFileName(fileName);
             }
-
-            string fullPath = Path.GetFullPath(fileName);
 
             if (!_wroteGEA)
             {
