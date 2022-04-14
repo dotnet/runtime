@@ -10241,8 +10241,7 @@ namespace System.Reflection
         ReferenceTypeConstraint = 4,
         NotNullableValueTypeConstraint = 8,
         DefaultConstructorConstraint = 16,
-        AcceptByRefLike = 32,
-        SpecialConstraintMask = 60,
+        SpecialConstraintMask = 28,
     }
     public partial interface ICustomAttributeProvider
     {

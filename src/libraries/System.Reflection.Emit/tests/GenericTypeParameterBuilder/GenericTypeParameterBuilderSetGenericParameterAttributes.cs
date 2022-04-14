@@ -8,7 +8,6 @@ namespace System.Reflection.Emit.Tests
     public class GenericTypeParameterBuilderSetGenericParameterAttributes
     {
         [Theory]
-        [InlineData(GenericParameterAttributes.AcceptByRefLike)]
         [InlineData(GenericParameterAttributes.Contravariant)]
         [InlineData(GenericParameterAttributes.Covariant)]
         [InlineData(GenericParameterAttributes.DefaultConstructorConstraint)]
