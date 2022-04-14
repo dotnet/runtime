@@ -83,6 +83,7 @@ namespace System.Diagnostics.Metrics.Tests
                 Counter<float> counter5 = meter.CreateCounter<float>("Counter5", "seconds", "Seconds Counter");
                 Counter<double> counter6 = meter.CreateCounter<double>("Counter6", "seconds", "Seconds Counter");
                 Counter<decimal> counter7 = meter.CreateCounter<decimal>("Counter7", "seconds", "Seconds Counter");
+                Counter<uint> counter8 = meter.CreateCounter<uint>("Counter8", "seconds", "Seconds Counter");
 
                 UpDownCounter<byte> upDownCounter1 = meter.CreateUpDownCounter<byte>("UpDownCounter1", "seconds", "Seconds UpDownCounter");
                 UpDownCounter<short> upDownCounter2 = meter.CreateUpDownCounter<short>("UpDownCounter2", "seconds", "Seconds Counter");
@@ -91,6 +92,7 @@ namespace System.Diagnostics.Metrics.Tests
                 UpDownCounter<float> upDownCounter5 = meter.CreateUpDownCounter<float>("UpDownCounter5", "seconds", "Seconds UpDownCounter");
                 UpDownCounter<double> upDownCounter6 = meter.CreateUpDownCounter<double>("UpDownCounter6", "seconds", "Seconds UpDownCounter");
                 UpDownCounter<decimal> upDownCounter7 = meter.CreateUpDownCounter<decimal>("UpDownCounter7", "seconds", "Seconds UpDownCounter");
+                UpDownCounter<uint> upDownCounter8 = meter.CreateUpDownCounter<uint>("UpDownCounter8", "seconds", "Seconds UpDownCounter");
 
                 Histogram<byte> histogram1 = meter.CreateHistogram<byte>("histogram1", "seconds", "Seconds histogram");
                 Histogram<short> histogram2 = meter.CreateHistogram<short>("histogram2", "seconds", "Seconds histogram");
@@ -99,6 +101,7 @@ namespace System.Diagnostics.Metrics.Tests
                 Histogram<float> histogram5 = meter.CreateHistogram<float>("histogram5", "seconds", "Seconds histogram");
                 Histogram<double> histogram6 = meter.CreateHistogram<double>("histogram6", "seconds", "Seconds histogram");
                 Histogram<decimal> histogram7 = meter.CreateHistogram<decimal>("histogram7", "seconds", "Seconds histogram");
+                Histogram<uint> histogram8 = meter.CreateHistogram<uint>("histogram8", "seconds", "Seconds histogram");
 
                 ObservableCounter<byte> observableCounter1 = meter.CreateObservableCounter<byte>("observableCounter1", () => 0, "seconds", "Seconds ObservableCounter");
                 ObservableCounter<short> observableCounter2 = meter.CreateObservableCounter<short>("observableCounter2", () => 0, "seconds", "Seconds ObservableCounter");
@@ -107,6 +110,7 @@ namespace System.Diagnostics.Metrics.Tests
                 ObservableCounter<float> observableCounter5 = meter.CreateObservableCounter<float>("observableCounter5", () => 0, "seconds", "Seconds ObservableCounter");
                 ObservableCounter<double> observableCounter6 = meter.CreateObservableCounter<double>("observableCounter6", () => 0, "seconds", "Seconds ObservableCounter");
                 ObservableCounter<decimal> observableCounter7 = meter.CreateObservableCounter<decimal>("observableCounter7", () => 0, "seconds", "Seconds ObservableCounter");
+                ObservableCounter<uint> observableCounter8 = meter.CreateObservableCounter<uint>("observableCounter8", () => 0, "seconds", "Seconds ObservableCounter");
 
                 ObservableUpDownCounter<byte> observableUpDownCounter1 = meter.CreateObservableUpDownCounter<byte>("observableUpDownCounter1", () => 0, "items", "Items ObservableUpDownCounter");
                 ObservableUpDownCounter<short> observableUpDownCounter2 = meter.CreateObservableUpDownCounter<short>("observableUpDownCounter2", () => 0, "items", "Items ObservableCounter");
@@ -115,6 +119,7 @@ namespace System.Diagnostics.Metrics.Tests
                 ObservableUpDownCounter<float> observableUpDownCounter5 = meter.CreateObservableUpDownCounter<float>("observableUpDownCounter5", () => 0, "items", "Items ObservableUpDownCounter");
                 ObservableUpDownCounter<double> observableUpDownCounter6 = meter.CreateObservableUpDownCounter<double>("observableUpDownCounter6", () => 0, "items", "Items ObservableUpDownCounter");
                 ObservableUpDownCounter<decimal> observableUpDownCounter7 = meter.CreateObservableUpDownCounter<decimal>("observableUpDownCounter7", () => 0, "items", "Items ObservableUpDownCounter");
+                ObservableUpDownCounter<uint> observableUpDownCounter8 = meter.CreateObservableUpDownCounter<uint>("observableUpDownCounter8", () => 0, "items", "Items ObservableUpDownCounter");
 
                 ObservableGauge<byte> observableGauge1 = meter.CreateObservableGauge<byte>("observableGauge1", () => 0, "seconds", "Seconds ObservableGauge");
                 ObservableGauge<short> observableGauge2 = meter.CreateObservableGauge<short>("observableGauge2", () => 0, "seconds", "Seconds ObservableGauge");
@@ -123,9 +128,8 @@ namespace System.Diagnostics.Metrics.Tests
                 ObservableGauge<float> observableGauge5 = meter.CreateObservableGauge<float>("observableGauge5", () => 0, "seconds", "Seconds ObservableGauge");
                 ObservableGauge<double> observableGauge6 = meter.CreateObservableGauge<double>("observableGauge6", () => 0, "seconds", "Seconds ObservableGauge");
                 ObservableGauge<decimal> observableGauge7 = meter.CreateObservableGauge<decimal>("observableGauge7", () => 0, "seconds", "Seconds ObservableGauge");
+                ObservableGauge<uint> observableGauge8 = meter.CreateObservableGauge<uint>("observableGauge8", () => 0, "seconds", "Seconds ObservableGauge");
 
-                Assert.Throws<InvalidOperationException>(() => meter.CreateCounter<uint>("Counter", "seconds", "Seconds Counter"));
-                Assert.Throws<InvalidOperationException>(() => meter.CreateUpDownCounter<uint>("UpDownCounter", "items", "Items Counter"));
                 Assert.Throws<InvalidOperationException>(() => meter.CreateHistogram<ulong>("histogram1", "seconds", "Seconds histogram"));
                 Assert.Throws<InvalidOperationException>(() => meter.CreateObservableCounter<sbyte>("observableCounter3", () => 0, "seconds", "Seconds ObservableCounter"));
                 Assert.Throws<InvalidOperationException>(() => meter.CreateObservableGauge<ushort>("observableGauge7", () => 0, "seconds", "Seconds ObservableGauge"));
