@@ -6200,7 +6200,8 @@ void Compiler::optHoistLoopCode()
 
         if (optLoopTable[lnum].lpParent == BasicBlock::NOT_IN_LOOP)
         {
-            optHoistLoopNest(lnum, &hoistCtxt);
+            ArrayStack<BasicBlock*> abc(getAllocatorLoopHoist());
+            optHoistLoopNest(lnum, &hoistCtxt, &abc);
         }
     }
 
@@ -6250,8 +6251,11 @@ void Compiler::optHoistLoopCode()
 #endif // DEBUG
 }
 
-void Compiler::optHoistLoopNest(unsigned lnum, LoopHoistContext* hoistCtxt)
+void Compiler::optHoistLoopNest(unsigned lnum, LoopHoistContext* hoistCtxt, ArrayStack<BasicBlock*>* preHeadersList)
 {
+    // BlockSet newPreHeaders(BlockSetOps::MakeEmpty(this));
+    // ArrayStack<BasicBlock*> preHeadersList(getAllocatorLoopHoist());
+
     // Do this loop, then recursively do all nested loops.
     JITDUMP("\n%s " FMT_LP "\n", optLoopTable[lnum].lpParent == BasicBlock::NOT_IN_LOOP ? "Loop Nest" : "Nested Loop",
             lnum);
@@ -6261,8 +6265,6 @@ void Compiler::optHoistLoopNest(unsigned lnum, LoopHoistContext* hoistCtxt)
     m_curLoopHasHoistedExpression = false;
     m_loopsConsidered++;
 #endif // LOOP_HOIST_STATS
-
-    optHoistThisLoop(lnum, hoistCtxt);
 
     VNSet* hoistedInCurLoop = hoistCtxt->ExtractHoistedInCurLoop();
 
@@ -6282,10 +6284,22 @@ void Compiler::optHoistLoopNest(unsigned lnum, LoopHoistContext* hoistCtxt)
             }
         }
 
+        // TODO: Have BlockSet newPreHeaders(BlockSetOps::MakeEmpty(this)); so we don't add duplicate blocks
+        // in newPreHeaders.
+        // BlockSet newPreHeaders(BlockSetOps::MakeEmpty(this));
+        // BlockSetOps::Add
+
         for (unsigned child = optLoopTable[lnum].lpChild; child != BasicBlock::NOT_IN_LOOP;
              child          = optLoopTable[child].lpSibling)
         {
-            optHoistLoopNest(child, hoistCtxt);
+            ArrayStack<BasicBlock*> preHeadersListForCurrLoop(getAllocatorLoopHoist());
+            optHoistLoopNest(child, hoistCtxt, &preHeadersListForCurrLoop);
+
+            while (!preHeadersListForCurrLoop.Empty())
+            {
+                BasicBlock* block = preHeadersListForCurrLoop.Pop();
+                preHeadersList->Push(block);
+            }
         }
 
         // Now remove them.
@@ -6299,9 +6313,19 @@ void Compiler::optHoistLoopNest(unsigned lnum, LoopHoistContext* hoistCtxt)
             }
         }
     }
+
+    ArrayStack<BasicBlock*> preHeadersListForCurrLoop(getAllocatorLoopHoist());
+
+    optHoistThisLoop(lnum, hoistCtxt, preHeadersList, &preHeadersListForCurrLoop);
+
+    // Reset the preHeaders list that we found out from this loop.
+    *preHeadersList = preHeadersListForCurrLoop;
 }
 
-void Compiler::optHoistThisLoop(unsigned lnum, LoopHoistContext* hoistCtxt)
+void Compiler::optHoistThisLoop(unsigned                 lnum,
+                                LoopHoistContext*        hoistCtxt,
+                                ArrayStack<BasicBlock*>* existingPreHeaders,
+                                ArrayStack<BasicBlock*>* newPreHeaders)
 {
     LoopDsc* pLoopDsc = &optLoopTable[lnum];
 
@@ -6420,6 +6444,12 @@ void Compiler::optHoistThisLoop(unsigned lnum, LoopHoistContext* hoistCtxt)
     // hoisting inner to outer.
     //
     ArrayStack<BasicBlock*> defExec(getAllocatorLoopHoist());
+
+    while (!existingPreHeaders->Empty())
+    {
+        defExec.Push(existingPreHeaders->Pop());
+    }
+
     if (pLoopDsc->lpExitCnt == 1)
     {
         assert(pLoopDsc->lpExit != nullptr);
@@ -6449,7 +6479,16 @@ void Compiler::optHoistThisLoop(unsigned lnum, LoopHoistContext* hoistCtxt)
         defExec.Push(pLoopDsc->lpEntry);
     }
 
-    optHoistLoopBlocks(lnum, &defExec, hoistCtxt);
+    /* for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+     {
+         if (BlockSetOps::IsMember(this, newPreHeaders, block->bbNum))
+         {
+             defExec.Push(block);
+
+         }
+     }*/
+
+    optHoistLoopBlocks(lnum, &defExec, newPreHeaders, hoistCtxt);
 }
 
 bool Compiler::optIsProfitableToHoistTree(GenTree* tree, unsigned lnum)
@@ -6690,7 +6729,10 @@ void Compiler::optCopyLoopMemoryDependence(GenTree* fromTree, GenTree* toTree)
 //    the loop, in the execution order, starting with the loop entry
 //    block on top of the stack.
 //
-void Compiler::optHoistLoopBlocks(unsigned loopNum, ArrayStack<BasicBlock*>* blocks, LoopHoistContext* hoistContext)
+void Compiler::optHoistLoopBlocks(unsigned                 loopNum,
+                                  ArrayStack<BasicBlock*>* blocks,
+                                  ArrayStack<BasicBlock*>* newPreHeaders,
+                                  LoopHoistContext*        hoistContext)
 {
     class HoistVisitor : public GenTreeVisitor<HoistVisitor>
     {
@@ -6725,6 +6767,8 @@ void Compiler::optHoistLoopBlocks(unsigned loopNum, ArrayStack<BasicBlock*>* blo
         unsigned          m_loopNum;
         LoopHoistContext* m_hoistContext;
         BasicBlock*       m_currentBlock;
+        // BlockSet          newPreHeaders;
+        ArrayStack<BasicBlock*>* preHeadersList;
 
         bool IsNodeHoistable(GenTree* node)
         {
@@ -6820,13 +6864,19 @@ void Compiler::optHoistLoopBlocks(unsigned loopNum, ArrayStack<BasicBlock*>* blo
             UseExecutionOrder = true,
         };
 
-        HoistVisitor(Compiler* compiler, unsigned loopNum, LoopHoistContext* hoistContext)
+        HoistVisitor(Compiler*                compiler,
+                     unsigned                 loopNum,
+                     LoopHoistContext*        hoistContext,
+                     ArrayStack<BasicBlock*>* newPreHeaders)
             : GenTreeVisitor(compiler)
             , m_valueStack(compiler->getAllocator(CMK_LoopHoist))
             , m_beforeSideEffect(true)
             , m_loopNum(loopNum)
             , m_hoistContext(hoistContext)
             , m_currentBlock(nullptr)
+            //, newPreHeaders(BlockSetOps::MakeEmpty(compiler))
+            , preHeadersList(newPreHeaders)
+
         {
         }
 
@@ -6842,6 +6892,11 @@ void Compiler::optHoistLoopBlocks(unsigned loopNum, ArrayStack<BasicBlock*>* blo
                 if (top.m_hoistable)
                 {
                     m_compiler->optHoistCandidate(stmt->GetRootNode(), block, m_loopNum, m_hoistContext);
+
+                    if ((m_compiler->optLoopTable[m_loopNum].lpFlags & LPFLG_HAS_PREHEAD) != 0)
+                    {
+                        preHeadersList->Push(m_compiler->optLoopTable[m_loopNum].lpHead);
+                    }
                 }
                 else
                 {
@@ -7187,6 +7242,11 @@ void Compiler::optHoistLoopBlocks(unsigned loopNum, ArrayStack<BasicBlock*>* blo
                         value.m_invariant = false;
 
                         m_compiler->optHoistCandidate(value.Node(), m_currentBlock, m_loopNum, m_hoistContext);
+
+                        if ((m_compiler->optLoopTable[m_loopNum].lpFlags & LPFLG_HAS_PREHEAD) != 0)
+                        {
+                            preHeadersList->Push(m_compiler->optLoopTable[m_loopNum].lpHead);
+                        }
                     }
                     else if (value.Node() != tree)
                     {
@@ -7213,12 +7273,17 @@ void Compiler::optHoistLoopBlocks(unsigned loopNum, ArrayStack<BasicBlock*>* blo
 
             return fgWalkResult::WALK_CONTINUE;
         }
+
+        // ArrayStack<BasicBlock*>* GetPreHeaders()
+        //{
+        //    return &preHeadersList;
+        //}
     };
 
     LoopDsc* loopDsc = &optLoopTable[loopNum];
     assert(blocks->Top() == loopDsc->lpEntry);
 
-    HoistVisitor visitor(this, loopNum, hoistContext);
+    HoistVisitor visitor(this, loopNum, hoistContext, newPreHeaders);
 
     while (!blocks->Empty())
     {
@@ -7236,6 +7301,8 @@ void Compiler::optHoistLoopBlocks(unsigned loopNum, ArrayStack<BasicBlock*>* blo
 
         visitor.HoistBlock(block);
     }
+
+    // return visitor.GetPreHeaders();
 }
 
 void Compiler::optHoistCandidate(GenTree* tree, BasicBlock* treeBb, unsigned lnum, LoopHoistContext* hoistCtxt)
