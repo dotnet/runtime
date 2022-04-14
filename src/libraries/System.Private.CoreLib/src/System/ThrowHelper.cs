@@ -509,12 +509,6 @@ namespace System
         }
 
         [DoesNotReturn]
-        internal static void ThrowFileLoadException_InvalidAssemblyName(string name)
-        {
-            throw new FileLoadException(SR.InvalidAssemblyName, name);
-        }
-
-        [DoesNotReturn]
         internal static void ThrowArgumentOutOfRangeException_PrecisionTooLarge()
         {
             throw new ArgumentOutOfRangeException("precision", SR.Format(SR.Argument_PrecisionTooLarge, StandardFormat.MaxPrecision));

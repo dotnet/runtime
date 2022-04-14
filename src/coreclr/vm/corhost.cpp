@@ -740,7 +740,6 @@ HRESULT CorHost2::CreateDelegate(
     BEGIN_EXTERNAL_ENTRYPOINT(&hr);
     GCX_COOP_THREAD_EXISTS(GET_THREAD());
 
-    MAKE_UTF8PTR_FROMWIDE(szAssemblyName, wszAssemblyName);
     MAKE_UTF8PTR_FROMWIDE(szClassName, wszClassName);
     MAKE_UTF8PTR_FROMWIDE(szMethodName, wszMethodName);
 
@@ -748,7 +747,8 @@ HRESULT CorHost2::CreateDelegate(
         GCX_PREEMP();
 
         AssemblySpec spec;
-        spec.Init(szAssemblyName);
+        SString ssAssemblyName(wszAssemblyName);
+        spec.Init(ssAssemblyName);
         Assembly* pAsm=spec.LoadAssembly(FILE_ACTIVE);
 
         TypeHandle th=pAsm->GetLoader()->LoadTypeByNameThrowing(pAsm,NULL,szClassName);

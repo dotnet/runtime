@@ -1397,18 +1397,18 @@ DomainAssembly * LoadDomainAssembly(
 {
     CONTRACTL
     {
-        MODE_ANY;
+        MODE_COOPERATIVE;
         THROWS;
         GC_TRIGGERS;
         INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
+
     AssemblySpec spec;
     DomainAssembly *pDomainAssembly = NULL;
 
-    StackScratchBuffer buffer;
-    LPCUTF8 szAssemblySpec = psszAssemblySpec ? psszAssemblySpec->GetUTF8(buffer) : NULL;
-    IfFailThrow(spec.Init(szAssemblySpec));
+    StackSString ssAssemblyName(*psszAssemblySpec);
+    spec.Init(ssAssemblyName);
 
     if (pRequestingAssembly)
     {

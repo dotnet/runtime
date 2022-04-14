@@ -64,14 +64,6 @@ inline void BaseAssemblySpec::Init(LPCSTR pAssemblyName,
     m_context = *pContext;
 }
 
-inline HRESULT BaseAssemblySpec::Init(LPCSTR pAssemblyDisplayName)
-{
-    WRAPPER_NO_CONTRACT;
-    m_pAssemblyName = pAssemblyDisplayName;
-    // We eagerly parse the name to allow FusionBind::Hash to avoid throwing.
-    return ParseName();
-}
-
 inline VOID BaseAssemblySpec::CloneFields()
 {
     CONTRACTL

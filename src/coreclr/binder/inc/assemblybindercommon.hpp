@@ -25,8 +25,6 @@ class PEImage;
 
 namespace BINDER_SPACE
 {
-    class AssemblyIdentityUTF8;
-
     class AssemblyBinderCommon
     {
     public:

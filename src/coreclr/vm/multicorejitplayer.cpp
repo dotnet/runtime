@@ -825,14 +825,10 @@ DomainAssembly * MulticoreJitProfilePlayer::LoadAssembly(SString & assemblyName)
 {
     STANDARD_VM_CONTRACT;
 
-    // Get the assembly name.
-    StackScratchBuffer scratch;
-    const ANSI* pAnsiAssemblyName = assemblyName.GetANSI(scratch);
-
     AssemblySpec spec;
 
     // Initialize the assembly spec.
-    HRESULT hr = spec.Init(pAnsiAssemblyName);
+    HRESULT hr = spec.InitNoThrow(assemblyName);
     if (FAILED(hr))
     {
         return NULL;

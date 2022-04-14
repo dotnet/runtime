@@ -700,7 +700,8 @@ namespace
             while (COMCharacter::nativeIsWhiteSpace(*(++szComma)));
 
             AssemblySpec spec;
-            if (SUCCEEDED(spec.Init(szComma)))
+            SString ssAssemblyDisplayName(SString::Utf8, szComma);
+            if (SUCCEEDED(spec.InitNoThrow(ssAssemblyDisplayName)))
             {
                 // Need to perform case insensitive hashing.
                 SString moduleName(SString::Utf8, szLibName);
