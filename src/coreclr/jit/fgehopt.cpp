@@ -443,7 +443,7 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
 
                 if (block != callFinally)
                 {
-                    JITDUMP("EH#%u found unexpected callfinally " FMT_BB "; skipping.\n");
+                    JITDUMP("EH#%u found unexpected callfinally " FMT_BB "; skipping.\n", block->bbNum);
                     verifiedSingleCallfinally = false;
                     break;
                 }
