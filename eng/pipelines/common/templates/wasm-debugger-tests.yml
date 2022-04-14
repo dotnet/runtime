@@ -1,7 +1,7 @@
 parameters:
   alwaysRun: false
   isExtraPlatformsBuild: false
-  browser: 'chrome'
+  browsers: ['chrome']
   platforms: []
 
 jobs:
@@ -30,8 +30,8 @@ jobs:
     jobParameters:
       testGroup: innerloop
       isExtraPlatforms: ${{ parameters.isExtraPlatformsBuild }}
-      nameSuffix: Mono_DebuggerTests_${{ parameters.browser }}
-      buildArgs: -s mono+libs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:TestWasmDebuggerTests=true /p:TestAssemblies=false /p:BrowserHost=$(_hostedOs)  $(debuggerBrowserArg)
+      nameSuffix: Mono_DebuggerTests
+      buildArgs: -s mono+libs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:TestWasmDebuggerTests=true /p:TestAssemblies=false /p:BrowserHost=$(_hostedOs)  $(debuggerBrowserArg) -p:_DebuggerHosts=${{ join('/', parameters.browsers }}
       timeoutInMinutes: 180
       condition: >-
         or(
