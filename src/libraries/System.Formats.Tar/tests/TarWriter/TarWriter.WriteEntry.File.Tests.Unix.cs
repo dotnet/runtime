@@ -51,15 +51,15 @@ namespace System.Formats.Tar.Tests
             RemoteExecutor.Invoke(() =>
             {
                 using TempDirectory root = new TempDirectory();
-                string blockDeviceName = "blockdevice";
-                string blockDevicePath = Path.Join(root.Path, blockDeviceName);
+                string blockDevicePath = Path.Join(root.Path, AssetBlockDeviceFileName);
 
+                // Creating device files needs elevation
                 Interop.CheckIo(Interop.Sys.CreateBlockDevice(blockDevicePath, (int)DefaultMode, TestBlockDeviceMajor, TestBlockDeviceMinor));
 
                 using MemoryStream archive = new MemoryStream();
                 using (TarWriter writer = new TarWriter(archive, leaveOpen: true))
                 {
-                    writer.WriteEntry(fileName: blockDevicePath, entryName: blockDeviceName);
+                    writer.WriteEntry(fileName: blockDevicePath, entryName: AssetBlockDeviceFileName);
                 }
 
                 archive.Seek(0, SeekOrigin.Begin);
@@ -68,7 +68,7 @@ namespace System.Formats.Tar.Tests
                     PosixTarEntry entry = reader.GetNextEntry() as PosixTarEntry;
 
                     Assert.NotNull(entry);
-                    Assert.Equal(blockDeviceName, entry.Name);
+                    Assert.Equal(AssetBlockDeviceFileName, entry.Name);
                     Assert.Equal(DefaultLinkName, entry.LinkName);
                     Assert.Equal(TarEntryType.BlockDevice, entry.EntryType);
                     Assert.Null(entry.DataStream);
@@ -95,15 +95,15 @@ namespace System.Formats.Tar.Tests
             RemoteExecutor.Invoke(() =>
             {
                 using TempDirectory root = new TempDirectory();
-                string characterDeviceName = "characterdevice";
-                string characterDevicePath = Path.Join(root.Path, characterDeviceName);
+                string characterDevicePath = Path.Join(root.Path, AssetCharacterDeviceFileName);
 
+                // Creating device files needs elevation
                 Interop.CheckIo(Interop.Sys.CreateCharacterDevice(characterDevicePath, (int)DefaultMode, TestCharacterDeviceMajor, TestCharacterDeviceMinor));
 
                 using MemoryStream archive = new MemoryStream();
                 using (TarWriter writer = new TarWriter(archive, leaveOpen: true))
                 {
-                    writer.WriteEntry(fileName: characterDevicePath, entryName: characterDeviceName);
+                    writer.WriteEntry(fileName: characterDevicePath, entryName: AssetCharacterDeviceFileName);
                 }
 
                 archive.Seek(0, SeekOrigin.Begin);
@@ -112,7 +112,7 @@ namespace System.Formats.Tar.Tests
                     PosixTarEntry entry = reader.GetNextEntry() as PosixTarEntry;
 
                     Assert.NotNull(entry);
-                    Assert.Equal(characterDeviceName, entry.Name);
+                    Assert.Equal(AssetCharacterDeviceFileName, entry.Name);
                     Assert.Equal(DefaultLinkName, entry.LinkName);
                     Assert.Equal(TarEntryType.CharacterDevice, entry.EntryType);
                     Assert.Null(entry.DataStream);

@@ -8,7 +8,7 @@ using Xunit;
 
 namespace System.Formats.Tar.Tests
 {
-    public class TarFile_CreateFromDirectory_Tests : TarTestsBase
+    public class TarFile_CreateFromDirectory_File_Tests : TarTestsBase
     {
         [Theory]
         [InlineData(false)]
