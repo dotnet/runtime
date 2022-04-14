@@ -132,7 +132,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
         private void ValidateService(ServiceDescriptor descriptor)
         {
-            if (descriptor.ServiceType.IsGenericType && !descriptor.ServiceType.IsConstructedGenericType)
+            if (descriptor.ServiceType.IsGenericType)
             {
                 return;
             }
