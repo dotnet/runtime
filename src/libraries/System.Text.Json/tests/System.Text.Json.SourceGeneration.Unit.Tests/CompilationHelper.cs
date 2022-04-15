@@ -294,7 +294,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                     string Name,
                     string PhoneNumber,
                     string Country
-                )
+                );
 
                 [JsonSerializable(typeof(Location))]
                 public partial class MyJsonContext : JsonSerializerContext
