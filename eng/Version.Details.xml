@@ -146,9 +146,9 @@
       <Uri>https://github.com/dotnet/runtime-assets</Uri>
       <Sha>971b917c6c2061ea6a747f0345ac86882c02c466</Sha>
     </Dependency>
-    <Dependency Name="System.Net.TestData" Version="7.0.0-beta.22179.2">
+    <Dependency Name="System.Net.TestData" Version="7.0.0-beta.22213.1">
       <Uri>https://github.com/dotnet/runtime-assets</Uri>
-      <Sha>971b917c6c2061ea6a747f0345ac86882c02c466</Sha>
+      <Sha>2e12dc95e1c286961eaea774cf26c1f29098fb43</Sha>
     </Dependency>
     <Dependency Name="System.Private.Runtime.UnicodeData" Version="7.0.0-beta.22179.2">
       <Uri>https://github.com/dotnet/runtime-assets</Uri>
