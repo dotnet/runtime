@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
@@ -655,24 +656,16 @@ namespace System.Net.Http.Tests
         }
 
         [Fact]
-        public void TryParseAndAddRawHeaderValue_TwoValidValues_NoInvalidValuesAdded()
+        public void TryParseAndAddRawHeaderValue_AddEmptyAfterValid_NoEmptyValuesAdded()
         {
             HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, "http://microsoft.com");
 
             request.Headers.TryAddWithoutValidation(KnownHeaders.CacheControl.Descriptor, "min-fresh=123");
-            request.Headers.TryAddWithoutValidation(KnownHeaders.CacheControl.Descriptor, "max-stale");
-            object? storeValue = request.Headers.GetParsedAndInvalidValues(KnownHeaders.CacheControl.Descriptor);
+            request.Headers.TryAddWithoutValidation(KnownHeaders.CacheControl.Descriptor, string.Empty);
 
-            Assert.NotNull(storeValue);
-            // Ensure that only a single value has been stored.
-            // If the second value were added via HttpHeaders.AddInvalidValue()
-            // This assert would fail as the storedValue would be a List of objects
-            // With one CacheControlHeaderValue and one InvalidValue.
-            Assert.IsAssignableFrom<CacheControlHeaderValue>(storeValue);
-
-            var cacheControl = storeValue as CacheControlHeaderValue;
-
-            Assert.Equal("max-stale, min-fresh=123", cacheControl.ToString());
+            Assert.True(request.Headers.TryGetValues(KnownHeaders.CacheControl.Descriptor, out IEnumerable<string>? values));
+            Assert.True(values.Count() == 1);
+            Assert.Equal("min-fresh=123", values.Single());
         }
 
         #region Helper methods
