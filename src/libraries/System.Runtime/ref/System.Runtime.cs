@@ -767,6 +767,9 @@ namespace System
         ulong System.IConvertible.ToUInt64(System.IFormatProvider? provider) { throw null; }
         static byte System.Numerics.IAdditionOperators<byte, byte, byte>.operator +(byte left, byte right) { throw null; }
         static byte System.Numerics.IAdditionOperators<byte, byte, byte>.operator checked +(byte left, byte right) { throw null; }
+        int System.Numerics.IBinaryInteger<byte>.GetByteCount() { throw null; }
+        long System.Numerics.IBinaryInteger<byte>.GetShortestBitLength() { throw null; }
+        bool System.Numerics.IBinaryInteger<byte>.TryWriteLittleEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
         static byte System.Numerics.IBitwiseOperators<byte, byte, byte>.operator &(byte left, byte right) { throw null; }
         static byte System.Numerics.IBitwiseOperators<byte, byte, byte>.operator |(byte left, byte right) { throw null; }
         static byte System.Numerics.IBitwiseOperators<byte, byte, byte>.operator ^(byte left, byte right) { throw null; }
@@ -912,6 +915,9 @@ namespace System
         static bool System.ISpanParsable<char>.TryParse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider, out char result) { throw null; }
         static char System.Numerics.IAdditionOperators<char, char, char>.operator +(char left, char right) { throw null; }
         static char System.Numerics.IAdditionOperators<char, char, char>.operator checked +(char left, char right) { throw null; }
+        int System.Numerics.IBinaryInteger<char>.GetByteCount() { throw null; }
+        long System.Numerics.IBinaryInteger<char>.GetShortestBitLength() { throw null; }
+        bool System.Numerics.IBinaryInteger<char>.TryWriteLittleEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
         static char System.Numerics.IBitwiseOperators<char, char, char>.operator &(char left, char right) { throw null; }
         static char System.Numerics.IBitwiseOperators<char, char, char>.operator |(char left, char right) { throw null; }
         static char System.Numerics.IBitwiseOperators<char, char, char>.operator ^(char left, char right) { throw null; }
@@ -1527,6 +1533,10 @@ namespace System
         public DateTime(int year, int month, int day, int hour, int minute, int second, int millisecond, System.DateTimeKind kind) { throw null; }
         public DateTime(int year, int month, int day, int hour, int minute, int second, int millisecond, System.Globalization.Calendar calendar) { throw null; }
         public DateTime(int year, int month, int day, int hour, int minute, int second, int millisecond, System.Globalization.Calendar calendar, System.DateTimeKind kind) { throw null; }
+        public DateTime(int year, int month, int day, int hour, int minute, int second, int millisecond, int microsecond) { throw null; }
+        public DateTime(int year, int month, int day, int hour, int minute, int second, int millisecond, int microsecond, System.DateTimeKind kind) { throw null; }
+        public DateTime(int year, int month, int day, int hour, int minute, int second, int millisecond, int microsecond, System.Globalization.Calendar calendar) { throw null; }
+        public DateTime(int year, int month, int day, int hour, int minute, int second, int millisecond, int microsecond, System.Globalization.Calendar calendar, System.DateTimeKind kind) { throw null; }
         public DateTime(long ticks) { throw null; }
         public DateTime(long ticks, System.DateTimeKind kind) { throw null; }
         public System.DateTime Date { get { throw null; } }
@@ -1535,9 +1545,11 @@ namespace System
         public int DayOfYear { get { throw null; } }
         public int Hour { get { throw null; } }
         public System.DateTimeKind Kind { get { throw null; } }
+        public int Microsecond { get { throw null; } }
         public int Millisecond { get { throw null; } }
         public int Minute { get { throw null; } }
         public int Month { get { throw null; } }
+        public int Nanosecond { get { throw null; } }
         public static System.DateTime Now { get { throw null; } }
         public int Second { get { throw null; } }
         static System.TimeSpan System.Numerics.IAdditiveIdentity<System.DateTime,System.TimeSpan>.AdditiveIdentity { get { throw null; } }
@@ -1551,6 +1563,7 @@ namespace System
         public System.DateTime Add(System.TimeSpan value) { throw null; }
         public System.DateTime AddDays(double value) { throw null; }
         public System.DateTime AddHours(double value) { throw null; }
+        public System.DateTime AddMicroseconds(double value) { throw null; }
         public System.DateTime AddMilliseconds(double value) { throw null; }
         public System.DateTime AddMinutes(double value) { throw null; }
         public System.DateTime AddMonths(int months) { throw null; }
@@ -1658,6 +1671,8 @@ namespace System
         public DateTimeOffset(System.DateTime dateTime) { throw null; }
         public DateTimeOffset(System.DateTime dateTime, System.TimeSpan offset) { throw null; }
         public DateTimeOffset(int year, int month, int day, int hour, int minute, int second, int millisecond, System.Globalization.Calendar calendar, System.TimeSpan offset) { throw null; }
+        public DateTimeOffset(int year, int month, int day, int hour, int minute, int second, int millisecond, int microsecond, System.Globalization.Calendar calendar, System.TimeSpan offset) { throw null; }
+        public DateTimeOffset(int year, int month, int day, int hour, int minute, int second, int millisecond, int microsecond, System.TimeSpan offset) { throw null; }
         public DateTimeOffset(int year, int month, int day, int hour, int minute, int second, int millisecond, System.TimeSpan offset) { throw null; }
         public DateTimeOffset(int year, int month, int day, int hour, int minute, int second, System.TimeSpan offset) { throw null; }
         public DateTimeOffset(long ticks, System.TimeSpan offset) { throw null; }
@@ -1668,9 +1683,11 @@ namespace System
         public int DayOfYear { get { throw null; } }
         public int Hour { get { throw null; } }
         public System.DateTime LocalDateTime { get { throw null; } }
+        public int Microsecond { get { throw null; } }
         public int Millisecond { get { throw null; } }
         public int Minute { get { throw null; } }
         public int Month { get { throw null; } }
+        public int Nanosecond { get { throw null; } }
         public static System.DateTimeOffset Now { get { throw null; } }
         public System.TimeSpan Offset { get { throw null; } }
         public int Second { get { throw null; } }
@@ -1686,6 +1703,7 @@ namespace System
         public System.DateTimeOffset Add(System.TimeSpan timeSpan) { throw null; }
         public System.DateTimeOffset AddDays(double days) { throw null; }
         public System.DateTimeOffset AddHours(double hours) { throw null; }
+        public System.DateTimeOffset AddMicroseconds(double microseconds) { throw null; }
         public System.DateTimeOffset AddMilliseconds(double milliseconds) { throw null; }
         public System.DateTimeOffset AddMinutes(double minutes) { throw null; }
         public System.DateTimeOffset AddMonths(int months) { throw null; }
@@ -2907,6 +2925,9 @@ namespace System
         ulong System.IConvertible.ToUInt64(System.IFormatProvider? provider) { throw null; }
         static short System.Numerics.IAdditionOperators<short, short, short>.operator +(short left, short right) { throw null; }
         static short System.Numerics.IAdditionOperators<short, short, short>.operator checked +(short left, short right) { throw null; }
+        int System.Numerics.IBinaryInteger<short>.GetByteCount() { throw null; }
+        long System.Numerics.IBinaryInteger<short>.GetShortestBitLength() { throw null; }
+        bool System.Numerics.IBinaryInteger<short>.TryWriteLittleEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
         static short System.Numerics.IBitwiseOperators<short, short, short>.operator &(short left, short right) { throw null; }
         static short System.Numerics.IBitwiseOperators<short, short, short>.operator |(short left, short right) { throw null; }
         static short System.Numerics.IBitwiseOperators<short, short, short>.operator ^(short left, short right) { throw null; }
@@ -3007,6 +3028,9 @@ namespace System
         ulong System.IConvertible.ToUInt64(System.IFormatProvider? provider) { throw null; }
         static int System.Numerics.IAdditionOperators<int, int, int>.operator +(int left, int right) { throw null; }
         static int System.Numerics.IAdditionOperators<int, int, int>.operator checked +(int left, int right) { throw null; }
+        int System.Numerics.IBinaryInteger<int>.GetByteCount() { throw null; }
+        long System.Numerics.IBinaryInteger<int>.GetShortestBitLength() { throw null; }
+        bool System.Numerics.IBinaryInteger<int>.TryWriteLittleEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
         static int System.Numerics.IBitwiseOperators<int, int, int>.operator &(int left, int right) { throw null; }
         static int System.Numerics.IBitwiseOperators<int, int, int>.operator |(int left, int right) { throw null; }
         static int System.Numerics.IBitwiseOperators<int, int, int>.operator ^(int left, int right) { throw null; }
@@ -3107,6 +3131,9 @@ namespace System
         ulong System.IConvertible.ToUInt64(System.IFormatProvider? provider) { throw null; }
         static long System.Numerics.IAdditionOperators<long, long, long>.operator +(long left, long right) { throw null; }
         static long System.Numerics.IAdditionOperators<long, long, long>.operator checked +(long left, long right) { throw null; }
+        int System.Numerics.IBinaryInteger<long>.GetByteCount() { throw null; }
+        long System.Numerics.IBinaryInteger<long>.GetShortestBitLength() { throw null; }
+        bool System.Numerics.IBinaryInteger<long>.TryWriteLittleEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
         static long System.Numerics.IBitwiseOperators<long, long, long>.operator &(long left, long right) { throw null; }
         static long System.Numerics.IBitwiseOperators<long, long, long>.operator |(long left, long right) { throw null; }
         static long System.Numerics.IBitwiseOperators<long, long, long>.operator ^(long left, long right) { throw null; }
@@ -3193,11 +3220,14 @@ namespace System
         static nint System.Numerics.IAdditionOperators<nint, nint, nint>.operator +(nint left, nint right) { throw null; }
         static nint System.Numerics.IAdditionOperators<nint, nint, nint>.operator checked +(nint left, nint right) { throw null; }
         static (nint Quotient, nint Remainder) System.Numerics.IBinaryInteger<nint>.DivRem(nint left, nint right) { throw null; }
+        int System.Numerics.IBinaryInteger<nint>.GetByteCount() { throw null; }
+        long System.Numerics.IBinaryInteger<nint>.GetShortestBitLength() { throw null; }
         static nint System.Numerics.IBinaryInteger<nint>.LeadingZeroCount(nint value) { throw null; }
         static nint System.Numerics.IBinaryInteger<nint>.PopCount(nint value) { throw null; }
         static nint System.Numerics.IBinaryInteger<nint>.RotateLeft(nint value, int rotateAmount) { throw null; }
         static nint System.Numerics.IBinaryInteger<nint>.RotateRight(nint value, int rotateAmount) { throw null; }
         static nint System.Numerics.IBinaryInteger<nint>.TrailingZeroCount(nint value) { throw null; }
+        bool System.Numerics.IBinaryInteger<nint>.TryWriteLittleEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
         static bool System.Numerics.IBinaryNumber<nint>.IsPow2(nint value) { throw null; }
         static nint System.Numerics.IBinaryNumber<nint>.Log2(nint value) { throw null; }
         static nint System.Numerics.IBitwiseOperators<nint, nint, nint>.operator &(nint left, nint right) { throw null; }
@@ -4113,6 +4143,9 @@ namespace System
         ulong System.IConvertible.ToUInt64(System.IFormatProvider? provider) { throw null; }
         static sbyte System.Numerics.IAdditionOperators<sbyte, sbyte, sbyte>.operator +(sbyte left, sbyte right) { throw null; }
         static sbyte System.Numerics.IAdditionOperators<sbyte, sbyte, sbyte>.operator checked +(sbyte left, sbyte right) { throw null; }
+        int System.Numerics.IBinaryInteger<sbyte>.GetByteCount() { throw null; }
+        long System.Numerics.IBinaryInteger<sbyte>.GetShortestBitLength() { throw null; }
+        bool System.Numerics.IBinaryInteger<sbyte>.TryWriteLittleEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
         static sbyte System.Numerics.IBitwiseOperators<sbyte, sbyte, sbyte>.operator &(sbyte left, sbyte right) { throw null; }
         static sbyte System.Numerics.IBitwiseOperators<sbyte, sbyte, sbyte>.operator |(sbyte left, sbyte right) { throw null; }
         static sbyte System.Numerics.IBitwiseOperators<sbyte, sbyte, sbyte>.operator ^(sbyte left, sbyte right) { throw null; }
@@ -4622,12 +4655,15 @@ namespace System
         public TimeOnly(int hour, int minute) { throw null; }
         public TimeOnly(int hour, int minute, int second) { throw null; }
         public TimeOnly(int hour, int minute, int second, int millisecond) { throw null; }
+        public TimeOnly(int hour, int minute, int second, int millisecond, int microsecond) { throw null; }
         public TimeOnly(long ticks) { throw null; }
         public int Hour { get { throw null; } }
         public static System.TimeOnly MaxValue { get { throw null; } }
+        public int Microsecond { get { throw null; } }
         public int Millisecond { get { throw null; } }
         public int Minute { get { throw null; } }
         public static System.TimeOnly MinValue { get { throw null; } }
+        public int Nanosecond { get { throw null; } }
         public int Second { get { throw null; } }
         public long Ticks { get { throw null; } }
         public System.TimeOnly Add(System.TimeSpan value) { throw null; }
@@ -4699,8 +4735,10 @@ namespace System
         private readonly int _dummyPrimitive;
         public static readonly System.TimeSpan MaxValue;
         public static readonly System.TimeSpan MinValue;
+        public const long NanosecondsPerTick = (long)100;
         public const long TicksPerDay = (long)864000000000;
         public const long TicksPerHour = (long)36000000000;
+        public const long TicksPerMicrosecond = (long)10;
         public const long TicksPerMillisecond = (long)10000;
         public const long TicksPerMinute = (long)600000000;
         public const long TicksPerSecond = (long)10000000;
@@ -4708,11 +4746,14 @@ namespace System
         public TimeSpan(int hours, int minutes, int seconds) { throw null; }
         public TimeSpan(int days, int hours, int minutes, int seconds) { throw null; }
         public TimeSpan(int days, int hours, int minutes, int seconds, int milliseconds) { throw null; }
+        public TimeSpan(int days, int hours, int minutes, int seconds, int milliseconds, int microseconds) { throw null; }
         public TimeSpan(long ticks) { throw null; }
         public int Days { get { throw null; } }
         public int Hours { get { throw null; } }
+        public int Microseconds { get { throw null; } }
         public int Milliseconds { get { throw null; } }
         public int Minutes { get { throw null; } }
+        public int Nanoseconds { get { throw null; } }
         public int Seconds { get { throw null; } }
         static System.TimeSpan System.Numerics.IAdditiveIdentity<System.TimeSpan,System.TimeSpan>.AdditiveIdentity { get { throw null; } }
         static System.TimeSpan System.Numerics.IMinMaxValue<System.TimeSpan>.MaxValue { get { throw null; } }
@@ -4721,8 +4762,10 @@ namespace System
         public long Ticks { get { throw null; } }
         public double TotalDays { get { throw null; } }
         public double TotalHours { get { throw null; } }
+        public double TotalMicroseconds { get { throw null; } }
         public double TotalMilliseconds { get { throw null; } }
         public double TotalMinutes { get { throw null; } }
+        public double TotalNanoseconds { get { throw null; } }
         public double TotalSeconds { get { throw null; } }
         public System.TimeSpan Add(System.TimeSpan ts) { throw null; }
         public static int Compare(System.TimeSpan t1, System.TimeSpan t2) { throw null; }
@@ -4736,6 +4779,7 @@ namespace System
         public static bool Equals(System.TimeSpan t1, System.TimeSpan t2) { throw null; }
         public static System.TimeSpan FromDays(double value) { throw null; }
         public static System.TimeSpan FromHours(double value) { throw null; }
+        public static System.TimeSpan FromMicroseconds(double value) { throw null; }
         public static System.TimeSpan FromMilliseconds(double value) { throw null; }
         public static System.TimeSpan FromMinutes(double value) { throw null; }
         public static System.TimeSpan FromSeconds(double value) { throw null; }
@@ -5531,6 +5575,9 @@ namespace System
         ulong System.IConvertible.ToUInt64(System.IFormatProvider? provider) { throw null; }
         static ushort System.Numerics.IAdditionOperators<ushort, ushort, ushort>.operator +(ushort left, ushort right) { throw null; }
         static ushort System.Numerics.IAdditionOperators<ushort, ushort, ushort>.operator checked +(ushort left, ushort right) { throw null; }
+        int System.Numerics.IBinaryInteger<ushort>.GetByteCount() { throw null; }
+        long System.Numerics.IBinaryInteger<ushort>.GetShortestBitLength() { throw null; }
+        bool System.Numerics.IBinaryInteger<ushort>.TryWriteLittleEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
         static ushort System.Numerics.IBitwiseOperators<ushort, ushort, ushort>.operator &(ushort left, ushort right) { throw null; }
         static ushort System.Numerics.IBitwiseOperators<ushort, ushort, ushort>.operator |(ushort left, ushort right) { throw null; }
         static ushort System.Numerics.IBitwiseOperators<ushort, ushort, ushort>.operator ^(ushort left, ushort right) { throw null; }
@@ -5631,6 +5678,9 @@ namespace System
         ulong System.IConvertible.ToUInt64(System.IFormatProvider? provider) { throw null; }
         static uint System.Numerics.IAdditionOperators<uint, uint, uint>.operator +(uint left, uint right) { throw null; }
         static uint System.Numerics.IAdditionOperators<uint, uint, uint>.operator checked +(uint left, uint right) { throw null; }
+        int System.Numerics.IBinaryInteger<uint>.GetByteCount() { throw null; }
+        long System.Numerics.IBinaryInteger<uint>.GetShortestBitLength() { throw null; }
+        bool System.Numerics.IBinaryInteger<uint>.TryWriteLittleEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
         static uint System.Numerics.IBitwiseOperators<uint, uint, uint>.operator &(uint left, uint right) { throw null; }
         static uint System.Numerics.IBitwiseOperators<uint, uint, uint>.operator |(uint left, uint right) { throw null; }
         static uint System.Numerics.IBitwiseOperators<uint, uint, uint>.operator ^(uint left, uint right) { throw null; }
@@ -5731,6 +5781,9 @@ namespace System
         ulong System.IConvertible.ToUInt64(System.IFormatProvider? provider) { throw null; }
         static ulong System.Numerics.IAdditionOperators<ulong, ulong, ulong>.operator +(ulong left, ulong right) { throw null; }
         static ulong System.Numerics.IAdditionOperators<ulong, ulong, ulong>.operator checked +(ulong left, ulong right) { throw null; }
+        int System.Numerics.IBinaryInteger<ulong>.GetByteCount() { throw null; }
+        long System.Numerics.IBinaryInteger<ulong>.GetShortestBitLength() { throw null; }
+        bool System.Numerics.IBinaryInteger<ulong>.TryWriteLittleEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
         static ulong System.Numerics.IBitwiseOperators<ulong, ulong, ulong>.operator &(ulong left, ulong right) { throw null; }
         static ulong System.Numerics.IBitwiseOperators<ulong, ulong, ulong>.operator |(ulong left, ulong right) { throw null; }
         static ulong System.Numerics.IBitwiseOperators<ulong, ulong, ulong>.operator ^(ulong left, ulong right) { throw null; }
@@ -5819,11 +5872,14 @@ namespace System
         static nuint System.Numerics.IAdditionOperators<nuint, nuint, nuint>.operator +(nuint left, nuint right) { throw null; }
         static nuint System.Numerics.IAdditionOperators<nuint, nuint, nuint>.operator checked +(nuint left, nuint right) { throw null; }
         static (nuint Quotient, nuint Remainder) System.Numerics.IBinaryInteger<nuint>.DivRem(nuint left, nuint right) { throw null; }
+        int System.Numerics.IBinaryInteger<nuint>.GetByteCount() { throw null; }
+        long System.Numerics.IBinaryInteger<nuint>.GetShortestBitLength() { throw null; }
         static nuint System.Numerics.IBinaryInteger<nuint>.LeadingZeroCount(nuint value) { throw null; }
         static nuint System.Numerics.IBinaryInteger<nuint>.PopCount(nuint value) { throw null; }
         static nuint System.Numerics.IBinaryInteger<nuint>.RotateLeft(nuint value, int rotateAmount) { throw null; }
         static nuint System.Numerics.IBinaryInteger<nuint>.RotateRight(nuint value, int rotateAmount) { throw null; }
         static nuint System.Numerics.IBinaryInteger<nuint>.TrailingZeroCount(nuint value) { throw null; }
+        bool System.Numerics.IBinaryInteger<nuint>.TryWriteLittleEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
         static bool System.Numerics.IBinaryNumber<nuint>.IsPow2(nuint value) { throw null; }
         static nuint System.Numerics.IBinaryNumber<nuint>.Log2(nuint value) { throw null; }
         static nuint System.Numerics.IBitwiseOperators<nuint, nuint, nuint>.operator &(nuint left, nuint right) { throw null; }
@@ -7368,7 +7424,7 @@ namespace System.Diagnostics.CodeAnalysis
         public string? Message { get { throw null; } }
         public string? Url { get { throw null; } set { } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Constructor | System.AttributeTargets.Method, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Method, Inherited=false)]
     public sealed partial class RequiresDynamicCodeAttribute : System.Attribute
     {
         public RequiresDynamicCodeAttribute(string message) { }
@@ -9470,11 +9526,17 @@ namespace System.Numerics
     public partial interface IBinaryInteger<TSelf> : System.IComparable, System.IComparable<TSelf>, System.IEquatable<TSelf>, System.IFormattable, System.IParsable<TSelf>, System.ISpanFormattable, System.ISpanParsable<TSelf>, System.Numerics.IAdditionOperators<TSelf, TSelf, TSelf>, System.Numerics.IAdditiveIdentity<TSelf, TSelf>, System.Numerics.IBinaryNumber<TSelf>, System.Numerics.IBitwiseOperators<TSelf, TSelf, TSelf>, System.Numerics.IComparisonOperators<TSelf, TSelf>, System.Numerics.IDecrementOperators<TSelf>, System.Numerics.IDivisionOperators<TSelf, TSelf, TSelf>, System.Numerics.IEqualityOperators<TSelf, TSelf>, System.Numerics.IIncrementOperators<TSelf>, System.Numerics.IModulusOperators<TSelf, TSelf, TSelf>, System.Numerics.IMultiplicativeIdentity<TSelf, TSelf>, System.Numerics.IMultiplyOperators<TSelf, TSelf, TSelf>, System.Numerics.INumber<TSelf>, System.Numerics.INumberBase<TSelf>, System.Numerics.IShiftOperators<TSelf, TSelf>, System.Numerics.ISubtractionOperators<TSelf, TSelf, TSelf>, System.Numerics.IUnaryNegationOperators<TSelf, TSelf>, System.Numerics.IUnaryPlusOperators<TSelf, TSelf> where TSelf : System.Numerics.IBinaryInteger<TSelf>
     {
         static abstract (TSelf Quotient, TSelf Remainder) DivRem(TSelf left, TSelf right);
+        int GetByteCount();
+        long GetShortestBitLength();
         static abstract TSelf LeadingZeroCount(TSelf value);
         static abstract TSelf PopCount(TSelf value);
         static abstract TSelf RotateLeft(TSelf value, int rotateAmount);
         static abstract TSelf RotateRight(TSelf value, int rotateAmount);
         static abstract TSelf TrailingZeroCount(TSelf value);
+        bool TryWriteLittleEndian(System.Span<byte> destination, out int bytesWritten);
+        int WriteLittleEndian(byte[] destination) { throw null; }
+        int WriteLittleEndian(byte[] destination, int startIndex) { throw null; }
+        int WriteLittleEndian(System.Span<byte> destination) { throw null; }
     }
     public partial interface IBinaryNumber<TSelf> : System.IComparable, System.IComparable<TSelf>, System.IEquatable<TSelf>, System.IFormattable, System.IParsable<TSelf>, System.ISpanFormattable, System.ISpanParsable<TSelf>, System.Numerics.IAdditionOperators<TSelf, TSelf, TSelf>, System.Numerics.IAdditiveIdentity<TSelf, TSelf>, System.Numerics.IBitwiseOperators<TSelf, TSelf, TSelf>, System.Numerics.IComparisonOperators<TSelf, TSelf>, System.Numerics.IDecrementOperators<TSelf>, System.Numerics.IDivisionOperators<TSelf, TSelf, TSelf>, System.Numerics.IEqualityOperators<TSelf, TSelf>, System.Numerics.IIncrementOperators<TSelf>, System.Numerics.IModulusOperators<TSelf, TSelf, TSelf>, System.Numerics.IMultiplicativeIdentity<TSelf, TSelf>, System.Numerics.IMultiplyOperators<TSelf, TSelf, TSelf>, System.Numerics.INumber<TSelf>, System.Numerics.INumberBase<TSelf>, System.Numerics.ISubtractionOperators<TSelf, TSelf, TSelf>, System.Numerics.IUnaryNegationOperators<TSelf, TSelf>, System.Numerics.IUnaryPlusOperators<TSelf, TSelf> where TSelf : System.Numerics.IBinaryNumber<TSelf>
     {
@@ -11275,6 +11337,15 @@ namespace System.Runtime.CompilerServices
         public CompilationRelaxationsAttribute(System.Runtime.CompilerServices.CompilationRelaxations relaxations) { }
         public int CompilationRelaxations { get { throw null; } }
     }
+    [System.AttributeUsageAttribute(System.AttributeTargets.All, AllowMultiple=true, Inherited=false)]
+    public sealed partial class CompilerFeatureRequiredAttribute : System.Attribute
+    {
+        public const string RefStructs = "RefStructs";
+        public const string RequiredMembers = "RequiredMembers";
+        public CompilerFeatureRequiredAttribute(string featureName) { }
+        public string FeatureName { get { throw null; } }
+        public bool IsOptional { get { throw null; } init { } }
+    }
     [System.AttributeUsageAttribute(System.AttributeTargets.All, Inherited=true)]
     public sealed partial class CompilerGeneratedAttribute : System.Attribute
     {
@@ -11296,6 +11367,7 @@ namespace System.Runtime.CompilerServices
         public bool Remove(TKey key) { throw null; }
         System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<TKey, TValue>> System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<TKey, TValue>>.GetEnumerator() { throw null; }
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
+        public bool TryAdd(TKey key, TValue value) { throw null; }
         public bool TryGetValue(TKey key, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TValue value) { throw null; }
         public delegate TValue CreateValueCallback(TKey key);
     }

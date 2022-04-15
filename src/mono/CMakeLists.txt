@@ -263,7 +263,8 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
   set(MONO_ZERO_LEN_ARRAY 1)
   set(INTERNAL_ZLIB 1)
   set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>") # statically link VC runtime library
-  add_compile_options(/W3)   # set warning level 3
+  add_compile_options(/W4)   # set warning level 4
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/WX>) # treat warnings as errors
   add_compile_options(/EHsc) # set exception handling behavior
   add_compile_options(/FC)   # use full pathnames in diagnostics
   add_link_options(/STACK:0x800000)  # set stack size to 8MB (default is 1MB)
@@ -623,7 +624,14 @@ if(LLVM_PREFIX)
   set(LLVM_LIBDIR "${LLVM_PREFIX}/lib")
   set(LLVM_INCLUDEDIR "${llvm_includedir}")
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${llvm_cflags}")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${llvm_cxxflags} -fexceptions -fno-rtti")
+  if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
+    # /EHsc already enabled, prevent LLVM flags to disable it. Corresponds to -fexceptions.
+    string(REPLACE "/EHs-c-" "" llvm_cxxflags "${llvm_cxxflags}")
+    # /GR- already enabled and inherited from LLVM flags. Corresponds to -fno-rtti.
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${llvm_cxxflags}")
+  else()
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${llvm_cxxflags} -fexceptions -fno-rtti")
+  endif()
   add_definitions(-DLLVM_API_VERSION=${llvm_api_version})
 endif()
 
@@ -856,10 +864,6 @@ if(HOST_IOS OR HOST_ANDROID OR HOST_MACCAT)
   unset(DISABLE_DLLMAP)
 else()
   set(DISABLE_DLLMAP 1)
-endif()
-if (TARGET_BROWSER)
-  # sys/errno.h exists, but just emits a warning and includes errno.h
-  unset(HAVE_SYS_ERRNO_H)
 endif()
 ### End of OS specific checks
 

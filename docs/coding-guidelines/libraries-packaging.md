@@ -22,7 +22,7 @@ Removing a library from the shared framework is a breaking change and should be 
 
 Transport packages are non-shipping packages that dotnet/runtime produces in order to share binaries with other repositories.
 
-### Microsoft.Internal.Runtime.**TARGET**.Transport
+### Microsoft.Internal.Runtime.**[TargetRepositoryName]**.Transport
 
 Such transport packages represent the set of libraries which are produced in dotnet/runtime and ship in target repo's shared framework (i.e. Microsoft.AspNetCore.App and Microsoft.WindowsDesktop.App). We produce a transport package so that we can easily share reference, implementation and analyzer assemblies that might not be present in NuGet packages that also ship.
 
@@ -91,4 +91,37 @@ In order to mitigate design-time/build-time performance issues with source gener
   <PropertyGroup>
     <DisableSourceGeneratorPropertyName>CustomPropertyName</DisableSourceGeneratorPropertyName>
   </PropertyGroup>
+```
+
+### NETStandard Compatibility Error infrastructure
+For libraries that support .NETStandard, the _.NETStandard Compatibility packaging infrastructure_ makes sure that out-of-support target frameworks like _netcoreapp3.1_ or _net461_ are unsupported by the produced package. That enables library authors to support .NETStandard but explicitly not support unsupported .NETStandard compatible target frameworks.
+
+The infrastructure generates a targets file that throws a user readable Error when msbuild invokes a project with an unsupported target framework. In addition to the targets file, placeholder files `_._` are placed into the minimum supported .NETStandard compatible target framework's package folder (as time of writing `net6.0` and `net462`), so that the generated targets files don't apply for that and any newer/compatible target framework. Example:
+
+```
+buildTransitive\net461\Microsoft.Extensions.Configuration.UserSecrets.targets            <- This file is generated and throws an Error
+buildTransitive\net462\_._
+buildTransitive\netcoreapp2.0\Microsoft.Extensions.Configuration.UserSecrets.targets     <- This file is generated and throws an Error
+buildTransitive\net6.0\_._ 
+```
+
+Whenever a library wants to author their own set of props and targets files (i.e. for source generators) and the above mentioned infrastructure kicks in (because the library targets .NETStandard), such files **must be included not only for the .NETStandard target framework but also for the specific minimum supported target frameworks**. The _.NETStandard Compatibility packaging infrastructure_ then omits the otherwise necessary placeholder files. Example:
+
+```
+buildTransitive\netstandard2.0\Microsoft.Extensions.Configuration.UserSecrets.targets    <- This file is hand authored and doesn't throw an error
+buildTransitive\net461\Microsoft.Extensions.Configuration.UserSecrets.targets            <- This file is generated and throws an Error
+buildTransitive\net462\Microsoft.Extensions.Configuration.UserSecrets.targets            <- This file is hand authored and doesn't throw an error
+buildTransitive\netcoreapp2.0\Microsoft.Extensions.Configuration.UserSecrets.targets     <- This file is generated and throws an Error
+buildTransitive\net6.0\Microsoft.Extensions.Configuration.UserSecrets.targets            <- This file is hand authored and doesn't throw an error
+```
+
+The above layout is achieved via the following item declaration in the project file. In that case, the hand authored msbuild props and/or targets files are located in a buildTransitive folder in the project tree. Note that the trailing directory separators are required.
+
+```xml
+<ItemGroup>
+    <Content Include="buildTransitive\$(MSBuildProjectName).*"
+             PackagePath="buildTransitive\netstandard2.0\;
+                          buildTransitive\$(NetFrameworkMinimum)\;
+                          buildTransitive\$(NetCoreAppMinimum)\" />
+</ItemGroup>
 ```

@@ -36,6 +36,7 @@ enum CORINFO_InstructionSet
     InstructionSet_Rdm_Arm64=18,
     InstructionSet_Sha1_Arm64=19,
     InstructionSet_Sha256_Arm64=20,
+    InstructionSet_Rcpc=21,
 #endif // TARGET_ARM64
 #ifdef TARGET_AMD64
     InstructionSet_X86Base=1,
@@ -486,6 +487,8 @@ inline const char *InstructionSetToString(CORINFO_InstructionSet instructionSet)
             return "Vector128";
         case InstructionSet_Dczva :
             return "Dczva";
+        case InstructionSet_Rcpc :
+            return "Rcpc";
 #endif // TARGET_ARM64
 #ifdef TARGET_AMD64
         case InstructionSet_X86Base :

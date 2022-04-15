@@ -22,6 +22,7 @@ System.Threading.RateLimiting.RateLimitLease</PackageDescription>
     <Compile Include="System\Threading\RateLimiting\QueueProcessingOrder.cs" />
     <Compile Include="System\Threading\RateLimiting\RateLimiter.cs" />
     <Compile Include="System\Threading\RateLimiting\RateLimitLease.cs" />
+    <Compile Include="System\Threading\RateLimiting\ReplenishingRateLimiter.cs" />
     <Compile Include="System\Threading\RateLimiting\TokenBucketRateLimiter.cs" />
     <Compile Include="System\Threading\RateLimiting\TokenBucketRateLimiterOptions.cs" />
     <Compile Include="$(CommonPath)System\Collections\Generic\Deque.cs" Link="Common\System\Collections\Generic\Deque.cs" />

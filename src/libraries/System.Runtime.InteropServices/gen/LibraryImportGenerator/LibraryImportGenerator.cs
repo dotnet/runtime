@@ -501,7 +501,7 @@ namespace Microsoft.Interop
                 pinvokeStub.LibraryImportData.SetLastError && !options.GenerateForwarders,
                 (elementInfo, ex) =>
                 {
-                    diagnostics.ReportMarshallingNotSupported(originalSyntax, elementInfo, ex.NotSupportedDetails);
+                    diagnostics.ReportMarshallingNotSupported(originalSyntax, elementInfo, ex.NotSupportedDetails, ex.DiagnosticProperties ?? ImmutableDictionary<string, string>.Empty);
                 },
                 pinvokeStub.StubContext.GeneratorFactory);
 

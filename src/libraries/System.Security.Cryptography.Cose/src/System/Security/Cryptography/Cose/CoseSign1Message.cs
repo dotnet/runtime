@@ -4,7 +4,10 @@
 using System.Buffers;
 using System.Diagnostics;
 using System.Formats.Cbor;
+using System.IO;
 using System.Runtime.Versioning;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace System.Security.Cryptography.Cose
 {
@@ -12,30 +15,111 @@ namespace System.Security.Cryptography.Cose
     {
         private const string SigStructureCoxtextSign1 = "Signature1";
         private const int Sign1ArrayLegth = 4;
-        private byte[]? _toBeSigned;
+        private byte[]? _toBeSignedHash;
 
         internal CoseSign1Message(CoseHeaderMap protectedHeader, CoseHeaderMap unprotectedHeader, byte[]? content, byte[] signature, byte[] protectedHeaderAsBstr)
             : base(protectedHeader, unprotectedHeader, content, signature, protectedHeaderAsBstr) { }
 
         [UnsupportedOSPlatform("browser")]
         public static byte[] Sign(byte[] content!!, AsymmetricAlgorithm key!!, HashAlgorithmName hashAlgorithm, CoseHeaderMap? protectedHeaders = null, CoseHeaderMap? unprotectedHeaders = null, bool isDetached = false)
-            => SignCore(content.AsSpan(), key, hashAlgorithm, GetKeyType(key), protectedHeaders, unprotectedHeaders, isDetached);
+            => SignCore(content.AsSpan(), null, key, hashAlgorithm, GetKeyType(key), protectedHeaders, unprotectedHeaders, isDetached);
 
         [UnsupportedOSPlatform("browser")]
         public static byte[] Sign(ReadOnlySpan<byte> content, AsymmetricAlgorithm key!!, HashAlgorithmName hashAlgorithm, CoseHeaderMap? protectedHeaders = null, CoseHeaderMap? unprotectedHeaders = null, bool isDetached = false)
-            => SignCore(content, key, hashAlgorithm, GetKeyType(key), protectedHeaders, unprotectedHeaders, isDetached);
+            => SignCore(content, null, key, hashAlgorithm, GetKeyType(key), protectedHeaders, unprotectedHeaders, isDetached);
 
         [UnsupportedOSPlatform("browser")]
-        internal static byte[] SignCore(ReadOnlySpan<byte> content, AsymmetricAlgorithm key, HashAlgorithmName hashAlgorithm, KeyType keyType, CoseHeaderMap? protectedHeaders, CoseHeaderMap? unprotectedHeaders, bool isDetached)
+        public static byte[] Sign(Stream detachedContent!!, AsymmetricAlgorithm key!!, HashAlgorithmName hashAlgorithm, CoseHeaderMap? protectedHeaders = null, CoseHeaderMap? unprotectedHeaders = null)
         {
+            if (!detachedContent.CanRead)
+            {
+                throw new ArgumentException(SR.Sign1ArgumentStreamNotReadable, nameof(detachedContent));
+            }
+
+            if (!detachedContent.CanSeek)
+            {
+                throw new ArgumentException(SR.Sign1ArgumentStreamNotSeekable, nameof(detachedContent));
+            }
+
+            return SignCore(default, detachedContent, key, hashAlgorithm, GetKeyType(key), protectedHeaders, unprotectedHeaders, isDetached: true);
+        }
+
+        [UnsupportedOSPlatform("browser")]
+        internal static byte[] SignCore(
+            ReadOnlySpan<byte> contentBytes,
+            Stream? contentStream,
+            AsymmetricAlgorithm key,
+            HashAlgorithmName hashAlgorithm,
+            KeyType keyType,
+            CoseHeaderMap? protectedHeaders,
+            CoseHeaderMap? unprotectedHeaders,
+            bool isDetached)
+        {
+            Debug.Assert(contentStream == null || (isDetached == true && contentBytes.Length == 0));
+
             ValidateBeforeSign(protectedHeaders, unprotectedHeaders, keyType, hashAlgorithm, out int? algHeaderValueToSlip);
 
-            int expectedSize = ComputeEncodedSize(protectedHeaders, unprotectedHeaders, algHeaderValueToSlip, content.Length, isDetached, key.KeySize, keyType);
-            byte[] buffer = new byte[expectedSize];
+            int contentLength;
+            if (contentStream != null)
+            {
+                contentLength = 0;
+            }
+            else
+            {
+                contentLength = contentBytes.Length;
+            }
 
-            int bytesWritten = CreateCoseSign1Message(content, buffer, key, hashAlgorithm, protectedHeaders, unprotectedHeaders, isDetached, algHeaderValueToSlip, keyType);
+            int expectedSize = ComputeEncodedSize(protectedHeaders, unprotectedHeaders, algHeaderValueToSlip, contentLength, isDetached, key.KeySize, keyType);
+            var buffer = new byte[expectedSize];
+
+            int bytesWritten = CreateCoseSign1Message(contentBytes, contentStream, buffer, key, hashAlgorithm, protectedHeaders, unprotectedHeaders, isDetached, algHeaderValueToSlip, keyType);
             Debug.Assert(expectedSize == bytesWritten);
 
+            return buffer;
+        }
+
+        [UnsupportedOSPlatform("browser")]
+        public static Task<byte[]> SignAsync(
+            Stream detachedContent!!,
+            AsymmetricAlgorithm key!!,
+            HashAlgorithmName hashAlgorithm,
+            CoseHeaderMap? protectedHeaders = null,
+            CoseHeaderMap? unprotectedHeaders = null,
+            CancellationToken cancellationToken = default)
+        {
+            if (!detachedContent.CanRead)
+            {
+                throw new ArgumentException(SR.Sign1ArgumentStreamNotReadable, nameof(detachedContent));
+            }
+
+            if (!detachedContent.CanSeek)
+            {
+                throw new ArgumentException(SR.Sign1ArgumentStreamNotSeekable, nameof(detachedContent));
+            }
+
+            KeyType keyType = GetKeyType(key);
+            ValidateBeforeSign(protectedHeaders, unprotectedHeaders, keyType, hashAlgorithm, out int? algHeaderValueToSlip);
+
+            int expectedSize = ComputeEncodedSize(protectedHeaders, unprotectedHeaders, algHeaderValueToSlip, contentLength: 0, isDetached: true, key.KeySize, keyType);
+            return SignAsyncCore(expectedSize, detachedContent, key, hashAlgorithm, keyType, protectedHeaders, unprotectedHeaders, cancellationToken, algHeaderValueToSlip);
+        }
+
+        [UnsupportedOSPlatform("browser")]
+        private static async Task<byte[]> SignAsyncCore(
+            int expectedSize,
+            Stream content,
+            AsymmetricAlgorithm key,
+            HashAlgorithmName hashAlgorithm,
+            KeyType keyType,
+            CoseHeaderMap? protectedHeaders,
+            CoseHeaderMap? unprotectedHeaders,
+            CancellationToken cancellationToken,
+            int? algHeaderValueToSlip)
+        {
+            byte[] buffer = new byte[expectedSize];
+            int bytesWritten = await CreateCoseSign1MessageAsync(content, buffer, key, hashAlgorithm, protectedHeaders, unprotectedHeaders, cancellationToken, algHeaderValueToSlip, keyType).ConfigureAwait(false);
+
+            Debug.Assert(buffer.Length == bytesWritten);
             return buffer;
         }
 
@@ -60,20 +144,10 @@ namespace System.Security.Cryptography.Cose
                 return false;
             }
 
-            bytesWritten = CreateCoseSign1Message(content, destination, key, hashAlgorithm, protectedHeaders, unprotectedHeaders, isDetached, algHeaderValueToSlip, keyType);
+            bytesWritten = CreateCoseSign1Message(content, null, destination, key, hashAlgorithm, protectedHeaders, unprotectedHeaders, isDetached, algHeaderValueToSlip, keyType);
             Debug.Assert(expectedSize == bytesWritten);
 
             return true;
-        }
-
-        internal static KeyType GetKeyType(AsymmetricAlgorithm key)
-        {
-            return key switch
-            {
-                ECDsa => KeyType.ECDsa,
-                RSA => KeyType.RSA,
-                _ => throw new CryptographicException(SR.Format(SR.Sign1UnsupportedKey, key.GetType()))
-            };
         }
 
         internal static void ValidateBeforeSign(CoseHeaderMap? protectedHeaders, CoseHeaderMap? unprotectedHeaders, KeyType keyType, HashAlgorithmName hashAlgorithm, out int? algHeaderValueToSlip)
@@ -83,22 +157,97 @@ namespace System.Security.Cryptography.Cose
         }
 
         [UnsupportedOSPlatform("browser")]
-        internal static int CreateCoseSign1Message(ReadOnlySpan<byte> content, Span<byte> buffer, AsymmetricAlgorithm key, HashAlgorithmName hashAlgorithm, CoseHeaderMap? protectedHeaders, CoseHeaderMap? unprotectedHeaders, bool isDetached, int? algHeaderValueToSlip, KeyType keyType)
+        private static int CreateCoseSign1Message(
+            ReadOnlySpan<byte> contentBytes,
+            Stream? contentStream,
+            Span<byte> buffer,
+            AsymmetricAlgorithm key,
+            HashAlgorithmName hashAlgorithm,
+            CoseHeaderMap? protectedHeaders,
+            CoseHeaderMap? unprotectedHeaders,
+            bool isDetached,
+            int? algHeaderValueToSlip,
+            KeyType keyType)
         {
             var writer = new CborWriter();
             writer.WriteTag(Sign1Tag);
             writer.WriteStartArray(Sign1ArrayLegth);
 
-            int protectedMapBytesWritten = CoseHeaderMap.Encode(protectedHeaders, buffer, true, algHeaderValueToSlip);
-            ReadOnlySpan<byte> encodedProtectedHeaders = buffer.Slice(0, protectedMapBytesWritten);
+            int protectedMapBytesWritten = WriteHeaderMap(buffer, writer, protectedHeaders, isProtected: true, algHeaderValueToSlip);
             // We're going to use the encoded protected headers again after this step (for the toBeSigned construction),
             // so don't overwrite them yet.
-            writer.WriteByteString(encodedProtectedHeaders);
+            WriteHeaderMap(buffer.Slice(protectedMapBytesWritten), writer, unprotectedHeaders, isProtected: false, null);
 
-            int unprotectedMapBytesWritten = CoseHeaderMap.Encode(unprotectedHeaders, buffer.Slice(protectedMapBytesWritten));
-            ReadOnlySpan<byte> encodedUnprotectedHeaders = buffer.Slice(protectedMapBytesWritten, unprotectedMapBytesWritten);
-            writer.WriteEncodedValue(encodedUnprotectedHeaders);
+            if (contentStream != null)
+            {
+                WriteContent(writer, default, isDetached: true);
+            }
+            else
+            {
+                WriteContent(writer, contentBytes, isDetached);
+            }
 
+            using (IncrementalHash hasher = IncrementalHash.CreateHash(hashAlgorithm))
+            {
+                AppendToBeSigned(buffer, hasher, SigStructureCoxtextSign1, buffer.Slice(0, protectedMapBytesWritten), contentBytes, contentStream, hashAlgorithm);
+                WriteSignature(buffer, hasher, writer, key, keyType, hashAlgorithm);
+            }
+
+            writer.WriteEndArray();
+            return writer.Encode(buffer);
+        }
+
+        [UnsupportedOSPlatform("browser")]
+        private static async Task<int> CreateCoseSign1MessageAsync(
+            Stream content,
+            byte[] buffer,
+            AsymmetricAlgorithm key,
+            HashAlgorithmName hashAlgorithm,
+            CoseHeaderMap? protectedHeaders,
+            CoseHeaderMap? unprotectedHeaders,
+            CancellationToken cancellationToken,
+            int? algHeaderValueToSlip,
+            KeyType keyType)
+        {
+            var writer = new CborWriter();
+            writer.WriteTag(Sign1Tag);
+            writer.WriteStartArray(Sign1ArrayLegth);
+
+            int protectedMapBytesWritten = WriteHeaderMap(buffer, writer, protectedHeaders, isProtected: true, algHeaderValueToSlip);
+            // We're going to use the encoded protected headers again after this step (for the toBeSigned construction),
+            // so don't overwrite them yet.
+            WriteHeaderMap(buffer.AsSpan(protectedMapBytesWritten), writer, unprotectedHeaders, isProtected: false, null);
+            WriteContent(writer, default, isDetached: true);
+
+            using (IncrementalHash hasher = IncrementalHash.CreateHash(hashAlgorithm))
+            {
+                await AppendToBeSignedAsync(buffer, hasher, SigStructureCoxtextSign1, buffer.AsMemory(0, protectedMapBytesWritten), content, hashAlgorithm, cancellationToken).ConfigureAwait(false);
+                WriteSignature(buffer, hasher, writer, key, keyType, hashAlgorithm);
+            }
+
+            writer.WriteEndArray();
+            return writer.Encode(buffer);
+        }
+
+        private static int WriteHeaderMap(Span<byte> buffer, CborWriter writer, CoseHeaderMap? headerMap, bool isProtected, int? algHeaderValueToSlip)
+        {
+            int bytesWritten = CoseHeaderMap.Encode(headerMap, buffer, mustReturnEmptyBstrIfEmpty: isProtected, algHeaderValueToSlip);
+            ReadOnlySpan<byte> encodedValue = buffer.Slice(0, bytesWritten);
+
+            if (isProtected)
+            {
+                writer.WriteByteString(encodedValue);
+            }
+            else
+            {
+                writer.WriteEncodedValue(encodedValue);
+            }
+
+            return bytesWritten;
+        }
+
+        private static void WriteContent(CborWriter writer, ReadOnlySpan<byte> content, bool isDetached)
+        {
             if (isDetached)
             {
                 writer.WriteNull();
@@ -107,85 +256,24 @@ namespace System.Security.Cryptography.Cose
             {
                 writer.WriteByteString(content);
             }
-
-            int expectedToBeSignedSize = ComputeToBeSignedEncodedSize(SigStructureCoxtextSign1, encodedProtectedHeaders, content);
-
-            Span<byte> toBeSignedBuffer = buffer;
-            byte[]? rentedToBeSignedBuffer = null;
-            int signatureBytesWritten;
-
-            // It is possible for toBeSigned to be bigger than the COSE message length that we used to determine the size of our buffer.
-            // we rent a bigger buffer if that's the case.
-            if (buffer.Length < expectedToBeSignedSize)
-            {
-                rentedToBeSignedBuffer = ArrayPool<byte>.Shared.Rent(expectedToBeSignedSize);
-                toBeSignedBuffer = rentedToBeSignedBuffer;
-            }
-
-            try
-            {
-                int toBeSignedBytesWritten = CreateToBeSigned(SigStructureCoxtextSign1, encodedProtectedHeaders, content, toBeSignedBuffer);
-                ReadOnlySpan<byte> encodedToBeSigned = buffer.Slice(0, toBeSignedBytesWritten);
-
-                if (keyType == KeyType.ECDsa)
-                {
-                    signatureBytesWritten = SignWithECDsa((ECDsa)key, encodedToBeSigned, hashAlgorithm, buffer);
-                }
-                else
-                {
-                    Debug.Assert(keyType == KeyType.RSA);
-                    signatureBytesWritten = SignWithRSA((RSA)key, encodedToBeSigned, hashAlgorithm, buffer);
-                }
-            }
-            finally
-            {
-                if (rentedToBeSignedBuffer != null)
-                {
-                    ArrayPool<byte>.Shared.Return(rentedToBeSignedBuffer, clearArray: true);
-                }
-            }
-
-            writer.WriteByteString(buffer.Slice(0, signatureBytesWritten));
-
-            writer.WriteEndArray();
-
-            return writer.Encode(buffer);
         }
 
         [UnsupportedOSPlatform("browser")]
-        private static int SignWithECDsa(ECDsa key, ReadOnlySpan<byte> data, HashAlgorithmName hashAlgorithm, Span<byte> destination)
+        private static void WriteSignature(Span<byte> buffer, IncrementalHash hasher, CborWriter writer, AsymmetricAlgorithm key, KeyType keyType, HashAlgorithmName hashAlgorithm)
         {
-#if NETSTANDARD2_0 || NETFRAMEWORK
-            byte[] signature = key.SignData(data.ToArray(), hashAlgorithm);
-            signature.CopyTo(destination);
-            return signature.Length;
-#else
-            if (!key.TrySignData(data, destination, hashAlgorithm, out int bytesWritten))
+            int bytesWritten;
+
+            if (keyType == KeyType.ECDsa)
             {
-                Debug.Fail("TrySignData failed with a pre-calculated destination");
-                throw new CryptographicException();
+                bytesWritten = CoseHelpers.SignHashWithECDsa((ECDsa)key, hasher, buffer);
+            }
+            else
+            {
+                Debug.Assert(keyType == KeyType.RSA);
+                bytesWritten = CoseHelpers.SignHashWithRSA((RSA)key, hasher, hashAlgorithm, buffer);
             }
 
-            return bytesWritten;
-#endif
-        }
-
-        [UnsupportedOSPlatform("browser")]
-        private static int SignWithRSA(RSA key, ReadOnlySpan<byte> data, HashAlgorithmName hashAlgorithm, Span<byte> destination)
-        {
-#if NETSTANDARD2_0 || NETFRAMEWORK
-            byte[] signature = key.SignData(data.ToArray(), hashAlgorithm, RSASignaturePadding.Pss);
-            signature.CopyTo(destination);
-            return signature.Length;
-#else
-            if (!key.TrySignData(data, destination, hashAlgorithm, RSASignaturePadding.Pss, out int bytesWritten))
-            {
-                Debug.Fail("TrySignData failed with a pre-calculated destination");
-                throw new CryptographicException();
-            }
-
-            return bytesWritten;
-#endif
+            writer.WriteByteString(buffer.Slice(0, bytesWritten));
         }
 
         [UnsupportedOSPlatform("browser")]
@@ -196,7 +284,7 @@ namespace System.Security.Cryptography.Cose
                 throw new CryptographicException(SR.Sign1VerifyContentWasDetached);
             }
 
-            return VerifyCore(key, _content);
+            return VerifyCore(key, _content, null, GetKeyType(key));
         }
 
         [UnsupportedOSPlatform("browser")]
@@ -207,54 +295,105 @@ namespace System.Security.Cryptography.Cose
                 throw new CryptographicException(SR.Sign1VerifyContentWasEmbedded);
             }
 
-            return VerifyCore(key, content);
+            return VerifyCore(key, content, null, GetKeyType(key));
         }
 
         [UnsupportedOSPlatform("browser")]
-        public bool Verify(AsymmetricAlgorithm key, ReadOnlySpan<byte> content)
+        public bool Verify(AsymmetricAlgorithm key!!, ReadOnlySpan<byte> content)
         {
             if (_content != null)
             {
                 throw new CryptographicException(SR.Sign1VerifyContentWasEmbedded);
             }
 
-            return VerifyCore(key, content);
+            return VerifyCore(key, content, null, GetKeyType(key));
         }
 
         [UnsupportedOSPlatform("browser")]
-        private bool VerifyCore(AsymmetricAlgorithm key, ReadOnlySpan<byte> content)
+        public bool Verify(AsymmetricAlgorithm key!!, Stream detachedContent!!)
         {
-            if (key is ECDsa ecdsa)
+            if (_content != null)
             {
-                return VerifyECDsa(ecdsa, content);
+                throw new CryptographicException(SR.Sign1VerifyContentWasEmbedded);
             }
-            else if (key is RSA rsa)
+
+            if (!detachedContent.CanRead)
             {
-                return VerifyRSA(rsa, content);
+                throw new ArgumentException(SR.Sign1ArgumentStreamNotReadable, nameof(detachedContent));
             }
-            else
+
+            if (!detachedContent.CanSeek)
             {
-                throw new CryptographicException(SR.Format(SR.Sign1UnsupportedKey, key.GetType()));
+                throw new ArgumentException(SR.Sign1ArgumentStreamNotSeekable, nameof(detachedContent));
+            }
+
+            return VerifyCore(key, default, detachedContent, GetKeyType(key));
+        }
+
+        [UnsupportedOSPlatform("browser")]
+        private bool VerifyCore(AsymmetricAlgorithm key, ReadOnlySpan<byte> contentBytes, Stream? contentStream, KeyType keyType)
+        {
+            Debug.Assert(contentStream == null || contentBytes.Length == 0);
+
+            ThrowIfUnsupportedHeaders();
+            ReadOnlyMemory<byte> encodedAlg = GetCoseAlgorithmFromProtectedHeaders(ProtectedHeaders);
+
+            int? nullableAlg = DecodeCoseAlgorithmHeader(encodedAlg);
+            if (nullableAlg == null)
+            {
+                throw new CryptographicException(SR.Sign1VerifyAlgHeaderWasIncorrect);
+            }
+
+            HashAlgorithmName hashAlgorithm = GetHashAlgorithmFromCoseAlgorithmAndKeyType(nullableAlg.Value, keyType);
+
+            if (_toBeSignedHash != null)
+            {
+                // toBeSigned shouldn't be cached if the message has detached content
+                // since the passed-in content can be different in each call.
+                Debug.Assert(_content != null);
+                return VerifyHash(key, hashAlgorithm, _toBeSignedHash, keyType);
+            }
+
+            using (IncrementalHash hasher = IncrementalHash.CreateHash(hashAlgorithm))
+            {
+                int bufferLength = ComputeToBeSignedEncodedSize(SigStructureCoxtextSign1, _protectedHeaderAsBstr, ReadOnlySpan<byte>.Empty);
+                byte[] buffer = ArrayPool<byte>.Shared.Rent(bufferLength);
+
+                try
+                {
+                    AppendToBeSigned(buffer, hasher, SigStructureCoxtextSign1, _protectedHeaderAsBstr, contentBytes, contentStream, hashAlgorithm);
+                    return VerifyHash(key, hasher, hashAlgorithm, keyType);
+                }
+                finally
+                {
+                    ArrayPool<byte>.Shared.Return(buffer, clearArray: true);
+                }
             }
         }
 
         [UnsupportedOSPlatform("browser")]
-        private bool VerifyECDsa(ECDsa key, ReadOnlySpan<byte> content)
+        public Task<bool> VerifyAsync(AsymmetricAlgorithm key!!, Stream detachedContent!!, CancellationToken cancellationToken = default)
         {
-            PrepareForVerify(content, out int alg, out byte[] toBeSigned);
-            HashAlgorithmName hashAlgorithm = GetHashAlgorithmFromCoseAlgorithmAndKeyType(alg, KeyType.ECDsa);
-            return key.VerifyData(toBeSigned, _signature, hashAlgorithm);
+            if (_content != null)
+            {
+                throw new CryptographicException(SR.Sign1VerifyContentWasEmbedded);
+            }
+
+            if (!detachedContent.CanRead)
+            {
+                throw new ArgumentException(SR.Sign1ArgumentStreamNotReadable, nameof(detachedContent));
+            }
+
+            if (!detachedContent.CanSeek)
+            {
+                throw new ArgumentException(SR.Sign1ArgumentStreamNotSeekable, nameof(detachedContent));
+            }
+
+            return VerifyAsyncCore(key, detachedContent, GetKeyType(key), cancellationToken);
         }
 
         [UnsupportedOSPlatform("browser")]
-        private bool VerifyRSA(RSA key, ReadOnlySpan<byte> content)
-        {
-            PrepareForVerify(content, out int alg, out byte[] toBeSigned);
-            HashAlgorithmName hashAlgorithm = GetHashAlgorithmFromCoseAlgorithmAndKeyType(alg, KeyType.RSA);
-            return key.VerifyData(toBeSigned, _signature, hashAlgorithm, RSASignaturePadding.Pss);
-        }
-
-        private void PrepareForVerify(ReadOnlySpan<byte> content, out int alg, out byte[] toBeSigned)
+        private async Task<bool> VerifyAsyncCore(AsymmetricAlgorithm key, Stream content, KeyType keyType, CancellationToken cancellationToken)
         {
             ThrowIfUnsupportedHeaders();
 
@@ -266,35 +405,70 @@ namespace System.Security.Cryptography.Cose
                 throw new CryptographicException(SR.Sign1VerifyAlgHeaderWasIncorrect);
             }
 
-            alg = nullableAlg.Value;
+            HashAlgorithmName hashAlgorithm = GetHashAlgorithmFromCoseAlgorithmAndKeyType(nullableAlg.Value, keyType);
 
-            if (_content == null)
+            using (IncrementalHash hasher = IncrementalHash.CreateHash(hashAlgorithm))
             {
-                // Never cache toBeSigned if the message has detached content since the passed-in content can be different in each call.
-                toBeSigned = CreateToBeSignedForVerify(content);
+                int bufferLength = ComputeToBeSignedEncodedSize(SigStructureCoxtextSign1, _protectedHeaderAsBstr, ReadOnlySpan<byte>.Empty);
+                byte[] buffer = ArrayPool<byte>.Shared.Rent(bufferLength);
+
+                await AppendToBeSignedAsync(buffer, hasher, SigStructureCoxtextSign1, _protectedHeaderAsBstr, content, hashAlgorithm, cancellationToken).ConfigureAwait(false);
+                bool retVal = VerifyHash(key, hasher, hashAlgorithm, keyType);
+
+                ArrayPool<byte>.Shared.Return(buffer, clearArray: true);
+
+                return retVal;
             }
-            else if (_toBeSigned == null)
+        }
+
+        [UnsupportedOSPlatform("browser")]
+        private bool VerifyHash(AsymmetricAlgorithm key, IncrementalHash hasher, HashAlgorithmName hashAlgorithm, KeyType keyType)
+        {
+#if NETSTANDARD2_0 || NETFRAMEWORK
+            byte[] hash = hasher.GetHashAndReset();
+            if (_content != null)
             {
-                toBeSigned = _toBeSigned = CreateToBeSignedForVerify(content);
+                _toBeSignedHash = hash;
+            }
+#else
+            Span<byte> hash = stackalloc byte[0];
+            if (_content != null)
+            {
+                hash = _toBeSignedHash = hasher.GetHashAndReset();
             }
             else
             {
-                toBeSigned = _toBeSigned;
+                Debug.Assert(hasher.HashLengthInBytes <= 512 / 8); // largest hash we can get (SHA512).
+                hash = stackalloc byte[hasher.HashLengthInBytes];
+                hasher.GetHashAndReset(hash);
             }
-
-            byte[] CreateToBeSignedForVerify(ReadOnlySpan<byte> content)
+#endif
+            if (keyType == KeyType.ECDsa)
             {
-                byte[] rentedbuffer = ArrayPool<byte>.Shared.Rent(ComputeToBeSignedEncodedSize(SigStructureCoxtextSign1, _protectedHeaderAsBstr, content));
-                try
-                {
-                    Span<byte> buffer = rentedbuffer;
-                    int bytesWritten = CreateToBeSigned(SigStructureCoxtextSign1, _protectedHeaderAsBstr, content, buffer);
-                    return buffer.Slice(0, bytesWritten).ToArray();
-                }
-                finally
-                {
-                    ArrayPool<byte>.Shared.Return(rentedbuffer, clearArray: true);
-                }
+                var ecdsa = (ECDsa)key;
+                return ecdsa.VerifyHash(hash, _signature);
+            }
+            else
+            {
+                Debug.Assert(keyType == KeyType.RSA);
+                var rsa = (RSA)key;
+                return rsa.VerifyHash(hash, _signature, hashAlgorithm, RSASignaturePadding.Pss);
+            }
+        }
+
+        [UnsupportedOSPlatform("browser")]
+        private bool VerifyHash(AsymmetricAlgorithm key, HashAlgorithmName hashAlgorithm, byte[] toBeSignedHash, KeyType keyType)
+        {
+            if (keyType == KeyType.ECDsa)
+            {
+                var ecdsa = (ECDsa)key;
+                return ecdsa.VerifyHash(toBeSignedHash, _signature);
+            }
+            else
+            {
+                Debug.Assert(keyType == KeyType.RSA);
+                var rsa = (RSA)key;
+                return rsa.VerifyHash(toBeSignedHash, _signature, hashAlgorithm, RSASignaturePadding.Pss);
             }
         }
 

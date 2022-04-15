@@ -7,6 +7,7 @@
     <DebugType>None</DebugType>
     <Optimize>True</Optimize>
     <GCStressIncompatible>true</GCStressIncompatible>
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="dblarray3.cs" />

@@ -25,6 +25,10 @@ namespace System.Tests
     {
         public static (TSelf Quotient, TSelf Remainder) DivRem(TSelf left, TSelf right) => TSelf.DivRem(left, right);
 
+        public static int GetByteCount(TSelf value) => value.GetByteCount();
+
+        public static long GetShortestBitLength(TSelf value) => value.GetShortestBitLength();
+
         public static TSelf LeadingZeroCount(TSelf value) => TSelf.LeadingZeroCount(value);
 
         public static TSelf PopCount(TSelf value) => TSelf.PopCount(value);
@@ -34,6 +38,8 @@ namespace System.Tests
         public static TSelf RotateRight(TSelf value, int rotateAmount) => TSelf.RotateRight(value, rotateAmount);
 
         public static TSelf TrailingZeroCount(TSelf value) => TSelf.TrailingZeroCount(value);
+
+        public static bool TryWriteLittleEndian(TSelf value, Span<byte> destination, out int bytesWritten) => value.TryWriteLittleEndian(destination, out bytesWritten);
     }
 
     public static class BinaryNumberHelper<TSelf>

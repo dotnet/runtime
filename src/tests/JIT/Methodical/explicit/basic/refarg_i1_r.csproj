@@ -3,6 +3,7 @@
     <OutputType>Exe</OutputType>
     <!-- TestAssemblyLoadContext.Load called from the finalizer -->
     <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <CLRTestPriority>1</CLRTestPriority>
   </PropertyGroup>
   <PropertyGroup>
