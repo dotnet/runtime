@@ -151,8 +151,8 @@ namespace System.Drawing
         }
 
         #region Cocoa Methods
-        [LibraryImport("libobjc.dylib", StringMarshalling = StringMarshalling.Utf8)]
-        public static partial IntPtr objc_getClass(string className);
+        [LibraryImport("libobjc.dylib")]
+        public static partial IntPtr objc_getClass([MarshalAs(UnmanagedType.LPUTF8Str)] string className);
         [LibraryImport("libobjc.dylib", EntryPoint = "objc_msgSend")]
         public static partial IntPtr intptr_objc_msgSend(IntPtr basePtr, IntPtr selector);
         [LibraryImport("libobjc.dylib", EntryPoint = "objc_msgSend_stret")]
@@ -160,8 +160,8 @@ namespace System.Drawing
         [LibraryImport("libobjc.dylib", EntryPoint = "objc_msgSend")]
         [return:MarshalAs(UnmanagedType.U1)]
         public static partial bool bool_objc_msgSend(IntPtr handle, IntPtr selector);
-        [LibraryImport("libobjc.dylib", StringMarshalling = StringMarshalling.Utf8)]
-        public static partial IntPtr sel_registerName(string selectorName);
+        [LibraryImport("libobjc.dylib")]
+        public static partial IntPtr sel_registerName([MarshalAs(UnmanagedType.LPUTF8Str)] string selectorName);
         #endregion
 
         [LibraryImport("/System/Library/Frameworks/Carbon.framework/Versions/Current/Carbon")]

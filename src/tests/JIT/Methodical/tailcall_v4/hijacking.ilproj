@@ -6,6 +6,7 @@
     <GCStressIncompatible Condition="'$(TargetArchitecture)' == 'arm64' and '$(TargetOS)' == 'OSX'">true</GCStressIncompatible>
     <!-- NOTE: this test simply takes too long to complete under heap verify. It is not fundamentally incompatible. -->
     <HeapVerifyIncompatible Condition="'$(TargetArchitecture)' == 'x86'">true</HeapVerifyIncompatible>
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
   </PropertyGroup>
   <PropertyGroup>
     <DebugType>PdbOnly</DebugType>

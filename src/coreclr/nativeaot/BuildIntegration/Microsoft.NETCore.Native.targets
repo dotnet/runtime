@@ -231,6 +231,7 @@ The .NET Foundation licenses this file to you under the MIT license.
       <IlcArg Condition="$(IlcFoldIdenticalMethodBodies) == 'true'" Include="--methodbodyfolding" />
       <IlcArg Condition="$(Optimize) == 'true' and $(IlcOptimizationPreference) == 'Size'" Include="--Os" />
       <IlcArg Condition="$(Optimize) == 'true' and $(IlcOptimizationPreference) == 'Speed'" Include="--Ot" />
+      <IlcArg Condition="$(IlcInstructionSet) != ''" Include="--instructionset:$(IlcInstructionSet)" />
       <IlcArg Condition="$(IlcDisableReflection) == 'true'" Include="--disablereflection" />
       <IlcArg Condition="$(IlcDisableReflection) == 'true'" Include="--feature:System.Collections.Generic.DefaultComparers=false" />
       <IlcArg Condition="$(IlcSingleThreaded) == 'true'" Include="--singlethreaded" />

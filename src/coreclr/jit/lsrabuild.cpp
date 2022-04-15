@@ -3974,34 +3974,19 @@ int LinearScan::BuildGCWriteBarrier(GenTree* tree)
     // is an indir through an lea, we need to actually instantiate the
     // lea in a register
     assert(!addr->isContained() && !src->isContained());
-    regMaskTP addrCandidates = RBM_ARG_0;
-    regMaskTP srcCandidates  = RBM_ARG_1;
+    regMaskTP addrCandidates = RBM_WRITE_BARRIER_DST;
+    regMaskTP srcCandidates  = RBM_WRITE_BARRIER_SRC;
 
-#if defined(TARGET_ARM64)
-
-    // the 'addr' goes into x14 (REG_WRITE_BARRIER_DST)
-    // the 'src'  goes into x15 (REG_WRITE_BARRIER_SRC)
-    //
-    addrCandidates = RBM_WRITE_BARRIER_DST;
-    srcCandidates  = RBM_WRITE_BARRIER_SRC;
-
-#elif defined(TARGET_LOONGARCH64)
-    // the 'addr' goes into t6 (REG_WRITE_BARRIER_DST)
-    // the 'src'  goes into t7 (REG_WRITE_BARRIER_SRC)
-    //
-    addrCandidates = RBM_WRITE_BARRIER_DST;
-    srcCandidates  = RBM_WRITE_BARRIER_SRC;
-
-#elif defined(TARGET_X86) && NOGC_WRITE_BARRIERS
+#if defined(TARGET_X86) && NOGC_WRITE_BARRIERS
 
     bool useOptimizedWriteBarrierHelper = compiler->codeGen->genUseOptimizedWriteBarriers(tree, src);
     if (useOptimizedWriteBarrierHelper)
     {
         // Special write barrier:
-        // op1 (addr) goes into REG_WRITE_BARRIER (rdx) and
+        // op1 (addr) goes into REG_OPTIMIZED_WRITE_BARRIER_DST (rdx) and
         // op2 (src) goes into any int register.
-        addrCandidates = RBM_WRITE_BARRIER;
-        srcCandidates  = RBM_WRITE_BARRIER_SRC;
+        addrCandidates = RBM_OPTIMIZED_WRITE_BARRIER_DST;
+        srcCandidates  = RBM_OPTIMIZED_WRITE_BARRIER_SRC;
     }
 
 #endif // defined(TARGET_X86) && NOGC_WRITE_BARRIERS

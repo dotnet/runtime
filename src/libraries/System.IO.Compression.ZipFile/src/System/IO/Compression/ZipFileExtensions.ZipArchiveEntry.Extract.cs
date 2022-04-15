@@ -96,7 +96,7 @@ namespace System.IO.Compression
             if (!destinationDirectoryFullPath.EndsWith(Path.DirectorySeparatorChar))
                 destinationDirectoryFullPath += Path.DirectorySeparatorChar;
 
-            string fileDestinationPath = Path.GetFullPath(Path.Combine(destinationDirectoryFullPath, source.FullName));
+            string fileDestinationPath = Path.GetFullPath(Path.Combine(destinationDirectoryFullPath, SanitizeZipFilePath(source.FullName)));
 
             if (!fileDestinationPath.StartsWith(destinationDirectoryFullPath, PathInternal.StringComparison))
                 throw new IOException(SR.IO_ExtractingResultsInOutside);

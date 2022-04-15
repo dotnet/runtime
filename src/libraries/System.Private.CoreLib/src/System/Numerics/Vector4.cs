@@ -695,7 +695,7 @@ namespace System.Numerics
 
             if ((index < 0) || (index >= array.Length))
             {
-                ThrowHelper.ThrowStartIndexArgumentOutOfRange_ArgumentOutOfRange_Index();
+                ThrowHelper.ThrowStartIndexArgumentOutOfRange_ArgumentOutOfRange_IndexMustBeLess();
             }
 
             if ((array.Length - index) < 4)

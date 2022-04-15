@@ -2305,7 +2305,7 @@ namespace System.Xml
 
         private AttributePSVIInfo AddAttributePSVI(int attIndex)
         {
-            Debug.Assert(attIndex <= _attributePSVINodes.Length);
+            Debug.Assert(attIndex < _attributePSVINodes.Length);
             AttributePSVIInfo attInfo = _attributePSVINodes[attIndex];
             if (attInfo != null)
             {

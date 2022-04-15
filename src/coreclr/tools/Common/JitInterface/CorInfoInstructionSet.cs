@@ -38,6 +38,7 @@ namespace Internal.JitInterface
         ARM64_Rdm_Arm64 = InstructionSet_ARM64.Rdm_Arm64,
         ARM64_Sha1_Arm64 = InstructionSet_ARM64.Sha1_Arm64,
         ARM64_Sha256_Arm64 = InstructionSet_ARM64.Sha256_Arm64,
+        ARM64_Rcpc = InstructionSet_ARM64.Rcpc,
         X64_X86Base = InstructionSet_X64.X86Base,
         X64_SSE = InstructionSet_X64.SSE,
         X64_SSE2 = InstructionSet_X64.SSE2,
@@ -136,6 +137,7 @@ namespace Internal.JitInterface
         Rdm_Arm64 = 18,
         Sha1_Arm64 = 19,
         Sha256_Arm64 = 20,
+        Rcpc = 21,
     }
 
     public enum InstructionSet_X64
@@ -740,6 +742,7 @@ namespace Internal.JitInterface
                     yield return new InstructionSetInfo("Vector64", "", InstructionSet.ARM64_Vector64, false);
                     yield return new InstructionSetInfo("Vector128", "", InstructionSet.ARM64_Vector128, false);
                     yield return new InstructionSetInfo("Dczva", "", InstructionSet.ARM64_Dczva, false);
+                    yield return new InstructionSetInfo("Rcpc", "", InstructionSet.ARM64_Rcpc, false);
                     break;
 
                 case TargetArchitecture.X64:

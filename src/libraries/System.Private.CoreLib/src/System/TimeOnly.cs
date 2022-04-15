@@ -65,7 +65,17 @@ namespace System
         /// <param name="minute">The minutes (0 through 59).</param>
         /// <param name="second">The seconds (0 through 59).</param>
         /// <param name="millisecond">The millisecond (0 through 999).</param>
-        public TimeOnly(int hour, int minute, int second, int millisecond) : this(DateTime.TimeToTicks(hour, minute, second, millisecond)) {}
+        public TimeOnly(int hour, int minute, int second, int millisecond) : this(DateTime.TimeToTicks(hour, minute, second, millisecond)) { }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="TimeOnly"/> structure to the specified hour, minute, second, and millisecond.
+        /// </summary>
+        /// <param name="hour">The hours (0 through 23).</param>
+        /// <param name="minute">The minutes (0 through 59).</param>
+        /// <param name="second">The seconds (0 through 59).</param>
+        /// <param name="millisecond">The millisecond (0 through 999).</param>
+        /// <param name="microsecond">The microsecond (0 through 999).</param>
+        public TimeOnly(int hour, int minute, int second, int millisecond, int microsecond) : this(DateTime.TimeToTicks(hour, minute, second, millisecond, microsecond)) { }
 
         /// <summary>
         /// Initializes a new instance of the TimeOnly structure using a specified number of ticks.
@@ -103,6 +113,16 @@ namespace System
         /// Gets the millisecond component of the time represented by this instance.
         /// </summary>
         public int Millisecond => new TimeSpan(_ticks).Milliseconds;
+
+        /// <summary>
+        /// Gets the microsecond component of the time represented by this instance.
+        /// </summary>
+        public int Microsecond => new TimeSpan(_ticks).Microseconds;
+
+        /// <summary>
+        /// Gets the nanosecond component of the time represented by this instance.
+        /// </summary>
+        public int Nanosecond => new TimeSpan(_ticks).Nanoseconds;
 
         /// <summary>
         /// Gets the number of ticks that represent the time of this instance.

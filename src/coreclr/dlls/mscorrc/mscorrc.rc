@@ -120,7 +120,7 @@ BEGIN
     FUSION_E_SIGNATURE_CHECK_FAILED         "Strong name signature verification failed for assembly '%1'.  The assembly may have been tampered with, or it was delay signed but not fully signed with the correct private key."
     COR_E_MODULE_HASH_CHECK_FAILED          "The check of the module's hash failed for file '%1'."
     FUSION_E_PRIVATE_ASM_DISALLOWED         "Assembly '%1' is required to be strongly named."
-    FUSION_E_INVALID_NAME                   "The given assembly name or codebase, '%1', was invalid."
+    FUSION_E_INVALID_NAME                   "The given assembly name, '%1', was invalid."
     FUSION_E_ASM_MODULE_MISSING             "A module specified in the manifest of assembly '%1' could not be found."
     FUSION_E_CODE_DOWNLOAD_DISABLED         "HTTP download of assemblies has been disabled for this appdomain."
     FUSION_E_HOST_GAC_ASM_MISMATCH          "The assembly returned from the host store has a different strong name signature than the corresponding one in GAC. Assembly: '%1'"

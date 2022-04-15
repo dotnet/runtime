@@ -42,5 +42,56 @@ namespace System.Numerics
         /// <param name="value">The value whose trailing zeroes are to be counted.</param>
         /// <returns>The number of trailing zeros in <paramref name="value" />.</returns>
         static abstract TSelf TrailingZeroCount(TSelf value);
+
+        /// <summary>Gets the length, in bits, of the shortest two's complement representation of the current value.</summary>
+        /// <returns>The length, in bits, of the shortest two's complement representation of the current value.</returns>
+        long GetShortestBitLength();
+
+        /// <summary>Gets the number of bytes that will be written as part of <see cref="TryWriteLittleEndian(Span{byte}, out int)" />.</summary>
+        /// <returns>The number of bytes that will be written as part of <see cref="TryWriteLittleEndian(Span{byte}, out int)" />.</returns>
+        int GetByteCount();
+
+        /// <summary>Tries to write the current value, in little-endian format, to a given span.</summary>
+        /// <param name="destination">The span to which the current value should be written.</param>
+        /// <param name="bytesWritten">The number of bytes written to <paramref name="destination" />.</param>
+        /// <returns><c>true</c> if the value was succesfully written to <paramref name="destination" />; otherwise, <c>false</c>.</returns>
+        bool TryWriteLittleEndian(Span<byte> destination, out int bytesWritten);
+
+        /// <summary>Writes the current value, in little-endian format, to a given array.</summary>
+        /// <param name="destination">The array to which the current value should be written.</param>
+        /// <returns>The number of bytes written to <paramref name="destination" />.</returns>
+        int WriteLittleEndian(byte[] destination)
+        {
+            if (!TryWriteLittleEndian(destination, out int bytesWritten))
+            {
+                ThrowHelper.ThrowArgumentException_DestinationTooShort();
+            }
+            return bytesWritten;
+        }
+
+        /// <summary>Writes the current value, in little-endian format, to a given array.</summary>
+        /// <param name="destination">The array to which the current value should be written.</param>
+        /// <param name="startIndex">The starting index at which the value should be written.</param>
+        /// <returns>The number of bytes written to <paramref name="destination" /> starting at <paramref name="startIndex" />.</returns>
+        int WriteLittleEndian(byte[] destination, int startIndex)
+        {
+            if (!TryWriteLittleEndian(destination.AsSpan(startIndex), out int bytesWritten))
+            {
+                ThrowHelper.ThrowArgumentException_DestinationTooShort();
+            }
+            return bytesWritten;
+        }
+
+        /// <summary>Writes the current value, in little-endian format, to a given span.</summary>
+        /// <param name="destination">The span to which the current value should be written.</param>
+        /// <returns>The number of bytes written to <paramref name="destination" />.</returns>
+        int WriteLittleEndian(Span<byte> destination)
+        {
+            if (!TryWriteLittleEndian(destination, out int bytesWritten))
+            {
+                ThrowHelper.ThrowArgumentException_DestinationTooShort();
+            }
+            return bytesWritten;
+        }
     }
 }

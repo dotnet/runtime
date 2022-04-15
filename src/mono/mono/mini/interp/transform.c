@@ -1702,7 +1702,7 @@ static void
 interp_emit_ldobj (TransformData *td, MonoClass *klass)
 {
 	int mt = mint_type (m_class_get_byval_arg (klass));
-	gint32 size;
+	gint32 size = 0;
 	td->sp--;
 
 	if (mt == MINT_TYPE_VT) {
@@ -3585,10 +3585,10 @@ recursively_make_pred_seq_points (TransformData *td, InterpBasicBlock *bb)
 			recursively_make_pred_seq_points (td, in_bb);
 
 		// Union sequence points with incoming bb's
-		for (int i=0; i < in_bb->num_pred_seq_points; i++) {
-			if (!g_hash_table_lookup (seen, in_bb->pred_seq_points [i])) {
-				g_array_append_val (predecessors, in_bb->pred_seq_points [i]);
-				g_hash_table_insert (seen, in_bb->pred_seq_points [i], (gpointer)&MONO_SEQ_SEEN_LOOP);
+		for (guint j = 0; j < in_bb->num_pred_seq_points; j++) {
+			if (!g_hash_table_lookup (seen, in_bb->pred_seq_points [j])) {
+				g_array_append_val (predecessors, in_bb->pred_seq_points [j]);
+				g_hash_table_insert (seen, in_bb->pred_seq_points [j], (gpointer)&MONO_SEQ_SEEN_LOOP);
 			}
 		}
 		// predecessors = g_array_append_vals (predecessors, in_bb->pred_seq_points, in_bb->num_pred_seq_points);
@@ -3600,7 +3600,7 @@ recursively_make_pred_seq_points (TransformData *td, InterpBasicBlock *bb)
 		bb->pred_seq_points = (SeqPoint**)mono_mempool_alloc0 (td->mempool, sizeof (SeqPoint *) * predecessors->len);
 		bb->num_pred_seq_points = predecessors->len;
 
-		for (int newer = 0; newer < bb->num_pred_seq_points; newer++) {
+		for (guint newer = 0; newer < bb->num_pred_seq_points; newer++) {
 			bb->pred_seq_points [newer] = (SeqPoint*)g_array_index (predecessors, gpointer, newer);
 		}
 	}
@@ -3615,7 +3615,7 @@ collect_pred_seq_points (TransformData *td, InterpBasicBlock *bb, SeqPoint *seqp
 	if (bb->pred_seq_points == NULL && bb != td->entry_bb)
 		recursively_make_pred_seq_points (td, bb);
 
-	for (int i = 0; i < bb->num_pred_seq_points; i++)
+	for (guint i = 0; i < bb->num_pred_seq_points; i++)
 		insert_pred_seq_point (bb->pred_seq_points [i], seqp, next);
 
 	return;
@@ -4070,7 +4070,7 @@ initialize_clause_bblocks (TransformData *td)
 		MonoExceptionClause *c = header->clauses + i;
 		InterpBasicBlock *bb;
 
-		for (int j = c->handler_offset; j < c->handler_offset + c->handler_len; j++) {
+		for (uint32_t j = c->handler_offset; j < c->handler_offset + c->handler_len; j++) {
 			if (td->clause_indexes [j] == -1)
 				td->clause_indexes [j] = i;
 		}
@@ -4176,7 +4176,7 @@ handle_stelem (TransformData *td, int op)
 static gboolean
 is_ip_protected (MonoMethodHeader *header, int offset)
 {
-	for (int i = 0; i < header->num_clauses; i++) {
+	for (unsigned int i = 0; i < header->num_clauses; i++) {
 		MonoExceptionClause *clause = &header->clauses [i];
 		if (clause->try_offset <= offset && offset < (clause->try_offset + clause->try_len))
 			return TRUE;
@@ -4188,7 +4188,7 @@ static gboolean
 generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, MonoGenericContext *generic_context, MonoError *error)
 {
 	int target;
-	int offset, mt, i, i32;
+	int mt, i32;
 	guint32 token;
 	int in_offset;
 	const unsigned char *end;
@@ -4251,14 +4251,14 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 
 		if (minfo) {
 			MonoSymSeqPoint *sps;
-			int i, n_il_offsets;
+			int n_il_offsets;
 
 			mono_debug_get_seq_points (minfo, NULL, NULL, NULL, &sps, &n_il_offsets);
 			// FIXME: Free
 			seq_point_locs = mono_bitset_mem_new (mono_mempool_alloc0 (td->mempool, mono_bitset_alloc_size (header->code_size, 0)), header->code_size, 0);
 			sym_seq_points = TRUE;
 
-			for (i = 0; i < n_il_offsets; ++i) {
+			for (int i = 0; i < n_il_offsets; ++i) {
 				if (sps [i].il_offset < header->code_size)
 					mono_bitset_set_fast (seq_point_locs, sps [i].il_offset);
 			}
@@ -4266,7 +4266,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 
 			MonoDebugMethodAsyncInfo* asyncMethod = mono_debug_lookup_method_async_debug_info (method);
 			if (asyncMethod) {
-				for (i = 0; asyncMethod != NULL && i < asyncMethod->num_awaits; i++) {
+				for (int i = 0; asyncMethod != NULL && i < asyncMethod->num_awaits; i++) {
 					mono_bitset_set_fast (seq_point_locs, asyncMethod->resume_offsets [i]);
 					mono_bitset_set_fast (seq_point_locs, asyncMethod->yield_offsets [i]);
 				}
@@ -4354,7 +4354,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 		int local;
 		arg_locals = (guint32*) g_malloc ((!!signature->hasthis + signature->param_count) * sizeof (guint32));
 		/* Allocate locals to store inlined method args from stack */
-		for (i = signature->param_count - 1; i >= 0; i--) {
+		for (int i = signature->param_count - 1; i >= 0; i--) {
 			local = create_interp_local (td, signature->params [i]);
 			arg_locals [i + !!signature->hasthis] = local;
 			store_local (td, local);
@@ -4377,7 +4377,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 
 		local_locals = (guint32*) g_malloc (header->num_locals * sizeof (guint32));
 		/* Allocate locals to store inlined method args from stack */
-		for (i = 0; i < header->num_locals; i++)
+		for (int i = 0; i < header->num_locals; i++)
 			local_locals [i] = create_interp_local (td, header->locals [i]);
 	}
 
@@ -4673,8 +4673,8 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 		}
 		case CEE_DUP: {
 			int type = td->sp [-1].type;
-			MonoClass *klass = td->sp [-1].klass;
-			int mt = td->locals [td->sp [-1].local].mt;
+			klass = td->sp [-1].klass;
+			mt = td->locals [td->sp [-1].local].mt;
 			if (mt == MINT_TYPE_VT) {
 				gint32 size = mono_class_value_size (klass, NULL);
 				g_assert (size < G_MAXUINT16);
@@ -4772,10 +4772,8 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			int vt_size = 0;
 			if (ult->type != MONO_TYPE_VOID) {
 				--td->sp;
-				if (mint_type (ult) == MINT_TYPE_VT) {
-					MonoClass *klass = mono_class_from_mono_type_internal (ult);
-					vt_size = mono_class_value_size (klass, NULL);
-				}
+				if (mint_type (ult) == MINT_TYPE_VT)
+					vt_size = mono_class_value_size (mono_class_from_mono_type_internal (ult), NULL);
 			}
 			if (td->sp > td->stack) {
 				mono_error_set_generic_error (error, "System", "InvalidProgramException", "");
@@ -4945,8 +4943,8 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			--td->sp;
 			interp_ins_set_sreg (td->last_ins, td->sp [0].local);
 			InterpBasicBlock **target_bb_table = (InterpBasicBlock**)mono_mempool_alloc0 (td->mempool, sizeof (InterpBasicBlock*) * n);
-			for (i = 0; i < n; i++) {
-				offset = read32 (td->ip);
+			for (guint32 i = 0; i < n; i++) {
+				int offset = read32 (td->ip);
 				target = next_ip - td->il_code + offset;
 				InterpBasicBlock *target_bb = td->offset_to_bb [target];
 				g_assert (target_bb);
@@ -5406,7 +5404,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			goto_if_nok (error, exit);
 
 			if (m_class_is_valuetype (klass)) {
-				int mt = mint_type (m_class_get_byval_arg (klass));
+				mt = mint_type (m_class_get_byval_arg (klass));
 				td->sp -= 2;
 				interp_add_ins (td, (mt == MINT_TYPE_VT) ? MINT_CPOBJ_VT : MINT_CPOBJ);
 				interp_ins_set_sregs2 (td->last_ins, td->sp [0].local, td->sp [1].local);
@@ -5717,7 +5715,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			if ((td->last_ins->opcode == MINT_BOX || td->last_ins->opcode == MINT_BOX_VT) &&
 					(td->sp - 1)->klass == klass && td->last_ins == td->cbb->last_ins) {
 				interp_clear_ins (td->last_ins);
-				int mt = mint_type (m_class_get_byval_arg (klass));
+				mt = mint_type (m_class_get_byval_arg (klass));
 				td->sp--;
 				// Push back the original value that was boxed. We should handle this in CEE_BOX instead
 				if (mt == MINT_TYPE_VT)
@@ -6351,8 +6349,8 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			break;
 		case CEE_CKFINITE: {
 			CHECK_STACK (td, 1);
-			int stack_type = td->sp [-1].type;
-			switch (stack_type) {
+			int ckfinite_stack_type = td->sp [-1].type;
+			switch (ckfinite_stack_type) {
 				case STACK_TYPE_R4: interp_add_ins (td, MINT_CKFINITE_R4); break;
 				case STACK_TYPE_R8: interp_add_ins (td, MINT_CKFINITE_R8); break;
 				default:
@@ -6360,7 +6358,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			}
 			td->sp--;
 			interp_ins_set_sreg (td->last_ins, td->sp [0].local);
-			push_simple_type (td, stack_type);
+			push_simple_type (td, ckfinite_stack_type);
 			interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
 			++td->ip;
 			break;
@@ -6708,7 +6706,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 
 			td->sp = td->stack;
 
-			for (i = 0; i < header->num_clauses; ++i) {
+			for (unsigned int i = 0; i < header->num_clauses; ++i) {
 				MonoExceptionClause *clause = &header->clauses [i];
 				if (clause->flags != MONO_EXCEPTION_CLAUSE_FINALLY)
 					continue;
@@ -6768,9 +6766,9 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 					break;
 				}
 				case CEE_MONO_JIT_ICALL_ADDR: {
-					const guint32 token = read32 (td->ip + 1);
+					const guint32 icall_id_token = read32 (td->ip + 1);
 					td->ip += 5;
-					const gconstpointer func = mono_find_jit_icall_info ((MonoJitICallId)token)->func;
+					const gconstpointer func = mono_find_jit_icall_info ((MonoJitICallId)icall_id_token)->func;
 
 					interp_add_ins (td, MINT_LDFTN_ADDR);
 					push_simple_type (td, STACK_TYPE_I);
@@ -6791,7 +6789,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 						call_args [i] = td->sp [i].local;
 					call_args [info->sig->param_count] = -1;
 					if (!MONO_TYPE_IS_VOID (info->sig->ret)) {
-						int mt = mint_type (info->sig->ret);
+						mt = mint_type (info->sig->ret);
 						push_simple_type (td, stack_type [mt]);
 						dreg = td->sp [-1].local;
 					}
@@ -6818,7 +6816,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			case CEE_MONO_VTADDR: {
 				int size;
 				CHECK_STACK (td, 1);
-				MonoClass *klass = td->sp [-1].klass;
+				klass = td->sp [-1].klass;
 				if (method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE && !signature->marshalling_disabled)
 					size = mono_class_native_size (klass, NULL);
 				else
@@ -7396,9 +7394,9 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 	}
 
 	if (sym_seq_points) {
-		for (InterpBasicBlock *bb = td->entry_bb->next_bb; bb != NULL; bb = bb->next_bb) {
-			if (bb->first_ins && bb->in_count > 1 && bb->first_ins->opcode == MINT_SDB_SEQ_POINT)
-				interp_insert_ins_bb (td, bb, NULL, MINT_SDB_INTR_LOC);
+		for (InterpBasicBlock *interp_bb = td->entry_bb->next_bb; interp_bb != NULL; interp_bb = interp_bb->next_bb) {
+			if (interp_bb->first_ins && interp_bb->in_count > 1 && interp_bb->first_ins->opcode == MINT_SDB_SEQ_POINT)
+				interp_insert_ins_bb (td, interp_bb, NULL, MINT_SDB_INTR_LOC);
 		}
 	}
 
@@ -7418,7 +7416,7 @@ static void
 handle_relocations (TransformData *td)
 {
 	// Handle relocations
-	for (int i = 0; i < td->relocs->len; ++i) {
+	for (guint i = 0; i < td->relocs->len; ++i) {
 		Reloc *reloc = (Reloc*)g_ptr_array_index (td->relocs, i);
 		int offset = reloc->target_bb->native_offset - reloc->offset;
 
@@ -7767,7 +7765,7 @@ interp_local_deadce (TransformData *td)
 	gboolean needs_dce = FALSE;
 	gboolean needs_cprop = FALSE;
 
-	for (int i = 0; i < td->locals_size; i++) {
+	for (unsigned int i = 0; i < td->locals_size; i++) {
 		g_assert (local_ref_count [i] >= 0);
 		g_assert (td->locals [i].indirects >= 0);
 		if (!local_ref_count [i] &&
@@ -8402,7 +8400,7 @@ retry:
 				ins = interp_fold_binop (td, local_defs, ins, &folded);
 				if (!folded) {
 					int sreg = -1;
-					int mov_op;
+					int mov_op = 0;
 					if ((opcode == MINT_MUL_I4 || opcode == MINT_DIV_I4) &&
 							local_defs [ins->sregs [1]].type == LOCAL_VALUE_I4 &&
 							local_defs [ins->sregs [1]].i == 1) {
@@ -9334,7 +9332,7 @@ interp_alloc_offsets (TransformData *td)
 	// Iterate over all call args locals, update their final offset (aka add td->total_locals_size to them)
 	// then also update td->total_locals_size to account for this space.
 	td->param_area_offset = final_total_locals_size;
-	for (int i = 0; i < td->locals_size; i++) {
+	for (unsigned int i = 0; i < td->locals_size; i++) {
 		// These are allocated separately at the end of the stack
 		if (td->locals [i].flags & INTERP_LOCAL_FLAG_CALL_ARGS) {
 			td->locals [i].offset += td->param_area_offset;

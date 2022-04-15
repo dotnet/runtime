@@ -4494,9 +4494,8 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
                 if (lvaGetDesc(i)->TypeGet() == TYP_REF)
                 {
                     // confirm that the argument is a GC pointer (for debugging (GC stress))
-                    GenTree*          op   = gtNewLclvNode(i, TYP_REF);
-                    GenTreeCall::Use* args = gtNewCallArgs(op);
-                    op                     = gtNewHelperCallNode(CORINFO_HELP_CHECK_OBJ, TYP_VOID, args);
+                    GenTree* op = gtNewLclvNode(i, TYP_REF);
+                    op          = gtNewHelperCallNode(CORINFO_HELP_CHECK_OBJ, TYP_VOID, op);
 
                     fgEnsureFirstBBisScratch();
                     fgNewStmtAtEnd(fgFirstBB, op);
@@ -5276,7 +5275,23 @@ void Compiler::generatePatchpointInfo()
     // but would need to adjust all consumers, too.
     for (unsigned lclNum = 0; lclNum < info.compLocalsCount; lclNum++)
     {
-        LclVarDsc* const varDsc = lvaGetDesc(lclNum);
+        // If there are shadowed params, the patchpoint info should refer to the shadow copy.
+        //
+        unsigned varNum = lclNum;
+
+        if (gsShadowVarInfo != nullptr)
+        {
+            unsigned const shadowNum = gsShadowVarInfo[lclNum].shadowCopy;
+            if (shadowNum != BAD_VAR_NUM)
+            {
+                assert(shadowNum < lvaCount);
+                assert(shadowNum >= info.compLocalsCount);
+
+                varNum = shadowNum;
+            }
+        }
+
+        LclVarDsc* const varDsc = lvaGetDesc(varNum);
 
         // We expect all these to have stack homes, and be FP relative
         assert(varDsc->lvOnFrame);
@@ -5292,8 +5307,8 @@ void Compiler::generatePatchpointInfo()
             patchpointInfo->SetIsExposed(lclNum);
         }
 
-        JITDUMP("--OSR-- V%02u is at virtual offset %d%s\n", lclNum, patchpointInfo->Offset(lclNum),
-                patchpointInfo->IsExposed(lclNum) ? " (exposed)" : "");
+        JITDUMP("--OSR-- V%02u is at virtual offset %d%s%s\n", lclNum, patchpointInfo->Offset(lclNum),
+                patchpointInfo->IsExposed(lclNum) ? " (exposed)" : "", (varNum != lclNum) ? " (shadowed)" : "");
     }
 
     // Special offsets
@@ -7488,16 +7503,12 @@ Compiler::NodeToIntMap* Compiler::FindReachableNodesInNodeTestData()
                 {
                     GenTreeCall* call = tree->AsCall();
                     unsigned     i    = 0;
-                    for (GenTreeCall::Use& use : call->Args())
+                    for (CallArg& arg : call->gtArgs.Args())
                     {
-                        if ((use.GetNode()->gtFlags & GTF_LATE_ARG) != 0)
+                        GenTree* argNode = arg.GetNode();
+                        if (GetNodeTestData()->Lookup(argNode, &tlAndN))
                         {
-                            // Find the corresponding late arg.
-                            GenTree* lateArg = call->fgArgInfo->GetArgNode(i);
-                            if (GetNodeTestData()->Lookup(lateArg, &tlAndN))
-                            {
-                                reachable->Set(lateArg, 0);
-                            }
+                            reachable->Set(argNode, 0);
                         }
                         i++;
                     }
@@ -9118,7 +9129,7 @@ Compiler::LoopDsc* dFindLoop(unsigned loopNum)
 
     if (loopNum >= comp->optLoopCount)
     {
-        printf("loopNum %u out of range\n");
+        printf("loopNum %u out of range\n", loopNum);
         return nullptr;
     }
 
@@ -9512,10 +9523,6 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
                     if (call->gtCallMoreFlags & GTF_CALL_M_TAILCALL)
                     {
                         chars += printf("[CALL_M_TAILCALL]");
-                    }
-                    if (call->gtCallMoreFlags & GTF_CALL_M_VARARGS)
-                    {
-                        chars += printf("[CALL_M_VARARGS]");
                     }
                     if (call->gtCallMoreFlags & GTF_CALL_M_RETBUFFARG)
                     {

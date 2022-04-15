@@ -361,7 +361,7 @@ namespace System
             return (IsLinux && File.Exists("/.dockerenv"));
         }
 
-        private static bool GetProtocolSupportFromWindowsRegistry(SslProtocols protocol, bool defaultProtocolSupport)
+        private static bool GetProtocolSupportFromWindowsRegistry(SslProtocols protocol, bool defaultProtocolSupport, bool disabledByDefault = false)
         {
             string registryProtocolName = protocol switch
             {
@@ -381,13 +381,18 @@ namespace System
             string serverKey = @$"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\{registryProtocolName}\Server";
 
             object client, server;
+            object clientDefault, serverDefault;
             try
             {
                 client = Registry.GetValue(clientKey, "Enabled", defaultProtocolSupport ? 1 : 0);
                 server = Registry.GetValue(serverKey, "Enabled", defaultProtocolSupport ? 1 : 0);
-                if (client is int c && server is int s)
+
+                clientDefault = Registry.GetValue(clientKey, "DisabledByDefault", 1);
+                serverDefault = Registry.GetValue(serverKey, "DisabledByDefault", 1);
+
+                if (client is int c && server is int s && clientDefault is int cd && serverDefault is int sd)
                 {
-                    return c == 1 && s == 1;
+                    return (c == 1 && s == 1) && (!disabledByDefault || (cd == 0 && sd == 0));
                 }
             }
             catch (SecurityException)
@@ -436,14 +441,16 @@ namespace System
 
         private static bool GetTls10Support()
         {
-            // on Windows, macOS, and Android TLS1.0/1.1 are supported.
+            // on macOS and Android TLS 1.0 is supported.
             if (IsOSXLike || IsAndroid)
             {
                 return true;
             }
+
+            // Windows depend on registry, enabled by default on all supported versions.
             if (IsWindows)
             {
-                return GetProtocolSupportFromWindowsRegistry(SslProtocols.Tls, true);
+                return GetProtocolSupportFromWindowsRegistry(SslProtocols.Tls, defaultProtocolSupport: true);
             }
 
             return OpenSslGetTlsSupport(SslProtocols.Tls);
@@ -451,13 +458,18 @@ namespace System
 
         private static bool GetTls11Support()
         {
-            // on Windows, macOS, and Android TLS1.0/1.1 are supported.            
             if (IsWindows)
             {
-                // TLS 1.1 and 1.2 can work on Windows7 but it is not enabled by default.
-                bool defaultProtocolSupport = !IsWindows7;
-                return GetProtocolSupportFromWindowsRegistry(SslProtocols.Tls11, defaultProtocolSupport);
+                // TLS 1.1 can work on Windows 7 but it is disabled by default.
+                if (IsWindows7)
+                {
+                    return GetProtocolSupportFromWindowsRegistry(SslProtocols.Tls11, defaultProtocolSupport: false, disabledByDefault: true);
+                }
+
+                // It is enabled on other versions unless explicitly disabled.
+                return GetProtocolSupportFromWindowsRegistry(SslProtocols.Tls11, defaultProtocolSupport: true);
             }
+            // on macOS and Android TLS 1.1 is supported.
             else if (IsOSXLike || IsAndroid)
             {
                 return true;
@@ -468,9 +480,19 @@ namespace System
 
         private static bool GetTls12Support()
         {
-            // TLS 1.1 and 1.2 can work on Windows7 but it is not enabled by default.
-            bool defaultProtocolSupport = !IsWindows7;
-            return GetProtocolSupportFromWindowsRegistry(SslProtocols.Tls12, defaultProtocolSupport);
+            if (IsWindows)
+            {
+                // TLS 1.2 can work on Windows 7 but it is disabled by default.
+                if (IsWindows7)
+                {
+                    return GetProtocolSupportFromWindowsRegistry(SslProtocols.Tls12, defaultProtocolSupport: false, disabledByDefault: true);
+                }
+
+                // It is enabled on other versions unless explicitly disabled.
+                return GetProtocolSupportFromWindowsRegistry(SslProtocols.Tls12, defaultProtocolSupport: true);
+            }
+
+            return true;
         }
 
         private static bool GetTls13Support()
