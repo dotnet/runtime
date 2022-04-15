@@ -222,6 +222,74 @@ namespace System.ComponentModel.DataAnnotations.Tests
         }
 
         [Fact]
+        public void Recursive_fails_if_nested_property_in_dictionary_is_invalid()
+        {
+            var thingToValidate = new TopLevelWithComplexProperties
+            {
+                IntRange = 4,
+                Required = "aaa",
+                StringLength = "222",
+                Lookup = new Dictionary<string, ComplexListItem>
+                {
+                    { "fred", new ComplexListItem{IntRange3 = 150, RequiredString = null!}}
+                },
+                AnnotatedSubsection = new AnnotatedSubsection
+                {
+                    IntRange2 = 5,
+                    ComplexItems = new List<ComplexListItem>
+                    {
+                        new ComplexListItem
+                        {
+                            IntRange3 = 150,
+                            RequiredString = "xxx"
+                        },
+                        new ComplexListItem
+                        {
+                            IntRange3 = 150,
+                            RequiredString = "yyy",
+                            Lookup = new Dictionary<string, ComplexListItem>
+                            {
+                                { "wilma", new ComplexListItem{IntRange3 = 150, RequiredString = null!}}
+                            },
+                        },
+                        new ComplexListItem
+                        {
+                            IntRange3 = 150,
+                            RequiredString = "yyy",
+                            Lookup = new Dictionary<string, ComplexListItem>
+                            {
+                                {
+                                    "wilma",
+                                    new ComplexListItem
+                                    {
+                                        IntRange3 = 150, RequiredString = "zzz", Lookup = new Dictionary<string, ComplexListItem>
+                                        {
+                                            {"barney", new ComplexListItem{RequiredString = null!, IntRange3 = 150}}
+                                        }
+                                    }
+                                }
+                            },
+                        }
+                    }
+                }                
+            };
+        
+            var context = new ValidationContext(thingToValidate);
+            var validationResults = new List<ValidationResult>();
+
+            Assert.False(Validator.TryValidateObject(thingToValidate, context, validationResults, true));
+            Assert.Equal(3, validationResults.Count);
+
+            Assert.Equal("The RequiredString field is required.", validationResults[0].ErrorMessage);
+            Assert.Equal("AnnotatedSubsection.ComplexItems[1].Lookup[0].RequiredString", validationResults[0].MemberNames.Single());
+            Assert.Equal("The RequiredString field is required.", validationResults[1].ErrorMessage);
+            Assert.Equal("AnnotatedSubsection.ComplexItems[2].Lookup[0].Lookup[0].RequiredString", validationResults[1].MemberNames.Single());
+            Assert.Equal("The RequiredString field is required.", validationResults[2].ErrorMessage);
+            Assert.Equal("Lookup[0].RequiredString", validationResults[2].MemberNames.Single());
+
+        }
+
+        [Fact]
         public void Recursive_fails_if_required_complex_property_is_null()
         {
             var thingToValidate = new TopLevelWithComplexProperties
@@ -1616,6 +1684,9 @@ namespace System.ComponentModel.DataAnnotations.Tests
 
             [Required]
             public AnnotatedSubsection AnnotatedSubsection { get; set; }
+
+            public IDictionary<string, ComplexListItem> Lookup { get; set;  } = new Dictionary<string, ComplexListItem>();
+            
         }
 
         public class AnnotatedSubsection
@@ -1636,7 +1707,7 @@ namespace System.ComponentModel.DataAnnotations.Tests
             public string RequiredString { get; set; }
 
             public List<ComplexListItem> MoreComplexItems { get; set; }
-            
+            public IDictionary<string, ComplexListItem> Lookup { get; set; }
         }
         
         [ValidClass]
