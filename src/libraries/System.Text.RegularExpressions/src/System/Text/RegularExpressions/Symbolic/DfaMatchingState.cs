@@ -51,7 +51,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <summary>If true then the state is a dead-end, rejects all inputs.</summary>
         internal bool IsNothing => Node.IsNothing;
 
-        /// <summary>If true then state starts with a ^ or $ or \A or \z or \Z</summary>
+        /// <summary>If true then state starts with a ^ or $ or \Z</summary>
         internal bool StartsWithLineAnchor => Node._info.StartsWithLineAnchor;
 
         /// <summary>

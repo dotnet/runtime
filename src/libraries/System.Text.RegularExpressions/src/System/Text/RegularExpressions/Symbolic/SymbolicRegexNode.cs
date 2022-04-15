@@ -382,7 +382,7 @@ namespace System.Text.RegularExpressions.Symbolic
             Create(builder, SymbolicRegexNodeKind.Singleton, null, null, -1, -1, builder._solver.Empty, null, SymbolicRegexInfo.Create());
 
         internal static SymbolicRegexNode<TSet> CreateTrue(SymbolicRegexBuilder<TSet> builder) =>
-            Create(builder, SymbolicRegexNodeKind.Singleton, null, null, -1, -1, builder._solver.Full, null, SymbolicRegexInfo.Create(containsSomeCharacter: true));
+            Create(builder, SymbolicRegexNodeKind.Singleton, null, null, -1, -1, builder._solver.Full, null, SymbolicRegexInfo.Create());
 
         internal static SymbolicRegexNode<TSet> CreateFixedLengthMarker(SymbolicRegexBuilder<TSet> builder, int length) =>
             Create(builder, SymbolicRegexNodeKind.FixedLengthMarker, null, null, length, -1, default, null, SymbolicRegexInfo.Create(isAlwaysNullable: true));
@@ -399,19 +399,22 @@ namespace System.Text.RegularExpressions.Symbolic
                 SymbolicRegexNodeKind.BeginningAnchor or SymbolicRegexNodeKind.EndAnchor or
                 SymbolicRegexNodeKind.EndAnchorZ or SymbolicRegexNodeKind.EndAnchorZReverse or
                 SymbolicRegexNodeKind.EOLAnchor or SymbolicRegexNodeKind.BOLAnchor);
-            return Create(builder, kind, null, null, -1, -1, default, null, SymbolicRegexInfo.Create(startsWithLineAnchor: true, canBeNullable: true));
+            return Create(builder, kind, null, null, -1, -1, default, null, SymbolicRegexInfo.Create(startsWithSomeAnchor: true, canBeNullable: true,
+                startsWithLineAnchor: kind is
+                    SymbolicRegexNodeKind.EndAnchorZ or SymbolicRegexNodeKind.EndAnchorZReverse or
+                    SymbolicRegexNodeKind.EOLAnchor or SymbolicRegexNodeKind.BOLAnchor));
         }
 
         internal static SymbolicRegexNode<TSet> CreateBoundaryAnchor(SymbolicRegexBuilder<TSet> builder, SymbolicRegexNodeKind kind)
         {
             Debug.Assert(kind is SymbolicRegexNodeKind.BoundaryAnchor or SymbolicRegexNodeKind.NonBoundaryAnchor);
-            return Create(builder, kind, null, null, -1, -1, default, null, SymbolicRegexInfo.Create(startsWithBoundaryAnchor: true, canBeNullable: true));
+            return Create(builder, kind, null, null, -1, -1, default, null, SymbolicRegexInfo.Create(startsWithSomeAnchor: true, canBeNullable: true));
         }
 
         #endregion
 
         internal static SymbolicRegexNode<TSet> CreateSingleton(SymbolicRegexBuilder<TSet> builder, TSet set) =>
-            Create(builder, SymbolicRegexNodeKind.Singleton, null, null, -1, -1, set, null, SymbolicRegexInfo.Create(containsSomeCharacter: !set.Equals(builder._solver.Empty)));
+            Create(builder, SymbolicRegexNodeKind.Singleton, null, null, -1, -1, set, null, SymbolicRegexInfo.Create());
 
         internal static SymbolicRegexNode<TSet> CreateLoop(SymbolicRegexBuilder<TSet> builder, SymbolicRegexNode<TSet> body, int lower, int upper, bool isLazy)
         {
@@ -588,40 +591,6 @@ namespace System.Text.RegularExpressions.Symbolic
 
             Debug.Assert(left._kind != SymbolicRegexNodeKind.OrderedOr);
             Debug.Assert(deduplicated);
-
-            // Apply the counter subsumption/combining optimization if possible
-            (SymbolicRegexNode<TSet> loop, SymbolicRegexNode<TSet> rest) = left.FirstCounterInfo();
-            if (loop != builder._nothing)
-            {
-                Debug.Assert(loop._kind == SymbolicRegexNodeKind.Loop && loop._left is not null);
-                (SymbolicRegexNode<TSet> otherLoop, SymbolicRegexNode<TSet> otherRest) = right.FirstCounterInfo();
-                if (otherLoop != builder._nothing && rest == otherRest)
-                {
-                    // Found two adjacent counters with the same continuation, check that the loops are equivalent apart from bounds
-                    // and that the bounds form a contiguous interval. Two integer intervals [x1,x2] and [y1,y2] overlap when
-                    // x1 <= y2 and y1 <= x2. The union of intervals that just touch is still contiguous, e.g. [2,5] and [6,10] make
-                    // [2,10], so the lower bounds are decremented by 1 in the check.
-                    Debug.Assert(otherLoop._kind == SymbolicRegexNodeKind.Loop && otherLoop._left is not null);
-                    if (loop._left == otherLoop._left && loop.IsLazy == otherLoop.IsLazy &&
-                        loop._lower - 1 <= otherLoop._upper && otherLoop._lower - 1 <= loop._upper)
-                    {
-                        // Loops are equivalent apart from bounds, and the union of the bounds is a contiguous interval
-                        // Build a new counter for the union of the ranges
-                        SymbolicRegexNode<TSet> newCounter = CreateConcat(builder, CreateLoop(builder, loop._left,
-                            Math.Min(loop._lower, otherLoop._lower), Math.Max(loop._upper, otherLoop._upper), loop.IsLazy), rest);
-                        if (right._kind == SymbolicRegexNodeKind.OrderedOr)
-                        {
-                            // The right counter came from an or, so include the rest of that or
-                            Debug.Assert(right._right is not null);
-                            return OrderedOr(builder, newCounter, right._right, deduplicated: true);
-                        }
-                        else
-                        {
-                            return newCounter;
-                        }
-                    }
-                }
-            }
 
             // Counter optimization did not apply, just build the or
             return Create(builder, SymbolicRegexNodeKind.OrderedOr, left, right, -1, -1, default, null, SymbolicRegexInfo.Or(left._info, right._info));
@@ -1052,6 +1021,8 @@ namespace System.Text.RegularExpressions.Symbolic
         private void AddTransitions(TSet elem, uint context, List<(SymbolicRegexNode<TSet>, DerivativeEffect[])> transitions,
             List<SymbolicRegexNode<TSet>> continuation, Stack<DerivativeEffect>? effects, bool simulateBacktracking)
         {
+            Debug.Assert(!_builder._solver.IsEmpty(elem), "False element or minterm should not make it into derivative construction.");
+
             // Helper function for concatenating a head node and a list of continuation nodes. The continuation nodes
             // are added in reverse order and the function below uses the list as a stack, so the nodes added to the
             // stack first end up at the tail of the concatenation.

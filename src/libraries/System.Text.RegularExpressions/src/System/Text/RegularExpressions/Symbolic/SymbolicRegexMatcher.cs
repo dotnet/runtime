@@ -210,7 +210,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
             // Create the dot-star pattern (a concatenation of any* with the original pattern)
             // and all of its initial states.
-            _dotStarredPattern = _builder.CreateConcat(_builder._anyStar, _pattern);
+            _dotStarredPattern = _builder.CreateConcat(_builder._anyStarLazy, _pattern);
             var dotstarredInitialStates = new DfaMatchingState<TSet>[statesCount];
             for (uint i = 0; i < dotstarredInitialStates.Length; i++)
             {
@@ -340,12 +340,25 @@ namespace System.Text.RegularExpressions.Symbolic
             // given the kinds of characters at and just before the end.
             if (startat == input.Length)
             {
-                // TODO https://github.com/dotnet/runtime/issues/65606: Handle capture groups.
                 uint prevKind = GetCharKind(input, startat - 1);
                 uint nextKind = GetCharKind(input, startat);
-                return _pattern.IsNullableFor(CharKind.Context(prevKind, nextKind)) ?
-                    new SymbolicMatch(startat, 0) :
-                    SymbolicMatch.NoMatch;
+                var context = CharKind.Context(prevKind, nextKind);
+                if (_pattern.IsNullableFor(context))
+                {
+                    if (!HasSubcaptures)
+                    {
+                        return new SymbolicMatch(startat, 0);
+                    }
+                    else
+                    {
+                        Registers endRegisters = FindSubcaptures(input, startat, startat, perThreadData);
+                        return new SymbolicMatch(startat, 0, endRegisters.CaptureStarts, endRegisters.CaptureEnds);
+                    }
+                }
+                else
+                {
+                    return SymbolicMatch.NoMatch;
+                }
             }
 
             // Phase 1:
@@ -354,10 +367,10 @@ namespace System.Text.RegularExpressions.Symbolic
             // a legitimate value when the initial state is nullable and startat == 0. It returns NoMatchExists (-2)
             // when there is no match.  As an example, consider the pattern a{5,10}b* run against an input
             // of aaaaaaaaaaaaaaabbbc: phase 1 will find the position of the first b: aaaaaaaaaaaaaaab.
-            int i = FindFinalStatePosition(input, startat, timeoutOccursAt, out int matchStartLowBoundary, out int matchStartLengthMarker, perThreadData);
+            int matchEnd = FindEndPosition(input, startat, timeoutOccursAt, isMatch, out int matchStartLowBoundary, out int matchStartLengthMarker, perThreadData);
 
             // If there wasn't a match, we're done.
-            if (i == NoMatchExists)
+            if (matchEnd == NoMatchExists)
             {
                 return SymbolicMatch.NoMatch;
             }
@@ -378,14 +391,18 @@ namespace System.Text.RegularExpressions.Symbolic
             int matchStart;
             if (matchStartLengthMarker >= 0)
             {
-                matchStart = i - matchStartLengthMarker + 1;
+                matchStart = matchEnd - matchStartLengthMarker;
+            }
+            else if (_fixedMatchLength.HasValue)
+            {
+                matchStart = matchEnd - _fixedMatchLength.GetValueOrDefault();
             }
             else
             {
-                Debug.Assert(i >= startat - 1);
-                matchStart = i < startat ?
+                Debug.Assert(matchEnd >= startat - 1);
+                matchStart = matchEnd < startat ?
                     startat :
-                    FindStartPosition(input, i, matchStartLowBoundary, perThreadData);
+                    FindStartPosition(input, matchEnd, matchStartLowBoundary, perThreadData);
             }
 
             // Phase 3:
@@ -398,77 +415,111 @@ namespace System.Text.RegularExpressions.Symbolic
             // will walk forwards from the 6th a until it finds the end of the match: aaaaaaaaaabbb.
             if (!HasSubcaptures)
             {
-                if (_fixedMatchLength.HasValue)
-                {
-                    return new SymbolicMatch(matchStart, _fixedMatchLength.GetValueOrDefault());
-                }
-
-                int matchEnd = FindEndPosition(input, matchStart, perThreadData);
-                return new SymbolicMatch(matchStart, matchEnd + 1 - matchStart);
+                return new SymbolicMatch(matchStart, matchEnd - matchStart);
             }
             else
             {
-                int matchEnd = FindEndPositionCapturing(input, matchStart, out Registers endRegisters, perThreadData);
-                return new SymbolicMatch(matchStart, matchEnd + 1 - matchStart, endRegisters.CaptureStarts, endRegisters.CaptureEnds);
+                Registers endRegisters = FindSubcaptures(input, matchStart, matchEnd, perThreadData);
+                return new SymbolicMatch(matchStart, matchEnd - matchStart, endRegisters.CaptureStarts, endRegisters.CaptureEnds);
             }
         }
 
-        /// <summary>Phase 3 of matching. From a found starting position, find the ending position of the match using the original pattern.</summary>
-        /// <remarks>
-        /// The ending position is known to exist; this function just needs to determine exactly what it is.
-        /// We need to find the longest possible match and thus the latest valid ending position.
-        /// </remarks>
+        /// <summary>Performs the initial Phase 1 match to find the end position of the match, or first final state if this is an isMatch call.</summary>
         /// <param name="input">The input text.</param>
-        /// <param name="i">The starting position of the match.</param>
+        /// <param name="i">The starting position in <paramref name="input"/>.</param>
+        /// <param name="timeoutOccursAt">The time at which timeout occurs, if timeouts are being checked.</param>
+        /// <param name="isMatch"></param>
+        /// <param name="initialStateIndex">The last position the initial state of <see cref="_dotStarredPattern"/> was visited.</param>
+        /// <param name="matchLength">Length of the match if there's a match; otherwise, -1.</param>
         /// <param name="perThreadData">Per thread data reused between calls.</param>
-        /// <returns>The found ending position of the match.</returns>
-        private int FindEndPosition(ReadOnlySpan<char> input, int i, PerThreadData perThreadData)
+        /// <returns>The index into input that matches the final state, or NoMatchExists if no match exists. It returns -1 when i=0 and the initial state is nullable.</returns>
+        private int FindEndPosition(ReadOnlySpan<char> input, int i, int timeoutOccursAt, bool isMatch, out int initialStateIndex, out int matchLength, PerThreadData perThreadData)
         {
-            // Get the starting state based on the current context.
-            DfaMatchingState<TSet> dfaStartState = _initialStates[GetCharKind(input, i - 1)];
+            int endPosition = NoMatchExists;
 
-            // If the starting state is nullable (accepts the empty string), then it's a valid
-            // match and we need to record the position as a possible end, but keep going looking
-            // for a better one.
-            int end = input.Length; // invalid sentinel value
-            if (dfaStartState.IsNullable(GetCharKind(input, i)))
-            {
-                // Empty match exists because the initial state is accepting.
-                end = i - 1;
-            }
+            matchLength = -1;
+            initialStateIndex = i;
+            int initialStateIndexCandidate = i;
 
-            if ((uint)i < (uint)input.Length)
+            var currentState = new CurrentState(_dotstarredInitialStates[GetCharKind(input, i - 1)]);
+            SymbolicRegexBuilder<TSet> builder = _pattern._builder;
+
+            while (true)
             {
-                // Iterate from the starting state until we've found the best ending state.
-                SymbolicRegexBuilder<TSet> builder = dfaStartState.Node._builder;
-                var currentState = new CurrentState(dfaStartState);
-                while (true)
+                if (currentState.DfaState is { IsInitialState: true })
                 {
-                    // Run the DFA or NFA traversal backwards from the current point using the current state.
-                    bool done = currentState.NfaState is not null ?
-                        FindEndPositionDeltas<NfaStateHandler>(builder, input, ref i, ref currentState, ref end) :
-                        FindEndPositionDeltas<DfaStateHandler>(builder, input, ref i, ref currentState, ref end);
-
-                    // If we successfully found the ending position, we're done.
-                    if (done || (uint)i >= (uint)input.Length)
+                    if (_findOpts is RegexFindOptimizations findOpts)
                     {
+                        // Find the first position i that matches with some likely character.
+                        if (!findOpts.TryFindNextStartingPosition(input, ref i, 0))
+                        {
+                            // no match was found
+                            break;
+                        }
+                    }
+
+                    initialStateIndexCandidate = i;
+
+                    // Update the starting state based on where TryFindNextStartingPosition moved us to.
+                    // As with the initial starting state, if it's a dead end, no match exists.
+                    currentState = new CurrentState(_dotstarredInitialStates[GetCharKind(input, i - 1)]);
+                }
+
+                // Now run the DFA or NFA traversal from the current point using the current state. If timeouts are being checked,
+                // we need to pop out of the inner loop every now and then to do the timeout check in this outer loop.
+                const int CharsPerTimeoutCheck = 1_000;
+                ReadOnlySpan<char> inputForInnerLoop = _checkTimeout && input.Length - i > CharsPerTimeoutCheck ?
+                    input.Slice(0, i + CharsPerTimeoutCheck) :
+                    input;
+
+                int newEndPosition;
+                int findResult = currentState.NfaState is not null ?
+                    FindEndPositionDeltas<NfaStateHandler>(builder, inputForInnerLoop, isMatch, ref i, ref currentState, ref matchLength, out newEndPosition) :
+                    FindEndPositionDeltas<DfaStateHandler>(builder, inputForInnerLoop, isMatch, ref i, ref currentState, ref matchLength, out newEndPosition);
+
+                // If a new end position was found, commit to the matching initial state index
+                if (newEndPosition != -1)
+                {
+                    endPosition = newEndPosition;
+                    initialStateIndex = initialStateIndexCandidate;
+                }
+
+                // If we reached the end of input or a deadend state, we're done.
+                if (findResult > 0)
+                {
+                    break;
+                }
+
+                // The search did not finish, so we either hit an initial state (in which case we want to loop around to apply our initial
+                // state processing logic and optimizations), or failed to transition (which should only happen if we were in DFA mode and
+                // need to switch over to NFA mode). If we exited because we hit an initial state, find result will be 0, otherwise -1.
+                if (findResult < 0)
+                {
+                    if (i >= input.Length)
+                    {
+                        // We ran out of input.
                         break;
                     }
 
-                    // We exited out of the inner processing loop, but we didn't hit a dead end or run out
-                    // of input, and that should only happen if we failed to transition from one state to
-                    // the next, which should only happen if we were in DFA mode and we tried to create
-                    // a new state and exceeded the graph size.  Upgrade to NFA mode and continue;
-                    Debug.Assert(currentState.DfaState is not null);
-                    NfaMatchingState nfaState = perThreadData.NfaState;
-                    nfaState.InitializeFrom(currentState.DfaState);
-                    currentState = new CurrentState(nfaState);
+                    if (i < inputForInnerLoop.Length)
+                    {
+                        // We failed to transition. Upgrade to DFA mode.
+                        Debug.Assert(i < inputForInnerLoop.Length);
+                        Debug.Assert(currentState.DfaState is not null);
+                        NfaMatchingState nfaState = perThreadData.NfaState;
+                        nfaState.InitializeFrom(currentState.DfaState);
+                        currentState = new CurrentState(nfaState);
+                    }
+                }
+
+                // Check for a timeout before continuing.
+                if (_checkTimeout)
+                {
+                    DoCheckTimeout(timeoutOccursAt);
                 }
             }
 
-            // Return the found ending position.
-            Debug.Assert(end < input.Length, "Expected to find an ending position but didn't");
-            return end;
+            return endPosition;
         }
 
         /// <summary>
@@ -476,54 +527,183 @@ namespace System.Text.RegularExpressions.Symbolic
         /// starting at <paramref name="i"/>, for each character transitioning from one state in the DFA or NFA graph to the next state,
         /// lazily building out the graph as needed.
         /// </summary>
-        private bool FindEndPositionDeltas<TStateHandler>(SymbolicRegexBuilder<TSet> builder, ReadOnlySpan<char> input, ref int i, ref CurrentState currentState, ref int endingIndex)
+        /// <remarks>
+        /// The <typeparamref name="TStateHandler"/> supplies the actual transitioning logic, controlling whether processing is
+        /// performed in DFA mode or in NFA mode.  However, it expects <paramref name="currentState"/> to be configured to match,
+        /// so for example if <typeparamref name="TStateHandler"/> is a <see cref="DfaStateHandler"/>, it expects the <paramref name="currentState"/>'s
+        /// <see cref="CurrentState.DfaState"/> to be non-null and its <see cref="CurrentState.NfaState"/> to be null; vice versa for
+        /// <see cref="NfaStateHandler"/>.
+        /// </remarks>
+        /// <returns>
+        /// A positive value if iteration completed because it reached a nullable or deadend state.
+        /// 0 if iteration completed because we reached an initial state.
+        /// A negative value if iteration completed because we ran out of input or we failed to transition.
+        /// </returns>
+        private int FindEndPositionDeltas<TStateHandler>(SymbolicRegexBuilder<TSet> builder, ReadOnlySpan<char> input, bool isMatch, ref int i, ref CurrentState currentState, ref int matchLength, out int endPosition)
+            where TStateHandler : struct, IStateHandler
+        {
+            // To avoid frequent reads/writes to ref values, make and operate on local copies, which we then copy back once before returning.
+            int pos = i;
+            CurrentState state = currentState;
+            int endPos = -1;
+
+            // Loop through each character in the input, transitioning from state to state for each.
+            int result;
+            while (true)
+            {
+                // We successfully transitioned for the character at index i.  If the new state is nullable for
+                // the next character, meaning it accepts the empty string, we found a final state and are done!
+                bool isNullable = TStateHandler.IsNullable(ref state, GetCharKind(input, pos));
+                if (isNullable)
+                {
+                    // Check whether there's a fixed-length marker for the current state.  If there is, we can
+                    // use that length to optimize subsequent matching phases.
+                    matchLength = TStateHandler.FixedLength(ref state);
+                    endPos = pos;
+                }
+
+                // If the new state is a dead end, such that we didn't match and we can't transition anywhere
+                // else, then no match exists.
+                if (TStateHandler.IsDeadend(ref state) || (isMatch && isNullable))
+                {
+                    result = 1;
+                    break;
+                }
+
+                if ((uint)pos >= (uint)input.Length || !TryTakeTransition<TStateHandler>(builder, input, pos, ref state))
+                {
+                    result = -1;
+                    break;
+                }
+
+                // We successfully transitioned, so update our current input index to match.
+                pos++;
+
+                // Now that currentState and our position are coherent, check if currentState represents an initial state.
+                // If it does, we exit out in order to allow our find optimizations to kick in to hopefully more quickly
+                // find the next possible starting location.
+                if (TStateHandler.IsInitialState(ref state))
+                {
+                    result = 0;
+                    break;
+                }
+            }
+
+            currentState = state;
+            i = pos;
+            endPosition = endPos;
+            return result;
+        }
+
+        /// <summary>
+        /// Phase 2 of matching. From a found ending position, walk in reverse through the input using the reverse pattern to find the
+        /// start position of match.
+        /// </summary>
+        /// <remarks>
+        /// The start position is known to exist; this function just needs to determine exactly what it is.
+        /// We need to find the earliest (lowest index) starting position that's not earlier than <paramref name="matchStartBoundary"/>.
+        /// </remarks>
+        /// <param name="input">The input text.</param>
+        /// <param name="i">The ending position to walk backwards from. <paramref name="i"/> points one past the last character of the match.</param>
+        /// <param name="matchStartBoundary">The initial starting location discovered in phase 1, a point we must not walk earlier than.</param>
+        /// <param name="perThreadData">Per thread data reused between calls.</param>
+        /// <returns>The found starting position for the match.</returns>
+        private int FindStartPosition(ReadOnlySpan<char> input, int i, int matchStartBoundary, PerThreadData perThreadData)
+        {
+            Debug.Assert(i >= 0, $"{nameof(i)} == {i}");
+            Debug.Assert(matchStartBoundary >= 0 && matchStartBoundary <= input.Length, $"{nameof(matchStartBoundary)} == {matchStartBoundary}");
+            Debug.Assert(i >= matchStartBoundary, $"Expected {i} >= {matchStartBoundary}.");
+
+            // Get the starting state for the reverse pattern. This depends on previous character (which, because we're
+            // going backwards, is character number i + 1).
+            var currentState = new CurrentState(_reverseInitialStates[GetCharKind(input, i)]);
+
+            int lastStart = -1; // invalid sentinel value
+
+            // Walk backwards to the furthest accepting state of the reverse pattern but no earlier than matchStartBoundary.
+            SymbolicRegexBuilder<TSet> builder = currentState.DfaState!.Node._builder;
+            while (true)
+            {
+                // Run the DFA or NFA traversal backwards from the current point using the current state.
+                bool done = currentState.NfaState is not null ?
+                    FindStartPositionDeltas<NfaStateHandler>(builder, input, ref i, matchStartBoundary, ref currentState, ref lastStart) :
+                    FindStartPositionDeltas<DfaStateHandler>(builder, input, ref i, matchStartBoundary, ref currentState, ref lastStart);
+
+                // If we found the starting position, we're done.
+                if (done)
+                {
+                    break;
+                }
+
+                // We didn't find the starting position but we did exit out of the backwards traversal.  That should only happen
+                // if we were unable to transition, which should only happen if we were in DFA mode and exceeded our graph size.
+                // Upgrade to NFA mode and continue.
+                Debug.Assert(i >= matchStartBoundary);
+                Debug.Assert(currentState.DfaState is not null);
+                NfaMatchingState nfaState = perThreadData.NfaState;
+                nfaState.InitializeFrom(currentState.DfaState);
+                currentState = new CurrentState(nfaState);
+            }
+
+            Debug.Assert(lastStart != -1, "We expected to find a starting position but didn't.");
+            return lastStart;
+        }
+
+        /// <summary>
+        /// Workhorse inner loop for <see cref="FindStartPosition"/>.  Consumes the <paramref name="input"/> character by character in reverse,
+        /// starting at <paramref name="i"/>, for each character transitioning from one state in the DFA or NFA graph to the next state,
+        /// lazily building out the graph as needed.
+        /// </summary>
+        private bool FindStartPositionDeltas<TStateHandler>(SymbolicRegexBuilder<TSet> builder, ReadOnlySpan<char> input, ref int i, int startThreshold, ref CurrentState currentState, ref int lastStart)
             where TStateHandler : struct, IStateHandler
         {
             // To avoid frequent reads/writes to ref values, make and operate on local copies, which we then copy back once before returning.
             int pos = i;
             CurrentState state = currentState;
 
-            // Repeatedly read the next character from the input and use it to transition the current state to the next.
-            // We're looking for the furthest final state we can find.
-            while ((uint)pos < (uint)input.Length && TryTakeTransition<TStateHandler>(builder, input, pos, ref state))
+            // Loop backwards through each character in the input, transitioning from state to state for each.
+            while (true)
             {
-                if (TStateHandler.IsNullable(ref state, GetCharKind(input, pos + 1)))
+                // If the new state accepts the empty string, we found a valid starting position.  Record it and keep going,
+                // since we're looking for the earliest one to occur within bounds.
+                if (TStateHandler.IsNullable(ref state, GetCharKind(input, pos - 1)))
                 {
-                    // If the new state accepts the empty string, we found an ending state. Record the position.
-                    endingIndex = pos;
+                    lastStart = pos;
                 }
-                else if (TStateHandler.IsDeadend(ref state))
+
+                // If doing so now puts us at the start threshold, bail; we should have already found a valid starting location.
+                // We successfully transitioned.  If the new state is a dead end, we're done, as we must have already seen
+                // and recorded a larger lastStart value that was the earliest valid starting position.
+                if (pos <= startThreshold || TStateHandler.IsDeadend(ref state))
                 {
-                    // If the new state is a dead end, the match ended the last time endingIndex was updated.
+                    Debug.Assert(lastStart != -1);
                     currentState = state;
                     i = pos;
                     return true;
                 }
 
-                // We successfully transitioned to the next state and consumed the current character,
-                // so move along to the next.
-                pos++;
-            }
+                if (!TryTakeTransition<TStateHandler>(builder, input, pos - 1, ref state))
+                {
+                    // Unable to transition further.
+                    currentState = state;
+                    i = pos;
+                    return false;
+                }
 
-            // We either ran out of input, in which case we successfully recorded an ending index,
-            // or we failed to transition to the next state due to the graph becoming too large.
-            currentState = state;
-            i = pos;
-            return false;
+                // Since we successfully transitioned, update our current index to match the fact that we consumed the previous character in the input.
+                pos--;
+            }
         }
+
 
         /// <summary>Find match end position using the original pattern, end position is known to exist. This version also produces captures.</summary>
         /// <param name="input">input span</param>
         /// <param name="i">inclusive start position</param>
-        /// <param name="resultRegisters">out parameter for the final register values, which indicate capture starts and ends</param>
+        /// <param name="i_end">exclusive end position</param>
         /// <param name="perThreadData">Per thread data reused between calls.</param>
-        /// <returns>the match end position</returns>
-        private int FindEndPositionCapturing(ReadOnlySpan<char> input, int i, out Registers resultRegisters, PerThreadData perThreadData)
+        /// <returns>the final register values, which indicate capture starts and ends</returns>
+        private Registers FindSubcaptures(ReadOnlySpan<char> input, int i, int i_end, PerThreadData perThreadData)
         {
-            int i_end = input.Length;
-            Registers endRegisters = default;
-            DfaMatchingState<TSet>? endState = null;
-
             // Pick the correct start state based on previous character kind.
             DfaMatchingState<TSet> initialState = _initialStates[GetCharKind(input, i - 1)];
 
@@ -532,14 +712,6 @@ namespace System.Text.RegularExpressions.Symbolic
             // Initialize registers with -1, which means "not seen yet"
             Array.Fill(initialRegisters.CaptureStarts, -1);
             Array.Fill(initialRegisters.CaptureEnds, -1);
-
-            if (initialState.IsNullable(GetCharKind(input, i)))
-            {
-                // Empty match exists because the initial state is accepting.
-                i_end = i - 1;
-                endRegisters.Assign(initialRegisters);
-                endState = initialState;
-            }
 
             // Use two maps from state IDs to register values for the current and next set of states.
             // Note that these maps use insertion order, which is used to maintain priorities between states in a way
@@ -552,7 +724,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
             SymbolicRegexBuilder<TSet> builder = _builder;
 
-            while ((uint)i < (uint)input.Length)
+            while ((uint)i < (uint)i_end)
             {
                 Debug.Assert(next.Count == 0);
 
@@ -595,10 +767,6 @@ namespace System.Text.RegularExpressions.Symbolic
                             next.Update(index, targetState.Id, newRegisters);
                             if (targetState.IsNullable(GetCharKind(input, i + 1)))
                             {
-                                // Accepting state has been reached. Record the position.
-                                i_end = i;
-                                endRegisters.Assign(newRegisters);
-                                endState = targetState;
                                 // No lower priority transitions from this or other source states are taken because the
                                 // backtracking engines would return the match ending here.
                                 goto BreakNullable;
@@ -608,12 +776,6 @@ namespace System.Text.RegularExpressions.Symbolic
                 }
 
             BreakNullable:
-                if (next.Count == 0)
-                {
-                    // If all states died out some nullable state must have been seen before
-                    break;
-                }
-
                 // Swap the state sets and prepare for the next character
                 SparseIntMap<Registers> tmp = current;
                 current = next;
@@ -622,311 +784,21 @@ namespace System.Text.RegularExpressions.Symbolic
                 i++;
             }
 
-            Debug.Assert(i_end != input.Length && endState is not null);
-            // Apply effects for finishing at the stored end state
-            endState.Node.ApplyEffects((effect, args) => args.Registers.ApplyEffect(effect, args.Pos),
-                CharKind.Context(endState.PrevCharKind, GetCharKind(input, i_end + 1)), (Registers: endRegisters, Pos: i_end + 1));
-            resultRegisters = endRegisters;
-            return i_end;
-        }
-
-        /// <summary>
-        /// Phase 2 of matching. From a found ending position, walk in reverse through the input using the reverse pattern to find the
-        /// start position of match.
-        /// </summary>
-        /// <remarks>
-        /// The start position is known to exist; this function just needs to determine exactly what it is.
-        /// We need to find the earliest (lowest index) starting position that's not earlier than <paramref name="matchStartBoundary"/>.
-        /// </remarks>
-        /// <param name="input">The input text.</param>
-        /// <param name="i">The ending position to walk backwards from. <paramref name="i"/> points at the last character of the match.</param>
-        /// <param name="matchStartBoundary">The initial starting location discovered in phase 1, a point we must not walk earlier than.</param>
-        /// <param name="perThreadData">Per thread data reused between calls.</param>
-        /// <returns>The found starting position for the match.</returns>
-        private int FindStartPosition(ReadOnlySpan<char> input, int i, int matchStartBoundary, PerThreadData perThreadData)
-        {
-            Debug.Assert(i >= 0, $"{nameof(i)} == {i}");
-            Debug.Assert(matchStartBoundary >= 0 && matchStartBoundary < input.Length, $"{nameof(matchStartBoundary)} == {matchStartBoundary}");
-            Debug.Assert(i >= matchStartBoundary, $"Expected {i} >= {matchStartBoundary}.");
-
-            // Get the starting state for the reverse pattern. This depends on previous character (which, because we're
-            // going backwards, is character number i + 1).
-            var currentState = new CurrentState(_reverseInitialStates[GetCharKind(input, i + 1)]);
-
-            // If the initial state is nullable, meaning it accepts the empty string, then we've already discovered
-            // a valid starting position, and we just need to keep looking for an earlier one in case there is one.
-            int lastStart = -1; // invalid sentinel value
-            if (currentState.DfaState!.IsNullable(GetCharKind(input, i)))
+            Debug.Assert(current.Count > 0);
+            Debug.Assert(_builder._capturingStateArray is not null);
+            foreach (var (endStateId, endRegisters) in current.Values)
             {
-                lastStart = i + 1;
-            }
-
-            // Walk backwards to the furthest accepting state of the reverse pattern but no earlier than matchStartBoundary.
-            SymbolicRegexBuilder<TSet> builder = currentState.DfaState.Node._builder;
-            while (true)
-            {
-                // Run the DFA or NFA traversal backwards from the current point using the current state.
-                bool done = currentState.NfaState is not null ?
-                    FindStartPositionDeltas<NfaStateHandler>(builder, input, ref i, matchStartBoundary, ref currentState, ref lastStart) :
-                    FindStartPositionDeltas<DfaStateHandler>(builder, input, ref i, matchStartBoundary, ref currentState, ref lastStart);
-
-                // If we found the starting position, we're done.
-                if (done)
+                DfaMatchingState<TSet> endState = _builder._capturingStateArray[endStateId];
+                if (endState.IsNullable(GetCharKind(input, i_end)))
                 {
-                    break;
-                }
-
-                // We didn't find the starting position but we did exit out of the backwards traversal.  That should only happen
-                // if we were unable to transition, which should only happen if we were in DFA mode and exceeded our graph size.
-                // Upgrade to NFA mode and continue.
-                Debug.Assert(i >= matchStartBoundary);
-                Debug.Assert(currentState.DfaState is not null);
-                NfaMatchingState nfaState = perThreadData.NfaState;
-                nfaState.InitializeFrom(currentState.DfaState);
-                currentState = new CurrentState(nfaState);
-            }
-
-            Debug.Assert(lastStart != -1, "We expected to find a starting position but didn't.");
-            return lastStart;
-        }
-
-        /// <summary>
-        /// Workhorse inner loop for <see cref="FindStartPosition"/>.  Consumes the <paramref name="input"/> character by character in reverse,
-        /// starting at <paramref name="i"/>, for each character transitioning from one state in the DFA or NFA graph to the next state,
-        /// lazily building out the graph as needed.
-        /// </summary>
-        private bool FindStartPositionDeltas<TStateHandler>(SymbolicRegexBuilder<TSet> builder, ReadOnlySpan<char> input, ref int i, int startThreshold, ref CurrentState currentState, ref int lastStart)
-            where TStateHandler : struct, IStateHandler
-        {
-            // To avoid frequent reads/writes to ref values, make and operate on local copies, which we then copy back once before returning.
-            int pos = i;
-            CurrentState state = currentState;
-
-            // Loop backwards through each character in the input, transitioning from state to state for each.
-            while (TryTakeTransition<TStateHandler>(builder, input, pos, ref state))
-            {
-                // We successfully transitioned.  If the new state is a dead end, we're done, as we must have already seen
-                // and recorded a larger lastStart value that was the earliest valid starting position.
-                if (TStateHandler.IsDeadend(ref state))
-                {
-                    Debug.Assert(lastStart != -1);
-                    currentState = state;
-                    i = pos;
-                    return true;
-                }
-
-                // If the new state accepts the empty string, we found a valid starting position.  Record it and keep going,
-                // since we're looking for the earliest one to occur within bounds.
-                if (TStateHandler.IsNullable(ref state, GetCharKind(input, pos - 1)))
-                {
-                    lastStart = pos;
-                }
-
-                // Since we successfully transitioned, update our current index to match the fact that we consumed the previous character in the input.
-                pos--;
-
-                // If doing so now puts us below the start threshold, bail; we should have already found a valid starting location.
-                if (pos < startThreshold)
-                {
-                    Debug.Assert(lastStart != -1);
-                    currentState = state;
-                    i = pos;
-                    return true;
+                    // Apply effects for finishing at the stored end state
+                    endState.Node.ApplyEffects((effect, args) => args.Registers.ApplyEffect(effect, args.Pos),
+                        CharKind.Context(endState.PrevCharKind, GetCharKind(input, i_end)), (Registers: endRegisters, Pos: i_end));
+                    return endRegisters;
                 }
             }
-
-            // Unable to transition further.
-            currentState = state;
-            i = pos;
-            return false;
-        }
-
-        /// <summary>Performs the initial Phase 1 match to find the first final state encountered.</summary>
-        /// <param name="input">The input text.</param>
-        /// <param name="i">The starting position in <paramref name="input"/>.</param>
-        /// <param name="timeoutOccursAt">The time at which timeout occurs, if timeouts are being checked.</param>
-        /// <param name="initialStateIndex">The last position the initial state of <see cref="_dotStarredPattern"/> was visited.</param>
-        /// <param name="matchLength">Length of the match if there's a match; otherwise, -1.</param>
-        /// <param name="perThreadData">Per thread data reused between calls.</param>
-        /// <returns>The index into input that matches the final state, or NoMatchExists if no match exists. It returns -1 when i=0 and the initial state is nullable.</returns>
-        private int FindFinalStatePosition(ReadOnlySpan<char> input, int i, int timeoutOccursAt, out int initialStateIndex, out int matchLength, PerThreadData perThreadData)
-        {
-            matchLength = -1;
-            initialStateIndex = i;
-
-            // Start with the start state of the dot-star pattern, which in general depends on the previous character kind in the input in order to handle anchors.
-            // If the starting state is a dead end, then no match exists.
-            var currentState = new CurrentState(_dotstarredInitialStates[GetCharKind(input, i - 1)]);
-            if (currentState.DfaState!.IsNothing)
-            {
-                // This can happen, for example, when the original regex starts with a beginning anchor but the previous char kind is not Beginning.
-                return NoMatchExists;
-            }
-
-            // If the starting state accepts the empty string in this context (factoring in anchors), we're done.
-            if (currentState.DfaState.IsNullable(GetCharKind(input, i)))
-            {
-                // The initial state is nullable in this context so at least an empty match exists.
-                // The last position of the match is i - 1 because the match is empty.
-                // This value is -1 if i == 0.
-                return i - 1;
-            }
-
-            // Otherwise, start searching from the current position until the end of the input.
-            if ((uint)i < (uint)input.Length)
-            {
-                SymbolicRegexBuilder<TSet> builder = currentState.DfaState.Node._builder;
-                while (true)
-                {
-                    // If we're at an initial state, try to search ahead for the next possible match location
-                    // using any find optimizations that may have previously been computed.
-                    if (currentState.DfaState is { IsInitialState: true })
-                    {
-                        // i is the most recent position in the input when the dot-star pattern is in the initial state
-                        initialStateIndex = i;
-
-                        if (_findOpts is RegexFindOptimizations findOpts)
-                        {
-                            // Find the first position i that matches with some likely character.
-                            if (!findOpts.TryFindNextStartingPosition(input, ref i, 0))
-                            {
-                                // no match was found
-                                return NoMatchExists;
-                            }
-
-                            initialStateIndex = i;
-
-                            // Update the starting state based on where TryFindNextStartingPosition moved us to.
-                            // As with the initial starting state, if it's a dead end, no match exists.
-                            currentState = new CurrentState(_dotstarredInitialStates[GetCharKind(input, i - 1)]);
-                            if (currentState.DfaState!.IsNothing)
-                            {
-                                return NoMatchExists;
-                            }
-                        }
-                    }
-
-                    // Now run the DFA or NFA traversal from the current point using the current state. If timeouts are being checked,
-                    // we need to pop out of the inner loop every now and then to do the timeout check in this outer loop.
-                    const int CharsPerTimeoutCheck = 10_000;
-                    ReadOnlySpan<char> inputForInnerLoop = _checkTimeout && input.Length - i > CharsPerTimeoutCheck ?
-                        input.Slice(0, i + CharsPerTimeoutCheck) :
-                        input;
-
-                    int finalStatePosition;
-                    int findResult = currentState.NfaState is not null ?
-                        FindFinalStatePositionDeltas<NfaStateHandler>(builder, inputForInnerLoop, ref i, ref currentState, ref matchLength, out finalStatePosition) :
-                        FindFinalStatePositionDeltas<DfaStateHandler>(builder, inputForInnerLoop, ref i, ref currentState, ref matchLength, out finalStatePosition);
-
-                    // If we reached a final or deadend state, we're done.
-                    if (findResult > 0)
-                    {
-                        return finalStatePosition;
-                    }
-
-                    // We're not at an end state, so we either ran out of input (in which case no match exists), hit an initial state (in which case
-                    // we want to loop around to apply our initial state processing logic and optimizations), or failed to transition (which should
-                    // only happen if we were in DFA mode and need to switch over to NFA mode).  If we exited because we hit an initial state,
-                    // find result will be 0, otherwise negative.
-                    if (findResult < 0)
-                    {
-                        if (i >= input.Length)
-                        {
-                            // We ran out of input. No match.
-                            break;
-                        }
-
-                        if (i < inputForInnerLoop.Length)
-                        {
-                            // We failed to transition. Upgrade to DFA mode.
-                            Debug.Assert(currentState.DfaState is not null);
-                            NfaMatchingState nfaState = perThreadData.NfaState;
-                            nfaState.InitializeFrom(currentState.DfaState);
-                            currentState = new CurrentState(nfaState);
-                        }
-                    }
-
-                    // Check for a timeout before continuing.
-                    if (_checkTimeout)
-                    {
-                        DoCheckTimeout(timeoutOccursAt);
-                    }
-                }
-            }
-
-            // No match was found.
-            return NoMatchExists;
-        }
-
-        /// <summary>
-        /// Workhorse inner loop for <see cref="FindFinalStatePosition"/>.  Consumes the <paramref name="input"/> character by character,
-        /// starting at <paramref name="i"/>, for each character transitioning from one state in the DFA or NFA graph to the next state,
-        /// lazily building out the graph as needed.
-        /// </summary>
-        /// <remarks>
-        /// The <typeparamref name="TStateHandler"/> supplies the actual transitioning logic, controlling whether processing is
-        /// performed in DFA mode or in NFA mode.  However, it expects <paramref name="currentState"/> to be configured to match,
-        /// so for example if <typeparamref name="TStateHandler"/> is a <see cref="DfaStateHandler"/>, it expects the <paramref name="currentState"/>'s
-        /// <see cref="CurrentState.DfaState"/> to be non-null and its <see cref="CurrentState.NfaState"/> to be null; vice versa for
-        /// <see cref="NfaStateHandler"/>.
-        /// </remarks>
-        /// <returns>
-        /// A positive value if iteration completed because it reached a nullable or deadend state.
-        /// 0 if iteration completed because we reached an initial state.
-        /// A negative value if iteration completed because we ran out of input or we failed to transition.
-        /// </returns>
-        private int FindFinalStatePositionDeltas<TStateHandler>(SymbolicRegexBuilder<TSet> builder, ReadOnlySpan<char> input, ref int i, ref CurrentState currentState, ref int matchLength, out int finalStatePosition)
-            where TStateHandler : struct, IStateHandler
-        {
-            // To avoid frequent reads/writes to ref values, make and operate on local copies, which we then copy back once before returning.
-            int pos = i;
-            CurrentState state = currentState;
-
-            // Loop through each character in the input, transitioning from state to state for each.
-            while ((uint)pos < (uint)input.Length && TryTakeTransition<TStateHandler>(builder, input, pos, ref state))
-            {
-                // We successfully transitioned for the character at index i.  If the new state is nullable for
-                // the next character, meaning it accepts the empty string, we found a final state and are done!
-                if (TStateHandler.IsNullable(ref state, GetCharKind(input, pos + 1)))
-                {
-                    // Check whether there's a fixed-length marker for the current state.  If there is, we can
-                    // use that length to optimize subsequent matching phases.
-                    matchLength = TStateHandler.FixedLength(ref state);
-                    currentState = state;
-                    i = pos;
-                    finalStatePosition = pos;
-                    return 1;
-                }
-
-                // If the new state is a dead end, such that we didn't match and we can't transition anywhere
-                // else, then no match exists.
-                if (TStateHandler.IsDeadend(ref state))
-                {
-                    currentState = state;
-                    i = pos;
-                    finalStatePosition = NoMatchExists;
-                    return 1;
-                }
-
-                // We successfully transitioned, so update our current input index to match.
-                pos++;
-
-                // Now that currentState and our position are coherent, check if currentState represents an initial state.
-                // If it does, we exit out in order to allow our find optimizations to kick in to hopefully more quickly
-                // find the next possible starting location.
-                if (TStateHandler.IsInitialState(ref state))
-                {
-                    currentState = state;
-                    i = pos;
-                    finalStatePosition = 0;
-                    return 0;
-                }
-            }
-
-            currentState = state;
-            i = pos;
-            finalStatePosition = 0;
-            return -1;
+            Debug.Fail("No nullable state found in the set of end states");
+            return default;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
