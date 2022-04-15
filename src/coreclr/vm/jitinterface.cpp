@@ -689,11 +689,9 @@ int CEEInfo::getStringLiteral (
         STRINGREF strRef = GetDynamicResolver(moduleHnd)->GetStringLiteral(metaTOK);
         if (strRef != NULL)
         {
-            GCPROTECT_BEGIN(strRef);
             StringObject* strObj = STRINGREFToObject(strRef);
             result = (int)strObj->GetStringLength();
             memcpyNoGCRefs(buffer, strObj->GetBuffer(), min(bufferSize, result) * sizeof(wchar_t));
-            GCPROTECT_END();
         }
     }
     else if (!FAILED((module)->GetMDImport()->GetUserString(metaTOK, &dwCharCount, NULL, &pString)))
