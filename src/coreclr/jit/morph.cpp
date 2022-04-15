@@ -11853,7 +11853,7 @@ DONE_MORPHING_CHILDREN:
 
         CM_ADD_OP:
 #ifdef TARGET_ARM64
-            if (!optValnumCSE_phase && opts.OptimizationEnabled())
+            if (!optValnumCSE_phase && opts.OptimizationEnabled() && tree->OperIs(GT_ADD))
             {
                 tree = fgMorphMulAdd(tree->AsOp());
                 op1  = tree->AsOp()->gtOp1;
