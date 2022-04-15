@@ -580,10 +580,11 @@ GenTreeStrCon* Compiler::impGetStrConFromSpan(GenTree* span)
         const NamedIntrinsic ni = lookupNamedIntrinsic(argCall->gtCallMethHnd);
         if ((ni == NI_System_MemoryExtensions_AsSpan) || (ni == NI_System_String_op_Implicit))
         {
-            assert(argCall->gtCallArgs->GetNext() == nullptr);
-            if (argCall->gtCallArgs->GetNode()->OperIs(GT_CNS_STR))
+            assert(argCall->gtArgs.CountArgs() == 1);
+            GenTree* arg = argCall->gtArgs.GetArgByIndex(0)->GetEarlyNode();
+            if (arg->OperIs(GT_CNS_STR))
             {
-                return argCall->gtCallArgs->GetNode()->AsStrCon();
+                return arg->AsStrCon();
             }
         }
     }

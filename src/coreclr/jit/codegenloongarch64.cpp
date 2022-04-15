@@ -5774,9 +5774,9 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
     unsigned argOffsetOut = treeNode->getArgOffset();
 
 #ifdef DEBUG
-    fgArgTabEntry* curArgTabEntry = compiler->gtArgEntryByNode(treeNode->gtCall, treeNode);
-    assert(curArgTabEntry != nullptr);
-    DEBUG_ARG_SLOTS_ASSERT(argOffsetOut == (curArgTabEntry->slotNum * TARGET_POINTER_SIZE));
+    CallArg* callArg = treeNode->gtCall->gtArgs.FindByNode(treeNode);
+    assert(callArg != nullptr);
+    DEBUG_ARG_SLOTS_ASSERT(argOffsetOut == (callArg->AbiInfo.SlotNum * TARGET_POINTER_SIZE));
 #endif // DEBUG
 
     // Whether to setup stk arg in incoming or out-going arg area?
@@ -7112,17 +7112,15 @@ void CodeGen::genCodeForLoadOffset(instruction ins, emitAttr size, regNumber dst
 void CodeGen::genCall(GenTreeCall* call)
 {
     // Consume all the arg regs
-    for (GenTreeCall::Use& use : call->LateArgs())
+    for (CallArg& arg : call->gtArgs.LateArgs())
     {
-        GenTree* argNode = use.GetNode();
-
-        fgArgTabEntry* curArgTabEntry = compiler->gtArgEntryByNode(call, argNode);
-        assert(curArgTabEntry);
+        CallArgABIInformation& abiInfo = arg.AbiInfo;
+        GenTree*               argNode = arg.GetLateNode();
 
         // GT_RELOAD/GT_COPY use the child node
         argNode = argNode->gtSkipReloadOrCopy();
 
-        if (curArgTabEntry->GetRegNum() == REG_STK)
+        if (abiInfo.GetRegNum() == REG_STK)
         {
             continue;
         }
@@ -7130,7 +7128,7 @@ void CodeGen::genCall(GenTreeCall* call)
         // Deal with multi register passed struct args.
         if (argNode->OperGet() == GT_FIELD_LIST)
         {
-            regNumber argReg = curArgTabEntry->GetRegNum();
+            regNumber argReg = abiInfo.GetRegNum();
             for (GenTreeFieldList::Use& use : argNode->AsFieldList()->Uses())
             {
                 GenTree* putArgRegNode = use.GetNode();
@@ -7143,13 +7141,13 @@ void CodeGen::genCall(GenTreeCall* call)
                 argReg = genRegArgNext(argReg);
             }
         }
-        else if (curArgTabEntry->IsSplit())
+        else if (abiInfo.IsSplit())
         {
             NYI("unimplemented on LOONGARCH64 yet");
         }
         else
         {
-            regNumber argReg = curArgTabEntry->GetRegNum();
+            regNumber argReg = abiInfo.GetRegNum();
             genConsumeReg(argNode);
             var_types dstType = emitter::isFloatReg(argReg) ? TYP_DOUBLE : TYP_I_IMPL;
             inst_Mov(dstType, argReg, argNode->GetRegNum(), /* canSkip */ true);
@@ -7350,12 +7348,11 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
             trashedByEpilog |= genRegMask(REG_GSCOOKIE_TMP_1);
         }
 
-        for (unsigned i = 0; i < call->fgArgInfo->ArgCount(); i++)
+        for (CallArg& arg : call->gtArgs.Args())
         {
-            fgArgTabEntry* entry = call->fgArgInfo->GetArgEntry(i);
-            for (unsigned j = 0; j < entry->numRegs; j++)
+            for (unsigned j = 0; j < arg.AbiInfo.NumRegs; j++)
             {
-                regNumber reg = entry->GetRegNum(j);
+                regNumber reg = arg.AbiInfo.GetRegNum(j);
                 if ((trashedByEpilog & genRegMask(reg)) != 0)
                 {
                     JITDUMP("Tail call node:\n");

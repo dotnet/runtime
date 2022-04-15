@@ -32150,11 +32150,7 @@ void gc_heap::walk_relocation (void* profiling_context, record_surv_fn fn)
         generation* condemned_gen = generation_of (i);
         heap_segment*  current_heap_segment = heap_segment_rw (generation_start_segment (condemned_gen));
 #ifdef USE_REGIONS
-        while (current_heap_segment && heap_segment_swept_in_plan (current_heap_segment))
-        {
-            // TODO: Walk the heap segment and report the plugs.
-            current_heap_segment = heap_segment_next_rw (current_heap_segment);
-        }
+        current_heap_segment = walk_relocation_sip (current_heap_segment, profiling_context, fn);
         if (!current_heap_segment)
             continue;
 #endif // USE_REGIONS
@@ -32187,11 +32183,7 @@ void gc_heap::walk_relocation (void* profiling_context, record_surv_fn fn)
                 }
                 current_heap_segment = heap_segment_next_rw (current_heap_segment);
 #ifdef USE_REGIONS
-                while (current_heap_segment && heap_segment_swept_in_plan (current_heap_segment))
-                {
-                    // TODO: Walk the heap segment and report the plugs.
-                    current_heap_segment = heap_segment_next_rw (current_heap_segment);
-                }
+                current_heap_segment = walk_relocation_sip (current_heap_segment, profiling_context, fn);
 #endif // USE_REGIONS
                 if (current_heap_segment)
                 {
@@ -32217,6 +32209,45 @@ void gc_heap::walk_relocation (void* profiling_context, record_surv_fn fn)
         }
     }
 }
+
+#ifdef USE_REGIONS
+heap_segment* gc_heap::walk_relocation_sip (heap_segment* current_heap_segment, void* profiling_context, record_surv_fn fn)
+{
+    while (current_heap_segment && heap_segment_swept_in_plan (current_heap_segment))
+    {
+        uint8_t* start = heap_segment_mem (current_heap_segment);
+        uint8_t* end = heap_segment_allocated (current_heap_segment);
+        uint8_t* obj = start;
+        uint8_t* plug_start = nullptr;
+        while (obj < end)
+        {
+            if (((CObjectHeader*)obj)->IsFree())
+            {
+                if (plug_start)
+                {
+                    fn (plug_start, obj, 0, profiling_context, false, false);
+                    plug_start = nullptr;
+                }
+            }
+            else
+            {
+                if (!plug_start) 
+                {
+                    plug_start = obj;
+                }
+            }
+
+            obj += Align (size (obj));
+        }
+        if (plug_start)
+        {
+            fn (plug_start, end, 0, profiling_context, false, false);
+        }
+        current_heap_segment = heap_segment_next_rw (current_heap_segment);
+    }
+    return current_heap_segment;
+}
+#endif // USE_REGIONS
 
 void gc_heap::walk_survivors (record_surv_fn fn, void* context, walk_surv_type type)
 {

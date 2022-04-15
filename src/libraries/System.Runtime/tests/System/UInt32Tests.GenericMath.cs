@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Globalization;
-using System.Runtime.Versioning;
 using Xunit;
 
 namespace System.Tests
@@ -115,6 +114,16 @@ namespace System.Tests
             Assert.Equal((uint)0x00000000, BinaryIntegerHelper<uint>.TrailingZeroCount((uint)0x7FFFFFFF));
             Assert.Equal((uint)0x0000001F, BinaryIntegerHelper<uint>.TrailingZeroCount((uint)0x80000000));
             Assert.Equal((uint)0x00000000, BinaryIntegerHelper<uint>.TrailingZeroCount((uint)0xFFFFFFFF));
+        }
+
+        [Fact]
+        public static void GetShortestBitLengthTest()
+        {
+            Assert.Equal(0x00, BinaryIntegerHelper<uint>.GetShortestBitLength((uint)0x00000000));
+            Assert.Equal(0x01, BinaryIntegerHelper<uint>.GetShortestBitLength((uint)0x00000001));
+            Assert.Equal(0x1F, BinaryIntegerHelper<uint>.GetShortestBitLength((uint)0x7FFFFFFF));
+            Assert.Equal(0x20, BinaryIntegerHelper<uint>.GetShortestBitLength((uint)0x80000000));
+            Assert.Equal(0x20, BinaryIntegerHelper<uint>.GetShortestBitLength((uint)0xFFFFFFFF));
         }
 
         [Fact]
@@ -1061,6 +1070,47 @@ namespace System.Tests
                 Assert.True(NumberHelper<uint>.TryCreate<nuint>(unchecked((nuint)0xFFFFFFFF), out result));
                 Assert.Equal((uint)0xFFFFFFFF, result);
             }
+        }
+
+        [Fact]
+        public static void GetByteCountTest()
+        {
+            Assert.Equal(4, BinaryIntegerHelper<uint>.GetByteCount((uint)0x00000000));
+            Assert.Equal(4, BinaryIntegerHelper<uint>.GetByteCount((uint)0x00000001));
+            Assert.Equal(4, BinaryIntegerHelper<uint>.GetByteCount((uint)0x7FFFFFFF));
+            Assert.Equal(4, BinaryIntegerHelper<uint>.GetByteCount((uint)0x80000000));
+            Assert.Equal(4, BinaryIntegerHelper<uint>.GetByteCount((uint)0xFFFFFFFF));
+        }
+
+        [Fact]
+        public static void TryWriteLittleEndianTest()
+        {
+            Span<byte> destination = stackalloc byte[4];
+            int bytesWritten = 0;
+
+            Assert.True(BinaryIntegerHelper<uint>.TryWriteLittleEndian((uint)0x00000000, destination, out bytesWritten));
+            Assert.Equal(4, bytesWritten);
+            Assert.Equal(new byte[] { 0x00, 0x00, 0x00, 0x00 }, destination.ToArray());
+
+            Assert.True(BinaryIntegerHelper<uint>.TryWriteLittleEndian((uint)0x00000001, destination, out bytesWritten));
+            Assert.Equal(4, bytesWritten);
+            Assert.Equal(new byte[] { 0x01, 0x00, 0x00, 0x00 }, destination.ToArray());
+
+            Assert.True(BinaryIntegerHelper<uint>.TryWriteLittleEndian((uint)0x7FFFFFFF, destination, out bytesWritten));
+            Assert.Equal(4, bytesWritten);
+            Assert.Equal(new byte[] { 0xFF, 0xFF, 0xFF, 0x7F }, destination.ToArray());
+
+            Assert.True(BinaryIntegerHelper<uint>.TryWriteLittleEndian((uint)0x80000000, destination, out bytesWritten));
+            Assert.Equal(4, bytesWritten);
+            Assert.Equal(new byte[] { 0x00, 0x00, 0x00, 0x80 }, destination.ToArray());
+
+            Assert.True(BinaryIntegerHelper<uint>.TryWriteLittleEndian((uint)0xFFFFFFFF, destination, out bytesWritten));
+            Assert.Equal(4, bytesWritten);
+            Assert.Equal(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF }, destination.ToArray());
+
+            Assert.False(BinaryIntegerHelper<uint>.TryWriteLittleEndian(default, Span<byte>.Empty, out bytesWritten));
+            Assert.Equal(0, bytesWritten);
+            Assert.Equal(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF }, destination.ToArray());
         }
 
         [Fact]

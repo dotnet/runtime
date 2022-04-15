@@ -763,9 +763,9 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
     unsigned argOffsetOut = treeNode->getArgOffset();
 
 #ifdef DEBUG
-    fgArgTabEntry* curArgTabEntry = compiler->gtArgEntryByNode(treeNode->gtCall, treeNode);
-    assert(curArgTabEntry != nullptr);
-    DEBUG_ARG_SLOTS_ASSERT(argOffsetOut == (curArgTabEntry->slotNum * TARGET_POINTER_SIZE));
+    CallArg* callArg = treeNode->gtCall->gtArgs.FindByNode(treeNode);
+    assert(callArg != nullptr);
+    DEBUG_ARG_SLOTS_ASSERT(argOffsetOut == (callArg->AbiInfo.SlotNum * TARGET_POINTER_SIZE));
 #endif // DEBUG
 
     // Whether to setup stk arg in incoming or out-going arg area?
@@ -3125,23 +3125,21 @@ void CodeGen::genCodeForInitBlkHelper(GenTreeBlk* initBlkNode)
 void CodeGen::genCall(GenTreeCall* call)
 {
     // Consume all the arg regs
-    for (GenTreeCall::Use& use : call->LateArgs())
+    for (CallArg& arg : call->gtArgs.LateArgs())
     {
-        GenTree* argNode = use.GetNode();
-
-        fgArgTabEntry* curArgTabEntry = compiler->gtArgEntryByNode(call, argNode);
-        assert(curArgTabEntry);
+        CallArgABIInformation& abiInfo = arg.AbiInfo;
+        GenTree*               argNode = arg.GetLateNode();
 
         // GT_RELOAD/GT_COPY use the child node
         argNode = argNode->gtSkipReloadOrCopy();
 
-        if (curArgTabEntry->GetRegNum() == REG_STK)
+        if (abiInfo.GetRegNum() == REG_STK)
             continue;
 
         // Deal with multi register passed struct args.
         if (argNode->OperGet() == GT_FIELD_LIST)
         {
-            regNumber argReg = curArgTabEntry->GetRegNum();
+            regNumber argReg = abiInfo.GetRegNum();
             for (GenTreeFieldList::Use& use : argNode->AsFieldList()->Uses())
             {
                 GenTree* putArgRegNode = use.GetNode();
@@ -3162,14 +3160,14 @@ void CodeGen::genCall(GenTreeCall* call)
 #endif // TARGET_ARM
             }
         }
-        else if (curArgTabEntry->IsSplit())
+        else if (abiInfo.IsSplit())
         {
             assert(compFeatureArgSplit());
-            assert(curArgTabEntry->numRegs >= 1);
+            assert(abiInfo.NumRegs >= 1);
             genConsumeArgSplitStruct(argNode->AsPutArgSplit());
-            for (unsigned idx = 0; idx < curArgTabEntry->numRegs; idx++)
+            for (unsigned idx = 0; idx < abiInfo.NumRegs; idx++)
             {
-                regNumber argReg   = (regNumber)((unsigned)curArgTabEntry->GetRegNum() + idx);
+                regNumber argReg   = (regNumber)((unsigned)abiInfo.GetRegNum() + idx);
                 regNumber allocReg = argNode->AsPutArgSplit()->GetRegNumByIdx(idx);
                 inst_Mov_Extend(argNode->TypeGet(), /* srcInReg */ true, argReg, allocReg, /* canSkip */ true,
                                 emitActualTypeSize(TYP_I_IMPL));
@@ -3177,7 +3175,7 @@ void CodeGen::genCall(GenTreeCall* call)
         }
         else
         {
-            regNumber argReg = curArgTabEntry->GetRegNum();
+            regNumber argReg = abiInfo.GetRegNum();
             genConsumeReg(argNode);
             inst_Mov_Extend(argNode->TypeGet(), /* srcInReg */ true, argReg, argNode->GetRegNum(), /* canSkip */ true,
                             emitActualTypeSize(TYP_I_IMPL));
@@ -3409,12 +3407,11 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
             trashedByEpilog |= genRegMask(REG_GSCOOKIE_TMP_1);
         }
 
-        for (unsigned i = 0; i < call->fgArgInfo->ArgCount(); i++)
+        for (CallArg& arg : call->gtArgs.Args())
         {
-            fgArgTabEntry* entry = call->fgArgInfo->GetArgEntry(i);
-            for (unsigned j = 0; j < entry->numRegs; j++)
+            for (unsigned j = 0; j < arg.AbiInfo.NumRegs; j++)
             {
-                regNumber reg = entry->GetRegNum(j);
+                regNumber reg = arg.AbiInfo.GetRegNum(j);
                 if ((trashedByEpilog & genRegMask(reg)) != 0)
                 {
                     JITDUMP("Tail call node:\n");
