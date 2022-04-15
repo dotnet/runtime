@@ -592,15 +592,14 @@ DacInstantiateClassByVTable(TADDR addr, ULONG32 minSize, bool throwEx)
     //
 
 #define VPTR_CLASS(name)                       \
-    if (vtAddr == g_dacImpl->m_globalBase +    \
-        g_dacGlobals.name##__vtAddr)           \
+    if (vtAddr == g_dacGlobals.name##__vtAddr) \
     {                                          \
         size = sizeof(name);                   \
         hostVtPtr = g_dacHostVtPtrs.name;      \
     }                                          \
     else
 #define VPTR_MULTI_CLASS(name, keyBase)        \
-    if (vtAddr == g_dacImpl->m_globalBase +    \
+    if (vtAddr ==                              \
         g_dacGlobals.name##__##keyBase##__mvtAddr) \
     {                                          \
         size = sizeof(name);                   \
