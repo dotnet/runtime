@@ -516,7 +516,7 @@ jobs:
           - jitstressregs0x1000
           - jitminopts
           - forcerelocs
-          - gcstress0xf
+          - gcstress0xc
         ${{ if in(parameters.testGroup, 'pgo') }}:
           scenarios:
           - nopgo

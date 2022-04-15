@@ -593,44 +593,21 @@ regMaskTP Compiler::compHelperCallKillSet(CorInfoHelpFunc helper)
 {
     switch (helper)
     {
-        case CORINFO_HELP_ASSIGN_BYREF:
-#if defined(TARGET_AMD64)
-            return RBM_RSI | RBM_RDI | RBM_CALLEE_TRASH_NOGC;
-#elif defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64)
-            return RBM_CALLEE_TRASH_WRITEBARRIER_BYREF;
-#elif defined(TARGET_X86)
-            return RBM_ESI | RBM_EDI | RBM_ECX;
-#else
-            NYI("Model kill set for CORINFO_HELP_ASSIGN_BYREF on target arch");
-            return RBM_CALLEE_TRASH;
-#endif
-
-#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64)
         case CORINFO_HELP_ASSIGN_REF:
         case CORINFO_HELP_CHECKED_ASSIGN_REF:
             return RBM_CALLEE_TRASH_WRITEBARRIER;
-#endif
+
+        case CORINFO_HELP_ASSIGN_BYREF:
+            return RBM_CALLEE_TRASH_WRITEBARRIER_BYREF;
 
         case CORINFO_HELP_PROF_FCN_ENTER:
-#ifdef RBM_PROFILER_ENTER_TRASH
             return RBM_PROFILER_ENTER_TRASH;
-#else
-            NYI("Model kill set for CORINFO_HELP_PROF_FCN_ENTER on target arch");
-#endif
 
         case CORINFO_HELP_PROF_FCN_LEAVE:
-#ifdef RBM_PROFILER_LEAVE_TRASH
             return RBM_PROFILER_LEAVE_TRASH;
-#else
-            NYI("Model kill set for CORINFO_HELP_PROF_FCN_LEAVE on target arch");
-#endif
 
         case CORINFO_HELP_PROF_FCN_TAILCALL:
-#ifdef RBM_PROFILER_TAILCALL_TRASH
             return RBM_PROFILER_TAILCALL_TRASH;
-#else
-            NYI("Model kill set for CORINFO_HELP_PROF_FCN_TAILCALL on target arch");
-#endif
 
 #ifdef TARGET_X86
         case CORINFO_HELP_ASSIGN_REF_EAX:
@@ -647,12 +624,6 @@ regMaskTP Compiler::compHelperCallKillSet(CorInfoHelpFunc helper)
         case CORINFO_HELP_CHECKED_ASSIGN_REF_ESI:
         case CORINFO_HELP_CHECKED_ASSIGN_REF_EDI:
             return RBM_EDX;
-
-#ifdef FEATURE_USE_ASM_GC_WRITE_BARRIERS
-        case CORINFO_HELP_ASSIGN_REF:
-        case CORINFO_HELP_CHECKED_ASSIGN_REF:
-            return RBM_EAX | RBM_EDX;
-#endif // FEATURE_USE_ASM_GC_WRITE_BARRIERS
 #endif
 
         case CORINFO_HELP_STOP_FOR_GC:
@@ -3301,10 +3272,10 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
         }
         C_ASSERT((char)MAX_REG_ARG == MAX_REG_ARG);
         assert(slots < INT8_MAX);
-        for (char i = 1; i < slots; i++)
+        for (int i = 1; i < slots; i++)
         {
             regArgTab[regArgNum + i].varNum = varNum;
-            regArgTab[regArgNum + i].slot   = i + 1;
+            regArgTab[regArgNum + i].slot   = static_cast<char>(i + 1);
         }
 #endif // TARGET_ARM
 
@@ -6517,17 +6488,17 @@ GenTree* CodeGen::getCallTarget(const GenTreeCall* call, CORINFO_METHOD_HANDLE* 
 // Notes:
 //   We currently use indirection cells for VSD on all platforms and for R2R calls on ARM architectures.
 //
-regNumber CodeGen::getCallIndirectionCellReg(const GenTreeCall* call)
+regNumber CodeGen::getCallIndirectionCellReg(GenTreeCall* call)
 {
     regNumber result = REG_NA;
     switch (call->GetIndirectionCellArgKind())
     {
-        case NonStandardArgKind::None:
+        case WellKnownArg::None:
             break;
-        case NonStandardArgKind::R2RIndirectionCell:
+        case WellKnownArg::R2RIndirectionCell:
             result = REG_R2R_INDIRECT_PARAM;
             break;
-        case NonStandardArgKind::VirtualStubCell:
+        case WellKnownArg::VirtualStubCell:
             result = compiler->virtualStubParamInfo->GetReg();
             break;
         default:
@@ -6535,20 +6506,11 @@ regNumber CodeGen::getCallIndirectionCellReg(const GenTreeCall* call)
     }
 
 #ifdef DEBUG
-    regNumber       foundReg = REG_NA;
-    unsigned        argCount = call->fgArgInfo->ArgCount();
-    fgArgTabEntry** argTable = call->fgArgInfo->ArgTable();
-    for (unsigned i = 0; i < argCount; i++)
+    if (call->GetIndirectionCellArgKind() != WellKnownArg::None)
     {
-        NonStandardArgKind kind = argTable[i]->nonStandardArgKind;
-        if ((kind == NonStandardArgKind::R2RIndirectionCell) || (kind == NonStandardArgKind::VirtualStubCell))
-        {
-            foundReg = argTable[i]->GetRegNum();
-            break;
-        }
+        CallArg* indirCellArg = call->gtArgs.FindWellKnownArg(call->GetIndirectionCellArgKind());
+        assert((indirCellArg != nullptr) && (indirCellArg->AbiInfo.GetRegNum() == result));
     }
-
-    assert(foundReg == result);
 #endif
 
     return result;

@@ -128,10 +128,10 @@ mono_install_runtime_load (MonoLoadFunc func)
 }
 
 MonoDomain*
-mono_runtime_load (const char *filename, const char *runtime_version)
+mono_runtime_load (const char *root_domain_name)
 {
 	g_assert (load_function);
-	return load_function (filename, runtime_version);
+	return load_function (root_domain_name);
 }
 
 /**

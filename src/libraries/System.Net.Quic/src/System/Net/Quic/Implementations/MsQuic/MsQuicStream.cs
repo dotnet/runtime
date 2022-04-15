@@ -319,20 +319,6 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         private CancellationTokenRegistration SetupWriteStartState(bool emptyBuffer, CancellationToken cancellationToken)
         {
-            if (_state.SendState == SendState.Closed)
-            {
-                throw new InvalidOperationException(SR.net_quic_writing_notallowed);
-            }
-            if (_state.SendState == SendState.Aborted)
-            {
-                if (_state.SendErrorCode != -1)
-                {
-                    throw new QuicStreamAbortedException(_state.SendErrorCode);
-                }
-
-                throw new OperationCanceledException(cancellationToken);
-            }
-
             if (cancellationToken.IsCancellationRequested)
             {
                 lock (_state)
@@ -344,6 +330,22 @@ namespace System.Net.Quic.Implementations.MsQuic
                 }
 
                 throw new OperationCanceledException(cancellationToken);
+            }
+
+            if (_state.SendState == SendState.Closed)
+            {
+                throw new InvalidOperationException(SR.net_quic_writing_notallowed);
+            }
+            if (_state.SendState == SendState.Aborted)
+            {
+                if (_state.SendErrorCode != -1)
+                {
+                    // aborted by peer
+                    throw new QuicStreamAbortedException(_state.SendErrorCode);
+                }
+
+                // aborted locally
+                throw new QuicOperationAbortedException(SR.net_quic_sending_aborted);
             }
 
             // if token was already cancelled, this would execute synchronously
@@ -376,10 +378,12 @@ namespace System.Net.Quic.Implementations.MsQuic
 
                     if (_state.SendErrorCode != -1)
                     {
+                        // aborted by peer
                         throw new QuicStreamAbortedException(_state.SendErrorCode);
                     }
 
-                    throw new OperationCanceledException(SR.net_quic_sending_aborted);
+                    // aborted locally
+                    throw new QuicOperationAbortedException(SR.net_quic_sending_aborted);
                 }
                 if (_state.SendState == SendState.ConnectionClosed)
                 {
@@ -1658,7 +1662,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             /// </summary>
             PendingRead,
 
-            // following states are final:
+            // following states are terminal:
 
             /// <summary>
             /// The peer has gracefully shutdown their sends / our receives; the stream's reads are complete.
@@ -1676,7 +1680,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             ConnectionClosed,
 
             /// <summary>
-            /// Stream is closed for reading.
+            /// Stream is closed for reading (is send-only).
             /// </summary>
             Closed
         }
@@ -1715,13 +1719,36 @@ namespace System.Net.Quic.Implementations.MsQuic
         // Closed - no transitions, set for Unidirectional read-only streams
         private enum SendState
         {
+            /// <summary>
+            /// The stream is open and there are no pending write operations.
+            /// </summary>
             None = 0,
+
+            /// <summary>
+            /// There is a pending WriteAsync operation awaiting completion notification from MsQuic.
+            /// </summary>
             Pending,
+
+            /// <summary>
+            /// Send completion notification from MsQuic was received.
+            /// </summary>
             Finished,
 
-            // Terminal states
+            // following states are terminal:
+
+            /// <summary>
+            /// User has aborted the stream, either via a cancellation token on WriteAsync(), or via AbortWrite().
+            /// </summary>
             Aborted,
+
+            /// <summary>
+            /// Connection was closed, either by user or by the peer.
+            /// </summary>
             ConnectionClosed,
+
+            /// <summary>
+            /// Stream is closed for writing (is receive-only).
+            /// </summary>
             Closed
         }
     }

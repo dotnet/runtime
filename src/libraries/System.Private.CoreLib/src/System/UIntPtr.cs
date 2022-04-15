@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers.Binary;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Numerics;
@@ -341,6 +342,30 @@ namespace System
             else
             {
                 return (nuint)BitOperations.TrailingZeroCount((uint)value);
+            }
+        }
+
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.GetShortestBitLength()" />
+        unsafe long IBinaryInteger<nuint>.GetShortestBitLength() => (sizeof(nuint) * 8) - BitOperations.LeadingZeroCount((nuint)_value);
+
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.GetByteCount()" />
+        unsafe int IBinaryInteger<nuint>.GetByteCount() => sizeof(nuint);
+
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.TryWriteLittleEndian(Span{byte}, out int)" />
+        unsafe bool IBinaryInteger<nuint>.TryWriteLittleEndian(Span<byte> destination, out int bytesWritten)
+        {
+            if (destination.Length >= sizeof(nuint))
+            {
+                nuint value = BitConverter.IsLittleEndian ? (nuint)_value : (nuint)BinaryPrimitives.ReverseEndianness((nuint)_value);
+                Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), value);
+
+                bytesWritten = sizeof(nuint);
+                return true;
+            }
+            else
+            {
+                bytesWritten = 0;
+                return false;
             }
         }
 

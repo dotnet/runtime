@@ -6,7 +6,7 @@ Reflection-free mode is a mode of the NativeAOT compiler and runtime that greatl
 * Reduced working set and better code locality - parts of the program are more tightly packed together.
 * Less metadata for people to reverese engineer - apps compiled in reflection-free mode are as hard to reverse engineer as apps written in e.g. C++.
 
-Of course the benefits come with a drawback: not all .NET code can work in such environment. In fact, most of the existing code probably won't. Use this mode with caution.
+Of course the benefits come with a drawback: not all .NET code can work in such environment. In fact, most of the existing code probably won't. Use this mode with caution. https://github.com/dotnet/runtime/issues/67193 tracks potential improvements of this mode.
 
 To enable reflection-free mode in a project that is already using CoreRT, add the following property to a `PropertyGroup` in your project file:
 

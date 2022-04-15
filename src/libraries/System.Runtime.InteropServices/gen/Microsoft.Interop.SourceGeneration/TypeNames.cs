@@ -19,6 +19,10 @@ namespace Microsoft.Interop
 
         public const string CustomTypeMarshallerAttributeGenericPlaceholder = "System.Runtime.InteropServices.CustomTypeMarshallerAttribute.GenericPlaceholder";
 
+        public const string AnsiStringMarshaller = "System.Runtime.InteropServices.AnsiStringMarshaller";
+        public const string Utf16StringMarshaller = "System.Runtime.InteropServices.Utf16StringMarshaller";
+        public const string Utf8StringMarshaller = "System.Runtime.InteropServices.Utf8StringMarshaller";
+
         public const string LCIDConversionAttribute = "System.Runtime.InteropServices.LCIDConversionAttribute";
 
         public const string SuppressGCTransitionAttribute = "System.Runtime.InteropServices.SuppressGCTransitionAttribute";
