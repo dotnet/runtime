@@ -1700,42 +1700,18 @@ void Lowering::ContainCheckBinary(GenTreeOp* node)
 #ifdef TARGET_ARM64
     if (comp->opts.OptimizationEnabled() && varTypeIsIntegral(node) && !node->isContained())
     {
-        // Find "a * b + c" or "c + a * b" in order to emit MADD/MSUB
-        if (node->OperIs(GT_ADD) && !node->gtOverflow() && (op1->OperIs(GT_MUL) || op2->OperIs(GT_MUL)))
+        // Find "a + b * c" in order to emit MADD
+        if (node->OperIs(GT_ADD) && !node->gtOverflow() && op2->OperIs(GT_MUL) && !op2->isContained() &&
+                 !op2->gtOverflow() && varTypeIsIntegral(op2))
         {
-            GenTree* mul;
-            GenTree* c;
-            if (op1->OperIs(GT_MUL))
-            {
-                mul = op1;
-                c   = op2;
-            }
-            else
-            {
-                mul = op2;
-                c   = op1;
-            }
+            GenTree* a = op1;
+            GenTree* b = op2->gtGetOp1();
+            GenTree* c = op2->gtGetOp2();
 
-            GenTree* a = mul->gtGetOp1();
-            GenTree* b = mul->gtGetOp2();
-
-            if (!mul->isContained() && !mul->gtOverflow() && !a->isContained() && !b->isContained() &&
-                !c->isContained() && varTypeIsIntegral(mul))
+            if (!a->isContained() && !b->isContained() && !c->isContained())
             {
-                if (a->OperIs(GT_NEG) && !a->gtGetOp1()->isContained() && !a->gtGetOp1()->IsRegOptional())
-                {
-                    // "-a * b + c" to MSUB
-                    MakeSrcContained(mul, a);
-                }
-                if (b->OperIs(GT_NEG) && !b->gtGetOp1()->isContained())
-                {
-                    // "a * -b + c" to MSUB
-                    MakeSrcContained(mul, b);
-                }
-                // If both 'a' and 'b' are GT_NEG - MADD will be emitted.
-
                 node->ChangeOper(GT_MADD);
-                MakeSrcContained(node, mul);
+                MakeSrcContained(node, op2);
             }
         }
         // Find "a - b * c" in order to emit MSUB
