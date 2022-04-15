@@ -20,7 +20,20 @@ namespace Microsoft.WebAssembly.Diagnostics
         protected ConcurrentQueue<byte[]> pending;
 
         public Task? CurrentSend { get { return current_send; } }
-        public DevToolsQueueBase()
+
+        public static DevToolsQueueBase Create(TcpClient tcpClient, WebSocket webSocket)
+        {
+            if (tcpClient is null && webSocket is null)
+                throw new ArgumentException($"Both {nameof(tcpClient)}, and {nameof(webSocket)} cannot be null");
+            if (tcpClient is not null && webSocket is not null)
+                throw new ArgumentException($"Both {nameof(tcpClient)}, and {nameof(webSocket)} cannot be non-null");
+
+            return tcpClient is not null
+                        ? new DevToolsQueueFirefox(tcpClient)
+                        : new DevToolsQueue(webSocket!);
+        }
+
+        protected DevToolsQueueBase()
         {
             pending = new ConcurrentQueue<byte[]>();
         }
@@ -49,7 +62,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         public DevToolsQueue(WebSocket sock)
         {
             this.Ws = sock;
-            pending = new ConcurrentQueue<byte[]>();
+            // pending = new ConcurrentQueue<byte[]>();
         }
 
         public override bool TryPumpIfCurrentCompleted(CancellationToken token, [NotNullWhen(true)] out Task? sendTask)

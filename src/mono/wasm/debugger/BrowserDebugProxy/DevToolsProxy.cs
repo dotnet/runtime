@@ -5,7 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Net;
 using System.Net.Sockets;
 using System.Net.WebSockets;
 using System.Text;
@@ -23,8 +22,9 @@ namespace Microsoft.WebAssembly.Diagnostics
         protected TaskCompletionSource<bool> side_exception = new TaskCompletionSource<bool>();
         protected TaskCompletionSource client_initiated_close = new TaskCompletionSource();
         protected Dictionary<MessageId, TaskCompletionSource<Result>> pending_cmds = new Dictionary<MessageId, TaskCompletionSource<Result>>();
-        private ClientWebSocket browser;
-        private WebSocket ide;
+        private AbstractConnection browser;
+        // private WebSocket ide;
+        private AbstractConnection ide;
         internal int next_cmd_id;
         internal readonly ChannelWriter<Task> _channelWriter;
         internal readonly ChannelReader<Task> _channelReader;
@@ -52,51 +52,13 @@ namespace Microsoft.WebAssembly.Diagnostics
             return Task.FromResult(false);
         }
 
-        protected async Task<string> ReadOne(WebSocket socket, CancellationToken token)
-        {
-            byte[] buff = new byte[4000];
-            var mem = new MemoryStream();
-            try
-            {
-                while (true)
-                {
-                    if (socket.State != WebSocketState.Open)
-                    {
-                        Log("error", $"DevToolsProxy: Socket is no longer open.");
-                        client_initiated_close.TrySetResult();
-                        return null;
-                    }
 
-                    WebSocketReceiveResult result = await socket.ReceiveAsync(new ArraySegment<byte>(buff), token);
-                    if (result.MessageType == WebSocketMessageType.Close)
-                    {
-                        client_initiated_close.TrySetResult();
-                        return null;
-                    }
-
-                    mem.Write(buff, 0, result.Count);
-
-                    if (result.EndOfMessage)
-                        return Encoding.UTF8.GetString(mem.GetBuffer(), 0, (int)mem.Length);
-                }
-            }
-            catch (WebSocketException e)
-            {
-                if (e.WebSocketErrorCode == WebSocketError.ConnectionClosedPrematurely)
-                {
-                    client_initiated_close.TrySetResult();
-                    return null;
-                }
-            }
-            return null;
-        }
-
-        private DevToolsQueueBase GetQueueForSocket(WebSocket ws)
+        private DevToolsQueueBase GetQueueForConnection(WebSocket ws)
         {
             return queues.FirstOrDefault(q => (q as DevToolsQueue).Ws == ws);
         }
 
-        protected DevToolsQueueBase GetQueueForTcpClient(TcpClient tc)
+        protected DevToolsQueueBase GetQueueForConnection(TcpClient tc)
         {
             return queues.FirstOrDefault(q => (q as DevToolsQueueFirefox).Tc == tc);
         }
@@ -106,17 +68,41 @@ namespace Microsoft.WebAssembly.Diagnostics
             return queues.FirstOrDefault(q => q.CurrentSend == task);
         }
 
+        protected Task Send(AbstractConnection conn, JObject o, CancellationToken token)
+        {
+            if (conn is WebSocketConnection wsc)
+                return Send(wsc.WebSocket, o, token);
+            if (conn is TcpClientConnection tcc)
+                return Send(tcc.TcpClient, o, token);
+            throw new NotImplementedException();
+        }
+
         internal async Task Send(WebSocket to, JObject o, CancellationToken token)
         {
-            string sender = browser == to ? "Send-browser" : "Send-ide";
+            // string sender = browser == to ? "Send-browser" : "Send-ide";
 
             //if (method != "Debugger.scriptParsed" && method != "Runtime.consoleAPICalled")
-            Log("protocol", $"{sender}: " + JsonConvert.SerializeObject(o));
+            // FIXME: AJ:
+            // Log("protocol", $"{sender}: " + JsonConvert.SerializeObject(o));
+            Log("protocol", JsonConvert.SerializeObject(o));
             byte[] bytes = Encoding.UTF8.GetBytes(o.ToString());
 
-            DevToolsQueueBase queue = GetQueueForSocket(to);
+            DevToolsQueueBase queue = GetQueueForConnection(to);
 
             Task task = queue.Send(bytes, token);
+            if (task != null)
+                await _channelWriter.WriteAsync(task, token);
+        }
+
+        internal async Task Send(TcpClient to, JObject o, CancellationToken token)
+        {
+            var msg = o.ToString(Formatting.None);
+            var bytes = Encoding.UTF8.GetBytes(msg);
+            var bytesWithHeader = Encoding.UTF8.GetBytes($"{bytes.Length}:").Concat(bytes).ToArray();
+
+            DevToolsQueueBase queue = GetQueueForConnection(to);
+
+            Task task = queue.Send(bytesWithHeader, token);
             if (task != null)
                 await _channelWriter.WriteAsync(task, token);
         }
@@ -268,23 +254,30 @@ namespace Microsoft.WebAssembly.Diagnostics
         public async Task Run(Uri browserUri, WebSocket ideSocket)
         {
             Log("debug", $"DevToolsProxy: Starting for browser at {browserUri}");
-            using (this.ide = ideSocket)
+            using (ide = AbstractConnection.Create(webSocket: ideSocket, logger: logger))
             {
                 Log("verbose", $"DevToolsProxy: Proxy waiting for connection to the browser at {browserUri}");
-                queues.Add(new DevToolsQueue(this.ide));
-                using (this.browser = new ClientWebSocket())
+                // queues.Add(new DevToolsQueue(this.ide));
+                queues.Add(ide.NewQueue());
+                using (browser = AbstractConnection.Create(webSocket: new ClientWebSocket(), logger: logger))
                 {
-                    this.browser.Options.KeepAliveInterval = Timeout.InfiniteTimeSpan;
-                    await this.browser.ConnectAsync(browserUri, CancellationToken.None);
-                    queues.Add(new DevToolsQueue(this.browser));
+                    if (browser is WebSocketConnection wsc && wsc.WebSocket is ClientWebSocket cws)
+                    {
+                        cws.Options.KeepAliveInterval = Timeout.InfiniteTimeSpan;
+                        await cws.ConnectAsync(browserUri, CancellationToken.None);
+                    }
+                    // queues.Add(new DevToolsQueue(this.browser));
+                    queues.Add(browser.NewQueue());
 
                     Log("verbose", $"DevToolsProxy: Proxy connected to the browser at {browserUri}");
                     var x = new CancellationTokenSource();
 
                     List<Task> pending_ops = new();
 
-                    pending_ops.Add(ReadOne(browser, x.Token));
-                    pending_ops.Add(ReadOne(ide, x.Token));
+                    // pending_ops.Add(ReadOne(browser, x.Token));
+                    // pending_ops.Add(ReadOne(ide, x.Token));
+                    pending_ops.Add(browser.ReadOne(client_initiated_close, x.Token));
+                    pending_ops.Add(ide.ReadOne(client_initiated_close, x.Token));
                     pending_ops.Add(side_exception.Task);
                     pending_ops.Add(client_initiated_close.Task);
                     Task<bool> readerTask = _channelReader.WaitToReadAsync(x.Token).AsTask();
@@ -321,7 +314,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                                 string msg = ((Task<string>)completedTask).Result;
                                 if (msg != null)
                                 {
-                                    pending_ops[0] = ReadOne(browser, x.Token); //queue next read
+                                    // pending_ops[0] = ReadOne(browser, x.Token); //queue next read
+                                    pending_ops[0] = browser.ReadOne(client_initiated_close, x.Token);
                                     Task newTask = ProcessBrowserMessage(msg, x.Token);
                                     if (newTask != null)
                                         pending_ops.Add(newTask);
@@ -332,7 +326,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                                 string msg = ((Task<string>)completedTask).Result;
                                 if (msg != null)
                                 {
-                                    pending_ops[1] = ReadOne(ide, x.Token); //queue next read
+                                    // pending_ops[1] = ReadOne(ide, x.Token); //queue next read
+                                    pending_ops[1] = ide.ReadOne(client_initiated_close, x.Token);
                                     Task newTask = ProcessIdeMessage(msg, x.Token);
                                     if (newTask != null)
                                         pending_ops.Add(newTask);
@@ -396,6 +391,160 @@ namespace Microsoft.WebAssembly.Diagnostics
                     logger.LogDebug(msg);
                     break;
             }
+        }
+    }
+
+    // internal class IDEConnection
+    // {
+    //     public TcpClient TcpClient { get; init; }
+    //     public WebSocket WebSocket { get; init; }
+
+    //     public IDEConnection(TcpClient tcpClient = null, WebSocket webSocket = null)
+    //     {
+    //         if (tcpClient is null && webSocket is null)
+    //             throw new ArgumentException($"Both {nameof(tcpClient)}, and {nameof(webSocket)} cannot be null");
+    //         if (tcpClient is not null && webSocket is not null)
+    //             throw new ArgumentException($"Both {nameof(tcpClient)}, and {nameof(webSocket)} cannot be non-null");
+
+    //         TcpClient = tcpClient;
+    //         WebSocket = webSocket;
+    //     }
+
+    //     public DevToolsQueueBase NewQueue()
+    //         => TcpClient is null
+    //                 ? new DevToolsQueue(WebSocket)
+    //                 : new DevToolsQueueFirefox(TcpClient);
+    // }
+
+    internal abstract class AbstractConnection : IDisposable
+    {
+        public static AbstractConnection Create(ILogger logger, TcpClient tcpClient = null, WebSocket webSocket = null)
+        {
+            if (tcpClient is null && webSocket is null)
+                throw new ArgumentException($"Both {nameof(tcpClient)}, and {nameof(webSocket)} cannot be null");
+            if (tcpClient is not null && webSocket is not null)
+                throw new ArgumentException($"Both {nameof(tcpClient)}, and {nameof(webSocket)} cannot be non-null");
+
+            return tcpClient is not null
+                        ? new WebSocketConnection(webSocket, logger)
+                        : new TcpClientConnection(tcpClient, logger);
+        }
+
+        public abstract DevToolsQueueBase NewQueue();
+        public virtual async Task<string> ReadOne(TaskCompletionSource client_initiated_close, CancellationToken token)
+                => await Task.FromResult<string>(null);
+
+        public virtual void Dispose()
+        {}
+    }
+
+    internal class TcpClientConnection : AbstractConnection
+    {
+        public TcpClient TcpClient { get; init; }
+        private readonly ILogger _logger;
+
+        public TcpClientConnection(TcpClient tcpClient, ILogger logger)
+        {
+            TcpClient = tcpClient ?? throw new ArgumentNullException(nameof(tcpClient));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        }
+
+        public override DevToolsQueueBase NewQueue() => new DevToolsQueueFirefox(TcpClient);
+
+        public override async Task<string> ReadOne(TaskCompletionSource client_initiated_close, CancellationToken token)
+        {
+#pragma warning disable CA1835 // Prefer the 'Memory'-based overloads for 'ReadAsync' and 'WriteAsync'
+            try
+            {
+                while (true)
+                {
+                    byte[] buffer = new byte[1000000];
+                    var stream = TcpClient.GetStream();
+                    int bytesRead = 0;
+                    while (bytesRead == 0 || Convert.ToChar(buffer[bytesRead - 1]) != ':')
+                    {
+                        var readLen = await stream.ReadAsync(buffer, bytesRead, 1, token);
+                        bytesRead+=readLen;
+                    }
+                    var str = Encoding.UTF8.GetString(buffer, 0, bytesRead - 1);
+                    int len = int.Parse(str);
+                    bytesRead = await stream.ReadAsync(buffer, 0, len, token);
+                    while (bytesRead != len)
+                        bytesRead += await stream.ReadAsync(buffer, bytesRead, len - bytesRead, token);
+                    str = Encoding.UTF8.GetString(buffer, 0, len);
+                    return str;
+                }
+            }
+            catch (Exception)
+            {
+                client_initiated_close.TrySetResult();
+                return null;
+            }
+        }
+
+        public override void Dispose()
+        {
+            TcpClient.Dispose();
+            base.Dispose();
+        }
+    }
+
+    internal class WebSocketConnection : AbstractConnection
+    {
+        public WebSocket WebSocket { get; init; }
+        private readonly ILogger _logger;
+
+        public WebSocketConnection(WebSocket webSocket, ILogger logger)
+        {
+            WebSocket = webSocket ?? throw new ArgumentNullException(nameof(webSocket));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        }
+
+        public override DevToolsQueueBase NewQueue() => new DevToolsQueue(WebSocket);
+
+        public override async Task<string> ReadOne(TaskCompletionSource client_initiated_close, CancellationToken token)
+        {
+            byte[] buff = new byte[4000];
+            var mem = new MemoryStream();
+            try
+            {
+                while (true)
+                {
+                    if (WebSocket.State != WebSocketState.Open)
+                    {
+                        _logger.LogError($"DevToolsProxy: Socket is no longer open.");
+                        client_initiated_close.TrySetResult();
+                        return null;
+                    }
+
+                    WebSocketReceiveResult result = await WebSocket.ReceiveAsync(new ArraySegment<byte>(buff), token);
+                    if (result.MessageType == WebSocketMessageType.Close)
+                    {
+                        client_initiated_close.TrySetResult();
+                        return null;
+                    }
+
+                    mem.Write(buff, 0, result.Count);
+
+                    if (result.EndOfMessage)
+                        return Encoding.UTF8.GetString(mem.GetBuffer(), 0, (int)mem.Length);
+                }
+            }
+            catch (WebSocketException e)
+            {
+                if (e.WebSocketErrorCode == WebSocketError.ConnectionClosedPrematurely)
+                {
+                    client_initiated_close.TrySetResult();
+                    return null;
+                }
+            }
+            return null;
+        }
+
+        public override void Dispose()
+        {
+            WebSocket.Dispose();
+            base.Dispose();
         }
     }
 }

@@ -19,8 +19,8 @@ namespace Microsoft.WebAssembly.Diagnostics;
 internal class FirefoxMonoProxy : MonoProxy
 {
     private readonly int portBrowser;
-    private TcpClient ide;
-    private TcpClient browser;
+    private AbstractConnection ide;
+    private AbstractConnection browser;
 
     public FirefoxMonoProxy(ILoggerFactory loggerFactory, int portBrowser) : base(loggerFactory, null)
     {
@@ -35,63 +35,39 @@ internal class FirefoxMonoProxy : MonoProxy
         throw new ArgumentException($"Invalid Session: \"{sessionId}\"", nameof(sessionId));
     }
 
-    private async Task<string> ReadOne(TcpClient socket, CancellationToken token)
-    {
-#pragma warning disable CA1835 // Prefer the 'Memory'-based overloads for 'ReadAsync' and 'WriteAsync'
-        try
-        {
-            while (true)
-            {
-                byte[] buffer = new byte[1000000];
-                var stream = socket.GetStream();
-                int bytesRead = 0;
-                while (bytesRead == 0 || Convert.ToChar(buffer[bytesRead - 1]) != ':')
-                {
-                    var readLen = await stream.ReadAsync(buffer, bytesRead, 1, token);
-                    bytesRead+=readLen;
-                }
-                var str = Encoding.UTF8.GetString(buffer, 0, bytesRead - 1);
-                int len = int.Parse(str);
-                bytesRead = await stream.ReadAsync(buffer, 0, len, token);
-                while (bytesRead != len)
-                    bytesRead += await stream.ReadAsync(buffer, bytesRead, len - bytesRead, token);
-                str = Encoding.UTF8.GetString(buffer, 0, len);
-                return str;
-            }
-        }
-        catch (Exception)
-        {
-            client_initiated_close.TrySetResult();
-            return null;
-        }
-    }
+    // private Task<string> ReadOne(IDEConnection conn, CancellationToken token)
+    //     => conn.TcpClient is not null
+    //                 ? ReadOne(conn.TcpClient, token)
+    //                 : ReadOne(conn.WebSocket, token);
 
     public async Task Run(TcpClient ideClient = null, WebSocket ideWebSocket = null)
     {
-        if (ideClient is null && ideWebSocket is null)
-            throw new ArgumentException($"Both {nameof(ideClient)}, and {nameof(ideWebSocket)} cannot be null");
-        if (ideClient is not null && ideWebSocket is not null)
-            throw new ArgumentException($"Both {nameof(ideClient)}, and {nameof(ideWebSocket)} cannot be non-null");
-
-        ide = ideClient;
-        browser = new TcpClient();
+        ide = AbstractConnection.Create(ideClient, ideWebSocket, logger);
+        TcpClient browserClient = new TcpClient();
+        browser = AbstractConnection.Create(tcpClient: browserClient, logger: logger);
         logger.LogDebug($"Run: Connecting to 127.0.0.1:{portBrowser}");
-        await browser.ConnectAsync("127.0.0.1", portBrowser);
-        if (ide != null)
-            queues.Add(new DevToolsQueueFirefox(this.ide));
-        else if (ideWebSocket != null)
-            queues.Add(new DevToolsQueue(ideWebSocket));
-        queues.Add(new DevToolsQueueFirefox(this.browser));
+        await browserClient.ConnectAsync("127.0.0.1", portBrowser);
+        // queues.Add(ide.NewQueue());
+        queues.Add(DevToolsQueueBase.Create(ideClient, ideWebSocket));
+        // if (ide != null)
+        //     queues.Add(new DevToolsQueueFirefox(this.ide));
+        // else if (ideWebSocket != null)
+        //     queues.Add(new DevToolsQueue(ideWebSocket));
+        // queues.Add(new DevToolsQueueFirefox(this.browser));
+        queues.Add(browser.NewQueue());
 
         var x = new CancellationTokenSource();
 
         List<Task> pending_ops = new();
 
-        pending_ops.Add(ReadOne(browser, x.Token));
-        if (ideWebSocket != null)
-            pending_ops.Add(ReadOne(ideWebSocket, x.Token));
-        else if (ide != null)
-            pending_ops.Add(ReadOne(ide, x.Token));
+            pending_ops.Add(browser.ReadOne(client_initiated_close, x.Token));
+            pending_ops.Add(ide.ReadOne(client_initiated_close, x.Token));
+        // pending_ops.Add(ReadOne(browser, x.Token));
+        // pending_ops.Add(ReadOne(ide, x.Token));
+        // if (ideWebSocket != null)
+        //     pending_ops.Add(ReadOne(ideWebSocket, x.Token));
+        // else if (ide != null)
+        //     pending_ops.Add(ReadOne(ide, x.Token));
         pending_ops.Add(side_exception.Task);
         pending_ops.Add(client_initiated_close.Task);
         Task<bool> readerTask = _channelReader.WaitToReadAsync(x.Token).AsTask();
@@ -116,7 +92,8 @@ internal class FirefoxMonoProxy : MonoProxy
                     string msg = ((Task<string>)completedTask).Result;
                     if (msg != null)
                     {
-                        pending_ops[0] = ReadOne(browser, x.Token); //queue next read
+                        // pending_ops[0] = browser.ReadOne() ReadOne(browser, x.Token); //queue next read
+                        pending_ops[0] = browser.ReadOne(client_initiated_close, x.Token);
                         Task newTask = ProcessBrowserMessage(msg, x.Token);
                         if (newTask != null)
                             pending_ops.Add(newTask);
@@ -127,7 +104,8 @@ internal class FirefoxMonoProxy : MonoProxy
                     string msg = ((Task<string>)completedTask).Result;
                     if (msg != null)
                     {
-                        pending_ops[1] = ReadOne(ide, x.Token); //queue next read
+                        // pending_ops[1] = ReadOne(ide, x.Token); //queue next read
+                        pending_ops[1] = ide.ReadOne(client_initiated_close, x.Token);
                         Task newTask = ProcessIdeMessage(msg, x.Token);
                         if (newTask != null)
                             pending_ops.Add(newTask);
@@ -163,19 +141,6 @@ internal class FirefoxMonoProxy : MonoProxy
             if (!x.IsCancellationRequested)
                 x.Cancel();
         }
-    }
-
-    internal async Task Send(TcpClient to, JObject o, CancellationToken token)
-    {
-        var msg = o.ToString(Formatting.None);
-        var bytes = Encoding.UTF8.GetBytes(msg);
-        var bytesWithHeader = Encoding.UTF8.GetBytes($"{bytes.Length}:").Concat(bytes).ToArray();
-
-        DevToolsQueueBase queue = GetQueueForTcpClient(to);
-
-        Task task = queue.Send(bytesWithHeader, token);
-        if (task != null)
-            await _channelWriter.WriteAsync(task, token);
     }
 
     internal override async Task OnEvent(SessionId sessionId, JObject parms, CancellationToken token)
@@ -227,7 +192,7 @@ internal class FirefoxMonoProxy : MonoProxy
         var res = JObject.Parse(msg);
 
         //if (method != "Debugger.scriptParsed" && method != "Runtime.consoleAPICalled")
-        Log("protocol", $"browser: {msg}");
+        Log("protocol", $"from-browser: {msg}");
 
         if (res["prototype"] != null || res["frames"] != null)
         {
@@ -316,11 +281,11 @@ internal class FirefoxMonoProxy : MonoProxy
             else
                 msgId = new FirefoxMessageId(sessionId.sessionId, 0, args["to"].Value<string>());
             pending_cmds[msgId] = tcs;
-            await Send(this.browser, args, token);
+            await Send(browser, args, token);
 
             return await tcs.Task;
         }
-        await Send(this.browser, args, token);
+        await Send(browser, args, token);
         return await Task.FromResult(Result.OkFromObject(new { }));
     }
 
@@ -333,8 +298,8 @@ internal class FirefoxMonoProxy : MonoProxy
     internal override Task SendEventInternal(SessionId sessionId, string method, JObject args, CancellationToken token)
     {
         if (method != "")
-            return Send(this.ide, new JObject(JObject.FromObject(new {type = method})), token);
-        return Send(this.ide, args, token);
+            return Send(ide, new JObject(JObject.FromObject(new {type = method})), token);
+        return Send(ide, args, token);
     }
 
     protected override async Task<bool> AcceptEvent(SessionId sessionId, JObject args, CancellationToken token)

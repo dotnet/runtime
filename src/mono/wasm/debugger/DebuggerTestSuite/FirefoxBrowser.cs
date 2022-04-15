@@ -68,7 +68,7 @@ internal class FirefoxBrowser : BrowserBase
         {
             ideSocket = await context.WebSockets.AcceptWebSocketAsync();
             var proxyFirefox = new FirefoxProxyServer(proxyLoggerFactory, remoteDebuggingPort);
-            await proxyFirefox.RunForTests(6002, ideSocket);
+            await proxyFirefox.RunForTests(ideSocket);
         }
         catch (Exception ex)
         {

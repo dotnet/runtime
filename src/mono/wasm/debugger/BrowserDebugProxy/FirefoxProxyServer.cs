@@ -38,23 +38,9 @@ public class FirefoxProxyServer
         }
     }
 
-    public async Task RunForTests(int proxyPort, WebSocket ideWebSocket)
+    public async Task RunForTests(WebSocket ideWebSocket)
     {
-        var _server = new TcpListener(IPAddress.Parse("127.0.0.1"), proxyPort);
-        _server.Start();
-        proxyPort = ((IPEndPoint)_server.LocalEndpoint).Port;
-        Console.WriteLine($"Now listening on: 127.0.0.1:{proxyPort} for Firefox debugging");
-        TcpClient newClient = await _server.AcceptTcpClientAsync();
-        try {
-            var monoProxy = new FirefoxMonoProxy(loggerFactory, portBrowser);
-            await monoProxy.Run(ideWebSocket: ideWebSocket);
-        }
-        catch (Exception)
-        {
-            _server.Stop();
-            newClient.Dispose();
-            throw;
-        }
-        _server.Stop();
+        var monoProxy = new FirefoxMonoProxy(loggerFactory, portBrowser);
+        await monoProxy.Run(ideWebSocket: ideWebSocket);
     }
 }
