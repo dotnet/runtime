@@ -412,7 +412,7 @@ namespace System
 
             if (expectedCount != actualCount)
             {
-                throw new XunitException($"Expected count: {expectedCount}{Environment.NewLine}Actual count: {actualCount}");
+                Throw();
             }
 
             for (var i = 0; i < expectedCount; i++)
@@ -420,15 +420,35 @@ namespace System
                 T currentExpectedItem = expectedArray[i];
                 if (!actualItemCountMapping.TryGetValue(currentExpectedItem, out ItemCount countInfo))
                 {
-                    throw new XunitException($"Expected: {currentExpectedItem} but not found");
+                    Throw();
                 }
 
                 if (countInfo.Remain == 0)
                 {
-                    throw new XunitException($"Collections are not equal.{Environment.NewLine}Totally {countInfo.Original} {currentExpectedItem} in actual collection but expect more {currentExpectedItem}");
+                    Throw();
                 }
 
                 countInfo.Remain--;
+            }
+
+            void Throw()
+            {
+                string exMessage = $"Collections are not equal.{Environment.NewLine}";
+                exMessage += $"Expected length: {expectedCount}, actual length: {actualCount}{Environment.NewLine}";
+
+                exMessage += $"Expected elements:{Environment.NewLine}";
+                foreach (T e in expected)
+                {
+                    exMessage += $"{e.ToString()}{Environment.NewLine}";
+                }
+
+                exMessage += $"Actual elements:{Environment.NewLine}";
+                foreach (T a in actual)
+                {
+                    exMessage += $"{a.ToString()}{Environment.NewLine}";
+                }
+
+                throw new XunitException(exMessage);
             }
         }
 

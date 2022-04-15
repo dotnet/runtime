@@ -462,8 +462,45 @@ namespace System.IO.Tests
 
         }
 
+        internal static void ExpectEvents(FileSystemWatcher watcher, Action action, Action cleanup, IEnumerable<FiredEvent> expectedEvents, int expectedEventCount, WatcherChangeTypes eventTypesToIgnore)
+        {
+            int attemptsCompleted = 0;
+            FileSystemWatcher newWatcher = watcher;
+
+            while (true)
+            {
+                if (attemptsCompleted > 1)
+                {
+                    newWatcher = RecreateWatcher(newWatcher);
+                    Thread.Sleep(RetryDelayMilliseconds);
+                }
+
+                IEnumerable<FiredEvent> actualEvents = ExpectEvents(newWatcher, expectedEventCount, action);
+
+                try
+                {
+                    // Remove events as there is racecondition on macOS.
+                    // When creating directory and then observe parent folder, watcher receives Create event altought it is not registered yet.
+                    // When creating file and then observe parent folder, watcher receives Create and Changed event altought it is not registered yet.
+                    actualEvents = actualEvents.Where(e => e.EventType.HasFlag(eventTypesToIgnore));
+
+                    AssertExtensions.CollectionEqual(expectedEvents, actualEvents, EqualityComparer<FiredEvent>.Default);
+                    break;
+                }
+                catch (XunitException)
+                {
+                    attemptsCompleted++;
+                    if (attemptsCompleted == DefaultAttemptsForExpectedEvent)
+                    {
+                        throw;
+                    }
+                    cleanup();
+                }
+            }
+        }
+
         // Observe until an expected count of events is triggered, otherwise fail. Return all collected events.
-        internal static List<FiredEvent> ExpectEvents(FileSystemWatcher watcher, int expectedEvents, Action action)
+        private static List<FiredEvent> ExpectEvents(FileSystemWatcher watcher, int expectedEvents, Action action)
         {
             using var eventsOccured = new AutoResetEvent(false);
             var eventsOrrures = 0;
@@ -515,6 +552,15 @@ namespace System.IO.Tests
                     eventsOccured.Set();
                 }
             }
+        }
+
+        internal static void TryDeleteDirectory(string path)
+        {
+            try
+            {
+                Directory.Delete(path);
+            }
+            catch (DirectoryNotFoundException) { }
         }
 
         internal class TestISynchronizeInvoke : ISynchronizeInvoke
