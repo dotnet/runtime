@@ -24,7 +24,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             .WithLanguageVersion(LanguageVersion.Preview);
 
 #if NETCOREAPP
-        private static readonly Assembly systemRuntimeAssembly = System.Runtime.Loader.AssemblyLoadContext.Default.LoadFromAssemblyName(new AssemblyName("System.Runtime"));
+        private static readonly Assembly systemRuntimeAssembly = Assembly.Load(new AssemblyName("System.Runtime"));
 #endif
 
         public static Compilation CreateCompilation(
