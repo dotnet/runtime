@@ -117,37 +117,33 @@ namespace System.Diagnostics.Metrics
         /// <param name="measurementCallback">The callback which can be used to get measurement recording of numeric type T.</param>
         public void SetMeasurementEventCallback<T>(MeasurementCallback<T>? measurementCallback) where T : struct
         {
-            if (measurementCallback is MeasurementCallback<byte> byteCallback)
+            if (measurementCallback is null)
+                measurementCallback = (instrument, measurement, tags, state) => { /* no-op */};
+            switch (typeof(T))
             {
-                _byteMeasurementCallback = (measurementCallback is null) ? ((instrument, measurement, tags, state) => { /* no-op */}) : byteCallback;
-            }
-            else if (measurementCallback is MeasurementCallback<int> intCallback)
-            {
-                _intMeasurementCallback = (measurementCallback is null) ? ((instrument, measurement, tags, state) => { /* no-op */}) : intCallback;
-            }
-            else if (measurementCallback is MeasurementCallback<float> floatCallback)
-            {
-                _floatMeasurementCallback = (measurementCallback is null) ? ((instrument, measurement, tags, state) => { /* no-op */}) : floatCallback;
-            }
-            else if (measurementCallback is MeasurementCallback<double> doubleCallback)
-            {
-                _doubleMeasurementCallback = (measurementCallback is null) ? ((instrument, measurement, tags, state) => { /* no-op */}) : doubleCallback;
-            }
-            else if (measurementCallback is MeasurementCallback<decimal> decimalCallback)
-            {
-                _decimalMeasurementCallback = (measurementCallback is null) ? ((instrument, measurement, tags, state) => { /* no-op */}) : decimalCallback;
-            }
-            else if (measurementCallback is MeasurementCallback<short> shortCallback)
-            {
-                _shortMeasurementCallback = (measurementCallback is null) ? ((instrument, measurement, tags, state) => { /* no-op */}) : shortCallback;
-            }
-            else if (measurementCallback is MeasurementCallback<long> longCallback)
-            {
-                _longMeasurementCallback = (measurementCallback is null) ? ((instrument, measurement, tags, state) => { /* no-op */}) : longCallback;
-            }
-            else
-            {
-                throw new InvalidOperationException(SR.Format(SR.UnsupportedType, typeof(T)));
+                case var type when type == typeof(byte):
+                    _byteMeasurementCallback = (MeasurementCallback<byte>)(object)measurementCallback;
+                    break;
+                case var type when type == typeof(int):
+                    _intMeasurementCallback = (MeasurementCallback<int>)(object)measurementCallback;
+                    break;
+                case var type when type == typeof(float):
+                    _floatMeasurementCallback = (MeasurementCallback<float>)(object)measurementCallback;
+                    break;
+                case var type when type == typeof(double):
+                    _doubleMeasurementCallback = (MeasurementCallback<double>)(object)measurementCallback;
+                    break;
+                case var type when type == typeof(decimal):
+                    _decimalMeasurementCallback = (MeasurementCallback<decimal>)(object)measurementCallback;
+                    break;
+                case var type when type == typeof(short):
+                    _shortMeasurementCallback = (MeasurementCallback<short>)(object)measurementCallback;
+                    break;
+                case var type when type == typeof(long):
+                    _longMeasurementCallback = (MeasurementCallback<long>)(object)measurementCallback;
+                    break;
+                default:
+                    throw new InvalidOperationException(SR.Format(SR.UnsupportedType, typeof(T)));
             }
         }
 
