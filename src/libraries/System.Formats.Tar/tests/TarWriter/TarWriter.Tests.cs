@@ -35,6 +35,9 @@ namespace System.Formats.Tar.Tests
         {
             using MemoryStream archiveStream = new MemoryStream();
 
+            using TarWriter writerDefault = new TarWriter(archiveStream, leaveOpen: true);
+            Assert.Equal(TarFormat.Pax, writerDefault.Format);
+
             using TarWriter writerV7 = new TarWriter(archiveStream, TarFormat.V7, leaveOpen: true);
             Assert.Equal(TarFormat.V7, writerV7.Format);
 

@@ -35,30 +35,33 @@ namespace System.Formats.Tar.Tests
 
                 Assert.Equal(DefaultDeviceMajor, posix.DeviceMajor);
                 Assert.Equal(DefaultDeviceMinor, posix.DeviceMinor);
-            }
 
-            if (entry is PaxTarEntry pax)
-            {
-                if (pax.ExtendedAttributes.ContainsKey("atime"))
+                if (entry is PaxTarEntry pax)
                 {
-                    long longATime = long.Parse(pax.ExtendedAttributes["atime"]);
-                    DateTimeOffset actualATime = DateTimeOffset.FromUnixTimeSeconds(longATime);
+                    Assert.True(pax.ExtendedAttributes.Count >= 4);
+                    Assert.Contains("path", pax.ExtendedAttributes);
+                    Assert.Contains("mtime", pax.ExtendedAttributes);
+                    Assert.Contains("atime", pax.ExtendedAttributes);
+                    Assert.Contains("ctime", pax.ExtendedAttributes);
 
+                    Assert.True(double.TryParse(pax.ExtendedAttributes["mtime"], out double doubleMTime));
+                    DateTimeOffset actualMTime = ConvertDoubleToDateTimeOffset(doubleMTime);
+                    VerifyTimestamp(info.LastAccessTimeUtc, actualMTime);
+
+                    Assert.True(double.TryParse(pax.ExtendedAttributes["atime"], out double doubleATime));
+                    DateTimeOffset actualATime = ConvertDoubleToDateTimeOffset(doubleATime);
                     VerifyTimestamp(info.LastAccessTimeUtc, actualATime);
+
+                    Assert.True(double.TryParse(pax.ExtendedAttributes["ctime"], out double doubleCTime));
+                    DateTimeOffset actualCTime = ConvertDoubleToDateTimeOffset(doubleCTime);
+                    VerifyTimestamp(info.LastAccessTimeUtc, actualCTime);
                 }
-                if (pax.ExtendedAttributes.ContainsKey("ctime"))
+
+                if (entry is GnuTarEntry gnu)
                 {
-                    long longCTime = long.Parse(pax.ExtendedAttributes["ctime"]);
-                    DateTimeOffset actualCTime = DateTimeOffset.FromUnixTimeSeconds(longCTime);
-
-                    VerifyTimestamp(info.CreationTimeUtc, actualCTime);// TODO: Verify if CreationTime is what we want to map to CTime on Windows
+                    VerifyTimestamp(info.LastAccessTimeUtc, gnu.AccessTime);
+                    VerifyTimestamp(info.CreationTimeUtc, gnu.ChangeTime);
                 }
-            }
-
-            if (entry is GnuTarEntry gnu)
-            {
-                VerifyTimestamp(info.LastAccessTimeUtc, gnu.AccessTime);
-                VerifyTimestamp(info.CreationTimeUtc, gnu.ChangeTime);// TODO: Verify if CreationTime is what we want to map to CTime on Windows
             }
         }
 

@@ -56,17 +56,17 @@ namespace System.Formats.Tar.Tests
 
         protected void SetGnuProperties(GnuTarEntry entry)
         {
-            DateTimeOffset approxNow = DateTimeOffset.Now.Subtract(TimeSpan.FromMinutes(2));
+            DateTimeOffset approxNow = DateTimeOffset.Now.Subtract(TimeSpan.FromHours(6));
 
             // ATime: Verify the default value was approximately "now"
             Assert.True(entry.AccessTime > approxNow);
             Assert.Throws<ArgumentOutOfRangeException>(() => entry.AccessTime = DateTimeOffset.MinValue);
-            entry.AccessTime = DateTimeOffset.UnixEpoch;
+            entry.AccessTime = TestAccessTime;
 
             // CTime: Verify the default value was approximately "now"
             Assert.True(entry.ChangeTime > approxNow);
             Assert.Throws<ArgumentOutOfRangeException>(() => entry.ChangeTime = DateTimeOffset.MinValue);
-            entry.ChangeTime = DateTimeOffset.UnixEpoch;
+            entry.ChangeTime = TestChangeTime;
         }
 
         protected void VerifyRegularFile(GnuTarEntry regularFile, bool isWritable)
@@ -113,8 +113,8 @@ namespace System.Formats.Tar.Tests
 
         protected void VerifyGnuProperties(GnuTarEntry entry)
         {
-            Assert.Equal(DateTimeOffset.UnixEpoch, entry.AccessTime);
-            Assert.Equal(DateTimeOffset.UnixEpoch, entry.ChangeTime);
+            Assert.Equal(TestAccessTime, entry.AccessTime);
+            Assert.Equal(TestChangeTime, entry.ChangeTime);
         }
     }
 }

@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
+using System.Runtime.CompilerServices;
+using Xunit;
 
 namespace System.Formats.Tar.Tests
 {
@@ -49,7 +51,6 @@ namespace System.Formats.Tar.Tests
         protected void VerifyRegularFile(PaxTarEntry regularFile, bool isWritable)
         {
             VerifyPosixRegularFile(regularFile, isWritable);
-            // TODO: Here and elsewhere, verify pax ext attrs
         }
 
         protected void VerifyDirectory(PaxTarEntry directory)
@@ -80,6 +81,37 @@ namespace System.Formats.Tar.Tests
         protected void VerifyFifo(PaxTarEntry fifo)
         {
             VerifyPosixFifo(fifo);
+        }
+
+        protected DateTimeOffset ConvertDoubleToDateTimeOffset(double value)
+        {
+            return new DateTimeOffset((long)(value * TimeSpan.TicksPerSecond) + DateTime.UnixEpoch.Ticks, TimeSpan.Zero);
+        }
+
+        protected double ConvertDateTimeOffsetToDouble(DateTimeOffset value)
+        {
+            return ((double)(value.UtcDateTime - DateTime.UnixEpoch).Ticks)/TimeSpan.TicksPerSecond;
+        }
+
+        protected void VerifyExtendedAttributeTimestamp(PaxTarEntry entry, string name, DateTimeOffset expected = default)
+        {
+            Assert.Contains(name, entry.ExtendedAttributes);
+
+            // As regular header fields, timestamps are saved as integer numbers that fit in 12 bytes
+            // But as extended attributes, they should always be saved as doubles with decimal precision
+            Assert.Contains(".", entry.ExtendedAttributes[name]);
+
+            Assert.True(double.TryParse(entry.ExtendedAttributes[name], out double doubleTime));
+            DateTimeOffset timestamp = ConvertDoubleToDateTimeOffset(doubleTime);
+
+            if (expected != default)
+            {
+                Assert.Equal(expected, timestamp);
+            }
+            else
+            {
+                Assert.True(timestamp > DateTimeOffset.UnixEpoch);
+            }
         }
     }
 }

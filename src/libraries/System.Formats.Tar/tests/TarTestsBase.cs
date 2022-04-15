@@ -29,6 +29,9 @@ namespace System.Formats.Tar.Tests
         protected const int TestBlockDeviceMinor = 65;
         protected const int TestCharacterDeviceMajor = 51;
         protected const int TestCharacterDeviceMinor = 42;
+        protected readonly DateTimeOffset TestModificationTime = new DateTimeOffset(2003, 3, 3, 3, 33, 33, TimeSpan.Zero);
+        protected readonly DateTimeOffset TestAccessTime = new DateTimeOffset(2022, 2, 2, 2, 22, 22, TimeSpan.Zero);
+        protected readonly DateTimeOffset TestChangeTime = new DateTimeOffset(2011, 11, 11, 11, 11, 11, TimeSpan.Zero);
         protected readonly string TestLinkName = "TestLinkName";
         protected const TarFileMode TestMode = TarFileMode.UserRead | TarFileMode.UserWrite | TarFileMode.GroupRead | TarFileMode.GroupWrite | TarFileMode.OtherRead | TarFileMode.OtherWrite;
         protected readonly DateTimeOffset TestTimestamp = DateTimeOffset.Now;
@@ -49,6 +52,8 @@ namespace System.Formats.Tar.Tests
         protected const TarFileMode AssetSymbolicLinkMode = TarFileMode.OtherExecute | TarFileMode.OtherWrite | TarFileMode.OtherRead | TarFileMode.GroupExecute | TarFileMode.GroupWrite | TarFileMode.GroupRead | TarFileMode.UserExecute | TarFileMode.UserWrite | TarFileMode.UserRead;
         protected const string AssetGName = "devdiv";
         protected const string AssetUName = "dotnet";
+        protected const string AssetPaxGeaKey = "globexthdr.MyGlobalExtendedAttribute";
+        protected const string AssetPaxGeaValue = "hello";
 
         protected enum CompressionMethod
         {
@@ -184,11 +189,11 @@ namespace System.Formats.Tar.Tests
             entry.Mode = TestMode;
 
             // MTime: Verify the default value was approximately "now" by default
-            DateTimeOffset approxNow = DateTimeOffset.Now.Subtract(TimeSpan.FromMinutes(2));
+            DateTimeOffset approxNow = DateTimeOffset.Now.Subtract(TimeSpan.FromHours(6));
             Assert.True(entry.ModificationTime > approxNow);
 
-            Assert.Throws<ArgumentOutOfRangeException>(() => entry.ModificationTime = DateTime.MinValue); // Minimum is UnixEpoch
-            entry.ModificationTime = DateTimeOffset.UnixEpoch;
+            Assert.Throws<ArgumentOutOfRangeException>(() => entry.ModificationTime = DateTime.MinValue); // Minimum allowed is UnixEpoch, not MinValue
+            entry.ModificationTime = TestModificationTime;
 
             // Name
             Assert.Equal(InitialEntryName, entry.Name);
@@ -240,7 +245,7 @@ namespace System.Formats.Tar.Tests
         {
             Assert.Equal(TestGid, entry.Gid);
             Assert.Equal(TestMode, entry.Mode);
-            Assert.Equal(DateTimeOffset.UnixEpoch, entry.ModificationTime);
+            Assert.Equal(TestModificationTime, entry.ModificationTime);
             Assert.Equal(ModifiedEntryName, entry.Name);
             Assert.Equal(TestUid, entry.Uid);
         }

@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.IO;
 using Xunit;
 
@@ -146,6 +147,122 @@ namespace System.Formats.Tar.Tests
             {
                 PaxTarEntry fifo = reader.GetNextEntry() as PaxTarEntry;
                 VerifyFifo(fifo);
+            }
+        }
+
+        [Fact]
+        public void WritePaxAttributes_CustomAttribute()
+        {
+            string expectedKey = "MyExtendedAttributeKey";
+            string expectedValue = "MyExtendedAttributeValue";
+
+            Dictionary<string, string> extendedAttributes = new();
+            extendedAttributes.Add(expectedKey, expectedValue);
+
+            using MemoryStream archiveStream = new MemoryStream();
+            using (TarWriter writer = new TarWriter(archiveStream, TarFormat.Pax, leaveOpen: true))
+            {
+                PaxTarEntry regularFile = new PaxTarEntry(TarEntryType.RegularFile, InitialEntryName, extendedAttributes);
+                SetRegularFile(regularFile);
+                VerifyRegularFile(regularFile, isWritable: true);
+                writer.WriteEntry(regularFile);
+            }
+
+            archiveStream.Position = 0;
+            using (TarReader reader = new TarReader(archiveStream))
+            {
+                PaxTarEntry regularFile = reader.GetNextEntry() as PaxTarEntry;
+                VerifyRegularFile(regularFile, isWritable: false);
+
+                Assert.NotNull(regularFile.ExtendedAttributes);
+
+                // path, mtime, atime and ctime are always collected by default
+                Assert.True(regularFile.ExtendedAttributes.Count >= 5);
+
+                Assert.Contains("path", regularFile.ExtendedAttributes);
+                Assert.Contains("mtime", regularFile.ExtendedAttributes);
+                Assert.Contains("atime", regularFile.ExtendedAttributes);
+                Assert.Contains("ctime", regularFile.ExtendedAttributes);
+
+                Assert.Contains(expectedKey, regularFile.ExtendedAttributes);
+                Assert.Equal(expectedValue, regularFile.ExtendedAttributes[expectedKey]);
+            }
+        }
+
+        [Fact]
+        public void WritePaxAttributes_Timestamps()
+        {
+            Dictionary<string, string> extendedAttributes = new();
+            extendedAttributes.Add("atime", ConvertDateTimeOffsetToDouble(TestAccessTime).ToString("F6"));
+            extendedAttributes.Add("ctime", ConvertDateTimeOffsetToDouble(TestChangeTime).ToString("F6"));
+
+            using MemoryStream archiveStream = new MemoryStream();
+            using (TarWriter writer = new TarWriter(archiveStream, TarFormat.Pax, leaveOpen: true))
+            {
+                PaxTarEntry regularFile = new PaxTarEntry(TarEntryType.RegularFile, InitialEntryName, extendedAttributes);
+                SetRegularFile(regularFile);
+                VerifyRegularFile(regularFile, isWritable: true);
+                writer.WriteEntry(regularFile);
+            }
+
+            archiveStream.Position = 0;
+            using (TarReader reader = new TarReader(archiveStream))
+            {
+                PaxTarEntry regularFile = reader.GetNextEntry() as PaxTarEntry;
+                VerifyRegularFile(regularFile, isWritable: false);
+
+                Assert.NotNull(regularFile.ExtendedAttributes);
+                Assert.True(regularFile.ExtendedAttributes.Count >= 4);
+
+                Assert.Contains("path", regularFile.ExtendedAttributes);
+                VerifyExtendedAttributeTimestamp(regularFile, "mtime", TestModificationTime);
+                VerifyExtendedAttributeTimestamp(regularFile, "atime", TestAccessTime);
+                VerifyExtendedAttributeTimestamp(regularFile, "ctime", TestChangeTime);
+            }
+        }
+
+        [Fact]
+        public void WritePaxAttributes_LongGroupName_LongUserName()
+        {
+            string userName = "IAmAUserNameWhoseLengthIsWayBeyondTheThirtyTwoByteLimit";
+            string groupName = "IAmAGroupNameWhoseLengthIsWayBeyondTheThirtyTwoByteLimit";
+
+            using MemoryStream archiveStream = new MemoryStream();
+            using (TarWriter writer = new TarWriter(archiveStream, TarFormat.Pax, leaveOpen: true))
+            {
+                PaxTarEntry regularFile = new PaxTarEntry(TarEntryType.RegularFile, InitialEntryName);
+                SetRegularFile(regularFile);
+                VerifyRegularFile(regularFile, isWritable: true);
+                regularFile.UserName = userName;
+                regularFile.GroupName = groupName;
+                writer.WriteEntry(regularFile);
+            }
+
+            archiveStream.Position = 0;
+            using (TarReader reader = new TarReader(archiveStream))
+            {
+                PaxTarEntry regularFile = reader.GetNextEntry() as PaxTarEntry;
+                VerifyRegularFile(regularFile, isWritable: false);
+
+                Assert.NotNull(regularFile.ExtendedAttributes);
+
+                // path, mtime, atime and ctime are always collected by default
+                Assert.True(regularFile.ExtendedAttributes.Count >= 6);
+
+                Assert.Contains("path", regularFile.ExtendedAttributes);
+                Assert.Contains("mtime", regularFile.ExtendedAttributes);
+                Assert.Contains("atime", regularFile.ExtendedAttributes);
+                Assert.Contains("ctime", regularFile.ExtendedAttributes);
+
+                Assert.Contains("uname", regularFile.ExtendedAttributes);
+                Assert.Equal(userName, regularFile.ExtendedAttributes["uname"]);
+
+                Assert.Contains("gname", regularFile.ExtendedAttributes);
+                Assert.Equal(groupName, regularFile.ExtendedAttributes["gname"]);
+
+                // They should also get exposed via the regular properties
+                Assert.Equal(groupName, regularFile.GroupName);
+                Assert.Equal(userName, regularFile.UserName);
             }
         }
     }

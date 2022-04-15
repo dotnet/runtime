@@ -46,10 +46,7 @@ namespace System.Formats.Tar
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="archiveFormat"/> is either <see cref="TarFormat.Unknown"/>, or not one of the other enum values.</exception>
         public TarWriter(Stream archiveStream, TarFormat archiveFormat, bool leaveOpen = false)
         {
-            if (archiveStream == null)
-            {
-                throw new ArgumentNullException(nameof(archiveStream));
-            }
+            ArgumentNullException.ThrowIfNull(archiveStream);
 
             if (!archiveStream.CanWrite)
             {
@@ -113,7 +110,7 @@ namespace System.Formats.Tar
                 entryName = Path.GetFileName(fileName);
             }
 
-            if (!_wroteGEA)
+            if (Format is TarFormat.Pax && !_wroteGEA)
             {
                 WriteGlobalExtendedAttributesEntry();
             }

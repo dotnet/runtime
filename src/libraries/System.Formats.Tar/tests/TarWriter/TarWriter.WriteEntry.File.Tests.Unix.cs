@@ -9,11 +9,16 @@ namespace System.Formats.Tar.Tests
 {
     public partial class TarWriter_WriteEntry_File_Tests : TarTestsBase
     {
-        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void Add_Fifo()
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(TarFormat.Ustar)]
+        [InlineData(TarFormat.Pax)]
+        [InlineData(TarFormat.Gnu)]
+        public void Add_Fifo(TarFormat format)
         {
-            RemoteExecutor.Invoke(() =>
+            RemoteExecutor.Invoke((string strFormat) =>
             {
+                TarFormat expectedFormat = Enum.Parse<TarFormat>(strFormat);
+
                 using TempDirectory root = new TempDirectory();
                 string fifoName = "fifofile";
                 string fifoPath = Path.Join(root.Path, fifoName);
@@ -21,7 +26,7 @@ namespace System.Formats.Tar.Tests
                 Interop.CheckIo(Interop.Sys.MkFifo(fifoPath, (int)DefaultMode));
 
                 using MemoryStream archive = new MemoryStream();
-                using (TarWriter writer = new TarWriter(archive, leaveOpen: true))
+                using (TarWriter writer = new TarWriter(archive, expectedFormat, leaveOpen: true))
                 {
                     writer.WriteEntry(fileName: fifoPath, entryName: fifoName);
                 }
@@ -29,7 +34,9 @@ namespace System.Formats.Tar.Tests
                 archive.Seek(0, SeekOrigin.Begin);
                 using (TarReader reader = new TarReader(archive))
                 {
-                    TarEntry entry = reader.GetNextEntry();
+                    Assert.Equal(TarFormat.Unknown, reader.Format);
+                    PosixTarEntry entry = reader.GetNextEntry() as PosixTarEntry;
+                    Assert.Equal(expectedFormat, reader.Format);
 
                     Assert.NotNull(entry);
                     Assert.Equal(fifoName, entry.Name);
@@ -42,14 +49,19 @@ namespace System.Formats.Tar.Tests
                     Assert.Null(reader.GetNextEntry());
                 }
 
-            }, new RemoteInvokeOptions { RunAsSudo = true }).Dispose();
+            }, format.ToString(), new RemoteInvokeOptions { RunAsSudo = true }).Dispose();
         }
 
-        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void Add_BlockDevice()
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(TarFormat.Ustar)]
+        [InlineData(TarFormat.Pax)]
+        [InlineData(TarFormat.Gnu)]
+        public void Add_BlockDevice(TarFormat format)
         {
-            RemoteExecutor.Invoke(() =>
+            RemoteExecutor.Invoke((string strFormat) =>
             {
+                TarFormat expectedFormat = Enum.Parse<TarFormat>(strFormat);
+
                 using TempDirectory root = new TempDirectory();
                 string blockDevicePath = Path.Join(root.Path, AssetBlockDeviceFileName);
 
@@ -57,7 +69,7 @@ namespace System.Formats.Tar.Tests
                 Interop.CheckIo(Interop.Sys.CreateBlockDevice(blockDevicePath, (int)DefaultMode, TestBlockDeviceMajor, TestBlockDeviceMinor));
 
                 using MemoryStream archive = new MemoryStream();
-                using (TarWriter writer = new TarWriter(archive, leaveOpen: true))
+                using (TarWriter writer = new TarWriter(archive, expectedFormat, leaveOpen: true))
                 {
                     writer.WriteEntry(fileName: blockDevicePath, entryName: AssetBlockDeviceFileName);
                 }
@@ -65,7 +77,9 @@ namespace System.Formats.Tar.Tests
                 archive.Seek(0, SeekOrigin.Begin);
                 using (TarReader reader = new TarReader(archive))
                 {
+                    Assert.Equal(TarFormat.Unknown, reader.Format);
                     PosixTarEntry entry = reader.GetNextEntry() as PosixTarEntry;
+                    Assert.Equal(expectedFormat, reader.Format);
 
                     Assert.NotNull(entry);
                     Assert.Equal(AssetBlockDeviceFileName, entry.Name);
@@ -86,14 +100,18 @@ namespace System.Formats.Tar.Tests
                     Assert.Null(reader.GetNextEntry());
                 }
 
-            }, new RemoteInvokeOptions { RunAsSudo = true }).Dispose();
+            }, format.ToString(), new RemoteInvokeOptions { RunAsSudo = true }).Dispose();
         }
 
-        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void Add_CharacterDevice()
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(TarFormat.Ustar)]
+        [InlineData(TarFormat.Pax)]
+        [InlineData(TarFormat.Gnu)]
+        public void Add_CharacterDevice(TarFormat format)
         {
-            RemoteExecutor.Invoke(() =>
+            RemoteExecutor.Invoke((string strFormat) =>
             {
+                TarFormat expectedFormat = Enum.Parse<TarFormat>(strFormat);
                 using TempDirectory root = new TempDirectory();
                 string characterDevicePath = Path.Join(root.Path, AssetCharacterDeviceFileName);
 
@@ -101,7 +119,7 @@ namespace System.Formats.Tar.Tests
                 Interop.CheckIo(Interop.Sys.CreateCharacterDevice(characterDevicePath, (int)DefaultMode, TestCharacterDeviceMajor, TestCharacterDeviceMinor));
 
                 using MemoryStream archive = new MemoryStream();
-                using (TarWriter writer = new TarWriter(archive, leaveOpen: true))
+                using (TarWriter writer = new TarWriter(archive, expectedFormat, leaveOpen: true))
                 {
                     writer.WriteEntry(fileName: characterDevicePath, entryName: AssetCharacterDeviceFileName);
                 }
@@ -109,7 +127,9 @@ namespace System.Formats.Tar.Tests
                 archive.Seek(0, SeekOrigin.Begin);
                 using (TarReader reader = new TarReader(archive))
                 {
+                    Assert.Equal(TarFormat.Unknown, reader.Format);
                     PosixTarEntry entry = reader.GetNextEntry() as PosixTarEntry;
+                    Assert.Equal(expectedFormat, reader.Format);
 
                     Assert.NotNull(entry);
                     Assert.Equal(AssetCharacterDeviceFileName, entry.Name);
@@ -130,7 +150,7 @@ namespace System.Formats.Tar.Tests
                     Assert.Null(reader.GetNextEntry());
                 }
 
-            },new RemoteInvokeOptions { RunAsSudo = true }).Dispose();
+            }, format.ToString(), new RemoteInvokeOptions { RunAsSudo = true }).Dispose();
         }
 
         partial void VerifyPlatformSpecificMetadata(string filePath, TarEntry entry)
@@ -167,18 +187,12 @@ namespace System.Formats.Tar.Tests
 
                 if (entry is PaxTarEntry pax)
                 {
-                    if (pax.ExtendedAttributes.ContainsKey("atime"))
-                    {
-                        long longATime = long.Parse(pax.ExtendedAttributes["atime"]);
-                        DateTimeOffset paxATime = DateTimeOffset.FromUnixTimeSeconds(longATime);
-                        Assert.Equal(expectedATime, paxATime);
-                    }
-                    if (pax.ExtendedAttributes.ContainsKey("ctime"))
-                    {
-                        long longCTime = long.Parse(pax.ExtendedAttributes["ctime"]);
-                        DateTimeOffset paxCTime = DateTimeOffset.FromUnixTimeSeconds(longCTime);
-                        Assert.Equal(expectedCTime, paxCTime);
-                    }
+                    Assert.NotNull(pax.ExtendedAttributes);
+                    Assert.True(pax.ExtendedAttributes.Count >= 4);
+                    Assert.Contains("path", pax.ExtendedAttributes);
+                    VerifyExtendedAttributeTimestamp(pax, "mtime");
+                    VerifyExtendedAttributeTimestamp(pax, "atime");
+                    VerifyExtendedAttributeTimestamp(pax, "ctime");
                 }
                 else if (entry is GnuTarEntry gnu)
                 {

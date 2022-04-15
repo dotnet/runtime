@@ -455,8 +455,12 @@ namespace System.Formats.Tar
             // Adds the specified datetime to the dictionary as a decimal number.
             static void AddTimestampAsUnixSeconds(Dictionary<string, string> extendedAttributes, string key, DateTimeOffset value)
             {
-                long unixTimeSeconds = value.ToUnixTimeSeconds();
-                extendedAttributes.Add(key, unixTimeSeconds.ToString());
+                // Avoid overwriting if the user already added it before
+                if (!extendedAttributes.ContainsKey(key))
+                {
+                    double unixTimeSeconds = ((double)(value.UtcDateTime - DateTime.UnixEpoch).Ticks)/TimeSpan.TicksPerSecond;
+                    extendedAttributes.Add(key, unixTimeSeconds.ToString("F6")); // 6 decimals, no commas
+                }
             }
 
             // Adds the specified string to the dictionary if it's longer than the specified max byte length.

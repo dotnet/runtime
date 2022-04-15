@@ -124,6 +124,13 @@ namespace System.Formats.Tar
             return offset;
         }
 
+        // Returns a DateTimeOffset instance representing the number of seconds that have passed since the Unix Epoch.
+        internal static DateTimeOffset GetDateTimeFromSecondsSinceEpoch(double secondsSinceUnixEpoch)
+        {
+            DateTimeOffset offset = new DateTimeOffset((long)(secondsSinceUnixEpoch * TimeSpan.TicksPerSecond) + DateTime.UnixEpoch.Ticks, TimeSpan.Zero);
+            return offset;
+        }
+
         // Receives a byte array that represents an ASCII string containing a number in octal base.
         // Converts the array to an octal base number, then transforms it to ten base and returns it.
         internal static int GetTenBaseNumberFromOctalAsciiChars(Span<byte> buffer)
@@ -177,7 +184,7 @@ namespace System.Formats.Tar
             timestamp = default;
             if (!string.IsNullOrEmpty(value))
             {
-                if (!long.TryParse(value, out long longTime))
+                if (!double.TryParse(value, out double longTime))
                 {
                     return false;
                 }

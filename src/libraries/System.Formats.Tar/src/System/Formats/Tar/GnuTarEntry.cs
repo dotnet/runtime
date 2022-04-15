@@ -42,7 +42,6 @@ namespace System.Formats.Tar
             get => _header._aTime;
             set
             {
-                // TODO: Is there a max value?
                 if (value < DateTimeOffset.UnixEpoch)
                 {
                     throw new ArgumentOutOfRangeException(nameof(value));
@@ -60,7 +59,6 @@ namespace System.Formats.Tar
             get => _header._cTime;
             set
             {
-                // TODO: Is there a max value?
                 if (value < DateTimeOffset.UnixEpoch)
                 {
                     throw new ArgumentOutOfRangeException(nameof(value));

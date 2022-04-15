@@ -25,14 +25,26 @@ namespace System.Formats.Tar
         /// <param name="entryName">A string with the relative path and file name of this entry.</param>
         /// <exception cref="ArgumentException"><paramref name="entryName"/> is null or empty.</exception>
         /// <exception cref="NotSupportedException">The entry type is not supported for creating an entry.</exception>
-        /// <remarks>When creating an instance using the <see cref="PaxTarEntry(TarEntryType, string)"/> constructor, only the following entry types are supported:
+        /// <remarks><para>When creating an instance using the <see cref="PaxTarEntry(TarEntryType, string)"/> constructor, only the following entry types are supported:</para>
         /// <list type="bullet">
         /// <item>In all platforms: <see cref="TarEntryType.Directory"/>, <see cref="TarEntryType.HardLink"/>, <see cref="TarEntryType.SymbolicLink"/>, <see cref="TarEntryType.RegularFile"/>.</item>
         /// <item>In Unix platforms only: <see cref="TarEntryType.BlockDevice"/>, <see cref="TarEntryType.CharacterDevice"/> and <see cref="TarEntryType.Fifo"/>.</item>
         /// </list>
-        /// Use the <see cref="PaxTarEntry(TarEntryType, string, IEnumerable{KeyValuePair{string, string}})"/> constructor to include additional extended attributes when creating the entry.
+        /// <para>Use the <see cref="PaxTarEntry(TarEntryType, string, IEnumerable{KeyValuePair{string, string}})"/> constructor to include additional extended attributes when creating the entry.</para>
+        /// <para>The following entries are always found in the Extended Attributes dictionary of any PAX entry:</para>
+        /// <list type="bullet">
+        /// <item>Modification time, under the name <c>mtime</c>, as a <see cref="double"/> number.</item>
+        /// <item>Access time, under the name <c>atime</c>, as a <see cref="double"/> number.</item>
+        /// <item>Change time, under the name <c>ctime</c>, as a <see cref="double"/> number.</item>
+        /// <item>Path, under the name <c>path</c>, as a string.</item>
+        /// </list>
+        /// <para>The following entries are only found in the Extended Attributes dictionary of a PAX entry if certain conditions are met:</para>
+        /// <list type="bullet">
+        /// <item>Group name, under the name <c>gname</c>, as a string, if it is larger than 32 bytes.</item>
+        /// <item>User name, under the name <c>uname</c>, as a string, if it is larger than 32 bytes.</item>
+        /// <item>File length, under the name <c>size</c>, as an <see cref="int"/>, if the string representation of the number is larger than 12 bytes.</item>
+        /// </list>
         /// </remarks>
-        // TODO: Document which are the default extended attributes that are always included in a pax entry.
         public PaxTarEntry(TarEntryType entryType, string entryName!!)
             : base(entryType, entryName, TarFormat.Pax) // Base constructor validates entry type
         {
@@ -53,8 +65,20 @@ namespace System.Formats.Tar
         /// <item>In Unix platforms only: <see cref="TarEntryType.BlockDevice"/>, <see cref="TarEntryType.CharacterDevice"/> and <see cref="TarEntryType.Fifo"/>.</item>
         /// </list>
         /// The specified <paramref name="extendedAttributes"/> get appended to the default attributes, unless the specified enumeration overrides any of them.
+        /// <para>The following entries are always found in the Extended Attributes dictionary of any PAX entry:</para>
+        /// <list type="bullet">
+        /// <item>Modification time, under the name <c>mtime</c>, as a <see cref="double"/> number.</item>
+        /// <item>Access time, under the name <c>atime</c>, as a <see cref="double"/> number.</item>
+        /// <item>Change time, under the name <c>ctime</c>, as a <see cref="double"/> number.</item>
+        /// <item>Path, under the name <c>path</c>, as a string.</item>
+        /// </list>
+        /// <para>The following entries are only found in the Extended Attributes dictionary of a PAX entry if certain conditions are met:</para>
+        /// <list type="bullet">
+        /// <item>Group name, under the name <c>gname</c>, as a string, if it is larger than 32 bytes.</item>
+        /// <item>User name, under the name <c>uname</c>, as a string, if it is larger than 32 bytes.</item>
+        /// <item>File length, under the name <c>size</c>, as an <see cref="int"/>, if the string representation of the number is larger than 12 bytes.</item>
+        /// </list>
         /// </remarks>
-        // TODO: Document which are the default extended attributes that are always included in a pax entry.
         public PaxTarEntry(TarEntryType entryType, string entryName, IEnumerable<KeyValuePair<string, string>> extendedAttributes!!)
             : base(entryType, entryName, TarFormat.Pax) // Base constructor vaildates entry type
         {
@@ -64,8 +88,21 @@ namespace System.Formats.Tar
         /// <summary>
         /// Returns the extended attributes for this entry.
         /// </summary>
-        /// <remarks>The extended attributes are specified when constructing an entry. Use <see cref="PaxTarEntry(TarEntryType, string, IEnumerable{KeyValuePair{string, string}})"/> to append your own enumeration of extended attributes to the current entry on top of the default ones. Use <see cref="PaxTarEntry(TarEntryType, string)"/> to only use the default extended attributes.</remarks>
-        // TODO: Document which are the default extended attributes that are always included in a pax entry.
+        /// <remarks>The extended attributes are specified when constructing an entry. Use <see cref="PaxTarEntry(TarEntryType, string, IEnumerable{KeyValuePair{string, string}})"/> to append your own enumeration of extended attributes to the current entry on top of the default ones. Use <see cref="PaxTarEntry(TarEntryType, string)"/> to only use the default extended attributes.
+        /// <para>The following entries are always found in the Extended Attributes dictionary of any PAX entry:</para>
+        /// <list type="bullet">
+        /// <item>Modification time, under the name <c>mtime</c>, as a <see cref="double"/> number.</item>
+        /// <item>Access time, under the name <c>atime</c>, as a <see cref="double"/> number.</item>
+        /// <item>Change time, under the name <c>ctime</c>, as a <see cref="double"/> number.</item>
+        /// <item>Path, under the name <c>path</c>, as a string.</item>
+        /// </list>
+        /// <para>The following entries are only found in the Extended Attributes dictionary of a PAX entry if certain conditions are met:</para>
+        /// <list type="bullet">
+        /// <item>Group name, under the name <c>gname</c>, as a string, if it is larger than 32 bytes.</item>
+        /// <item>User name, under the name <c>uname</c>, as a string, if it is larger than 32 bytes.</item>
+        /// <item>File length, under the name <c>size</c>, as an <see cref="int"/>, if the string representation of the number is larger than 12 bytes.</item>
+        /// </list>
+        /// </remarks>
         public IReadOnlyDictionary<string, string> ExtendedAttributes
         {
             get

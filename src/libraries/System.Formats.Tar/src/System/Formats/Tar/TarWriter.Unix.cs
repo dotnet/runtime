@@ -24,7 +24,7 @@ namespace System.Formats.Tar
                 Interop.Sys.FileTypes.S_IFCHR => TarEntryType.CharacterDevice,
                 Interop.Sys.FileTypes.S_IFIFO => TarEntryType.Fifo,
                 Interop.Sys.FileTypes.S_IFLNK => TarEntryType.SymbolicLink,
-                Interop.Sys.FileTypes.S_IFREG => TarEntryType.RegularFile,
+                Interop.Sys.FileTypes.S_IFREG => Format is TarFormat.V7 ? TarEntryType.V7RegularFile : TarEntryType.RegularFile,
                 Interop.Sys.FileTypes.S_IFDIR => TarEntryType.Directory,
                 _ => throw new IOException(string.Format(SR.TarUnsupportedFile, fullPath)),
             };
@@ -47,9 +47,9 @@ namespace System.Formats.Tar
                 entry._header._devMinor = (int)minor;
             }
 
-            entry._header._mTime = DateTimeOffset.FromUnixTimeSeconds(status.MTime);
-            entry._header._aTime = DateTimeOffset.FromUnixTimeSeconds(status.ATime);
-            entry._header._cTime = DateTimeOffset.FromUnixTimeSeconds(status.CTime);
+            entry._header._mTime = TarHelpers.GetDateTimeFromSecondsSinceEpoch(status.MTime);
+            entry._header._aTime = TarHelpers.GetDateTimeFromSecondsSinceEpoch(status.ATime);
+            entry._header._cTime = TarHelpers.GetDateTimeFromSecondsSinceEpoch(status.CTime);
 
             entry._header._mode = (status.Mode & 4095); // First 12 bits
 
@@ -65,7 +65,7 @@ namespace System.Formats.Tar
                 entry.LinkName = info.LinkTarget ?? string.Empty;
             }
 
-            if (entry.EntryType == TarEntryType.RegularFile)
+            if (entry.EntryType is TarEntryType.RegularFile or TarEntryType.V7RegularFile)
             {
                 FileStreamOptions options = new()
                 {

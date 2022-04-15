@@ -37,8 +37,8 @@ namespace System.Formats.Tar
                 {
                     throw new NotSupportedException(SR.TarEntryBlockOrCharacterExpected);
                 }
-                // TODO: Check max value too. Confirm it's 255.
-                if (value < 0)
+
+                if (value < 0 || value > 99_999_999)
                 {
                     throw new ArgumentOutOfRangeException(nameof(value));
                 }
@@ -61,8 +61,7 @@ namespace System.Formats.Tar
                 {
                     throw new NotSupportedException(SR.TarEntryBlockOrCharacterExpected);
                 }
-                // TODO: Check max value too. Confirm it's 255.
-                if (value < 0)
+                if (value < 0 || value > 99_999_999)
                 {
                     throw new ArgumentOutOfRangeException(nameof(value));
                 }
