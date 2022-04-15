@@ -98,6 +98,22 @@ namespace System.Tests
         public static bool op_Inequality(TSelf left, TOther right) => left != right;
     }
 
+    public static class FloatingPointHelper<TSelf>
+        where TSelf : IFloatingPoint<TSelf>
+    {
+        public static int GetExponentByteCount(TSelf value) => value.GetExponentByteCount();
+
+        public static long GetExponentShortestBitLength(TSelf value) => value.GetExponentShortestBitLength();
+
+        public static int GetSignificandByteCount(TSelf value) => value.GetSignificandByteCount();
+
+        public static long GetSignificandBitLength(TSelf value) => value.GetSignificandBitLength();
+
+        public static bool TryWriteExponentLittleEndian(TSelf value, Span<byte> destination, out int bytesWritten) => value.TryWriteExponentLittleEndian(destination, out bytesWritten);
+
+        public static bool TryWriteSignificandLittleEndian(TSelf value, Span<byte> destination, out int bytesWritten) => value.TryWriteSignificandLittleEndian(destination, out bytesWritten);
+    }
+
     public static class IncrementOperatorsHelper<TSelf>
         where TSelf : IIncrementOperators<TSelf>
     {
