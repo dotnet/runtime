@@ -3269,7 +3269,7 @@ namespace System.Xml
             Debug.Assert(_ps.encoding != null);
             Debug.Assert(_ps.bytes != null);
             ReadOnlySpan<byte> preamble = _ps.encoding.Preamble;
-            if (preamble.CommonPrefixLength(_ps.bytes.AsSpan(0, _ps.bytesUsed)) == preamble.Length)
+            if (_ps.bytes.AsSpan(0, _ps.bytesUsed).StartsWith(preamble))
             {
                 _ps.bytePos = preamble.Length;
             }

@@ -18,15 +18,7 @@ namespace System.SpanTests
         [InlineData(0, 2)]
         public static void OneOrBothZeroLength_Returns0(int length1, int length2)
         {
-            Assert.Equal(0, MemoryExtensions.CommonPrefixLength((ReadOnlySpan<char>)new char[length1], new char[length2]));
-            Assert.Equal(0, MemoryExtensions.CommonPrefixLength((ReadOnlySpan<char>)new char[length1], new char[length2], null));
-            Assert.Equal(0, MemoryExtensions.CommonPrefixLength((ReadOnlySpan<char>)new char[length1], new char[length2], EqualityComparer<char>.Default));
-            Assert.Equal(0, MemoryExtensions.CommonPrefixLength((ReadOnlySpan<char>)new char[length1], new char[length2], NonDefaultEqualityComparer<char>.Instance));
-
-            Assert.Equal(0, MemoryExtensions.CommonPrefixLength((Span<char>)new char[length1], new char[length2]));
-            Assert.Equal(0, MemoryExtensions.CommonPrefixLength((Span<char>)new char[length1], new char[length2], null));
-            Assert.Equal(0, MemoryExtensions.CommonPrefixLength((Span<char>)new char[length1], new char[length2], EqualityComparer<char>.Default));
-            Assert.Equal(0, MemoryExtensions.CommonPrefixLength((Span<char>)new char[length1], new char[length2], NonDefaultEqualityComparer<char>.Instance));
+            ValidateWithDefaultValues(length1, length2, NonDefaultEqualityComparer<char>.Instance, 0);
         }
 
         [Theory]
@@ -35,15 +27,7 @@ namespace System.SpanTests
         [InlineData(15)]
         public static void SameLengthAllEqual_ReturnsLength(int length)
         {
-            Assert.Equal(length, MemoryExtensions.CommonPrefixLength((ReadOnlySpan<char>)new char[length], new char[length]));
-            Assert.Equal(length, MemoryExtensions.CommonPrefixLength((ReadOnlySpan<char>)new char[length], new char[length], null));
-            Assert.Equal(length, MemoryExtensions.CommonPrefixLength((ReadOnlySpan<char>)new char[length], new char[length], EqualityComparer<char>.Default));
-            Assert.Equal(length, MemoryExtensions.CommonPrefixLength((ReadOnlySpan<char>)new char[length], new char[length], NonDefaultEqualityComparer<char>.Instance));
-
-            Assert.Equal(length, MemoryExtensions.CommonPrefixLength((Span<char>)new char[length], new char[length]));
-            Assert.Equal(length, MemoryExtensions.CommonPrefixLength((Span<char>)new char[length], new char[length], null));
-            Assert.Equal(length, MemoryExtensions.CommonPrefixLength((Span<char>)new char[length], new char[length], EqualityComparer<char>.Default));
-            Assert.Equal(length, MemoryExtensions.CommonPrefixLength((Span<char>)new char[length], new char[length], NonDefaultEqualityComparer<char>.Instance));
+            ValidateWithDefaultValues(length, length, NonDefaultEqualityComparer<char>.Instance, length);
         }
 
         [Theory]
@@ -52,15 +36,7 @@ namespace System.SpanTests
         [InlineData(15)]
         public static void FirstShorterAllEqual_ReturnsFirstLength(int length)
         {
-            Assert.Equal(length, MemoryExtensions.CommonPrefixLength((ReadOnlySpan<char>)new char[length], new char[length + 1]));
-            Assert.Equal(length, MemoryExtensions.CommonPrefixLength((ReadOnlySpan<char>)new char[length], new char[length + 1], null));
-            Assert.Equal(length, MemoryExtensions.CommonPrefixLength((ReadOnlySpan<char>)new char[length], new char[length + 1], EqualityComparer<char>.Default));
-            Assert.Equal(length, MemoryExtensions.CommonPrefixLength((ReadOnlySpan<char>)new char[length], new char[length + 1], NonDefaultEqualityComparer<char>.Instance));
-
-            Assert.Equal(length, MemoryExtensions.CommonPrefixLength((Span<char>)new char[length], new char[length + 1]));
-            Assert.Equal(length, MemoryExtensions.CommonPrefixLength((Span<char>)new char[length], new char[length + 1], null));
-            Assert.Equal(length, MemoryExtensions.CommonPrefixLength((Span<char>)new char[length], new char[length + 1], EqualityComparer<char>.Default));
-            Assert.Equal(length, MemoryExtensions.CommonPrefixLength((Span<char>)new char[length], new char[length + 1], NonDefaultEqualityComparer<char>.Instance));
+            ValidateWithDefaultValues(length, length + 1, NonDefaultEqualityComparer<char>.Instance, length);
         }
 
         [Theory]
@@ -69,15 +45,20 @@ namespace System.SpanTests
         [InlineData(15)]
         public static void SecondShorterAllEqual_ReturnsSecondLength(int length)
         {
-            Assert.Equal(length, MemoryExtensions.CommonPrefixLength((ReadOnlySpan<char>)new char[length + 1], new char[length]));
-            Assert.Equal(length, MemoryExtensions.CommonPrefixLength((ReadOnlySpan<char>)new char[length + 1], new char[length], null));
-            Assert.Equal(length, MemoryExtensions.CommonPrefixLength((ReadOnlySpan<char>)new char[length + 1], new char[length], EqualityComparer<char>.Default));
-            Assert.Equal(length, MemoryExtensions.CommonPrefixLength((ReadOnlySpan<char>)new char[length + 1], new char[length], NonDefaultEqualityComparer<char>.Instance));
+            ValidateWithDefaultValues(length + 1, length, NonDefaultEqualityComparer<char>.Instance, length);
+        }
 
-            Assert.Equal(length, MemoryExtensions.CommonPrefixLength((Span<char>)new char[length + 1], new char[length]));
-            Assert.Equal(length, MemoryExtensions.CommonPrefixLength((Span<char>)new char[length + 1], new char[length], null));
-            Assert.Equal(length, MemoryExtensions.CommonPrefixLength((Span<char>)new char[length + 1], new char[length], EqualityComparer<char>.Default));
-            Assert.Equal(length, MemoryExtensions.CommonPrefixLength((Span<char>)new char[length + 1], new char[length], NonDefaultEqualityComparer<char>.Instance));
+        private static void ValidateWithDefaultValues<T>(int length1, int length2, IEqualityComparer<T> customComparer, int expected)
+        {
+            Assert.Equal(expected, MemoryExtensions.CommonPrefixLength((ReadOnlySpan<T>)new T[length1], new T[length2]));
+            Assert.Equal(expected, MemoryExtensions.CommonPrefixLength((ReadOnlySpan<T>)new T[length1], new T[length2], null));
+            Assert.Equal(expected, MemoryExtensions.CommonPrefixLength((ReadOnlySpan<T>)new T[length1], new T[length2], EqualityComparer<T>.Default));
+            Assert.Equal(expected, MemoryExtensions.CommonPrefixLength((ReadOnlySpan<T>)new T[length1], new T[length2], customComparer));
+
+            Assert.Equal(expected, MemoryExtensions.CommonPrefixLength((Span<T>)new T[length1], new T[length2]));
+            Assert.Equal(expected, MemoryExtensions.CommonPrefixLength((Span<T>)new T[length1], new T[length2], null));
+            Assert.Equal(expected, MemoryExtensions.CommonPrefixLength((Span<T>)new T[length1], new T[length2], EqualityComparer<T>.Default));
+            Assert.Equal(expected, MemoryExtensions.CommonPrefixLength((Span<T>)new T[length1], new T[length2], customComparer));
         }
 
         [Fact]
@@ -114,11 +95,50 @@ namespace System.SpanTests
             Assert.Equal(4, MemoryExtensions.CommonPrefixLength((Span<string>)arr1, arr2, NonDefaultEqualityComparer<string>.Instance));
         }
 
+        [Fact]
+        public static void Comparer_UsedInComparisons_ReferenceType()
+        {
+            string[] arr1 = new string[] { null, "a", null, "b", "c", "d", "e" };
+            string[] arr2 = new string[] { null, "A", null, "B", "F", "G", "H" };
+
+            Assert.Equal(4, MemoryExtensions.CommonPrefixLength((ReadOnlySpan<string>)arr1, arr2, StringComparer.OrdinalIgnoreCase));
+            Assert.Equal(4, MemoryExtensions.CommonPrefixLength((Span<string>)arr1, arr2, StringComparer.OrdinalIgnoreCase));
+
+            Assert.Equal(1, MemoryExtensions.CommonPrefixLength((ReadOnlySpan<string>)arr1, arr2, NonDefaultEqualityComparer<string>.Instance));
+            Assert.Equal(1, MemoryExtensions.CommonPrefixLength((Span<string>)arr1, arr2, NonDefaultEqualityComparer<string>.Instance));
+
+            Assert.Equal(1, MemoryExtensions.CommonPrefixLength((ReadOnlySpan<string>)arr1, arr2, EqualityComparer<string>.Default));
+            Assert.Equal(1, MemoryExtensions.CommonPrefixLength((Span<string>)arr1, arr2, EqualityComparer<string>.Default));
+        }
+
+        [Fact]
+        public static void Comparer_UsedInComparisons_ValueType()
+        {
+            int[] arr1 = new[] { 1, 2, 3, 4, 5, 6 };
+            int[] arr2 = new[] { -1, 2, -3, 4, -7, -8 };
+
+            Assert.Equal(4, MemoryExtensions.CommonPrefixLength((ReadOnlySpan<int>)arr1, arr2, AbsoluteValueComparer.Instance));
+            Assert.Equal(4, MemoryExtensions.CommonPrefixLength((Span<int>)arr1, arr2, AbsoluteValueComparer.Instance));
+
+            Assert.Equal(0, MemoryExtensions.CommonPrefixLength((ReadOnlySpan<int>)arr1, arr2, NonDefaultEqualityComparer<int>.Instance));
+            Assert.Equal(0, MemoryExtensions.CommonPrefixLength((Span<int>)arr1, arr2, NonDefaultEqualityComparer<int>.Instance));
+
+            Assert.Equal(0, MemoryExtensions.CommonPrefixLength((ReadOnlySpan<int>)arr1, arr2, EqualityComparer<int>.Default));
+            Assert.Equal(0, MemoryExtensions.CommonPrefixLength((Span<int>)arr1, arr2, EqualityComparer<int>.Default));
+        }
+
         private sealed class NonDefaultEqualityComparer<T> : IEqualityComparer<T>
         {
             public static NonDefaultEqualityComparer<T> Instance { get; } = new NonDefaultEqualityComparer<T>();
             public bool Equals(T? x, T? y) => EqualityComparer<T>.Default.Equals(x, y);
             public int GetHashCode([DisallowNull] T obj) => EqualityComparer<T>.Default.GetHashCode(obj);
+        }
+
+        private sealed class AbsoluteValueComparer : IEqualityComparer<int>
+        {
+            public static AbsoluteValueComparer Instance { get; } = new AbsoluteValueComparer();
+            public bool Equals(int x, int y) => Math.Abs(x) == Math.Abs(y);
+            public int GetHashCode(int x) => Math.Abs(x).GetHashCode();
         }
     }
 }
