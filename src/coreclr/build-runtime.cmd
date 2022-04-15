@@ -225,9 +225,6 @@ if not exist "%__IntermediatesDir%"    md "%__IntermediatesDir%"
 if not exist "%__LogsDir%"             md "%__LogsDir%"
 if not exist "%__MsbuildDebugLogsDir%" md "%__MsbuildDebugLogsDir%"
 
-if not exist "%__RootBinDir%\Directory.Build.props" copy "%__ProjectDir%\EmptyProps.props" "%__RootBinDir%\Directory.Build.props"
-if not exist "%__RootBinDir%\Directory.Build.targets" copy "%__ProjectDir%\EmptyProps.props" "%__RootBinDir%\Directory.Build.targets"
-
 REM Set up the directory for MSBuild debug logs.
 set MSBUILDDEBUGPATH=%__MsbuildDebugLogsDir%
 

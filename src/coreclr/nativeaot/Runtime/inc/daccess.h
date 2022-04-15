@@ -583,14 +583,12 @@ extern DacTableInfo g_dacTableInfo;
 
 //
 // The following table contains all the global information that data access needs to begin
-// operation.  All of the values stored here are RVAs.  DacGlobalBase() returns the current
-// base address to combine with to get a full target address.
+// operation.  All of the values stored here are global addresses.
 //
 
 typedef struct _DacGlobals
 {
-// These will define all of the dac related mscorwks static and global variables
-// TODO: update DacTableGen to parse "uint32_t" instead of "ULONG32" for the ids
+// These will define all of the dac related coreclr static and global variables
 #ifdef DAC_CLR_ENVIRONMENT
 #define DEFINE_DACVAR(id_type, size, id)                 id_type id;
 #define DEFINE_DACVAR_NO_DUMP(id_type, size, id)         id_type id;
