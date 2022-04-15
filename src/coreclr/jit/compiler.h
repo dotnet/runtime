@@ -4382,8 +4382,8 @@ protected:
 
     enum BoxPatternFlags
     {
-        None = 0,
-        IsByRefLike = 1,
+        None                  = 0,
+        IsByRefLike           = 1,
         MakeInlineObservation = 2,
     };
 

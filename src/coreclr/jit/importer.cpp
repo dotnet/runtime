@@ -16545,7 +16545,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 }
 
                 bool isByRefLike =
-                        (info.compCompHnd->getClassAttribs(resolvedToken.hClass) & CORINFO_FLG_BYREF_LIKE) != 0;
+                    (info.compCompHnd->getClassAttribs(resolvedToken.hClass) & CORINFO_FLG_BYREF_LIKE) != 0;
                 if (isByRefLike)
                 {
                     // For ByRefLike types we are required to either fold the
@@ -16556,7 +16556,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 }
 
                 // Look ahead for box idioms
-                int matched = impBoxPatternMatch(&resolvedToken, codeAddr + sz, codeEndp, isByRefLike ? IsByRefLike : None);
+                int matched =
+                    impBoxPatternMatch(&resolvedToken, codeAddr + sz, codeEndp, isByRefLike ? IsByRefLike : None);
                 if (matched >= 0)
                 {
                     // Skip the matched IL instructions
