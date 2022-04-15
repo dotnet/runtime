@@ -86,9 +86,4 @@ namespace System
     {
         public OutOfMemoryException() { }
     }
-
-    internal class InvalidProgramException : Exception
-    {
-        public InvalidProgramException() { }
-    }
 }
