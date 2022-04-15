@@ -113,7 +113,7 @@ int ILStubResolver::GetStringLiteralLength(mdToken metaTok)
 
 STRINGREF ILStubResolver::GetStringLiteral(mdToken metaTok)
 {
-    STANDARD_VM_CONTRACT;
+    LIMITED_METHOD_CONTRACT;
     _ASSERTE(FALSE);
     return NULL;
 }

@@ -1889,7 +1889,7 @@ namespace Internal.JitInterface
                     buffer[i] = ptr[i];
                 }
             }
-            return (int)s.Length;
+            return s.Length;
         }
 
         private CorInfoType asCorInfoType(CORINFO_CLASS_STRUCT_* cls)
