@@ -119,31 +119,37 @@ namespace System.Diagnostics.Metrics
         {
             if (measurementCallback is null)
                 measurementCallback = (instrument, measurement, tags, state) => { /* no-op */};
-            switch (typeof(T))
+            if (typeof(T) == typeof(byte))
             {
-                case var type when type == typeof(byte):
-                    _byteMeasurementCallback = (MeasurementCallback<byte>)(object)measurementCallback;
-                    break;
-                case var type when type == typeof(int):
-                    _intMeasurementCallback = (MeasurementCallback<int>)(object)measurementCallback;
-                    break;
-                case var type when type == typeof(float):
-                    _floatMeasurementCallback = (MeasurementCallback<float>)(object)measurementCallback;
-                    break;
-                case var type when type == typeof(double):
-                    _doubleMeasurementCallback = (MeasurementCallback<double>)(object)measurementCallback;
-                    break;
-                case var type when type == typeof(decimal):
-                    _decimalMeasurementCallback = (MeasurementCallback<decimal>)(object)measurementCallback;
-                    break;
-                case var type when type == typeof(short):
-                    _shortMeasurementCallback = (MeasurementCallback<short>)(object)measurementCallback;
-                    break;
-                case var type when type == typeof(long):
-                    _longMeasurementCallback = (MeasurementCallback<long>)(object)measurementCallback;
-                    break;
-                default:
-                    throw new InvalidOperationException(SR.Format(SR.UnsupportedType, typeof(T)));
+                _byteMeasurementCallback = (MeasurementCallback<byte>)(object)measurementCallback;
+            }
+            else if (typeof(T) == typeof(int))
+            {
+                _intMeasurementCallback = (MeasurementCallback<int>)(object)measurementCallback;
+            }
+            else if (typeof(T) == typeof(float))
+            {
+                _floatMeasurementCallback = (MeasurementCallback<float>)(object)measurementCallback;
+            }
+            else if (typeof(T) == typeof(double))
+            {
+                _doubleMeasurementCallback = (MeasurementCallback<double>)(object)measurementCallback;
+            }
+            else if (typeof(T) == typeof(decimal))
+            {
+                _decimalMeasurementCallback = (MeasurementCallback<decimal>)(object)measurementCallback;
+            }
+            else if (typeof(T) == typeof(short))
+            {
+                _shortMeasurementCallback = (MeasurementCallback<short>)(object)measurementCallback;
+            }
+            else if (typeof(T) == typeof(long))
+            {
+                _longMeasurementCallback = (MeasurementCallback<long>)(object)measurementCallback;
+            }
+            else
+            {
+                throw new ArgumentException($"The specified numeric type {typeof(T).Name} is not supported.");
             }
         }
 
