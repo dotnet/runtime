@@ -2046,6 +2046,18 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        public async Task PolymorphicClassWithNullDerivedTypeAttribute_ThrowsInvalidOperationException()
+        {
+            var value = new PolymorphicClassWithNullDerivedTypeAttribute();
+            await Assert.ThrowsAsync<InvalidOperationException>(() => Serializer.SerializeWrapper(value));
+        }
+
+        [JsonDerivedType(derivedType: null)]
+        public class PolymorphicClassWithNullDerivedTypeAttribute
+        {
+        }
+
+        [Fact]
         public async Task PolymorphicClassWithStructDerivedTypeAttribute_ThrowsInvalidOperationException()
         {
             var value = new PolymorphicClassWithStructDerivedTypeAttribute();

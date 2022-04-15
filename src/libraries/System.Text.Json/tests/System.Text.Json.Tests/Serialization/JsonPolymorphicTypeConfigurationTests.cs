@@ -69,6 +69,7 @@ namespace System.Text.Json.Tests.Serialization
         }
 
         [Theory]
+        [InlineData(null)]
         [InlineData(typeof(int))]
         [InlineData(typeof(int*))]
         [InlineData(typeof(string))]
@@ -85,6 +86,7 @@ namespace System.Text.Json.Tests.Serialization
 
         [Theory]
         [InlineData(typeof(Interface), typeof(object))]
+        [InlineData(typeof(Class), null)]
         [InlineData(typeof(Class), typeof(Interface))]
         [InlineData(typeof(Class), typeof(GenericClass<>))]
         public static void InvalidDerivedTypeArgument_ThrowsArgumentException(Type baseType, Type derivedType)

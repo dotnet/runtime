@@ -166,14 +166,15 @@ namespace System.Text.Json.Serialization.Metadata
             return false;
         }
 
-        public static bool IsSupportedPolymorphicBaseType(Type type) =>
+        public static bool IsSupportedPolymorphicBaseType(Type? type) =>
+            type != null &&
             (type.IsClass || type.IsInterface) &&
             !type.IsSealed &&
             !type.IsGenericTypeDefinition &&
             !type.IsPointer &&
             type != JsonTypeInfo.ObjectType;
 
-        public static bool IsSupportedDerivedType(Type baseType, Type derivedType) =>
+        public static bool IsSupportedDerivedType(Type baseType, Type? derivedType) =>
             baseType.IsAssignableFrom(derivedType) && !derivedType.IsGenericTypeDefinition;
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
