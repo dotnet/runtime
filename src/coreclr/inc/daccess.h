@@ -636,6 +636,8 @@ typedef struct _DacGlobals
 #ifdef _MSC_VER
 private:
     const static _DacGlobals s_dacGlobals;
+#else
+    void InitializeEntries();
 #endif
 public:
     static void Initialize();

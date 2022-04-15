@@ -44,12 +44,12 @@ HRESULT STDMETHODCALLTYPE TrackerTarget_QueryInterface(
     /* [in] */ REFIID riid,
     /* [iid_is][out] */ _COM_Outptr_ void __RPC_FAR* __RPC_FAR* ppvObject);
 
-template<typename T, template<typename> typename U>
+template<typename T, template<typename> class U>
 struct is_type_template_instantiation
 {
     constexpr static bool m_value = false;
 };
-template<typename T, template<typename> typename U>
+template<typename T, template<typename> class U>
 struct is_type_template_instantiation<U<T>, U>
 {
     constexpr static bool m_value = true;
@@ -109,7 +109,7 @@ void DacGlobals::Initialize()
 // the same way we do with MSVC to statically initialize the DAC table.
 DLLEXPORT DacGlobals g_DacTable;
 
-void DacGlobals::Initialize()
+void DacGlobals::InitializeEntries()
 {
     
 #define DEFINE_DACVAR(size, id, var) static_assert(!is_type_template_instantiation<decltype(var), Volatile>::m_value, "DAC variables defined with DEFINE_DACVAR must not be instantiations of Volatile<T>.");
@@ -130,8 +130,8 @@ void DacGlobals::Initialize()
 #undef DEFINE_DACVAR
 #undef DEFINE_DACVAR_VOLATILE
 #undef DEFINE_DACVAR_NO_DUMP
-#define DEFINE_DACGFN(func) PTR_TO_TADDR(&func),
-#define DEFINE_DACGFN_STATIC(class, func) PTR_TO_TADDR(&class::func),
+#define DEFINE_DACGFN(func) fn__##func = PTR_TO_TADDR(&func);
+#define DEFINE_DACGFN_STATIC(class, func) fn__##class##__##func = PTR_TO_TADDR(&class::func);
 #include "gfunc_list.h"
 #undef DEFINE_DACGFN
 #undef DEFINE_DACGFN_STATIC
@@ -150,6 +150,11 @@ void DacGlobals::Initialize()
 #include <vptr_list.h>
 #undef VPTR_CLASS
 #undef VPTR_MULTI_CLASS
+}
+
+void DacGlobals::Initialize()
+{
+    g_DacTable.InitializeEntries();
 }
 #endif
 #endif // DEBUGGER_SUPPORTED
