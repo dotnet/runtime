@@ -54,11 +54,11 @@ internal class FirefoxBrowser : BrowserBase
 
         var proxyLoggerFactory = LoggerFactory.Create(
             builder => builder
-                    // .AddSimpleConsole(options =>
-                    //     {
-                    //         options.SingleLine = true;
-                    //         options.TimestampFormat = "[HH:mm:ss] ";
-                    //     })
+                    .AddSimpleConsole(options =>
+                        {
+                            // options.SingleLine = true;
+                            options.TimestampFormat = "[HH:mm:ss] ";
+                        })
                 .AddFile(logFilePath, minimumLevel: LogLevel.Trace)
                 .AddFilter(null, LogLevel.Trace));
 

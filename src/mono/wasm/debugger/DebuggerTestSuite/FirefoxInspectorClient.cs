@@ -23,7 +23,7 @@ class FirefoxInspectorClient : InspectorClient
     internal string BreakpointActorId {get; set;}
     internal string ConsoleActorId {get; set;}
     internal string ThreadActorId {get; set;}
-    public FirefoxInspectorClient(ILogger logger) : base(logger) 
+    public FirefoxInspectorClient(ILogger logger) : base(logger)
     {
     }
 
@@ -33,6 +33,7 @@ class FirefoxInspectorClient : InspectorClient
             socket.Dispose();
         base.Dispose(disposing);
     }
+
     public override async Task Connect(
             Uri uri,
             Func<string, JObject, CancellationToken, Task> onEvent,
@@ -57,11 +58,13 @@ class FirefoxInspectorClient : InspectorClient
             proxyConnection.Close();
         };
 
+        logger.LogDebug($"FirefoxInspectorClient.Connect: calling ConnectWithMapLoops");
         await ConnectWithMainLoops(uri, HandleMessage, token);
         proxyConnection = new TcpClient();
         for (int i = 0 ; i < 10; i++)
         {
             try {
+                logger.LogDebug($"FirefoxInspectorClient.Connect: trying to connect to 127.0.0.1:6002");
                 proxyConnection.Connect("127.0.0.1", 6002);
                 break;
             }
@@ -90,22 +93,22 @@ class FirefoxInspectorClient : InspectorClient
             var toCmd = command.Value["result"]["value"]["tabs"][0]["actor"].Value<string>();
             var res = await SendCommand("getWatcher", JObject.FromObject(new { type = "getWatcher", isServerTargetSwitchingEnabled = true, to = toCmd}), token);
             var watcherId = res.Value["result"]["value"]["actor"].Value<string>();
-            res = await SendCommand("watchResources", JObject.FromObject(new { type = "watchResources", resourceTypes = new JArray("console-message"), to = watcherId}), token);            
+            res = await SendCommand("watchResources", JObject.FromObject(new { type = "watchResources", resourceTypes = new JArray("console-message"), to = watcherId}), token);
             res = await SendCommand("watchTargets", JObject.FromObject(new { type = "watchTargets", targetType = "frame", to = watcherId}), token);
             ThreadActorId = res.Value["result"]["value"]["target"]["threadActor"].Value<string>();
             ConsoleActorId = res.Value["result"]["value"]["target"]["consoleActor"].Value<string>();
-            await SendCommand("attach", JObject.FromObject(new 
-                { 
-                    type = "attach", 
-                    options =  JObject.FromObject(new 
+            await SendCommand("attach", JObject.FromObject(new
+                {
+                    type = "attach",
+                    options =  JObject.FromObject(new
                         {
-                            pauseOnExceptions = false, 
-                            ignoreCaughtExceptions = true, 
-                            shouldShowOverlay = true, 
+                            pauseOnExceptions = false,
+                            ignoreCaughtExceptions = true,
+                            shouldShowOverlay = true,
                             shouldIncludeSavedFrames = true,
-                            shouldIncludeAsyncLiveFrames = false, 
-                            skipBreakpoints = false, 
-                            logEventBreakpoints = false, 
+                            shouldIncludeAsyncLiveFrames = false,
+                            skipBreakpoints = false,
+                            logEventBreakpoints = false,
                             observeAsmJS = true,
                             breakpoints = new JArray(),
                             eventBreakpoints = new JArray()
@@ -167,9 +170,9 @@ class FirefoxInspectorClient : InspectorClient
                         {
                             args.Add(JObject.FromObject(new { value = argument.Value<string>()}));
                         }
-                        res = JObject.FromObject(new 
+                        res = JObject.FromObject(new
                             {
-                                type =  res["resources"][0]["message"]["level"].Value<string>(), 
+                                type =  res["resources"][0]["message"]["level"].Value<string>(),
                                 args
                             });
                     }

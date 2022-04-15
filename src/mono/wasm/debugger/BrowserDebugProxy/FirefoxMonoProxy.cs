@@ -42,7 +42,7 @@ internal class FirefoxMonoProxy : MonoProxy
 
     public async Task Run(TcpClient ideClient = null, WebSocket ideWebSocket = null)
     {
-        ide = AbstractConnection.Create(ideClient, ideWebSocket, logger);
+        ide = AbstractConnection.Create(logger, ideClient, ideWebSocket);
         TcpClient browserClient = new TcpClient();
         browser = AbstractConnection.Create(tcpClient: browserClient, logger: logger);
         logger.LogDebug($"Run: Connecting to 127.0.0.1:{portBrowser}");

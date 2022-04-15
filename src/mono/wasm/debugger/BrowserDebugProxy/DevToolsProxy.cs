@@ -426,8 +426,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                 throw new ArgumentException($"Both {nameof(tcpClient)}, and {nameof(webSocket)} cannot be non-null");
 
             return tcpClient is not null
-                        ? new WebSocketConnection(webSocket, logger)
-                        : new TcpClientConnection(tcpClient, logger);
+                        ? new TcpClientConnection(tcpClient, logger)
+                        : new WebSocketConnection(webSocket, logger);
         }
 
         public abstract DevToolsQueueBase NewQueue();
