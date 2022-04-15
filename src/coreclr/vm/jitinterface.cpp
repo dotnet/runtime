@@ -675,19 +675,19 @@ int CEEInfo::getStringLiteral (
 
     Module* module = GetModule(moduleHnd);
 
+    _ASSERTE(bufferSize >= 0);
+
     int result = -1;
 
     JIT_TO_EE_TRANSITION();
 
+    ULONG dwCharCount;
+    LPCWSTR pString;
     if (IsDynamicScope(moduleHnd))
     {
         GCX_COOP();
         STRINGREF strRef = GetDynamicResolver(moduleHnd)->GetStringLiteral(metaTOK);
-        if (strRef == NULL)
-        {
-            result = -1;
-        }
-        else
+        if (strRef != NULL)
         {
             GCPROTECT_BEGIN(strRef);
             StringObject* strObj = STRINGREFToObject(strRef);
@@ -696,21 +696,11 @@ int CEEInfo::getStringLiteral (
             GCPROTECT_END();
         }
     }
-    else
+    else if (!FAILED((module)->GetMDImport()->GetUserString(metaTOK, &dwCharCount, NULL, &pString)))
     {
-        ULONG dwCharCount;
-        LPCWSTR pString;
-        if (!FAILED((module)->GetMDImport()->GetUserString(metaTOK, &dwCharCount, NULL, &pString)))
-        {
-            // For string.Empty pString will be null
-            _ASSERTE(dwCharCount >= 0 && dwCharCount <= INT_MAX);
-            result = dwCharCount;
-            memcpy(buffer, pString, min(bufferSize, (int)dwCharCount) * sizeof(char16_t));
-        }
-        else
-        {
-            result = -1;
-        }
+        _ASSERTE(dwCharCount >= 0 && dwCharCount <= INT_MAX);
+        result = dwCharCount;
+        memcpy(buffer, pString, min(bufferSize, (int)dwCharCount) * sizeof(char16_t));
     }
 
     EE_TO_JIT_TRANSITION();

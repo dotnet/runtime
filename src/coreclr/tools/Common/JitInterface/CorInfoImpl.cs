@@ -1877,13 +1877,17 @@ namespace Internal.JitInterface
 
         private int getStringLiteral(CORINFO_MODULE_STRUCT_* module, uint metaTOK, char* buffer, int size)
         {
+            Debug.Assert(size >= 0);
+
             MethodILScope methodIL = HandleToObject(module);
             string s = (string)methodIL.GetObject((int)metaTOK);
 
-            char* ptr = (char*)GetPin(s);
-            for (int i = 0; i < Math.Min(size, s.Length); i++)
+            fixed (char* ptr = s)
             {
-                buffer[i] = ptr[i];
+                for (int i = 0; i < Math.Min(size, s.Length); i++)
+                {
+                    buffer[i] = ptr[i];
+                }
             }
             return (int)s.Length;
         }
