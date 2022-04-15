@@ -118,7 +118,7 @@ Enumerating of constructors/methods on `Span<T>` and `ReadOnlySpan<T>` may throw
 
 ## Special IL Sequences
 
-The following are IL sequences involving the `box` instruction. They are used for common C# language constructs and shall continue to be valid, even with ByRefLike types, in cases where the result can be computed at JIT time and elided safely. The conditions where each sequence is elided are described below and each condition will be added to the ECMA-335 addendum.
+The following are IL sequences involving the `box` instruction. They are used for common C# language constructs and shall continue to be valid, even with ByRefLike types, in cases where the result can be computed at JIT time and elided safely. These sequences must now be elided when the target type is ByRefLike. The conditions where each sequence is elided are described below and each condition will be added to the ECMA-335 addendum.
 
 `box` ; `unbox.any` &ndash; The box target type is equal to the unboxed target type.
 
