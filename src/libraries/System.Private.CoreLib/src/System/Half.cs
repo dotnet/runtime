@@ -113,7 +113,7 @@ namespace System
         {
             get
             {
-                return (sbyte)(BiasedExponent + ExponentBias);
+                return (sbyte)(BiasedExponent - ExponentBias);
             }
         }
 
@@ -121,7 +121,7 @@ namespace System
         {
             get
             {
-                return (ushort)(Significand + (1 << BiasedExponentShift));
+                return (ushort)(TrailingSignificand | ((BiasedExponent != 0) ? (1U << BiasedExponentShift) : 0U));
             }
         }
 
@@ -880,6 +880,66 @@ namespace System
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.Truncate(TSelf)" />
         public static Half Truncate(Half x) => (Half)MathF.Truncate((float)x);
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.GetExponentShortestBitLength()" />
+        long IFloatingPoint<Half>.GetExponentShortestBitLength()
+        {
+            sbyte exponent = Exponent;
+
+            if (exponent >= 0)
+            {
+                return (sizeof(sbyte) * 8) - sbyte.LeadingZeroCount(exponent);
+            }
+            else
+            {
+                return (sizeof(sbyte) * 8) + 1 - sbyte.LeadingZeroCount((sbyte)(~exponent));
+            }
+        }
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.GetExponentByteCount()" />
+        int IFloatingPoint<Half>.GetExponentByteCount() => sizeof(sbyte);
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.TryWriteExponentLittleEndian(Span{byte}, out int)" />
+        bool IFloatingPoint<Half>.TryWriteExponentLittleEndian(Span<byte> destination, out int bytesWritten)
+        {
+            if (destination.Length >= sizeof(sbyte))
+            {
+                sbyte exponent = Exponent;
+                Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), exponent);
+
+                bytesWritten = sizeof(sbyte);
+                return true;
+            }
+            else
+            {
+                bytesWritten = 0;
+                return false;
+            }
+        }
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.GetSignificandBitLength()" />
+        long IFloatingPoint<Half>.GetSignificandBitLength() => 11;
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.GetSignificandByteCount()" />
+        int IFloatingPoint<Half>.GetSignificandByteCount() => sizeof(ushort);
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.TryWriteSignificandLittleEndian(Span{byte}, out int)" />
+        bool IFloatingPoint<Half>.TryWriteSignificandLittleEndian(Span<byte> destination, out int bytesWritten)
+        {
+            if (destination.Length >= sizeof(ushort))
+            {
+                ushort significand = Significand;
+                Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), significand);
+
+                bytesWritten = sizeof(ushort);
+                return true;
+            }
+            else
+            {
+                bytesWritten = 0;
+                return false;
+            }
+        }
 
         //
         // IFloatingPointIeee754
