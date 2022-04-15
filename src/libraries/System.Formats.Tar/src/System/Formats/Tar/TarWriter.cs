@@ -188,7 +188,7 @@ namespace System.Formats.Tar
                     break;
                 case TarFormat.Unknown:
                 default:
-                    throw new FormatException(SR.UnknownFormat); // TODO: Should this be a debug assert? It shouldn't happen
+                    throw new FormatException(SR.UnknownFormat);
             }
 
             _wroteEntries = true;

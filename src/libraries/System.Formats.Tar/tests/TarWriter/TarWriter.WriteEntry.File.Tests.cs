@@ -184,7 +184,7 @@ namespace System.Formats.Tar.Tests
             }
 
             FileInfo linkInfo = new FileInfo(linkPath);
-            linkInfo.CreateAsSymbolicLink(targetName); // TODO: Need another test that has a link with an absolute path to a target
+            linkInfo.CreateAsSymbolicLink(targetName);
 
             using MemoryStream archive = new MemoryStream();
             using (TarWriter writer = new TarWriter(archive, format, leaveOpen: true))
@@ -210,8 +210,6 @@ namespace System.Formats.Tar.Tests
                 Assert.Null(reader.GetNextEntry());
             }
         }
-        // TODO: Find out how (if possible) to add a file as a hardlink, because otherwise,
-        // it can only be created directly as an entry, not by reading it from the filesystem
 
         [Theory]
         [InlineData(false)]

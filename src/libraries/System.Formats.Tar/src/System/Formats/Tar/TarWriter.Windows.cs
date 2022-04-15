@@ -47,7 +47,7 @@ namespace System.Formats.Tar
 
             entry._header._mTime = new DateTimeOffset(info.LastWriteTimeUtc);
             entry._header._aTime = new DateTimeOffset(info.LastAccessTimeUtc);
-            entry._header._cTime = new DateTimeOffset(info.CreationTimeUtc); // TODO: Figure out how to fix this mismatch
+            entry._header._cTime = new DateTimeOffset(info.LastWriteTimeUtc); // There is no "change time" property
 
             entry.Mode = DefaultWindowsMode;
 
