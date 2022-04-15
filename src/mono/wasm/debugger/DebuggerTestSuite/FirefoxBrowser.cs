@@ -58,7 +58,7 @@ internal class FirefoxBrowser : BrowserBase
                             // options.SingleLine = true;
                             options.TimestampFormat = "[HH:mm:ss] ";
                         })
-                .AddFilter(null, LogLevel.Debug))
+                .AddFilter(null, LogLevel.Information))
                 .AddFile(logFilePath, minimumLevel: LogLevel.Trace);
 
         var proxy = new DebuggerProxy(proxyLoggerFactory, null, loggerId: test_id);
