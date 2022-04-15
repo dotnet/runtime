@@ -1880,16 +1880,10 @@ namespace Internal.JitInterface
             Debug.Assert(size >= 0);
 
             MethodILScope methodIL = HandleToObject(module);
-            string s = (string)methodIL.GetObject((int)metaTOK);
-
-            fixed (char* ptr = s)
-            {
-                for (int i = 0; i < Math.Min(size, s.Length); i++)
-                {
-                    buffer[i] = ptr[i];
-                }
-            }
-            return s.Length;
+            string str = (string)methodIL.GetObject((int)metaTOK);
+            // Copy str's content to buffer
+            str.AsSpan(0, Math.Min(size, str.Length)).CopyTo(new Span<char>(buffer, size));
+            return str.Length;
         }
 
         private CorInfoType asCorInfoType(CORINFO_CLASS_STRUCT_* cls)
