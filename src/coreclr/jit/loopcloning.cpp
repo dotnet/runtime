@@ -1028,7 +1028,37 @@ bool Compiler::optDeriveLoopCloningConditions(unsigned loopNum, LoopCloneContext
 
     if (GenTree::StaticOperIs(loop->lpTestOper(), GT_LT, GT_LE, GT_GT, GT_GE))
     {
-        LC_Ident ident;
+
+        bool isLessThanLimitCheck    = GenTree::StaticOperIs(loop->lpTestOper(), GT_LT, GT_LE);
+        bool isGreaterThanLimitCheck = GenTree::StaticOperIs(loop->lpTestOper(), GT_GT, GT_GE);
+
+        // Increasing loop is the one that has "+=" increament operation and "< or <=" limit check.
+        bool isIncreasingLoop =
+            (isLessThanLimitCheck && (((loop->lpIterOper() == GT_ADD) && (loop->lpIterConst() > 0)) ||
+                                      ((loop->lpIterOper() == GT_SUB) && (loop->lpIterConst() < 0))));
+
+        // Increasing loop is the one that has "-=" decrement operation and "> or >=" limit check. If the operation is
+        // "+=", make sure the constant is negative to give an effect of decrementing the iterator.
+        bool isDecreasingLoop =
+            (isGreaterThanLimitCheck && (((loop->lpIterOper() == GT_ADD) && (loop->lpIterConst() < 0)) ||
+                                         ((loop->lpIterOper() == GT_SUB) && (loop->lpIterConst() > 0))));
+
+        int stride = loop->lpIterConst();
+        if (isIncreasingLoop)
+        {
+            stride = stride > 0 ? stride : -stride;
+        }
+        else if (isDecreasingLoop)
+        {
+            stride = stride < 0 ? -stride : stride;
+        }
+        else
+        {
+            assert("Should not be here. the loop is not detected increasing or decreasing.\n");
+        }
+
+        if (stride > 58)
+
 
         // Init conditions
         if (loop->lpFlags & LPFLG_CONST_INIT)
