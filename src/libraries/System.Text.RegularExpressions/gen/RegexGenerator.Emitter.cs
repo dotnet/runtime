@@ -4244,48 +4244,69 @@ namespace System.Text.RegularExpressions.Generator
         /// <param name="depth">The depth of the current node.</param>
         private static void DescribeExpressionAsXmlComment(TextWriter writer, RegexNode node, RegexMethod rm, int depth = 0)
         {
-            bool skip = node.Kind switch
+            if (!StackHelper.TryEnsureSufficientExecutionStack())
             {
-                // For concatenations, flatten the contents into the parent, but only if the parent isn't a form of alternation,
-                // where each branch is considered to be independent rather than a concatenation.
-                RegexNodeKind.Concatenate when node.Parent is not { Kind: RegexNodeKind.Alternate or RegexNodeKind.BackreferenceConditional or RegexNodeKind.ExpressionConditional } => true,
+                writer.WriteLine("/// ...");
+                return;
+            }
 
-                // For atomic, skip the node if we'll instead render the atomic label as part of rendering the child.
-                RegexNodeKind.Atomic when node.Child(0).Kind is RegexNodeKind.Loop or RegexNodeKind.Lazyloop or RegexNodeKind.Alternate => true,
-
-                // Skip nodes that are implementation details with no visible behavioral impact.
-                RegexNodeKind.UpdateBumpalong => true,
-
-                // Don't skip anything else.
-                _ => false,
-            };
-
-            if (!skip)
+            do
             {
-                string tag = node.Parent?.Kind switch
+                bool skip = node.Kind switch
                 {
-                    RegexNodeKind.ExpressionConditional when node.Parent.Child(0) == node => "Condition: ",
-                    RegexNodeKind.ExpressionConditional when node.Parent.Child(1) == node => "Matched: ",
-                    RegexNodeKind.ExpressionConditional when node.Parent.Child(2) == node => "Not Matched: ",
+                    // For concatenations, flatten the contents into the parent, but only if the parent isn't a form of alternation,
+                    // where each branch is considered to be independent rather than a concatenation.
+                    RegexNodeKind.Concatenate when node.Parent is not { Kind: RegexNodeKind.Alternate or RegexNodeKind.BackreferenceConditional or RegexNodeKind.ExpressionConditional } => true,
 
-                    RegexNodeKind.BackreferenceConditional when node.Parent.Child(0) == node => "Matched: ",
-                    RegexNodeKind.BackreferenceConditional when node.Parent.Child(1) == node => "Not Matched: ",
+                    // For atomic, skip the node if we'll instead render the atomic label as part of rendering the child.
+                    RegexNodeKind.Atomic when node.Child(0).Kind is RegexNodeKind.Loop or RegexNodeKind.Lazyloop or RegexNodeKind.Alternate => true,
 
-                    _ => "",
+                    // Skip nodes that are implementation details with no visible behavioral impact.
+                    RegexNodeKind.UpdateBumpalong => true,
+
+                    // Don't skip anything else.
+                    _ => false,
                 };
 
-                // Write out the line for the node.
-                const char BulletPoint = '\u25CB';
-                writer.WriteLine($"/// {new string(' ', depth * 4)}{BulletPoint} {tag}{HttpUtility.HtmlEncode(DescribeNode(node, rm))}<br/>");
-            }
+                if (!skip)
+                {
+                    string tag = node.Parent?.Kind switch
+                    {
+                        RegexNodeKind.ExpressionConditional when node.Parent.Child(0) == node => "Condition: ",
+                        RegexNodeKind.ExpressionConditional when node.Parent.Child(1) == node => "Matched: ",
+                        RegexNodeKind.ExpressionConditional when node.Parent.Child(2) == node => "Not Matched: ",
 
-            // Recur into each of its children.
-            int childCount = node.ChildCount();
-            for (int i = 0; i < childCount; i++)
-            {
-                int childDepth = skip ? depth : depth + 1;
-                DescribeExpressionAsXmlComment(writer, node.Child(i), rm, childDepth);
+                        RegexNodeKind.BackreferenceConditional when node.Parent.Child(0) == node => "Matched: ",
+                        RegexNodeKind.BackreferenceConditional when node.Parent.Child(1) == node => "Not Matched: ",
+
+                        _ => "",
+                    };
+
+                    // Write out the line for the node.
+                    const char BulletPoint = '\u25CB';
+                    writer.WriteLine($"/// {new string(' ', depth * 4)}{BulletPoint} {tag}{HttpUtility.HtmlEncode(DescribeNode(node, rm))}<br/>");
+                }
+
+                // Process each child.
+                int childCount = node.ChildCount();
+                if (childCount == 0)
+                {
+                    break;
+                }
+
+                if (!skip)
+                {
+                    depth++;
+                }
+
+                // Process all but the last child recursively, then loop around to process the last.
+                for (int i = 0; i < childCount - 1; i++)
+                {
+                    DescribeExpressionAsXmlComment(writer, node.Child(i), rm, depth);
+                }
+                node = node.Child(childCount - 1);
             }
+            while (true);
         }
 
         /// <summary>Gets a textual description of a loop's style and bounds.</summary>
