@@ -499,7 +499,7 @@ if(NOT DISABLE_EXECUTABLES)
   endif()
 
   if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-    target_link_libraries(mono-sgen PRIVATE monoapi-validate)
+    target_sources(mono-sgen PRIVATE ${mono_validate_apis_source})
   endif()
 
   install(TARGETS mono-sgen RUNTIME)

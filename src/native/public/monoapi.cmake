@@ -141,7 +141,7 @@ endif()
 
 
 # create a helper source file to validate an implementation exists for each public API,
-# it is linked into mono-sgen and will cause a linking failure there if an API is missing
+# it is compiled into mono-sgen and will cause a linking failure there if an API is missing
 foreach(header IN LISTS jit_public_headers metadata_public_headers utils_public_headers)
 	if(NOT header MATCHES "profiler-events.h") # profiler-events.h doesn't define APIs which causes an issue
 		string(APPEND publicapis_headers_include "#include <${header}>\n")
@@ -154,7 +154,5 @@ foreach(header IN LISTS jit_public_headers_details metadata_public_headers_detai
 	endif()
 endforeach()
 
+set(mono_validate_apis_source ${CMAKE_CURRENT_BINARY_DIR}/validate-apis.c PARENT_SCOPE)
 configure_file(validate-apis.c.in ${CMAKE_CURRENT_BINARY_DIR}/validate-apis.c @ONLY)
-
-add_library(monoapi-validate INTERFACE)
-target_sources(monoapi-validate INTERFACE ${CMAKE_CURRENT_BINARY_DIR}/validate-apis.c)
