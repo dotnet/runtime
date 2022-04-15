@@ -71,7 +71,7 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Ping\tests\FunctionalTests\System.Net.Ping.Functional.Tests.csproj" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetsMobile)' == 'true' or '$(TargetArchitecture)' == 'ARMv6'">
+  <ItemGroup Condition="'$(TargetsMobile)' == 'true' or $(OutputRid.StartsWith('linux-bionic')) or '$(TargetArchitecture)' == 'ARMv6'">
     <!-- LibraryImportGenerator runtime tests depend on DNNE, which does not support mobile platforms. -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.InteropServices\tests\LibraryImportGenerator.Tests\LibraryImportGenerator.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.InteropServices\tests\LibraryImportGenerator.UnitTests\LibraryImportGenerator.Unit.Tests.csproj" />
