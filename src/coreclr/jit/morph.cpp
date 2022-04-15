@@ -11855,7 +11855,7 @@ DONE_MORPHING_CHILDREN:
 #ifdef TARGET_ARM64
             if (!optValnumCSE_phase && opts.OptimizationEnabled())
             {
-                tree = fgMorphMulAddToMulSub(tree->AsOp());
+                tree = fgMorphMulAdd(tree->AsOp());
                 op1  = tree->AsOp()->gtOp1;
                 op2  = tree->AsOp()->gtOp2;
             }
@@ -14274,16 +14274,16 @@ GenTree* Compiler::fgMorphUModToAndSub(GenTreeOp* tree)
 // fgMorphMulAddToMulSub:
 //                       Transform "-a * b + c" to "c - a * b"
 //                       Transform "a * -b + c" to "c - a * b"
-//
+//                       Transform "a * b + c" to "c + a * b"
 // Arguments:
 //    tree - The GT_ADD tree to morph
 //
 // Returns:
 //    The morphed tree
 //
-GenTree* Compiler::fgMorphMulAddToMulSub(GenTreeOp* tree)
+GenTree* Compiler::fgMorphMulAdd(GenTreeOp* tree)
 {
-    JITDUMP("\nMorphing MUL/ADD [%06u] to MUL/SUB\n", dspTreeID(tree));
+    JITDUMP("\nMorphing MUL/ADD [%06u]\n", dspTreeID(tree));
 
     assert(tree->OperIs(GT_ADD));
 
@@ -14318,6 +14318,12 @@ GenTree* Compiler::fgMorphMulAddToMulSub(GenTreeOp* tree)
             tree->ChangeOper(GT_SUB);
 
             DEBUG_DESTROY_NODE(mulOp2);
+        }
+        // Transform "a * b + c" to "c + a * b"
+        else
+        {
+            tree->gtOp1 = addOp2;
+            tree->gtOp2 = addOp1;
         }
     }
 
