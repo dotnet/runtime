@@ -11859,6 +11859,7 @@ DONE_MORPHING_CHILDREN:
                 op1  = tree->AsOp()->gtOp1;
                 op2  = tree->AsOp()->gtOp2;
             }
+            break;
 #else
             FALLTHROUGH;
 #endif
