@@ -275,6 +275,36 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             return CreateCompilation(source);
         }
 
+        public static Compilation CreateCompilationWithRecordPositionalParameters()
+        {
+            string source = @"
+            using System;
+            using System.Text.Json.Serialization;
+
+            namespace HelloWorld
+            {                
+                public record Location
+                (
+                    int Id,
+                    string Address1,
+                    string Address2,
+                    string City,
+                    string State,
+                    string PostalCode,
+                    string Name,
+                    string PhoneNumber,
+                    string Country
+                )
+
+                [JsonSerializable(typeof(Location))]
+                public partial class MyJsonContext : JsonSerializerContext
+                {
+                }
+            }";
+
+            return CreateCompilation(source);
+        }
+
         public static Compilation CreateCompilationWithInitOnlyProperties()
         {
             string source = @"

@@ -217,6 +217,19 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/58770", TestPlatforms.Browser)]
+        public void DoNotWarnOnRecordsWithPositionalParameters()
+        {
+            Compilation compilation = CompilationHelper.CreateCompilationWithRecordPositionalParameters();
+            JsonSourceGenerator generator = new JsonSourceGenerator();
+            CompilationHelper.RunGenerators(compilation, out var generatorDiags, generator);
+
+            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Info, generatorDiags, Array.Empty<(Location, string)>());
+            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Warning, generatorDiags, Array.Empty<(Location, string)>());
+            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Error, generatorDiags, Array.Empty<(Location, string)>());
+        }
+
+        [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/58226", TestPlatforms.Browser)]
         public void WarnOnClassesWithInitOnlyProperties()
         {

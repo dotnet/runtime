@@ -1028,7 +1028,7 @@ namespace System.Text.Json.SourceGeneration
                                     _implicitlyRegisteredTypes.Add(dataExtensionPropGenSpec);
                                 }
 
-                                if (!hasInitOnlyProperties && spec.CanUseSetter && spec.IsInitOnlySetter)
+                                if (!hasInitOnlyProperties && spec.CanUseSetter && spec.IsInitOnlySetter && !PropertyIsConstructorParameter(spec, paramGenSpecArray))
                                 {
                                     _sourceGenerationContext.ReportDiagnostic(Diagnostic.Create(InitOnlyPropertyDeserializationNotSupported, memberLocation, new string[] { type.Name }));
                                     hasInitOnlyProperties = true;
@@ -1118,6 +1118,9 @@ namespace System.Text.Json.SourceGeneration
                     ignoredMembers.Add(propGenSpec.ClrName, propGenSpec);
                 }
             }
+
+            private static bool PropertyIsConstructorParameter(PropertyGenerationSpec propSpec, ParameterGenerationSpec[]? paramGenSpecArray)
+                => paramGenSpecArray != null && paramGenSpecArray.Any(paramSpec => propSpec.ClrName == paramSpec.ParameterInfo.Name);
 
             private static bool PropertyIsOverridenAndIgnored(
                 string currentMemberName,
