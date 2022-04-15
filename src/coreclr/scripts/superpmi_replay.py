@@ -34,7 +34,8 @@ jit_flags_all = [
     "JitStressRegs=4",
     "JitStressRegs=8",
     "JitStressRegs=0x10",
-    "JitStressRegs=0x80",
+#    See https://github.com/dotnet/runtime/issues/66563
+#    "JitStressRegs=0x80",
     "JitStressRegs=0x1000",
 ]
 
