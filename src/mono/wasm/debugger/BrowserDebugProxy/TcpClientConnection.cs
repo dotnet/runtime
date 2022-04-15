@@ -15,10 +15,10 @@ namespace Microsoft.WebAssembly.Diagnostics
         public TcpClient TcpClient { get; init; }
         private readonly ILogger _logger;
 
-        public TcpClientConnection(TcpClient tcpClient, ILogger logger)
+        public TcpClientConnection(TcpClient tcpClient!!, ILogger logger!!)
         {
-            TcpClient = tcpClient ?? throw new ArgumentNullException(nameof(tcpClient));
-            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            TcpClient = tcpClient;
+            _logger = logger;
         }
 
         public override DevToolsQueueBase NewQueue() => new DevToolsQueueFirefox(TcpClient);
