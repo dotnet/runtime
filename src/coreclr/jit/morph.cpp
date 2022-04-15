@@ -2239,9 +2239,7 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
         // Change the node to TYP_I_IMPL so we don't report GC info
         // NOTE: We deferred this from the importer because of the inliner.
 
-        // TODO-ARGS: Quirk this to match previous behavior. This optimization
-        // is not being done for 'this' pointer. It should be.
-        if ((arg.GetWellKnownArg() != WellKnownArg::ThisPointer) && argx->IsLocalAddrExpr() != nullptr)
+        if (argx->IsLocalAddrExpr() != nullptr)
         {
             argx->gtType = TYP_I_IMPL;
         }
@@ -3224,9 +3222,9 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
         DEBUG_ARG_SLOTS_ASSERT(size != 0);
         DEBUG_ARG_SLOTS_ONLY(argSlots += arg.AbiInfo.GetSlotCount();)
 
-        // TODO-ARGS: Quirk this to match previous behavior where it was
-        // skipped for 'this' pointer. We should turn it off.
-        if ((arg.GetWellKnownArg() != WellKnownArg::ThisPointer) && (argx->IsLocalAddrExpr() != nullptr))
+        // For pointers to locals we can skip reporting GC info and also skip
+        // zero initialization.
+        if (argx->IsLocalAddrExpr() != nullptr)
         {
             argx->gtType = TYP_I_IMPL;
         }
