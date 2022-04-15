@@ -14272,6 +14272,8 @@ GenTree* Compiler::fgMorphUModToAndSub(GenTreeOp* tree)
 
 //------------------------------------------------------------------------
 // fgMorphMulAdd:
+//                Transform "a + -b * c" to "a - b * c"
+//                Transform "a + b * -c" to "a - b * c"
 //                Transform "-a * b + c" to "c - a * b"
 //                Transform "a * -b + c" to "c - a * b"
 //                Transform "a * b + c" to "c + a * b"
@@ -14297,18 +14299,31 @@ GenTree* Compiler::fgMorphMulAdd(GenTreeOp* tree)
     GenTree* addOp1 = tree->gtGetOp1();
     GenTree* addOp2 = tree->gtGetOp2();
 
-    if (addOp1->OperIs(GT_MUL) && varTypeIsIntegral(addOp1) &&
-        !addOp1->gtOverflow())
+    GenTree* mul;
+    GenTree* op2;
+    if (addOp1->OperIs(GT_MUL))
     {
-        GenTree* mulOp1 = addOp1->gtGetOp1();
-        GenTree* mulOp2 = addOp1->gtGetOp2();
+        mul = addOp1;
+        op2 = addOp2;
+    }
+    else
+    {
+        mul = addOp2;
+        op2 = addOp1;
+    }
+
+    if (mul->OperIs(GT_MUL) && varTypeIsIntegral(mul) &&
+        !mul->gtOverflow())
+    {
+        GenTree* mulOp1 = mul->gtGetOp1();
+        GenTree* mulOp2 = mul->gtGetOp2();
 
         // Transform "-a * b + c" to "c - a * b"
         if (mulOp1->OperIs(GT_NEG) && !mulOp2->OperIs(GT_NEG))
         {
-            addOp1->AsOp()->gtOp1 = mulOp1->gtGetOp1();
-            tree->gtOp1           = addOp2;
-            tree->gtOp2           = addOp1;
+            mul->AsOp()->gtOp1 = mulOp1->gtGetOp1();
+            tree->gtOp1           = op2;
+            tree->gtOp2           = mul;
             tree->ChangeOper(GT_SUB);
 
             DEBUG_DESTROY_NODE(mulOp1);
@@ -14316,9 +14331,9 @@ GenTree* Compiler::fgMorphMulAdd(GenTreeOp* tree)
         // Transform "a * -b + c" to "c - a * b"
         else if (mulOp2->OperIs(GT_NEG) && !mulOp1->OperIs(GT_NEG))
         {
-            addOp1->AsOp()->gtOp2 = mulOp2->gtGetOp1();
-            tree->gtOp1           = addOp2;
-            tree->gtOp2           = addOp1;
+            mul->AsOp()->gtOp2 = mulOp2->gtGetOp1();
+            tree->gtOp1           = op2;
+            tree->gtOp2           = mul;
             tree->ChangeOper(GT_SUB);
 
             DEBUG_DESTROY_NODE(mulOp2);
@@ -14326,8 +14341,8 @@ GenTree* Compiler::fgMorphMulAdd(GenTreeOp* tree)
         // Transform "a * b + c" to "c + a * b"
         else
         {
-            tree->gtOp1 = addOp2;
-            tree->gtOp2 = addOp1;
+            tree->gtOp1 = op2;
+            tree->gtOp2 = mul;
         }
     }
 
