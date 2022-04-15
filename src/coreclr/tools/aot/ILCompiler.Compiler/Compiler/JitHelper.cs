@@ -83,7 +83,6 @@ namespace ILCompiler
                     mangledName = "RhpCheckedAssignRefECX";
                     break;
 
-                case ReadyToRunHelper.Box_Slow:
                 case ReadyToRunHelper.Box:
                 case ReadyToRunHelper.Box_Nullable:
                     mangledName = "RhBox";

@@ -1073,10 +1073,6 @@ namespace Internal.IL
             {
                 _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.Box_Nullable), reason);
             }
-            else if (type.IsByRefLike)
-            {
-                _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.Box_Slow), reason);
-            }
             else
             {
                 _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.Box), reason);

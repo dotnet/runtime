@@ -130,6 +130,45 @@
     }
 
     .method public hidebysig
+        instance bool BoxBranch_WithSideEffects(!T&) cil managed
+    {
+        ldarg.1
+        // Begin sequence
+            ldobj !T // Side-effect
+            box !T
+            brfalse.s NEXT_1
+        // End sequence
+        NEXT_1:
+
+        ldarg.1
+        // Begin sequence
+            ldobj !T // Side-effect
+            box !T
+            brfalse NEXT_2
+        // End sequence
+        NEXT_2:
+
+        ldarg.1
+        // Begin sequence
+            ldobj !T // Side-effect
+            box !T
+            brtrue.s NEXT_3
+        // End sequence
+        NEXT_3:
+
+        ldarg.1
+        // Begin sequence
+            ldobj !T // Side-effect
+            box !T
+            brtrue NEXT_4
+        // End sequence
+        NEXT_4:
+
+        ldc.i4.1
+        ret
+    }
+
+    .method public hidebysig
         instance bool BoxIsinstUnboxAny(!T) cil managed
     {
         ldarg.1
@@ -172,6 +211,49 @@
 
         ldarg.1
         // Begin sequence
+            box !T
+            isinst ByRefLikeType
+            brtrue NEXT_4
+        // End sequence
+        NEXT_4:
+
+        ldc.i4.1
+        ret
+    }
+
+    .method public hidebysig
+        instance bool BoxIsinstBranch_WithSideEffects(!T&) cil managed
+    {
+        ldarg.1
+        // Begin sequence
+            ldobj !T // Side-effect
+            box !T
+            isinst ByRefLikeType
+            brfalse.s NEXT_1
+        // End sequence
+        NEXT_1:
+
+        ldarg.1
+        // Begin sequence
+            ldobj !T // Side-effect
+            box !T
+            isinst ByRefLikeType
+            brfalse NEXT_2
+        // End sequence
+        NEXT_2:
+
+        ldarg.1
+        // Begin sequence
+            ldobj !T // Side-effect
+            box !T
+            isinst ByRefLikeType
+            brtrue.s NEXT_3
+        // End sequence
+        NEXT_3:
+
+        ldarg.1
+        // Begin sequence
+            ldobj !T // Side-effect
             box !T
             isinst ByRefLikeType
             brtrue NEXT_4
@@ -343,93 +425,6 @@
     }
 
     .method public hidebysig static
-        string NonByRefLikeGenericValue(int32) cil managed
-    {
-        .locals init (
-            [0] valuetype InvalidCSharp.GenericByRefLike_Over`1<int32>
-        )
-        ldloca.s 0
-        initobj valuetype InvalidCSharp.GenericByRefLike_Over`1<int32>
-        ldloca.s 0
-        ldarg.0
-        stfld !0 valuetype InvalidCSharp.GenericByRefLike_Over`1<int32>::Field
-        ldloc.0
-        call string Exec::TypeOrValue<int32>(valuetype InvalidCSharp.GenericByRefLike_Over`1<!!0>)
-        ret
-    }
-
-    .method public hidebysig static
-        string ByRefLikeGenericTypeName() cil managed
-    {
-        .locals init (
-            [0] valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>
-        )
-        ldloca.s 0
-        initobj valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>
-        ldloca.s 0
-        ldflda !0 valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>::Field
-        initobj ByRefLikeType
-        ldloc.0
-        call string Exec::TypeOrValue<valuetype ByRefLikeType>(valuetype InvalidCSharp.GenericByRefLike_Over`1<!!0>)
-        ret
-    }
-
-    /*
-        // TypeOrValue in C#
-        private static string TypeOrValue<T>(InvalidCSharp.GenericByRefLike_Over<T> input)
-        {
-            if (typeof(T).IsByRefLike)
-            {
-                return typeof(T).ToString();
-            }
-            else
-            {
-                return input.E.ToString();
-            }
-    }
-    */
-    .method private hidebysig static
-        string TypeOrValue<byreflike T> (
-            valuetype InvalidCSharp.GenericByRefLike_Over`1<!!T> input
-        ) cil managed
-    {
-        // Method begins at RVA 0x2070
-        // Code size 63 (0x3f)
-        .maxstack 1
-        .locals init (
-            [0] bool,
-            [1] string
-        )
-
-        IL_0000: nop
-        IL_0001: ldtoken !!T
-        IL_0006: call class [System.Runtime]System.Type [System.Runtime]System.Type::GetTypeFromHandle(valuetype [System.Runtime]System.RuntimeTypeHandle)
-        IL_000b: callvirt instance bool [System.Runtime]System.Type::get_IsByRefLike()
-        IL_0010: stloc.0
-        // sequence point: hidden
-        IL_0011: ldloc.0
-        IL_0012: brfalse.s IL_0027
-
-        IL_0014: nop
-        IL_0015: ldtoken !!T
-        IL_001a: call class [System.Runtime]System.Type [System.Runtime]System.Type::GetTypeFromHandle(valuetype [System.Runtime]System.RuntimeTypeHandle)
-        IL_001f: callvirt instance string [System.Runtime]System.Object::ToString()
-        IL_0024: stloc.1
-        IL_0025: br.s IL_003d
-
-        IL_0027: nop
-        IL_0028: ldarga.s input
-        IL_002a: ldflda !0 valuetype InvalidCSharp.GenericByRefLike_Over`1<!!T>::Field
-        IL_002f: constrained. !!T
-        IL_0035: callvirt instance string [System.Runtime]System.Object::ToString()
-        IL_003a: stloc.1
-        IL_003b: br.s IL_003d
-
-        IL_003d: ldloc.1
-        IL_003e: ret
-    } // end of method Exec::TypeOrValue
-
-    .method public hidebysig static
         object BoxAsObject() cil managed
     {
         .locals init (
@@ -465,15 +460,24 @@
         bool BoxBranch() cil managed
     {
         .locals init (
-            [0] valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>
+            [0] valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>,
+            [1] bool
         )
 
         ldloca.s 0
         initobj valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>
+
         ldloca.s 0
         ldloc 0
         ldfld !0 valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>::Field
         call instance bool valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>::BoxBranch(!0)
+        pop
+
+        ldloca.s 0
+        ldloca.s 0
+        ldflda !0 valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>::Field
+        call instance bool valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>::BoxBranch_WithSideEffects(!0&)
+
         ret
     }
 
@@ -502,10 +506,18 @@
 
         ldloca.s 0
         initobj valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>
+
         ldloca.s 0
         ldloc 0
         ldfld !0 valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>::Field
         call instance bool valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>::BoxIsinstBranch(!0)
+        pop
+
+        ldloca.s 0
+        ldloca.s 0
+        ldflda !0 valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>::Field
+        call instance bool valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>::BoxIsinstBranch_WithSideEffects(!0&)
+
         ret
     }
 

@@ -10295,7 +10295,6 @@ VNFunc Compiler::fgValueNumberJitHelperMethodVNFunc(CorInfoHelpFunc helpFunc)
             vnf = VNF_LoopCloneChoiceAddr;
             break;
 
-        case CORINFO_HELP_BOX_SLOW:
         case CORINFO_HELP_BOX:
             vnf = VNF_Box;
             break;

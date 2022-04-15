@@ -1706,10 +1706,6 @@ namespace ILCompiler.Reflection.ReadyToRun
                     builder.Append("GET_RUNTIME_FIELD_HANDLE");
                     break;
 
-                case ReadyToRunHelper.Box_Slow:
-                    builder.Append("BOX_SLOW");
-                    break;
-
                 case ReadyToRunHelper.Box:
                     builder.Append("BOX");
                     break;

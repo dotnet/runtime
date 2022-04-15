@@ -6958,6 +6958,7 @@ GenTree* Compiler::impImportLdvirtftn(GenTree*                thisPtr,
 //   pResolvedToken - resolved token from the box operation
 //   codeAddr - position in IL stream after the box instruction
 //   codeEndp - end of IL stream
+//   flags - dictate pattern matching behavior
 //
 // Return Value:
 //   Number of IL bytes matched and imported, -1 otherwise
@@ -6969,7 +6970,7 @@ GenTree* Compiler::impImportLdvirtftn(GenTree*                thisPtr,
 int Compiler::impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                  const BYTE*             codeAddr,
                                  const BYTE*             codeEndp,
-                                 bool                    makeInlineObservation)
+                                 BoxPatternFlags         flags)
 {
     if (codeAddr >= codeEndp)
     {
@@ -6982,7 +6983,7 @@ int Compiler::impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken,
             // box + unbox.any
             if (codeAddr + 1 + sizeof(mdToken) <= codeEndp)
             {
-                if (makeInlineObservation)
+                if (flags & MakeInlineObservation)
                 {
                     compInlineResult->Note(InlineObservation::CALLEE_FOLDABLE_BOX);
                     return 1 + sizeof(mdToken);
@@ -7013,7 +7014,7 @@ int Compiler::impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken,
             // box + br_true/false
             if ((codeAddr + ((codeAddr[0] >= CEE_BRFALSE) ? 5 : 2)) <= codeEndp)
             {
-                if (makeInlineObservation)
+                if (flags & MakeInlineObservation)
                 {
                     compInlineResult->Note(InlineObservation::CALLEE_FOLDABLE_BOX);
                     return 0;
@@ -7026,6 +7027,8 @@ int Compiler::impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                 // Can the thing being boxed cause a side effect?
                 if ((treeToBox->gtFlags & GTF_SIDE_EFFECT) != 0)
                 {
+                    assert(!(flags & IsByRefLike)); // we expect caller to spill before this.
+
                     // Is this a side effect we can replicate cheaply?
                     if (((treeToBox->gtFlags & GTF_SIDE_EFFECT) == GTF_EXCEPT) &&
                         treeToBox->OperIs(GT_OBJ, GT_BLK, GT_IND))
@@ -7045,10 +7048,8 @@ int Compiler::impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken,
 
                 if (canOptimize)
                 {
-                    CorInfoHelpFunc boxHelper = info.compCompHnd->getBoxHelper(pResolvedToken->hClass);
-
-                    // The fast and slow boxing helpers are both convertable to constants.
-                    if (boxHelper == CORINFO_HELP_BOX || boxHelper == CORINFO_HELP_BOX_SLOW)
+                    if ((flags & IsByRefLike) ||
+                        info.compCompHnd->getBoxHelper(pResolvedToken->hClass) == CORINFO_HELP_BOX)
                     {
                         JITDUMP("\n Importing BOX; BR_TRUE/FALSE as %sconstant\n",
                                 treeToNullcheck == nullptr ? "" : "nullcheck+");
@@ -7083,18 +7084,29 @@ int Compiler::impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                     case CEE_BRFALSE_S:
                         if ((nextCodeAddr + ((nextCodeAddr[0] >= CEE_BRFALSE) ? 5 : 2)) <= codeEndp)
                         {
-                            if (makeInlineObservation)
+                            if (flags & MakeInlineObservation)
                             {
                                 compInlineResult->Note(InlineObservation::CALLEE_FOLDABLE_BOX);
                                 return 1 + sizeof(mdToken);
                             }
 
+                            assert(!(flags & IsByRefLike) || ((impStackTop().val->gtFlags & GTF_SIDE_EFFECT) == 0));
+
                             if (!(impStackTop().val->gtFlags & GTF_SIDE_EFFECT))
                             {
-                                CorInfoHelpFunc boxHelper = info.compCompHnd->getBoxHelper(pResolvedToken->hClass);
+                                CorInfoHelpFunc foldAsHelper;
+                                if (flags & IsByRefLike)
+                                {
+                                    // Treat ByRefLike types as if they were regular boxing operations
+                                    // so they can be elided.
+                                    foldAsHelper = CORINFO_HELP_BOX;
+                                }
+                                else
+                                {
+                                    foldAsHelper = info.compCompHnd->getBoxHelper(pResolvedToken->hClass);
+                                }
 
-                                // The fast and slow boxing helpers are both convertable to constants.
-                                if (boxHelper == CORINFO_HELP_BOX || boxHelper == CORINFO_HELP_BOX_SLOW)
+                                if (foldAsHelper == CORINFO_HELP_BOX)
                                 {
                                     CORINFO_RESOLVED_TOKEN isInstResolvedToken;
 
@@ -7115,7 +7127,7 @@ int Compiler::impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                         return 1 + sizeof(mdToken);
                                     }
                                 }
-                                else if (boxHelper == CORINFO_HELP_BOX_NULLABLE)
+                                else if (foldAsHelper == CORINFO_HELP_BOX_NULLABLE)
                                 {
                                     // For nullable we're going to fold it to "ldfld hasValue + brtrue/brfalse" or
                                     // "ldc.i4.0 + brtrue/brfalse" in case if the underlying type is not castable to
@@ -7167,7 +7179,7 @@ int Compiler::impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                     case CEE_UNBOX_ANY:
                         if ((nextCodeAddr + 1 + sizeof(mdToken)) <= codeEndp)
                         {
-                            if (makeInlineObservation)
+                            if (flags & MakeInlineObservation)
                             {
                                 compInlineResult->Note(InlineObservation::CALLEE_FOLDABLE_BOX);
                                 return 2 + sizeof(mdToken) * 2;
@@ -16532,8 +16544,19 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     break;
                 }
 
+                bool isByRefLike =
+                        (info.compCompHnd->getClassAttribs(resolvedToken.hClass) & CORINFO_FLG_BYREF_LIKE) != 0;
+                if (isByRefLike)
+                {
+                    // For ByRefLike types we are required to either fold the
+                    // recognized patterns in impBoxPatternMatch or otherwise
+                    // throw InvalidProgramException at runtime. In either case
+                    // we will need to spill side effects of the expression.
+                    impSpillSideEffects(false, CHECK_SPILL_ALL DEBUGARG("Required for box of ByRefLike type"));
+                }
+
                 // Look ahead for box idioms
-                int matched = impBoxPatternMatch(&resolvedToken, codeAddr + sz, codeEndp);
+                int matched = impBoxPatternMatch(&resolvedToken, codeAddr + sz, codeEndp, isByRefLike ? IsByRefLike : None);
                 if (matched >= 0)
                 {
                     // Skip the matched IL instructions
@@ -16541,10 +16564,19 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     break;
                 }
 
-                impImportAndPushBox(&resolvedToken);
-                if (compDonotInline())
+                if (isByRefLike)
                 {
-                    return;
+                    // ByRefLike types are supported in boxing scenarios when the instruction can be elided
+                    // due to a recognized pattern above. If the pattern is not recognized, the code is invalid.
+                    BADCODE("ByRefLike types cannot be boxed");
+                }
+                else
+                {
+                    impImportAndPushBox(&resolvedToken);
+                    if (compDonotInline())
+                    {
+                        return;
+                    }
                 }
             }
             break;

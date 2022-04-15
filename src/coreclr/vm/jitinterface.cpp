@@ -6016,11 +6016,12 @@ CorInfoHelpFunc CEEInfo::getBoxHelper(CORINFO_CLASS_HANDLE clsHnd)
         if (VMClsHnd.IsTypeDesc())
             COMPlusThrow(kInvalidOperationException,W("InvalidOperation_TypeCannotBeBoxed"));
 
-        // The CORINFO_HELP_BOX_SLOW is designed to handle failure cases at run-time.
-        // CORINFO_HELP_BOX is always the fastest path when success is assumed.
-        result = VMClsHnd.IsByRefLike()
-            ? CORINFO_HELP_BOX_SLOW
-            : CORINFO_HELP_BOX;
+        // we shouldn't allow boxing of types that contains stack pointers
+        // csc and vbc already disallow it.
+        if (VMClsHnd.AsMethodTable()->IsByRefLike())
+            COMPlusThrow(kInvalidProgramException,W("NotSupported_ByRefLike"));
+
+        result = CORINFO_HELP_BOX;
     }
 
     EE_TO_JIT_TRANSITION();

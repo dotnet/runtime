@@ -30,17 +30,6 @@ class Validate
 
     [Fact]
     [SkipOnMono("Mono does not support ByRefLike generics yet")]
-    public static void Validate_IsByRefLikeInstrinsic()
-    {
-        Console.WriteLine($"{nameof(Validate_IsByRefLikeInstrinsic)}...");
-
-        int value = 1024;
-        Assert.Equal(value.ToString(), Exec.NonByRefLikeGenericValue(value));
-        Assert.Equal(typeof(ByRefLikeType).ToString(), Exec.ByRefLikeGenericTypeName());
-    }
-
-    [Fact]
-    [SkipOnMono("Mono does not support ByRefLike generics yet")]
     public static void Validate_Casting_Scenarios()
     {
         Console.WriteLine($"{nameof(Validate_Casting_Scenarios)}...");

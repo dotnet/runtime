@@ -530,9 +530,6 @@ namespace Internal.JitInterface
                     id = ReadyToRunHelper.AreTypesEquivalent;
                     break;
 
-                case CorInfoHelpFunc.CORINFO_HELP_BOX_SLOW:
-                    id = ReadyToRunHelper.Box_Slow;
-                    break;
                 case CorInfoHelpFunc.CORINFO_HELP_BOX:
                     id = ReadyToRunHelper.Box;
                     break;

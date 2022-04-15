@@ -75,8 +75,8 @@ namespace System.Runtime
         {
             ref byte dataAdjustedForNullable = ref data;
 
-            // Can box value types only (which also implies no finalizers).
-            Debug.Assert(pEEType->IsValueType && !pEEType->IsFinalizable);
+            // Can box non-ByRefLike value types only (which also implies no finalizers).
+            Debug.Assert(pEEType->IsValueType && !pEEType->IsByRefLike && !pEEType->IsFinalizable);
 
             // If we're boxing a Nullable<T> then either box the underlying T or return null (if the
             // nullable's value is empty).
@@ -90,10 +90,6 @@ namespace System.Runtime
                 // to the value embedded within the nullable.
                 dataAdjustedForNullable = ref Unsafe.Add(ref data, pEEType->NullableValueOffset);
                 pEEType = pEEType->NullableType;
-            }
-            else if (pEEType->IsByRefLike)
-            {
-                throw pEEType->GetClasslibException(ExceptionIDs.InvalidProgram);
             }
 
             object result;
