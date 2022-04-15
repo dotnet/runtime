@@ -10,6 +10,8 @@ using System.Net.WebSockets;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 
+#nullable enable
+
 namespace Microsoft.WebAssembly.Diagnostics;
 
 public class FirefoxProxyServer
