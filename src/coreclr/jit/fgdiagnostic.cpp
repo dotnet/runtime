@@ -3041,44 +3041,17 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
 
             call = tree->AsCall();
 
-            if ((call->gtCallThisArg != nullptr) && ((call->gtCallThisArg->GetNode()->gtFlags & GTF_ASG) != 0))
+            for (CallArg& arg : call->gtArgs.Args())
             {
                 // TODO-Cleanup: this is a patch for a violation in our GT_ASG propagation.
                 // see https://github.com/dotnet/runtime/issues/13758
-                actualFlags |= GTF_ASG;
-            }
-
-            for (GenTreeCall::Use& use : call->Args())
-            {
-                if ((use.GetNode()->gtFlags & GTF_ASG) != 0)
+                actualFlags |= arg.GetEarlyNode()->gtFlags & GTF_ASG;
+                if (arg.GetLateNode() != nullptr)
                 {
-                    // TODO-Cleanup: this is a patch for a violation in our GT_ASG propagation.
-                    // see https://github.com/dotnet/runtime/issues/13758
-                    actualFlags |= GTF_ASG;
+                    actualFlags |= arg.GetLateNode()->gtFlags & GTF_ASG;
                 }
             }
 
-            for (GenTreeCall::Use& use : call->LateArgs())
-            {
-                if ((use.GetNode()->gtFlags & GTF_ASG) != 0)
-                {
-                    // TODO-Cleanup: this is a patch for a violation in our GT_ASG propagation.
-                    // see https://github.com/dotnet/runtime/issues/13758
-                    actualFlags |= GTF_ASG;
-                }
-            }
-
-            if (call->IsUnmanaged() && ((call->gtCallMoreFlags & GTF_CALL_M_UNMGD_THISCALL) != 0))
-            {
-                if (call->gtCallArgs->GetNode()->OperGet() == GT_NOP)
-                {
-                    assert(call->gtCallLateArgs->GetNode()->TypeIs(TYP_I_IMPL, TYP_BYREF));
-                }
-                else
-                {
-                    assert(call->gtCallArgs->GetNode()->TypeIs(TYP_I_IMPL, TYP_BYREF));
-                }
-            }
             break;
 
         case GT_CMPXCHG:

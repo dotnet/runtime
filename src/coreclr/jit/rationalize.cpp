@@ -197,7 +197,8 @@ void Rationalizer::RewriteNodeAsCall(GenTree**             use,
 #ifdef FEATURE_READYTORUN
                                      CORINFO_CONST_LOOKUP entryPoint,
 #endif
-                                     GenTreeCall::Use* args)
+                                     GenTree* arg1,
+                                     GenTree* arg2)
 {
     GenTree* const tree           = *use;
     GenTree* const treeFirstNode  = comp->fgGetFirstNode(tree);
@@ -206,7 +207,19 @@ void Rationalizer::RewriteNodeAsCall(GenTree**             use,
     BlockRange().Remove(treeFirstNode, tree);
 
     // Create the call node
-    GenTreeCall* call = comp->gtNewCallNode(CT_USER_FUNC, callHnd, tree->gtType, args);
+    GenTreeCall* call = comp->gtNewCallNode(CT_USER_FUNC, callHnd, tree->gtType);
+
+    if (arg2 != nullptr)
+    {
+        call->gtArgs.PushFront(comp, arg2);
+        call->gtFlags |= arg2->gtFlags & GTF_ALL_EFFECT;
+    }
+
+    if (arg1 != nullptr)
+    {
+        call->gtArgs.PushFront(comp, arg1);
+        call->gtFlags |= arg1->gtFlags & GTF_ALL_EFFECT;
+    }
 
 #if DEBUG
     CORINFO_SIG_INFO sig;
@@ -267,21 +280,13 @@ void Rationalizer::RewriteIntrinsicAsUserCall(GenTree** use, ArrayStack<GenTree*
 {
     GenTreeIntrinsic* intrinsic = (*use)->AsIntrinsic();
 
-    GenTreeCall::Use* args;
-    if (intrinsic->AsOp()->gtOp2 == nullptr)
-    {
-        args = comp->gtNewCallArgs(intrinsic->gtGetOp1());
-    }
-    else
-    {
-        args = comp->gtNewCallArgs(intrinsic->gtGetOp1(), intrinsic->gtGetOp2());
-    }
-
+    GenTree* arg1 = intrinsic->gtGetOp1();
+    GenTree* arg2 = intrinsic->gtGetOp2();
     RewriteNodeAsCall(use, parents, intrinsic->gtMethodHandle,
 #ifdef FEATURE_READYTORUN
                       intrinsic->gtEntryPoint,
 #endif
-                      args);
+                      arg1, arg2);
 }
 
 #ifdef DEBUG
