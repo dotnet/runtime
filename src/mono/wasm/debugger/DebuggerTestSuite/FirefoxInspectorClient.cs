@@ -9,18 +9,16 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json;
-using System.Net.Sockets;
-using System.Diagnostics;
-using System.IO;
-using System.Reflection;
+
+#nullable enable
 
 namespace Microsoft.WebAssembly.Diagnostics;
 
 class FirefoxInspectorClient : InspectorClient
 {
-    internal string BreakpointActorId {get; set;}
-    internal string ConsoleActorId {get; set;}
-    internal string ThreadActorId {get; set;}
+    internal string? BreakpointActorId {get; set;}
+    internal string? ConsoleActorId {get; set;}
+    internal string? ThreadActorId {get; set;}
 
     public FirefoxInspectorClient(ILogger logger) : base(logger)
     {
@@ -30,13 +28,13 @@ class FirefoxInspectorClient : InspectorClient
     {
         if (command.Value?["result"]?["value"]?["tabs"] != null)
         {
-            var toCmd = command.Value["result"]["value"]["tabs"][0]["actor"].Value<string>();
+            var toCmd = command.Value?["result"]?["value"]?["tabs"]?[0]?["actor"]?.Value<string>();
             var res = await SendCommand("getWatcher", JObject.FromObject(new { type = "getWatcher", isServerTargetSwitchingEnabled = true, to = toCmd}), token);
-            var watcherId = res.Value["result"]["value"]["actor"].Value<string>();
+            var watcherId = res.Value?["result"]?["value"]?["actor"]?.Value<string>();
             res = await SendCommand("watchResources", JObject.FromObject(new { type = "watchResources", resourceTypes = new JArray("console-message"), to = watcherId}), token);
             res = await SendCommand("watchTargets", JObject.FromObject(new { type = "watchTargets", targetType = "frame", to = watcherId}), token);
-            ThreadActorId = res.Value["result"]["value"]["target"]["threadActor"].Value<string>();
-            ConsoleActorId = res.Value["result"]["value"]["target"]["consoleActor"].Value<string>();
+            ThreadActorId = res.Value?["result"]?["value"]?["target"]?["threadActor"]?.Value<string>();
+            ConsoleActorId = res.Value?["result"]?["value"]?["target"]?["consoleActor"]?.Value<string>();
             await SendCommand("attach", JObject.FromObject(new
                 {
                     type = "attach",
@@ -56,17 +54,16 @@ class FirefoxInspectorClient : InspectorClient
                     to = ThreadActorId
                 }), token);
             res = await SendCommand("getBreakpointListActor", JObject.FromObject(new { type = "getBreakpointListActor", to = watcherId}), token);
-            BreakpointActorId = res.Value["result"]["value"]["breakpointList"]["actor"].Value<string>();
+            BreakpointActorId = res.Value?["result"]?["value"]?["breakpointList"]?["actor"]?.Value<string>();
         }
     }
 
-
-    protected override Task HandleMessage(string msg, CancellationToken token)
+    protected override Task? HandleMessage(string msg, CancellationToken token)
     {
         var res = JObject.Parse(msg);
         if (res["type"]?.Value<string>() == "newSource")
         {
-            var method = res["type"].Value<string>();
+            var method = res["type"]?.Value<string>();
             return onEvent(method, res, token);
         }
         if (res["applicationType"] != null)
@@ -75,7 +72,7 @@ class FirefoxInspectorClient : InspectorClient
         {
             if (res["type"]?.Value<string>() == "evaluationResult")
             {
-                var messageId = new FirefoxMessageId("", 0, res["from"].Value<string>());
+                var messageId = new FirefoxMessageId("", 0, res["from"]?.Value<string>());
                 if (pending_cmds.Remove(messageId, out var item))
                     item.SetResult(Result.FromJsonFirefox(res));
             }
@@ -83,7 +80,7 @@ class FirefoxInspectorClient : InspectorClient
         }
         if (res["from"] != null)
         {
-            var messageId = new FirefoxMessageId("", 0, res["from"].Value<string>());
+            var messageId = new FirefoxMessageId("", 0, res["from"]?.Value<string>());
             if (pending_cmds.Remove(messageId, out var item))
             {
                 item.SetResult(Result.FromJsonFirefox(res));
@@ -92,7 +89,7 @@ class FirefoxInspectorClient : InspectorClient
         }
         if (res["type"] != null)
         {
-            var method = res["type"].Value<string>();
+            var method = res["type"]?.Value<string>();
             switch (method)
             {
                 case "paused":
@@ -102,17 +99,18 @@ class FirefoxInspectorClient : InspectorClient
                 }
                 case "resource-available-form":
                 {
-                    if (res["resources"][0]["resourceType"].Value<string>() == "console-message" /*&& res["resources"][0]["arguments"] != null*/)
+                    if (res["resources"]?[0]?["resourceType"]?.Value<string>() == "console-message" /*&& res["resources"][0]["arguments"] != null*/)
                     {
                         method = "Runtime.consoleAPICalled";
                         var args = new JArray();
-                        foreach (var argument in res["resources"][0]["message"]["arguments"].Value<JArray>())
+                        // FIXME: unncessary alloc
+                        foreach (JToken? argument in res["resources"]?[0]?["message"]?["arguments"]?.Value<JArray>() ?? new JArray())
                         {
                             args.Add(JObject.FromObject(new { value = argument.Value<string>()}));
                         }
                         res = JObject.FromObject(new
                             {
-                                type =  res["resources"][0]["message"]["level"].Value<string>(),
+                                type =  res["resources"]?[0]?["message"]?["level"]?.Value<string>(),
                                 args
                             });
                     }
@@ -131,7 +129,7 @@ class FirefoxInspectorClient : InspectorClient
 
         var tcs = new TaskCompletionSource<Result>();
         MessageId msgId;
-        msgId = new FirefoxMessageId("", 0, args["to"].Value<string>());
+        msgId = new FirefoxMessageId("", 0, args["to"]?.Value<string>());
         pending_cmds[msgId] = tcs;
 
         var msg = args.ToString(Formatting.None);

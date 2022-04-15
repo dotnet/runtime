@@ -34,11 +34,14 @@ internal class ChromeBrowser : BrowserBase
                                       int browser_ready_timeout_ms = 20000)
     {
         ProcessStartInfo psi = GetProcessStartInfo(browserPath, GetInitParms(remoteDebuggingPort), url);
-        (Process proc, string line) = await LaunchBrowser(
+        (Process? proc, string? line) = await LaunchBrowser(
                                 psi,
                                 context,
                                 str =>
                                 {
+                                    if (string.IsNullOrEmpty(str))
+                                        return null;
+
                                     Match match = s_parseConnection.Match(str);
                                     return match.Success
                                                 ? match.Groups[1].Captures[0].Value

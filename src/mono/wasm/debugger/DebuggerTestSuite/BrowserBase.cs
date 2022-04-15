@@ -10,7 +10,9 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 
 #nullable enable
+
 namespace DebuggerTests;
+
 internal abstract class BrowserBase
 {
     protected ILogger logger { get; init; }
