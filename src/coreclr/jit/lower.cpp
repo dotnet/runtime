@@ -5457,45 +5457,47 @@ GenTree* Lowering::LowerAdd(GenTreeOp* node)
                 !node->isContained())
             {
                 GenTree* mul;
-                GenTree* firstOp;
+                GenTree* c;
                 if (op1->OperIs(GT_MUL))
                 {
-                    mul     = op1;
-                    firstOp = op2;
+                    mul = op1;
+                    c   = op2;
                 }
                 else
                 {
-                    mul     = op2;
-                    firstOp = op1;
+                    mul = op2;
+                    c   = op1;
                 }
 
-                if (mul->OperIs(GT_MUL) && varTypeIsIntegral(mul) && !mul->gtOverflow() && !mul->isContained())
+                if (mul->OperIs(GT_MUL) && varTypeIsIntegral(mul) && !mul->gtOverflow() && !mul->isContained() &&
+                    !c->isContained())
                 {
-                    GenTree* mulOp1 = mul->gtGetOp1();
-                    GenTree* mulOp2 = mul->gtGetOp2();
+                    GenTree* a = mul->gtGetOp1();
+                    GenTree* b = mul->gtGetOp2();
 
                     // Transform "-a * b + c" to "c - a * b"
-                    if (mulOp1->OperIs(GT_NEG) && !mulOp2->OperIs(GT_NEG) && !mulOp1->isContained())
+                    if (a->OperIs(GT_NEG) && !b->OperIs(GT_NEG) && !a->isContained() && !a->gtGetOp1()->isContained())
                     {
-                        mul->AsOp()->gtOp1 = mulOp1->gtGetOp1();
-                        BlockRange().Remove(mulOp1);
-                        node->gtOp1        = firstOp;
-                        node->gtOp2        = mul;
+                        mul->AsOp()->gtOp1 = a->gtGetOp1();
+                        BlockRange().Remove(a);
+                        node->gtOp1 = c;
+                        node->gtOp2 = mul;
                         node->ChangeOper(GT_SUB);
                     }
                     // Transform "a * -b + c" to "c - a * b"
-                    else if (mulOp2->OperIs(GT_NEG) && !mulOp1->OperIs(GT_NEG) && !mulOp2->isContained())
+                    else if (b->OperIs(GT_NEG) && !a->OperIs(GT_NEG) && !b->isContained() &&
+                             !b->gtGetOp1()->isContained())
                     {
-                        mul->AsOp()->gtOp2 = mulOp2->gtGetOp1();
-                        BlockRange().Remove(mulOp2);
-                        node->gtOp1        = firstOp;
-                        node->gtOp2        = mul;
+                        mul->AsOp()->gtOp2 = b->gtGetOp1();
+                        BlockRange().Remove(b);
+                        node->gtOp1 = c;
+                        node->gtOp2 = mul;
                         node->ChangeOper(GT_SUB);
                     }
                     // Transform "a * b + c" to "c + a * b"
                     else if (op1->OperIs(GT_MUL))
                     {
-                        node->gtOp1 = firstOp;
+                        node->gtOp1 = c;
                         node->gtOp2 = mul;
                     }
                 }
