@@ -118,7 +118,9 @@ namespace System.Diagnostics.Metrics
         public void SetMeasurementEventCallback<T>(MeasurementCallback<T>? measurementCallback) where T : struct
         {
             if (measurementCallback is null)
+            {
                 measurementCallback = (instrument, measurement, tags, state) => { /* no-op */};
+            }
             if (typeof(T) == typeof(byte))
             {
                 _byteMeasurementCallback = (MeasurementCallback<byte>)(object)measurementCallback;
@@ -149,7 +151,7 @@ namespace System.Diagnostics.Metrics
             }
             else
             {
-                throw new ArgumentException($"The specified numeric type {typeof(T).Name} is not supported.");
+                 throw new InvalidOperationException(SR.Format(SR.UnsupportedType, typeof(T)));
             }
         }
 
