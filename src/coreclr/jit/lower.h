@@ -159,10 +159,10 @@ private:
     GenTree* LowerVirtualStubCall(GenTreeCall* call);
     void LowerArgsForCall(GenTreeCall* call);
     void ReplaceArgWithPutArgOrBitcast(GenTree** ppChild, GenTree* newNode);
-    GenTree* NewPutArg(GenTreeCall* call, GenTree* arg, fgArgTabEntry* info, var_types type);
-    void LowerArg(GenTreeCall* call, GenTree** ppTree);
+    GenTree* NewPutArg(GenTreeCall* call, GenTree* arg, CallArg* callArg, var_types type);
+    void LowerArg(GenTreeCall* call, CallArg* callArg, bool late);
 #if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64)
-    GenTree* LowerFloatArg(GenTree** pArg, fgArgTabEntry* info);
+    GenTree* LowerFloatArg(GenTree** pArg, CallArg* callArg);
     GenTree* LowerFloatArgReg(GenTree* arg, regNumber regNum);
 #endif
 

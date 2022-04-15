@@ -6488,17 +6488,17 @@ GenTree* CodeGen::getCallTarget(const GenTreeCall* call, CORINFO_METHOD_HANDLE* 
 // Notes:
 //   We currently use indirection cells for VSD on all platforms and for R2R calls on ARM architectures.
 //
-regNumber CodeGen::getCallIndirectionCellReg(const GenTreeCall* call)
+regNumber CodeGen::getCallIndirectionCellReg(GenTreeCall* call)
 {
     regNumber result = REG_NA;
     switch (call->GetIndirectionCellArgKind())
     {
-        case NonStandardArgKind::None:
+        case WellKnownArg::None:
             break;
-        case NonStandardArgKind::R2RIndirectionCell:
+        case WellKnownArg::R2RIndirectionCell:
             result = REG_R2R_INDIRECT_PARAM;
             break;
-        case NonStandardArgKind::VirtualStubCell:
+        case WellKnownArg::VirtualStubCell:
             result = compiler->virtualStubParamInfo->GetReg();
             break;
         default:
@@ -6506,20 +6506,11 @@ regNumber CodeGen::getCallIndirectionCellReg(const GenTreeCall* call)
     }
 
 #ifdef DEBUG
-    regNumber       foundReg = REG_NA;
-    unsigned        argCount = call->fgArgInfo->ArgCount();
-    fgArgTabEntry** argTable = call->fgArgInfo->ArgTable();
-    for (unsigned i = 0; i < argCount; i++)
+    if (call->GetIndirectionCellArgKind() != WellKnownArg::None)
     {
-        NonStandardArgKind kind = argTable[i]->nonStandardArgKind;
-        if ((kind == NonStandardArgKind::R2RIndirectionCell) || (kind == NonStandardArgKind::VirtualStubCell))
-        {
-            foundReg = argTable[i]->GetRegNum();
-            break;
-        }
+        CallArg* indirCellArg = call->gtArgs.FindWellKnownArg(call->GetIndirectionCellArgKind());
+        assert((indirCellArg != nullptr) && (indirCellArg->AbiInfo.GetRegNum() == result));
     }
-
-    assert(foundReg == result);
 #endif
 
     return result;
