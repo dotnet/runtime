@@ -35,6 +35,7 @@ namespace System.Text.RegularExpressions
 
         private readonly RegexInterpreterCode _code;
         private readonly CultureInfo? _culture;
+        private RegexCaseBehavior _caseBehavior;
 
         private RegexOpcode _operator;
         private int _codepos;
@@ -304,6 +305,7 @@ namespace System.Text.RegularExpressions
                 {
                     char backreferenceChar = inputSpan[--cmpos];
                     char currentChar = inputSpan[--pos];
+
                     // If we are evaluating a backreference case-insensitive match, we first check if the characters at the position
                     // are the same character.
                     if (backreferenceChar != currentChar)
@@ -311,16 +313,11 @@ namespace System.Text.RegularExpressions
                         // If they are not the same character, then we need to check if the backreference character participates in case conversion
                         // and if so, we need to fetch the case equivalences from our casing tables.
                         Debug.Assert(_culture != null, "If the pattern has backreferences and is IgnoreCase, then _culture must not be null.");
-                        if (RegexCaseEquivalences.TryFindCaseEquivalencesForCharWithIBehavior(backreferenceChar, _culture, out ReadOnlySpan<char> equivalences))
+                        if (!RegexCaseEquivalences.TryFindCaseEquivalencesForCharWithIBehavior(backreferenceChar, _culture, ref _caseBehavior, out ReadOnlySpan<char> equivalences) ||
+                            equivalences.IndexOf(inputSpan[pos]) < 0)
                         {
-                            // If the backreference character participates in case conversion, we use IndexOfAny to see if currentChar matches one of the
-                            // equivalences from our casing table.
-                            if (inputSpan.Slice(pos, 1).IndexOfAny(equivalences) == -1)
-                                return false;
-                        }
-                        else
-                        {
-                            // If the backreference character does not participate in case conversions we fail to match.
+                            // The backreference character doesn't participate in case conversions, or it does but the input character
+                            // doesn't match any of its equivalents.  Either way, we fail to match.
                             return false;
                         }
                     }

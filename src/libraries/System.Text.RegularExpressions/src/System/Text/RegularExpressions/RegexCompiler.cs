@@ -23,6 +23,7 @@ namespace System.Text.RegularExpressions
         private static readonly FieldInfo s_runtrackposField = RegexRunnerField("runtrackpos");
         private static readonly FieldInfo s_runstackField = RegexRunnerField("runstack");
         private static readonly FieldInfo s_cultureField = typeof(CompiledRegexRunner).GetField("_culture", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        private static readonly FieldInfo s_caseBehaviorField = typeof(CompiledRegexRunner).GetField("_caseBehavior", BindingFlags.Instance | BindingFlags.NonPublic)!;
 
         private static readonly MethodInfo s_captureMethod = RegexRunnerMethod("Capture");
         private static readonly MethodInfo s_transferCaptureMethod = RegexRunnerMethod("TransferCapture");
@@ -184,6 +185,13 @@ namespace System.Text.RegularExpressions
         {
             Ldthis();
             _ilg!.Emit(OpCodes.Ldfld, ft);
+        }
+
+        /// <summary>A macro for Ldthis(); Ldflda();</summary>
+        protected void Ldthisflda(FieldInfo ft)
+        {
+            Ldthis();
+            _ilg!.Emit(OpCodes.Ldflda, ft);
         }
 
         /// <summary>Fetches the address of argument in passed in <paramref name="position"/></summary>
@@ -1662,7 +1670,6 @@ namespace System.Text.RegularExpressions
                 Label charactersMatched = DefineLabel();
                 LocalBuilder backreferenceCharacter = _ilg!.DeclareLocal(typeof(char));
                 LocalBuilder currentCharacter = _ilg!.DeclareLocal(typeof(char));
-                LocalBuilder caseEquivalences = DeclareReadOnlySpanChar();
 
                 // for (int i = 0; ...)
                 Ldc(0);
@@ -1701,30 +1708,31 @@ namespace System.Text.RegularExpressions
 
                 if ((node.Options & RegexOptions.IgnoreCase) != 0)
                 {
+                    LocalBuilder caseEquivalences = DeclareReadOnlySpanChar();
+
                     // if (backreferenceChar != currentChar)
                     Ldloc(backreferenceCharacter);
                     Ldloc(currentCharacter);
                     Ceq();
-                    Ldc(0);
-                    Ceq();
-                    BrfalseFar(charactersMatched);
+                    BrtrueFar(charactersMatched);
 
-                    // if (RegexCaseEquivalences.TryFindCaseEquivalencesForCharWithIBehavior(backreferenceChar, _culture, out ReadOnlySpan<char> equivalences))
+                    // if (RegexCaseEquivalences.TryFindCaseEquivalencesForCharWithIBehavior(backreferenceChar, _culture, ref _caseBehavior, out ReadOnlySpan<char> equivalences))
                     Ldloc(backreferenceCharacter);
                     Ldthisfld(s_cultureField);
+                    Ldthisflda(s_caseBehaviorField);
                     Ldloca(caseEquivalences);
                     Call(s_regexCaseEquivalencesTryFindCaseEquivalencesForCharWithIBehaviorMethod);
                     BrfalseFar(doneLabel);
 
+                    // if (equivalences.IndexOf(slice[i]) == -1) // Or if (equivalences.IndexOf(inputSpan[pos - matchLength + i]) == -1) when rtl
+                    Ldloc(caseEquivalences);
                     if (!rtl)
                     {
-                        // if (slice.Slice(i, 1).IndexOfAny(equivalences) == -1)
                         Ldloca(slice);
                         Ldloc(i);
                     }
                     else
                     {
-                        // if (inputSpan.Slice((pos - matchLength + i), 1).IndexOfAny(equivalences) == -1)
                         Ldloca(inputSpan);
                         Ldloc(pos);
                         Ldloc(matchLength);
@@ -1732,10 +1740,9 @@ namespace System.Text.RegularExpressions
                         Ldloc(i);
                         Add();
                     }
-                    Ldc(1);
-                    Call(s_spanSliceIntIntMethod);
-                    Ldloc(caseEquivalences);
-                    Call(s_spanIndexOfAnySpan);
+                    Call(s_spanGetItemMethod);
+                    LdindU2();
+                    Call(s_spanIndexOfChar);
                     Ldc(-1);
                     Ceq();
                     // return false; // input didn't match.
@@ -1747,10 +1754,8 @@ namespace System.Text.RegularExpressions
                     Ldloc(backreferenceCharacter);
                     Ldloc(currentCharacter);
                     Ceq();
-                    Ldc(0);
-                    Ceq();
                     // return false; // input didn't match.
-                    BrtrueFar(doneLabel);
+                    BrfalseFar(doneLabel);
                 }
 
                 MarkLabel(charactersMatched);

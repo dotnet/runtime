@@ -73,6 +73,8 @@ namespace System.Text.RegularExpressions.Generator
         private static void EmitRegexLimitedBoilerplate(
             IndentedTextWriter writer, RegexMethod rm, string reason)
         {
+            // If code generation is not supported but compilation is, then we fall back to use the compiled engine.
+            RegexOptions options = rm.Tree.Root.SupportsCompilation(out string? _) ? rm.Options | RegexOptions.Compiled : rm.Options; 
             writer.WriteLine($"/// <summary>Caches a <see cref=\"Regex\"/> instance for the {rm.MethodName} method.</summary>");
             writer.WriteLine($"/// <remarks>A custom Regex-derived type could not be generated because {reason}.</remarks>");
             writer.WriteLine($"internal sealed class {rm.GeneratedName} : Regex");
@@ -80,8 +82,8 @@ namespace System.Text.RegularExpressions.Generator
             writer.WriteLine($"    /// <summary>Cached, thread-safe singleton instance.</summary>");
             writer.Write($"    internal static readonly Regex Instance = ");
             writer.WriteLine(
-                rm.MatchTimeout is not null ? $"new({Literal(rm.Pattern)}, {Literal(rm.Options)}, {GetTimeoutExpression(rm.MatchTimeout.Value)});" :
-                rm.Options != 0 ? $"new({Literal(rm.Pattern)}, {Literal(rm.Options)});" :
+                rm.MatchTimeout is not null ? $"new({Literal(rm.Pattern)}, {Literal(options)}, {GetTimeoutExpression(rm.MatchTimeout.Value)});" :
+                options != 0 ? $"new({Literal(rm.Pattern)}, {Literal(options)});" :
                 $"new({Literal(rm.Pattern)});");
             writer.WriteLine($"}}");
         }
@@ -181,27 +183,6 @@ namespace System.Text.RegularExpressions.Generator
             writer.WriteLine($"    /// <summary>Provides the runner that contains the custom logic implementing the specified regular expression.</summary>");
             writer.WriteLine($"    private sealed class Runner : RegexRunner");
             writer.WriteLine($"    {{");
-            if (rm.Tree.Culture != null)
-            {
-                // If the RegexTree has Culture set, then we need to emit the _textInfo field that should be used at match time for casing operations.
-                // Instead of just using the culture set on the tree, we use it to check which behavior corresponds to the culture, and based on that we
-                // create a TextInfo based on a well-known culture that has the same behavior. This is done in order to ensure that the culture being used at
-                // runtime will be supported no matter where the code ends up running.
-                writer.WriteLine($"        /// <summary>TextInfo that will be used for Backreference case comparisons.</summary>");
-                switch (RegexCaseEquivalences.GetRegexBehavior(rm.Tree.Culture))
-                {
-                    case RegexCaseBehavior.Invariant:
-                        writer.WriteLine($"        private readonly TextInfo _textInfo = CultureInfo.InvariantCulture.TextInfo;");
-                        break;
-                    case RegexCaseBehavior.NonTurkish:
-                        writer.WriteLine($"        private readonly TextInfo _textInfo = CultureInfo.GetCultureInfo(\"en-US\").TextInfo;");
-                        break;
-                    case RegexCaseBehavior.Turkish:
-                        writer.WriteLine($"        private readonly TextInfo _textInfo = CultureInfo.GetCultureInfo(\"tr-TR\").TextInfo;");
-                        break;
-                }
-                writer.WriteLine();
-            }
             if (rm.MatchTimeout is null)
             {
                 // We need to emit timeout checks for everything other than the developer explicitly setting Timeout.Infinite.

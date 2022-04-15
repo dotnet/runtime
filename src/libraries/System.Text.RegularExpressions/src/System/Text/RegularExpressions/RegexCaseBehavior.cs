@@ -17,6 +17,12 @@ namespace System.Text.RegularExpressions
     internal enum RegexCaseBehavior
     {
         /// <summary>
+        /// This means that the RegexCaseBehavior hasn't been calculated based on a passed in culture yet, so it will need to be calculated before the first
+        /// equivalence check by calling <see cref="RegexCaseEquivalences.GetRegexBehavior(CultureInfo)"/>
+        /// </summary>
+        NotSet,
+
+        /// <summary>
         /// Invariant case-mappings are used. This includes all of the common mappings across cultures. This behavior is used when either the  user
         /// specified <see cref="RegexOptions.CultureInvariant"/> or when the CurrentCulture is <see cref="CultureInfo.InvariantCulture"/>.
         /// </summary>

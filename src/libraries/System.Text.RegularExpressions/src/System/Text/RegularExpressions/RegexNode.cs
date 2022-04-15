@@ -89,15 +89,16 @@ namespace System.Text.RegularExpressions
         /// <param name="ch">The character.</param>
         /// <param name="options">The node's options.</param>
         /// <param name="culture">The culture to use to perform any required transformations.</param>
+        /// <param name="_caseBehavior">The behavior to be used for case comparisons. If the value hasn't been set yet, it will get initialized in the first lookup.</param>
         /// <returns>The created RegexNode.  This might be a RegexNode.One or a RegexNode.Set.</returns>
-        public static RegexNode CreateOneWithCaseConversion(char ch, RegexOptions options, CultureInfo? culture)
+        public static RegexNode CreateOneWithCaseConversion(char ch, RegexOptions options, CultureInfo? culture, ref RegexCaseBehavior _caseBehavior)
         {
             // If the options specify case-insensitivity, we try to create a node that fully encapsulates that.
             if ((options & RegexOptions.IgnoreCase) != 0)
             {
                 Debug.Assert(culture is not null);
 
-                if (!RegexCaseEquivalences.TryFindCaseEquivalencesForCharWithIBehavior(ch, culture, out ReadOnlySpan<char> equivalences))
+                if (!RegexCaseEquivalences.TryFindCaseEquivalencesForCharWithIBehavior(ch, culture, ref _caseBehavior, out ReadOnlySpan<char> equivalences))
                 {
                     // If we reach here, then we know that ch does not participate in case conversion, so we just
                     // create a One node with it and strip out the IgnoreCase option.
@@ -2664,14 +2665,14 @@ namespace System.Text.RegularExpressions
             return 1;
         }
 
-        // Determines whether the node supports a compilation / code generation strategy based on walking the node tree.
+        // Determines whether the node supports code generation strategy based on walking the node tree.
         // Also returns a human-readable string to explain the reason (it will be emitted by the source generator, hence
         // there's no need to localize).
-        internal bool SupportsCompilation([NotNullWhen(false)] out string? reason)
+        internal bool SupportsCodeGeneration([NotNullWhen(false)] out string? reason)
         {
-            if ((Options & RegexOptions.NonBacktracking) != 0)
+            if (!SupportsCompilation(out reason))
             {
-                reason = "RegexOptions.NonBacktracking isn't supported";
+                // If the pattern doesn't support Compilation, then code generation won't be supported either.
                 return false;
             }
 
@@ -2684,6 +2685,43 @@ namespace System.Text.RegularExpressions
                 // and given the Regex case equivalence table is internal and can't be called by the source generated emitted type, if
                 // the pattern contains case-insensitive backreferences then we won't try to create a source generated Regex-derived type.
                 reason = "the expression contains case-insensitive backreferences which are not supported by the source generator";
+                return false;
+            }
+
+            // If Compilation is supported and pattern doesn't have case insensitive backreferences, then code generation is supported.
+            reason = null;
+            return true;
+
+            static bool HasCaseInsensitiveBackReferences(RegexNode node)
+            {
+                if (node.Kind is RegexNodeKind.Backreference && (node.Options & RegexOptions.IgnoreCase) != 0)
+                {
+                    return true;
+                }
+
+                int childCount = node.ChildCount();
+                for (int i = 0; i < childCount; i++)
+                {
+                    // This recursion shouldn't hit issues with stack depth since this gets checked after
+                    // SupportCompilation has ensured that the max depth is not greater than 40.
+                    if (HasCaseInsensitiveBackReferences(node.Child(i)))
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+        }
+
+        // Determines whether the node supports a compilation strategy based on walking the node tree.
+        // Also returns a human-readable string to explain the reason (it will be emitted by the source generator, hence
+        // there's no need to localize).
+        internal bool SupportsCompilation([NotNullWhen(false)] out string? reason)
+        {
+            if ((Options & RegexOptions.NonBacktracking) != 0)
+            {
+                reason = "RegexOptions.NonBacktracking isn't supported";
                 return false;
             }
 
@@ -2702,25 +2740,6 @@ namespace System.Text.RegularExpressions
             // Supported.
             reason = null;
             return true;
-
-            static bool HasCaseInsensitiveBackReferences(RegexNode node)
-            {
-                if (node.Kind is RegexNodeKind.Backreference && (node.Options & RegexOptions.IgnoreCase) != 0)
-                {
-                    return true;
-                }
-
-                int childCount = node.ChildCount();
-                for (int i = 0; i < childCount; i++)
-                {
-                    if (HasCaseInsensitiveBackReferences(node.Child(i)))
-                    {
-                        return true;
-                    }
-                }
-
-                return false;
-            }
 
             static bool ExceedsMaxDepthAllowedDepth(RegexNode node, int allowedDepth)
             {

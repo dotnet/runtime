@@ -65,7 +65,7 @@ namespace System.Text.RegularExpressions.Generator
 
                     // If we're unable to generate a full implementation for this regex, report a diagnostic.
                     // We'll still output a limited implementation that just caches a new Regex(...).
-                    if (!regexMethod.Tree.Root.SupportsCompilation(out string? reason))
+                    if (!regexMethod.Tree.Root.SupportsCodeGeneration(out string? reason))
                     {
                         return (regexMethod, reason, Diagnostic.Create(DiagnosticDescriptors.LimitedSourceGeneration, regexMethod.MethodSyntax.GetLocation()));
                     }
