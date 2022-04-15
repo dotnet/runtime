@@ -14300,16 +14300,16 @@ GenTree* Compiler::fgMorphMulAdd(GenTreeOp* tree)
     GenTree* addOp2 = tree->gtGetOp2();
 
     GenTree* mul;
-    GenTree* op2;
+    GenTree* op1;
     if (addOp1->OperIs(GT_MUL))
     {
         mul = addOp1;
-        op2 = addOp2;
+        op1 = addOp2;
     }
     else
     {
         mul = addOp2;
-        op2 = addOp1;
+        op1 = addOp1;
     }
 
     if (mul->OperIs(GT_MUL) && varTypeIsIntegral(mul) &&
@@ -14322,8 +14322,8 @@ GenTree* Compiler::fgMorphMulAdd(GenTreeOp* tree)
         if (mulOp1->OperIs(GT_NEG) && !mulOp2->OperIs(GT_NEG))
         {
             mul->AsOp()->gtOp1 = mulOp1->gtGetOp1();
-            tree->gtOp1           = op2;
-            tree->gtOp2           = mul;
+            tree->gtOp1        = op1;
+            tree->gtOp2        = mul;
             tree->ChangeOper(GT_SUB);
 
             DEBUG_DESTROY_NODE(mulOp1);
@@ -14332,8 +14332,8 @@ GenTree* Compiler::fgMorphMulAdd(GenTreeOp* tree)
         else if (mulOp2->OperIs(GT_NEG) && !mulOp1->OperIs(GT_NEG))
         {
             mul->AsOp()->gtOp2 = mulOp2->gtGetOp1();
-            tree->gtOp1           = op2;
-            tree->gtOp2           = mul;
+            tree->gtOp1        = op1;
+            tree->gtOp2        = mul;
             tree->ChangeOper(GT_SUB);
 
             DEBUG_DESTROY_NODE(mulOp2);
@@ -14341,7 +14341,7 @@ GenTree* Compiler::fgMorphMulAdd(GenTreeOp* tree)
         // Transform "a * b + c" to "c + a * b"
         else
         {
-            tree->gtOp1 = op2;
+            tree->gtOp1 = op1;
             tree->gtOp2 = mul;
         }
     }
