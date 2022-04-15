@@ -18,73 +18,12 @@ namespace Microsoft.WebAssembly.Diagnostics;
 
 class FirefoxInspectorClient : InspectorClient
 {
-    protected TaskCompletionSource connectToProxy = new TaskCompletionSource();
-    // TcpClient proxyConnection;
     internal string BreakpointActorId {get; set;}
     internal string ConsoleActorId {get; set;}
     internal string ThreadActorId {get; set;}
+
     public FirefoxInspectorClient(ILogger logger) : base(logger)
     {
-    }
-
-    protected override void Dispose(bool disposing)
-    {
-        if (disposing)
-            socket.Dispose();
-        base.Dispose(disposing);
-    }
-
-    public override async Task Connect(
-            Uri uri,
-            Func<string, JObject, CancellationToken, Task> onEvent,
-            CancellationToken token)
-    {
-        this.onEvent = onEvent;
-
-        RunLoopStopped += (_, args) =>
-        {
-            logger.LogDebug($"Failing {pending_cmds.Count} pending cmds");
-            if (args.reason == RunLoopStopReason.Exception)
-            {
-                foreach (var cmd in pending_cmds.Values)
-                    cmd.SetException(args.ex);
-            }
-            else
-            {
-                foreach (var cmd in pending_cmds.Values)
-                    cmd.SetCanceled();
-            }
-            socket.Abort();
-            // proxyConnection.Close();
-        };
-
-        logger.LogDebug($"FirefoxInspectorClient.Connect: calling ConnectWithMapLoops");
-        await ConnectWithMainLoops(uri, HandleMessage, token);
-        // proxyConnection = new TcpClient();
-        // for (int i = 0 ; i < 10; i++)
-        // {
-        //     try {
-        //         logger.LogDebug($"FirefoxInspectorClient.Connect: trying to connect to 127.0.0.1:6002");
-        //         proxyConnection.Connect("127.0.0.1", 6002);
-        //         break;
-        //     }
-        //     catch (Exception)
-        //     {
-        //         await Task.Delay(1000);
-        //     }
-        // }
-        connectToProxy.TrySetResult();
-    }
-
-    internal void Send(JObject o, CancellationToken token)
-    {
-        // NetworkStream toStream = proxyConnection.GetStream();
-        var msg = o.ToString(Formatting.None);
-        var bytes = Encoding.UTF8.GetBytes(msg);
-        Send(bytes, token);
-        // toStream.Write(Encoding.UTF8.GetBytes($"{bytes.Length}:"));
-        // toStream.Write(bytes);
-        // toStream.Flush();
     }
 
     public override async Task ProcessCommand(Result command, CancellationToken token)
@@ -185,39 +124,6 @@ class FirefoxInspectorClient : InspectorClient
         return null;
     }
 
-#if false
-    protected override async Task<string> ReadOne(CancellationToken token)
-    {
-        try
-        {
-            await connectToProxy.Task;
-            while (true)
-            {
-                byte[] buffer = new byte[1000000];
-                var stream = proxyConnection.GetStream();
-                int bytesRead = 0;
-                while (bytesRead == 0 || Convert.ToChar(buffer[bytesRead - 1]) != ':')
-                {
-                    var readLen = await stream.ReadAsync(buffer, bytesRead, 1, token);
-                    bytesRead++;
-                }
-                var str = Encoding.UTF8.GetString(buffer, 0, bytesRead - 1);
-                int len = int.Parse(str);
-                bytesRead = await stream.ReadAsync(buffer, 0, len, token);
-                while (bytesRead != len)
-                    bytesRead += await stream.ReadAsync(buffer, bytesRead, len - bytesRead, token);
-                str = Encoding.UTF8.GetString(buffer, 0, len);
-                return str;
-            }
-        }
-        catch (Exception)
-        {
-            _clientInitiatedClose.TrySetResult();
-            return null;
-        }
-    }
-#endif
-
     public override Task<Result> SendCommand(SessionId sessionId, string method, JObject args, CancellationToken token)
     {
         if (args == null)
@@ -227,7 +133,11 @@ class FirefoxInspectorClient : InspectorClient
         MessageId msgId;
         msgId = new FirefoxMessageId("", 0, args["to"].Value<string>());
         pending_cmds[msgId] = tcs;
-        Send(args, token);
+
+        var msg = args.ToString(Formatting.None);
+        var bytes = Encoding.UTF8.GetBytes(msg);
+        Send(bytes, token);
+
         return tcs.Task;
     }
 }

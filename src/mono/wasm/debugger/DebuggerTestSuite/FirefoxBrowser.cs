@@ -21,7 +21,7 @@ internal class FirefoxBrowser : BrowserBase
     {
     }
 
-    public override async Task Launch(HttpContext context,
+    public override async Task LaunchAndStartProxy(HttpContext context,
                                       string browserPath,
                                       string url,
                                       int remoteDebuggingPort,
@@ -31,7 +31,7 @@ internal class FirefoxBrowser : BrowserBase
     {
         string args = $"-profile {GetProfilePath()} -headless -private -start-debugger-server {remoteDebuggingPort}";
         ProcessStartInfo? psi = GetProcessStartInfo(browserPath, args, url);
-        (Process proc, string line) = await LaunchBrowser(
+        (Process? proc, string? line) = await LaunchBrowser(
                                 psi,
                                 context,
                                 str =>
@@ -48,8 +48,6 @@ internal class FirefoxBrowser : BrowserBase
         if (proc is null || line is null)
             throw new Exception($"Failed to launch firefox");
 
-        // FIXME: rename to LaunchAndStartProxy
-        // logger.LogInformation($"{message_prefix} launching proxy to listen {line}");
         string logFilePath = Path.Combine(DebuggerTestBase.TestLogPath, $"{test_id}-proxy.log");
         File.Delete(logFilePath);
 
@@ -60,8 +58,8 @@ internal class FirefoxBrowser : BrowserBase
                             // options.SingleLine = true;
                             options.TimestampFormat = "[HH:mm:ss] ";
                         })
-                .AddFile(logFilePath, minimumLevel: LogLevel.Trace)
-                .AddFilter(null, LogLevel.Trace));
+                .AddFilter(null, LogLevel.Debug))
+                .AddFile(logFilePath, minimumLevel: LogLevel.Trace);
 
         var proxy = new DebuggerProxy(proxyLoggerFactory, null, loggerId: test_id);
         WebSocket? ideSocket = null;
@@ -95,7 +93,6 @@ internal class FirefoxBrowser : BrowserBase
         user_pref(""devtools.debugger.remote-enabled"", true);
         user_pref(""devtools.debugger.prompt-connection"", false);";
 
-        Console.WriteLine ($"base: {DebuggerTestBase.DebuggerTestAppPath}");
         string profilePath = Path.GetFullPath(Path.Combine(DebuggerTestBase.DebuggerTestAppPath, "test-profile"));
         if (Directory.Exists(profilePath))
             Directory.Delete(profilePath, recursive: true);

@@ -125,7 +125,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                             port = 6000;
                         }
 
-                        await browser.Launch(context,
+                        await browser.LaunchAndStartProxy(context,
                                              options.BrowserPath,
                                              $"http://{TestHarnessProxy.Endpoint.Authority}/{options.PagePath}",
                                              port,

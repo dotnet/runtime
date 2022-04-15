@@ -25,7 +25,7 @@ internal class ChromeBrowser : BrowserBase
     {
     }
 
-    public override async Task Launch(HttpContext context,
+    public override async Task LaunchAndStartProxy(HttpContext context,
                                       string browserPath,
                                       string url,
                                       int remoteDebuggingPort,

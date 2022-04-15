@@ -9,8 +9,8 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 
+#nullable enable
 namespace DebuggerTests;
-
 internal abstract class BrowserBase
 {
     protected ILogger logger { get; init; }
@@ -27,7 +27,7 @@ internal abstract class BrowserBase
             RedirectStandardOutput = true
         };
 
-    public virtual Task Launch(HttpContext context,
+    public virtual Task LaunchAndStartProxy(HttpContext context,
                                string browserPath,
                                string url,
                                int remoteDebuggingPort,
@@ -36,9 +36,9 @@ internal abstract class BrowserBase
                                int browser_ready_timeout_ms = 20000)
         => Task.CompletedTask;
 
-    protected async Task<(Process, string)> LaunchBrowser(ProcessStartInfo psi,
-                                        HttpContext context,
-                                        Func<string, string> checkBrowserReady,
+    protected async Task<(Process?, string?)> LaunchBrowser(ProcessStartInfo psi!!,
+                                        HttpContext context!!,
+                                        Func<string?, string?> checkBrowserReady!!,
                                         string message_prefix,
                                         int browser_ready_timeout_ms)
     {
@@ -53,11 +53,14 @@ internal abstract class BrowserBase
 
         logger.LogDebug($"Starting {psi.FileName} with {psi.Arguments}");
         var proc = Process.Start(psi);
+        if (proc is null)
+            return (null, null);
+
         await Task.Delay(1000);
         try
         {
-            proc.ErrorDataReceived += (sender, e) => ProcessOutput($"{message_prefix} browser-stderr ", e.Data);
-            proc.OutputDataReceived += (sender, e) => ProcessOutput($"{message_prefix} browser-stdout ", e.Data);
+            proc.ErrorDataReceived += (sender, e) => ProcessOutput($"{message_prefix} browser-stderr ", e?.Data);
+            proc.OutputDataReceived += (sender, e) => ProcessOutput($"{message_prefix} browser-stdout ", e?.Data);
 
             proc.BeginErrorReadLine();
             proc.BeginOutputReadLine();
@@ -75,14 +78,14 @@ internal abstract class BrowserBase
             throw;
         }
 
-        void ProcessOutput(string prefix, string msg)
+        void ProcessOutput(string prefix, string? msg)
         {
             logger.LogDebug($"{prefix}{msg}");
 
             if (string.IsNullOrEmpty(msg) || browserReadyTCS.Task.IsCompleted)
                 return;
 
-            string result = checkBrowserReady(msg);
+            string? result = checkBrowserReady(msg);
             if (result is not null)
                 browserReadyTCS.TrySetResult(result);
         }
