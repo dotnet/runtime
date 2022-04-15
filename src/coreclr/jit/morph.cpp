@@ -14281,6 +14281,10 @@ GenTree* Compiler::fgMorphUModToAndSub(GenTreeOp* tree)
 // Returns:
 //    The morphed tree
 //
+// Notes:
+//    This is useful for ARM64 because the patterns "a + b * c" and
+//    "a - b * c" can be optimized into a combined operation.
+//
 GenTree* Compiler::fgMorphMulAdd(GenTreeOp* tree)
 {
     JITDUMP("\nMorphing MUL/ADD [%06u]\n", dspTreeID(tree));
