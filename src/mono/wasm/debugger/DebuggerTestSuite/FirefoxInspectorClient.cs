@@ -19,7 +19,7 @@ namespace Microsoft.WebAssembly.Diagnostics;
 class FirefoxInspectorClient : InspectorClient
 {
     protected TaskCompletionSource connectToProxy = new TaskCompletionSource();
-    TcpClient proxyConnection;
+    // TcpClient proxyConnection;
     internal string BreakpointActorId {get; set;}
     internal string ConsoleActorId {get; set;}
     internal string ThreadActorId {get; set;}
@@ -55,35 +55,36 @@ class FirefoxInspectorClient : InspectorClient
                     cmd.SetCanceled();
             }
             socket.Abort();
-            proxyConnection.Close();
+            // proxyConnection.Close();
         };
 
         logger.LogDebug($"FirefoxInspectorClient.Connect: calling ConnectWithMapLoops");
         await ConnectWithMainLoops(uri, HandleMessage, token);
-        proxyConnection = new TcpClient();
-        for (int i = 0 ; i < 10; i++)
-        {
-            try {
-                logger.LogDebug($"FirefoxInspectorClient.Connect: trying to connect to 127.0.0.1:6002");
-                proxyConnection.Connect("127.0.0.1", 6002);
-                break;
-            }
-            catch (Exception)
-            {
-                await Task.Delay(1000);
-            }
-        }
+        // proxyConnection = new TcpClient();
+        // for (int i = 0 ; i < 10; i++)
+        // {
+        //     try {
+        //         logger.LogDebug($"FirefoxInspectorClient.Connect: trying to connect to 127.0.0.1:6002");
+        //         proxyConnection.Connect("127.0.0.1", 6002);
+        //         break;
+        //     }
+        //     catch (Exception)
+        //     {
+        //         await Task.Delay(1000);
+        //     }
+        // }
         connectToProxy.TrySetResult();
     }
 
     internal void Send(JObject o, CancellationToken token)
     {
-        NetworkStream toStream = proxyConnection.GetStream();
+        // NetworkStream toStream = proxyConnection.GetStream();
         var msg = o.ToString(Formatting.None);
         var bytes = Encoding.UTF8.GetBytes(msg);
-        toStream.Write(Encoding.UTF8.GetBytes($"{bytes.Length}:"));
-        toStream.Write(bytes);
-        toStream.Flush();
+        Send(bytes, token);
+        // toStream.Write(Encoding.UTF8.GetBytes($"{bytes.Length}:"));
+        // toStream.Write(bytes);
+        // toStream.Flush();
     }
 
     public override async Task ProcessCommand(Result command, CancellationToken token)
@@ -184,6 +185,7 @@ class FirefoxInspectorClient : InspectorClient
         return null;
     }
 
+#if false
     protected override async Task<string> ReadOne(CancellationToken token)
     {
         try
@@ -214,6 +216,7 @@ class FirefoxInspectorClient : InspectorClient
             return null;
         }
     }
+#endif
 
     public override Task<Result> SendCommand(SessionId sessionId, string method, JObject args, CancellationToken token)
     {

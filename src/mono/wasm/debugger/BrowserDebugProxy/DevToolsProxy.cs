@@ -3,7 +3,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Net.Sockets;
 using System.Net.WebSockets;
@@ -55,12 +54,12 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         private DevToolsQueueBase GetQueueForConnection(WebSocket ws)
         {
-            return queues.FirstOrDefault(q => (q as DevToolsQueue).Ws == ws);
+            return queues.FirstOrDefault(q => (q as DevToolsQueue)?.Ws == ws);
         }
 
         protected DevToolsQueueBase GetQueueForConnection(TcpClient tc)
         {
-            return queues.FirstOrDefault(q => (q as DevToolsQueueFirefox).Tc == tc);
+            return queues.FirstOrDefault(q => (q as DevToolsQueueFirefox)?.Tc == tc);
         }
 
         protected DevToolsQueueBase GetQueueForTask(Task task)
@@ -391,160 +390,6 @@ namespace Microsoft.WebAssembly.Diagnostics
                     logger.LogDebug(msg);
                     break;
             }
-        }
-    }
-
-    // internal class IDEConnection
-    // {
-    //     public TcpClient TcpClient { get; init; }
-    //     public WebSocket WebSocket { get; init; }
-
-    //     public IDEConnection(TcpClient tcpClient = null, WebSocket webSocket = null)
-    //     {
-    //         if (tcpClient is null && webSocket is null)
-    //             throw new ArgumentException($"Both {nameof(tcpClient)}, and {nameof(webSocket)} cannot be null");
-    //         if (tcpClient is not null && webSocket is not null)
-    //             throw new ArgumentException($"Both {nameof(tcpClient)}, and {nameof(webSocket)} cannot be non-null");
-
-    //         TcpClient = tcpClient;
-    //         WebSocket = webSocket;
-    //     }
-
-    //     public DevToolsQueueBase NewQueue()
-    //         => TcpClient is null
-    //                 ? new DevToolsQueue(WebSocket)
-    //                 : new DevToolsQueueFirefox(TcpClient);
-    // }
-
-    internal abstract class AbstractConnection : IDisposable
-    {
-        public static AbstractConnection Create(ILogger logger, TcpClient tcpClient = null, WebSocket webSocket = null)
-        {
-            if (tcpClient is null && webSocket is null)
-                throw new ArgumentException($"Both {nameof(tcpClient)}, and {nameof(webSocket)} cannot be null");
-            if (tcpClient is not null && webSocket is not null)
-                throw new ArgumentException($"Both {nameof(tcpClient)}, and {nameof(webSocket)} cannot be non-null");
-
-            return tcpClient is not null
-                        ? new TcpClientConnection(tcpClient, logger)
-                        : new WebSocketConnection(webSocket, logger);
-        }
-
-        public abstract DevToolsQueueBase NewQueue();
-        public virtual async Task<string> ReadOne(TaskCompletionSource client_initiated_close, CancellationToken token)
-                => await Task.FromResult<string>(null);
-
-        public virtual void Dispose()
-        {}
-    }
-
-    internal class TcpClientConnection : AbstractConnection
-    {
-        public TcpClient TcpClient { get; init; }
-        private readonly ILogger _logger;
-
-        public TcpClientConnection(TcpClient tcpClient, ILogger logger)
-        {
-            TcpClient = tcpClient ?? throw new ArgumentNullException(nameof(tcpClient));
-            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-        }
-
-        public override DevToolsQueueBase NewQueue() => new DevToolsQueueFirefox(TcpClient);
-
-        public override async Task<string> ReadOne(TaskCompletionSource client_initiated_close, CancellationToken token)
-        {
-#pragma warning disable CA1835 // Prefer the 'Memory'-based overloads for 'ReadAsync' and 'WriteAsync'
-            try
-            {
-                while (true)
-                {
-                    byte[] buffer = new byte[1000000];
-                    var stream = TcpClient.GetStream();
-                    int bytesRead = 0;
-                    while (bytesRead == 0 || Convert.ToChar(buffer[bytesRead - 1]) != ':')
-                    {
-                        var readLen = await stream.ReadAsync(buffer, bytesRead, 1, token);
-                        bytesRead+=readLen;
-                    }
-                    var str = Encoding.UTF8.GetString(buffer, 0, bytesRead - 1);
-                    int len = int.Parse(str);
-                    bytesRead = await stream.ReadAsync(buffer, 0, len, token);
-                    while (bytesRead != len)
-                        bytesRead += await stream.ReadAsync(buffer, bytesRead, len - bytesRead, token);
-                    str = Encoding.UTF8.GetString(buffer, 0, len);
-                    return str;
-                }
-            }
-            catch (Exception)
-            {
-                client_initiated_close.TrySetResult();
-                return null;
-            }
-        }
-
-        public override void Dispose()
-        {
-            TcpClient.Dispose();
-            base.Dispose();
-        }
-    }
-
-    internal class WebSocketConnection : AbstractConnection
-    {
-        public WebSocket WebSocket { get; init; }
-        private readonly ILogger _logger;
-
-        public WebSocketConnection(WebSocket webSocket, ILogger logger)
-        {
-            WebSocket = webSocket ?? throw new ArgumentNullException(nameof(webSocket));
-            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-        }
-
-        public override DevToolsQueueBase NewQueue() => new DevToolsQueue(WebSocket);
-
-        public override async Task<string> ReadOne(TaskCompletionSource client_initiated_close, CancellationToken token)
-        {
-            byte[] buff = new byte[4000];
-            var mem = new MemoryStream();
-            try
-            {
-                while (true)
-                {
-                    if (WebSocket.State != WebSocketState.Open)
-                    {
-                        _logger.LogError($"DevToolsProxy: Socket is no longer open.");
-                        client_initiated_close.TrySetResult();
-                        return null;
-                    }
-
-                    WebSocketReceiveResult result = await WebSocket.ReceiveAsync(new ArraySegment<byte>(buff), token);
-                    if (result.MessageType == WebSocketMessageType.Close)
-                    {
-                        client_initiated_close.TrySetResult();
-                        return null;
-                    }
-
-                    mem.Write(buff, 0, result.Count);
-
-                    if (result.EndOfMessage)
-                        return Encoding.UTF8.GetString(mem.GetBuffer(), 0, (int)mem.Length);
-                }
-            }
-            catch (WebSocketException e)
-            {
-                if (e.WebSocketErrorCode == WebSocketError.ConnectionClosedPrematurely)
-                {
-                    client_initiated_close.TrySetResult();
-                    return null;
-                }
-            }
-            return null;
-        }
-
-        public override void Dispose()
-        {
-            WebSocket.Dispose();
-            base.Dispose();
         }
     }
 }

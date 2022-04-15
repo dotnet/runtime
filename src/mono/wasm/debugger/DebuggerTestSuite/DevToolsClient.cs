@@ -127,7 +127,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             Func<string, CancellationToken, Task> receive,
             CancellationToken token)
         {
-            logger.LogDebug("connecting to {0}", uri);
+            logger.LogDebug("Client connecting to {0}", uri);
             this.socket = new ClientWebSocket();
             this.socket.Options.KeepAliveInterval = Timeout.InfiniteTimeSpan;
 

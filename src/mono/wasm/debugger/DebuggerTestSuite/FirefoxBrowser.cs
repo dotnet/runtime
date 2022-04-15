@@ -48,7 +48,8 @@ internal class FirefoxBrowser : BrowserBase
         if (proc is null || line is null)
             throw new Exception($"Failed to launch firefox");
 
-        logger.LogInformation($"{message_prefix} launching proxy for {line}");
+        // FIXME: rename to LaunchAndStartProxy
+        // logger.LogInformation($"{message_prefix} launching proxy to listen {line}");
         string logFilePath = Path.Combine(DebuggerTestBase.TestLogPath, $"{test_id}-proxy.log");
         File.Delete(logFilePath);
 
