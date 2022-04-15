@@ -12996,7 +12996,7 @@ DONE_MORPHING_CHILDREN:
                 //
                 op1->gtFlags |= treeFlags & ~GTF_ALL_EFFECT;
                 op1->gtFlags |= (addr->gtFlags & GTF_ALL_EFFECT);
-                op1->gtFlags |= treeFlags & (GTF_GLOB_REF | GTF_IND_FLAGS);
+                op1->gtFlags |= treeFlags & GTF_GLOB_REF;
 
 #ifdef DEBUG
                 op1->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED;
