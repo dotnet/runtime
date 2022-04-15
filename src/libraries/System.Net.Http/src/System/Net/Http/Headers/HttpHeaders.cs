@@ -813,7 +813,7 @@ namespace System.Net.Http.Headers
                     {
                         AddParsedValue(info, parsedValue);
                     }
-                    else if (addWhenInvalid && string.IsNullOrWhiteSpace(value))
+                    else if (addWhenInvalid && info.ParsedAndInvalidValues is null)
                     {
                         AddInvalidValue(info, value ?? string.Empty);
                     }
@@ -854,7 +854,7 @@ namespace System.Net.Http.Headers
                     AddParsedValue(info, item);
                 }
 
-                if (parsedValues.Count == 0 && addWhenInvalid && string.IsNullOrWhiteSpace(value))
+                if (parsedValues.Count == 0 && addWhenInvalid && info.ParsedAndInvalidValues is null)
                 {
                     AddInvalidValue(info, value ?? string.Empty);
                 }

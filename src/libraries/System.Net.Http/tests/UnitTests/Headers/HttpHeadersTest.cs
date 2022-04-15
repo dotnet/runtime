@@ -1189,13 +1189,13 @@ namespace System.Net.Http.Tests
             // TryGetValues() should trigger parsing of values added with TryAddWithoutValidation()
             Assert.Equal(3, headers.Parser.TryParseValueCallCount);
 
-            // All values should be still present as parsing should not remove any values.
-            Assert.Equal(3, values.Count());
+            // The first 2 valid values should be present.
+            // The last empty value will be ignored.
+            Assert.Equal(2, values.Count());
 
             // Check returned values
             Assert.Equal(parsedPrefix + "1", values.ElementAt(0));
             Assert.Equal(parsedPrefix + "2", values.ElementAt(1));
-            Assert.Equal(string.Empty, values.ElementAt(2));
         }
 
         [Theory]
