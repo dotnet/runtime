@@ -14271,10 +14271,10 @@ GenTree* Compiler::fgMorphUModToAndSub(GenTreeOp* tree)
 }
 
 //------------------------------------------------------------------------
-// fgMorphMulAddToMulSub:
-//                       Transform "-a * b + c" to "c - a * b"
-//                       Transform "a * -b + c" to "c - a * b"
-//                       Transform "a * b + c" to "c + a * b"
+// fgMorphMulAdd:
+//                Transform "-a * b + c" to "c - a * b"
+//                Transform "a * -b + c" to "c - a * b"
+//                Transform "a * b + c" to "c + a * b"
 // Arguments:
 //    tree - The GT_ADD tree to morph
 //
