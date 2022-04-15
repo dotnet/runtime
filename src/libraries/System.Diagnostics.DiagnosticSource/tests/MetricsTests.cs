@@ -895,6 +895,28 @@ namespace System.Diagnostics.Metrics.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void NullMeasurementEventCallbackTest()
+        {
+             RemoteExecutor.Invoke(() => {
+                Meter meter = new Meter("NullMeasurementEventCallbackTest");
+
+                Counter<int> counter = meter.CreateCounter<int>("Counter");
+
+                MeterListener listener = new MeterListener();
+
+                listener.InstrumentPublished = (theInstrument, theListener) => theListener.EnableMeasurementEvents(theInstrument, theInstrument);
+
+                listener.SetMeasurementEventCallback<int>(null);
+
+                listener.Start();
+
+                counter.Add(1);
+
+                Assert.Throws<InvalidOperationException>(() => listener.SetMeasurementEventCallback<ulong>(null));
+            }).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void EnableListeneingMultipleTimesWithDifferentState()
         {
             RemoteExecutor.Invoke(() => {
