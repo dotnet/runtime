@@ -80,7 +80,8 @@
       Text="Generating native image of System.Private.CoreLib for $(OSPlatformConfig). Logging to $(CrossGenCoreLibLog)" />
 
     <PropertyGroup>
-      <CrossGenDllCmd>$(DotNetCli) $([MSBuild]::NormalizePath('$(BinDir)', '$(CrossDir)', 'crossgen2', 'crossgen2.dll'))</CrossGenDllCmd>
+      <CrossgenRidDir Condition="'$(DotnetBuildFromSource)' == 'true'">$(PackageRID)</CrossgenRidDir>
+      <CrossGenDllCmd>$(DotNetCli) $([MSBuild]::NormalizePath('$(BinDir)', '$(CrossDir)', 'crossgen2', '$(CrossgenRidDir)', 'crossgen2.dll'))</CrossGenDllCmd>
       <CrossGenDllCmd>$(CrossGenDllCmd) -o:$(CoreLibOutputPath)</CrossGenDllCmd>
       <CrossGenDllCmd>$(CrossGenDllCmd) -r:$([MSBuild]::NormalizePath('$(BinDir)', 'IL', '*.dll'))</CrossGenDllCmd>
       <CrossGenDllCmd>$(CrossGenDllCmd) --targetarch:$(TargetArchitecture)</CrossGenDllCmd>
