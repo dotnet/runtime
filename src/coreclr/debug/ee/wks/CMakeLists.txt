@@ -1,5 +1,3 @@
-add_compile_options(/FA)
-
 if (CLR_CMAKE_TARGET_WIN32)
 
   list(APPEND CORDBEE_SOURCES_WKS ${CORDBEE_HEADERS_WKS})

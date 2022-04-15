@@ -19,7 +19,6 @@ set(DBGUTIL_SOURCES
     dbgutil.cpp
 )
 
-
 if(CLR_CMAKE_TARGET_LINUX)
     list(APPEND DBGUTIL_SOURCES
         elfreader.cpp
