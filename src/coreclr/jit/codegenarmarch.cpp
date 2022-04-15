@@ -2674,7 +2674,7 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
     // The following condition prevents using 16-byte stores when dstRegAddrAlignment is:
     //   1) unknown (i.e. dstReg is neither FP nor SP) or
     //   2) non-zero (i.e. dstRegAddr is not 16-byte aligned).
-    const bool hasAvailableSimdReg = isDstRegAddrAlignmentKnown && (size > FP_REGSIZE_BYTES);
+    const bool hasAvailableSimdReg = /*isDstRegAddrAlignmentKnown &&*/ (size > FP_REGSIZE_BYTES);
     const bool canUse16ByteWideInstrs =
         hasAvailableSimdReg && (dstRegAddrAlignment == 0) && helper.CanEncodeAllOffsets(FP_REGSIZE_BYTES);
 
@@ -2914,8 +2914,8 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
     // known and the block size is larger than a single SIMD register size (i.e. when using SIMD instructions can
     // be profitable).
 
-    const bool canUse16ByteWideInstrs = isSrcRegAddrAlignmentKnown && isDstRegAddrAlignmentKnown &&
-                                        (size >= 2 * FP_REGSIZE_BYTES) && (srcRegAddrAlignment == dstRegAddrAlignment);
+    const bool canUse16ByteWideInstrs = /*isSrcRegAddrAlignmentKnown && isDstRegAddrAlignmentKnown &&*/
+                                        (size >= 2 * FP_REGSIZE_BYTES) /*&& (srcRegAddrAlignment == dstRegAddrAlignment)*/;
 
     bool shouldUse16ByteWideInstrs = false;
 
