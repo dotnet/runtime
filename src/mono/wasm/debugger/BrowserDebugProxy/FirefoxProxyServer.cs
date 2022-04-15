@@ -6,7 +6,6 @@
 using System;
 using System.Net;
 using System.Net.Sockets;
-using System.Net.WebSockets;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 
@@ -40,9 +39,28 @@ public class FirefoxProxyServer
         }
     }
 
-    public async Task RunForTests(WebSocket ideWebSocket)
+    public async Task RunForTests(int proxyPort, string testId, ILogger logger)
     {
-        var monoProxy = new FirefoxMonoProxy(loggerFactory, portBrowser);
-        await monoProxy.Run(ideWebSocket: ideWebSocket);
+        try
+        {
+        var _server = new TcpListener(IPAddress.Parse("127.0.0.1"), proxyPort);
+        logger.LogInformation($"[{testId}] RunForTests: listening on port {proxyPort}");
+        _server.Start();
+        TcpClient ideClient = await _server.AcceptTcpClientAsync();
+        _server.Stop();
+
+        logger.LogDebug($"[{testId}] RunForTests: client connected");
+        var monoProxy = new FirefoxMonoProxy(loggerFactory, portBrowser, testId);
+        await monoProxy.Run(ideClient: ideClient);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine ($"[{testId}] RunForTests: {ex}");
+            throw;
+        }
+        finally
+        {
+            Console.WriteLine($"[{testId}] RunForTests: finally");
+        }
     }
 }

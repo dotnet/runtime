@@ -1,18 +1,17 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.Collections.Generic;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json;
+using Microsoft.WebAssembly.Diagnostics;
 
 #nullable enable
 
-namespace Microsoft.WebAssembly.Diagnostics;
+namespace DebuggerTests;
 
 class FirefoxInspectorClient : InspectorClient
 {
@@ -22,6 +21,7 @@ class FirefoxInspectorClient : InspectorClient
 
     public FirefoxInspectorClient(ILogger logger) : base(logger)
     {
+        _useWebSockets = false;
     }
 
     public override async Task ProcessCommand(Result command, CancellationToken token)
@@ -134,6 +134,9 @@ class FirefoxInspectorClient : InspectorClient
 
         var msg = args.ToString(Formatting.None);
         var bytes = Encoding.UTF8.GetBytes(msg);
+        // var bytesWithHeader = Encoding.UTF8.GetBytes($"{bytes.Length}:").Concat(bytes).ToArray();
+        // var msg = args.ToString(Formatting.None);
+        // var bytes = Encoding.UTF8.GetBytes(msg);
         Send(bytes, token);
 
         return tcs.Task;

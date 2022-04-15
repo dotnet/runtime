@@ -29,14 +29,14 @@ internal abstract class BrowserBase
             RedirectStandardOutput = true
         };
 
-    public virtual Task LaunchAndStartProxy(HttpContext context,
-                               string browserPath,
-                               string url,
-                               int remoteDebuggingPort,
-                               string test_id,
-                               string message_prefix,
-                               int browser_ready_timeout_ms = 20000)
-        => Task.CompletedTask;
+    // public virtual Task LaunchAndStartProxy(HttpContext context,
+    //                                         string browserPath,
+    //                                         string url,
+    //                                         int remoteDebuggingPort,
+    //                                         string test_id,
+    //                                         string message_prefix,
+    //                                         int browser_ready_timeout_ms = 20000)
+    //     => Task.CompletedTask;
 
     protected async Task<(Process?, string?)> LaunchBrowser(ProcessStartInfo psi!!,
                                         HttpContext context!!,

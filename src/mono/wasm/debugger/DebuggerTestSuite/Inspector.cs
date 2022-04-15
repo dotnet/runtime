@@ -226,9 +226,11 @@ namespace DebuggerTests
         public async Task LaunchBrowser(DateTime start, TimeSpan span)
         {
             _cancellationTokenSource.CancelAfter(span);
-            var uri = new Uri($"ws://{TestHarnessProxy.Endpoint.Authority}/launch-browser-and-connect/?test_id={Id}");
+            string uriStr = $"ws://{TestHarnessProxy.Endpoint.Authority}/launch-browser-and-connect/?test_id={Id}";
+            if (!DebuggerTestBase.RunningOnChrome)
+                uriStr += "&browser=firefox&firefox-proxy-port=6002";
 
-            await Client.Connect(uri, OnMessage, _cancellationTokenSource.Token);
+            await Client.Connect(new Uri(uriStr), OnMessage, _cancellationTokenSource.Token);
             Client.RunLoopStopped += (_, args) =>
             {
                 switch (args.reason)

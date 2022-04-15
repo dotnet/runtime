@@ -16,10 +16,10 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Microsoft.WebAssembly.Diagnostics;
 using Newtonsoft.Json.Linq;
-using DebuggerTests;
 
-namespace Microsoft.WebAssembly.Diagnostics
+namespace DebuggerTests
 {
     public class TestHarnessStartup
     {
@@ -107,30 +107,51 @@ namespace Microsoft.WebAssembly.Diagnostics
                     else
                         test_id = "unknown";
 
+                    string browser_name = "chrome";
+                    if (context.Request.Query.TryGetValue("browser", out value) && value.Count == 1)
+                        browser_name = value[0];
+
+                    int firefox_proxy_port = 6002;
+                    if (context.Request.Query.TryGetValue("firefox-proxy-port", out value) && value.Count == 1 &&
+                        int.TryParse(value[0], out int port))
+                    {
+                        firefox_proxy_port = port;
+                    }
+
                     string message_prefix = $"[testId: {test_id}]";
                     Logger.LogInformation($"{message_prefix} New test request for test id {test_id}");
                     try
                     {
-                        BrowserBase browser;
-                        int port;
+                        // BrowserBase browser;
+                        int browserPort;
 
-                        if (DebuggerTestBase.RunningOnChrome)
+                        if (browser_name == "chrome")
                         {
-                            browser = new ChromeBrowser(Logger);
-                            port = options.DevToolsUrl.Port;
+                            var browser = new ChromeBrowser(Logger);
+                            browserPort = options.DevToolsUrl.Port;
+                            await browser.LaunchAndStartProxy(context,
+                                                options.BrowserPath,
+                                                $"http://{TestHarnessProxy.Endpoint.Authority}/{options.PagePath}",
+                                                browserPort,
+                                                test_id,
+                                                message_prefix);
+                        }
+                        else if (browser_name == "firefox")
+                        {
+                            var browser = new FirefoxBrowser(Logger);
+                            browserPort = 6000;
+                            await browser.LaunchAndStartProxy(context,
+                                                options.BrowserPath,
+                                                $"http://{TestHarnessProxy.Endpoint.Authority}/{options.PagePath}",
+                                                browserPort,
+                                                firefox_proxy_port,
+                                                test_id,
+                                                message_prefix);
                         }
                         else
                         {
-                            browser = new FirefoxBrowser(Logger);
-                            port = 6000;
+                            throw new NotSupportedException($"Unknown browser {browser_name}");
                         }
-
-                        await browser.LaunchAndStartProxy(context,
-                                             options.BrowserPath,
-                                             $"http://{TestHarnessProxy.Endpoint.Authority}/{options.PagePath}",
-                                             port,
-                                             test_id,
-                                             message_prefix);
                     }
                     catch (Exception ex)
                     {

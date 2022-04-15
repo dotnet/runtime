@@ -21,16 +21,17 @@ internal class FirefoxBrowser : BrowserBase
     {
     }
 
-    public override async Task LaunchAndStartProxy(HttpContext context,
-                                      string browserPath,
-                                      string url,
-                                      int remoteDebuggingPort,
+    public async Task LaunchAndStartProxy(HttpContext context,
+                                      string browser_path,
+                                      string target_url,
+                                      int remote_debugger_port,
+                                      int proxy_port,
                                       string test_id,
                                       string message_prefix,
                                       int browser_ready_timeout_ms = 20000)
     {
-        string args = $"-profile {GetProfilePath()} -headless -private -start-debugger-server {remoteDebuggingPort}";
-        ProcessStartInfo? psi = GetProcessStartInfo(browserPath, args, url);
+        string args = $"-profile {GetProfilePath()} -headless -private -start-debugger-server {remote_debugger_port}";
+        ProcessStartInfo? psi = GetProcessStartInfo(browser_path, args, target_url);
         (Process? proc, string? line) = await LaunchBrowser(
                                 psi,
                                 context,
@@ -38,7 +39,7 @@ internal class FirefoxBrowser : BrowserBase
                                 {
                                     //for running debugger tests on firefox
                                     if (str?.Contains("[GFX1-]: RenderCompositorSWGL failed mapping default framebuffer, no dt") == true)
-                                        return $"http://localhost:{remoteDebuggingPort}";
+                                        return $"http://localhost:{remote_debugger_port}";
 
                                     return null;
                                 },
@@ -65,9 +66,10 @@ internal class FirefoxBrowser : BrowserBase
         WebSocket? ideSocket = null;
         try
         {
+            // needed to "complete" the connection to the webserver
             ideSocket = await context.WebSockets.AcceptWebSocketAsync();
-            var proxyFirefox = new FirefoxProxyServer(proxyLoggerFactory, remoteDebuggingPort);
-            await proxyFirefox.RunForTests(ideSocket);
+            var proxyFirefox = new FirefoxProxyServer(proxyLoggerFactory, remote_debugger_port);
+            await proxyFirefox.RunForTests(proxy_port, test_id, logger);
         }
         catch (Exception ex)
         {

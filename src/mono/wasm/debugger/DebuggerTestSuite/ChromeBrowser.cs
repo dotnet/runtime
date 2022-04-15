@@ -25,7 +25,7 @@ internal class ChromeBrowser : BrowserBase
     {
     }
 
-    public override async Task LaunchAndStartProxy(HttpContext context,
+    public async Task LaunchAndStartProxy(HttpContext context,
                                       string browserPath,
                                       string url,
                                       int remoteDebuggingPort,
@@ -61,13 +61,13 @@ internal class ChromeBrowser : BrowserBase
 
         var proxyLoggerFactory = LoggerFactory.Create(
             builder => builder
-                    // .AddSimpleConsole(options =>
-                    //     {
-                    //         options.SingleLine = true;
-                    //         options.TimestampFormat = "[HH:mm:ss] ";
-                    //     })
-                .AddFile(logFilePath, minimumLevel: LogLevel.Trace)
-                .AddFilter(null, LogLevel.Trace));
+                    .AddSimpleConsole(options =>
+                        {
+                            // options.SingleLine = true;
+                            options.TimestampFormat = "[HH:mm:ss] ";
+                        })
+                .AddFilter(null, LogLevel.Information)
+                .AddFile(logFilePath, minimumLevel: LogLevel.Trace));
 
         var proxy = new DebuggerProxy(proxyLoggerFactory, null, loggerId: test_id);
         var browserUri = new Uri(con_str);

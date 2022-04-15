@@ -24,8 +24,6 @@ internal class WebSocketConnection : AbstractConnection
         _logger = logger;
     }
 
-    public override DevToolsQueueBase NewQueue() => new DevToolsQueue(WebSocket);
-
     public override async Task<string?> ReadOne(TaskCompletionSource client_initiated_close, CancellationToken token)
     {
         byte[] buff = new byte[4000];
@@ -41,14 +39,15 @@ internal class WebSocketConnection : AbstractConnection
                     return null;
                 }
 
-                WebSocketReceiveResult result = await WebSocket.ReceiveAsync(new ArraySegment<byte>(buff), token);
+                ArraySegment<byte> buffAsSeg = new(buff);
+                WebSocketReceiveResult result = await WebSocket.ReceiveAsync(buffAsSeg, token);
                 if (result.MessageType == WebSocketMessageType.Close)
                 {
                     client_initiated_close.TrySetResult();
                     return null;
                 }
 
-                mem.Write(buff, 0, result.Count);
+                await mem.WriteAsync(new ReadOnlyMemory<byte>(buff, 0, result.Count), token);
 
                 if (result.EndOfMessage)
                     return Encoding.UTF8.GetString(mem.GetBuffer(), 0, (int)mem.Length);
@@ -63,6 +62,25 @@ internal class WebSocketConnection : AbstractConnection
             }
         }
         return null;
+    }
+
+    public override Task SendAsync(byte[] bytes, CancellationToken token)
+        => WebSocket.SendAsync(new ArraySegment<byte>(bytes),
+                               WebSocketMessageType.Text,
+                               true,
+                               token);
+
+    public override async Task Shutdown(CancellationToken cancellationToken)
+    {
+        try
+        {
+            if (!cancellationToken.IsCancellationRequested && WebSocket.State == WebSocketState.Open)
+                await WebSocket.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, "Closing", cancellationToken);
+        }
+        catch (Exception ex) when (ex is IOException || ex is WebSocketException || ex is OperationCanceledException)
+        {
+            _logger.LogDebug($"Shutdown: Close failed, but ignoring: {ex}");
+        }
     }
 
     public override void Dispose()

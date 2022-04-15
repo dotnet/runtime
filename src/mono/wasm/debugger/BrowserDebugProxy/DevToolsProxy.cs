@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net.Sockets;
 using System.Net.WebSockets;
 using System.Text;
 using System.Threading;
@@ -21,13 +20,12 @@ namespace Microsoft.WebAssembly.Diagnostics
         protected TaskCompletionSource<bool> side_exception = new TaskCompletionSource<bool>();
         protected TaskCompletionSource client_initiated_close = new TaskCompletionSource();
         protected Dictionary<MessageId, TaskCompletionSource<Result>> pending_cmds = new Dictionary<MessageId, TaskCompletionSource<Result>>();
-        private AbstractConnection browser;
-        // private WebSocket ide;
-        private AbstractConnection ide;
+        protected AbstractConnection browser;
+        protected AbstractConnection ide;
         internal int next_cmd_id;
         internal readonly ChannelWriter<Task> _channelWriter;
         internal readonly ChannelReader<Task> _channelReader;
-        internal List<DevToolsQueueBase> queues = new List<DevToolsQueueBase>();
+        internal List<DevToolsQueue> queues = new List<DevToolsQueue>();
 
         protected readonly ILogger logger;
 
@@ -51,57 +49,22 @@ namespace Microsoft.WebAssembly.Diagnostics
             return Task.FromResult(false);
         }
 
+        private DevToolsQueue GetQueueForConnection(AbstractConnection conn)
+            => queues.FirstOrDefault(q => q.Connection == conn);
 
-        private DevToolsQueueBase GetQueueForConnection(WebSocket ws)
-        {
-            return queues.FirstOrDefault(q => (q as DevToolsQueue)?.Ws == ws);
-        }
-
-        protected DevToolsQueueBase GetQueueForConnection(TcpClient tc)
-        {
-            return queues.FirstOrDefault(q => (q as DevToolsQueueFirefox)?.Tc == tc);
-        }
-
-        protected DevToolsQueueBase GetQueueForTask(Task task)
+        protected DevToolsQueue GetQueueForTask(Task task)
         {
             return queues.FirstOrDefault(q => q.CurrentSend == task);
         }
 
-        protected Task Send(AbstractConnection conn, JObject o, CancellationToken token)
-        {
-            if (conn is WebSocketConnection wsc)
-                return Send(wsc.WebSocket, o, token);
-            if (conn is TcpClientConnection tcc)
-                return Send(tcc.TcpClient, o, token);
-            throw new NotImplementedException();
-        }
-
-        internal async Task Send(WebSocket to, JObject o, CancellationToken token)
-        {
-            // string sender = browser == to ? "Send-browser" : "Send-ide";
-
-            //if (method != "Debugger.scriptParsed" && method != "Runtime.consoleAPICalled")
-            // FIXME: AJ:
-            // Log("protocol", $"{sender}: " + JsonConvert.SerializeObject(o));
-            Log("protocol", JsonConvert.SerializeObject(o));
-            byte[] bytes = Encoding.UTF8.GetBytes(o.ToString());
-
-            DevToolsQueueBase queue = GetQueueForConnection(to);
-
-            Task task = queue.Send(bytes, token);
-            if (task != null)
-                await _channelWriter.WriteAsync(task, token);
-        }
-
-        internal async Task Send(TcpClient to, JObject o, CancellationToken token)
+        protected async Task Send(AbstractConnection conn, JObject o, CancellationToken token)
         {
             var msg = o.ToString(Formatting.None);
             var bytes = Encoding.UTF8.GetBytes(msg);
-            var bytesWithHeader = Encoding.UTF8.GetBytes($"{bytes.Length}:").Concat(bytes).ToArray();
 
-            DevToolsQueueBase queue = GetQueueForConnection(to);
+            DevToolsQueue queue = GetQueueForConnection(conn);
 
-            Task task = queue.Send(bytesWithHeader, token);
+            Task task = queue.Send(bytes, token);
             if (task != null)
                 await _channelWriter.WriteAsync(task, token);
         }
@@ -156,6 +119,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         internal virtual Task ProcessBrowserMessage(string msg, CancellationToken token)
         {
+            logger.LogDebug($"* ProcessBrowserMessage: {msg}");
             var res = JObject.Parse(msg);
 
             //if (method != "Debugger.scriptParsed" && method != "Runtime.consoleAPICalled")
@@ -249,32 +213,41 @@ namespace Microsoft.WebAssembly.Diagnostics
             return Send(this.ide, o, token);
         }
 
-        // , HttpContext context)
         public async Task Run(Uri browserUri, WebSocket ideSocket)
         {
-            Log("debug", $"DevToolsProxy: Starting for browser at {browserUri}");
-            using (ide = AbstractConnection.Create(webSocket: ideSocket, logger: logger))
+            try
             {
+                Log("debug", $"DevToolsProxy: Starting for browser at {browserUri}");
                 Log("verbose", $"DevToolsProxy: Proxy waiting for connection to the browser at {browserUri}");
-                // queues.Add(new DevToolsQueue(this.ide));
-                queues.Add(ide.NewQueue());
-                using (browser = AbstractConnection.Create(webSocket: new ClientWebSocket(), logger: logger))
-                {
-                    if (browser is WebSocketConnection wsc && wsc.WebSocket is ClientWebSocket cws)
-                    {
-                        cws.Options.KeepAliveInterval = Timeout.InfiniteTimeSpan;
-                        await cws.ConnectAsync(browserUri, CancellationToken.None);
-                    }
-                    // queues.Add(new DevToolsQueue(this.browser));
-                    queues.Add(browser.NewQueue());
 
-                    Log("verbose", $"DevToolsProxy: Proxy connected to the browser at {browserUri}");
+                ClientWebSocket browserSocket = new();
+                browserSocket.Options.KeepAliveInterval = Timeout.InfiniteTimeSpan;
+                await browserSocket.ConnectAsync(browserUri, CancellationToken.None);
+
+                using var ideConn = new WebSocketConnection(ideSocket, logger);
+                using var browserConn = new WebSocketConnection(browserSocket, logger);
+
+                await RunInternal(ideConn: ideConn, browserConn: browserConn);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError($"DevToolsProxy.Run: {ex}");
+                throw;
+            }
+        }
+
+        protected async Task RunInternal(AbstractConnection ideConn, AbstractConnection browserConn)
+        {
+            using (ide = ideConn)
+            {
+                queues.Add(new DevToolsQueue(ide));
+                using (browser = browserConn)
+                {
+                    queues.Add(new DevToolsQueue(browser));
                     var x = new CancellationTokenSource();
 
                     List<Task> pending_ops = new();
 
-                    // pending_ops.Add(ReadOne(browser, x.Token));
-                    // pending_ops.Add(ReadOne(ide, x.Token));
                     pending_ops.Add(browser.ReadOne(client_initiated_close, x.Token));
                     pending_ops.Add(ide.ReadOne(client_initiated_close, x.Token));
                     pending_ops.Add(side_exception.Task);
@@ -291,7 +264,9 @@ namespace Microsoft.WebAssembly.Diagnostics
                             if (client_initiated_close.Task.IsCompleted)
                             {
                                 await client_initiated_close.Task.ConfigureAwait(false);
-                                Log("verbose", $"DevToolsProxy: Client initiated close from {browserUri}");
+                                // FIXME: add browseruri to the connection?
+                                // Log("verbose", $"DevToolsProxy: Client initiated close from {browserUri}");
+                                Log("verbose", $"DevToolsProxy: Client initiated close from browserUri");
                                 x.Cancel();
 
                                 break;
@@ -341,7 +316,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                             {
                                 //must be a background task
                                 pending_ops.Remove(completedTask);
-                                DevToolsQueueBase queue = GetQueueForTask(completedTask);
+                                DevToolsQueue queue = GetQueueForTask(completedTask);
                                 if (queue != null)
                                 {
                                     if (queue.TryPumpIfCurrentCompleted(x.Token, out Task tsk))

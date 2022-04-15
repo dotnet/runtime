@@ -6,12 +6,9 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Sockets;
-using System.Net.WebSockets;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
 namespace Microsoft.WebAssembly.Diagnostics;
@@ -19,10 +16,8 @@ namespace Microsoft.WebAssembly.Diagnostics;
 internal class FirefoxMonoProxy : MonoProxy
 {
     private readonly int portBrowser;
-    private AbstractConnection ide;
-    private AbstractConnection browser;
 
-    public FirefoxMonoProxy(ILoggerFactory loggerFactory, int portBrowser) : base(loggerFactory, null)
+    public FirefoxMonoProxy(ILoggerFactory loggerFactory, int portBrowser, string loggerId = null) : base(loggerFactory, null, loggerId: loggerId)
     {
         this.portBrowser = portBrowser;
     }
@@ -35,112 +30,17 @@ internal class FirefoxMonoProxy : MonoProxy
         throw new ArgumentException($"Invalid Session: \"{sessionId}\"", nameof(sessionId));
     }
 
-    // private Task<string> ReadOne(IDEConnection conn, CancellationToken token)
-    //     => conn.TcpClient is not null
-    //                 ? ReadOne(conn.TcpClient, token)
-    //                 : ReadOne(conn.WebSocket, token);
-
-    public async Task Run(TcpClient ideClient = null, WebSocket ideWebSocket = null)
+    public async Task Run(TcpClient ideClient = null)
     {
-        ide = AbstractConnection.Create(logger, ideClient, ideWebSocket);
+        using var ideConn = new TcpClientConnection(ideClient, logger);
         TcpClient browserClient = new TcpClient();
-        browser = AbstractConnection.Create(tcpClient: browserClient, logger: logger);
-        logger.LogDebug($"Run: Connecting to 127.0.0.1:{portBrowser}");
+        using var browserConn = new TcpClientConnection(browserClient, logger);
+
+        logger.LogDebug($"Connecting to the browser at tcp://127.0.0.1:{portBrowser} ..");
         await browserClient.ConnectAsync("127.0.0.1", portBrowser);
-        // queues.Add(ide.NewQueue());
-        queues.Add(DevToolsQueueBase.Create(ideClient, ideWebSocket));
-        // if (ide != null)
-        //     queues.Add(new DevToolsQueueFirefox(this.ide));
-        // else if (ideWebSocket != null)
-        //     queues.Add(new DevToolsQueue(ideWebSocket));
-        // queues.Add(new DevToolsQueueFirefox(this.browser));
-        queues.Add(browser.NewQueue());
+        logger.LogDebug($".. connected to the browser!");
 
-        var x = new CancellationTokenSource();
-
-        List<Task> pending_ops = new();
-
-            pending_ops.Add(browser.ReadOne(client_initiated_close, x.Token));
-            pending_ops.Add(ide.ReadOne(client_initiated_close, x.Token));
-        // pending_ops.Add(ReadOne(browser, x.Token));
-        // pending_ops.Add(ReadOne(ide, x.Token));
-        // if (ideWebSocket != null)
-        //     pending_ops.Add(ReadOne(ideWebSocket, x.Token));
-        // else if (ide != null)
-        //     pending_ops.Add(ReadOne(ide, x.Token));
-        pending_ops.Add(side_exception.Task);
-        pending_ops.Add(client_initiated_close.Task);
-        Task<bool> readerTask = _channelReader.WaitToReadAsync(x.Token).AsTask();
-        pending_ops.Add(readerTask);
-
-        try
-        {
-            while (!x.IsCancellationRequested)
-            {
-                Task completedTask = await Task.WhenAny(pending_ops.ToArray());
-                if (client_initiated_close.Task.IsCompleted)
-                {
-                    await client_initiated_close.Task.ConfigureAwait(false);
-                    x.Cancel();
-
-                    break;
-                }
-
-                //logger.LogTrace ("pump {0} {1}", task, pending_ops.IndexOf (task));
-                if (completedTask == pending_ops[0])
-                {
-                    string msg = ((Task<string>)completedTask).Result;
-                    if (msg != null)
-                    {
-                        // pending_ops[0] = browser.ReadOne() ReadOne(browser, x.Token); //queue next read
-                        pending_ops[0] = browser.ReadOne(client_initiated_close, x.Token);
-                        Task newTask = ProcessBrowserMessage(msg, x.Token);
-                        if (newTask != null)
-                            pending_ops.Add(newTask);
-                    }
-                }
-                else if (completedTask == pending_ops[1])
-                {
-                    string msg = ((Task<string>)completedTask).Result;
-                    if (msg != null)
-                    {
-                        // pending_ops[1] = ReadOne(ide, x.Token); //queue next read
-                        pending_ops[1] = ide.ReadOne(client_initiated_close, x.Token);
-                        Task newTask = ProcessIdeMessage(msg, x.Token);
-                        if (newTask != null)
-                            pending_ops.Add(newTask);
-                    }
-                }
-                else if (completedTask == pending_ops[2])
-                {
-                    bool res = ((Task<bool>)completedTask).Result;
-                    throw new Exception("side task must always complete with an exception, what's going on???");
-                }
-                else
-                {
-                    //must be a background task
-                    pending_ops.Remove(completedTask);
-                    DevToolsQueueBase queue = GetQueueForTask(completedTask);
-                    if (queue != null)
-                    {
-                        if (queue.TryPumpIfCurrentCompleted(x.Token, out Task tsk))
-                            pending_ops.Add(tsk);
-                    }
-                }
-            }
-            _channelWriter.Complete();
-        }
-        catch (Exception e)
-        {
-            Log("error", $"DevToolsProxy::Run: Exception {e}");
-            _channelWriter.Complete(e);
-            //throw;
-        }
-        finally
-        {
-            if (!x.IsCancellationRequested)
-                x.Cancel();
-        }
+        await RunInternal(ideConn, browserConn);
     }
 
     internal override async Task OnEvent(SessionId sessionId, JObject parms, CancellationToken token)

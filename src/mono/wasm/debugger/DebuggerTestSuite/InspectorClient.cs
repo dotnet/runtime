@@ -7,9 +7,10 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using Microsoft.WebAssembly.Diagnostics;
 using Newtonsoft.Json.Linq;
 
-namespace Microsoft.WebAssembly.Diagnostics
+namespace DebuggerTests
 {
     internal class InspectorClient : DevToolsClient
     {

@@ -4,8 +4,9 @@
 using System;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using Microsoft.WebAssembly.Diagnostics;
 
-namespace Microsoft.WebAssembly.Diagnostics
+namespace DebuggerTests
 {
     public class TestHarnessOptions : ProxyOptions
     {

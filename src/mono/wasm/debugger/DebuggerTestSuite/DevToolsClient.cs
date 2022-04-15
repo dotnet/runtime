@@ -3,24 +3,26 @@
 
 using System;
 using System.Collections.Generic;
-using System.IO;
+using System.Net;
+using System.Net.Sockets;
 using System.Net.WebSockets;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using Microsoft.WebAssembly.Diagnostics;
 
-namespace Microsoft.WebAssembly.Diagnostics
+namespace DebuggerTests
 {
     internal class DevToolsClient : IDisposable
     {
         DevToolsQueue _queue;
-        protected ClientWebSocket socket;
+        protected AbstractConnection _conn;
         protected TaskCompletionSource _clientInitiatedClose = new TaskCompletionSource();
         TaskCompletionSource _shutdownRequested = new TaskCompletionSource();
         readonly TaskCompletionSource<Exception> _failRequested = new();
         TaskCompletionSource _newSendTaskAvailable = new ();
         protected readonly ILogger logger;
+        protected bool _useWebSockets = true;
 
         public event EventHandler<(RunLoopStopReason reason, Exception ex)> RunLoopStopped;
 
@@ -42,29 +44,20 @@ namespace Microsoft.WebAssembly.Diagnostics
         protected virtual void Dispose(bool disposing)
         {
             if (disposing)
-                socket.Dispose();
+                _conn.Dispose();
         }
 
         public async Task Shutdown(CancellationToken cancellationToken)
         {
             if (_shutdownRequested.Task.IsCompleted)
             {
-                logger.LogDebug($"Shutdown was already requested once. socket: {socket.State}. Ignoring");
+                logger.LogDebug($"Shutdown was already requested once. Ignoring");
                 return;
             }
 
-            try
-            {
-                _shutdownRequested.SetResult();
-
-                if (!cancellationToken.IsCancellationRequested && socket.State == WebSocketState.Open)
-                    await socket.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, "Closing", cancellationToken);
-            }
-            catch (Exception ex) when (ex is IOException || ex is WebSocketException || ex is OperationCanceledException)
-            {
-                logger.LogDebug($"DevToolsClient.Shutdown: Close failed, but ignoring: {ex}");
-            }
-        }
+            await _conn.Shutdown(cancellationToken);
+            _shutdownRequested.SetResult();
+       }
 
         public void Fail(Exception exception)
         {
@@ -74,7 +67,10 @@ namespace Microsoft.WebAssembly.Diagnostics
                 _failRequested.TrySetResult(exception);
         }
 
-        protected virtual async Task<string> ReadOne(CancellationToken token)
+        // FIXME: AJ: shutdownrequested - handle that in ReadOne also
+
+#if false
+        protected async Task<string> ReadOne(CancellationToken token)
         {
             byte[] buff = new byte[4000];
             var mem = new MemoryStream();
@@ -114,6 +110,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 }
             }
         }
+#endif
 
         protected void Send(byte[] bytes, CancellationToken token)
         {
@@ -127,13 +124,26 @@ namespace Microsoft.WebAssembly.Diagnostics
             Func<string, CancellationToken, Task> receive,
             CancellationToken token)
         {
+            ClientWebSocket clientSocket = new ();
+            clientSocket.Options.KeepAliveInterval = Timeout.InfiniteTimeSpan;
             logger.LogDebug("Client connecting to {0}", uri);
-            this.socket = new ClientWebSocket();
-            this.socket.Options.KeepAliveInterval = Timeout.InfiniteTimeSpan;
+            await clientSocket.ConnectAsync(uri, token);
 
-            await this.socket.ConnectAsync(uri, token);
-            _queue = new DevToolsQueue(socket);
+            if (_useWebSockets)
+            {
+                _conn = new WebSocketConnection(clientSocket, logger);
+            }
+            else
+            {
+                TcpClient tcpClient = new();
+                IPEndPoint endpoint = new (IPAddress.Parse("127.0.0.1"), 6002);
+                logger.LogDebug($"Connecting to the proxy at tcp://{endpoint} ..");
+                await tcpClient.ConnectAsync(endpoint, token);
+                logger.LogDebug($".. connected to the proxy!");
+                _conn = new TcpClientConnection(tcpClient, logger);
+            }
 
+            _queue = new DevToolsQueue(_conn);
             var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(token);
 
             _ = Task.Run(async () =>
@@ -166,7 +176,10 @@ namespace Microsoft.WebAssembly.Diagnostics
                 }
                 finally
                 {
-                    logger.LogDebug($"Loop ended with socket: {socket.State}");
+                    if (_conn is WebSocketConnection wsc)
+                        logger.LogDebug($"Loop ended with socket: {wsc.WebSocket.State}");
+                    else
+                        logger.LogDebug($"Loop ended");
                     linkedCts.Cancel();
                 }
             });
@@ -178,7 +191,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         {
             var pending_ops = new List<Task>
             {
-                ReadOne(linkedCts.Token),
+                _conn.ReadOne(_clientInitiatedClose, linkedCts.Token),
                 _newSendTaskAvailable.Task,
                 _clientInitiatedClose.Task,
                 _shutdownRequested.Task,
@@ -220,7 +233,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 if (task == pending_ops[0])
                 {
                     var msg = await (Task<string>)pending_ops[0];
-                    pending_ops[0] = ReadOne(linkedCts.Token);
+                    pending_ops[0] = _conn.ReadOne(_clientInitiatedClose, linkedCts.Token);
 
                     if (msg != null)
                     {
