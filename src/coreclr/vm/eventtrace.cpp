@@ -5435,12 +5435,9 @@ VOID ETW::MethodLog::LogMethodInstrumentationData(MethodDesc* method, uint32_t c
                 typeLogger.FireBulkTypeEvent();
             }
 
-            if (numMethods != 0)
+            for (uint32_t iMethod = 0; iMethod < numMethods; iMethod++)
             {
-                for (uint32_t iMethod = 0; iMethod < numMethods; iMethod++)
-                {
-                    ETW::MethodLog::SendMethodDetailsEvent(pMethods[iMethod]);
-                }
+                ETW::MethodLog::SendMethodDetailsEvent(pMethods[iMethod]);
             }
 
             ULONG ulMethodToken=0;
