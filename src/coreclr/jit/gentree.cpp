@@ -11310,7 +11310,7 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
                         }
 
                         printf("\n");
-                        printf("                                                  ");
+                        printf("                                                            ");
                         printIndent(indentStack);
                         printf("    %-6s V%02u.%s (offs=0x%02x) -> ", varTypeName(fieldVarDsc->TypeGet()),
                                tree->AsLclVarCommon()->GetLclNum(), fieldName, fieldVarDsc->lvFldOffset);
