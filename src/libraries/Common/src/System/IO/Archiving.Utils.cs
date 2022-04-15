@@ -5,7 +5,7 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 
-namespace System.IO.Compression
+namespace System.IO
 {
     internal static partial class ArchivingUtils
     {

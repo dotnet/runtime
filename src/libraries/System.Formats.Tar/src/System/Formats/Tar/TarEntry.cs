@@ -140,7 +140,6 @@ namespace System.Formats.Tar
             set
             {
                 ArgumentException.ThrowIfNullOrEmpty(value);
-                // TODO: Validate valid pathname
                 _header._name = value;
             }
         }
@@ -362,7 +361,7 @@ namespace System.Formats.Tar
             string destinationDirectoryFullPath = di.FullName.EndsWith(Path.DirectorySeparatorChar) ? di.FullName : di.FullName + Path.DirectorySeparatorChar;
 
             // Resolves unexpected relative segments
-            string fileDestinationPath = Path.GetFullPath(Path.Combine(destinationDirectoryFullPath, Name));
+            string fileDestinationPath = Path.GetFullPath(Path.Combine(destinationDirectoryFullPath, ArchivingUtils.SanitizeEntryFilePath(Name)));
 
             if (!fileDestinationPath.StartsWith(destinationDirectoryFullPath, PathInternal.StringComparison))
             {
