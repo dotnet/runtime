@@ -113,6 +113,7 @@ namespace System
             // but we won't double compute for any evenly divisible by 4 length since we
             // compare pos > lengthSubVector128 rather than pos >= lengthSubVector128
             nuint lengthSubVector128 = (nuint)bytes.Length - (nuint)Vector128<int>.Count;
+            ref byte destRef = ref Unsafe.As<char, byte>(ref MemoryMarshal.GetReference(chars));
             do
             {
                 // Read 32bits from "bytes" span at "pos" offset
@@ -154,10 +155,7 @@ namespace System
                 // The high bytes (0x00) of the chars have also been converted
                 // to ascii hex '0', so clear them out.
                 hex &= Vector128.Create((ushort)0xFF).AsByte();
-
-                ref byte destRef = ref Unsafe.As<char, byte>(ref MemoryMarshal.GetReference(chars));
-                hex.StoreUnsafe(ref destRef, pos * 4);
-
+                hex.StoreUnsafe(ref destRef, pos * 4); // we encode 4 bytes as a single char (0x0-0xF)
                 pos += (nuint)Vector128<int>.Count;
 
                 if (pos == (nuint)bytes.Length)
