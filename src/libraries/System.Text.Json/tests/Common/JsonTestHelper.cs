@@ -24,7 +24,7 @@ namespace System.Text.Json
         private static void AssertJsonEqual(JsonElement expected, JsonElement actual, Stack<object> path)
         {
             JsonValueKind valueKind = expected.ValueKind;
-            AssertTrue(valueKind == actual.ValueKind);
+            AssertTrue(passCondition: valueKind == actual.ValueKind);
 
             switch (valueKind)
             {
@@ -43,12 +43,12 @@ namespace System.Text.Json
 
                     foreach (var property in expectedProperties.Except(actualProperties))
                     {
-                        AssertTrue(false, $"Property \"{property}\" missing from actual object.");
+                        AssertTrue(passCondition: false, $"Property \"{property}\" missing from actual object.");
                     }
 
                     foreach (var property in actualProperties.Except(expectedProperties))
                     {
-                        AssertTrue(false, $"Actual object defines additional property \"{property}\".");
+                        AssertTrue(passCondition: false, $"Actual object defines additional property \"{property}\".");
                     }
 
                     foreach (string name in expectedProperties)
@@ -65,31 +65,31 @@ namespace System.Text.Json
                     int i = 0;
                     while (expectedEnumerator.MoveNext())
                     {
-                        AssertTrue(actualEnumerator.MoveNext(), "Actual array contains fewer elements.");
+                        AssertTrue(passCondition: actualEnumerator.MoveNext(), "Actual array contains fewer elements.");
                         path.Push(i++);
                         AssertJsonEqual(expectedEnumerator.Current, actualEnumerator.Current, path);
                         path.Pop();
                     }
 
-                    AssertTrue(!actualEnumerator.MoveNext(), "Actual array contains additional elements.");
+                    AssertTrue(passCondition: !actualEnumerator.MoveNext(), "Actual array contains additional elements.");
                     break;
                 case JsonValueKind.String:
-                    AssertTrue(expected.GetString() == actual.GetString());
+                    AssertTrue(passCondition: expected.GetString() == actual.GetString());
                     break;
                 case JsonValueKind.Number:
                 case JsonValueKind.True:
                 case JsonValueKind.False:
                 case JsonValueKind.Null:
-                    AssertTrue(expected.GetRawText() == actual.GetRawText());
+                    AssertTrue(passCondition: expected.GetRawText() == actual.GetRawText());
                     break;
                 default:
                     Debug.Fail($"Unexpected JsonValueKind: JsonValueKind.{valueKind}.");
                     break;
             }
 
-            void AssertTrue(bool condition, string? message = null)
+            void AssertTrue(bool passCondition, string? message = null)
             {
-                if (!condition)
+                if (!passCondition)
                 {
                     message ??= "Expected JSON does not match actual value";
                     Assert.Fail($"{message}\nExpected JSON: {expected}\n  Actual JSON: {actual}\n  in JsonPath: {BuildJsonPath(path)}");
