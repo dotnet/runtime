@@ -157,17 +157,17 @@ parse_optimizations (guint32 opt, const char* p, gboolean cpu_opts)
 	parts = g_strsplit (p, ",", -1);
 	for (ptr = parts; ptr && *ptr; ptr ++) {
 		char *arg = *ptr;
-		char *p = arg;
+		char *parg = arg;
 
-		if (*p == '-') {
-			p++;
+		if (*parg == '-') {
+			parg++;
 			invert = TRUE;
 		} else {
 			invert = FALSE;
 		}
 		for (i = 0; i < G_N_ELEMENTS (opt_names) && optflag_get_name (i); ++i) {
 			n = optflag_get_name (i);
-			if (!strcmp (p, n)) {
+			if (!strcmp (parg, n)) {
 				if (invert)
 					opt &= ~ (1 << i);
 				else
@@ -176,13 +176,13 @@ parse_optimizations (guint32 opt, const char* p, gboolean cpu_opts)
 			}
 		}
 		if (i == G_N_ELEMENTS (opt_names) || !optflag_get_name (i)) {
-			if (strncmp (p, "all", 3) == 0) {
+			if (strncmp (parg, "all", 3) == 0) {
 				if (invert)
 					opt = 0;
 				else
 					opt = ~(EXCLUDED_FROM_ALL | exclude);
 			} else {
-				fprintf (stderr, "Invalid optimization name `%s'\n", p);
+				fprintf (stderr, "Invalid optimization name `%s'\n", parg);
 				exit (1);
 			}
 		}
@@ -514,7 +514,7 @@ mini_regression_step (MonoImage *image, int verbose, int *total_run, int *total,
 
 #ifdef DISABLE_JIT
 #ifdef MONO_USE_AOT_COMPILER
-			ERROR_DECL (error);
+			error_init_reuse (error);
 			func = (TestMethod)mono_aot_get_method (method, error);
 			mono_error_cleanup (error);
 #else
@@ -527,7 +527,7 @@ mini_regression_step (MonoImage *image, int verbose, int *total_run, int *total,
 			comp_time += g_timer_elapsed (timer, NULL);
 			if (cfg->exception_type == MONO_EXCEPTION_NONE) {
 #ifdef MONO_USE_AOT_COMPILER
-				ERROR_DECL (error);
+				error_init_reuse (error);
 				func = (TestMethod)mono_aot_get_method (method, error);
 				mono_error_cleanup (error);
 				if (!func) {
@@ -1800,16 +1800,14 @@ mono_jit_parse_options (int argc, char * argv[])
 		if (argv [i] [0] != '-')
 			break;
 		if (strncmp (argv [i], "--debugger-agent=", 17) == 0) {
-			MonoDebugOptions *opt = mini_get_debug_options ();
-
+			MonoDebugOptions *debug_opt = mini_get_debug_options ();
 			mono_debugger_agent_parse_options (g_strdup (argv [i] + 17));
-			opt->mdb_optimizations = TRUE;
+			debug_opt ->mdb_optimizations = TRUE;
 			enable_debugging = TRUE;
 		} else if (!strcmp (argv [i], "--soft-breakpoints")) {
-			MonoDebugOptions *opt = mini_get_debug_options ();
-
-			opt->soft_breakpoints = TRUE;
-			opt->explicit_null_checks = TRUE;
+			MonoDebugOptions *debug_opt  = mini_get_debug_options ();
+			debug_opt ->soft_breakpoints = TRUE;
+			debug_opt ->explicit_null_checks = TRUE;
 		} else if (strncmp (argv [i], "--optimize=", 11) == 0) {
 			opt = parse_optimizations (opt, argv [i] + 11, TRUE);
 			mono_set_optimizations (opt);
@@ -1823,9 +1821,8 @@ mono_jit_parse_options (int argc, char * argv[])
 		} else if (strcmp (argv [i], "--verbose") == 0 || strcmp (argv [i], "-v") == 0) {
 			mini_verbose_level++;
 		} else if (strcmp (argv [i], "--breakonex") == 0) {
-			MonoDebugOptions *opt = mini_get_debug_options ();
-
-			opt->break_on_exc = TRUE;
+			MonoDebugOptions *debug_opt = mini_get_debug_options ();
+			debug_opt->break_on_exc = TRUE;
 		} else if (strcmp (argv [i], "--stats") == 0) {
 			enable_runtime_stats ();
 		} else if (strncmp (argv [i], "--stats=", 8) == 0) {
@@ -2178,10 +2175,10 @@ mono_main (int argc, char* argv[])
 				fprintf (stderr, "Error: --bisect requires OPT:FILENAME\n");
 				return 1;
 			}
-			char *opt_string = g_strndup (param, sep - param);
-			guint32 opt = parse_optimizations (0, opt_string, FALSE);
-			g_free (opt_string);
-			mono_set_bisect_methods (opt, sep + 1);
+			char *bisect_opt_string = g_strndup (param, sep - param);
+			guint32 bisect_opt = parse_optimizations (0, bisect_opt_string, FALSE);
+			g_free (bisect_opt_string);
+			mono_set_bisect_methods (bisect_opt, sep + 1);
 		} else if (strcmp (argv [i], "--gc=sgen") == 0) {
 			switch_gc (argv, "sgen");
 		} else if (strcmp (argv [i], "--gc=boehm") == 0) {
@@ -2222,9 +2219,8 @@ mono_main (int argc, char* argv[])
 		} else if (strncmp (argv [i], "--trace=", 8) == 0) {
 			trace_options = &argv [i][8];
 		} else if (strcmp (argv [i], "--breakonex") == 0) {
-			MonoDebugOptions *opt = mini_get_debug_options ();
-
-			opt->break_on_exc = TRUE;
+			MonoDebugOptions *debug_opt = mini_get_debug_options ();
+			debug_opt->break_on_exc = TRUE;
 		} else if (strcmp (argv [i], "--break") == 0) {
 			if (i+1 >= argc){
 				fprintf (stderr, "Missing method name in --break command line option\n");
@@ -2361,16 +2357,14 @@ mono_main (int argc, char* argv[])
 			enable_debugging = TRUE;
 			if (!parse_debug_options (argv [i] + 8))
 				return 1;
-			MonoDebugOptions *opt = mini_get_debug_options ();
-
-			if (!opt->enabled) {
+			MonoDebugOptions *debug_opt = mini_get_debug_options ();
+			if (!debug_opt->enabled) {
 				enable_debugging = FALSE;
 			}
 		} else if (strncmp (argv [i], "--debugger-agent=", 17) == 0) {
-			MonoDebugOptions *opt = mini_get_debug_options ();
-
+			MonoDebugOptions *debug_opt = mini_get_debug_options ();
 			mono_debugger_agent_parse_options (g_strdup (argv [i] + 17));
-			opt->mdb_optimizations = TRUE;
+			debug_opt->mdb_optimizations = TRUE;
 			enable_debugging = TRUE;
 		} else if (strcmp (argv [i], "--security") == 0) {
 			fprintf (stderr, "error: --security is obsolete.");
@@ -2386,11 +2380,11 @@ mono_main (int argc, char* argv[])
 				fprintf (stderr, "error: --security=cas is obsolete.");
 				return 1;
 			} else if (strcmp (argv [i] + 11, "validil") == 0) {
-                                fprintf (stderr, "error: --security=validil is obsolete.");
-                                return 1;
+				fprintf (stderr, "error: --security=validil is obsolete.");
+				return 1;
 			} else if (strcmp (argv [i] + 11, "verifiable") == 0) {
-                                fprintf (stderr, "error: --securty=verifiable is obsolete.");
-                                return 1;
+				fprintf (stderr, "error: --securty=verifiable is obsolete.");
+				return 1;
 			} else {
 				fprintf (stderr, "error: --security= option has invalid argument (cas, core-clr, verifiable or validil)\n");
 				return 1;
@@ -2517,13 +2511,13 @@ mono_main (int argc, char* argv[])
 		enable_debugging = TRUE;
 
 #ifdef MONO_CROSS_COMPILE
-       if (!mono_compile_aot) {
-		   fprintf (stderr, "This mono runtime is compiled for cross-compiling. Only the --aot option is supported.\n");
-		   exit (1);
-       }
+	if (!mono_compile_aot) {
+		fprintf (stderr, "This mono runtime is compiled for cross-compiling. Only the --aot option is supported.\n");
+		exit (1);
+	}
 #if TARGET_SIZEOF_VOID_P == 4 && (defined(TARGET_ARM64) || defined(TARGET_AMD64)) && !defined(MONO_ARCH_ILP32)
-       fprintf (stderr, "Can't cross-compile on 32-bit platforms to 64-bit architecture.\n");
-       exit (1);
+	fprintf (stderr, "Can't cross-compile on 32-bit platforms to 64-bit architecture.\n");
+	exit (1);
 #endif
 #endif
 
@@ -2576,10 +2570,8 @@ mono_main (int argc, char* argv[])
 	mono_gc_set_stack_end (&domain);
 
 	if (agents) {
-		int i;
-
-		for (i = 0; i < agents->len; ++i) {
-			int res = load_agent (domain, (char*)g_ptr_array_index (agents, i));
+		for (guint agent_idx = 0; agent_idx < agents->len; ++agent_idx) {
+			int res = load_agent (domain, (char*)g_ptr_array_index (agents, agent_idx));
 			if (res) {
 				g_ptr_array_free (agents, TRUE);
 				mini_cleanup (domain);
@@ -2650,13 +2642,13 @@ mono_main (int argc, char* argv[])
 	mono_callspec_set_assembly (assembly);
 
 	if (mono_compile_aot || action == DO_EXEC) {
-		const char *error;
+		const char *version_error;
 
 		//mono_set_rootdir ();
 
-		error = mono_check_corlib_version ();
-		if (error) {
-			fprintf (stderr, "Corlib not in sync with this runtime: %s\n", error);
+		version_error = mono_check_corlib_version ();
+		if (version_error) {
+			fprintf (stderr, "Corlib not in sync with this runtime: %s\n", version_error);
 			fprintf (stderr, "Loaded from: %s\n",
 				mono_defaults.corlib? mono_image_get_filename (mono_defaults.corlib): "unknown");
 			fprintf (stderr, "Download a newer corlib or a newer runtime at http://www.mono-project.com/download.\n");

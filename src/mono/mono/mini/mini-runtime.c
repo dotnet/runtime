@@ -1548,7 +1548,7 @@ mono_resolve_patch_target_ext (MonoMemoryManager *mem_manager, MonoMethod *metho
 		break;
 	case MONO_PATCH_INFO_ADJUSTED_IID:
 		mono_class_init_internal (patch_info->data.klass);
-		target = GUINT_TO_POINTER ((guint32)(-((m_class_get_interface_id (patch_info->data.klass) + 1) * TARGET_SIZEOF_VOID_P)));
+		target = GUINT_TO_POINTER ((guint32)(-(gint32)((m_class_get_interface_id (patch_info->data.klass) + 1) * TARGET_SIZEOF_VOID_P)));
 		break;
 	case MONO_PATCH_INFO_VTABLE:
 		target = mono_class_vtable_checked (patch_info->data.klass, error);
@@ -2535,7 +2535,6 @@ compile_special (MonoMethod *method, MonoError *error)
 		if (info->subtype == WRAPPER_SUBTYPE_GSHAREDVT_IN || info->subtype == WRAPPER_SUBTYPE_GSHAREDVT_OUT) {
 			static MonoTrampInfo *in_tinfo, *out_tinfo;
 			MonoTrampInfo *tinfo;
-			MonoJitInfo *jinfo;
 			gboolean is_in = info->subtype == WRAPPER_SUBTYPE_GSHAREDVT_IN;
 
 			if (is_in && in_tinfo)
@@ -2605,14 +2604,14 @@ mono_jit_compile_method_with_opt (MonoMethod *method, guint32 opt, gboolean jit_
 		callinfo = mono_find_jit_icall_info (winfo->d.icall.jit_icall_id);
 
 	if (method->wrapper_type == MONO_WRAPPER_OTHER) {
-		WrapperInfo *info = mono_marshal_get_wrapper_info (method);
+		WrapperInfo *wrapper_info = mono_marshal_get_wrapper_info (method);
 
-		g_assert (info);
-		if (info->subtype == WRAPPER_SUBTYPE_SYNCHRONIZED_INNER) {
+		g_assert (wrapper_info );
+		if (wrapper_info ->subtype == WRAPPER_SUBTYPE_SYNCHRONIZED_INNER) {
 			MonoGenericContext *ctx = NULL;
 			if (method->is_inflated)
 				ctx = mono_method_get_context (method);
-			method = info->d.synchronized_inner.method;
+			method = wrapper_info ->d.synchronized_inner.method;
 			if (ctx) {
 				method = mono_class_inflate_generic_method_checked (method, ctx, error);
 				g_assert (is_ok (error)); /* FIXME don't swallow the error */

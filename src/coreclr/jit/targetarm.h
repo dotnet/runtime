@@ -150,6 +150,12 @@
   //       r2: trashed
   //       r3: trashed
 
+  #define REG_WRITE_BARRIER_DST          REG_ARG_0
+  #define RBM_WRITE_BARRIER_DST          RBM_ARG_0
+
+  #define REG_WRITE_BARRIER_SRC          REG_ARG_1
+  #define RBM_WRITE_BARRIER_SRC          RBM_ARG_1
+
   #define REG_WRITE_BARRIER_DST_BYREF    REG_ARG_0
   #define RBM_WRITE_BARRIER_DST_BYREF    RBM_ARG_0
 

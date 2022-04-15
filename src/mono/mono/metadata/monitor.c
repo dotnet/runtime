@@ -762,7 +762,7 @@ mono_monitor_try_enter_inflated (MonoObject *obj, guint32 ms, gboolean allow_int
 	guint32 waitms;
 	guint32 new_status, old_status, tmp_status;
 	MonoInternalThread *thread;
-	gboolean interrupted, timedout;
+	gboolean interrupted, timedout = FALSE;
 
 	LOCK_DEBUG (g_message("%s: (%d) Trying to lock object %p (%d ms)", __func__, id, obj, ms));
 
@@ -1116,9 +1116,9 @@ mono_monitor_try_enter_loop_if_interrupted (MonoObject *obj, guint32 ms,
 		if (error) {
 			mono_error_set_argument_null (error, "obj", "");
 		} else {
-			ERROR_DECL (error);
-			mono_error_set_argument_null (error, "obj", "");
-			mono_error_set_pending_exception (error);
+			ERROR_DECL (null_error);
+			mono_error_set_argument_null (null_error, "obj", "");
+			mono_error_set_pending_exception (null_error);
 		}
 		return FALSE;
 	}
@@ -1330,7 +1330,6 @@ mono_monitor_wait (MonoObjectHandle obj_handle, guint32 ms, MonoBoolean allow_in
 
 	event = mono_w32event_create (FALSE, FALSE);
 	if (event == NULL) {
-		ERROR_DECL (error);
 		mono_error_set_synchronization_lock (error, "Failed to set up wait event");
 		mono_error_set_pending_exception (error);
 		return FALSE;

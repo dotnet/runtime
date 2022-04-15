@@ -1779,7 +1779,6 @@ mono_image_open_a_lot_parameterized (MonoLoadedImages *li, MonoAssemblyLoadConte
 	if (coree_module_handle) {
 		HMODULE module_handle;
 		gunichar2 *fname_utf16;
-		DWORD last_error;
 
 		absfname = mono_path_resolve_symlinks (fname);
 		fname_utf16 = NULL;
@@ -1803,6 +1802,8 @@ mono_image_open_a_lot_parameterized (MonoLoadedImages *li, MonoAssemblyLoadConte
 			g_free (absfname);
 			return image;
 		}
+
+		DWORD last_error = ERROR_SUCCESS;
 
 		// Image not loaded, load it now
 		fname_utf16 = g_utf8_to_utf16 (absfname, -1, NULL, NULL, NULL);

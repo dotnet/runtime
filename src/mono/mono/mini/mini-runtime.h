@@ -700,10 +700,12 @@ void mini_register_sigterm_handler (void);
 	} while (0)
 
 #define MINI_END_CODEGEN(buf,size,type,arg) do { \
+	MONO_DISABLE_WARNING(4127) /* conditional expression is constant */ \
 	mono_codeman_disable_write (); \
 	mono_arch_flush_icache ((buf), (size)); \
 	if ((int)type != -1) \
 		MONO_PROFILER_RAISE (jit_code_buffer, ((buf), (size), (MonoProfilerCodeBufferType)(type), (arg))); \
+	MONO_RESTORE_WARNING \
 	} while (0)
 
 #endif /* __MONO_MINI_RUNTIME_H__ */

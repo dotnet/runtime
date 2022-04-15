@@ -84,7 +84,7 @@
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedMessageValue">
         <source>The specified value '{0}' for '{1}' is not supported by source-generated P/Invokes. If the specified value is required, use a regular `DllImport` instead.</source>
-        <target state="needs-review-translation">Určená hodnota {0} pro {1} se nepodporuje u zdrojem generovaných volání P/Invokes. Pokud je určená konfigurace povinná, použijte místo ní normální Dllimport.</target>
+        <target state="new">The specified value '{0}' for '{1}' is not supported by source-generated P/Invokes. If the specified value is required, use a regular `DllImport` instead.</target>
         <note />
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedTitle">
@@ -209,7 +209,7 @@
       </trans-unit>
       <trans-unit id="InTwoStageMarshallingRequiresToNativeValueMessage">
         <source>A marshaller type '{0}' that supports marshalling in the 'In' direction with the 'TwoStageMarshalling' feature must provide a 'ToNativeValue' instance method that returns the native value</source>
-        <target state="needs-review-translation">Typ zařazování {0} podporuje zařazování ve směru „In“ s funkcí TwoStageMarshalling podporující instanční metodu ToNativeValue, která vrací nativní hodnotu.</target>
+        <target state="new">A marshaller type '{0}' that supports marshalling in the 'In' direction with the 'TwoStageMarshalling' feature must provide a 'ToNativeValue' instance method that returns the native value</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidAttributedMethodContainingTypeMissingModifiersMessage">

@@ -74,7 +74,6 @@ namespace System.Net.Security.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/67712")]
         [ConditionalTheory]
         [MemberData(nameof(OneOrBothUseDefaulData))]
         public async Task ClientAndServer_OneOrBothUseDefault_Ok(SslProtocols? clientProtocols, SslProtocols? serverProtocols)

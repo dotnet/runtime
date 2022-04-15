@@ -1513,7 +1513,7 @@ emit_vector64_vector128_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 	case SN_op_Subtraction: {
 		if (fsig->param_count != 2 )
 			return NULL;
-		MonoTypeEnum arg0_type = fsig->param_count > 0 ? get_underlying_type (fsig->params [0]) : MONO_TYPE_VOID;
+		arg0_type = fsig->param_count > 0 ? get_underlying_type (fsig->params [0]) : MONO_TYPE_VOID;
 		return emit_simd_ins_for_binary_op (cfg, klass, fsig, args, arg0_type, id);
 		
 	}
@@ -1722,7 +1722,7 @@ emit_sys_numerics_vector_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSig
 		MonoTypeEnum ty = etype->type;
 		int opcode = type_to_xextract_op (ty);
 		int src1 = load_simd_vreg (cfg, cmethod, args [0], NULL);
-		MonoInst *ins = emit_simd_ins (cfg, klass, opcode, src1, args [1]->dreg);
+		ins = emit_simd_ins (cfg, klass, opcode, src1, args [1]->dreg);
 		ins->inst_c1 = ty;
 		return ins;
 	}
@@ -3538,7 +3538,6 @@ emit_x86_intrinsics (
 			int ctlreg = args [1]->dreg;
 			if (fsig->param_count == 2) {
 			} else if (fsig->param_count == 3) {
-				MonoInst *ins = NULL;
 				/* This intrinsic is also implemented in managed code.
 				 * TODO: remove this if cross-AOT-assembly inlining works
 				 */

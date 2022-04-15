@@ -815,8 +815,6 @@ emit_object_to_ptr_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv 
 	case MONO_MARSHAL_CONV_STR_BSTR:
 	case MONO_MARSHAL_CONV_STR_ANSIBSTR:
 	case MONO_MARSHAL_CONV_STR_TBSTR: {
-		int pos;
-
 		/* free space if free == true */
 		mono_mb_emit_ldloc (mb, 2);
 		pos = mono_mb_emit_short_branch (mb, CEE_BRFALSE_S);
@@ -1005,8 +1003,6 @@ emit_object_to_ptr_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv 
 #endif /* DISABLE_COM */
 
 	case MONO_MARSHAL_CONV_SAFEHANDLE: {
-		int pos;
-
 		mono_mb_emit_ldloc (mb, 0);
 		mono_mb_emit_byte (mb, CEE_LDIND_I);
 		pos = mono_mb_emit_branch (mb, CEE_BRTRUE);
@@ -2222,7 +2218,7 @@ emit_native_wrapper_ilgen (MonoImage *image, MonoMethodBuilder *mb, MonoMethodSi
 	}
 
 	if (MONO_TYPE_ISSTRUCT (sig->ret)) {
-		MonoClass *klass = mono_class_from_mono_type_internal (sig->ret);
+		klass = mono_class_from_mono_type_internal (sig->ret);
 		mono_class_init_internal (klass);
 		if (!(mono_class_is_explicit_layout (klass) || m_class_is_blittable (klass))) {
 			/* This is used by emit_marshal_vtype (), but it needs to go right before the call */
@@ -4136,7 +4132,7 @@ emit_delegate_end_invoke_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *sig)
 static void
 emit_delegate_invoke_internal_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *sig, MonoMethodSignature *invoke_sig, gboolean static_method_with_first_arg_bound, gboolean callvirt, gboolean closed_over_null, MonoMethod *method, MonoMethod *target_method, MonoClass *target_class, MonoGenericContext *ctx, MonoGenericContainer *container)
 {
-	int local_i, local_len, local_delegates, local_d, local_target, local_res;
+	int local_i, local_len, local_delegates, local_d, local_target, local_res = 0;
 	int pos0, pos1, pos2;
 	int i;
 	gboolean void_ret;
@@ -4294,6 +4290,7 @@ emit_delegate_invoke_internal_ilgen (MonoMethodBuilder *mb, MonoMethodSignature 
 		mono_mb_emit_op (mb, CEE_CALLVIRT, mono_class_inflate_generic_method_checked (method, &container->context, error));
 		g_assert (is_ok (error)); /* FIXME don't swallow the error */
 	}
+
 	if (!void_ret)
 		mono_mb_emit_stloc (mb, local_res);
 
@@ -5297,11 +5294,11 @@ emit_marshal_string_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 				break;
 			}
 
-			MONO_STATIC_POINTER_INIT (MonoMethod, m)
+			MONO_STATIC_POINTER_INIT (MonoMethod, method)
 
-				m = get_method_nofail (mono_defaults.string_class, "get_Length", -1, 0);
+				method = get_method_nofail (mono_defaults.string_class, "get_Length", -1, 0);
 
-			MONO_STATIC_POINTER_INIT_END (MonoMethod, m)
+			MONO_STATIC_POINTER_INIT_END (MonoMethod, method)
 
 			/*
 			 * Have to allocate a new string with the same length as the original, and
@@ -5312,7 +5309,7 @@ emit_marshal_string_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 			mono_mb_emit_ldloc (mb, conv_arg);
 			mono_mb_emit_ldarg (mb, argnum);
 			mono_mb_emit_byte (mb, CEE_LDIND_I);
-			mono_mb_emit_managed_call (mb, m, NULL);
+			mono_mb_emit_managed_call (mb, method, NULL);
 			mono_mb_emit_icall (mb, mono_string_new_len_wrapper);
 			mono_mb_emit_byte (mb, CEE_STIND_REF);
 		} else if (m_type_is_byref (t) && (t->attrs & PARAM_ATTRIBUTE_OUT || !(t->attrs & PARAM_ATTRIBUTE_IN))) {
@@ -6029,8 +6026,6 @@ emit_marshal_object_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 		/* Set src */
 		mono_mb_emit_ldarg (mb, argnum);
 		if (m_type_is_byref (t)) {
-			int pos2;
-
 			/* Check for NULL and raise an exception */
 			pos2 = mono_mb_emit_branch (mb, CEE_BRTRUE);
 
