@@ -21,6 +21,12 @@ struct _EventPipeStackContents {
 #else
 struct _EventPipeStackContents_Internal {
 #endif
+	// TODO: Look at optimizing this when writing into buffer manager.
+	// Only write up to next available frame to better utilize memory.
+	// Even events not requesting a stack will still waste space in buffer manager.
+	// Needs to go first since it dictates size of struct.
+	// The next available slot in stack_frames.
+	uint32_t next_available_frame;
 	// Array of IP values from a stack crawl.
 	// Top of stack is at index 0.
 	uintptr_t stack_frames [EP_MAX_STACK_DEPTH];
@@ -30,12 +36,6 @@ struct _EventPipeStackContents_Internal {
 	ep_rt_method_desc_t *methods [EP_MAX_STACK_DEPTH];
 #endif
 
-	// TODO: Look at optimizing this when writing into buffer manager.
-	// Only write up to next available frame to better utilize memory.
-	// Even events not requesting a stack will still waste space in buffer manager.
-	// Needs to go first since it dictates size of struct.
-	// The next available slot in stack_frames.
-	uint32_t next_available_frame;
 };
 
 #if !defined(EP_INLINE_GETTER_SETTER) && !defined(EP_IMPL_STACK_CONTENTS_GETTER_SETTER)
@@ -161,6 +161,15 @@ ep_stack_contents_get_size (const EventPipeStackContents *stack_contents)
 {
 	EP_ASSERT (stack_contents != NULL);
 	return (ep_stack_contents_get_next_available_frame (stack_contents) * sizeof (uintptr_t));
+}
+
+static
+inline
+uint32_t
+ep_stack_contents_get_total_size (const EventPipeStackContents *stack_contents)
+{
+	// The total size including the size
+	return stack_contents ? (ep_stack_contents_get_next_available_frame (stack_contents) * sizeof (uintptr_t)) + sizeof (uint32_t) : 0;
 }
 
 #endif /* ENABLE_PERFTRACING */
