@@ -5,7 +5,6 @@
     <NoWarn>$(NoWarn);CA2249;CA1838;CA1846</NoWarn>
     <!-- Suppress CA1845: Use span-based 'string.Concat' and 'AsSpan' instead of 'Substring' to avoid ifdefs. -->
     <NoWarn>$(NoWarn);CA1845</NoWarn>
-    <Nullable>enable</Nullable>
     <IsPackable>true</IsPackable>
     <PackageDescription>Provides a collection of classes used to access an ODBC data source in the managed space
 

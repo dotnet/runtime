@@ -5,7 +5,6 @@
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <!-- Too much private reflection. Do not bother with trimming -->
     <ILLinkTrimAssembly>false</ILLinkTrimAssembly>
-    <Nullable>enable</Nullable>
     <EnableRegexGenerator>true</EnableRegexGenerator>
   </PropertyGroup>
   <PropertyGroup>

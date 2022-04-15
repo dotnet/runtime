@@ -3,7 +3,6 @@
     <RootNamespace>System.Xml</RootNamespace>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)</TargetFrameworks>
-    <Nullable>enable</Nullable>
     <EnableRegexGenerator>true</EnableRegexGenerator>
   </PropertyGroup>
   <ItemGroup>
