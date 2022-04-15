@@ -3194,18 +3194,9 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
             // We may want to force 'this' into a temp because we want to use
             // it to expand the call target in morph so that CSE can pick it
             // up.
-            if (call->IsExpandedEarly() && call->IsVirtualVtable() && !argx->OperIsLocal())
+            if (!reMorphing && call->IsExpandedEarly() && call->IsVirtualVtable() && !argx->OperIsLocal())
             {
-                if (!reMorphing)
-                {
-                    call->gtArgs.SetNeedsTemp(&arg);
-                }
-                else
-                {
-                    // Should have been converted to a temp the first time
-                    // around.
-                    assert(arg.IsTemp());
-                }
+                call->gtArgs.SetNeedsTemp(&arg);
             }
         }
 
