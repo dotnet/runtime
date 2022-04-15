@@ -14297,7 +14297,7 @@ GenTree* Compiler::fgMorphMulAdd(GenTreeOp* tree)
         !addOp1->gtOverflow())
     {
         GenTree* mulOp1 = addOp1->gtGetOp1();
-        GenTree* mulOp2 = addOp2->gtGetOp2();
+        GenTree* mulOp2 = addOp1->gtGetOp2();
 
         // Transform "-a * b + c" to "c - a * b"
         if (mulOp1->OperIs(GT_NEG) && !mulOp2->OperIs(GT_NEG))
