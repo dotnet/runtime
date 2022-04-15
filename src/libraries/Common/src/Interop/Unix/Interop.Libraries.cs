@@ -7,9 +7,6 @@ internal static partial class Interop
     {
         internal const string libc = "libc";
 
-        // Duplicated from Android for Linux Bionic
-        internal const string Liblog = "liblog";
-
         // Shims
         internal const string SystemNative = "libSystem.Native";
         internal const string NetSecurityNative = "libSystem.Net.Security.Native";
