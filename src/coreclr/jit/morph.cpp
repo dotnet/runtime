@@ -14339,7 +14339,7 @@ GenTree* Compiler::fgMorphMulAdd(GenTreeOp* tree)
             DEBUG_DESTROY_NODE(mulOp2);
         }
         // Transform "a * b + c" to "c + a * b"
-        else
+        else if (addOp1->OperIs(GT_MUL))
         {
             tree->gtOp1 = op1;
             tree->gtOp2 = mul;
