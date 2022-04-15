@@ -610,6 +610,95 @@ void Lowering::LowerRotate(GenTree* tree)
     ContainCheckShiftRotate(tree->AsOp());
 }
 
+#ifdef TARGET_ARM64
+//------------------------------------------------------------------------
+// LowerModPow2: Lower GT_MOD if the second operand is a constant power of 2.
+//
+// Arguments:
+//    tree - the node to lower
+//
+// Return Value:
+//    A new tree node if it changed.
+//
+// Notes:
+//     {expr} % {cns}
+//     Logically turns into:
+//         let a = {expr}
+//         if a > 0 then (a & ({cns} - 1)) else -(-a & ({cns} - 1))
+//     which then turns into:
+//         and   reg1, reg0, #({cns} - 1)
+//         negs  reg0, reg0
+//         and   reg0, reg0, #({cns} - 1)
+//         csneg reg0, reg1, reg0, mi
+//     TODO: We could do this optimization in morph but we do not have
+//           a conditional select op in HIR. At some point, we may
+//           introduce such an op.
+GenTree* Lowering::LowerModPow2(GenTree* node)
+{
+    assert(node->OperIs(GT_MOD));
+    GenTree* mod      = node;
+    GenTree* dividend = mod->gtGetOp1();
+    GenTree* divisor  = mod->gtGetOp2();
+
+    assert(divisor->IsIntegralConstPow2());
+
+    const var_types type = mod->TypeGet();
+    assert((type == TYP_INT) || (type == TYP_LONG));
+
+    LIR::Use use;
+    if (!BlockRange().TryGetUse(node, &use))
+    {
+        return nullptr;
+    }
+
+    ssize_t cnsValue = static_cast<ssize_t>(divisor->AsIntConCommon()->IntegralValue()) - 1;
+
+    BlockRange().Remove(divisor);
+
+    // We need to use the dividend node multiple times so its value needs to be
+    // computed once and stored in a temp variable.
+    LIR::Use opDividend(BlockRange(), &mod->AsOp()->gtOp1, mod);
+    dividend = ReplaceWithLclVar(opDividend);
+
+    GenTree* dividend2 = comp->gtClone(dividend);
+    BlockRange().InsertAfter(dividend, dividend2);
+
+    GenTreeIntCon* cns = comp->gtNewIconNode(cnsValue, type);
+    BlockRange().InsertAfter(dividend2, cns);
+
+    GenTree* const trueExpr = comp->gtNewOperNode(GT_AND, type, dividend, cns);
+    BlockRange().InsertAfter(cns, trueExpr);
+    LowerNode(trueExpr);
+
+    GenTree* const neg = comp->gtNewOperNode(GT_NEG, type, dividend2);
+    neg->gtFlags |= GTF_SET_FLAGS;
+    BlockRange().InsertAfter(trueExpr, neg);
+
+    GenTreeIntCon* cns2 = comp->gtNewIconNode(cnsValue, type);
+    BlockRange().InsertAfter(neg, cns2);
+
+    GenTree* const falseExpr = comp->gtNewOperNode(GT_AND, type, neg, cns2);
+    BlockRange().InsertAfter(cns2, falseExpr);
+    LowerNode(falseExpr);
+
+    GenTree* const cc = comp->gtNewOperNode(GT_CSNEG_MI, type, trueExpr, falseExpr);
+    cc->gtFlags |= GTF_USE_FLAGS;
+
+    JITDUMP("Lower: optimize X MOD POW2");
+    DISPNODE(mod);
+    JITDUMP("to:\n");
+    DISPNODE(cc);
+
+    BlockRange().InsertBefore(mod, cc);
+    ContainCheckNode(cc);
+    BlockRange().Remove(mod);
+
+    use.ReplaceWith(cc);
+
+    return cc->gtNext;
+}
+#endif
+
 #ifdef FEATURE_HW_INTRINSICS
 
 //----------------------------------------------------------------------------------------------
@@ -1723,7 +1812,7 @@ void Lowering::ContainCheckMul(GenTreeOp* node)
 //
 void Lowering::ContainCheckDivOrMod(GenTreeOp* node)
 {
-    assert(node->OperIs(GT_DIV, GT_UDIV));
+    assert(node->OperIs(GT_DIV, GT_UDIV, GT_MOD));
 
     // ARM doesn't have a div instruction with an immediate operand
 }

@@ -389,7 +389,7 @@ namespace System.Security.Cryptography.Pkcs
 
             if (index < 0 || index >= _signedData.SignerInfos.Length)
             {
-                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_IndexMustBeLess);
             }
 
             AlgorithmIdentifierAsn signerAlgorithm = _signedData.SignerInfos[index].DigestAlgorithm;
