@@ -14329,6 +14329,10 @@ GenTree* Compiler::fgMorphMulAdd(GenTreeOp* tree)
             tree->gtOp1 = addOp2;
             tree->gtOp2 = addOp1;
         }
+
+#ifdef DEBUG
+        tree->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED;
+#endif
     }
 
     return tree;
