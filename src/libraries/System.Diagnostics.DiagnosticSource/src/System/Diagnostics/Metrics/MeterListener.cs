@@ -151,7 +151,7 @@ namespace System.Diagnostics.Metrics
             }
             else
             {
-                 throw new InvalidOperationException(SR.Format(SR.UnsupportedType, typeof(T)));
+                throw new InvalidOperationException(SR.Format(SR.UnsupportedType, typeof(T)));
             }
         }
 
