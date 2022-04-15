@@ -3382,7 +3382,7 @@ BOOL AppDomain::AddFileToCache(AssemblySpec* pSpec, PEAssembly * pPEAssembly, BO
     //    add the reference.
     //   - For loads via assembly references, this will never be NULL.
     // - Result assembly for the result
-    //   - For dynamic assemblies, there will be no host assembly, so we have the result assembly / LoaderAllocator.
+    //   - For dynamic assemblies, there is no host assembly, so we don't have the result assembly / LoaderAllocator.
     //     We currently block resolving to dynamic assemblies, so we simply assert that we have a host assembly.
     //   - For non-dynamic assemblies, we should be able to get the host assembly.
     DomainAssembly *pParentAssembly = pSpec->GetParentAssembly();
