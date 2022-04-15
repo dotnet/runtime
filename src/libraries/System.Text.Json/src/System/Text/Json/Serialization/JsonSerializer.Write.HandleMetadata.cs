@@ -11,8 +11,8 @@ namespace System.Text.Json
         // Pre-encoded metadata properties.
         internal static readonly JsonEncodedText s_metadataId = JsonEncodedText.Encode("$id", encoder: null);
         internal static readonly JsonEncodedText s_metadataRef = JsonEncodedText.Encode("$ref", encoder: null);
-        internal static readonly JsonEncodedText s_metadataValues = JsonEncodedText.Encode("$values", encoder: null);
         internal static readonly JsonEncodedText s_metadataType = JsonEncodedText.Encode("$type", encoder: null);
+        internal static readonly JsonEncodedText s_metadataValues = JsonEncodedText.Encode("$values", encoder: null);
 
         internal static MetadataPropertyName WriteMetadataForObject(
             JsonConverter jsonConverter,
@@ -37,7 +37,7 @@ namespace System.Text.Json
                 Debug.Assert(state.Parent.JsonPropertyInfo!.JsonTypeInfo.PolymorphicTypeResolver != null);
 
                 JsonEncodedText propertyName =
-                    state.Parent.JsonPropertyInfo.JsonTypeInfo.PolymorphicTypeResolver.CustomTypeDiscriminatorPropertyNameEncoded is JsonEncodedText customPropertyName
+                    state.Parent.JsonPropertyInfo.JsonTypeInfo.PolymorphicTypeResolver.CustomTypeDiscriminatorPropertyNameJsonEncoded is JsonEncodedText customPropertyName
                     ? customPropertyName
                     : s_metadataType;
 

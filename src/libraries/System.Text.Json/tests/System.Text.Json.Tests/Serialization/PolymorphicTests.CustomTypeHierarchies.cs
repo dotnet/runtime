@@ -2299,6 +2299,61 @@ namespace System.Text.Json.Serialization.Tests
                     => writer.WriteNullValue();
             }
         }
+
+        [Theory]
+        [InlineData("$id")]
+        [InlineData("$ref")]
+        [InlineData("$values")]
+        public async Task PolymorphicClass_InvalidCustomTypeDiscriminatorPropertyName_ThrowsInvalidOperationException(string invalidPropertyName)
+        {
+            JsonSerializerOptions? options = PolymorphicClass_InvalidCustomTypeDiscriminatorPropertyName.CreatePolymorphicConfigurationWithCustomPropertyName(invalidPropertyName);
+            PolymorphicClass_InvalidCustomTypeDiscriminatorPropertyName value = new PolymorphicClass_InvalidCustomTypeDiscriminatorPropertyName.DerivedClass();
+            await Assert.ThrowsAsync<InvalidOperationException>(() => Serializer.SerializeWrapper(value, options));
+        }
+
+        [Fact]
+        public async Task PolymorphicClass_InvalidCustomTypeDiscriminatorPropertyName_PassingDefaultPropertyNameAsCustomParameter_ShouldSucceed()
+        {
+            JsonSerializerOptions? options = PolymorphicClass_InvalidCustomTypeDiscriminatorPropertyName.CreatePolymorphicConfigurationWithCustomPropertyName("$type");
+            PolymorphicClass_InvalidCustomTypeDiscriminatorPropertyName value = new PolymorphicClass_InvalidCustomTypeDiscriminatorPropertyName.DerivedClass { Number = 42 };
+
+            string expectedJson = @"{ ""$type"" : ""derivedClass"", ""Number"" : 42 }";
+            string actualJson = await Serializer.SerializeWrapper(value, options);
+            JsonTestHelper.AssertJsonEqual(expectedJson, actualJson);
+        }
+
+        [JsonPolymorphic(CustomTypeDiscriminatorPropertyName = "$id")]
+        [JsonDerivedType(typeof(DerivedClass), "derivedClass")]
+        public class PolymorphicClass_InvalidCustomTypeDiscriminatorPropertyName
+        {
+            public int Number { get; set; }
+
+            public class DerivedClass : PolymorphicClass_InvalidCustomTypeDiscriminatorPropertyName
+            {
+            }
+
+            public static JsonSerializerOptions? CreatePolymorphicConfigurationWithCustomPropertyName(string customPropertyName)
+            {
+                if (customPropertyName == "$id")
+                {
+                    // revert to attribute configuration
+                    return null;
+                }
+
+                return new JsonSerializerOptions
+                {
+                    PolymorphicTypeConfigurations =
+                    {
+                        new JsonPolymorphicTypeConfiguration<PolymorphicClass_InvalidCustomTypeDiscriminatorPropertyName>
+                        {
+                            CustomTypeDiscriminatorPropertyName = customPropertyName
+                        }
+                        .WithDerivedType<DerivedClass>("derivedClass")
+                    }
+                };
+            }
+        }
+
         #endregion
 
         #region Test Helpers

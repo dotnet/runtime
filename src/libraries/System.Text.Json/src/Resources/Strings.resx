@@ -635,6 +635,9 @@
   <data name="Polymorphism_TypeDicriminatorIdIsAlreadySpecified" xml:space="preserve">
     <value>The polymorphic type '{0}' has already specified a type discriminator '{1}'.</value>
   </data>
+  <data name="Polymorphism_InvalidCustomTypeDiscriminatorPropertyName" xml:space="preserve">
+    <value>The metadata property names '$id', '$ref', and '$values' are reserved and cannot be used as custom type discriminator property names.</value>
+  </data>
   <data name="Polymorphism_ConfigurationDoesNotSpecifyDerivedTypes" xml:space="preserve">
     <value>Polymorphic configuration for type '{0}' should specify at least one derived type.</value>
   </data>
