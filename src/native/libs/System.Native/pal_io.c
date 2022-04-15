@@ -124,6 +124,7 @@ c_static_assert(PAL_S_ISGID == S_ISGID);
 // accordingly.
 c_static_assert(PAL_S_IFMT == S_IFMT);
 c_static_assert(PAL_S_IFIFO == S_IFIFO);
+c_static_assert(PAL_S_IFBLK == S_IFBLK);
 c_static_assert(PAL_S_IFCHR == S_IFCHR);
 c_static_assert(PAL_S_IFDIR == S_IFDIR);
 c_static_assert(PAL_S_IFREG == S_IFREG);

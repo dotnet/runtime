@@ -121,6 +121,7 @@ enum
 {
     PAL_S_IFMT = 0xF000,  // Type of file (apply as mask to FileStatus.Mode and one of S_IF*)
     PAL_S_IFIFO = 0x1000, // FIFO (named pipe)
+    PAL_S_IFBLK = 0x6000, // Block special
     PAL_S_IFCHR = 0x2000, // Character special
     PAL_S_IFDIR = 0x4000, // Directory
     PAL_S_IFREG = 0x8000, // Regular file
