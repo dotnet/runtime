@@ -4778,7 +4778,7 @@ void MethodContext::recGetStringLiteral(CORINFO_MODULE_HANDLE module, unsigned m
 
     DWORD strBuf = (DWORD)-1;
     if (buffer != nullptr)
-        strBuf = (DWORD)GetStringLiteral->AddBuffer((unsigned char*)buffer, (unsigned int)((wcslen((LPCWSTR)buffer) * 2) + 2));
+        strBuf = (DWORD)GetStringLiteral->AddBuffer((unsigned char*)buffer, (unsigned int)bufferSize);
 
     DD value;
     value.A = (DWORD)length;
@@ -4790,8 +4790,7 @@ void MethodContext::recGetStringLiteral(CORINFO_MODULE_HANDLE module, unsigned m
 
 void MethodContext::dmpGetStringLiteral(DLDD key, DD value)
 {
-    printf("GetStringLiteral key mod-%016llX tok-%08X, bufSize-%u, result-%s, len-%u", key.A, key.B, key.C,
-    GetStringLiteral->GetBuffer(value.B), value.A);
+    printf("GetStringLiteral key mod-%016llX tok-%08X, bufSize-%u, len-%u", key.A, key.B, key.C, value.A);
     GetStringLiteral->Unlock();
 }
 
