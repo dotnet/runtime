@@ -2612,6 +2612,8 @@ emit_marshal_handleref_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 	return conv_arg;
 }
 
+
+#ifdef ENABLE_ILGEN
 void
 mono_marshal_ilgen_legacy_init (void)
 {
@@ -2635,6 +2637,7 @@ mono_marshal_ilgen_legacy_init (void)
 #endif
 	mono_install_marshal_callbacks_legacy (&cb);
 }
+#endif // ENABLE_ILGEN
 
 static gboolean legacy_cb_inited = FALSE;
 static MonoMarshalCallbacksLegacy legacy_marshal_cb_static;
