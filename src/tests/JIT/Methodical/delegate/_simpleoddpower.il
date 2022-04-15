@@ -49,7 +49,7 @@
 
 } 
 
-.class private auto ansi OddPower
+.class public auto ansi OddPower
        extends [mscorlib]System.Object
        implements Power
 {
