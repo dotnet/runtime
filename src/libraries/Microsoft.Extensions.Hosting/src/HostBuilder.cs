@@ -197,7 +197,7 @@ namespace Microsoft.Extensions.Hosting
         [MemberNotNull(nameof(_hostingEnvironment))]
         private void InitializeHostingEnvironment()
         {
-            (_hostingEnvironment, _defaultProvider) = CreateHostingEnvironment(_hostConfiguration!); // TODO-NULLABLE: https://github.com/dotnet/csharplang/discussions/5778
+            (_hostingEnvironment, _defaultProvider) = CreateHostingEnvironment(_hostConfiguration!); // TODO-NULLABLE: https://github.com/dotnet/csharplang/discussions/5778. The same pattern exists below as well.
         }
 
         internal static (HostingEnvironment, PhysicalFileProvider) CreateHostingEnvironment(IConfiguration hostConfiguration)
@@ -239,8 +239,8 @@ namespace Microsoft.Extensions.Hosting
         {
             _hostBuilderContext = new HostBuilderContext(Properties)
             {
-                HostingEnvironment = _hostingEnvironment!, // TODO-NULLABLE: https://github.com/dotnet/csharplang/discussions/5778
-                Configuration = _hostConfiguration! // TODO-NULLABLE: https://github.com/dotnet/csharplang/discussions/5778
+                HostingEnvironment = _hostingEnvironment!,
+                Configuration = _hostConfiguration!
             };
         }
 
@@ -248,15 +248,15 @@ namespace Microsoft.Extensions.Hosting
         private void InitializeAppConfiguration()
         {
             IConfigurationBuilder configBuilder = new ConfigurationBuilder()
-                .SetBasePath(_hostingEnvironment!.ContentRootPath) // TODO-NULLABLE: https://github.com/dotnet/csharplang/discussions/5778
-                .AddConfiguration(_hostConfiguration!, shouldDisposeConfiguration: true); // TODO-NULLABLE: https://github.com/dotnet/csharplang/discussions/5778
+                .SetBasePath(_hostingEnvironment!.ContentRootPath)
+                .AddConfiguration(_hostConfiguration!, shouldDisposeConfiguration: true);
 
             foreach (Action<HostBuilderContext, IConfigurationBuilder> buildAction in _configureAppConfigActions)
             {
-                buildAction(_hostBuilderContext!, configBuilder); // TODO-NULLABLE: https://github.com/dotnet/csharplang/discussions/5778
+                buildAction(_hostBuilderContext!, configBuilder);
             }
             _appConfiguration = configBuilder.Build();
-            _hostBuilderContext!.Configuration = _appConfiguration; // TODO-NULLABLE: https://github.com/dotnet/csharplang/discussions/5778
+            _hostBuilderContext!.Configuration = _appConfiguration;
         }
 
         [MemberNotNull(nameof(_appServices))]
@@ -307,22 +307,22 @@ namespace Microsoft.Extensions.Hosting
 
             PopulateServiceCollection(
                 services,
-                _hostBuilderContext!, // TODO-NULLABLE: https://github.com/dotnet/csharplang/discussions/5778
-                _hostingEnvironment!, // TODO-NULLABLE: https://github.com/dotnet/csharplang/discussions/5778
-                _defaultProvider!, // TODO-NULLABLE: https://github.com/dotnet/csharplang/discussions/5778
-                _appConfiguration!, // TODO-NULLABLE: https://github.com/dotnet/csharplang/discussions/5778
+                _hostBuilderContext!,
+                _hostingEnvironment!,
+                _defaultProvider!,
+                _appConfiguration!,
                 () => _appServices!);
 
             foreach (Action<HostBuilderContext, IServiceCollection> configureServicesAction in _configureServicesActions)
             {
-                configureServicesAction(_hostBuilderContext!, services); // TODO-NULLABLE: https://github.com/dotnet/csharplang/discussions/5778
+                configureServicesAction(_hostBuilderContext!, services);
             }
 
             object containerBuilder = _serviceProviderFactory.CreateBuilder(services);
 
             foreach (IConfigureContainerAdapter containerAction in _configureContainerActions)
             {
-                containerAction.ConfigureContainer(_hostBuilderContext!, containerBuilder); // TODO-NULLABLE: https://github.com/dotnet/csharplang/discussions/5778
+                containerAction.ConfigureContainer(_hostBuilderContext!, containerBuilder);
             }
 
             _appServices = _serviceProviderFactory.CreateServiceProvider(containerBuilder);

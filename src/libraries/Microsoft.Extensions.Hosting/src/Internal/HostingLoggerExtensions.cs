@@ -16,8 +16,10 @@ namespace Microsoft.Extensions.Hosting.Internal
             {
                 foreach (Exception? ex in reflectionTypeLoadException.LoaderExceptions)
                 {
-                    Debug.Assert(ex != null);
-                    message = message + Environment.NewLine + ex.Message;
+                    if (ex is not null)
+                    {
+                        message = message + Environment.NewLine + ex.Message;
+                    }
                 }
             }
 
