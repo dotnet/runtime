@@ -16552,8 +16552,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 }
 
                 // Look ahead for box idioms
-                int matched =
-                    impBoxPatternMatch(&resolvedToken, codeAddr + sz, codeEndp, isByRefLike ? BoxPatterns::IsByRefLike : BoxPatterns::None);
+                int matched = impBoxPatternMatch(&resolvedToken, codeAddr + sz, codeEndp,
+                                                 isByRefLike ? BoxPatterns::IsByRefLike : BoxPatterns::None);
                 if (matched >= 0)
                 {
                     // Skip the matched IL instructions
