@@ -11852,17 +11852,17 @@ DONE_MORPHING_CHILDREN:
             }
 
         CM_ADD_OP:
-#ifdef TARGET_ARM64
-            if (!optValnumCSE_phase && opts.OptimizationEnabled() && tree->OperIs(GT_ADD))
-            {
-                tree = fgMorphMulAdd(tree->AsOp());
-                op1  = tree->AsOp()->gtOp1;
-                op2  = tree->AsOp()->gtOp2;
-            }
-            break;
-#else
+//#ifdef TARGET_ARM64
+//            if (!optValnumCSE_phase && opts.OptimizationEnabled() && tree->OperIs(GT_ADD))
+//            {
+//                tree = fgMorphMulAdd(tree->AsOp());
+//                op1  = tree->AsOp()->gtOp1;
+//                op2  = tree->AsOp()->gtOp2;
+//            }
+//            break;
+//#else
             FALLTHROUGH;
-#endif
+//#endif
 
         case GT_OR:
         case GT_XOR:
