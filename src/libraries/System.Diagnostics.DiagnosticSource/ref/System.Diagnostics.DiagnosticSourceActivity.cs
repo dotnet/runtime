@@ -223,6 +223,7 @@ namespace System.Diagnostics
         public string Name { get { throw null; } }
         public System.DateTimeOffset Timestamp { get { throw null; } }
         public System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>> Tags { get { throw null; } }
+        public System.Diagnostics.Activity.Enumerator<System.Collections.Generic.KeyValuePair<string, object?>> EnumerateTagObjects() { throw null; }
     }
     public readonly struct ActivityContext : System.IEquatable<System.Diagnostics.ActivityContext>
     {
@@ -251,6 +252,7 @@ namespace System.Diagnostics
         public static bool operator ==(System.Diagnostics.ActivityLink left, System.Diagnostics.ActivityLink right) { throw null; }
         public static bool operator !=(System.Diagnostics.ActivityLink left, System.Diagnostics.ActivityLink right) { throw null; }
         public override int GetHashCode()  { throw null; }
+        public System.Diagnostics.Activity.Enumerator<System.Collections.Generic.KeyValuePair<string, object?>> EnumerateTagObjects() { throw null; }
     }
     public readonly struct ActivityCreationOptions<T>
     {
