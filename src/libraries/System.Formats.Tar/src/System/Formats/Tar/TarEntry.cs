@@ -194,31 +194,7 @@ namespace System.Formats.Tar
                 case TarEntryType.RegularFile:
                 case TarEntryType.V7RegularFile:
                 case TarEntryType.ContiguousFile:
-                    // Rely on FileStream's ctor for further checking destinationFileName parameter
-                    FileMode fileMode = overwrite ? FileMode.Create : FileMode.CreateNew;
-
-                    using (FileStream fs = new(destinationFileName, fileMode, FileAccess.Write, FileShare.None))
-                    {
-                        if (DataStream != null)
-                        {
-                            if (DataStream.CanSeek)
-                            {
-                                // Make sure to rewind the data stream in case it was opened and read externally before calling this method.
-                                DataStream.Seek(0, SeekOrigin.Begin);
-                            }
-                            DataStream.CopyTo(fs);
-                            SetModeOnFile(fs.SafeFileHandle, destinationFileName);
-                        }
-                    }
-
-                    try
-                    {
-                        File.SetLastWriteTime(destinationFileName, ModificationTime.DateTime);
-                    }
-                    catch (UnauthorizedAccessException)
-                    {
-                        // some OSes like Android (#35374) might not support setting the last write time, the extraction should not fail because of that
-                    }
+                    ExtractAsRegularFile(destinationFileName);
 
                     break;
 
@@ -288,6 +264,7 @@ namespace System.Formats.Tar
         /// </summary>
         /// <value><para>Gets a stream that represents the data section of this entry.</para>
         /// <para>Sets a new stream that represents the data section, if it makes sense for the <see cref="EntryType"/> to contain data; if a stream already existed, the old stream gets disposed before substituting it with the new stream. Setting a <see langword="null"/> stream is allowed.</para></value>
+        /// <remarks>If you write data to this data stream, make sure to rewind it to the desired start position before writing this entry into an archive using <see cref="TarWriter.WriteEntry(TarEntry)"/> or <see cref="TarWriter.WriteEntryAsync(TarEntry, CancellationToken)"/>.</remarks>
         /// <exception cref="NotSupportedException">Setting a data section is not supported because the <see cref="EntryType"/> is not <see cref="TarEntryType.RegularFile"/> (or <see cref="TarEntryType.V7RegularFile"/> for an archive of <see cref="TarFormat.V7"/> format).</exception>
         /// <exception cref="IOException"><para>Cannot set an unreadable stream.</para>
         /// <para>-or-</para>
@@ -336,17 +313,22 @@ namespace System.Formats.Tar
         // or if a directory exists in the location of 'destinationFileName'.
         private static void VerifyOverwriteFileIsPossible(string destinationFileName, bool overwrite)
         {
-            if (File.Exists(destinationFileName))
+            // In most cases, nothing exists in the destination, so we perform one check
+            if (Path.Exists(destinationFileName))
             {
-                if (!overwrite)
+                if (File.Exists(destinationFileName))
+                {
+                    if (!overwrite)
+                    {
+                        throw new IOException(string.Format(SR.IO_AlreadyExists_Name, destinationFileName));
+                    }
+                    File.Delete(destinationFileName);
+                }
+                // We never want to overwrite a directory, so we always throw
+                else if (Directory.Exists(destinationFileName))
                 {
                     throw new IOException(string.Format(SR.IO_AlreadyExists_Name, destinationFileName));
                 }
-            }
-            // We never want to overwrite a directory, so we always throw
-            else if (Directory.Exists(destinationFileName))
-            {
-                throw new IOException(string.Format(SR.IO_AlreadyExists_Name, destinationFileName));
             }
         }
 
@@ -378,6 +360,33 @@ namespace System.Formats.Tar
                 Directory.CreateDirectory(Path.GetDirectoryName(fileDestinationPath)!);
                 ExtractToFile(fileDestinationPath, overwrite);
             }
+        }
+
+        // Extracts the current entry as a regular file into the specified destination.
+        // The assumption is that at this point there is no preexisting file or directory in that destination.
+        private void ExtractAsRegularFile(string destinationFileName)
+        {
+            Debug.Assert(!Path.Exists(destinationFileName));
+
+            FileStreamOptions fileStreamOptions = new FileStreamOptions()
+            {
+                Access = FileAccess.Write,
+                Mode = FileMode.CreateNew,
+                Share = FileShare.None,
+                PreallocationSize = Length,
+            };
+            // Rely on FileStream's ctor for further checking destinationFileName parameter
+            using (FileStream fs = new FileStream(destinationFileName, fileStreamOptions))
+            {
+                if (DataStream != null)
+                {
+                    // Important: The DataStream will be written from its current position
+                    DataStream.CopyTo(fs);
+                    SetModeOnFile(fs.SafeFileHandle, destinationFileName);
+                }
+            }
+
+            ArchivingUtils.AttemptSetLastWriteTime(destinationFileName, ModificationTime);
         }
 
         // Abstract method that extracts the current entry when it is a block device.

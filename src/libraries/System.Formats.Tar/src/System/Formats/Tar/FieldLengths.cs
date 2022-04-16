@@ -4,7 +4,7 @@
 namespace System.Formats.Tar
 {
     // Specifies the expected lengths of all the header fields in the supported formats.
-    internal struct FieldLengths
+    internal static class FieldLengths
     {
         private const ushort Path = 100;
 

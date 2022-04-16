@@ -57,7 +57,8 @@ namespace System.Formats.Tar
             byte[] linkNameBytes = new byte[FieldLengths.LinkName];
 
             int checksum = SaveNameFieldAsBytes(nameBytes, out _);
-            checksum += SaveCommonFieldsAsBytes(modeBytes, uidBytes, gidBytes, sizeBytes, mTimeBytes, ref typeFlagByte, linkNameBytes);
+            long actualLength = GetTotalDataBytesToWrite();
+            checksum += SaveCommonFieldsAsBytes(modeBytes, uidBytes, gidBytes, sizeBytes, mTimeBytes, ref typeFlagByte, linkNameBytes, actualLength);
 
             _checksum = SaveChecksumBytes(checksum, checksumBytes);
 
@@ -74,7 +75,7 @@ namespace System.Formats.Tar
 
             if (_dataStream != null)
             {
-                WriteData(archiveStream, _dataStream);
+                WriteData(archiveStream, _dataStream, actualLength);
             }
         }
 
@@ -100,7 +101,8 @@ namespace System.Formats.Tar
             byte[] prefixBytes = new byte[FieldLengths.Prefix];
 
             int checksum = SavePosixNameFieldAsBytes(nameBytes, prefixBytes);
-            checksum += SaveCommonFieldsAsBytes(modeBytes, uidBytes, gidBytes, sizeBytes, mTimeBytes, ref typeFlagByte, linkNameBytes);
+            long actualLength = GetTotalDataBytesToWrite();
+            checksum += SaveCommonFieldsAsBytes(modeBytes, uidBytes, gidBytes, sizeBytes, mTimeBytes, ref typeFlagByte, linkNameBytes, actualLength);
             checksum += SavePosixMagicAndVersionBytes(magicBytes, versionBytes);
             checksum += SavePosixAndGnuSharedBytes(uNameBytes, gNameBytes, devMajorBytes, devMinorBytes);
 
@@ -128,7 +130,7 @@ namespace System.Formats.Tar
 
             if (_dataStream != null)
             {
-                WriteData(archiveStream, _dataStream);
+                WriteData(archiveStream, _dataStream, actualLength);
             }
         }
 
@@ -175,7 +177,8 @@ namespace System.Formats.Tar
             _gnuUnusedBytes ??= new byte[FieldLengths.AllGnuUnused];
 
             int checksum = SaveNameFieldAsBytes(nameBytes, out _);
-            checksum += SaveCommonFieldsAsBytes(modeBytes, uidBytes, gidBytes, sizeBytes, mTimeBytes, ref typeFlagByte, linkNameBytes);
+            long actualLength = GetTotalDataBytesToWrite();
+            checksum += SaveCommonFieldsAsBytes(modeBytes, uidBytes, gidBytes, sizeBytes, mTimeBytes, ref typeFlagByte, linkNameBytes, actualLength);
             checksum += SaveGnuMagicAndVersionBytes(magicBytes, versionBytes);
             checksum += SavePosixAndGnuSharedBytes(uNameBytes, gNameBytes, devMajorBytes, devMinorBytes);
             checksum += SaveGnuBytes(aTimeBytes, cTimeBytes);
@@ -207,7 +210,7 @@ namespace System.Formats.Tar
 
             if (_dataStream != null)
             {
-                WriteData(archiveStream, _dataStream);
+                WriteData(archiveStream, _dataStream, actualLength);
             }
         }
 
@@ -253,7 +256,8 @@ namespace System.Formats.Tar
             byte[] prefixBytes = new byte[FieldLengths.Prefix];
 
             int checksum = SavePosixNameFieldAsBytes(nameBytes, prefixBytes);
-            checksum += SaveCommonFieldsAsBytes(modeBytes, uidBytes, gidBytes, sizeBytes, mTimeBytes, ref typeFlagByte, linkNameBytes);
+            long actualLength = GetTotalDataBytesToWrite();
+            checksum += SaveCommonFieldsAsBytes(modeBytes, uidBytes, gidBytes, sizeBytes, mTimeBytes, ref typeFlagByte, linkNameBytes, actualLength);
             checksum += SavePosixMagicAndVersionBytes(magicBytes, versionBytes);
             checksum += SavePosixAndGnuSharedBytes(uNameBytes, gNameBytes, devMajorBytes, devMinorBytes);
 
@@ -281,7 +285,7 @@ namespace System.Formats.Tar
 
             if (_dataStream != null)
             {
-                WriteData(archiveStream, _dataStream);
+                WriteData(archiveStream, _dataStream, actualLength);
             }
         }
 
@@ -307,18 +311,27 @@ namespace System.Formats.Tar
         }
 
         // Writes all the common fields shared by all formats into the specified spans.
-        private int SaveCommonFieldsAsBytes(Span<byte> _modeBytes, Span<byte> _uidBytes, Span<byte> _gidBytes, Span<byte> sizeBytes, Span<byte> _mTimeBytes, ref byte _typeFlagByte, Span<byte> _linkNameBytes)
+        private int SaveCommonFieldsAsBytes(Span<byte> _modeBytes, Span<byte> _uidBytes, Span<byte> _gidBytes, Span<byte> sizeBytes, Span<byte> _mTimeBytes, ref byte _typeFlagByte, Span<byte> _linkNameBytes, long actualLength)
         {
-            byte[] modeBytes = TarHelpers.GetAsciiBytes(TarHelpers.ConvertDecimalToOctal(_mode));
+            byte[] modeBytes = (_mode > 0) ?
+                TarHelpers.GetAsciiBytes(TarHelpers.ConvertDecimalToOctal(_mode)) :
+                Array.Empty<byte>();
+
             int checksum = WriteRightAlignedBytesAndGetChecksum(modeBytes, _modeBytes);
 
-            byte[] uidBytes = TarHelpers.GetAsciiBytes(TarHelpers.ConvertDecimalToOctal(_uid));
+            byte[] uidBytes = (_uid > 0) ?
+                TarHelpers.GetAsciiBytes(TarHelpers.ConvertDecimalToOctal(_uid)) :
+                Array.Empty<byte>();
+
             checksum += WriteRightAlignedBytesAndGetChecksum(uidBytes, _uidBytes);
 
-            byte[] gidBytes = TarHelpers.GetAsciiBytes(TarHelpers.ConvertDecimalToOctal(_gid));
+            byte[] gidBytes = (_gid > 0) ?
+                TarHelpers.GetAsciiBytes(TarHelpers.ConvertDecimalToOctal(_gid)) :
+                Array.Empty<byte>();
+
             checksum += WriteRightAlignedBytesAndGetChecksum(gidBytes, _gidBytes);
 
-            _size = _dataStream == null ? 0 : _dataStream.Length;
+            _size = actualLength;
 
             byte[] tmpSizeBytes = (_size > 0) ?
                 TarHelpers.GetAsciiBytes(TarHelpers.ConvertDecimalToOctal(_size)) :
@@ -338,6 +351,20 @@ namespace System.Formats.Tar
             }
 
             return checksum;
+        }
+
+        private long GetTotalDataBytesToWrite()
+        {
+            if (_dataStream != null)
+            {
+                long length = _dataStream.Length;
+                long position = _dataStream.Position;
+                if (position < length)
+                {
+                    return length - position;
+                }
+            }
+            return 0;
         }
 
         // Writes the magic and version fields of a ustar or pax entry into the specified spans.
@@ -402,16 +429,10 @@ namespace System.Formats.Tar
         }
 
         // Writes the current header's data stream into the archive stream.
-        private static void WriteData(Stream archiveStream, Stream dataStream)
+        private static void WriteData(Stream archiveStream, Stream dataStream, long actualLength)
         {
-            if (dataStream.CanSeek)
-            {
-                // If the user constructed the stream, or it comes from another tar with an underlying
-                // seekable stream, then we can do this, otherwise, the user will have to do it
-                dataStream.Seek(0, SeekOrigin.Begin);
-            }
-            dataStream.CopyTo(archiveStream);
-            int paddingAfterData = TarHelpers.CalculatePadding(dataStream.Length);
+            dataStream.CopyTo(archiveStream); // The data gets copied from the current position
+            int paddingAfterData = TarHelpers.CalculatePadding(actualLength);
             archiveStream.Write(new byte[paddingAfterData]);
         }
 
@@ -427,6 +448,7 @@ namespace System.Formats.Tar
                 byte[] entryBytes = GenerateExtendedAttributeKeyValuePairAsByteArray(Encoding.UTF8.GetBytes(attribute), Encoding.UTF8.GetBytes(value));
                 dataStream.Write(entryBytes);
             }
+            dataStream?.Seek(0, SeekOrigin.Begin); // Ensure it gets written into the archive from the beginning
             return dataStream;
         }
 

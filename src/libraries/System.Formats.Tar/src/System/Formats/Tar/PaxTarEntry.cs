@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 
 namespace System.Formats.Tar
@@ -11,11 +12,14 @@ namespace System.Formats.Tar
     /// </summary>
     public sealed class PaxTarEntry : PosixTarEntry
     {
+        private ReadOnlyDictionary<string, string>? _readOnlyExtendedAttributes;
+
         // Constructor used when reading an existing archive.
         internal PaxTarEntry(TarHeader header, TarReader readerOfOrigin)
             : base(header, readerOfOrigin)
         {
             _header._extendedAttributes ??= new Dictionary<string, string>();
+            _readOnlyExtendedAttributes = null;
         }
 
         /// <summary>
@@ -108,7 +112,7 @@ namespace System.Formats.Tar
             get
             {
                 Debug.Assert(_header._extendedAttributes != null);
-                return _header._extendedAttributes.AsReadOnly();
+                return _readOnlyExtendedAttributes ??= _header._extendedAttributes.AsReadOnly();
             }
         }
 

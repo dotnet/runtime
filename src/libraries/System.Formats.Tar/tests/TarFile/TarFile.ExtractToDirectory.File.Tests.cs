@@ -9,6 +9,41 @@ namespace System.Formats.Tar.Tests
 {
     public class TarFile_ExtractToDirectory_File_Tests : TarTestsBase
     {
+        [Fact]
+        public void InvalidPaths_Throw()
+        {
+            Assert.Throws<ArgumentNullException>(() => TarFile.ExtractToDirectory(sourceFileName: null, destinationDirectoryName: "path", overwriteFiles: false));
+            Assert.Throws<ArgumentException>(() => TarFile.ExtractToDirectory(sourceFileName: string.Empty, destinationDirectoryName: "path", overwriteFiles: false));
+            Assert.Throws<ArgumentNullException>(() => TarFile.ExtractToDirectory(sourceFileName: "path", destinationDirectoryName: null, overwriteFiles: false));
+            Assert.Throws<ArgumentException>(() => TarFile.ExtractToDirectory(sourceFileName: "path", destinationDirectoryName: string.Empty, overwriteFiles: false));
+        }
+
+        [Fact]
+        public void NonExistentFile_Throws()
+        {
+            using TempDirectory root = new TempDirectory();
+
+            string filePath = Path.Join(root.Path, "file.tar");
+            string dirPath = Path.Join(root.Path, "dir");
+
+            Directory.CreateDirectory(dirPath);
+
+            Assert.Throws<FileNotFoundException>(() => TarFile.ExtractToDirectory(sourceFileName: filePath, destinationDirectoryName: dirPath, overwriteFiles: false));
+        }
+
+        [Fact]
+        public void NonExistentDirectory_Throws()
+        {
+            using TempDirectory root = new TempDirectory();
+
+            string filePath = Path.Join(root.Path, "file.tar");
+            string dirPath = Path.Join(root.Path, "dir");
+
+            File.Create(filePath).Dispose();
+
+            Assert.Throws<DirectoryNotFoundException>(() => TarFile.ExtractToDirectory(sourceFileName: filePath, destinationDirectoryName: dirPath, overwriteFiles: false));
+        }
+
         [Theory]
         [InlineData(TestTarFormat.v7)]
         [InlineData(TestTarFormat.ustar)]
@@ -40,10 +75,8 @@ namespace System.Formats.Tar.Tests
             string filePath = Path.Join(destination.Path, "file.txt");
             using (FileStream fileStream = File.Create(filePath))
             {
-                using (StreamWriter writer = new StreamWriter(fileStream, leaveOpen: false))
-                {
-                    writer.WriteLine("Original text");
-                }
+                using StreamWriter writer = new StreamWriter(fileStream, leaveOpen: false);
+                writer.WriteLine("Original text");
             }
 
             TarFile.ExtractToDirectory(archivePath, destination.Path, overwriteFiles: true);

@@ -170,7 +170,7 @@ namespace System.Formats.Tar
                     return;
                 }
 
-                if (!dataStream.WasStreamAdvanced)
+                if (!dataStream.HasReachedEnd)
                 {
                     // If the user did not advance the position, we need to make sure the position
                     // pointer is located at the beginning of the next header.
@@ -179,7 +179,7 @@ namespace System.Formats.Tar
                         long bytesToSkip = _previouslyReadEntry._header._size - dataStream.Position;
                         TarHelpers.AdvanceStream(_archiveStream, bytesToSkip);
                         TarHelpers.SkipBlockAlignmentPadding(_archiveStream, _previouslyReadEntry._header._size);
-                        dataStream.WasStreamAdvanced = true; // Now the pointer is beyond the limit, so any read attempts should throw
+                        dataStream.HasReachedEnd = true; // Now the pointer is beyond the limit, so any read attempts should throw
                     }
                 }
             }

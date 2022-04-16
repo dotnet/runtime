@@ -110,9 +110,9 @@ namespace System.Formats.Tar
                 entryName = Path.GetFileName(fileName);
             }
 
-            if (Format is TarFormat.Pax && !_wroteGEA)
+            if (Format is TarFormat.Pax)
             {
-                WriteGlobalExtendedAttributesEntry();
+                WriteGlobalExtendedAttributesEntryIfNeeded();
             }
 
             ReadFileFromDiskAndWriteToArchiveStreamAsEntry(fullPath, entryName);
@@ -133,7 +133,8 @@ namespace System.Formats.Tar
         /// Writes the specified entry into the archive stream.
         /// </summary>
         /// <param name="entry">The tar entry to write.</param>
-        /// <remarks><para>These are the entry types supported for writing on each format:</para>
+        /// <remarks><para>Before writing an entry to the archive, if you wrote data into the entry's <see cref="TarEntry.DataStream"/>, make sure to rewind it to the desired start position.</para>
+        /// <para>These are the entry types supported for writing on each format:</para>
         /// <list type="bullet">
         /// <item>
         /// <para><see cref="TarFormat.V7"/></para>
@@ -167,10 +168,7 @@ namespace System.Formats.Tar
 
             TarHelpers.VerifyEntryTypeIsSupported(entry.EntryType, Format);
 
-            if (!_wroteGEA)
-            {
-                WriteGlobalExtendedAttributesEntry();
-            }
+            WriteGlobalExtendedAttributesEntryIfNeeded();
 
             switch (Format)
             {
@@ -198,6 +196,32 @@ namespace System.Formats.Tar
         /// </summary>
         /// <param name="entry">The tar entry to write.</param>
         /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.</param>
+        /// <remarks><para>Before writing an entry to the archive, if you wrote data into the entry's <see cref="TarEntry.DataStream"/>, make sure to rewind it to the desired start position.</para>
+        /// <para>These are the entry types supported for writing on each format:</para>
+        /// <list type="bullet">
+        /// <item>
+        /// <para><see cref="TarFormat.V7"/></para>
+        /// <list type="bullet">
+        /// <item><see cref="TarEntryType.Directory"/></item>
+        /// <item><see cref="TarEntryType.HardLink"/></item>
+        /// <item><see cref="TarEntryType.SymbolicLink"/></item>
+        /// <item><see cref="TarEntryType.V7RegularFile"/></item>
+        /// </list>
+        /// </item>
+        /// <item>
+        /// <para><see cref="TarFormat.Ustar"/>, <see cref="TarFormat.Pax"/> and <see cref="TarFormat.Gnu"/></para>
+        /// <list type="bullet">
+        /// <item><see cref="TarEntryType.BlockDevice"/></item>
+        /// <item><see cref="TarEntryType.CharacterDevice"/></item>
+        /// <item><see cref="TarEntryType.Directory"/></item>
+        /// <item><see cref="TarEntryType.Fifo"/></item>
+        /// <item><see cref="TarEntryType.HardLink"/></item>
+        /// <item><see cref="TarEntryType.RegularFile"/></item>
+        /// <item><see cref="TarEntryType.SymbolicLink"/></item>
+        /// </list>
+        /// </item>
+        /// </list>
+        /// </remarks>
         public Task WriteEntryAsync(TarEntry entry, CancellationToken cancellationToken = default)
         {
             throw new NotImplementedException();
@@ -211,10 +235,7 @@ namespace System.Formats.Tar
             {
                 try
                 {
-                    if (!_wroteGEA)
-                    {
-                        WriteGlobalExtendedAttributesEntry();
-                    }
+                    WriteGlobalExtendedAttributesEntryIfNeeded();
 
                     if (_wroteEntries)
                     {
@@ -244,9 +265,15 @@ namespace System.Formats.Tar
         }
 
         // Writes a Global Extended Attributes entry at the beginning of the archive.
-        private void WriteGlobalExtendedAttributesEntry()
+        private void WriteGlobalExtendedAttributesEntryIfNeeded()
         {
             Debug.Assert(!_isDisposed);
+
+            if (_wroteGEA)
+            {
+                return;
+            }
+
             Debug.Assert(!_wroteEntries); // The GEA entry can only be the first entry
 
             if (_globalExtendedAttributes != null)

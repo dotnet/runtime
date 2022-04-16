@@ -9,18 +9,18 @@ internal static partial class Interop
     // makedev, major and minor: https://man7.org/linux/man-pages/man3/makedev.3.html
     internal static partial class Sys
     {
-        internal static int CreateBlockDevice(string pathName, int mode, uint major, uint minor)
+        internal static int CreateBlockDevice(string pathName, uint mode, uint major, uint minor)
         {
             return MkNod(pathName, mode | FileTypes.S_IFBLK, major, minor);
         }
 
-        internal static int CreateCharacterDevice(string pathName, int mode, uint major, uint minor)
+        internal static int CreateCharacterDevice(string pathName, uint mode, uint major, uint minor)
         {
             return MkNod(pathName, mode | FileTypes.S_IFCHR, major, minor);
         }
 
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_MkNod", StringMarshalling = StringMarshalling.Utf8, SetLastError = true)]
-        internal static partial int MkNod(string pathName, int mode, uint major, uint minor);
+        internal static partial int MkNod(string pathName, uint mode, uint major, uint minor);
 
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_MakeDev", SetLastError = true)]
         internal static partial ulong MakeDev(uint major, uint minor);

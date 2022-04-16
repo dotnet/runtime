@@ -109,6 +109,7 @@ namespace System.Formats.Tar.Tests
 
                 // '0000000005\0' = 48 + 48 + 48 + 48 + 48 + 48 + 48 + 48 + 48 + 48 + 53 + 0 = 533
                 entry.DataStream.Write(buffer); // Data length: decimal 5
+                entry.DataStream.Seek(0, SeekOrigin.Begin); // Rewind to ensure it gets written from the beginning
 
                 // Sum so far: 0 + 241 + 351 + 353 + 359 + 571 + 533 = decimal 2408
                 // Add 8 spaces to the sum: 2408 + (8 x 32) = octal 5150, decimal 2664 (final)

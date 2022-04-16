@@ -287,6 +287,7 @@ namespace System.Formats.Tar.Tests
                 entry.DataStream.WriteByte(1);
                 Assert.Equal(1, entry.Length);
                 Assert.Equal(1, entry.DataStream.Length);
+                entry.DataStream.Seek(0, SeekOrigin.Begin);
             }
             else
             {

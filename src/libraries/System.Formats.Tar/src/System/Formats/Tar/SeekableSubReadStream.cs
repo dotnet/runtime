@@ -24,16 +24,32 @@ namespace System.Formats.Tar
 
         public override bool CanSeek => !_isDisposed;
 
+        public override long Position
+        {
+            get
+            {
+                ThrowIfDisposed();
+                return _positionInSuperStream - _startInSuperStream;
+            }
+            set
+            {
+                ThrowIfDisposed();
+                if (value < 0 || value >= _endInSuperStream)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(value));
+                }
+                _positionInSuperStream = _startInSuperStream + value;
+            }
+        }
+
         public override int Read(Span<byte> destination)
         {
+            ThrowIfDisposed();
+            VerifyPositionInSuperStream();
+
             // parameter validation sent to _superStream.Read
             int origCount = destination.Length;
             int count = destination.Length;
-
-            if (_superStream.Position < _startInSuperStream || _superStream.Position >= _endInSuperStream)
-            {
-                return 0;
-            }
 
             if (_positionInSuperStream + count > _endInSuperStream)
             {
@@ -56,12 +72,14 @@ namespace System.Formats.Tar
         public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
         {
             ThrowIfDisposed();
+            VerifyPositionInSuperStream();
             return ReadAsyncCore(buffer, cancellationToken);
         }
 
         public override long Seek(long offset, SeekOrigin origin)
         {
             ThrowIfDisposed();
+
             long newPosition = origin switch
             {
                 SeekOrigin.Begin => _startInSuperStream + offset,
@@ -78,6 +96,16 @@ namespace System.Formats.Tar
             _positionInSuperStream = newPosition;
 
             return _superStream.Position;
+        }
+
+        private void VerifyPositionInSuperStream()
+        {
+            if (_positionInSuperStream != _superStream.Position)
+            {
+                // Since we can seek, if the stream had its position pointer moved externally,
+                // we must bring it back to the last read location on this stream
+                _superStream.Seek(_positionInSuperStream, SeekOrigin.Begin);
+            }
         }
     }
 }

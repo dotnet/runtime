@@ -22,7 +22,9 @@
 #include <sys/file.h>
 #include <sys/ioctl.h>
 #include <sys/socket.h>
+#if !defined(TARGET_OSX) && !defined(TARGET_FREEBSD)
 #include <sys/sysmacros.h>
+#endif
 #include <sys/uio.h>
 #include <syslog.h>
 #include <termios.h>
@@ -780,9 +782,15 @@ void SystemNative_GetDeviceIdentifiers(uint64_t dev, uint32_t* major, uint32_t* 
     *minor = minor(castedDev);
 }
 
-int32_t SystemNative_MkNod(const char* pathName, int32_t mode, uint32_t major, uint32_t minor)
+int32_t SystemNative_MkNod(const char* pathName, uint32_t mode, uint32_t major, uint32_t minor)
 {
-    dev_t dev = makedev(major, minor);
+#if defined(TARGET_WASM)
+    unsigned long long
+#else
+    dev_t
+#endif
+    dev = makedev(major, minor);
+
     if (errno > 0)
     {
         return -1;
@@ -793,7 +801,7 @@ int32_t SystemNative_MkNod(const char* pathName, int32_t mode, uint32_t major, u
     return result;
 }
 
-int32_t SystemNative_MkFifo(const char* pathName, int32_t mode)
+int32_t SystemNative_MkFifo(const char* pathName, uint32_t mode)
 {
     int32_t result;
     while ((result = mkfifo(pathName, (mode_t)mode)) < 0 && errno == EINTR);

@@ -21,6 +21,7 @@ namespace System.Formats.Tar.Tests
                 {
                     streamWriter.WriteLine(expectedText);
                 }
+                entry1.DataStream.Seek(0, SeekOrigin.Begin); // Rewind to ensure it gets written from the beginning
                 writer.WriteEntry(entry1);
 
                 UstarTarEntry entry2 = new UstarTarEntry(TarEntryType.Directory, "dir");
@@ -66,6 +67,7 @@ namespace System.Formats.Tar.Tests
                 {
                     streamWriter.WriteLine(expectedText);
                 }
+                entry1.DataStream.Seek(0, SeekOrigin.Begin);
                 writer.WriteEntry(entry1);
 
                 UstarTarEntry entry2 = new UstarTarEntry(TarEntryType.Directory, "dir");
@@ -86,6 +88,7 @@ namespace System.Formats.Tar.Tests
                 Assert.NotNull(reader.GetNextEntry());
                 Assert.Null(reader.GetNextEntry());
 
+                Assert.NotNull(entry.DataStream);
                 entry.DataStream.Seek(0, SeekOrigin.Begin); // Should not throw: This is a new stream, not the archive's disposed stream
                 using (StreamReader streamReader = new StreamReader(entry.DataStream))
                 {
@@ -111,6 +114,7 @@ namespace System.Formats.Tar.Tests
                 {
                     streamWriter.WriteLine("Hello world!");
                 }
+                entry1.DataStream.Seek(0, SeekOrigin.Begin); // Rewind to ensure it gets written from the beginning
                 writer.WriteEntry(entry1);
 
                 UstarTarEntry entry2 = new UstarTarEntry(TarEntryType.Directory, "dir");
@@ -153,6 +157,7 @@ namespace System.Formats.Tar.Tests
                 {
                     streamWriter.WriteLine("Hello world!");
                 }
+                entry1.DataStream.Seek(0, SeekOrigin.Begin); // Rewind to ensure it gets written from the beginning
                 writer.WriteEntry(entry1);
 
                 UstarTarEntry entry2 = new UstarTarEntry(TarEntryType.Directory, "dir");

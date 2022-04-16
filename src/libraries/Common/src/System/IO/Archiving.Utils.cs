@@ -76,5 +76,17 @@ namespace System.IO
             using (IEnumerator<string> enumerator = Directory.EnumerateFileSystemEntries(possiblyEmptyDir.FullName).GetEnumerator())
                 return !enumerator.MoveNext();
         }
+
+        public static void AttemptSetLastWriteTime(string destinationFileName, DateTimeOffset lastWriteTime)
+        {
+            try
+            {
+                File.SetLastWriteTime(destinationFileName, lastWriteTime.DateTime);
+            }
+            catch (UnauthorizedAccessException)
+            {
+                // Some OSes like Android (#35374) might not support setting the last write time, the extraction should not fail because of that
+            }
+        }
     }
 }

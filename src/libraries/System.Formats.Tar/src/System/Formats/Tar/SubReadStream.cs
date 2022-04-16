@@ -14,6 +14,7 @@ namespace System.Formats.Tar
     // Does not support writing.
     internal class SubReadStream : Stream
     {
+        protected bool _hasReachedEnd;
         protected readonly long _startInSuperStream;
         protected long _positionInSuperStream;
         protected readonly long _endInSuperStream;
@@ -31,6 +32,7 @@ namespace System.Formats.Tar
             _endInSuperStream = startPosition + maxLength;
             _superStream = superStream;
             _isDisposed = false;
+            _hasReachedEnd = false;
         }
 
         public override long Length
@@ -62,14 +64,21 @@ namespace System.Formats.Tar
 
         public override bool CanWrite => false;
 
-        internal bool WasStreamAdvanced
+        internal bool HasReachedEnd
         {
-            get => _positionInSuperStream >= _endInSuperStream;
+            get
+            {
+                if (!_hasReachedEnd && _positionInSuperStream > _endInSuperStream)
+                {
+                    _hasReachedEnd = true;
+                }
+                return _hasReachedEnd;
+            }
             set
             {
-                if (value)
+                if (value) // Don't allow revert to false
                 {
-                    _positionInSuperStream = _endInSuperStream + 1;
+                    _hasReachedEnd = true;
                 }
             }
         }
@@ -84,7 +93,7 @@ namespace System.Formats.Tar
 
         private void ThrowIfBeyondEndOfStream()
         {
-            if (_positionInSuperStream >= _endInSuperStream)
+            if (HasReachedEnd)
             {
                 throw new EndOfStreamException();
             }
@@ -136,10 +145,7 @@ namespace System.Formats.Tar
 
         protected async ValueTask<int> ReadAsyncCore(Memory<byte> buffer, CancellationToken cancellationToken)
         {
-            if (_superStream.Position != _positionInSuperStream)
-            {
-                _superStream.Seek(_positionInSuperStream, SeekOrigin.Begin);
-            }
+            Debug.Assert(!_hasReachedEnd);
 
             if (_positionInSuperStream > _endInSuperStream - buffer.Length)
             {

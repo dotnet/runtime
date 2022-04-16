@@ -556,14 +556,14 @@ PALEXPORT void SystemNative_GetDeviceIdentifiers(uint64_t dev, uint32_t* major, 
  *
  * Returns 0 on success; otherwise, returns -1 and errno is set.
  */
-PALEXPORT int32_t SystemNative_MkNod(const char* pathName, int32_t mode, uint32_t major, uint32_t minor);
+PALEXPORT int32_t SystemNative_MkNod(const char* pathName, uint32_t mode, uint32_t major, uint32_t minor);
 
 /**
  * Creates a FIFO special file (named pipe).
  *
  * Returns 0 on success; otherwise, returns -1 and errno is set.
  */
-PALEXPORT int32_t SystemNative_MkFifo(const char* pathName, int32_t mode);
+PALEXPORT int32_t SystemNative_MkFifo(const char* pathName, uint32_t mode);
 
 /**
  * Creates a file name that adheres to the specified template, creates the file on disk with
