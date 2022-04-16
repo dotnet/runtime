@@ -856,7 +856,7 @@ namespace System.Net.Http.Headers
 
                 if (parsedValues.Count == 0 && addWhenInvalid && info.ParsedAndInvalidValues is null)
                 {
-                    AddInvalidValue(info, value ?? string.Empty);
+                    AddInvalidValue(info, value);
                 }
 
                 return true;

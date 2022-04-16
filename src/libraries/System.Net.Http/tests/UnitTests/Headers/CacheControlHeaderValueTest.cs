@@ -664,8 +664,7 @@ namespace System.Net.Http.Tests
             request.Headers.TryAddWithoutValidation(KnownHeaders.CacheControl.Descriptor, string.Empty);
 
             Assert.True(request.Headers.TryGetValues(KnownHeaders.CacheControl.Descriptor, out IEnumerable<string>? values));
-            Assert.True(values.Count() == 1);
-            Assert.Equal("min-fresh=123", values.Single());
+            Assert.Equal("min-fresh=123", Assert.Single(values));
         }
 
         #region Helper methods
