@@ -680,7 +680,7 @@ GenTree* Compiler::impStringEqualsOrStartsWith(bool startsWith, CORINFO_SIG_INFO
         needsNullcheck = false;
     }
 
-    int      cnsLength = -1;
+    int      cnsLength;
     char16_t str[MaxPossibleUnrollSize];
     if (cnsStr->IsStringEmptyField())
     {
