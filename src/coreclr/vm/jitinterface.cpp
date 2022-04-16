@@ -703,7 +703,7 @@ int CEEInfo::getStringLiteral (
         {
             _ASSERTE(dwCharCount >= 0 && dwCharCount <= INT_MAX);
             result = (int)dwCharCount;
-            if (buffer != NULL && bufferSize > 0)
+            if (buffer != NULL)
             {
                 memcpyNoGCRefs(buffer, pString, min(bufferSize, result) * sizeof(char16_t));
             }

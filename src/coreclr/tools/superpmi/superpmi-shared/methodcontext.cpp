@@ -4816,7 +4816,7 @@ int MethodContext::repGetStringLiteral(CORINFO_MODULE_HANDLE module, unsigned me
     {
         DD value = GetStringLiteral->Get(key);
         DEBUG_REP(dmpGetStringLiteral(key, value));
-        if (buffer != nullptr && bufferSize > 0)
+        if (buffer != nullptr)
         {
             memcpy(buffer, GetStringLiteral->GetBuffer(value.B), bufferSize * sizeof(char16_t));
         }

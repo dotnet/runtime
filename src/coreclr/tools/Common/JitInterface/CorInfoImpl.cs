@@ -1882,7 +1882,7 @@ namespace Internal.JitInterface
             MethodILScope methodIL = HandleToObject(module);
             string str = (string)methodIL.GetObject((int)metaTOK);
 
-            if (buffer != null && size > 0)
+            if (buffer != null)
             {
                 // Copy str's content to buffer
                 str.AsSpan(0, Math.Min(size, str.Length)).CopyTo(new Span<char>(buffer, size));
