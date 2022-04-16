@@ -12279,9 +12279,21 @@ DONE_MORPHING_CHILDREN:
                 GenTree* addr = commaNode->AsOp()->gtOp2;
                 // TODO-1stClassStructs: we often create a struct IND without a handle, fix it.
                 op1 = gtNewIndir(typ, addr);
-                // This is very conservative
-                op1->gtFlags |= treeFlags & ~GTF_ALL_EFFECT & ~GTF_IND_NONFAULTING;
+
+                // Determine flags on the indir.
+                //
+                op1->gtFlags |= treeFlags & ~GTF_ALL_EFFECT;
                 op1->gtFlags |= (addr->gtFlags & GTF_ALL_EFFECT);
+
+                // if this was a non-faulting indir, clear GTF_EXCEPT,
+                // unless we inherit it from the addr.
+                //
+                if (((treeFlags & GTF_IND_NONFAULTING) != 0) && ((addr->gtFlags & GTF_EXCEPT) == 0))
+                {
+                    op1->gtFlags &= ~GTF_EXCEPT;
+                }
+
+                op1->gtFlags |= treeFlags & GTF_GLOB_REF;
 
 #ifdef DEBUG
                 op1->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED;
