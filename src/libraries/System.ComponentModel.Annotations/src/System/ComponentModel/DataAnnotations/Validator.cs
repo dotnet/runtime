@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using System.Reflection;
 
 namespace System.ComponentModel.DataAnnotations
 {
@@ -17,18 +16,6 @@ namespace System.ComponentModel.DataAnnotations
     /// </summary>
     public static class Validator
     {
-        private record class Path(string Name, int Index)
-        {
-            public static readonly Path Empty = new(string.Empty, -1);
-
-            public override string ToString()
-            {
-                if (Index == -1) return Name;
-
-                return $"{Name}[{Index}]";
-            }
-        }
-
         private static readonly ValidationAttributeStore _store = ValidationAttributeStore.Instance;
 
         /// <summary>
@@ -144,11 +131,8 @@ namespace System.ComponentModel.DataAnnotations
         ///     <see cref="ValidationContext.ObjectInstance" />on <paramref name="validationContext" />.
         /// </exception>
         [RequiresUnreferencedCode(ValidationContext.InstanceTypeNotStaticallyDiscovered)]
-        public static bool TryValidateObject(
-            object instance!!,
-            ValidationContext validationContext,
-            ICollection<ValidationResult>? validationResults,
-            bool validateAllProperties)
+        public static bool TryValidateObject(object instance!!, ValidationContext validationContext,
+            ICollection<ValidationResult>? validationResults, bool validateAllProperties)
         {
             if (validationContext != null && instance != validationContext.ObjectInstance)
             {
@@ -206,9 +190,7 @@ namespace System.ComponentModel.DataAnnotations
             var result = true;
             var breakOnFirstError = validationResults == null;
 
-            foreach (
-                var err in
-                    GetValidationErrors(value, validationContext, validationAttributes, breakOnFirstError, new Stack<Path>()))
+            foreach (ValidationError err in GetValidationErrors(value, validationContext, validationAttributes, breakOnFirstError, new Stack<Path>()))
             {
                 result = false;
 
@@ -411,12 +393,8 @@ namespace System.ComponentModel.DataAnnotations
         ///     <see cref="ValidationContext.ObjectInstance" /> on <paramref name="validationContext" />.
         /// </exception>
         [RequiresUnreferencedCode(ValidationContext.InstanceTypeNotStaticallyDiscovered)]
-        private static List<ValidationError> GetObjectValidationErrors(
-            object instance,
-            ValidationContext validationContext!!,
-            bool validateAllProperties,
-            bool breakOnFirstError,
-            Stack<Path> parentPaths)
+        private static List<ValidationError> GetObjectValidationErrors(object instance,
+            ValidationContext validationContext!!, bool validateAllProperties, bool breakOnFirstError, Stack<Path> parentPaths)
         {
             Debug.Assert(instance != null);
 
@@ -481,7 +459,7 @@ namespace System.ComponentModel.DataAnnotations
             var properties = GetPropertyValues(instance, validationContext);
             var errors = new List<ValidationError>();
 
-            foreach (KeyValuePair<ValidationContext, object?> property in properties)
+            foreach (var property in properties)
             {
                 // get list of all validation attributes for this property
                 var attributes = _store.GetPropertyValidationAttributes(property.Key).ToList();
@@ -493,8 +471,7 @@ namespace System.ComponentModel.DataAnnotations
                     // validate all validation attributes on this property
                     if (attributes.Count != 0)
                     {
-                        List<ValidationError> validationErrors = GetValidationErrors(propertyValue, property.Key, attributes, breakOnFirstError, parentPaths);
-                        errors.AddRange(validationErrors);
+                        errors.AddRange(GetValidationErrors(propertyValue, property.Key, attributes, breakOnFirstError, parentPaths));
                     }
 
                     if (propertyValue != null)
@@ -515,9 +492,7 @@ namespace System.ComponentModel.DataAnnotations
 
                                 parentPaths.Pop();
 
-                                IEnumerable<ValidationError> e = propertyErrors;
-
-                                errors.AddRange(e);
+                                errors.AddRange(propertyErrors);
 
                                 idx++;
                             }
@@ -532,15 +507,14 @@ namespace System.ComponentModel.DataAnnotations
                                 validateAllProperties,
                                 breakOnFirstError,
                                 parentPaths);
-                            IEnumerable<ValidationError> subErrors = propertyErrors;
 
-                            errors.AddRange(subErrors);
+                                errors.AddRange(propertyErrors);
 
                             parentPaths.Pop();
                         }
                     }
                 }
-                else // if we're NOT validating all properties
+                else
                 {
                     // only validate the first Required attribute
                     foreach (ValidationAttribute attribute in attributes)
@@ -553,8 +527,7 @@ namespace System.ComponentModel.DataAnnotations
                             if (validationResult != ValidationResult.Success)
                             {
                                 validationResult = TryAddPrefixToMemberNames(validationResult!, parentPaths);
-                                ValidationError validationError = new ValidationError(reqAttr, propertyValue, validationResult!);
-                                errors.Add(validationError);
+                                errors.Add(new ValidationError(reqAttr, propertyValue, validationResult!));
                             }
                             break;
                         }
@@ -569,7 +542,6 @@ namespace System.ComponentModel.DataAnnotations
 
             return errors;
         }
-
 
         /// <summary>
         ///     Retrieves the property values for the given instance.
@@ -598,7 +570,6 @@ namespace System.ComponentModel.DataAnnotations
             return items;
         }
 
-
         /// <summary>
         ///     Internal iterator to enumerate all validation errors for an value.
         /// </summary>
@@ -613,7 +584,7 @@ namespace System.ComponentModel.DataAnnotations
         ///     Whether or not to break on the first validation failure.  A
         ///     <see cref="RequiredAttribute" /> failure will always abort with that sole failure.
         /// </param>
-        /// <param name="parentNames"></param>
+        /// <param name="parentNames">The paths previously visited; used to prefix property names when validating recursively.</param>
         /// <returns>The collection of validation errors.</returns>
         /// <exception cref="ArgumentNullException">When <paramref name="validationContext" /> is null.</exception>
         private static List<ValidationError> GetValidationErrors(object? value,
@@ -685,10 +656,7 @@ namespace System.ComponentModel.DataAnnotations
             ValidationResult? validationResult = attribute.GetValidationResult(value, validationContext);
             if (validationResult != ValidationResult.Success)
             {
-                // todo: create a new validation result and prefix member names
                 validationResult = TryAddPrefixToMemberNames(validationResult!, parentNames);
-                //var v = new ValidationResult(validationResult.ErrorMessage, v)
-                //validationResult.MemberNames
                 validationError = new ValidationError(attribute, value, validationResult!);
                 return false;
             }
@@ -704,11 +672,7 @@ namespace System.ComponentModel.DataAnnotations
                 return validationResult;
             }
 
-            string prefix = string.Join(".", parentNames.Reverse());//.Skip(1));
-            // if (index != -1)
-            // {
-            //     prefix += $"[{index}]";
-            // }
+            string prefix = string.Join(".", parentNames.Reverse());
 
             if (string.IsNullOrEmpty(prefix))
             {
@@ -738,6 +702,16 @@ namespace System.ComponentModel.DataAnnotations
             internal ValidationResult ValidationResult { get; }
 
             internal void ThrowValidationException() => throw new ValidationException(ValidationResult, _validationAttribute, _value);
+        }
+
+        private record Path(string Name, int Index)
+        {
+            public override string ToString()
+            {
+                if (Index == -1) return Name;
+
+                return $"{Name}[{Index}]";
+            }
         }
     }
 }
