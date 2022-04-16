@@ -1982,19 +1982,30 @@ void CodeGen::genGenerateMachineCode()
 
 void CodeGen::genUpdateLiveRangesForTruncatedIGs()
 {
-    bool     updatedGroup = false;
-    emitter* emit = GetEmitter();
+#ifdef DEBUG
+    if (verbose)
+    {
+        printf("*************** In genUpdateLiveRangesForTruncatedIGs()\n");
+    }
+#endif
+    bool updatedGroup = false;
    
     if (compiler->lvaCount > 0)
     {
-        insGroup* ig =  emit->emitIGlist;
+        insGroup* ig = GetEmitter()->emitIGlist;
         while (ig != nullptr)
         {
             if (ig->igFlags & IGF_UPD_ICOUNT)
             {
-                if (varLiveKeeper->getLiveRangesCount() > 0)
+
+                unsigned int liveVarCount = varLiveKeeper->getVarCount();
+                if (liveVarCount > 0)
                 {
-                    for (unsigned int varNum = 0; varNum < compiler->lvaCount; varNum++)
+                    if (compiler->verbose)
+                    {
+                        JITDUMP("IG%02u is marked with IGF_UPD_ICOUNT and has %d live variables\n", ig->igNum, liveVarCount);
+                    }
+                    for (unsigned int varNum = 0; varNum < liveVarCount; varNum++)
                     {
                         if (compiler->compMap2ILvarNum(varNum) == (unsigned int)ICorDebugInfo::UNKNOWN_ILNUM)
                         {
@@ -2012,12 +2023,17 @@ void CodeGen::genUpdateLiveRangesForTruncatedIGs()
                             {
                                 liveRanges = varLiveKeeper->getLiveRangesForVarForBody(varNum);
                             }
-    
+                            
                             for (VariableLiveKeeper::VariableLiveRange& liveRange : *liveRanges)
                             {
                                 if (liveRange.m_StartEmitLocation.GetIG()->igNum == ig->igNum &&
                                     liveRange.m_StartEmitLocation.GetInsNum() > ig->igInsCnt)
                                 {
+                                    if (compiler->verbose)
+                                    {
+                                        JITDUMP("IG%02u varNum %d StartEmitLocation InsCnt changed from %d to %d\n", ig,
+                                                liveVarCount, liveRange.m_StartEmitLocation.GetInsNum(), ig->igInsCnt);
+                                    }
                                     liveRange.m_StartEmitLocation.SetInsNum(ig->igInsCnt);
                                     assert(liveRange.m_StartEmitLocation.GetInsNum() == ig->igInsCnt);
                                     updatedGroup = true;
@@ -2027,11 +2043,23 @@ void CodeGen::genUpdateLiveRangesForTruncatedIGs()
                                     liveRange.m_EndEmitLocation.GetInsNum() > ig->igInsCnt)
                                 {
                                     liveRange.m_EndEmitLocation.SetInsNum(ig->igInsCnt);
+                                    if (compiler->verbose)
+                                    {
+                                        JITDUMP("IG%02u varNum %d EndEmitLocation InsCnt changed from %d to %d\n", ig,
+                                                liveVarCount, liveRange.m_StartEmitLocation.GetInsNum(), ig->igInsCnt);
+                                    }
                                     assert(liveRange.m_EndEmitLocation.GetInsNum() == ig->igInsCnt);
                                     updatedGroup = true;
                                 }
                             }
                         }
+                    }
+                }
+                else
+                {
+                    if (compiler->verbose)
+                    {
+                        JITDUMP("IG%02u is marked with IGF_UPD_ICOUNT but has no live variables\n", ig);
                     }
                 }
 
@@ -2044,6 +2072,7 @@ void CodeGen::genUpdateLiveRangesForTruncatedIGs()
 
     if (updatedGroup && verbose)
     {
+        printf("\nlvaTable after genUpdateLiveRangesForTruncatedIGs\n");
         compiler->lvaTableDump();
     }
 }
@@ -9348,7 +9377,7 @@ CodeGenInterface::VariableLiveKeeper::LiveRangeList* CodeGenInterface::VariableL
 }
 
 //------------------------------------------------------------------------
-// getLiveRangesCount: Returns the count of variable locations reported for the tracked
+// getLiveRangesCount: Returns the size of variable locations reported for the tracked
 //  variables, which are arguments, special arguments, and local IL variables.
 //
 // Return Value:
@@ -9379,6 +9408,30 @@ size_t CodeGenInterface::VariableLiveKeeper::getLiveRangesCount() const
     }
     return liveRangesCount;
 }
+
+//------------------------------------------------------------------------
+// getVarCount: Returns the count of variable locations reported for the tracked
+//  variables, which are arguments, special arguments, and local IL variables.
+//
+// Return Value:
+//    unsigned int - the count of variables
+//
+unsigned int CodeGenInterface::VariableLiveKeeper::getVarCount() const
+{
+    unsigned int liveRangesCount = 0;
+
+    if (m_Compiler->opts.compDbgInfo)
+    {
+        for (unsigned int varNum = 0; varNum < m_LiveDscCount; varNum++)
+        {
+            if (m_Compiler->compMap2ILvarNum(varNum) != (unsigned int)ICorDebugInfo::UNKNOWN_ILNUM)
+            {
+                liveRangesCount += 1;
+            }
+        }
+    }
+    return liveRangesCount;
+};
 
 //------------------------------------------------------------------------
 // psiStartVariableLiveRange: Reports the given variable as being born.

@@ -4195,40 +4195,36 @@ AGAIN:
                 insGroup* targetGroup = (insGroup*)emitCodeGetCookie(jmp->idAddr()->iiaBBlabel);
 
                 // if the target group is the next instruction group
-                if (targetGroup != nullptr && jmp->idjIG->igNext == targetGroup &&
-                    (targetGroup->igFlags & (IGF_EPILOG | IGF_FUNCLET_PROLOG | IGF_FUNCLET_EPILOG)) == 0)
+                if (targetGroup != nullptr && jmp->idjIG->igNext == targetGroup)
                 {
                     insGroup* group            = jmp->idjIG;
                     unsigned  instructionCount = group->igInsCnt;
 
-                    if (instructionCount > 1)
+                    if (instructionCount > 0)
                     {
                         BYTE*      dataPtr               = group->igData;
                         instrDesc* instructionDescriptor = nullptr;
-                        unsigned   foundCount            = 0;
 
                         do
                         {
                             instructionDescriptor = (instrDesc*)dataPtr;
-                            if (instructionDescriptor->idIns() == jmp->idIns())
-                            {
-                                foundCount += 1;
-                            }
                             dataPtr += emitSizeOfInsDsc(instructionDescriptor);
-                        } while (--instructionCount && foundCount < 2);
+                        } while (--instructionCount);
 
-                        if (foundCount == 1 && instructionDescriptor != nullptr &&
-                            instructionDescriptor->idIns() == jmp->idIns())
+                        assert(instructionDescriptor != nullptr);
+                        // instructionDescriptor is now the last instruction in the group
+
+                        if (instructionDescriptor->idIns() == jmp->idIns() &&
+                            jmp == instructionDescriptor)
                         {
-                            assert(jmp == instructionDescriptor);
-
-                            // the last instruction in the group is the only occurence of the jmp
+                            // the last instruction in the group is the jmp we're looking for
                             // and it jumps to the next instruction group so we don't really need it
 
                             if (EMITVERBOSE)
                             {
-                                printf("Removing jump [%08X/%03u] in %s\n", dspPtr(jmp), jmp->idDebugOnlyInfo()->idNum,
-                                       emitComp->impInlineRoot()->info.compFullName);
+                                printf("Removing unconditional jump [%08X/%03u] from the last instruction in IG%02u to the next IG IG%02u label %s\n",
+                                       dspPtr(jmp), jmp->idDebugOnlyInfo()->idNum, group->igNum, targetGroup->igNum,
+                                       emitLabelString(targetGroup));
                             }
                             
                             UNATIVE_OFFSET sizeRemoved = instructionDescriptor->idCodeSize();
@@ -4250,17 +4246,19 @@ AGAIN:
                             }
                             jmp->idjNext = nullptr;
 
+#if DEBUG
                             // clear the instruction data
-                            //#if DEBUG
-                            //                            memset((BYTE*)instructionDescriptor, 0,
-                            //                            instructionDescriptor->idCodeSize());
-                            //#endif
+                            memset((BYTE*)instructionDescriptor, 0, instructionDescriptor->idCodeSize());
+#endif
+
                             // remove the instruction from the group
                             group->igInsCnt -= 1;
                             group->igSize -= sizeRemoved;
-                            group->igFlags |= (IGF_UPD_ISZ | IGF_UPD_ICOUNT);
                             emitTotalCodeSize -= sizeRemoved;
 
+                            // flag the group as resized and recounted
+                            group->igFlags |= (IGF_UPD_ISZ | IGF_UPD_ICOUNT);
+                            
                             // cleanup
                             instructionDescriptor = nullptr;
                             jmp                   = nullptr;
