@@ -681,8 +681,6 @@ int CEEInfo::getStringLiteral (
 
     JIT_TO_EE_TRANSITION();
 
-    ULONG dwCharCount;
-    LPCWSTR pString;
     if (IsDynamicScope(moduleHnd))
     {
         GCX_COOP();
@@ -697,13 +695,18 @@ int CEEInfo::getStringLiteral (
             }
         }
     }
-    else if (!FAILED((module)->GetMDImport()->GetUserString(metaTOK, &dwCharCount, NULL, &pString)))
+    else
     {
-        _ASSERTE(dwCharCount >= 0 && dwCharCount <= INT_MAX);
-        result = (int)dwCharCount;
-        if (buffer != NULL && bufferSize > 0)
+        ULONG dwCharCount;
+        LPCWSTR pString;
+        if (!FAILED((module)->GetMDImport()->GetUserString(metaTOK, &dwCharCount, NULL, &pString)))
         {
-            memcpyNoGCRefs(buffer, pString, min(bufferSize, result) * sizeof(char16_t));
+            _ASSERTE(dwCharCount >= 0 && dwCharCount <= INT_MAX);
+            result = (int)dwCharCount;
+            if (buffer != NULL && bufferSize > 0)
+            {
+                memcpyNoGCRefs(buffer, pString, min(bufferSize, result) * sizeof(char16_t));
+            }
         }
     }
 

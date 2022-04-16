@@ -1230,21 +1230,6 @@ LCGMethodResolver::IsValidStringRef(mdToken metaTok)
     return GetStringLiteral(metaTok) != NULL;
 }
 
-int
-LCGMethodResolver::GetStringLiteralLength(mdToken metaTok)
-{
-    STANDARD_VM_CONTRACT;
-
-    GCX_COOP();
-
-    STRINGREF str = GetStringLiteral(metaTok);
-    if (str != NULL)
-    {
-        return str->GetStringLength();
-    }
-    return -1;
-}
-
 //---------------------------------------------------------------------------------------
 //
 STRINGREF

@@ -104,13 +104,6 @@ BOOL ILStubResolver::IsValidStringRef(mdToken metaTok)
     return FALSE;
 }
 
-int ILStubResolver::GetStringLiteralLength(mdToken metaTok)
-{
-    STANDARD_VM_CONTRACT;
-    _ASSERTE(FALSE);
-    return -1;
-}
-
 STRINGREF ILStubResolver::GetStringLiteral(mdToken metaTok)
 {
     LIMITED_METHOD_CONTRACT;

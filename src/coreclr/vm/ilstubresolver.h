@@ -32,7 +32,6 @@ public:
 
     OBJECTHANDLE ConstructStringLiteral(mdToken metaTok);
     BOOL IsValidStringRef(mdToken metaTok);
-    int GetStringLiteralLength(mdToken metaTok);
     STRINGREF GetStringLiteral(mdToken metaTok);
     void ResolveToken(mdToken token, TypeHandle * pTH, MethodDesc ** ppMD, FieldDesc ** ppFD);
     SigPointer ResolveSignature(mdToken token);
