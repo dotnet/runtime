@@ -691,7 +691,7 @@ int CEEInfo::getStringLiteral (
         {
             StringObject* strObj = STRINGREFToObject(strRef);
             result = (int)strObj->GetStringLength();
-            if (buffer != NULL && bufferSize > 0)
+            if (buffer != NULL)
             {
                 memcpyNoGCRefs(buffer, strObj->GetBuffer(), min(bufferSize, result) * sizeof(char16_t));
             }
