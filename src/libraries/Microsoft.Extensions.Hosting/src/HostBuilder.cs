@@ -31,12 +31,12 @@ namespace Microsoft.Extensions.Hosting
         private List<IConfigureContainerAdapter> _configureContainerActions = new List<IConfigureContainerAdapter>();
         private IServiceFactoryAdapter _serviceProviderFactory = new ServiceFactoryAdapter<IServiceCollection>(new DefaultServiceProviderFactory());
         private bool _hostBuilt;
-        private IConfiguration _hostConfiguration;
-        private IConfiguration _appConfiguration;
-        private HostBuilderContext _hostBuilderContext;
-        private HostingEnvironment _hostingEnvironment;
-        private IServiceProvider _appServices;
-        private PhysicalFileProvider _defaultProvider;
+        private IConfiguration? _hostConfiguration;
+        private IConfiguration? _appConfiguration;
+        private HostBuilderContext? _hostBuilderContext;
+        private HostingEnvironment? _hostingEnvironment;
+        private IServiceProvider? _appServices;
+        private PhysicalFileProvider? _defaultProvider;
 
         /// <summary>
         /// A central location for sharing state between components during the host building process.
@@ -88,7 +88,7 @@ namespace Microsoft.Extensions.Hosting
         /// <typeparam name="TContainerBuilder">The type of the builder to create.</typeparam>
         /// <param name="factory">A factory used for creating service providers.</param>
         /// <returns>The same instance of the <see cref="IHostBuilder"/> for chaining.</returns>
-        public IHostBuilder UseServiceProviderFactory<TContainerBuilder>(IServiceProviderFactory<TContainerBuilder> factory!!)
+        public IHostBuilder UseServiceProviderFactory<TContainerBuilder>(IServiceProviderFactory<TContainerBuilder> factory!!) where TContainerBuilder : notnull
         {
             _serviceProviderFactory = new ServiceFactoryAdapter<TContainerBuilder>(factory);
             return this;
@@ -100,9 +100,9 @@ namespace Microsoft.Extensions.Hosting
         /// <param name="factory">A factory used for creating service providers.</param>
         /// <typeparam name="TContainerBuilder">The type of the builder to create.</typeparam>
         /// <returns>The same instance of the <see cref="IHostBuilder"/> for chaining.</returns>
-        public IHostBuilder UseServiceProviderFactory<TContainerBuilder>(Func<HostBuilderContext, IServiceProviderFactory<TContainerBuilder>> factory!!)
+        public IHostBuilder UseServiceProviderFactory<TContainerBuilder>(Func<HostBuilderContext, IServiceProviderFactory<TContainerBuilder>> factory!!) where TContainerBuilder : notnull
         {
-            _serviceProviderFactory = new ServiceFactoryAdapter<TContainerBuilder>(() => _hostBuilderContext, factory);
+            _serviceProviderFactory = new ServiceFactoryAdapter<TContainerBuilder>(() => _hostBuilderContext!, factory);
             return this;
         }
 
@@ -180,6 +180,7 @@ namespace Microsoft.Extensions.Hosting
             diagnosticSource.Write(name, value);
         }
 
+        [MemberNotNull(nameof(_hostConfiguration))]
         private void InitializeHostConfiguration()
         {
             IConfigurationBuilder configBuilder = new ConfigurationBuilder()
@@ -192,9 +193,11 @@ namespace Microsoft.Extensions.Hosting
             _hostConfiguration = configBuilder.Build();
         }
 
+        [MemberNotNull(nameof(_defaultProvider))]
+        [MemberNotNull(nameof(_hostingEnvironment))]
         private void InitializeHostingEnvironment()
         {
-            (_hostingEnvironment, _defaultProvider) = CreateHostingEnvironment(_hostConfiguration);
+            (_hostingEnvironment, _defaultProvider) = CreateHostingEnvironment(_hostConfiguration!); // TODO-NULLABLE: https://github.com/dotnet/csharplang/discussions/5778. The same pattern exists below as well.
         }
 
         internal static (HostingEnvironment, PhysicalFileProvider) CreateHostingEnvironment(IConfiguration hostConfiguration)
@@ -218,7 +221,7 @@ namespace Microsoft.Extensions.Hosting
             return (hostingEnvironment, physicalFileProvider);
         }
 
-        internal static string ResolveContentRootPath(string contentRootPath, string basePath)
+        internal static string ResolveContentRootPath(string? contentRootPath, string basePath)
         {
             if (string.IsNullOrEmpty(contentRootPath))
             {
@@ -231,29 +234,32 @@ namespace Microsoft.Extensions.Hosting
             return Path.Combine(Path.GetFullPath(basePath), contentRootPath);
         }
 
+        [MemberNotNull(nameof(_hostBuilderContext))]
         private void InitializeHostBuilderContext()
         {
             _hostBuilderContext = new HostBuilderContext(Properties)
             {
-                HostingEnvironment = _hostingEnvironment,
-                Configuration = _hostConfiguration
+                HostingEnvironment = _hostingEnvironment!,
+                Configuration = _hostConfiguration!
             };
         }
 
+        [MemberNotNull(nameof(_appConfiguration))]
         private void InitializeAppConfiguration()
         {
             IConfigurationBuilder configBuilder = new ConfigurationBuilder()
-                .SetBasePath(_hostingEnvironment.ContentRootPath)
-                .AddConfiguration(_hostConfiguration, shouldDisposeConfiguration: true);
+                .SetBasePath(_hostingEnvironment!.ContentRootPath)
+                .AddConfiguration(_hostConfiguration!, shouldDisposeConfiguration: true);
 
             foreach (Action<HostBuilderContext, IConfigurationBuilder> buildAction in _configureAppConfigActions)
             {
-                buildAction(_hostBuilderContext, configBuilder);
+                buildAction(_hostBuilderContext!, configBuilder);
             }
             _appConfiguration = configBuilder.Build();
-            _hostBuilderContext.Configuration = _appConfiguration;
+            _hostBuilderContext!.Configuration = _appConfiguration;
         }
 
+        [MemberNotNull(nameof(_appServices))]
         internal static void PopulateServiceCollection(
             IServiceCollection services,
             HostBuilderContext hostBuilderContext,
@@ -270,7 +276,7 @@ namespace Microsoft.Extensions.Hosting
             // register configuration as factory to make it dispose with the service provider
             services.AddSingleton(_ => appConfiguration);
 #pragma warning disable CS0618 // Type or member is obsolete
-            services.AddSingleton(s => (IApplicationLifetime)s.GetService<IHostApplicationLifetime>());
+            services.AddSingleton(s => (IApplicationLifetime)s.GetRequiredService<IHostApplicationLifetime>());
 #pragma warning restore CS0618 // Type or member is obsolete
             services.AddSingleton<IHostApplicationLifetime, ApplicationLifetime>();
 
@@ -294,28 +300,29 @@ namespace Microsoft.Extensions.Hosting
             services.AddLogging();
         }
 
+        [MemberNotNull(nameof(_appServices))]
         private void InitializeServiceProvider()
         {
             var services = new ServiceCollection();
 
             PopulateServiceCollection(
                 services,
-                _hostBuilderContext,
-                _hostingEnvironment,
-                _defaultProvider,
-                _appConfiguration,
-                () => _appServices);
+                _hostBuilderContext!,
+                _hostingEnvironment!,
+                _defaultProvider!,
+                _appConfiguration!,
+                () => _appServices!);
 
             foreach (Action<HostBuilderContext, IServiceCollection> configureServicesAction in _configureServicesActions)
             {
-                configureServicesAction(_hostBuilderContext, services);
+                configureServicesAction(_hostBuilderContext!, services);
             }
 
             object containerBuilder = _serviceProviderFactory.CreateBuilder(services);
 
             foreach (IConfigureContainerAdapter containerAction in _configureContainerActions)
             {
-                containerAction.ConfigureContainer(_hostBuilderContext, containerBuilder);
+                containerAction.ConfigureContainer(_hostBuilderContext!, containerBuilder);
             }
 
             _appServices = _serviceProviderFactory.CreateServiceProvider(containerBuilder);
