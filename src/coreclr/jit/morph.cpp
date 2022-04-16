@@ -11852,17 +11852,7 @@ DONE_MORPHING_CHILDREN:
             }
 
         CM_ADD_OP:
-//#ifdef TARGET_ARM64
-//            if (!optValnumCSE_phase && opts.OptimizationEnabled() && tree->OperIs(GT_ADD))
-//            {
-//                tree = fgMorphMulAdd(tree->AsOp());
-//                op1  = tree->AsOp()->gtOp1;
-//                op2  = tree->AsOp()->gtOp2;
-//            }
-//            break;
-//#else
             FALLTHROUGH;
-//#endif
 
         case GT_OR:
         case GT_XOR:
@@ -14269,85 +14259,6 @@ GenTree* Compiler::fgMorphUModToAndSub(GenTreeOp* tree)
     DEBUG_DESTROY_NODE(tree);
 
     return newTree;
-}
-
-//------------------------------------------------------------------------
-// fgMorphMulAdd:
-//                Transform "a + -b * c" to "a - b * c"
-//                Transform "a + b * -c" to "a - b * c"
-//                Transform "-a * b + c" to "c - a * b"
-//                Transform "a * -b + c" to "c - a * b"
-//                Transform "a * b + c" to "c + a * b"
-// Arguments:
-//    tree - The GT_ADD tree to morph
-//
-// Returns:
-//    The morphed tree
-//
-// Notes:
-//    This is useful for ARM64 because the patterns "a + b * c" and
-//    "a - b * c" can be optimized into a combined operation.
-//
-GenTree* Compiler::fgMorphMulAdd(GenTreeOp* tree)
-{
-    JITDUMP("\nMorphing MUL/ADD [%06u]\n", dspTreeID(tree));
-
-    assert(tree->OperIs(GT_ADD));
-
-    if (!varTypeIsIntegral(tree) || tree->gtOverflow())
-        return tree;
-
-    GenTree* addOp1 = tree->gtGetOp1();
-    GenTree* addOp2 = tree->gtGetOp2();
-
-    GenTree* mul;
-    GenTree* op1;
-    if (addOp1->OperIs(GT_MUL))
-    {
-        mul = addOp1;
-        op1 = addOp2;
-    }
-    else
-    {
-        mul = addOp2;
-        op1 = addOp1;
-    }
-
-    if (mul->OperIs(GT_MUL) && varTypeIsIntegral(mul) &&
-        !mul->gtOverflow())
-    {
-        GenTree* mulOp1 = mul->gtGetOp1();
-        GenTree* mulOp2 = mul->gtGetOp2();
-
-        // Transform "-a * b + c" to "c - a * b"
-        if (mulOp1->OperIs(GT_NEG) && !mulOp2->OperIs(GT_NEG))
-        {
-            mul->AsOp()->gtOp1 = mulOp1->gtGetOp1();
-            tree->gtOp1        = op1;
-            tree->gtOp2        = mul;
-            tree->ChangeOper(GT_SUB);
-
-            DEBUG_DESTROY_NODE(mulOp1);
-        }
-        // Transform "a * -b + c" to "c - a * b"
-        else if (mulOp2->OperIs(GT_NEG) && !mulOp1->OperIs(GT_NEG))
-        {
-            mul->AsOp()->gtOp2 = mulOp2->gtGetOp1();
-            tree->gtOp1        = op1;
-            tree->gtOp2        = mul;
-            tree->ChangeOper(GT_SUB);
-
-            DEBUG_DESTROY_NODE(mulOp2);
-        }
-        // Transform "a * b + c" to "c + a * b"
-        else if (addOp1->OperIs(GT_MUL))
-        {
-            tree->gtOp1 = op1;
-            tree->gtOp2 = mul;
-        }
-    }
-
-    return tree;
 }
 
 //------------------------------------------------------------------------------

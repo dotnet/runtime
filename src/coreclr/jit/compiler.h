@@ -5696,7 +5696,6 @@ private:
     GenTree* fgMorphRetInd(GenTreeUnOp* tree);
     GenTree* fgMorphModToSubMulDiv(GenTreeOp* tree);
     GenTree* fgMorphUModToAndSub(GenTreeOp* tree);
-    GenTree* fgMorphMulAdd(GenTreeOp* tree);
     GenTree* fgMorphSmpOpOptional(GenTreeOp* tree);
     GenTree* fgMorphMultiOp(GenTreeMultiOp* multiOp);
     GenTree* fgMorphConst(GenTree* tree);
