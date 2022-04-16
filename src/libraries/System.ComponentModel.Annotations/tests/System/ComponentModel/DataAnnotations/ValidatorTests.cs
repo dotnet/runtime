@@ -218,7 +218,116 @@ namespace System.ComponentModel.DataAnnotations.Tests
 
             Assert.Equal("The RequiredString field is required.", validationResults.Single().ErrorMessage);
             Assert.Equal("AnnotatedSubsection.ComplexItems[0].RequiredString", validationResults.Single().MemberNames.Single());
+        }
 
+        public class Address
+        {
+            [MinLength(5)]
+            public string Street { get; set; }
+            public string Postcode { get; set; }
+        }
+
+        public class Person
+        {
+            [Required]
+            public string Name { get; set; }
+    
+            public List<Address> Addresses { get; set; }
+    
+            public IDictionary<string, Person> Children { get; set; }
+        }
+
+        public class ThingWithAKeyValuePair
+        {
+            public KeyValuePair<string, LookupItem> Pair1 { get; set; }
+        }
+
+        public class ThingWithADictionary
+        {
+            public IDictionary<string, LookupItem> Lookup { get; set; }
+        }
+
+        public class LookupItem
+        {
+            [Required]
+            public string Name { get; set; }
+        }
+        
+        [Fact]
+        public void Recursive_key_value_pair_has_Value_in_path()
+        {
+            var thingToValidate = new ThingWithAKeyValuePair
+            {
+                Pair1 = new KeyValuePair<string, LookupItem>("fred", new LookupItem {Name = null})
+            };
+
+            var context = new ValidationContext(thingToValidate);
+            var validationResults = new List<ValidationResult>();
+
+            Assert.False(Validator.TryValidateObject(thingToValidate, context, validationResults, true));
+            Assert.Equal(1, validationResults.Count);
+
+            Assert.Equal("The Name field is required.", validationResults[0].ErrorMessage);
+            Assert.Equal("Pair1.Value.Name", validationResults[0].MemberNames.Single());
+        }
+
+        [Fact]
+        public void Recursive_dictionary_values_have_Value_in_path()
+        {
+            var thingToValidate = new ThingWithADictionary
+            {
+                Lookup = new Dictionary<string, LookupItem>
+                {
+                    {
+                        "fred",
+                        new LookupItem
+                        {
+                            Name = null
+                        }
+                    }
+                }
+            };
+
+            var context = new ValidationContext(thingToValidate);
+            var validationResults = new List<ValidationResult>();
+
+            Assert.False(Validator.TryValidateObject(thingToValidate, context, validationResults, true));
+            Assert.Equal(1, validationResults.Count);
+
+            Assert.Equal("The Name field is required.", validationResults[0].ErrorMessage);
+            Assert.Equal("Lookup[0].Value.Name", validationResults[0].MemberNames.Single());
+        }
+
+        [Fact]
+        public void Recursive_fails_if_nested_property_in_dictionary_is_invalid2()
+        {
+            var thingToValidate = new Person
+            {
+                Name = "fred",
+                Addresses = new List<Address> {new Address {Street = "qa", Postcode = "aaaaa"}},
+                Children = new Dictionary<string, Person>
+                {
+                    {
+                        "c1",
+                        new Person
+                        {
+                            Name = "fred",
+                            Addresses = new List<Address> {new Address {Street = "qa", Postcode = "aaaaa"}}
+                        }
+                    }
+                }
+            };
+
+            var context = new ValidationContext(thingToValidate);
+            var validationResults = new List<ValidationResult>();
+
+            Assert.False(Validator.TryValidateObject(thingToValidate, context, validationResults, true));
+            Assert.Equal(2, validationResults.Count);
+
+            Assert.Equal("The field Street must be a string or array type with a minimum length of '5'.", validationResults[0].ErrorMessage);
+            Assert.Equal("Addresses[0].Street", validationResults[0].MemberNames.Single());
+            Assert.Equal("The field Street must be a string or array type with a minimum length of '5'.", validationResults[1].ErrorMessage);
+            Assert.Equal("Children[0].Value.Addresses[0].Street", validationResults[1].MemberNames.Single());
         }
 
         [Fact]
@@ -281,11 +390,11 @@ namespace System.ComponentModel.DataAnnotations.Tests
             Assert.Equal(3, validationResults.Count);
 
             Assert.Equal("The RequiredString field is required.", validationResults[0].ErrorMessage);
-            Assert.Equal("AnnotatedSubsection.ComplexItems[1].Lookup[0].RequiredString", validationResults[0].MemberNames.Single());
+            Assert.Equal("AnnotatedSubsection.ComplexItems[1].Lookup[0].Value.RequiredString", validationResults[0].MemberNames.Single());
             Assert.Equal("The RequiredString field is required.", validationResults[1].ErrorMessage);
-            Assert.Equal("AnnotatedSubsection.ComplexItems[2].Lookup[0].Lookup[0].RequiredString", validationResults[1].MemberNames.Single());
+            Assert.Equal("AnnotatedSubsection.ComplexItems[2].Lookup[0].Value.Lookup[0].Value.RequiredString", validationResults[1].MemberNames.Single());
             Assert.Equal("The RequiredString field is required.", validationResults[2].ErrorMessage);
-            Assert.Equal("Lookup[0].RequiredString", validationResults[2].MemberNames.Single());
+            Assert.Equal("Lookup[0].Value.RequiredString", validationResults[2].MemberNames.Single());
 
         }
 
@@ -356,7 +465,6 @@ namespace System.ComponentModel.DataAnnotations.Tests
 
             Assert.Equal("AnnotatedSubsection.IntRange2", validationResults[1].MemberNames.Single());
             Assert.Equal("Really out of range.", validationResults[1].ErrorMessage);
-
         }
 
         [Fact]

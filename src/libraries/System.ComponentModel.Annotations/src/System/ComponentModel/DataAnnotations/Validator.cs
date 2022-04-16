@@ -73,7 +73,7 @@ namespace System.ComponentModel.DataAnnotations
 
             var attributes = _store.GetPropertyValidationAttributes(validationContext);
 
-            foreach (var err in GetValidationErrors(value, validationContext, attributes, breakOnFirstError, new List<Path>()))
+            foreach (var err in GetValidationErrors(value, validationContext, attributes, breakOnFirstError, new Stack<Path>()))
             {
                 result = false;
 
@@ -158,7 +158,10 @@ namespace System.ComponentModel.DataAnnotations
             var result = true;
             var breakOnFirstError = (validationResults == null);
 
-            foreach (ValidationError err in GetObjectValidationErrors(instance, validationContext!, validateAllProperties, breakOnFirstError, new List<Path>()))
+            var parentPaths = new Stack<Path>();
+
+            foreach (ValidationError err in GetObjectValidationErrors(instance, validationContext!,
+                         validateAllProperties, breakOnFirstError, parentPaths))
             {
                 result = false;
 
@@ -205,7 +208,7 @@ namespace System.ComponentModel.DataAnnotations
 
             foreach (
                 var err in
-                    GetValidationErrors(value, validationContext, validationAttributes, breakOnFirstError, new List<Path>()))
+                    GetValidationErrors(value, validationContext, validationAttributes, breakOnFirstError, new Stack<Path>()))
             {
                 result = false;
 
@@ -234,7 +237,7 @@ namespace System.ComponentModel.DataAnnotations
 
             var attributes = _store.GetPropertyValidationAttributes(validationContext);
 
-            List<ValidationError> errors = GetValidationErrors(value, validationContext, attributes, false, new List<Path>());
+            List<ValidationError> errors = GetValidationErrors(value, validationContext, attributes, false, new Stack<Path>());
             if (errors.Count > 0)
             {
                 errors[0].ThrowValidationException();
@@ -294,7 +297,7 @@ namespace System.ComponentModel.DataAnnotations
                 throw new ArgumentException(SR.Validator_InstanceMustMatchValidationContextInstance, nameof(instance));
             }
 
-            List<ValidationError> errors = GetObjectValidationErrors(instance, validationContext, validateAllProperties, false, new List<Path>());
+            List<ValidationError> errors = GetObjectValidationErrors(instance, validationContext, validateAllProperties, false, new Stack<Path>());
             if (errors.Count > 0)
             {
                 errors[0].ThrowValidationException();
@@ -321,7 +324,7 @@ namespace System.ComponentModel.DataAnnotations
         public static void ValidateValue(object value, ValidationContext validationContext!!,
             IEnumerable<ValidationAttribute> validationAttributes!!)
         {
-            List<ValidationError> errors = GetValidationErrors(value, validationContext, validationAttributes, false, new List<Path>());
+            List<ValidationError> errors = GetValidationErrors(value, validationContext, validationAttributes, false, new Stack<Path>());
             if (errors.Count > 0)
             {
                 errors[0].ThrowValidationException();
@@ -396,7 +399,7 @@ namespace System.ComponentModel.DataAnnotations
         /// <param name="validationContext">Describes the object type.</param>
         /// <param name="validateAllProperties">if <c>true</c> also validates all properties.</param>
         /// <param name="breakOnFirstError">Whether to break on the first error or validate everything.</param>
-        /// <param name="parentNames"></param>
+        /// <param name="parentPaths">The paths previously visited; used to prefix property names when validating recursively.</param>
         /// <returns>
         ///     A collection of validation errors that result from validating the <paramref name="instance" /> with
         ///     the given <paramref name="validationContext" />.
@@ -413,14 +416,14 @@ namespace System.ComponentModel.DataAnnotations
             ValidationContext validationContext!!,
             bool validateAllProperties,
             bool breakOnFirstError,
-            List<Path> parentNames)
+            Stack<Path> parentPaths)
         {
             Debug.Assert(instance != null);
 
             // Step 1: Validate the object properties' validation attributes
             var errors = new List<ValidationError>();
             errors.AddRange(GetObjectPropertyValidationErrors(instance, validationContext, validateAllProperties,
-                breakOnFirstError, parentNames));
+                breakOnFirstError, parentPaths));
 
             // We only proceed to Step 2 if there are no errors
             if (errors.Count > 0)
@@ -430,7 +433,7 @@ namespace System.ComponentModel.DataAnnotations
 
             // Step 2: Validate the object's validation attributes
             var attributes = _store.GetTypeValidationAttributes(validationContext);
-            errors.AddRange(GetValidationErrors(instance, validationContext, attributes, breakOnFirstError, parentNames));
+            errors.AddRange(GetValidationErrors(instance, validationContext, attributes, breakOnFirstError, parentPaths));
 
             // We only proceed to Step 3 if there are no errors
             if (errors.Count > 0)
@@ -468,12 +471,13 @@ namespace System.ComponentModel.DataAnnotations
         ///     ones marked with <see cref="RequiredAttribute" /> are not null.
         /// </param>
         /// <param name="breakOnFirstError">Whether to break on the first error or validate everything.</param>
-        /// <param name="parentNames">The name of the parent, or null if this is a top level item.</param>
+        /// <param name="parentPaths">The paths previously visited; used to prefix property names when validating recursively.</param>
         /// <returns>A list of <see cref="ValidationError" /> instances.</returns>
         [RequiresUnreferencedCode(ValidationContext.InstanceTypeNotStaticallyDiscovered)]
         private static IEnumerable<ValidationError> GetObjectPropertyValidationErrors(object instance,
-            ValidationContext validationContext, bool validateAllProperties, bool breakOnFirstError, List<Path> parentNames)
+            ValidationContext validationContext, bool validateAllProperties, bool breakOnFirstError, Stack<Path> parentPaths)
         {
+            // Don't add ourselves to paths. Whoever calls this adds us, as we might be an item in a collection.
             var properties = GetPropertyValues(instance, validationContext);
             var errors = new List<ValidationError>();
 
@@ -486,35 +490,30 @@ namespace System.ComponentModel.DataAnnotations
 
                 if (validateAllProperties)
                 {
-                    var newNames = new List<Path>(parentNames!);
-
-                    // if there are parents, and the immediate parent is not an index, then add this object as a parent.
-                    if (!parentNames!.Any() || parentNames!.LastOrDefault()?.Index == -1)
-                        newNames.Add(new Path(validationContext.ObjectType.Name, -1));
-
                     // validate all validation attributes on this property
                     if (attributes.Count != 0)
                     {
-                        List<ValidationError> validationErrors = GetValidationErrors(propertyValue, property.Key, attributes, breakOnFirstError, newNames);
+                        List<ValidationError> validationErrors = GetValidationErrors(propertyValue, property.Key, attributes, breakOnFirstError, parentPaths);
                         errors.AddRange(validationErrors);
                     }
 
                     if (propertyValue != null)
                     {
-                        if (propertyValue is not string && propertyValue is IEnumerable items)
+                        if (propertyValue is not string && propertyValue is IEnumerable collection)
                         {
                             int idx = 0;
-                            foreach (object? eachItem in items)
+                            foreach (object? eachItemInCollection in collection)
                             {
-                                var nn2 = new List<Path>(newNames);
-                                nn2.Add(new Path(property.Key.MemberName!, idx));
+                                parentPaths.Push(new Path(property.Key.MemberName!, idx));
 
                                 IEnumerable<ValidationError> propertyErrors = GetObjectPropertyValidationErrors(
-                                    eachItem,
-                                    CreateValidationContext(eachItem, validationContext),
+                                    eachItemInCollection,
+                                    CreateValidationContext(eachItemInCollection, validationContext),
                                     validateAllProperties,
                                     breakOnFirstError,
-                                    nn2);
+                                    parentPaths);
+
+                                parentPaths.Pop();
 
                                 IEnumerable<ValidationError> e = propertyErrors;
 
@@ -525,23 +524,24 @@ namespace System.ComponentModel.DataAnnotations
                         }
                         else
                         {
-                            IEnumerable<ValidationError> propertyErrors = GetObjectPropertyValidationErrors(
+                                parentPaths.Push(new Path(property.Key.MemberName!, -1));
+
+                                IEnumerable<ValidationError> propertyErrors = GetObjectPropertyValidationErrors(
                                 propertyValue,
                                 CreateValidationContext(propertyValue, validationContext),
                                 validateAllProperties,
                                 breakOnFirstError,
-                                newNames);
+                                parentPaths);
                             IEnumerable<ValidationError> subErrors = propertyErrors;
 
                             errors.AddRange(subErrors);
+
+                            parentPaths.Pop();
                         }
                     }
                 }
-                else
+                else // if we're NOT validating all properties
                 {
-                    var newNames = parentNames ?? new List<Path>();
-                    newNames.Add(new Path(validationContext.ObjectType.Name, -1));
-
                     // only validate the first Required attribute
                     foreach (ValidationAttribute attribute in attributes)
                     {
@@ -552,7 +552,7 @@ namespace System.ComponentModel.DataAnnotations
                             var validationResult = reqAttr.GetValidationResult(propertyValue, property.Key);
                             if (validationResult != ValidationResult.Success)
                             {
-                                validationResult = TryAddPrefixToMemberNames(validationResult!, newNames);
+                                validationResult = TryAddPrefixToMemberNames(validationResult!, parentPaths);
                                 ValidationError validationError = new ValidationError(reqAttr, propertyValue, validationResult!);
                                 errors.Add(validationError);
                             }
@@ -618,7 +618,7 @@ namespace System.ComponentModel.DataAnnotations
         /// <exception cref="ArgumentNullException">When <paramref name="validationContext" /> is null.</exception>
         private static List<ValidationError> GetValidationErrors(object? value,
             ValidationContext validationContext, IEnumerable<ValidationAttribute> attributes, bool breakOnFirstError,
-            List<Path> parentNames)
+            Stack<Path> parentNames)
         {
             var errors = new List<ValidationError>();
             ValidationError? validationError;
@@ -678,7 +678,7 @@ namespace System.ComponentModel.DataAnnotations
             ValidationContext validationContext,
             ValidationAttribute attribute,
             [NotNullWhen(false)] out ValidationError? validationError,
-            List<Path> parentNames)
+            Stack<Path> parentNames)
         {
             Debug.Assert(validationContext != null);
 
@@ -697,14 +697,14 @@ namespace System.ComponentModel.DataAnnotations
             return true;
         }
 
-        private static ValidationResult TryAddPrefixToMemberNames(ValidationResult validationResult, List<Path> parentNames)
+        private static ValidationResult TryAddPrefixToMemberNames(ValidationResult validationResult, Stack<Path> parentNames)
         {
             if (parentNames.Count == 0)
             {
                 return validationResult;
             }
 
-            string prefix = string.Join(".", parentNames.Skip(1));
+            string prefix = string.Join(".", parentNames.Reverse());//.Skip(1));
             // if (index != -1)
             // {
             //     prefix += $"[{index}]";
