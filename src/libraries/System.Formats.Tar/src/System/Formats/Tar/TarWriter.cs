@@ -186,7 +186,7 @@ namespace System.Formats.Tar
                     break;
                 case TarFormat.Unknown:
                 default:
-                    throw new FormatException(SR.UnknownFormat);
+                    throw new FormatException(string.Format(SR.TarInvalidFormat, Format));
             }
 
             _wroteEntries = true;

@@ -283,7 +283,7 @@ namespace System.Formats.Tar
 
                 case TarFormat.Unknown:
                 default:
-                    throw new NotSupportedException(SR.UnknownFormat);
+                    throw new FormatException(string.Format(SR.TarInvalidFormat, archiveFormat));
             }
 
             throw new NotSupportedException(string.Format(SR.TarEntryTypeNotSupported, entryType, archiveFormat));

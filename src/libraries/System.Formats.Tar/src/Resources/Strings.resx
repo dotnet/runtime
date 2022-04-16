@@ -219,6 +219,9 @@
   <data name="TarGnuFormatExpected" xml:space="preserve">
     <value>A GNU format was expected, but could not be reliably determined for entry '{0}'.</value>
   </data>
+  <data name="TarInvalidFormat" xml:space="preserve">
+    <value>The archive format is invalid: '{0}'</value>
+  </data>
   <data name="TarMalformedTwoExtendedAttributesEntries" xml:space="preserve">
     <value>The archive is malformed. It contains two extended attributes entries in a row.</value>
   </data>
@@ -245,8 +248,5 @@
   </data>
   <data name="UnauthorizedAccess_IODenied_Path" xml:space="preserve">
     <value>Access to the path '{0}' is denied.</value>
-  </data>
-  <data name="UnknownFormat" xml:space="preserve">
-    <value>The archive format is unknown.</value>
   </data>
 </root>
