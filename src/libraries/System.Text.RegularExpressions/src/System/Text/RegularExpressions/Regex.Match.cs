@@ -87,7 +87,7 @@ namespace System.Text.RegularExpressions
         /// <returns><see langword="true"/> if the regular expression finds a match; otherwise, <see langword="false"/>.</returns>
         /// <exception cref="RegexMatchTimeoutException">A time-out ocurred.</exception>
         public bool IsMatch(ReadOnlySpan<char> input) =>
-            RunSingleMatch(input, RightToLeft ? input.Length : 0) is null;
+            RunSingleMatch(quick: true, -1, input, RightToLeft ? input.Length : 0) is null;
 
         /// <summary>
         /// Searches the input string for one or more matches using the previous pattern and options,

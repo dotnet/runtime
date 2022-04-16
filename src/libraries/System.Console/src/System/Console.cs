@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -808,25 +809,25 @@ namespace System
         }
 
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
-        public static void WriteLine(string format, object? arg0)
+        public static void WriteLine([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0)
         {
             Out.WriteLine(format, arg0);
         }
 
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
-        public static void WriteLine(string format, object? arg0, object? arg1)
+        public static void WriteLine([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0, object? arg1)
         {
             Out.WriteLine(format, arg0, arg1);
         }
 
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
-        public static void WriteLine(string format, object? arg0, object? arg1, object? arg2)
+        public static void WriteLine([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0, object? arg1, object? arg2)
         {
             Out.WriteLine(format, arg0, arg1, arg2);
         }
 
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
-        public static void WriteLine(string format, params object?[]? arg)
+        public static void WriteLine([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params object?[]? arg)
         {
             if (arg == null)                       // avoid ArgumentNullException from String.Format
                 Out.WriteLine(format, null, null); // faster than Out.WriteLine(format, (Object)arg);
@@ -835,25 +836,25 @@ namespace System
         }
 
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
-        public static void Write(string format, object? arg0)
+        public static void Write([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0)
         {
             Out.Write(format, arg0);
         }
 
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
-        public static void Write(string format, object? arg0, object? arg1)
+        public static void Write([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0, object? arg1)
         {
             Out.Write(format, arg0, arg1);
         }
 
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
-        public static void Write(string format, object? arg0, object? arg1, object? arg2)
+        public static void Write([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0, object? arg1, object? arg2)
         {
             Out.Write(format, arg0, arg1, arg2);
         }
 
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
-        public static void Write(string format, params object?[]? arg)
+        public static void Write([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params object?[]? arg)
         {
             if (arg == null)                   // avoid ArgumentNullException from String.Format
                 Out.Write(format, null, null); // faster than Out.Write(format, (Object)arg);

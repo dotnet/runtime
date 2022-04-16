@@ -1355,9 +1355,10 @@ GenTree* DecomposeLongs::DecomposeShift(LIR::Use& use)
                 unreached();
         }
 
-        GenTreeCall::Use* argList = m_compiler->gtNewCallArgs(loOp1, hiOp1, shiftByOp);
-
-        GenTreeCall* call = m_compiler->gtNewHelperCallNode(helper, TYP_LONG, argList);
+        GenTreeCall* call = m_compiler->gtNewHelperCallNode(helper, TYP_LONG);
+        call->gtArgs.PushFront(m_compiler, shiftByOp);
+        call->gtArgs.PushFront(m_compiler, hiOp1, WellKnownArg::ShiftHigh);
+        call->gtArgs.PushFront(m_compiler, loOp1, WellKnownArg::ShiftLow);
         call->gtFlags |= shift->gtFlags & GTF_ALL_EFFECT;
 
         if (shift->IsUnusedValue())

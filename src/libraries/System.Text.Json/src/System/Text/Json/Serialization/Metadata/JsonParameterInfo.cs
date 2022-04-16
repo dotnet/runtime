@@ -63,7 +63,7 @@ namespace System.Text.Json.Serialization.Metadata
             NameAsUtf8Bytes = matchingProperty.NameAsUtf8Bytes!;
             ConverterBase = matchingProperty.ConverterBase;
             IgnoreDefaultValuesOnRead = matchingProperty.IgnoreDefaultValuesOnRead;
-            NumberHandling = matchingProperty.NumberHandling;
+            NumberHandling = matchingProperty.EffectiveNumberHandling;
             MatchingPropertyCanBeNull = matchingProperty.PropertyTypeCanBeNull;
         }
 

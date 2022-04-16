@@ -394,7 +394,7 @@ namespace System
             T[] _this = Unsafe.As<T[]>(this);
             if ((uint)index >= (uint)_this.Length)
             {
-                ThrowHelper.ThrowArgumentOutOfRange_IndexException();
+                ThrowHelper.ThrowArgumentOutOfRange_IndexMustBeLessException();
             }
 
             return _this[index];
@@ -407,7 +407,7 @@ namespace System
             T[] _this = Unsafe.As<T[]>(this);
             if ((uint)index >= (uint)_this.Length)
             {
-                ThrowHelper.ThrowArgumentOutOfRange_IndexException();
+                ThrowHelper.ThrowArgumentOutOfRange_IndexMustBeLessException();
             }
 
             _this[index] = value;

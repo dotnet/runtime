@@ -32,16 +32,16 @@ namespace System
         public const byte MinValue = 0;
 
         /// <summary>Represents the additive identity (0).</summary>
-        public const byte AdditiveIdentity = 0;
+        private const byte AdditiveIdentity = 0;
 
         /// <summary>Represents the multiplicative identity (1).</summary>
-        public const byte MultiplicativeIdentity = 1;
+        private const byte MultiplicativeIdentity = 1;
 
         /// <summary>Represents the number one (1).</summary>
-        public const byte One = 1;
+        private const byte One = 1;
 
         /// <summary>Represents the number zero (0).</summary>
-        public const byte Zero = 0;
+        private const byte Zero = 0;
 
         // Compares this object to another object, returning an integer that
         // indicates the relationship.
@@ -189,7 +189,7 @@ namespace System
             return Number.UInt32ToDecStr(m_value);
         }
 
-        public string ToString(string? format)
+        public string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format)
         {
             return Number.FormatUInt32(m_value, format, null);
         }
@@ -199,12 +199,12 @@ namespace System
             return Number.UInt32ToDecStr(m_value);
         }
 
-        public string ToString(string? format, IFormatProvider? provider)
+        public string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format, IFormatProvider? provider)
         {
             return Number.FormatUInt32(m_value, format, provider);
         }
 
-        public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format = default, IFormatProvider? provider = null)
+        public bool TryFormat(Span<char> destination, out int charsWritten, [StringSyntax(StringSyntaxAttribute.NumericFormat)] ReadOnlySpan<char> format = default, IFormatProvider? provider = null)
         {
             return Number.TryFormatUInt32(m_value, format, provider, destination, out charsWritten);
         }
@@ -300,8 +300,8 @@ namespace System
         /// <inheritdoc cref="IAdditionOperators{TSelf, TOther, TResult}.op_Addition(TSelf, TOther)" />
         static byte IAdditionOperators<byte, byte, byte>.operator +(byte left, byte right) => (byte)(left + right);
 
-        // /// <inheritdoc cref="IAdditionOperators{TSelf, TOther, TResult}.op_CheckedAddition(TSelf, TOther)" />
-        // static byte IAdditionOperators<byte, byte, byte>.operator checked +(byte left, byte right) => checked((byte)(left + right));
+        /// <inheritdoc cref="IAdditionOperators{TSelf, TOther, TResult}.op_CheckedAddition(TSelf, TOther)" />
+        static byte IAdditionOperators<byte, byte, byte>.operator checked +(byte left, byte right) => checked((byte)(left + right));
 
         //
         // IAdditiveIdentity
@@ -313,6 +313,9 @@ namespace System
         //
         // IBinaryInteger
         //
+
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.DivRem(TSelf, TSelf)" />
+        public static (byte Quotient, byte Remainder) DivRem(byte left, byte right) => Math.DivRem(left, right);
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.LeadingZeroCount(TSelf)" />
         public static byte LeadingZeroCount(byte value) => (byte)(BitOperations.LeadingZeroCount(value) - 24);
@@ -328,6 +331,30 @@ namespace System
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.TrailingZeroCount(TSelf)" />
         public static byte TrailingZeroCount(byte value) => (byte)(BitOperations.TrailingZeroCount(value << 24) - 24);
+
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.GetShortestBitLength()" />
+        long IBinaryInteger<byte>.GetShortestBitLength() => (sizeof(byte) * 8) - LeadingZeroCount(m_value);
+
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.GetByteCount()" />
+        int IBinaryInteger<byte>.GetByteCount() => sizeof(byte);
+
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.TryWriteLittleEndian(Span{byte}, out int)" />
+        bool IBinaryInteger<byte>.TryWriteLittleEndian(Span<byte> destination, out int bytesWritten)
+        {
+            if (destination.Length >= sizeof(byte))
+            {
+                byte value = m_value;
+                Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), value);
+
+                bytesWritten = sizeof(byte);
+                return true;
+            }
+            else
+            {
+                bytesWritten = 0;
+                return false;
+            }
+        }
 
         //
         // IBinaryNumber
@@ -378,8 +405,8 @@ namespace System
         /// <inheritdoc cref="IDecrementOperators{TSelf}.op_Decrement(TSelf)" />
         static byte IDecrementOperators<byte>.operator --(byte value) => --value;
 
-        // /// <inheritdoc cref="IDecrementOperators{TSelf}.op_CheckedDecrement(TSelf)" />
-        // static byte IDecrementOperators<byte>.operator checked --(byte value) => checked(--value);
+        /// <inheritdoc cref="IDecrementOperators{TSelf}.op_CheckedDecrement(TSelf)" />
+        static byte IDecrementOperators<byte>.operator checked --(byte value) => checked(--value);
 
         //
         // IDivisionOperators
@@ -388,8 +415,8 @@ namespace System
         /// <inheritdoc cref="IDivisionOperators{TSelf, TOther, TResult}.op_Division(TSelf, TOther)" />
         static byte IDivisionOperators<byte, byte, byte>.operator /(byte left, byte right) => (byte)(left / right);
 
-        // /// <inheritdoc cref="IDivisionOperators{TSelf, TOther, TResult}.op_CheckedDivision(TSelf, TOther)" />
-        // static byte IDivisionOperators<byte, byte, byte>.operator checked /(byte left, byte right) => checked((byte)(left / right));
+        /// <inheritdoc cref="IDivisionOperators{TSelf, TOther, TResult}.op_CheckedDivision(TSelf, TOther)" />
+        static byte IDivisionOperators<byte, byte, byte>.operator checked /(byte left, byte right) => (byte)(left / right);
 
         //
         // IEqualityOperators
@@ -408,8 +435,8 @@ namespace System
         /// <inheritdoc cref="IIncrementOperators{TSelf}.op_Increment(TSelf)" />
         static byte IIncrementOperators<byte>.operator ++(byte value) => ++value;
 
-        // /// <inheritdoc cref="IIncrementOperators{TSelf}.op_CheckedIncrement(TSelf)" />
-        // static byte IIncrementOperators<byte>.operator checked ++(byte value) => checked(++value);
+        /// <inheritdoc cref="IIncrementOperators{TSelf}.op_CheckedIncrement(TSelf)" />
+        static byte IIncrementOperators<byte>.operator checked ++(byte value) => checked(++value);
 
         //
         // IMinMaxValue
@@ -442,28 +469,25 @@ namespace System
         /// <inheritdoc cref="IMultiplyOperators{TSelf, TOther, TResult}.op_Multiply(TSelf, TOther)" />
         static byte IMultiplyOperators<byte, byte, byte>.operator *(byte left, byte right) => (byte)(left * right);
 
-        // /// <inheritdoc cref="IMultiplyOperators{TSelf, TOther, TResult}.op_CheckedMultiply(TSelf, TOther)" />
-        // static byte IMultiplyOperators<byte, byte, byte>.operator checked *(byte left, byte right) => checked((byte)(left * right));
+        /// <inheritdoc cref="IMultiplyOperators{TSelf, TOther, TResult}.op_CheckedMultiply(TSelf, TOther)" />
+        static byte IMultiplyOperators<byte, byte, byte>.operator checked *(byte left, byte right) => checked((byte)(left * right));
 
         //
         // INumber
         //
 
-        /// <inheritdoc cref="INumber{TSelf}.One" />
-        static byte INumber<byte>.One => One;
-
-        /// <inheritdoc cref="INumber{TSelf}.Zero" />
-        static byte INumber<byte>.Zero => Zero;
-
         /// <inheritdoc cref="INumber{TSelf}.Abs(TSelf)" />
-        public static byte Abs(byte value) => value;
+        static byte INumber<byte>.Abs(byte value) => value;
 
         /// <inheritdoc cref="INumber{TSelf}.Clamp(TSelf, TSelf, TSelf)" />
         public static byte Clamp(byte value, byte min, byte max) => Math.Clamp(value, min, max);
 
-        /// <inheritdoc cref="INumber{TSelf}.Create{TOther}(TOther)" />
+        /// <inheritdoc cref="INumber{TSelf}.CopySign(TSelf, TSelf)" />
+        static byte INumber<byte>.CopySign(byte value, byte sign) => value;
+
+        /// <inheritdoc cref="INumber{TSelf}.CreateChecked{TOther}(TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static byte Create<TOther>(TOther value)
+        public static byte CreateChecked<TOther>(TOther value)
             where TOther : INumber<TOther>
         {
             if (typeof(TOther) == typeof(byte))
@@ -685,17 +709,23 @@ namespace System
             }
         }
 
-        /// <inheritdoc cref="INumber{TSelf}.DivRem(TSelf, TSelf)" />
-        public static (byte Quotient, byte Remainder) DivRem(byte left, byte right) => Math.DivRem(left, right);
+        /// <inheritdoc cref="INumber{TSelf}.IsNegative(TSelf)" />
+        static bool INumber<byte>.IsNegative(byte value) => false;
 
         /// <inheritdoc cref="INumber{TSelf}.Max(TSelf, TSelf)" />
         public static byte Max(byte x, byte y) => Math.Max(x, y);
 
+        /// <inheritdoc cref="INumber{TSelf}.MaxMagnitude(TSelf, TSelf)" />
+        static byte INumber<byte>.MaxMagnitude(byte x, byte y) => Max(x, y);
+
         /// <inheritdoc cref="INumber{TSelf}.Min(TSelf, TSelf)" />
         public static byte Min(byte x, byte y) => Math.Min(x, y);
 
+        /// <inheritdoc cref="INumber{TSelf}.MinMagnitude(TSelf, TSelf)" />
+        static byte INumber<byte>.MinMagnitude(byte x, byte y) => Min(x, y);
+
         /// <inheritdoc cref="INumber{TSelf}.Sign(TSelf)" />
-        public static byte Sign(byte value) => (byte)((value == 0) ? 0 : 1);
+        public static int Sign(byte value) => (value == 0) ? 0 : 1;
 
         /// <inheritdoc cref="INumber{TSelf}.TryCreate{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -885,10 +915,20 @@ namespace System
         }
 
         //
-        // IParseable
+        // INumberBase
         //
 
-        /// <inheritdoc cref="IParseable{TSelf}.TryParse(string?, IFormatProvider?, out TSelf)" />
+        /// <inheritdoc cref="INumberBase{TSelf}.One" />
+        static byte INumberBase<byte>.One => One;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.Zero" />
+        static byte INumberBase<byte>.Zero => Zero;
+
+        //
+        // IParsable
+        //
+
+        /// <inheritdoc cref="IParsable{TSelf}.TryParse(string?, IFormatProvider?, out TSelf)" />
         public static bool TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out byte result) => TryParse(s, NumberStyles.Integer, provider, out result);
 
         //
@@ -905,13 +945,13 @@ namespace System
         // static byte IShiftOperators<byte, byte>.operator >>>(byte value, int shiftAmount) => (byte)(value >> shiftAmount);
 
         //
-        // ISpanParseable
+        // ISpanParsable
         //
 
-        /// <inheritdoc cref="ISpanParseable{TSelf}.Parse(ReadOnlySpan{char}, IFormatProvider?)" />
+        /// <inheritdoc cref="ISpanParsable{TSelf}.Parse(ReadOnlySpan{char}, IFormatProvider?)" />
         public static byte Parse(ReadOnlySpan<char> s, IFormatProvider? provider) => Parse(s, NumberStyles.Integer, provider);
 
-        /// <inheritdoc cref="ISpanParseable{TSelf}.TryParse(ReadOnlySpan{char}, IFormatProvider?, out TSelf)" />
+        /// <inheritdoc cref="ISpanParsable{TSelf}.TryParse(ReadOnlySpan{char}, IFormatProvider?, out TSelf)" />
         public static bool TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out byte result) => TryParse(s, NumberStyles.Integer, provider, out result);
 
         //
@@ -921,8 +961,8 @@ namespace System
         /// <inheritdoc cref="ISubtractionOperators{TSelf, TOther, TResult}.op_Subtraction(TSelf, TOther)" />
         static byte ISubtractionOperators<byte, byte, byte>.operator -(byte left, byte right) => (byte)(left - right);
 
-        // /// <inheritdoc cref="ISubtractionOperators{TSelf, TOther, TResult}.op_CheckedSubtraction(TSelf, TOther)" />
-        // static byte ISubtractionOperators<byte, byte, byte>.operator checked -(byte left, byte right) => checked((byte)(left - right));
+        /// <inheritdoc cref="ISubtractionOperators{TSelf, TOther, TResult}.op_CheckedSubtraction(TSelf, TOther)" />
+        static byte ISubtractionOperators<byte, byte, byte>.operator checked -(byte left, byte right) => checked((byte)(left - right));
 
         //
         // IUnaryNegationOperators
@@ -931,8 +971,8 @@ namespace System
         /// <inheritdoc cref="IUnaryNegationOperators{TSelf, TResult}.op_UnaryNegation(TSelf)" />
         static byte IUnaryNegationOperators<byte, byte>.operator -(byte value) => (byte)(-value);
 
-        // /// <inheritdoc cref="IUnaryNegationOperators{TSelf, TResult}.op_CheckedUnaryNegation(TSelf)" />
-        // static byte IUnaryNegationOperators<byte, byte>.operator checked -(byte value) => checked((byte)(-value));
+        /// <inheritdoc cref="IUnaryNegationOperators{TSelf, TResult}.op_CheckedUnaryNegation(TSelf)" />
+        static byte IUnaryNegationOperators<byte, byte>.operator checked -(byte value) => checked((byte)(-value));
 
         //
         // IUnaryPlusOperators
@@ -940,8 +980,5 @@ namespace System
 
         /// <inheritdoc cref="IUnaryPlusOperators{TSelf, TResult}.op_UnaryPlus(TSelf)" />
         static byte IUnaryPlusOperators<byte, byte>.operator +(byte value) => (byte)(+value);
-
-        // /// <inheritdoc cref="IUnaryPlusOperators{TSelf, TResult}.op_CheckedUnaryPlus(TSelf)" />
-        // static byte IUnaryPlusOperators<byte, byte>.operator checked +(byte value) => checked((byte)(+value));
     }
 }
