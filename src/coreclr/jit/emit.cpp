@@ -4150,8 +4150,8 @@ void emitter::emitJumpDistBind()
 
     int jmp_iteration = 1;
 #ifdef TARGET_XARCH
-    int jmp_removal   = 1;
-    bool jmpRemoved    = false;
+    int  jmp_removal = 1;
+    bool jmpRemoved  = false;
 #endif
 
 /*****************************************************************************/
@@ -4178,7 +4178,6 @@ AGAIN:
     adjLJ         = 0;
     adjIG         = 0;
     minShortExtra = (UNATIVE_OFFSET)-1;
-
 
 #ifdef TARGET_XARCH
     // try to remove unconditional jumps at the end of a group to the next group
@@ -4214,21 +4213,21 @@ AGAIN:
                         assert(instructionDescriptor != nullptr);
                         // instructionDescriptor is now the last instruction in the group
 
-                        if (instructionDescriptor->idIns() == jmp->idIns() &&
-                            jmp == instructionDescriptor)
+                        if (instructionDescriptor->idIns() == jmp->idIns() && jmp == instructionDescriptor)
                         {
                             // the last instruction in the group is the jmp we're looking for
                             // and it jumps to the next instruction group so we don't really need it
 
                             if (EMITVERBOSE)
                             {
-                                printf("Removing unconditional jump [%08X/%03u] from the last instruction in IG%02u to the next IG IG%02u label %s\n",
+                                printf("Removing unconditional jump [%08X/%03u] from the last instruction in IG%02u to "
+                                       "the next IG IG%02u label %s\n",
                                        dspPtr(jmp), jmp->idDebugOnlyInfo()->idNum, group->igNum, targetGroup->igNum,
                                        emitLabelString(targetGroup));
                             }
-                            
+
                             UNATIVE_OFFSET sizeRemoved = instructionDescriptor->idCodeSize();
-                            
+
                             // set state needed at the end of the loop in ADJUST_GROUP
                             adjIG      = sizeRemoved;
                             lstIG      = group;
@@ -4258,7 +4257,7 @@ AGAIN:
 
                             // flag the group as resized and recounted
                             group->igFlags |= (IGF_UPD_ISZ | IGF_UPD_ICOUNT);
-                            
+
                             // cleanup
                             instructionDescriptor = nullptr;
                             jmp                   = nullptr;
@@ -4904,7 +4903,7 @@ AGAIN:
     } // end for each jump
 
 #ifdef TARGET_XARCH
-    ADJUST_GROUP:
+ADJUST_GROUP:
 #endif
 
     /* Did we shorten any jumps? */
@@ -4954,7 +4953,7 @@ AGAIN:
 #ifdef TARGET_XARCH
         if (jmpRemoved)
         {
-            
+
             jmp_removal++;
 #ifdef DEBUG
             if (EMITVERBOSE)
@@ -4984,7 +4983,6 @@ AGAIN:
 
             goto AGAIN;
         }
-
     }
 #ifdef DEBUG
     if (EMIT_INSTLIST_VERBOSE)

@@ -159,7 +159,7 @@ public:
         return ig;
     }
 
-    int GetInsNum() const;
+    int  GetInsNum() const;
     void SetInsNum(int insNum);
 
     bool operator!=(const emitLocation& other) const
@@ -278,7 +278,9 @@ struct insGroup
                                   // and the emitter should continue to track GC info as if there was no new block.
 #define IGF_HAS_ALIGN 0x0400      // this group contains an alignment instruction(s) at the end to align either the next
                                   // IG, or, if this IG contains with an unconditional branch, some subsequent IG.
-#define IGF_UPD_ICOUNT 0x0800     // instruction was removed from the marked group and the live range end will not match this ig instruction count
+#define IGF_UPD_ICOUNT                                                                                                 \
+    0x0800 // instruction was removed from the marked group and the live range end will not match this ig instruction
+           // count
 
 // Mask of IGF_* flags that should be propagated to new blocks when they are created.
 // This allows prologs and epilogs to be any number of IGs, but still be

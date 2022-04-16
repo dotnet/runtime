@@ -743,7 +743,7 @@ public:
 
         LiveRangeList* getLiveRangesForVarForBody(unsigned int varNum) const;
         LiveRangeList* getLiveRangesForVarForProlog(unsigned int varNum) const;
-        size_t getLiveRangesCount() const;
+        size_t       getLiveRangesCount() const;
         unsigned int getVarCount() const;
 
         // For parameters locations on prolog

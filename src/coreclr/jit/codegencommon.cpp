@@ -1989,7 +1989,7 @@ void CodeGen::genUpdateLiveRangesForTruncatedIGs()
     }
 #endif
     bool updatedGroup = false;
-   
+
     if (compiler->lvaCount > 0)
     {
         insGroup* ig = GetEmitter()->emitIGlist;
@@ -2003,7 +2003,8 @@ void CodeGen::genUpdateLiveRangesForTruncatedIGs()
                 {
                     if (compiler->verbose)
                     {
-                        JITDUMP("IG%02u is marked with IGF_UPD_ICOUNT and has %d live variables\n", ig->igNum, liveVarCount);
+                        JITDUMP("IG%02u is marked with IGF_UPD_ICOUNT and has %d live variables\n", ig->igNum,
+                                liveVarCount);
                     }
                     for (unsigned int varNum = 0; varNum < liveVarCount; varNum++)
                     {
@@ -2023,7 +2024,7 @@ void CodeGen::genUpdateLiveRangesForTruncatedIGs()
                             {
                                 liveRanges = varLiveKeeper->getLiveRangesForVarForBody(varNum);
                             }
-                            
+
                             for (VariableLiveKeeper::VariableLiveRange& liveRange : *liveRanges)
                             {
                                 if (liveRange.m_StartEmitLocation.GetIG()->igNum == ig->igNum &&
@@ -2065,7 +2066,7 @@ void CodeGen::genUpdateLiveRangesForTruncatedIGs()
 
                 ig->igFlags ^= IGF_UPD_ICOUNT;
             }
-    
+
             ig = ig->igNext;
         }
     }
