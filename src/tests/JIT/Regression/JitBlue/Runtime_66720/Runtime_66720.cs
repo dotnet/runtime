@@ -3,7 +3,7 @@
 
 using System.Runtime.CompilerServices;
 
-public class Program
+public class Runtime_66720
 {
     public static int Main()
     {
