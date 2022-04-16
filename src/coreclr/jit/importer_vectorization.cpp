@@ -680,8 +680,8 @@ GenTree* Compiler::impStringEqualsOrStartsWith(bool startsWith, CORINFO_SIG_INFO
         needsNullcheck = false;
     }
 
-    int      cnsLength                  = -1;
-    char16_t str[MaxPossibleUnrollSize] = {};
+    int      cnsLength = -1;
+    char16_t str[MaxPossibleUnrollSize];
     if (cnsStr->IsStringEmptyField())
     {
         // check for fake "" first
@@ -696,7 +696,7 @@ GenTree* Compiler::impStringEqualsOrStartsWith(bool startsWith, CORINFO_SIG_INFO
             // We were unable to get the literal (e.g. dynamic context)
             return nullptr;
         }
-        JITDUMP("Trying to unroll String.Equals|StartsWith(op1, \"%ws\")...\n", str)
+        JITDUMP("Trying to unroll String.Equals|StartsWith(op1, \"cns\")...\n")
     }
 
     // Create a temp which is safe to gtClone for varStr
@@ -818,8 +818,8 @@ GenTree* Compiler::impSpanEqualsOrStartsWith(bool startsWith, CORINFO_SIG_INFO* 
         spanObj = op1;
     }
 
-    int      cnsLength                  = -1;
-    char16_t str[MaxPossibleUnrollSize] = {};
+    int      cnsLength = -1;
+    char16_t str[MaxPossibleUnrollSize];
     if (cnsStr->IsStringEmptyField())
     {
         // check for fake "" first

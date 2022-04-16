@@ -691,14 +691,20 @@ int CEEInfo::getStringLiteral (
         {
             StringObject* strObj = STRINGREFToObject(strRef);
             result = (int)strObj->GetStringLength();
-            memcpyNoGCRefs(buffer, strObj->GetBuffer(), min(bufferSize, result) * sizeof(char16_t));
+            if (buffer != NULL && bufferSize > 0)
+            {
+                memcpyNoGCRefs(buffer, strObj->GetBuffer(), min(bufferSize, result) * sizeof(char16_t));
+            }
         }
     }
     else if (!FAILED((module)->GetMDImport()->GetUserString(metaTOK, &dwCharCount, NULL, &pString)))
     {
         _ASSERTE(dwCharCount >= 0 && dwCharCount <= INT_MAX);
         result = (int)dwCharCount;
-        memcpyNoGCRefs(buffer, pString, min(bufferSize, result) * sizeof(char16_t));
+        if (buffer != NULL && bufferSize > 0)
+        {
+            memcpyNoGCRefs(buffer, pString, min(bufferSize, result) * sizeof(char16_t));
+        }
     }
 
     EE_TO_JIT_TRANSITION();

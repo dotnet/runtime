@@ -4854,9 +4854,9 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
         const int cnsIndex = static_cast<int>(asIndex->Index()->AsIntConCommon()->IconValue());
         if (cnsIndex >= 0)
         {
-            constexpr int maxStrSize      = 1024;
-            char16_t      str[maxStrSize] = {};
-            int           length          = info.compCompHnd->getStringLiteral(asIndex->Arr()->AsStrCon()->gtScpHnd,
+            const int maxStrSize = 1024;
+            char16_t  str[maxStrSize];
+            int       length = info.compCompHnd->getStringLiteral(asIndex->Arr()->AsStrCon()->gtScpHnd,
                                                             asIndex->Arr()->AsStrCon()->gtSconCPX, str, maxStrSize);
             if ((cnsIndex < length))
             {

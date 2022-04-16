@@ -6957,22 +6957,11 @@ GenTreeIntCon* Compiler::gtNewStringLiteralLength(GenTreeStrCon* node)
         return gtNewIconNode(0);
     }
 
-    constexpr int maxStrSize      = 1024;
-    char16_t      str[maxStrSize] = {};
-    int           length = info.compCompHnd->getStringLiteral(node->gtScpHnd, node->gtSconCPX, str, maxStrSize);
+    int length = info.compCompHnd->getStringLiteral(node->gtScpHnd, node->gtSconCPX, nullptr, 0);
     if (length >= 0)
     {
         GenTreeIntCon* iconNode = gtNewIconNode(length);
-
-        // str can be NULL for dynamic context
-        if (str != nullptr)
-        {
-            JITDUMP("Folded '\"%ws\".Length' to '%d'\n", str, length)
-        }
-        else
-        {
-            JITDUMP("Folded 'CNS_STR.Length' to '%d'\n", length)
-        }
+        JITDUMP("Folded 'CNS_STR.Length' to '%d'\n", length)
         return iconNode;
     }
     return nullptr;
