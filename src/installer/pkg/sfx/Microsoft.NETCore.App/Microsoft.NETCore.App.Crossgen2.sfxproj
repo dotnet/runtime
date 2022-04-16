@@ -30,7 +30,7 @@
           SkipUnchangedFiles="true" />
 
     <PropertyGroup>
-      <_TargetsToRun>DeleteAssetsJson;Restore;Publish;PublishItemsOutputGroup</_TargetsToRun>
+      <_TargetsToRun>Restore;Publish;PublishItemsOutputGroup</_TargetsToRun>
     </PropertyGroup>
 
     <MSBuild Projects="$(RepoRoot)src/coreclr/tools/aot/crossgen2/crossgen2.csproj"
