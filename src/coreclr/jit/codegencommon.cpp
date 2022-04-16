@@ -1969,6 +1969,8 @@ void CodeGen::genGenerateMachineCode()
 
     GetEmitter()->emitJumpDistBind();
 
+    genUpdateLiveRangesForTruncatedIGs();
+
 #if FEATURE_LOOP_ALIGN
     /* Perform alignment adjustments */
 
@@ -1976,6 +1978,74 @@ void CodeGen::genGenerateMachineCode()
 #endif
 
     /* The code is now complete and final; it should not change after this. */
+}
+
+void CodeGen::genUpdateLiveRangesForTruncatedIGs()
+{
+    bool     updatedGroup = false;
+    emitter* emit = GetEmitter();
+   
+    if (compiler->lvaCount > 0)
+    {
+        insGroup* ig =  emit->emitIGlist;
+        while (ig != nullptr)
+        {
+            if (ig->igFlags & IGF_UPD_ICOUNT)
+            {
+                if (varLiveKeeper->getLiveRangesCount() > 0)
+                {
+                    for (unsigned int varNum = 0; varNum < compiler->lvaCount; varNum++)
+                    {
+                        if (compiler->compMap2ILvarNum(varNum) == (unsigned int)ICorDebugInfo::UNKNOWN_ILNUM)
+                        {
+                            continue;
+                        }
+
+                        for (int rangeIndex = 0; rangeIndex < 2; rangeIndex++)
+                        {
+                            VariableLiveKeeper::LiveRangeList* liveRanges;
+                            if (rangeIndex == 0)
+                            {
+                                liveRanges = varLiveKeeper->getLiveRangesForVarForProlog(varNum);
+                            }
+                            else
+                            {
+                                liveRanges = varLiveKeeper->getLiveRangesForVarForBody(varNum);
+                            }
+    
+                            for (VariableLiveKeeper::VariableLiveRange& liveRange : *liveRanges)
+                            {
+                                if (liveRange.m_StartEmitLocation.GetIG()->igNum == ig->igNum &&
+                                    liveRange.m_StartEmitLocation.GetInsNum() > ig->igInsCnt)
+                                {
+                                    liveRange.m_StartEmitLocation.SetInsNum(ig->igInsCnt);
+                                    assert(liveRange.m_StartEmitLocation.GetInsNum() == ig->igInsCnt);
+                                    updatedGroup = true;
+                                }
+
+                                if (liveRange.m_EndEmitLocation.GetIG()->igNum == ig->igNum &&
+                                    liveRange.m_EndEmitLocation.GetInsNum() > ig->igInsCnt)
+                                {
+                                    liveRange.m_EndEmitLocation.SetInsNum(ig->igInsCnt);
+                                    assert(liveRange.m_EndEmitLocation.GetInsNum() == ig->igInsCnt);
+                                    updatedGroup = true;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                ig->igFlags ^= IGF_UPD_ICOUNT;
+            }
+    
+            ig = ig->igNext;
+        }
+    }
+
+    if (updatedGroup && verbose)
+    {
+        compiler->lvaTableDump();
+    }
 }
 
 //----------------------------------------------------------------------
@@ -7174,7 +7244,6 @@ void CodeGen::genSetScopeInfoUsingVariableRanges()
             reportRange(curLoc, curStart, curEnd);
         }
     }
-
     compiler->eeVarsCount = liveRangeIndex;
 }
 #endif // USING_VARIABLE_LIVE_RANGE

@@ -29,7 +29,6 @@ void emitLocation::CaptureLocation(emitter* emit)
 {
     ig      = emit->emitCurIG;
     codePos = emit->emitCurOffset();
-
     assert(Valid());
 }
 
@@ -48,6 +47,13 @@ UNATIVE_OFFSET emitLocation::CodeOffset(emitter* emit) const
 int emitLocation::GetInsNum() const
 {
     return emitGetInsNumFromCodePos(codePos);
+}
+
+void emitLocation::SetInsNum(int insNum)
+{
+    assert((unsigned int)insNum == emitGetInsNumFromCodePos(insNum));
+    codePos = emitGetInsNumFromCodePos(insNum) + (emitGetInsOfsFromCodePos(codePos) << 16);
+    assert(Valid());
 }
 
 // Get the instruction offset in the current instruction group, which must be a funclet prolog group.
@@ -3613,6 +3619,10 @@ void emitter::emitDispIGflags(unsigned flags)
     {
         printf(", isz");
     }
+    if (flags & IGF_UPD_ICOUNT)
+    {
+        printf(", ict");
+    }
     if (flags & IGF_EXTEND)
     {
         printf(", extend");
@@ -4172,103 +4182,108 @@ AGAIN:
 
 #ifdef TARGET_XARCH
     // try to remove unconditional jumps at the end of a group to the next group
-    
-    jmp = emitJumpList;
-    instrDescJmp* previousJmp = nullptr;
-    while (jmp)
+
     {
-        // if the jump is unconditional then it is a candidate
-        if (jmp->idInsFmt() == IF_LABEL && emitIsUncondJump(jmp) && !jmp->idjKeepLong)
+        jmp                       = emitJumpList;
+        instrDescJmp* previousJmp = nullptr;
+        while (jmp)
         {
-            // target group is not bound yet so use the cookie to fetch it
-            insGroup* targetGroup = (insGroup*)emitCodeGetCookie(jmp->idAddr()->iiaBBlabel);
-
-            // if the target group is the next instruction group
-            if (targetGroup != nullptr && jmp->idjIG->igNext == targetGroup)
+            // if the jump is unconditional then it is a candidate
+            if (jmp->idInsFmt() == IF_LABEL && emitIsUncondJump(jmp) && !jmp->idjKeepLong)
             {
-                insGroup* group = jmp->idjIG;
-                unsigned  instructionCount = group->igInsCnt;
+                // target group is not bound yet so use the cookie to fetch it
+                insGroup* targetGroup = (insGroup*)emitCodeGetCookie(jmp->idAddr()->iiaBBlabel);
 
-                if (instructionCount)
+                // if the target group is the next instruction group
+                if (targetGroup != nullptr && jmp->idjIG->igNext == targetGroup &&
+                    (targetGroup->igFlags & (IGF_EPILOG | IGF_FUNCLET_PROLOG | IGF_FUNCLET_EPILOG)) == 0)
                 {
-                    BYTE*      dataPtr               = group->igData;
-                    instrDesc* instructionDescriptor = nullptr;
-                    unsigned   foundCount            = 0;
+                    insGroup* group            = jmp->idjIG;
+                    unsigned  instructionCount = group->igInsCnt;
 
-                    do
+                    if (instructionCount > 1)
                     {
-                        instructionDescriptor = (instrDesc*)dataPtr;
-                        if (instructionDescriptor->idIns() == jmp->idIns())
+                        BYTE*      dataPtr               = group->igData;
+                        instrDesc* instructionDescriptor = nullptr;
+                        unsigned   foundCount            = 0;
+
+                        do
                         {
-                            foundCount += 1;
-                        }
-                        dataPtr += emitSizeOfInsDsc(instructionDescriptor);
-                    } while (--instructionCount && foundCount < 2);
+                            instructionDescriptor = (instrDesc*)dataPtr;
+                            if (instructionDescriptor->idIns() == jmp->idIns())
+                            {
+                                foundCount += 1;
+                            }
+                            dataPtr += emitSizeOfInsDsc(instructionDescriptor);
+                        } while (--instructionCount && foundCount < 2);
 
-                    if (foundCount == 1 && instructionDescriptor != nullptr &&
-                        instructionDescriptor->idIns() == jmp->idIns())
-                    {
-                        assert(jmp == instructionDescriptor);
-
-                        // the last instruction in the group is the only occurence of the jmp
-                        // and it jumps to the next instruction group so we don't really need it
-
-                        if (EMITVERBOSE)
+                        if (foundCount == 1 && instructionDescriptor != nullptr &&
+                            instructionDescriptor->idIns() == jmp->idIns())
                         {
-                            printf("Removing jump [%08X/%03u]\n", dspPtr(jmp), jmp->idDebugOnlyInfo()->idNum);
+                            assert(jmp == instructionDescriptor);
+
+                            // the last instruction in the group is the only occurence of the jmp
+                            // and it jumps to the next instruction group so we don't really need it
+
+                            if (EMITVERBOSE)
+                            {
+                                printf("Removing jump [%08X/%03u] in %s\n", dspPtr(jmp), jmp->idDebugOnlyInfo()->idNum,
+                                       emitComp->impInlineRoot()->info.compFullName);
+                            }
+                            
+                            UNATIVE_OFFSET sizeRemoved = instructionDescriptor->idCodeSize();
+                            
+                            // set state needed at the end of the loop in ADJUST_GROUP
+                            adjIG      = sizeRemoved;
+                            lstIG      = group;
+                            jmpRemoved = true;
+
+                            // unlink the jump
+                            if (previousJmp != nullptr)
+                            {
+                                previousJmp->idjNext = jmp->idjNext;
+                            }
+                            else
+                            {
+                                assert(jmp == emitJumpList);
+                                emitJumpList = jmp->idjNext;
+                            }
+                            jmp->idjNext = nullptr;
+
+                            // clear the instruction data
+                            //#if DEBUG
+                            //                            memset((BYTE*)instructionDescriptor, 0,
+                            //                            instructionDescriptor->idCodeSize());
+                            //#endif
+                            // remove the instruction from the group
+                            group->igInsCnt -= 1;
+                            group->igSize -= sizeRemoved;
+                            group->igFlags |= (IGF_UPD_ISZ | IGF_UPD_ICOUNT);
+                            emitTotalCodeSize -= sizeRemoved;
+
+                            // cleanup
+                            instructionDescriptor = nullptr;
+                            jmp                   = nullptr;
+
+                            // jump to adjusting the size
+                            goto ADJUST_GROUP;
                         }
-
-                        UNATIVE_OFFSET sizeRemoved = instructionDescriptor->idCodeSize();
-
-                        // set state needed at the end of the loop in ADJUST_GROUP
-                        adjIG        = sizeRemoved;
-                        lstIG        = group;
-                        jmpRemoved = true;
-
-                        // unlink the jump
-                        if (previousJmp != nullptr)
-                        {
-                            previousJmp->idjNext = jmp->idjNext;
-                        }
-                        else
-                        {
-                            assert(jmp == emitJumpList);
-                            emitJumpList = jmp->idjNext;
-                        }
-                        jmp->idjNext = nullptr;
-
-                        // clear the instruction data
-//#if DEBUG
-//                            memset((BYTE*)instructionDescriptor, 0, instructionDescriptor->idCodeSize());
-//#endif
-                        // remove the instruction from the group
-                        group->igInsCnt -= 1;
-                        group->igSize -= sizeRemoved;
-                        emitTotalCodeSize -= sizeRemoved;
-
-                        // cleanup
-                        instructionDescriptor = nullptr;
-                        jmp                   = nullptr;
-
-                        // jump to adjusting the size
-                        goto ADJUST_GROUP;
                     }
                 }
             }
 
+            previousJmp = jmp;
+            if (jmp != nullptr)
+            {
+                jmp = jmp->idjNext;
+            }
         }
 
-        previousJmp = jmp;
-        if (jmp != nullptr)
-        {
-            jmp = jmp->idjNext;
-        }
+        jmp   = nullptr;
+        lstIG = nullptr;
+        adjLJ = 0;
+        adjIG = 0;
     }
-
-    jmp = nullptr;
-    lstIG = nullptr;
-    adjLJ = 0;
-    adjIG = 0;
 #endif
 
 #if defined(TARGET_ARM)
@@ -4890,10 +4905,11 @@ AGAIN:
 
     } // end for each jump
 
-    /* Did we shorten any jumps? */
 #ifdef TARGET_XARCH
     ADJUST_GROUP:
 #endif
+
+    /* Did we shorten any jumps? */
     if (adjIG)
     {
         /* Adjust offsets of any remaining blocks */
@@ -4937,6 +4953,22 @@ AGAIN:
 #endif
 #endif
 
+#ifdef TARGET_XARCH
+        if (jmpRemoved)
+        {
+            
+            jmp_removal++;
+#ifdef DEBUG
+            if (EMITVERBOSE)
+            {
+                printf("Iterating branch removal. Iteration = %d\n", jmp_removal);
+            }
+#endif
+            jmpRemoved = false;
+            goto AGAIN;
+        }
+#endif
+
         if ((minShortExtra <= adjIG)
 #if defined(TARGET_ARM)
             || (minMediumExtra <= adjIG)
@@ -4954,21 +4986,7 @@ AGAIN:
 
             goto AGAIN;
         }
-#ifdef TARGET_XARCH
-        if (jmpRemoved)
-        {
-            
-            jmp_removal++;
-#ifdef DEBUG
-            if (EMITVERBOSE)
-            {
-                printf("Iterating branch removal. Iteration = %d\n", jmp_removal);
-            }
-#endif
-            jmpRemoved = false;
-            goto AGAIN;
-        }
-#endif 
+
     }
 #ifdef DEBUG
     if (EMIT_INSTLIST_VERBOSE)

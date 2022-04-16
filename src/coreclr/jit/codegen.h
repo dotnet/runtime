@@ -623,7 +623,7 @@ protected:
     }
 
 #endif // !FEATURE_EH_FUNCLETS
-
+    void genUpdateLiveRangesForTruncatedIGs();
     void genGeneratePrologsAndEpilogs();
 
 #if defined(DEBUG) && defined(TARGET_ARM64)
