@@ -52,7 +52,7 @@ if "%VisualStudioVersion%"=="16.0" (
 )
 if "%VisualStudioVersion%"=="17.0" (
     set __VSVersion=vs2022
-    set __PlatformToolset=v142
+    set __PlatformToolset=v143
     goto :SetVCEnvironment
 )
 
