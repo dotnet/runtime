@@ -41,5 +41,30 @@ namespace System.Formats.Tar.Tests
             using MemoryStream archive = new MemoryStream();
             Assert.Throws<DirectoryNotFoundException>(() => TarFile.ExtractToDirectory(archive, destinationDirectoryName: dirPath, overwriteFiles: false));
         }
+
+        [Fact]
+        public void ExtractEntry_ManySubfolderSegments_NoPrecedingDirectoryEntries()
+        {
+            using TempDirectory root = new TempDirectory();
+
+            string firstSegment = Path.Join(root.Path, "a");
+            string secondSegment = Path.Join(firstSegment, "b");
+            string fileWithTwoSegments = Path.Join(secondSegment, "c.txt");
+
+            using MemoryStream archive = new MemoryStream();
+            using (TarWriter writer = new TarWriter(archive, TarFormat.Ustar, leaveOpen: true))
+            {
+                // No preceding directory entries for the segments
+                UstarTarEntry entry = new UstarTarEntry(TarEntryType.RegularFile, fileWithTwoSegments);
+                writer.WriteEntry(entry);
+            }
+
+            archive.Seek(0, SeekOrigin.Begin);
+            TarFile.ExtractToDirectory(archive, root.Path, overwriteFiles: false);
+
+            Assert.True(Directory.Exists(firstSegment));
+            Assert.True(Directory.Exists(secondSegment));
+            Assert.True(File.Exists(fileWithTwoSegments));
+        }
     }
 }
