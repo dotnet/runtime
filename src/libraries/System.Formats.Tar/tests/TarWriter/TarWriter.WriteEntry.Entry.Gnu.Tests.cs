@@ -148,5 +148,84 @@ namespace System.Formats.Tar.Tests
                 VerifyFifo(fifo);
             }
         }
+
+        [Theory]
+        [InlineData(TarEntryType.RegularFile)]
+        [InlineData(TarEntryType.Directory)]
+        [InlineData(TarEntryType.SymbolicLink)]
+        [InlineData(TarEntryType.HardLink)]
+        public void Write_Long_Name(TarEntryType entryType)
+        {
+            // Name field in header only fits 100 bytes
+            string longName = new string('a', 101);
+
+            using MemoryStream archiveStream = new MemoryStream();
+            using (TarWriter writer = new TarWriter(archiveStream, TarFormat.Gnu, leaveOpen: true))
+            {
+                GnuTarEntry entry = new GnuTarEntry(entryType, longName);
+                writer.WriteEntry(entry);
+            }
+
+            archiveStream.Position = 0;
+            using (TarReader reader = new TarReader(archiveStream))
+            {
+                GnuTarEntry entry = reader.GetNextEntry() as GnuTarEntry;
+                Assert.Equal(entryType, entry.EntryType);
+                Assert.Equal(longName, entry.Name);
+            }
+        }
+
+        [Theory]
+        [InlineData(TarEntryType.SymbolicLink)]
+        [InlineData(TarEntryType.HardLink)]
+        public void Write_LongLinKName(TarEntryType entryType)
+        {
+            // LinkName field in header only fits 100 bytes
+            string longLinkName = new string('a', 101);
+
+            using MemoryStream archiveStream = new MemoryStream();
+            using (TarWriter writer = new TarWriter(archiveStream, TarFormat.Gnu, leaveOpen: true))
+            {
+                GnuTarEntry entry = new GnuTarEntry(entryType, "file.txt");
+                entry.LinkName = longLinkName;
+                writer.WriteEntry(entry);
+            }
+
+            archiveStream.Position = 0;
+            using (TarReader reader = new TarReader(archiveStream))
+            {
+                GnuTarEntry entry = reader.GetNextEntry() as GnuTarEntry;
+                Assert.Equal(entryType, entry.EntryType);
+                Assert.Equal("file.txt", entry.Name);
+                Assert.Equal(longLinkName, entry.LinkName);
+            }
+        }
+
+        [Theory]
+        [InlineData(TarEntryType.SymbolicLink)]
+        [InlineData(TarEntryType.HardLink)]
+        public void Write_LongName_And_LongLinKName(TarEntryType entryType)
+        {
+            // Both the Name and LinkName fields in header only fit 100 bytes
+            string longName = new string('a', 101);
+            string longLinkName = new string('a', 101);
+
+            using MemoryStream archiveStream = new MemoryStream();
+            using (TarWriter writer = new TarWriter(archiveStream, TarFormat.Gnu, leaveOpen: true))
+            {
+                GnuTarEntry entry = new GnuTarEntry(entryType, longName);
+                entry.LinkName = longLinkName;
+                writer.WriteEntry(entry);
+            }
+
+            archiveStream.Position = 0;
+            using (TarReader reader = new TarReader(archiveStream))
+            {
+                GnuTarEntry entry = reader.GetNextEntry() as GnuTarEntry;
+                Assert.Equal(entryType, entry.EntryType);
+                Assert.Equal(longName, entry.Name);
+                Assert.Equal(longLinkName, entry.LinkName);
+            }
+        }
     }
 }

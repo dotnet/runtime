@@ -11,14 +11,11 @@ namespace System.Formats.Tar
     // Writes header attributes of a tar archive entry.
     internal partial struct TarHeader
     {
-        private const byte SpaceChar = 0x20;
-        private const byte EqualsChar = 0x3d;
-        private const byte NewLineChar = 0xa;
         private static readonly byte[] s_paxMagic = new byte[] { 0x75, 0x73, 0x74, 0x61, 0x72, 0x0 }; // "ustar\0"
-        private static readonly byte[] s_paxVersion = new byte[] { 0x30, 0x30 }; // "00"
+        private static readonly byte[] s_paxVersion = new byte[] { TarHelpers.ZeroChar, TarHelpers.ZeroChar }; // "00"
 
-        private static readonly byte[] s_gnuMagic = new byte[] { 0x75, 0x73, 0x74, 0x61, 0x72, 0x20 }; // "ustar "
-        private static readonly byte[] s_gnuVersion = new byte[] { 0x20, 0x0 }; // " \0"
+        private static readonly byte[] s_gnuMagic = new byte[] { 0x75, 0x73, 0x74, 0x61, 0x72, TarHelpers.SpaceChar }; // "ustar "
+        private static readonly byte[] s_gnuVersion = new byte[] { TarHelpers.SpaceChar, 0x0 }; // " \0"
 
         // Extended Attribute entries have a special format in the Name field:
         // "{dirName}/PaxHeaders.{processId}/{fileName}{trailingSeparator}"
@@ -27,6 +24,9 @@ namespace System.Formats.Tar
         // Global Extended Attribute entries have a special format in the Name field:
         // "{tmpFolder}/GlobalHead.{processId}.1"
         private const string GlobalHeadFormat = "{0}/GlobalHead.{1}.1";
+
+        // Predefined text for the Name field of a GNU long metadata entry. Applies for both LongPath ('L') and LongLink ('K').
+        private const string GnuLongMetadataName = "././@LongLink";
 
         // Creates a PAX Global Extended Attributes header and writes it into the specified archive stream.
         internal static void WriteGlobalExtendedAttributesHeader(Stream archiveStream, IEnumerable<KeyValuePair<string, string>> globalExtendedAttributes)
@@ -135,6 +135,7 @@ namespace System.Formats.Tar
         }
 
         // Writes the current header as a PAX entry into the archive stream.
+        // Makes sure to add the preceding exteded attributes entry before the actual entry.
         internal void WriteAsPax(Stream archiveStream)
         {
             // First, we write the preceding extended attributes header
@@ -148,8 +149,52 @@ namespace System.Formats.Tar
             WriteAsPaxInternal(archiveStream);
         }
 
-        // Writes the current header as a GNU entry into the archive stream.
+        // Writes the current header as a Gnu entry into the archive stream.
+        // Makes sure to add the preceding LongLink and/or LongPath entries if necessary, before the actual entry.
         internal void WriteAsGnu(Stream archiveStream)
+        {
+            // First, we determine if we need a preceding LongLink, and write it if needed
+            if (_linkName.Length > FieldLengths.LinkName)
+            {
+                TarHeader longLinkHeader = GetGnuLongMetadataHeader(TarEntryType.LongLink, _linkName);
+                longLinkHeader.WriteAsGnuInternal(archiveStream);
+            }
+
+            // Second, we determine if we need a preceding LongPath, and write it if needed
+            if (_name.Length > FieldLengths.Name)
+            {
+                TarHeader longPathHeader = GetGnuLongMetadataHeader(TarEntryType.LongPath, _name);
+                longPathHeader.WriteAsGnuInternal(archiveStream);
+            }
+
+            // Third, we write this header as a normal one
+            WriteAsGnuInternal(archiveStream);
+        }
+
+        // Creates and returns a GNU long metadata header, with the specified long text written into its data stream.
+        private static TarHeader GetGnuLongMetadataHeader(TarEntryType entryType, string longText)
+        {
+            Debug.Assert((entryType is TarEntryType.LongPath && longText.Length > FieldLengths.Name) ||
+                         (entryType is TarEntryType.LongLink && longText.Length > FieldLengths.LinkName));
+
+            TarHeader longMetadataHeader = default;
+
+            longMetadataHeader._name = GnuLongMetadataName; // Same name for both longpath or longlink
+            longMetadataHeader._mode = (int)TarHelpers.DefaultMode;
+            longMetadataHeader._uid = 0;
+            longMetadataHeader._gid = 0;
+            longMetadataHeader._mTime = DateTimeOffset.MinValue; // 0
+            longMetadataHeader._typeFlag = entryType;
+
+            longMetadataHeader._dataStream = new MemoryStream();
+            longMetadataHeader._dataStream.Write(Encoding.UTF8.GetBytes(longText));
+            longMetadataHeader._dataStream.Seek(0, SeekOrigin.Begin); // Ensure it gets written into the archive from the beginning
+
+            return longMetadataHeader;
+        }
+
+        // Writes the current header as a GNU entry into the archive stream.
+        internal void WriteAsGnuInternal(Stream archiveStream)
         {
             byte[] nameBytes = new byte[FieldLengths.Name];
             byte[] modeBytes = new byte[FieldLengths.Mode];
@@ -524,11 +569,11 @@ namespace System.Formats.Tar
             List<byte> bytesList = new();
 
             bytesList.AddRange(finalTotalCharCountBytes);
-            bytesList.Add(SpaceChar);
+            bytesList.Add(TarHelpers.SpaceChar);
             bytesList.AddRange(keyBytes);
-            bytesList.Add(EqualsChar);
+            bytesList.Add(TarHelpers.EqualsChar);
             bytesList.AddRange(valueBytes);
-            bytesList.Add(NewLineChar);
+            bytesList.Add(TarHelpers.NewLineChar);
 
             Debug.Assert(bytesList.Count == (realTotalCharCount + suffixByteCount));
 
@@ -542,12 +587,12 @@ namespace System.Formats.Tar
         {
             // The checksum field is also counted towards the total sum
             // but as an array filled with spaces
-            checksum += SpaceChar * 8;
+            checksum += TarHelpers.SpaceChar * 8;
 
             byte[] converted = TarHelpers.GetAsciiBytes(TarHelpers.ConvertDecimalToOctal(checksum));
 
             // Checksum field ends with a null and a space
-            destination[^1] = SpaceChar; // ' '
+            destination[^1] = TarHelpers.SpaceChar; // ' '
             destination[^2] = 0; // '\0'
 
             int i = destination.Length - 3;
@@ -562,7 +607,7 @@ namespace System.Formats.Tar
                 }
                 else
                 {
-                    destination[i] = 0x30; // Leading zero chars '0'
+                    destination[i] = TarHelpers.ZeroChar; // Leading zero chars '0'
                 }
                 i--;
             }
@@ -616,7 +661,7 @@ namespace System.Formats.Tar
                 }
                 else
                 {
-                    destination[i] = ZeroChar; // leading zeros
+                    destination[i] = TarHelpers.ZeroChar; // leading zeros
                 }
                 checksum += destination[i];
                 i--;

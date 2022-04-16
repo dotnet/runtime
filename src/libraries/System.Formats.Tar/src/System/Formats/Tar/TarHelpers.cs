@@ -13,6 +13,11 @@ namespace System.Formats.Tar
         internal const short RecordSize = 512;
         internal const int MaxBufferLength = 4096;
 
+        internal const int ZeroChar = 0x30;
+        internal const byte SpaceChar = 0x20;
+        internal const byte EqualsChar = 0x3d;
+        internal const byte NewLineChar = 0xa;
+
         internal const TarFileMode DefaultMode = // 644 in octal
             TarFileMode.UserRead | TarFileMode.UserWrite | TarFileMode.GroupRead | TarFileMode.OtherRead;
 

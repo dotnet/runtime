@@ -15,8 +15,11 @@ namespace System.Formats.Tar
     // Documentation: https://www.freebsd.org/cgi/man.cgi?query=tar&sektion=5
     internal partial struct TarHeader
     {
+        // POSIX fields (shared by Ustar and PAX)
         private const string UstarMagic = "ustar\0";
         private const string UstarVersion = "00";
+
+        // GNU-specific fields
         private const string GnuMagic = "ustar ";
         private const string GnuVersion = " \0";
 
@@ -35,9 +38,6 @@ namespace System.Formats.Tar
         private const string PaxEaDevMajor = "devmajor";
         private const string PaxEaDevMinor = "devminor";
 
-        private const int ZeroChar = 0x30;
-
-        //private TarBlocks _blocks;
         internal Stream? _dataStream;
 
         // Position in the stream where the data ends in this header.

@@ -260,60 +260,24 @@ namespace System.Formats.Tar
             }
 
             // If a metadata typeflag entry is retrieved, handle it here, then read the next entry
-            if (header._typeFlag is TarEntryType.ExtendedAttributes or TarEntryType.LongLink or TarEntryType.LongPath)
+
+            // PAX metadata
+            if (header._typeFlag is TarEntryType.ExtendedAttributes)
             {
-                TarHeader actualEntryHeader = default;
-
-                // We should know by now the format of the archive based on the first retrieved entry
-                actualEntryHeader._format = header._format;
-
-                // Now get the actual entry
-                if (!actualEntryHeader.TryGetNextHeader(_archiveStream, copyData))
+                if (!TryProcessExtendedAttributesHeader(header, copyData, out TarHeader mainHeader))
                 {
                     return false;
                 }
-
-                // Should never read a GEA entry at this point
-                if (header._typeFlag == TarEntryType.GlobalExtendedAttributes)
+                header = mainHeader;
+            }
+            // GNU metadata
+            else if (header._typeFlag is TarEntryType.LongLink or TarEntryType.LongPath)
+            {
+                if (!TryProcessGnuMetadataHeader(header, copyData, out TarHeader mainHeader))
                 {
-                    throw new FormatException(SR.TarTooManyGlobalExtendedAttributesEntries);
+                    return false;
                 }
-
-                // Can't have two metadata entries in a row, no matter the archive format
-                if (actualEntryHeader._typeFlag is TarEntryType.ExtendedAttributes or TarEntryType.LongLink or TarEntryType.LongPath)
-                {
-                    throw new FormatException(string.Format(SR.TarUnexpectedMetadataEntry, actualEntryHeader._typeFlag, header._typeFlag));
-                }
-
-                // Handle metadata entry types
-                switch (header._typeFlag)
-                {
-                    case TarEntryType.ExtendedAttributes: // pax
-                        Debug.Assert(header._extendedAttributes != null);
-                        if (GlobalExtendedAttributes != null)
-                        {
-                            // First, replace some of the entry's standard attributes with the global ones
-                            actualEntryHeader.ReplaceNormalAttributesWithGlobalExtended(GlobalExtendedAttributes);
-                        }
-                        // Then replace all the standard attributes with the extended attributes ones,
-                        // overwriting the previous global replacements if needed
-                        actualEntryHeader.ReplaceNormalAttributesWithExtended(header._extendedAttributes);
-                        break;
-
-                    case TarEntryType.LongLink: // gnu
-                        Debug.Assert(header._linkName != null);
-                        // Replace with longer, complete path
-                        actualEntryHeader._linkName = header._linkName;
-                        break;
-
-                    case TarEntryType.LongPath: // gnu
-                        Debug.Assert(header._name != null);
-                        // Replace with longer, complete path
-                        actualEntryHeader._name = header._name;
-                        break;
-                }
-
-                header = actualEntryHeader;
+                header = mainHeader;
             }
 
             // Common fields should always acquire a value
@@ -326,6 +290,118 @@ namespace System.Formats.Tar
             header._gName ??= string.Empty;
             header._uName ??= string.Empty;
             header._prefix ??= string.Empty;
+
+            return true;
+        }
+
+        private bool TryProcessExtendedAttributesHeader(TarHeader firstHeader, bool copyData, out TarHeader secondHeader)
+        {
+            secondHeader = default;
+            secondHeader._format = TarFormat.Pax;
+
+            // Now get the actual entry
+            if (!secondHeader.TryGetNextHeader(_archiveStream, copyData))
+            {
+                return false;
+            }
+
+            // Should never read a GEA entry at this point
+            if (secondHeader._typeFlag == TarEntryType.GlobalExtendedAttributes)
+            {
+                throw new FormatException(SR.TarTooManyGlobalExtendedAttributesEntries);
+            }
+
+            // Can't have two metadata entries in a row, no matter the archive format
+            if (secondHeader._typeFlag is TarEntryType.ExtendedAttributes)
+            {
+                throw new FormatException(string.Format(SR.TarUnexpectedMetadataEntry, TarEntryType.ExtendedAttributes, TarEntryType.ExtendedAttributes));
+            }
+
+            Debug.Assert(firstHeader._extendedAttributes != null);
+            if (GlobalExtendedAttributes != null)
+            {
+                // First, replace some of the entry's standard attributes with the global ones
+                secondHeader.ReplaceNormalAttributesWithGlobalExtended(GlobalExtendedAttributes);
+            }
+            // Then replace all the standard attributes with the extended attributes ones,
+            // overwriting the previous global replacements if needed
+            secondHeader.ReplaceNormalAttributesWithExtended(firstHeader._extendedAttributes);
+
+            return true;
+        }
+
+        private bool TryProcessGnuMetadataHeader(TarHeader header, bool copyData, out TarHeader finalHeader)
+        {
+            finalHeader = default;
+
+            TarHeader secondHeader = default;
+            secondHeader._format = TarFormat.Gnu;
+
+            // Get the second entry, which is the actual entry
+            if (!secondHeader.TryGetNextHeader(_archiveStream, copyData))
+            {
+                return false;
+            }
+
+            // Can't have two identical metadata entries in a row
+            if (secondHeader._typeFlag == header._typeFlag)
+            {
+                throw new FormatException(string.Format(SR.TarUnexpectedMetadataEntry, secondHeader._typeFlag, header._typeFlag));
+            }
+
+            // It's possible to have the two different metadata entries in a row
+            if ((header._typeFlag is TarEntryType.LongLink && secondHeader._typeFlag is TarEntryType.LongPath) ||
+                (header._typeFlag is TarEntryType.LongPath && secondHeader._typeFlag is TarEntryType.LongLink))
+            {
+                TarHeader thirdHeader = default;
+                thirdHeader._format = TarFormat.Gnu;
+
+                // Get the third entry, which is the actual entry
+                if (!thirdHeader.TryGetNextHeader(_archiveStream, copyData))
+                {
+                    return false;
+                }
+
+                // Can't have three GNU metadata entries in a row
+                if (thirdHeader._typeFlag is TarEntryType.LongLink or TarEntryType.LongPath)
+                {
+                    throw new FormatException(string.Format(SR.TarUnexpectedMetadataEntry, thirdHeader._typeFlag, secondHeader._typeFlag));
+                }
+
+                if (header._typeFlag is TarEntryType.LongLink)
+                {
+                    Debug.Assert(header._linkName != null);
+                    Debug.Assert(secondHeader._name != null);
+
+                    thirdHeader._linkName = header._linkName;
+                    thirdHeader._name = secondHeader._name;
+                }
+                else if (header._typeFlag is TarEntryType.LongPath)
+                {
+                    Debug.Assert(header._name != null);
+                    Debug.Assert(secondHeader._linkName != null);
+                    thirdHeader._name = header._name;
+                    thirdHeader._linkName = secondHeader._linkName;
+                }
+
+                finalHeader = thirdHeader;
+            }
+            // Only one metadata entry was found
+            else
+            {
+                if (header._typeFlag is TarEntryType.LongLink)
+                {
+                    Debug.Assert(header._linkName != null);
+                    secondHeader._linkName = header._linkName;
+                }
+                else if (header._typeFlag is TarEntryType.LongPath)
+                {
+                    Debug.Assert(header._name != null);
+                    secondHeader._name = header._name;
+                }
+
+                finalHeader = secondHeader;
+            }
 
             return true;
         }
