@@ -46,25 +46,4 @@
   <Import Project="$(CoreCLRBuildIntegrationDir)Microsoft.DotNet.ILCompiler.targets"
           Condition="'$(NativeAotSupported)' == 'true' and '$(RunningPublish)' == 'true'" />
 
-  <Target Name="DeleteAssetsJson" Condition="'$(DotNetBuildFromSource)' == 'true'">
-    <Message Importance="high" Text="Deleting project.assets.json" />
-    <Delete Files="$(ProjectAssetsFile)" />
-    <Message Importance="high" Text="Continuing with RID $(RuntimeIdentifier)" />
-  </Target>
-
-  <Target Name="PrintAssetsJson" Condition="'$(DotNetBuildFromSource)' == 'true'" 
-    BeforeTargets="ResolvePackageAssets">
-    <Message Importance="high" Text="FileContents: $(ProjectAssetsFile)" />
-    <Exec Command="cat $(ProjectAssetsFile)" />
-  </Target>
-
-  <Target Name="PrintAssetsJson2" Condition="'$(DotNetBuildFromSource)' == 'true'" 
-    AfterTargets="Resolve">
-    <ReadLinesFromFile File="$(ProjectAssetsFile)">
-      <Output TaskParameter="Lines" ItemName="_LinesFromFile" />
-    </ReadLinesFromFile>
-
-    <Message Importance="high" Text="FileContents: $(ProjectAssetsFile)" />
-    <Exec Command="cat $(ProjectAssetsFile)" />
-  </Target>
 </Project>
