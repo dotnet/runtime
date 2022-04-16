@@ -695,14 +695,8 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token, MonoError 
 		return NULL;
 	}
 
-#if 0  // FIXME this causes an issue when AOT compiling using llvm: 
-	if (mono_is_corlib_image (klass->image) && !strcmp (nspace, "System.Numerics")) {
-		/* The JIT can't handle SIMD types with != 16 size yet */
-		//if (!strcmp (name, "Vector2") || !strcmp (name, "Vector3") || !strcmp (name, "Vector4"))
-		if (!strcmp (name, "Vector4"))
-			klass->simd_type = 1;
-	}
-#endif
+	if (mono_get_runtime_callbacks ()->init_class)
+		mono_get_runtime_callbacks ()->init_class (klass);
 
 	// compute is_byreflike
 	if (m_class_is_valuetype (klass))
@@ -877,12 +871,8 @@ mono_class_create_generic_inst (MonoGenericClass *gclass)
 	klass->enumtype = gklass->enumtype;
 	klass->valuetype = gklass->valuetype;
 
-	if (mono_is_corlib_image (gklass->image) &&
-		(!strcmp (gklass->name, "Vector`1") || !strcmp (gklass->name, "Vector64`1") || !strcmp (gklass->name, "Vector128`1") || !strcmp (gklass->name, "Vector256`1"))) {
-		MonoType *etype = gclass->context.class_inst->type_argv [0];
-		if (mono_type_is_primitive (etype) && etype->type != MONO_TYPE_CHAR && etype->type != MONO_TYPE_BOOLEAN)
-			klass->simd_type = 1;
-	}
+	if (mono_get_runtime_callbacks ()->init_class)
+		mono_get_runtime_callbacks ()->init_class (klass);
 
 	klass->is_array_special_interface = gklass->is_array_special_interface;
 
