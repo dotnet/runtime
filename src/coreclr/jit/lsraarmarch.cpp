@@ -205,11 +205,6 @@ int LinearScan::BuildCall(GenTreeCall* call)
         buildInternalIntRegisterDefForNode(call);
     }
 
-    if (call->NeedsNullCheck())
-    {
-        buildInternalIntRegisterDefForNode(call);
-    }
-
 #endif // TARGET_ARM
 
     RegisterType registerType = call->TypeGet();

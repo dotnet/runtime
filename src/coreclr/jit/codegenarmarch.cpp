@@ -3182,17 +3182,17 @@ void CodeGen::genCall(GenTreeCall* call)
         }
     }
 
+    GenTree* target = getCallTarget(call, nullptr);
+
+    if (target != nullptr)
+    {
+        genConsumeReg(target);
+    }
+
     // Insert a null check on "this" pointer if asked.
     if (call->NeedsNullCheck())
     {
-        const regNumber regThis = genGetThisArgReg(call);
-
-#if defined(TARGET_ARM)
-        const regNumber tmpReg = call->ExtractTempReg();
-        GetEmitter()->emitIns_R_R_I(INS_ldr, EA_4BYTE, tmpReg, regThis, 0);
-#elif defined(TARGET_ARM64)
-        GetEmitter()->emitIns_R_R_I(INS_ldr, EA_4BYTE, REG_ZR, regThis, 0);
-#endif // TARGET*
+        GetEmitter()->emitIns_R_R_I(INS_ldr, EA_4BYTE, REG_LR, genGetThisArgReg(call), 0);
     }
 
     // If fast tail call, then we are done here, we just have to load the call
@@ -3200,16 +3200,10 @@ void CodeGen::genCall(GenTreeCall* call)
     // into a volatile register that won't be restored by epilog sequence.
     if (call->IsFastTailCall())
     {
-        GenTree* target = getCallTarget(call, nullptr);
-
-        if (target != nullptr)
-        {
-            // Indirect fast tail calls materialize call target either in gtControlExpr or in gtCallAddr.
-            genConsumeReg(target);
-        }
 #ifdef FEATURE_READYTORUN
-        else if (call->IsR2ROrVirtualStubRelativeIndir())
+        if (call->IsR2ROrVirtualStubRelativeIndir())
         {
+            assert(target == nullptr);
             assert(((call->IsR2RRelativeIndir()) && (call->gtEntryPoint.accessType == IAT_PVALUE)) ||
                    ((call->IsVirtualStubRelativeIndir()) && (call->gtEntryPoint.accessType == IAT_VALUE)));
             assert(call->gtControlExpr == nullptr);
@@ -3430,14 +3424,6 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
     {
         // A call target can not be a contained indirection
         assert(!target->isContainedIndir());
-
-        // For fast tailcall we have already consumed the target. We ensure in
-        // RA that the target was allocated into a volatile register that will
-        // not be messed up by epilog sequence.
-        if (!call->IsFastTailCall())
-        {
-            genConsumeReg(target);
-        }
 
         // We have already generated code for gtControlExpr evaluating it into a register.
         // We just need to emit "call reg" in this case.
