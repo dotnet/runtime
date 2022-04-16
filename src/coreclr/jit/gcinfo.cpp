@@ -257,7 +257,7 @@ GCInfo::WriteBarrierForm GCInfo::gcIsWriteBarrierCandidate(GenTreeStoreInd* stor
     if (wbf == WBF_BarrierUnknown)
     {
         assert(store->Addr()->TypeIs(TYP_BYREF));
-        wbf = ((store->gtFlags & GTF_IND_TGTANYWHERE) == 0) ? WBF_BarrierUnchecked : WBF_BarrierChecked;
+        wbf = ((store->gtFlags & GTF_IND_TGT_HEAP) != 0) ? WBF_BarrierUnchecked : WBF_BarrierChecked;
     }
 
     return wbf;
@@ -277,7 +277,9 @@ GCInfo::WriteBarrierForm GCInfo::gcWriteBarrierFormFromTargetAddress(GenTree* tg
     // If we store through an int to a GC_REF field, we'll assume that needs to use a checked barriers.
     if (tgtAddr->TypeGet() == TYP_I_IMPL)
     {
-        return GCInfo::WBF_BarrierChecked; // Why isn't this GCInfo::WBF_BarrierUnknown?
+        // TODO-CQ: return "WBF_BarrierUnknown" here and let the caller check "GTF_IND_TGT_HEAP".
+        // This will result in using an unchecked barrier for "STOREIND(static-field-addr, ...)".
+        return GCInfo::WBF_BarrierChecked;
     }
 
     // Otherwise...

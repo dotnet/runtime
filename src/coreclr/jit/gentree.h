@@ -489,6 +489,7 @@ enum GenTreeFlags : unsigned int
 
     GTF_FLD_VOLATILE            = 0x40000000, // GT_FIELD/GT_CLS_VAR -- same as GTF_IND_VOLATILE
     GTF_FLD_INITCLASS           = 0x20000000, // GT_FIELD/GT_CLS_VAR -- field access requires preceding class/static init helper
+    GTF_FLD_TGT_HEAP            = 0x10000000, // GT_FIELD/GT_CLS_VAR -- same as GTF_IND_TGT_HEAP
 
     GTF_INX_RNGCHK              = 0x80000000, // GT_INDEX/GT_INDEX_ADDR -- the array reference should be range-checked.
     GTF_INX_STRING_LAYOUT       = 0x40000000, // GT_INDEX -- this uses the special string array layout
@@ -498,7 +499,7 @@ enum GenTreeFlags : unsigned int
     GTF_IND_VOLATILE            = 0x40000000, // GT_IND   -- the load or store must use volatile sematics (this is a nop on X86)
     GTF_IND_NONFAULTING         = 0x20000000, // Operations for which OperIsIndir() is true  -- An indir that cannot fault.
                                               // Same as GTF_ARRLEN_NONFAULTING.
-    GTF_IND_TGTANYWHERE         = 0x10000000, // GT_IND   -- the target could be anywhere
+    GTF_IND_TGT_HEAP            = 0x10000000, // GT_IND   -- the target is on the heap
     GTF_IND_TLS_REF             = 0x08000000, // GT_IND   -- the target is accessed via TLS
     GTF_IND_ASG_LHS             = 0x04000000, // GT_IND   -- this GT_IND node is (the effective val) of the LHS of an
                                               //             assignment; don't evaluate it independently.
@@ -513,11 +514,12 @@ enum GenTreeFlags : unsigned int
     GTF_IND_INVARIANT           = 0x01000000, // GT_IND   -- the target is invariant (a prejit indirection)
     GTF_IND_NONNULL             = 0x00400000, // GT_IND   -- the indirection never returns null (zero)
 
-    GTF_IND_FLAGS = GTF_IND_VOLATILE | GTF_IND_TGTANYWHERE | GTF_IND_NONFAULTING | GTF_IND_TLS_REF |
-                    GTF_IND_UNALIGNED | GTF_IND_INVARIANT | GTF_IND_NONNULL | GTF_IND_TGT_NOT_HEAP,
+    GTF_IND_FLAGS = GTF_IND_VOLATILE | GTF_IND_NONFAULTING | GTF_IND_TLS_REF | GTF_IND_UNALIGNED | GTF_IND_INVARIANT |
+                    GTF_IND_NONNULL | GTF_IND_TGT_NOT_HEAP | GTF_IND_TGT_HEAP,
 
     GTF_CLS_VAR_VOLATILE        = 0x40000000, // GT_FIELD/GT_CLS_VAR -- same as GTF_IND_VOLATILE
     GTF_CLS_VAR_INITCLASS       = 0x20000000, // GT_FIELD/GT_CLS_VAR -- same as GTF_FLD_INITCLASS
+    GTF_CLS_VAR_TGT_HEAP        = 0x10000000, // GT_FIELD/GT_CLS_VAR -- same as GTF_IND_TGT_HEAP
     GTF_CLS_VAR_ASG_LHS         = 0x04000000, // GT_CLS_VAR   -- this GT_CLS_VAR node is (the effective val) of the LHS
                                               //                 of an assignment; don't evaluate it independently.
 
