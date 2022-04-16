@@ -2620,6 +2620,7 @@ namespace System.Runtime.Intrinsics
         /// <param name="vector">The input vector from which values are selected.</param>
         /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
         /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
+        [Intrinsic]
         public static Vector64<byte> Shuffle(Vector64<byte> vector, Vector64<byte> indices)
         {
             Unsafe.SkipInit(out Vector64<byte> result);
@@ -2643,6 +2644,7 @@ namespace System.Runtime.Intrinsics
         /// <param name="vector">The input vector from which values are selected.</param>
         /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
         /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
+        [Intrinsic]
         [CLSCompliant(false)]
         public static Vector64<sbyte> Shuffle(Vector64<sbyte> vector, Vector64<sbyte> indices)
         {
@@ -2667,6 +2669,7 @@ namespace System.Runtime.Intrinsics
         /// <param name="vector">The input vector from which values are selected.</param>
         /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
         /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
+        [Intrinsic]
         public static Vector64<short> Shuffle(Vector64<short> vector, Vector64<short> indices)
         {
             Unsafe.SkipInit(out Vector64<short> result);
@@ -2690,6 +2693,7 @@ namespace System.Runtime.Intrinsics
         /// <param name="vector">The input vector from which values are selected.</param>
         /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
         /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
+        [Intrinsic]
         [CLSCompliant(false)]
         public static Vector64<ushort> Shuffle(Vector64<ushort> vector, Vector64<ushort> indices)
         {
@@ -2714,6 +2718,7 @@ namespace System.Runtime.Intrinsics
         /// <param name="vector">The input vector from which values are selected.</param>
         /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
         /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
+        [Intrinsic]
         public static Vector64<int> Shuffle(Vector64<int> vector, Vector64<int> indices)
         {
             Unsafe.SkipInit(out Vector64<int> result);
@@ -2737,6 +2742,7 @@ namespace System.Runtime.Intrinsics
         /// <param name="vector">The input vector from which values are selected.</param>
         /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
         /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
+        [Intrinsic]
         [CLSCompliant(false)]
         public static Vector64<uint> Shuffle(Vector64<uint> vector, Vector64<uint> indices)
         {
@@ -2761,6 +2767,7 @@ namespace System.Runtime.Intrinsics
         /// <param name="vector">The input vector from which values are selected.</param>
         /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
         /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
+        [Intrinsic]
         public static Vector64<float> Shuffle(Vector64<float> vector, Vector64<int> indices)
         {
             Unsafe.SkipInit(out Vector64<float> result);

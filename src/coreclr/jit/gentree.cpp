@@ -21416,6 +21416,27 @@ GenTree* Compiler::gtNewSimdNarrowNode(var_types   type,
 #endif // !TARGET_XARCH && !TARGET_ARM64
 }
 
+GenTree* Compiler::gtNewSimdShuffleNode(var_types   type,
+                                        GenTree*    op1,
+                                        GenTree*    op2,
+                                        CorInfoType simdBaseJitType,
+                                        unsigned    simdSize,
+                                        bool        isSimdAsHWIntrinsic)
+{
+    return nullptr;
+}
+
+GenTree* Compiler::gtNewSimdShuffleNode(var_types   type,
+                                        GenTree*    op1,
+                                        GenTree*    op2,
+                                        GenTree*    op3,
+                                        CorInfoType simdBaseJitType,
+                                        unsigned    simdSize,
+                                        bool        isSimdAsHWIntrinsic)
+{
+    return nullptr;
+}
+
 GenTree* Compiler::gtNewSimdSqrtNode(
     var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize, bool isSimdAsHWIntrinsic)
 {

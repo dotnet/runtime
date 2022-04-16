@@ -3555,6 +3555,7 @@ namespace System.Runtime.Intrinsics
         /// <param name="vector">The input vector from which values are selected.</param>
         /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
         /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
+        [Intrinsic]
         public static Vector256<byte> Shuffle(Vector256<byte> vector, Vector256<byte> indices)
         {
             Unsafe.SkipInit(out Vector256<byte> result);
@@ -3578,6 +3579,7 @@ namespace System.Runtime.Intrinsics
         /// <param name="vector">The input vector from which values are selected.</param>
         /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
         /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
+        [Intrinsic]
         [CLSCompliant(false)]
         public static Vector256<sbyte> Shuffle(Vector256<sbyte> vector, Vector256<sbyte> indices)
         {
@@ -3602,6 +3604,7 @@ namespace System.Runtime.Intrinsics
         /// <param name="vector">The input vector from which values are selected.</param>
         /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
         /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
+        [Intrinsic]
         public static Vector256<short> Shuffle(Vector256<short> vector, Vector256<short> indices)
         {
             Unsafe.SkipInit(out Vector256<short> result);
@@ -3625,6 +3628,7 @@ namespace System.Runtime.Intrinsics
         /// <param name="vector">The input vector from which values are selected.</param>
         /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
         /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
+        [Intrinsic]
         [CLSCompliant(false)]
         public static Vector256<ushort> Shuffle(Vector256<ushort> vector, Vector256<ushort> indices)
         {
@@ -3649,6 +3653,7 @@ namespace System.Runtime.Intrinsics
         /// <param name="vector">The input vector from which values are selected.</param>
         /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
         /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
+        [Intrinsic]
         public static Vector256<int> Shuffle(Vector256<int> vector, Vector256<int> indices)
         {
             Unsafe.SkipInit(out Vector256<int> result);
@@ -3672,6 +3677,7 @@ namespace System.Runtime.Intrinsics
         /// <param name="vector">The input vector from which values are selected.</param>
         /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
         /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
+        [Intrinsic]
         [CLSCompliant(false)]
         public static Vector256<uint> Shuffle(Vector256<uint> vector, Vector256<uint> indices)
         {
@@ -3696,6 +3702,7 @@ namespace System.Runtime.Intrinsics
         /// <param name="vector">The input vector from which values are selected.</param>
         /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
         /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
+        [Intrinsic]
         public static Vector256<float> Shuffle(Vector256<float> vector, Vector256<int> indices)
         {
             Unsafe.SkipInit(out Vector256<float> result);
@@ -3719,6 +3726,7 @@ namespace System.Runtime.Intrinsics
         /// <param name="vector">The input vector from which values are selected.</param>
         /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
         /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
+        [Intrinsic]
         public static Vector256<long> Shuffle(Vector256<long> vector, Vector256<long> indices)
         {
             Unsafe.SkipInit(out Vector256<long> result);
@@ -3742,6 +3750,7 @@ namespace System.Runtime.Intrinsics
         /// <param name="vector">The input vector from which values are selected.</param>
         /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
         /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
+        [Intrinsic]
         [CLSCompliant(false)]
         public static Vector256<ulong> Shuffle(Vector256<ulong> vector, Vector256<ulong> indices)
         {
@@ -3766,6 +3775,7 @@ namespace System.Runtime.Intrinsics
         /// <param name="vector">The input vector from which values are selected.</param>
         /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
         /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
+        [Intrinsic]
         public static Vector256<double> Shuffle(Vector256<double> vector, Vector256<long> indices)
         {
             Unsafe.SkipInit(out Vector256<double> result);

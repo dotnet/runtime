@@ -1878,6 +1878,12 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_Vector128_Shuffle:
+        case NI_Vector256_Shuffle:
+        {
+            break;
+        }
+
         case NI_Vector128_Sqrt:
         case NI_Vector256_Sqrt:
         {
