@@ -98,6 +98,20 @@ namespace System.Runtime.InteropServices
     {
         public AllowReversePInvokeCallsAttribute() { }
     }
+    [System.CLSCompliant(false)]
+    [System.Runtime.InteropServices.CustomTypeMarshaller(typeof(string), BufferSize = 0x100,
+        Features = System.Runtime.InteropServices.CustomTypeMarshallerFeatures.UnmanagedResources
+            | System.Runtime.InteropServices.CustomTypeMarshallerFeatures.CallerAllocatedBuffer
+            | System.Runtime.InteropServices.CustomTypeMarshallerFeatures.TwoStageMarshalling )]
+    public unsafe ref struct AnsiStringMarshaller
+    {
+        public AnsiStringMarshaller(string? str) { }
+        public AnsiStringMarshaller(string? str, System.Span<byte> buffer) { }
+        public byte* ToNativeValue() { throw null; }
+        public void FromNativeValue(byte* value) { }
+        public string? ToManaged() { throw null; }
+        public void FreeNative() { }
+    }
     public readonly partial struct ArrayWithOffset : System.IEquatable<System.Runtime.InteropServices.ArrayWithOffset>
     {
         private readonly object _dummy;
@@ -948,9 +962,9 @@ namespace System.Runtime.InteropServices
         public static System.Runtime.InteropServices.NFloat Parse(string s, System.IFormatProvider? provider) { throw null; }
         public override string ToString() { throw null; }
         public string ToString(System.IFormatProvider? provider) { throw null; }
-        public string ToString(string? format) { throw null; }
-        public string ToString(string? format, System.IFormatProvider? provider) { throw null; }
-        public bool TryFormat(System.Span<char> destination, out int charsWritten, System.ReadOnlySpan<char> format = default(System.ReadOnlySpan<char>), System.IFormatProvider? provider = null) { throw null; }
+        public string ToString([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] string? format) { throw null; }
+        public string ToString([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] string? format, System.IFormatProvider? provider) { throw null; }
+        public bool TryFormat(System.Span<char> destination, out int charsWritten, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] System.ReadOnlySpan<char> format = default(System.ReadOnlySpan<char>), System.IFormatProvider? provider = null) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.Runtime.InteropServices.NFloat result) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> s, out System.Runtime.InteropServices.NFloat result) { throw null; }
         public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.Runtime.InteropServices.NFloat result) { throw null; }
@@ -1280,6 +1294,35 @@ namespace System.Runtime.InteropServices
         public UnmanagedCallersOnlyAttribute() { }
         public System.Type[]? CallConvs;
         public string? EntryPoint;
+    }
+    [System.CLSCompliant(false)]
+    [System.Runtime.InteropServices.CustomTypeMarshaller(typeof(string), BufferSize = 0x100,
+        Features = System.Runtime.InteropServices.CustomTypeMarshallerFeatures.UnmanagedResources
+            | System.Runtime.InteropServices.CustomTypeMarshallerFeatures.CallerAllocatedBuffer
+            | System.Runtime.InteropServices.CustomTypeMarshallerFeatures.TwoStageMarshalling )]
+    public unsafe ref struct Utf8StringMarshaller
+    {
+        public Utf8StringMarshaller(string? str) { }
+        public Utf8StringMarshaller(string? str, System.Span<byte> buffer) { }
+        public byte* ToNativeValue() { throw null; }
+        public void FromNativeValue(byte* value) { }
+        public string? ToManaged() { throw null; }
+        public void FreeNative() { }
+    }
+    [System.CLSCompliant(false)]
+    [System.Runtime.InteropServices.CustomTypeMarshaller(typeof(string), BufferSize = 0x100,
+        Features = System.Runtime.InteropServices.CustomTypeMarshallerFeatures.UnmanagedResources
+            | System.Runtime.InteropServices.CustomTypeMarshallerFeatures.CallerAllocatedBuffer
+            | System.Runtime.InteropServices.CustomTypeMarshallerFeatures.TwoStageMarshalling )]
+    public unsafe ref struct Utf16StringMarshaller
+    {
+        public Utf16StringMarshaller(string? str) { }
+        public Utf16StringMarshaller(string? str, System.Span<ushort> buffer) { }
+        public ref ushort GetPinnableReference() { throw null; }
+        public ushort* ToNativeValue() { throw null; }
+        public void FromNativeValue(ushort* value) { }
+        public string? ToManaged() { throw null; }
+        public void FreeNative() { }
     }
 }
 namespace System.Runtime.InteropServices.ComTypes

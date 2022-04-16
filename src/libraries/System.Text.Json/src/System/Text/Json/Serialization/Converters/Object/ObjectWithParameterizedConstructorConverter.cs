@@ -69,7 +69,7 @@ namespace System.Text.Json.Serialization.Converters
 
                         state.Current.JsonPropertyName = propertyNameArray;
                         state.Current.JsonPropertyInfo = jsonPropertyInfo;
-                        state.Current.NumberHandling = jsonPropertyInfo.NumberHandling;
+                        state.Current.NumberHandling = jsonPropertyInfo.EffectiveNumberHandling;
 
                         bool useExtensionProperty = dataExtKey != null;
 
@@ -505,7 +505,11 @@ namespace System.Text.Json.Serialization.Converters
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void BeginRead(ref ReadStack state, ref Utf8JsonReader reader, JsonSerializerOptions options)
         {
-            if (state.Current.JsonTypeInfo.ParameterCount != state.Current.JsonTypeInfo.ParameterCache!.Count)
+            JsonTypeInfo jsonTypeInfo = state.Current.JsonTypeInfo;
+
+            jsonTypeInfo.ValidateCanBeUsedForDeserialization();
+
+            if (jsonTypeInfo.ParameterCount != jsonTypeInfo.ParameterCache!.Count)
             {
                 ThrowHelper.ThrowInvalidOperationException_ConstructorParameterIncompleteBinding(TypeToConvert);
             }

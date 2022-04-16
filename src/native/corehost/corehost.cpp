@@ -9,6 +9,7 @@
 #include "trace.h"
 #include "utils.h"
 #include "hostfxr_resolver.h"
+#include <cinttypes>
 
 #if defined(FEATURE_APPHOST)
 #include "bundle_marker.h"
@@ -200,7 +201,7 @@ int exe_start(const int argc, const pal::char_t* argv[])
             trace::info(_X("Host path: [%s]"), host_path.c_str());
             trace::info(_X("Dotnet path: [%s]"), fxr.dotnet_root().c_str());
             trace::info(_X("App path: [%s]"), app_path.c_str());
-            trace::info(_X("Bundle Header Offset: [%lx]"), bundle_header_offset);
+            trace::info(_X("Bundle Header Offset: [%" PRId64 "]"), bundle_header_offset);
 
             auto set_error_writer = fxr.resolve_set_error_writer();
             propagate_error_writer_t propagate_error_writer_to_hostfxr(set_error_writer);

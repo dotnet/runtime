@@ -14,7 +14,6 @@ using Xunit.Abstractions;
 
 namespace System.IO.Tests
 {
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/34583", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
     public class FileSystemWatcherTests : FileSystemWatcherTest
     {
         private static void ValidateDefaults(FileSystemWatcher watcher, string path, string filter)
