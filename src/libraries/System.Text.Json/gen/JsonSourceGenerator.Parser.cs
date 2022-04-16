@@ -1120,7 +1120,7 @@ namespace System.Text.Json.SourceGeneration
             }
 
             private static bool PropertyIsConstructorParameter(PropertyGenerationSpec propSpec, ParameterGenerationSpec[]? paramGenSpecArray)
-                => paramGenSpecArray != null && paramGenSpecArray.Any(paramSpec => propSpec.ClrName == paramSpec.ParameterInfo.Name);
+                => paramGenSpecArray != null && paramGenSpecArray.Any(paramSpec => propSpec.ClrName.Equals(paramSpec.ParameterInfo.Name, StringComparison.OrdinalIgnoreCase));
 
             private static bool PropertyIsOverridenAndIgnored(
                 string currentMemberName,
