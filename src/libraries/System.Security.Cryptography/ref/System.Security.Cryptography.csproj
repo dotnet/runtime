@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
-    <Nullable>enable</Nullable>
     <NoWarn>$(NoWarn);SYSLIB0026</NoWarn>
     <!-- PasswordDeriveBytes.GetBytes is obsolete but DeriveBytes.GetBytes intentionally isn't. -->
     <NoWarn>$(NoWarn);CS0809</NoWarn>
