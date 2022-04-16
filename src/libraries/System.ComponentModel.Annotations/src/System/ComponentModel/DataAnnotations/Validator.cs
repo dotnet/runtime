@@ -578,7 +578,7 @@ namespace System.ComponentModel.DataAnnotations
         /// <returns>The collection of validation errors.</returns>
         /// <exception cref="ArgumentNullException">When <paramref name="validationContext" /> is null.</exception>
         private static List<ValidationError> GetValidationErrors(object? value,
-            ValidationContext validationContext, IEnumerable<ValidationAttribute> attributes, bool breakOnFirstError, Stack<Path> parentNames)
+            ValidationContext validationContext!!, IEnumerable<ValidationAttribute> attributes, bool breakOnFirstError, Stack<Path> parentNames)
         {
             var errors = new List<ValidationError>();
             ValidationError? validationError;
