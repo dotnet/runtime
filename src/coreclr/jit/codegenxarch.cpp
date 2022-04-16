@@ -5405,6 +5405,21 @@ void CodeGen::genCall(GenTreeCall* call)
     }
 #endif // defined(TARGET_X86) || defined(UNIX_AMD64_ABI)
 
+    GenTree* target = getCallTarget(call, nullptr);
+
+    if (target != nullptr)
+    {
+        if (target->isContainedIndir())
+        {
+            genConsumeAddress(target->AsIndir()->Addr());
+        }
+        else
+        {
+            assert(!target->isContained());
+            genConsumeReg(target);
+        }
+    }
+
     // Insert a null check on "this" pointer if asked.
     if (call->NeedsNullCheck())
     {
@@ -5412,26 +5427,12 @@ void CodeGen::genCall(GenTreeCall* call)
         GetEmitter()->emitIns_AR_R(INS_cmp, EA_4BYTE, regThis, regThis, 0);
     }
 
-    // If fast tail call, then we are done here, we just have to load the call
-    // target into the right registers. We ensure in RA that the registers used
-    // for the target (e.g. contained indir) are loaded into volatile registers
-    // that won't be restored by epilog sequence.
+    // If fast tail call, then we are done here as we loaded the call target
+    // above. We ensure in RA that the registers used for the target (e.g.
+    // contained indir) are loaded into volatile registers that won't be
+    // restored by epilog sequence.
     if (call->IsFastTailCall())
     {
-        GenTree* target = getCallTarget(call, nullptr);
-        if (target != nullptr)
-        {
-            if (target->isContainedIndir())
-            {
-                genConsumeAddress(target->AsIndir()->Addr());
-            }
-            else
-            {
-                assert(!target->isContained());
-                genConsumeReg(target);
-            }
-        }
-
         return;
     }
 
@@ -5745,7 +5746,6 @@ void CodeGen::genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackA
             GenTree* addr = target->AsIndir()->Addr();
             assert(addr->isUsedFromReg());
 
-            genConsumeReg(addr);
             genCopyRegIfNeeded(addr, REG_VIRTUAL_STUB_TARGET);
 
             GetEmitter()->emitIns_Nop(3);
@@ -5794,13 +5794,6 @@ void CodeGen::genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackA
             }
             else
             {
-                // For fast tailcalls this is happening in epilog, so we should
-                // have already consumed target in genCall.
-                if (!call->IsFastTailCall())
-                {
-                    genConsumeAddress(target->AsIndir()->Addr());
-                }
-
                 // clang-format off
                 genEmitCallIndir(emitter::EC_INDIR_ARD,
                                  methHnd,
@@ -5819,13 +5812,6 @@ void CodeGen::genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackA
             // We have already generated code for gtControlExpr evaluating it into a register.
             // We just need to emit "call reg" in this case.
             assert(genIsValidIntReg(target->GetRegNum()));
-
-            // For fast tailcalls this is happening in epilog, so we should
-            // have already consumed target in genCall.
-            if (!call->IsFastTailCall())
-            {
-                genConsumeReg(target);
-            }
 
             // clang-format off
             genEmitCall(emitter::EC_INDIR_R,

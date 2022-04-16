@@ -3196,14 +3196,14 @@ void CodeGen::genCall(GenTreeCall* call)
     }
 
     // If fast tail call, then we are done here, we just have to load the call
-    // target into the right registers. We ensure in RA that target is loaded
-    // into a volatile register that won't be restored by epilog sequence.
+    // target into the right registers if we used an internal register for it.
+    // We ensure in RA that target is loaded into a volatile register that
+    // won't be restored by epilog sequence.
     if (call->IsFastTailCall())
     {
 #ifdef FEATURE_READYTORUN
-        if (call->IsR2ROrVirtualStubRelativeIndir())
+        if ((target == nullptr) && call->IsR2ROrVirtualStubRelativeIndir())
         {
-            assert(target == nullptr);
             assert(((call->IsR2RRelativeIndir()) && (call->gtEntryPoint.accessType == IAT_PVALUE)) ||
                    ((call->IsVirtualStubRelativeIndir()) && (call->gtEntryPoint.accessType == IAT_VALUE)));
             assert(call->gtControlExpr == nullptr);
