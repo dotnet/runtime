@@ -2129,6 +2129,10 @@ void Compiler::fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALAR
                 break;
 #endif // FEATURE_HW_INTRINSICS
 
+            case GT_NO_OP:
+                // This is a non-removable NOP
+                break;
+
             case GT_NOP:
             {
                 // NOTE: we need to keep some NOPs around because they are referenced by calls. See the dead store
