@@ -3740,16 +3740,18 @@ namespace System.Text.RegularExpressions.Generator
             void EmitStackPush(params string[] args)
             {
                 Debug.Assert(args.Length is >= 1);
-                string methodName = $"StackPush{args.Length}";
+
+                const string MethodName = "StackPush";
+                string key = $"{MethodName}{args.Length}";
 
                 additionalDeclarations.Add("int stackpos = 0;");
 
-                if (!requiredHelpers.ContainsKey(methodName))
+                if (!requiredHelpers.ContainsKey(key))
                 {
                     var lines = new string[24 + args.Length];
-                    lines[0] = $"// <summary>Pushes {args.Length} value{(args.Length == 1 ? "" : "s")} onto the backtracking stack.</summary>";
+                    lines[0] = $"/// <summary>Pushes {args.Length} value{(args.Length == 1 ? "" : "s")} onto the backtracking stack.</summary>";
                     lines[1] = $"[MethodImpl(MethodImplOptions.AggressiveInlining)]";
-                    lines[2] = $"internal static void {methodName}(ref int[] stack, ref int pos{FormatN(", int arg{0}", args.Length)})";
+                    lines[2] = $"internal static void {MethodName}(ref int[] stack, ref int pos{FormatN(", int arg{0}", args.Length)})";
                     lines[3] = $"{{";
                     lines[4] = $"    // If there's space available for {(args.Length > 1 ? $"all {args.Length} values, store them" : "the value, store it")}.";
                     lines[5] = $"    int[] s = stack;";
@@ -3772,14 +3774,14 @@ namespace System.Text.RegularExpressions.Generator
                     lines[18 + args.Length] = $"    static void WithResize(ref int[] stack, ref int pos{FormatN(", int arg{0}", args.Length)})";
                     lines[19 + args.Length] = $"    {{";
                     lines[20 + args.Length] = $"        Array.Resize(ref stack, (pos + {args.Length - 1}) * 2);";
-                    lines[21 + args.Length] = $"        {methodName}(ref stack, ref pos{FormatN(", arg{0}", args.Length)});";
+                    lines[21 + args.Length] = $"        {MethodName}(ref stack, ref pos{FormatN(", arg{0}", args.Length)});";
                     lines[22 + args.Length] = $"    }}";
                     lines[23 + args.Length] = $"}}";
 
-                    requiredHelpers.Add(methodName, lines);
+                    requiredHelpers.Add(key, lines);
                 }
 
-                writer.WriteLine($"{HelpersTypeName}.{methodName}(ref base.runstack!, ref stackpos, {string.Join(", ", args)});");
+                writer.WriteLine($"{HelpersTypeName}.{MethodName}(ref base.runstack!, ref stackpos, {string.Join(", ", args)});");
             }
 
             /// <summary>Pops values from the backtracking stack into the specified locations.</summary>
@@ -3793,14 +3795,15 @@ namespace System.Text.RegularExpressions.Generator
                     return;
                 }
 
-                string methodName = $"StackPop{args.Length}";
+                const string MethodName = "StackPop";
+                string key = $"{MethodName}{args.Length}";
 
-                if (!requiredHelpers.ContainsKey(methodName))
+                if (!requiredHelpers.ContainsKey(key))
                 {
                     var lines = new string[5 + args.Length];
-                    lines[0] = $"// <summary>Pops {args.Length} value{(args.Length == 1 ? "" : "s")} from the backtracking stack.</summary>";
+                    lines[0] = $"/// <summary>Pops {args.Length} value{(args.Length == 1 ? "" : "s")} from the backtracking stack.</summary>";
                     lines[1] = $"[MethodImpl(MethodImplOptions.AggressiveInlining)]";
-                    lines[2] = $"internal static void {methodName}(int[] stack, ref int pos{FormatN(", out int arg{0}", args.Length)})";
+                    lines[2] = $"internal static void {MethodName}(int[] stack, ref int pos{FormatN(", out int arg{0}", args.Length)})";
                     lines[3] = $"{{";
                     for (int i = 0; i < args.Length; i++)
                     {
@@ -3808,10 +3811,10 @@ namespace System.Text.RegularExpressions.Generator
                     }
                     lines[4 + args.Length] = $"}}";
 
-                    requiredHelpers.Add(methodName, lines);
+                    requiredHelpers.Add(key, lines);
                 }
 
-                writer.WriteLine($"{HelpersTypeName}.{methodName}(base.runstack, ref stackpos, out {string.Join(", out ", args)});");
+                writer.WriteLine($"{HelpersTypeName}.{MethodName}(base.runstack, ref stackpos, out {string.Join(", out ", args)});");
             }
 
             /// <summary>Expression for popping the next item from the backtracking stack.</summary>
