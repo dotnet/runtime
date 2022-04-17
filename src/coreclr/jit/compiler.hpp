@@ -1256,15 +1256,6 @@ inline void GenTree::gtBashToNOP()
     gtFlags &= ~(GTF_ALL_EFFECT | GTF_REVERSE_OPS);
 }
 
-// return new arg placeholder node.  Does not do anything but has a type associated
-// with it so we can keep track of register arguments in lists associated w/ call nodes
-
-inline GenTree* Compiler::gtNewArgPlaceHolderNode(var_types type, CORINFO_CLASS_HANDLE clsHnd)
-{
-    GenTree* node = new (this, GT_ARGPLACE) GenTreeArgPlace(type, clsHnd);
-    return node;
-}
-
 /*****************************************************************************/
 
 inline GenTree* Compiler::gtUnusedValNode(GenTree* expr)
@@ -4208,7 +4199,6 @@ void GenTree::VisitOperands(TVisitor visitor)
         case GT_JMPTABLE:
         case GT_CLS_VAR:
         case GT_CLS_VAR_ADDR:
-        case GT_ARGPLACE:
         case GT_PHYSREG:
         case GT_EMITNOP:
         case GT_PINVOKE_PROLOG:
@@ -4370,7 +4360,7 @@ void GenTree::VisitOperands(TVisitor visitor)
         {
             GenTreeCall* const call = this->AsCall();
 
-            for (CallArg& arg : call->gtArgs.Args())
+            for (CallArg& arg : call->gtArgs.EarlyArgs())
             {
                 if (visitor(arg.GetEarlyNode()) == VisitResult::Abort)
                 {

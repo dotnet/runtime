@@ -681,11 +681,6 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
         }
         break;
 
-        case GT_ARGPLACE:
-            // Remove argplace and list nodes from the execution order.
-            BlockRange().Remove(node);
-            break;
-
 #if defined(TARGET_XARCH) || defined(TARGET_ARM)
         case GT_CLS_VAR:
         {

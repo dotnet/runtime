@@ -288,7 +288,7 @@ public:
 
             for (CallArg& arg : m_callAncestor->gtArgs.Args())
             {
-                m_useFlags |= (arg.GetEarlyNode()->gtFlags & GTF_GLOB_EFFECT);
+                m_useFlags |= (arg.GetNode()->gtFlags & GTF_GLOB_EFFECT);
             }
 
             if (oldUseFlags != m_useFlags)

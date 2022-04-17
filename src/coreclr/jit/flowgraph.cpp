@@ -3972,7 +3972,7 @@ void Compiler::fgSetTreeSeqHelper(GenTree* tree, bool isLIR)
     {
         case GT_CALL:
 
-            for (CallArg& arg : tree->AsCall()->gtArgs.Args())
+            for (CallArg& arg : tree->AsCall()->gtArgs.EarlyArgs())
             {
                 fgSetTreeSeqHelper(arg.GetEarlyNode(), isLIR);
             }
@@ -4086,11 +4086,6 @@ void Compiler::fgSetTreeSeqFinish(GenTree* tree, bool isLIR)
     if (isLIR)
     {
         tree->gtFlags &= ~GTF_REVERSE_OPS;
-
-        if (tree->OperIs(GT_ARGPLACE))
-        {
-            return;
-        }
     }
 
     /* Append to the node list */
