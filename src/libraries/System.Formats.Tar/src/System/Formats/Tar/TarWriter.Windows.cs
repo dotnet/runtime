@@ -27,7 +27,7 @@ namespace System.Formats.Tar
             }
             else if (attributes.HasFlag(FileAttributes.Normal) || attributes.HasFlag(FileAttributes.Archive))
             {
-                entryType = TarEntryType.RegularFile;
+                entryType = Format is TarFormat.V7 ? TarEntryType.V7RegularFile : TarEntryType.RegularFile;
             }
             else
             {
