@@ -572,26 +572,6 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             Assert.Equal("Yo2", options.InstantiatedISet.ElementAt(1));
         }
 
-        // [Fact]
-        // public void CanBindInstantiatedISet2()
-        // {
-        //     var dic = new Dictionary<string, string>
-        //     {
-        //         {"NonInstantiatedISet:0", "Yo1"},
-        //         {"NonInstantiatedISet:1", "Yo2"},
-        //     };
-        //     var configurationBuilder = new ConfigurationBuilder();
-        //     configurationBuilder.AddInMemoryCollection(dic);
-        //
-        //     var config = configurationBuilder.Build();
-        //
-        //     var options = config.Get<Steve>()!;
-        //
-        //     Assert.Equal(2, options.NonInstantiatedISet.Count());
-        //     Assert.Equal("Yo1", options.NonInstantiatedISet.ElementAt(0));
-        //     Assert.Equal("Yo2", options.NonInstantiatedISet.ElementAt(1));
-        // }
-
         [Fact]
         public void CanBindInstantiatedIEnumerableWithItems()
         {
