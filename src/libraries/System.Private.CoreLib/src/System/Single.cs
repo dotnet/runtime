@@ -47,19 +47,19 @@ namespace System
         public const float NaN = (float)0.0 / (float)0.0;
 
         /// <summary>Represents the additive identity (0).</summary>
-        private const float AdditiveIdentity = 0.0f;
+        internal const float AdditiveIdentity = 0.0f;
 
         /// <summary>Represents the multiplicative identity (1).</summary>
-        private const float MultiplicativeIdentity = 1.0f;
+        internal const float MultiplicativeIdentity = 1.0f;
 
         /// <summary>Represents the number one (1).</summary>
-        private const float One = 1.0f;
+        internal const float One = 1.0f;
 
         /// <summary>Represents the number zero (0).</summary>
-        private const float Zero = 0.0f;
+        internal const float Zero = 0.0f;
 
         /// <summary>Represents the number negative one (-1).</summary>
-        private const float NegativeOne = -1.0f;
+        internal const float NegativeOne = -1.0f;
 
         /// <summary>Represents the number negative zero (-0).</summary>
         public const float NegativeZero = -0.0f;

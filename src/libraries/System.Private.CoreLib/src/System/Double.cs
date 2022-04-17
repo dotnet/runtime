@@ -48,19 +48,19 @@ namespace System
         public const double NaN = (double)0.0 / (double)0.0;
 
         /// <summary>Represents the additive identity (0).</summary>
-        private const double AdditiveIdentity = 0.0;
+        internal const double AdditiveIdentity = 0.0;
 
         /// <summary>Represents the multiplicative identity (1).</summary>
-        private const double MultiplicativeIdentity = 1.0;
+        internal const double MultiplicativeIdentity = 1.0;
 
         /// <summary>Represents the number one (1).</summary>
-        private const double One = 1.0;
+        internal const double One = 1.0;
 
         /// <summary>Represents the number zero (0).</summary>
-        private const double Zero = 0.0;
+        internal const double Zero = 0.0;
 
         /// <summary>Represents the number negative one (-1).</summary>
-        private const double NegativeOne = -1.0;
+        internal const double NegativeOne = -1.0;
 
         /// <summary>Represents the number negative zero (-0).</summary>
         public const double NegativeZero = -0.0;
