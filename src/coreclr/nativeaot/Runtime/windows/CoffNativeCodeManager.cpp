@@ -38,7 +38,14 @@ typedef struct _RUNTIME_FUNCTION {
     DWORD UnwindData;
 } RUNTIME_FUNCTION, *PRUNTIME_FUNCTION;
 
-typedef struct _KNONVOLATILE_CONTEXT_POINTERS {
+// If I include PalRedhawkFunctions.h then declarations get's conflicted with windows.h
+// this is only one function which is needed here.
+#define PalRaiseFailFastException RaiseFailFastException
+
+// Because winnt.h defines _KNONVOLATILE_CONTEXT_POINTERS for x86
+// I have to define that structure under different name fo x86
+// and define that name for other platforms.
+typedef struct {
 
     // The ordering of these fields should be aligned with that
     // of corresponding fields in CONTEXT
@@ -53,13 +60,17 @@ typedef struct _KNONVOLATILE_CONTEXT_POINTERS {
 
     PDWORD Ebp;
 
-} KNONVOLATILE_CONTEXT_POINTERS, *PKNONVOLATILE_CONTEXT_POINTERS;
+} T_KNONVOLATILE_CONTEXT_POINTERS;
+
+#define T_KNONVOLATILE_CONTEXT_POINTERS KNONVOLATILE_CONTEXT_POINTERS
 
 typedef struct _UNWIND_INFO {
     ULONG FunctionLength;
 } UNWIND_INFO, *PUNWIND_INFO;
 
 #elif defined(TARGET_AMD64)
+
+#define T_KNONVOLATILE_CONTEXT_POINTERS KNONVOLATILE_CONTEXT_POINTERS
 
 #define UNW_FLAG_NHANDLER 0x0
 #define UNW_FLAG_EHANDLER 0x1
@@ -89,6 +100,10 @@ typedef struct _UNWIND_INFO {
     uint8_t FrameOffset : 4;
     UNWIND_CODE UnwindCode[1];
 } UNWIND_INFO, *PUNWIND_INFO;
+
+#else
+
+#define T_KNONVOLATILE_CONTEXT_POINTERS KNONVOLATILE_CONTEXT_POINTERS
 
 #endif // TARGET_X86
 
@@ -533,7 +548,7 @@ bool CoffNativeCodeManager::UnwindStackFrame(MethodInfo *    pMethodInfo,
     *ppPreviousTransitionFrame = NULL;
 
     CONTEXT context;
-    KNONVOLATILE_CONTEXT_POINTERS contextPointers;
+    T_KNONVOLATILE_CONTEXT_POINTERS contextPointers;
 
 #ifdef _DEBUG
     memset(&context, 0xDD, sizeof(context));

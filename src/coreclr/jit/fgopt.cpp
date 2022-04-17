@@ -1834,7 +1834,7 @@ bool Compiler::fgCanCompactBlocks(BasicBlock* block, BasicBlock* bNext)
         return false;
     }
 
-#if defined(TARGET_ARM)
+#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
     // We can't compact a finally target block, as we need to generate special code for such blocks during code
     // generation
     if ((bNext->bbFlags & BBF_FINALLY_TARGET) != 0)

@@ -19,9 +19,7 @@
 #define _max(a, b) (((a) > (b)) ? (a) : (b))
 #define _min(a, b) (((a) < (b)) ? (a) : (b))
 
-#if !defined(TARGET_X86)
 #define USE_GC_INFO_DECODER
-#endif
 
 #if !defined(GCINFODECODER_NO_EE)
 

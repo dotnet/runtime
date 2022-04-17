@@ -102,8 +102,10 @@ namespace Internal.Runtime.TypeLoader
                                                                       out IntPtr commonStub
 #if CALLDESCR_FPARGREGSARERETURNREGS
 #else
+#pragma warning disable SA1001, SA1113, SA1115
                                                                      , out IntPtr returnFloatingPointReturn4Thunk,
                                                                        out IntPtr returnFloatingPointReturn8Thunk
+#pragma warning restore SA1001, SA1113, SA1115
 #endif
                                                                      );
 
@@ -122,7 +124,9 @@ namespace Internal.Runtime.TypeLoader
             CallingConventionConverter_GetStubs(out ReturnVoidReturnThunk, out ReturnIntegerPointReturnThunk, out CommonInputThunkStub
 #if CALLDESCR_FPARGREGSARERETURNREGS
 #else
+#pragma warning disable SA1001, SA1113, SA111
                                                , out ReturnFloatingPointReturn4Thunk, out ReturnFloatingPointReturn8Thunk
+#pragma warning restore SA1001, SA1113, SA1115
 #endif
                                                 );
             s_commonStubData.ManagedCallConverterThunk = (IntPtr)(delegate*<IntPtr, IntPtr, IntPtr>)&CallConversionThunk;

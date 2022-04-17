@@ -4714,7 +4714,9 @@ void GCInfo::gcMakeVarPtrTable(GcInfoEncoder* gcInfoEncoder, MakeRegPtrMode mode
         {
             const unsigned flags = varTmp->vpdVarNum & OFFSET_MASK;
             assert((flags & pinned_OFFSET_FLAG) == 0);
+#if !defined(TARGET_X86) || !defined(FEATURE_EH_FUNCLETS)
             assert((flags & this_OFFSET_FLAG) == 0);
+#endif // !defined(TARGET_X86) || !defined(FEATURE_EH_FUNCLETS)
         }
     }
 #endif // DEBUG

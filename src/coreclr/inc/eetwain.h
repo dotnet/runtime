@@ -31,9 +31,7 @@
 #include "bitvector.h"
 #include "gcinfotypes.h"
 
-#if !defined(TARGET_X86)
 #define USE_GC_INFO_DECODER
-#endif
 
 #if (defined(TARGET_X86) && !defined(TARGET_UNIX)) || defined(TARGET_AMD64)
 #define HAS_QUICKUNWIND
