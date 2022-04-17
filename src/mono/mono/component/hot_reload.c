@@ -509,15 +509,15 @@ hot_reload_close_except_pools_all (MonoImage *base_image)
 	if (!info)
 		return;
 	for (GList *ptr = info->delta_info; ptr; ptr = ptr->next) {
-		DeltaInfo *info = (DeltaInfo *)ptr->data;
-		MonoImage *image = info->delta_image;
+		DeltaInfo *delta_info = (DeltaInfo *)ptr->data;
+		MonoImage *image = delta_info->delta_image;
 		if (image) {
 			table_to_image_lock ();
 			g_hash_table_remove (delta_image_to_info, image);
 			table_to_image_unlock ();
 			/* if for some reason the image has other references, break the link to this delta_info that is going away */
 			if (!mono_image_close_except_pools (image))
-			    info->delta_image = NULL;
+				delta_info->delta_image = NULL;
 		}
 	}
 }
@@ -529,14 +529,14 @@ hot_reload_close_all (MonoImage *base_image)
 	if (!info)
 		return;
 	for (GList *ptr = info->delta_info; ptr; ptr = ptr->next) {
-		DeltaInfo *info = (DeltaInfo *)ptr->data;
-		if (!info)
+		DeltaInfo *delta_info = (DeltaInfo *)ptr->data;
+		if (!delta_info)
 			continue;
-		MonoImage *image = info->delta_image;
+		MonoImage *image = delta_info->delta_image;
 		if (image) {
 			mono_image_close_finish (image);
 		}
-		delta_info_destroy (info);
+		delta_info_destroy (delta_info);
 		ptr->data = NULL;
 	}
 	g_list_free (info->delta_info);
@@ -2218,10 +2218,10 @@ apply_enclog_pass2 (Pass2Context *ctx, MonoImage *image_base, BaselineInfo *base
 			default:
 				g_assert_not_reached (); /* unexpected func code */
 			}
-			uint32_t cols[MONO_PROPERTY_MAP_SIZE];
-			mono_metadata_decode_row (&image_base->tables [MONO_TABLE_PROPERTYMAP], token_index - 1, cols, MONO_PROPERTY_MAP_SIZE);
+			uint32_t prop_cols[MONO_PROPERTY_MAP_SIZE];
+			mono_metadata_decode_row (&image_base->tables [MONO_TABLE_PROPERTYMAP], token_index - 1, prop_cols, MONO_PROPERTY_MAP_SIZE);
 
-			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "EnC: propertymap parent = 0x%08x, props = 0x%08x\n", cols[MONO_PROPERTY_MAP_PARENT], cols [MONO_PROPERTY_MAP_PROPERTY_LIST]);
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "EnC: propertymap parent = 0x%08x, props = 0x%08x\n", prop_cols [MONO_PROPERTY_MAP_PARENT], prop_cols [MONO_PROPERTY_MAP_PROPERTY_LIST]);
 			break;
 		}
 		case MONO_TABLE_PROPERTY: {
@@ -2271,10 +2271,10 @@ apply_enclog_pass2 (Pass2Context *ctx, MonoImage *image_base, BaselineInfo *base
 			default:
 				g_assert_not_reached (); /* unexpected func code */
 			}
-			uint32_t cols[MONO_EVENT_MAP_SIZE];
-			mono_metadata_decode_row (&image_base->tables [MONO_TABLE_EVENTMAP], token_index - 1, cols, MONO_EVENT_MAP_SIZE);
+			uint32_t prop_cols[MONO_EVENT_MAP_SIZE];
+			mono_metadata_decode_row (&image_base->tables [MONO_TABLE_EVENTMAP], token_index - 1, prop_cols, MONO_EVENT_MAP_SIZE);
 
-			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "EnC: eventmap parent = 0x%08x, evts = 0x%08x\n", cols[MONO_EVENT_MAP_PARENT], cols [MONO_EVENT_MAP_EVENTLIST]);
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "EnC: eventmap parent = 0x%08x, evts = 0x%08x\n", prop_cols [MONO_EVENT_MAP_PARENT], prop_cols [MONO_EVENT_MAP_EVENTLIST]);
 			break;
 			
 		}

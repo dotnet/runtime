@@ -99,10 +99,16 @@ namespace System
         }
 
         [DoesNotReturn]
-        internal static void ThrowArgumentOutOfRange_IndexException()
+        internal static void ThrowArgumentOutOfRange_IndexMustBeLessException()
         {
             throw GetArgumentOutOfRangeException(ExceptionArgument.index,
-                                                    ExceptionResource.ArgumentOutOfRange_Index);
+                                                    ExceptionResource.ArgumentOutOfRange_IndexMustBeLess);
+        }
+        [DoesNotReturn]
+        internal static void ThrowArgumentOutOfRange_IndexMustBeLessOrEqualException()
+        {
+            throw GetArgumentOutOfRangeException(ExceptionArgument.index,
+                                                    ExceptionResource.ArgumentOutOfRange_IndexMustBeLessOrEqual);
         }
 
         [DoesNotReturn]
@@ -133,10 +139,17 @@ namespace System
         }
 
         [DoesNotReturn]
-        internal static void ThrowStartIndexArgumentOutOfRange_ArgumentOutOfRange_Index()
+        internal static void ThrowStartIndexArgumentOutOfRange_ArgumentOutOfRange_IndexMustBeLessOrEqual()
         {
             throw GetArgumentOutOfRangeException(ExceptionArgument.startIndex,
-                                                    ExceptionResource.ArgumentOutOfRange_Index);
+                                                    ExceptionResource.ArgumentOutOfRange_IndexMustBeLessOrEqual);
+        }
+
+        [DoesNotReturn]
+        internal static void ThrowStartIndexArgumentOutOfRange_ArgumentOutOfRange_IndexMustBeLess()
+        {
+            throw GetArgumentOutOfRangeException(ExceptionArgument.startIndex,
+                                                    ExceptionResource.ArgumentOutOfRange_IndexMustBeLess);
         }
 
         [DoesNotReturn]
@@ -903,8 +916,10 @@ namespace System
         {
             switch (resource)
             {
-                case ExceptionResource.ArgumentOutOfRange_Index:
-                    return SR.ArgumentOutOfRange_Index;
+                case ExceptionResource.ArgumentOutOfRange_IndexMustBeLessOrEqual:
+                    return SR.ArgumentOutOfRange_IndexMustBeLessOrEqual;
+                case ExceptionResource.ArgumentOutOfRange_IndexMustBeLess:
+                    return SR.ArgumentOutOfRange_IndexMustBeLess;
                 case ExceptionResource.ArgumentOutOfRange_IndexCount:
                     return SR.ArgumentOutOfRange_IndexCount;
                 case ExceptionResource.ArgumentOutOfRange_IndexCountBuffer:
@@ -1158,7 +1173,8 @@ namespace System
     //
     internal enum ExceptionResource
     {
-        ArgumentOutOfRange_Index,
+        ArgumentOutOfRange_IndexMustBeLessOrEqual,
+        ArgumentOutOfRange_IndexMustBeLess,
         ArgumentOutOfRange_IndexCount,
         ArgumentOutOfRange_IndexCountBuffer,
         ArgumentOutOfRange_Count,

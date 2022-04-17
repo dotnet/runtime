@@ -1115,7 +1115,7 @@ struct CORINFO_SIG_INFO
     CorInfoCallConv     getCallConv()       { return CorInfoCallConv((callConv & CORINFO_CALLCONV_MASK)); }
     bool                hasThis()           { return ((callConv & CORINFO_CALLCONV_HASTHIS) != 0); }
     bool                hasExplicitThis()   { return ((callConv & CORINFO_CALLCONV_EXPLICITTHIS) != 0); }
-    unsigned            totalILArgs()       { return (numArgs + hasThis()); }
+    unsigned            totalILArgs()       { return (numArgs + (hasThis() ? 1 : 0)); }
     bool                isVarArg()          { return ((getCallConv() == CORINFO_CALLCONV_VARARG) || (getCallConv() == CORINFO_CALLCONV_NATIVEVARARG)); }
     bool                hasTypeArg()        { return ((callConv & CORINFO_CALLCONV_PARAMTYPE) != 0); }
 };
@@ -2240,10 +2240,11 @@ public:
 
     // Returns string length and content (can be null for dynamic context)
     // for given metaTOK and module, length `-1` means input is incorrect
-    virtual const char16_t * getStringLiteral (
+    virtual int getStringLiteral (
             CORINFO_MODULE_HANDLE       module,     /* IN  */
             unsigned                    metaTOK,    /* IN  */
-            int*                        length      /* OUT */
+            char16_t*                   buffer,     /* OUT */
+            int                         bufferSize  /* IN  */
             ) = 0;
 
     /**********************************************************************************/

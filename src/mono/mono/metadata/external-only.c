@@ -274,14 +274,6 @@ mono_g_hash_table_new_type (GHashFunc hash_func, GEqualFunc key_equal_func, Mono
 }
 
 /**
- * mono_config_for_assembly:
- */
-void
-mono_config_for_assembly (MonoImage *assembly)
-{
-}
-
-/**
  * mono_class_get_property_from_name:
  * \param klass a class
  * \param name name of the property to lookup in the specified class
@@ -319,6 +311,22 @@ gboolean
 mono_class_is_subclass_of (MonoClass *klass, MonoClass *klassc, gboolean check_interfaces)
 {
 	MONO_EXTERNAL_ONLY_GC_UNSAFE (gboolean, mono_class_is_subclass_of_internal (klass, klassc, check_interfaces));
+}
+
+MonoDomain *
+mono_domain_create_appdomain (char *friendly_name, char *configuration_file)
+{
+	return NULL;
+}
+
+void
+mono_domain_try_unload (MonoDomain *domain, MonoObject **exc)
+{
+}
+
+void
+mono_domain_unload (MonoDomain *domain)
+{
 }
 
 /**
@@ -373,11 +381,6 @@ void
 mono_thread_manage (void)
 {
 	MONO_EXTERNAL_ONLY_GC_UNSAFE_VOID (mono_thread_manage_internal ());
-}
-
-void
-mono_register_config_for_assembly (const char* assembly_name, const char* config_xml)
-{
 }
 
 /**
@@ -608,6 +611,26 @@ mono_domain_foreach (MonoDomainFunc func, gpointer user_data)
  */
 void
 mono_context_init (MonoDomain *domain)
+{
+}
+
+void *
+mono_load_remote_field (MonoObject *this_obj, MonoClass *klass, MonoClassField *field, void **res)
+{
+	return NULL;
+}
+
+MonoObject *
+mono_load_remote_field_new (MonoObject *this_obj, MonoClass *klass, MonoClassField *field)
+{
+	return NULL;
+}
+
+void mono_store_remote_field (MonoObject *this_obj, MonoClass *klass, MonoClassField *field, void* val)
+{
+}
+
+void mono_store_remote_field_new (MonoObject *this_obj, MonoClass *klass, MonoClassField *field, MonoObject *arg)
 {
 }
 

@@ -3352,20 +3352,53 @@ BOOL AppDomain::AddFileToCache(AssemblySpec* pSpec, PEAssembly * pPEAssembly, BO
     }
     CONTRACTL_END;
 
-    GCX_PREEMP();
-    DomainCacheCrstHolderForGCCoop holder(this);
-
-    // !!! suppress exceptions
-    if(!m_AssemblyCache.StorePEAssembly(pSpec, pPEAssembly) && !fAllowFailure)
     {
-        // TODO: Disabling the below assertion as currently we experience
-        // inconsistency on resolving the Microsoft.Office.Interop.MSProject.dll
-        // This causes below assertion to fire and crashes the VS. This issue
-        // is being tracked with Dev10 Bug 658555. Brought back it when this bug
-        // is fixed.
-        // _ASSERTE(FALSE);
+        GCX_PREEMP();
+        DomainCacheCrstHolderForGCCoop holder(this);
 
-        EEFileLoadException::Throw(pSpec, FUSION_E_CACHEFILE_FAILED, NULL);
+        // !!! suppress exceptions
+        if(!m_AssemblyCache.StorePEAssembly(pSpec, pPEAssembly) && !fAllowFailure)
+        {
+            // TODO: Disabling the below assertion as currently we experience
+            // inconsistency on resolving the Microsoft.Office.Interop.MSProject.dll
+            // This causes below assertion to fire and crashes the VS. This issue
+            // is being tracked with Dev10 Bug 658555. Brought back it when this bug
+            // is fixed.
+            // _ASSERTE(FALSE);
+
+            EEFileLoadException::Throw(pSpec, FUSION_E_CACHEFILE_FAILED, NULL);
+        }
+    }
+
+    // If the ALC for the result (pPEAssembly) is collectible and not the same as the ALC for the request (pSpec),
+    // which can happen when extension points (AssemblyLoadContext.Load, AssemblyLoadContext.Resolving) resolve the
+    // assembly, we need to ensure the result ALC is not collected before the request ALC. We do this by adding an
+    // explicit reference between the LoaderAllocators corresponding to the ALCs.
+    //
+    // To get the LoaderAllocators, we rely on the DomainAssembly corresponding to:
+    // - Parent assembly for the request
+    //   - For loads via explicit load or reflection, this will be NULL. In these cases, the request ALC should not
+    //    implicitly (as in not detectable via managed references) depend on the result ALC, so it is fine to not
+    //    add the reference.
+    //   - For loads via assembly references, this will never be NULL.
+    // - Result assembly for the result
+    //   - For dynamic assemblies, there is no host assembly, so we don't have the result assembly / LoaderAllocator.
+    //     We currently block resolving to dynamic assemblies, so we simply assert that we have a host assembly.
+    //   - For non-dynamic assemblies, we should be able to get the host assembly.
+    DomainAssembly *pParentAssembly = pSpec->GetParentAssembly();
+    BINDER_SPACE::Assembly *pBinderSpaceAssembly = pPEAssembly->GetHostAssembly();
+    _ASSERTE(pBinderSpaceAssembly != NULL);
+    DomainAssembly *pResultAssembly = pBinderSpaceAssembly->GetDomainAssembly();
+    if ((pParentAssembly != NULL) && (pResultAssembly != NULL))
+    {
+        LoaderAllocator *pParentAssemblyLoaderAllocator = pParentAssembly->GetLoaderAllocator();
+        LoaderAllocator *pResultAssemblyLoaderAllocator = pResultAssembly->GetLoaderAllocator();
+        _ASSERTE(pParentAssemblyLoaderAllocator);
+        _ASSERTE(pResultAssemblyLoaderAllocator);
+        if (pResultAssemblyLoaderAllocator->IsCollectible())
+        {
+            pParentAssemblyLoaderAllocator->EnsureReference(pResultAssemblyLoaderAllocator);
+        }
     }
 
     return TRUE;

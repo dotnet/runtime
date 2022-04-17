@@ -98,7 +98,7 @@ namespace System.Text
 
             if (charIndex < 0 || charIndex > chars.Length)
                 throw new ArgumentOutOfRangeException(nameof(charIndex),
-                    SR.ArgumentOutOfRange_Index);
+                    SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
 
             int charCount = chars.Length - charIndex;
 

@@ -160,7 +160,7 @@ namespace System.Globalization
             }
             if ((uint)index > (uint)str.Length)
             {
-                ThrowHelper.ThrowArgumentOutOfRange_IndexException();
+                ThrowHelper.ThrowArgumentOutOfRange_IndexMustBeLessOrEqualException();
             }
 
             return GetNextTextElementLength(str.AsSpan(index));
@@ -187,7 +187,7 @@ namespace System.Globalization
             }
             if ((uint)index > (uint)str.Length)
             {
-                ThrowHelper.ThrowArgumentOutOfRange_IndexException();
+                ThrowHelper.ThrowArgumentOutOfRange_IndexMustBeLessOrEqualException();
             }
 
             return new TextElementEnumerator(str, index);

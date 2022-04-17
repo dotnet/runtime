@@ -257,7 +257,7 @@ jobs:
       buildConfig: release
       runtimeFlavor: mono
       platforms:
-        - Windows_x64
+        - OSX_x64
       variables:
         - name: mauiVersion
           value: $[ dependencies.Build_iOS_arm64_release_MACiOSAndroidMaui.outputs['getMauiVersion.mauiVersion'] ]
@@ -267,9 +267,9 @@ jobs:
         projectFile: ios_scenarios.proj
         runKind: ios_scenarios
         runJobTemplate: /eng/pipelines/coreclr/templates/run-scenarios-job.yml
-        logicalmachine: 'perfpixel4a'
-        iosLlvmBuild: False
-        additionalSetupParameters: "-MauiVersion $env:mauiVersion"
+        logicalmachine: 'perfiphone12mini'
+        iOSLlvmBuild: False
+        additionalSetupParameters: "--mauiversion $(mauiVersion)"
 
   - template: /eng/pipelines/common/platform-matrix.yml
     parameters:
@@ -277,15 +277,19 @@ jobs:
       buildConfig: release
       runtimeFlavor: mono
       platforms:
-        - Windows_x64
+        - OSX_x64
+      variables:
+        - name: mauiVersion
+          value: $[ dependencies.Build_iOS_arm64_release_MACiOSAndroidMaui.outputs['getMauiVersion.mauiVersion'] ]
       jobParameters:
         testGroup: perf
         runtimeType: iOSMono
         projectFile: ios_scenarios.proj
         runKind: ios_scenarios
         runJobTemplate: /eng/pipelines/coreclr/templates/run-scenarios-job.yml
-        logicalmachine: 'perfpixel4a'
-        iosLlvmBuild: True
+        logicalmachine: 'perfiphone12mini'
+        iOSLlvmBuild: True
+        additionalSetupParameters: "--mauiversion $(mauiVersion)"
 
   # run mono microbenchmarks perf job
   - template: /eng/pipelines/common/platform-matrix.yml
