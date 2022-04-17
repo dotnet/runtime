@@ -256,8 +256,16 @@ GCInfo::WriteBarrierForm GCInfo::gcIsWriteBarrierCandidate(GenTreeStoreInd* stor
 
     if (wbf == WBF_BarrierUnknown)
     {
-        assert(store->Addr()->TypeIs(TYP_BYREF));
-        wbf = ((store->gtFlags & GTF_IND_TGT_HEAP) != 0) ? WBF_BarrierUnchecked : WBF_BarrierChecked;
+        if (compiler->codeGen->genUseOptimizedWriteBarriers(wbf))
+        {
+            // TODO-CQ: remove this pessimization, it was added to avoid diffs.
+            wbf = WBF_BarrierChecked;
+        }
+        else
+        {
+            assert(store->Addr()->TypeIs(TYP_BYREF));
+            wbf = ((store->gtFlags & GTF_IND_TGT_HEAP) != 0) ? WBF_BarrierUnchecked : WBF_BarrierChecked;
+        }
     }
 
     return wbf;
