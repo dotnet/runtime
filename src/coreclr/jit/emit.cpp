@@ -4215,9 +4215,9 @@ AGAIN:
 
                         if (instructionDescriptor->idIns() == jmp->idIns() && jmp == instructionDescriptor)
                         {
-                            // the last instruction in the group is the jmp we're looking for
-                            // and it jumps to the next instruction group so we don't really need it
-
+// the last instruction in the group is the jmp we're looking for
+// and it jumps to the next instruction group so we don't really need it
+#ifdef DEBUG
                             if (EMITVERBOSE)
                             {
                                 printf("Removing unconditional jump [%08X/%03u] from the last instruction in IG%02u to "
@@ -4225,7 +4225,7 @@ AGAIN:
                                        dspPtr(jmp), jmp->idDebugOnlyInfo()->idNum, group->igNum, targetGroup->igNum,
                                        emitLabelString(targetGroup));
                             }
-
+#endif
                             UNATIVE_OFFSET sizeRemoved = instructionDescriptor->idCodeSize();
 
                             // set state needed at the end of the loop in ADJUST_GROUP

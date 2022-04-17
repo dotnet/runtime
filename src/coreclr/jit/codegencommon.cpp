@@ -2001,11 +2001,13 @@ void CodeGen::genUpdateLiveRangesForTruncatedIGs()
                 unsigned int liveVarCount = varLiveKeeper->getVarCount();
                 if (liveVarCount > 0)
                 {
+#ifdef DEBUG
                     if (compiler->verbose)
                     {
                         JITDUMP("IG%02u is marked with IGF_UPD_ICOUNT and has %d live variables\n", ig->igNum,
                                 liveVarCount);
                     }
+#endif
                     for (unsigned int varNum = 0; varNum < liveVarCount; varNum++)
                     {
                         if (compiler->compMap2ILvarNum(varNum) == (unsigned int)ICorDebugInfo::UNKNOWN_ILNUM)
@@ -2030,11 +2032,13 @@ void CodeGen::genUpdateLiveRangesForTruncatedIGs()
                                 if (liveRange.m_StartEmitLocation.GetIG()->igNum == ig->igNum &&
                                     liveRange.m_StartEmitLocation.GetInsNum() > ig->igInsCnt)
                                 {
+#ifdef DEBUG
                                     if (compiler->verbose)
                                     {
                                         JITDUMP("IG%02u varNum %d StartEmitLocation InsCnt changed from %d to %d\n", ig,
                                                 liveVarCount, liveRange.m_StartEmitLocation.GetInsNum(), ig->igInsCnt);
                                     }
+#endif
                                     liveRange.m_StartEmitLocation.SetInsNum(ig->igInsCnt);
                                     assert(liveRange.m_StartEmitLocation.GetInsNum() == ig->igInsCnt);
                                     updatedGroup = true;
@@ -2044,11 +2048,13 @@ void CodeGen::genUpdateLiveRangesForTruncatedIGs()
                                     liveRange.m_EndEmitLocation.GetInsNum() > ig->igInsCnt)
                                 {
                                     liveRange.m_EndEmitLocation.SetInsNum(ig->igInsCnt);
+#ifdef DEBUG
                                     if (compiler->verbose)
                                     {
                                         JITDUMP("IG%02u varNum %d EndEmitLocation InsCnt changed from %d to %d\n", ig,
                                                 liveVarCount, liveRange.m_StartEmitLocation.GetInsNum(), ig->igInsCnt);
                                     }
+#endif
                                     assert(liveRange.m_EndEmitLocation.GetInsNum() == ig->igInsCnt);
                                     updatedGroup = true;
                                 }
@@ -2058,10 +2064,12 @@ void CodeGen::genUpdateLiveRangesForTruncatedIGs()
                 }
                 else
                 {
+#ifdef DEBUG
                     if (compiler->verbose)
                     {
                         JITDUMP("IG%02u is marked with IGF_UPD_ICOUNT but has no live variables\n", ig);
                     }
+#endif
                 }
 
                 ig->igFlags ^= IGF_UPD_ICOUNT;
@@ -2070,12 +2078,13 @@ void CodeGen::genUpdateLiveRangesForTruncatedIGs()
             ig = ig->igNext;
         }
     }
-
+#ifdef DEBUG
     if (updatedGroup && verbose)
     {
         printf("\nlvaTable after genUpdateLiveRangesForTruncatedIGs\n");
         compiler->lvaTableDump();
     }
+#endif
 }
 
 //----------------------------------------------------------------------
