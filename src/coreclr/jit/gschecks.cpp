@@ -205,7 +205,7 @@ Compiler::fgWalkResult Compiler::gsMarkPtrsAndAssignGroups(GenTree** pTree, fgWa
                     // TODO-ARGS: This is a quirk for previous behavior where
                     // we set this to true for the 'this' arg. The flag can
                     // then remain set after the recursive call, depending on
-                    // what the child node is, e.g. GT_ARGPLACE does not clear
+                    // what the child node is, e.g. GT_ARGPLACE did not clear
                     // the flag, so when processing the second arg we would
                     // also have isUnderIndir = true.
                     newState.isUnderIndir = true;

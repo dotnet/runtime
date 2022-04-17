@@ -1541,16 +1541,15 @@ GenTree* CallArgs::MakeTmpArgNode(Compiler* comp, CallArg* arg)
 //        will be assigned to a temp in the early node and passed as the local
 //        in the late node. This can happen for both register and stack args.
 //
-//   2. Early: GT_ARGPLACE, Late: <any node>
+//   2. Early: nullptr, Late: <any node>
 //        All arguments that are placed in registers need to appear as a late
 //        node. Some stack arguments may also require this pattern, for example
 //        if a later argument trashes the outgoing arg area by requiring a
 //        call.
-//        If the argument does not otherwise need to be evaluated into a temp,
-//        we create just a placeholder GT_ARGPLACE for the early list and move
-//        it into the late list.
+//        If the argument does not otherwise need to be evaluated into a temp
+//        we just move it into the late list.
 //
-//   3. Early: <any node>, Late: no node
+//   3. Early: <any node>, Late: nullptr
 //        Arguments that are passed on stack and that do not need an explicit
 //        assignment in the early node list do not require any late node.
 //
