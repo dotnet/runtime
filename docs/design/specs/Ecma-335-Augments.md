@@ -399,9 +399,9 @@ Default interface methods is a runtime feature designed to support the [default 
 The major changes are:
 
 * Interfaces are now allowed to have instance methods (both virtual and non-virtual). Previously we only allowed abstract virtual methods.
-  * Interfaces obviously still can't have instance fields.
-  * Interfaces may also define static virtual methods (either as abstract or by directly providing the default implementation in the declaration).
-* Interface methods are allowed to MethodImpl other interface methods the interface _requires_ (but we require the `MethodImpl`s to be final to keep things simple) - i.e. an interface is allowed to provide (or override) an implementation of another interface's method
+* Interfaces obviously still can't have instance fields.
+* Interfaces may also define static virtual methods (either as abstract or by directly providing the default implementation in the declaration).
+* Interface methods are allowed to MethodImpl other interface methods the interface _requires_ i.e. an interface is allowed to provide (or override) an implementation of another interface's method
   (instance or static virtual).
 
 This list of changes to the specification doesn't attempt to be an exhaustive list - there are many places within the spec that mention interfaces being just contracts that don't define implementation. This list should be complete enough to list places where interesting _implementation differences_ happen.
@@ -547,11 +547,11 @@ Interfaces may define static virtual methods that get resolved at runtime based 
 ### II.12.2 Implementing virtual methods on interfaces
 
 (Add a new bullet under the second bullet in the bulleted list below the first paragraph by mentioning
-that classes can implement abstract static virtual methods by implementing a derived interface providing
-the default implementation for the abstract static virtual method):
+that classes can implement static virtual methods by implementing a derived interface providing
+the implementation for the static virtual method):
 
 * Inheritance of an existing default implementation from an implemented interface derived from
-  the interface declaring the abstract static virtual method.
+  the interface declaring the static virtual method.
 
 (Edit 8th paragraph at page 158, the first unindented one below the bullet list, by
 basically clarifying that "public virtual methods" only refer to "public virtual instance methods"):
