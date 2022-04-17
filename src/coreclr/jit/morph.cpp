@@ -4854,10 +4854,11 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
         const int cnsIndex = static_cast<int>(asIndex->Index()->AsIntConCommon()->IconValue());
         if (cnsIndex >= 0)
         {
-            int             length;
-            const char16_t* str = info.compCompHnd->getStringLiteral(asIndex->Arr()->AsStrCon()->gtScpHnd,
-                                                                     asIndex->Arr()->AsStrCon()->gtSconCPX, &length);
-            if ((cnsIndex < length) && (str != nullptr))
+            const int maxStrSize = 1024;
+            char16_t  str[maxStrSize];
+            int       length = info.compCompHnd->getStringLiteral(asIndex->Arr()->AsStrCon()->gtScpHnd,
+                                                            asIndex->Arr()->AsStrCon()->gtSconCPX, str, maxStrSize);
+            if ((cnsIndex < length))
             {
                 GenTree* cnsCharNode = gtNewIconNode(str[cnsIndex], TYP_INT);
                 INDEBUG(cnsCharNode->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
