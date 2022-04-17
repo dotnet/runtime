@@ -30,11 +30,11 @@ struct _EventPipeStackContents_Internal {
 	// Array of IP values from a stack crawl.
 	// Top of stack is at index 0.
 	uintptr_t stack_frames [EP_MAX_STACK_DEPTH];
-#ifdef EP_CHECKED_BUILD
-	// Parallel array of MethodDesc pointers.
-	// Used for debug-only stack printing.
-	ep_rt_method_desc_t *methods [EP_MAX_STACK_DEPTH];
-#endif
+// #ifdef EP_CHECKED_BUILD
+// 	// Parallel array of MethodDesc pointers.
+// 	// Used for debug-only stack printing.
+// 	ep_rt_method_desc_t *methods [EP_MAX_STACK_DEPTH];
+// #endif
 
 };
 
@@ -45,9 +45,9 @@ struct _EventPipeStackContents {
 #endif
 
 EP_DEFINE_GETTER_ARRAY_REF(EventPipeStackContents *, stack_contents, uintptr_t *, const uintptr_t *, stack_frames, stack_frames[0])
-#ifdef EP_CHECKED_BUILD
-EP_DEFINE_GETTER_ARRAY_REF(EventPipeStackContents *, stack_contents, ep_rt_method_desc_t **, ep_rt_method_desc_t *const*, methods, methods[0])
-#endif
+// #ifdef EP_CHECKED_BUILD
+// EP_DEFINE_GETTER_ARRAY_REF(EventPipeStackContents *, stack_contents, ep_rt_method_desc_t **, ep_rt_method_desc_t *const*, methods, methods[0])
+// #endif
 EP_DEFINE_GETTER(EventPipeStackContents *, stack_contents, uint32_t, next_available_frame)
 EP_DEFINE_SETTER(EventPipeStackContents *, stack_contents, uint32_t, next_available_frame)
 
@@ -75,12 +75,12 @@ ep_stack_contents_copyto (
 		ep_stack_contents_get_stack_frames_ref (stack_contents),
 		ep_stack_contents_get_next_available_frame (stack_contents) * sizeof (uintptr_t));
 
-#ifdef EP_CHECKED_BUILD
-	memcpy (
-		ep_stack_contents_get_methods_ref (dest),
-		ep_stack_contents_get_methods_ref (stack_contents),
-		ep_stack_contents_get_next_available_frame (stack_contents) * sizeof (ep_rt_method_desc_t *));
-#endif
+// #ifdef EP_CHECKED_BUILD
+// 	memcpy (
+// 		ep_stack_contents_get_methods_ref (dest),
+// 		ep_stack_contents_get_methods_ref (stack_contents),
+// 		ep_stack_contents_get_next_available_frame (stack_contents) * sizeof (ep_rt_method_desc_t *));
+// #endif
 
 	ep_stack_contents_set_next_available_frame (dest, ep_stack_contents_get_next_available_frame (stack_contents));
 }
@@ -109,21 +109,21 @@ ep_stack_contents_get_length (EventPipeStackContents *stack_contents)
 	return ep_stack_contents_get_next_available_frame (stack_contents);
 }
 
-#ifdef EP_CHECKED_BUILD
-static
-inline
-ep_rt_method_desc_t *
-ep_stack_contents_get_method (
-	EventPipeStackContents *stack_contents,
-	uint32_t frame_index)
-{
-	EP_ASSERT (frame_index < EP_MAX_STACK_DEPTH);
-	if (frame_index >= EP_MAX_STACK_DEPTH)
-		return NULL;
+// #ifdef EP_CHECKED_BUILD
+// static
+// inline
+// ep_rt_method_desc_t *
+// ep_stack_contents_get_method (
+// 	EventPipeStackContents *stack_contents,
+// 	uint32_t frame_index)
+// {
+// 	EP_ASSERT (frame_index < EP_MAX_STACK_DEPTH);
+// 	if (frame_index >= EP_MAX_STACK_DEPTH)
+// 		return NULL;
 
-	return ep_stack_contents_get_methods_cref (stack_contents)[frame_index];
-}
-#endif
+// 	return ep_stack_contents_get_methods_cref (stack_contents)[frame_index];
+// }
+// #endif
 
 static
 inline
@@ -137,9 +137,9 @@ ep_stack_contents_append (
 	uint32_t next_frame = ep_stack_contents_get_next_available_frame (stack_contents);
 	if (next_frame < EP_MAX_STACK_DEPTH) {
 		ep_stack_contents_get_stack_frames_ref (stack_contents)[next_frame] = control_pc;
-#ifdef EP_CHECKED_BUILD
-		ep_stack_contents_get_methods_ref (stack_contents)[next_frame] = method;
-#endif
+// #ifdef EP_CHECKED_BUILD
+// 		ep_stack_contents_get_methods_ref (stack_contents)[next_frame] = method;
+// #endif
 		next_frame++;
 		ep_stack_contents_set_next_available_frame (stack_contents, next_frame);
 	}
@@ -169,7 +169,7 @@ uint32_t
 ep_stack_contents_get_total_size (const EventPipeStackContents *stack_contents)
 {
 	// The total size including the size
-	return stack_contents ? (ep_stack_contents_get_next_available_frame (stack_contents) * sizeof (uintptr_t)) + sizeof (uint32_t) : 0;
+	return stack_contents ? (ep_stack_contents_get_next_available_frame (stack_contents) * sizeof (uintptr_t)) + sizeof (uint32_t) : sizeof (uint32_t);
 }
 
 #endif /* ENABLE_PERFTRACING */

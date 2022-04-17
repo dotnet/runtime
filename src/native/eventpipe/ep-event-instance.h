@@ -31,15 +31,15 @@ struct _EventPipeEventInstance_Internal {
 	uint32_t metadata_id;
 	uint32_t proc_num;
 	uint32_t data_len;
+#ifdef EP_CHECKED_BUILD
+	uint32_t debug_event_start;
+	uint32_t debug_event_end;
+#endif
 	// TODO: Look at optimizing this when writing into buffer manager.
 	// Only write up to next available frame to better utilize memory.
 	// Even events not requesting a stack will still waste space in buffer manager.
 	// Needs to go last since number of frames will set size in stream.
 	EventPipeStackContents stack_contents;
-#ifdef EP_CHECKED_BUILD
-	uint32_t debug_event_start;
-	uint32_t debug_event_end;
-#endif
 };
 
 #if !defined(EP_INLINE_GETTER_SETTER) && !defined(EP_IMPL_EVENT_INSTANCE_GETTER_SETTER)
@@ -100,6 +100,17 @@ void
 ep_event_instance_serialize_to_json_file (
 	EventPipeEventInstance *ep_event_instance,
 	EventPipeJsonFile *json_file);
+
+static
+inline
+uint32_t
+ep_event_instance_get_flattened_size (const EventPipeEventInstance *ep_event_instance)
+{
+	EP_ASSERT (ep_event_instance != NULL);
+	return ep_event_instance_get_data (ep_event_instance) ?
+		sizeof (EventPipeEventInstance) - sizeof (EventPipeStackContents) + ep_stack_contents_get_total_size (ep_event_instance_get_stack_contents_cref (ep_event_instance)) + ep_event_instance_get_data_len (ep_event_instance) :
+		sizeof (EventPipeEventInstance) - sizeof (EventPipeStackContents) + ep_stack_contents_get_total_size (ep_event_instance_get_stack_contents_cref (ep_event_instance));
+}
 
 /*
  * EventPipeSequencePoint.

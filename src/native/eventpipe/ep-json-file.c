@@ -124,14 +124,16 @@ ep_json_file_write_event_data (
 	ep_char8_t method_name [MAX_METHOD_NAME_LEN];
 
 	for (uint32_t i = 0; i < ep_stack_contents_get_length (stack_contents); ++i) {
-		ep_rt_method_desc_t *method = ep_stack_contents_get_method (stack_contents, i);
+		// ep_rt_method_desc_t *method = ep_stack_contents_get_method (stack_contents, i);
 
-		if (!ep_rt_method_get_simple_assembly_name (method, assembly_name, ARRAY_SIZE (assembly_name))) {
+		// if (!ep_rt_method_get_simple_assembly_name (method, assembly_name, ARRAY_SIZE (assembly_name))) {
+		if (true) {
 			assembly_name [0] = '?';
 			assembly_name [1] = 0;
 		}
 
-		if (!ep_rt_method_get_full_name (method, method_name, ARRAY_SIZE (method_name))) {
+		// if (!ep_rt_method_get_full_name (method, method_name, ARRAY_SIZE (method_name))) {
+		if (true) {
 			method_name [0] = '?';
 			method_name [1] = 0;
 		}

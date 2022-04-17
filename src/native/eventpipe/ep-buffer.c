@@ -83,10 +83,6 @@ ep_buffer_write_event (
 
 	bool success = true;
 
-	// Calculate the location of the data payload.
-	uint8_t *data_dest;
-	data_dest = (ep_event_payload_get_size (payload) == 0 ? NULL : buffer->current + sizeof(EventPipeEventInstance));
-
 	EventPipeStackContents stack_contents;
 	EventPipeStackContents *current_stack_contents;
 	current_stack_contents = ep_stack_contents_init (&stack_contents);
@@ -94,6 +90,10 @@ ep_buffer_write_event (
 		ep_walk_managed_stack_for_current_thread (current_stack_contents);
 		stack = current_stack_contents;
 	}
+
+	// Calculate the location of the data payload.
+	uint8_t *data_dest;
+	data_dest = (ep_event_payload_get_size (payload) == 0 ? NULL : buffer->current + sizeof(EventPipeEventInstance) - sizeof (EventPipeStackContents) + ep_stack_contents_get_total_size (stack));
 
 	// Calculate the size of the event.
 	uint32_t event_size = sizeof (EventPipeEventInstance) - sizeof (EventPipeStackContents) + ep_stack_contents_get_total_size (stack) + ep_event_payload_get_size (payload);
@@ -150,13 +150,7 @@ ep_buffer_move_next_read_event (EventPipeBuffer *buffer)
 			EP_ASSERT (!"Input pointer is out of range.");
 			buffer->current_read_event = NULL;
 		} else {
-			if (ep_event_instance_get_data (buffer->current_read_event))
-				// We have a pointer within the bounds of the buffer.
-				// Find the next event by skipping the current event with it's data payload immediately after the instance.
-				buffer->current_read_event = (EventPipeEventInstance *)ep_buffer_get_next_aligned_address (buffer, (uint8_t *)(ep_event_instance_get_data (buffer->current_read_event) + ep_event_instance_get_data_len (buffer->current_read_event)));
-			else
-				// In case we do not have a payload, the next instance is right after the current instance
-				buffer->current_read_event = (EventPipeEventInstance *)ep_buffer_get_next_aligned_address (buffer, (uint8_t *)(buffer->current_read_event + 1));
+			buffer->current_read_event = (EventPipeEventInstance *)ep_buffer_get_next_aligned_address (buffer, (uint8_t *)buffer->current_read_event + ep_event_instance_get_flattened_size (buffer->current_read_event));
 
 			// this may roll over and that is fine
 			buffer->event_sequence_number++;
@@ -243,7 +237,7 @@ ep_buffer_ensure_consistency (const EventPipeBuffer *buffer)
 		);
 
 		// Skip the event.
-		ptr = ep_buffer_get_next_aligned_address (buffer, ptr + sizeof (EventPipeEventInstance) + ep_event_instance_get_data_len (instance));
+		ptr = ep_buffer_get_next_aligned_address (buffer, ptr + ep_event_instance_get_flattened_size (instance));
 	}
 
 	// When we're done walking the filled portion of the buffer,
