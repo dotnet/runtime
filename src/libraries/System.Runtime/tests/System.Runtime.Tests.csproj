@@ -248,11 +248,11 @@
     <Compile Include="System\ExitCodeTests.Unix.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="$(CommonTestPath)System\GenericMathHelpers.cs" Link="Common\System\GenericMathHelpers.cs" />
     <Compile Include="System\ByteTests.GenericMath.cs" />
     <Compile Include="System\CharTests.GenericMath.cs" />
     <Compile Include="System\DecimalTests.GenericMath.cs" />
     <Compile Include="System\DoubleTests.GenericMath.cs" />
-    <Compile Include="System\GenericMathHelpers.cs" />
     <Compile Include="System\HalfTests.GenericMath.cs" />
     <Compile Include="System\Int16Tests.GenericMath.cs" />
     <Compile Include="System\Int32Tests.GenericMath.cs" />
