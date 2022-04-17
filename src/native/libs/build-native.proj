@@ -6,6 +6,7 @@
     <AssemblyName>.NET Runtime</AssemblyName>
     <_BuildNativeArgs>$(TargetArchitecture) $(Configuration) outconfig $(NetCoreAppCurrent)-$(TargetOS)-$(Configuration)-$(TargetArchitecture) -os $(TargetOS)</_BuildNativeArgs>
     <_BuildNativeArgs Condition="'$(OfficialBuildId)' != ''">$(_BuildNativeArgs) /p:OfficialBuildId="$(OfficialBuildId)"</_BuildNativeArgs>
+    <_BuildNativeArgs Condition="'$(PgoInstrument)' == 'true'">$(_BuildNativeArgs) pgoinstrument</_BuildNativeArgs>
   </PropertyGroup>
 
   <ItemGroup>
