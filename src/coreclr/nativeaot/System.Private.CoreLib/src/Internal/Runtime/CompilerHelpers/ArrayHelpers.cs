@@ -64,7 +64,7 @@ namespace Internal.Runtime.CompilerHelpers
                 {
                     // Multidimensional array of rank 1 with 0 lower bounds gets actually allocated
                     // as an SzArray. SzArray is castable to MdArray rank 1.
-                    int length = pDimensions[0];
+                    int length = pDimensions![0];
                     if (length < 0)
                     {
                         // Compat: we need to throw OverflowException. Array.CreateInstance would throw ArgumentOutOfRange
