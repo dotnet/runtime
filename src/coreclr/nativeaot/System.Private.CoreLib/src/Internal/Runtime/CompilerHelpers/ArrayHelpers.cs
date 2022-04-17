@@ -64,8 +64,8 @@ namespace Internal.Runtime.CompilerHelpers
                 {
                     // Multidimensional array of rank 1 with 0 lower bounds gets actually allocated
                     // as an SzArray. SzArray is castable to MdArray rank 1.
-                    Type elementType = Type.GetTypeFromHandle(new RuntimeTypeHandle(eeType.ArrayElementType));
-                    return RuntimeImports.RhNewArray(elementType.MakeArrayType().TypeHandle.ToEETypePtr(), pDimensions![0]);
+                    Type elementType = Type.GetTypeFromHandle(new RuntimeTypeHandle(eeType.ArrayElementType))!;
+                    return RuntimeImports.RhNewArray(elementType.MakeArrayType().TypeHandle.ToEETypePtr(), pDimensions[0]);
                 }
 
                 return Array.NewMultiDimArray(eeType, pDimensions, rank);
