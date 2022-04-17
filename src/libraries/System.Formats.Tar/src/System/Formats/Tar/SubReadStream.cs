@@ -25,7 +25,7 @@ namespace System.Formats.Tar
         {
             if (!superStream.CanRead)
             {
-                throw new NotSupportedException(SR.IO_NotSupported_UnreadableStream);
+                throw new InvalidOperationException(SR.IO_NotSupported_UnreadableStream);
             }
             _startInSuperStream = startPosition;
             _positionInSuperStream = startPosition;
@@ -54,7 +54,7 @@ namespace System.Formats.Tar
             set
             {
                 ThrowIfDisposed();
-                throw new NotSupportedException(SR.IO_NotSupported_UnseekableStream);
+                throw new InvalidOperationException(SR.IO_NotSupported_UnseekableStream);
             }
         }
 
@@ -158,13 +158,13 @@ namespace System.Formats.Tar
             return ret;
         }
 
-        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException(SR.IO_NotSupported_UnseekableStream);
+        public override long Seek(long offset, SeekOrigin origin) => throw new InvalidOperationException(SR.IO_NotSupported_UnseekableStream);
 
-        public override void SetLength(long value) => throw new NotSupportedException(SR.IO_NotSupported_UnseekableStream);
+        public override void SetLength(long value) => throw new InvalidOperationException(SR.IO_NotSupported_UnseekableStream);
 
-        public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException(SR.IO_NotSupported_UnwritableStream);
+        public override void Write(byte[] buffer, int offset, int count) => throw new InvalidOperationException(SR.IO_NotSupported_UnwritableStream);
 
-        public override void Flush() => throw new NotSupportedException(SR.IO_NotSupported_UnwritableStream);
+        public override void Flush() => throw new InvalidOperationException(SR.IO_NotSupported_UnwritableStream);
 
         // Close the stream for reading.  Note that this does NOT close the superStream (since
         // the substream is just 'a chunk' of the super-stream

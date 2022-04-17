@@ -17,25 +17,54 @@ namespace System.Formats.Tar.Tests
             using (TarWriter writer = new TarWriter(archiveStream, archiveFormat: TarFormat.V7, leaveOpen: true))
             {
                 // Entry types supported in ustar but not in v7
-                Assert.Throws<NotSupportedException>(() => writer.WriteEntry(new UstarTarEntry(TarEntryType.BlockDevice, InitialEntryName)));
-                Assert.Throws<NotSupportedException>(() => writer.WriteEntry(new UstarTarEntry(TarEntryType.CharacterDevice, InitialEntryName)));
-                Assert.Throws<NotSupportedException>(() => writer.WriteEntry(new UstarTarEntry(TarEntryType.Fifo, InitialEntryName)));
-                Assert.Throws<NotSupportedException>(() => writer.WriteEntry(new UstarTarEntry(TarEntryType.RegularFile, InitialEntryName)));
+                Assert.Throws<InvalidOperationException>(() => writer.WriteEntry(new UstarTarEntry(TarEntryType.BlockDevice, InitialEntryName)));
+                Assert.Throws<InvalidOperationException>(() => writer.WriteEntry(new UstarTarEntry(TarEntryType.CharacterDevice, InitialEntryName)));
+                Assert.Throws<InvalidOperationException>(() => writer.WriteEntry(new UstarTarEntry(TarEntryType.Fifo, InitialEntryName)));
 
                 // Entry types supported in pax but not in v7
-                Assert.Throws<NotSupportedException>(() => writer.WriteEntry(new PaxTarEntry(TarEntryType.BlockDevice, InitialEntryName)));
-                Assert.Throws<NotSupportedException>(() => writer.WriteEntry(new PaxTarEntry(TarEntryType.CharacterDevice, InitialEntryName)));
-                Assert.Throws<NotSupportedException>(() => writer.WriteEntry(new PaxTarEntry(TarEntryType.Fifo, InitialEntryName)));
-                Assert.Throws<NotSupportedException>(() => writer.WriteEntry(new PaxTarEntry(TarEntryType.RegularFile, InitialEntryName)));
+                Assert.Throws<InvalidOperationException>(() => writer.WriteEntry(new PaxTarEntry(TarEntryType.BlockDevice, InitialEntryName)));
+                Assert.Throws<InvalidOperationException>(() => writer.WriteEntry(new PaxTarEntry(TarEntryType.CharacterDevice, InitialEntryName)));
+                Assert.Throws<InvalidOperationException>(() => writer.WriteEntry(new PaxTarEntry(TarEntryType.Fifo, InitialEntryName)));
 
                 // Entry types supported in gnu but not in v7
-                Assert.Throws<NotSupportedException>(() => writer.WriteEntry(new GnuTarEntry(TarEntryType.BlockDevice, InitialEntryName)));
-                Assert.Throws<NotSupportedException>(() => writer.WriteEntry(new GnuTarEntry(TarEntryType.CharacterDevice, InitialEntryName)));
-                Assert.Throws<NotSupportedException>(() => writer.WriteEntry(new GnuTarEntry(TarEntryType.Fifo, InitialEntryName)));
-                Assert.Throws<NotSupportedException>(() => writer.WriteEntry(new GnuTarEntry(TarEntryType.RegularFile, InitialEntryName)));
+                Assert.Throws<InvalidOperationException>(() => writer.WriteEntry(new GnuTarEntry(TarEntryType.BlockDevice, InitialEntryName)));
+                Assert.Throws<InvalidOperationException>(() => writer.WriteEntry(new GnuTarEntry(TarEntryType.CharacterDevice, InitialEntryName)));
+                Assert.Throws<InvalidOperationException>(() => writer.WriteEntry(new GnuTarEntry(TarEntryType.Fifo, InitialEntryName)));
             }
             // Verify nothing was written, not even the empty records
             Assert.Equal(0, archiveStream.Length);
+        }
+
+        [Theory]
+        [InlineData(TarFormat.Ustar)]
+        [InlineData(TarFormat.Pax)]
+        [InlineData(TarFormat.Gnu)]
+        public void Write_RegularFileEntry_As_V7RegularFileEntry(TarFormat entryFormat)
+        {
+            using MemoryStream archive = new MemoryStream();
+            using (TarWriter writer = new TarWriter(archive, archiveFormat: TarFormat.V7, leaveOpen: true))
+            {
+                TarEntry entry = entryFormat switch
+                {
+                    TarFormat.Ustar => new UstarTarEntry(TarEntryType.RegularFile, InitialEntryName),
+                    TarFormat.Pax => new PaxTarEntry(TarEntryType.RegularFile, InitialEntryName),
+                    TarFormat.Gnu => new GnuTarEntry(TarEntryType.RegularFile, InitialEntryName),
+                    _ => throw new FormatException()
+                };
+
+                // Should be written as V7RegularFile
+                writer.WriteEntry(entry);
+            }
+
+            archive.Seek(0, SeekOrigin.Begin);
+            using (TarReader reader = new TarReader(archive))
+            {
+                TarEntry entry = reader.GetNextEntry();
+                Assert.True(entry is V7TarEntry);
+                Assert.Equal(TarEntryType.V7RegularFile, entry.EntryType);
+
+                Assert.Null(reader.GetNextEntry());
+            }
         }
 
 

@@ -33,7 +33,7 @@ namespace System.Formats.Tar
             ArgumentException.ThrowIfNullOrEmpty(entryName);
 
             // Throws if format is unknown or out of range
-            TarHelpers.VerifyEntryTypeIsSupported(entryType, format);
+            TarHelpers.VerifyEntryTypeIsSupported(entryType, format, forWriting: false);
 
             _readerOfOrigin = null;
 
@@ -101,6 +101,7 @@ namespace System.Formats.Tar
         /// <summary>
         /// When the <see cref="EntryType"/> indicates a <see cref="TarEntryType.SymbolicLink"/> or a <see cref="TarEntryType.HardLink"/>, this property returns the link target path of such link.
         /// </summary>
+        /// <exception cref="InvalidOperationException">Cannot set the link name if the entry type is not <see cref="TarEntryType.HardLink"/> or <see cref="TarEntryType.SymbolicLink"/>.</exception>
         public string LinkName
         {
             get => _header._linkName;
@@ -108,7 +109,7 @@ namespace System.Formats.Tar
             {
                 if (_header._typeFlag is not TarEntryType.HardLink and not TarEntryType.SymbolicLink)
                 {
-                    throw new NotSupportedException(SR.TarEntryHardLinkOrSymLinkExpected);
+                    throw new InvalidOperationException(SR.TarEntryHardLinkOrSymLinkExpected);
                 }
                 _header._linkName = value;
             }
@@ -169,7 +170,7 @@ namespace System.Formats.Tar
         /// <para>A directory exists with the same name as <paramref name="destinationFileName"/>.</para>
         /// <para>-or-</para>
         /// <para>An I/O problem occurred.</para></exception>
-        /// <exception cref="NotSupportedException">Attempted to extract an unsupported entry type.</exception>
+        /// <exception cref="InvalidOperationException">Attempted to extract an unsupported entry type.</exception>
         /// <exception cref="UnauthorizedAccessException">Operation not permitted due to insufficient permissions.</exception>
         public void ExtractToFile(string destinationFileName, bool overwrite)
         {
@@ -231,7 +232,7 @@ namespace System.Formats.Tar
                 case TarEntryType.SparseFile:
                 case TarEntryType.TapeVolume:
                 default:
-                    throw new NotSupportedException(string.Format(SR.TarEntryTypeNotSupportedForExtracting, EntryType));
+                    throw new InvalidOperationException(string.Format(SR.TarEntryTypeNotSupportedForExtracting, EntryType));
             }
         }
 
@@ -252,7 +253,7 @@ namespace System.Formats.Tar
         /// <para>A directory exists with the same name as <paramref name="destinationFileName"/>.</para>
         /// <para>-or-</para>
         /// <para>An I/O problem occurred.</para></exception>
-        /// <exception cref="NotSupportedException">Attempted to extract an unsupported entry type.</exception>
+        /// <exception cref="InvalidOperationException">Attempted to extract an unsupported entry type.</exception>
         /// <exception cref="UnauthorizedAccessException">Operation not permitted due to insufficient permissions.</exception>
         public Task ExtractToFileAsync(string destinationFileName, bool overwrite, CancellationToken cancellationToken = default)
         {
@@ -265,7 +266,7 @@ namespace System.Formats.Tar
         /// <value><para>Gets a stream that represents the data section of this entry.</para>
         /// <para>Sets a new stream that represents the data section, if it makes sense for the <see cref="EntryType"/> to contain data; if a stream already existed, the old stream gets disposed before substituting it with the new stream. Setting a <see langword="null"/> stream is allowed.</para></value>
         /// <remarks>If you write data to this data stream, make sure to rewind it to the desired start position before writing this entry into an archive using <see cref="TarWriter.WriteEntry(TarEntry)"/> or <see cref="TarWriter.WriteEntryAsync(TarEntry, CancellationToken)"/>.</remarks>
-        /// <exception cref="NotSupportedException">Setting a data section is not supported because the <see cref="EntryType"/> is not <see cref="TarEntryType.RegularFile"/> (or <see cref="TarEntryType.V7RegularFile"/> for an archive of <see cref="TarFormat.V7"/> format).</exception>
+        /// <exception cref="InvalidOperationException">Setting a data section is not supported because the <see cref="EntryType"/> is not <see cref="TarEntryType.RegularFile"/> (or <see cref="TarEntryType.V7RegularFile"/> for an archive of <see cref="TarFormat.V7"/> format).</exception>
         /// <exception cref="IOException"><para>Cannot set an unreadable stream.</para>
         /// <para>-or-</para>
         /// <para>An I/O problem occurred.</para></exception>
@@ -276,7 +277,7 @@ namespace System.Formats.Tar
             {
                 if (!IsDataStreamSetterSupported())
                 {
-                    throw new NotSupportedException(SR.TarEntryNotARegularFile);
+                    throw new InvalidOperationException(string.Format(SR.TarEntryDoesNotSupportDataStream, Name, EntryType));
                 }
 
                 if (value != null && !value.CanRead)

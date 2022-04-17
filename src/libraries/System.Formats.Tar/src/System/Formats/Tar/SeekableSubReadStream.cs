@@ -18,7 +18,7 @@ namespace System.Formats.Tar
         {
             if (!superStream.CanSeek)
             {
-                throw new NotSupportedException(SR.IO_NotSupported_UnseekableStream);
+                throw new InvalidOperationException(SR.IO_NotSupported_UnseekableStream);
             }
         }
 

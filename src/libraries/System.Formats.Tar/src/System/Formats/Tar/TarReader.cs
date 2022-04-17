@@ -113,7 +113,7 @@ namespace System.Formats.Tar
                 }
                 else if (header._format != Format)
                 {
-                    throw new FormatException(SR.TarEntriesInDifferentFormats);
+                    throw new FormatException(string.Format(SR.TarEntriesInDifferentFormats, header._format, Format));
                 }
 
                 TarEntry entry = Format switch

@@ -193,40 +193,31 @@
     <value>A metadata entry of type '{0}' was unexpectedly found after a metadata entry of type '{1}'.</value>
   </data>
   <data name="TarEntriesInDifferentFormats" xml:space="preserve">
-    <value>The archive contains entries in different formats.</value>
+    <value>An entry in '{0}' format was found in an archive where other entries of format '{1}' have been found.</value>
   </data>
   <data name="TarEntryBlockOrCharacterExpected" xml:space="preserve">
-    <value>Cannot set the DevMajor or DevMinor fields on an entry that does not represent a block or character device.</value>
+    <value>Cannot set the 'DeviceMajor' or 'DeviceMinor' fields on an entry that does not represent a block or character device.</value>
   </data>
   <data name="TarEntryHardLinkOrSymLinkExpected" xml:space="preserve">
     <value>Cannot set the LinkName field on an entry that does not represent a hard link or a symbolic link.</value>
   </data>
-  <data name="TarEntryModeOutOfRange" xml:space="preserve">
-    <value>The mode must be a base 10 number between 0 and 511 (777 in octal).</value>
-  </data>
-  <data name="TarEntryNotARegularFile" xml:space="preserve">
-    <value>Entry type is not a regular file, so it does not support setting the data stream.</value>
+  <data name="TarEntryDoesNotSupportDataStream" xml:space="preserve">
+    <value>The entry '{0}' has a '{1}' type, which does not support setting a data stream.</value>
   </data>
   <data name="TarEntryTypeNotSupported" xml:space="preserve">
     <value>Entry type '{0}' not supported in format '{1}'.</value>
   </data>
   <data name="TarEntryTypeNotSupportedForExtracting" xml:space="preserve">
-    <value>Entry type not supported for extraction: '{0}'</value>
+    <value>Entry type '{0}' not supported for extraction.</value>
   </data>
   <data name="TarExtractingResultsInOutside" xml:space="preserve">
     <value>Extracting Tar entry would have resulted in a file outside the specified destination directory.</value>
   </data>
   <data name="TarGnuFormatExpected" xml:space="preserve">
-    <value>A GNU format was expected, but could not be reliably determined for entry '{0}'.</value>
+    <value>Entry '{0}' was expected to be in the GNU format, but did not have the expected version data.</value>
   </data>
   <data name="TarInvalidFormat" xml:space="preserve">
     <value>The archive format is invalid: '{0}'</value>
-  </data>
-  <data name="TarMalformedTwoExtendedAttributesEntries" xml:space="preserve">
-    <value>The archive is malformed. It contains two extended attributes entries in a row.</value>
-  </data>
-  <data name="TarPaxFormatExpected" xml:space="preserve">
-    <value>A PAX format was expected, but could not be reliably determined for entry '{0}'.</value>
   </data>
   <data name="TarPosixFormatExpected" xml:space="preserve">
     <value>A POSIX format was expected (Ustar or PAX), but could not be reliably determined for entry '{0}'.</value>
@@ -241,7 +232,7 @@
     <value>The archive has more than one global extended attributes entry.</value>
   </data>
   <data name="TarUnsupportedFile" xml:space="preserve">
-    <value>The file '{0}' is not supported for tar archiving.</value>
+    <value>The file '{0}' is a type of file not supported for tar archiving.</value>
   </data>
   <data name="UnauthorizedAccess_IODenied_NoPathName" xml:space="preserve">
     <value>Access to the path is denied.</value>

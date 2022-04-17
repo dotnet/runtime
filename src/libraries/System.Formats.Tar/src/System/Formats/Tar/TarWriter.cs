@@ -160,13 +160,13 @@ namespace System.Formats.Tar
         /// </list>
         /// </remarks>
         /// <exception cref="ObjectDisposedException">The archive stream is disposed.</exception>
-        /// <exception cref="NotSupportedException">The entry type of the <paramref name="entry"/> is not supported for writing.</exception>
+        /// <exception cref="InvalidOperationException">The entry type of the <paramref name="entry"/> is not supported for writing.</exception>
         /// <exception cref="IOException">An I/O problem ocurred.</exception>
         public void WriteEntry(TarEntry entry)
         {
             ThrowIfDisposed();
 
-            TarHelpers.VerifyEntryTypeIsSupported(entry.EntryType, Format);
+            TarHelpers.VerifyEntryTypeIsSupported(entry.EntryType, Format, forWriting: true);
 
             WriteGlobalExtendedAttributesEntryIfNeeded();
 

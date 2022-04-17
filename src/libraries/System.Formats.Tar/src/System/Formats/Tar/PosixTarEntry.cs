@@ -26,7 +26,7 @@ namespace System.Formats.Tar
         /// When the current entry represents a character device or a block device, the major number identifies the driver associated with the device.
         /// </summary>
         /// <remarks>Character and block devices are Unix-specific entry types.</remarks>
-        /// <exception cref="NotSupportedException">The entry does not represent a block device or a character device.</exception>
+        /// <exception cref="InvalidOperationException">The entry does not represent a block device or a character device.</exception>
         /// <exception cref="ArgumentOutOfRangeException">Cannot set a negative value.</exception>
         public int DeviceMajor
         {
@@ -35,7 +35,7 @@ namespace System.Formats.Tar
             {
                 if (_header._typeFlag is not TarEntryType.BlockDevice and not TarEntryType.CharacterDevice)
                 {
-                    throw new NotSupportedException(SR.TarEntryBlockOrCharacterExpected);
+                    throw new InvalidOperationException(SR.TarEntryBlockOrCharacterExpected);
                 }
 
                 if (value < 0 || value > 99_999_999)
@@ -50,7 +50,7 @@ namespace System.Formats.Tar
         /// When the current entry represents a character device or a block device, the minor number is used by the driver to distinguish individual devices it controls.
         /// </summary>
         /// <remarks>Character and block devices are Unix-specific entry types.</remarks>
-        /// <exception cref="NotSupportedException">The entry does not represent a block device or a character device.</exception>
+        /// <exception cref="InvalidOperationException">The entry does not represent a block device or a character device.</exception>
         /// <exception cref="ArgumentOutOfRangeException">Cannot set a negative value.</exception>
         public int DeviceMinor
         {
@@ -59,7 +59,7 @@ namespace System.Formats.Tar
             {
                 if (_header._typeFlag is not TarEntryType.BlockDevice and not TarEntryType.CharacterDevice)
                 {
-                    throw new NotSupportedException(SR.TarEntryBlockOrCharacterExpected);
+                    throw new InvalidOperationException(SR.TarEntryBlockOrCharacterExpected);
                 }
                 if (value < 0 || value > 99_999_999)
                 {

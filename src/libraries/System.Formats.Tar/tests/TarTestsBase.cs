@@ -101,7 +101,7 @@ namespace System.Formats.Tar.Tests
             {
                 CompressionMethod.Uncompressed => ("tar", ".tar"),
                 CompressionMethod.GZip => ("targz", ".tar.gz"),
-                _ => throw new NotSupportedException($"Unexpected compression method: {compressionMethod}"),
+                _ => throw new InvalidOperationException($"Unexpected compression method: {compressionMethod}"),
             };
 
             return Path.Join(Directory.GetCurrentDirectory(), compressionMethodFolder, format.ToString(), testCaseName + fileExtension);
@@ -253,7 +253,7 @@ namespace System.Formats.Tar.Tests
         protected void VerifyUnsupportedLinkProperty(TarEntry entry)
         {
             Assert.Equal(DefaultLinkName, entry.LinkName);
-            Assert.Throws<NotSupportedException>(() => entry.LinkName = "NotSupported");
+            Assert.Throws<InvalidOperationException>(() => entry.LinkName = "NotSupported");
             Assert.Equal(DefaultLinkName, entry.LinkName);
         }
 
@@ -262,7 +262,7 @@ namespace System.Formats.Tar.Tests
             Assert.Null(entry.DataStream);
             using (MemoryStream dataStream = new MemoryStream())
             {
-                Assert.Throws<NotSupportedException>(() => entry.DataStream = dataStream);
+                Assert.Throws<InvalidOperationException>(() => entry.DataStream = dataStream);
             }
         }
 

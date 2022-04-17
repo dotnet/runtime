@@ -32,10 +32,10 @@ namespace System.Formats.Tar
                 }
                 catch (ObjectDisposedException ex)
                 {
-                    throw new NotSupportedException("This stream does not support reading", ex);
+                    throw new InvalidOperationException("This stream does not support reading", ex);
                 }
             }
-            else throw new NotSupportedException("This stream does not support reading");
+            else throw new InvalidOperationException("This stream does not support reading");
         }
 
         public override long Seek(long offset, SeekOrigin origin)
@@ -48,10 +48,10 @@ namespace System.Formats.Tar
                 }
                 catch (ObjectDisposedException ex)
                 {
-                    throw new NotSupportedException("This stream does not support seeking", ex);
+                    throw new InvalidOperationException("This stream does not support seeking", ex);
                 }
             }
-            else throw new NotSupportedException("This stream does not support seeking");
+            else throw new InvalidOperationException("This stream does not support seeking");
         }
 
         public override void SetLength(long value) { _baseStream.SetLength(value); }
@@ -66,10 +66,10 @@ namespace System.Formats.Tar
                 }
                 catch (ObjectDisposedException ex)
                 {
-                    throw new NotSupportedException("This stream does not support writing", ex);
+                    throw new InvalidOperationException("This stream does not support writing", ex);
                 }
             }
-            else throw new NotSupportedException("This stream does not support writing");
+            else throw new InvalidOperationException("This stream does not support writing");
         }
 
         public override bool CanRead => _canRead && _baseStream.CanRead;
@@ -84,7 +84,7 @@ namespace System.Formats.Tar
             {
                 if (!CanSeek)
                 {
-                    throw new NotSupportedException("This stream does not support seeking.");
+                    throw new InvalidOperationException("This stream does not support seeking.");
                 }
                 return _baseStream.Length;
             }
@@ -96,7 +96,7 @@ namespace System.Formats.Tar
             {
                 if (!CanSeek)
                 {
-                    throw new NotSupportedException("This stream does not support seeking");
+                    throw new InvalidOperationException("This stream does not support seeking");
                 }
                 return _baseStream.Position;
             }
@@ -110,10 +110,10 @@ namespace System.Formats.Tar
                     }
                     catch (ObjectDisposedException ex)
                     {
-                        throw new NotSupportedException("This stream does not support seeking", ex);
+                        throw new InvalidOperationException("This stream does not support seeking", ex);
                     }
                 }
-                else throw new NotSupportedException("This stream does not support seeking");
+                else throw new InvalidOperationException("This stream does not support seeking");
             }
         }
 

@@ -549,7 +549,7 @@ namespace System.Formats.Tar
             // 4096 is a common max path length, and also the size field is 12 bytes long, which is under int.MaxValue.
             if (_size > int.MaxValue)
             {
-                throw new NotSupportedException(string.Format(SR.TarSizeFieldTooLargeForExtendedAttribute, _typeFlag.ToString()));
+                throw new InvalidOperationException(string.Format(SR.TarSizeFieldTooLargeForExtendedAttribute, _typeFlag.ToString()));
             }
 
             byte[] buffer = new byte[(int)_size];

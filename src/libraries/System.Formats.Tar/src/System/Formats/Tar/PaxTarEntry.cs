@@ -28,7 +28,7 @@ namespace System.Formats.Tar
         /// <param name="entryType">The type of the entry.</param>
         /// <param name="entryName">A string with the relative path and file name of this entry.</param>
         /// <exception cref="ArgumentException"><paramref name="entryName"/> is null or empty.</exception>
-        /// <exception cref="NotSupportedException">The entry type is not supported for creating an entry.</exception>
+        /// <exception cref="InvalidOperationException">The entry type is not supported for creating an entry.</exception>
         /// <remarks><para>When creating an instance using the <see cref="PaxTarEntry(TarEntryType, string)"/> constructor, only the following entry types are supported:</para>
         /// <list type="bullet">
         /// <item>In all platforms: <see cref="TarEntryType.Directory"/>, <see cref="TarEntryType.HardLink"/>, <see cref="TarEntryType.SymbolicLink"/>, <see cref="TarEntryType.RegularFile"/>.</item>
@@ -62,7 +62,7 @@ namespace System.Formats.Tar
         /// <param name="extendedAttributes">An enumeration of string key-value pairs that represents the metadata to include in the Extended Attributes entry that precedes the current entry.</param>
         /// <exception cref="ArgumentNullException"><paramref name="extendedAttributes"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentException"><paramref name="entryName"/> is null or empty.</exception>
-        /// <exception cref="NotSupportedException">The entry type is not supported for creating an entry.</exception>
+        /// <exception cref="InvalidOperationException">The entry type is not supported for creating an entry.</exception>
         /// <remarks>When creating an instance using the <see cref="PaxTarEntry(TarEntryType, string)"/> constructor, only the following entry types are supported:
         /// <list type="bullet">
         /// <item>In all platforms: <see cref="TarEntryType.Directory"/>, <see cref="TarEntryType.HardLink"/>, <see cref="TarEntryType.SymbolicLink"/>, <see cref="TarEntryType.RegularFile"/>.</item>

@@ -58,7 +58,8 @@ namespace System.Formats.Tar
 
             int checksum = SaveNameFieldAsBytes(nameBytes, out _);
             long actualLength = GetTotalDataBytesToWrite();
-            checksum += SaveCommonFieldsAsBytes(modeBytes, uidBytes, gidBytes, sizeBytes, mTimeBytes, ref typeFlagByte, linkNameBytes, actualLength);
+            TarEntryType actualEntryType = GetCorrectTypeFlagForFormat(TarFormat.V7);
+            checksum += SaveCommonFieldsAsBytes(modeBytes, uidBytes, gidBytes, sizeBytes, mTimeBytes, ref typeFlagByte, linkNameBytes, actualLength, actualEntryType);
 
             _checksum = SaveChecksumBytes(checksum, checksumBytes);
 
@@ -102,7 +103,8 @@ namespace System.Formats.Tar
 
             int checksum = SavePosixNameFieldAsBytes(nameBytes, prefixBytes);
             long actualLength = GetTotalDataBytesToWrite();
-            checksum += SaveCommonFieldsAsBytes(modeBytes, uidBytes, gidBytes, sizeBytes, mTimeBytes, ref typeFlagByte, linkNameBytes, actualLength);
+            TarEntryType actualEntryType = GetCorrectTypeFlagForFormat(TarFormat.Ustar);
+            checksum += SaveCommonFieldsAsBytes(modeBytes, uidBytes, gidBytes, sizeBytes, mTimeBytes, ref typeFlagByte, linkNameBytes, actualLength, actualEntryType);
             checksum += SavePosixMagicAndVersionBytes(magicBytes, versionBytes);
             checksum += SavePosixAndGnuSharedBytes(uNameBytes, gNameBytes, devMajorBytes, devMinorBytes);
 
@@ -223,7 +225,8 @@ namespace System.Formats.Tar
 
             int checksum = SaveNameFieldAsBytes(nameBytes, out _);
             long actualLength = GetTotalDataBytesToWrite();
-            checksum += SaveCommonFieldsAsBytes(modeBytes, uidBytes, gidBytes, sizeBytes, mTimeBytes, ref typeFlagByte, linkNameBytes, actualLength);
+            TarEntryType actualEntryType = GetCorrectTypeFlagForFormat(TarFormat.Gnu);
+            checksum += SaveCommonFieldsAsBytes(modeBytes, uidBytes, gidBytes, sizeBytes, mTimeBytes, ref typeFlagByte, linkNameBytes, actualLength, actualEntryType);
             checksum += SaveGnuMagicAndVersionBytes(magicBytes, versionBytes);
             checksum += SavePosixAndGnuSharedBytes(uNameBytes, gNameBytes, devMajorBytes, devMinorBytes);
             checksum += SaveGnuBytes(aTimeBytes, cTimeBytes);
@@ -302,7 +305,8 @@ namespace System.Formats.Tar
 
             int checksum = SavePosixNameFieldAsBytes(nameBytes, prefixBytes);
             long actualLength = GetTotalDataBytesToWrite();
-            checksum += SaveCommonFieldsAsBytes(modeBytes, uidBytes, gidBytes, sizeBytes, mTimeBytes, ref typeFlagByte, linkNameBytes, actualLength);
+            TarEntryType actualEntryType = GetCorrectTypeFlagForFormat(TarFormat.Pax);
+            checksum += SaveCommonFieldsAsBytes(modeBytes, uidBytes, gidBytes, sizeBytes, mTimeBytes, ref typeFlagByte, linkNameBytes, actualLength, actualEntryType);
             checksum += SavePosixMagicAndVersionBytes(magicBytes, versionBytes);
             checksum += SavePosixAndGnuSharedBytes(uNameBytes, gNameBytes, devMajorBytes, devMinorBytes);
 
@@ -356,7 +360,7 @@ namespace System.Formats.Tar
         }
 
         // Writes all the common fields shared by all formats into the specified spans.
-        private int SaveCommonFieldsAsBytes(Span<byte> _modeBytes, Span<byte> _uidBytes, Span<byte> _gidBytes, Span<byte> sizeBytes, Span<byte> _mTimeBytes, ref byte _typeFlagByte, Span<byte> _linkNameBytes, long actualLength)
+        private int SaveCommonFieldsAsBytes(Span<byte> _modeBytes, Span<byte> _uidBytes, Span<byte> _gidBytes, Span<byte> sizeBytes, Span<byte> _mTimeBytes, ref byte _typeFlagByte, Span<byte> _linkNameBytes, long actualLength, TarEntryType actualEntryType)
         {
             byte[] modeBytes = (_mode > 0) ?
                 TarHelpers.GetAsciiBytes(TarHelpers.ConvertDecimalToOctal(_mode)) :
@@ -386,7 +390,7 @@ namespace System.Formats.Tar
 
             checksum += WriteTimestampAndGetChecksum(_mTime, _mTimeBytes);
 
-            char typeFlagChar = (char)_typeFlag;
+            char typeFlagChar = (char)actualEntryType;
             _typeFlagByte = (byte)typeFlagChar;
             checksum += typeFlagChar;
 
@@ -396,6 +400,26 @@ namespace System.Formats.Tar
             }
 
             return checksum;
+        }
+
+        // When writing an entry that came from an archive of a different format, if its entry type happens to
+        // be an incompatible regular file entry type, convert it to the compatible one.
+        // No change for all other entry types.
+        private TarEntryType GetCorrectTypeFlagForFormat(TarFormat format)
+        {
+            if (format is TarFormat.V7)
+            {
+                if (_typeFlag is TarEntryType.RegularFile)
+                {
+                    return TarEntryType.V7RegularFile;
+                }
+            }
+            else if (_typeFlag is TarEntryType.V7RegularFile)
+            {
+                return TarEntryType.RegularFile;
+            }
+
+            return _typeFlag;
         }
 
         private long GetTotalDataBytesToWrite()

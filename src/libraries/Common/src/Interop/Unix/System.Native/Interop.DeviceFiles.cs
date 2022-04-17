@@ -20,10 +20,7 @@ internal static partial class Interop
         }
 
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_MkNod", StringMarshalling = StringMarshalling.Utf8, SetLastError = true)]
-        internal static partial int MkNod(string pathName, uint mode, uint major, uint minor);
-
-        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_MakeDev", SetLastError = true)]
-        internal static partial ulong MakeDev(uint major, uint minor);
+        private static partial int MkNod(string pathName, uint mode, uint major, uint minor);
 
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetDeviceIdentifiers", SetLastError = true)]
         internal static partial void GetDeviceIdentifiers(ulong dev, out uint major, out uint minor);

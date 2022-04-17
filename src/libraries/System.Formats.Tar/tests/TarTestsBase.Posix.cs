@@ -133,11 +133,11 @@ namespace System.Formats.Tar.Tests
         {
             Assert.True(entry.EntryType is not TarEntryType.CharacterDevice and not TarEntryType.BlockDevice);
             Assert.Equal(0, entry.DeviceMajor);
-            Assert.Throws<NotSupportedException>(() => entry.DeviceMajor = 5);
+            Assert.Throws<InvalidOperationException>(() => entry.DeviceMajor = 5);
             Assert.Equal(0, entry.DeviceMajor); // No change
 
             Assert.Equal(0, entry.DeviceMinor);
-            Assert.Throws<NotSupportedException>(() => entry.DeviceMinor = 5);
+            Assert.Throws<InvalidOperationException>(() => entry.DeviceMinor = 5);
             Assert.Equal(0, entry.DeviceMinor); // No change
         }
     }

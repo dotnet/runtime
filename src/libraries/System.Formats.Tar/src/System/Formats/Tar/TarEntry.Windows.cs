@@ -13,21 +13,21 @@ namespace System.Formats.Tar
         partial void ExtractAsBlockDevice(string destinationFileName)
         {
             Debug.Assert(EntryType is TarEntryType.BlockDevice or TarEntryType.CharacterDevice);
-            throw new NotSupportedException(SR.IO_DeviceFiles_NotSupported);
+            throw new InvalidOperationException(SR.IO_DeviceFiles_NotSupported);
         }
 
         // Throws on Windows. Character devices are not supported on this platform.
         partial void ExtractAsCharacterDevice(string destinationFileName)
         {
             Debug.Assert(EntryType is TarEntryType.BlockDevice or TarEntryType.CharacterDevice);
-            throw new NotSupportedException(SR.IO_DeviceFiles_NotSupported);
+            throw new InvalidOperationException(SR.IO_DeviceFiles_NotSupported);
         }
 
         // Throws on Windows. Fifo files are not supported on this platform.
         partial void ExtractAsFifo(string destinationFileName)
         {
             Debug.Assert(EntryType is TarEntryType.Fifo);
-            throw new NotSupportedException(SR.IO_FifoFiles_NotSupported);
+            throw new InvalidOperationException(SR.IO_FifoFiles_NotSupported);
         }
 
         // Windows specific implementation of the method that extracts the current entry as a hard link.

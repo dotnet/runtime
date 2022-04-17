@@ -6,9 +6,32 @@ using Xunit;
 
 namespace System.Formats.Tar.Tests
 {
-    // Tests specific to V7 format.
+    // Tests specific to Ustar format.
     public class TarWriter_WriteEntry_Ustar_Tests : TarTestsBase
     {
+        [Fact]
+        public void Write_V7RegularFileEntry_As_RegularFileEntry()
+        {
+            using MemoryStream archive = new MemoryStream();
+            using (TarWriter writer = new TarWriter(archive, archiveFormat: TarFormat.Ustar, leaveOpen: true))
+            {
+                V7TarEntry entry = new V7TarEntry(TarEntryType.V7RegularFile, InitialEntryName);
+
+                // Should be written as RegularFile
+                writer.WriteEntry(entry);
+            }
+
+            archive.Seek(0, SeekOrigin.Begin);
+            using (TarReader reader = new TarReader(archive))
+            {
+                UstarTarEntry entry = reader.GetNextEntry() as UstarTarEntry;
+                Assert.NotNull(entry);
+                Assert.Equal(TarEntryType.RegularFile, entry.EntryType);
+
+                Assert.Null(reader.GetNextEntry());
+            }
+        }
+
         [Fact]
         public void WriteRegularFile()
         {

@@ -770,11 +770,6 @@ int32_t SystemNative_SymLink(const char* target, const char* linkPath)
     return result;
 }
 
-uint64_t SystemNative_MakeDev(uint32_t major, uint32_t minor)
-{
-    return (uint64_t)makedev(major, minor);
-}
-
 void SystemNative_GetDeviceIdentifiers(uint64_t dev, uint32_t* major, uint32_t* minor)
 {
     dev_t castedDev = (dev_t)dev;
