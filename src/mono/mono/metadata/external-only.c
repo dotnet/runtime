@@ -313,6 +313,22 @@ mono_class_is_subclass_of (MonoClass *klass, MonoClass *klassc, gboolean check_i
 	MONO_EXTERNAL_ONLY_GC_UNSAFE (gboolean, mono_class_is_subclass_of_internal (klass, klassc, check_interfaces));
 }
 
+MonoDomain *
+mono_domain_create_appdomain (char *friendly_name, char *configuration_file)
+{
+	return NULL;
+}
+
+void
+mono_domain_try_unload (MonoDomain *domain, MonoObject **exc)
+{
+}
+
+void
+mono_domain_unload (MonoDomain *domain)
+{
+}
+
 /**
  * mono_domain_set_internal:
  * \param domain the new domain
@@ -595,6 +611,26 @@ mono_domain_foreach (MonoDomainFunc func, gpointer user_data)
  */
 void
 mono_context_init (MonoDomain *domain)
+{
+}
+
+void *
+mono_load_remote_field (MonoObject *this_obj, MonoClass *klass, MonoClassField *field, void **res)
+{
+	return NULL;
+}
+
+MonoObject *
+mono_load_remote_field_new (MonoObject *this_obj, MonoClass *klass, MonoClassField *field)
+{
+	return NULL;
+}
+
+void mono_store_remote_field (MonoObject *this_obj, MonoClass *klass, MonoClassField *field, void* val)
+{
+}
+
+void mono_store_remote_field_new (MonoObject *this_obj, MonoClass *klass, MonoClassField *field, MonoObject *arg)
 {
 }
 
