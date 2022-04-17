@@ -211,7 +211,7 @@
     <value>Entry type '{0}' not supported for extraction.</value>
   </data>
   <data name="TarExtractingResultsInOutside" xml:space="preserve">
-    <value>Extracting Tar entry would have resulted in a file outside the specified destination directory.</value>
+    <value>Extracting the Tar entry '{0}' would have resulted in a file outside the specified destination directory: '{1}'</value>
   </data>
   <data name="TarGnuFormatExpected" xml:space="preserve">
     <value>Entry '{0}' was expected to be in the GNU format, but did not have the expected version data.</value>

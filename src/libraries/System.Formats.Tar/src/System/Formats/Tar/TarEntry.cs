@@ -348,7 +348,7 @@ namespace System.Formats.Tar
 
             if (!fileDestinationPath.StartsWith(destinationDirectoryFullPath, PathInternal.StringComparison))
             {
-                throw new IOException(SR.TarExtractingResultsInOutside);
+                throw new IOException(string.Format(SR.TarExtractingResultsInOutside, fileDestinationPath, destinationDirectoryFullPath));
             }
 
             if (EntryType == TarEntryType.Directory)
