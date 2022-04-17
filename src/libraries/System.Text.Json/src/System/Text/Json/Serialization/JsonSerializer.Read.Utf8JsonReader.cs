@@ -107,13 +107,8 @@ namespace System.Text.Json
         ///   </para>
         /// </remarks>
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
-        public static object? Deserialize(ref Utf8JsonReader reader, Type returnType, JsonSerializerOptions? options = null)
+        public static object? Deserialize(ref Utf8JsonReader reader, Type returnType!!, JsonSerializerOptions? options = null)
         {
-            if (returnType == null)
-            {
-                throw new ArgumentNullException(nameof(returnType));
-            }
-
             JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, returnType);
             return Read<object?>(ref reader, jsonTypeInfo);
         }
@@ -223,6 +218,7 @@ namespace System.Text.Json
         private static TValue? Read<TValue>(ref Utf8JsonReader reader, JsonTypeInfo jsonTypeInfo)
         {
             ReadStack state = default;
+            jsonTypeInfo.EnsureConfigured();
             state.Initialize(jsonTypeInfo);
 
             JsonReaderState readerState = reader.CurrentState;

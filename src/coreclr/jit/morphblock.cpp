@@ -57,6 +57,7 @@ protected:
         OneAsgBlock,
         StructBlock,
         SkipCallSrc,
+        SkipMultiRegIntrinsicSrc,
         Nop
     };
 
@@ -262,9 +263,6 @@ void MorphInitBlockHelper::PrepareDst()
         noway_assert(dstAddr->TypeIs(TYP_BYREF, TYP_I_IMPL));
         if (dstAddr->IsLocalAddrExpr(m_comp, &m_dstLclNode, &m_dstFldSeq, &m_dstAddOff))
         {
-            // Don't expect `IsLocalAddrExpr` to pass `INDEX_ADDR`.
-            assert((m_dst->gtFlags & GTF_IND_ARR_INDEX) == 0);
-
             // Note that lclNode can be a field, like `BLK<4> struct(ADD(ADDR(LCL_FLD int), CNST_INT))`.
             m_dstVarDsc = m_comp->lvaGetDesc(m_dstLclNode);
         }
@@ -466,7 +464,7 @@ GenTree* MorphInitBlockHelper::MorphCommaBlock(Compiler* comp, GenTreeOp* firstC
 {
     assert(firstComma->OperIs(GT_COMMA));
 
-    Compiler::GenTreePtrStack commas(comp->getAllocator(CMK_ArrayStack));
+    ArrayStack<GenTree*> commas(comp->getAllocator(CMK_ArrayStack));
     for (GenTree* currComma = firstComma; currComma != nullptr && currComma->OperIs(GT_COMMA);
          currComma          = currComma->gtGetOp2())
     {
@@ -635,6 +633,16 @@ void MorphCopyBlockHelper::PrepareSrc()
 //
 void MorphCopyBlockHelper::TrySpecialCases()
 {
+#ifdef FEATURE_HW_INTRINSICS
+    if (m_src->OperIsHWIntrinsic() && HWIntrinsicInfo::IsMultiReg(m_src->AsHWIntrinsic()->GetHWIntrinsicId()))
+    {
+        assert(m_src->IsMultiRegNode());
+        JITDUMP("Not morphing a multireg intrinsic\n");
+        m_transformationDecision = BlockTransformation::SkipMultiRegIntrinsicSrc;
+        m_result                 = m_asg;
+    }
+#endif // FEATURE_HW_INTRINSICS
+
 #if FEATURE_MULTIREG_RET
     // If this is a multi-reg return, we will not do any morphing of this node.
     if (m_src->IsMultiRegCall())
@@ -887,7 +895,7 @@ void MorphCopyBlockHelper::MorphStructCases()
         }
         else if (m_srcDoFldAsg && srcFldIsProfitable)
         {
-            // Check for the symmetric case (which happens for the _pointer field of promoted spans):
+            // Check for the symmetric case (which happens for the _reference field of promoted spans):
             //
             //               [000240] -----+------             /--*  lclVar    struct(P) V18 tmp9
             //                                                  /--*    byref  V18._value (offs=0x00) -> V30
@@ -1271,12 +1279,10 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
         GenTree* srcFld = nullptr;
         if (m_srcDoFldAsg)
         {
-            noway_assert(m_srcLclNum != BAD_VAR_NUM);
+            noway_assert((m_srcLclNum != BAD_VAR_NUM) && (m_srcLclNode != nullptr));
             unsigned srcFieldLclNum = m_comp->lvaGetDesc(m_srcLclNum)->lvFieldLclStart + i;
-            srcFld = m_comp->gtNewLclvNode(srcFieldLclNum, m_comp->lvaGetDesc(srcFieldLclNum)->TypeGet());
 
-            noway_assert(m_srcLclNode != nullptr);
-            srcFld->gtFlags |= m_srcLclNode->gtFlags & ~GTF_NODE_MASK;
+            srcFld = m_comp->gtNewLclvNode(srcFieldLclNum, m_comp->lvaGetDesc(srcFieldLclNum)->TypeGet());
         }
         else
         {

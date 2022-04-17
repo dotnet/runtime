@@ -14,7 +14,7 @@ namespace System.Text.Json.Serialization.Converters
     /// </summary>
     internal class ObjectDefaultConverter<T> : JsonObjectConverter<T> where T : notnull
     {
-        internal override bool CanHaveIdMetadata => true;
+        internal override bool CanHaveMetadata => true;
 
         internal override bool OnTryRead(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options, ref ReadStack state, [MaybeNullWhen(false)] out T value)
         {
@@ -72,7 +72,7 @@ namespace System.Text.Json.Serialization.Converters
             }
             else
             {
-                // Slower path that supports continuation and preserved references.
+                // Slower path that supports continuation and reading metadata.
 
                 if (state.Current.ObjectState == StackFrameObjectState.None)
                 {
@@ -85,35 +85,44 @@ namespace System.Text.Json.Serialization.Converters
                 }
 
                 // Handle the metadata properties.
-                if (state.Current.ObjectState < StackFrameObjectState.PropertyValue)
+                if (state.CanContainMetadata && state.Current.ObjectState < StackFrameObjectState.ReadMetadata)
                 {
-                    if (options.ReferenceHandlingStrategy == ReferenceHandlingStrategy.Preserve)
+                    if (!JsonSerializer.TryReadMetadata(this, ref reader, ref state))
                     {
-                        if (JsonSerializer.ResolveMetadataForJsonObject<T>(ref reader, ref state, options))
-                        {
-                            if (state.Current.ObjectState == StackFrameObjectState.ReadRefEndObject)
-                            {
-                                // This will never throw since it was previously validated in ResolveMetadataForJsonObject.
-                                value = (T)state.Current.ReturnValue!;
-                                return true;
-                            }
-                        }
-                        else
-                        {
-                            value = default;
-                            return false;
-                        }
+                        value = default;
+                        return false;
                     }
+
+                    state.Current.ObjectState = StackFrameObjectState.ReadMetadata;
                 }
 
                 if (state.Current.ObjectState < StackFrameObjectState.CreatedObject)
                 {
+                    if (state.CanContainMetadata)
+                    {
+                        JsonSerializer.ValidateMetadataForObjectConverter(this, ref reader, ref state);
+                    }
+
+                    if (state.Current.MetadataPropertyNames == MetadataPropertyName.Ref)
+                    {
+                        value = JsonSerializer.ResolveReferenceId<T>(ref state);
+                        return true;
+                    }
+
                     if (jsonTypeInfo.CreateObject == null)
                     {
                         ThrowHelper.ThrowNotSupportedException_DeserializeNoConstructor(jsonTypeInfo.Type, ref reader, ref state);
                     }
 
                     obj = jsonTypeInfo.CreateObject!()!;
+
+                    if (state.Current.MetadataPropertyNames.HasFlag(MetadataPropertyName.Id))
+                    {
+                        Debug.Assert(state.ReferenceId != null);
+                        Debug.Assert(options.ReferenceHandlingStrategy == ReferenceHandlingStrategy.Preserve);
+                        state.ReferenceResolver.AddReference(state.ReferenceId, obj);
+                        state.ReferenceId = null;
+                    }
 
                     if (obj is IJsonOnDeserializing onDeserializing)
                     {
@@ -261,10 +270,8 @@ namespace System.Text.Json.Serialization.Converters
                 writer.WriteStartObject();
                 if (options.ReferenceHandlingStrategy == ReferenceHandlingStrategy.Preserve)
                 {
-                    if (JsonSerializer.WriteReferenceForObject(this, obj, ref state, writer) == MetadataPropertyName.Ref)
-                    {
-                        return true;
-                    }
+                    MetadataPropertyName propertyName = JsonSerializer.WriteReferenceForObject(this, ref state, writer);
+                    Debug.Assert(propertyName != MetadataPropertyName.Ref);
                 }
 
                 if (obj is IJsonOnSerializing onSerializing)
@@ -279,8 +286,8 @@ namespace System.Text.Json.Serialization.Converters
                     if (jsonPropertyInfo.ShouldSerialize)
                     {
                         // Remember the current property for JsonPath support if an exception is thrown.
-                        state.Current.DeclaredJsonPropertyInfo = jsonPropertyInfo;
-                        state.Current.NumberHandling = jsonPropertyInfo.NumberHandling;
+                        state.Current.JsonPropertyInfo = jsonPropertyInfo;
+                        state.Current.NumberHandling = jsonPropertyInfo.EffectiveNumberHandling;
 
                         bool success = jsonPropertyInfo.GetMemberAndWriteJson(obj, ref state, writer);
                         // Converters only return 'false' when out of data which is not possible in fast path.
@@ -295,8 +302,8 @@ namespace System.Text.Json.Serialization.Converters
                 if (dataExtensionProperty?.ShouldSerialize == true)
                 {
                     // Remember the current property for JsonPath support if an exception is thrown.
-                    state.Current.DeclaredJsonPropertyInfo = dataExtensionProperty;
-                    state.Current.NumberHandling = dataExtensionProperty.NumberHandling;
+                    state.Current.JsonPropertyInfo = dataExtensionProperty;
+                    state.Current.NumberHandling = dataExtensionProperty.EffectiveNumberHandling;
 
                     bool success = dataExtensionProperty.GetMemberAndWriteJsonExtensionData(obj, ref state, writer);
                     Debug.Assert(success);
@@ -313,10 +320,8 @@ namespace System.Text.Json.Serialization.Converters
                     writer.WriteStartObject();
                     if (options.ReferenceHandlingStrategy == ReferenceHandlingStrategy.Preserve)
                     {
-                        if (JsonSerializer.WriteReferenceForObject(this, obj, ref state, writer) == MetadataPropertyName.Ref)
-                        {
-                            return true;
-                        }
+                        MetadataPropertyName propertyName = JsonSerializer.WriteReferenceForObject(this, ref state, writer);
+                        Debug.Assert(propertyName != MetadataPropertyName.Ref);
                     }
 
                     if (obj is IJsonOnSerializing onSerializing)
@@ -334,14 +339,12 @@ namespace System.Text.Json.Serialization.Converters
                     Debug.Assert(jsonPropertyInfo != null);
                     if (jsonPropertyInfo.ShouldSerialize)
                     {
-                        state.Current.DeclaredJsonPropertyInfo = jsonPropertyInfo;
-                        state.Current.NumberHandling = jsonPropertyInfo.NumberHandling;
+                        state.Current.JsonPropertyInfo = jsonPropertyInfo;
+                        state.Current.NumberHandling = jsonPropertyInfo.EffectiveNumberHandling;
 
                         if (!jsonPropertyInfo.GetMemberAndWriteJson(obj!, ref state, writer))
                         {
-                            Debug.Assert(jsonPropertyInfo.ConverterBase.ConverterStrategy != ConverterStrategy.Value ||
-                                         jsonPropertyInfo.ConverterBase.TypeToConvert == JsonTypeInfo.ObjectType);
-
+                            Debug.Assert(jsonPropertyInfo.ConverterBase.ConverterStrategy != ConverterStrategy.Value);
                             return false;
                         }
 
@@ -366,8 +369,8 @@ namespace System.Text.Json.Serialization.Converters
                     if (dataExtensionProperty?.ShouldSerialize == true)
                     {
                         // Remember the current property for JsonPath support if an exception is thrown.
-                        state.Current.DeclaredJsonPropertyInfo = dataExtensionProperty;
-                        state.Current.NumberHandling = dataExtensionProperty.NumberHandling;
+                        state.Current.JsonPropertyInfo = dataExtensionProperty;
+                        state.Current.NumberHandling = dataExtensionProperty.EffectiveNumberHandling;
 
                         if (!dataExtensionProperty.GetMemberAndWriteJsonExtensionData(obj, ref state, writer))
                         {
@@ -443,7 +446,7 @@ namespace System.Text.Json.Serialization.Converters
 
             if (!state.Current.UseExtensionProperty)
             {
-                if (!SingleValueReadWithReadAhead(jsonPropertyInfo.ConverterBase.ConverterStrategy, ref reader, ref state))
+                if (!SingleValueReadWithReadAhead(jsonPropertyInfo.ConverterBase.RequiresReadAhead, ref reader, ref state))
                 {
                     return false;
                 }
@@ -451,29 +454,13 @@ namespace System.Text.Json.Serialization.Converters
             else
             {
                 // The actual converter is JsonElement, so force a read-ahead.
-                if (!SingleValueReadWithReadAhead(ConverterStrategy.Value, ref reader, ref state))
+                if (!SingleValueReadWithReadAhead(requiresReadAhead: true, ref reader, ref state))
                 {
                     return false;
                 }
             }
 
             return true;
-        }
-
-        internal sealed override void CreateInstanceForReferenceResolver(ref Utf8JsonReader reader, ref ReadStack state, JsonSerializerOptions options)
-        {
-            if (state.Current.JsonTypeInfo.CreateObject == null)
-            {
-                ThrowHelper.ThrowNotSupportedException_DeserializeNoConstructor(state.Current.JsonTypeInfo.Type, ref reader, ref state);
-            }
-
-            object obj = state.Current.JsonTypeInfo.CreateObject!()!;
-            state.Current.ReturnValue = obj;
-
-            if (obj is IJsonOnDeserializing onDeserializing)
-            {
-                onDeserializing.OnDeserializing();
-            }
         }
     }
 }

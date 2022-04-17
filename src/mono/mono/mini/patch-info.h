@@ -88,3 +88,6 @@ PATCH_INFO(METHOD_PINVOKE_ADDR_CACHE, "pinvoke_addr_cache")
 
 /* MonoMethod* -> llvmonly interp entry */
 PATCH_INFO(LLVMONLY_INTERP_ENTRY, "llvmonly_interp_entry")
+
+/* A MonoGSharedMethodInfo structure */
+PATCH_INFO(GSHARED_METHOD_INFO, "gshared_method_info")

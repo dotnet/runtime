@@ -119,11 +119,8 @@ namespace System.IO
         }
 
         // Writes this MemoryStream to another stream.
-        public override unsafe void WriteTo(Stream stream)
+        public override unsafe void WriteTo(Stream stream!!)
         {
-            if (stream == null)
-                throw new ArgumentNullException(nameof(stream), SR.ArgumentNull_Stream);
-
             byte[] buffer = ToArray();
 
             stream.Write(buffer, 0, buffer.Length);

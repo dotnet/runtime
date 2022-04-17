@@ -66,13 +66,15 @@ namespace Microsoft.WebAssembly.Diagnostics
         public string Scheme { get; }
         public int Value { get; }
         public int SubValue { get; set; }
+        public bool IsValueType { get; set; }
 
         public static bool TryParse(JToken jToken, out DotnetObjectId objectId) => TryParse(jToken?.Value<string>(), out objectId);
 
         public static bool TryParse(string id, out DotnetObjectId objectId)
         {
             objectId = null;
-            try {
+            try
+            {
                 if (id == null)
                     return false;
 
@@ -88,12 +90,13 @@ namespace Microsoft.WebAssembly.Diagnostics
                 switch (objectId.Scheme)
                 {
                     case "methodId":
-                    {
-                        parts = id.Split(":");
-                        if (parts.Length > 3)
+                        if (parts.Length > 4)
+                        {
                             objectId.SubValue = int.Parse(parts[3]);
-                        break;
-                    }
+                            objectId.IsValueType = parts[4] == "ValueType";
+                            return true;
+                        }
+                        return false;
                 }
                 return true;
             }
@@ -125,42 +128,46 @@ namespace Microsoft.WebAssembly.Diagnostics
         public JObject Value { get; private set; }
         public JObject Error { get; private set; }
 
-        public bool IsOk => Value != null;
-        public bool IsErr => Error != null;
+        public bool IsOk => Error == null;
 
-        private Result(JObject result, JObject error)
+        private Result(JObject resultOrError, bool isError)
         {
-            if (result != null && error != null)
-                throw new ArgumentException($"Both {nameof(result)} and {nameof(error)} arguments cannot be non-null.");
+            if (resultOrError == null)
+                throw new ArgumentNullException(nameof(resultOrError));
 
-            bool resultHasError = string.Equals((result?["result"] as JObject)?["subtype"]?.Value<string>(), "error");
-            if (result != null && resultHasError)
+            bool resultHasError = isError || string.Equals((resultOrError["result"] as JObject)?["subtype"]?.Value<string>(), "error");
+            resultHasError |= resultOrError["exceptionDetails"] != null;
+            if (resultHasError)
             {
-                this.Value = null;
-                this.Error = result;
+                Value = null;
+                Error = resultOrError;
             }
             else
             {
-                this.Value = result;
-                this.Error = error;
+                Value = resultOrError;
+                Error = null;
             }
         }
-
         public static Result FromJson(JObject obj)
         {
-            //Log ("protocol", $"from result: {obj}");
-            return new Result(obj["result"] as JObject, obj["error"] as JObject);
+            var error = obj["error"] as JObject;
+            if (error != null)
+                return new Result(error, true);
+            var result = (obj["result"] as JObject) ?? new JObject();
+            return new Result(result, false);
         }
 
-        public static Result Ok(JObject ok) => new Result(ok, null);
+        public static Result Ok(JObject ok) => new Result(ok, false);
 
         public static Result OkFromObject(object ok) => Ok(JObject.FromObject(ok));
 
-        public static Result Err(JObject err) => new Result(null, err);
+        public static Result Err(JObject err) => new Result(err, true);
 
-        public static Result Err(string msg) => new Result(null, JObject.FromObject(new { message = msg }));
+        public static Result Err(string msg) => new Result(JObject.FromObject(new { message = msg }), true);
 
-        public static Result Exception(Exception e) => new Result(null, JObject.FromObject(new { message = e.Message }));
+        public static Result UserVisibleErr(JObject result) => new Result { Value = result };
+
+        public static Result Exception(Exception e) => new Result(JObject.FromObject(new { message = e.Message }), true);
 
         public JObject ToJObject(MessageId target)
         {
@@ -186,7 +193,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         public override string ToString()
         {
-            return $"[Result: IsOk: {IsOk}, IsErr: {IsErr}, Value: {Value?.ToString()}, Error: {Error?.ToString()} ]";
+            return $"[Result: IsOk: {IsOk}, IsErr: {!IsOk}, Value: {Value?.ToString()}, Error: {Error?.ToString()} ]";
         }
     }
 

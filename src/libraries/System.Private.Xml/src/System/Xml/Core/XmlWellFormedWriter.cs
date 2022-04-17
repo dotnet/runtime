@@ -1096,10 +1096,7 @@ namespace System.Xml
         {
             try
             {
-                if (buffer == null)
-                {
-                    throw new ArgumentNullException(nameof(buffer));
-                }
+                ArgumentNullException.ThrowIfNull(buffer);
                 if (index < 0)
                 {
                     throw new ArgumentOutOfRangeException(nameof(index));
@@ -1134,10 +1131,7 @@ namespace System.Xml
         {
             try
             {
-                if (buffer == null)
-                {
-                    throw new ArgumentNullException(nameof(buffer));
-                }
+                ArgumentNullException.ThrowIfNull(buffer);
                 if (index < 0)
                 {
                     throw new ArgumentOutOfRangeException(nameof(index));
@@ -1198,10 +1192,7 @@ namespace System.Xml
         {
             try
             {
-                if (buffer == null)
-                {
-                    throw new ArgumentNullException(nameof(buffer));
-                }
+                ArgumentNullException.ThrowIfNull(buffer);
                 if (index < 0)
                 {
                     throw new ArgumentOutOfRangeException(nameof(index));
@@ -1300,10 +1291,7 @@ namespace System.Xml
         {
             try
             {
-                if (ns == null)
-                {
-                    throw new ArgumentNullException(nameof(ns));
-                }
+                ArgumentNullException.ThrowIfNull(ns);
                 for (int i = _nsTop; i >= 0; i--)
                 {
                     if (_nsStack[i].namespaceUri == ns)
@@ -2125,7 +2113,7 @@ namespace System.Xml
             return s;
         }
 
-        private void CheckNCName(string ncname)
+        private static void CheckNCName(string ncname)
         {
             Debug.Assert(ncname != null && ncname.Length > 0);
 

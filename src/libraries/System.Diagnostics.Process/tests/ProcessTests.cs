@@ -74,6 +74,15 @@ namespace System.Diagnostics.Tests
             }
         }
 
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(-2)]
+        [InlineData((long)int.MaxValue + 1)]
+        public void TestWaitForExitValidation(long milliseconds)
+        {
+            CreateDefaultProcess();
+            Assert.Throws<ArgumentOutOfRangeException>("timeout", () => _process.WaitForExit(TimeSpan.FromMilliseconds(milliseconds)));
+        }
+
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [PlatformSpecific(TestPlatforms.Windows)]  // Expected behavior varies on Windows and Unix
         public void TestBasePriorityOnWindows()
@@ -1116,6 +1125,18 @@ namespace System.Diagnostics.Tests
             Process p = Process.GetProcessById(_process.Id);
             Assert.Equal(_process.Id, p.Id);
             Assert.Equal(_process.ProcessName, p.ProcessName);
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void GetProcessById_KilledProcess_ThrowsArgumentException()
+        {
+            Process process = CreateDefaultProcess();
+            var handle = process.SafeHandle;
+            int processId = process.Id;
+            process.Kill();
+            process.WaitForExit(WaitInMS);
+            Assert.Throws<ArgumentException>(() => Process.GetProcessById(processId));
+            GC.KeepAlive(handle);
         }
 
         [Fact]

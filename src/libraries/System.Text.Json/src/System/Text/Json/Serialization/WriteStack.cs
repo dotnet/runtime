@@ -12,9 +12,11 @@ using System.Threading.Tasks;
 
 namespace System.Text.Json
 {
-    [DebuggerDisplay("Path:{PropertyPath()} Current: ConverterStrategy.{ConverterStrategy.JsonTypeInfo.PropertyInfoForTypeInfo.ConverterStrategy}, {Current.JsonTypeInfo.Type.Name}")]
+    [DebuggerDisplay("{DebuggerDisplay,nq}")]
     internal struct WriteStack
     {
+        public int CurrentDepth => _count;
+
         /// <summary>
         /// Exposes the stackframe that is currently active.
         /// </summary>
@@ -77,9 +79,14 @@ namespace System.Text.Json
         public bool SupportContinuation;
 
         /// <summary>
-        /// Stores a reference id that has been calculated by a polymorphic converter handling a newly encountered boxed struct.
+        /// Internal flag indicating that async serialization is supported. Implies `SupportContinuation`.
         /// </summary>
-        public string? BoxedStructReferenceId;
+        public bool SupportAsync;
+
+        /// <summary>
+        /// Stores a reference id that has been calculated for a newly serialized object.
+        /// </summary>
+        public string? NewReferenceId;
 
         private void EnsurePushCapacity()
         {
@@ -96,18 +103,19 @@ namespace System.Text.Json
         /// <summary>
         /// Initialize the state without delayed initialization of the JsonTypeInfo.
         /// </summary>
-        public JsonConverter Initialize(Type type, JsonSerializerOptions options, bool supportContinuation)
+        public JsonConverter Initialize(Type type, JsonSerializerOptions options, bool supportContinuation, bool supportAsync)
         {
-            JsonTypeInfo jsonTypeInfo = options.GetOrAddClassForRootType(type);
-            Debug.Assert(options == jsonTypeInfo.Options);
-            return Initialize(jsonTypeInfo, supportContinuation);
+            JsonTypeInfo jsonTypeInfo = options.GetOrAddJsonTypeInfoForRootType(type);
+            return Initialize(jsonTypeInfo, supportContinuation, supportAsync);
         }
 
-        internal JsonConverter Initialize(JsonTypeInfo jsonTypeInfo, bool supportContinuation)
+        internal JsonConverter Initialize(JsonTypeInfo jsonTypeInfo, bool supportContinuation, bool supportAsync)
         {
+            Debug.Assert(!supportAsync || supportContinuation, "supportAsync implies supportContinuation.");
+
             Current.JsonTypeInfo = jsonTypeInfo;
-            Current.DeclaredJsonPropertyInfo = jsonTypeInfo.PropertyInfoForTypeInfo;
-            Current.NumberHandling = Current.DeclaredJsonPropertyInfo.NumberHandling;
+            Current.JsonPropertyInfo = jsonTypeInfo.PropertyInfoForTypeInfo;
+            Current.NumberHandling = Current.JsonPropertyInfo.EffectiveNumberHandling;
 
             JsonSerializerOptions options = jsonTypeInfo.Options;
             if (options.ReferenceHandlingStrategy != ReferenceHandlingStrategy.None)
@@ -117,6 +125,7 @@ namespace System.Text.Json
             }
 
             SupportContinuation = supportContinuation;
+            SupportAsync = supportAsync;
 
             return jsonTypeInfo.PropertyInfoForTypeInfo.ConverterBase;
         }
@@ -127,12 +136,14 @@ namespace System.Text.Json
             {
                 if (_count == 0)
                 {
-                    // The first stack frame is held in Current.
+                    // Performance optimization: reuse the first stackframe on the first push operation.
+                    // NB need to be careful when making writes to Current _before_ the first `Push`
+                    // operation is performed.
                     _count = 1;
                 }
                 else
                 {
-                    JsonTypeInfo jsonTypeInfo = Current.GetPolymorphicJsonPropertyInfo().RuntimeTypeInfo;
+                    JsonTypeInfo jsonTypeInfo = Current.GetNestedJsonTypeInfo();
                     JsonNumberHandling? numberHandling = Current.NumberHandling;
 
                     EnsurePushCapacity();
@@ -141,9 +152,9 @@ namespace System.Text.Json
                     _count++;
 
                     Current.JsonTypeInfo = jsonTypeInfo;
-                    Current.DeclaredJsonPropertyInfo = jsonTypeInfo.PropertyInfoForTypeInfo;
+                    Current.JsonPropertyInfo = jsonTypeInfo.PropertyInfoForTypeInfo;
                     // Allow number handling on property to win over handling on type.
-                    Current.NumberHandling = numberHandling ?? Current.DeclaredJsonPropertyInfo.NumberHandling;
+                    Current.NumberHandling = numberHandling ?? Current.JsonPropertyInfo.EffectiveNumberHandling;
                 }
             }
             else
@@ -329,15 +340,19 @@ namespace System.Text.Json
         {
             StringBuilder sb = new StringBuilder("$");
 
-            // If a continuation, always report back full stack which does not use Current for the last frame.
-            int count = Math.Max(_count, _continuationCount + 1);
+            (int frameCount, bool includeCurrentFrame) = _continuationCount switch
+            {
+                0 => (_count - 1, true), // Not a countinuation, report previous frames and Current.
+                1 => (0, true), // Continuation of depth 1, just report Current frame.
+                int c => (c, false) // Continuation of depth > 1, report the entire stack.
+            };
 
-            for (int i = 0; i < count - 1; i++)
+            for (int i = 0; i < frameCount; i++)
             {
                 AppendStackFrame(sb, ref _stack[i]);
             }
 
-            if (_continuationCount == 0)
+            if (includeCurrentFrame)
             {
                 AppendStackFrame(sb, ref Current);
             }
@@ -347,7 +362,7 @@ namespace System.Text.Json
             static void AppendStackFrame(StringBuilder sb, ref WriteStackFrame frame)
             {
                 // Append the property name.
-                string? propertyName = frame.DeclaredJsonPropertyInfo?.ClrName;
+                string? propertyName = frame.JsonPropertyInfo?.ClrName;
                 if (propertyName == null)
                 {
                     // Attempt to get the JSON property name from the property name specified in re-entry.
@@ -375,5 +390,8 @@ namespace System.Text.Json
                 }
             }
         }
+
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+        private string DebuggerDisplay => $"Path:{PropertyPath()} Current: ConverterStrategy.{Current.JsonPropertyInfo?.ConverterStrategy}, {Current.JsonTypeInfo?.Type.Name}";
     }
 }

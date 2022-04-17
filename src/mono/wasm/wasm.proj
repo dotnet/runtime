@@ -65,13 +65,71 @@
   </Target>
 
   <Target Name="GenerateEmccPropsAndRspFiles">
+
+    <!-- Generate emcc-props.json -->
+
+    <RunWithEmSdkEnv Command="$(EmccCmd) --version"
+          ConsoleToMsBuild="true"
+          EmSdkPath="$(EMSDK_PATH)"
+          IgnoreStandardErrorWarningFormat="true">
+      <Output TaskParameter="ConsoleOutput" ItemName="_VersionLines" />
+    </RunWithEmSdkEnv>
+
+    <!-- we want to get the first line from the output, which has the version.
+         Rest of the lines are the license -->
+    <ItemGroup>
+      <_ReversedVersionLines Include="@(_VersionLines->Reverse())" />
+    </ItemGroup>
+    <PropertyGroup>
+      <_EmccVersionRaw>%(_ReversedVersionLines.Identity)</_EmccVersionRaw>
+
+      <_EmccVersionRegexPattern>^ *emcc \([^\)]+\) *([0-9\.]+).*\(([^\)]+)\)$</_EmccVersionRegexPattern>
+      <_EmccVersion>$([System.Text.RegularExpressions.Regex]::Match($(_EmccVersionRaw), $(_EmccVersionRegexPattern)).Groups[1].Value)</_EmccVersion>
+      <_EmccVersionHash>$([System.Text.RegularExpressions.Regex]::Match($(_EmccVersionRaw), $(_EmccVersionRegexPattern)).Groups[2].Value)</_EmccVersionHash>
+    </PropertyGroup>
+
+    <Error Text="Failed to parse emcc version, and hash from the full version string: '$(_EmccVersionRaw)'"
+           Condition="'$(_EmccVersion)' == '' or '$(_EmccVersionHash)' == ''" />
+
+    <PropertyGroup>
+      <_EmccPropsJson>
+<![CDATA[
+{
+  "items": {
+    "EmccProperties": [
+      { "identity": "RuntimeEmccVersion",     "value": "$(_EmccVersion)" },
+      { "identity": "RuntimeEmccVersionRaw",  "value": "$(_EmccVersionRaw)" },
+      { "identity": "RuntimeEmccVersionHash", "value": "$(_EmccVersionHash)" }
+    ]
+  }
+}
+]]>
+      </_EmccPropsJson>
+    </PropertyGroup>
+
+    <WriteLinesToFile File="$(NativeBinDir)src\emcc-props.json"
+                      Lines="$(_EmccPropsJson)"
+                      Overwrite="true"
+                      WriteOnlyWhenDifferent="true" />
+
+    <PropertyGroup>
+      <_DefaultExportedFunctions Condition="$([MSBuild]::VersionGreaterThanOrEquals('$(_EmccVersion)', '3.1.7'))"
+                                >_malloc,stackSave,stackRestore,stackAlloc,_memalign,_memset,_htons,_ntohs</_DefaultExportedFunctions>
+
+      <!-- _htons,_ntohs,__get_daylight,__get_timezone,__get_tzname are exported temporarily, until the issue is fixed in emscripten, https://github.com/dotnet/runtime/issues/64724  -->
+      <_DefaultExportedFunctions Condition="'$(_DefaultExportedFunctions)' == '' and $([MSBuild]::VersionGreaterThan('$(_EmccVersion)', '3.0'))"
+                                >g_free,_malloc,_memalign,_memset,_htons,_ntohs,__get_daylight,__get_timezone,__get_tzname</_DefaultExportedFunctions>
+      <_DefaultExportedFunctions Condition="'$(_DefaultExportedFunctions)' == '' and $([MSBuild]::VersionLessThan('$(_EmccVersion)', '3.0'))"
+                                >g_free,_malloc,_htons,_ntohs,__get_daylight,__get_timezone,__get_tzname,_memalign</_DefaultExportedFunctions>
+    </PropertyGroup>
+
     <ItemGroup>
       <_EmccLinkFlags Include="-s EXPORT_ES6=1" Condition="'$(WasmEnableES6)' == 'true'" />
       <_EmccLinkFlags Include="-s ALLOW_MEMORY_GROWTH=1" />
       <_EmccLinkFlags Include="-s NO_EXIT_RUNTIME=1" />
       <_EmccLinkFlags Include="-s FORCE_FILESYSTEM=1" />
-      <_EmccLinkFlags Include="-s EXPORTED_RUNTIME_METHODS=&quot;['FS','print','ccall','cwrap','setValue','getValue','UTF8ToString','UTF8ArrayToString','FS_createPath','FS_createDataFile','removeRunDependency','addRunDependency']&quot;" />
-      <_EmccLinkFlags Include="-s EXPORTED_FUNCTIONS=&quot;['_free','_malloc']&quot;" />
+      <_EmccLinkFlags Include="-s EXPORTED_RUNTIME_METHODS=&quot;['FS','print','ccall','cwrap','setValue','getValue','UTF8ToString','UTF8ArrayToString','FS_createPath','FS_createDataFile','removeRunDependency','addRunDependency', 'FS_readFile']&quot;"  />
+      <_EmccLinkFlags Include="-s EXPORTED_FUNCTIONS=$(_DefaultExportedFunctions)" Condition="'$(_DefaultExportedFunctions)' != ''" />
       <_EmccLinkFlags Include="--source-map-base http://example.com" />
       <_EmccLinkFlags Include="-s STRICT_JS=1" />
       <_EmccLinkFlags Include="-s EXPORT_NAME=&quot;'createDotnetRuntime'&quot;" />
@@ -101,50 +159,6 @@
                       Lines="@(_EmccLinkFlags)"
                       WriteOnlyWhenDifferent="true"
                       Overwrite="true" />
-
-    <!-- Generate emcc-props.json -->
-
-    <RunWithEmSdkEnv Command="$(EmccCmd) --version"
-          ConsoleToMsBuild="true"
-          EmSdkPath="$(EMSDK_PATH)"
-          IgnoreStandardErrorWarningFormat="true">
-      <Output TaskParameter="ConsoleOutput" ItemName="_VersionLines" />
-    </RunWithEmSdkEnv>
-
-    <!-- we want to get the first line from the output, which has the version.
-         Rest of the lines are the license -->
-    <ItemGroup>
-      <_ReversedVersionLines Include="@(_VersionLines->Reverse())" />
-    </ItemGroup>
-    <PropertyGroup>
-      <_EmccVersionRaw>%(_ReversedVersionLines.Identity)</_EmccVersionRaw>
-
-      <_EmccVersionRegexPattern>^ *emcc \([^\)]+\) *([0-9\.]+).*\(([^\)]+)\)$</_EmccVersionRegexPattern>
-      <_EmccVersion>$([System.Text.RegularExpressions.Regex]::Match($(_EmccVersionRaw), $(_EmccVersionRegexPattern)).Groups[1].Value)</_EmccVersion>
-      <_EmccVersionHash>$([System.Text.RegularExpressions.Regex]::Match($(_EmccVersionRaw), $(_EmccVersionRegexPattern)).Groups[2].Value)</_EmccVersionHash>
-
-      <_EmccPropsJson>
-<![CDATA[
-{
-  "items": {
-    "EmccProperties": [
-      { "identity": "RuntimeEmccVersion",     "value": "$(_EmccVersion)" },
-      { "identity": "RuntimeEmccVersionRaw",  "value": "$(_EmccVersionRaw)" },
-      { "identity": "RuntimeEmccVersionHash", "value": "$(_EmccVersionHash)" }
-    ]
-  }
-}
-]]>
-      </_EmccPropsJson>
-    </PropertyGroup>
-
-    <Error Text="Failed to parse emcc version, and hash from the full version string: '$(_EmccVersionRaw)'"
-           Condition="'$(_EmccVersion)' == '' or '$(_EmccVersionHash)' == ''" />
-
-    <WriteLinesToFile File="$(NativeBinDir)src\emcc-props.json"
-                      Lines="$(_EmccPropsJson)"
-                      Overwrite="true"
-                      WriteOnlyWhenDifferent="true" />
   </Target>
 
   <!-- This is a documented target that is invoked by developers in their innerloop work. -->
@@ -159,16 +173,31 @@
     </ItemGroup>
     <PropertyGroup>
       <PInvokeTableFile>$(ArtifactsObjDir)wasm/pinvoke-table.h</PInvokeTableFile>
-      <CMakeConfigurationEmccFlags Condition="'$(Configuration)' == 'Debug'">-g -Os -s -DDEBUG=1</CMakeConfigurationEmccFlags>
+      <CMakeConfigurationEmccFlags Condition="'$(Configuration)' == 'Debug'">-g -Os -s -DDEBUG=1 -DENABLE_AOT_PROFILER=1</CMakeConfigurationEmccFlags>
       <CMakeConfigurationEmccFlags Condition="'$(Configuration)' == 'Release'">-Oz</CMakeConfigurationEmccFlags>
-      <CMakeConfigurationLinkFlags Condition="'$(Configuration)' == 'Debug'">$(CMakeConfigurationEmccFlags)</CMakeConfigurationLinkFlags>
+
+      <CMakeConfigurationLinkFlags Condition="'$(Configuration)' == 'Debug'"  >$(CMakeConfigurationEmccFlags)</CMakeConfigurationLinkFlags>
       <CMakeConfigurationLinkFlags Condition="'$(Configuration)' == 'Release'">-O2</CMakeConfigurationLinkFlags>
+      <CMakeConfigurationLinkFlags                                            >$(CMakeConfigurationLinkFlags) --emit-symbol-map</CMakeConfigurationLinkFlags>
+
       <CMakeConfigurationEmsdkPath Condition="'$(Configuration)' == 'Release'"> -DEMSDK_PATH=&quot;$(EMSDK_PATH.TrimEnd('\/'))&quot;</CMakeConfigurationEmsdkPath>
-      <CMakeBuildRuntimeConfigureCmd>emcmake cmake $(MSBuildThisFileDirectory)runtime -DCMAKE_BUILD_TYPE=$(Configuration) -DCONFIGURATION_EMCC_FLAGS=&quot;$(CMakeConfigurationEmccFlags)&quot; -DCONFIGURATION_LINK_FLAGS=&quot;$(CMakeConfigurationLinkFlags)&quot; -DMONO_INCLUDES=&quot;$(MonoArtifactsPath)include/mono-2.0&quot; -DMONO_OBJ_INCLUDES=&quot;$(MonoObjDir.TrimEnd('\/'))&quot; -DICU_LIB_DIR=&quot;$(ICULibDir.TrimEnd('\/'))&quot; -DMONO_ARTIFACTS_DIR=&quot;$(MonoArtifactsPath.TrimEnd('\/'))&quot; -DNATIVE_BIN_DIR=&quot;$(NativeBinDir.TrimEnd('\/'))&quot; $(CMakeConfigurationEmsdkPath)</CMakeBuildRuntimeConfigureCmd>
+
+      <CMakeBuildRuntimeConfigureCmd>emcmake cmake $(MSBuildThisFileDirectory)runtime</CMakeBuildRuntimeConfigureCmd>
+      <CMakeBuildRuntimeConfigureCmd>$(CMakeBuildRuntimeConfigureCmd) -DCMAKE_BUILD_TYPE=$(Configuration)</CMakeBuildRuntimeConfigureCmd>
+      <CMakeBuildRuntimeConfigureCmd>$(CMakeBuildRuntimeConfigureCmd) -DCONFIGURATION_EMCC_FLAGS=&quot;$(CMakeConfigurationEmccFlags)&quot;</CMakeBuildRuntimeConfigureCmd>
+      <CMakeBuildRuntimeConfigureCmd>$(CMakeBuildRuntimeConfigureCmd) -DCONFIGURATION_LINK_FLAGS=&quot;$(CMakeConfigurationLinkFlags)&quot;</CMakeBuildRuntimeConfigureCmd>
+      <CMakeBuildRuntimeConfigureCmd>$(CMakeBuildRuntimeConfigureCmd) -DMONO_INCLUDES=&quot;$(MonoArtifactsPath)include/mono-2.0&quot;</CMakeBuildRuntimeConfigureCmd>
+      <CMakeBuildRuntimeConfigureCmd>$(CMakeBuildRuntimeConfigureCmd) -DMONO_OBJ_INCLUDES=&quot;$(MonoObjDir.TrimEnd('\/'))&quot;</CMakeBuildRuntimeConfigureCmd>
+      <CMakeBuildRuntimeConfigureCmd>$(CMakeBuildRuntimeConfigureCmd) -DICU_LIB_DIR=&quot;$(ICULibDir.TrimEnd('\/'))&quot;</CMakeBuildRuntimeConfigureCmd>
+      <CMakeBuildRuntimeConfigureCmd>$(CMakeBuildRuntimeConfigureCmd) -DMONO_ARTIFACTS_DIR=&quot;$(MonoArtifactsPath.TrimEnd('\/'))&quot;</CMakeBuildRuntimeConfigureCmd>
+      <CMakeBuildRuntimeConfigureCmd>$(CMakeBuildRuntimeConfigureCmd) -DNATIVE_BIN_DIR=&quot;$(NativeBinDir.TrimEnd('\/'))&quot;</CMakeBuildRuntimeConfigureCmd>
+      <CMakeBuildRuntimeConfigureCmd>$(CMakeBuildRuntimeConfigureCmd) $(CMakeConfigurationEmsdkPath)</CMakeBuildRuntimeConfigureCmd>
+
       <CMakeBuildRuntimeConfigureCmd Condition="'$(OS)' == 'Windows_NT'">call &quot;$(RepositoryEngineeringDir)native\init-vs-env.cmd&quot; &amp;&amp; call &quot;$([MSBuild]::NormalizePath('$(EMSDK_PATH)', 'emsdk_env.bat'))&quot; &amp;&amp; $(CMakeBuildRuntimeConfigureCmd)</CMakeBuildRuntimeConfigureCmd>
       <CMakeBuildRuntimeConfigureCmd Condition="'$(OS)' != 'Windows_NT'">bash -c 'source $(EMSDK_PATH)/emsdk_env.sh 2>&amp;1 &amp;&amp; $(CMakeBuildRuntimeConfigureCmd)'</CMakeBuildRuntimeConfigureCmd>
 
-      <CMakeBuildRuntimeCmd>cmake --build . --config $(Configuration)</CMakeBuildRuntimeCmd>
+      <CMakeOptions Condition="'$(MonoVerboseBuild)' != ''">-v</CMakeOptions>
+      <CMakeBuildRuntimeCmd>cmake --build . --config $(Configuration) $(CmakeOptions)</CMakeBuildRuntimeCmd>
       <CMakeBuildRuntimeCmd Condition="'$(OS)' == 'Windows_NT'">call &quot;$(RepositoryEngineeringDir)native\init-vs-env.cmd&quot; &amp;&amp; call &quot;$([MSBuild]::NormalizePath('$(EMSDK_PATH)', 'emsdk_env.bat'))&quot; &amp;&amp; $(CMakeBuildRuntimeCmd)</CMakeBuildRuntimeCmd>
       <CMakeBuildRuntimeCmd Condition="'$(OS)' != 'Windows_NT'">bash -c 'source $(EMSDK_PATH)/emsdk_env.sh 2>&amp;1 &amp;&amp;  $(CMakeBuildRuntimeCmd)'</CMakeBuildRuntimeCmd>
     </PropertyGroup>
@@ -197,7 +226,7 @@
           DestinationFolder="$(NativeBinDir)src/es6"
           SkipUnchangedFiles="true" />
 
-    <Copy SourceFiles="runtime\pinvoke.h"
+    <Copy SourceFiles="runtime\pinvoke.h;runtime\gc-common.h"
           DestinationFolder="$(NativeBinDir)include\wasm"
           SkipUnchangedFiles="true" />
 
@@ -227,6 +256,10 @@
                        $(NativeBinDir)package.json;
                        $(NativeBinDir)dotnet.wasm;
                        $(NativeBinDir)dotnet.timezones.blat"
+          DestinationFolder="$(MicrosoftNetCoreAppRuntimePackNativeDir)"
+          SkipUnchangedFiles="true" />
+
+    <Copy SourceFiles="$(NativeBinDir)dotnet.js.symbols"
           DestinationFolder="$(MicrosoftNetCoreAppRuntimePackNativeDir)"
           SkipUnchangedFiles="true" />
 

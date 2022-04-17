@@ -2,11 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Text;
-using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using System.Diagnostics;
-using Internal.Runtime.CompilerServices;
 
 namespace System.StubHelpers
 {
@@ -37,7 +35,7 @@ namespace System.StubHelpers
 
         internal static char ConvertToManaged(byte nativeChar)
         {
-            var bytes = new ReadOnlySpan<byte>(ref nativeChar, 1);
+            var bytes = new ReadOnlySpan<byte>(in nativeChar);
             string str = Encoding.Default.GetString(bytes);
             return str[0];
         }
@@ -583,7 +581,7 @@ namespace System.StubHelpers
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern object ConvertToManaged(ref IntPtr ppUnk, IntPtr itfMT, IntPtr classMT, int flags);
 
-        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "InterfaceMarshaler__ClearNative")]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "InterfaceMarshaler__ClearNative")]
         internal static partial void ClearNative(IntPtr pUnk);
     }  // class InterfaceMarshaler
 #endif // FEATURE_COMINTEROP

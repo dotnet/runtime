@@ -509,11 +509,11 @@ namespace System.Reflection
 
         public override object[] GetCustomAttributes(Type attributeType!!, bool inherit)
         {
-            if (MdToken.IsNullToken(m_tkParamDef))
-                return Array.Empty<object>();
-
             if (attributeType.UnderlyingSystemType is not RuntimeType attributeRuntimeType)
                 throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
+
+            if (MdToken.IsNullToken(m_tkParamDef))
+                return CustomAttribute.CreateAttributeArrayHelper(attributeRuntimeType, 0);
 
             return CustomAttribute.GetCustomAttributes(this, attributeRuntimeType);
         }

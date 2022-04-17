@@ -90,8 +90,10 @@ mono_100ns_datetime (void)
 {
 	ULARGE_INTEGER ft;
 
+MONO_DISABLE_WARNING(4127) /* conditional expression is constant */
 	if (sizeof(ft) != sizeof(FILETIME))
 		g_assert_not_reached ();
+MONO_RESTORE_WARNING
 
 	GetSystemTimeAsFileTime ((FILETIME*) &ft);
 	return ft.QuadPart;
@@ -102,9 +104,6 @@ mono_100ns_datetime (void)
 
 #if defined (HAVE_SYS_PARAM_H)
 #include <sys/param.h>
-#endif
-#if defined(HAVE_SYS_SYSCTL_H)
-#include <sys/sysctl.h>
 #endif
 
 #if defined(HOST_DARWIN)

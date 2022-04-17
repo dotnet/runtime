@@ -597,7 +597,7 @@ bool pal::get_default_bundle_extraction_base_dir(pal::string_t& extraction_dir)
     if (CreateDirectoryW(extraction_dir.c_str(), NULL) == 0 &&
         GetLastError() != ERROR_ALREADY_EXISTS)
     {
-        trace::error(_X("Failed to create default extraction directory [%s]. %s, error code: %d"), extraction_dir.c_str(), pal::strerror(errno), GetLastError());
+        trace::error(_X("Failed to create default extraction directory [%s]. %s, error code: %d"), extraction_dir.c_str(), pal::strerror(errno).c_str(), GetLastError());
         return false;
     }
 
@@ -812,7 +812,7 @@ bool pal::is_emulating_x64()
         if (!isWow64Process2Func(GetCurrentProcess(), &pProcessMachine, &pNativeMachine))
         {
             // IsWow64Process2 failed. Log the error and continue.
-            trace::info(_X("Call to IsWow64Process2 failed: %s"), GetLastError());
+            trace::info(_X("Call to IsWow64Process2 failed: %u"), GetLastError());
             return false;
         }
 
@@ -821,7 +821,7 @@ bool pal::is_emulating_x64()
     }
 
     // Loading kernel32.dll failed, log the error and continue.
-    trace::info(_X("Could not load 'kernel32.dll': %s"), GetLastError());
+    trace::info(_X("Could not load 'kernel32.dll': %u"), GetLastError());
 
     return false;
 }

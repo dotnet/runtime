@@ -94,8 +94,7 @@ namespace System.Security.Cryptography
             [MemberNotNull(nameof(_rawData))]
             set
             {
-                if (value == null)
-                    throw new ArgumentNullException(nameof(value));
+                ArgumentNullException.ThrowIfNull(value);
                 _rawData = value.CloneByteArray();
             }
         }

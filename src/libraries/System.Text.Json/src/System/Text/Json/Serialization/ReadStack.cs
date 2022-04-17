@@ -10,7 +10,7 @@ using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json
 {
-    [DebuggerDisplay("Path:{JsonPath()} Current: ConverterStrategy.{Current.JsonTypeInfo.PropertyInfoForTypeInfo.ConverterStrategy}, {Current.JsonTypeInfo.Type.Name}")]
+    [DebuggerDisplay("{DebuggerDisplay,nq}")]
     internal struct ReadStack
     {
         internal static readonly char[] SpecialCharacters = { '.', ' ', '\'', '/', '"', '[', ']', '(', ')', '\t', '\n', '\r', '\f', '\b', '\\', '\u0085', '\u2028', '\u2029' };
@@ -62,9 +62,19 @@ namespace System.Text.Json
         public bool SupportContinuation;
 
         /// <summary>
+        /// Holds the value of $id or $ref of the currently read object
+        /// </summary>
+        public string? ReferenceId;
+
+        /// <summary>
         /// Whether we can read without the need of saving state for stream and preserve references cases.
         /// </summary>
         public bool UseFastPath;
+
+        /// <summary>
+        /// Global flag indicating whether the current deserializer supports metadata.
+        /// </summary>
+        public bool CanContainMetadata;
 
         /// <summary>
         /// Ensures that the stack buffer has sufficient capacity to hold an additional frame.
@@ -83,28 +93,24 @@ namespace System.Text.Json
 
         public void Initialize(Type type, JsonSerializerOptions options, bool supportContinuation)
         {
-            JsonTypeInfo jsonTypeInfo = options.GetOrAddClassForRootType(type);
+            JsonTypeInfo jsonTypeInfo = options.GetOrAddJsonTypeInfoForRootType(type);
             Initialize(jsonTypeInfo, supportContinuation);
         }
 
         internal void Initialize(JsonTypeInfo jsonTypeInfo, bool supportContinuation = false)
         {
-            Current.JsonTypeInfo = jsonTypeInfo;
-
-            // The initial JsonPropertyInfo will be used to obtain the converter.
-            Current.JsonPropertyInfo = jsonTypeInfo.PropertyInfoForTypeInfo;
-
-            Current.NumberHandling = Current.JsonPropertyInfo.NumberHandling;
-
             JsonSerializerOptions options = jsonTypeInfo.Options;
-            bool preserveReferences = options.ReferenceHandlingStrategy == ReferenceHandlingStrategy.Preserve;
-            if (preserveReferences)
+            if (options.ReferenceHandlingStrategy == ReferenceHandlingStrategy.Preserve)
             {
                 ReferenceResolver = options.ReferenceHandler!.CreateResolver(writing: false);
+                CanContainMetadata = true;
             }
 
             SupportContinuation = supportContinuation;
-            UseFastPath = !supportContinuation && !preserveReferences;
+            Current.JsonTypeInfo = jsonTypeInfo;
+            Current.JsonPropertyInfo = jsonTypeInfo.PropertyInfoForTypeInfo;
+            Current.NumberHandling = Current.JsonPropertyInfo.EffectiveNumberHandling;
+            UseFastPath = !supportContinuation && !CanContainMetadata;
         }
 
         public void Push()
@@ -113,36 +119,16 @@ namespace System.Text.Json
             {
                 if (_count == 0)
                 {
-                    // The first stack frame is held in Current.
+                    // Performance optimization: reuse the first stackframe on the first push operation.
+                    // NB need to be careful when making writes to Current _before_ the first `Push`
+                    // operation is performed.
                     _count = 1;
                 }
                 else
                 {
-                    JsonTypeInfo jsonTypeInfo;
+                    JsonTypeInfo jsonTypeInfo = Current.JsonPropertyInfo?.JsonTypeInfo ?? Current.CtorArgumentState!.JsonParameterInfo!.JsonTypeInfo;
                     JsonNumberHandling? numberHandling = Current.NumberHandling;
                     ConverterStrategy converterStrategy = Current.JsonTypeInfo.PropertyInfoForTypeInfo.ConverterStrategy;
-
-                    if (converterStrategy == ConverterStrategy.Object)
-                    {
-                        if (Current.JsonPropertyInfo != null)
-                        {
-                            jsonTypeInfo = Current.JsonPropertyInfo.RuntimeTypeInfo;
-                        }
-                        else
-                        {
-                            jsonTypeInfo = Current.CtorArgumentState!.JsonParameterInfo!.RuntimeTypeInfo;
-                        }
-                    }
-                    else if (converterStrategy == ConverterStrategy.Value)
-                    {
-                        // Although ConverterStrategy.Value doesn't push, a custom custom converter may re-enter serialization.
-                        jsonTypeInfo = Current.JsonPropertyInfo!.RuntimeTypeInfo;
-                    }
-                    else
-                    {
-                        Debug.Assert(((ConverterStrategy.Enumerable | ConverterStrategy.Dictionary) & converterStrategy) != 0);
-                        jsonTypeInfo = Current.JsonTypeInfo.ElementTypeInfo!;
-                    }
 
                     EnsurePushCapacity();
                     _stack[_count - 1] = Current;
@@ -152,7 +138,7 @@ namespace System.Text.Json
                     Current.JsonTypeInfo = jsonTypeInfo;
                     Current.JsonPropertyInfo = jsonTypeInfo.PropertyInfoForTypeInfo;
                     // Allow number handling on property to win over handling on type.
-                    Current.NumberHandling = numberHandling ?? Current.JsonPropertyInfo.NumberHandling;
+                    Current.NumberHandling = numberHandling ?? Current.JsonPropertyInfo.EffectiveNumberHandling;
                 }
             }
             else
@@ -160,6 +146,7 @@ namespace System.Text.Json
                 // We are re-entering a continuation, adjust indices accordingly
                 if (_count++ > 0)
                 {
+                    _stack[_count - 2] = Current;
                     Current = _stack[_count - 1];
                 }
 
@@ -228,15 +215,19 @@ namespace System.Text.Json
         {
             StringBuilder sb = new StringBuilder("$");
 
-            // If a continuation, always report back full stack which does not use Current for the last frame.
-            int count = Math.Max(_count, _continuationCount + 1);
+            (int frameCount, bool includeCurrentFrame) = _continuationCount switch
+            {
+                0 => (_count - 1, true), // Not a countinuation, report previous frames and Current.
+                1 => (0, true), // Continuation of depth 1, just report Current frame.
+                int c => (c, false) // Continuation of depth > 1, report the entire stack.
+            };
 
-            for (int i = 0; i < count - 1; i++)
+            for (int i = 0; i < frameCount; i++)
             {
                 AppendStackFrame(sb, ref _stack[i]);
             }
 
-            if (_continuationCount == 0)
+            if (includeCurrentFrame)
             {
                 AppendStackFrame(sb, ref Current);
             }
@@ -334,10 +325,28 @@ namespace System.Text.Json
             }
         }
 
+        // Traverses the stack for the outermost object being deserialized using constructor parameters
+        // Only called when calculating exception information.
+        public JsonTypeInfo GetTopJsonTypeInfoWithParameterizedConstructor()
+        {
+            Debug.Assert(!IsContinuation);
+
+            for (int i = 0; i < _count - 1; i++)
+            {
+                if (_stack[i].JsonTypeInfo.PropertyInfoForTypeInfo.ConverterBase.ConstructorIsParameterized)
+                {
+                    return _stack[i].JsonTypeInfo;
+                }
+            }
+
+            Debug.Assert(Current.JsonTypeInfo.PropertyInfoForTypeInfo.ConverterBase.ConstructorIsParameterized);
+            return Current.JsonTypeInfo;
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void SetConstructorArgumentState()
         {
-            if (Current.JsonTypeInfo.IsObjectWithParameterizedCtor)
+            if (Current.JsonTypeInfo.PropertyInfoForTypeInfo.ConverterBase.ConstructorIsParameterized)
             {
                 // A zero index indicates a new stack frame.
                 if (Current.CtorArgumentStateIndex == 0)
@@ -355,5 +364,8 @@ namespace System.Text.Json
                 }
             }
         }
+
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+        private string DebuggerDisplay => $"Path:{JsonPath()} Current: ConverterStrategy.{Current.JsonTypeInfo?.PropertyInfoForTypeInfo.ConverterStrategy}, {Current.JsonTypeInfo?.Type.Name}";
     }
 }

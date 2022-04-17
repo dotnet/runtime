@@ -3,6 +3,9 @@
 
 using System;
 using System.Runtime.InteropServices;
+#if NET7_0_OR_GREATER
+using System.Runtime.InteropServices.GeneratedMarshalling;
+#endif
 
 internal static partial class Interop
 {
@@ -12,37 +15,85 @@ internal static partial class Interop
         internal const int CHECKJPEGFORMAT = 4119;
         internal const int CHECKPNGFORMAT = 4120;
 
-        [DllImport(Libraries.Gdi32, SetLastError = true, ExactSpelling = true)]
-        internal static extern IntPtr CreateCompatibleBitmap(HandleRef hDC, int width, int height);
+        [LibraryImport(Libraries.Gdi32, SetLastError = true)]
+        internal static partial IntPtr CreateCompatibleBitmap(
+#if NET7_0_OR_GREATER
+            [MarshalUsing(typeof(HandleRefMarshaller))]
+#endif
+            HandleRef hDC, int width, int height);
 
-        [DllImport(Libraries.Gdi32)]
-        internal static extern int GetDIBits(HandleRef hdc, HandleRef hbm, int arg1, int arg2, IntPtr arg3, ref BITMAPINFO_FLAT bmi, int arg5);
+        [LibraryImport(Libraries.Gdi32)]
+        internal static partial int GetDIBits(
+#if NET7_0_OR_GREATER
+            [MarshalUsing(typeof(HandleRefMarshaller))]
+#endif
+            HandleRef hdc,
+#if NET7_0_OR_GREATER
+            [MarshalUsing(typeof(HandleRefMarshaller))]
+#endif
+            HandleRef hbm, int arg1, int arg2, IntPtr arg3, ref BITMAPINFO_FLAT bmi, int arg5);
 
-        [DllImport(Libraries.Gdi32)]
-        internal static extern uint GetPaletteEntries(HandleRef hpal, int iStartIndex, int nEntries, byte[] lppe);
+        [LibraryImport(Libraries.Gdi32)]
+        internal static partial uint GetPaletteEntries(
+#if NET7_0_OR_GREATER
+            [MarshalUsing(typeof(HandleRefMarshaller))]
+#endif
+            HandleRef hpal, int iStartIndex, int nEntries, byte[] lppe);
 
-        [DllImport(Libraries.Gdi32, SetLastError = true, ExactSpelling = true)]
-        internal static extern IntPtr CreateDIBSection(HandleRef hdc, ref BITMAPINFO_FLAT bmi, int iUsage, ref IntPtr ppvBits, IntPtr hSection, int dwOffset);
+        [LibraryImport(Libraries.Gdi32, SetLastError = true)]
+        internal static partial IntPtr CreateDIBSection(
+#if NET7_0_OR_GREATER
+            [MarshalUsing(typeof(HandleRefMarshaller))]
+#endif
+            HandleRef hdc, ref BITMAPINFO_FLAT bmi, int iUsage, ref IntPtr ppvBits, IntPtr hSection, int dwOffset);
 
-        [DllImport(Libraries.Gdi32, SetLastError = true, CharSet = CharSet.Auto)]
-        internal static extern int StartDoc(HandleRef hDC, DOCINFO lpDocInfo);
+        [LibraryImport(Libraries.Gdi32, EntryPoint = "StartDocW", SetLastError = true)]
+        internal static partial int StartDoc(
+#if NET7_0_OR_GREATER
+            [MarshalUsing(typeof(HandleRefMarshaller))]
+#endif
+            HandleRef hDC, DOCINFO lpDocInfo);
 
-        [DllImport(Libraries.Gdi32, SetLastError = true, ExactSpelling = true, CharSet = CharSet.Auto)]
-        internal static extern int StartPage(HandleRef hDC);
+        [LibraryImport(Libraries.Gdi32, SetLastError = true)]
+        internal static partial int StartPage(
+#if NET7_0_OR_GREATER
+            [MarshalUsing(typeof(HandleRefMarshaller))]
+#endif
+            HandleRef hDC);
 
-        [DllImport(Libraries.Gdi32, SetLastError = true, ExactSpelling = true, CharSet = CharSet.Auto)]
-        internal static extern int EndPage(HandleRef hDC);
+        [LibraryImport(Libraries.Gdi32, SetLastError = true)]
+        internal static partial int EndPage(
+#if NET7_0_OR_GREATER
+            [MarshalUsing(typeof(HandleRefMarshaller))]
+#endif
+            HandleRef hDC);
 
-        [DllImport(Libraries.Gdi32, SetLastError = true, ExactSpelling = true, CharSet = CharSet.Auto)]
-        internal static extern int AbortDoc(HandleRef hDC);
+        [LibraryImport(Libraries.Gdi32, SetLastError = true)]
+        internal static partial int AbortDoc(
+#if NET7_0_OR_GREATER
+            [MarshalUsing(typeof(HandleRefMarshaller))]
+#endif
+            HandleRef hDC);
 
-        [DllImport(Libraries.Gdi32, SetLastError = true, ExactSpelling = true, CharSet = CharSet.Auto)]
-        internal static extern int EndDoc(HandleRef hDC);
+        [LibraryImport(Libraries.Gdi32, SetLastError = true)]
+        internal static partial int EndDoc(
+#if NET7_0_OR_GREATER
+            [MarshalUsing(typeof(HandleRefMarshaller))]
+#endif
+            HandleRef hDC);
 
-        [DllImport(Libraries.Gdi32, SetLastError = true, CharSet = CharSet.Auto)]
-        internal static extern IntPtr /*HDC*/ ResetDC(HandleRef hDC, HandleRef /*DEVMODE*/ lpDevMode);
+        [LibraryImport(Libraries.Gdi32, EntryPoint = "ResetDCW", SetLastError = true)]
+        internal static partial IntPtr /*HDC*/ ResetDC(
+#if NET7_0_OR_GREATER
+            [MarshalUsing(typeof(HandleRefMarshaller))]
+#endif
+            HandleRef hDC,
+#if NET7_0_OR_GREATER
+            [MarshalUsing(typeof(HandleRefMarshaller))]
+#endif
+            HandleRef /*DEVMODE*/ lpDevMode);
 
-        [GeneratedDllImport(Libraries.Gdi32, CharSet = CharSet.Auto, SetLastError = true)]
+        [LibraryImport(Libraries.Gdi32, EntryPoint = "AddFontResourceExW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         internal static partial int AddFontResourceEx(string lpszFilename, int fl, IntPtr pdv);
 
         internal static int AddFontFile(string fileName)
@@ -50,22 +101,46 @@ internal static partial class Interop
             return AddFontResourceEx(fileName, /*FR_PRIVATE*/ 0x10, IntPtr.Zero);
         }
 
-        [DllImport(Libraries.Gdi32, SetLastError = true, ExactSpelling = true, CharSet = CharSet.Auto)]
-        internal static extern int ExtEscape(HandleRef hDC, int nEscape, int cbInput, ref int inData, int cbOutput, [Out] out int outData);
+        [LibraryImport(Libraries.Gdi32, SetLastError = true)]
+        internal static partial int ExtEscape(
+#if NET7_0_OR_GREATER
+            [MarshalUsing(typeof(HandleRefMarshaller))]
+#endif
+            HandleRef hDC, int nEscape, int cbInput, ref int inData, int cbOutput, out int outData);
 
-        [DllImport(Libraries.Gdi32, SetLastError = true, ExactSpelling = true, CharSet = CharSet.Auto)]
-        internal static extern int ExtEscape(HandleRef hDC, int nEscape, int cbInput, byte[] inData, int cbOutput, [Out] out int outData);
+        [LibraryImport(Libraries.Gdi32, SetLastError = true)]
+        internal static partial int ExtEscape(
+#if NET7_0_OR_GREATER
+            [MarshalUsing(typeof(HandleRefMarshaller))]
+#endif
+            HandleRef hDC, int nEscape, int cbInput, byte[] inData, int cbOutput, out int outData);
 
-        [DllImport(Libraries.Gdi32, SetLastError = true, ExactSpelling = true, CharSet = CharSet.Auto)]
-        internal static extern int IntersectClipRect(HandleRef hDC, int x1, int y1, int x2, int y2);
+        [LibraryImport(Libraries.Gdi32, SetLastError = true)]
+        internal static partial int IntersectClipRect(
+#if NET7_0_OR_GREATER
+            [MarshalUsing(typeof(HandleRefMarshaller))]
+#endif
+            HandleRef hDC, int x1, int y1, int x2, int y2);
 
-        [DllImport(Libraries.Gdi32, SetLastError = true)]
-        internal static extern int GetObject(HandleRef hObject, int nSize, ref BITMAP bm);
+        [LibraryImport(Libraries.Gdi32, EntryPoint = "GetObjectW", SetLastError = true)]
+        internal static partial int GetObject(
+#if NET7_0_OR_GREATER
+            [MarshalUsing(typeof(HandleRefMarshaller))]
+#endif
+            HandleRef hObject, int nSize, ref BITMAP bm);
 
-        [DllImport(Libraries.Gdi32, SetLastError = true, CharSet = CharSet.Unicode)]
-        internal static extern int GetObject(HandleRef hObject, int nSize, ref Interop.User32.LOGFONT lf);
+        [LibraryImport(Libraries.Gdi32, EntryPoint = "GetObjectW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
+        internal static partial int GetObject(
+#if NET7_0_OR_GREATER
+            [MarshalUsing(typeof(HandleRefMarshaller))]
+#endif
+            HandleRef hObject, int nSize, ref Interop.User32.LOGFONT lf);
 
-        internal static unsafe int GetObject(HandleRef hObject, ref Interop.User32.LOGFONT lp)
+        internal static unsafe int GetObject(
+#if NET7_0_OR_GREATER
+            [MarshalUsing(typeof(HandleRefMarshaller))]
+#endif
+            HandleRef hObject, ref Interop.User32.LOGFONT lp)
             => GetObject(hObject, sizeof(Interop.User32.LOGFONT), ref lp);
 
         [StructLayout(LayoutKind.Sequential)]
@@ -100,6 +175,9 @@ internal static partial class Interop
             public fixed byte bmiColors[BITMAPINFO_MAX_COLORSIZE * 4]; // RGBQUAD structs... Blue-Green-Red-Reserved, repeat...
         }
 
+#if NET7_0_OR_GREATER
+        [NativeMarshalling(typeof(Native))]
+#endif
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
         internal sealed class DOCINFO
         {
@@ -108,6 +186,34 @@ internal static partial class Interop
             internal string? lpszOutput;
             internal string? lpszDatatype;
             internal int fwType;
+
+#if NET7_0_OR_GREATER
+            [CustomTypeMarshaller(typeof(DOCINFO), Direction = CustomTypeMarshallerDirection.In, Features = CustomTypeMarshallerFeatures.UnmanagedResources)]
+            internal struct Native
+            {
+                internal int cbSize;
+                internal IntPtr lpszDocName;
+                internal IntPtr lpszOutput;
+                internal IntPtr lpszDatatype;
+                internal int fwType;
+
+                public Native(DOCINFO docInfo)
+                {
+                    cbSize = docInfo.cbSize;
+                    lpszDocName = Marshal.StringToCoTaskMemAuto(docInfo.lpszDocName);
+                    lpszOutput = Marshal.StringToCoTaskMemAuto(docInfo.lpszOutput);
+                    lpszDatatype = Marshal.StringToCoTaskMemAuto(docInfo.lpszDatatype);
+                    fwType = docInfo.fwType;
+                }
+
+                public void FreeNative()
+                {
+                    Marshal.FreeCoTaskMem(lpszDocName);
+                    Marshal.FreeCoTaskMem(lpszOutput);
+                    Marshal.FreeCoTaskMem(lpszDatatype);
+                }
+            }
+#endif
         }
 
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]

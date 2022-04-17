@@ -107,10 +107,11 @@
     <HaveExcludes Condition="'$(__Exclude)' != ''">True</HaveExcludes>
   </PropertyGroup>
 
-
   <Target Name="MonoAotCompileTests" DependsOnTargets="GetListOfTestCmds;FindCmdDirectories">
     <ItemGroup>
-      <AllTestScripts Include="%(TestDirectories.Identity)\**\*.sh" />
+      <AllTestScripts Condition="'@(TestDirectories)' != ''" Include="%(TestDirectories.Identity)\**\*.sh" />
+      <AllTestScripts Condition="'@(MergedRunnableTestPaths)' != ''" Include="%(MergedRunnableTestPaths.RootDir)%(MergedRunnableTestPaths.Directory)*.dll" />
+      <AllTestScripts Condition="'@(OutOfProcessTestPaths)' != ''" Include="%(OutOfProcessTestPaths.RootDir)%(OutOfProcessTestPaths.Directory)*.sh" />
       <TestExclusions Include="@(ExcludeList->Metadata('FullPath'))" Condition="$(HaveExcludes)" />
       <TestScripts Include="@(AllTestScripts)" Exclude="@(TestExclusions)" />
 
@@ -122,7 +123,7 @@
       <Output TaskParameter="Filtered" ItemName="TestDirs" />
     </RemoveDuplicates>
     <ItemGroup>
-      <TestsAndAssociatedAssemblies Include="%(TestDirs.Identity)/*.dll" />
+      <TestsAndAssociatedAssemblies Include="%(TestDirs.Identity)/*.dll" Exclude="@(NoMonoAotAssemblyPaths)" />
       <CoreRootDlls Include="$(CORE_ROOT)/*.dll" Exclude="$(CORE_ROOT)/xunit.performance.api.dll" />
       <AllDlls Condition="'$(MonoFullAot)' == 'true'" Include="@(TestsAndAssociatedAssemblies);@(CoreRootDlls)" />
       <AllDlls Condition="'$(MonoFullAot)' != 'true'" Include="@(TestsAndAssociatedAssemblies)" />
@@ -197,6 +198,8 @@
       <AppDir>$(BuildDir)\apk</AppDir>
       <FinalApkPath>$(XUnitTestBinBase)$(CategoryWithSlash)\$(Category).apk</FinalApkPath>
       <StripDebugSymbols>False</StripDebugSymbols>
+      <RuntimeComponents>diagnostics_tracing</RuntimeComponents>
+      <DiagnosticPorts>127.0.0.1:9000,nosuspend,listen</DiagnosticPorts>
       <StripDebugSymbols Condition="'$(Configuration)' == 'Release'">True</StripDebugSymbols>
       <MicrosoftNetCoreAppRuntimePackDir>$(ArtifactsBinDir)microsoft.netcore.app.runtime.android-$(TargetArchitecture)\$(Configuration)\runtimes\android-$(TargetArchitecture)\</MicrosoftNetCoreAppRuntimePackDir>
       <AndroidAbi Condition="'$(TargetArchitecture)' == 'arm64'">arm64-v8a</AndroidAbi>
@@ -244,6 +247,8 @@
         RuntimeIdentifier="$(RuntimeIdentifier)"
         ProjectName="$(Category)"
         MonoRuntimeHeaders="$(MicrosoftNetCoreAppRuntimePackDir)/native/include/mono-2.0"
+        RuntimeComponents="$(RuntimeComponents)"
+        DiagnosticPorts="$(DiagnosticPorts)"
         StripDebugSymbols="$(StripDebugSymbols)"
         ForceInterpreter="$(MonoInterp)"
         AppDir="$(BuildDir)"
@@ -279,6 +284,7 @@
       <XUnitWrapperDll>$(CMDDIR_GrandParent)/$(CategoryWithSlash)/$(XUnitWrapperFileName)</XUnitWrapperDll>
       <BuildDir>$(IntermediateOutputPath)\iOSApps\$(Category)</BuildDir>
       <FinalPath>$(XUnitTestBinBase)$(CategoryWithSlash)\$(Category).app</FinalPath>
+      <RuntimeComponents>diagnostics_tracing</RuntimeComponents>
     </PropertyGroup>
 
     <PropertyGroup>
@@ -338,6 +344,7 @@
         Arch="$(TargetArchitecture)"
         ProjectName="$(AssemblyName)"
         MonoRuntimeHeaders="$(MicrosoftNetCoreAppRuntimePackNativeDir)/include/mono-2.0"
+        RuntimeComponents="$(RuntimeComponents)"
         Assemblies="@(BundleAssemblies)"
         ForceInterpreter="$(MonoForceInterpreter)"
         EnableAppSandbox="$(EnableAppSandbox)"
@@ -385,14 +392,21 @@
       <AllRunnableTestPaths Include="$(XunitTestBinBase)\**\*.$(TestScriptExtension)"/>
       <AllRunnableTestPaths Remove="$(XunitTestBinBase)\**\run-v8.sh" Condition="'$(TargetArchitecture)' == 'wasm'" />
       <MergedAssemblyMarkerPaths Include="$(XunitTestBinBase)\**\*.MergedTestAssembly"/>
+      <MergedAssemblyFolders Include="$([System.IO.Path]::GetDirectoryName('%(MergedAssemblyMarkerPaths.Identity)'))" />
+      <MergedAssemblyParentFolders Include="$([System.IO.Path]::GetDirectoryName('%(MergedAssemblyFolders.Identity)'))" />
+      <AllRunnableTestPaths Remove="%(MergedAssemblyParentFolders.Identity)\**\*.$(TestScriptExtension)" />
       <MergedRunnableTestPaths Include="$([System.IO.Path]::ChangeExtension('%(MergedAssemblyMarkerPaths.Identity)', '.$(TestScriptExtension)'))" />
+      <OutOfProcessTestMarkerPaths Include="$(XunitTestBinBase)\**\*.OutOfProcessTest"/>
+      <OutOfProcessTestPaths Include="$([System.IO.Path]::ChangeExtension('%(OutOfProcessTestMarkerPaths.Identity)', '.$(TestScriptExtension)'))" />
+      <NoMonoAotMarkerPaths Include="$(XunitTestBinBase)\**\*.NoMonoAot" />
+      <NoMonoAotAssemblyPaths Include="$([System.IO.Path]::ChangeExtension('%(NoMonoAotMarkerPaths.Identity)', '.dll'))" />
     </ItemGroup>
     <!-- Remove the cmd/sh scripts for merged test runner app bundles from our list. -->
     <PropertyGroup Condition="'$(TargetsMobile)' == 'true'">
       <MergedRunnableTestAppBundleScriptPathsPattern>@(MergedAssemblyMarkerPaths->'%(RootDir)%(Directory)AppBundle/**/*.$(TestScriptExtension)')</MergedRunnableTestAppBundleScriptPathsPattern>
     </PropertyGroup>
     <ItemGroup>
-      <LegacyRunnableTestPaths Include="@(AllRunnableTestPaths)" Exclude="@(MergedRunnableTestPaths);$(MergedRunnableTestAppBundleScriptPathsPattern)" />
+      <LegacyRunnableTestPaths Include="@(AllRunnableTestPaths)" Exclude="@(MergedRunnableTestPaths);@(OutOfProcessTestPaths);$(MergedRunnableTestAppBundleScriptPathsPattern)" />
     </ItemGroup>
   </Target>
 
@@ -494,7 +508,13 @@
   <Target Name="GenerateLayout"
       DependsOnTargets="CreateTestOverlay"
       AfterTargets="ManagedBuild;RestorePackages"
-      Condition="'$(__BuildTestWrappersOnly)' != '1' and '$(__CopyNativeTestBinaries)' != '1' and '$(__SkipGenerateLayout)' != '1' and !$(MonoAot) and !$(MonoFullAot)" />
+      Condition="'$(__BuildTestWrappersOnly)' != '1' and '$(__CopyNativeTestBinaries)' != '1' and '$(__SkipGenerateLayout)' != '1' and !$(MonoAot) and !$(MonoFullAot)">
+
+    <MSBuild
+      Projects="$(MSBuildProjectFile)"
+      Targets="EmitTestExclusionList"
+      Properties="XunitTestBinBase=$(XunitTestBinBase)" />
+  </Target>
 
   <Target Name="BuildTestWrappers"
       DependsOnTargets="CreateAllWrappers"
@@ -575,5 +595,17 @@
     <MSBuild Projects="$(CoreCLRBuildIntegrationDir)/BuildFrameworkNativeObjects.proj"
       Targets="CreateLib"
       Properties="@(CreateLibProperty)" />
+  </Target>
+
+  <Target Name="EmitTestExclusionList" DependsOnTargets="GetFilteredExcludeList">
+    <PropertyGroup>
+      <TestExclusionListPath>$(CORE_ROOT)\TestExclusionList.txt</TestExclusionListPath>
+    </PropertyGroup>
+
+    <WriteLinesToFile
+        File="$(TestExclusionListPath)"
+        Lines="@(FilteredExcludeList)"
+        Overwrite="true"
+        Encoding="Unicode" />
   </Target>
 </Project>

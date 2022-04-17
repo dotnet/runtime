@@ -1260,7 +1260,7 @@ mono_de_ss_start (SingleStepReq *ss_req, SingleStepArgs *ss_args)
 	SeqPoint *next_sp, *parent_sp = NULL;
 	SeqPoint local_sp, local_parent_sp;
 	gboolean found_sp;
-	MonoSeqPointInfo *parent_info;
+	MonoSeqPointInfo *parent_info = NULL;
 	MonoMethod *parent_sp_method = NULL;
 	gboolean enable_global = FALSE;
 
@@ -1690,7 +1690,7 @@ get_async_method_builder (DbgEngineStackFrame *frame)
 		builder = mono_vtype_get_field_addr (*(guint8**)this_addr, builder_field);
 	} else {
 		this_obj = *(MonoObject**)this_addr;
-		builder = (char*)this_obj + builder_field->offset;
+		builder = (char*)this_obj + m_field_get_offset (builder_field);
 	}
 
 	return builder;

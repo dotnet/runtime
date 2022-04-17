@@ -37,7 +37,7 @@
 #include <time.h>
 #include <string.h>
 #include <ctype.h>
-#include "image.h"
+#include <mono/metadata/image.h>
 #include "cil-coff.h"
 #include "mono-endian.h"
 #include <mono/metadata/gc-internals.h>

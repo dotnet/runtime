@@ -9,10 +9,16 @@
 
 EVP_MD_CTX* CryptoNative_EvpMdCtxCreate(const EVP_MD* type)
 {
+    ERR_clear_error();
+
     EVP_MD_CTX* ctx = EVP_MD_CTX_new();
+
     if (ctx == NULL)
     {
-        // Allocation failed
+        // Allocation failed.
+        // This is one of the few places that don't report the error to the queue, so
+        // we'll do it here.
+        ERR_put_error(ERR_LIB_EVP, 0, ERR_R_MALLOC_FAILURE, __FILE__, __LINE__);
         return NULL;
     }
 
@@ -36,16 +42,20 @@ void CryptoNative_EvpMdCtxDestroy(EVP_MD_CTX* ctx)
 
 int32_t CryptoNative_EvpDigestReset(EVP_MD_CTX* ctx, const EVP_MD* type)
 {
+    ERR_clear_error();
     return EVP_DigestInit_ex(ctx, type, NULL);
 }
 
 int32_t CryptoNative_EvpDigestUpdate(EVP_MD_CTX* ctx, const void* d, int32_t cnt)
 {
+    // No error queue impact
     return EVP_DigestUpdate(ctx, d, (size_t)cnt);
 }
 
 int32_t CryptoNative_EvpDigestFinalEx(EVP_MD_CTX* ctx, uint8_t* md, uint32_t* s)
 {
+    ERR_clear_error();
+
     unsigned int size;
     int32_t ret = EVP_DigestFinal_ex(ctx, md, &size);
     if (ret == SUCCESS)
@@ -67,6 +77,10 @@ static EVP_MD_CTX* EvpDup(const EVP_MD_CTX* ctx)
 
     if (dup == NULL)
     {
+        // Allocation failed.
+        // This is one of the few places that don't report the error to the queue, so
+        // we'll do it here.
+        ERR_put_error(ERR_LIB_EVP, 0, ERR_R_MALLOC_FAILURE, __FILE__, __LINE__);
         return NULL;
     }
 
@@ -81,6 +95,8 @@ static EVP_MD_CTX* EvpDup(const EVP_MD_CTX* ctx)
 
 int32_t CryptoNative_EvpDigestCurrent(const EVP_MD_CTX* ctx, uint8_t* md, uint32_t* s)
 {
+    ERR_clear_error();
+
     EVP_MD_CTX* dup = EvpDup(ctx);
 
     if (dup != NULL)
@@ -95,13 +111,19 @@ int32_t CryptoNative_EvpDigestCurrent(const EVP_MD_CTX* ctx, uint8_t* md, uint32
 
 int32_t CryptoNative_EvpDigestOneShot(const EVP_MD* type, const void* source, int32_t sourceSize, uint8_t* md, uint32_t* mdSize)
 {
+    ERR_clear_error();
+
     if (type == NULL || sourceSize < 0 || md == NULL || mdSize == NULL)
+    {
         return 0;
+    }
 
     EVP_MD_CTX* ctx = CryptoNative_EvpMdCtxCreate(type);
 
     if (ctx == NULL)
+    {
         return 0;
+    }
 
     int32_t ret = EVP_DigestUpdate(ctx, source, (size_t)sourceSize);
 
@@ -119,36 +141,43 @@ int32_t CryptoNative_EvpDigestOneShot(const EVP_MD* type, const void* source, in
 
 int32_t CryptoNative_EvpMdSize(const EVP_MD* md)
 {
+    // No error queue impact.
     return EVP_MD_get_size(md);
 }
 
 const EVP_MD* CryptoNative_EvpMd5()
 {
+    // No error queue impact.
     return EVP_md5();
 }
 
 const EVP_MD* CryptoNative_EvpSha1()
 {
+    // No error queue impact.
     return EVP_sha1();
 }
 
 const EVP_MD* CryptoNative_EvpSha256()
 {
+    // No error queue impact.
     return EVP_sha256();
 }
 
 const EVP_MD* CryptoNative_EvpSha384()
 {
+    // No error queue impact.
     return EVP_sha384();
 }
 
 const EVP_MD* CryptoNative_EvpSha512()
 {
+    // No error queue impact.
     return EVP_sha512();
 }
 
 int32_t CryptoNative_GetMaxMdSize()
 {
+    // No error queue impact.
     return EVP_MAX_MD_SIZE;
 }
 
@@ -166,6 +195,8 @@ int32_t CryptoNative_Pbkdf2(const char* password,
     {
         return -1;
     }
+
+    ERR_clear_error();
 
     const char* empty = "";
 

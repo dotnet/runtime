@@ -416,7 +416,7 @@ namespace System.Xml.Xsl.Xslt
             return _f.Conditional(_f.IsType(it, xt), MatchPatterns(it, patternList), otherwise);
         }
 
-        private bool IsNoMatch(QilNode matcher)
+        private static bool IsNoMatch(QilNode matcher)
         {
             if (matcher.NodeType == QilNodeType.LiteralInt32)
             {

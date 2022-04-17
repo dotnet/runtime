@@ -27,15 +27,10 @@ namespace System.Reflection.Metadata.Ecma335
         /// Additional context needed to resolve generic parameters.
         /// </param>
         public SignatureDecoder(
-            ISignatureTypeProvider<TType, TGenericContext> provider,
+            ISignatureTypeProvider<TType, TGenericContext> provider!!,
             MetadataReader metadataReader,
             TGenericContext genericContext)
         {
-            if (provider == null)
-            {
-                Throw.ArgumentNull(nameof(provider));
-            }
-
             _metadataReaderOpt = metadataReader;
             _provider = provider;
             _genericContext = genericContext;
@@ -328,7 +323,7 @@ namespace System.Reflection.Metadata.Ecma335
             throw new BadImageFormatException(SR.NotTypeDefOrRefOrSpecHandle);
         }
 
-        private void CheckHeader(SignatureHeader header, SignatureKind expectedKind)
+        private static void CheckHeader(SignatureHeader header, SignatureKind expectedKind)
         {
             if (header.Kind != expectedKind)
             {
@@ -336,7 +331,7 @@ namespace System.Reflection.Metadata.Ecma335
             }
         }
 
-        private void CheckMethodOrPropertyHeader(SignatureHeader header)
+        private static void CheckMethodOrPropertyHeader(SignatureHeader header)
         {
             SignatureKind kind = header.Kind;
             if (kind != SignatureKind.Method && kind != SignatureKind.Property)

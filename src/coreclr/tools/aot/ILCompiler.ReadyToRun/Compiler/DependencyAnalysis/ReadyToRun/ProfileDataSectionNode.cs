@@ -8,7 +8,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
     public class ProfileDataSectionNode : ArrayOfEmbeddedDataNode<ProfileDataNode>
     {
         public ProfileDataSectionNode()
-            : base("ProfileDataSectionNode_Begin", "ProfileDataSectionNode_End", new EmbeddedObjectNodeComparer(new CompilerComparer()))
+            : base("ProfileDataSectionNode_Begin", "ProfileDataSectionNode_End", new EmbeddedObjectNodeComparer(CompilerComparer.Instance))
         {
         }
 

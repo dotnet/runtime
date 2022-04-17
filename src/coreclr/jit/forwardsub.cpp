@@ -286,14 +286,9 @@ public:
             //
             GenTreeFlags oldUseFlags = m_useFlags;
 
-            if (m_callAncestor->gtCallThisArg != nullptr)
+            for (CallArg& arg : m_callAncestor->gtArgs.Args())
             {
-                m_useFlags |= (m_callAncestor->gtCallThisArg->GetNode()->gtFlags & GTF_GLOB_EFFECT);
-            }
-
-            for (GenTreeCall::Use& use : m_callAncestor->Args())
-            {
-                m_useFlags |= (use.GetNode()->gtFlags & GTF_GLOB_EFFECT);
+                m_useFlags |= (arg.GetEarlyNode()->gtFlags & GTF_GLOB_EFFECT);
             }
 
             if (oldUseFlags != m_useFlags)
@@ -654,8 +649,9 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
     // Not doing so can lead to regressions...
     //
     // Hold off on doing this for call args for now (per issue #51569).
+    // Hold off on OBJ(GT_LCL_ADDR).
     //
-    if (fwdSubNode->OperIs(GT_OBJ) && !fsv.IsCallArg())
+    if (fwdSubNode->OperIs(GT_OBJ) && !fsv.IsCallArg() && fwdSubNode->gtGetOp1()->OperIs(GT_ADDR))
     {
         const bool     destroyNodes = false;
         GenTree* const optTree      = fgMorphTryFoldObjAsLclVar(fwdSubNode->AsObj(), destroyNodes);

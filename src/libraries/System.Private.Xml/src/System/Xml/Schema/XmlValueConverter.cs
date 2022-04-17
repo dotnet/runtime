@@ -977,10 +977,8 @@ namespace System.Xml.Schema
         // ChangeType
         //-----------------------------------------------
 
-        public override object ChangeType(decimal value, Type destinationType)
+        public override object ChangeType(decimal value, Type destinationType!!)
         {
-            if (destinationType == null) throw new ArgumentNullException(nameof(destinationType));
-
             if (destinationType == ObjectType) destinationType = DefaultClrType!;
             if (destinationType == DecimalType) return ((decimal)value);
             if (destinationType == Int32Type) return DecimalToInt32((decimal)value);
@@ -992,10 +990,8 @@ namespace System.Xml.Schema
             return ChangeTypeWildcardSource(value, destinationType, null);
         }
 
-        public override object ChangeType(int value, Type destinationType)
+        public override object ChangeType(int value, Type destinationType!!)
         {
-            if (destinationType == null) throw new ArgumentNullException(nameof(destinationType));
-
             if (destinationType == ObjectType) destinationType = DefaultClrType!;
             if (destinationType == DecimalType) return ((decimal)(int)value);
             if (destinationType == Int32Type) return ((int)value);
@@ -1007,10 +1003,8 @@ namespace System.Xml.Schema
             return ChangeTypeWildcardSource(value, destinationType, null);
         }
 
-        public override object ChangeType(long value, Type destinationType)
+        public override object ChangeType(long value, Type destinationType!!)
         {
-            if (destinationType == null) throw new ArgumentNullException(nameof(destinationType));
-
             if (destinationType == ObjectType) destinationType = DefaultClrType!;
             if (destinationType == DecimalType) return ((decimal)(long)value);
             if (destinationType == Int32Type) return Int64ToInt32((long)value);
@@ -1022,10 +1016,8 @@ namespace System.Xml.Schema
             return ChangeTypeWildcardSource(value, destinationType!, null);
         }
 
-        public override object ChangeType(string value!!, Type destinationType, IXmlNamespaceResolver? nsResolver)
+        public override object ChangeType(string value!!, Type destinationType!!, IXmlNamespaceResolver? nsResolver)
         {
-            if (destinationType == null) throw new ArgumentNullException(nameof(destinationType));
-
             if (destinationType == ObjectType) destinationType = DefaultClrType!;
             if (destinationType == DecimalType) return this.ToDecimal((string)value);
             if (destinationType == Int32Type) return this.ToInt32((string)value);
@@ -1037,10 +1029,8 @@ namespace System.Xml.Schema
             return ChangeTypeWildcardSource(value, destinationType, nsResolver);
         }
 
-        public override object ChangeType(object value!!, Type destinationType, IXmlNamespaceResolver? nsResolver)
+        public override object ChangeType(object value!!, Type destinationType!!, IXmlNamespaceResolver? nsResolver)
         {
-            if (destinationType == null) throw new ArgumentNullException(nameof(destinationType));
-
             Type sourceType = value.GetType();
 
             if (destinationType == ObjectType) destinationType = DefaultClrType!;
@@ -1213,10 +1203,8 @@ namespace System.Xml.Schema
         // ChangeType
         //-----------------------------------------------
 
-        public override object ChangeType(double value, Type destinationType)
+        public override object ChangeType(double value, Type destinationType!!)
         {
-            if (destinationType == null) throw new ArgumentNullException(nameof(destinationType));
-
             if (destinationType == ObjectType) destinationType = DefaultClrType!;
             if (destinationType == DoubleType) return ((double)value);
             if (destinationType == SingleType) return ((float)(double)value);
@@ -1429,10 +1417,8 @@ namespace System.Xml.Schema
         // ChangeType
         //-----------------------------------------------
 
-        public override object ChangeType(DateTime value, Type destinationType)
+        public override object ChangeType(DateTime value, Type destinationType!!)
         {
-            if (destinationType == null) throw new ArgumentNullException(nameof(destinationType));
-
             if (destinationType == ObjectType) destinationType = DefaultClrType!;
             if (destinationType == DateTimeType) return ((DateTime)value);
             if (destinationType == DateTimeOffsetType) return this.ToDateTimeOffset((DateTime)value);
@@ -1577,10 +1563,8 @@ namespace System.Xml.Schema
         // ChangeType
         //-----------------------------------------------
 
-        public override object ChangeType(bool value, Type destinationType)
+        public override object ChangeType(bool value, Type destinationType!!)
         {
-            if (destinationType == null) throw new ArgumentNullException(nameof(destinationType));
-
             if (destinationType == ObjectType) destinationType = DefaultClrType!;
             if (destinationType == BooleanType) return ((bool)value);
             if (destinationType == StringType) return XmlConvert.ToString((bool)value);
@@ -2137,60 +2121,48 @@ namespace System.Xml.Schema
         // ChangeType
         //-----------------------------------------------
 
-        public override object ChangeType(bool value, Type destinationType)
+        public override object ChangeType(bool value, Type destinationType!!)
         {
-            if (destinationType == null) throw new ArgumentNullException(nameof(destinationType));
-
             if (destinationType == ObjectType) destinationType = DefaultClrType!;
             if (destinationType == StringType) return XmlConvert.ToString((bool)value);
 
             return ChangeTypeWildcardSource(value, destinationType, null);
         }
 
-        public override object ChangeType(DateTime value, Type destinationType)
+        public override object ChangeType(DateTime value, Type destinationType!!)
         {
-            if (destinationType == null) throw new ArgumentNullException(nameof(destinationType));
-
             if (destinationType == ObjectType) destinationType = DefaultClrType!;
             if (destinationType == StringType) return DateTimeToString((DateTime)value);
 
             return ChangeTypeWildcardSource(value, destinationType, null);
         }
 
-        public override object ChangeType(decimal value, Type destinationType)
+        public override object ChangeType(decimal value, Type destinationType!!)
         {
-            if (destinationType == null) throw new ArgumentNullException(nameof(destinationType));
-
             if (destinationType == ObjectType) destinationType = DefaultClrType!;
             if (destinationType == StringType) return XmlConvert.ToString((decimal)value);
 
             return ChangeTypeWildcardSource(value, destinationType, null);
         }
 
-        public override object ChangeType(double value, Type destinationType)
+        public override object ChangeType(double value, Type destinationType!!)
         {
-            if (destinationType == null) throw new ArgumentNullException(nameof(destinationType));
-
             if (destinationType == ObjectType) destinationType = DefaultClrType!;
             if (destinationType == StringType) return XmlConvert.ToString((double)value);
 
             return ChangeTypeWildcardSource(value, destinationType, null);
         }
 
-        public override object ChangeType(int value, Type destinationType)
+        public override object ChangeType(int value, Type destinationType!!)
         {
-            if (destinationType == null) throw new ArgumentNullException(nameof(destinationType));
-
             if (destinationType == ObjectType) destinationType = DefaultClrType!;
             if (destinationType == StringType) return XmlConvert.ToString((int)value);
 
             return ChangeTypeWildcardSource(value, destinationType, null);
         }
 
-        public override object ChangeType(long value, Type destinationType)
+        public override object ChangeType(long value, Type destinationType!!)
         {
-            if (destinationType == null) throw new ArgumentNullException(nameof(destinationType));
-
             if (destinationType == ObjectType) destinationType = DefaultClrType!;
             if (destinationType == StringType) return XmlConvert.ToString((long)value);
 
@@ -2367,7 +2339,7 @@ namespace System.Xml.Schema
             return base.ChangeListType(value, destinationType, nsResolver);
         }
 
-        private bool SupportsType(Type clrType)
+        private static bool SupportsType(Type clrType)
         {
             if (clrType == BooleanType) return true;
             if (clrType == ByteType) return true;
@@ -2845,7 +2817,7 @@ namespace System.Xml.Schema
         ///   2. A strongly-typed array
         ///   3. A string
         /// </summary>
-        private bool IsListType(Type type)
+        private static bool IsListType(Type type)
         {
             // IsClrListType returns true if "type" is one of the list interfaces
             if (type == IListType || type == ICollectionType || type == IEnumerableType || type == StringType)
@@ -2914,7 +2886,7 @@ namespace System.Xml.Schema
         /// <summary>
         /// Tokenize "value" by splitting it on whitespace characters.  Insert tokens into an ArrayList and return the list.
         /// </summary>
-        private List<string> StringAsList(string value)
+        private static List<string> StringAsList(string value)
         {
             return new List<string>(XmlConvert.SplitString(value));
         }

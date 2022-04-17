@@ -190,6 +190,7 @@ namespace ILCompiler
             public const int Atomics = 0x0200;
             public const int Vector64 = 0x0400;
             public const int Vector128 = 0x0800;
+            public const int Rcpc = 0x1000;
 
             public static int FromHardwareIntrinsicId(string id)
             {
@@ -207,6 +208,7 @@ namespace ILCompiler
                     "Atomics" => Atomics,
                     "Vector64" => Vector64,
                     "Vector128" => Vector128,
+                    "Rcpc" => Rcpc,
                _ => throw new NotSupportedException(),
                 };
             }
@@ -231,6 +233,7 @@ namespace ILCompiler
                         InstructionSet.ARM64_Atomics => Atomics,
                         InstructionSet.ARM64_Vector64 => Vector64,
                         InstructionSet.ARM64_Vector128 => Vector128,
+                        InstructionSet.ARM64_Rcpc => Rcpc,
                         _ => throw new NotSupportedException()
                     };
                 }

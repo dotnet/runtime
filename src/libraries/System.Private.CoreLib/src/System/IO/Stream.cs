@@ -333,9 +333,9 @@ namespace System.IO
         }
 
 #if CORERT // TODO: https://github.com/dotnet/corert/issues/3251
-        private bool HasOverriddenBeginEndRead() => true;
+        private static bool HasOverriddenBeginEndRead() => true;
 
-        private bool HasOverriddenBeginEndWrite() => true;
+        private static bool HasOverriddenBeginEndWrite() => true;
 #else
         [MethodImpl(MethodImplOptions.InternalCall)]
         private extern bool HasOverriddenBeginEndRead();
@@ -719,10 +719,8 @@ namespace System.IO
 
         public virtual void WriteByte(byte value) => Write(new byte[1] { value }, 0, 1);
 
-        public static Stream Synchronized(Stream stream) =>
-            stream is null ? throw new ArgumentNullException(nameof(stream)) :
-            stream is SyncStream ? stream :
-            new SyncStream(stream);
+        public static Stream Synchronized(Stream stream!!) =>
+            stream as SyncStream ?? new SyncStream(stream);
 
         [Obsolete("Do not call or override this method.")]
         protected virtual void ObjectInvariant() { }
@@ -865,7 +863,7 @@ namespace System.IO
         {
             private readonly Stream _stream;
 
-            internal SyncStream(Stream stream) => _stream = stream ?? throw new ArgumentNullException(nameof(stream));
+            internal SyncStream(Stream stream!!) => _stream = stream;
 
             public override bool CanRead => _stream.CanRead;
             public override bool CanWrite => _stream.CanWrite;

@@ -149,7 +149,9 @@ namespace Tracing.Tests.ProcessInfoValidation
             string currentProcessCommandLine = $"{currentProcess.MainModule.FileName} {System.Reflection.Assembly.GetExecutingAssembly().Location}";
             string receivedCommandLine = NormalizeCommandLine(commandLine);
 
-            Utils.Assert(currentProcessCommandLine.Equals(receivedCommandLine, StringComparison.OrdinalIgnoreCase), $"CommandLine must match current process. Expected: {currentProcessCommandLine}, Received: {receivedCommandLine} (original: {commandLine})");
+            // ActiveIssue https://github.com/dotnet/runtime/issues/62729
+            if (!OperatingSystem.IsAndroid())
+                Utils.Assert(currentProcessCommandLine.Equals(receivedCommandLine, StringComparison.OrdinalIgnoreCase), $"CommandLine must match current process. Expected: {currentProcessCommandLine}, Received: {receivedCommandLine} (original: {commandLine})");
 
             // VALIDATE OS
             start = end;
@@ -177,6 +179,10 @@ namespace Tracing.Tests.ProcessInfoValidation
             else if (OperatingSystem.IsLinux())
             {
                 expectedOSValue = "Linux";
+            }
+            else if (OperatingSystem.IsAndroid())
+            {
+                expectedOSValue = "Android";
             }
             else
             {

@@ -11,11 +11,11 @@ namespace System.Formats.Cbor
 
         /// <summary>Writes a single-precision floating point number (major type 7).</summary>
         /// <param name="value">The value to write.</param>
-        /// <exception cref="InvalidOperationException">Writing a new value exceeds the definite length of the parent data item.
-        /// -or-
-        /// The major type of the encoded value is not permitted in the parent data item.
-        /// -or-
-        /// The written data is not accepted under the current conformance mode.</exception>
+        /// <exception cref="InvalidOperationException"><para>Writing a new value exceeds the definite length of the parent data item.</para>
+        /// <para>-or-</para>
+        /// <para>The major type of the encoded value is not permitted in the parent data item.</para>
+        /// <para>-or-</para>
+        /// <para>The written data is not accepted under the current conformance mode.</para></exception>
         public void WriteSingle(float value)
         {
             if (!CborConformanceModeHelpers.RequiresPreservingFloatPrecision(ConformanceMode) &&
@@ -31,11 +31,11 @@ namespace System.Formats.Cbor
 
         /// <summary>Writes a double-precision floating point number (major type 7).</summary>
         /// <param name="value">The value to write.</param>
-        /// <exception cref="InvalidOperationException">Writing a new value exceeds the definite length of the parent data item.
-        /// -or-
-        /// The major type of the encoded value is not permitted in the parent data item.
-        /// -or-
-        /// The written data is not accepted under the current conformance mode.</exception>
+        /// <exception cref="InvalidOperationException"><para>Writing a new value exceeds the definite length of the parent data item.</para>
+        /// <para>-or-</para>
+        /// <para>The major type of the encoded value is not permitted in the parent data item.</para>
+        /// <para>-or-</para>
+        /// <para>The written data is not accepted under the current conformance mode.</para></exception>
         public void WriteDouble(double value)
         {
             if (!CborConformanceModeHelpers.RequiresPreservingFloatPrecision(ConformanceMode) &&

@@ -517,7 +517,7 @@ namespace System.IO
             vsb.Dispose();
         }
 
-        public override void Write(string format, object? arg0)
+        public override void Write([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0)
         {
             if (GetType() == typeof(StreamWriter))
             {
@@ -529,7 +529,7 @@ namespace System.IO
             }
         }
 
-        public override void Write(string format, object? arg0, object? arg1)
+        public override void Write([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0, object? arg1)
         {
             if (GetType() == typeof(StreamWriter))
             {
@@ -541,7 +541,7 @@ namespace System.IO
             }
         }
 
-        public override void Write(string format, object? arg0, object? arg1, object? arg2)
+        public override void Write([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0, object? arg1, object? arg2)
         {
             if (GetType() == typeof(StreamWriter))
             {
@@ -553,13 +553,13 @@ namespace System.IO
             }
         }
 
-        public override void Write(string format, params object?[] arg)
+        public override void Write([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params object?[] arg)
         {
             if (GetType() == typeof(StreamWriter))
             {
                 if (arg == null)
                 {
-                    throw new ArgumentNullException((format == null) ? nameof(format) : nameof(arg)); // same as base logic
+                    ArgumentNullException.Throw(format is null ? nameof(format) : nameof(arg)); // same as base logic
                 }
                 WriteFormatHelper(format, new ParamsArray(arg), appendNewLine: false);
             }
@@ -569,7 +569,7 @@ namespace System.IO
             }
         }
 
-        public override void WriteLine(string format, object? arg0)
+        public override void WriteLine([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0)
         {
             if (GetType() == typeof(StreamWriter))
             {
@@ -581,7 +581,7 @@ namespace System.IO
             }
         }
 
-        public override void WriteLine(string format, object? arg0, object? arg1)
+        public override void WriteLine([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0, object? arg1)
         {
             if (GetType() == typeof(StreamWriter))
             {
@@ -593,7 +593,7 @@ namespace System.IO
             }
         }
 
-        public override void WriteLine(string format, object? arg0, object? arg1, object? arg2)
+        public override void WriteLine([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0, object? arg1, object? arg2)
         {
             if (GetType() == typeof(StreamWriter))
             {
@@ -605,14 +605,11 @@ namespace System.IO
             }
         }
 
-        public override void WriteLine(string format, params object?[] arg)
+        public override void WriteLine([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params object?[] arg)
         {
             if (GetType() == typeof(StreamWriter))
             {
-                if (arg == null)
-                {
-                    throw new ArgumentNullException(nameof(arg));
-                }
+                ArgumentNullException.ThrowIfNull(arg);
                 WriteFormatHelper(format, new ParamsArray(arg), appendNewLine: true);
             }
             else

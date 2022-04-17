@@ -158,7 +158,7 @@ namespace System.Xml.Linq
             }
             set
             {
-                if (value == null) throw new ArgumentNullException(nameof(value));
+                ArgumentNullException.ThrowIfNull(value);
                 ValidateAttribute(name, value);
                 bool notify = NotifyChanging(this, XObjectChangeEventArgs.Value);
                 this.value = value;

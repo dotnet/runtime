@@ -1596,13 +1596,9 @@ namespace System.Xml
         }
 
         // Reads and concatenates content nodes, base64-decodes the results and copies the decoded bytes into the provided buffer
-        public override int ReadContentAsBase64(byte[] buffer, int index, int count)
+        public override int ReadContentAsBase64(byte[] buffer!!, int index, int count)
         {
             // check arguments
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer));
-            }
             if (count < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(count));
@@ -1656,13 +1652,9 @@ namespace System.Xml
 
 
         // Reads and concatenates content nodes, binhex-decodes the results and copies the decoded bytes into the provided buffer
-        public override int ReadContentAsBinHex(byte[] buffer, int index, int count)
+        public override int ReadContentAsBinHex(byte[] buffer!!, int index, int count)
         {
             // check arguments
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer));
-            }
             if (count < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(count));
@@ -1715,13 +1707,9 @@ namespace System.Xml
         }
 
         // Reads and concatenates content of an element, base64-decodes the results and copies the decoded bytes into the provided buffer
-        public override int ReadElementContentAsBase64(byte[] buffer, int index, int count)
+        public override int ReadElementContentAsBase64(byte[] buffer!!, int index, int count)
         {
             // check arguments
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer));
-            }
             if (count < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(count));
@@ -1775,13 +1763,9 @@ namespace System.Xml
 
 
         // Reads and concatenates content of an element, binhex-decodes the results and copies the decoded bytes into the provided buffer
-        public override int ReadElementContentAsBinHex(byte[] buffer, int index, int count)
+        public override int ReadElementContentAsBinHex(byte[] buffer!!, int index, int count)
         {
             // check arguments
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer));
-            }
             if (count < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(count));
@@ -1851,10 +1835,7 @@ namespace System.Xml
                 throw new InvalidOperationException(SR.Format(SR.Xml_InvalidReadValueChunk, _curNode.type));
             }
             // check arguments
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer));
-            }
+            ArgumentNullException.ThrowIfNull(buffer);
             if (count < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(count));
@@ -5474,7 +5455,7 @@ namespace System.Xml
             _stringBuilder.Length = 0;
         }
 
-        private void AddAttributeChunkToList(NodeData attr, NodeData chunk, ref NodeData? lastChunk)
+        private static void AddAttributeChunkToList(NodeData attr, NodeData chunk, ref NodeData? lastChunk)
         {
             if (lastChunk == null)
             {
@@ -9637,7 +9618,7 @@ namespace System.Xml
         }
 
         // SxS: URIs are resolved only to be compared. No resource exposure. It's OK to suppress the SxS warning.
-        private bool UriEqual(Uri? uri1, string? uri1Str, string? uri2Str, XmlResolver? resolver)
+        private static bool UriEqual(Uri? uri1, string? uri1Str, string? uri2Str, XmlResolver? resolver)
         {
             if (resolver == null)
             {

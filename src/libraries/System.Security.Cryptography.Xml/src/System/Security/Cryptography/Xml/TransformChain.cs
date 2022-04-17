@@ -51,7 +51,7 @@ namespace System.Security.Cryptography.Xml
             get
             {
                 if (index >= _transforms.Count)
-                    throw new ArgumentException(SR.ArgumentOutOfRange_Index, nameof(index));
+                    throw new ArgumentException(SR.ArgumentOutOfRange_IndexMustBeLess, nameof(index));
                 return (Transform)_transforms[index];
             }
         }

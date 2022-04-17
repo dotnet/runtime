@@ -8,6 +8,7 @@ using System.Threading;
 using Xunit;
 using Xunit.Sdk;
 using Xunit.Abstractions;
+using System.Linq;
 
 namespace System.IO.Tests
 {
@@ -39,11 +40,11 @@ namespace System.IO.Tests
             FileSystemEventHandler changeHandler = (o, e) =>
             {
                 Assert.Equal(WatcherChangeTypes.Changed, e.ChangeType);
-                if (expectedPaths != null)
+
+                if (expectedPaths == null || expectedPaths.Contains(e.FullPath))
                 {
-                    Assert.Contains(Path.GetFullPath(e.FullPath), expectedPaths);
+                    eventOccurred.Set();
                 }
-                eventOccurred.Set();
             };
 
             watcher.Changed += changeHandler;
@@ -67,20 +68,11 @@ namespace System.IO.Tests
                 }
 
                 Assert.Equal(WatcherChangeTypes.Created, e.ChangeType);
-                if (expectedPaths != null)
-                {
-                    try
-                    {
-                        Assert.Contains(Path.GetFullPath(e.FullPath), expectedPaths);
-                    }
-                    catch (Exception ex)
-                    {
-                        _output?.WriteLine(ex.ToString());
-                        throw;
-                    }
-                }
 
-                eventOccurred.Set();
+                if (expectedPaths == null || expectedPaths.Contains(e.FullPath))
+                {
+                    eventOccurred.Set();
+                }
             };
 
             watcher.Created += handler;
@@ -102,19 +94,10 @@ namespace System.IO.Tests
                     Assert.Equal(WatcherChangeTypes.Deleted, e.ChangeType);
                 }
 
-                if (expectedPaths != null)
+                if (expectedPaths == null || expectedPaths.Contains(e.FullPath))
                 {
-                    try
-                    {
-                        Assert.Contains(Path.GetFullPath(e.FullPath), expectedPaths);
-                    }
-                    catch (Exception ex)
-                    {
-                        _output?.WriteLine(ex.ToString());
-                        throw;
-                    }
+                    eventOccurred.Set();
                 }
-                eventOccurred.Set();
             };
 
             watcher.Deleted += handler;
@@ -137,19 +120,10 @@ namespace System.IO.Tests
                     Assert.Equal(WatcherChangeTypes.Renamed, e.ChangeType);
                 }
 
-                if (expectedPaths != null)
+                if (expectedPaths == null || expectedPaths.Contains(e.FullPath))
                 {
-                    try
-                    {
-                        Assert.Contains(Path.GetFullPath(e.FullPath), expectedPaths);
-                    }
-                    catch (Exception ex)
-                    {
-                        _output?.WriteLine(ex.ToString());
-                        throw;
-                    }
+                    eventOccurred.Set();
                 }
-                eventOccurred.Set();
             };
 
             watcher.Renamed += handler;
@@ -257,7 +231,7 @@ namespace System.IO.Tests
         /// <param name="expectedPath">Optional. Adds path verification to all expected events.</param>
         public static void ExpectNoEvent(FileSystemWatcher watcher, WatcherChangeTypes unExpectedEvents, Action action, Action cleanup = null, string expectedPath = null, int timeout = WaitForExpectedEventTimeout)
         {
-            bool result = ExecuteAndVerifyEvents(watcher, unExpectedEvents, action, false, new string[] { expectedPath }, timeout);
+            bool result = ExecuteAndVerifyEvents(watcher, unExpectedEvents, action, false, expectedPath == null ? null : new string[] { expectedPath }, timeout);
             Assert.False(result, "Expected Event occured");
 
             if (cleanup != null)

@@ -13,7 +13,7 @@
 #define __MONO_METADATA_GC_INTERNAL_H__
 
 #include <glib.h>
-#include <mono/utils/gc_wrapper.h>
+#include <mono/metadata/gc_wrapper.h>
 #include <mono/metadata/object-internals.h>
 #include <mono/metadata/threads-types.h>
 #include <mono/sgen/gc-internal-agnostic.h>
@@ -115,7 +115,7 @@ gboolean mono_gc_user_markers_supported (void);
  */
 MonoObject* mono_gc_alloc_fixed      (size_t size, MonoGCDescriptor descr, MonoGCRootSource source, void *key, const char *msg);
 
-// C++ callers outside of metadata (mini/tasklets.c) must use mono_gc_alloc_fixed_no_descriptor
+// C++ callers outside of metadata must use mono_gc_alloc_fixed_no_descriptor
 // instead of mono_gc_alloc_fixed, or else compile twice -- boehm and sgen.
 MonoObject*
 mono_gc_alloc_fixed_no_descriptor (size_t size, MonoGCRootSource source, void *key, const char *msg);

@@ -151,7 +151,7 @@ namespace System
                 throw new ArgumentNullException(nameof(typeName));
 
             return RuntimeTypeHandle.GetTypeByName(
-                typeName, throwOnError, ignoreCase, ref stackMark, false);
+                typeName, throwOnError, ignoreCase, ref stackMark);
         }
 
         private static void SplitName(string? fullname, out string? name, out string? ns)
@@ -833,7 +833,7 @@ namespace System
             }
 
             if ((bindingAttr & BindingFlags.ExactBinding) != 0)
-                return System.DefaultBinder.ExactBinding(candidates.ToArray(), types, modifiers) as ConstructorInfo;
+                return System.DefaultBinder.ExactBinding(candidates.ToArray(), types) as ConstructorInfo;
 
             if (binder == null)
                 binder = DefaultBinder;
@@ -873,7 +873,7 @@ namespace System
             }
 
             if ((bindingAttr & BindingFlags.ExactBinding) != 0)
-                return System.DefaultBinder.ExactPropertyBinding(candidates.ToArray(), returnType, types, modifiers);
+                return System.DefaultBinder.ExactPropertyBinding(candidates.ToArray(), returnType, types);
 
             if (binder == null)
                 binder = DefaultBinder;
@@ -946,6 +946,10 @@ namespace System
             return match;
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2063:UnrecognizedReflectionPattern",
+            Justification = "Trimming makes sure that interfaces are fully preserved, so the Interfaces annotation is transitive." +
+                            "The cache doesn't carry the necessary annotation since it returns an array type," +
+                            "so the analysis complains that the returned value doesn't have the necessary annotation.")]
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
         [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
         public override Type? GetInterface(string fullname, bool ignoreCase)
@@ -1637,7 +1641,8 @@ namespace System
                 if (ReferenceEquals(elementType, typeof(TypedReference)) || ReferenceEquals(elementType, typeof(RuntimeArgumentHandle)))
                     throw new NotSupportedException("NotSupported_ContainsStackPtr");
 
-                if (IsValueType) {
+                if (IsValueType)
+                {
                     var this_type = this;
                     return CreateInstanceInternal(new QCallTypeHandle(ref this_type));
                 }
@@ -1651,74 +1656,140 @@ namespace System
                 throw new MissingMethodException("Cannot create an abstract class '{0}'.", FullName);
             }
 
-            return ctor.InvokeWorker(null, wrapExceptions ? BindingFlags.Default : BindingFlags.DoNotWrapExceptions, Span<object?>.Empty);
+            unsafe
+            {
+                return ctor.Invoker.InvokeUnsafe(
+                    obj: null,
+                    args: default,
+                    argsForTemporaryMonoSupport: default,
+                    wrapExceptions ? BindingFlags.Default : BindingFlags.DoNotWrapExceptions);
+            }
         }
 
-        internal object? CheckValue(object? value, Binder? binder, CultureInfo? culture, BindingFlags invokeAttr)
+        // Once Mono has managed conversion logic, this method can be removed and the Core
+        // implementation of this method moved to RuntimeMethod.Invoke().
+#if DEBUG
+#pragma warning disable CA1822
+        internal void VerifyValueType(object? value) { }
+#pragma warning restore CA1822
+#endif
+
+        /// <summary>
+        /// Verify <paramref name="value"/> and optionally convert the value for special cases.
+        /// </summary>
+        /// <returns>Not yet implemented in Mono: True if the value should be considered a value type, False otherwise</returns>
+        internal bool CheckValue(
+            ref object? value,
+            ref bool copyBack,
+            Binder? binder,
+            CultureInfo? culture,
+            BindingFlags invokeAttr)
         {
-            bool failed = false;
-            object? res = TryConvertToType(value, ref failed);
-            if (!failed)
-                return res;
+            // Already fast-pathed by the caller.
+            Debug.Assert(!ReferenceEquals(value?.GetType(), this));
+
+            copyBack = true;
+
+            CheckValueStatus status = TryConvertToType(ref value);
+            if (status == CheckValueStatus.Success)
+            {
+                return true;
+            }
+
+            if (status == CheckValueStatus.NotSupported_ByRefLike)
+            {
+                throw new NotSupportedException(SR.Format(SR.NotSupported_ByRefLike, value?.GetType(), this));
+            }
 
             if ((invokeAttr & BindingFlags.ExactBinding) == BindingFlags.ExactBinding)
-                throw new ArgumentException(SR.Format(SR.Arg_ObjObjEx, value!.GetType(), this));
+            {
+                throw new ArgumentException(SR.Format(SR.Arg_ObjObjEx, value?.GetType(), this));
+            }
 
             if (binder != null && binder != DefaultBinder)
-                return binder.ChangeType(value!, this, culture);
+            {
+                value = binder.ChangeType(value!, this, culture);
+                return true;
+            }
 
-            throw new ArgumentException(SR.Format(SR.Arg_ObjObjEx, value!.GetType(), this));
+            throw new ArgumentException(SR.Format(SR.Arg_ObjObjEx, value?.GetType(), this));
         }
 
-        private object? TryConvertToType(object? value, ref bool failed)
+        private enum CheckValueStatus
+        {
+            Success = 0,
+            ArgumentException,
+            NotSupported_ByRefLike
+        }
+
+        private CheckValueStatus TryConvertToType(ref object? value)
         {
             if (IsInstanceOfType(value))
-            {
-                return value;
-            }
+                return CheckValueStatus.Success;
 
             if (IsByRef)
             {
-                Type? elementType = GetElementType();
+                Type elementType = GetElementType();
+                if (elementType.IsByRefLike)
+                {
+                    return CheckValueStatus.NotSupported_ByRefLike;
+                }
+
                 if (value == null || elementType.IsInstanceOfType(value))
                 {
-                    return value;
+                    return CheckValueStatus.Success;
                 }
             }
 
             if (value == null)
-                return value;
+            {
+                if (IsByRefLike)
+                {
+                    return CheckValueStatus.NotSupported_ByRefLike;
+                }
+
+                return CheckValueStatus.Success;
+            }
 
             if (IsEnum)
             {
                 Type? type = Enum.GetUnderlyingType(this);
                 if (type == value.GetType())
-                    return value;
+                    return CheckValueStatus.Success;
+
                 object? res = IsConvertibleToPrimitiveType(value, type);
                 if (res != null)
-                    return res;
+                {
+                    value = res;
+                    return CheckValueStatus.Success;
+                }
             }
             else if (IsPrimitive)
             {
                 object? res = IsConvertibleToPrimitiveType(value, this);
                 if (res != null)
-                    return res;
+                {
+                    value = res;
+                    return CheckValueStatus.Success;
+                }
             }
             else if (IsPointer)
             {
                 Type? vtype = value.GetType();
                 if (vtype == typeof(IntPtr) || vtype == typeof(UIntPtr))
-                    return value;
+                    return CheckValueStatus.Success;
                 if (value is Pointer pointer)
                 {
                     Type pointerType = pointer.GetPointerType();
                     if (pointerType == this)
-                        return pointer.GetPointerValue();
+                    {
+                        value = pointer.GetPointerValue();
+                        return CheckValueStatus.Success;
+                    }
                 }
             }
 
-            failed = true;
-            return null;
+            return CheckValueStatus.ArgumentException;
         }
 
         // Binder uses some incompatible conversion rules. For example
@@ -1979,7 +2050,10 @@ namespace System
             if (ctor is null || !ctor.IsPublic)
                 throw new MissingMethodException(SR.Format(SR.Arg_NoDefCTor, gt!));
 
-            return ctor.InvokeCtorWorker(BindingFlags.Default, Span<object?>.Empty)!;
+            unsafe
+            {
+                return ctor.Invoker.InvokeUnsafe(obj: null, args: default, argsForTemporaryMonoSupport: default, BindingFlags.Default)!;
+            }
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]

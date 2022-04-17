@@ -5,6 +5,7 @@ using System.Numerics;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 namespace System.IO.Tests
@@ -185,43 +186,6 @@ namespace System.IO.Tests
 
             Assert.Equal(expectedBytes.Length /* byte count */, new BinaryReader(stream).Read7BitEncodedInt());
             Assert.Equal(expectedBytes, stream.GetBuffer()[Get7BitEncodedIntByteLength((uint)expectedBytes.Length)..(int)stream.Length]);
-        }
-
-        [Fact]
-        [SkipOnPlatform(TestPlatforms.Android, "OOM on Android could be uncatchable & kill the test runner")]
-        public unsafe void WriteChars_VeryLargeArray_DoesNotOverflow()
-        {
-            const nuint INPUT_LEN_IN_CHARS = 1_500_000_000;
-            const nuint OUTPUT_LEN_IN_BYTES = 3_500_000_000; // overallocate
-
-            SafeBuffer unmanagedInputBuffer = null;
-            SafeBuffer unmanagedOutputBufer = null;
-            try
-            {
-                try
-                {
-                    unmanagedInputBuffer = SafeBufferUtil.CreateSafeBuffer(INPUT_LEN_IN_CHARS * sizeof(char));
-                    unmanagedOutputBufer = SafeBufferUtil.CreateSafeBuffer(OUTPUT_LEN_IN_BYTES * sizeof(byte));
-                }
-                catch (OutOfMemoryException)
-                {
-                    return; // skip test in low-mem conditions
-                }
-
-                Span<char> inputSpan = new Span<char>((char*)unmanagedInputBuffer.DangerousGetHandle(), (int)INPUT_LEN_IN_CHARS);
-                inputSpan.Fill('\u0224'); // LATIN CAPITAL LETTER Z WITH HOOK
-                Stream outStream = new UnmanagedMemoryStream(unmanagedOutputBufer, 0, (long)unmanagedOutputBufer.ByteLength, FileAccess.ReadWrite);
-                BinaryWriter writer = new BinaryWriter(outStream);
-
-                writer.Write(inputSpan); // will write 3 billion bytes to the output
-
-                Assert.Equal(3_000_000_000, outStream.Position);
-            }
-            finally
-            {
-                unmanagedInputBuffer?.Dispose();
-                unmanagedOutputBufer?.Dispose();
-            }
         }
 
         private static bool IsUsingFastUtf8(BinaryWriter writer)

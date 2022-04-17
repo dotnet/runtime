@@ -11,12 +11,13 @@ namespace System.Text.Json.Serialization
     /// </summary>
     internal sealed class ConverterList : IList<JsonConverter>
     {
-        private readonly List<JsonConverter> _list = new List<JsonConverter>();
+        private readonly List<JsonConverter> _list;
         private readonly JsonSerializerOptions _options;
 
         public ConverterList(JsonSerializerOptions options)
         {
             _options = options;
+            _list = new List<JsonConverter>();
         }
 
         public ConverterList(JsonSerializerOptions options, ConverterList source)

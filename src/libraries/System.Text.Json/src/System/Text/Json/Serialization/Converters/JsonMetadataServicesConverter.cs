@@ -41,6 +41,8 @@ namespace System.Text.Json.Serialization.Converters
 
         internal override bool ConstructorIsParameterized => Converter.ConstructorIsParameterized;
 
+        internal override bool CanHaveMetadata => Converter.CanHaveMetadata;
+
         public JsonMetadataServicesConverter(Func<JsonConverter<T>> converterCreator!!, ConverterStrategy converterStrategy)
         {
             _converterCreator = converterCreator;
@@ -48,24 +50,7 @@ namespace System.Text.Json.Serialization.Converters
         }
 
         internal override bool OnTryRead(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options, ref ReadStack state, out T? value)
-        {
-            JsonTypeInfo jsonTypeInfo = state.Current.JsonTypeInfo;
-
-            if (_converterStrategy == ConverterStrategy.Object)
-            {
-                if (jsonTypeInfo.PropertyCache == null)
-                {
-                    jsonTypeInfo.InitializePropCache();
-                }
-
-                if (jsonTypeInfo.ParameterCache == null && jsonTypeInfo.IsObjectWithParameterizedCtor)
-                {
-                    jsonTypeInfo.InitializeParameterCache();
-                }
-            }
-
-            return Converter.OnTryRead(ref reader, typeToConvert, options, ref state, out value);
-        }
+            => Converter.OnTryRead(ref reader, typeToConvert, options, ref state, out value);
 
         internal override bool OnTryWrite(Utf8JsonWriter writer, T value, JsonSerializerOptions options, ref WriteStack state)
         {
@@ -76,18 +61,16 @@ namespace System.Text.Json.Serialization.Converters
             if (!state.SupportContinuation &&
                 jsonTypeInfo is JsonTypeInfo<T> info &&
                 info.SerializeHandler != null &&
-                info.Options._context?.CanUseSerializationLogic == true)
+                info.Options.JsonSerializerContext?.CanUseSerializationLogic == true)
             {
                 info.SerializeHandler(writer, value);
                 return true;
             }
 
-            if (_converterStrategy == ConverterStrategy.Object && jsonTypeInfo.PropertyCache == null)
-            {
-                jsonTypeInfo.InitializePropCache();
-            }
-
             return Converter.OnTryWrite(writer, value, options, ref state);
         }
+
+        internal override void ConfigureJsonTypeInfo(JsonTypeInfo jsonTypeInfo, JsonSerializerOptions options)
+            => Converter.ConfigureJsonTypeInfo(jsonTypeInfo, options);
     }
 }

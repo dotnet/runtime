@@ -6,6 +6,7 @@
     <DebugType>None</DebugType>
     <Optimize>False</Optimize>
     <GCStressIncompatible>true</GCStressIncompatible>
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="lcs2.cs" />

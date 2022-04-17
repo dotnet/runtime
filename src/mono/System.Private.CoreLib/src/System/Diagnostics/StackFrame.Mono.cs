@@ -45,7 +45,9 @@ namespace System.Diagnostics
             }
         }
 
+#pragma warning disable IDE0060
         private static bool AppendStackFrameWithoutMethodBase(StringBuilder sb) => false;
+#pragma warning restore IDE0060
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern bool get_frame_info(int skipFrames, bool needFileInfo,

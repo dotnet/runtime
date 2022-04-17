@@ -17,12 +17,13 @@
 #include "mono-config-internals.h"
 #include "object-internals.h"
 #include "class-init.h"
-#include "assembly.h"
+#include <mono/metadata/assembly.h>
 #include "marshal.h"
-#include "object.h"
+#include <mono/metadata/object.h>
 #include "assembly-internals.h"
 #include "external-only.h"
-#include "threads.h"
+#include <mono/metadata/threads.h>
+#include <mono/metadata/mono-private-unstable.h>
 #include "threads-types.h"
 #include "jit-info.h"
 
@@ -273,14 +274,6 @@ mono_g_hash_table_new_type (GHashFunc hash_func, GEqualFunc key_equal_func, Mono
 }
 
 /**
- * mono_config_for_assembly:
- */
-void
-mono_config_for_assembly (MonoImage *assembly)
-{
-}
-
-/**
  * mono_class_get_property_from_name:
  * \param klass a class
  * \param name name of the property to lookup in the specified class
@@ -372,11 +365,6 @@ void
 mono_thread_manage (void)
 {
 	MONO_EXTERNAL_ONLY_GC_UNSAFE_VOID (mono_thread_manage_internal ());
-}
-
-void
-mono_register_config_for_assembly (const char* assembly_name, const char* config_xml)
-{
 }
 
 /**
@@ -695,4 +683,26 @@ gboolean
 mono_domain_owns_vtable_slot (MonoDomain *domain, gpointer vtable_slot)
 {
 	return mono_mem_manager_mp_contains_addr (mono_mem_manager_get_ambient (), vtable_slot);
+}
+
+/**
+ * mono_method_get_unmanaged_callers_only_ftnptr:
+ * \param method method to generate a thunk for.
+ * \param error set on error
+ *
+ * Returns a function pointer for calling the given UnmanagedCallersOnly method from native code.
+ * The function pointer will use the calling convention specified on the UnmanagedCallersOnly
+ * attribute (or the default platform calling convention if omitted).
+ *
+ * Unlike \c mono_method_get_unmanaged_thunk, minimal marshaling is done to the method parameters in
+ * the wrapper. See
+ * https://docs.microsoft.com/en-us/dotnet/api/system.runtime.interopservices.unmanagedcallersonlyattribute?view=net-6.0
+ * The method must be static and only use blittable argument types.  There is no exception out-argument.
+ *
+ *
+ */
+void*
+mono_method_get_unmanaged_callers_only_ftnptr (MonoMethod *method, MonoError *error)
+{
+ 	MONO_EXTERNAL_ONLY_GC_UNSAFE (gpointer, mono_method_get_unmanaged_wrapper_ftnptr_internal (method, TRUE, error));
 }

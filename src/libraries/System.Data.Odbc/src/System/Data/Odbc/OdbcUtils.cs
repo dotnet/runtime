@@ -499,7 +499,7 @@ namespace System.Data.Odbc
             return localidx;
         }
 
-        private bool IsValidNameChar(char ch)
+        private static bool IsValidNameChar(char ch)
         {
             return (char.IsLetterOrDigit(ch) ||
                     (ch == '_') || (ch == '-') || (ch == '.') ||

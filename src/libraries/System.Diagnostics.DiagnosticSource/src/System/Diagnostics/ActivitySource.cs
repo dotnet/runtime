@@ -171,6 +171,7 @@ namespace System.Diagnostics
 
             Activity? activity = null;
             ActivityTagsCollection? samplerTags;
+            string? traceState;
 
             ActivitySamplingResult samplingResult = ActivitySamplingResult.None;
 
@@ -191,6 +192,8 @@ namespace System.Diagnostics
                     if (sampleUsingParentId != null)
                     {
                         ActivitySamplingResult sr = sampleUsingParentId(ref data);
+                        dataWithContext.SetTraceState(data.TraceState); // Keep the trace state in sync between data and dataWithContext
+
                         if (sr > result)
                         {
                             result = sr;
@@ -206,6 +209,8 @@ namespace System.Diagnostics
                         if (sample != null)
                         {
                             ActivitySamplingResult sr = sample(ref dataWithContext);
+                            data.SetTraceState(dataWithContext.TraceState); // Keep the trace state in sync between data and dataWithContext
+
                             if (sr > result)
                             {
                                 result = sr;
@@ -246,6 +251,7 @@ namespace System.Diagnostics
                 }
 
                 idFormat = aco.IdFormat;
+                traceState = aco.TraceState;
             }
             else
             {
@@ -273,11 +279,12 @@ namespace System.Diagnostics
 
                 samplerTags = aco.GetSamplingTags();
                 idFormat = aco.IdFormat;
+                traceState = aco.TraceState;
             }
 
             if (samplingResult != ActivitySamplingResult.None)
             {
-                activity = Activity.Create(this, name, kind, parentId, context, tags, links, startTime, samplerTags, samplingResult, startIt, idFormat);
+                activity = Activity.Create(this, name, kind, parentId, context, tags, links, startTime, samplerTags, samplingResult, startIt, idFormat, traceState);
             }
 
             return activity;

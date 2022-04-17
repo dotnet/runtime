@@ -366,6 +366,11 @@ namespace DebuggerTests
                 return a;
             }
 
+            public char CallMethodReturningChar()
+            {
+                return 'A';
+            }
+
             public int CallMethodWithParm(int parm)
             {
                 return a + parm;
@@ -818,27 +823,6 @@ namespace DebuggerTests
         }
     }
 
-    public static class EvaluateProtectionLevels
-    {
-        public class TestClass
-        {
-            public string fieldPublic = "public";
-            private string fieldPrivate = "private";
-            internal string fieldInternal = "internal";
-            protected string fieldProtected = "protected";
-
-            public TestClass()
-            {
-                var a = fieldPrivate;
-            }
-        }
-
-        public static void Evaluate()
-        {
-            var testClass = new TestClass();
-        }
-    }
-
     public static class StructureGetters
     {
         public struct Point
@@ -849,6 +833,55 @@ namespace DebuggerTests
         public static void Evaluate()
         {
             var s = new Point();
+        }
+    }
+
+    public static class DefaultParamMethods
+    {
+        public class TestClass
+        {
+            public IEnumerable<int> listToLinq = System.Linq.Enumerable.Range(1, 11);
+
+            public bool GetBool(bool param = true) => param;
+            public char GetChar(char param = 'T') => param;
+            public char GetUnicodeChar(char param = 'ą') => param;
+            public byte GetByte(byte param = 1) => param;
+            public sbyte GetSByte(sbyte param = 1) => param;
+            public short GetInt16(short param = 1) => param;
+            public ushort GetUInt16(ushort param = 1) => param;
+            public int GetInt32(int param = 1) => param;
+            public uint GetUInt32(uint param = 1) => param;
+            public long GetInt64(long param = 1) => param;
+            public ulong GetUInt64(ulong param = 1) => param;
+            public float GetSingle(float param = 1.23f) => param;
+            public double GetDouble(double param = 1.23) => param;
+            public string GetString(string param = "1.23") => param;
+            public string GetUnicodeString(string param = "żółć") => param;
+            
+            #nullable enable
+            public bool? GetBoolNullable(bool? param = true) => param;
+            public char? GetCharNullable(char? param = 'T') => param;
+            public byte? GetByteNullable(byte? param = 1) => param;
+            public sbyte? GetSByteNullable(sbyte? param = 1) => param;
+            public short? GetInt16Nullable(short? param = 1) => param;
+            public ushort? GetUInt16Nullable(ushort? param = 1) => param;
+            public int? GetInt32Nullable(int? param = 1) => param;
+            public uint? GetUInt32Nullable(uint? param = 1) => param;
+            public long? GetInt64Nullable(long? param = 1) => param;
+            public ulong? GetUInt64Nullable(ulong? param = 1) => param;
+            public float? GetSingleNullable(float? param = 1.23f) => param;
+            public double? GetDoubleNullable(double? param = 1.23) => param;
+            public string? GetStringNullable(string? param = "1.23") => param;
+            #nullable disable
+
+            public bool GetNull(object param = null) => param == null ? true : false;
+            public int GetDefaultAndRequiredParam(int requiredParam, int optionalParam = 3) => requiredParam + optionalParam;
+            public string GetDefaultAndRequiredParamMixedTypes(string requiredParam, int optionalParamFirst = -1, bool optionalParamSecond = false) => $"{requiredParam}; {optionalParamFirst}; {optionalParamSecond}";
+        }
+
+        public static void Evaluate()
+        {
+            var test = new TestClass();
         }
     }
 }

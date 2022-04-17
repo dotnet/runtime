@@ -3,8 +3,6 @@
 
 #include "createdump.h"
 
-#define IMAGE_FILE_MACHINE_AMD64             0x8664  // AMD64 (K8)
-
 DumpDataTarget::DumpDataTarget(CrashInfo& crashInfo) :
     m_ref(1),
     m_crashInfo(crashInfo)
@@ -25,6 +23,12 @@ DumpDataTarget::QueryInterface(
         InterfaceId == IID_ICLRDataTarget)
     {
         *Interface = (ICLRDataTarget*)this;
+        AddRef();
+        return S_OK;
+    }
+    else if (InterfaceId == IID_ICLRRuntimeLocator)
+    {
+        *Interface = (ICLRRuntimeLocator*)this;
         AddRef();
         return S_OK;
     }
@@ -203,4 +207,14 @@ DumpDataTarget::Request(
 {
     assert(false);
     return E_NOTIMPL;
+}
+
+// ICLRRuntimeLocator
+
+HRESULT STDMETHODCALLTYPE 
+DumpDataTarget::GetRuntimeBase(
+    /* [out] */ CLRDATA_ADDRESS* baseAddress)
+{
+    *baseAddress = m_crashInfo.RuntimeBaseAddress();
+    return S_OK;
 }

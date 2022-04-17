@@ -49,7 +49,6 @@ COPY_OR_MARK_FUNCTION_NAME (GCObject **ptr, GCObject *obj, SgenGrayQueue *queue)
 #if !defined(COPY_OR_MARK_CONCURRENT) && !defined(COPY_OR_MARK_CONCURRENT_WITH_EVACUATION)
 		int word, bit;
 		gboolean first;
-		first = TRUE;
 		GCObject *forwarded, *old_obj;
 		mword vtable_word;
 		vtable_word = *(mword*)obj;
@@ -127,6 +126,7 @@ COPY_OR_MARK_FUNCTION_NAME (GCObject **ptr, GCObject *obj, SgenGrayQueue *queue)
 		MS_SET_MARK_BIT_PAR (block, word, bit, first);
 #else
 		MS_SET_MARK_BIT (block, word, bit);
+		first = TRUE;
 #endif
 		if (first)
 			sgen_binary_protocol_mark (obj, (gpointer)SGEN_LOAD_VTABLE (obj), sgen_safe_object_get_size (obj));

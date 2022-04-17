@@ -1,107 +1,88 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Globalization;
-using System.Text.RegularExpressions.Symbolic.Unicode;
 
 namespace System.Text.RegularExpressions.Symbolic
 {
     /// <summary><see cref="RegexRunnerFactory"/> for symbolic regexes.</summary>
     internal sealed class SymbolicRegexRunnerFactory : RegexRunnerFactory
     {
-        /// <summary>The unicode component, including the BDD algebra.</summary>
-        internal static readonly UnicodeCategoryTheory<BDD> s_unicode = new UnicodeCategoryTheory<BDD>(new CharSetSolver());
-
-        /// <summary>The matching engine, for 64 or fewer minterms. A SymbolicRegexMatcher of ulong or VB</summary>
-        internal readonly ISymbolicRegexMatcher _matcher;
+        /// <summary>A SymbolicRegexMatcher of either ulong or <see cref="BitVector"/> depending on the number of minterms.</summary>
+        internal readonly SymbolicRegexMatcher _matcher;
 
         /// <summary>Initializes the factory.</summary>
-        public SymbolicRegexRunnerFactory(RegexCode code, RegexOptions options, TimeSpan matchTimeout, CultureInfo culture)
+        public SymbolicRegexRunnerFactory(RegexTree regexTree, RegexOptions options, TimeSpan matchTimeout, CultureInfo culture)
         {
-            // RightToLeft and ECMAScript are currently not supported in conjunction with NonBacktracking.
-            if ((options & (RegexOptions.RightToLeft | RegexOptions.ECMAScript)) != 0)
-            {
-                throw new NotSupportedException(
-                    SR.Format(SR.NotSupported_NonBacktrackingConflictingOption,
-                        (options & RegexOptions.RightToLeft) != 0 ? nameof(RegexOptions.RightToLeft) : nameof(RegexOptions.ECMAScript)));
-            }
+            Debug.Assert((options & (RegexOptions.RightToLeft | RegexOptions.ECMAScript)) == 0);
 
-            var converter = new RegexNodeToSymbolicConverter(s_unicode, culture);
-            var solver = (CharSetSolver)s_unicode._solver;
-            SymbolicRegexNode<BDD> root = converter.Convert(code.Tree.Root, topLevel: true);
+            var charSetSolver = new CharSetSolver();
+            var bddBuilder = new SymbolicRegexBuilder<BDD>(charSetSolver, charSetSolver);
+            var converter = new RegexNodeConverter(bddBuilder, culture, regexTree.CaptureNumberSparseMapping);
 
-            BDD[] minterms = root.ComputeMinterms();
-            if (minterms.Length > 64)
-            {
-                // Use BV to represent a predicate
-                var algBV = new BVAlgebra(solver, minterms);
-                var builderBV = new SymbolicRegexBuilder<BV>(algBV)
-                {
-                    // The default constructor sets the following predicates to False; this update happens after the fact.
-                    // It depends on whether anchors where used in the regex whether the predicates are actually different from False.
-                    _wordLetterPredicateForAnchors = algBV.ConvertFromCharSet(solver, converter._builder._wordLetterPredicateForAnchors),
-                    _newLinePredicate = algBV.ConvertFromCharSet(solver, converter._builder._newLinePredicate)
-                };
+            SymbolicRegexNode<BDD> rootNode = converter.ConvertToSymbolicRegexNode(regexTree.Root, tryCreateFixedLengthMarker: true);
+            BDD[] minterms = rootNode.ComputeMinterms();
 
-                // Convert the BDD-based AST to BV-based AST
-                SymbolicRegexNode<BV> rootBV = converter._builder.Transform(root, builderBV, bdd => builderBV._solver.ConvertFromCharSet(solver, bdd));
-                _matcher = new SymbolicRegexMatcher<BV>(rootBV, code, solver, minterms, matchTimeout, culture);
-            }
-            else
-            {
-                // Use ulong to represent a predicate
-                var alg64 = new BV64Algebra(solver, minterms);
-                var builder64 = new SymbolicRegexBuilder<ulong>(alg64)
-                {
-                    // The default constructor sets the following predicates to False, this update happens after the fact
-                    // It depends on whether anchors where used in the regex whether the predicates are actually different from False
-                    _wordLetterPredicateForAnchors = alg64.ConvertFromCharSet(solver, converter._builder._wordLetterPredicateForAnchors),
-                    _newLinePredicate = alg64.ConvertFromCharSet(solver, converter._builder._newLinePredicate)
-                };
-
-                // Convert the BDD-based AST to ulong-based AST
-                SymbolicRegexNode<ulong> root64 = converter._builder.Transform(root, builder64, bdd => builder64._solver.ConvertFromCharSet(solver, bdd));
-                _matcher = new SymbolicRegexMatcher<ulong>(root64, code, solver, minterms, matchTimeout, culture);
-            }
+            _matcher = minterms.Length > 64 ?
+                SymbolicRegexMatcher<BitVector>.Create(regexTree.CaptureCount, regexTree.FindOptimizations, bddBuilder, rootNode, new BitVectorSolver(minterms, charSetSolver), matchTimeout) :
+                SymbolicRegexMatcher<ulong>.Create(regexTree.CaptureCount, regexTree.FindOptimizations, bddBuilder, rootNode, new UInt64Solver(minterms, charSetSolver), matchTimeout);
         }
 
         /// <summary>Creates a <see cref="RegexRunner"/> object.</summary>
         protected internal override RegexRunner CreateInstance() => _matcher is SymbolicRegexMatcher<ulong> srmUInt64 ?
             new Runner<ulong>(srmUInt64) :
-            new Runner<BV>((SymbolicRegexMatcher<BV>)_matcher);
+            new Runner<BitVector>((SymbolicRegexMatcher<BitVector>)_matcher);
 
         /// <summary>Runner type produced by this factory.</summary>
         /// <remarks>
-        /// The wrapped <see cref="ISymbolicRegexMatcher"/> is itself thread-safe and can be shared across
+        /// The wrapped <see cref="SymbolicRegexMatcher"/> is itself thread-safe and can be shared across
         /// all runner instances, but the runner itself has state (e.g. for captures, positions, etc.)
         /// and must not be shared between concurrent uses.
         /// </remarks>
-        private sealed class Runner<TSetType> : RegexRunner where TSetType : notnull
+        private sealed class Runner<TSet> : RegexRunner where TSet : IComparable<TSet>
         {
             /// <summary>The matching engine.</summary>
-            private readonly SymbolicRegexMatcher<TSetType> _matcher;
+            /// <remarks>The matcher is stateless and may be shared by any number of threads executing concurrently.</remarks>
+            private readonly SymbolicRegexMatcher<TSet> _matcher;
+            /// <summary>Runner-specific data to pass to the matching engine.</summary>
+            /// <remarks>This state is per runner and is thus only used by one thread at a time.</remarks>
+            private readonly SymbolicRegexMatcher<TSet>.PerThreadData _perThreadData;
 
-            internal Runner(SymbolicRegexMatcher<TSetType> matcher) => _matcher = matcher;
-
-            protected override void InitTrackCount() { } // nop, no backtracking
-
-            protected override bool FindFirstChar() => true; // The logic is all in Go.
-
-            protected override void Go()
+            internal Runner(SymbolicRegexMatcher<TSet> matcher)
             {
-                int beginning = runtextbeg;
-                ReadOnlySpan<char> inputSpan = runtext.AsSpan(beginning, runtextend - beginning);
+                _matcher = matcher;
+                _perThreadData = matcher.CreatePerThreadData();
+            }
 
+            protected internal override void Scan(ReadOnlySpan<char> text)
+            {
                 // Perform the match.
-                SymbolicMatch pos = _matcher.FindMatch(quick, inputSpan, runtextpos - beginning);
+                SymbolicMatch pos = _matcher.FindMatch(quick, text, runtextpos, _perThreadData);
 
                 // Transfer the result back to the RegexRunner state.
                 if (pos.Success)
                 {
                     // If we successfully matched, capture the match, and then jump the current position to the end of the match.
-                    int start = pos.Index + beginning;
+                    int start = pos.Index;
                     int end = start + pos.Length;
-                    Capture(0, start, end);
+                    if (!quick && pos.CaptureStarts != null)
+                    {
+                        Debug.Assert(pos.CaptureEnds != null);
+                        Debug.Assert(pos.CaptureStarts.Length == pos.CaptureEnds.Length);
+                        for (int cap = 0; cap < pos.CaptureStarts.Length; ++cap)
+                        {
+                            if (pos.CaptureStarts[cap] >= 0)
+                            {
+                                Debug.Assert(pos.CaptureEnds[cap] >= pos.CaptureStarts[cap]);
+                                Capture(cap, pos.CaptureStarts[cap], pos.CaptureEnds[cap]);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        Capture(0, start, end);
+                    }
                     runtextpos = end;
                 }
                 else

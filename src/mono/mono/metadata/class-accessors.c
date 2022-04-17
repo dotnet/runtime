@@ -602,6 +602,7 @@ mono_class_get_metadata_update_info (MonoClass *klass)
 		return (MonoClassMetadataUpdateInfo *)get_pointer_property (klass, PROP_METADATA_UPDATE_INFO);
 	case MONO_CLASS_GINST:
 	case MONO_CLASS_GPARAM:
+	case MONO_CLASS_ARRAY:
 	case MONO_CLASS_POINTER:
 	case MONO_CLASS_GC_FILLER:
 		return NULL;

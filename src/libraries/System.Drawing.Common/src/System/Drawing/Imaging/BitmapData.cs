@@ -1,6 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+
 namespace System.Drawing.Imaging
 {
     public partial class BitmapData
@@ -91,5 +94,23 @@ namespace System.Drawing.Imaging
             get { return _reserved; }
             set { _reserved = value; }
         }
+
+        internal ref int GetPinnableReference() => ref _width;
+
+#if NET7_0_OR_GREATER
+        [CustomTypeMarshaller(typeof(BitmapData), Direction = CustomTypeMarshallerDirection.In, Features = CustomTypeMarshallerFeatures.TwoStageMarshalling)]
+        internal unsafe struct PinningMarshaller
+        {
+            private readonly BitmapData _managed;
+            public PinningMarshaller(BitmapData managed)
+            {
+                _managed = managed;
+            }
+
+            public ref int GetPinnableReference() => ref (_managed is null ? ref Unsafe.NullRef<int>() : ref _managed.GetPinnableReference());
+
+            public void* ToNativeValue() => Unsafe.AsPointer(ref GetPinnableReference());
+        }
+#endif
     }
 }

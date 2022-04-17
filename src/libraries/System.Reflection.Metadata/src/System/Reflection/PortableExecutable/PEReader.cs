@@ -490,13 +490,8 @@ namespace System.Reflection.PortableExecutable
         /// </returns>
         /// <exception cref="ArgumentNullException"><paramref name="sectionName"/> is null.</exception>
         /// <exception cref="InvalidOperationException">PE image not available.</exception>
-        public PEMemoryBlock GetSectionData(string sectionName)
+        public PEMemoryBlock GetSectionData(string sectionName!!)
         {
-            if (sectionName == null)
-            {
-                Throw.ArgumentNull(nameof(sectionName));
-            }
-
             int sectionIndex = PEHeaders.IndexOfSection(sectionName);
             if (sectionIndex < 0)
             {
@@ -687,18 +682,8 @@ namespace System.Reflection.PortableExecutable
         /// <exception cref="InvalidOperationException">The stream returned from <paramref name="pdbFileStreamProvider"/> doesn't support read and seek operations.</exception>
         /// <exception cref="BadImageFormatException">No matching PDB file is found due to an error: The PE image or the PDB is invalid.</exception>
         /// <exception cref="IOException">No matching PDB file is found due to an error: An IO error occurred while reading the PE image or the PDB.</exception>
-        public bool TryOpenAssociatedPortablePdb(string peImagePath, Func<string, Stream?> pdbFileStreamProvider, out MetadataReaderProvider? pdbReaderProvider, out string? pdbPath)
+        public bool TryOpenAssociatedPortablePdb(string peImagePath!!, Func<string, Stream?> pdbFileStreamProvider!!, out MetadataReaderProvider? pdbReaderProvider, out string? pdbPath)
         {
-            if (peImagePath == null)
-            {
-                Throw.ArgumentNull(nameof(peImagePath));
-            }
-
-            if (pdbFileStreamProvider == null)
-            {
-                Throw.ArgumentNull(nameof(pdbFileStreamProvider));
-            }
-
             pdbReaderProvider = null;
             pdbPath = null;
 
@@ -781,7 +766,7 @@ namespace System.Reflection.PortableExecutable
             return false;
         }
 
-        private bool TryOpenPortablePdbFile(string path, BlobContentId id, Func<string, Stream?> pdbFileStreamProvider, out MetadataReaderProvider? provider, ref Exception? errorToReport)
+        private static bool TryOpenPortablePdbFile(string path, BlobContentId id, Func<string, Stream?> pdbFileStreamProvider, out MetadataReaderProvider? provider, ref Exception? errorToReport)
         {
             provider = null;
             MetadataReaderProvider? candidate = null;

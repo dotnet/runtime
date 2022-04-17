@@ -8,7 +8,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
-using Internal.Runtime.CompilerServices;
 
 namespace System.Text
 {
@@ -356,7 +355,7 @@ namespace System.Text
                     // Check that we will not overrun our boundaries.
                     if ((uint)(chunkLength + chunkOffset) > (uint)result.Length || (uint)chunkLength > (uint)sourceArray.Length)
                     {
-                        throw new ArgumentOutOfRangeException(nameof(chunkLength), SR.ArgumentOutOfRange_Index);
+                        throw new ArgumentOutOfRangeException(nameof(chunkLength), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
                     }
 
                     Buffer.Memmove(
@@ -508,7 +507,7 @@ namespace System.Text
                     {
                         if (indexInBlock >= chunk.m_ChunkLength)
                         {
-                            throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
+                            throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_IndexMustBeLess);
                         }
                         chunk.m_ChunkChars[indexInBlock] = value;
                         return;
@@ -516,7 +515,7 @@ namespace System.Text
                     chunk = chunk.m_ChunkPrevious;
                     if (chunk == null)
                     {
-                        throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
+                        throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_IndexMustBeLess);
                     }
                 }
             }
@@ -748,11 +747,11 @@ namespace System.Text
                     return this;
                 }
 
-                throw new ArgumentNullException(nameof(value));
+                ArgumentNullException.Throw(nameof(value));
             }
             if (charCount > value.Length - startIndex)
             {
-                throw new ArgumentOutOfRangeException(nameof(charCount), SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(charCount), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
             }
 
             if (charCount != 0)
@@ -787,7 +786,7 @@ namespace System.Text
         {
             if (startIndex < 0)
             {
-                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
             }
             if (count < 0)
             {
@@ -800,14 +799,14 @@ namespace System.Text
                 {
                     return this;
                 }
-                throw new ArgumentNullException(nameof(value));
+                ArgumentNullException.Throw(nameof(value));
             }
 
             if (count != 0)
             {
                 if (startIndex > value.Length - count)
                 {
-                    throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_Index);
+                    throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
                 }
 
                 Append(ref Unsafe.Add(ref value.GetRawStringData(), startIndex), count);
@@ -829,7 +828,7 @@ namespace System.Text
         {
             if (startIndex < 0)
             {
-                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
             }
 
             if (count < 0)
@@ -843,7 +842,7 @@ namespace System.Text
                 {
                     return this;
                 }
-                throw new ArgumentNullException(nameof(value));
+                ArgumentNullException.Throw(nameof(value));
             }
 
             if (count == 0)
@@ -853,7 +852,7 @@ namespace System.Text
 
             if (count > value.Length - startIndex)
             {
-                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
             }
 
             return AppendCore(value, startIndex, count);
@@ -923,7 +922,7 @@ namespace System.Text
 
             if ((uint)sourceIndex > (uint)Length)
             {
-                throw new ArgumentOutOfRangeException(nameof(sourceIndex), SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(sourceIndex), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
             }
 
             if (sourceIndex > Length - count)
@@ -966,7 +965,9 @@ namespace System.Text
         /// <param name="index">The index to insert in this builder.</param>
         /// <param name="value">The string to insert.</param>
         /// <param name="count">The number of times to insert the string.</param>
-        public StringBuilder Insert(int index, string? value, int count)
+        public StringBuilder Insert(int index, string? value, int count) => Insert(index, value.AsSpan(), count);
+
+        private StringBuilder Insert(int index, ReadOnlySpan<char> value, int count)
         {
             if (count < 0)
             {
@@ -976,10 +977,10 @@ namespace System.Text
             int currentLength = Length;
             if ((uint)index > (uint)currentLength)
             {
-                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
             }
 
-            if (string.IsNullOrEmpty(value) || count == 0)
+            if (value.IsEmpty || count == 0)
             {
                 return this;
             }
@@ -997,7 +998,7 @@ namespace System.Text
 
             while (count > 0)
             {
-                ReplaceInPlaceAtChunk(ref chunk!, ref indexInChunk, ref value.GetRawStringData(), value.Length);
+                ReplaceInPlaceAtChunk(ref chunk!, ref indexInChunk, ref MemoryMarshal.GetReference(value), value.Length);
                 --count;
             }
 
@@ -1024,7 +1025,7 @@ namespace System.Text
 
             if (length > Length - startIndex)
             {
-                throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
             }
 
             if (Length == length && startIndex == 0)
@@ -1264,7 +1265,7 @@ namespace System.Text
         {
             if ((uint)index > (uint)Length)
             {
-                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
             }
 
             if (value != null)
@@ -1275,17 +1276,25 @@ namespace System.Text
             return this;
         }
 
-        public StringBuilder Insert(int index, bool value) => Insert(index, value.ToString(), 1);
+#pragma warning disable CA1830 // Prefer strongly-typed Append and Insert method overloads on StringBuilder. No need to fix for the builder itself
+        // bool does not implement ISpanFormattable but its ToString override returns cached strings.
+        public StringBuilder Insert(int index, bool value) => Insert(index, value.ToString().AsSpan(), 1);
+#pragma warning restore CA1830
 
         [CLSCompliant(false)]
-        public StringBuilder Insert(int index, sbyte value) => Insert(index, value.ToString(), 1);
+        public StringBuilder Insert(int index, sbyte value) => InsertSpanFormattable(index, value);
 
-        public StringBuilder Insert(int index, byte value) => Insert(index, value.ToString(), 1);
+        public StringBuilder Insert(int index, byte value) => InsertSpanFormattable(index, value);
 
-        public StringBuilder Insert(int index, short value) => Insert(index, value.ToString(), 1);
+        public StringBuilder Insert(int index, short value) => InsertSpanFormattable(index, value);
 
         public StringBuilder Insert(int index, char value)
         {
+            if ((uint)index > (uint)Length)
+            {
+                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
+            }
+
             Insert(index, ref value, 1);
             return this;
         }
@@ -1294,12 +1303,12 @@ namespace System.Text
         {
             if ((uint)index > (uint)Length)
             {
-                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
             }
 
             if (value != null)
             {
-                Insert(index, value, 0, value.Length);
+                Insert(index, ref MemoryMarshal.GetArrayDataReference(value), value.Length);
             }
             return this;
         }
@@ -1309,7 +1318,7 @@ namespace System.Text
             int currentLength = Length;
             if ((uint)index > (uint)currentLength)
             {
-                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
             }
 
             if (value == null)
@@ -1318,7 +1327,7 @@ namespace System.Text
                 {
                     return this;
                 }
-                throw new ArgumentNullException(nameof(value), SR.ArgumentNull_String);
+                ArgumentNullException.Throw(nameof(value));
             }
 
             if (startIndex < 0)
@@ -1333,7 +1342,7 @@ namespace System.Text
 
             if (startIndex > value.Length - charCount)
             {
-                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
             }
 
             if (charCount > 0)
@@ -1344,24 +1353,24 @@ namespace System.Text
             return this;
         }
 
-        public StringBuilder Insert(int index, int value) => Insert(index, value.ToString(), 1);
+        public StringBuilder Insert(int index, int value) => InsertSpanFormattable(index, value);
 
-        public StringBuilder Insert(int index, long value) => Insert(index, value.ToString(), 1);
+        public StringBuilder Insert(int index, long value) => InsertSpanFormattable(index, value);
 
-        public StringBuilder Insert(int index, float value) => Insert(index, value.ToString(), 1);
+        public StringBuilder Insert(int index, float value) => InsertSpanFormattable(index, value);
 
-        public StringBuilder Insert(int index, double value) => Insert(index, value.ToString(), 1);
+        public StringBuilder Insert(int index, double value) => InsertSpanFormattable(index, value);
 
-        public StringBuilder Insert(int index, decimal value) => Insert(index, value.ToString(), 1);
-
-        [CLSCompliant(false)]
-        public StringBuilder Insert(int index, ushort value) => Insert(index, value.ToString(), 1);
+        public StringBuilder Insert(int index, decimal value) => InsertSpanFormattable(index, value);
 
         [CLSCompliant(false)]
-        public StringBuilder Insert(int index, uint value) => Insert(index, value.ToString(), 1);
+        public StringBuilder Insert(int index, ushort value) => InsertSpanFormattable(index, value);
 
         [CLSCompliant(false)]
-        public StringBuilder Insert(int index, ulong value) => Insert(index, value.ToString(), 1);
+        public StringBuilder Insert(int index, uint value) => InsertSpanFormattable(index, value);
+
+        [CLSCompliant(false)]
+        public StringBuilder Insert(int index, ulong value) => InsertSpanFormattable(index, value);
 
         public StringBuilder Insert(int index, object? value) => (value == null) ? this : Insert(index, value.ToString(), 1);
 
@@ -1369,7 +1378,7 @@ namespace System.Text
         {
             if ((uint)index > (uint)Length)
             {
-                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
             }
 
             if (value.Length != 0)
@@ -1380,39 +1389,52 @@ namespace System.Text
             return this;
         }
 
-        public StringBuilder AppendFormat(string format, object? arg0) => AppendFormatHelper(null, format, new ParamsArray(arg0));
-
-        public StringBuilder AppendFormat(string format, object? arg0, object? arg1) => AppendFormatHelper(null, format, new ParamsArray(arg0, arg1));
-
-        public StringBuilder AppendFormat(string format, object? arg0, object? arg1, object? arg2) => AppendFormatHelper(null, format, new ParamsArray(arg0, arg1, arg2));
-
-        public StringBuilder AppendFormat(string format, params object?[] args)
+        private StringBuilder InsertSpanFormattable<T>(int index, T value) where T : ISpanFormattable
         {
-            if (args == null)
+            Debug.Assert(typeof(T).Assembly.Equals(typeof(object).Assembly), "Implementation trusts the results of TryFormat because T is expected to be something known");
+
+            Span<char> buffer = stackalloc char[256];
+            if (value.TryFormat(buffer, out int charsWritten, format: default, provider: null))
+            {
+                // We don't use Insert(int, ReadOnlySpan<char>) for exception compatibility;
+                // we want exceeding the maximum capacity to throw an OutOfMemoryException.
+                return Insert(index, buffer.Slice(0, charsWritten), 1);
+            }
+
+            return Insert(index, value.ToString(), 1);
+        }
+
+        public StringBuilder AppendFormat([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0) => AppendFormatHelper(null, format, new ParamsArray(arg0));
+
+        public StringBuilder AppendFormat([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0, object? arg1) => AppendFormatHelper(null, format, new ParamsArray(arg0, arg1));
+
+        public StringBuilder AppendFormat([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0, object? arg1, object? arg2) => AppendFormatHelper(null, format, new ParamsArray(arg0, arg1, arg2));
+
+        public StringBuilder AppendFormat([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params object?[] args)
+        {
+            if (args is null)
             {
                 // To preserve the original exception behavior, throw an exception about format if both
                 // args and format are null. The actual null check for format is in AppendFormatHelper.
-                string paramName = (format == null) ? nameof(format) : nameof(args);
-                throw new ArgumentNullException(paramName);
+                ArgumentNullException.Throw(format is null ? nameof(format) : nameof(args));
             }
 
             return AppendFormatHelper(null, format, new ParamsArray(args));
         }
 
-        public StringBuilder AppendFormat(IFormatProvider? provider, string format, object? arg0) => AppendFormatHelper(provider, format, new ParamsArray(arg0));
+        public StringBuilder AppendFormat(IFormatProvider? provider, [StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0) => AppendFormatHelper(provider, format, new ParamsArray(arg0));
 
-        public StringBuilder AppendFormat(IFormatProvider? provider, string format, object? arg0, object? arg1) => AppendFormatHelper(provider, format, new ParamsArray(arg0, arg1));
+        public StringBuilder AppendFormat(IFormatProvider? provider, [StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0, object? arg1) => AppendFormatHelper(provider, format, new ParamsArray(arg0, arg1));
 
-        public StringBuilder AppendFormat(IFormatProvider? provider, string format, object? arg0, object? arg1, object? arg2) => AppendFormatHelper(provider, format, new ParamsArray(arg0, arg1, arg2));
+        public StringBuilder AppendFormat(IFormatProvider? provider, [StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0, object? arg1, object? arg2) => AppendFormatHelper(provider, format, new ParamsArray(arg0, arg1, arg2));
 
-        public StringBuilder AppendFormat(IFormatProvider? provider, string format, params object?[] args)
+        public StringBuilder AppendFormat(IFormatProvider? provider, [StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params object?[] args)
         {
-            if (args == null)
+            if (args is null)
             {
                 // To preserve the original exception behavior, throw an exception about format if both
                 // args and format are null. The actual null check for format is in AppendFormatHelper.
-                string paramName = (format == null) ? nameof(format) : nameof(args);
-                throw new ArgumentNullException(paramName);
+                ArgumentNullException.Throw(format is null ? nameof(format) : nameof(args));
             }
 
             return AppendFormatHelper(provider, format, new ParamsArray(args));
@@ -1829,11 +1851,11 @@ namespace System.Text
             int currentLength = Length;
             if ((uint)startIndex > (uint)currentLength)
             {
-                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
             }
             if (count < 0 || startIndex > currentLength - count)
             {
-                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
             }
             ArgumentException.ThrowIfNullOrEmpty(oldValue);
 
@@ -1914,12 +1936,12 @@ namespace System.Text
             int currentLength = Length;
             if ((uint)startIndex > (uint)currentLength)
             {
-                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
             }
 
             if (count < 0 || startIndex > currentLength - count)
             {
-                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
             }
 
             int endIndex = startIndex + count;
@@ -2046,10 +2068,7 @@ namespace System.Text
         /// <param name="valueCount">The number of characters in the buffer.</param>
         private void Insert(int index, ref char value, int valueCount)
         {
-            if ((uint)index > (uint)Length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
-            }
+            Debug.Assert((uint)index <= (uint)Length, "Callers should check that index is a legal value.");
 
             if (valueCount > 0)
             {

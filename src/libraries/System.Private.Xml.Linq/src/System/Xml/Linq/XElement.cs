@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Text;
 using System.Threading;
@@ -13,7 +14,6 @@ using CultureInfo = System.Globalization.CultureInfo;
 using IEnumerable = System.Collections.IEnumerable;
 using SuppressMessageAttribute = System.Diagnostics.CodeAnalysis.SuppressMessageAttribute;
 using StringBuilder = System.Text.StringBuilder;
-using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics;
 
 namespace System.Xml.Linq
@@ -56,9 +56,8 @@ namespace System.Xml.Linq
         /// <param name="name">
         /// The name of the element.
         /// </param>
-        public XElement(XName name)
+        public XElement(XName name!!)
         {
-            if (name == null) throw new ArgumentNullException(nameof(name));
             this.name = name;
         }
 
@@ -270,7 +269,7 @@ namespace System.Xml.Linq
             }
             set
             {
-                if (value == null) throw new ArgumentNullException(nameof(value));
+                ArgumentNullException.ThrowIfNull(value);
                 bool notify = NotifyChanging(this, XObjectChangeEventArgs.Name);
                 name = value;
                 if (notify) NotifyChanged(this, XObjectChangeEventArgs.Name);
@@ -311,7 +310,7 @@ namespace System.Xml.Linq
             }
             set
             {
-                if (value == null) throw new ArgumentNullException(nameof(value));
+                ArgumentNullException.ThrowIfNull(value);
                 RemoveNodes();
                 Add(value);
             }
@@ -490,9 +489,8 @@ namespace System.Xml.Linq
         /// </summary>
         /// <param name="ns">The <see cref="XNamespace"/> for which to get a prefix</param>
         /// <returns>The namespace prefix string</returns>
-        public string? GetPrefixOfNamespace(XNamespace ns)
+        public string? GetPrefixOfNamespace(XNamespace ns!!)
         {
-            if (ns == null) throw new ArgumentNullException(nameof(ns));
             string namespaceName = ns.NamespaceName;
             bool hasInScopeNamespace = false;
             XElement? e = this;
@@ -567,7 +565,7 @@ namespace System.Xml.Linq
         /// An <see cref="XElement"/> initialized with the contents of the file referenced
         /// in the passed in uri parameter.
         /// </returns>
-        public static XElement Load(string uri)
+        public static XElement Load([StringSyntax(StringSyntaxAttribute.Uri)] string uri)
         {
             return Load(uri, LoadOptions.None);
         }
@@ -596,7 +594,7 @@ namespace System.Xml.Linq
         /// in the passed uri parameter.  If LoadOptions.PreserveWhitespace is enabled then
         /// significant whitespace will be preserved.
         /// </returns>
-        public static XElement Load(string uri, LoadOptions options)
+        public static XElement Load([StringSyntax(StringSyntaxAttribute.Uri)] string uri, LoadOptions options)
         {
             XmlReaderSettings rs = GetXmlReaderSettings(options);
             using (XmlReader r = XmlReader.Create(uri, rs))

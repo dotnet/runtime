@@ -1,7 +1,7 @@
 <Project>
 
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0</TargetFrameworks>
+    <TargetFramework>netstandard2.0</TargetFramework>
     <AssemblyName>$(MSBuildThisFileName)</AssemblyName>
     <RootNamespace>$(MSBuildThisFileName)</RootNamespace>
     <StringResourcesClassName>SR</StringResourcesClassName>

@@ -4,6 +4,7 @@
     <!-- NOTE: this test simply takes too long to complete under GC stress/heap verify; it is not fundamentally incompatible -->
     <GCStressIncompatible Condition="'$(TargetArchitecture)' == 'x86'">true</GCStressIncompatible>
     <HeapVerifyIncompatible>true</HeapVerifyIncompatible>
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
   </PropertyGroup>
   <PropertyGroup>
     <DebugType>None</DebugType>

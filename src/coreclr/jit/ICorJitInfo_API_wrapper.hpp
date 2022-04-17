@@ -353,13 +353,14 @@ bool WrapICorJitInfo::isValidStringRef(
     return temp;
 }
 
-const char16_t* WrapICorJitInfo::getStringLiteral(
+int WrapICorJitInfo::getStringLiteral(
           CORINFO_MODULE_HANDLE module,
           unsigned metaTOK,
-          int* length)
+          char16_t* buffer,
+          int bufferSize)
 {
     API_ENTER(getStringLiteral);
-    const char16_t* temp = wrapHnd->getStringLiteral(module, metaTOK, length);
+    int temp = wrapHnd->getStringLiteral(module, metaTOK, buffer, bufferSize);
     API_LEAVE(getStringLiteral);
     return temp;
 }
@@ -656,11 +657,12 @@ bool WrapICorJitInfo::getReadyToRunHelper(
 
 void WrapICorJitInfo::getReadyToRunDelegateCtorHelper(
           CORINFO_RESOLVED_TOKEN* pTargetMethod,
+          mdToken targetConstraint,
           CORINFO_CLASS_HANDLE delegateType,
           CORINFO_LOOKUP* pLookup)
 {
     API_ENTER(getReadyToRunDelegateCtorHelper);
-    wrapHnd->getReadyToRunDelegateCtorHelper(pTargetMethod, delegateType, pLookup);
+    wrapHnd->getReadyToRunDelegateCtorHelper(pTargetMethod, targetConstraint, delegateType, pLookup);
     API_LEAVE(getReadyToRunDelegateCtorHelper);
 }
 
@@ -1151,6 +1153,15 @@ bool WrapICorJitInfo::getSystemVAmd64PassStructInRegisterDescriptor(
     API_ENTER(getSystemVAmd64PassStructInRegisterDescriptor);
     bool temp = wrapHnd->getSystemVAmd64PassStructInRegisterDescriptor(structHnd, structPassInRegDescPtr);
     API_LEAVE(getSystemVAmd64PassStructInRegisterDescriptor);
+    return temp;
+}
+
+uint32_t WrapICorJitInfo::getLoongArch64PassStructInRegisterFlags(
+          CORINFO_CLASS_HANDLE structHnd)
+{
+    API_ENTER(getLoongArch64PassStructInRegisterFlags);
+    uint32_t temp = wrapHnd->getLoongArch64PassStructInRegisterFlags(structHnd);
+    API_LEAVE(getLoongArch64PassStructInRegisterFlags);
     return temp;
 }
 

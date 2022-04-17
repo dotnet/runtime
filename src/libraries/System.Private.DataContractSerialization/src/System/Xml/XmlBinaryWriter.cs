@@ -1075,10 +1075,8 @@ namespace System.Xml
         private byte[]? _bytes;
 
 
-        public void SetOutput(Stream stream, IXmlDictionary? dictionary, XmlBinaryWriterSession? session, bool ownsStream)
+        public void SetOutput(Stream stream!!, IXmlDictionary? dictionary, XmlBinaryWriterSession? session, bool ownsStream)
         {
-            if (stream == null)
-                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentNullException(nameof(stream)));
             if (_writer == null)
                 _writer = new XmlBinaryNodeWriter();
             _writer.SetOutput(stream, dictionary, session, ownsStream);
@@ -1188,17 +1186,12 @@ namespace System.Xml
             WriteEndElement();
         }
 
-        private void WriteEndArray()
-        {
-            EndArray();
-        }
-
         private unsafe void UnsafeWriteArray(string? prefix, string localName, string? namespaceUri,
                                XmlBinaryNodeType nodeType, int count, byte* array, byte* arrayMax)
         {
             WriteStartArray(prefix, localName, namespaceUri, count);
             _writer.UnsafeWriteArray(nodeType, count, array, arrayMax);
-            WriteEndArray();
+            // WriteEndArray();
         }
 
         private unsafe void UnsafeWriteArray(string? prefix, XmlDictionaryString localName, XmlDictionaryString? namespaceUri,
@@ -1206,13 +1199,11 @@ namespace System.Xml
         {
             WriteStartArray(prefix, localName, namespaceUri, count);
             _writer.UnsafeWriteArray(nodeType, count, array, arrayMax);
-            WriteEndArray();
+            // WriteEndArray();
         }
 
-        private void CheckArray(Array array, int offset, int count)
+        private static void CheckArray(Array array!!, int offset, int count)
         {
-            if (array == null)
-                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentNullException(nameof(array)));
             if (offset < 0)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException(nameof(offset), SR.ValueMustBeNonNegative));
             if (offset > array.Length)
@@ -1428,7 +1419,7 @@ namespace System.Xml
                 {
                     WriteStartArray(prefix, localName, namespaceUri, count);
                     _writer.WriteDateTimeArray(array, offset, count);
-                    WriteEndArray();
+                    // WriteEndArray();
                 }
             }
         }
@@ -1441,7 +1432,7 @@ namespace System.Xml
                 {
                     WriteStartArray(prefix, localName, namespaceUri, count);
                     _writer.WriteDateTimeArray(array, offset, count);
-                    WriteEndArray();
+                    // WriteEndArray();
                 }
             }
         }
@@ -1455,7 +1446,7 @@ namespace System.Xml
                 {
                     WriteStartArray(prefix, localName, namespaceUri, count);
                     _writer.WriteGuidArray(array, offset, count);
-                    WriteEndArray();
+                    // WriteEndArray();
                 }
             }
         }
@@ -1468,7 +1459,7 @@ namespace System.Xml
                 {
                     WriteStartArray(prefix, localName, namespaceUri, count);
                     _writer.WriteGuidArray(array, offset, count);
-                    WriteEndArray();
+                    // WriteEndArray();
                 }
             }
         }
@@ -1482,7 +1473,7 @@ namespace System.Xml
                 {
                     WriteStartArray(prefix, localName, namespaceUri, count);
                     _writer.WriteTimeSpanArray(array, offset, count);
-                    WriteEndArray();
+                    // WriteEndArray();
                 }
             }
         }
@@ -1495,7 +1486,7 @@ namespace System.Xml
                 {
                     WriteStartArray(prefix, localName, namespaceUri, count);
                     _writer.WriteTimeSpanArray(array, offset, count);
-                    WriteEndArray();
+                    // WriteEndArray();
                 }
             }
         }

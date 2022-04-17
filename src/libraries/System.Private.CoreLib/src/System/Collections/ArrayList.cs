@@ -130,12 +130,12 @@ namespace System.Collections
         {
             get
             {
-                if (index < 0 || index >= _size) throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
+                if (index < 0 || index >= _size) throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_IndexMustBeLess);
                 return _items[index];
             }
             set
             {
-                if (index < 0 || index >= _size) throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
+                if (index < 0 || index >= _size) throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_IndexMustBeLess);
                 _items[index] = value;
                 _version++;
             }
@@ -383,7 +383,7 @@ namespace System.Collections
         public virtual int IndexOf(object? value, int startIndex)
         {
             if (startIndex > _size)
-                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
             return Array.IndexOf((Array)_items, value, startIndex, _size - startIndex);
         }
 
@@ -399,7 +399,7 @@ namespace System.Collections
         public virtual int IndexOf(object? value, int startIndex, int count)
         {
             if (startIndex > _size)
-                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
             if (count < 0 || startIndex > _size - count) throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_Count);
             return Array.IndexOf((Array)_items, value, startIndex, count);
         }
@@ -411,7 +411,7 @@ namespace System.Collections
         public virtual void Insert(int index, object? value)
         {
             // Note that insertions at the end are legal.
-            if (index < 0 || index > _size) throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
+            if (index < 0 || index > _size) throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
 
             if (_size == _items.Length) EnsureCapacity(_size + 1);
             if (index < _size)
@@ -430,7 +430,7 @@ namespace System.Collections
         //
         public virtual void InsertRange(int index, ICollection c!!)
         {
-            if (index < 0 || index > _size) throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
+            if (index < 0 || index > _size) throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
 
             int count = c.Count;
             if (count > 0)
@@ -475,7 +475,7 @@ namespace System.Collections
         public virtual int LastIndexOf(object? value, int startIndex)
         {
             if (startIndex >= _size)
-                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_IndexMustBeLess);
             return LastIndexOf(value, startIndex, startIndex + 1);
         }
 
@@ -531,7 +531,7 @@ namespace System.Collections
         //
         public virtual void RemoveAt(int index)
         {
-            if (index < 0 || index >= _size) throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
+            if (index < 0 || index >= _size) throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_IndexMustBeLess);
 
             _size--;
             if (index < _size)
@@ -612,7 +612,7 @@ namespace System.Collections
         public virtual void SetRange(int index, ICollection c!!)
         {
             int count = c.Count;
-            if (index < 0 || index > _size - count) throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
+            if (index < 0 || index > _size - count) throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
 
             if (count > 0)
             {
@@ -696,12 +696,9 @@ namespace System.Collections
         // downcasting all elements.  This copy may fail and is an O(n) operation.
         // Internally, this implementation calls Array.Copy.
         //
-        [RequiresDynamicCode("The native code for the array might not be available at runtime.")]
-        public virtual Array ToArray(Type type)
+        [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
+        public virtual Array ToArray(Type type!!)
         {
-            if (type == null)
-                throw new ArgumentNullException(nameof(type));
-
             Array array = Array.CreateInstance(type, _size);
             Array.Copy(_items, array, _size);
             return array;
@@ -881,7 +878,7 @@ namespace System.Collections
 
             public override int IndexOf(object? value, int startIndex, int count)
             {
-                if (startIndex < 0 || startIndex > Count) throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_Index);
+                if (startIndex < 0 || startIndex > Count) throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
                 if (count < 0 || startIndex > Count - count) throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_Count);
 
                 int endIndex = startIndex + count;
@@ -909,7 +906,7 @@ namespace System.Collections
 
             public override void InsertRange(int index, ICollection c!!)
             {
-                if (index < 0 || index > Count) throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
+                if (index < 0 || index > Count) throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
 
                 if (c.Count > 0)
                 {
@@ -947,7 +944,7 @@ namespace System.Collections
                 if (_list.Count == 0)
                     return -1;
 
-                if (startIndex < 0 || startIndex >= _list.Count) throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_Index);
+                if (startIndex < 0 || startIndex >= _list.Count) throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_IndexMustBeLess);
                 if (count < 0 || count > startIndex + 1) throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_Count);
 
                 int endIndex = startIndex - count + 1;
@@ -1021,7 +1018,7 @@ namespace System.Collections
             {
                 if (index < 0 || index > _list.Count - c.Count)
                 {
-                    throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
+                    throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
                 }
 
                 if (c.Count > 0)
@@ -1071,12 +1068,9 @@ namespace System.Collections
                 return array;
             }
 
-            [RequiresDynamicCode("The native code for the array might not be available at runtime.")]
-            public override Array ToArray(Type type)
+            [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
+            public override Array ToArray(Type type!!)
             {
-                if (type == null)
-                    throw new ArgumentNullException(nameof(type));
-
                 Array array = Array.CreateInstance(type, _list.Count);
                 _list.CopyTo(array, 0);
                 return array;
@@ -1465,7 +1459,7 @@ namespace System.Collections
                 }
             }
 
-            [RequiresDynamicCode("The native code for the array might not be available at runtime.")]
+            [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
             public override Array ToArray(Type type)
             {
                 lock (_root)
@@ -1848,7 +1842,7 @@ namespace System.Collections
                 return _list.ToArray();
             }
 
-            [RequiresDynamicCode("The native code for the array might not be available at runtime.")]
+            [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
             public override Array ToArray(Type type)
             {
                 return _list.ToArray(type);
@@ -2100,7 +2094,7 @@ namespace System.Collections
                 return _list.ToArray();
             }
 
-            [RequiresDynamicCode("The native code for the array might not be available at runtime.")]
+            [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
             public override Array ToArray(Type type)
             {
                 return _list.ToArray(type);
@@ -2374,7 +2368,7 @@ namespace System.Collections
                 if (startIndex < 0)
                     throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_NeedNonNegNum);
                 if (startIndex > _baseSize)
-                    throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_Index);
+                    throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
 
                 InternalUpdateRange();
                 int i = _baseList.IndexOf(value, _baseIndex + startIndex, _baseSize - startIndex);
@@ -2385,7 +2379,7 @@ namespace System.Collections
             public override int IndexOf(object? value, int startIndex, int count)
             {
                 if (startIndex < 0 || startIndex > _baseSize)
-                    throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_Index);
+                    throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
 
                 if (count < 0 || (startIndex > _baseSize - count))
                     throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_Count);
@@ -2398,7 +2392,7 @@ namespace System.Collections
 
             public override void Insert(int index, object? value)
             {
-                if (index < 0 || index > _baseSize) throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
+                if (index < 0 || index > _baseSize) throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
 
                 InternalUpdateRange();
                 _baseList.Insert(_baseIndex + index, value);
@@ -2408,7 +2402,7 @@ namespace System.Collections
 
             public override void InsertRange(int index, ICollection c)
             {
-                if (index < 0 || index > _baseSize) throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
+                if (index < 0 || index > _baseSize) throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
                 ArgumentNullException.ThrowIfNull(c);
 
                 InternalUpdateRange();
@@ -2441,7 +2435,7 @@ namespace System.Collections
                     return -1;
 
                 if (startIndex >= _baseSize)
-                    throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_Index);
+                    throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_IndexMustBeLess);
                 if (startIndex < 0)
                     throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_NeedNonNegNum);
 
@@ -2454,7 +2448,7 @@ namespace System.Collections
 
             public override void RemoveAt(int index)
             {
-                if (index < 0 || index >= _baseSize) throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
+                if (index < 0 || index >= _baseSize) throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_IndexMustBeLess);
 
                 InternalUpdateRange();
                 _baseList.RemoveAt(_baseIndex + index);
@@ -2495,7 +2489,7 @@ namespace System.Collections
             public override void SetRange(int index, ICollection c)
             {
                 InternalUpdateRange();
-                if (index < 0 || index >= _baseSize) throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
+                if (index < 0 || index >= _baseSize) throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_IndexMustBeLess);
                 _baseList.SetRange(_baseIndex + index, c);
                 if (c.Count > 0)
                 {
@@ -2520,13 +2514,13 @@ namespace System.Collections
                 get
                 {
                     InternalUpdateRange();
-                    if (index < 0 || index >= _baseSize) throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
+                    if (index < 0 || index >= _baseSize) throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_IndexMustBeLess);
                     return _baseList[_baseIndex + index];
                 }
                 set
                 {
                     InternalUpdateRange();
-                    if (index < 0 || index >= _baseSize) throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
+                    if (index < 0 || index >= _baseSize) throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_IndexMustBeLess);
                     _baseList[_baseIndex + index] = value;
                     InternalUpdateVersion();
                 }
@@ -2542,12 +2536,9 @@ namespace System.Collections
                 return array;
             }
 
-            [RequiresDynamicCode("The native code for the array might not be available at runtime.")]
-            public override Array ToArray(Type type)
+            [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
+            public override Array ToArray(Type type!!)
             {
-                if (type == null)
-                    throw new ArgumentNullException(nameof(type));
-
                 InternalUpdateRange();
                 Array array = Array.CreateInstance(type, _baseSize);
                 _baseList.CopyTo(_baseIndex, array, 0, _baseSize);

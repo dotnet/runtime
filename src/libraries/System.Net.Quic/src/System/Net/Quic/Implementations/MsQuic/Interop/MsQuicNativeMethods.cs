@@ -8,7 +8,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
     /// <summary>
     /// Contains all native delegates and structs that are used with MsQuic.
     /// </summary>
-    internal static unsafe class MsQuicNativeMethods
+    internal static unsafe partial class MsQuicNativeMethods
     {
         [StructLayout(LayoutKind.Sequential)]
         internal struct NativeApi
@@ -51,38 +51,30 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             internal IntPtr DatagramSend;
         }
 
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         internal delegate uint SetContextDelegate(
             SafeHandle handle,
             IntPtr context);
 
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         internal delegate IntPtr GetContextDelegate(
             SafeHandle handle);
 
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         internal delegate void SetCallbackHandlerDelegate(
             SafeHandle handle,
             Delegate del,
             IntPtr context);
 
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         internal delegate uint SetParamDelegate(
             SafeHandle handle,
-            QUIC_PARAM_LEVEL level,
             uint param,
             uint bufferLength,
             byte* buffer);
 
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         internal delegate uint GetParamDelegate(
             SafeHandle handle,
-            QUIC_PARAM_LEVEL level,
             uint param,
             ref uint bufferLength,
             byte* buffer);
 
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         internal delegate uint RegistrationOpenDelegate(
             ref RegistrationConfig config,
             out SafeMsQuicRegistrationHandle registrationContext);
@@ -91,15 +83,41 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         internal delegate void RegistrationCloseDelegate(
             IntPtr registrationContext);
 
-        [StructLayout(LayoutKind.Sequential)]
+        [NativeMarshalling(typeof(Native))]
         internal struct RegistrationConfig
         {
-            [MarshalAs(UnmanagedType.LPUTF8Str)]
             internal string AppName;
             internal QUIC_EXECUTION_PROFILE ExecutionProfile;
+
+            [CustomTypeMarshaller(typeof(RegistrationConfig), Features = CustomTypeMarshallerFeatures.UnmanagedResources)]
+            [StructLayout(LayoutKind.Sequential)]
+            public struct Native
+            {
+                private IntPtr AppName;
+                private QUIC_EXECUTION_PROFILE ExecutionProfile;
+
+                public Native(RegistrationConfig managed)
+                {
+                    AppName = Marshal.StringToCoTaskMemUTF8(managed.AppName);
+                    ExecutionProfile = managed.ExecutionProfile;
+                }
+
+                public RegistrationConfig ToManaged()
+                {
+                    return new RegistrationConfig()
+                    {
+                        AppName = Marshal.PtrToStringUTF8(AppName)!,
+                        ExecutionProfile = ExecutionProfile
+                    };
+                }
+
+                public void FreeNative()
+                {
+                    Marshal.FreeCoTaskMem(AppName);
+                }
+            }
         }
 
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         internal delegate uint ConfigurationOpenDelegate(
             SafeMsQuicRegistrationHandle registrationContext,
             QuicBuffer* alpnBuffers,
@@ -113,10 +131,27 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         internal delegate void ConfigurationCloseDelegate(
             IntPtr configuration);
 
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         internal delegate uint ConfigurationLoadCredentialDelegate(
             SafeMsQuicConfigurationHandle configuration,
             ref CredentialConfig credConfig);
+
+        internal struct AnyDelegateMarshaller
+        {
+            private readonly Delegate _managed;
+
+            public AnyDelegateMarshaller(Delegate managed)
+            {
+                _managed = managed;
+                Value = Marshal.GetFunctionPointerForDelegate(_managed);
+            }
+
+            public IntPtr Value { get; }
+
+            public void FreeNative()
+            {
+                GC.KeepAlive(_managed);
+            }
+        }
 
         [StructLayout(LayoutKind.Sequential)]
         internal struct QuicSettings
@@ -125,6 +160,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             internal ulong MaxBytesPerKey;
             internal ulong HandshakeIdleTimeoutMs;
             internal ulong IdleTimeoutMs;
+            internal ulong MtuDiscoverySearchCompleteTimeoutUs;
             internal uint TlsClientMaxSendBuffer;
             internal uint TlsServerMaxSendBuffer;
             internal uint StreamRecvWindowDefault;
@@ -138,47 +174,52 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             internal uint MaxAckDelayMs;
             internal uint DisconnectTimeoutMs;
             internal uint KeepAliveIntervalMs;
+            internal ushort CongestionControlAlgorithm; // QUIC_CONGESTION_CONTROL_ALGORITHM
             internal ushort PeerBidiStreamCount;
             internal ushort PeerUnidiStreamCount;
-            internal ushort RetryMemoryLimit;              // Global only
-            internal ushort LoadBalancingMode;             // Global only
-            internal byte MaxOperationsPerDrain;
+            internal ushort MaxBindingStatelessOperations;
+            internal ushort StatelessOperationExpirationMs;
+            internal ushort MinimumMtu;
+            internal ushort MaximumMtu;
             internal QuicSettingsEnabledFlagsFlags EnabledFlags;
-            internal uint* DesiredVersionsList;
-            internal uint DesiredVersionsListLength;
+            internal byte MaxOperationsPerDrain;
+            internal byte MtuDiscoveryMissingProbeCount;
         }
 
         [Flags]
         internal enum QuicSettingsIsSetFlags : ulong
         {
-            MaxBytesPerKey = 1 << 0,
-            HandshakeIdleTimeoutMs = 1 << 1,
-            IdleTimeoutMs = 1 << 2,
-            TlsClientMaxSendBuffer = 1 << 3,
-            TlsServerMaxSendBuffer = 1 << 4,
-            StreamRecvWindowDefault = 1 << 5,
-            StreamRecvBufferDefault = 1 << 6,
-            ConnFlowControlWindow = 1 << 7,
-            MaxWorkerQueueDelayUs = 1 << 8,
-            MaxStatelessOperations = 1 << 9,
-            InitialWindowPackets = 1 << 10,
-            SendIdleTimeoutMs = 1 << 11,
-            InitialRttMs = 1 << 12,
-            MaxAckDelayMs = 1 << 13,
-            DisconnectTimeoutMs = 1 << 14,
-            KeepAliveIntervalMs = 1 << 15,
-            PeerBidiStreamCount = 1 << 16,
-            PeerUnidiStreamCount = 1 << 17,
-            RetryMemoryLimit = 1 << 18,
-            LoadBalancingMode = 1 << 19,
-            MaxOperationsPerDrain = 1 << 20,
-            SendBufferingEnabled = 1 << 21,
-            PacingEnabled = 1 << 22,
-            MigrationEnabled = 1 << 23,
-            DatagramReceiveEnabled = 1 << 24,
-            ServerResumptionLevel = 1 << 25,
-            DesiredVersionsList = 1 << 26,
-            VersionNegotiationExtEnabled = 1 << 27,
+            MaxBytesPerKey = 1UL << 0,
+            HandshakeIdleTimeoutMs = 1UL << 1,
+            IdleTimeoutMs = 1UL << 2,
+            MtuDiscoverySearchCompleteTimeoutUs = 1UL << 3,
+            TlsClientMaxSendBuffer = 1UL << 4,
+            TlsServerMaxSendBuffer = 1UL << 5,
+            StreamRecvWindowDefault = 1UL << 6,
+            StreamRecvBufferDefault = 1UL << 7,
+            ConnFlowControlWindow = 1UL << 8,
+            MaxWorkerQueueDelayUs = 1UL << 9,
+            MaxStatelessOperations = 1UL << 10,
+            InitialWindowPackets = 1UL << 11,
+            SendIdleTimeoutMs = 1UL << 12,
+            InitialRttMs = 1UL << 13,
+            MaxAckDelayMs = 1UL << 14,
+            DisconnectTimeoutMs = 1UL << 15,
+            KeepAliveIntervalMs = 1UL << 16,
+            CongestionControlAlgorithm = 1UL << 17,
+            PeerBidiStreamCount = 1UL << 18,
+            PeerUnidiStreamCount = 1UL << 19,
+            MaxBindingStatelessOperations = 1UL << 20,
+            StatelessOperationExpirationMs = 1UL << 21,
+            MinimumMtu = 1UL << 22,
+            MaximumMtu = 1UL << 23,
+            SendBufferingEnabled = 1UL << 24,
+            PacingEnabled = 1UL << 25,
+            MigrationEnabled = 1UL << 26,
+            DatagramReceiveEnabled = 1UL << 27,
+            ServerResumptionLevel = 1UL << 28,
+            MaxOperationsPerDrain = 1UL << 29,
+            MtuDiscoveryMissingProbeCount = 1UL << 31,
         }
 
         [Flags]
@@ -193,18 +234,63 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             VersionNegotiationExtEnabled = 1 << 6,
         }
 
-        [StructLayout(LayoutKind.Sequential)]
+        [NativeMarshalling(typeof(Native))]
         internal struct CredentialConfig
         {
             internal QUIC_CREDENTIAL_TYPE Type;
             internal QUIC_CREDENTIAL_FLAGS Flags;
             // CredentialConfigCertificateUnion*
             internal IntPtr Certificate;
-            [MarshalAs(UnmanagedType.LPUTF8Str)]
+
             internal string Principal;
             internal IntPtr Reserved; // Currently unused
             // TODO: define delegate for AsyncHandler and make proper use of it.
             internal IntPtr AsyncHandler;
+            internal QUIC_ALLOWED_CIPHER_SUITE_FLAGS AllowedCipherSuites;
+
+            [CustomTypeMarshaller(typeof(CredentialConfig), Features = CustomTypeMarshallerFeatures.UnmanagedResources)]
+            [StructLayout(LayoutKind.Sequential)]
+            public struct Native
+            {
+                internal QUIC_CREDENTIAL_TYPE Type;
+                internal QUIC_CREDENTIAL_FLAGS Flags;
+                // CredentialConfigCertificateUnion*
+                internal IntPtr Certificate;
+                internal IntPtr Principal;
+                internal IntPtr Reserved;
+                internal IntPtr AsyncHandler;
+                internal QUIC_ALLOWED_CIPHER_SUITE_FLAGS AllowedCipherSuites;
+
+                public Native(CredentialConfig managed)
+                {
+                    Type = managed.Type;
+                    Flags = managed.Flags;
+                    Certificate = managed.Certificate;
+                    Principal = Marshal.StringToCoTaskMemUTF8(managed.Principal);
+                    Reserved = managed.Reserved;
+                    AsyncHandler = managed.AsyncHandler;
+                    AllowedCipherSuites = managed.AllowedCipherSuites;
+                }
+
+                public CredentialConfig ToManaged()
+                {
+                    return new CredentialConfig
+                    {
+                        Type = Type,
+                        Flags = Flags,
+                        Certificate = Certificate,
+                        Principal = Marshal.PtrToStringUTF8(Principal)!,
+                        Reserved = Reserved,
+                        AsyncHandler = AsyncHandler,
+                        AllowedCipherSuites = AllowedCipherSuites
+                    };
+                }
+
+                public void FreeNative()
+                {
+                    Marshal.FreeCoTaskMem(Principal);
+                }
+            }
         }
 
         [StructLayout(LayoutKind.Explicit)]
@@ -328,9 +414,8 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         internal delegate uint ListenerCallbackDelegate(
             IntPtr listener,
             IntPtr context,
-            ref ListenerEvent evt);
+            ListenerEvent* evt);
 
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         internal delegate uint ListenerOpenDelegate(
            SafeMsQuicRegistrationHandle registration,
            ListenerCallbackDelegate handler,
@@ -341,14 +426,12 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         internal delegate void ListenerCloseDelegate(
             IntPtr listener);
 
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         internal delegate uint ListenerStartDelegate(
             SafeMsQuicListenerHandle listener,
             QuicBuffer* alpnBuffers,
             uint alpnBufferCount,
-            ref SOCKADDR_INET localAddress);
+            byte* localAddress);
 
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         internal delegate void ListenerStopDelegate(
             SafeMsQuicListenerHandle listener);
 
@@ -469,10 +552,9 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         internal delegate uint ConnectionCallbackDelegate(
             IntPtr connection,
             IntPtr context,
-            ref ConnectionEvent connectionEvent);
+            ConnectionEvent* connectionEvent);
 
         // TODO: order is Open, Close, Shutdown, Start, SetConfiguration, SendResumptionTicket
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         internal delegate uint ConnectionOpenDelegate(
             SafeMsQuicRegistrationHandle registration,
             ConnectionCallbackDelegate handler,
@@ -483,12 +565,10 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         internal delegate void ConnectionCloseDelegate(
             IntPtr connection);
 
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         internal delegate uint ConnectionSetConfigurationDelegate(
             SafeMsQuicConnectionHandle connection,
             SafeMsQuicConfigurationHandle configuration);
 
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         internal delegate uint ConnectionStartDelegate(
             SafeMsQuicConnectionHandle connection,
             SafeMsQuicConfigurationHandle configuration,
@@ -497,13 +577,20 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             string serverName,
             ushort serverPort);
 
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         internal delegate void ConnectionShutdownDelegate(
             SafeMsQuicConnectionHandle connection,
             QUIC_CONNECTION_SHUTDOWN_FLAGS flags,
             long errorCode);
 
         // TODO: missing SendResumptionTicket
+
+        [StructLayout(LayoutKind.Sequential)]
+        internal struct StreamEventDataStartComplete
+        {
+            internal uint Status;
+            internal ulong Id;
+            internal byte PeerAccepted;
+        };
 
         [StructLayout(LayoutKind.Sequential)]
         internal struct StreamEventDataReceive
@@ -549,7 +636,9 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         [StructLayout(LayoutKind.Explicit)]
         internal struct StreamEventDataUnion
         {
-            // TODO: missing START_COMPLETE
+            [FieldOffset(0)]
+            internal StreamEventDataStartComplete StartComplete;
+
             [FieldOffset(0)]
             internal StreamEventDataReceive Receive;
 
@@ -578,55 +667,12 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             internal StreamEventDataUnion Data;
         }
 
-        // TODO: rename to C#-like
-        [StructLayout(LayoutKind.Sequential)]
-        internal struct SOCKADDR_IN
-        {
-#if SOCKADDR_HAS_LENGTH
-            internal byte sin_len;
-#endif
-            internal QUIC_ADDRESS_FAMILY sin_family;
-            internal ushort sin_port;
-            internal fixed byte sin_addr[4];
-        }
-
-        // TODO: rename to C#-like
-        [StructLayout(LayoutKind.Sequential)]
-        internal struct SOCKADDR_IN6
-        {
-#if SOCKADDR_HAS_LENGTH
-            internal byte sin6_len;
-#endif
-            internal QUIC_ADDRESS_FAMILY sin6_family;
-            internal ushort sin6_port;
-            internal uint sin6_flowinfo;
-            internal fixed byte sin6_addr[16];
-            internal uint sin6_scope_id;
-        }
-
-        // TODO: rename to C#-like
-        [StructLayout(LayoutKind.Explicit)]
-        internal struct SOCKADDR_INET
-        {
-            [FieldOffset(0)]
-            internal SOCKADDR_IN Ipv4;
-            [FieldOffset(0)]
-            internal SOCKADDR_IN6 Ipv6;
-#if SOCKADDR_HAS_LENGTH
-            [FieldOffset(1)]
-#else
-            [FieldOffset(0)]
-#endif
-            internal QUIC_ADDRESS_FAMILY si_family;
-        }
-
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         internal delegate uint StreamCallbackDelegate(
             IntPtr stream,
             IntPtr context,
-            ref StreamEvent streamEvent);
+            StreamEvent* streamEvent);
 
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         internal delegate uint StreamOpenDelegate(
             SafeMsQuicConnectionHandle connection,
             QUIC_STREAM_OPEN_FLAGS flags,
@@ -634,7 +680,6 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             IntPtr context,
             out SafeMsQuicStreamHandle stream);
 
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         internal delegate uint StreamStartDelegate(
             SafeMsQuicStreamHandle stream,
             QUIC_STREAM_START_FLAGS flags);
@@ -643,13 +688,11 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         internal delegate void StreamCloseDelegate(
             IntPtr stream);
 
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         internal delegate uint StreamShutdownDelegate(
             SafeMsQuicStreamHandle stream,
             QUIC_STREAM_SHUTDOWN_FLAGS flags,
             long errorCode);
 
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         internal delegate uint StreamSendDelegate(
             SafeMsQuicStreamHandle stream,
             QuicBuffer* buffers,
@@ -657,15 +700,12 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             QUIC_SEND_FLAGS flags,
             IntPtr clientSendContext);
 
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-        internal delegate uint StreamReceiveCompleteDelegate(
+        internal delegate void StreamReceiveCompleteDelegate(
             SafeMsQuicStreamHandle stream,
             ulong bufferLength);
 
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         internal delegate uint StreamReceiveSetEnabledDelegate(
             SafeMsQuicStreamHandle stream,
-            [MarshalAs(UnmanagedType.U1)]
             bool enabled);
 
         [StructLayout(LayoutKind.Sequential)]
@@ -676,5 +716,722 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         }
 
         // TODO: DatagramSend missing
+
+        internal struct DelegateHelper
+        {
+            private IntPtr _functionPointer;
+
+            public DelegateHelper(IntPtr functionPointer)
+            {
+                _functionPointer = functionPointer;
+            }
+            internal uint SetContext(SafeHandle handle, IntPtr context)
+            {
+                IntPtr __handle_gen_native;
+                uint __retVal;
+                //
+                // Setup
+                //
+                bool handle__addRefd = false;
+                try
+                {
+                    //
+                    // Marshal
+                    //
+                    handle.DangerousAddRef(ref handle__addRefd);
+                    __handle_gen_native = handle.DangerousGetHandle();
+                    __retVal = ((delegate* unmanaged[Cdecl]<IntPtr, IntPtr, uint>)_functionPointer)(__handle_gen_native, context);
+                }
+                finally
+                {
+                    //
+                    // Cleanup
+                    //
+                    if (handle__addRefd)
+                        handle.DangerousRelease();
+                }
+
+                return __retVal;
+            }
+            internal IntPtr GetContext(SafeHandle handle)
+            {
+                IntPtr __handle_gen_native;
+                IntPtr __retVal;
+                //
+                // Setup
+                //
+                bool handle__addRefd = false;
+                try
+                {
+                    //
+                    // Marshal
+                    //
+                    handle.DangerousAddRef(ref handle__addRefd);
+                    __handle_gen_native = handle.DangerousGetHandle();
+                    __retVal = ((delegate* unmanaged[Cdecl]<IntPtr, IntPtr>)_functionPointer)(__handle_gen_native);
+                }
+                finally
+                {
+                    //
+                    // Cleanup
+                    //
+                    if (handle__addRefd)
+                        handle.DangerousRelease();
+                }
+
+                return __retVal;
+            }
+            internal void SetCallbackHandler(SafeHandle handle, Delegate del, IntPtr context)
+            {
+                //
+                // Setup
+                //
+                bool handle__addRefd = false;
+                AnyDelegateMarshaller __del_gen_native__marshaller = default;
+                try
+                {
+                    //
+                    // Marshal
+                    //
+                    handle.DangerousAddRef(ref handle__addRefd);
+                    IntPtr __handle_gen_native = handle.DangerousGetHandle();
+                    __del_gen_native__marshaller = new AnyDelegateMarshaller(del);
+                    IntPtr __del_gen_native = __del_gen_native__marshaller.Value;
+                    ((delegate* unmanaged[Cdecl]<IntPtr, IntPtr, IntPtr, void>)_functionPointer)(__handle_gen_native, __del_gen_native, context);
+                }
+                finally
+                {
+                    //
+                    // Cleanup
+                    //
+                    if (handle__addRefd)
+                        handle.DangerousRelease();
+                    __del_gen_native__marshaller.FreeNative();
+                }
+            }
+            internal uint SetParam(SafeHandle handle, uint param, uint bufferLength, byte* buffer)
+            {
+                uint __retVal;
+                //
+                // Setup
+                //
+                bool handle__addRefd = false;
+                try
+                {
+                    //
+                    // Marshal
+                    //
+                    handle.DangerousAddRef(ref handle__addRefd);
+                    IntPtr __handle_gen_native = handle.DangerousGetHandle();
+                    __retVal = ((delegate* unmanaged[Cdecl]<IntPtr, uint, uint, byte*, uint>)_functionPointer)(__handle_gen_native, param, bufferLength, buffer);
+                }
+                finally
+                {
+                    //
+                    // Cleanup
+                    //
+                    if (handle__addRefd)
+                        handle.DangerousRelease();
+                }
+
+                return __retVal;
+            }
+            internal uint GetParam(SafeHandle handle, uint param, ref uint bufferLength, byte* buffer)
+            {
+                IntPtr __handle_gen_native = default;
+                uint __retVal;
+                //
+                // Setup
+                //
+                bool handle__addRefd = false;
+                try
+                {
+                    //
+                    // Marshal
+                    //
+                    handle.DangerousAddRef(ref handle__addRefd);
+                    __handle_gen_native = handle.DangerousGetHandle();
+                    fixed (uint* __bufferLength_gen_native = &bufferLength)
+                    {
+                        __retVal = ((delegate* unmanaged[Cdecl]<IntPtr, uint, uint*, byte*, uint>)_functionPointer)(__handle_gen_native, param, __bufferLength_gen_native, buffer);
+                    }
+                }
+                finally
+                {
+                    //
+                    // Cleanup
+                    //
+                    if (handle__addRefd)
+                        handle.DangerousRelease();
+                }
+
+                return __retVal;
+            }
+            internal uint RegistrationOpen(ref RegistrationConfig config, out SafeMsQuicRegistrationHandle registrationContext)
+            {
+                RegistrationConfig.Native __config_gen_native = default;
+                registrationContext = default!;
+                IntPtr __registrationContext_gen_native = default;
+                uint __retVal;
+                bool __invokeSucceeded = default;
+                //
+                // Setup
+                //
+                SafeMsQuicRegistrationHandle registrationContext__newHandle = new SafeMsQuicRegistrationHandle();
+                try
+                {
+                    //
+                    // Marshal
+                    //
+                    __config_gen_native = new RegistrationConfig.Native(config);
+                    __retVal = ((delegate* unmanaged[Cdecl]<RegistrationConfig.Native*, IntPtr*, uint>)_functionPointer)(&__config_gen_native, &__registrationContext_gen_native);
+                    __invokeSucceeded = true;
+                    //
+                    // Unmarshal
+                    //
+                    config = __config_gen_native.ToManaged();
+                }
+                finally
+                {
+                    if (__invokeSucceeded)
+                    {
+                        //
+                        // GuaranteedUnmarshal
+                        //
+                        Marshal.InitHandle(registrationContext__newHandle, __registrationContext_gen_native);
+                        registrationContext = registrationContext__newHandle;
+                    }
+
+                    //
+                    // Cleanup
+                    //
+                    __config_gen_native.FreeNative();
+                }
+
+                return __retVal;
+            }
+            internal uint ConfigurationOpen(SafeMsQuicRegistrationHandle registrationContext, QuicBuffer* alpnBuffers, uint alpnBufferCount, ref QuicSettings settings, uint settingsSize, IntPtr context, out SafeMsQuicConfigurationHandle configuration)
+            {
+                IntPtr __registrationContext_gen_native = default;
+                configuration = default!;
+                IntPtr __configuration_gen_native = default;
+                uint __retVal;
+                bool __invokeSucceeded = default;
+                //
+                // Setup
+                //
+                bool registrationContext__addRefd = false;
+                SafeMsQuicConfigurationHandle configuration__newHandle = new SafeMsQuicConfigurationHandle();
+                try
+                {
+                    //
+                    // Marshal
+                    //
+                    registrationContext.DangerousAddRef(ref registrationContext__addRefd);
+                    __registrationContext_gen_native = registrationContext.DangerousGetHandle();
+                    fixed (QuicSettings* __settings_gen_native = &settings)
+                    {
+                        __retVal = ((delegate* unmanaged[Cdecl]<IntPtr, QuicBuffer*, uint, QuicSettings*, uint, IntPtr, IntPtr*, uint>)_functionPointer)(__registrationContext_gen_native, alpnBuffers, alpnBufferCount, __settings_gen_native, settingsSize, context, &__configuration_gen_native);
+                    }
+
+                    __invokeSucceeded = true;
+                }
+                finally
+                {
+                    if (__invokeSucceeded)
+                    {
+                        //
+                        // GuaranteedUnmarshal
+                        //
+                        Marshal.InitHandle(configuration__newHandle, __configuration_gen_native);
+                        configuration = configuration__newHandle;
+                    }
+
+                    //
+                    // Cleanup
+                    //
+                    if (registrationContext__addRefd)
+                        registrationContext.DangerousRelease();
+                }
+
+                return __retVal;
+            }
+            internal uint ConfigurationLoadCredential(SafeMsQuicConfigurationHandle configuration, ref CredentialConfig credConfig)
+            {
+                CredentialConfig.Native __credConfig_gen_native = default;
+                uint __retVal;
+                //
+                // Setup
+                //
+                bool configuration__addRefd = false;
+                try
+                {
+                    //
+                    // Marshal
+                    //
+                    configuration.DangerousAddRef(ref configuration__addRefd);
+                    IntPtr __configuration_gen_native = configuration.DangerousGetHandle();
+                    __credConfig_gen_native = new CredentialConfig.Native(credConfig);
+                    __retVal = ((delegate* unmanaged[Cdecl]<IntPtr, CredentialConfig.Native*, uint>)_functionPointer)(__configuration_gen_native, &__credConfig_gen_native);
+                    //
+                    // Unmarshal
+                    //
+                    credConfig = __credConfig_gen_native.ToManaged();
+                }
+                finally
+                {
+                    //
+                    // Cleanup
+                    //
+                    if (configuration__addRefd)
+                        configuration.DangerousRelease();
+                    __credConfig_gen_native.FreeNative();
+                }
+
+                return __retVal;
+            }
+            internal uint ListenerOpen(SafeMsQuicRegistrationHandle registration, ListenerCallbackDelegate handler, IntPtr context, out SafeMsQuicListenerHandle listener)
+            {
+                IntPtr __handler_gen_native = default;
+                listener = default!;
+                IntPtr __listener_gen_native = default;
+                uint __retVal;
+                bool __invokeSucceeded = default;
+                //
+                // Setup
+                //
+                bool registration__addRefd = false;
+                SafeMsQuicListenerHandle listener__newHandle = new SafeMsQuicListenerHandle();
+                try
+                {
+                    //
+                    // Marshal
+                    //
+                    registration.DangerousAddRef(ref registration__addRefd);
+                    IntPtr __registration_gen_native = registration.DangerousGetHandle();
+                    __handler_gen_native = handler != null ? Marshal.GetFunctionPointerForDelegate(handler) : default;
+                    __retVal = ((delegate* unmanaged[Cdecl]<IntPtr, IntPtr, IntPtr, IntPtr*, uint>)_functionPointer)(__registration_gen_native, __handler_gen_native, context, &__listener_gen_native);
+                    __invokeSucceeded = true;
+                    //
+                    // KeepAlive
+                    //
+                    GC.KeepAlive(handler);
+                }
+                finally
+                {
+                    if (__invokeSucceeded)
+                    {
+                        //
+                        // GuaranteedUnmarshal
+                        //
+                        Marshal.InitHandle(listener__newHandle, __listener_gen_native);
+                        listener = listener__newHandle;
+                    }
+
+                    //
+                    // Cleanup
+                    //
+                    if (registration__addRefd)
+                        registration.DangerousRelease();
+                }
+
+                return __retVal;
+            }
+            internal uint ListenerStart(SafeMsQuicListenerHandle listener, QuicBuffer* alpnBuffers, uint alpnBufferCount, byte* localAddress)
+            {
+                IntPtr __listener_gen_native;
+                uint __retVal;
+                //
+                // Setup
+                //
+                bool listener__addRefd = false;
+                try
+                {
+                    //
+                    // Marshal
+                    //
+                    listener.DangerousAddRef(ref listener__addRefd);
+                    __listener_gen_native = listener.DangerousGetHandle();
+                    __retVal = ((delegate* unmanaged[Cdecl]<IntPtr, QuicBuffer*, uint, byte*, uint>)_functionPointer)(__listener_gen_native, alpnBuffers, alpnBufferCount, localAddress);
+                }
+                finally
+                {
+                    //
+                    // Cleanup
+                    //
+                    if (listener__addRefd)
+                        listener.DangerousRelease();
+                }
+
+                return __retVal;
+            }
+            internal void ListenerStop(SafeMsQuicListenerHandle listener)
+            {
+                //
+                // Setup
+                //
+                bool listener__addRefd = false;
+                try
+                {
+                    //
+                    // Marshal
+                    //
+                    listener.DangerousAddRef(ref listener__addRefd);
+                    IntPtr __listener_gen_native = listener.DangerousGetHandle();
+                    ((delegate* unmanaged[Cdecl]<IntPtr, void>)_functionPointer)(__listener_gen_native);
+                }
+                finally
+                {
+                    //
+                    // Cleanup
+                    //
+                    if (listener__addRefd)
+                        listener.DangerousRelease();
+                }
+            }
+            internal uint ConnectionOpen(SafeMsQuicRegistrationHandle registration, ConnectionCallbackDelegate handler, IntPtr context, out SafeMsQuicConnectionHandle connection)
+            {
+                IntPtr __handler_gen_native = default;
+                connection = default!;
+                IntPtr __connection_gen_native = default;
+                uint __retVal;
+                bool __invokeSucceeded = default;
+                //
+                // Setup
+                //
+                bool registration__addRefd = false;
+                SafeMsQuicConnectionHandle connection__newHandle = new SafeMsQuicConnectionHandle();
+                try
+                {
+                    //
+                    // Marshal
+                    //
+                    registration.DangerousAddRef(ref registration__addRefd);
+                    IntPtr __registration_gen_native = registration.DangerousGetHandle();
+                    __handler_gen_native = handler != null ? Marshal.GetFunctionPointerForDelegate(handler) : default;
+                    __retVal = ((delegate* unmanaged[Cdecl]<IntPtr, IntPtr, IntPtr, IntPtr*, uint>)_functionPointer)(__registration_gen_native, __handler_gen_native, context, &__connection_gen_native);
+                    __invokeSucceeded = true;
+                    //
+                    // KeepAlive
+                    //
+                    GC.KeepAlive(handler);
+                }
+                finally
+                {
+                    if (__invokeSucceeded)
+                    {
+                        //
+                        // GuaranteedUnmarshal
+                        //
+                        Marshal.InitHandle(connection__newHandle, __connection_gen_native);
+                        connection = connection__newHandle;
+                    }
+
+                    //
+                    // Cleanup
+                    //
+                    if (registration__addRefd)
+                        registration.DangerousRelease();
+                }
+
+                return __retVal;
+            }
+            internal uint ConnectionSetConfiguration(SafeMsQuicConnectionHandle connection, SafeMsQuicConfigurationHandle configuration)
+            {
+                uint __retVal;
+                //
+                // Setup
+                //
+                bool connection__addRefd = false;
+                bool configuration__addRefd = false;
+                try
+                {
+                    //
+                    // Marshal
+                    //
+                    connection.DangerousAddRef(ref connection__addRefd);
+                    IntPtr __connection_gen_native = connection.DangerousGetHandle();
+                    configuration.DangerousAddRef(ref configuration__addRefd);
+                    IntPtr __configuration_gen_native = configuration.DangerousGetHandle();
+                    __retVal = ((delegate* unmanaged[Cdecl]<IntPtr, IntPtr, uint>)_functionPointer)(__connection_gen_native, __configuration_gen_native);
+                }
+                finally
+                {
+                    //
+                    // Cleanup
+                    //
+                    if (connection__addRefd)
+                        connection.DangerousRelease();
+                    if (configuration__addRefd)
+                        configuration.DangerousRelease();
+                }
+
+                return __retVal;
+            }
+            internal uint ConnectionStart(SafeMsQuicConnectionHandle connection, SafeMsQuicConfigurationHandle configuration, QUIC_ADDRESS_FAMILY family, string serverName, ushort serverPort)
+            {
+                IntPtr __connection_gen_native = default;
+                IntPtr __configuration_gen_native = default;
+                byte* __serverName_gen_native = default;
+                uint __retVal;
+                //
+                // Setup
+                //
+                bool connection__addRefd = false;
+                bool configuration__addRefd = false;
+                bool __serverName_gen_native__allocated = false;
+                try
+                {
+                    //
+                    // Marshal
+                    //
+                    connection.DangerousAddRef(ref connection__addRefd);
+                    __connection_gen_native = connection.DangerousGetHandle();
+                    configuration.DangerousAddRef(ref configuration__addRefd);
+                    __configuration_gen_native = configuration.DangerousGetHandle();
+                    if (serverName != null)
+                    {
+                        int __serverName_gen_native__bytelen = (serverName.Length + 1) * 3 + 1;
+                        if (__serverName_gen_native__bytelen > 260)
+                        {
+                            __serverName_gen_native = (byte*)Marshal.StringToCoTaskMemUTF8(serverName);
+                            __serverName_gen_native__allocated = true;
+                        }
+                        else
+                        {
+                            byte* __serverName_gen_native__stackptr = stackalloc byte[__serverName_gen_native__bytelen];
+                            {
+                                __serverName_gen_native__bytelen = Text.Encoding.UTF8.GetBytes(serverName, new Span<byte>(__serverName_gen_native__stackptr, __serverName_gen_native__bytelen));
+                                __serverName_gen_native__stackptr[__serverName_gen_native__bytelen] = 0;
+                            }
+
+                            __serverName_gen_native = (byte*)__serverName_gen_native__stackptr;
+                        }
+                    }
+
+                    __retVal = ((delegate* unmanaged[Cdecl]<IntPtr, IntPtr, QUIC_ADDRESS_FAMILY, byte*, ushort, uint>)_functionPointer)(__connection_gen_native, __configuration_gen_native, family, __serverName_gen_native, serverPort);
+                }
+                finally
+                {
+                    //
+                    // Cleanup
+                    //
+                    if (connection__addRefd)
+                        connection.DangerousRelease();
+                    if (configuration__addRefd)
+                        configuration.DangerousRelease();
+                    if (__serverName_gen_native__allocated)
+                    {
+                        Marshal.FreeCoTaskMem((IntPtr)__serverName_gen_native);
+                    }
+                }
+
+                return __retVal;
+            }
+            internal void ConnectionShutdown(SafeMsQuicConnectionHandle connection, QUIC_CONNECTION_SHUTDOWN_FLAGS flags, long errorCode)
+            {
+                //
+                // Setup
+                //
+                bool connection__addRefd = false;
+                try
+                {
+                    //
+                    // Marshal
+                    //
+                    connection.DangerousAddRef(ref connection__addRefd);
+                    IntPtr __connection_gen_native = connection.DangerousGetHandle();
+                    ((delegate* unmanaged[Cdecl]<IntPtr, QUIC_CONNECTION_SHUTDOWN_FLAGS, long, void>)_functionPointer)(__connection_gen_native, flags, errorCode);
+                }
+                finally
+                {
+                    //
+                    // Cleanup
+                    //
+                    if (connection__addRefd)
+                        connection.DangerousRelease();
+                }
+            }
+            internal uint StreamOpen(SafeMsQuicConnectionHandle connection, QUIC_STREAM_OPEN_FLAGS flags, StreamCallbackDelegate handler, IntPtr context, out SafeMsQuicStreamHandle stream)
+            {
+                IntPtr __handler_gen_native = default;
+                stream = default!;
+                IntPtr __stream_gen_native = default;
+                uint __retVal;
+                bool __invokeSucceeded = default;
+                //
+                // Setup
+                //
+                bool connection__addRefd = false;
+                SafeMsQuicStreamHandle stream__newHandle = new SafeMsQuicStreamHandle();
+                try
+                {
+                    //
+                    // Marshal
+                    //
+                    connection.DangerousAddRef(ref connection__addRefd);
+                    IntPtr __connection_gen_native = connection.DangerousGetHandle();
+                    __handler_gen_native = handler != null ? Marshal.GetFunctionPointerForDelegate(handler) : default;
+                    __retVal = ((delegate* unmanaged[Cdecl]<IntPtr, QUIC_STREAM_OPEN_FLAGS, IntPtr, IntPtr, IntPtr*, uint>)_functionPointer)(__connection_gen_native, flags, __handler_gen_native, context, &__stream_gen_native);
+                    __invokeSucceeded = true;
+                    //
+                    // KeepAlive
+                    //
+                    GC.KeepAlive(handler);
+                }
+                finally
+                {
+                    if (__invokeSucceeded)
+                    {
+                        //
+                        // GuaranteedUnmarshal
+                        //
+                        Marshal.InitHandle(stream__newHandle, __stream_gen_native);
+                        stream = stream__newHandle;
+                    }
+
+                    //
+                    // Cleanup
+                    //
+                    if (connection__addRefd)
+                        connection.DangerousRelease();
+                }
+
+                return __retVal;
+            }
+            internal uint StreamStart(SafeMsQuicStreamHandle stream, QUIC_STREAM_START_FLAGS flags)
+            {
+                uint __retVal;
+                //
+                // Setup
+                //
+                bool stream__addRefd = false;
+                try
+                {
+                    //
+                    // Marshal
+                    //
+                    stream.DangerousAddRef(ref stream__addRefd);
+                    IntPtr __stream_gen_native = stream.DangerousGetHandle();
+                    __retVal = ((delegate* unmanaged[Cdecl]<IntPtr, QUIC_STREAM_START_FLAGS, uint>)_functionPointer)(__stream_gen_native, flags);
+                }
+                finally
+                {
+                    //
+                    // Cleanup
+                    //
+                    if (stream__addRefd)
+                        stream.DangerousRelease();
+                }
+
+                return __retVal;
+            }
+            internal uint StreamShutdown(SafeMsQuicStreamHandle stream, QUIC_STREAM_SHUTDOWN_FLAGS flags, long errorCode)
+            {
+                uint __retVal;
+                //
+                // Setup
+                //
+                bool stream__addRefd = false;
+                try
+                {
+                    //
+                    // Marshal
+                    //
+                    stream.DangerousAddRef(ref stream__addRefd);
+                    IntPtr __stream_gen_native = stream.DangerousGetHandle();
+                    __retVal = ((delegate* unmanaged[Cdecl]<IntPtr, QUIC_STREAM_SHUTDOWN_FLAGS, long, uint>)_functionPointer)(__stream_gen_native, flags, errorCode);
+                }
+                finally
+                {
+                    //
+                    // Cleanup
+                    //
+                    if (stream__addRefd)
+                        stream.DangerousRelease();
+                }
+
+                return __retVal;
+            }
+            internal uint StreamSend(SafeMsQuicStreamHandle stream, QuicBuffer* buffers, uint bufferCount, QUIC_SEND_FLAGS flags, IntPtr clientSendContext)
+            {
+                uint __retVal;
+                //
+                // Setup
+                //
+                bool stream__addRefd = false;
+                try
+                {
+                    //
+                    // Marshal
+                    //
+                    stream.DangerousAddRef(ref stream__addRefd);
+                    IntPtr __stream_gen_native = stream.DangerousGetHandle();
+                    __retVal = ((delegate* unmanaged[Cdecl]<IntPtr, QuicBuffer*, uint, QUIC_SEND_FLAGS, IntPtr, uint>)_functionPointer)(__stream_gen_native, buffers, bufferCount, flags, clientSendContext);
+                }
+                finally
+                {
+                    //
+                    // Cleanup
+                    //
+                    if (stream__addRefd)
+                        stream.DangerousRelease();
+                }
+
+                return __retVal;
+            }
+            internal void StreamReceiveComplete(SafeMsQuicStreamHandle stream, ulong bufferLength)
+            {
+                //
+                // Setup
+                //
+                bool stream__addRefd = false;
+                try
+                {
+                    //
+                    // Marshal
+                    //
+                    stream.DangerousAddRef(ref stream__addRefd);
+                    IntPtr __stream_gen_native = stream.DangerousGetHandle();
+                    ((delegate* unmanaged[Cdecl]<IntPtr, ulong, void>)_functionPointer)(__stream_gen_native, bufferLength);
+                }
+                finally
+                {
+                    //
+                    // Cleanup
+                    //
+                    if (stream__addRefd)
+                        stream.DangerousRelease();
+                }
+            }
+            internal uint StreamReceiveSetEnabled(SafeMsQuicStreamHandle stream, bool enabled)
+            {
+                uint __retVal;
+                //
+                // Setup
+                //
+                bool stream__addRefd = false;
+                try
+                {
+                    //
+                    // Marshal
+                    //
+                    stream.DangerousAddRef(ref stream__addRefd);
+                    IntPtr __stream_gen_native = stream.DangerousGetHandle();
+                    byte __enabled_gen_native = (byte)(enabled ? 1 : 0);
+                    __retVal = ((delegate* unmanaged[Cdecl]<IntPtr, byte, uint>)_functionPointer)(__stream_gen_native, __enabled_gen_native);
+                }
+                finally
+                {
+                    //
+                    // Cleanup
+                    //
+                    if (stream__addRefd)
+                        stream.DangerousRelease();
+                }
+
+                return __retVal;
+            }
+        }
     }
 }

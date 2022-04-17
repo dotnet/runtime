@@ -14,11 +14,6 @@ parameters:
 jobs:
 - template: ${{ coalesce(parameters.helixQueuesTemplate, parameters.jobTemplate) }}
   parameters:
-    ${{ if eq(parameters.jobParameters.runtimeFlavor, 'coreclr') }}:
-      runtimeFlavorDisplayName: 'CoreCLR'
-    ${{ if eq(parameters.jobParameters.runtimeFlavor, 'mono') }}:
-      runtimeFlavorDisplayName: 'Mono'
-
     shouldContinueOnError: ${{ and(endsWith(variables['Build.DefinitionName'], 'staging'), eq(variables['Build.Reason'], 'PullRequest')) }}
 
     # keep in sync with /eng/pipelines/common/variables.yml
@@ -67,6 +62,8 @@ jobs:
           value: '\'
         - name: _msbuildCommand
           value: powershell -ExecutionPolicy ByPass -NoProfile eng\common\msbuild.ps1 -ci
+        - name: _warnAsErrorParamHelixOverride
+          value: -warnaserror 0
         - name: setScriptToEchoAndFailOnNonZero
           value: ''
         - name: logRootNameArg
@@ -85,6 +82,8 @@ jobs:
           value: '/'
         - name: _msbuildCommand
           value: ./eng/common/msbuild.sh --ci
+        - name: _warnAsErrorParamHelixOverride
+          value: --warnaserror false
         # Set the bash script to display each command, and stop if any command exits nonzero.
         - name: setScriptToEchoAndFailOnNonZero
           value: 'set -xe'

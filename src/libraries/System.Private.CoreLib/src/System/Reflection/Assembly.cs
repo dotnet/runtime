@@ -203,17 +203,7 @@ namespace System.Reflection
 
         public static string CreateQualifiedName(string? assemblyName, string? typeName) => typeName + ", " + assemblyName;
 
-        public static Assembly? GetAssembly(Type type)
-        {
-            if (type == null)
-                throw new ArgumentNullException(nameof(type));
-
-            Module m = type.Module;
-            if (m == null)
-                return null;
-            else
-                return m.Assembly;
-        }
+        public static Assembly? GetAssembly(Type type!!) => type.Module?.Assembly;
 
         // internal test hook
         private static bool s_forceNullEntryPoint;
@@ -286,9 +276,11 @@ namespace System.Reflection
 
             // Get the path where requesting assembly lives and check if it is in the list
             // of assemblies for which LoadFrom was invoked.
-            string requestorPath = Path.GetFullPath(requestingAssembly.Location);
+            string requestorPath = requestingAssembly.Location;
             if (string.IsNullOrEmpty(requestorPath))
                 return null;
+
+            requestorPath = Path.GetFullPath(requestorPath);
 
             lock (s_loadFromAssemblyList)
             {

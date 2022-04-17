@@ -593,7 +593,14 @@ RefPosition* LinearScan::newRefPosition(Interval*    theInterval,
         regNumber    physicalReg = genRegNumFromMask(mask);
         RefPosition* pos         = newRefPosition(physicalReg, theLocation, RefTypeFixedReg, nullptr, mask);
         assert(theInterval != nullptr);
+#ifdef TARGET_LOONGARCH64
+        // The LoongArch64's ABI which the float args maybe passed by integer register
+        // when no float register left but free integer register.
+        assert((regType(theInterval->registerType) == FloatRegisterType) ||
+               (allRegs(theInterval->registerType) & mask) != 0);
+#else
         assert((allRegs(theInterval->registerType) & mask) != 0);
+#endif
     }
 
     RefPosition* newRP = newRefPositionRaw(theLocation, theTreeNode, theRefType);
@@ -617,6 +624,10 @@ RefPosition* LinearScan::newRefPosition(Interval*    theInterval,
 
     newRP->setMultiRegIdx(multiRegIdx);
     newRP->setRegOptional(false);
+
+#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
+    newRP->skipSaveRestore = false;
+#endif
 
     associateRefPosWithInterval(newRP);
 
@@ -1475,7 +1486,7 @@ void LinearScan::buildUpperVectorSaveRefPositions(GenTree* tree, LsraLocation cu
 {
     if ((tree != nullptr) && tree->IsCall())
     {
-        if (tree->AsCall()->IsNoReturn())
+        if (tree->AsCall()->IsNoReturn() || compiler->fgIsThrow(tree))
         {
             // No point in having vector save/restore if the call will not return.
             return;
@@ -1492,7 +1503,9 @@ void LinearScan::buildUpperVectorSaveRefPositions(GenTree* tree, LsraLocation cu
         // We only need to save the upper half of any large vector vars that are currently live.
         VARSET_TP       liveLargeVectors(VarSetOps::Intersection(compiler, currentLiveVars, largeVectorVars));
         VarSetOps::Iter iter(compiler, liveLargeVectors);
-        unsigned        varIndex = 0;
+        unsigned        varIndex     = 0;
+        bool            isThrowBlock = compiler->compCurBB->KindIs(BBJ_THROW);
+
         while (iter.NextElem(&varIndex))
         {
             Interval* varInterval = getIntervalForLocalVar(varIndex);
@@ -1502,6 +1515,7 @@ void LinearScan::buildUpperVectorSaveRefPositions(GenTree* tree, LsraLocation cu
                 RefPosition* pos =
                     newRefPosition(upperVectorInterval, currentLoc, RefTypeUpperVectorSave, tree, RBM_FLT_CALLEE_SAVED);
                 varInterval->isPartiallySpilled = true;
+                pos->skipSaveRestore            = isThrowBlock;
 #ifdef TARGET_XARCH
                 pos->regOptional = true;
 #endif
@@ -1570,17 +1584,37 @@ void LinearScan::buildUpperVectorSaveRefPositions(GenTree* tree, LsraLocation cu
 //    currentLoc     - The current location for which we're building RefPositions
 //    node           - The node, if any, that the restore would be inserted before.
 //                     If null, the restore will be inserted at the end of the block.
+//    isUse          - If the refPosition that is about to be created represents a use or not.
+//                   - If not, it would be the one at the end of the block.
 //
-void LinearScan::buildUpperVectorRestoreRefPosition(Interval* lclVarInterval, LsraLocation currentLoc, GenTree* node)
+void LinearScan::buildUpperVectorRestoreRefPosition(Interval*    lclVarInterval,
+                                                    LsraLocation currentLoc,
+                                                    GenTree*     node,
+                                                    bool         isUse)
 {
     if (lclVarInterval->isPartiallySpilled)
     {
         unsigned     varIndex            = lclVarInterval->getVarIndex(compiler);
         Interval*    upperVectorInterval = getUpperVectorInterval(varIndex);
-        RefPosition* pos = newRefPosition(upperVectorInterval, currentLoc, RefTypeUpperVectorRestore, node, RBM_NONE);
+        RefPosition* savePos             = upperVectorInterval->recentRefPosition;
+        RefPosition* restorePos =
+            newRefPosition(upperVectorInterval, currentLoc, RefTypeUpperVectorRestore, node, RBM_NONE);
         lclVarInterval->isPartiallySpilled = false;
+
+        if (isUse)
+        {
+            // If there was a use of the restore before end of the block restore,
+            // then it is needed and cannot be eliminated
+            savePos->skipSaveRestore = false;
+        }
+        else
+        {
+            // otherwise, just do the whatever was decided for save position
+            restorePos->skipSaveRestore = savePos->skipSaveRestore;
+        }
+
 #ifdef TARGET_XARCH
-        pos->regOptional = true;
+        restorePos->regOptional = true;
 #endif
     }
 }
@@ -1611,12 +1645,12 @@ void LinearScan::buildUpperVectorRestoreRefPosition(Interval* lclVarInterval, Ls
 int LinearScan::ComputeOperandDstCount(GenTree* operand)
 {
     // GT_ARGPLACE is the only non-LIR node that is currently in the trees at this stage, though
-    // note that it is not in the linear order. It seems best to check for !IsLIR() rather than
-    // GT_ARGPLACE directly, since it's that characteristic that makes it irrelevant for this method.
-    if (!operand->IsLIR())
+    // note that it is not in the linear order.
+    if (operand->OperIs(GT_ARGPLACE))
     {
         return 0;
     }
+
     if (operand->isContained())
     {
         int dstCount = 0;
@@ -1960,9 +1994,11 @@ void LinearScan::insertZeroInitRefPositions()
     }
 }
 
-#if defined(UNIX_AMD64_ABI)
+#if defined(UNIX_AMD64_ABI) || defined(TARGET_LOONGARCH64)
 //------------------------------------------------------------------------
-// unixAmd64UpdateRegStateForArg: Sets the register state for an argument of type STRUCT for System V systems.
+// UpdateRegStateForStructArg:
+//    Sets the register state for an argument of type STRUCT.
+//    This is shared between with AMD64's SystemV systems and LoongArch64-ABI.
 //
 // Arguments:
 //    argDsc - the LclVarDsc for the argument of interest
@@ -1971,7 +2007,7 @@ void LinearScan::insertZeroInitRefPositions()
 //     See Compiler::raUpdateRegStateForArg(RegState *regState, LclVarDsc *argDsc) in regalloc.cpp
 //         for how state for argument is updated for unix non-structs and Windows AMD64 structs.
 //
-void LinearScan::unixAmd64UpdateRegStateForArg(LclVarDsc* argDsc)
+void LinearScan::UpdateRegStateForStructArg(LclVarDsc* argDsc)
 {
     assert(varTypeIsStruct(argDsc));
     RegState* intRegState   = &compiler->codeGen->intRegState;
@@ -2006,7 +2042,7 @@ void LinearScan::unixAmd64UpdateRegStateForArg(LclVarDsc* argDsc)
     }
 }
 
-#endif // defined(UNIX_AMD64_ABI)
+#endif // defined(UNIX_AMD64_ABI) || defined(TARGET_LOONGARCH64)
 
 //------------------------------------------------------------------------
 // updateRegStateForArg: Updates rsCalleeRegArgMaskLiveIn for the appropriate
@@ -2029,15 +2065,15 @@ void LinearScan::unixAmd64UpdateRegStateForArg(LclVarDsc* argDsc)
 //
 void LinearScan::updateRegStateForArg(LclVarDsc* argDsc)
 {
-#if defined(UNIX_AMD64_ABI)
-    // For System V AMD64 calls the argDsc can have 2 registers (for structs.)
-    // Handle them here.
+#if defined(UNIX_AMD64_ABI) || defined(TARGET_LOONGARCH64)
+    // For SystemV-AMD64 and LoongArch64 calls the argDsc
+    // can have 2 registers (for structs.). Handle them here.
     if (varTypeIsStruct(argDsc))
     {
-        unixAmd64UpdateRegStateForArg(argDsc);
+        UpdateRegStateForStructArg(argDsc);
     }
     else
-#endif // defined(UNIX_AMD64_ABI)
+#endif // defined(UNIX_AMD64_ABI) || defined(TARGET_LOONGARCH64)
     {
         RegState* intRegState   = &compiler->codeGen->intRegState;
         RegState* floatRegState = &compiler->codeGen->floatRegState;
@@ -2254,6 +2290,7 @@ void LinearScan::buildIntervals()
     for (block = startBlockSequence(); block != nullptr; block = moveToNextBlock())
     {
         JITDUMP("\nNEW BLOCK " FMT_BB "\n", block->bbNum);
+        compiler->compCurBB = block;
 
         bool predBlockIsAllocated = false;
         predBlock                 = findPredBlockForLiveIn(block, prevBlock DEBUGARG(&predBlockIsAllocated));
@@ -2411,7 +2448,7 @@ void LinearScan::buildIntervals()
             while (largeVectorVarsIter.NextElem(&largeVectorVarIndex))
             {
                 Interval* lclVarInterval = getIntervalForLocalVar(largeVectorVarIndex);
-                buildUpperVectorRestoreRefPosition(lclVarInterval, currentLoc, nullptr);
+                buildUpperVectorRestoreRefPosition(lclVarInterval, currentLoc, nullptr, false);
             }
         }
 #endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
@@ -2855,7 +2892,7 @@ void LinearScan::BuildDefs(GenTree* tree, int dstCount, regMaskTP dstCandidates)
         regMaskTP thisDstCandidates;
         if (fixedReg)
         {
-            // In case of multi-reg call node, we have to query the ith position return register.
+            // In case of multi-reg call node, we have to query the i'th position return register.
             // For all other cases of multi-reg definitions, the registers must be in sequential order.
             if (retTypeDesc != nullptr)
             {
@@ -2964,7 +3001,7 @@ RefPosition* LinearScan::BuildUse(GenTree* operand, regMaskTP candidates, int mu
             VarSetOps::RemoveElemD(compiler, currentLiveVars, varIndex);
         }
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
-        buildUpperVectorRestoreRefPosition(interval, currentLoc, operand);
+        buildUpperVectorRestoreRefPosition(interval, currentLoc, operand, true);
 #endif
     }
     else if (operand->IsMultiRegLclVar())
@@ -2978,7 +3015,7 @@ RefPosition* LinearScan::BuildUse(GenTree* operand, regMaskTP candidates, int mu
             VarSetOps::RemoveElemD(compiler, currentLiveVars, fieldVarDsc->lvVarIndex);
         }
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
-        buildUpperVectorRestoreRefPosition(interval, currentLoc, operand);
+        buildUpperVectorRestoreRefPosition(interval, currentLoc, operand, true);
 #endif
     }
     else
@@ -3044,6 +3081,13 @@ int LinearScan::BuildAddrUses(GenTree* addr, regMaskTP candidates)
         else if (addrMode->Index()->OperIs(GT_BFIZ))
         {
             GenTreeCast* cast = addrMode->Index()->gtGetOp1()->AsCast();
+            assert(cast->isContained());
+            BuildUse(cast->CastOp(), candidates);
+            srcCount++;
+        }
+        else if (addrMode->Index()->OperIs(GT_CAST))
+        {
+            GenTreeCast* cast = addrMode->Index()->AsCast();
             assert(cast->isContained());
             BuildUse(cast->CastOp(), candidates);
             srcCount++;
@@ -3291,7 +3335,7 @@ void LinearScan::BuildStoreLocDef(GenTreeLclVarCommon* storeLoc,
     assert(varDsc->lvTracked);
     unsigned  varIndex       = varDsc->lvVarIndex;
     Interval* varDefInterval = getIntervalForLocalVar(varIndex);
-    if ((storeLoc->gtFlags & GTF_VAR_DEATH) == 0)
+    if (!storeLoc->IsLastUse(index))
     {
         VarSetOps::AddElemD(compiler, currentLiveVars, varIndex);
     }
@@ -3372,7 +3416,7 @@ int LinearScan::BuildMultiRegStoreLoc(GenTreeLclVar* storeLoc)
     //
     if (isMultiRegSrc)
     {
-        assert(op1->GetMultiRegCount() == srcCount);
+        assert(op1->GetMultiRegCount(compiler) == srcCount);
     }
     else if (varTypeIsEnregisterable(op1))
     {
@@ -3396,7 +3440,8 @@ int LinearScan::BuildMultiRegStoreLoc(GenTreeLclVar* storeLoc)
     //
     for (unsigned int i = 0; i < dstCount; ++i)
     {
-        LclVarDsc* fieldVarDsc = compiler->lvaGetDesc(varDsc->lvFieldLclStart + i);
+        LclVarDsc*   fieldVarDsc  = compiler->lvaGetDesc(varDsc->lvFieldLclStart + i);
+        RefPosition* singleUseRef = nullptr;
 
         if (isMultiRegSrc)
         {
@@ -3408,10 +3453,10 @@ int LinearScan::BuildMultiRegStoreLoc(GenTreeLclVar* storeLoc)
                 srcCandidates = allByteRegs();
             }
 #endif // TARGET_X86
-            BuildUse(op1, srcCandidates, i);
+            singleUseRef = BuildUse(op1, srcCandidates, i);
         }
         assert(isCandidateVar(fieldVarDsc));
-        BuildStoreLocDef(storeLoc, fieldVarDsc, nullptr, i);
+        BuildStoreLocDef(storeLoc, fieldVarDsc, singleUseRef, i);
         if (isMultiRegSrc && (i < (dstCount - 1)))
         {
             currentLoc += 2;
@@ -3456,12 +3501,12 @@ int LinearScan::BuildStoreLoc(GenTreeLclVarCommon* storeLoc)
 
     // Second, use source registers.
 
-    if (op1->IsMultiRegNode() && (op1->GetMultiRegCount() > 1))
+    if (op1->IsMultiRegNode() && (op1->GetMultiRegCount(compiler) > 1))
     {
         // This is the case where the source produces multiple registers.
         // This must be a store lclvar.
         assert(storeLoc->OperGet() == GT_STORE_LCL_VAR);
-        srcCount = op1->GetMultiRegCount();
+        srcCount = op1->GetMultiRegCount(compiler);
 
         for (int i = 0; i < srcCount; ++i)
         {
@@ -3929,27 +3974,19 @@ int LinearScan::BuildGCWriteBarrier(GenTree* tree)
     // is an indir through an lea, we need to actually instantiate the
     // lea in a register
     assert(!addr->isContained() && !src->isContained());
-    regMaskTP addrCandidates = RBM_ARG_0;
-    regMaskTP srcCandidates  = RBM_ARG_1;
+    regMaskTP addrCandidates = RBM_WRITE_BARRIER_DST;
+    regMaskTP srcCandidates  = RBM_WRITE_BARRIER_SRC;
 
-#if defined(TARGET_ARM64)
-
-    // the 'addr' goes into x14 (REG_WRITE_BARRIER_DST)
-    // the 'src'  goes into x15 (REG_WRITE_BARRIER_SRC)
-    //
-    addrCandidates = RBM_WRITE_BARRIER_DST;
-    srcCandidates  = RBM_WRITE_BARRIER_SRC;
-
-#elif defined(TARGET_X86) && NOGC_WRITE_BARRIERS
+#if defined(TARGET_X86) && NOGC_WRITE_BARRIERS
 
     bool useOptimizedWriteBarrierHelper = compiler->codeGen->genUseOptimizedWriteBarriers(tree, src);
     if (useOptimizedWriteBarrierHelper)
     {
         // Special write barrier:
-        // op1 (addr) goes into REG_WRITE_BARRIER (rdx) and
+        // op1 (addr) goes into REG_OPTIMIZED_WRITE_BARRIER_DST (rdx) and
         // op2 (src) goes into any int register.
-        addrCandidates = RBM_WRITE_BARRIER;
-        srcCandidates  = RBM_WRITE_BARRIER_SRC;
+        addrCandidates = RBM_OPTIMIZED_WRITE_BARRIER_DST;
+        srcCandidates  = RBM_OPTIMIZED_WRITE_BARRIER_SRC;
     }
 
 #endif // defined(TARGET_X86) && NOGC_WRITE_BARRIERS

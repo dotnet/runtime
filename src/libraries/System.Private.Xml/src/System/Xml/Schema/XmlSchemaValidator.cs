@@ -381,10 +381,7 @@ namespace System.Xml.Schema
             {
                 throw new InvalidOperationException(SR.Format(SR.Sch_InvalidStateTransition, new string[] { s_methodNames[(int)_currentState], s_methodNames[(int)ValidatorState.Start] }));
             }
-            if (partialValidationType == null)
-            {
-                throw new ArgumentNullException(nameof(partialValidationType));
-            }
+            ArgumentNullException.ThrowIfNull(partialValidationType);
             if (!(partialValidationType is XmlSchemaElement || partialValidationType is XmlSchemaAttribute || partialValidationType is XmlSchemaType))
             {
                 throw new ArgumentException(SR.Sch_InvalidPartialValidationType);
@@ -1481,7 +1478,7 @@ namespace System.Xml.Schema
             return typedValue;
         }
 
-        private string GetTypeName(SchemaDeclBase decl)
+        private static string GetTypeName(SchemaDeclBase decl)
         {
             Debug.Assert(decl != null && decl.SchemaType != null);
             string typeName = decl.SchemaType.QualifiedName.ToString();

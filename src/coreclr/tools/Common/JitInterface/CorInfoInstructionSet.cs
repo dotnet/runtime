@@ -38,6 +38,7 @@ namespace Internal.JitInterface
         ARM64_Rdm_Arm64 = InstructionSet_ARM64.Rdm_Arm64,
         ARM64_Sha1_Arm64 = InstructionSet_ARM64.Sha1_Arm64,
         ARM64_Sha256_Arm64 = InstructionSet_ARM64.Sha256_Arm64,
+        ARM64_Rcpc = InstructionSet_ARM64.Rcpc,
         X64_X86Base = InstructionSet_X64.X86Base,
         X64_SSE = InstructionSet_X64.SSE,
         X64_SSE2 = InstructionSet_X64.SSE2,
@@ -136,6 +137,7 @@ namespace Internal.JitInterface
         Rdm_Arm64 = 18,
         Sha1_Arm64 = 19,
         Sha256_Arm64 = 20,
+        Rcpc = 21,
     }
 
     public enum InstructionSet_X64
@@ -292,6 +294,35 @@ namespace Internal.JitInterface
         public void ExpandInstructionSetByImplication(TargetArchitecture architecture)
         {
             this = ExpandInstructionSetByImplicationHelper(architecture, this);
+        }
+
+        public static InstructionSet ConvertToImpliedInstructionSetForVectorInstructionSets(TargetArchitecture architecture, InstructionSet input)
+        {
+            switch(architecture)
+            {
+            case TargetArchitecture.ARM64:
+                switch(input)
+                {
+                case InstructionSet.ARM64_Vector64: return InstructionSet.ARM64_AdvSimd;
+                case InstructionSet.ARM64_Vector128: return InstructionSet.ARM64_AdvSimd;
+                }
+                break;
+            case TargetArchitecture.X64:
+                switch(input)
+                {
+                case InstructionSet.X64_Vector128: return InstructionSet.X64_SSE;
+                case InstructionSet.X64_Vector256: return InstructionSet.X64_AVX;
+                }
+                break;
+            case TargetArchitecture.X86:
+                switch(input)
+                {
+                case InstructionSet.X86_Vector128: return InstructionSet.X86_SSE;
+                case InstructionSet.X86_Vector256: return InstructionSet.X86_AVX;
+                }
+                break;
+            }
+            return input;
         }
 
         public static InstructionSetFlags ExpandInstructionSetByImplicationHelper(TargetArchitecture architecture, InstructionSetFlags input)
@@ -711,6 +742,7 @@ namespace Internal.JitInterface
                     yield return new InstructionSetInfo("Vector64", "", InstructionSet.ARM64_Vector64, false);
                     yield return new InstructionSetInfo("Vector128", "", InstructionSet.ARM64_Vector128, false);
                     yield return new InstructionSetInfo("Dczva", "", InstructionSet.ARM64_Dczva, false);
+                    yield return new InstructionSetInfo("Rcpc", "", InstructionSet.ARM64_Rcpc, false);
                     break;
 
                 case TargetArchitecture.X64:

@@ -50,7 +50,6 @@
 #include <mono/metadata/tabledefs.h>
 #include <mono/metadata/exception.h>
 #include <mono/metadata/exception-internals.h>
-#include <mono/metadata/w32file.h>
 #include <mono/metadata/mono-endian.h>
 #include <mono/metadata/tokentype.h>
 #include <mono/metadata/metadata-internals.h>
@@ -68,7 +67,6 @@
 #include <mono/metadata/profiler-private.h>
 #include <mono/metadata/mono-config.h>
 #include <mono/metadata/cil-coff.h>
-#include <mono/metadata/mono-perfcounters.h>
 #include <mono/metadata/mono-debug.h>
 #include <mono/metadata/mono-ptr-array.h>
 #include <mono/metadata/verify-internals.h>
@@ -76,7 +74,6 @@
 #include <mono/metadata/seq-points-data.h>
 #include <mono/metadata/icall-table.h>
 #include <mono/metadata/handle.h>
-#include <mono/metadata/w32event.h>
 #include <mono/metadata/abi-details.h>
 #include <mono/metadata/loader-internals.h>
 #include <mono/utils/monobitset.h>
@@ -89,7 +86,6 @@
 #include <mono/utils/bsearch.h>
 #include <mono/utils/mono-os-mutex.h>
 #include <mono/utils/mono-threads.h>
-#include <mono/metadata/w32error.h>
 #include <mono/utils/w32api.h>
 #include <mono/utils/mono-logger-internals.h>
 #include <mono/utils/mono-math.h>
@@ -167,9 +163,7 @@ is_generic_parameter (MonoType *type)
 static void
 mono_icall_make_platform_path (gchar *path)
 {
-	for (size_t i = strlen (path); i > 0; i--)
-		if (path [i-1] == '\\')
-			path [i-1] = '/';
+	g_strdelimit (path, '\\', '/');
 }
 
 static const gchar *
@@ -1216,7 +1210,10 @@ ves_icall_System_ValueType_InternalGetHashCode (MonoObjectHandle this_obj, MonoA
 			continue;
 		if (mono_field_is_deleted (field))
 			continue;
-		gpointer addr = (guint8*)MONO_HANDLE_RAW (this_obj)  + field->offset;
+		/* metadata-update: structs don't get added fields */
+		g_assert (!m_field_is_from_update (field));
+
+		gpointer addr = (guint8*)MONO_HANDLE_RAW (this_obj)  + m_field_get_offset (field);
 		/* FIXME: Add more types */
 		switch (field->type->type) {
 		case MONO_TYPE_I4:
@@ -1289,8 +1286,11 @@ ves_icall_System_ValueType_Equals (MonoObjectHandle this_obj, MonoObjectHandle t
 			continue;
 		if (mono_field_is_deleted (field))
 			continue;
-		guint8 *this_field = (guint8 *)MONO_HANDLE_RAW (this_obj) + field->offset;
-		guint8 *that_field = (guint8 *)MONO_HANDLE_RAW (that) + field->offset;
+		/* metadata-update: no added fields in valuetypes */
+		g_assert (!m_field_is_from_update (field));
+		int field_offset = m_field_get_offset (field);
+		guint8 *this_field = (guint8 *)MONO_HANDLE_RAW (this_obj) + field_offset;
+		guint8 *that_field = (guint8 *)MONO_HANDLE_RAW (that) + field_offset;
 
 #define UNALIGNED_COMPARE(type) \
 			do { \
@@ -1803,7 +1803,7 @@ ves_icall_RuntimeTypeHandle_GetAttributes (MonoQCallTypeHandle type_handle)
 	MonoType *type = type_handle.type;
 
 	if (m_type_is_byref (type) || type->type == MONO_TYPE_PTR || type->type == MONO_TYPE_FNPTR)
-		return TYPE_ATTRIBUTE_NOT_PUBLIC;
+		return TYPE_ATTRIBUTE_PUBLIC;
 
 	MonoClass *klass = mono_class_from_mono_type_internal (type);
 	return mono_class_get_flags (klass);
@@ -2004,7 +2004,10 @@ ves_icall_RuntimeFieldInfo_GetFieldOffset (MonoReflectionFieldHandle field, Mono
 	MonoClassField *class_field = MONO_HANDLE_GETVAL (field, field);
 	mono_class_setup_fields (m_field_get_parent (class_field));
 
-	return class_field->offset - MONO_ABI_SIZEOF (MonoObject);
+	/* TODO: metadata-update: figure out what CoreCLR does in this situation. */
+	g_assert (!m_field_is_from_update (class_field));
+
+	return m_field_get_offset (class_field) - MONO_ABI_SIZEOF (MonoObject);
 }
 
 MonoReflectionTypeHandle
@@ -2175,13 +2178,16 @@ ves_icall_System_RuntimeFieldHandle_GetValueDirect (MonoReflectionFieldHandle fi
 	MonoClassField *field = MONO_HANDLE_GETVAL (field_h, field);
 	MonoClass *klass = mono_class_from_mono_type_internal (field->type);
 
+	/* TODO: metadata-update: get the values of added fields */
+	g_assert (!m_field_is_from_update (field));
+
 	if (!MONO_TYPE_ISSTRUCT (m_class_get_byval_arg (m_field_get_parent (field)))) {
 		mono_error_set_not_implemented (error, "");
 		return MONO_HANDLE_NEW (MonoObject, NULL);
 	} else if (MONO_TYPE_IS_REFERENCE (field->type)) {
-		return MONO_HANDLE_NEW (MonoObject, *(MonoObject**)((guint8*)obj->value + field->offset - sizeof (MonoObject)));
+		return MONO_HANDLE_NEW (MonoObject, *(MonoObject**)((guint8*)obj->value + m_field_get_offset (field) - sizeof (MonoObject)));
 	} else {
-		return mono_value_box_handle (klass, (guint8*)obj->value + field->offset - sizeof (MonoObject), error);
+		return mono_value_box_handle (klass, (guint8*)obj->value + m_field_get_offset (field) - sizeof (MonoObject), error);
 	}
 }
 
@@ -2193,6 +2199,9 @@ ves_icall_System_RuntimeFieldHandle_SetValueDirect (MonoReflectionFieldHandle fi
 	g_assert (obj);
 
 	mono_class_setup_fields (m_field_get_parent (f));
+
+	/* TODO: metadata-update: set the values of added fields */
+	g_assert (!m_field_is_from_update (f));
 
 	if (!MONO_TYPE_ISSTRUCT (m_class_get_byval_arg (m_field_get_parent (f)))) {
 		MonoObjectHandle objHandle = typed_reference_to_object (obj, error);
@@ -2231,7 +2240,7 @@ ves_icall_RuntimeFieldInfo_GetRawConstantValue (MonoReflectionFieldHandle rfield
 		goto invalid_operation;
 
 	if (image_is_dynamic (m_class_get_image (m_field_get_parent (field)))) {
-		MonoClass *klass = m_field_get_parent (field);
+		klass = m_field_get_parent (field);
 		int fidx = field - m_class_get_fields (klass);
 		MonoFieldDefaultValue *def_values = mono_class_get_field_def_values (klass);
 
@@ -2264,8 +2273,6 @@ ves_icall_RuntimeFieldInfo_GetRawConstantValue (MonoReflectionFieldHandle rfield
 	case MONO_TYPE_U8:
 	case MONO_TYPE_I8:
 	case MONO_TYPE_R8: {
-		MonoType *t;
-
 		/* boxed value type */
 		t = g_new0 (MonoType, 1);
 		t->type = def_type;
@@ -2336,7 +2343,7 @@ ves_icall_RuntimePropertyInfo_get_property_info (MonoReflectionPropertyHandle pr
 	}
 
 	if ((req_info & PInfo_Attributes) != 0)
-		info->attrs = pproperty->attrs;
+		info->attrs = (pproperty->attrs & ~MONO_PROPERTY_META_FLAG_MASK);
 
 	if ((req_info & PInfo_GetMethod) != 0) {
 		MonoClass *property_klass = MONO_HANDLE_GETVAL (property, klass);
@@ -2401,7 +2408,7 @@ ves_icall_RuntimeEventInfo_get_event_info (MonoReflectionMonoEventHandle ref_eve
 	return_if_nok (error);
 	MONO_STRUCT_SETREF_INTERNAL (info, name, MONO_HANDLE_RAW (ev_name));
 
-	info->attrs = event->attrs;
+	info->attrs = event->attrs & ~MONO_EVENT_META_FLAG_MASK;
 
 	MonoReflectionMethodHandle rm;
 	if (event->add) {
@@ -3239,44 +3246,47 @@ init_io_stream_slots (void)
 	io_stream_slots_set = TRUE;
 }
 
-MonoBoolean
-ves_icall_System_IO_Stream_HasOverriddenBeginEndRead (MonoObjectHandle stream, MonoError *error)
+
+static MonoBoolean
+stream_has_overriden_begin_or_end_method (MonoObjectHandle stream, int begin_slot, int end_slot, MonoError *error)
 {
 	MonoClass* curr_klass = MONO_HANDLE_GET_CLASS (stream);
 	MonoClass* base_klass = mono_class_try_get_stream_class ();
 
-	if (!io_stream_slots_set)
-		init_io_stream_slots ();
+	mono_class_setup_vtable (curr_klass);
+	if (mono_class_has_failure (curr_klass)) {
+		mono_error_set_for_class_failure (error, curr_klass);
+		return_val_if_nok (error, FALSE);
+	}
 
 	// slots can still be -1 and it means Linker removed the methods from the base class (Stream)
 	// in this case we can safely assume the methods are not overridden
 	// otherwise - check vtable
 	MonoMethod **curr_klass_vtable = m_class_get_vtable (curr_klass);
-	gboolean begin_read_is_overriden = io_stream_begin_read_slot != -1 && curr_klass_vtable [io_stream_begin_read_slot]->klass != base_klass;
-	gboolean end_read_is_overriden = io_stream_end_read_slot != -1 && curr_klass_vtable [io_stream_end_read_slot]->klass != base_klass;
+	gboolean begin_is_overriden = begin_slot != -1 && curr_klass_vtable [begin_slot] != NULL && curr_klass_vtable [begin_slot]->klass != base_klass;
+	gboolean end_is_overriden = end_slot != -1 && curr_klass_vtable [end_slot] != NULL && curr_klass_vtable [end_slot]->klass != base_klass;
+
+	return begin_is_overriden || end_is_overriden;
+}
+
+MonoBoolean
+ves_icall_System_IO_Stream_HasOverriddenBeginEndRead (MonoObjectHandle stream, MonoError *error)
+{
+	if (!io_stream_slots_set)
+		init_io_stream_slots ();
 
 	// return true if BeginRead or EndRead were overriden
-	return begin_read_is_overriden || end_read_is_overriden;
+	return stream_has_overriden_begin_or_end_method (stream, io_stream_begin_read_slot, io_stream_end_read_slot, error);
 }
 
 MonoBoolean
 ves_icall_System_IO_Stream_HasOverriddenBeginEndWrite (MonoObjectHandle stream, MonoError *error)
 {
-	MonoClass* curr_klass = MONO_HANDLE_GETVAL (stream, vtable)->klass;
-	MonoClass* base_klass = mono_class_try_get_stream_class ();
-
 	if (!io_stream_slots_set)
 		init_io_stream_slots ();
 
-	// slots can still be -1 and it means Linker removed the methods from the base class (Stream)
-	// in this case we can safely assume the methods are not overridden
-	// otherwise - check vtable
-	MonoMethod **curr_klass_vtable = m_class_get_vtable (curr_klass);
-	gboolean begin_write_is_overriden = io_stream_begin_write_slot != -1 && curr_klass_vtable [io_stream_begin_write_slot]->klass != base_klass;
-	gboolean end_write_is_overriden = io_stream_end_write_slot != -1 && curr_klass_vtable [io_stream_end_write_slot]->klass != base_klass;
-
 	// return true if BeginWrite or EndWrite were overriden
-	return begin_write_is_overriden || end_write_is_overriden;
+	return stream_has_overriden_begin_or_end_method (stream, io_stream_begin_write_slot, io_stream_end_write_slot, error);
 }
 
 MonoBoolean
@@ -5035,9 +5045,8 @@ image_get_type (MonoImage *image, MonoTableInfo *tdef, int table_idx, int count,
 static MonoArrayHandle
 mono_module_get_types (MonoImage *image, MonoArrayHandleOut exceptions, MonoBoolean exportedOnly, MonoError *error)
 {
-	/* FIXME: metadata-update */
 	MonoTableInfo *tdef = &image->tables [MONO_TABLE_TYPEDEF];
-	int rows = table_info_get_rows (tdef);
+	int rows = mono_metadata_table_num_rows (image, MONO_TABLE_TYPEDEF);
 	int i, count;
 
 	/* we start the count from 1 because we skip the special type <Module> */
@@ -6010,11 +6019,17 @@ ves_icall_System_Environment_Exit (int result)
 void
 ves_icall_System_Environment_FailFast (MonoStringHandle message, MonoExceptionHandle exception, MonoStringHandle errorSource, MonoError *error)
 {
-	if (MONO_HANDLE_IS_NULL (message)) {
+	if (MONO_HANDLE_IS_NULL (errorSource)) {
 		g_warning ("Process terminated.");
 	} else {
+		char *errorSourceMsg = mono_string_handle_to_utf8 (errorSource, error);
+		g_warning ("Process terminated. %s", errorSourceMsg);
+		g_free (errorSourceMsg);
+	}
+
+	if (!MONO_HANDLE_IS_NULL (message)) {
 		char *msg = mono_string_handle_to_utf8 (message, error);
-		g_warning ("Process terminated due to \"%s\"", msg);
+		g_warning (msg);
 		g_free (msg);
 	}
 
@@ -6046,10 +6061,18 @@ ves_icall_System_Environment_get_TickCount64 (void)
 gpointer
 ves_icall_RuntimeMethodHandle_GetFunctionPointer (MonoMethod *method, MonoError *error)
 {
+	return mono_method_get_unmanaged_wrapper_ftnptr_internal (method, FALSE, error);
+}
+
+void*
+mono_method_get_unmanaged_wrapper_ftnptr_internal (MonoMethod *method, gboolean only_unmanaged_callers_only, MonoError *error)
+{
 	/* WISH: we should do this in managed */
 	if (G_UNLIKELY (mono_method_has_unmanaged_callers_only_attribute (method))) {
 		method = mono_marshal_get_managed_wrapper  (method, NULL, (MonoGCHandle)0, error);
 		return_val_if_nok (error, NULL);
+	} else {
+		g_assert (!only_unmanaged_callers_only);
 	}
 	return mono_get_runtime_callbacks ()->get_ftnptr (method, error);
 }
@@ -6159,7 +6182,7 @@ ves_icall_System_ArgIterator_IntGetNextArg (MonoArgIterator *iter, MonoTypedRef 
 	res->type = iter->sig->params [i];
 	res->klass = mono_class_from_mono_type_internal (res->type);
 	arg_size = mono_type_stack_size (res->type, &align);
-#if defined(__arm__) || defined(__mips__)
+#if defined(__arm__)
 	iter->args = (guint8*)(((gsize)iter->args + (align) - 1) & ~(align - 1));
 #endif
 	res->value = iter->args;
@@ -6193,7 +6216,7 @@ ves_icall_System_ArgIterator_IntGetNextArgWithType (MonoArgIterator *iter, MonoT
 		res->klass = mono_class_from_mono_type_internal (res->type);
 		/* FIXME: endianess issue... */
 		arg_size = mono_type_stack_size (res->type, &align);
-#if defined(__arm__) || defined(__mips__)
+#if defined(__arm__)
 		iter->args = (guint8*)(((gsize)iter->args + (align) - 1) & ~(align - 1));
 #endif
 		res->value = iter->args;
@@ -6244,10 +6267,13 @@ ves_icall_System_TypedReference_InternalMakeTypedReference (MonoTypedRef *res, M
 
 		g_assert (f);
 
+		/* TODO: metadata-update: the first field might be added, right? the rest are inside structs */
+		g_assert (!m_field_is_from_update (f));
+
 		if (i == 0)
-			offset = f->offset;
+			offset = m_field_get_offset (f);
 		else
-			offset += f->offset - sizeof (MonoObject);
+			offset += m_field_get_offset (f) - sizeof (MonoObject);
 		(void)mono_class_from_mono_type_internal (f->type);
 		ftype = f->type;
 	}
@@ -6756,7 +6782,7 @@ mono_add_internal_call_internal (const char *name, gconstpointer method)
 static int
 concat_class_name (char *buf, int bufsize, MonoClass *klass)
 {
-	int nspacelen, cnamelen;
+	size_t nspacelen, cnamelen;
 	nspacelen = strlen (m_class_get_name_space (klass));
 	cnamelen = strlen (m_class_get_name (klass));
 	if (nspacelen + cnamelen + 2 > bufsize)
@@ -6767,7 +6793,7 @@ concat_class_name (char *buf, int bufsize, MonoClass *klass)
 	}
 	memcpy (buf + nspacelen, m_class_get_name (klass), cnamelen);
 	buf [nspacelen + cnamelen] = 0;
-	return nspacelen + cnamelen;
+	return (int)(nspacelen + cnamelen);
 }
 
 static void
@@ -6792,7 +6818,8 @@ mono_lookup_internal_call_full_with_flags (MonoMethod *method, gboolean warn_on_
 	char *tmpsig = NULL;
 	char mname [2048];
 	char *classname = NULL;
-	int typelen = 0, mlen, siglen;
+	int typelen = 0;
+	size_t mlen, siglen;
 	gconstpointer res = NULL;
 	gboolean locked = FALSE;
 

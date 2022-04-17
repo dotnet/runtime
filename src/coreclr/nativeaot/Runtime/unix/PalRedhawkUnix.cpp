@@ -1219,8 +1219,8 @@ REDHAWK_PALEXPORT void REDHAWK_PALAPI PAL_GetCpuCapabilityFlags(int* flags)
 //        *flags |= ARM64IntrinsicConstants_???;
 #endif
 #ifdef HWCAP_LRCPC
-//    if (hwCap & HWCAP_LRCPC)
-//        *flags |= ARM64IntrinsicConstants_???;
+      if (hwCap & HWCAP_LRCPC)
+          *flags |= ARM64IntrinsicConstants_Rcpc;
 #endif
 #ifdef HWCAP_PMULL
 //    if (hwCap & HWCAP_PMULL)

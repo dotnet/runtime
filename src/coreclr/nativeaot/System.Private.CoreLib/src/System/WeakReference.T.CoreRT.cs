@@ -2,10 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Runtime;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
-
-using Internal.Runtime.CompilerServices;
 
 namespace System
 {
@@ -79,7 +78,7 @@ namespace System
         /// and gets\create a new RCW in case it is alive.
         /// </summary>
         /// <returns></returns>
-        private object? TryGetComTarget()
+        private static object? TryGetComTarget()
         {
 #if ENABLE_WINRT
             WinRTInteropCallbacks callbacks = WinRTInterop.UnsafeCallbacks;
@@ -100,7 +99,7 @@ namespace System
         /// go from the managed weak reference to the actual native object even though the managed counterpart might have been collected.
         /// </summary>
         /// <param name="target"></param>
-        private void TrySetComTarget(object? target)
+        private static void TrySetComTarget(object? target)
         {
 #if ENABLE_WINRT
             WinRTInteropCallbacks callbacks = WinRTInterop.UnsafeCallbacks;

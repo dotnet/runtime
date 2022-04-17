@@ -27,10 +27,11 @@ namespace System.Drawing
                 // OLE to do it for us.
                 PICTDESC pictdesc = PICTDESC.CreateIconPICTDESC(Handle);
                 Guid g = typeof(IPicture).GUID;
-                IPicture picture = OleCreatePictureIndirect(pictdesc, ref g, false);
-
-                if (picture != null)
+                IntPtr iPicturePtr = OleCreatePictureIndirect(pictdesc, ref g, false);
+                if (iPicturePtr != IntPtr.Zero)
                 {
+                    IPicture picture = (IPicture)Marshal.GetObjectForIUnknown(iPicturePtr);
+                    Marshal.Release(iPicturePtr);
                     try
                     {
                         ArgumentNullException.ThrowIfNull(outputStream);
@@ -45,8 +46,8 @@ namespace System.Drawing
             }
         }
 
-        [DllImport(Interop.Libraries.Oleaut32, PreserveSig = false)]
-        internal static extern IPicture OleCreatePictureIndirect(PICTDESC pictdesc, [In]ref Guid refiid, bool fOwn);
+        [LibraryImport(Interop.Libraries.Oleaut32, PreserveSig = false)]
+        internal static partial IntPtr OleCreatePictureIndirect(in PICTDESC pictdesc, in Guid refiid, bool fOwn);
 
         [ComImport]
         [Guid("7BF80980-BF32-101A-8BBB-00AA00300CAB")]
@@ -92,7 +93,7 @@ namespace System.Drawing
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        internal sealed class PICTDESC
+        internal struct PICTDESC
         {
             internal int cbSizeOfStruct;
             public int picType;

@@ -7,33 +7,34 @@ using System.Diagnostics;
 
 namespace System.Text.RegularExpressions.Symbolic
 {
-    internal class SymbolicRegexSampler<S> where S : notnull
+    internal sealed class SymbolicRegexSampler<TSet> where TSet : IComparable<TSet>
     {
         private Random _random;
-        private SymbolicRegexNode<S> _root;
+        private SymbolicRegexNode<TSet> _root;
         /// <summary>The used random seed</summary>
         public int RandomSeed { get; private set; }
         private BDD _asciiWordCharacters;
         private BDD _asciiNonWordCharacters; // omits all characters before ' '
         private BDD _ascii;                  // omits all characters before ' '
-        private ICharAlgebra<S> _solver;
+        private ISolver<TSet> _solver;
+        private CharSetSolver _charSetSolver;
 
-        public SymbolicRegexSampler(SymbolicRegexNode<S> root, int randomseed, bool negative)
+        public SymbolicRegexSampler(SymbolicRegexNode<TSet> root, int randomseed, bool negative)
         {
-            _root = negative ? root._builder.MkNot(root) : root;
+            _root = negative ? root._builder.Not(root) : root;
             // Treat 0 as no seed and instead choose a random seed randomly
             RandomSeed = randomseed == 0 ? new Random().Next() : randomseed;
             _random = new Random(RandomSeed);
             _solver = root._builder._solver;
-            ICharAlgebra<BDD> bddSolver = SymbolicRegexRunnerFactory.s_unicode._solver;
-            _asciiWordCharacters = bddSolver.Or(new BDD[] {
-                bddSolver.RangeConstraint('A', 'Z'),
-                bddSolver.RangeConstraint('a', 'z'),
-                bddSolver.CharConstraint('_'),
-                bddSolver.RangeConstraint('0', '9')});
+            _charSetSolver = new CharSetSolver();
+            _asciiWordCharacters = _charSetSolver.Or(new BDD[] {
+                _charSetSolver.CreateSetFromRange('A', 'Z'),
+                _charSetSolver.CreateSetFromRange('a', 'z'),
+                _charSetSolver.CreateFromChar('_'),
+                _charSetSolver.CreateSetFromRange('0', '9')});
             // Visible ASCII range for input character generation
-            _ascii = bddSolver.RangeConstraint('\x20', '\x7E');
-            _asciiNonWordCharacters = bddSolver.And(_ascii, bddSolver.Not(_asciiWordCharacters));
+            _ascii = _charSetSolver.CreateSetFromRange('\x20', '\x7E');
+            _asciiNonWordCharacters = _charSetSolver.And(_ascii, _charSetSolver.Not(_asciiWordCharacters));
         }
 
         /// <summary>Generates up to k random strings accepted by the regex</summary>
@@ -47,19 +48,19 @@ namespace System.Text.RegularExpressions.Symbolic
                 // Initially there is no previous character
                 // Here one could also consider previous characters for example for \b, \B, and ^ anchors
                 // and initialize input_so_far accordingly
-                uint prevCharKind = CharKind.StartStop;
+                uint prevCharKind = CharKind.BeginningEnd;
 
                 // This flag is set to false in the unlikely situation that generation ends up in a dead-end
                 bool generationSucceeded = true;
 
                 // Current set of states reached initially contains just the root
-                List<SymbolicRegexNode<S>> states = new();
+                List<SymbolicRegexNode<TSet>> states = new();
                 states.Add(_root);
 
                 // Used for end suffixes
                 List<string> possible_endings = new();
 
-                List<SymbolicRegexNode<S>> nextStates = new();
+                List<SymbolicRegexNode<TSet>> nextStates = new();
 
                 while (true)
                 {
@@ -68,7 +69,7 @@ namespace System.Text.RegularExpressions.Symbolic
                     if (CanBeFinal(states))
                     {
                         // Unconditionally final state or end of the input due to \Z anchor for example
-                        if (IsFinal(states) || IsFinal(states, CharKind.Context(prevCharKind, CharKind.StartStop)))
+                        if (IsFinal(states) || IsFinal(states, CharKind.Context(prevCharKind, CharKind.BeginningEnd)))
                         {
                             possible_endings.Add("");
                         }
@@ -100,29 +101,29 @@ namespace System.Text.RegularExpressions.Symbolic
                         break;
                     }
 
-                    SymbolicRegexNode<S> state = Choose(states);
+                    SymbolicRegexNode<TSet> state = Choose(states);
                     char c = '\0';
                     uint cKind = 0;
-                    // Observe that state.MkDerivative() can be a deadend
-                    List<(S, SymbolicRegexNode<S>?, SymbolicRegexNode<S>)> paths = new(state.MkDerivative().EnumeratePaths(_solver.True));
+                    // Observe that state.CreateDerivative() can be a deadend
+                    List<(TSet, SymbolicRegexNode<TSet>?, SymbolicRegexNode<TSet>)> paths = new(state.CreateDerivative().EnumeratePaths(_solver.Full));
                     if (paths.Count > 0)
                     {
-                        (S, SymbolicRegexNode<S>?, SymbolicRegexNode<S>) path = Choose(paths);
+                        (TSet, SymbolicRegexNode<TSet>?, SymbolicRegexNode<TSet>) path = Choose(paths);
                         // Consider a random path from some random state in states and
-                        // select a random member of the predicate on that path
+                        // select a random member of the set on that path
                         c = ChooseChar(ToBDD(path.Item1));
 
                         // Map the character back into the corresponding character constraint of the solver
-                        S c_pred = _solver.CharConstraint(c);
+                        TSet c_set = _solver.CreateFromChar(c);
 
                         // Determine the character kind of c
-                        cKind = IsNewline(c_pred) ? CharKind.Newline : (IsWordchar(c_pred) ? CharKind.WordLetter : CharKind.General);
+                        cKind = IsNewline(c_set) ? CharKind.Newline : (IsWordchar(c_set) ? CharKind.WordLetter : CharKind.General);
 
                         // Construct the combined context of previous and c kind
                         uint context = CharKind.Context(prevCharKind, cKind);
 
                         // Step into the next set of states
-                        nextStates.AddRange(Step(states, c_pred, context));
+                        nextStates.AddRange(Step(states, c_set, context));
                     }
 
                     // In the case that there are no next states: stop here
@@ -144,7 +145,7 @@ namespace System.Text.RegularExpressions.Symbolic
                     input_so_far.Append(c);
                     states.Clear();
                     possible_endings.Clear();
-                    List<SymbolicRegexNode<S>> tmp = states;
+                    List<SymbolicRegexNode<TSet>> tmp = states;
                     states = nextStates;
                     nextStates = tmp;
                     prevCharKind = cKind;
@@ -157,12 +158,12 @@ namespace System.Text.RegularExpressions.Symbolic
             }
         }
 
-        private IEnumerable<SymbolicRegexNode<S>> Step(List<SymbolicRegexNode<S>> states, S pred, uint context)
+        private static IEnumerable<SymbolicRegexNode<TSet>> Step(List<SymbolicRegexNode<TSet>> states, TSet set, uint context)
         {
-            HashSet<SymbolicRegexNode<S>> seen = new();
-            foreach (SymbolicRegexNode<S> state in states)
+            HashSet<SymbolicRegexNode<TSet>> seen = new();
+            foreach (SymbolicRegexNode<TSet> state in states)
             {
-                foreach ((S, SymbolicRegexNode<S>?, SymbolicRegexNode<S>) path in state.MkDerivative().EnumeratePaths(pred))
+                foreach ((TSet, SymbolicRegexNode<TSet>?, SymbolicRegexNode<TSet>) path in state.CreateDerivative().EnumeratePaths(set))
                 {
                     // Either there are no anchors or else check that the anchors are nullable in the given context
                     if (path.Item2 is null || path.Item2.IsNullableFor(context))
@@ -177,7 +178,7 @@ namespace System.Text.RegularExpressions.Symbolic
             }
         }
 
-        private BDD ToBDD(S pred) => _solver.ConvertToCharSet(SymbolicRegexRunnerFactory.s_unicode._solver, pred);
+        private BDD ToBDD(TSet set) => _solver.ConvertToBDD(set, _charSetSolver);
 
         private T Choose<T>(IList<T> elems) => elems[_random.Next(elems.Count)];
 
@@ -187,16 +188,16 @@ namespace System.Text.RegularExpressions.Symbolic
         {
             Debug.Assert(!bdd.IsEmpty);
             // Select characters from the visible ASCII range whenever possible
-            BDD bdd1 = SymbolicRegexRunnerFactory.s_unicode._solver.And(bdd, _ascii);
-            return ChooseChar(Choose(((CharSetSolver)SymbolicRegexRunnerFactory.s_unicode._solver).ToRanges(bdd1.IsEmpty ? bdd : bdd1)));
+            BDD bdd1 = _charSetSolver.And(bdd, _ascii);
+            return ChooseChar(Choose(BDDRangeConverter.ToRanges(bdd1.IsEmpty ? bdd : bdd1)));
         }
 
         private bool ChooseRandomlyTrueOrFalse() => _random.Next(100) < 50;
         /// <summary>Returns true if some state is unconditionally final</summary>
 
-        private bool IsFinal(IEnumerable<SymbolicRegexNode<S>> states)
+        private static bool IsFinal(List<SymbolicRegexNode<TSet>> states)
         {
-            foreach (SymbolicRegexNode<S> state in states)
+            foreach (SymbolicRegexNode<TSet> state in states)
             {
                 if (state.IsNullable)
                 {
@@ -206,23 +207,10 @@ namespace System.Text.RegularExpressions.Symbolic
             return false;
         }
 
-        /// <summary>Returns true if some state can be final</summary>
-        private bool CanBeFinal(IEnumerable<SymbolicRegexNode<S>> states)
-        {
-            foreach (SymbolicRegexNode<S> state in states)
-            {
-                if (state.CanBeNullable)
-                {
-                    return true;
-                }
-            }
-            return false;
-        }
-
         /// <summary>Returns true if some state is final in the given context</summary>
-        private bool IsFinal(IEnumerable<SymbolicRegexNode<S>> states, uint context)
+        private static bool IsFinal(List<SymbolicRegexNode<TSet>> states, uint context)
         {
-            foreach (SymbolicRegexNode<S> state in states)
+            foreach (SymbolicRegexNode<TSet> state in states)
             {
                 if (state.IsNullableFor(context))
                 {
@@ -232,9 +220,22 @@ namespace System.Text.RegularExpressions.Symbolic
             return false;
         }
 
-        private bool IsWordchar(S pred) => _solver.IsSatisfiable(_solver.And(pred, _root._builder._wordLetterPredicateForAnchors));
+        /// <summary>Returns true if some state can be final</summary>
+        private static bool CanBeFinal(List<SymbolicRegexNode<TSet>> states)
+        {
+            foreach (SymbolicRegexNode<TSet> state in states)
+            {
+                if (state.CanBeNullable)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
 
-        private bool IsNewline(S pred) => _solver.IsSatisfiable(_solver.And(pred, _root._builder._newLinePredicate));
+        private bool IsWordchar(TSet set) => !_solver.IsEmpty(_solver.And(set, _root._builder._wordLetterForBoundariesSet));
+
+        private bool IsNewline(TSet set) => !_solver.IsEmpty(_solver.And(set, _root._builder._newLineSet));
     }
 }
 #endif

@@ -409,13 +409,8 @@ namespace System.Net
             return HostToNetworkOrder(network);
         }
 
-        public static bool IsLoopback(IPAddress address)
+        public static bool IsLoopback(IPAddress address!!)
         {
-            if (address == null)
-            {
-                ThrowAddressNullException();
-            }
-
             if (address.IsIPv6)
             {
                 // Do Equals test for IPv6 addresses

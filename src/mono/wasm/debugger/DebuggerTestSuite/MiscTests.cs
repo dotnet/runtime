@@ -34,7 +34,7 @@ namespace DebuggerTests
             });
 
             var eval_res = await cli.SendCommand("Runtime.evaluate", eval_req, token);
-            Assert.True(eval_res.IsErr);
+            Assert.False(eval_res.IsOk);
             Assert.Equal("Uncaught", eval_res.Error["exceptionDetails"]?["text"]?.Value<string>());
         }
 
@@ -84,8 +84,8 @@ namespace DebuggerTests
                 "window.setTimeout(function() { invoke_static_method ('[debugger-test] Math:PrimitiveTypesTest'); }, 1);",
                 test_fn: async (locals) =>
                 {
-                    await CheckSymbol(locals, "c0", "8364 '€'");
-                    await CheckSymbol(locals, "c1", "65 'A'");
+                    await CheckSymbol(locals, "c0", '€');
+                    await CheckSymbol(locals, "c1", 'A');
                     await Task.CompletedTask;
                 }
             );
@@ -245,7 +245,7 @@ namespace DebuggerTests
                    });
 
                    var frame_props = await cli.SendCommand("Runtime.getProperties", get_prop_req, token);
-                   Assert.True(frame_props.IsErr);
+                   Assert.False(frame_props.IsOk);
                }
             );
         }
@@ -563,7 +563,7 @@ namespace DebuggerTests
                     Days = TNumber(3530),
                     Minutes = TNumber(2),
                     Seconds = TNumber(4),
-                }, "ts_props", num_fields: 12);
+                }, "ts_props", skip_num_fields_check: true);
 
             // DateTimeOffset
             await CompareObjectPropertiesFor(frame_locals, "dto",
@@ -572,7 +572,7 @@ namespace DebuggerTests
                     Day = TNumber(2),
                     Year = TNumber(2020),
                     DayOfWeek = TEnum("System.DayOfWeek", "Thursday")
-                }, "dto_props", num_fields: 20);
+                }, "dto_props", skip_num_fields_check: true);
 
             var DT = new DateTime(2004, 10, 15, 1, 2, 3);
             var DTO = new DateTimeOffset(dt0, new TimeSpan(2, 14, 0));
@@ -954,5 +954,24 @@ namespace DebuggerTests
             );
         }
         //TODO add tests covering basic stepping behavior as step in/out/over
+
+        [Theory]
+        [InlineData(
+            "DebuggerTests.CheckSpecialCharactersInPath", 
+            "dotnet://debugger-test-special-char-in-path.dll/test#.cs")]
+        [InlineData(
+            "DebuggerTests.CheckSNonAsciiCharactersInPath", 
+            "dotnet://debugger-test-special-char-in-path.dll/non-ascii-test-ął.cs")]
+        public async Task SetBreakpointInProjectWithSpecialCharactersInPath(
+            string classWithNamespace, string expectedFileLocation)
+        {
+            var bp = await SetBreakpointInMethod("debugger-test-special-char-in-path.dll", classWithNamespace, "Evaluate", 1);
+            await EvaluateAndCheck(
+                $"window.setTimeout(function() {{ invoke_static_method ('[debugger-test-special-char-in-path] {classWithNamespace}:Evaluate'); }}, 1);",
+                expectedFileLocation,
+                bp.Value["locations"][0]["lineNumber"].Value<int>(),
+                bp.Value["locations"][0]["columnNumber"].Value<int>(),
+                "Evaluate");
+        }
     }
 }

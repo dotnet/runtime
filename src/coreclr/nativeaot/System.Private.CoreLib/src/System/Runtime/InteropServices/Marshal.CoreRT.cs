@@ -1,14 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 using Internal.Runtime.Augments;
-using Internal.Runtime.CompilerServices;
 
 namespace System.Runtime.InteropServices
 {
@@ -20,6 +20,7 @@ namespace System.Runtime.InteropServices
             return RuntimeAugments.InteropCallbacks.GetStructUnsafeStructSize(t.TypeHandle);
         }
 
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static IntPtr OffsetOf(Type t, string fieldName)
         {
             if (t == null)
@@ -42,7 +43,7 @@ namespace System.Runtime.InteropServices
             if (structure == null)
                 throw new ArgumentNullException(nameof(structure));
 
-            if (!allowValueClasses && structure.EETypePtr.IsValueType)
+            if (!allowValueClasses && structure.GetEETypePtr().IsValueType)
             {
                 throw new ArgumentException(nameof(structure), SR.Argument_StructMustNotBeValueClass);
             }
@@ -87,6 +88,7 @@ namespace System.Runtime.InteropServices
         }
 
         [RequiresDynamicCode("Marshalling code for the object might not be available. Use the DestroyStructure<T> overload instead.")]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static unsafe void DestroyStructure(IntPtr ptr, Type structuretype)
         {
             if (ptr == IntPtr.Zero)
@@ -124,6 +126,7 @@ namespace System.Runtime.InteropServices
         }
 
         [RequiresDynamicCode("Marshalling code for the object might not be available. Use the StructureToPtr<T> overload instead.")]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static unsafe void StructureToPtr(object structure, IntPtr ptr, bool fDeleteOld)
         {
             if (structure == null)
@@ -204,9 +207,11 @@ namespace System.Runtime.InteropServices
 
         internal static bool IsPinnable(object o)
         {
-            return (o == null) || o.EETypePtr.MightBeBlittable();
+            return (o == null) || o.GetEETypePtr().MightBeBlittable();
         }
 
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        [Obsolete("GetExceptionCode() may be unavailable in future releases.")]
         public static int GetExceptionCode()
         {
             // Obsolete
@@ -219,24 +224,32 @@ namespace System.Runtime.InteropServices
         }
 
         [RequiresDynamicCode("Marshalling code for the object might not be available")]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        [Obsolete("ReadByte(Object, Int32) may be unavailable in future releases.")]
         public static unsafe byte ReadByte(object ptr, int ofs)
         {
             return ReadValueSlow<byte>(ptr, ofs, &ReadByte);
         }
 
         [RequiresDynamicCode("Marshalling code for the object might not be available")]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        [Obsolete("ReadInt16(Object, Int32) may be unavailable in future releases.")]
         public static unsafe short ReadInt16(object ptr, int ofs)
         {
             return ReadValueSlow<short>(ptr, ofs, &ReadInt16);
         }
 
         [RequiresDynamicCode("Marshalling code for the object might not be available")]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        [Obsolete("ReadInt32(Object, Int32) may be unavailable in future releases.")]
         public static unsafe int ReadInt32(object ptr, int ofs)
         {
             return ReadValueSlow<int>(ptr, ofs, &ReadInt32);
         }
 
         [RequiresDynamicCode("Marshalling code for the object might not be available")]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        [Obsolete("ReadInt64(Object, Int32) may be unavailable in future releases.")]
         public static unsafe long ReadInt64(object ptr, int ofs)
         {
             return ReadValueSlow<long>(ptr, ofs, &ReadInt64);
@@ -257,7 +270,7 @@ namespace System.Runtime.InteropServices
                 throw new AccessViolationException();
             }
 
-            if (ptr.EETypePtr.IsArray ||
+            if (ptr.GetEETypePtr().IsArray ||
                 ptr is string ||
                 ptr is StringBuilder)
             {
@@ -296,24 +309,32 @@ namespace System.Runtime.InteropServices
         }
 
         [RequiresDynamicCode("Marshalling code for the object might not be available")]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        [Obsolete("WriteByte(Object, Int32, Byte) may be unavailable in future releases.")]
         public static unsafe void WriteByte(object ptr, int ofs, byte val)
         {
             WriteValueSlow(ptr, ofs, val, &WriteByte);
         }
 
         [RequiresDynamicCode("Marshalling code for the object might not be available")]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        [Obsolete("WriteInt16(Object, Int32, Int16) may be unavailable in future releases.")]
         public static unsafe void WriteInt16(object ptr, int ofs, short val)
         {
             WriteValueSlow(ptr, ofs, val, &WriteInt16);
         }
 
         [RequiresDynamicCode("Marshalling code for the object might not be available")]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        [Obsolete("WriteInt32(Object, Int32, Int32) may be unavailable in future releases.")]
         public static unsafe void WriteInt32(object ptr, int ofs, int val)
         {
             WriteValueSlow(ptr, ofs, val, &WriteInt32);
         }
 
         [RequiresDynamicCode("Marshalling code for the object might not be available")]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        [Obsolete("WriteInt64(Object, Int32, Int64) may be unavailable in future releases.")]
         public static unsafe void WriteInt64(object ptr, int ofs, long val)
         {
             WriteValueSlow(ptr, ofs, val, &WriteInt64);
@@ -328,7 +349,7 @@ namespace System.Runtime.InteropServices
                 throw new AccessViolationException();
             }
 
-            if (ptr.EETypePtr.IsArray ||
+            if (ptr.GetEETypePtr().IsArray ||
                 ptr is string ||
                 ptr is StringBuilder)
             {

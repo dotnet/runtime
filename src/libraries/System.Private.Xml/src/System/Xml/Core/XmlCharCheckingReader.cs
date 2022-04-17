@@ -476,13 +476,9 @@ namespace System.Xml
             return readCount;
         }
 
-        public override int ReadElementContentAsBase64(byte[] buffer, int index, int count)
+        public override int ReadElementContentAsBase64(byte[] buffer!!, int index, int count)
         {
             // check arguments
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer));
-            }
             if (count < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(count));
@@ -537,13 +533,9 @@ namespace System.Xml
             return readCount;
         }
 
-        public override int ReadElementContentAsBinHex(byte[] buffer, int index, int count)
+        public override int ReadElementContentAsBinHex(byte[] buffer!!, int index, int count)
         {
             // check arguments
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer));
-            }
             if (count < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(count));
@@ -622,7 +614,7 @@ namespace System.Xml
             }
         }
 
-        private void ValidateQName(string name)
+        private static void ValidateQName(string name)
         {
             ValidateNames.ParseQNameThrow(name);
         }
@@ -644,7 +636,7 @@ namespace System.Xml
             }
         }
 
-        private void CheckCharacters(string value)
+        private static void CheckCharacters(string value)
         {
             XmlConvert.VerifyCharData(value, ExceptionType.ArgumentException, ExceptionType.XmlException);
         }

@@ -296,13 +296,14 @@ bool interceptor_ICJI::isValidStringRef(
     return original_ICorJitInfo->isValidStringRef(module, metaTOK);
 }
 
-const char16_t* interceptor_ICJI::getStringLiteral(
+int interceptor_ICJI::getStringLiteral(
           CORINFO_MODULE_HANDLE module,
           unsigned metaTOK,
-          int* length)
+          char16_t* buffer,
+          int bufferSize)
 {
     mcs->AddCall("getStringLiteral");
-    return original_ICorJitInfo->getStringLiteral(module, metaTOK, length);
+    return original_ICorJitInfo->getStringLiteral(module, metaTOK, buffer, bufferSize);
 }
 
 CorInfoType interceptor_ICJI::asCorInfoType(
@@ -538,11 +539,12 @@ bool interceptor_ICJI::getReadyToRunHelper(
 
 void interceptor_ICJI::getReadyToRunDelegateCtorHelper(
           CORINFO_RESOLVED_TOKEN* pTargetMethod,
+          mdToken targetConstraint,
           CORINFO_CLASS_HANDLE delegateType,
           CORINFO_LOOKUP* pLookup)
 {
     mcs->AddCall("getReadyToRunDelegateCtorHelper");
-    original_ICorJitInfo->getReadyToRunDelegateCtorHelper(pTargetMethod, delegateType, pLookup);
+    original_ICorJitInfo->getReadyToRunDelegateCtorHelper(pTargetMethod, targetConstraint, delegateType, pLookup);
 }
 
 const char* interceptor_ICJI::getHelperName(
@@ -941,6 +943,13 @@ bool interceptor_ICJI::getSystemVAmd64PassStructInRegisterDescriptor(
 {
     mcs->AddCall("getSystemVAmd64PassStructInRegisterDescriptor");
     return original_ICorJitInfo->getSystemVAmd64PassStructInRegisterDescriptor(structHnd, structPassInRegDescPtr);
+}
+
+uint32_t interceptor_ICJI::getLoongArch64PassStructInRegisterFlags(
+          CORINFO_CLASS_HANDLE structHnd)
+{
+    mcs->AddCall("getLoongArch64PassStructInRegisterFlags");
+    return original_ICorJitInfo->getLoongArch64PassStructInRegisterFlags(structHnd);
 }
 
 uint32_t interceptor_ICJI::getThreadTLSIndex(

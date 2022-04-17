@@ -226,15 +226,16 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
-        public static void ThrowNotSupportedException_ObjectWithParameterizedCtorRefMetadataNotHonored(
+        public static void ThrowNotSupportedException_ObjectWithParameterizedCtorRefMetadataNotSupported(
             ReadOnlySpan<byte> propertyName,
             ref Utf8JsonReader reader,
             ref ReadStack state)
         {
+            JsonTypeInfo jsonTypeInfo = state.GetTopJsonTypeInfoWithParameterizedConstructor();
             state.Current.JsonPropertyName = propertyName.ToArray();
 
             NotSupportedException ex = new NotSupportedException(
-                SR.Format(SR.ObjectWithParameterizedCtorRefMetadataNotHonored, state.Current.JsonTypeInfo.Type));
+                SR.Format(SR.ObjectWithParameterizedCtorRefMetadataNotSupported, jsonTypeInfo.Type));
             ThrowNotSupportedException(ref state, reader, ex);
         }
 
@@ -290,12 +291,7 @@ namespace System.Text.Json
             if (string.IsNullOrEmpty(message))
             {
                 // Use a default message.
-                Type? propertyType = state.Current.JsonPropertyInfo?.RuntimePropertyType;
-                if (propertyType == null)
-                {
-                    propertyType = state.Current.JsonTypeInfo?.Type;
-                }
-
+                Type propertyType = state.Current.JsonPropertyInfo?.PropertyType ?? state.Current.JsonTypeInfo.Type;
                 message = SR.Format(SR.DeserializeUnableToConvertValue, propertyType);
                 ex.AppendPathInformation = true;
             }
@@ -376,11 +372,7 @@ namespace System.Text.Json
             Debug.Assert(!message.Contains(" Path: "));
 
             // Obtain the type to show in the message.
-            Type? propertyType = state.Current.JsonPropertyInfo?.RuntimePropertyType;
-            if (propertyType == null)
-            {
-                propertyType = state.Current.JsonTypeInfo.Type;
-            }
+            Type propertyType = state.Current.JsonPropertyInfo?.PropertyType ?? state.Current.JsonTypeInfo.Type;
 
             if (!message.Contains(propertyType.ToString()))
             {
@@ -408,11 +400,7 @@ namespace System.Text.Json
             Debug.Assert(!message.Contains(" Path: "));
 
             // Obtain the type to show in the message.
-            Type? propertyType = state.Current.DeclaredJsonPropertyInfo?.RuntimePropertyType;
-            if (propertyType == null)
-            {
-                propertyType = state.Current.JsonTypeInfo.Type;
-            }
+            Type propertyType = state.Current.JsonPropertyInfo?.PropertyType ?? state.Current.JsonTypeInfo.Type;
 
             if (!message.Contains(propertyType.ToString()))
             {
@@ -571,10 +559,6 @@ namespace System.Text.Json
             ref Utf8JsonReader reader,
             ref ReadStack state)
         {
-            if (state.Current.JsonTypeInfo.PropertyInfoForTypeInfo.ConverterBase.ConstructorIsParameterized)
-            {
-                ThrowNotSupportedException_ObjectWithParameterizedCtorRefMetadataNotHonored(propertyName, ref reader, ref state);
-            }
 
             MetadataPropertyName name = JsonSerializer.GetMetadataPropertyName(propertyName);
             if (name == MetadataPropertyName.Id)
@@ -589,12 +573,6 @@ namespace System.Text.Json
             {
                 ThrowJsonException_MetadataInvalidPropertyWithLeadingDollarSign(propertyName, ref state, reader);
             }
-        }
-
-        [DoesNotReturn]
-        public static void ThrowInvalidOperationException_JsonSerializerOptionsAlreadyBoundToContext()
-        {
-            throw new InvalidOperationException(SR.Format(SR.OptionsAlreadyBoundToContext));
         }
 
         [DoesNotReturn]
@@ -621,14 +599,14 @@ namespace System.Text.Json
             throw new InvalidOperationException(SR.Format(SR.MetadataInitFuncsNull));
         }
 
-        public static void ThrowInvalidOperationException_NoMetadataForTypeProperties(JsonSerializerContext context, Type type)
+        public static void ThrowInvalidOperationException_NoMetadataForTypeProperties(JsonSerializerContext? context, Type type)
         {
-            throw new InvalidOperationException(SR.Format(SR.NoMetadataForTypeProperties, context.GetType(), type));
+            throw new InvalidOperationException(SR.Format(SR.NoMetadataForTypeProperties, context?.GetType().FullName ?? "<null>", type));
         }
 
-        public static void ThrowInvalidOperationException_NoMetadataForTypeCtorParams(JsonSerializerContext context, Type type)
+        public static void ThrowInvalidOperationException_NoMetadataForTypeCtorParams(JsonSerializerContext? context, Type type)
         {
-            throw new InvalidOperationException(SR.Format(SR.NoMetadataForTypeCtorParams, context.GetType(), type));
+            throw new InvalidOperationException(SR.Format(SR.NoMetadataForTypeCtorParams, context?.GetType().FullName ?? "<null>", type));
         }
 
         public static void ThrowInvalidOperationException_NoDefaultOptionsForContext(JsonSerializerContext context, Type type)
