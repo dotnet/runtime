@@ -284,7 +284,7 @@ namespace System.Formats.Tar
 
             return archiveStream.CanSeek
                 ? new SeekableSubReadStream(archiveStream, archiveStream.Position, _size)
-                : (Stream)new SubReadStream(archiveStream, 0, _size);
+                : new SubReadStream(archiveStream, 0, _size);
         }
 
         // Attempts to read the fields shared by all formats and stores them in their expected data type.

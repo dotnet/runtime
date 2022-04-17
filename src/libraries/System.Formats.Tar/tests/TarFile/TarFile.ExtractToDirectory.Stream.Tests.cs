@@ -47,7 +47,7 @@ namespace System.Formats.Tar.Tests
         {
             using TempDirectory root = new TempDirectory();
 
-            string firstSegment = Path.Join(root.Path, "a");
+            string firstSegment = "a";
             string secondSegment = Path.Join(firstSegment, "b");
             string fileWithTwoSegments = Path.Join(secondSegment, "c.txt");
 
@@ -56,15 +56,20 @@ namespace System.Formats.Tar.Tests
             {
                 // No preceding directory entries for the segments
                 UstarTarEntry entry = new UstarTarEntry(TarEntryType.RegularFile, fileWithTwoSegments);
+
+                entry.DataStream = new MemoryStream();
+                entry.DataStream.Write(new byte[] { 0x1 });
+                entry.DataStream.Seek(0, SeekOrigin.Begin);
+
                 writer.WriteEntry(entry);
             }
 
             archive.Seek(0, SeekOrigin.Begin);
             TarFile.ExtractToDirectory(archive, root.Path, overwriteFiles: false);
 
-            Assert.True(Directory.Exists(firstSegment));
-            Assert.True(Directory.Exists(secondSegment));
-            Assert.True(File.Exists(fileWithTwoSegments));
+            Assert.True(Directory.Exists(Path.Join(root.Path, firstSegment)));
+            Assert.True(Directory.Exists(Path.Join(root.Path, secondSegment)));
+            Assert.True(File.Exists(Path.Join(root.Path, fileWithTwoSegments)));
         }
     }
 }

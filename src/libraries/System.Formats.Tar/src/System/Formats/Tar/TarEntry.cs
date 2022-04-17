@@ -196,7 +196,6 @@ namespace System.Formats.Tar
                 case TarEntryType.V7RegularFile:
                 case TarEntryType.ContiguousFile:
                     ExtractAsRegularFile(destinationFileName);
-
                     break;
 
                 case TarEntryType.SymbolicLink:
@@ -334,17 +333,22 @@ namespace System.Formats.Tar
         }
 
         // Extracts the current entry to a location relative to the specified directory.
-        internal void ExtractRelativeToDirectory(string destinationDirectoryName, bool overwrite)
+        internal void ExtractRelativeToDirectory(string destinationDirectoryPath, bool overwrite)
         {
-            Debug.Assert(!string.IsNullOrEmpty(destinationDirectoryName));
+            Debug.Assert(!string.IsNullOrEmpty(destinationDirectoryPath));
+            Debug.Assert(Path.IsPathFullyQualified(destinationDirectoryPath));
 
-            // This returns a good DirectoryInfo even if destinationDirectoryName exists
-            DirectoryInfo di = Directory.CreateDirectory(destinationDirectoryName);
+            string destinationDirectoryFullPath = destinationDirectoryPath.EndsWith(Path.DirectorySeparatorChar) ? destinationDirectoryPath : destinationDirectoryPath + Path.DirectorySeparatorChar;
 
-            string destinationDirectoryFullPath = di.FullName.EndsWith(Path.DirectorySeparatorChar) ? di.FullName : di.FullName + Path.DirectorySeparatorChar;
-
-            // Resolves unexpected relative segments
-            string fileDestinationPath = Path.GetFullPath(Path.Combine(destinationDirectoryFullPath, ArchivingUtils.SanitizeEntryFilePath(Name)));
+            string fileDestinationPath;
+            if (Path.IsPathFullyQualified(Name))
+            {
+                fileDestinationPath = ArchivingUtils.SanitizeEntryFilePath(Name);
+            }
+            else
+            {
+                fileDestinationPath = Path.GetFullPath(Path.Join(destinationDirectoryFullPath, ArchivingUtils.SanitizeEntryFilePath(Name)));
+            }
 
             if (!fileDestinationPath.StartsWith(destinationDirectoryFullPath, PathInternal.StringComparison))
             {
@@ -383,8 +387,8 @@ namespace System.Formats.Tar
                 {
                     // Important: The DataStream will be written from its current position
                     DataStream.CopyTo(fs);
-                    SetModeOnFile(fs.SafeFileHandle, destinationFileName);
                 }
+                SetModeOnFile(fs.SafeFileHandle, destinationFileName);
             }
 
             ArchivingUtils.AttemptSetLastWriteTime(destinationFileName, ModificationTime);

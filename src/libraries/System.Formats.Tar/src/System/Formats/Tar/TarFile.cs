@@ -258,11 +258,11 @@ namespace System.Formats.Tar
 
         // Extracts an archive into the specified directory.
         // It assumes the destinationDirectoryName is a fully qualified path, and allows choosing if the archive stream should be left open or not.
-        private static void ExtractToDirectoryInternal(Stream source, string destinationDirectoryName, bool overwriteFiles, bool leaveOpen)
+        private static void ExtractToDirectoryInternal(Stream source, string destinationDirectoryPath, bool overwriteFiles, bool leaveOpen)
         {
             Debug.Assert(source != null);
-            Debug.Assert(!string.IsNullOrEmpty(destinationDirectoryName));
-            Debug.Assert(Path.IsPathFullyQualified(destinationDirectoryName));
+            Debug.Assert(!string.IsNullOrEmpty(destinationDirectoryPath));
+            Debug.Assert(Path.IsPathFullyQualified(destinationDirectoryPath));
             Debug.Assert(source.CanRead);
 
             using TarReader reader = new TarReader(source, leaveOpen);
@@ -270,7 +270,7 @@ namespace System.Formats.Tar
             TarEntry? entry;
             while ((entry = reader.GetNextEntry()) != null)
             {
-                entry.ExtractRelativeToDirectory(destinationDirectoryName, overwriteFiles);
+                entry.ExtractRelativeToDirectory(destinationDirectoryPath, overwriteFiles);
             }
         }
     }

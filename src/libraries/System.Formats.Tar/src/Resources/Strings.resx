@@ -189,20 +189,17 @@
   <data name="TarDuplicateExtendedAttribute" xml:space="preserve">
     <value>The entry '{0}' has a duplicate extended attribute.</value>
   </data>
-  <data name="TarUnexpectedMetadataEntry" xml:space="preserve">
-    <value>A metadata entry of type '{0}' was unexpectedly found after a metadata entry of type '{1}'.</value>
-  </data>
   <data name="TarEntriesInDifferentFormats" xml:space="preserve">
     <value>An entry in '{0}' format was found in an archive where other entries of format '{1}' have been found.</value>
   </data>
   <data name="TarEntryBlockOrCharacterExpected" xml:space="preserve">
     <value>Cannot set the 'DeviceMajor' or 'DeviceMinor' fields on an entry that does not represent a block or character device.</value>
   </data>
-  <data name="TarEntryHardLinkOrSymLinkExpected" xml:space="preserve">
-    <value>Cannot set the LinkName field on an entry that does not represent a hard link or a symbolic link.</value>
-  </data>
   <data name="TarEntryDoesNotSupportDataStream" xml:space="preserve">
     <value>The entry '{0}' has a '{1}' type, which does not support setting a data stream.</value>
+  </data>
+  <data name="TarEntryHardLinkOrSymLinkExpected" xml:space="preserve">
+    <value>Cannot set the LinkName field on an entry that does not represent a hard link or a symbolic link.</value>
   </data>
   <data name="TarEntryTypeNotSupported" xml:space="preserve">
     <value>Entry type '{0}' not supported in format '{1}'.</value>
@@ -230,6 +227,9 @@
   </data>
   <data name="TarTooManyGlobalExtendedAttributesEntries" xml:space="preserve">
     <value>The archive has more than one global extended attributes entry.</value>
+  </data>
+  <data name="TarUnexpectedMetadataEntry" xml:space="preserve">
+    <value>A metadata entry of type '{0}' was unexpectedly found after a metadata entry of type '{1}'.</value>
   </data>
   <data name="TarUnsupportedFile" xml:space="preserve">
     <value>The file '{0}' is a type of file not supported for tar archiving.</value>
