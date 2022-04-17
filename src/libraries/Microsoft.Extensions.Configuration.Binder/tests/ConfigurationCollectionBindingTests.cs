@@ -582,6 +582,32 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
         }
 
         [Fact]
+        public void AlreadyInitializedHashSetDictionaryBinding()
+        {
+            var input = new Dictionary<string, string>
+            {
+                {"AlreadyInitializedHashSetDictionary:123:0", "val_1"},
+                {"AlreadyInitializedHashSetDictionary:123:1", "val_2"},
+                {"AlreadyInitializedHashSetDictionary:123:2", "val_3"}
+            };
+
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(input);
+            var config = configurationBuilder.Build();
+
+            var options = new OptionsWithDictionary();
+            config.Bind(options);
+
+            Assert.NotNull(options.AlreadyInitializedHashSetDictionary);
+            Assert.Equal(1, options.AlreadyInitializedHashSetDictionary.Count);
+
+            Assert.Equal("This was already here", options.AlreadyInitializedHashSetDictionary["123"].ElementAt(0));
+            Assert.Equal("val_1", options.AlreadyInitializedHashSetDictionary["123"].ElementAt(1));
+            Assert.Equal("val_2", options.AlreadyInitializedHashSetDictionary["123"].ElementAt(2));
+            Assert.Equal("val_3", options.AlreadyInitializedHashSetDictionary["123"].ElementAt(3));
+        }
+
+        [Fact]
         public void CanOverrideExistingDictionaryKey()
         {
             var input = new Dictionary<string, string>
@@ -682,6 +708,36 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             Assert.Equal("def_0", options.ListDictionary["def"][0]);
             Assert.Equal("def_1", options.ListDictionary["def"][1]);
             Assert.Equal("def_2", options.ListDictionary["def"][2]);
+        }
+
+        [Fact]
+        public void ISetDictionary()
+        {
+            var input = new Dictionary<string, string>
+            {
+                {"ISetDictionary:abc:0", "abc_0"},
+                {"ISetDictionary:abc:1", "abc_1"},
+                {"ISetDictionary:def:0", "def_0"},
+                {"ISetDictionary:def:1", "def_1"},
+                {"ISetDictionary:def:2", "def_2"}
+            };
+
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(input);
+            var config = configurationBuilder.Build();
+
+            var options = new OptionsWithDictionary();
+            config.Bind(options);
+
+            Assert.Equal(2, options.ISetDictionary.Count);
+            Assert.Equal(2, options.ISetDictionary["abc"].Count);
+            Assert.Equal(3, options.ISetDictionary["def"].Count);
+
+            Assert.Equal("abc_0", options.ISetDictionary["abc"].ElementAt(0));
+            Assert.Equal("abc_1", options.ISetDictionary["abc"].ElementAt(1));
+            Assert.Equal("def_0", options.ISetDictionary["def"].ElementAt(0));
+            Assert.Equal("def_1", options.ISetDictionary["def"].ElementAt(1));
+            Assert.Equal("def_2", options.ISetDictionary["def"].ElementAt(2));
         }
 
         [Fact]
@@ -1410,6 +1466,11 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
                 {
                     ["123"] = "This was already here"
                 };
+
+                AlreadyInitializedHashSetDictionary = new Dictionary<string, HashSet<string>>
+                {
+                    ["123"] = new HashSet<string>(new[] {"This was already here"})
+                };
             }
 
             public Dictionary<string, int> IntDictionary { get; set; }
@@ -1418,6 +1479,7 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
 
             public Dictionary<string, NestedOptions> ObjectDictionary { get; set; }
 
+            public Dictionary<string, ISet<string>> ISetDictionary { get; set; }
             public Dictionary<string, List<string>> ListDictionary { get; set; }
 
             public Dictionary<NestedOptions, string> NonStringKeyDictionary { get; set; }
@@ -1427,6 +1489,7 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             public IDictionary<string, string> StringDictionaryInterface { get; set; }
 
             public IDictionary<string, string> AlreadyInitializedStringDictionaryInterface { get; set; }
+            public IDictionary<string, HashSet<string>> AlreadyInitializedHashSetDictionary { get; set; }
         }
 
         private class OptionsWithInterdependentProperties

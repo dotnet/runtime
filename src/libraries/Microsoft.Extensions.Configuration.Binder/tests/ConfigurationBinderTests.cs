@@ -49,7 +49,13 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
                 get { return null; }
             }
 
+            public ISet<string> NonInstantiatedISet { get; set; } = null!;
+            public IDictionary<string, ISet<string>> NonInstantiatedDictionaryWithISet { get; set; } = null!;
+            public IDictionary<string, HashSet<string>> InstantiatedDictionaryWithHashSet { get; set; } =
+                new Dictionary<string, HashSet<string>>();
+            
             public IEnumerable<string> NonInstantiatedIEnumerable { get; set; } = null!;
+            public ISet<string> InstantiatedISet { get; set; } = new HashSet<string>();
             public IEnumerable<string> InstantiatedIEnumerable { get; set; } = new List<string>();
             public ICollection<string> InstantiatedICollection { get; set; } = new List<string>();
             public IReadOnlyCollection<string> InstantiatedIReadOnlyCollection { get; set; } = new List<string>();
@@ -477,6 +483,114 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             Assert.Equal("Yo1", options.NonInstantiatedIEnumerable.ElementAt(0));
             Assert.Equal("Yo2", options.NonInstantiatedIEnumerable.ElementAt(1));
         }
+
+        [Fact]
+        public void CanBindNonInstantiatedISet()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"NonInstantiatedISet:0", "Yo1"},
+                {"NonInstantiatedISet:1", "Yo2"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<ComplexOptions>()!;
+
+            Assert.Equal(2, options.NonInstantiatedISet.Count());
+            Assert.Equal("Yo1", options.NonInstantiatedISet.ElementAt(0));
+            Assert.Equal("Yo2", options.NonInstantiatedISet.ElementAt(1));
+        }
+
+        [Fact]
+        public void CanBindNonInstantiatedDictionaryOfISet()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"NonInstantiatedDictionaryWithISet:foo:0", "foo-1"},
+                {"NonInstantiatedDictionaryWithISet:foo:1", "foo-2"},
+                {"NonInstantiatedDictionaryWithISet:bar:0", "bar-1"},
+                {"NonInstantiatedDictionaryWithISet:bar:1", "bar-2"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<ComplexOptions>()!;
+
+            Assert.Equal(2, options.NonInstantiatedDictionaryWithISet.Count);
+            Assert.Equal("foo-1", options.NonInstantiatedDictionaryWithISet["foo"].ElementAt(0));
+            Assert.Equal("foo-2", options.NonInstantiatedDictionaryWithISet["foo"].ElementAt(1));
+            Assert.Equal("bar-1", options.NonInstantiatedDictionaryWithISet["bar"].ElementAt(0));
+            Assert.Equal("bar-2", options.NonInstantiatedDictionaryWithISet["bar"].ElementAt(1));
+        }
+
+        [Fact]
+        public void CanBindInstantiatedDictionaryOfISet()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"InstantiatedDictionaryWithHashSet:foo:0", "foo-1"},
+                {"InstantiatedDictionaryWithHashSet:foo:1", "foo-2"},
+                {"InstantiatedDictionaryWithHashSet:bar:0", "bar-1"},
+                {"InstantiatedDictionaryWithHashSet:bar:1", "bar-2"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<ComplexOptions>()!;
+
+            Assert.Equal(2, options.InstantiatedDictionaryWithHashSet.Count);
+            Assert.Equal("foo-1", options.InstantiatedDictionaryWithHashSet["foo"].ElementAt(0));
+            Assert.Equal("foo-2", options.InstantiatedDictionaryWithHashSet["foo"].ElementAt(1));
+            Assert.Equal("bar-1", options.InstantiatedDictionaryWithHashSet["bar"].ElementAt(0));
+            Assert.Equal("bar-2", options.InstantiatedDictionaryWithHashSet["bar"].ElementAt(1));
+        }
+
+        [Fact]
+        public void CanBindInstantiatedISet()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"InstantiatedISet:0", "Yo1"},
+                {"InstantiatedISet:1", "Yo2"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<ComplexOptions>()!;
+
+            Assert.Equal(2, options.InstantiatedISet.Count());
+            Assert.Equal("Yo1", options.InstantiatedISet.ElementAt(0));
+            Assert.Equal("Yo2", options.InstantiatedISet.ElementAt(1));
+        }
+
+        // [Fact]
+        // public void CanBindInstantiatedISet2()
+        // {
+        //     var dic = new Dictionary<string, string>
+        //     {
+        //         {"NonInstantiatedISet:0", "Yo1"},
+        //         {"NonInstantiatedISet:1", "Yo2"},
+        //     };
+        //     var configurationBuilder = new ConfigurationBuilder();
+        //     configurationBuilder.AddInMemoryCollection(dic);
+        //
+        //     var config = configurationBuilder.Build();
+        //
+        //     var options = config.Get<Steve>()!;
+        //
+        //     Assert.Equal(2, options.NonInstantiatedISet.Count());
+        //     Assert.Equal("Yo1", options.NonInstantiatedISet.ElementAt(0));
+        //     Assert.Equal("Yo2", options.NonInstantiatedISet.ElementAt(1));
+        // }
 
         [Fact]
         public void CanBindInstantiatedIEnumerableWithItems()
@@ -1107,7 +1221,7 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             var config = configurationBuilder.Build();
 
             var options = new ComplexOptions();
-            config.Bind(options, o => o.BindNonPublicProperties = true );
+            config.Bind(options, o => o.BindNonPublicProperties = true);
             Assert.Equal("stuff", options.GetType().GetTypeInfo().GetDeclaredProperty(property).GetValue(options));
         }
 
