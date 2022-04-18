@@ -11,8 +11,10 @@ namespace System.Threading
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_OverlappedIO);
         }
+#if !FEATURE_WASM_THREADS
         public void Dispose()
         {
         }
+#endif
     }
 }
