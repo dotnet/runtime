@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Diagnostics.CodeAnalysis;
 using System.Net.Sockets;
 using System.Runtime.Versioning;
 
@@ -26,7 +25,6 @@ namespace Microsoft.Extensions.Hosting.Systemd
         }
 
         /// <inheritdoc />
-        [MemberNotNullWhen(true, nameof(_socketPath))]
         public bool IsEnabled => _socketPath != null;
 
         /// <inheritdoc />
@@ -39,7 +37,7 @@ namespace Microsoft.Extensions.Hosting.Systemd
 
             using (var socket = new Socket(AddressFamily.Unix, SocketType.Dgram, ProtocolType.Unspecified))
             {
-                var endPoint = new UnixDomainSocketEndPoint(_socketPath);
+                var endPoint = new UnixDomainSocketEndPoint(_socketPath!);
                 socket.Connect(endPoint);
 
                 // It's safe to do a non-blocking call here: messages sent here are much
