@@ -1179,8 +1179,6 @@ REDHAWK_PALEXPORT void REDHAWK_PALAPI PAL_GetCpuCapabilityFlags(int* flags)
     // From a single binary distribution perspective, compiling with latest kernel asm/hwcap.h should
     // include all published flags.  Given flags are merged to kernel and published before silicon is
     // available, using the latest kernel for release should be sufficient.
-    *flags |= ARM64IntrinsicConstants_ArmBase;
-    *flags |= ARM64IntrinsicConstants_ArmBase_Arm64;
 
 #ifdef HWCAP_AES
     if (hwCap & HWCAP_AES)
@@ -1199,8 +1197,8 @@ REDHAWK_PALEXPORT void REDHAWK_PALAPI PAL_GetCpuCapabilityFlags(int* flags)
 //        *flags |= ARM64IntrinsicConstants_???;
 #endif
 #ifdef HWCAP_ASIMDDP
-//    if (hwCap & HWCAP_ASIMDDP)
-//        *flags |= ARM64IntrinsicConstants_???;
+    if (hwCap & HWCAP_ASIMDDP)
+        *flags |= ARM64IntrinsicConstants_Dp;
 #endif
 #ifdef HWCAP_FCMA
 //    if (hwCap & HWCAP_FCMA)
@@ -1244,14 +1242,11 @@ REDHAWK_PALEXPORT void REDHAWK_PALAPI PAL_GetCpuCapabilityFlags(int* flags)
 #endif
 #ifdef HWCAP_ASIMD
     if (hwCap & HWCAP_ASIMD)
-    {
         *flags |= ARM64IntrinsicConstants_AdvSimd;
-        *flags |= ARM64IntrinsicConstants_AdvSimd_Arm64;
-    }
 #endif
 #ifdef HWCAP_ASIMDRDM
-//    if (hwCap & HWCAP_ASIMDRDM)
-//        *flags |= ARM64IntrinsicConstants_???;
+    if (hwCap & HWCAP_ASIMDRDM)
+        *flags |= ARM64IntrinsicConstants_Rdm;
 #endif
 #ifdef HWCAP_ASIMDHP
 //    if (hwCap & HWCAP_ASIMDHP)
@@ -1316,10 +1311,7 @@ REDHAWK_PALEXPORT void REDHAWK_PALAPI PAL_GetCpuCapabilityFlags(int* flags)
     // Every ARM64 CPU should support SIMD and FP
     // If the OS have no function to query for CPU capabilities we set just these
 
-    *flags |= ARM64IntrinsicConstants_ArmBase;
-    *flags |= ARM64IntrinsicConstants_ArmBase_Arm64;
     *flags |= ARM64IntrinsicConstants_AdvSimd;
-    *flags |= ARM64IntrinsicConstants_AdvSimd_Arm64;
 #endif // HAVE_AUXV_HWCAP_H
 }
 #endif
