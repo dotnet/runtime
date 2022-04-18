@@ -716,6 +716,11 @@ namespace System.Runtime.Serialization.Formatters.Tests
             public override Type BindToType(string assemblyName, string typeName) => BindToTypeDelegate?.Invoke(assemblyName, typeName);
         }
 
+        public struct MyStruct
+        {
+            public int A;
+        }
+
         public static IEnumerable<object[]> NullableComparersTestData()
         {
             yield return new object[] { "AAEAAAD/////AQAAAAAAAAAEAQAAAJEBU3lzdGVtLkNvbGxlY3Rpb25zLkdlbmVyaWMuTnVsbGFibGVFcXVhbGl0eUNvbXBhcmVyYDFbW1N5c3RlbS5CeXRlLCBtc2NvcmxpYiwgVmVyc2lvbj00LjAuMC4wLCBDdWx0dXJlPW5ldXRyYWwsIFB1YmxpY0tleVRva2VuPWI3N2E1YzU2MTkzNGUwODldXQAAAAAL",
