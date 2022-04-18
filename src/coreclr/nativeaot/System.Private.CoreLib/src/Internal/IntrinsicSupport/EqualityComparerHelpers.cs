@@ -156,9 +156,9 @@ namespace Internal.IntrinsicSupport
         }
 
         private static bool StructOnlyNormalEquals<T>(T left, T right)
+            where T : notnull
         {
-            // left is not null, because compiler say so.
-            return left!.Equals(right);
+            return left.Equals(right);
         }
 
         [Intrinsic]
