@@ -8,8 +8,8 @@ namespace System.Net.Security
 {
     public partial class SslStreamCertificateContext
     {
-        internal readonly X509Certificate2 Certificate;
-        internal readonly X509Certificate2[] IntermediateCertificates;
+        public readonly X509Certificate2 Certificate;
+        public readonly X509Certificate2[] IntermediateCertificates;
         internal readonly SslCertificateTrust? Trust;
 
         [EditorBrowsable(EditorBrowsableState.Never)]
