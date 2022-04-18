@@ -39,7 +39,7 @@ namespace System.Text.RegularExpressions
             {
                 // If this is the first time that this method is being called then mappingBehavior will be set to default, so we calculate
                 // the behavior to use and cache the value for future lookups.
-                if (mappingBehavior == default)
+                if (mappingBehavior == RegexCaseBehavior.NotSet)
                     mappingBehavior = GetRegexBehavior(culture);
 
                 equivalences = c switch

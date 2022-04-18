@@ -89,16 +89,16 @@ namespace System.Text.RegularExpressions
         /// <param name="ch">The character.</param>
         /// <param name="options">The node's options.</param>
         /// <param name="culture">The culture to use to perform any required transformations.</param>
-        /// <param name="_caseBehavior">The behavior to be used for case comparisons. If the value hasn't been set yet, it will get initialized in the first lookup.</param>
+        /// <param name="caseBehavior">The behavior to be used for case comparisons. If the value hasn't been set yet, it will get initialized in the first lookup.</param>
         /// <returns>The created RegexNode.  This might be a RegexNode.One or a RegexNode.Set.</returns>
-        public static RegexNode CreateOneWithCaseConversion(char ch, RegexOptions options, CultureInfo? culture, ref RegexCaseBehavior _caseBehavior)
+        public static RegexNode CreateOneWithCaseConversion(char ch, RegexOptions options, CultureInfo? culture, ref RegexCaseBehavior caseBehavior)
         {
             // If the options specify case-insensitivity, we try to create a node that fully encapsulates that.
             if ((options & RegexOptions.IgnoreCase) != 0)
             {
                 Debug.Assert(culture is not null);
 
-                if (!RegexCaseEquivalences.TryFindCaseEquivalencesForCharWithIBehavior(ch, culture, ref _caseBehavior, out ReadOnlySpan<char> equivalences))
+                if (!RegexCaseEquivalences.TryFindCaseEquivalencesForCharWithIBehavior(ch, culture, ref caseBehavior, out ReadOnlySpan<char> equivalences))
                 {
                     // If we reach here, then we know that ch does not participate in case conversion, so we just
                     // create a One node with it and strip out the IgnoreCase option.
@@ -2663,55 +2663,6 @@ namespace System.Text.RegularExpressions
 
             Debug.Assert(Children is RegexNode);
             return 1;
-        }
-
-        // Determines whether the node supports code generation strategy based on walking the node tree.
-        // Also returns a human-readable string to explain the reason (it will be emitted by the source generator, hence
-        // there's no need to localize).
-        internal bool SupportsCodeGeneration([NotNullWhen(false)] out string? reason)
-        {
-            if (!SupportsCompilation(out reason))
-            {
-                // If the pattern doesn't support Compilation, then code generation won't be supported either.
-                return false;
-            }
-
-            if (HasCaseInsensitiveBackReferences(this))
-            {
-                // For case-insensitive patterns, we use our internal Regex case equivalence table when doing character comparisons.
-                // Most of the use of this table is done at Regex construction time by substituting all characters that are involved in
-                // case conversions into sets that contain all possible characters that could match. That said, there is still one case
-                // where you may need to do case-insensitive comparisons at match time which is the case for backreferences. For that reason
-                // and given the Regex case equivalence table is internal and can't be called by the source generated emitted type, if
-                // the pattern contains case-insensitive backreferences then we won't try to create a source generated Regex-derived type.
-                reason = "the expression contains case-insensitive backreferences which are not supported by the source generator";
-                return false;
-            }
-
-            // If Compilation is supported and pattern doesn't have case insensitive backreferences, then code generation is supported.
-            reason = null;
-            return true;
-
-            static bool HasCaseInsensitiveBackReferences(RegexNode node)
-            {
-                if (node.Kind is RegexNodeKind.Backreference && (node.Options & RegexOptions.IgnoreCase) != 0)
-                {
-                    return true;
-                }
-
-                int childCount = node.ChildCount();
-                for (int i = 0; i < childCount; i++)
-                {
-                    // This recursion shouldn't hit issues with stack depth since this gets checked after
-                    // SupportCompilation has ensured that the max depth is not greater than 40.
-                    if (HasCaseInsensitiveBackReferences(node.Child(i)))
-                    {
-                        return true;
-                    }
-                }
-
-                return false;
-            }
         }
 
         // Determines whether the node supports a compilation strategy based on walking the node tree.

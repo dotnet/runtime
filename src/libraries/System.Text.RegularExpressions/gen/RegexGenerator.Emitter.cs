@@ -73,8 +73,6 @@ namespace System.Text.RegularExpressions.Generator
         private static void EmitRegexLimitedBoilerplate(
             IndentedTextWriter writer, RegexMethod rm, string reason)
         {
-            // If code generation is not supported but compilation is, then we fall back to use the compiled engine.
-            RegexOptions options = rm.Tree.Root.SupportsCompilation(out string? _) ? rm.Options | RegexOptions.Compiled : rm.Options; 
             writer.WriteLine($"/// <summary>Caches a <see cref=\"Regex\"/> instance for the {rm.MethodName} method.</summary>");
             writer.WriteLine($"/// <remarks>A custom Regex-derived type could not be generated because {reason}.</remarks>");
             writer.WriteLine($"internal sealed class {rm.GeneratedName} : Regex");
@@ -82,8 +80,8 @@ namespace System.Text.RegularExpressions.Generator
             writer.WriteLine($"    /// <summary>Cached, thread-safe singleton instance.</summary>");
             writer.Write($"    internal static readonly Regex Instance = ");
             writer.WriteLine(
-                rm.MatchTimeout is not null ? $"new({Literal(rm.Pattern)}, {Literal(options)}, {GetTimeoutExpression(rm.MatchTimeout.Value)});" :
-                options != 0 ? $"new({Literal(rm.Pattern)}, {Literal(options)});" :
+                rm.MatchTimeout is not null ? $"new({Literal(rm.Pattern)}, {Literal(rm.Options)}, {GetTimeoutExpression(rm.MatchTimeout.Value)});" :
+                rm.Options != 0 ? $"new({Literal(rm.Pattern)}, {Literal(rm.Options)});" :
                 $"new({Literal(rm.Pattern)});");
             writer.WriteLine($"}}");
         }
