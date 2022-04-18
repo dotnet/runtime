@@ -32,7 +32,7 @@ namespace System.Text.Json.Serialization.Metadata
                 ThrowHelper.ThrowInvalidOperationException_TypeDoesNotSupportPolymorphism(BaseType);
             }
 
-            int count = 0;
+            bool containsDerivedTypes = false;
             foreach ((Type derivedType, string? typeDiscriminatorId) in configuration.GetSupportedDerivedTypes())
             {
                 if (!IsSupportedDerivedType(BaseType, derivedType) ||
@@ -61,10 +61,10 @@ namespace System.Text.Json.Serialization.Metadata
                     }
                 }
 
-                count++;
+                containsDerivedTypes = true;
             }
 
-            if (count == 0)
+            if (!containsDerivedTypes)
             {
                 ThrowHelper.ThrowInvalidOperationException_PolymorphicTypeConfigurationDoesNotSpecifyDerivedTypes(BaseType);
             }

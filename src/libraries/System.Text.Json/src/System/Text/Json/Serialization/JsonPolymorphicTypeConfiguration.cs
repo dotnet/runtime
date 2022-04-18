@@ -24,6 +24,11 @@ namespace System.Text.Json.Serialization
         /// <param name="baseType">The base type for which to configure polymorphic serialization.</param>
         public JsonPolymorphicTypeConfiguration(Type baseType)
         {
+            if (baseType is null)
+            {
+                throw new ArgumentNullException(nameof(baseType));
+            }
+
             if (!PolymorphicTypeResolver.IsSupportedPolymorphicBaseType(baseType))
             {
                 throw new ArgumentException(SR.Format(SR.Polymorphism_TypeDoesNotSupportPolymorphism, baseType), nameof(baseType));
@@ -51,7 +56,7 @@ namespace System.Text.Json.Serialization
         }
 
         /// <summary>
-        /// When set to <see langword="true"/>, instructs the deserializer to ignore any
+        /// When set to <see langword="true"/>, instructs the serializer to ignore any
         /// unrecognized type discriminator id's and reverts to the contract of the base type.
         /// Otherwise, it will fail the deserialization.
         /// </summary>
@@ -88,6 +93,11 @@ namespace System.Text.Json.Serialization
         public JsonPolymorphicTypeConfiguration WithDerivedType(Type derivedType, string? typeDiscriminatorId = null)
         {
             VerifyMutable();
+
+            if (derivedType is null)
+            {
+                throw new ArgumentNullException(nameof(derivedType));
+            }
 
             if (!PolymorphicTypeResolver.IsSupportedDerivedType(BaseType, derivedType))
             {

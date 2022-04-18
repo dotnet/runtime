@@ -713,7 +713,9 @@ namespace System.Text.Json.SourceGeneration
                 foreach (CustomAttributeData attributeData in attributeDataList)
                 {
                     Type attributeType = attributeData.AttributeType;
-                    if (attributeType.FullName == JsonNumberHandlingAttributeFullName)
+                    string attributeTypeFullName = attributeType.FullName;
+
+                    if (attributeTypeFullName == JsonNumberHandlingAttributeFullName)
                     {
                         IList<CustomAttributeTypedArgument> ctorArgs = attributeData.ConstructorArguments;
                         numberHandling = (JsonNumberHandling)ctorArgs[0].Value;
@@ -729,7 +731,7 @@ namespace System.Text.Json.SourceGeneration
                             ref hasTypeFactoryConverter);
                     }
 
-                    if (attributeType.FullName == JsonDerivedTypeAttributeFullName)
+                    if (attributeTypeFullName == JsonDerivedTypeAttributeFullName)
                     {
                         Debug.Assert(attributeData.ConstructorArguments.Count > 0);
                         ITypeSymbol derivedTypeSymbol = (ITypeSymbol)attributeData.ConstructorArguments[0].Value;

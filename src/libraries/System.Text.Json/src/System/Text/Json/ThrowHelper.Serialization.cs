@@ -523,7 +523,7 @@ namespace System.Text.Json
         [DoesNotReturn]
         public static void ThrowJsonException_MetadataDuplicateTypeProperty()
         {
-            ThrowJsonException(SR.Format(SR.MetadataDuplicateTypeProperty));
+            ThrowJsonException(SR.MetadataDuplicateTypeProperty);
         }
 
         [DoesNotReturn]

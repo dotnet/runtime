@@ -69,7 +69,6 @@ namespace System.Text.Json.Tests.Serialization
         }
 
         [Theory]
-        [InlineData(null)]
         [InlineData(typeof(int))]
         [InlineData(typeof(int*))]
         [InlineData(typeof(string))]
@@ -84,9 +83,14 @@ namespace System.Text.Json.Tests.Serialization
             Assert.Throws<ArgumentException>(() => new JsonPolymorphicTypeConfiguration(baseType));
         }
 
+        [Fact]
+        public static void NullBaseTypeArgument_ThrowsArgumentNullException()
+        {
+            Assert.Throws<ArgumentNullException>(() => new JsonPolymorphicTypeConfiguration(null));
+        }
+
         [Theory]
         [InlineData(typeof(Interface), typeof(object))]
-        [InlineData(typeof(Class), null)]
         [InlineData(typeof(Class), typeof(Interface))]
         [InlineData(typeof(Class), typeof(GenericClass<>))]
         public static void InvalidDerivedTypeArgument_ThrowsArgumentException(Type baseType, Type derivedType)
@@ -97,6 +101,14 @@ namespace System.Text.Json.Tests.Serialization
             Assert.Empty(configuration);
 
             Assert.Throws<ArgumentException>(() => configuration.WithDerivedType(derivedType, "typeDiscriminator"));
+            Assert.Empty(configuration);
+        }
+
+        [Fact]
+        public static void NullDerivedTypeArgument_ThrowsArgumentNullException()
+        {
+            var configuration = new JsonPolymorphicTypeConfiguration(typeof(Class));
+            Assert.Throws<ArgumentNullException>(() => configuration.WithDerivedType(derivedType: null));
             Assert.Empty(configuration);
         }
 

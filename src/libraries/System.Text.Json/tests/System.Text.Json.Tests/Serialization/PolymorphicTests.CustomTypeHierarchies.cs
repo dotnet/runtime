@@ -5,6 +5,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using System.Text.Encodings.Web;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -59,6 +60,7 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData("$.$type", @"{ ""$type"" : ""derivedClass1"", ""$type"" : ""derivedClass1"", ""Number"" : 42 }")]
         [InlineData("$.$type", @"{ ""$type"" : ""derivedClass1"", ""Number"" : 42, ""$type"" : ""derivedClass1""}")]
         [InlineData("$.$id", @"{ ""$type"" : ""derivedClass1"", ""Number"" : 42, ""$id"" : ""referenceId""}")]
+        [InlineData("$.$id", @"{ ""$type"" : ""derivedClass1"", """" : 42, ""$id"" : ""referenceId""}")]
         [InlineData("$.$values", @"{ ""Number"" : 42, ""$values"" : [] }")]
         [InlineData("$.$type", @"{ ""Number"" : 42, ""$type"" : ""derivedClass"" }")]
         [InlineData("$", @"{ ""$type"" : ""invalidDiscriminator"", ""Number"" : 42 }")]
@@ -134,6 +136,7 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData("$._case", @"{ ""_case"" : ""derivedClass1"", ""Number"" : 42, ""_case"" : ""derivedClass1""}")]
         [InlineData("$.$type", @"{ ""_case"" : ""derivedClass1"", ""Number"" : 42, ""$type"" : ""derivedClass1""}")]
         [InlineData("$.$id", @"{ ""_case"" : ""derivedClass1"", ""Number"" : 42, ""$id"" : ""referenceId""}")]
+        [InlineData("$.$id", @"{ ""_case"" : ""derivedClass1"", """" : 42, ""$id"" : ""referenceId""}")]
         [InlineData("$.$values", @"{ ""_case"" : ""derivedClass1"", ""Number"" : 42, ""$values"" : [] }")]
         [InlineData("$._case", @"{ ""Number"" : 42, ""_case"" : ""derivedClass1"" }")]
         [InlineData("$", @"{ ""_case"" : ""invalidDiscriminator"", ""Number"" : 42 }")]
@@ -209,6 +212,7 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData("$._case", @"{ ""_case"" : ""derivedClass1"", ""Number"" : 42, ""_case"" : ""derivedClass1""}")]
         [InlineData("$.$type", @"{ ""_case"" : ""derivedClass1"", ""Number"" : 42, ""$type"" : ""derivedClass1""}")]
         [InlineData("$.$id", @"{ ""_case"" : ""derivedClass1"", ""Number"" : 42, ""$id"" : ""referenceId""}")]
+        [InlineData("$.$id", @"{ ""_case"" : ""derivedClass1"", """" : 42, ""$id"" : ""referenceId""}")]
         [InlineData("$.$values", @"{ ""_case"" : ""derivedClass1"", ""Number"" : 42, ""$values"" : [] }")]
         [InlineData("$._case", @"{ ""Number"" : 42, ""_case"" : ""derivedClass1"" }")]
         [InlineData("$", @"{ ""_case"" : ""invalidDiscriminator"", ""Number"" : 42 }")]
@@ -2332,6 +2336,25 @@ namespace System.Text.Json.Serialization.Tests
             string expectedJson = @"{ ""$type"" : ""derivedClass"", ""Number"" : 42 }";
             string actualJson = await Serializer.SerializeWrapper(value, options);
             JsonTestHelper.AssertJsonEqual(expectedJson, actualJson);
+        }
+
+        [Theory]
+        [InlineData(@"")]
+        [InlineData(@" ")]
+        [InlineData(@"\t")]
+        [InlineData(@"\r\n")]
+        [InlineData(@"{ ""lol"" : true }")]
+        public async Task PolymorphicClass_DegenerateCustomPropertyNames_ShouldSucceed(string propertyName)
+        {
+            JsonSerializerOptions? options = PolymorphicClass_InvalidCustomTypeDiscriminatorPropertyName.CreatePolymorphicConfigurationWithCustomPropertyName(propertyName);
+            PolymorphicClass_InvalidCustomTypeDiscriminatorPropertyName value = new PolymorphicClass_InvalidCustomTypeDiscriminatorPropertyName.DerivedClass { Number = 42 };
+
+            string expectedJson = @$"{{ ""{JavaScriptEncoder.Default.Encode(propertyName)}"" : ""derivedClass"", ""Number"" : 42 }}";
+            string actualJson = await Serializer.SerializeWrapper(value, options);
+            JsonTestHelper.AssertJsonEqual(expectedJson, actualJson);
+
+            PolymorphicClass_InvalidCustomTypeDiscriminatorPropertyName deserializeResult = await Serializer.DeserializeWrapper<PolymorphicClass_InvalidCustomTypeDiscriminatorPropertyName>(actualJson, options);
+            Assert.IsType<PolymorphicClass_InvalidCustomTypeDiscriminatorPropertyName.DerivedClass>(deserializeResult);
         }
 
         [JsonPolymorphic(CustomTypeDiscriminatorPropertyName = "$id")]
