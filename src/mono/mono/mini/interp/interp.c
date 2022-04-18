@@ -3601,8 +3601,11 @@ main_loop:
 		if (debugger_enabled)
 		{
 			total_executed_opcodes_wasi++;
-			if (total_executed_opcodes_wasi % 10 == 0)
+			if (total_executed_opcodes_wasi % 1000 == 0)
+			{
+				total_executed_opcodes_wasi = 0;
 				mono_component_debugger()->receive_and_process_command_from_debugger_agent ();
+			}
 		}
 #endif
 		MintOpcode opcode;
