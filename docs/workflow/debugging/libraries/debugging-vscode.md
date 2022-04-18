@@ -17,4 +17,5 @@
     - to find the exact arguments to replicate a test run you are trying to debug, run the test command in a terminal and look for output starting with `exec`. Copy all arguments and reformat them in `launch.json` as shown above.
       - ex. running `dotnet build /t:Test` in `runtime/src/libraries/System.Net.Sockets/tests/FunctionalTests` has terminal output including `"exec --runtimeconfig System.Net.Sockets.Tests.runtimeconfig.json ... -notrait category=failing"`, which can be reformatted into `["exec","--runtimeconfig","System.Net.Sockets.Tests.runtimeconfigjson", ... ,"-notrait","category=failing"]`
       - similarly, running `dotnet build /t:Test /p:xUnitMethodName=System.Net.Sockets.Tests.{ClassName}.{TestMethodName}` will get you the args needed to debug a specific test
-- Set a breakpoint and launch the debugger (running ".NET Core Launch (console)"), inspecting variables and call stacks will now work
+- Set a breakpoint and launch the debugger (running ".NET Core Launch (console)"), inspecting variables and call stacks will now work.
+- Optionally, save the launch settings in a [workspace](https://code.visualstudio.com/docs/editor/workspaces) file. The advantage is that it doesn't necessarily need to reside in `.vscode` in the currently open directory, so it's much easier to preserve during `git clean -dfx`.
