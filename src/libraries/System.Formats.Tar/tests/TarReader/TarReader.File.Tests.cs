@@ -716,7 +716,7 @@ namespace System.Formats.Tar.Tests
             // TODO: Figure out why the numbers don't match
             // Assert.Equal(AssetBlockDeviceMajor, blockDevice.DeviceMajor);
             // Assert.Equal(AssetBlockDeviceMinor, blockDevice.DeviceMinor);
-            // Meanwhile, TODO: Remove this when the above is fixed
+            // Remove these two temporary checks when the above is fixed
             Assert.True(blockDevice.DeviceMajor > 0);
             Assert.True(blockDevice.DeviceMinor > 0);
             Assert.Equal(AssetGName, blockDevice.GroupName);
@@ -752,7 +752,7 @@ namespace System.Formats.Tar.Tests
             // TODO: Figure out why the numbers don't match
             //Assert.Equal(AssetBlockDeviceMajor, characterDevice.DeviceMajor);
             //Assert.Equal(AssetBlockDeviceMinor, characterDevice.DeviceMinor);
-            // Meanwhile, TODO: Remove this when the above is fixed
+            // Remove these two temporary checks when the above is fixed
             Assert.True(characterDevice.DeviceMajor > 0);
             Assert.True(characterDevice.DeviceMinor > 0);
             Assert.Equal(AssetGName, characterDevice.GroupName);
