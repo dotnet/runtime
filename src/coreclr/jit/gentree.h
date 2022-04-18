@@ -1900,7 +1900,8 @@ public:
     // tree for the local that is defined, and, if "pIsEntire" is non-null, sets "*pIsEntire" to
     // true or false, depending on whether the assignment writes to the entirety of the local
     // variable, or just a portion of it.
-    bool DefinesLocal(Compiler* comp, GenTreeLclVarCommon** pLclVarTree, bool* pIsEntire = nullptr);
+    bool DefinesLocal(
+        Compiler* comp, GenTreeLclVarCommon** pLclVarTree, bool* pIsEntire = nullptr, ssize_t* pOffset = nullptr);
 
     bool IsLocalAddrExpr(Compiler*             comp,
                          GenTreeLclVarCommon** pLclVarTree,
@@ -1939,7 +1940,11 @@ public:
     // operation.  Returns "true" if "this" is an address of (or within)
     // a local variable; sets "*pLclVarTree" to that local variable instance; and, if "pIsEntire" is non-null,
     // sets "*pIsEntire" to true if this assignment writes the full width of the local.
-    bool DefinesLocalAddr(Compiler* comp, unsigned width, GenTreeLclVarCommon** pLclVarTree, bool* pIsEntire);
+    bool DefinesLocalAddr(Compiler*             comp,
+                          unsigned              width,
+                          GenTreeLclVarCommon** pLclVarTree,
+                          bool*                 pIsEntire,
+                          ssize_t*              pOffset = nullptr);
 
     // These are only used for dumping.
     // The GetRegNum() is only valid in LIR, but the dumping methods are not easily
@@ -3519,6 +3524,8 @@ public:
     {
         m_fieldSeq = fieldSeq;
     }
+
+    unsigned GetSize() const;
 
 #ifdef TARGET_ARM
     bool IsOffsetMisaligned() const;
@@ -6521,6 +6528,8 @@ struct GenTreeIndir : public GenTreeOp
     GenTree* Index();
     unsigned Scale();
     ssize_t  Offset();
+
+    unsigned Size() const;
 
     GenTreeIndir(genTreeOps oper, var_types type, GenTree* addr, GenTree* data) : GenTreeOp(oper, type, addr, data)
     {

@@ -4730,6 +4730,13 @@ public:
     // Compute the value number for a byref-exposed load of the given type via the given pointerVN.
     ValueNum fgValueNumberByrefExposedLoad(var_types type, ValueNum pointerVN);
 
+    void fgValueNumberLocalStore(GenTree*             storeNode,
+                                 GenTreeLclVarCommon* lclDefNode,
+                                 unsigned             storeSize,
+                                 ssize_t              storeOffset,
+                                 ValueNumPair         value,
+                                 bool                 normalize = true);
+
     unsigned fgVNPassesCompleted; // Number of times fgValueNumber has been run.
 
     // Utility functions for fgValueNumber.

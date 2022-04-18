@@ -3309,7 +3309,7 @@ void Compiler::lvaUpdateClass(unsigned varNum, GenTree* tree, CORINFO_CLASS_HAND
 //
 // Returns:
 //    Number of bytes needed on the frame for such a local.
-
+//
 unsigned Compiler::lvaLclSize(unsigned varNum)
 {
     assert(varNum < lvaCount);

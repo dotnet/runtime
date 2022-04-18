@@ -587,12 +587,20 @@ public:
 
     ValueNum VNForMapSelect(ValueNumKind vnk, var_types type, ValueNum map, ValueNum index);
 
+    ValueNum VNForMapPhysicalSelect(ValueNumKind vnk, var_types type, ValueNum map, unsigned offset, unsigned size);
+
     // A method that does the work for VNForMapSelect and may call itself recursively.
     ValueNum VNForMapSelectWork(
         ValueNumKind vnk, var_types type, ValueNum map, ValueNum index, int* pBudget, bool* pUsedRecursiveVN);
 
     // A specialized version of VNForFunc that is used for VNF_MapStore and provides some logging when verbose is set
     ValueNum VNForMapStore(ValueNum map, ValueNum index, ValueNum value);
+
+    ValueNum VNForMapPhysicalStore(ValueNum map, unsigned offset, unsigned size, ValueNum value);
+
+    ValueNum EncodePhysicalSelector(unsigned offset, unsigned size);
+
+    unsigned DecodePhysicalSelector(ValueNum selector, unsigned* pSize);
 
     ValueNum VNForFieldSelector(CORINFO_FIELD_HANDLE fieldHnd, var_types* pFieldType, size_t* pStructSize = nullptr);
 
@@ -649,6 +657,39 @@ public:
     ValueNum VNApplySelectorsAssignTypeCoerce(ValueNum value, var_types dstIndType);
 
     ValueNumPair VNPairApplySelectors(ValueNumPair map, FieldSeqNode* fieldSeq, var_types indType);
+
+    ValueNum VNForLoad(ValueNumKind vnk,
+                       ValueNum     locationValue,
+                       unsigned     locationSize,
+                       var_types    loadType,
+                       ssize_t      offset,
+                       unsigned     loadSize);
+
+    ValueNumPair VNPairForLoad(ValueNumPair locationValue,
+                               unsigned     locationSize,
+                               var_types    loadType,
+                               ssize_t      offset,
+                               unsigned     loadSize);
+
+    ValueNum VNForStore(ValueNum locationValue,
+                        unsigned locationSize,
+                        ssize_t  offset,
+                        unsigned storeSize,
+                        ValueNum value);
+
+    ValueNumPair VNPairForStore(ValueNumPair locationValue,
+                                unsigned     locationSize,
+                                ssize_t      offset,
+                                unsigned     storeSize,
+                                ValueNumPair value);
+
+    ValueNum VNForLoadStoreBitcast(ValueNumKind vnk, ValueNum value, var_types indType, unsigned indSize);
+
+    ValueNumPair VNPairForLoadStoreBitcast(ValueNumPair value, var_types indType, unsigned indSize);
+
+    ValueNum VNForEmptyMap(var_types type);
+
+    ValueNumPair VNPairForEmptyMap(var_types type);
 
     ValueNumPair VNPairApplySelectorsAssign(ValueNumPair  map,
                                             FieldSeqNode* fieldSeq,
@@ -1014,6 +1055,10 @@ public:
     // Requires "mapStore" to be a map store VNFuncApp.
     // Prints a representation of a MapStore operation on standard out.
     void vnDumpMapStore(Compiler* comp, VNFuncApp* mapStore);
+
+    void vnDumpPhysicalSelector(ValueNum selector);
+
+    void vnDumpMapPhysicalStore(Compiler* comp, VNFuncApp* mapPhysicalStore);
 
     // Requires "memOpaque" to be a mem opaque VNFuncApp
     // Prints a representation of a MemOpaque state on standard out.

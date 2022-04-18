@@ -2299,6 +2299,18 @@ ValueNum ValueNumStore::VNForMapStore(ValueNum map, ValueNum index, ValueNum val
     return result;
 }
 
+ValueNum ValueNumStore::VNForMapPhysicalStore(ValueNum map, unsigned offset, unsigned size, ValueNum value)
+{
+    ValueNum selector = EncodePhysicalSelector(offset, size);
+    ValueNum result   = VNForFunc(TypeOfVN(map), VNF_MapPhysicalStore, map, selector, value);
+
+    JITDUMP("    VNForMapPhysicalStore:%s returns ", VNMapTypeName(TypeOfVN(result)));
+    JITDUMPEXEC(m_pComp->vnPrint(result, 1));
+    JITDUMP("\n");
+
+    return result;
+}
+
 //------------------------------------------------------------------------------
 // VNForMapSelect : Evaluate VNF_MapSelect with the given arguments.
 //
@@ -2316,7 +2328,7 @@ ValueNum ValueNumStore::VNForMapStore(ValueNum map, ValueNum index, ValueNum val
 //    This requires a "ValueNumKind" because it will attempt, given "select(phi(m1, ..., mk), ind)", to evaluate
 //    "select(m1, ind)", ..., "select(mk, ind)" to see if they agree.  It needs to know which kind of value number
 //    (liberal/conservative) to read from the SSA def referenced in the phi argument.
-
+//
 ValueNum ValueNumStore::VNForMapSelect(ValueNumKind vnk, var_types type, ValueNum map, ValueNum index)
 {
     int      budget          = m_mapSelectBudget;
@@ -2326,14 +2338,29 @@ ValueNum ValueNumStore::VNForMapSelect(ValueNumKind vnk, var_types type, ValueNu
     // The remaining budget should always be between [0..m_mapSelectBudget]
     assert((budget >= 0) && (budget <= m_mapSelectBudget));
 
-#ifdef DEBUG
-    if (m_pComp->verbose)
-    {
-        printf("    VNForMapSelect(" FMT_VN ", " FMT_VN "):%s returns ", map, index, VNMapTypeName(type));
-        m_pComp->vnPrint(result, 1);
-        printf("\n");
-    }
-#endif
+    JITDUMP("    VNForMapSelect(" FMT_VN ", " FMT_VN "):%s returns ", map, index, VNMapTypeName(type));
+    JITDUMPEXEC(m_pComp->vnPrint(result, 1));
+    JITDUMP("\n");
+
+    return result;
+}
+
+ValueNum ValueNumStore::VNForMapPhysicalSelect(ValueNumKind vnk, var_types type, ValueNum map, unsigned offset, unsigned size)
+{
+    ValueNum selector        = EncodePhysicalSelector(offset, size);
+    int      budget          = m_mapSelectBudget;
+    bool     usedRecursiveVN = false;
+    ValueNum result          = VNForMapSelectWork(vnk, type, map, selector, &budget, &usedRecursiveVN);
+
+    // The remaining budget should always be between [0..m_mapSelectBudget]
+    assert((budget >= 0) && (budget <= m_mapSelectBudget));
+
+    JITDUMP("    VNForMapPhysicalSelect(" FMT_VN ", ", map);
+    JITDUMPEXEC(vnDumpPhysicalSelector(selector));
+    JITDUMP("):%s returns ", VNMapTypeName(type));
+    JITDUMPEXEC(m_pComp->vnPrint(result, 1));
+    JITDUMP("\n");
+
     return result;
 }
 
@@ -2357,14 +2384,19 @@ ValueNum ValueNumStore::VNForMapSelect(ValueNumKind vnk, var_types type, ValueNu
 //    This requires a "ValueNumKind" because it will attempt, given "select(phi(m1, ..., mk), ind)", to evaluate
 //    "select(m1, ind)", ..., "select(mk, ind)" to see if they agree.  It needs to know which kind of value number
 //    (liberal/conservative) to read from the SSA def referenced in the phi argument.
-
+//
 ValueNum ValueNumStore::VNForMapSelectWork(
     ValueNumKind vnk, var_types type, ValueNum map, ValueNum index, int* pBudget, bool* pUsedRecursiveVN)
 {
+#ifdef DEBUG
+    bool mapIsPrecise  = false;
+    bool mapIsPhysical = false;
+#endif // DEBUG
+
 TailCall:
     // This label allows us to directly implement a tail call by setting up the arguments, and doing a goto to here.
     assert(map != NoVN && index != NoVN);
-    assert(map == VNNormalValue(map));     // Arguments carry no exceptions.
+    assert(map   == VNNormalValue(map));   // Arguments carry no exceptions.
     assert(index == VNNormalValue(index)); // Arguments carry no exceptions.
 
     *pUsedRecursiveVN = false;
@@ -2415,6 +2447,9 @@ TailCall:
         {
             if (funcApp.m_func == VNF_MapStore)
             {
+                assert(!mapIsPhysical);
+                INDEBUG(mapIsPrecise = true);
+
                 // select(store(m, i, v), i) == v
                 if (funcApp.m_args[1] == index)
                 {
@@ -2443,6 +2478,74 @@ TailCall:
                     // Make sure we capture any exceptions from the "i" and "v" of the store...
                     map = funcApp.m_args[0];
                     goto TailCall;
+                }
+            }
+            else if (funcApp.m_func == VNF_MapPhysicalStore)
+            {
+                assert(!mapIsPrecise);
+                INDEBUG(mapIsPhysical = true);
+
+#if FEATURE_VN_TRACE_APPLY_SELECTORS
+                JITDUMP("      select(");
+                JITDUMPEXEC(m_pComp->vnPrint(map, 1));
+                JITDUMP(", ");
+                JITDUMPEXEC(vnDumpPhysicalSelector(index));
+                JITDUMP(")");
+#endif
+                ValueNum storeSelector = funcApp.m_args[1];
+
+                if (index == storeSelector)
+                {
+#if FEATURE_VN_TRACE_APPLY_SELECTORS
+                    JITDUMP(" ==> " FMT_VN "\n", funcApp.m_args[2]);
+#endif
+                    return funcApp.m_args[2];
+                }
+
+                unsigned selectSize;
+                unsigned selectOffset = DecodePhysicalSelector(index, &selectSize);
+
+                unsigned storeSize;
+                unsigned storeOffset = DecodePhysicalSelector(storeSelector, &storeSize);
+
+                unsigned selectEndOffset = selectOffset + selectSize; // Exclusive.
+                unsigned storeEndOffset  = storeOffset + storeSize;   // Exclusive.
+
+                if ((storeOffset <= selectOffset) && (selectEndOffset <= storeEndOffset))
+                {
+#if FEATURE_VN_TRACE_APPLY_SELECTORS
+                    JITDUMP(" ==> enclosing, selecting inner, remaining budget is %d\n", *pBudget);
+#endif
+                    map   = funcApp.m_args[2];
+                    index = EncodePhysicalSelector(selectOffset - storeOffset, selectSize);
+                    goto TailCall;
+                }
+
+                // If it was disjoint with the location being selected, continue the linear search.
+                if ((storeEndOffset <= selectOffset) || (selectEndOffset <= storeOffset))
+                {
+#if FEATURE_VN_TRACE_APPLY_SELECTORS
+                    JITDUMP(" ==> disjoint, remaining budget is %d\n", *pBudget);
+#endif
+                    map = funcApp.m_args[0];
+                    goto TailCall;
+                }
+                else
+                {
+#if FEATURE_VN_TRACE_APPLY_SELECTORS
+                    JITDUMP(" ==> aliasing!\n");
+#endif
+                }
+            }
+            else if (funcApp.m_func == VNF_ZeroObj)
+            {
+                // ZeroObj maps are always physical.
+                assert(!mapIsPrecise);
+
+                // TODO-CQ: support selection of TYP_STRUCT here.
+                if (type != TYP_STRUCT)
+                {
+                    return VNZeroForType(type);
                 }
             }
             else if (funcApp.m_func == VNF_PhiDef || funcApp.m_func == VNF_PhiMemoryDef)
@@ -2529,6 +2632,7 @@ TailCall:
                                 bool     usedRecursiveVN = false;
                                 ValueNum curResult =
                                     VNForMapSelectWork(vnk, type, phiArgVN, index, pBudget, &usedRecursiveVN);
+
                                 *pUsedRecursiveVN |= usedRecursiveVN;
                                 if (sameSelResult == ValueNumStore::RecursiveVN)
                                 {
@@ -2564,22 +2668,6 @@ TailCall:
                     m_fixedPointMapSels.Pop();
                 }
             }
-            else if (funcApp.m_func == VNF_ZeroObj)
-            {
-                // For structs, we need to extract the handle from the selector.
-                if (type == TYP_STRUCT)
-                {
-                    // We only expect field selectors here.
-                    assert(GetHandleFlags(index) == GTF_ICON_FIELD_HDL);
-                    CORINFO_FIELD_HANDLE fieldHnd  = CORINFO_FIELD_HANDLE(ConstantValue<ssize_t>(index));
-                    CORINFO_CLASS_HANDLE structHnd = NO_CLASS_HANDLE;
-                    m_pComp->eeGetFieldType(fieldHnd, &structHnd);
-
-                    return VNForZeroObj(structHnd);
-                }
-
-                return VNZeroForType(type);
-            }
         }
 
         // We may have run out of budget and already assigned a result
@@ -2598,6 +2686,23 @@ TailCall:
         }
         return res;
     }
+}
+
+ValueNum ValueNumStore::EncodePhysicalSelector(unsigned offset, unsigned size)
+{
+    assert(size != 0);
+
+    return VNForLongCon(static_cast<uint64_t>(offset) | (static_cast<uint64_t>(size) << 32));
+}
+
+unsigned ValueNumStore::DecodePhysicalSelector(ValueNum selector, unsigned* pSize)
+{
+    uint64_t value  = ConstantValue<uint64_t>(selector);
+    unsigned offset = static_cast<unsigned>(value);
+    unsigned size   = static_cast<unsigned>(value >> 32);
+
+    *pSize = size;
+    return offset;
 }
 
 //------------------------------------------------------------------------
@@ -4206,6 +4311,142 @@ ValueNumPair ValueNumStore::VNPairApplySelectors(ValueNumPair map, FieldSeqNode*
     return ValueNumPair(liberalVN, conservVN);
 }
 
+ValueNum ValueNumStore::VNForLoad(ValueNumKind vnk,
+                                  ValueNum     locationValue,
+                                  unsigned     locationSize,
+                                  var_types    loadType,
+                                  ssize_t      offset,
+                                  unsigned     loadSize)
+{
+    assert((loadSize > 0));
+
+    unsigned loadOffset = static_cast<unsigned>(offset);
+
+    if ((offset < 0) || (locationSize < (loadOffset + loadSize)))
+    {
+        JITDUMP("    *** VNForLoad: out-of-bounds load!\n");
+        return VNForExpr(m_pComp->compCurBB, loadType);
+    }
+
+    JITDUMP("  VNForLoad:\n");
+    ValueNum value = VNForMapPhysicalSelect(vnk, loadType, locationValue, loadOffset, loadSize);
+    value          = VNForLoadStoreBitcast(vnk, value, loadType, loadSize);
+
+    return value;
+}
+
+ValueNumPair ValueNumStore::VNPairForLoad(
+    ValueNumPair locationValue, unsigned locationSize, var_types loadType, ssize_t offset, unsigned loadSize)
+{
+    ValueNum liberalVN = VNForLoad(VNK_Liberal, locationValue.GetLiberal(), locationSize, loadType, offset, loadSize);
+    ValueNum conservVN = VNForLoad(VNK_Conservative, locationValue.GetConservative(), locationSize, loadType, offset,
+                                   loadSize);
+
+    return ValueNumPair(liberalVN, conservVN);
+}
+
+ValueNum ValueNumStore::VNForStore(ValueNum locationValue,
+                                   unsigned locationSize,
+                                   ssize_t  offset,
+                                   unsigned storeSize,
+                                   ValueNum value)
+{
+    assert(storeSize > 0);
+
+    unsigned storeOffset = static_cast<unsigned>(offset);
+
+    if ((offset < 0) || (locationSize < (storeOffset + storeSize)))
+    {
+        JITDUMP("    *** VNForStore: out-of-bounds store!\n");
+        // Some callers will need to invalidate parenting maps, so force explicit
+        // handling of this case instead of returning a "new, unique" VN.
+        return NoVN;
+    }
+
+    // Note how we handle identity (whole/entire) stores via selection here.
+    // This is to allow the caller to apply its own policy in case of type
+    // mismatches between the underlying location and value being stored.
+    // Currently, this policy is to normalize for locals and leave all other
+    // locations (possibly) denormalized.
+    //
+    JITDUMP("  VNForStore:\n");
+    return VNForMapPhysicalStore(locationValue, storeOffset, storeSize, value);
+}
+
+ValueNumPair ValueNumStore::VNPairForStore(ValueNumPair locationValue,
+                                           unsigned     locationSize,
+                                           ssize_t      offset,
+                                           unsigned     storeSize,
+                                           ValueNumPair value)
+{
+    ValueNum liberalVN = VNForStore(locationValue.GetLiberal(), locationSize, offset, storeSize, value.GetLiberal());
+    ValueNum conservVN;
+    if (locationValue.BothEqual() && value.BothEqual())
+    {
+        conservVN = liberalVN;
+    }
+    else
+    {
+        conservVN = VNForStore(locationValue.GetConservative(), locationSize, offset, storeSize,
+                               value.GetConservative());
+    }
+
+    return ValueNumPair(liberalVN, conservVN);
+}
+
+ValueNum ValueNumStore::VNForLoadStoreBitcast(ValueNumKind vnk, ValueNum value, var_types indType, unsigned indSize)
+{
+    var_types typeOfValue = TypeOfVN(value);
+
+    if (typeOfValue != indType)
+    {
+        if (indType == TYP_STRUCT)
+        {
+            assert(typeOfValue != TYP_STRUCT);
+            // Represent this as an identity store: "$VN.Struct[[0:size - 1] := primitive]".
+            JITDUMP("  VNForLoadStoreBitcast:\n");
+            value = VNForMapPhysicalStore(VNForEmptyMap(TYP_STRUCT), 0, indSize, value);
+        }
+        else if (typeOfValue == TYP_STRUCT)
+        {
+            assert(indType != TYP_STRUCT);
+            // Unwrap the (possibly present) identity store with an identity selection.
+            JITDUMP("  VNForLoadStoreBitcast:\n");
+            value = VNForMapPhysicalSelect(vnk, indType, value, 0, indSize);
+        }
+        else
+        {
+            assert(genTypeSize(indType) == indSize);
+            value = VNApplySelectorsTypeCheck(value, indType, indSize);
+        }
+    }
+
+    assert(genActualType(TypeOfVN(value)) == genActualType(indType));
+
+    return value;
+}
+
+ValueNumPair ValueNumStore::VNPairForLoadStoreBitcast(ValueNumPair value, var_types indType, unsigned indSize)
+{
+    ValueNum liberalVN = VNForLoadStoreBitcast(VNK_Liberal, value.GetLiberal(), indType, indSize);
+    ValueNum conservVN = VNForLoadStoreBitcast(VNK_Conservative, value.GetConservative(), indType, indSize);
+
+    return ValueNumPair(liberalVN, conservVN);
+}
+
+ValueNum ValueNumStore::VNForEmptyMap(var_types type)
+{
+    // TODO-PhysicalVN: use one single VN here instead of allocation new ones.
+    return VNForExpr(nullptr, type);
+}
+
+ValueNumPair ValueNumStore::VNPairForEmptyMap(var_types type)
+{
+    ValueNum map = VNForEmptyMap(type);
+
+    return ValueNumPair(map, map);
+}
+
 //------------------------------------------------------------------------
 // IsVNNotAField: Is the value number a "NotAField" field sequence?
 //
@@ -4587,6 +4828,59 @@ ValueNum Compiler::fgValueNumberByrefExposedLoad(var_types type, ValueNum pointe
         ValueNum loadVN =
             vnStore->VNForFunc(type, VNF_ByrefExposedLoad, typeVN, vnStore->VNNormalValue(pointerVN), memoryVN);
         return loadVN;
+    }
+}
+
+void Compiler::fgValueNumberLocalStore(GenTree*             storeNode,
+                                       GenTreeLclVarCommon* lclDefNode,
+                                       unsigned             storeSize,
+                                       ssize_t              offset,
+                                       ValueNumPair         value,
+                                       bool                 normalize)
+{
+    // Should not have been recorded as updating the GC heap.
+    assert(!GetMemorySsaMap(GcHeap)->Lookup(storeNode));
+
+    LclVarDsc* varDsc       = lvaGetDesc(lclDefNode);
+    unsigned   lclDefSsaNum = GetSsaNumForLocalVarDef(lclDefNode);
+
+    if (lclDefSsaNum != SsaConfig::RESERVED_SSA_NUM)
+    {
+        unsigned lclSize = lvaLclExactSize(lclDefNode->GetLclNum());
+
+        ValueNumPair newLclValue;
+        if ((storeSize == lclSize) && (offset == 0))
+        {
+            newLclValue = normalize ? vnStore->VNPairForLoadStoreBitcast(value, varDsc->TypeGet(), lclSize) : value;
+        }
+        else
+        {
+            assert((lclDefNode->gtFlags & GTF_VAR_USEASG) != 0);
+            // The "lclDefNode" node will be labeled with the SSA number of its "use" identity
+            // (we looked in a side table above for its "def" identity).  Look up that value.
+            ValueNumPair oldLclValue = varDsc->GetPerSsaData(lclDefNode->GetSsaNum())->m_vnPair;
+            newLclValue              = vnStore->VNPairForStore(oldLclValue, lclSize, offset, storeSize, value);
+        }
+
+        // We maintain this invariant only for local locations.
+        assert((genActualType(vnStore->TypeOfVN(newLclValue.GetLiberal())) == genActualType(varDsc)) || !normalize);
+
+        varDsc->GetPerSsaData(lclDefSsaNum)->m_vnPair = newLclValue;
+
+        JITDUMP("Tree [%06u] assigned VN to local var V%02u/%d: ", dspTreeID(storeNode), lclDefNode->GetLclNum(),
+                lclDefSsaNum);
+        JITDUMPEXEC(vnpPrint(newLclValue, 1));
+        JITDUMP("\n");
+    }
+    else if (varDsc->IsAddressExposed())
+    {
+        ValueNum heapVN = vnStore->VNForExpr(compCurBB, TYP_HEAP);
+        recordAddressExposedLocalStore(storeNode, heapVN DEBUGARG("local assign"));
+    }
+    else
+    {
+        JITDUMP("Tree [%06u] assigns to non-address-taken local var V%02u; excluded from SSA, so value not tracked\n",
+                dspTreeID(storeNode), lclDefNode->GetLclNum());
     }
 }
 
@@ -6166,6 +6460,9 @@ void ValueNumStore::vnDump(Compiler* comp, ValueNum vn, bool isPtr)
             case VNF_MapStore:
                 vnDumpMapStore(comp, &funcApp);
                 break;
+            case VNF_MapPhysicalStore:
+                vnDumpMapPhysicalStore(comp, &funcApp);
+                break;
             case VNF_ValWithExc:
                 vnDumpValWithExc(comp, &funcApp);
                 break;
@@ -6295,6 +6592,38 @@ void ValueNumStore::vnDumpMapStore(Compiler* comp, VNFuncApp* mapStore)
     {
         printf("@" FMT_LP, loopNum);
     }
+}
+
+void ValueNumStore::vnDumpPhysicalSelector(ValueNum selector)
+{
+    unsigned size;
+    unsigned offset = DecodePhysicalSelector(selector, &size);
+
+    if (size == 1)
+    {
+        printf("[%u]", offset);
+    }
+    else
+    {
+        printf("[%u:%u]", offset, offset + size - 1);
+    }
+}
+
+void ValueNumStore::vnDumpMapPhysicalStore(Compiler* comp, VNFuncApp* mapPhysicalStore)
+{
+    ValueNum mapVN    = mapPhysicalStore->m_args[0];
+    ValueNum selector = mapPhysicalStore->m_args[1];
+    ValueNum valueVN  = mapPhysicalStore->m_args[2];
+
+    unsigned size;
+    unsigned offset    = DecodePhysicalSelector(selector, &size);
+    unsigned endOffset = offset + size;
+
+    comp->vnPrint(mapVN, 0);
+    vnDumpPhysicalSelector(selector);
+    printf(" := ");
+    comp->vnPrint(valueVN, 0);
+    printf("]");
 }
 
 void ValueNumStore::vnDumpMemOpaque(Compiler* comp, VNFuncApp* memOpaque)
@@ -7650,6 +7979,7 @@ void Compiler::fgValueNumberAssignment(GenTreeOp* tree)
     ValueNumPair rhsExcSet;
     ValueNumPair rhsVNPair;
     vnStore->VNPUnpackExc(rhs->gtVNPair, &rhsVNPair, &rhsExcSet);
+    assert(rhsVNPair.BothDefined());
 
     // Is the type being stored different from the type computed by the rhs?
     if (rhs->TypeGet() != lhs->TypeGet())
@@ -7679,106 +8009,29 @@ void Compiler::fgValueNumberAssignment(GenTreeOp* tree)
     {
         case GT_LCL_VAR:
         {
-            GenTreeLclVarCommon* lcl          = lhs->AsLclVarCommon();
-            unsigned             lclDefSsaNum = GetSsaNumForLocalVarDef(lcl);
-
-            // Should not have been recorded as updating the GC heap.
-            assert(!GetMemorySsaMap(GcHeap)->Lookup(tree));
-
-            if (lclDefSsaNum != SsaConfig::RESERVED_SSA_NUM)
-            {
-                // Should not have been recorded as updating ByrefExposed mem.
-                assert(!GetMemorySsaMap(ByrefExposed)->Lookup(tree));
-                assert(rhsVNPair.BothDefined());
-
-                lvaTable[lcl->GetLclNum()].GetPerSsaData(lclDefSsaNum)->m_vnPair = rhsVNPair;
-
-                JITDUMP("Tree [%06u] assigned VN to local var V%02u/%d: ", dspTreeID(tree), lcl->GetLclNum(),
-                        lclDefSsaNum);
-                JITDUMPEXEC(vnpPrint(rhsVNPair, 1));
-                JITDUMP("\n");
-            }
-            else if (lvaVarAddrExposed(lcl->GetLclNum()))
-            {
-                // We could use MapStore here and MapSelect on reads of address-exposed locals
-                // (using the local nums as selectors) to get e.g. propagation of values
-                // through address-taken locals in regions of code with no calls or byref
-                // writes.
-                // For now, just use a new opaque VN.
-                ValueNum heapVN = vnStore->VNForExpr(compCurBB, TYP_HEAP);
-                recordAddressExposedLocalStore(tree, heapVN DEBUGARG("local assign"));
-            }
-            else
-            {
-                JITDUMP("Tree [%06u] assigns to non-address-taken local var V%02u; excluded from SSA, so value not"
-                        "tracked.\n",
-                        dspTreeID(tree), lcl->GetLclNum());
-            }
+            GenTreeLclVarCommon* lcl = lhs->AsLclVarCommon();
+            fgValueNumberLocalStore(tree, lcl, lvaLclExactSize(lcl->GetLclNum()), 0, rhsVNPair, /* normalize */ false);
         }
         break;
+
         case GT_LCL_FLD:
         {
-            GenTreeLclFld* lclFld       = lhs->AsLclFld();
-            unsigned       lclDefSsaNum = GetSsaNumForLocalVarDef(lclFld);
+            GenTreeLclFld* lclFld      = lhs->AsLclFld();
+            unsigned       storeOffset = lclFld->GetLclOffs();
+            unsigned       storeSize   = lclFld->GetSize();
 
-            // Should not have been recorded as updating the GC heap.
-            assert(!GetMemorySsaMap(GcHeap)->Lookup(tree));
-
-            if (lclDefSsaNum != SsaConfig::RESERVED_SSA_NUM)
+            // TODO-PhysicalVN: with the physical VN scheme, we no longer need the field sequence checks.
+            if ((lclFld->GetFieldSeq() == FieldSeqStore::NotAField()) && ((lclFld->gtFlags & GTF_VAR_USEASG) != 0))
             {
-                ValueNumPair newLhsVNPair;
-                // Is this a full definition?
-                if ((lclFld->gtFlags & GTF_VAR_USEASG) == 0)
-                {
-                    assert(!lclFld->IsPartialLclFld(this));
-                    assert(rhsVNPair.GetLiberal() != ValueNumStore::NoVN);
-                    newLhsVNPair = rhsVNPair;
-                }
-                else
-                {
-                    // We should never have a null field sequence here.
-                    assert(lclFld->GetFieldSeq() != nullptr);
-                    if (lclFld->GetFieldSeq() == FieldSeqStore::NotAField())
-                    {
-                        // We don't know what field this represents.  Assign a new VN to the whole variable
-                        // (since we may be writing to an unknown portion of it.)
-                        newLhsVNPair.SetBoth(vnStore->VNForExpr(compCurBB, lvaGetActualType(lclFld->GetLclNum())));
-                    }
-                    else
-                    {
-                        // We do know the field sequence.
-                        // The "lclFld" node will be labeled with the SSA number of its "use" identity
-                        // (we looked in a side table above for its "def" identity).  Look up that value.
-                        ValueNumPair oldLhsVNPair =
-                            lvaTable[lclFld->GetLclNum()].GetPerSsaData(lclFld->GetSsaNum())->m_vnPair;
-                        newLhsVNPair = vnStore->VNPairApplySelectorsAssign(oldLhsVNPair, lclFld->GetFieldSeq(),
-                                                                           rhsVNPair, // Pre-value.
-                                                                           lclFld->TypeGet());
-                    }
-                }
+                // Invalidate the whole local.
+                rhsVNPair.SetBoth(vnStore->VNForExpr(compCurBB, lvaGetDesc(lclFld)->TypeGet()));
+                storeOffset = 0;
+                storeSize   = lvaLclExactSize(lclFld->GetLclNum());
+            }
 
-                lvaTable[lclFld->GetLclNum()].GetPerSsaData(lclDefSsaNum)->m_vnPair = newLhsVNPair;
-
-                JITDUMP("Tree [%06u] assigned VN to local var V%02u/%d: ", dspTreeID(tree), lclFld->GetLclNum(),
-                        lclDefSsaNum);
-                JITDUMPEXEC(vnpPrint(newLhsVNPair, 1));
-                JITDUMP("\n");
-            }
-            else if (lvaVarAddrExposed(lclFld->GetLclNum()))
-            {
-                // This side-effects ByrefExposed.  Just use a new opaque VN.
-                // As with GT_LCL_VAR, we could probably use MapStore here and MapSelect at corresponding
-                // loads, but to do so would have to identify the subset of address-exposed locals
-                // whose fields can be disambiguated.
-                ValueNum heapVN = vnStore->VNForExpr(compCurBB, TYP_HEAP);
-                recordAddressExposedLocalStore(tree, heapVN DEBUGARG("local field assign"));
-            }
-            else
-            {
-                JITDUMP("Tree [%06u] assigns to non-address-taken local var V%02u; excluded from SSA, so value not"
-                        "tracked.\n",
-                        dspTreeID(tree), lclFld->GetLclNum());
-            }
+            // TODO-PhysicalVN: remove this quirk, it was added to avoid diffs.
+            bool normalize = ((lclFld->gtFlags & GTF_VAR_USEASG) != 0);
+            fgValueNumberLocalStore(tree, lclFld, storeSize, storeOffset, rhsVNPair, normalize);
         }
         break;
 
@@ -7798,249 +8051,153 @@ void Compiler::fgValueNumberAssignment(GenTreeOp* tree)
                 tree->gtVNPair.SetBoth(vnStore->VNForExpr(compCurBB, lhs->TypeGet()));
             }
 
-            GenTree* arg = lhs->AsOp()->gtOp1;
-
-            // Indicates whether the argument of the IND is the address of a local.
-            bool wasLocal = false;
+            GenTree* arg     = lhs->AsOp()->gtOp1;
+            unsigned lhsSize = lhs->AsIndir()->Size();
 
             VNFuncApp funcApp;
-            ValueNum  argVN = arg->gtVNPair.GetLiberal();
+            ValueNum  argVN       = arg->gtVNPair.GetLiberal();
+            bool      argIsVNFunc = vnStore->GetVNFunc(vnStore->VNNormalValue(argVN), &funcApp);
 
-            bool argIsVNFunc = vnStore->GetVNFunc(vnStore->VNNormalValue(argVN), &funcApp);
+            GenTreeLclVarCommon* lclVarTree = nullptr;
+            bool                 isEntire   = false;
+            ssize_t              offset     = 0;
+            GenTree*             baseAddr   = nullptr;
+            FieldSeqNode*        fldSeq     = nullptr;
 
-            // Is this an assignment to a (field of, perhaps) a local?
-            // If it is a PtrToLoc, lib and cons VNs will be the same.
-            if (argIsVNFunc)
+            if (argIsVNFunc && (funcApp.m_func == VNF_PtrToStatic))
             {
-                if (funcApp.m_func == VNF_PtrToLoc)
+                FieldSeqNode* fldSeq = vnStore->FieldSeqVNToFieldSeq(funcApp.m_args[1]);
+                assert(fldSeq != nullptr); // We should never see an empty sequence here.
+
+                if (fldSeq != FieldSeqStore::NotAField())
                 {
-                    assert(arg->gtVNPair.BothEqual()); // If it's a PtrToLoc, lib/cons shouldn't differ.
-                    assert(vnStore->IsVNConstant(funcApp.m_args[0]));
-                    unsigned lclNum = vnStore->ConstantValue<unsigned>(funcApp.m_args[0]);
-
-                    wasLocal = true;
-
-                    bool wasInSsa = false;
-                    if (lvaInSsa(lclNum))
-                    {
-                        FieldSeqNode* fieldSeq = vnStore->FieldSeqVNToFieldSeq(funcApp.m_args[1]);
-
-                        // Either "arg" is the address of (part of) a local itself, or else we have
-                        // a "rogue" PtrToLoc, one that should have made the local in question
-                        // address-exposed.  Assert on that.
-                        GenTreeLclVarCommon* lclVarTree = nullptr;
-                        bool                 isEntire   = false;
-
-                        if (arg->DefinesLocalAddr(this, genTypeSize(lhs->TypeGet()), &lclVarTree, &isEntire) &&
-                            lclVarTree->HasSsaName())
-                        {
-                            // The local #'s should agree.
-                            assert(lclNum == lclVarTree->GetLclNum());
-
-                            if (fieldSeq == FieldSeqStore::NotAField())
-                            {
-                                assert(!isEntire && "did not expect an entire NotAField write.");
-                                // We don't know where we're storing, so give the local a new, unique VN.
-                                // Do this by considering it an "entire" assignment, with an unknown RHS.
-                                isEntire = true;
-                                rhsVNPair.SetBoth(vnStore->VNForExpr(compCurBB, lclVarTree->TypeGet()));
-                            }
-                            else if ((fieldSeq == nullptr) && !isEntire)
-                            {
-                                // It is a partial store of a LCL_VAR without using LCL_FLD.
-                                // Generate a unique VN.
-                                isEntire = true;
-                                rhsVNPair.SetBoth(vnStore->VNForExpr(compCurBB, lclVarTree->TypeGet()));
-                            }
-
-                            ValueNumPair newLhsVNPair;
-                            if (isEntire)
-                            {
-                                newLhsVNPair = rhsVNPair;
-                            }
-                            else
-                            {
-                                // Don't use the lclVarTree's VN: if it's a local field, it will
-                                // already be dereferenced by it's field sequence.
-                                ValueNumPair oldLhsVNPair =
-                                    lvaTable[lclVarTree->GetLclNum()].GetPerSsaData(lclVarTree->GetSsaNum())->m_vnPair;
-                                newLhsVNPair = vnStore->VNPairApplySelectorsAssign(oldLhsVNPair, fieldSeq, rhsVNPair,
-                                                                                   lhs->TypeGet());
-                            }
-
-                            unsigned lclDefSsaNum = GetSsaNumForLocalVarDef(lclVarTree);
-
-                            if (lclDefSsaNum != SsaConfig::RESERVED_SSA_NUM)
-                            {
-                                lvaTable[lclNum].GetPerSsaData(lclDefSsaNum)->m_vnPair = newLhsVNPair;
-                                wasInSsa                                               = true;
-#ifdef DEBUG
-                                if (verbose)
-                                {
-                                    printf("Tree ");
-                                    Compiler::printTreeID(tree);
-                                    printf(" assigned VN to local var V%02u/%d: VN ", lclNum, lclDefSsaNum);
-                                    vnpPrint(newLhsVNPair, 1);
-                                    printf("\n");
-                                }
-#endif // DEBUG
-                            }
-                        }
-                        else
-                        {
-                            unreached(); // "Rogue" PtrToLoc, as discussed above.
-                        }
-                    }
-
-                    if (!wasInSsa && lvaVarAddrExposed(lclNum))
-                    {
-                        // Need to record the effect on ByrefExposed.
-                        // We could use MapStore here and MapSelect on reads of address-exposed locals
-                        // (using the local nums as selectors) to get e.g. propagation of values
-                        // through address-taken locals in regions of code with no calls or byref
-                        // writes.
-                        // For now, just use a new opaque VN.
-                        ValueNum heapVN = vnStore->VNForExpr(compCurBB, TYP_HEAP);
-                        recordAddressExposedLocalStore(tree, heapVN DEBUGARG("PtrToLoc indir"));
-                    }
-                }
-            }
-
-            // Was the argument of the GT_IND the address of a local, handled above?
-            if (!wasLocal)
-            {
-                GenTree*      baseAddr = nullptr;
-                FieldSeqNode* fldSeq   = nullptr;
-
-                if (argIsVNFunc && funcApp.m_func == VNF_PtrToStatic)
-                {
-                    FieldSeqNode* fldSeq = vnStore->FieldSeqVNToFieldSeq(funcApp.m_args[1]);
-                    assert(fldSeq != nullptr); // We should never see an empty sequence here.
-
-                    if (fldSeq != FieldSeqStore::NotAField())
-                    {
-                        ValueNum newHeapVN = vnStore->VNApplySelectorsAssign(VNK_Liberal, fgCurMemoryVN[GcHeap], fldSeq,
-                                                                             rhsVNPair.GetLiberal(), lhs->TypeGet());
-                        recordGcHeapStore(tree, newHeapVN DEBUGARG("static field store"));
-                    }
-                    else
-                    {
-                        fgMutateGcHeap(tree DEBUGARG("indirect store at NotAField PtrToStatic address"));
-                    }
-                }
-                // Is the LHS an array index expression?
-                else if (argIsVNFunc && funcApp.m_func == VNF_PtrToArrElem)
-                {
-                    CORINFO_CLASS_HANDLE elemTypeEq =
-                        CORINFO_CLASS_HANDLE(vnStore->ConstantValue<ssize_t>(funcApp.m_args[0]));
-                    ValueNum      arrVN  = funcApp.m_args[1];
-                    ValueNum      inxVN  = funcApp.m_args[2];
-                    FieldSeqNode* fldSeq = vnStore->FieldSeqVNToFieldSeq(funcApp.m_args[3]);
-#ifdef DEBUG
-                    if (verbose)
-                    {
-                        printf("Tree ");
-                        Compiler::printTreeID(tree);
-                        printf(" assigns to an array element:\n");
-                    }
-#endif // DEBUG
-
-                    ValueNum heapVN = fgValueNumberArrIndexAssign(elemTypeEq, arrVN, inxVN, fldSeq,
-                                                                  rhsVNPair.GetLiberal(), lhs->TypeGet());
-                    recordGcHeapStore(tree, heapVN DEBUGARG("ArrIndexAssign"));
-                }
-                else if (arg->IsFieldAddr(this, &baseAddr, &fldSeq))
-                {
-                    assert((fldSeq != nullptr) && (fldSeq != FieldSeqStore::NotAField()));
-
-                    // The value number from the rhs of the assignment
-                    ValueNum storeVal  = rhsVNPair.GetLiberal();
-                    ValueNum newHeapVN = ValueNumStore::NoVN;
-
-                    // We will check that the final field in the sequence matches 'indType'.
-                    var_types indType = lhs->TypeGet();
-
-                    if (baseAddr != nullptr)
-                    {
-                        // Instance field / "complex" static: heap[field][baseAddr][struct fields...] = storeVal.
-
-                        var_types firstFieldType;
-                        ValueNum  firstFieldSelectorVN =
-                            vnStore->VNForFieldSelector(fldSeq->GetFieldHandle(), &firstFieldType);
-
-                        // Construct the "field map" VN. It represents memory state of the first field
-                        // of all objects on the heap. This is our primary map.
-                        ValueNum fldMapVN =
-                            vnStore->VNForMapSelect(VNK_Liberal, TYP_MEM, fgCurMemoryVN[GcHeap], firstFieldSelectorVN);
-
-                        ValueNum firstFieldValueSelectorVN = vnStore->VNLiberalNormalValue(baseAddr->gtVNPair);
-
-                        ValueNum newFirstFieldValueVN = ValueNumStore::NoVN;
-                        // Optimization: avoid traversting the maps for the value of the first field if
-                        // we do not need it, which is the case if the rest of the field sequence is empty.
-                        if (fldSeq->GetNext() == nullptr)
-                        {
-                            newFirstFieldValueVN = vnStore->VNApplySelectorsAssignTypeCoerce(storeVal, indType);
-                        }
-                        else
-                        {
-                            // Construct the ValueNumber for fldMap[baseAddr]. This (struct)
-                            // map represents the specific field we're looking to store to.
-                            ValueNum firstFieldValueVN = vnStore->VNForMapSelect(VNK_Liberal, firstFieldType, fldMapVN,
-                                                                                 firstFieldValueSelectorVN);
-
-                            // Construct the maps updating the struct fields in the sequence.
-                            newFirstFieldValueVN =
-                                vnStore->VNApplySelectorsAssign(VNK_Liberal, firstFieldValueVN, fldSeq->GetNext(),
-                                                                storeVal, indType);
-                        }
-
-                        // Finally, construct the new field map...
-                        ValueNum newFldMapVN =
-                            vnStore->VNForMapStore(fldMapVN, firstFieldValueSelectorVN, newFirstFieldValueVN);
-
-                        // ...and a new value for the heap.
-                        newHeapVN = vnStore->VNForMapStore(fgCurMemoryVN[GcHeap], firstFieldSelectorVN, newFldMapVN);
-                    }
-                    else
-                    {
-                        // "Simple" static: heap[field][struct fields...] = storeVal.
-                        newHeapVN = vnStore->VNApplySelectorsAssign(VNK_Liberal, fgCurMemoryVN[GcHeap], fldSeq,
-                                                                    storeVal, indType);
-                    }
-
-                    // Update the GcHeap value.
-                    recordGcHeapStore(tree, newHeapVN DEBUGARG("StoreField"));
+                    ValueNum newHeapVN = vnStore->VNApplySelectorsAssign(VNK_Liberal, fgCurMemoryVN[GcHeap], fldSeq,
+                                                                         rhsVNPair.GetLiberal(), lhs->TypeGet());
+                    recordGcHeapStore(tree, newHeapVN DEBUGARG("static field store"));
                 }
                 else
                 {
-                    GenTreeLclVarCommon* lclVarTree = nullptr;
-                    bool                 isLocal    = tree->DefinesLocal(this, &lclVarTree);
-
-                    if (isLocal && lvaVarAddrExposed(lclVarTree->GetLclNum()))
-                    {
-                        // Store to address-exposed local; need to record the effect on ByrefExposed.
-                        // We could use MapStore here and MapSelect on reads of address-exposed locals
-                        // (using the local nums as selectors) to get e.g. propagation of values
-                        // through address-taken locals in regions of code with no calls or byref
-                        // writes.
-                        // For now, just use a new opaque VN.
-                        ValueNum memoryVN = vnStore->VNForExpr(compCurBB, TYP_HEAP);
-                        recordAddressExposedLocalStore(tree, memoryVN DEBUGARG("PtrToLoc indir"));
-                    }
-                    else if (!isLocal)
-                    {
-                        // If it doesn't define a local, then it might update GcHeap/ByrefExposed.
-                        // For the new ByrefExposed VN, we could use an operator here like
-                        // VNF_ByrefExposedStore that carries the VNs of the pointer and RHS, then
-                        // at byref loads if the current ByrefExposed VN happens to be
-                        // VNF_ByrefExposedStore with the same pointer VN, we could propagate the
-                        // VN from the RHS to the VN for the load.  This would e.g. allow tracking
-                        // values through assignments to out params.  For now, just model this
-                        // as an opaque GcHeap/ByrefExposed mutation.
-                        fgMutateGcHeap(tree DEBUGARG("assign-of-IND"));
-                    }
+                    fgMutateGcHeap(tree DEBUGARG("indirect store at NotAField PtrToStatic address"));
                 }
+            }
+            // Is the LHS an array index expression?
+            else if (argIsVNFunc && funcApp.m_func == VNF_PtrToArrElem)
+            {
+                CORINFO_CLASS_HANDLE elemTypeEq =
+                    CORINFO_CLASS_HANDLE(vnStore->ConstantValue<ssize_t>(funcApp.m_args[0]));
+                ValueNum      arrVN  = funcApp.m_args[1];
+                ValueNum      inxVN  = funcApp.m_args[2];
+                FieldSeqNode* fldSeq = vnStore->FieldSeqVNToFieldSeq(funcApp.m_args[3]);
+#ifdef DEBUG
+                if (verbose)
+                {
+                    printf("Tree ");
+                    Compiler::printTreeID(tree);
+                    printf(" assigns to an array element:\n");
+                }
+#endif // DEBUG
+
+                ValueNum heapVN = fgValueNumberArrIndexAssign(elemTypeEq, arrVN, inxVN, fldSeq,
+                                                              rhsVNPair.GetLiberal(), lhs->TypeGet());
+                recordGcHeapStore(tree, heapVN DEBUGARG("ArrIndexAssign"));
+            }
+            else if (arg->IsFieldAddr(this, &baseAddr, &fldSeq))
+            {
+                assert((fldSeq != nullptr) && (fldSeq != FieldSeqStore::NotAField()));
+
+                // The value number from the rhs of the assignment
+                ValueNum storeVal  = rhsVNPair.GetLiberal();
+                ValueNum newHeapVN = ValueNumStore::NoVN;
+
+                // We will check that the final field in the sequence matches 'indType'.
+                var_types indType = lhs->TypeGet();
+
+                if (baseAddr != nullptr)
+                {
+                    // Instance field / "complex" static: heap[field][baseAddr][struct fields...] = storeVal.
+
+                    var_types firstFieldType;
+                    ValueNum  firstFieldSelectorVN =
+                        vnStore->VNForFieldSelector(fldSeq->GetFieldHandle(), &firstFieldType);
+
+                    // Construct the "field map" VN. It represents memory state of the first field
+                    // of all objects on the heap. This is our primary map.
+                    ValueNum fldMapVN =
+                        vnStore->VNForMapSelect(VNK_Liberal, TYP_MEM, fgCurMemoryVN[GcHeap], firstFieldSelectorVN);
+
+                    ValueNum firstFieldValueSelectorVN = vnStore->VNLiberalNormalValue(baseAddr->gtVNPair);
+
+                    ValueNum newFirstFieldValueVN = ValueNumStore::NoVN;
+                    // Optimization: avoid traversting the maps for the value of the first field if
+                    // we do not need it, which is the case if the rest of the field sequence is empty.
+                    if (fldSeq->GetNext() == nullptr)
+                    {
+                        newFirstFieldValueVN = vnStore->VNApplySelectorsAssignTypeCoerce(storeVal, indType);
+                    }
+                    else
+                    {
+                        // Construct the ValueNumber for fldMap[baseAddr]. This (struct)
+                        // map represents the specific field we're looking to store to.
+                        ValueNum firstFieldValueVN = vnStore->VNForMapSelect(VNK_Liberal, firstFieldType, fldMapVN,
+                                                                             firstFieldValueSelectorVN);
+
+                        // Construct the maps updating the struct fields in the sequence.
+                        newFirstFieldValueVN =
+                            vnStore->VNApplySelectorsAssign(VNK_Liberal, firstFieldValueVN, fldSeq->GetNext(),
+                                                            storeVal, indType);
+                    }
+
+                    // Finally, construct the new field map...
+                    ValueNum newFldMapVN =
+                        vnStore->VNForMapStore(fldMapVN, firstFieldValueSelectorVN, newFirstFieldValueVN);
+
+                    // ...and a new value for the heap.
+                    newHeapVN = vnStore->VNForMapStore(fgCurMemoryVN[GcHeap], firstFieldSelectorVN, newFldMapVN);
+                }
+                else
+                {
+                    // "Simple" static: heap[field][struct fields...] = storeVal.
+                    newHeapVN = vnStore->VNApplySelectorsAssign(VNK_Liberal, fgCurMemoryVN[GcHeap], fldSeq,
+                                                                storeVal, indType);
+                }
+
+                // Update the GcHeap value.
+                recordGcHeapStore(tree, newHeapVN DEBUGARG("StoreField"));
+            }
+            else if (arg->DefinesLocalAddr(this, lhsSize, &lclVarTree, &isEntire, &offset))
+            {
+                unsigned lclNum = lclVarTree->GetLclNum();
+                fldSeq          = FieldSeqStore::NotAField();
+
+                if (argIsVNFunc && (funcApp.m_func == VNF_PtrToLoc))
+                {
+                    assert(arg->gtVNPair.BothEqual()); // If it's a PtrToLoc, lib/cons shouldn't differ.
+                    assert(lclNum == vnStore->ConstantValue<unsigned>(funcApp.m_args[0]));
+                    fldSeq = vnStore->FieldSeqVNToFieldSeq(funcApp.m_args[1]);
+                }
+
+                // TODO-PhysicalVN: with the physical VN scheme, we no longer need the field sequence checks.
+                if ((fldSeq == FieldSeqStore::NotAField()) || ((fldSeq == nullptr) && !isEntire))
+                {
+                    rhsVNPair.SetBoth(vnStore->VNForExpr(compCurBB, lclVarTree->TypeGet()));
+                    offset  = 0;
+                    lhsSize = lvaLclExactSize(lclVarTree->GetLclNum());
+                }
+
+                fgValueNumberLocalStore(tree, lclVarTree, lhsSize, offset, rhsVNPair);
+            }
+            else
+            {
+                assert(!tree->DefinesLocal(this, &lclVarTree));
+                // If it doesn't define a local, then it might update GcHeap/ByrefExposed.
+                // For the new ByrefExposed VN, we could use an operator here like
+                // VNF_ByrefExposedStore that carries the VNs of the pointer and RHS, then
+                // at byref loads if the current ByrefExposed VN happens to be
+                // VNF_ByrefExposedStore with the same pointer VN, we could propagate the
+                // VN from the RHS to the VN for the load.  This would e.g. allow tracking
+                // values through assignments to out params.  For now, just model this
+                // as an opaque GcHeap/ByrefExposed mutation.
+                fgMutateGcHeap(tree DEBUGARG("assign-of-IND"));
             }
 
             // We don't actually evaluate an IND on the LHS, so give it the Void value.
@@ -8073,9 +8230,10 @@ void Compiler::fgValueNumberBlockAssignment(GenTree* tree)
     GenTree* lhs = tree->gtGetOp1();
     GenTree* rhs = tree->gtGetOp2();
 
-    GenTreeLclVarCommon* lclVarTree;
-    bool                 isEntire;
-    if (tree->DefinesLocal(this, &lclVarTree, &isEntire))
+    GenTreeLclVarCommon* lclVarTree = nullptr;
+    bool                 isEntire   = false;
+    ssize_t              offset     = 0;
+    if (tree->DefinesLocal(this, &lclVarTree, &isEntire, &offset))
     {
         assert(lclVarTree->gtFlags & GTF_VAR_DEF);
         // Should not have been recorded as updating the GC heap.
@@ -8089,31 +8247,30 @@ void Compiler::fgValueNumberBlockAssignment(GenTree* tree)
         // SSA names in which to store VN's on defs.  We'll yield unique VN's when we read from them.
         if (lclDefSsaNum != SsaConfig::RESERVED_SSA_NUM)
         {
-            FieldSeqNode* lhsFldSeq = nullptr;
+            unsigned lhsLclSize = lvaLclExactSize(lhsLclNum);
 
-            if (lhs->IsLocalExpr(this, &lclVarTree, &lhsFldSeq))
+            unsigned      storeSize;
+            FieldSeqNode* lhsFldSeq;
+            if (lhs->OperIs(GT_LCL_VAR))
             {
-                noway_assert(lclVarTree->GetLclNum() == lhsLclNum);
+                storeSize = lhsLclSize;
+                lhsFldSeq = nullptr;
+            }
+            else if (lhs->OperIs(GT_LCL_FLD))
+            {
+                storeSize   = lhs->AsLclFld()->GetSize();
+                lhsFldSeq   = lhs->AsLclFld()->GetFieldSeq();
             }
             else
             {
-                GenTree* lhsAddr = lhs->AsIndir()->Addr();
+                storeSize = lhs->AsIndir()->Size();
 
-                // For addr-of-local expressions, lib/cons shouldn't matter.
-                assert(lhsAddr->gtVNPair.BothEqual());
-                ValueNum lhsAddrVN = lhsAddr->GetVN(VNK_Liberal);
+                ValueNumPair lhsAddrVNP = lhs->AsIndir()->Addr()->gtVNPair;
+                VNFuncApp    lhsAddrFunc;
+                bool         lhsAddrIsVNFunc = vnStore->GetVNFunc(lhsAddrVNP.GetLiberal(), &lhsAddrFunc);
+                assert(lhsAddrIsVNFunc && (lhsAddrFunc.m_func == VNF_PtrToLoc) && lhsAddrVNP.BothEqual());
 
-                // Unpack the PtrToLoc value number of the address.
-                assert(vnStore->IsVNFunc(lhsAddrVN));
-
-                VNFuncApp lhsAddrFuncApp;
-                vnStore->GetVNFunc(lhsAddrVN, &lhsAddrFuncApp);
-
-                assert(lhsAddrFuncApp.m_func == VNF_PtrToLoc);
-                assert(vnStore->IsVNConstant(lhsAddrFuncApp.m_args[0]) &&
-                       vnStore->ConstantValue<unsigned>(lhsAddrFuncApp.m_args[0]) == lhsLclNum);
-
-                lhsFldSeq = vnStore->FieldSeqVNToFieldSeq(lhsAddrFuncApp.m_args[1]);
+                lhsFldSeq = vnStore->FieldSeqVNToFieldSeq(lhsAddrFunc.m_args[1]);
             }
 
             bool         isNewUniq       = false;
@@ -8141,12 +8298,28 @@ void Compiler::fgValueNumberBlockAssignment(GenTree* tree)
             {
                 assert(tree->OperIsCopyBlkOp());
 
+                // TODO-PhysicalVN: with the physical VN scheme, we no longer need this check.
                 if (fgValueNumberBlockAssignmentTypeCheck(lhsVarDsc, lhsFldSeq, rhs))
                 {
-                    ValueNumPair rhsVNPair       = vnStore->VNPNormalPair(rhs->gtVNPair);
-                    ValueNumPair oldLhsLclVNPair = lhsVarDsc->GetPerSsaData(lclVarTree->GetSsaNum())->m_vnPair;
-                    newLhsLclVNPair =
-                        vnStore->VNPairApplySelectorsAssign(oldLhsLclVNPair, lhsFldSeq, rhsVNPair, lhs->TypeGet());
+                    ValueNumPair rhsVNPair = vnStore->VNPNormalPair(rhs->gtVNPair);
+
+                    // TODO-PhysicalVN: remove this quirk, it was added to avoid diffs.
+                    if (lhs->TypeIs(TYP_STRUCT) && (vnStore->TypeOfVN(rhsVNPair.GetLiberal()) != TYP_STRUCT))
+                    {
+                        rhsVNPair.SetBoth(vnStore->VNForExpr(compCurBB, TYP_STRUCT));
+                    }
+
+                    if (isEntire)
+                    {
+                        newLhsLclVNPair = vnStore->VNPairForLoadStoreBitcast(rhsVNPair, lhsVarDsc->TypeGet(),
+                                                                             lhsLclSize);
+                    }
+                    else
+                    {
+                        ValueNumPair oldLhsLclVNPair = lhsVarDsc->GetPerSsaData(lclVarTree->GetSsaNum())->m_vnPair;
+                        newLhsLclVNPair              = vnStore->VNPairForStore(oldLhsLclVNPair, lhsLclSize, offset,
+                                                                               storeSize, rhsVNPair);
+                    }
                 }
                 else
                 {
@@ -8414,26 +8587,26 @@ void Compiler::fgValueNumberTree(GenTree* tree)
             case GT_LCL_FLD:
             {
                 GenTreeLclFld* lclFld = tree->AsLclFld();
-                assert(!lvaInSsa(lclFld->GetLclNum()) || (lclFld->GetFieldSeq() != nullptr));
 
                 // If this is a (full or partial) def we skip; it will be handled as part of the assignment.
                 if ((lclFld->gtFlags & GTF_VAR_DEF) == 0)
                 {
-                    unsigned   ssaNum = lclFld->GetSsaNum();
-                    LclVarDsc* varDsc = lvaGetDesc(lclFld);
+                    unsigned lclNum = lclFld->GetLclNum();
 
-                    var_types indType = tree->TypeGet();
+                    // TODO-ADDR: delete the "GetSize" check below once TYP_STRUCT LCL_FLD is supported.
+                    // TODO-PhysicalVN: with the physical VN scheme, we no longer need the field sequence checks.
                     if ((lclFld->GetFieldSeq() == FieldSeqStore::NotAField()) || !lvaInSsa(lclFld->GetLclNum()) ||
-                        !lclFld->HasSsaName())
+                        !lclFld->HasSsaName() || (lclFld->GetSize() == 0))
                     {
-                        // This doesn't represent a proper field access or it's a struct
-                        // with overlapping fields that is hard to reason about; return a new unique VN.
-                        tree->gtVNPair.SetBoth(vnStore->VNForExpr(compCurBB, indType));
+                        lclFld->gtVNPair.SetBoth(vnStore->VNForExpr(compCurBB, lclFld->TypeGet()));
                     }
                     else
                     {
-                        ValueNumPair lclVNPair = varDsc->GetPerSsaData(ssaNum)->m_vnPair;
-                        tree->gtVNPair = vnStore->VNPairApplySelectors(lclVNPair, lclFld->GetFieldSeq(), indType);
+                        LclVarDsc*   varDsc      = lvaGetDesc(lclNum);
+                        ValueNumPair lclVarValue = varDsc->GetPerSsaData(lclFld->GetSsaNum())->m_vnPair;
+                        lclFld->gtVNPair         = vnStore->VNPairForLoad(lclVarValue, lvaLclExactSize(lclNum),
+                                                                          lclFld->TypeGet(), lclFld->GetLclOffs(),
+                                                                          lclFld->GetSize());
 
                         // If we have byref field, we may have a zero-offset sequence to add.
                         FieldSeqNode* zeroOffsetFldSeq = nullptr;
@@ -8665,25 +8838,41 @@ void Compiler::fgValueNumberTree(GenTree* tree)
             // We will "evaluate" this as part of the assignment.
             else if ((tree->gtFlags & GTF_IND_ASG_LHS) == 0)
             {
+                unsigned loadSize = tree->AsIndir()->Size();
+                ssize_t  offset   = 0;
+
                 FieldSeqNode* localFldSeq = nullptr;
                 VNFuncApp     funcApp;
 
                 // Is it a local or a heap address?
-                if (addr->IsLocalAddrExpr(this, &lclVarTree, &localFldSeq) && lvaInSsa(lclVarTree->GetLclNum()) &&
-                    lclVarTree->HasSsaName())
+                if (addr->IsLocalAddrExpr(this, &lclVarTree, &localFldSeq, &offset) &&
+                    lvaInSsa(lclVarTree->GetLclNum()) && lclVarTree->HasSsaName())
                 {
                     unsigned   ssaNum = lclVarTree->GetSsaNum();
                     LclVarDsc* varDsc = lvaGetDesc(lclVarTree);
 
+                    // TODO-PhysicalVN: with the physical VN scheme, we no longer need the field sequence checks.
+                    // TODO-PhysicalVN: use "DefinesLocalAddr" here for consistency with the store code.
                     if ((localFldSeq == FieldSeqStore::NotAField()) || (localFldSeq == nullptr))
                     {
                         tree->gtVNPair.SetBoth(vnStore->VNForExpr(compCurBB, tree->TypeGet()));
                     }
                     else
                     {
-                        var_types    indType   = tree->TypeGet();
-                        ValueNumPair lclVNPair = varDsc->GetPerSsaData(ssaNum)->m_vnPair;
-                        tree->gtVNPair         = vnStore->VNPairApplySelectors(lclVNPair, localFldSeq, indType);
+                        ValueNumPair lclVNPair  = varDsc->GetPerSsaData(ssaNum)->m_vnPair;
+                        unsigned     lclSize    = lvaLclExactSize(lclVarTree->GetLclNum());
+                        offset                  = offset + lclVarTree->GetLclOffs();
+
+                        // TODO-1stClassStructs-CQ: delete layout-less struct nodes and the "loadSize == 0" condition.
+                        if (loadSize != 0)
+                        {
+                            tree->gtVNPair = vnStore->VNPairForLoad(lclVNPair, lclSize, tree->TypeGet(), offset,
+                                                                    loadSize);
+                        }
+                        else
+                        {
+                            tree->gtVNPair.SetBoth(vnStore->VNForExpr(compCurBB, tree->TypeGet()));
+                        }
                     }
                     tree->gtVNPair = vnStore->VNPWithExc(tree->gtVNPair, addrXvnp);
                 }

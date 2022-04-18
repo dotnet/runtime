@@ -15997,7 +15997,7 @@ bool GenTree::IsPartialLclFld(Compiler* comp)
             (comp->lvaTable[this->AsLclVarCommon()->GetLclNum()].lvExactSize != genTypeSize(gtType)));
 }
 
-bool GenTree::DefinesLocal(Compiler* comp, GenTreeLclVarCommon** pLclVarTree, bool* pIsEntire)
+bool GenTree::DefinesLocal(Compiler* comp, GenTreeLclVarCommon** pLclVarTree, bool* pIsEntire, ssize_t* pOffset)
 {
     GenTreeBlk* blkNode = nullptr;
     if (OperIs(GT_ASG))
@@ -16017,12 +16017,16 @@ bool GenTree::DefinesLocal(Compiler* comp, GenTreeLclVarCommon** pLclVarTree, bo
                     *pIsEntire = true;
                 }
             }
+            if (pOffset != nullptr)
+            {
+                *pOffset = AsOp()->gtOp1->AsLclVarCommon()->GetLclOffs();
+            }
             return true;
         }
         else if (AsOp()->gtOp1->OperGet() == GT_IND)
         {
             GenTree* indArg = AsOp()->gtOp1->AsOp()->gtOp1;
-            return indArg->DefinesLocalAddr(comp, genTypeSize(AsOp()->gtOp1->TypeGet()), pLclVarTree, pIsEntire);
+            return indArg->DefinesLocalAddr(comp, genTypeSize(AsOp()->gtOp1->TypeGet()), pLclVarTree, pIsEntire, pOffset);
         }
         else if (AsOp()->gtOp1->OperIsBlk())
         {
@@ -16038,7 +16042,7 @@ bool GenTree::DefinesLocal(Compiler* comp, GenTreeLclVarCommon** pLclVarTree, bo
         }
 
         unsigned size = comp->typGetObjLayout(AsCall()->gtRetClsHnd)->GetSize();
-        return retBufArg->DefinesLocalAddr(comp, size, pLclVarTree, pIsEntire);
+        return retBufArg->DefinesLocalAddr(comp, size, pLclVarTree, pIsEntire, pOffset);
     }
     else if (OperIsBlk())
     {
@@ -16064,14 +16068,17 @@ bool GenTree::DefinesLocal(Compiler* comp, GenTreeLclVarCommon** pLclVarTree, bo
             }
         }
 
-        return destAddr->DefinesLocalAddr(comp, width, pLclVarTree, pIsEntire);
+        return destAddr->DefinesLocalAddr(comp, width, pLclVarTree, pIsEntire, pOffset);
     }
     // Otherwise...
     return false;
 }
 
-// Returns true if this GenTree defines a result which is based on the address of a local.
-bool GenTree::DefinesLocalAddr(Compiler* comp, unsigned width, GenTreeLclVarCommon** pLclVarTree, bool* pIsEntire)
+bool GenTree::DefinesLocalAddr(Compiler*             comp,
+                               unsigned              width,
+                               GenTreeLclVarCommon** pLclVarTree,
+                               bool*                 pIsEntire,
+                               ssize_t*              pOffset)
 {
     if (OperIs(GT_ADDR, GT_LCL_VAR_ADDR, GT_LCL_FLD_ADDR))
     {
@@ -16085,10 +16092,10 @@ bool GenTree::DefinesLocalAddr(Compiler* comp, unsigned width, GenTreeLclVarComm
         {
             GenTreeLclVarCommon* addrArgLcl = addrArg->AsLclVarCommon();
             *pLclVarTree                    = addrArgLcl;
+            unsigned lclOffset              = addrArgLcl->GetLclOffs();
+
             if (pIsEntire != nullptr)
             {
-                unsigned lclOffset = addrArgLcl->GetLclOffs();
-
                 if (lclOffset != 0)
                 {
                     // We aren't updating the bytes at [0..lclOffset-1] so *pIsEntire should be set to false
@@ -16107,29 +16114,45 @@ bool GenTree::DefinesLocalAddr(Compiler* comp, unsigned width, GenTreeLclVarComm
                     *pIsEntire = (varWidth == width);
                 }
             }
+
+            if (pOffset != nullptr)
+            {
+                *pOffset += lclOffset;
+            }
+
             return true;
         }
         else if (addrArg->OperGet() == GT_IND)
         {
             // A GT_ADDR of a GT_IND can both be optimized away, recurse using the child of the GT_IND
-            return addrArg->AsOp()->gtOp1->DefinesLocalAddr(comp, width, pLclVarTree, pIsEntire);
+            return addrArg->AsOp()->gtOp1->DefinesLocalAddr(comp, width, pLclVarTree, pIsEntire, pOffset);
         }
     }
     else if (OperGet() == GT_ADD)
     {
         if (AsOp()->gtOp1->IsCnsIntOrI())
         {
+            if (pOffset != nullptr)
+            {
+                *pOffset += AsOp()->gtOp1->AsIntCon()->IconValue();
+            }
+
             // If we just adding a zero then we allow an IsEntire match against width
             //  otherwise we change width to zero to disallow an IsEntire Match
             return AsOp()->gtOp2->DefinesLocalAddr(comp, AsOp()->gtOp1->IsIntegralConst(0) ? width : 0, pLclVarTree,
-                                                   pIsEntire);
+                                                   pIsEntire, pOffset);
         }
         else if (AsOp()->gtOp2->IsCnsIntOrI())
         {
+            if (pOffset != nullptr)
+            {
+                *pOffset += AsOp()->gtOp2->AsIntCon()->IconValue();
+            }
+
             // If we just adding a zero then we allow an IsEntire match against width
             //  otherwise we change width to zero to disallow an IsEntire Match
             return AsOp()->gtOp1->DefinesLocalAddr(comp, AsOp()->gtOp2->IsIntegralConst(0) ? width : 0, pLclVarTree,
-                                                   pIsEntire);
+                                                   pIsEntire, pOffset);
         }
     }
     // Post rationalization we could have GT_IND(GT_LEA(..)) trees.
@@ -16145,20 +16168,20 @@ bool GenTree::DefinesLocalAddr(Compiler* comp, unsigned width, GenTreeLclVarComm
         GenTree* index = AsOp()->gtOp2;
         if (index != nullptr)
         {
-            assert(!index->DefinesLocalAddr(comp, width, pLclVarTree, pIsEntire));
+            assert(!index->DefinesLocalAddr(comp, width, pLclVarTree, pIsEntire, pOffset));
         }
 #endif // DEBUG
 
         // base
-        GenTree* base = AsOp()->gtOp1;
+        GenTree* base = AsAddrMode()->Base();
         if (base != nullptr)
         {
-            // Lea could have an Indir as its base.
-            if (base->OperGet() == GT_IND)
+            if (pOffset != nullptr)
             {
-                base = base->AsOp()->gtOp1->gtEffectiveVal(/*commas only*/ true);
+                *pOffset += AsAddrMode()->Offset();
             }
-            return base->DefinesLocalAddr(comp, width, pLclVarTree, pIsEntire);
+
+            return base->DefinesLocalAddr(comp, width, pLclVarTree, pIsEntire, pOffset);
         }
     }
     // Otherwise...
@@ -16602,6 +16625,12 @@ ssize_t GenTreeIndir::Offset()
     {
         return 0;
     }
+}
+
+unsigned GenTreeIndir::Size() const
+{
+    assert(isIndir() || OperIsBlk());
+    return OperIsBlk() ? AsBlk()->Size() : genTypeSize(TypeGet());
 }
 
 //------------------------------------------------------------------------
@@ -22815,6 +22844,11 @@ unsigned GenTreeHWIntrinsic::GetResultOpNumForFMA(GenTree* use, GenTree* op1, Ge
     return 0;
 }
 #endif // TARGET_XARCH && FEATURE_HW_INTRINSICS
+
+unsigned GenTreeLclFld::GetSize() const
+{
+    return genTypeSize(TypeGet());
+}
 
 #ifdef TARGET_ARM
 //------------------------------------------------------------------------
