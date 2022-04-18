@@ -494,12 +494,6 @@
 // link errors for an unresolved method called VPtrSize you missed a
 // derived class declaration.
 //
-// As described above, dac can only handle classes with a single
-// vtable.  However, there's a special case for multiple inheritance
-// situations when only one of the classes is needed for dac.  If
-// the base class needed is the first class in the derived class's
-// layout then it can be used with dac via using the VPTR_MULTI_CLASS
-// macros.  Use with extreme care.
 //
 // All classes to be instantiated must be listed in src\inc\vptr_list.h.
 //
@@ -570,6 +564,7 @@
 #include "safemath.h"
 #include "corerror.h"
 
+// Keep in sync with the definitions in dbgutil.cpp and crashinfo.h
 #define DACCESS_TABLE_SYMBOL "g_dacTable"
 
 #ifdef PAL_STDCPP_COMPAT
@@ -660,10 +655,8 @@ public:
     // Vtable pointer values for all classes that must
     // be instanted using vtable pointers as the identity.
 #define VPTR_CLASS(name) TADDR name##__vtAddr;
-#define VPTR_MULTI_CLASS(name, keyBase) TADDR name##__##keyBase##__mvtAddr;
 #include "vptr_list.h"
 #undef VPTR_CLASS
-#undef VPTR_MULTI_CLASS
 } DacGlobals;
 
 #ifdef DACCESS_COMPILE
@@ -1860,22 +1853,12 @@ typedef __VoidPtr PTR_CVOID;
             SUPPORTS_DAC;                                       \
             return g_dacGlobals.name##__vtAddr; }
 
-#define VPTR_MULTI_CLASS_METHODS(name, keyBase)                 \
-        VPTR_ANY_CLASS_METHODS(name)                            \
-        static TADDR VPtrTargetVTable() {                       \
-            SUPPORTS_DAC;                                       \
-            return g_dacGlobals.name##__##keyBase##__mvtAddr; }
-
 #define VPTR_VTABLE_CLASS(name, base)                           \
 public: name(TADDR addr, TADDR vtAddr) : base(addr, vtAddr) {}  \
         VPTR_CLASS_METHODS(name)
 
 #define VPTR_VTABLE_CLASS_AND_CTOR(name, base)                  \
         VPTR_VTABLE_CLASS(name, base)
-
-#define VPTR_MULTI_VTABLE_CLASS(name, base)                     \
-public: name(TADDR addr, TADDR vtAddr) : base(addr, vtAddr) {}  \
-        VPTR_MULTI_CLASS_METHODS(name, base)
 
 // Used for base classes that can be instantiated directly.
 // The fake vfn is still used to force a vtable even when
@@ -2158,10 +2141,6 @@ public: name(int dummy) : base(dummy) {}
         VPTR_VTABLE_CLASS(name, base) \
         name() : base() {}
 
-#define VPTR_MULTI_VTABLE_CLASS(name, base) \
-        friend struct _DacGlobals; \
-public: name(int dummy) : base(dummy) {}
-
 #define VPTR_BASE_CONCRETE_VTABLE_CLASS(name) \
         friend struct _DacGlobals; \
 public: name(int dummy) {}
@@ -2186,7 +2165,6 @@ public: name(int dummy) : base(dummy) {}
 
 #define VPTR_VTABLE_CLASS(name, base) friend struct _DacGlobals;
 #define VPTR_VTABLE_CLASS_AND_CTOR(name, base)
-#define VPTR_MULTI_VTABLE_CLASS(name, base) friend struct _DacGlobals;
 #define VPTR_BASE_CONCRETE_VTABLE_CLASS(name) friend struct _DacGlobals;
 #define VPTR_BASE_VTABLE_CLASS(name) friend struct _DacGlobals;
 #define VPTR_BASE_VTABLE_CLASS_AND_CTOR(name)

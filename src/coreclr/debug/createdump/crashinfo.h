@@ -6,7 +6,7 @@
 #else
 #include "../dbgutil/elfreader.h"
 
-// This should match the macro with the same name in daccess.h
+// Keep in sync with the definitions in dbgutil.cpp and daccess.h
 #define DACCESS_TABLE_SYMBOL "g_dacTable"
 
 // typedef for our parsing of the auxv variables in /proc/pid/auxv.

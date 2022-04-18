@@ -453,13 +453,6 @@
 // link errors for an unresolved method called VPtrSize you missed a
 // derived class declaration.
 //
-// As described above, dac can only handle classes with a single
-// vtable.  However, there's a special case for multiple inheritance
-// situations when only one of the classes is needed for dac.  If
-// the base class needed is the first class in the derived class's
-// layout then it can be used with dac via using the VPTR_MULTI_CLASS
-// macros.  Use with extreme care.
-//
 // All classes to be instantiated must be listed in src\inc\vptr_list.h.
 //
 // Create a typedef for the type with typedef VPTR(type) PTR_type;

@@ -24,20 +24,16 @@ DacGlobals g_dacGlobals;
 struct DacHostVtPtrs
 {
 #define VPTR_CLASS(name) PVOID name;
-#define VPTR_MULTI_CLASS(name, keyBase) PVOID name##__##keyBase;
 #include <vptr_list.h>
 #undef VPTR_CLASS
-#undef VPTR_MULTI_CLASS
 };
 
 
 const WCHAR *g_dacVtStrings[] =
 {
 #define VPTR_CLASS(name) W(#name),
-#define VPTR_MULTI_CLASS(name, keyBase) W(#name),
 #include <vptr_list.h>
 #undef VPTR_CLASS
-#undef VPTR_MULTI_CLASS
 };
 
 DacHostVtPtrs g_dacHostVtPtrs;
@@ -47,11 +43,8 @@ DacGetHostVtPtrs(void)
 {
 #define VPTR_CLASS(name) \
     g_dacHostVtPtrs.name = name::VPtrHostVTable();
-#define VPTR_MULTI_CLASS(name, keyBase) \
-    g_dacHostVtPtrs.name##__##keyBase = name::VPtrHostVTable();
 #include <vptr_list.h>
 #undef VPTR_CLASS
-#undef VPTR_MULTI_CLASS
 
     return S_OK;
 }
@@ -598,17 +591,8 @@ DacInstantiateClassByVTable(TADDR addr, ULONG32 minSize, bool throwEx)
         hostVtPtr = g_dacHostVtPtrs.name;      \
     }                                          \
     else
-#define VPTR_MULTI_CLASS(name, keyBase)        \
-    if (vtAddr ==                              \
-        g_dacGlobals.name##__##keyBase##__mvtAddr) \
-    {                                          \
-        size = sizeof(name);                   \
-        hostVtPtr = g_dacHostVtPtrs.name##__##keyBase; \
-    }                                          \
-    else
 #include <vptr_list.h>
 #undef VPTR_CLASS
-#undef VPTR_MULTI_CLASS
 
     {
         // Can't identify the vtable pointer.

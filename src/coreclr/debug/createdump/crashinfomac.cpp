@@ -254,7 +254,7 @@ void CrashInfo::VisitModule(MachOModule& module)
             uint64_t symbolOffset;
             if (!module.TryLookupSymbol(DACCESS_TABLE_SYMBOL, &symbolOffset))
             {
-                TRACE("TryLookupSymbol(g_dacTable) FAILED\n");
+                TRACE("TryLookupSymbol(" DACCESS_TABLE_SYMBOL ") FAILED\n");
             }
         }
     }

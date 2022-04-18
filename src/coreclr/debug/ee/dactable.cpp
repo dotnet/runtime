@@ -31,6 +31,8 @@ extern DWORD gThreadTLSIndex;
 extern DWORD gAppDomainTLSIndex;
 extern "C" void STDCALL ThePreStubPatchLabel(void);
 
+#ifdef FEATURE_COMWRAPPERS
+// Keep these forward declarations in sync with the method definitions in interop/comwrappers.cpp
 namespace ABI
 {
     struct ComInterfaceDispatch;
@@ -43,6 +45,8 @@ HRESULT STDMETHODCALLTYPE TrackerTarget_QueryInterface(
     _In_ ABI::ComInterfaceDispatch* disp,
     /* [in] */ REFIID riid,
     /* [iid_is][out] */ _COM_Outptr_ void __RPC_FAR* __RPC_FAR* ppvObject);
+
+#endif
 
 template<typename T, template<typename> class U>
 struct is_type_template_instantiation
@@ -63,10 +67,8 @@ struct is_type_template_instantiation<U<T>, U>
 #define DEFINE_ALTERNATENAME_1(part) DEFINE_ALTERNATENAME_2(#part)
 #define DEFINE_ALTERNATENAME(alias, func) DEFINE_ALTERNATENAME_1(/ALTERNATENAME:alias=func)
 #define VPTR_CLASS(type) DEFINE_ALTERNATENAME(vtable_ ## type, ??_7 ## type ## @@6B@) extern "C" void* vtable_ ## type;
-#define VPTR_MULTI_CLASS(type, keyBase) DEFINE_ALTERNATENAME(vtable_ ## type, ??_7 ## type ## @@6B@ ## keyBase ## @@@) extern "C" void* vtable_ ## type ## _ ## keyBase;
 #include "vptr_list.h"
 #undef VPTR_CLASS
-#undef VPTR_MULTI_CLASS
 
 // Re-export the static dac table as the global g_dacTable symbol.
 // This allows us to not have to change how any of the "friend struct" relationships with the DAC table work
@@ -87,7 +89,6 @@ const DacGlobals _DacGlobals::s_dacGlobals =
 #undef DEFINE_DACGFN
 #undef DEFINE_DACGFN_STATIC
 #define VPTR_CLASS(type) PTR_TO_TADDR(&vtable_ ## type),
-#define VPTR_MULTI_CLASS(type, keyBase) PTR_TO_TADDR(&vtable_ ## type ## _ ## keyBase),
 #include "vptr_list.h"
 };
 
@@ -141,15 +142,8 @@ void DacGlobals::InitializeEntries()
         name *dummy = new (pBuf) name(0); \
         name##__vtAddr = PTR_TO_TADDR(*((PVOID*)dummy)); \
     }
-#define VPTR_MULTI_CLASS(name, keyBase) \
-    { \
-        void *pBuf = _alloca(sizeof(name)); \
-        name *dummy = new (pBuf) name(0); \
-        name##__##keyBase##__mvtAddr = PTR_TO_TADDR(*((PVOID*)dummy)); \
-    }
 #include <vptr_list.h>
 #undef VPTR_CLASS
-#undef VPTR_MULTI_CLASS
 }
 
 void DacGlobals::Initialize()

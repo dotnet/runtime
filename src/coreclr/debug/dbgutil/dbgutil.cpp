@@ -16,6 +16,8 @@
 #include <assert.h>
 #include <stdio.h>
 #include "corhlpr.h"
+
+// Keep in sync with the definitions in daccess.h and crashinfo.h
 #define DACCESS_TABLE_SYMBOL "g_dacTable"
 
 #ifdef HOST_WINDOWS
