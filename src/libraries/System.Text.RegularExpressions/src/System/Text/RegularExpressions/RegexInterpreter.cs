@@ -31,8 +31,6 @@ namespace System.Text.RegularExpressions
     /// <summary>Executes a block of regular expression codes while consuming input.</summary>
     internal sealed class RegexInterpreter : RegexRunner
     {
-        private const int LoopTimeoutCheckCount = 2048; // conservative value to provide reasonably-accurate timeout handling.
-
         private readonly RegexInterpreterCode _code;
         private readonly TextInfo? _textInfo;
 
@@ -136,6 +134,8 @@ namespace System.Text.RegularExpressions
 
         private void Backtrack()
         {
+            CheckTimeout();
+
             int newpos = runtrack![runtrackpos];
             runtrackpos++;
 
@@ -379,8 +379,6 @@ namespace System.Text.RegularExpressions
                     DebugTraceCurrentState();
                 }
 #endif
-                CheckTimeout();
-
                 switch (_operator)
                 {
                     case RegexOpcode.Stop:
@@ -929,12 +927,6 @@ namespace System.Text.RegularExpressions
 
                             while (c-- > 0)
                             {
-                                // Check the timeout every 2048th iteration.
-                                if ((uint)c % LoopTimeoutCheckCount == 0)
-                                {
-                                    CheckTimeout();
-                                }
-
                                 if (!RegexCharClass.CharInClass(Forwardcharnext(inputSpan), set, ref setLookup))
                                 {
                                     goto BreakBackward;
@@ -1022,12 +1014,6 @@ namespace System.Text.RegularExpressions
 
                             for (i = len; i > 0; i--)
                             {
-                                // Check the timeout every 2048th iteration.
-                                if ((uint)i % LoopTimeoutCheckCount == 0)
-                                {
-                                    CheckTimeout();
-                                }
-
                                 if (!RegexCharClass.CharInClass(Forwardcharnext(inputSpan), set, ref setLookup))
                                 {
                                     Backwardnext();
