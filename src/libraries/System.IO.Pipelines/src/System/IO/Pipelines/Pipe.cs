@@ -239,7 +239,7 @@ namespace System.IO.Pipelines
             return newSegment;
         }
 
-        private int GetSegmentSize(int minimumSegmentSize, int sizeHint, int maxBufferSize = int.MaxValue)
+        private static int GetSegmentSize(int minimumSegmentSize, int sizeHint, int maxBufferSize = int.MaxValue)
         {
             // First we need to handle case where hint is smaller than minimum segment size
             sizeHint = Math.Max(minimumSegmentSize, sizeHint);
