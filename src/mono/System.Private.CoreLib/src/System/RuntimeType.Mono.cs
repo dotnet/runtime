@@ -1685,6 +1685,9 @@ namespace System
             CultureInfo? culture,
             BindingFlags invokeAttr)
         {
+            // Already fast-pathed by the caller.
+            Debug.Assert(!ReferenceEquals(value?.GetType(), this));
+
             copyBack = true;
 
             CheckValueStatus status = TryConvertToType(ref value);
