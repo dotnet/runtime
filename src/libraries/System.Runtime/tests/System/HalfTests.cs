@@ -3,8 +3,8 @@
 
 using System.Collections.Generic;
 using System.Globalization;
-using System.Runtime.CompilerServices;
 using Xunit;
+using Xunit.Sdk;
 
 namespace System.Tests
 {
@@ -1099,6 +1099,118 @@ namespace System.Tests
             Assert.True(Half.NaN.Equals(Half.NaN));
             Assert.False(Half.NaN == Half.NaN);
             Assert.Equal(Half.NaN, Half.NaN);
+        }
+
+        public static IEnumerable<object[]> MaxMagnitudeNumber_TestData()
+        {
+            yield return new object[] { Half.NegativeInfinity, Half.PositiveInfinity, Half.PositiveInfinity };
+            yield return new object[] { Half.PositiveInfinity, Half.NegativeInfinity, Half.PositiveInfinity };
+            yield return new object[] { Half.MinValue, Half.MaxValue, Half.MaxValue };
+            yield return new object[] { Half.MaxValue, Half.MinValue, Half.MaxValue };
+            yield return new object[] { Half.NaN, Half.NaN, Half.NaN };
+            yield return new object[] { Half.NaN, (Half)1.0f, (Half)1.0f };
+            yield return new object[] { (Half)1.0f, Half.NaN, (Half)1.0f };
+            yield return new object[] { Half.PositiveInfinity, Half.NaN, Half.PositiveInfinity };
+            yield return new object[] { Half.NegativeInfinity, Half.NaN, Half.NegativeInfinity };
+            yield return new object[] { Half.NaN, Half.PositiveInfinity, Half.PositiveInfinity };
+            yield return new object[] { Half.NaN, Half.NegativeInfinity, Half.NegativeInfinity };
+            yield return new object[] { (Half)(-0.0f), (Half)0.0f, (Half)0.0f };
+            yield return new object[] { (Half)0.0f, (Half)(-0.0f), (Half)0.0f };
+            yield return new object[] { (Half)2.0f, (Half)(-3.0f), (Half)(-3.0f) };
+            yield return new object[] { (Half)(-3.0f), (Half)2.0f, (Half)(-3.0f) };
+            yield return new object[] { (Half)3.0f, (Half)(-2.0f), (Half)3.0f };
+            yield return new object[] { (Half)(-2.0f), (Half)3.0f, (Half)3.0f };
+        }
+
+        [Theory]
+        [MemberData(nameof(MaxMagnitudeNumber_TestData))]
+        public static void MaxMagnitudeNumberTest(Half x, Half y, Half expectedResult)
+        {
+            AssertExtensions.Equal(expectedResult, Half.MaxMagnitudeNumber(x, y), (Half)0.0f);
+        }
+
+        public static IEnumerable<object[]> MaxNumber_TestData()
+        {
+            yield return new object[] { Half.NegativeInfinity, Half.PositiveInfinity, Half.PositiveInfinity };
+            yield return new object[] { Half.PositiveInfinity, Half.NegativeInfinity, Half.PositiveInfinity };
+            yield return new object[] { Half.MinValue, Half.MaxValue, Half.MaxValue };
+            yield return new object[] { Half.MaxValue, Half.MinValue, Half.MaxValue };
+            yield return new object[] { Half.NaN, Half.NaN, Half.NaN };
+            yield return new object[] { Half.NaN, (Half)1.0f, (Half)1.0f };
+            yield return new object[] { (Half)1.0f, Half.NaN, (Half)1.0f };
+            yield return new object[] { Half.PositiveInfinity, Half.NaN, Half.PositiveInfinity };
+            yield return new object[] { Half.NegativeInfinity, Half.NaN, Half.NegativeInfinity };
+            yield return new object[] { Half.NaN, Half.PositiveInfinity, Half.PositiveInfinity };
+            yield return new object[] { Half.NaN, Half.NegativeInfinity, Half.NegativeInfinity };
+            yield return new object[] { (Half)(-0.0f), (Half)0.0f, (Half)0.0f };
+            yield return new object[] { (Half)0.0f, (Half)(-0.0f), (Half)0.0f };
+            yield return new object[] { (Half)2.0f, (Half)(-3.0f), (Half)2.0f };
+            yield return new object[] { (Half)(-3.0f), (Half)2.0f, (Half)2.0f };
+            yield return new object[] { (Half)3.0f, (Half)(-2.0f), (Half)3.0f };
+            yield return new object[] { (Half)(-2.0f), (Half)3.0f, (Half)3.0f };
+        }
+
+        [Theory]
+        [MemberData(nameof(MaxNumber_TestData))]
+        public static void MaxNumberTest(Half x, Half y, Half expectedResult)
+        {
+            AssertExtensions.Equal(expectedResult, Half.MaxNumber(x, y), (Half)0.0f);
+        }
+
+        public static IEnumerable<object[]> MinMagnitudeNumber_TestData()
+        {
+            yield return new object[] { Half.NegativeInfinity, Half.PositiveInfinity, Half.NegativeInfinity };
+            yield return new object[] { Half.PositiveInfinity, Half.NegativeInfinity, Half.NegativeInfinity };
+            yield return new object[] { Half.MinValue, Half.MaxValue, Half.MinValue };
+            yield return new object[] { Half.MaxValue, Half.MinValue, Half.MinValue };
+            yield return new object[] { Half.NaN, Half.NaN, Half.NaN };
+            yield return new object[] { Half.NaN, (Half)1.0f, (Half)1.0f };
+            yield return new object[] { (Half)1.0f, Half.NaN, (Half)1.0f };
+            yield return new object[] { Half.PositiveInfinity, Half.NaN, Half.PositiveInfinity };
+            yield return new object[] { Half.NegativeInfinity, Half.NaN, Half.NegativeInfinity };
+            yield return new object[] { Half.NaN, Half.PositiveInfinity, Half.PositiveInfinity };
+            yield return new object[] { Half.NaN, Half.NegativeInfinity, Half.NegativeInfinity };
+            yield return new object[] { (Half)(-0.0f), (Half)0.0f, (Half)(-0.0f) };
+            yield return new object[] { (Half)0.0f, (Half)(-0.0f), (Half)(-0.0f) };
+            yield return new object[] { (Half)2.0f, (Half)(-3.0f), (Half)2.0f };
+            yield return new object[] { (Half)(-3.0f), (Half)2.0f, (Half)2.0f };
+            yield return new object[] { (Half)3.0f, (Half)(-2.0f), (Half)(-2.0f) };
+            yield return new object[] { (Half)(-2.0f), (Half)3.0f, (Half)(-2.0f) };
+        }
+
+        [Theory]
+        [MemberData(nameof(MinMagnitudeNumber_TestData))]
+        public static void MinMagnitudeNumberTest(Half x, Half y, Half expectedResult)
+        {
+            AssertExtensions.Equal(expectedResult, Half.MinMagnitudeNumber(x, y), (Half)0.0f);
+        }
+
+        public static IEnumerable<object[]> MinNumber_TestData()
+        {
+            yield return new object[] { Half.NegativeInfinity, Half.PositiveInfinity, Half.NegativeInfinity };
+            yield return new object[] { Half.PositiveInfinity, Half.NegativeInfinity, Half.NegativeInfinity };
+            yield return new object[] { Half.MinValue, Half.MaxValue, Half.MinValue };
+            yield return new object[] { Half.MaxValue, Half.MinValue, Half.MinValue };
+            yield return new object[] { Half.NaN, Half.NaN, Half.NaN };
+            yield return new object[] { Half.NaN, (Half)1.0f, (Half)1.0f };
+            yield return new object[] { (Half)1.0f, Half.NaN, (Half)1.0f };
+            yield return new object[] { Half.PositiveInfinity, Half.NaN, Half.PositiveInfinity };
+            yield return new object[] { Half.NegativeInfinity, Half.NaN, Half.NegativeInfinity };
+            yield return new object[] { Half.NaN, Half.PositiveInfinity, Half.PositiveInfinity };
+            yield return new object[] { Half.NaN, Half.NegativeInfinity, Half.NegativeInfinity };
+            yield return new object[] { (Half)(-0.0f), (Half)0.0f, (Half)(-0.0f) };
+            yield return new object[] { (Half)0.0f, (Half)(-0.0f), (Half)(-0.0f) };
+            yield return new object[] { (Half)2.0f, (Half)(-3.0f), (Half)(-3.0f) };
+            yield return new object[] { (Half)(-3.0f), (Half)2.0f, (Half)(-3.0f) };
+            yield return new object[] { (Half)3.0f, (Half)(-2.0f), (Half)(-2.0f) };
+            yield return new object[] { (Half)(-2.0f), (Half)3.0f, (Half)(-2.0f) };
+        }
+
+        [Theory]
+        [MemberData(nameof(MinNumber_TestData))]
+        public static void MinNumberTest(Half x, Half y, Half expectedResult)
+        {
+            AssertExtensions.Equal(expectedResult, Half.MinNumber(x, y), (Half)0.0f);
         }
     }
 }
