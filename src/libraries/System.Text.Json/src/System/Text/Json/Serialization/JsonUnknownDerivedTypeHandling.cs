@@ -6,7 +6,6 @@ namespace System.Text.Json.Serialization
     /// <summary>
     /// Defines how objects of a derived runtime type that has not been explicitly declared for polymorphic serialization should be handled.
     /// </summary>
-    [System.Runtime.Versioning.RequiresPreviewFeatures("Polymorphic serialization is currently in preview.")]
     public enum JsonUnknownDerivedTypeHandling
     {
         /// <summary>

@@ -146,7 +146,6 @@ namespace System.Text.Json
         /// <remarks>
         /// Once serialization or deserialization occurs, the list cannot be modified.
         /// </remarks>
-        [System.Runtime.Versioning.RequiresPreviewFeatures("Polymorphic serialization is currently in preview.")]
         public IList<JsonPolymorphicTypeConfiguration> PolymorphicTypeConfigurations => _polymorphicTypeConfigurations;
 
         internal JsonConverter GetConverterFromMember(Type? parentClassType, Type propertyType, MemberInfo? memberInfo)

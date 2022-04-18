@@ -6,7 +6,6 @@ namespace System.Text.Json.Serialization
     /// <summary>
     /// When placed on a type, indicates that the type should be serialized polymorphically.
     /// </summary>
-    [System.Runtime.Versioning.RequiresPreviewFeatures("Polymorphic serialization is currently in preview.")]
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Interface, AllowMultiple = false, Inherited = false)]
     public sealed class JsonPolymorphicAttribute : JsonAttribute
     {

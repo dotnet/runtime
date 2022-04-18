@@ -320,7 +320,6 @@ namespace System.Text.Json
         public System.Text.Json.JsonNamingPolicy? PropertyNamingPolicy { get { throw null; } set { } }
         public System.Text.Json.JsonCommentHandling ReadCommentHandling { get { throw null; } set { } }
         public System.Text.Json.Serialization.ReferenceHandler? ReferenceHandler { get { throw null; } set { } }
-        [System.Runtime.Versioning.RequiresPreviewFeatures("Polymorphic serialization is currently in preview.")]
         public System.Collections.Generic.IList<System.Text.Json.Serialization.JsonPolymorphicTypeConfiguration> PolymorphicTypeConfigurations { get { throw null; } }
         public System.Text.Json.Serialization.JsonUnknownTypeHandling UnknownTypeHandling { get { throw null; } set { } }
         public bool WriteIndented { get { throw null; } set { } }
@@ -831,7 +830,6 @@ namespace System.Text.Json.Serialization
             System.Text.Json.JsonSerializerOptions options);
         public virtual void WriteAsPropertyName(System.Text.Json.Utf8JsonWriter writer, T value, System.Text.Json.JsonSerializerOptions options) { }
     }
-    [System.Runtime.Versioning.RequiresPreviewFeatures("Polymorphic serialization is currently in preview.")]
     [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Interface, AllowMultiple = true, Inherited = false)]
     public partial class JsonDerivedTypeAttribute : System.Text.Json.Serialization.JsonAttribute
     {
@@ -882,7 +880,6 @@ namespace System.Text.Json.Serialization
         public JsonNumberHandlingAttribute(System.Text.Json.Serialization.JsonNumberHandling handling) { }
         public System.Text.Json.Serialization.JsonNumberHandling Handling { get { throw null; } }
     }
-    [System.Runtime.Versioning.RequiresPreviewFeatures("Polymorphic serialization is currently in preview.")]
     [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Interface, AllowMultiple = false, Inherited = false)]
     public sealed partial class JsonPolymorphicAttribute : System.Text.Json.Serialization.JsonAttribute
     {
@@ -943,7 +940,6 @@ namespace System.Text.Json.Serialization
         public sealed override bool CanConvert(System.Type typeToConvert) { throw null; }
         public sealed override System.Text.Json.Serialization.JsonConverter CreateConverter(System.Type typeToConvert, System.Text.Json.JsonSerializerOptions options) { throw null; }
     }
-    [System.Runtime.Versioning.RequiresPreviewFeatures("Polymorphic serialization is currently in preview.")]
     public enum JsonUnknownDerivedTypeHandling
     {
         FailSerialization = 0,
@@ -955,7 +951,6 @@ namespace System.Text.Json.Serialization
         JsonElement = 0,
         JsonNode = 1,
     }
-    [System.Runtime.Versioning.RequiresPreviewFeatures("Polymorphic serialization is currently in preview.")]
     public partial class JsonPolymorphicTypeConfiguration : System.Collections.Generic.ICollection<(System.Type DerivedType, string? TypeDiscriminatorId)>, System.Collections.Generic.IEnumerable<(System.Type DerivedType, string? TypeDiscriminatorId)>, System.Collections.IEnumerable
     {
         public JsonPolymorphicTypeConfiguration(System.Type baseType) { }
@@ -974,7 +969,6 @@ namespace System.Text.Json.Serialization
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
         public System.Text.Json.Serialization.JsonPolymorphicTypeConfiguration WithDerivedType(System.Type derivedType, string? typeDiscriminatorId = null) { throw null; }
     }
-    [System.Runtime.Versioning.RequiresPreviewFeatures("Polymorphic serialization is currently in preview.")]
     public partial class JsonPolymorphicTypeConfiguration<TBaseType> : System.Text.Json.Serialization.JsonPolymorphicTypeConfiguration where TBaseType : class
     {
         public JsonPolymorphicTypeConfiguration() : base(default(System.Type)) { }

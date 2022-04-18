@@ -8,9 +8,6 @@
     <!-- SYSLIB1038: Suppress JsonInclude on inaccessible members warning -->
     <!-- SYSLIB1039: Suppress Polymorphic types not supported warning -->
     <NoWarn>$(NoWarn);SYSLIB0020;SYSLIB1037;SYSLIB1038;SYSLIB1039</NoWarn>
-    <!-- Remove once polymorphism is out of preview. -->
-    <EnablePreviewFeatures>true</EnablePreviewFeatures>
-    <GenerateRequiresPreviewFeaturesAttribute>true</GenerateRequiresPreviewFeaturesAttribute>
   </PropertyGroup>
 
   <PropertyGroup>

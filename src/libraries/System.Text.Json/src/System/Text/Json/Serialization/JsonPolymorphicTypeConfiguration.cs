@@ -10,7 +10,6 @@ namespace System.Text.Json.Serialization
     /// <summary>
     /// Defines polymorphic configuration for a specified base type.
     /// </summary>
-    [System.Runtime.Versioning.RequiresPreviewFeatures("Polymorphic serialization is currently in preview.")]
     public class JsonPolymorphicTypeConfiguration : IJsonPolymorphicTypeConfiguration, ICollection<(Type DerivedType, string? TypeDiscriminatorId)>
     {
         private readonly List<(Type DerivedType, string? TypeDiscriminatorId)> _derivedTypes = new();
@@ -168,7 +167,6 @@ namespace System.Text.Json.Serialization
     /// Defines polymorphic type configuration for a given type.
     /// </summary>
     /// <typeparam name="TBaseType">The type for which polymorphic configuration is provided.</typeparam>
-    [System.Runtime.Versioning.RequiresPreviewFeatures("Polymorphic serialization is currently in preview.")]
     public class JsonPolymorphicTypeConfiguration<TBaseType> : JsonPolymorphicTypeConfiguration where TBaseType : class
     {
         /// <summary>
