@@ -153,7 +153,8 @@
     <_runtimeOS Condition="$(_runtimeOS.StartsWith('tizen'))">linux</_runtimeOS>
     <_runtimeOS Condition="'$(PortableBuild)' == 'true'">$(_portableOS)</_runtimeOS>
 
-    <_packageOS Condition="'$(CrossBuild)' == 'true'">$(_hostOS.ToLowerInvariant)</_packageOS>
+    <_packageLibc Condition="'$(_packageLibc)' == '' and $(_runtimeOS.Contains('musl'))">-musl</_packageLibc>
+    <_packageOS Condition="'$(CrossBuild)' == 'true'">$(_hostOS.ToLowerInvariant)$(_packageLibc)</_packageOS>
     <_packageOS Condition="'$(_packageOS)' == '' and '$(PortableBuild)' == 'true'">$(_portableOS)</_packageOS>
     <_packageOS Condition="'$(_packageOS)' == ''">$(_runtimeOS)</_packageOS>
   </PropertyGroup>
@@ -182,9 +183,9 @@
     <MicrosoftNetCoreIlasmPackageRuntimeId>$(ToolsRID)</MicrosoftNetCoreIlasmPackageRuntimeId>
 
     <PackageRID>$(_packageOS)-$(TargetArchitecture)</PackageRID>
-    <PackageRID Condition="'$(PortableBuild)' == 'true'">$(_portableOS)-$(TargetArchitecture)</PackageRID>
 
     <OutputRid Condition="'$(OutputRid)' == ''">$(PackageRID)</OutputRid>
+    <OutputRid Condition="'$(PortableBuild)' == 'true'">$(_portableOS)-$(TargetArchitecture)</OutputRid>
   </PropertyGroup>
 
   <PropertyGroup Label="CalculateTargetOSName" Condition="'$(SkipInferTargetOSName)' != 'true'">
