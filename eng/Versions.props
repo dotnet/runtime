@@ -49,7 +49,7 @@
     <!--
       TODO: Remove pinned version once arcade supplies a 4.3 compiler.
     -->
-    <MicrosoftNetCompilersToolsetVersion>4.3.0-1.22208.1</MicrosoftNetCompilersToolsetVersion>
+    <MicrosoftNetCompilersToolsetVersion>4.3.0-1.22215.4</MicrosoftNetCompilersToolsetVersion>
     <!-- SDK dependencies -->
     <MicrosoftDotNetCompatibilityVersion>2.0.0-alpha.1.21525.11</MicrosoftDotNetCompatibilityVersion>
     <!-- Arcade dependencies -->
