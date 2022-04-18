@@ -54,21 +54,21 @@ unsafe class Runtime_58874
                 const int PAGE_READWRITE = 0x04;
 
                 // Reserve 2 pages
-                void* pages = VirtualAlloc(null, 0x2000, MEM_RESERVE, PAGE_READWRITE);
-                if (pages == null)
+                mem = VirtualAlloc(null, 0x2000, MEM_RESERVE, PAGE_READWRITE);
+                if (mem != null)
                 {
-                    return null;
-                }
-                // Commit first page
-                mem = VirtualAlloc(pages, 0x1000, MEM_COMMIT, PAGE_READWRITE);
-                if (mem != pages)
-                {
-                    return null;
+                    // Commit first page
+                    mem = VirtualAlloc(mem, 0x1000, MEM_COMMIT, PAGE_READWRITE);
                 }
             }
             else
             {
                 mem = NativeMemory.Alloc(0x1000);
+            }
+
+            if (mem == null)
+            {
+                return null;
             }
 
             return new EndOfPage { _addr = mem };
