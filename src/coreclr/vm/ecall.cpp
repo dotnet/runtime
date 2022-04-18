@@ -187,7 +187,7 @@ GARY_IMPL(PCODE, g_FCDynamicallyAssignedImplementations,
 
 #else // !DACCESS_COMPILE
 
-extern "C" PCODE g_FCDynamicallyAssignedImplementations[ECall::NUM_DYNAMICALLY_ASSIGNED_FCALL_IMPLEMENTATIONS] = {
+PCODE g_FCDynamicallyAssignedImplementations[ECall::NUM_DYNAMICALLY_ASSIGNED_FCALL_IMPLEMENTATIONS] = {
     #undef DYNAMICALLY_ASSIGNED_FCALL_IMPL
     #define DYNAMICALLY_ASSIGNED_FCALL_IMPL(id,defaultimpl) GetEEFuncEntryPoint(defaultimpl),
     DYNAMICALLY_ASSIGNED_FCALLS()

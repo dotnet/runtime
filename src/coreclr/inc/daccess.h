@@ -661,7 +661,6 @@ public:
 
 #ifdef DACCESS_COMPILE
 
-extern DacTableInfo g_dacTableInfo;
 extern DacGlobals g_dacGlobals;
 
 #ifdef __cplusplus

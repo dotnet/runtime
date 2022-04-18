@@ -26,7 +26,7 @@
 extern PTR_ECHash gFCallMethods[FCALL_HASH_SIZE];
 extern TADDR gLowestFCall;
 extern TADDR gHighestFCall;
-extern "C" PCODE g_FCDynamicallyAssignedImplementations;
+extern PCODE g_FCDynamicallyAssignedImplementations[ECall::NUM_DYNAMICALLY_ASSIGNED_FCALL_IMPLEMENTATIONS];
 extern DWORD gThreadTLSIndex;
 extern DWORD gAppDomainTLSIndex;
 extern "C" void STDCALL ThePreStubPatchLabel(void);
@@ -108,7 +108,7 @@ void DacGlobals::Initialize()
 #else
 // Only dynamically initialize on non-MSVC builds since we can't handle symbol aliasing
 // the same way we do with MSVC to statically initialize the DAC table.
-DLLEXPORT DacGlobals g_DacTable;
+DLLEXPORT DacGlobals g_dacTable;
 
 void DacGlobals::InitializeEntries()
 {
@@ -148,7 +148,7 @@ void DacGlobals::InitializeEntries()
 
 void DacGlobals::Initialize()
 {
-    g_DacTable.InitializeEntries();
+    g_dacTable.InitializeEntries();
 }
 #endif
 #endif // DEBUGGER_SUPPORTED
