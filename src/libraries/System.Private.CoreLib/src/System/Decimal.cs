@@ -371,8 +371,12 @@ namespace System
                 //
                 // Given that scale is bound by 0 and 28, inclusive, the returned exponent will be between 95
                 // and 67, inclusive. That is between `(p - 1)` and `(p - 1) - MaxScale`.
+                //
+                // The generalized algorithm for converting from scale to exponent is then `exponent = 95 - scale`.
 
-                return (sbyte)(95 - Scale);
+                sbyte exponent = (sbyte)(95 - Scale);
+                Debug.Assert((exponent >= 67) && (exponent <= 95));
+                return exponent;
             }
         }
 
@@ -1146,15 +1150,7 @@ namespace System
         long IFloatingPoint<decimal>.GetExponentShortestBitLength()
         {
             sbyte exponent = Exponent;
-
-            if (exponent >= 0)
-            {
-                return (sizeof(sbyte) * 8) - sbyte.LeadingZeroCount(exponent);
-            }
-            else
-            {
-                return (sizeof(sbyte) * 8) + 1 - sbyte.LeadingZeroCount((sbyte)(~exponent));
-            }
+            return (sizeof(sbyte) * 8) - sbyte.LeadingZeroCount(exponent);
         }
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.GetExponentByteCount()" />
