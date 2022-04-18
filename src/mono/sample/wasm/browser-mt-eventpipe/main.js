@@ -41,7 +41,7 @@ async function main() {
     console.log('after createDotnetRuntime')
 
     try {
-        const testMeaning = BINDING.bind_static_method("[Wasm.Browser.CJS.Sample] Sample.Test:TestMeaning");
+        const testMeaning = BINDING.bind_static_method("[Wasm.Browser.ThreadsEP.Sample] Sample.Test:TestMeaning");
         const ret = testMeaning();
         document.getElementById("out").innerHTML = `${ret} as computed on dotnet ver ${RuntimeBuildInfo.ProductVersion}`;
 
