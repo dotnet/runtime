@@ -4734,6 +4734,11 @@ BOOL MetaSig::CompareVariableConstraints(const Substitution *pSubst1,
             if ((specialConstraints2 & (gpDefaultConstructorConstraint | gpNotNullableValueTypeConstraint)) == 0)
                 return FALSE;
         }
+        if ((specialConstraints1 & gpAcceptByRefLike) != 0)
+        {
+            if ((specialConstraints2 & gpAcceptByRefLike) == 0)
+                return FALSE;
+        }
     }
 
 
