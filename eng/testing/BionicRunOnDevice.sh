@@ -37,7 +37,6 @@ _RuntimeDir=$(dirname $runtimeExe)
 # Consume OpenSSL as found on Helix
 if [ -d "$_RuntimeDir/openssl" ]; then
 	_thisArch=$(uname -m)
-	echo "****** arch is $_thisArch"
 	case "$_thisArch" in
 		x86_64)
 			_thisArchAndroid=x86_64
