@@ -38,11 +38,7 @@ wasi_transport_send (void *data, int len)
 		res = write (conn_fd, (const char*)data, len);
 	} while (res == -1);
 
-	if (res != len)
-		return FALSE;
-	else
-		return TRUE;
-	return TRUE;
+	return res == len;
 }
 
 /*
