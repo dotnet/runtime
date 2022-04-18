@@ -2805,6 +2805,9 @@
         <ExcludeList Include = "$(XunitTestBinBase)/Loader/classloader/RefFields/Validate/**">
             <Issue>expected failure: unsupported type with ref field fails at AOT compile time, not runtime</Issue>
         </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/Loader/classloader/generics/ByRefLike/Validate/**">
+            <Issue>expected failure: unsupported type with ByRefLike parameters currently fails at AOT compile time, not runtime</Issue>
+        </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/Interop/SuppressGCTransition/SuppressGCTransitionTest/**">
             <Issue>https://github.com/dotnet/runtime/issues/57361</Issue>
         </ExcludeList>

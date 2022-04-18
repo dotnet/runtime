@@ -3633,7 +3633,7 @@ inline bool Compiler::IsSharedStaticHelper(GenTree* tree)
 
     bool result1 =
         // More helpers being added to IsSharedStaticHelper (that have similar behaviors but are not true
-        // ShareStaticHelperts)
+        // ShareStaticHelpers)
         helper == CORINFO_HELP_STRCNS || helper == CORINFO_HELP_BOX ||
 
         // helpers being added to IsSharedStaticHelper

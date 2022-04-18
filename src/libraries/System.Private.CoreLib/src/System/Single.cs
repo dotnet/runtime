@@ -82,21 +82,71 @@ namespace System
 
         internal const uint SignMask = 0x8000_0000;
         internal const int SignShift = 31;
+        internal const byte ShiftedSignMask = (byte)(SignMask >> SignShift);
 
-        internal const uint ExponentMask = 0x7F80_0000;
-        internal const int ExponentShift = 23;
-        internal const uint ShiftedExponentMask = ExponentMask >> ExponentShift;
+        internal const uint BiasedExponentMask = 0x7F80_0000;
+        internal const int BiasedExponentShift = 23;
+        internal const byte ShiftedBiasedExponentMask = (byte)(BiasedExponentMask >> BiasedExponentShift);
 
-        internal const uint SignificandMask = 0x007F_FFFF;
+        internal const uint TrailingSignificandMask = 0x007F_FFFF;
 
         internal const byte MinSign = 0;
         internal const byte MaxSign = 1;
 
-        internal const byte MinExponent = 0x00;
-        internal const byte MaxExponent = 0xFF;
+        internal const byte MinBiasedExponent = 0x00;
+        internal const byte MaxBiasedExponent = 0xFF;
 
-        internal const uint MinSignificand = 0x0000_0000;
-        internal const uint MaxSignificand = 0x007F_FFFF;
+        internal const byte ExponentBias = 127;
+
+        internal const sbyte MinExponent = -126;
+        internal const sbyte MaxExponent = +127;
+
+        internal const uint MinTrailingSignificand = 0x0000_0000;
+        internal const uint MaxTrailingSignificand = 0x007F_FFFF;
+
+        private byte BiasedExponent
+        {
+            get
+            {
+                uint bits = BitConverter.SingleToUInt32Bits(m_value);
+                return ExtractBiasedExponentFromBits(bits);
+            }
+        }
+
+        private sbyte Exponent
+        {
+            get
+            {
+                return (sbyte)(BiasedExponent - ExponentBias);
+            }
+        }
+
+        private uint Significand
+        {
+            get
+            {
+                return TrailingSignificand | ((BiasedExponent != 0) ? (1U << BiasedExponentShift) : 0U);
+            }
+        }
+
+        private uint TrailingSignificand
+        {
+            get
+            {
+                uint bits = BitConverter.SingleToUInt32Bits(m_value);
+                return ExtractTrailingSignificandFromBits(bits);
+            }
+        }
+
+        internal static byte ExtractBiasedExponentFromBits(uint bits)
+        {
+            return (byte)((bits >> BiasedExponentShift) & ShiftedBiasedExponentMask);
+        }
+
+        internal static uint ExtractTrailingSignificandFromBits(uint bits)
+        {
+            return bits & TrailingSignificandMask;
+        }
 
         /// <summary>Determines whether the specified value is finite (zero, subnormal, or normal).</summary>
         [NonVersionable]
@@ -171,16 +221,6 @@ namespace System
             int bits = BitConverter.SingleToInt32Bits(f);
             bits &= 0x7FFFFFFF;
             return (bits < 0x7F800000) && (bits != 0) && ((bits & 0x7F800000) == 0);
-        }
-
-        internal static int ExtractExponentFromBits(uint bits)
-        {
-            return (int)(bits >> ExponentShift) & (int)ShiftedExponentMask;
-        }
-
-        internal static uint ExtractSignificandFromBits(uint bits)
-        {
-            return bits & SignificandMask;
         }
 
         // Compares this object to another object, returning an integer that
@@ -505,12 +545,12 @@ namespace System
         {
             uint bits = BitConverter.SingleToUInt32Bits(value);
 
-            uint exponent = (bits >> ExponentShift) & ShiftedExponentMask;
-            uint significand = bits & SignificandMask;
+            byte biasedExponent = ExtractBiasedExponentFromBits(bits);
+            uint trailingSignificand = ExtractTrailingSignificandFromBits(bits);
 
             return (value > 0)
-                && (exponent != MinExponent) && (exponent != MaxExponent)
-                && (significand == MinSignificand);
+                && (biasedExponent != MinBiasedExponent) && (biasedExponent != MaxBiasedExponent)
+                && (trailingSignificand == MinTrailingSignificand);
         }
 
         /// <inheritdoc cref="IBinaryNumber{TSelf}.Log2(TSelf)" />
@@ -614,6 +654,66 @@ namespace System
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.Truncate(TSelf)" />
         public static float Truncate(float x) => MathF.Truncate(x);
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.GetExponentShortestBitLength()" />
+        long IFloatingPoint<float>.GetExponentShortestBitLength()
+        {
+            sbyte exponent = Exponent;
+
+            if (exponent >= 0)
+            {
+                return (sizeof(sbyte) * 8) - sbyte.LeadingZeroCount(exponent);
+            }
+            else
+            {
+                return (sizeof(sbyte) * 8) + 1 - sbyte.LeadingZeroCount((sbyte)(~exponent));
+            }
+        }
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.GetExponentByteCount()" />
+        int IFloatingPoint<float>.GetExponentByteCount() => sizeof(sbyte);
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.TryWriteExponentLittleEndian(Span{byte}, out int)" />
+        bool IFloatingPoint<float>.TryWriteExponentLittleEndian(Span<byte> destination, out int bytesWritten)
+        {
+            if (destination.Length >= sizeof(sbyte))
+            {
+                sbyte exponent = Exponent;
+                Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), exponent);
+
+                bytesWritten = sizeof(sbyte);
+                return true;
+            }
+            else
+            {
+                bytesWritten = 0;
+                return false;
+            }
+        }
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.GetSignificandBitLength()" />
+        long IFloatingPoint<float>.GetSignificandBitLength() => 24;
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.GetSignificandByteCount()" />
+        int IFloatingPoint<float>.GetSignificandByteCount() => sizeof(uint);
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.TryWriteSignificandLittleEndian(Span{byte}, out int)" />
+        bool IFloatingPoint<float>.TryWriteSignificandLittleEndian(Span<byte> destination, out int bytesWritten)
+        {
+            if (destination.Length >= sizeof(uint))
+            {
+                uint significand = Significand;
+                Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), significand);
+
+                bytesWritten = sizeof(uint);
+                return true;
+            }
+            else
+            {
+                bytesWritten = 0;
+                return false;
+            }
+        }
 
         //
         // IFloatingPointIeee754
