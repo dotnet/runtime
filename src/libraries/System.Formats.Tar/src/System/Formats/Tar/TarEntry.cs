@@ -313,23 +313,24 @@ namespace System.Formats.Tar
         // or if a directory exists in the location of 'destinationFileName'.
         private static void VerifyOverwriteFileIsPossible(string destinationFileName, bool overwrite)
         {
-            // In most cases, nothing exists in the destination, so we perform one check
-            if (Path.Exists(destinationFileName))
+            // In most cases, nothing exists in the destination, so we perform one initial check
+            if (!Path.Exists(destinationFileName))
             {
-                if (File.Exists(destinationFileName))
-                {
-                    if (!overwrite)
-                    {
-                        throw new IOException(string.Format(SR.IO_AlreadyExists_Name, destinationFileName));
-                    }
-                    File.Delete(destinationFileName);
-                }
-                // We never want to overwrite a directory, so we always throw
-                else if (Directory.Exists(destinationFileName))
-                {
-                    throw new IOException(string.Format(SR.IO_AlreadyExists_Name, destinationFileName));
-                }
+                return;
             }
+
+            // We never want to overwrite a directory, so we always throw
+            if (Directory.Exists(destinationFileName))
+            {
+                throw new IOException(string.Format(SR.IO_AlreadyExists_Name, destinationFileName));
+            }
+
+            // A file exists at this point
+            if (!overwrite)
+            {
+                throw new IOException(string.Format(SR.IO_AlreadyExists_Name, destinationFileName));
+            }
+            File.Delete(destinationFileName);
         }
 
         // Extracts the current entry to a location relative to the specified directory.
