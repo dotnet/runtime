@@ -1289,7 +1289,7 @@ namespace System.Reflection
             attributeType = (decoratedModule.ResolveType(scope.GetParentToken(caCtorToken), null, null) as RuntimeType)!;
 
             // Test attribute type against user provided attribute type filter
-            if (!attributeFilterType.IsAssignableFrom(attributeType))
+            if (!MatchesTypeFilter(attributeType, attributeFilterType))
                 return false;
 
             // Ensure if attribute type must be inheritable that it is inheritable
@@ -1369,6 +1369,23 @@ namespace System.Reflection
 
             GC.KeepAlive(ctorWithParameters);
             return result;
+        }
+
+        private static bool MatchesTypeFilter(RuntimeType attributeType, RuntimeType attributeFilterType)
+        {
+            if (attributeFilterType.IsGenericTypeDefinition)
+            {
+                for (RuntimeType? type = attributeType; type != null; type = (RuntimeType?)type.BaseType)
+                {
+                    if (type.IsConstructedGenericType && type.GetGenericTypeDefinition() == attributeFilterType)
+                    {
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+            return attributeFilterType.IsAssignableFrom(attributeType);
         }
         #endregion
 

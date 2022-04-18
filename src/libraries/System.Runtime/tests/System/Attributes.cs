@@ -295,10 +295,21 @@ namespace System.Tests
             GenericAttributesTestHelper<DateTime?>(t => Attribute.GetCustomAttributes(@event, t));
         }
 
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/56887", TestRuntimes.Mono)]
+        public static void GetCustomAttributesOnOpenGenericTypeRetrievesDerivedAttributes()
+        {
+            Attribute[] attributes = Attribute.GetCustomAttributes(typeof(HasGenericAttribute), typeof(GenericAttribute<>));
+            Assert.Equal(2, attributes.Length);
+            Assert.Equal(1, attributes.OfType<DerivesFromGenericAttribute>().Count());
+            Assert.Equal(1, attributes.OfType<GenericAttribute<string>>().Count());
+        }
+
         private static void GenericAttributesTestHelper<TGenericParameter>(Func<Type, Attribute[]> getCustomAttributes)
         {
             Attribute[] openGenericAttributes = getCustomAttributes(typeof(GenericAttribute<>));
-            Assert.Empty(openGenericAttributes);
+            Assert.True(openGenericAttributes.Length >= 1);
+            Assert.Equal(1, openGenericAttributes.OfType<GenericAttribute<TGenericParameter>>().Count());
 
             Attribute[] closedGenericAttributes = getCustomAttributes(typeof(GenericAttribute<TGenericParameter>));
             Assert.Equal(1, closedGenericAttributes.Length);
@@ -915,6 +926,11 @@ namespace System.Tests
     {
     }
 
+    public class DerivesFromGenericAttribute : GenericAttribute<bool>
+    {
+    }
+
+    [DerivesFromGeneric]
     [GenericAttribute<string>]
     public class HasGenericAttribute
     {
