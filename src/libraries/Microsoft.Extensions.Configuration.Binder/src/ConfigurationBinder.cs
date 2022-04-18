@@ -4,6 +4,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -303,11 +304,14 @@ namespace Microsoft.Extensions.Configuration
                 return instance;
             }
 
-            collectionInterface = FindOpenGenericInterface(typeof(IReadOnlyCollection<>), type);
+            collectionInterface = FindOpenGenericInterface(typeof(ISet<>), type);
+#if NET5_0_OR_GREATER
+            collectionInterface ??= FindOpenGenericInterface(typeof(IReadOnlySet<>), type);
+#endif
             if (collectionInterface != null)
             {
-                // IReadOnlyCollection<T> is guaranteed to have exactly one parameter
-                return BindToCollection(type, config, options);
+                // ISet<T> is guaranteed to have exactly one parameter
+                return BindToSet(type, config, options);
             }
 
             collectionInterface = FindOpenGenericInterface(typeof(ICollection<>), type);
@@ -615,7 +619,11 @@ namespace Microsoft.Extensions.Configuration
             else // e. g. IEnumerable<T>
             {
                 elementType = type.GetGenericArguments()[0];
-            }
+
+                if ((type = sourceType.GetInterface("IReadOnlySet`1", false)) != null)
+                {
+                    return (typeof(HashSet<>), type.GenericTypeArguments[0]);
+                }
 
             IList list = new List<object?>();
 

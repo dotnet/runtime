@@ -56,6 +56,10 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             
             public IEnumerable<string> NonInstantiatedIEnumerable { get; set; } = null!;
             public ISet<string> InstantiatedISet { get; set; } = new HashSet<string>();
+            #if NET5_0_OR_GREATER
+            public IReadOnlySet<string> InstantiatedIReadOnlySet { get; set; } = new HashSet<string>();
+            public IReadOnlySet<string> NonInstantiatedIReadOnlySet { get; set; }
+            #endif
             public IEnumerable<string> InstantiatedIEnumerable { get; set; } = new List<string>();
             public ICollection<string> InstantiatedICollection { get; set; } = new List<string>();
             public IReadOnlyCollection<string> InstantiatedIReadOnlyCollection { get; set; } = new List<string>();
@@ -499,11 +503,52 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
 
             var options = config.Get<ComplexOptions>()!;
 
-            Assert.Equal(2, options.NonInstantiatedISet.Count());
+            Assert.Equal(2, options.NonInstantiatedISet.Count);
             Assert.Equal("Yo1", options.NonInstantiatedISet.ElementAt(0));
             Assert.Equal("Yo2", options.NonInstantiatedISet.ElementAt(1));
         }
 
+#if NET5_0_OR_GREATER
+        [Fact]
+        public void CanBindInstantiatedIReadOnlySet()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"InstantiatedIReadOnlySet:0", "Yo1"},
+                {"InstantiatedIReadOnlySet:1", "Yo2"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<ComplexOptions>()!;
+
+            Assert.Equal(2, options.InstantiatedIReadOnlySet.Count);
+            Assert.Equal("Yo1", options.InstantiatedIReadOnlySet.ElementAt(0));
+            Assert.Equal("Yo2", options.InstantiatedIReadOnlySet.ElementAt(1));
+        }
+
+        [Fact]
+        public void CanBindNonInstantiatedIReadOnlySet()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"NonInstantiatedIReadOnlySet:0", "Yo1"},
+                {"NonInstantiatedIReadOnlySet:1", "Yo2"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<ComplexOptions>()!;
+
+            Assert.Equal(2, options.NonInstantiatedIReadOnlySet.Count);
+            Assert.Equal("Yo1", options.NonInstantiatedIReadOnlySet.ElementAt(0));
+            Assert.Equal("Yo2", options.NonInstantiatedIReadOnlySet.ElementAt(1));
+        }
+#endif
         [Fact]
         public void CanBindNonInstantiatedDictionaryOfISet()
         {
