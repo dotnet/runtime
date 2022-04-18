@@ -2877,7 +2877,6 @@ namespace System.Net.Http.Functional.Tests
                     {
                         HttpRequestMessage request = CreateRequest(HttpMethod.Get, uri, UseVersion);
                         HttpResponseMessage response = await client.SendAsync(request);
-                        Console.WriteLine(response);
                         Assert.Equal(1, response.Version.Major);
                     }
                 },

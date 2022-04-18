@@ -34,21 +34,21 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <summary>Gets a <see cref="BDD"/> that represents the specified <see cref="UnicodeCategory"/>.</summary>
         public static BDD GetCategory(UnicodeCategory category) =>
             Volatile.Read(ref s_categories[(int)category]) ??
-            Interlocked.CompareExchange(ref s_categories[(int)category], BDD.Deserialize(UnicodeCategoryRanges.GetSerializedCategory(category), CharSetSolver.Instance), null) ??
+            Interlocked.CompareExchange(ref s_categories[(int)category], BDD.Deserialize(UnicodeCategoryRanges.GetSerializedCategory(category)), null) ??
             s_categories[(int)category]!;
 
         /// <summary>Gets a <see cref="BDD"/> that represents the \s character class.</summary>
         public static BDD WhiteSpace =>
             s_whiteSpace ??
-            Interlocked.CompareExchange(ref s_whiteSpace, BDD.Deserialize(UnicodeCategoryRanges.SerializedWhitespaceBDD, CharSetSolver.Instance), null) ??
+            Interlocked.CompareExchange(ref s_whiteSpace, BDD.Deserialize(UnicodeCategoryRanges.SerializedWhitespaceBDD), null) ??
             s_whiteSpace;
 
         /// <summary>Gets a <see cref="BDD"/> that represents the \w character class.</summary>
         /// <remarks>\w is the union of the 8 categories: 0,1,2,3,4,5,8,18</remarks>
-        public static BDD WordLetter =>
+        public static BDD WordLetter(CharSetSolver solver) =>
             s_wordLetter ??
             Interlocked.CompareExchange(ref s_wordLetter,
-                                        CharSetSolver.Instance.Or(new[]
+                                        solver.Or(new[]
                                         {
                                             GetCategory(UnicodeCategory.UppercaseLetter),
                                             GetCategory(UnicodeCategory.LowercaseLetter),
@@ -67,9 +67,9 @@ namespace System.Text.RegularExpressions.Symbolic
         /// \u200C (zero width non joiner) and \u200D (zero width joiner) that are treated as if they were
         /// word characters in the context of the anchors \b and \B.
         /// </summary>
-        public static BDD WordLetterForAnchors =>
+        public static BDD WordLetterForAnchors(CharSetSolver solver) =>
             s_wordLetterForAnchors ??
-            Interlocked.CompareExchange(ref s_wordLetterForAnchors, CharSetSolver.Instance.Or(WordLetter, CharSetSolver.Instance.CreateCharSetFromRange('\u200C', '\u200D')), null) ??
+            Interlocked.CompareExchange(ref s_wordLetterForAnchors, solver.Or(WordLetter(solver), solver.CreateSetFromRange('\u200C', '\u200D')), null) ??
             s_wordLetterForAnchors;
     }
 }

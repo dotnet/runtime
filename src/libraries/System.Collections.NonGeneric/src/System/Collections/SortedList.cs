@@ -378,7 +378,7 @@ namespace System.Collections
         public virtual object? GetByIndex(int index)
         {
             if (index < 0 || index >= Count)
-                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_IndexMustBeLess);
             return values[index];
         }
 
@@ -406,7 +406,7 @@ namespace System.Collections
         //
         public virtual object GetKey(int index)
         {
-            if (index < 0 || index >= Count) throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
+            if (index < 0 || index >= Count) throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_IndexMustBeLess);
             return keys[index];
         }
 
@@ -514,7 +514,7 @@ namespace System.Collections
         //
         public virtual void RemoveAt(int index)
         {
-            if (index < 0 || index >= Count) throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
+            if (index < 0 || index >= Count) throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_IndexMustBeLess);
             _size--;
             if (index < _size)
             {
@@ -542,7 +542,7 @@ namespace System.Collections
         //
         public virtual void SetByIndex(int index, object? value)
         {
-            if (index < 0 || index >= Count) throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
+            if (index < 0 || index >= Count) throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_IndexMustBeLess);
             values[index] = value;
             version++;
         }

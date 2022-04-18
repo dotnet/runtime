@@ -14,7 +14,7 @@
 {
 }
 .assembly extern xunit.core {}
-.namespace BoxTest
+.namespace BoxTest_instance_il
 {
   .class abstract auto ansi BaseTest extends [mscorlib]System.Object
   {
@@ -33,7 +33,7 @@
 
   } // end of class 'BaseTest'
 
-  .class auto ansi Test extends BoxTest.BaseTest
+  .class public auto ansi Test extends BoxTest_instance_il.BaseTest
   {
     .field private class System.Object m_num
     .method family hidebysig instance class System.Object 
@@ -59,7 +59,7 @@
       IL_002a:  ldarg.0
       IL_002b:  ldarg.1
       IL_002c:  ldarg.2
-      IL_002d:  callvirt   instance class System.Object BoxTest.BaseTest::Fibonacci2(class System.Object,
+      IL_002d:  callvirt   instance class System.Object BoxTest_instance_il.BaseTest::Fibonacci2(class System.Object,
                                                                                      class System.Object)
       IL_0032:  ret
     } // end of method 'Test::Fibonacci'
@@ -96,7 +96,7 @@
       IL_002e:  stloc.2
       IL_002f:  ldloc.s   V_2
       IL_0031:  box        [mscorlib]System.Boolean
-      IL_0036:  call       instance class System.Object BoxTest.Test::Fibonacci(class System.Object,
+      IL_0036:  call       instance class System.Object BoxTest_instance_il.Test::Fibonacci(class System.Object,
                                                                                 class System.Object)
       IL_003b:  unbox      [mscorlib]System.Single
       IL_0040:  ldind.r4
@@ -110,7 +110,7 @@
       IL_0050:  ldloc.s   V_1
       IL_0052:  box        [mscorlib]System.Single
       IL_0057:  ldarg.2
-      IL_0058:  call       instance class System.Object BoxTest.Test::Fibonacci(class System.Object,
+      IL_0058:  call       instance class System.Object BoxTest_instance_il.Test::Fibonacci(class System.Object,
                                                                                 class System.Object)
       IL_005d:  unbox      [mscorlib]System.Single
       IL_0062:  ldind.r4
@@ -140,7 +140,7 @@
       .maxstack  2
       .locals ([0] float32 V_0)
       IL_0000:  ldarg.0
-      IL_0001:  call       instance void BoxTest.BaseTest::.ctor()
+      IL_0001:  call       instance void BoxTest_instance_il.BaseTest::.ctor()
       IL_0006:  ldarg.0
       IL_0007:  ldarg.1
       IL_0008:  unbox      [mscorlib]System.Double
@@ -149,7 +149,7 @@
       IL_000f:  stloc.0
       IL_0010:  ldloc.s   V_0
       IL_0012:  box        [mscorlib]System.Single
-      IL_0017:  stfld      class System.Object BoxTest.Test::m_num
+      IL_0017:  stfld      class System.Object BoxTest_instance_il.Test::m_num
       IL_001c:  ret
     } // end of method 'Test::.ctor'
 
@@ -160,21 +160,21 @@
       .locals ([0] bool V_0)
       IL_0000:  ldarg.0
       IL_0001:  ldarg.0
-      IL_0002:  ldfld      class System.Object BoxTest.Test::m_num
+      IL_0002:  ldfld      class System.Object BoxTest_instance_il.Test::m_num
       IL_0007:  ldc.i4.1
       IL_0008:  stloc.0
       IL_0009:  ldloc.s   V_0
       IL_000b:  box        [mscorlib]System.Boolean
-      IL_0010:  call       instance class System.Object BoxTest.Test::Fibonacci(class System.Object,
+      IL_0010:  call       instance class System.Object BoxTest_instance_il.Test::Fibonacci(class System.Object,
                                                                                 class System.Object)
       IL_0015:  pop
       IL_0016:  call       void [System.Console]System.Console::WriteLine()
       IL_001b:  ldarg.0
-      IL_001c:  ldfld      class System.Object BoxTest.Test::m_num
+      IL_001c:  ldfld      class System.Object BoxTest_instance_il.Test::m_num
       IL_0021:  ret
     } // end of method 'Test::Print'
 
-    .method private hidebysig static int32
+    .method public hidebysig static int32
             Main() il managed
     {
       .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
@@ -182,16 +182,16 @@
       )
       .entrypoint
       .maxstack  2
-      .locals ([0] class BoxTest.Test test,
+      .locals ([0] class BoxTest_instance_il.Test test,
                [1] float64 V_1)
       IL_0000:  ldc.r8     20.
       IL_0009:  stloc.1
       IL_000a:  ldloc.s   V_1
       IL_000c:  box        [mscorlib]System.Double
-      IL_0011:  newobj     instance void BoxTest.Test::.ctor(class System.Object)
+      IL_0011:  newobj     instance void BoxTest_instance_il.Test::.ctor(class System.Object)
       IL_0016:  stloc.0
       IL_0017:  ldloc.0
-      IL_0018:  call       instance class System.Object BoxTest.Test::Print()
+      IL_0018:  call       instance class System.Object BoxTest_instance_il.Test::Print()
       IL_001d:  pop
       IL_001e:  ldstr      "*** PASSED ***"
       IL_0023:  call       void [System.Console]System.Console::WriteLine(class System.String)
@@ -201,5 +201,5 @@
 
   } // end of class 'Test'
 
-} // end of namespace 'BoxTest'
+} // end of namespace 'BoxTest_instance_il'
 

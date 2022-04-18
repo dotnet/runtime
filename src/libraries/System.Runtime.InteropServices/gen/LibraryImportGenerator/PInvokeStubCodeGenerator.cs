@@ -95,8 +95,9 @@ namespace Microsoft.Interop
             {
                 BoundGenerator generator = CreateGenerator(argType);
 
-                // Check each marshaler if the current target framework is supported or not.
-                SupportsTargetFramework &= generator.Generator.IsSupported(environment.TargetFramework, environment.TargetFrameworkVersion);
+                // Check if marshalling info and generator support the current target framework.
+                SupportsTargetFramework &= argType.MarshallingAttributeInfo is not MissingSupportMarshallingInfo
+                    && generator.Generator.IsSupported(environment.TargetFramework, environment.TargetFrameworkVersion);
 
                 // Check if generator is either blittable or just a forwarder.
                 noMarshallingNeeded &= generator is { Generator: BlittableMarshaller, TypeInfo: { IsByRef: false } }

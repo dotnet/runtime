@@ -27,14 +27,20 @@ namespace System.Text.Json.SourceGeneration.Tests
         [InlineData(typeof(StructWithBadIgnoreAttribute))]
         public override async Task JsonIgnoreCondition_WhenWritingNull_OnValueType_Fail_EmptyJson(Type type)
         {
-            await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper("", type));
+            InvalidOperationException ioe = await Assert.ThrowsAsync<InvalidOperationException>(async () => await Serializer.DeserializeWrapper("", type));
+            ValidateInvalidOperationException();
 
-            InvalidOperationException ioe = await Assert.ThrowsAsync<InvalidOperationException>(async () => await Serializer.SerializeWrapper(Activator.CreateInstance(type), type));
-            string exAsStr = ioe.ToString();
-            Assert.Contains("JsonIgnoreCondition.WhenWritingNull", exAsStr);
-            Assert.Contains("MyBadMember", exAsStr);
-            Assert.Contains(type.ToString(), exAsStr);
-            Assert.Contains("JsonIgnoreCondition.WhenWritingDefault", exAsStr);
+            ioe = await Assert.ThrowsAsync<InvalidOperationException>(async () => await Serializer.SerializeWrapper(Activator.CreateInstance(type), type));
+            ValidateInvalidOperationException();
+
+            void ValidateInvalidOperationException()
+            {
+                string exAsStr = ioe.ToString();
+                Assert.Contains("JsonIgnoreCondition.WhenWritingNull", exAsStr);
+                Assert.Contains("MyBadMember", exAsStr);
+                Assert.Contains(type.ToString(), exAsStr);
+                Assert.Contains("JsonIgnoreCondition.WhenWritingDefault", exAsStr);
+            }
         }
 
         [Fact]
@@ -314,7 +320,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         public override async Task JsonIgnoreCondition_WhenWritingNull_OnValueType_Fail_EmptyJson(Type type)
         {
             // Since this code goes down fast-path, there's no warm up and we hit the reader exception about having no tokens.
-            await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper("", type));
+            await Assert.ThrowsAsync<InvalidOperationException>(async () => await Serializer.DeserializeWrapper("", type));
             await Assert.ThrowsAsync<InvalidOperationException>(async () => await Serializer.SerializeWrapper(Activator.CreateInstance(type), type));
         }
 

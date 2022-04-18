@@ -71,9 +71,14 @@
 //                                              default traits if it can be assigned from 0.
 // static const bool IsDeleted(const ELEMENT &e) Compare element with Deleted sentinal value. May be inherited from the
 //                                              default traits if it can be assigned from -1.
+// static bool ShouldDelete(const ELEMENT &e)   Called in addition to IsDeleted() when s_supports_autoremove is true, see more
+//                                              information there.
 //
 // static void OnDestructPerEntryCleanupAction(ELEMENT& e) Called on every element when in hashtable destructor.
 //                                              s_DestructPerEntryCleanupAction must be set to true if implemented.
+// static void OnRemovePerEntryCleanupAction(ELEMENT& e) Called when an element is removed from the hashtable, including when
+//                                              the hashtable is destructed. s_RemovePerEntryCleanupAction must be set to true
+//                                              if implemented.
 //
 // s_growth_factor_numerator
 // s_growth_factor_denominator                  Factor to grow allocation (numerator/denominator).
@@ -92,7 +97,19 @@
 //                                              in that there may be more copies of the template instantiated through
 //                                              the system as different variants are used.
 //
+// s_supports_autoremove                        When autoremove is supported, ShouldDelete() is called in addition to
+//                                              IsDeleted() in any situation that involves walking the table's elements, to
+//                                              determine if an element should be deleted. It enables the hash table to
+//                                              self-clean elements whose underlying lifetime may be controlled externally. Note
+//                                              that since some lookup/iteration operations are const (can operate on a
+//                                              "const SHash"), when autoremove is supported, any such const operation may still
+//                                              modify the hash table. If this is set to true, s_supports_remove must also be
+//                                              true.
+//
 // s_DestructPerEntryCleanupAction              Set to true if OnDestructPerEntryCleanupAction has non-empty implementation.
+// s_RemovePerEntryCleanupAction                Set to true if OnRemovePerEntryCleanupAction has non-empty implementation.
+//                                              Only one of s_DestructPerEntryCleanupAction and s_RemovePerEntryCleanupAction
+//                                              may be set to true.
 //
 // DefaultHashTraits provides defaults for seldomly customized values in traits classes.
 
@@ -115,14 +132,19 @@ class DefaultSHashTraits
     static const COUNT_T s_minimum_allocation = 7;
 
     static const bool s_supports_remove = true;
+    static const bool s_supports_autoremove = false;
 
     static ELEMENT Null() { return (ELEMENT)(TADDR)0; }
     static ELEMENT Deleted() { return (ELEMENT)(TADDR)-1; }
     static bool IsNull(const ELEMENT &e) { return e == (ELEMENT)(TADDR)0; }
     static bool IsDeleted(const ELEMENT &e) { return e == (ELEMENT)(TADDR)-1; }
+    static bool ShouldDelete(const ELEMENT &e) { return false; }
 
     static inline void OnDestructPerEntryCleanupAction(const ELEMENT& e) { /* Do nothing */ }
     static const bool s_DestructPerEntryCleanupAction = false;
+
+    static void OnRemovePerEntryCleanupAction(const ELEMENT &e) {}
+    static const bool s_RemovePerEntryCleanupAction = false;
 
     static const bool s_NoThrow = true;
 
@@ -176,6 +198,10 @@ class EMPTY_BASES_DECL SHash : public TRAITS
     // Pointer-based flavor of Lookup (allows efficient access to tables of structures)
 
     const element_t* LookupPtr(key_t key) const;
+
+    // Pointer-based flavor to replace an existing element (allows efficient access to tables of structures)
+
+    void ReplacePtr(const element_t *elementPtr, const element_t &newElement, bool invokeCleanupAction = true);
 
     // Add an element to the hash table.  This will never replace an element; multiple
     // elements may be stored with the same key.
@@ -298,7 +324,7 @@ class EMPTY_BASES_DECL SHash : public TRAITS
     // it is perfectly fine for the element to be a duplicate - if so it
     // is added an additional time. Returns TRUE if a new empty spot was used;
     // FALSE if an existing deleted slot.
-    static BOOL Add(element_t *table, count_t tableSize, const element_t &element);
+    BOOL Add(element_t *table, count_t tableSize, const element_t &element);
 
     // Utility function to add a new element to the hash table, if no element with the same key
     // is already there. Otherwise, it will replace the existing element. This has the effect of
@@ -308,7 +334,7 @@ class EMPTY_BASES_DECL SHash : public TRAITS
     // Utility function to find the first element with the given key in
     // the hash table.
 
-    static const element_t* Lookup(PTR_element_t table, count_t tableSize, key_t key);
+    const element_t* Lookup(PTR_element_t table, count_t tableSize, key_t key) const;
 
     // Utility function to remove the first element with the given key
     // in the hash table.
@@ -334,13 +360,17 @@ class EMPTY_BASES_DECL SHash : public TRAITS
         // Some compilers won't compile the separate implementation in shash.inl
       protected:
 
+        SHash *m_hash;
         PTR_element_t m_table;
         count_t m_tableSize;
         count_t m_index;
 
-
+        // Iteration may modify the hash table if s_supports_autoremove is true. Since it typically does not modify the hash
+        // table, it should be possible to iterate over a "const SHash". So this takes a "const SHash *" and casts away the
+        // const to support autoremove.
         Index(const SHash *hash, BOOL begin)
-        : m_table(hash->m_table),
+        : m_hash(const_cast<SHash *>(hash)),
+            m_table(hash->m_table),
             m_tableSize(hash->m_tableSize),
             m_index(begin ? 0 : m_tableSize)
         {
@@ -358,9 +388,24 @@ class EMPTY_BASES_DECL SHash : public TRAITS
         {
             LIMITED_METHOD_CONTRACT;
 
-            if (m_index < m_tableSize)
-                if (TRAITS::IsNull(m_table[m_index]) || TRAITS::IsDeleted(m_table[m_index]))
-                    Next();
+            if (m_index >= m_tableSize)
+            {
+                return;
+            }
+
+            if (!TRAITS::IsNull(m_table[m_index]) && !TRAITS::IsDeleted(m_table[m_index]))
+            {
+                if (TRAITS::s_supports_autoremove && TRAITS::ShouldDelete(m_table[m_index]))
+                {
+                    m_hash->RemoveElement(m_table, m_tableSize, &m_table[m_index]);
+                }
+                else
+                {
+                    return;
+                }
+            }
+
+            Next();
         }
 
         void Next()
@@ -376,7 +421,16 @@ class EMPTY_BASES_DECL SHash : public TRAITS
                 if (m_index >= m_tableSize)
                     break;
                 if (!TRAITS::IsNull(m_table[m_index]) && !TRAITS::IsDeleted(m_table[m_index]))
-                    break;
+                {
+                    if (TRAITS::s_supports_autoremove && TRAITS::ShouldDelete(m_table[m_index]))
+                    {
+                        m_hash->RemoveElement(m_table, m_tableSize, &m_table[m_index]);
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
             }
         }
 
@@ -442,11 +496,26 @@ class EMPTY_BASES_DECL SHash : public TRAITS
                 m_increment = (hash % (this->m_tableSize-1)) + 1;
 
                 // Find first valid element
+
                 if (TRAITS::IsNull(this->m_table[this->m_index]))
+                {
                     this->m_index = this->m_tableSize;
-                else if (TRAITS::IsDeleted(this->m_table[this->m_index])
-                        || !TRAITS::Equals(m_key, TRAITS::GetKey(this->m_table[this->m_index])))
-                    Next();
+                    return;
+                }
+
+                if (!TRAITS::IsDeleted(this->m_table[this->m_index]))
+                {
+                    if (TRAITS::s_supports_autoremove && TRAITS::ShouldDelete(this->m_table[this->m_index]))
+                    {
+                        this->m_hash->RemoveElement(this->m_table, this->m_tableSize, &this->m_table[this->m_index]);
+                    }
+                    else if (TRAITS::Equals(m_key, TRAITS::GetKey(this->m_table[this->m_index])))
+                    {
+                        return;
+                    }
+                }
+
+                Next();
             }
         }
 
@@ -466,8 +535,18 @@ class EMPTY_BASES_DECL SHash : public TRAITS
                     break;
                 }
 
-                if (!TRAITS::IsDeleted(this->m_table[this->m_index])
-                        && TRAITS::Equals(m_key, TRAITS::GetKey(this->m_table[this->m_index])))
+                if (TRAITS::IsDeleted(this->m_table[this->m_index]))
+                {
+                    continue;
+                }
+
+                if (TRAITS::s_supports_autoremove && TRAITS::ShouldDelete(this->m_table[this->m_index]))
+                {
+                    this->m_hash->RemoveElement(this->m_table, this->m_tableSize, &this->m_table[this->m_index]);
+                    continue;
+                }
+
+                if (TRAITS::Equals(m_key, TRAITS::GetKey(this->m_table[this->m_index])))
                 {
                     break;
                 }

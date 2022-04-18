@@ -3,7 +3,6 @@
 
 using System.Globalization;
 using System.Numerics;
-using System.Runtime.Versioning;
 
 namespace System.Tests
 {
@@ -11,6 +10,8 @@ namespace System.Tests
         where TSelf : IAdditionOperators<TSelf, TOther, TResult>
     {
         public static TResult op_Addition(TSelf left, TOther right) => left + right;
+
+        public static TResult op_CheckedAddition(TSelf left, TOther right) => checked(left + right);
     }
 
     public static class AdditiveIdentityHelper<TSelf, TResult>
@@ -24,6 +25,10 @@ namespace System.Tests
     {
         public static (TSelf Quotient, TSelf Remainder) DivRem(TSelf left, TSelf right) => TSelf.DivRem(left, right);
 
+        public static int GetByteCount(TSelf value) => value.GetByteCount();
+
+        public static long GetShortestBitLength(TSelf value) => value.GetShortestBitLength();
+
         public static TSelf LeadingZeroCount(TSelf value) => TSelf.LeadingZeroCount(value);
 
         public static TSelf PopCount(TSelf value) => TSelf.PopCount(value);
@@ -33,6 +38,8 @@ namespace System.Tests
         public static TSelf RotateRight(TSelf value, int rotateAmount) => TSelf.RotateRight(value, rotateAmount);
 
         public static TSelf TrailingZeroCount(TSelf value) => TSelf.TrailingZeroCount(value);
+
+        public static bool TryWriteLittleEndian(TSelf value, Span<byte> destination, out int bytesWritten) => value.TryWriteLittleEndian(destination, out bytesWritten);
     }
 
     public static class BinaryNumberHelper<TSelf>
@@ -71,12 +78,16 @@ namespace System.Tests
         where TSelf : IDecrementOperators<TSelf>
 {
         public static TSelf op_Decrement(TSelf value) => --value;
+
+        public static TSelf op_CheckedDecrement(TSelf value) => checked(--value);
     }
 
     public static class DivisionOperatorsHelper<TSelf, TOther, TResult>
         where TSelf : IDivisionOperators<TSelf, TOther, TResult>
     {
         public static TResult op_Division(TSelf left, TOther right) => left / right;
+
+        public static TResult op_CheckedDivision(TSelf left, TOther right) => checked(left / right);
     }
 
     public static class EqualityOperatorsHelper<TSelf, TOther>
@@ -91,6 +102,8 @@ namespace System.Tests
         where TSelf : IIncrementOperators<TSelf>
     {
         public static TSelf op_Increment(TSelf value) => ++value;
+
+        public static TSelf op_CheckedIncrement(TSelf value) => checked(++value);
     }
 
     public static class MinMaxValueHelper<TSelf>
@@ -107,16 +120,18 @@ namespace System.Tests
         public static TResult op_Modulus(TSelf left, TOther right) => left % right;
     }
 
-    public static class MultiplyOperatorsHelper<TSelf, TOther, TResult>
-        where TSelf : IMultiplyOperators<TSelf, TOther, TResult>
-    {
-        public static TResult op_Multiply(TSelf left, TOther right) => left * right;
-    }
-
     public static class MultiplicativeIdentityHelper<TSelf, TResult>
         where TSelf : IMultiplicativeIdentity<TSelf, TResult>
     {
         public static TResult MultiplicativeIdentity => TSelf.MultiplicativeIdentity;
+    }
+
+    public static class MultiplyOperatorsHelper<TSelf, TOther, TResult>
+        where TSelf : IMultiplyOperators<TSelf, TOther, TResult>
+    {
+        public static TResult op_Multiply(TSelf left, TOther right) => left * right;
+
+        public static TResult op_CheckedMultiply(TSelf left, TOther right) => checked(left * right);
     }
 
     public static class NumberBaseHelper<TSelf>
@@ -211,12 +226,16 @@ namespace System.Tests
         where TSelf : ISubtractionOperators<TSelf, TOther, TResult>
     {
         public static TResult op_Subtraction(TSelf left, TOther right) => left - right;
+
+        public static TResult op_CheckedSubtraction(TSelf left, TOther right) => checked(left - right);
     }
 
     public static class UnaryNegationOperatorsHelper<TSelf, TResult>
         where TSelf : IUnaryNegationOperators<TSelf, TResult>
     {
         public static TResult op_UnaryNegation(TSelf value) => -value;
+
+        public static TResult op_CheckedUnaryNegation(TSelf value) => checked(-value);
     }
 
     public static class UnaryPlusOperatorsHelper<TSelf, TResult>

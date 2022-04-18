@@ -250,6 +250,7 @@
   <ItemGroup>
     <Compile Include="System\ByteTests.GenericMath.cs" />
     <Compile Include="System\CharTests.GenericMath.cs" />
+    <Compile Include="System\DecimalTests.GenericMath.cs" />
     <Compile Include="System\DoubleTests.GenericMath.cs" />
     <Compile Include="System\GenericMathHelpers.cs" />
     <Compile Include="System\HalfTests.GenericMath.cs" />

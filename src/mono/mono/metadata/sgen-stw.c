@@ -65,6 +65,7 @@ align_pointer (void *ptr)
 	return (void*)p;
 }
 
+MONO_DISABLE_WARNING(4740) /* flow in or out of inline asm code suppresses global optimization, x86 only */
 static void
 update_current_thread_stack (void *start)
 {
@@ -86,6 +87,7 @@ update_current_thread_stack (void *start)
 	if (mono_gc_get_gc_callbacks ()->thread_suspend_func)
 		mono_gc_get_gc_callbacks ()->thread_suspend_func (info->client_info.runtime_data, NULL, &info->client_info.ctx);
 }
+MONO_RESTORE_WARNING
 
 static void
 acquire_gc_locks (void)
