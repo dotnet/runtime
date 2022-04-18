@@ -15,10 +15,8 @@
 #include "corerror.h"
 #include <assert.h>
 #include <stdio.h>
+#include <memory>
 #include "corhlpr.h"
-
-// Keep in sync with the definitions in daccess.h and createdump.h
-#define DACCESS_TABLE_SYMBOL "g_dacTable"
 
 #ifdef HOST_WINDOWS
 
@@ -443,6 +441,7 @@ HRESULT ReadFromDataTarget(ICorDebugDataTarget* pDataTarget,
 }
 
 #if TARGET_WINDOWS
+
 extern "C" bool
 TryGetSymbol(ICorDebugDataTarget* dataTarget, uint64_t baseAddress, const char* symbolName, uint64_t* symbolAddress)
 {
@@ -473,10 +472,18 @@ TryGetSymbol(ICorDebugDataTarget* dataTarget, uint64_t baseAddress, const char* 
         }
         if (namePointerRVA != 0)
         {
-            // We'll read up to the length of the dac table name.
+            size_t symbolNameLength = strlen(symbolName);
+            if (symbolNameLength > UINT32_MAX)
+            {
+                // Symbol name is too large, we won't discover it.
+                return false;
+            }
+            // Allocate a buffer for the memory that we'll read out of the target image.
+            // We can allocate as much space as the target symbol name as we gracefully handle reading
+            // inaccessable memory.
+            std::unique_ptr<char[]> namePointer(new char[symbolNameLength]);
             // If we fail to read the memory or the name doesn't match, then we don't have the right export.
-            char namePointer[sizeof(DACCESS_TABLE_SYMBOL)]{};
-            if (SUCCEEDED(ReadFromDataTarget(dataTarget, baseAddress + namePointerRVA, (BYTE*)&namePointer, sizeof(namePointer))) && strcmp(namePointer, DACCESS_TABLE_SYMBOL) == 0)
+            if (SUCCEEDED(ReadFromDataTarget(dataTarget, baseAddress + namePointerRVA, (BYTE*)namePointer.get(), (UINT32)symbolNameLength + 1)) && strcmp(namePointer.get(), symbolName) == 0)
             {
                 // If the name matches, we should be able to get the ordinal
                 uint16_t ordinalForNamedExport = 0;
