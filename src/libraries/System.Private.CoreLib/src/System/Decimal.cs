@@ -362,12 +362,12 @@ namespace System
                 // * `m` is the significand itself
                 //
                 // For a value such as decimal.MaxValue, the significand is 79228162514264337593543950335
-                // and the scale is 0. Since decimal tracks 96 significand bits, the required algorithm
-                // gives us 7.9228162514264337593543950335 * 10^-67. To get back to our original value we
+                // and the scale is 0. Since decimal tracks 96 significand bits, the required algorithm (simplified)
+                // gives us 7.9228162514264337593543950335 * 10^-67 * 10^e. To get back to our original value we
                 // then need the exponent to be 95.
                 //
-                // For a value such as 1E-28, the significand is 1 and the scale is 28. The required algorithm
-                // gives us 1.0 * 10^-95 and to get back to our original value we need the exponent to be 67.
+                // For a value such as 1E-28, the significand is 1 and the scale is 28. The required algorithm (simplified)
+                // gives us 1.0 * 10^-95 * 10^e. To get back to our original value we need the exponent to be 67.
                 //
                 // Given that scale is bound by 0 and 28, inclusive, the returned exponent will be between 95
                 // and 67, inclusive. That is between `(p - 1)` and `(p - 1) - MaxScale`.
