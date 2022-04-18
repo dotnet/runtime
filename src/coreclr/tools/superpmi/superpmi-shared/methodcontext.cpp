@@ -4777,8 +4777,11 @@ void MethodContext::recGetStringLiteral(CORINFO_MODULE_HANDLE module, unsigned m
     key.C = (DWORD)bufferSize;
 
     DWORD strBuf = (DWORD)-1;
-    if (buffer != nullptr)
-        strBuf = (DWORD)GetStringLiteral->AddBuffer((unsigned char*)buffer, (unsigned int)bufferSize);
+    if (buffer != nullptr && length != -1)
+    {
+        int bufferRealSize = min(length, bufferSize) * sizeof(char16_t);
+        strBuf = (DWORD)GetStringLiteral->AddBuffer((unsigned char*)buffer, (unsigned int)bufferRealSize);
+    }
 
     DD value;
     value.A = (DWORD)length;
@@ -4816,11 +4819,14 @@ int MethodContext::repGetStringLiteral(CORINFO_MODULE_HANDLE module, unsigned me
     {
         DD value = GetStringLiteral->Get(key);
         DEBUG_REP(dmpGetStringLiteral(key, value));
-        if (buffer != nullptr)
+        int srcBufferLength = (int)value.A;
+        if (buffer != nullptr && srcBufferLength != -1)
         {
-            memcpy(buffer, GetStringLiteral->GetBuffer(value.B), bufferSize * sizeof(char16_t));
+            char16_t* srcBuffer = (char16_t*)GetStringLiteral->GetBuffer(value.B);
+            Assert(srcBuffer != nullptr);
+            memcpy(buffer, srcBuffer, min(srcBufferLength, bufferSize) * sizeof(char16_t));
         }
-        return (int)value.A;
+        return srcBufferLength;
     }
 }
 
