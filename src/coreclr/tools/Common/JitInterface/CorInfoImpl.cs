@@ -2365,8 +2365,6 @@ namespace Internal.JitInterface
         {
             var type = HandleToObject(cls);
 
-            // we shouldn't allow boxing of types that contains stack pointers
-            // csc and vbc already disallow it.
             if (type.IsByRefLike)
                 ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramSpecific, MethodBeingCompiled);
 
@@ -3947,7 +3945,7 @@ namespace Internal.JitInterface
                 if (!isMethodDefinedInCoreLib())
                 {
                     // If a vector instruction set is marked as attempted to be used, but is also explicitly unsupported
-                    // then we need to mark as explicitly unsupported the implied instruction set associated with the vector set. 
+                    // then we need to mark as explicitly unsupported the implied instruction set associated with the vector set.
                     instructionSet = InstructionSetFlags.ConvertToImpliedInstructionSetForVectorInstructionSets(_compilation.TypeSystemContext.Target.Architecture, instructionSet);
 
                     _actualInstructionSetUnsupported.AddInstructionSet(instructionSet);

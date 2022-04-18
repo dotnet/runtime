@@ -6025,7 +6025,7 @@ CorInfoHelpFunc CEEInfo::getBoxHelper(CORINFO_CLASS_HANDLE clsHnd)
     }
     else
     {
-        if(VMClsHnd.IsTypeDesc())
+        if (VMClsHnd.IsTypeDesc() || !VMClsHnd.IsValueType())
             COMPlusThrow(kInvalidOperationException,W("InvalidOperation_TypeCannotBeBoxed"));
 
         // we shouldn't allow boxing of types that contains stack pointers
