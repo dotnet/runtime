@@ -2,17 +2,22 @@
 
 ## Building ##
 
-Build with `/p:WasmEnableThreads=true`
+Build with `/p:WasmEnableThreads=true` to enable support for multi-threading.
 
-**TODO**: Have two options - one for limited threading support for the runtime internals, and another to fully enable threading for user apps.
+Build with `/p:WasmEnablePerfTracing=true` to enable support for EventPipe diagnostics - this enabled threading, but only for "internal" utility threads.  User code is not allowed to start threads.
+
+Do not combine these options, just turn on one or the other.
 
 ## Libraries feature defines ##
 
-We use the `FeatureWasmThreads` property in the libraries projects to conditionallyie define
+We use the `FeatureWasmThreads` property in the libraries projects to conditionally define
 `FEATURE_WASM_THREADS` which is used to affect how the libraries are built for the multi-threaded
 runtime.
 
-**TODO** add a separate feature property for WebAssembly EventPipe diagnostics.
+We use the `FeatureWasmPerfTracing` property in the libraries projects to
+conditionally define `FEATURE_WASM_PERFTRACING` which is used to affect how the
+libraries are built for a runtime that is single-threaded for users, but
+internally can use multithreading for EventPipe diagnostics.
 
 ### Ref asssemblies ###
 
@@ -36,13 +41,20 @@ JIT/interpreter/AOT to drop the multi-threaded implementation in the single-thre
 
 The implementation should not use `[UnsupportedOSPlatform("browser")]`
 
+**TODO** For `FeatureWasmPerfTracing`, the implementation should check *some
+runtime contant* and throw PNSE if diagnostics are not enabled.
+
 ## Native runtime preprocessor defines ##
 
-In `src/mono/mono`, `DISABLE_THREADS` is _not_ defined if threading is enabled.
+In `src/mono/mono` and `src/mono/wasm` `DISABLE_THREADS` is defined for single-threaded builds (same
+as mono's existing `-DENABLE_MINIMAL=threads` option).  In multi-threaded builds, `DISABLE_THREADS`
+is _not_ defined.
 
-If `src/mono/wasm`, `__EMSCRIPTEN_THREADS__` _is_ defined if threading is enabled.
+For `WasmEnablePerfTracing`, `DISABLE_THREADS` is undefined (ie threading is enabled), but starting
+user threads is not supported and `DISABLE_WASM_USER_THREADS` is defined (ie there is a
+`-DENABLE_MINIMAL=wasm-user-threads` option)
 
-**TODO**: Add a define if threading is only enabled internally, not for user apps.
+Additionally, `__EMSCRIPTEN_THREADS__` is defined by emscripten if threading is enabled.
 
 ## Browser thread, main thread ##
 

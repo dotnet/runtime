@@ -118,9 +118,10 @@
     <FeatureManagedEtw>true</FeatureManagedEtw>
     <FeaturePortableTimer Condition="'$(TargetsBrowser)' != 'true'">true</FeaturePortableTimer>
     <FeaturePortableThreadPool>true</FeaturePortableThreadPool>
-    <FeaturePerfTracing>true</FeaturePerfTracing>
-    <FeatureObjCMarshal Condition="'$(TargetsOSX)' == 'true' or '$(TargetsMacCatalyst)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">true</FeatureObjCMarshal>
     <FeatureWasmThreads Condition="'$(TargetsBrowser)' == 'true' and '$(WasmEnableThreads)' == 'true'">true</FeatureWasmThreads>
+    <FeatureWasmPerfTracing Condition="'$(TargetsBrowser)' == 'true' and ('$(WasmEnableThreads)' == 'true' or '$(WasmEnablePerfTracing)' == 'true')">true</FeatureWasmPerfTracing>
+    <FeaturePerfTracing Condition="'$(TargetsBrowser)' != 'true' or '$(FeatureWasmPerftracing)' == 'true'">true</FeaturePerfTracing>
+    <FeatureObjCMarshal Condition="'$(TargetsOSX)' == 'true' or '$(TargetsMacCatalyst)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">true</FeatureObjCMarshal>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -129,6 +130,7 @@
     <DefineConstants Condition="'$(FeaturePerfTracing)' == 'true'">$(DefineConstants);FEATURE_PERFTRACING</DefineConstants>
     <DefineConstants Condition="'$(FeatureObjCMarshal)' == 'true'">$(DefineConstants);FEATURE_OBJCMARSHAL</DefineConstants>
     <DefineConstants Condition="'$(FeatureWasmThreads)' == 'true'" >$(DefineConstants);FEATURE_WASM_THREADS</DefineConstants>
+    <DefineConstants Condition="'$(FeatureWasmPerfTracing)' == 'true'">$(DefineConstants);FEATURE_WASM_PERFTRACING</DefineConstants>
   </PropertyGroup>
 
   <!-- ILLinker settings -->
