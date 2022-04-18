@@ -3454,7 +3454,7 @@ namespace System.Text.RegularExpressions
                 // base.runstack[stackpos++] = startingPos;
                 // base.runstack[stackpos++] = pos;
                 // base.runstack[stackpos++] = sawEmpty;
-                EmitStackResizeIfNeeded(3);
+                EmitStackResizeIfNeeded(4);
                 if (expressionHasCaptures)
                 {
                     EmitStackPush(() =>
