@@ -206,6 +206,8 @@ namespace System.Tests
         public static TResult op_LeftShift(TSelf value, int shiftAmount) => value << shiftAmount;
 
         public static TResult op_RightShift(TSelf value, int shiftAmount) => value >> shiftAmount;
+
+        public static TResult op_UnsignedRightShift(TSelf value, int shiftAmount) => value >>> shiftAmount;
     }
 
     public static class SignedNumberHelper<TSelf>
