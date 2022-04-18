@@ -200,12 +200,17 @@ mono_threads_platform_get_stack_bounds (guint8 **staddr, size_t *stsize)
 		*staddr = (guint8*)wasm_get_stack_base ();
 		*stsize = wasm_get_stack_size ();
 	}
+#else
+	*staddr = (guint8*)wasm_get_stack_base ();
+	*stsize = wasm_get_stack_size ();
+#endif
+
 #ifdef HOST_WASI
 	// TODO: For WASI, we need to ensure the stack is positioned correctly and reintroduce these assertions.
 	// Currently it works anyway in prototypes (except these checks would fail)
 #else
-	*staddr = (guint8*)wasm_get_stack_base ();
-	*stsize = wasm_get_stack_size ();
+	g_assert ((guint8*)&tmp > *staddr);
+	g_assert ((guint8*)&tmp < (guint8*)*staddr + *stsize);
 #endif
 }
 
