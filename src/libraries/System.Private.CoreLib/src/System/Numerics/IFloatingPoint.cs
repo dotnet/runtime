@@ -48,5 +48,107 @@ namespace System.Numerics
         /// <param name="x">The value to truncate.</param>
         /// <returns>The truncation of <paramref name="x" />.</returns>
         static abstract TSelf Truncate(TSelf x);
+
+        /// <summary>Gets the length, in bits, of the shortest two's complement representation of the current exponent.</summary>
+        /// <returns>The length, in bits, of the shortest two's complement representation of the current exponent.</returns>
+        long GetExponentShortestBitLength();
+
+        /// <summary>Gets the number of bytes that will be written as part of <see cref="TryWriteExponentLittleEndian(Span{byte}, out int)" />.</summary>
+        /// <returns>The number of bytes that will be written as part of <see cref="TryWriteExponentLittleEndian(Span{byte}, out int)" />.</returns>
+        int GetExponentByteCount();
+
+        /// <summary>Gets the length, in bits, of the current significand.</summary>
+        /// <returns>The length, in bits, of the current significand.</returns>
+        long GetSignificandBitLength();
+
+        /// <summary>Gets the number of bytes that will be written as part of <see cref="TryWriteSignificandLittleEndian(Span{byte}, out int)" />.</summary>
+        /// <returns>The number of bytes that will be written as part of <see cref="TryWriteSignificandLittleEndian(Span{byte}, out int)" />.</returns>
+        int GetSignificandByteCount();
+
+        /// <summary>Tries to write the current exponent, in little-endian format, to a given span.</summary>
+        /// <param name="destination">The span to which the current exponent should be written.</param>
+        /// <param name="bytesWritten">The number of bytes written to <paramref name="destination" />.</param>
+        /// <returns><c>true</c> if the exponent was succesfully written to <paramref name="destination" />; otherwise, <c>false</c>.</returns>
+        bool TryWriteExponentLittleEndian(Span<byte> destination, out int bytesWritten);
+
+        /// <summary>Tries to write the current significand, in little-endian format, to a given span.</summary>
+        /// <param name="destination">The span to which the current significand should be written.</param>
+        /// <param name="bytesWritten">The number of bytes written to <paramref name="destination" />.</param>
+        /// <returns><c>true</c> if the significand was succesfully written to <paramref name="destination" />; otherwise, <c>false</c>.</returns>
+        bool TryWriteSignificandLittleEndian(Span<byte> destination, out int bytesWritten);
+
+        /// <summary>Writes the current exponent, in little-endian format, to a given array.</summary>
+        /// <param name="destination">The array to which the current exponent should be written.</param>
+        /// <returns>The number of bytes written to <paramref name="destination" />.</returns>
+        int WriteExponentLittleEndian(byte[] destination)
+        {
+            if (!TryWriteExponentLittleEndian(destination, out int bytesWritten))
+            {
+                ThrowHelper.ThrowArgumentException_DestinationTooShort();
+            }
+            return bytesWritten;
+        }
+
+        /// <summary>Writes the current exponent, in little-endian format, to a given array.</summary>
+        /// <param name="destination">The array to which the current exponent should be written.</param>
+        /// <param name="startIndex">The starting index at which the exponent should be written.</param>
+        /// <returns>The number of bytes written to <paramref name="destination" /> starting at <paramref name="startIndex" />.</returns>
+        int WriteExponentLittleEndian(byte[] destination, int startIndex)
+        {
+            if (!TryWriteExponentLittleEndian(destination.AsSpan(startIndex), out int bytesWritten))
+            {
+                ThrowHelper.ThrowArgumentException_DestinationTooShort();
+            }
+            return bytesWritten;
+        }
+
+        /// <summary>Writes the current exponent, in little-endian format, to a given span.</summary>
+        /// <param name="destination">The span to which the current exponent should be written.</param>
+        /// <returns>The number of bytes written to <paramref name="destination" />.</returns>
+        int WriteExponentLittleEndian(Span<byte> destination)
+        {
+            if (!TryWriteExponentLittleEndian(destination, out int bytesWritten))
+            {
+                ThrowHelper.ThrowArgumentException_DestinationTooShort();
+            }
+            return bytesWritten;
+        }
+
+        /// <summary>Writes the current significand, in little-endian format, to a given array.</summary>
+        /// <param name="destination">The array to which the current significand should be written.</param>
+        /// <returns>The number of bytes written to <paramref name="destination" />.</returns>
+        int WriteSignificandLittleEndian(byte[] destination)
+        {
+            if (!TryWriteSignificandLittleEndian(destination, out int bytesWritten))
+            {
+                ThrowHelper.ThrowArgumentException_DestinationTooShort();
+            }
+            return bytesWritten;
+        }
+
+        /// <summary>Writes the current significand, in little-endian format, to a given array.</summary>
+        /// <param name="destination">The array to which the current significand should be written.</param>
+        /// <param name="startIndex">The starting index at which the significand should be written.</param>
+        /// <returns>The number of bytes written to <paramref name="destination" /> starting at <paramref name="startIndex" />.</returns>
+        int WriteSignificandLittleEndian(byte[] destination, int startIndex)
+        {
+            if (!TryWriteSignificandLittleEndian(destination.AsSpan(startIndex), out int bytesWritten))
+            {
+                ThrowHelper.ThrowArgumentException_DestinationTooShort();
+            }
+            return bytesWritten;
+        }
+
+        /// <summary>Writes the current significand, in little-endian format, to a given span.</summary>
+        /// <param name="destination">The span to which the current significand should be written.</param>
+        /// <returns>The number of bytes written to <paramref name="destination" />.</returns>
+        int WriteSignificandLittleEndian(Span<byte> destination)
+        {
+            if (!TryWriteSignificandLittleEndian(destination, out int bytesWritten))
+            {
+                ThrowHelper.ThrowArgumentException_DestinationTooShort();
+            }
+            return bytesWritten;
+        }
     }
 }

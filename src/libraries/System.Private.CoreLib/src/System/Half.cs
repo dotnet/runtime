@@ -7,7 +7,6 @@ using System.Globalization;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Runtime.Versioning;
 
 namespace System
 {
@@ -29,24 +28,29 @@ namespace System
 
         // Constants for manipulating the private bit-representation
 
-        private const ushort SignMask = 0x8000;
-        private const ushort SignShift = 15;
+        internal const ushort SignMask = 0x8000;
+        internal const int SignShift = 15;
+        internal const byte ShiftedSignMask = SignMask >> SignShift;
 
-        private const ushort ExponentMask = 0x7C00;
-        private const ushort ExponentShift = 10;
-        private const ushort ShiftedExponentMask = ExponentMask >> ExponentShift;
+        internal const ushort BiasedExponentMask = 0x7C00;
+        internal const int BiasedExponentShift = 10;
+        internal const byte ShiftedBiasedExponentMask = BiasedExponentMask >> BiasedExponentShift;
 
-        private const ushort SignificandMask = 0x03FF;
-        private const ushort SignificandShift = 0;
+        internal const ushort TrailingSignificandMask = 0x03FF;
 
-        private const ushort MinSign = 0;
-        private const ushort MaxSign = 1;
+        internal const byte MinSign = 0;
+        internal const byte MaxSign = 1;
 
-        private const ushort MinExponent = 0x00;
-        private const ushort MaxExponent = 0x1F;
+        internal const byte MinBiasedExponent = 0x00;
+        internal const byte MaxBiasedExponent = 0x1F;
 
-        private const ushort MinSignificand = 0x0000;
-        private const ushort MaxSignificand = 0x03FF;
+        internal const byte ExponentBias = 15;
+
+        internal const sbyte MinExponent = -14;
+        internal const sbyte MaxExponent = +15;
+
+        internal const ushort MinTrailingSignificand = 0x0000;
+        internal const ushort MaxTrailingSignificand = 0x03FF;
 
         // Constants representing the private bit-representation for various default values
 
@@ -94,13 +98,22 @@ namespace System
             _value = value;
         }
 
-        private Half(bool sign, ushort exp, ushort sig) => _value = (ushort)(((sign ? 1 : 0) << SignShift) + (exp << ExponentShift) + sig);
+        private Half(bool sign, ushort exp, ushort sig) => _value = (ushort)(((sign ? 1 : 0) << SignShift) + (exp << BiasedExponentShift) + sig);
+
+        private byte BiasedExponent
+        {
+            get
+            {
+                ushort bits = _value;
+                return ExtractBiasedExponentFromBits(bits);
+            }
+        }
 
         private sbyte Exponent
         {
             get
             {
-                return (sbyte)((_value & ExponentMask) >> ExponentShift);
+                return (sbyte)(BiasedExponent - ExponentBias);
             }
         }
 
@@ -108,8 +121,27 @@ namespace System
         {
             get
             {
-                return (ushort)((_value & SignificandMask) >> SignificandShift);
+                return (ushort)(TrailingSignificand | ((BiasedExponent != 0) ? (1U << BiasedExponentShift) : 0U));
             }
+        }
+
+        private ushort TrailingSignificand
+        {
+            get
+            {
+                ushort bits = _value;
+                return ExtractTrailingSignificandFromBits(bits);
+            }
+        }
+
+        internal static byte ExtractBiasedExponentFromBits(ushort bits)
+        {
+            return (byte)((bits >> BiasedExponentShift) & ShiftedBiasedExponentMask);
+        }
+
+        internal static ushort ExtractTrailingSignificandFromBits(ushort bits)
+        {
+            return (ushort)(bits & TrailingSignificandMask);
         }
 
         /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_LessThan(TSelf, TOther)" />
@@ -224,7 +256,7 @@ namespace System
             uint absValue = StripSign(value);
             return (absValue < PositiveInfinityBits)    // is finite
                 && (absValue != 0)                      // is not zero
-                && ((absValue & ExponentMask) != 0);    // is not subnormal (has a non-zero exponent)
+                && ((absValue & BiasedExponentMask) != 0);    // is not subnormal (has a non-zero exponent)
         }
 
         /// <summary>Determines whether the specified value is positive infinity.</summary>
@@ -240,7 +272,7 @@ namespace System
             uint absValue = StripSign(value);
             return (absValue < PositiveInfinityBits)    // is finite
                 && (absValue != 0)                      // is not zero
-                && ((absValue & ExponentMask) == 0);    // is subnormal (has a zero exponent)
+                && ((absValue & BiasedExponentMask) == 0);    // is subnormal (has a zero exponent)
         }
 
         /// <summary>
@@ -514,8 +546,8 @@ namespace System
 
             uint floatInt = BitConverter.SingleToUInt32Bits(value);
             bool sign = (floatInt & float.SignMask) >> float.SignShift != 0;
-            int exp = (int)(floatInt & float.ExponentMask) >> float.ExponentShift;
-            uint sig = floatInt & float.SignificandMask;
+            int exp = (int)(floatInt & float.BiasedExponentMask) >> float.BiasedExponentShift;
+            uint sig = floatInt & float.TrailingSignificandMask;
 
             if (exp == SingleMaxExponent)
             {
@@ -542,8 +574,8 @@ namespace System
 
             ulong doubleInt = BitConverter.DoubleToUInt64Bits(value);
             bool sign = (doubleInt & double.SignMask) >> double.SignShift != 0;
-            int exp = (int)((doubleInt & double.ExponentMask) >> double.ExponentShift);
-            ulong sig = doubleInt & double.SignificandMask;
+            int exp = (int)((doubleInt & double.BiasedExponentMask) >> double.BiasedExponentShift);
+            ulong sig = doubleInt & double.TrailingSignificandMask;
 
             if (exp == DoubleMaxExponent)
             {
@@ -566,10 +598,10 @@ namespace System
         public static explicit operator float(Half value)
         {
             bool sign = IsNegative(value);
-            int exp = value.Exponent;
-            uint sig = value.Significand;
+            int exp = value.BiasedExponent;
+            uint sig = value.TrailingSignificand;
 
-            if (exp == MaxExponent)
+            if (exp == MaxBiasedExponent)
             {
                 if (sig != 0)
                 {
@@ -594,10 +626,10 @@ namespace System
         public static explicit operator double(Half value)
         {
             bool sign = IsNegative(value);
-            int exp = value.Exponent;
-            uint sig = value.Significand;
+            int exp = value.BiasedExponent;
+            uint sig = value.TrailingSignificand;
 
-            if (exp == MaxExponent)
+            if (exp == MaxBiasedExponent)
             {
                 if (sig != 0)
                 {
@@ -637,7 +669,7 @@ namespace System
         // Creates Quiet NaN if significand == 0
         private static Half CreateHalfNaN(bool sign, ulong significand)
         {
-            const uint NaNBits = ExponentMask | 0x200; // Most significant significand bit
+            const uint NaNBits = BiasedExponentMask | 0x200; // Most significant significand bit
 
             uint signInt = (sign ? 1U : 0U) << SignShift;
             uint sigInt = (uint)(significand >> 54);
@@ -684,7 +716,7 @@ namespace System
 
         private static float CreateSingleNaN(bool sign, ulong significand)
         {
-            const uint NaNBits = float.ExponentMask | 0x400000; // Most significant significand bit
+            const uint NaNBits = float.BiasedExponentMask | 0x400000; // Most significant significand bit
 
             uint signInt = (sign ? 1U : 0U) << float.SignShift;
             uint sigInt = (uint)(significand >> 41);
@@ -694,7 +726,7 @@ namespace System
 
         private static double CreateDoubleNaN(bool sign, ulong significand)
         {
-            const ulong NaNBits = double.ExponentMask | 0x80000_00000000; // Most significant significand bit
+            const ulong NaNBits = double.BiasedExponentMask | 0x80000_00000000; // Most significant significand bit
 
             ulong signInt = (sign ? 1UL : 0UL) << double.SignShift;
             ulong sigInt = significand >> 12;
@@ -702,9 +734,9 @@ namespace System
             return BitConverter.UInt64BitsToDouble(signInt | NaNBits | sigInt);
         }
 
-        private static float CreateSingle(bool sign, byte exp, uint sig) => BitConverter.UInt32BitsToSingle(((sign ? 1U : 0U) << float.SignShift) + ((uint)exp << float.ExponentShift) + sig);
+        private static float CreateSingle(bool sign, byte exp, uint sig) => BitConverter.UInt32BitsToSingle(((sign ? 1U : 0U) << float.SignShift) + ((uint)exp << float.BiasedExponentShift) + sig);
 
-        private static double CreateDouble(bool sign, ushort exp, ulong sig) => BitConverter.UInt64BitsToDouble(((sign ? 1UL : 0UL) << double.SignShift) + ((ulong)exp << double.ExponentShift) + sig);
+        private static double CreateDouble(bool sign, ushort exp, ulong sig) => BitConverter.UInt64BitsToDouble(((sign ? 1UL : 0UL) << double.SignShift) + ((ulong)exp << double.BiasedExponentShift) + sig);
 
         #endregion
 
@@ -732,14 +764,14 @@ namespace System
         /// <inheritdoc cref="IBinaryNumber{TSelf}.IsPow2(TSelf)" />
         public static bool IsPow2(Half value)
         {
-            uint bits = BitConverter.HalfToUInt16Bits(value);
+            ushort bits = BitConverter.HalfToUInt16Bits(value);
 
-            uint exponent = (bits >> ExponentShift) & ShiftedExponentMask;
-            uint significand = bits & SignificandMask;
+            byte biasedExponent = ExtractBiasedExponentFromBits(bits);
+            ushort trailingSignificand = ExtractTrailingSignificandFromBits(bits);
 
             return (value > default(Half))
-                && (exponent != MinExponent) && (exponent != MaxExponent)
-                && (significand == MinSignificand);
+                && (biasedExponent != MinBiasedExponent) && (biasedExponent != MaxBiasedExponent)
+                && (trailingSignificand == MinTrailingSignificand);
         }
 
         /// <inheritdoc cref="IBinaryNumber{TSelf}.Log2(TSelf)" />
@@ -848,6 +880,66 @@ namespace System
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.Truncate(TSelf)" />
         public static Half Truncate(Half x) => (Half)MathF.Truncate((float)x);
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.GetExponentShortestBitLength()" />
+        long IFloatingPoint<Half>.GetExponentShortestBitLength()
+        {
+            sbyte exponent = Exponent;
+
+            if (exponent >= 0)
+            {
+                return (sizeof(sbyte) * 8) - sbyte.LeadingZeroCount(exponent);
+            }
+            else
+            {
+                return (sizeof(sbyte) * 8) + 1 - sbyte.LeadingZeroCount((sbyte)(~exponent));
+            }
+        }
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.GetExponentByteCount()" />
+        int IFloatingPoint<Half>.GetExponentByteCount() => sizeof(sbyte);
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.TryWriteExponentLittleEndian(Span{byte}, out int)" />
+        bool IFloatingPoint<Half>.TryWriteExponentLittleEndian(Span<byte> destination, out int bytesWritten)
+        {
+            if (destination.Length >= sizeof(sbyte))
+            {
+                sbyte exponent = Exponent;
+                Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), exponent);
+
+                bytesWritten = sizeof(sbyte);
+                return true;
+            }
+            else
+            {
+                bytesWritten = 0;
+                return false;
+            }
+        }
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.GetSignificandBitLength()" />
+        long IFloatingPoint<Half>.GetSignificandBitLength() => 11;
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.GetSignificandByteCount()" />
+        int IFloatingPoint<Half>.GetSignificandByteCount() => sizeof(ushort);
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.TryWriteSignificandLittleEndian(Span{byte}, out int)" />
+        bool IFloatingPoint<Half>.TryWriteSignificandLittleEndian(Span<byte> destination, out int bytesWritten)
+        {
+            if (destination.Length >= sizeof(ushort))
+            {
+                ushort significand = Significand;
+                Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), significand);
+
+                bytesWritten = sizeof(ushort);
+                return true;
+            }
+            else
+            {
+                bytesWritten = 0;
+                return false;
+            }
+        }
 
         //
         // IFloatingPointIeee754
