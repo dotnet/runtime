@@ -467,8 +467,10 @@ mono_wasm_load_runtime (const char *unused, int debug_level)
 #endif
 
 	// We should enable this as part of the wasm build later
+#ifndef DISABLE_THREADS
 	monoeg_g_setenv ("MONO_THREADS_SUSPEND", "coop", 0);
 	monoeg_g_setenv ("MONO_SLEEP_ABORT_LIMIT", "250", 0);
+#endif
 
 	monoeg_g_setenv ("MONO_LOG_LEVEL", "debug", 0);
 	monoeg_g_setenv ("MONO_LOG_MASK", "all", 0);

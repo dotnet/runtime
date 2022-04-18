@@ -291,10 +291,10 @@
   <ItemGroup Condition="'$(TargetsBrowser)' == 'true'">
       <Compile Include="$(BclSourcesRoot)\System\Threading\TimerQueue.Browser.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Threading\ThreadPoolBoundHandle.Browser.Mono.cs" />
-      <!--<Compile Include="$(BclSourcesRoot)\System\Threading\PreAllocatedOverlapped.Browser.Mono.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsBrowser)' == 'true' and '$(FeatureWasmThreads)' != 'true'">
+      <Compile Include="$(BclSourcesRoot)\System\Threading\PreAllocatedOverlapped.Browser.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Threading\ThreadPool.Browser.Mono.cs" />
-      <Compile Include="$(BclSourcesRoot)\System\Threading\Thread.Browser.Mono.cs" />
-      <Compile Include="$(LibrariesProjectRoot)\System.Private.CoreLib\src\System\Threading\ThreadPoolBoundHandle.PlatformNotSupported.cs" />-->
   </ItemGroup>
   <ItemGroup>
       <Compile Include="$(BclSourcesRoot)\Mono\HotReload.cs" />

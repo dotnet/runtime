@@ -11,5 +11,8 @@ namespace System.Threading
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_OverlappedIO);
         }
+        public void Dispose()
+        {
+        }
     }
 }
