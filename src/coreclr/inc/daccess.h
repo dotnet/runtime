@@ -564,7 +564,7 @@
 #include "safemath.h"
 #include "corerror.h"
 
-// Keep in sync with the definitions in dbgutil.cpp and crashinfo.h
+// Keep in sync with the definitions in dbgutil.cpp and createdump.h
 #define DACCESS_TABLE_SYMBOL "g_dacTable"
 
 #ifdef PAL_STDCPP_COMPAT
