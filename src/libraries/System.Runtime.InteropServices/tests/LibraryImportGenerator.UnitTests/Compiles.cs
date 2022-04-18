@@ -55,6 +55,18 @@ namespace LibraryImportGenerator.UnitTests
             yield return new[] { CodeSnippets.MarshalAsArrayParametersAndModifiers<double>() };
             yield return new[] { CodeSnippets.MarshalAsArrayParametersAndModifiers<IntPtr>() };
             yield return new[] { CodeSnippets.MarshalAsArrayParametersAndModifiers<UIntPtr>() };
+            yield return new[] { CodeSnippets.MarshalAsArrayParametersAndModifiers("byte*", "unsafe") };
+            yield return new[] { CodeSnippets.MarshalAsArrayParametersAndModifiers("sbyte*", "unsafe") };
+            yield return new[] { CodeSnippets.MarshalAsArrayParametersAndModifiers("short*", "unsafe") };
+            yield return new[] { CodeSnippets.MarshalAsArrayParametersAndModifiers("ushort*", "unsafe") };
+            yield return new[] { CodeSnippets.MarshalAsArrayParametersAndModifiers("int*", "unsafe") };
+            yield return new[] { CodeSnippets.MarshalAsArrayParametersAndModifiers("uint*", "unsafe") };
+            yield return new[] { CodeSnippets.MarshalAsArrayParametersAndModifiers("long*", "unsafe") };
+            yield return new[] { CodeSnippets.MarshalAsArrayParametersAndModifiers("ulong*", "unsafe") };
+            yield return new[] { CodeSnippets.MarshalAsArrayParametersAndModifiers("float*", "unsafe") };
+            yield return new[] { CodeSnippets.MarshalAsArrayParametersAndModifiers("double*", "unsafe") };
+            yield return new[] { CodeSnippets.MarshalAsArrayParametersAndModifiers("System.IntPtr*", "unsafe") };
+            yield return new[] { CodeSnippets.MarshalAsArrayParametersAndModifiers("System.UIntPtr*", "unsafe") };
             yield return new[] { CodeSnippets.MarshalAsArrayParameterWithSizeParam<byte>(isByRef: false) };
             yield return new[] { CodeSnippets.MarshalAsArrayParameterWithSizeParam<sbyte>(isByRef: false) };
             yield return new[] { CodeSnippets.MarshalAsArrayParameterWithSizeParam<short>(isByRef: false) };

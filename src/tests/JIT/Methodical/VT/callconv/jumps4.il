@@ -14,9 +14,9 @@
 {
                         }
 .assembly extern xunit.core {}
-.namespace MS
+.namespace MS_jumps4_il
 {
-  .class value private auto ansi sealed VT
+  .class value public auto ansi sealed VT
          extends [mscorlib]System.ValueType
   {
     .field private class System.String path
@@ -28,14 +28,14 @@
 		.maxstack  8
 				ldarg.0
 				dup
-				ldfld      class System.String MS.VT::path
+				ldfld      class System.String MS_jumps4_il.VT::path
 				ldstr      "->ToString"
 				call       class System.String [mscorlib]System.String::Concat(class System.String,
                                                                                class System.String)
-				stfld      class System.String MS.VT::path
+				stfld      class System.String MS_jumps4_il.VT::path
       
       			ldarg.0
-      			ldfld      int32 MS.VT::target
+      			ldfld      int32 MS_jumps4_il.VT::target
       			switch     (case0, case1, case2)
       			newobj     instance void [mscorlib]System.Exception::.ctor()
       			throw
@@ -45,16 +45,16 @@
 
       case1:	ldarg.0
       			ldc.i4.0
-      			stfld      int32 MS.VT::target
+      			stfld      int32 MS_jumps4_il.VT::target
       			ldarg.0
-      			ldftn instance class System.String MS.VT::ToStringHelper()
+      			ldftn instance class System.String MS_jumps4_il.VT::ToStringHelper()
       			br merge
 
       case2:	ldarg.0
       			ldc.i4.0
-      			stfld      int32 MS.VT::target
+      			stfld      int32 MS_jumps4_il.VT::target
       			ldarg.0
-      			ldftn instance class System.String MS.VT::ToString()
+      			ldftn instance class System.String MS_jumps4_il.VT::ToString()
       merge:
             	tail. calli instance class System.String()
             	ret
@@ -69,14 +69,14 @@
                
 				ldarg.0
 				dup
-				ldfld      class System.String MS.VT::path
+				ldfld      class System.String MS_jumps4_il.VT::path
 				ldstr      "->ToStringHelper"
 				call       class System.String [mscorlib]System.String::Concat(class System.String,
                                                                                class System.String)
-				stfld      class System.String MS.VT::path
+				stfld      class System.String MS_jumps4_il.VT::path
       
       			ldarg.0
-      			ldfld      int32 MS.VT::target
+      			ldfld      int32 MS_jumps4_il.VT::target
       			switch     (case0, case1, case2)
       			newobj     instance void [mscorlib]System.Exception::.ctor()
       			throw
@@ -86,26 +86,26 @@
 
       case1:	ldarg.0
       			ldc.i4.0
-      			stfld      int32 MS.VT::target
+      			stfld      int32 MS_jumps4_il.VT::target
       			ldarg.0
-      			ldftn instance class System.String MS.VT::ToStringHelper()
+      			ldftn instance class System.String MS_jumps4_il.VT::ToStringHelper()
       			tail. calli instance class System.String()
       			ret
 
       case2:	ldarg.0
       			ldc.i4.0
-      			stfld      int32 MS.VT::target
+      			stfld      int32 MS_jumps4_il.VT::target
       			ldarg.0
       			dup
-      			ldobj MS.VT
-      			box MS.VT
+      			ldobj MS_jumps4_il.VT
+      			box MS_jumps4_il.VT
       			dup
       			dup
       			ldvirtftn instance class System.String [mscorlib]System.Object::ToString()
             	calli	instance class System.String()
             	pop
-            	unbox MS.VT
-            	cpobj MS.VT
+            	unbox MS_jumps4_il.VT
+            	cpobj MS_jumps4_il.VT
             	ldstr "HACK"
             	ret
     } // end of method VT::ToStringHelper
@@ -117,21 +117,21 @@
       .locals (bool V_0)
       IL_0000:  ldarg.0
       IL_0001:  ldc.i4.0
-      IL_0002:  stfld      int32 MS.VT::target
+      IL_0002:  stfld      int32 MS_jumps4_il.VT::target
       IL_0007:  ldarg.0
       IL_0008:  ldnull
-      IL_0009:  stfld      class System.String MS.VT::path
+      IL_0009:  stfld      class System.String MS_jumps4_il.VT::path
       IL_000e:  ldarg.0
-      IL_000f:  call       instance class System.String MS.VT::ToStringHelper()
+      IL_000f:  call       instance class System.String MS_jumps4_il.VT::ToStringHelper()
       IL_0014:  ldstr      " : "
       IL_0019:  ldarg.0
-      IL_001a:  ldfld      class System.String MS.VT::path
+      IL_001a:  ldfld      class System.String MS_jumps4_il.VT::path
       IL_001f:  call       class System.String [mscorlib]System.String::Concat(class System.String,
                                                                                class System.String,
                                                                                class System.String)
       IL_0024:  call       void [System.Console]System.Console::WriteLine(class System.String)
       IL_0029:  ldarg.0
-      IL_002a:  ldfld      class System.String MS.VT::path
+      IL_002a:  ldfld      class System.String MS_jumps4_il.VT::path
       IL_002f:  ldstr      "->ToStringHelper"
       IL_0034:  call       bool [mscorlib]System.String::Equals(class System.String,
                                                                 class System.String)
@@ -143,21 +143,21 @@
 
       IL_0042:  ldarg.0
       IL_0043:  ldc.i4.1
-      IL_0044:  stfld      int32 MS.VT::target
+      IL_0044:  stfld      int32 MS_jumps4_il.VT::target
       IL_0049:  ldarg.0
       IL_004a:  ldnull
-      IL_004b:  stfld      class System.String MS.VT::path
+      IL_004b:  stfld      class System.String MS_jumps4_il.VT::path
       IL_0050:  ldarg.0
-      IL_0051:  call       instance class System.String MS.VT::ToStringHelper()
+      IL_0051:  call       instance class System.String MS_jumps4_il.VT::ToStringHelper()
       IL_0056:  ldstr      " : "
       IL_005b:  ldarg.0
-      IL_005c:  ldfld      class System.String MS.VT::path
+      IL_005c:  ldfld      class System.String MS_jumps4_il.VT::path
       IL_0061:  call       class System.String [mscorlib]System.String::Concat(class System.String,
                                                                                class System.String,
                                                                                class System.String)
       IL_0066:  call       void [System.Console]System.Console::WriteLine(class System.String)
       IL_006b:  ldarg.0
-      IL_006c:  ldfld      class System.String MS.VT::path
+      IL_006c:  ldfld      class System.String MS_jumps4_il.VT::path
       IL_0071:  ldstr      "->ToStringHelper->ToStringHelper"
       IL_0076:  call       bool [mscorlib]System.String::Equals(class System.String,
                                                                 class System.String)
@@ -169,21 +169,21 @@
 
       IL_0084:  ldarg.0
       IL_0085:  ldc.i4.2
-      IL_0086:  stfld      int32 MS.VT::target
+      IL_0086:  stfld      int32 MS_jumps4_il.VT::target
       IL_008b:  ldarg.0
       IL_008c:  ldnull
-      IL_008d:  stfld      class System.String MS.VT::path
+      IL_008d:  stfld      class System.String MS_jumps4_il.VT::path
       IL_0092:  ldarg.0
-      IL_0093:  call       instance class System.String MS.VT::ToStringHelper()
+      IL_0093:  call       instance class System.String MS_jumps4_il.VT::ToStringHelper()
       IL_0098:  ldstr      " : "
       IL_009d:  ldarg.0
-      IL_009e:  ldfld      class System.String MS.VT::path
+      IL_009e:  ldfld      class System.String MS_jumps4_il.VT::path
       IL_00a3:  call       class System.String [mscorlib]System.String::Concat(class System.String,
                                                                                class System.String,
                                                                                class System.String)
       IL_00a8:  call       void [System.Console]System.Console::WriteLine(class System.String)
       IL_00ad:  ldarg.0
-      IL_00ae:  ldfld      class System.String MS.VT::path
+      IL_00ae:  ldfld      class System.String MS_jumps4_il.VT::path
       IL_00b3:  ldstr      "->ToStringHelper->ToString"
       IL_00b8:  call       bool [mscorlib]System.String::Equals(class System.String,
                                                                 class System.String)
@@ -195,21 +195,21 @@
 
       IL_00c6:  ldarg.0
       IL_00c7:  ldc.i4.0
-      IL_00c8:  stfld      int32 MS.VT::target
+      IL_00c8:  stfld      int32 MS_jumps4_il.VT::target
       IL_00cd:  ldarg.0
       IL_00ce:  ldnull
-      IL_00cf:  stfld      class System.String MS.VT::path
+      IL_00cf:  stfld      class System.String MS_jumps4_il.VT::path
       IL_00d4:  ldarg.0
-      IL_00d5:  call       instance class System.String MS.VT::ToString()
+      IL_00d5:  call       instance class System.String MS_jumps4_il.VT::ToString()
       IL_00da:  ldstr      " : "
       IL_00df:  ldarg.0
-      IL_00e0:  ldfld      class System.String MS.VT::path
+      IL_00e0:  ldfld      class System.String MS_jumps4_il.VT::path
       IL_00e5:  call       class System.String [mscorlib]System.String::Concat(class System.String,
                                                                                class System.String,
                                                                                class System.String)
       IL_00ea:  call       void [System.Console]System.Console::WriteLine(class System.String)
       IL_00ef:  ldarg.0
-      IL_00f0:  ldfld      class System.String MS.VT::path
+      IL_00f0:  ldfld      class System.String MS_jumps4_il.VT::path
       IL_00f5:  ldstr      "->ToString"
       IL_00fa:  call       bool [mscorlib]System.String::Equals(class System.String,
                                                                 class System.String)
@@ -221,21 +221,21 @@
 
       IL_0108:  ldarg.0
       IL_0109:  ldc.i4.1
-      IL_010a:  stfld      int32 MS.VT::target
+      IL_010a:  stfld      int32 MS_jumps4_il.VT::target
       IL_010f:  ldarg.0
       IL_0110:  ldnull
-      IL_0111:  stfld      class System.String MS.VT::path
+      IL_0111:  stfld      class System.String MS_jumps4_il.VT::path
       IL_0116:  ldarg.0
-      IL_0117:  call       instance class System.String MS.VT::ToString()
+      IL_0117:  call       instance class System.String MS_jumps4_il.VT::ToString()
       IL_011c:  ldstr      " : "
       IL_0121:  ldarg.0
-      IL_0122:  ldfld      class System.String MS.VT::path
+      IL_0122:  ldfld      class System.String MS_jumps4_il.VT::path
       IL_0127:  call       class System.String [mscorlib]System.String::Concat(class System.String,
                                                                                class System.String,
                                                                                class System.String)
       IL_012c:  call       void [System.Console]System.Console::WriteLine(class System.String)
       IL_0131:  ldarg.0
-      IL_0132:  ldfld      class System.String MS.VT::path
+      IL_0132:  ldfld      class System.String MS_jumps4_il.VT::path
       IL_0137:  ldstr      "->ToString->ToStringHelper"
       IL_013c:  call       bool [mscorlib]System.String::Equals(class System.String,
                                                                 class System.String)
@@ -247,21 +247,21 @@
 
       IL_0147:  ldarg.0
       IL_0148:  ldc.i4.2
-      IL_0149:  stfld      int32 MS.VT::target
+      IL_0149:  stfld      int32 MS_jumps4_il.VT::target
       IL_014e:  ldarg.0
       IL_014f:  ldnull
-      IL_0150:  stfld      class System.String MS.VT::path
+      IL_0150:  stfld      class System.String MS_jumps4_il.VT::path
       IL_0155:  ldarg.0
-      IL_0156:  call       instance class System.String MS.VT::ToString()
+      IL_0156:  call       instance class System.String MS_jumps4_il.VT::ToString()
       IL_015b:  ldstr      " : "
       IL_0160:  ldarg.0
-      IL_0161:  ldfld      class System.String MS.VT::path
+      IL_0161:  ldfld      class System.String MS_jumps4_il.VT::path
       IL_0166:  call       class System.String [mscorlib]System.String::Concat(class System.String,
                                                                                class System.String,
                                                                                class System.String)
       IL_016b:  call       void [System.Console]System.Console::WriteLine(class System.String)
       IL_0170:  ldarg.0
-      IL_0171:  ldfld      class System.String MS.VT::path
+      IL_0171:  ldfld      class System.String MS_jumps4_il.VT::path
       IL_0176:  ldstr      "->ToString->ToString"
       IL_017b:  call       bool [mscorlib]System.String::Equals(class System.String,
                                                                 class System.String)
@@ -279,7 +279,7 @@
       IL_018b:  ret
     } // end of method VT::RunTests
 
-    .method private hidebysig static int32
+    .method public hidebysig static int32
             Main() il managed
     {
       .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
@@ -288,13 +288,13 @@
       .entrypoint
       .maxstack  1
       .locals (int32 V_0,
-               value class MS.VT V_1)
+               value class MS_jumps4_il.VT V_1)
       IL_0000:  ldloca.s   V_1
-      IL_0002:  initobj    MS.VT
+      IL_0002:  initobj    MS_jumps4_il.VT
       IL_0008:  ldloc.1
       IL_0009:  stloc.1
       IL_000a:  ldloca.s   V_1
-      IL_000c:  call       instance bool MS.VT::RunTests()
+      IL_000c:  call       instance bool MS_jumps4_il.VT::RunTests()
       IL_0011:  brfalse.s  IL_0022
 
       IL_0013:  ldstr      "PASSED."
@@ -315,5 +315,5 @@
 
   } // end of class VT
 
-} // end of namespace MS
+} // end of namespace MS_jumps4_il
 

@@ -4765,20 +4765,20 @@ bool MethodContext::repIsValidStringRef(CORINFO_MODULE_HANDLE module, unsigned m
     return value != 0;
 }
 
-
-void MethodContext::recGetStringLiteral(CORINFO_MODULE_HANDLE module, unsigned metaTOK, int length, const char16_t* result)
+void MethodContext::recGetStringLiteral(CORINFO_MODULE_HANDLE module, unsigned metaTOK, char16_t* buffer, int bufferSize, int length)
 {
     if (GetStringLiteral == nullptr)
-        GetStringLiteral = new LightWeightMap<DLD, DD>();
+        GetStringLiteral = new LightWeightMap<DLDD, DD>();
 
-    DLD key;
+    DLDD key;
     ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
     key.A = CastHandle(module);
     key.B = (DWORD)metaTOK;
+    key.C = (DWORD)bufferSize;
 
     DWORD strBuf = (DWORD)-1;
-    if (result != nullptr)
-        strBuf = (DWORD)GetStringLiteral->AddBuffer((unsigned char*)result, (unsigned int)((wcslen((LPCWSTR)result) * 2) + 2));
+    if (buffer != nullptr)
+        strBuf = (DWORD)GetStringLiteral->AddBuffer((unsigned char*)buffer, (unsigned int)bufferSize);
 
     DD value;
     value.A = (DWORD)length;
@@ -4788,39 +4788,39 @@ void MethodContext::recGetStringLiteral(CORINFO_MODULE_HANDLE module, unsigned m
     DEBUG_REC(dmpGetStringLiteral(key, value));
 }
 
-void MethodContext::dmpGetStringLiteral(DLD key, DD value)
+void MethodContext::dmpGetStringLiteral(DLDD key, DD value)
 {
-    printf("GetStringLiteral key mod-%016llX tok-%08X, result-%s, len-%u", key.A, key.B,
-        GetStringLiteral->GetBuffer(value.B), value.A);
+    printf("GetStringLiteral key mod-%016llX tok-%08X, bufSize-%u, len-%u", key.A, key.B, key.C, value.A);
     GetStringLiteral->Unlock();
 }
 
-const char16_t* MethodContext::repGetStringLiteral(CORINFO_MODULE_HANDLE module, unsigned metaTOK, int* length)
+int MethodContext::repGetStringLiteral(CORINFO_MODULE_HANDLE module, unsigned metaTOK, char16_t* buffer, int bufferSize)
 {
     if (GetStringLiteral == nullptr)
     {
-        *length = -1;
-        return nullptr;
+        return -1;
     }
 
-    DLD key;
+    DLDD key;
     ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
     key.A = CastHandle(module);
     key.B = (DWORD)metaTOK;
+    key.C = (DWORD)bufferSize;
 
     int itemIndex = GetStringLiteral->GetIndex(key);
     if (itemIndex < 0)
     {
-        *length = -1;
-        return nullptr;
+        return -1;
     }
     else
     {
         DD value = GetStringLiteral->Get(key);
         DEBUG_REP(dmpGetStringLiteral(key, value));
-
-        *length = (int)value.A;
-        return (const char16_t*)GetStringLiteral->GetBuffer(value.B);
+        if (buffer != nullptr)
+        {
+            memcpy(buffer, GetStringLiteral->GetBuffer(value.B), bufferSize * sizeof(char16_t));
+        }
+        return (int)value.A;
     }
 }
 

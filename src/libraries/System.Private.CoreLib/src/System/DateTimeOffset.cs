@@ -238,7 +238,7 @@ namespace System
         /// <paramref name="millisecond"/> is less than 0 or greater than 999.
         /// -or-
         ///
-        /// <paramref name="microsecond"/> is less than 0 or greater than 900.
+        /// <paramref name="microsecond"/> is less than 0 or greater than 999.
         /// </exception>
         public DateTimeOffset(int year, int month, int day, int hour, int minute, int second, int millisecond, int microsecond, TimeSpan offset)
             : this(year, month, day, hour, minute, second, millisecond, offset)
@@ -302,7 +302,7 @@ namespace System
         ///
         /// -or-
         ///
-        /// <paramref name="microsecond"/> is less than 0 or greater than 900.
+        /// <paramref name="microsecond"/> is less than 0 or greater than 999.
         ///
         /// -or-
         ///

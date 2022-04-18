@@ -21,7 +21,7 @@
 }
 .assembly extern xunit.core {}
 // MVID: {4F6CDA4F-13A9-40C8-ADF8-98FBBEF21260}
-.namespace JitTest
+.namespace JitTest_objref_implicit_il
 {
   .class private auto ansi Base extends ['mscorlib']System.Object
   {
@@ -51,7 +51,7 @@
 
   } // end of class 'Base'
 
-  .class private auto ansi Test extends JitTest.Base
+  .class public auto ansi Test extends JitTest_objref_implicit_il.Base
   {
     .method public hidebysig virtual instance class System.String ToString() il managed
     {
@@ -66,29 +66,29 @@
       IL_0009:  ret
     } // end of method 'Test::ToString'
 
-    .method private hidebysig static void TestFunc1(class JitTest.Base& obj) il managed
+    .method private hidebysig static void TestFunc1(class JitTest_objref_implicit_il.Base& obj) il managed
     {
       // Code size       13 (0xd)
       .maxstack  8
       IL_0000:  ldarg.0
       IL_0001:  ldind.ref
-      IL_0002:  callvirt   instance class System.String JitTest.Base::ToString()
+      IL_0002:  callvirt   instance class System.String JitTest_objref_implicit_il.Base::ToString()
       IL_0007:  call       void [System.Console]System.Console::WriteLine(class System.String)
       IL_000c:  ret
     } // end of method 'Test::TestFunc'
 
-    .method private hidebysig static void TestFunc2(class JitTest.Test& obj) il managed
+    .method private hidebysig static void TestFunc2(class JitTest_objref_implicit_il.Test& obj) il managed
     {
       // Code size       13 (0xd)
       .maxstack  8
       IL_0000:  ldarg.0
       IL_0001:  ldind.ref
-      IL_0002:  callvirt   instance class System.String JitTest.Base::ToString()
+      IL_0002:  callvirt   instance class System.String JitTest_objref_implicit_il.Base::ToString()
       IL_0007:  call       void [System.Console]System.Console::WriteLine(class System.String)
       IL_000c:  ret
     } // end of method 'Test::TestFunc'
 
-    .method private hidebysig static int32 Main() il managed
+    .method public hidebysig static int32 Main() il managed
     {
       .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
           01 00 00 00
@@ -96,23 +96,23 @@
       .entrypoint
       // Code size       59 (0x3b)
       .maxstack  1
-      .locals (class JitTest.Base V_0, class JitTest.Test V_1, int32 V_2)
+      .locals (class JitTest_objref_implicit_il.Base V_0, class JitTest_objref_implicit_il.Test V_1, int32 V_2)
       .try
       {
-        newobj     instance void JitTest.Base::.ctor()
+        newobj     instance void JitTest_objref_implicit_il.Base::.ctor()
         stloc.0
-        newobj     instance void JitTest.Test::.ctor()
+        newobj     instance void JitTest_objref_implicit_il.Test::.ctor()
         stloc.1
         
         ldloca.s   V_0
-        call       void JitTest.Test::TestFunc1(class JitTest.Base&)
+        call       void JitTest_objref_implicit_il.Test::TestFunc1(class JitTest_objref_implicit_il.Base&)
         ldloca.s   V_1
-        call       void JitTest.Test::TestFunc1(class JitTest.Base&)
+        call       void JitTest_objref_implicit_il.Test::TestFunc1(class JitTest_objref_implicit_il.Base&)
         leave.s    IL_002b
         ldloca.s   V_0
-        call       void JitTest.Test::TestFunc2(class JitTest.Test&)
+        call       void JitTest_objref_implicit_il.Test::TestFunc2(class JitTest_objref_implicit_il.Test&)
         ldloca.s   V_1
-        call       void JitTest.Test::TestFunc2(class JitTest.Test&)
+        call       void JitTest_objref_implicit_il.Test::TestFunc2(class JitTest_objref_implicit_il.Test&)
         leave.s    IL_002b
 
       }  // end .try
@@ -141,12 +141,12 @@
       // Code size       7 (0x7)
       .maxstack  8
       IL_0000:  ldarg.0
-      IL_0001:  call       instance void JitTest.Base::.ctor()
+      IL_0001:  call       instance void JitTest_objref_implicit_il.Base::.ctor()
       IL_0006:  ret
     } // end of method 'Test::.ctor'
 
   } // end of class 'Test'
 
-} // end of namespace 'JitTest'
+} // end of namespace 'JitTest_objref_implicit_il'
 
 //*********** DISASSEMBLY COMPLETE ***********************
