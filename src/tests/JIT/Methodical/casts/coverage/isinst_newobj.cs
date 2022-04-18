@@ -2,12 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
-namespace JitTest
+namespace JitTest_isinst_newobj_cs
 {
-    internal class BaseClass { }
+    public class BaseClass { }
 
-    internal class TestClass : BaseClass
+    public class TestClass : BaseClass
     {
         private static bool Test_NEWOBJ(TestClass _this, int cookie, bool flag)
         {
@@ -47,7 +48,8 @@ namespace JitTest
             }
         }
 
-        private static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             TestClass _this = new TestClass();
             if (!Test_NEWOBJ(_this, 0, true))

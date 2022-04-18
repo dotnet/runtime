@@ -12,9 +12,9 @@
 .assembly extern xunit.core {}
 
 
-.namespace Test
+.namespace Test_rethrowinfinallyinsidecatch_il
 {
-  .class private auto ansi beforefieldinit Class1
+  .class public auto ansi beforefieldinit Class1
          extends [mscorlib]System.Object
   {
     .field private static class [eh_common]TestUtil.TestLog testLog
@@ -49,7 +49,7 @@
 
       ldloc.s    expectedOut
       newobj     instance void [eh_common]TestUtil.TestLog::.ctor(object)
-      stsfld     class [eh_common]TestUtil.TestLog Test.Class1::testLog
+      stsfld     class [eh_common]TestUtil.TestLog Test_rethrowinfinallyinsidecatch_il.Class1::testLog
       ret
     } 
 
@@ -66,7 +66,7 @@
                class [mscorlib]System.Exception e,
                int32 V_3)
 
-      ldsfld     class [eh_common]TestUtil.TestLog Test.Class1::testLog
+      ldsfld     class [eh_common]TestUtil.TestLog Test_rethrowinfinallyinsidecatch_il.Class1::testLog
       callvirt   instance void [eh_common]TestUtil.TestLog::StartRecording()
 
       .try
@@ -142,10 +142,10 @@
 
       }  
       L3:  
-      ldsfld     class [eh_common]TestUtil.TestLog Test.Class1::testLog
+      ldsfld     class [eh_common]TestUtil.TestLog Test_rethrowinfinallyinsidecatch_il.Class1::testLog
       callvirt   instance void [eh_common]TestUtil.TestLog::StopRecording()
       
-      ldsfld     class [eh_common]TestUtil.TestLog Test.Class1::testLog
+      ldsfld     class [eh_common]TestUtil.TestLog Test_rethrowinfinallyinsidecatch_il.Class1::testLog
       callvirt   instance int32 [eh_common]TestUtil.TestLog::VerifyOutput()
 
       ret

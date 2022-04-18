@@ -23,6 +23,8 @@
 
 
 
+.namespace Test_test_implicit_il
+{
 .class public auto ansi beforefieldinit Class1
        extends [mscorlib]System.Object
 {
@@ -34,23 +36,23 @@
   {
     .maxstack  5
     .locals init (int32 V_0)
-              ldsfld     bool Class1::s_failure
+              ldsfld     bool Test_test_implicit_il.Class1::s_failure
               brtrue.s   IL_0003
 
     IL_0000:  ldarg.1
     IL_0001:  brtrue.s   IL_000c
 
     IL_0003:  ldarg.0
-    IL_0004:  ldfld      int32 Class1::'value'
+    IL_0004:  ldfld      int32 Test_test_implicit_il.Class1::'value'
     IL_0009:  stloc.0
     IL_000a:  br.s       IL_004b
 
     IL_000c:  ldarg.0
     IL_000d:  dup
-    IL_000e:  ldfld      int32 Class1::'value'
+    IL_000e:  ldfld      int32 Test_test_implicit_il.Class1::'value'
     IL_0013:  ldarg.1
     IL_0014:  add
-    IL_0015:  stfld      int32 Class1::'value'
+    IL_0015:  stfld      int32 Test_test_implicit_il.Class1::'value'
     IL_001a:  ldarg.1
     IL_001b:  ldc.i4     0x80
     IL_0020:  rem
@@ -61,7 +63,7 @@
     IL_0026:  ldarg.1
     IL_0027:  ldc.i4.1
     IL_0028:  sub
-    IL_0029:  tail. callvirt   instance int32 Class1::Recurse3(int32)
+    IL_0029:  tail. callvirt   instance int32 Test_test_implicit_il.Class1::Recurse3(int32)
 ret
     IL_002e:  stloc.0
     IL_002f:  br.s       IL_004b
@@ -76,7 +78,7 @@ ret
     IL_003c:  ldc.i4.1
     IL_003d:  add
     IL_003e:  box        [mscorlib]System.Int32
-    IL_0043:  tail. call       instance int32 Class1::Recurse2(int32,
+    IL_0043:  tail. call       instance int32 Test_test_implicit_il.Class1::Recurse2(int32,
                                                          object,
                                                          object)
 ret
@@ -95,19 +97,19 @@ ret
     .maxstack  4
     .locals init (string V_0,
              int32 V_1)
-              ldsfld     bool Class1::s_failure
+              ldsfld     bool Test_test_implicit_il.Class1::s_failure
               brtrue.s   IL_0003
 
     IL_0000:  ldarg.1
     IL_0001:  brtrue.s   IL_000c
 
     IL_0003:  ldarg.0
-    IL_0004:  ldfld      int32 Class1::'value'
+    IL_0004:  ldfld      int32 Test_test_implicit_il.Class1::'value'
     IL_0009:  stloc.1
     IL_000a:  br.s       IL_007b
 
     IL_000c:  ldarg.1
-    IL_000d:  ldsfld     int32 Class1::MaxDepth
+    IL_000d:  ldsfld     int32 Test_test_implicit_il.Class1::MaxDepth
     IL_0012:  ldc.i4.s   10
     IL_0014:  div
     IL_0015:  rem
@@ -130,13 +132,13 @@ ret
     IL_003e:  ldstr      "Test Failed"
     IL_0043:  call       void [System.Console]System.Console::WriteLine(string)
     IL_0048:  ldc.i4.1
-              stsfld     bool Class1::s_failure
+              stsfld     bool Test_test_implicit_il.Class1::s_failure
               br.s       IL_0003
 
     IL_004e:  call       void [mscorlib]System.GC::Collect()
     IL_0053:  ldarg.0
     IL_0054:  dup
-    IL_0055:  ldfld      int32 Class1::'value'
+    IL_0055:  ldfld      int32 Test_test_implicit_il.Class1::'value'
     IL_005a:  ldarg.2
     IL_005b:  unbox      [mscorlib]System.Int32
     IL_0060:  ldind.i4
@@ -145,12 +147,12 @@ ret
     IL_0067:  ldind.i4
     IL_0068:  add
     IL_0069:  add
-    IL_006a:  stfld      int32 Class1::'value'
+    IL_006a:  stfld      int32 Test_test_implicit_il.Class1::'value'
     IL_006f:  ldarg.0
     IL_0070:  ldarg.1
     IL_0071:  ldc.i4.1
     IL_0072:  sub
-    IL_0073:  tail. callvirt   instance int32 Class1::Recurse3(int32)
+    IL_0073:  tail. callvirt   instance int32 Test_test_implicit_il.Class1::Recurse3(int32)
 ret
     IL_0078:  stloc.1
     IL_0079:  br.s       IL_007b
@@ -164,14 +166,14 @@ ret
   {
     .maxstack  5
     .locals init (int32 V_0)
-              ldsfld     bool Class1::s_failure
+              ldsfld     bool Test_test_implicit_il.Class1::s_failure
               brtrue.s   IL_0003
 
     IL_0000:  ldarg.1
     IL_0001:  brtrue.s   IL_000c
 
     IL_0003:  ldarg.0
-    IL_0004:  ldfld      int32 Class1::'value'
+    IL_0004:  ldfld      int32 Test_test_implicit_il.Class1::'value'
     IL_0009:  stloc.0
     IL_000a:  br.s       IL_003f
 
@@ -185,7 +187,7 @@ ret
     IL_0018:  ldarg.1
     IL_0019:  ldc.i4.1
     IL_001a:  sub
-    IL_001b:  tail. call       instance int32 Class1::Recurse1(int32)
+    IL_001b:  tail. call       instance int32 Test_test_implicit_il.Class1::Recurse1(int32)
 ret
     IL_0020:  stloc.0
     IL_0021:  br.s       IL_003f
@@ -202,7 +204,7 @@ ret
     IL_0030:  ldc.i4.2
     IL_0031:  add
     IL_0032:  box        [mscorlib]System.Int32
-    IL_0037:  tail. callvirt   instance int32 Class1::Recurse4(int32,
+    IL_0037:  tail. callvirt   instance int32 Test_test_implicit_il.Class1::Recurse4(int32,
                                                          object,
                                                          object)
 ret
@@ -221,19 +223,19 @@ ret
     .maxstack  4
     .locals init (string V_0,
              int32 V_1)
-              ldsfld     bool Class1::s_failure
+              ldsfld     bool Test_test_implicit_il.Class1::s_failure
               brtrue.s   IL_0003
 
     IL_0000:  ldarg.1
     IL_0001:  brtrue.s   IL_000c
 
     IL_0003:  ldarg.0
-    IL_0004:  ldfld      int32 Class1::'value'
+    IL_0004:  ldfld      int32 Test_test_implicit_il.Class1::'value'
     IL_0009:  stloc.1
     IL_000a:  br.s       IL_007e
 
     IL_000c:  ldarg.1
-    IL_000d:  ldsfld     int32 Class1::MaxDepth
+    IL_000d:  ldsfld     int32 Test_test_implicit_il.Class1::MaxDepth
     IL_0012:  ldc.i4.s   10
     IL_0014:  div
     IL_0015:  rem
@@ -257,12 +259,12 @@ ret
     IL_0046:  ldstr      "Test Failed"
     IL_004b:  call       void [System.Console]System.Console::WriteLine(string)
     IL_0050:  ldc.i4.1
-              stsfld     bool Class1::s_failure
+              stsfld     bool Test_test_implicit_il.Class1::s_failure
               br.s       IL_0003
 
     IL_0056:  ldarg.0
     IL_0057:  dup
-    IL_0058:  ldfld      int32 Class1::'value'
+    IL_0058:  ldfld      int32 Test_test_implicit_il.Class1::'value'
     IL_005d:  ldarg.2
     IL_005e:  unbox      [mscorlib]System.Int32
     IL_0063:  ldind.i4
@@ -271,12 +273,12 @@ ret
     IL_006a:  ldind.i4
     IL_006b:  add
     IL_006c:  add
-    IL_006d:  stfld      int32 Class1::'value'
+    IL_006d:  stfld      int32 Test_test_implicit_il.Class1::'value'
     IL_0072:  ldarg.0
     IL_0073:  ldarg.1
     IL_0074:  ldc.i4.1
     IL_0075:  sub
-    IL_0076:  tail. call       instance int32 Class1::Recurse1(int32)
+    IL_0076:  tail. call       instance int32 Test_test_implicit_il.Class1::Recurse1(int32)
 ret
     IL_007b:  stloc.1
     IL_007c:  br.s       IL_007e
@@ -292,25 +294,25 @@ ret
     )
     .entrypoint
     .maxstack  3
-    .locals init (class Class1 V_0,
+    .locals init (class Test_test_implicit_il.Class1 V_0,
              int32 V_1,
              int32 V_2,
              object[] V_3)
     IL_0000:  ldstr      "Test Start"
     IL_0005:  call       void [System.Console]System.Console::WriteLine(string)
-    IL_000a:  newobj     instance void Class1::.ctor()
+    IL_000a:  newobj     instance void Test_test_implicit_il.Class1::.ctor()
     IL_000f:  stloc.0
     IL_0010:  ldloc.0
-    IL_0011:  ldsfld     int32 Class1::MaxDepth
-    IL_0016:  callvirt   instance int32 Class1::Recurse1(int32)
+    IL_0011:  ldsfld     int32 Test_test_implicit_il.Class1::MaxDepth
+    IL_0016:  callvirt   instance int32 Test_test_implicit_il.Class1::Recurse1(int32)
     IL_001b:  pop
-              ldsfld     bool Class1::s_failure
+              ldsfld     bool Test_test_implicit_il.Class1::s_failure
               brtrue.s   IL_0060
 
     IL_001c:  ldc.i4     41963520
     IL_001d:  stloc.1
     IL_001e:  ldloc.0
-    IL_001f:  ldfld      int32 Class1::'value'
+    IL_001f:  ldfld      int32 Test_test_implicit_il.Class1::'value'
     IL_0024:  ldloc.1
     IL_0025:  beq.s      IL_006e
 
@@ -333,7 +335,7 @@ ret
     IL_0047:  ldloc.3
     IL_0048:  ldc.i4.3
     IL_0049:  ldloc.0
-    IL_004a:  ldfld      int32 Class1::'value'
+    IL_004a:  ldfld      int32 Test_test_implicit_il.Class1::'value'
     IL_004f:  box        [mscorlib]System.Int32
     IL_0054:  stelem.ref
     IL_0055:  ldloc.3
@@ -360,7 +362,7 @@ ret
   {
     .maxstack  8
     IL_0000:  ldc.i4     0x2000
-    IL_0005:  stsfld     int32 Class1::MaxDepth
+    IL_0005:  stsfld     int32 Test_test_implicit_il.Class1::MaxDepth
     IL_000a:  ret
   }
 
@@ -373,4 +375,5 @@ ret
     IL_0006:  ret
   }
 
+}
 }
