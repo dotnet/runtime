@@ -81,9 +81,9 @@ namespace System.Collections.Generic
         private NullableComparer(SerializationInfo info, StreamingContext context) { }
         public void GetObjectData(SerializationInfo info, StreamingContext context)
         {
-            if (!typeof(T).IsAssignableTo(typeof(IEquatable<T>)))
+            if (!typeof(T).IsAssignableTo(typeof(IComparable<T>)))
             {
-                // We used to use NullableComparer only for types implementing IEquatable<T>
+                // We used to use NullableComparer only for types implementing IComparable<T>
                 info.SetType(typeof(ObjectComparer<T>));
             }
         }
