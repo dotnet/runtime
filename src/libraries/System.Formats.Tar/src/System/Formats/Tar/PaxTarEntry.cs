@@ -49,8 +49,8 @@ namespace System.Formats.Tar
         /// <item>File length, under the name <c>size</c>, as an <see cref="int"/>, if the string representation of the number is larger than 12 bytes.</item>
         /// </list>
         /// </remarks>
-        public PaxTarEntry(TarEntryType entryType, string entryName!!)
-            : base(entryType, entryName, TarFormat.Pax) // Base constructor validates entry type
+        public PaxTarEntry(TarEntryType entryType, string entryName)
+            : base(entryType, entryName, TarFormat.Pax)
         {
         }
 
@@ -83,9 +83,10 @@ namespace System.Formats.Tar
         /// <item>File length, under the name <c>size</c>, as an <see cref="int"/>, if the string representation of the number is larger than 12 bytes.</item>
         /// </list>
         /// </remarks>
-        public PaxTarEntry(TarEntryType entryType, string entryName, IEnumerable<KeyValuePair<string, string>> extendedAttributes!!)
-            : base(entryType, entryName, TarFormat.Pax) // Base constructor vaildates entry type
+        public PaxTarEntry(TarEntryType entryType, string entryName, IEnumerable<KeyValuePair<string, string>> extendedAttributes)
+            : base(entryType, entryName, TarFormat.Pax)
         {
+            ArgumentNullException.ThrowIfNull(extendedAttributes);
             _header.ReplaceNormalAttributesWithExtended(extendedAttributes);
         }
 

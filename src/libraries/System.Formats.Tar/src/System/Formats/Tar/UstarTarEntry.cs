@@ -27,7 +27,7 @@ namespace System.Formats.Tar
         /// <item>In Unix platforms only: <see cref="TarEntryType.BlockDevice"/>, <see cref="TarEntryType.CharacterDevice"/> and <see cref="TarEntryType.Fifo"/>.</item>
         /// </list>
         /// </remarks>
-        public UstarTarEntry(TarEntryType entryType, string entryName!!)
+        public UstarTarEntry(TarEntryType entryType, string entryName)
             : base(entryType, entryName, TarFormat.Ustar)
         {
         }

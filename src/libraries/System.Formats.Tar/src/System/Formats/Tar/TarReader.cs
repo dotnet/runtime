@@ -28,8 +28,10 @@ namespace System.Formats.Tar
         /// <param name="archiveStream">The stream to read from.</param>
         /// <param name="leaveOpen"><see langword="false"/> to dispose the <paramref name="archiveStream"/> when this instance is disposed; <see langword="true"/> to leave the stream open.</param>
         /// <exception cref="IOException"><paramref name="archiveStream"/> is unreadable.</exception>
-        public TarReader(Stream archiveStream!!, bool leaveOpen = false)
+        public TarReader(Stream archiveStream, bool leaveOpen = false)
         {
+            ArgumentNullException.ThrowIfNull(archiveStream);
+
             if (!archiveStream.CanRead)
             {
                 throw new IOException(SR.IO_NotSupported_UnreadableStream);
