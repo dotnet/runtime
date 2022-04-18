@@ -275,8 +275,8 @@ namespace System.Net.Http
                 }
 
                 // Get any additional certificates sent from the remote server during the TLS/SSL handshake.
-                X509Certificate2Collection remoteCertificateStore =
-                    UnmanagedCertificateContext.GetRemoteCertificatesFromStoreContext(certHandle);
+                X509Certificate2Collection remoteCertificateStore = new X509Certificate2Collection();
+                    UnmanagedCertificateContext.GetRemoteCertificatesFromStoreContext(certHandle, remoteCertificateStore);
 
                 // Create a managed wrapper around the certificate handle. Since this results in duplicating
                 // the handle, we will close the original handle after creating the wrapper.

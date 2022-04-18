@@ -114,7 +114,7 @@ namespace System.Security.Cryptography.X509Certificates
                 if (certificate == null || certificate.Pal == null)
                     throw new ArgumentException(SR.Cryptography_InvalidContextHandle, nameof(certificate));
 
-                if (_chainPolicy != null && _chainPolicy.CustomTrustStore != null)
+                if (_chainPolicy != null && _chainPolicy._customTrustStore != null)
                 {
                     if (_chainPolicy.TrustMode == X509ChainTrustMode.System && _chainPolicy.CustomTrustStore.Count > 0)
                         throw new CryptographicException(SR.Cryptography_CustomTrustCertsInSystemMode);
