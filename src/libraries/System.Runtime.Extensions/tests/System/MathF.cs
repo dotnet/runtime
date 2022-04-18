@@ -1225,12 +1225,22 @@ namespace System.Tests
 
         [Theory]
         [InlineData(float.NegativeInfinity, float.PositiveInfinity, float.PositiveInfinity)]
+        [InlineData(float.PositiveInfinity, float.NegativeInfinity, float.PositiveInfinity)]
         [InlineData(float.MinValue, float.MaxValue, float.MaxValue)]
+        [InlineData(float.MaxValue, float.MinValue, float.MaxValue)]
         [InlineData(float.NaN, float.NaN, float.NaN)]
-        [InlineData(-0.0f, 0.0f, 0.0f)]
-        [InlineData(2.0f, -3.0f, 2.0f)]
-        [InlineData(3.0f, -2.0f, 3.0f)]
+        [InlineData(float.NaN, 1.0f, float.NaN)]
+        [InlineData(1.0f, float.NaN, float.NaN)]
         [InlineData(float.PositiveInfinity, float.NaN, float.NaN)]
+        [InlineData(float.NegativeInfinity, float.NaN, float.NaN)]
+        [InlineData(float.NaN, float.PositiveInfinity, float.NaN)]
+        [InlineData(float.NaN, float.NegativeInfinity, float.NaN)]
+        [InlineData(-0.0f, 0.0f, 0.0f)]
+        [InlineData(0.0f, -0.0f, 0.0f)]
+        [InlineData(2.0f, -3.0f, 2.0f)]
+        [InlineData(-3.0f, 2.0f, 2.0f)]
+        [InlineData(3.0f, -2.0f, 3.0f)]
+        [InlineData(-2.0f, 3.0f, 3.0f)]
         public static void Max(float x, float y, float expectedResult)
         {
             AssertEqual(expectedResult, MathF.Max(x, y), 0.0f);
@@ -1238,12 +1248,22 @@ namespace System.Tests
 
         [Theory]
         [InlineData(float.NegativeInfinity, float.PositiveInfinity, float.PositiveInfinity)]
+        [InlineData(float.PositiveInfinity, float.NegativeInfinity, float.PositiveInfinity)]
         [InlineData(float.MinValue, float.MaxValue, float.MaxValue)]
+        [InlineData(float.MaxValue, float.MinValue, float.MaxValue)]
         [InlineData(float.NaN, float.NaN, float.NaN)]
-        [InlineData(-0.0f, 0.0f, 0.0f)]
-        [InlineData(2.0f, -3.0f, -3.0f)]
-        [InlineData(3.0f, -2.0f, 3.0f)]
+        [InlineData(float.NaN, 1.0f, float.NaN)]
+        [InlineData(1.0f, float.NaN, float.NaN)]
         [InlineData(float.PositiveInfinity, float.NaN, float.NaN)]
+        [InlineData(float.NegativeInfinity, float.NaN, float.NaN)]
+        [InlineData(float.NaN, float.PositiveInfinity, float.NaN)]
+        [InlineData(float.NaN, float.NegativeInfinity, float.NaN)]
+        [InlineData(-0.0f, 0.0f, 0.0f)]
+        [InlineData(0.0f, -0.0f, 0.0f)]
+        [InlineData(2.0f, -3.0f, -3.0f)]
+        [InlineData(-3.0f, 2.0f, -3.0f)]
+        [InlineData(3.0f, -2.0f, 3.0f)]
+        [InlineData(-2.0f, 3.0f, 3.0f)]
         public static void MaxMagnitude(float x, float y, float expectedResult)
         {
             AssertEqual(expectedResult, MathF.MaxMagnitude(x, y), 0.0f);
@@ -1251,12 +1271,22 @@ namespace System.Tests
 
         [Theory]
         [InlineData(float.NegativeInfinity, float.PositiveInfinity, float.NegativeInfinity)]
+        [InlineData(float.PositiveInfinity, float.NegativeInfinity, float.NegativeInfinity)]
         [InlineData(float.MinValue, float.MaxValue, float.MinValue)]
+        [InlineData(float.MaxValue, float.MinValue, float.MinValue)]
         [InlineData(float.NaN, float.NaN, float.NaN)]
-        [InlineData(-0.0f, 0.0f, -0.0f)]
-        [InlineData(2.0f, -3.0f, -3.0f)]
-        [InlineData(3.0f, -2.0f, -2.0f)]
+        [InlineData(float.NaN, 1.0f, float.NaN)]
+        [InlineData(1.0f, float.NaN, float.NaN)]
         [InlineData(float.PositiveInfinity, float.NaN, float.NaN)]
+        [InlineData(float.NegativeInfinity, float.NaN, float.NaN)]
+        [InlineData(float.NaN, float.PositiveInfinity, float.NaN)]
+        [InlineData(float.NaN, float.NegativeInfinity, float.NaN)]
+        [InlineData(-0.0f, 0.0f, -0.0f)]
+        [InlineData(0.0f, -0.0f, -0.0f)]
+        [InlineData(2.0f, -3.0f, -3.0f)]
+        [InlineData(-3.0f, 2.0f, -3.0f)]
+        [InlineData(3.0f, -2.0f, -2.0f)]
+        [InlineData(-2.0f, 3.0f, -2.0f)]
         public static void Min(float x, float y, float expectedResult)
         {
             AssertEqual(expectedResult, MathF.Min(x, y), 0.0f);
@@ -1264,12 +1294,22 @@ namespace System.Tests
 
         [Theory]
         [InlineData(float.NegativeInfinity, float.PositiveInfinity, float.NegativeInfinity)]
+        [InlineData(float.PositiveInfinity, float.NegativeInfinity, float.NegativeInfinity)]
         [InlineData(float.MinValue, float.MaxValue, float.MinValue)]
+        [InlineData(float.MaxValue, float.MinValue, float.MinValue)]
         [InlineData(float.NaN, float.NaN, float.NaN)]
-        [InlineData(-0.0f, 0.0f, -0.0f)]
-        [InlineData(2.0f, -3.0f, 2.0f)]
-        [InlineData(3.0f, -2.0f, -2.0f)]
+        [InlineData(float.NaN, 1.0f, float.NaN)]
+        [InlineData(1.0f, float.NaN, float.NaN)]
         [InlineData(float.PositiveInfinity, float.NaN, float.NaN)]
+        [InlineData(float.NegativeInfinity, float.NaN, float.NaN)]
+        [InlineData(float.NaN, float.PositiveInfinity, float.NaN)]
+        [InlineData(float.NaN, float.NegativeInfinity, float.NaN)]
+        [InlineData(-0.0f, 0.0f, -0.0f)]
+        [InlineData(0.0f, -0.0f, -0.0f)]
+        [InlineData(2.0f, -3.0f, 2.0f)]
+        [InlineData(-3.0f, 2.0f, 2.0f)]
+        [InlineData(3.0f, -2.0f, -2.0f)]
+        [InlineData(-2.0f, 3.0f, -2.0f)]
         public static void MinMagnitude(float x, float y, float expectedResult)
         {
             AssertEqual(expectedResult, MathF.MinMagnitude(x, y), 0.0f);

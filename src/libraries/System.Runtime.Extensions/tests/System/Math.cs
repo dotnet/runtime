@@ -343,15 +343,15 @@ namespace System.Tests
         // but also NaN and +-infinity) are correctly and consistently represented.
         private static string ToStringPadded(float value)
         {
-            if (double.IsNaN(value))
+            if (float.IsNaN(value))
             {
                 return "NaN".PadLeft(10);
             }
-            else if (double.IsPositiveInfinity(value))
+            else if (float.IsPositiveInfinity(value))
             {
                 return "+\u221E".PadLeft(10);
             }
-            else if (double.IsNegativeInfinity(value))
+            else if (float.IsNegativeInfinity(value))
             {
                 return "-\u221E".PadLeft(10);
             }
@@ -2854,12 +2854,22 @@ namespace System.Tests
 
         [Theory]
         [InlineData(double.NegativeInfinity, double.PositiveInfinity, double.PositiveInfinity)]
+        [InlineData(double.PositiveInfinity, double.NegativeInfinity, double.PositiveInfinity)]
         [InlineData(double.MinValue, double.MaxValue, double.MaxValue)]
+        [InlineData(double.MaxValue, double.MinValue, double.MaxValue)]
         [InlineData(double.NaN, double.NaN, double.NaN)]
-        [InlineData(-0.0, 0.0, 0.0)]
-        [InlineData(2.0, -3.0, -3.0)]
-        [InlineData(3.0, -2.0, 3.0)]
+        [InlineData(double.NaN, 1.0, double.NaN)]
+        [InlineData(1.0, double.NaN, double.NaN)]
         [InlineData(double.PositiveInfinity, double.NaN, double.NaN)]
+        [InlineData(double.NegativeInfinity, double.NaN, double.NaN)]
+        [InlineData(double.NaN, double.PositiveInfinity, double.NaN)]
+        [InlineData(double.NaN, double.NegativeInfinity, double.NaN)]
+        [InlineData(-0.0, 0.0, 0.0)]
+        [InlineData(0.0, -0.0, 0.0)]
+        [InlineData(2.0, -3.0, -3.0)]
+        [InlineData(-3.0, 2.0, -3.0)]
+        [InlineData(3.0, -2.0, 3.0)]
+        [InlineData(-2.0, 3.0, 3.0)]
         public static void MaxMagnitude(double x, double y, double expectedResult)
         {
             AssertEqual(expectedResult, Math.MaxMagnitude(x, y), 0.0);
@@ -2867,12 +2877,22 @@ namespace System.Tests
 
         [Theory]
         [InlineData(double.NegativeInfinity, double.PositiveInfinity, double.NegativeInfinity)]
+        [InlineData(double.PositiveInfinity, double.NegativeInfinity, double.NegativeInfinity)]
         [InlineData(double.MinValue, double.MaxValue, double.MinValue)]
+        [InlineData(double.MaxValue, double.MinValue, double.MinValue)]
         [InlineData(double.NaN, double.NaN, double.NaN)]
-        [InlineData(-0.0, 0.0, -0.0)]
-        [InlineData(2.0, -3.0, 2.0)]
-        [InlineData(3.0, -2.0, -2.0)]
+        [InlineData(double.NaN, 1.0, double.NaN)]
+        [InlineData(1.0, double.NaN, double.NaN)]
         [InlineData(double.PositiveInfinity, double.NaN, double.NaN)]
+        [InlineData(double.NegativeInfinity, double.NaN, double.NaN)]
+        [InlineData(double.NaN, double.PositiveInfinity, double.NaN)]
+        [InlineData(double.NaN, double.NegativeInfinity, double.NaN)]
+        [InlineData(-0.0, 0.0, -0.0)]
+        [InlineData(0.0, -0.0, -0.0)]
+        [InlineData(2.0, -3.0, 2.0)]
+        [InlineData(-3.0, 2.0, 2.0)]
+        [InlineData(3.0, -2.0, -2.0)]
+        [InlineData(-2.0, 3.0, -2.0)]
         public static void MinMagnitude(double x, double y, double expectedResult)
         {
             AssertEqual(expectedResult, Math.MinMagnitude(x, y), 0.0);
