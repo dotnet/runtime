@@ -8,7 +8,7 @@ using Xunit;
 
 namespace System.Text.RegularExpressions.Tests
 {
-    public class RegexCountTests
+    public partial class RegexCountTests
     {
         [Theory]
         [MemberData(nameof(Count_ReturnsExpectedCount_TestData))]
@@ -119,7 +119,7 @@ namespace System.Text.RegularExpressions.Tests
             Stopwatch sw = Stopwatch.StartNew();
             Assert.Throws<RegexMatchTimeoutException>(() => r.Count(Input));
             Assert.Throws<RegexMatchTimeoutException>(() => r.Count(Input.AsSpan()));
-            Assert.InRange(sw.Elapsed.TotalSeconds, 0, 10); // arbitrary upper bound that should be well above what's needed with a 1ms timeout
+            Assert.InRange(sw.Elapsed.TotalSeconds, 0, 30); // arbitrary upper bound that should be well above what's needed with a 1ms timeout
 
             switch (engine)
             {
@@ -128,7 +128,7 @@ namespace System.Text.RegularExpressions.Tests
                     sw = Stopwatch.StartNew();
                     Assert.Throws<RegexMatchTimeoutException>(() => Regex.Count(Input, Pattern, RegexHelpers.OptionsFromEngine(engine), TimeSpan.FromMilliseconds(1)));
                     Assert.Throws<RegexMatchTimeoutException>(() => Regex.Count(Input.AsSpan(), Pattern, RegexHelpers.OptionsFromEngine(engine), TimeSpan.FromMilliseconds(1)));
-                    Assert.InRange(sw.Elapsed.TotalSeconds, 0, 10); // arbitrary upper bound that should be well above what's needed with a 1ms timeout
+                    Assert.InRange(sw.Elapsed.TotalSeconds, 0, 30); // arbitrary upper bound that should be well above what's needed with a 1ms timeout
                     break;
             }
         }

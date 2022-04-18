@@ -451,7 +451,7 @@ namespace System
         internal T InternalArray__IReadOnlyList_get_Item<T>(int index)
         {
             if ((uint)index >= (uint)Length)
-                ThrowHelper.ThrowArgumentOutOfRange_IndexException();
+                ThrowHelper.ThrowArgumentOutOfRange_IndexMustBeLessException();
 
             T value;
             // Do not change this to call GetGenericValue_icall directly, due to special casing in the runtime.
@@ -482,7 +482,7 @@ namespace System
         internal T InternalArray__get_Item<T>(int index)
         {
             if ((uint)index >= (uint)Length)
-                ThrowHelper.ThrowArgumentOutOfRange_IndexException();
+                ThrowHelper.ThrowArgumentOutOfRange_IndexMustBeLessException();
 
             T value;
             // Do not change this to call GetGenericValue_icall directly, due to special casing in the runtime.
@@ -493,7 +493,7 @@ namespace System
         internal void InternalArray__set_Item<T>(int index, T item)
         {
             if ((uint)index >= (uint)Length)
-                ThrowHelper.ThrowArgumentOutOfRange_IndexException();
+                ThrowHelper.ThrowArgumentOutOfRange_IndexMustBeLessException();
 
             if (this is object?[] oarray)
             {

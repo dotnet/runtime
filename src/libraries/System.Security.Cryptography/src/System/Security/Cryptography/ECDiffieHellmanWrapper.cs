@@ -195,7 +195,9 @@ namespace System.Security.Cryptography
                 }
             }
 
+#pragma warning disable 0672, SYSLIB0043 // Member overrides an obsolete member, ToByteArray is obsolete.
             public override byte[] ToByteArray() => _wrapped.ToByteArray();
+#pragma warning restore 0672, SYSLIB0043
 
 #pragma warning disable 0672, SYSLIB0042 // Member overrides an obsolete member, ToXmlString is obsolete.
             public override string ToXmlString() => _wrapped.ToXmlString();

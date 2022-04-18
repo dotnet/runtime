@@ -3,17 +3,34 @@
 
   <ItemGroup>
     <BuiltBinary Include="$(TargetPath)" />
+    <_AllPdbs Include="@(BuiltBinary -> '%(RootDir)%(Directory)%(Filename).pdb')">
+      <FolderName>$([System.IO.Directory]::GetParent(`%(Identity)`).Name)</FolderName>
+    </_AllPdbs>
   </ItemGroup>
 
-  <!-- Target used to consolidate all PDBs into a single location -->
+  <!-- Target used to consolidate all PDBs into a single location, except the aotsdk
+       PDBs, as S.P.C will overwrite the coreclr PDBs -->
   <Target Name="MoveSymbolFiles"
           AfterTargets="Build"
-          Condition="Exists(@(BuiltBinary -> '%(RootDir)%(Directory)%(Filename).pdb'))"
-          Inputs="@(BuiltBinary -> '%(RootDir)%(Directory)%(Filename).pdb')"
-          Outputs="@(BuiltBinary -> '$(RuntimeBinDir)PDB/%(Filename).pdb')">
+          Condition="Exists(@(_AllPdbs))"
+          Inputs="@(_AllPdbs)"
+          Outputs="@(_AllPdbs -> '$(RuntimeBinDir)PDB/%(Filename).pdb')">
 
-    <Move SourceFiles="@(BuiltBinary -> '%(RootDir)%(Directory)%(Filename).pdb')"
-          DestinationFolder="$(RuntimeBinDir)PDB" />
+    <Move SourceFiles="@(_AllPdbs)"
+          DestinationFolder="$(RuntimeBinDir)PDB"
+          Condition="'%(_AllPdbs.FolderName)' != 'aotsdk'" />
+
+  </Target>
+
+  <Target Name="MoveAotSymbolFiles"
+          AfterTargets="Build"
+          Condition="Exists(@(_AllPdbs))"
+          Inputs="@(_AllPdbs)"
+          Outputs="@(_AllPdbs -> '$(RuntimeBinDir)PDB/aotsdk/%(Filename).pdb')">
+
+    <Move SourceFiles="@(_AllPdbs)"
+          DestinationFolder="$(RuntimeBinDir)PDB/aotsdk"
+          Condition="'%(_AllPdbs.FolderName)' == 'aotsdk'" />
 
   </Target>
 

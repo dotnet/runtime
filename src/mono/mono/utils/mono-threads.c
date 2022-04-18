@@ -1653,7 +1653,7 @@ sleep_interrupt (gpointer data)
 static guint32
 sleep_interruptable (guint32 ms, gboolean *alerted)
 {
-	gint64 now, end;
+	gint64 now = 0, end = 0;
 
 	g_assert (MONO_INFINITE_WAIT == G_MAXUINT32);
 
@@ -1839,7 +1839,6 @@ MonoNativeThreadHandle
 mono_threads_open_native_thread_handle (MonoNativeThreadHandle thread_handle)
 {
 #ifdef HOST_WIN32
-	BOOL success = FALSE;
 	HANDLE new_thread_handle = NULL;
 
 	g_assert (thread_handle && thread_handle != INVALID_HANDLE_VALUE);

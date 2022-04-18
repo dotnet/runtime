@@ -10,6 +10,7 @@ Commonly Used Types:
 System.Formats.Cbor.CborReader
 System.Formats.Cbor.CborWriter</PackageDescription>
   </PropertyGroup>
+
   <ItemGroup>
     <Compile Include="$(CommonPath)System\Memory\PointerMemoryManager.cs" Link="Common\System\Memory\PointerMemoryManager.cs" />
     <Compile Include="System\Formats\Cbor\Reader\CborReaderState.cs" />
@@ -49,13 +50,10 @@ System.Formats.Cbor.CborWriter</PackageDescription>
   </ItemGroup>
     
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
-    <Reference Include="System.Buffers" />
     <Reference Include="System.Collections" />
     <Reference Include="System.Memory" />
     <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.CompilerServices.Unsafe" />
     <Reference Include="System.Runtime.Numerics" />
-    <Reference Include="System.Security.Cryptography.Algorithms" />
     <Reference Include="System.Text.Encoding.Extensions" />
     <Reference Include="System.Threading" />
   </ItemGroup>
@@ -63,7 +61,8 @@ System.Formats.Cbor.CborWriter</PackageDescription>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
     <PackageReference Include="System.Buffers" Version="$(SystemBuffersVersion)" />
     <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
-    <PackageReference Include="Microsoft.Bcl.HashCode" Version="1.1" />
+    <PackageReference Include="Microsoft.Bcl.HashCode" Version="$(MicrosoftBclHashCodeVersion)" />
+    <PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="$(SystemRuntimeCompilerServicesUnsafeVersion)" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">

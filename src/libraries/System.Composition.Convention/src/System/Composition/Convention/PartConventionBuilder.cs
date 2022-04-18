@@ -18,7 +18,6 @@ namespace System.Composition.Convention
         private static readonly List<Attribute> s_importingConstructorList = new List<Attribute>() { new ImportingConstructorAttribute() };
         private static readonly Type s_exportAttributeType = typeof(ExportAttribute);
         private readonly List<ExportConventionBuilder> _typeExportBuilders;
-        private readonly List<ImportConventionBuilder> _constructorImportBuilders;
         private bool _isShared;
         private string _sharingBoundary;
 
@@ -42,7 +41,6 @@ namespace System.Composition.Convention
         {
             SelectType = selectType;
             _typeExportBuilders = new List<ExportConventionBuilder>();
-            _constructorImportBuilders = new List<ImportConventionBuilder>();
             _propertyExports = new List<Tuple<Predicate<PropertyInfo>, Action<PropertyInfo, ExportConventionBuilder>, Type>>();
             _propertyImports = new List<Tuple<Predicate<PropertyInfo>, Action<PropertyInfo, ImportConventionBuilder>>>();
             _interfaceExports = new List<Tuple<Predicate<Type>, Action<Type, ExportConventionBuilder>>>();
@@ -496,7 +494,7 @@ namespace System.Composition.Convention
 
         internal bool BuildConstructorAttributes(Type type, ref List<Tuple<object, List<Attribute>>> configuredMembers)
         {
-            IEnumerable<ConstructorInfo> constructors = type.GetTypeInfo().DeclaredConstructors;
+            ConstructorInfo[] constructors = type.GetConstructors(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly);
 
             // First see if any of these constructors have the ImportingConstructorAttribute if so then we are already done
             foreach (ConstructorInfo ci in constructors)
@@ -534,7 +532,7 @@ namespace System.Composition.Convention
 
         internal static void BuildDefaultConstructorAttributes(Type type, ref List<Tuple<object, List<Attribute>>> configuredMembers)
         {
-            IEnumerable<ConstructorInfo> constructors = type.GetTypeInfo().DeclaredConstructors;
+            ConstructorInfo[] constructors = type.GetConstructors(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly);
 
             foreach (ConstructorInfo constructorInfo in FindLongestConstructors(constructors))
             {
@@ -733,7 +731,7 @@ namespace System.Composition.Convention
             return;
         }
 
-        private static IEnumerable<ConstructorInfo> FindLongestConstructors(IEnumerable<ConstructorInfo> constructors)
+        private static IEnumerable<ConstructorInfo> FindLongestConstructors(ConstructorInfo[] constructors)
         {
             ConstructorInfo longestConstructor = null;
             int argumentsCount = 0;

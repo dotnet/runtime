@@ -27,61 +27,61 @@
 #include <mono/metadata/icalls.h>
 
 /* Use this as MONO_CHECK_ARG (arg,expr,) in functions returning void */
-#define MONO_CHECK_ARG(arg, expr, retval) do {				\
-	if (G_UNLIKELY (!(expr)))					\
-	{								\
-		if (0) { (void)(arg); } /* check if the name exists */	\
-		ERROR_DECL (error);					\
-		mono_error_set_argument_format (error, #arg, "assertion `%s' failed", #expr); \
-		mono_error_set_pending_exception (error);		\
-		return retval;						\
-	} 								\
+#define MONO_CHECK_ARG(arg, expr, retval) do { \
+	if (G_UNLIKELY (!(expr))) \
+	{ \
+		if (0) { (void)(arg); } /* check if the name exists */ \
+		ERROR_DECL (__error); \
+		mono_error_set_argument_format (__error, #arg, "assertion `%s' failed", #expr); \
+		mono_error_set_pending_exception (__error); \
+		return retval; \
+	} \
 } while (0)
 
-#define MONO_CHECK_ARG_NULL_NAMED(arg, argname, retval) do {	\
-	if (G_UNLIKELY (!(arg)))				\
-	{							\
-		ERROR_DECL (error);				\
-		mono_error_set_argument_null (error, (argname), "");	\
-		mono_error_set_pending_exception (error);	\
-		return retval;					\
-	}							\
+#define MONO_CHECK_ARG_NULL_NAMED(arg, argname, retval) do { \
+	if (G_UNLIKELY (!(arg))) \
+	{ \
+		ERROR_DECL (__error); \
+		mono_error_set_argument_null (__error, (argname), ""); \
+		mono_error_set_pending_exception (__error); \
+		return retval; \
+	} \
 } while (0)
 /* Use this as MONO_CHECK_ARG_NULL (arg,) in functions returning void */
-#define MONO_CHECK_ARG_NULL(arg, retval) do { 			\
-	if (G_UNLIKELY (!(arg)))				\
-	{							\
-		mono_error_set_argument_null (error, #arg, "");	\
-		return retval;					\
-	}							\
+#define MONO_CHECK_ARG_NULL(arg, retval) do { \
+	if (G_UNLIKELY (!(arg))) \
+	{ \
+		mono_error_set_argument_null (error, #arg, ""); \
+		return retval; \
+	} \
 } while (0)
 
 /* Use this as MONO_CHECK_ARG_NULL_HANDLE (arg,) in functions returning void */
-#define MONO_CHECK_ARG_NULL_HANDLE(arg, retval) do { 		\
-	if (G_UNLIKELY (MONO_HANDLE_IS_NULL (arg)))		\
-	{							\
-		mono_error_set_argument_null (error, #arg, "");	\
-		return retval;					\
-	}							\
+#define MONO_CHECK_ARG_NULL_HANDLE(arg, retval) do { \
+	if (G_UNLIKELY (MONO_HANDLE_IS_NULL (arg))) \
+	{ \
+		mono_error_set_argument_null (error, #arg, ""); \
+		return retval; \
+	} \
 } while (0)
 
 #define MONO_CHECK_ARG_NULL_HANDLE_NAMED(arg, argname, retval) do { \
-	if (G_UNLIKELY (MONO_HANDLE_IS_NULL (arg)))		\
-	{							\
-		mono_error_set_argument_null (error, (argname), "");	\
-		return retval;					\
-	}							\
+	if (G_UNLIKELY (MONO_HANDLE_IS_NULL (arg))) \
+	{ \
+		mono_error_set_argument_null (error, (argname), ""); \
+		return retval; \
+	} \
 } while (0)
 
 /* Use this as MONO_CHECK_NULL (arg,) in functions returning void */
-#define MONO_CHECK_NULL(arg, retval) do { 			\
-	if (G_UNLIKELY (!(arg)))				\
-	{							\
-		ERROR_DECL (error);				\
-		mono_error_set_null_reference (error);		\
-		mono_error_set_pending_exception (error);	\
-		return retval;					\
-	} 							\
+#define MONO_CHECK_NULL(arg, retval) do { \
+	if (G_UNLIKELY (!(arg))) \
+	{ \
+		ERROR_DECL (__error); \
+		mono_error_set_null_reference (__error); \
+		mono_error_set_pending_exception (__error); \
+		return retval; \
+	} \
 } while (0)
 
 MONO_COMPONENT_API MonoClass *
@@ -171,7 +171,7 @@ struct _MonoArray {
 /* match the layout of the managed definition of Span<T> */
 #define MONO_DEFINE_SPAN_OF_T(name, type)	\
 	typedef struct {	\
-		type* _pointer;	\
+		type* _reference;	\
 		uint32_t _length;	\
 	} name;
 
@@ -241,7 +241,7 @@ mono_array_handle_length (MonoArrayHandle arr)
 // in order to mimic non-_internal but without the GC mode transitions, or at least,
 // to avoid the runtime using the embedding API, whether or not it has GC mode transitions.
 static inline char*
-mono_array_addr_with_size_internal (MonoArray *array, int size, uintptr_t idx)
+mono_array_addr_with_size_internal (MonoArray *array, size_t size, uintptr_t idx)
 {
 	return mono_array_addr_with_size_fast (array, size, idx);
 }
@@ -280,9 +280,9 @@ mono_handle_array_get_bounds_dim (MonoArrayHandle arr, gint32 dim, MonoArrayBoun
 
 #define mono_span_length(span) (span->_length)
 
-#define mono_span_get(span,type,idx) (type)(!span->_pointer ? (type)0 : span->_pointer[idx])
+#define mono_span_get(span,type,idx) (type)(!span->_reference ? (type)0 : span->_reference[idx])
 
-#define mono_span_addr(span,type,idx) (type*)(span->_pointer + idx)
+#define mono_span_addr(span,type,idx) (type*)(span->_reference + idx)
 
 #define mono_span_setref(span,index,value)	\
 	do {	\
@@ -296,10 +296,10 @@ mono_span_create_from_object_array (MonoArray *arr) {
 	MonoSpanOfObjects span;
 	if (arr != NULL) {
 		span._length = (int32_t)mono_array_length_internal (arr);
-		span._pointer = mono_array_addr_fast (arr, MonoObject*, 0);
+		span._reference = mono_array_addr_fast (arr, MonoObject*, 0);
 	} else {
 		span._length = 0;
-		span._pointer = NULL;
+		span._reference = NULL;
 	}
 	return span;
 }

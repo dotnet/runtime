@@ -289,7 +289,7 @@ monovm_create_delegate (const char *assemblyName, const char *typeName, const ch
 	/* monovm_create_delegate may be called instead of monovm_execute_assembly.  Initialize the
 	 * runtime if it isn't already. */
 	if (!mono_get_root_domain())
-		mini_init (assemblyName, "v4.0.30319");
+		mini_init (assemblyName);
 	MONO_ENTER_GC_UNSAFE;
 	result = monovm_create_delegate_impl (assemblyName, typeName, methodName, delegate);
 	MONO_EXIT_GC_UNSAFE;

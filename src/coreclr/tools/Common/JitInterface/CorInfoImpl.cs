@@ -1672,14 +1672,23 @@ namespace Internal.JitInterface
             var typeOrMethodContext = (pResolvedToken.tokenContext == contextFromMethodBeingCompiled()) ?
                 MethodBeingCompiled : HandleToObject((IntPtr)pResolvedToken.tokenContext);
 
-            object result = ResolveTokenInScope(methodIL, typeOrMethodContext, pResolvedToken.token);
+            object result = GetRuntimeDeterminedObjectForToken(methodIL, typeOrMethodContext, pResolvedToken.token);
+            if (pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_Newarr)
+                result = ((TypeDesc)result).MakeArrayType();
+
+            return result;
+        }
+
+        private object GetRuntimeDeterminedObjectForToken(MethodILScope methodIL, object typeOrMethodContext, mdToken token)
+        {
+            object result = ResolveTokenInScope(methodIL, typeOrMethodContext, token);
 
             if (result is MethodDesc method)
             {
                 if (method.IsSharedByGenericInstantiations)
                 {
                     MethodDesc sharedMethod = methodIL.OwningMethod.GetSharedRuntimeFormMethodTarget();
-                    result = ResolveTokenWithSubstitution(methodIL, pResolvedToken.token, sharedMethod.OwningType.Instantiation, sharedMethod.Instantiation);
+                    result = ResolveTokenWithSubstitution(methodIL, token, sharedMethod.OwningType.Instantiation, sharedMethod.Instantiation);
                     Debug.Assert(((MethodDesc)result).IsRuntimeDeterminedExactMethod);
                 }
             }
@@ -1688,7 +1697,7 @@ namespace Internal.JitInterface
                 if (field.OwningType.IsCanonicalSubtype(CanonicalFormKind.Any))
                 {
                     MethodDesc sharedMethod = methodIL.OwningMethod.GetSharedRuntimeFormMethodTarget();
-                    result = ResolveTokenWithSubstitution(methodIL, pResolvedToken.token, sharedMethod.OwningType.Instantiation, sharedMethod.Instantiation);
+                    result = ResolveTokenWithSubstitution(methodIL, token, sharedMethod.OwningType.Instantiation, sharedMethod.Instantiation);
                     Debug.Assert(((FieldDesc)result).OwningType.IsRuntimeDeterminedSubtype);
                 }
             }
@@ -1698,16 +1707,13 @@ namespace Internal.JitInterface
                 if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
                 {
                     MethodDesc sharedMethod = methodIL.OwningMethod.GetSharedRuntimeFormMethodTarget();
-                    result = ResolveTokenWithSubstitution(methodIL, pResolvedToken.token, sharedMethod.OwningType.Instantiation, sharedMethod.Instantiation);
+                    result = ResolveTokenWithSubstitution(methodIL, token, sharedMethod.OwningType.Instantiation, sharedMethod.Instantiation);
                     Debug.Assert(((TypeDesc)result).IsRuntimeDeterminedSubtype ||
                         /* If the resolved type is not runtime determined there's a chance we went down this path
                            because there was a literal typeof(__Canon) in the compiled IL - check for that
                            by resolving the token in the definition. */
-                        ((TypeDesc)methodIL.GetMethodILScopeDefinition().GetObject((int)pResolvedToken.token)).IsCanonicalDefinitionType(CanonicalFormKind.Any));
+                        ((TypeDesc)methodIL.GetMethodILScopeDefinition().GetObject((int)token)).IsCanonicalDefinitionType(CanonicalFormKind.Any));
                 }
-
-                if (pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_Newarr)
-                    result = ((TypeDesc)result).MakeArrayType();
             }
 
             return result;
@@ -1869,12 +1875,19 @@ namespace Internal.JitInterface
         private bool isValidStringRef(CORINFO_MODULE_STRUCT_* module, uint metaTOK)
         { throw new NotImplementedException("isValidStringRef"); }
 
-        private char* getStringLiteral(CORINFO_MODULE_STRUCT_* module, uint metaTOK, ref int length)
+        private int getStringLiteral(CORINFO_MODULE_STRUCT_* module, uint metaTOK, char* buffer, int size)
         {
+            Debug.Assert(size >= 0);
+
             MethodILScope methodIL = HandleToObject(module);
-            string s = (string)methodIL.GetObject((int)metaTOK);
-            length = (int)s.Length;
-            return (char*)GetPin(s);
+            string str = (string)methodIL.GetObject((int)metaTOK);
+
+            if (buffer != null)
+            {
+                // Copy str's content to buffer
+                str.AsSpan(0, Math.Min(size, str.Length)).CopyTo(new Span<char>(buffer, size));
+            }
+            return str.Length;
         }
 
         private CorInfoType asCorInfoType(CORINFO_CLASS_STRUCT_* cls)
@@ -1928,14 +1941,21 @@ namespace Internal.JitInterface
             if (pnBufLen > 0)
             {
                 char* buffer = *ppBuf;
-                for (int i = 0; i < Math.Min(name.Length, pnBufLen); i++)
+                int lengthToCopy = Math.Min(name.Length, pnBufLen);
+                for (int i = 0; i < lengthToCopy; i++)
                     buffer[i] = name[i];
                 if (name.Length < pnBufLen)
+                {
                     buffer[name.Length] = (char)0;
+                }
                 else
+                {
                     buffer[pnBufLen - 1] = (char)0;
-                pnBufLen -= length;
-                *ppBuf = buffer + length;
+                    lengthToCopy -= 1;
+                }
+
+                pnBufLen -= lengthToCopy;
+                *ppBuf = buffer + lengthToCopy;
             }
 
             return length;
@@ -2028,7 +2048,7 @@ namespace Internal.JitInterface
             if (!_compilation.CompilationModuleGroup.VersionsWithType(type))
             {
                 // Prevent the JIT from drilling into types outside of the current versioning bubble
-                result |= CorInfoFlag.CORINFO_FLG_DONT_PROMOTE;
+                result |= CorInfoFlag.CORINFO_FLG_DONT_DIG_FIELDS;
                 result &= ~CorInfoFlag.CORINFO_FLG_BEFOREFIELDINIT;
             }
 #endif

@@ -259,12 +259,6 @@ class LocalAddressVisitor final : public GenTreeVisitor<LocalAddressVisitor>
                     {
                         haveCorrectFieldForVN = false;
                     }
-                    else if (FieldSeqStore::IsPseudoField(field->gtFldHnd))
-                    {
-                        assert(compiler->compObjectStackAllocation());
-                        // We use PseudoFields when accessing stack allocated classes.
-                        haveCorrectFieldForVN = false;
-                    }
                     else if (val.m_fieldSeq == nullptr)
                     {
 
@@ -279,7 +273,7 @@ class LocalAddressVisitor final : public GenTreeVisitor<LocalAddressVisitor>
                     {
                         FieldSeqNode* lastSeqNode = val.m_fieldSeq->GetTail();
                         assert(lastSeqNode != nullptr);
-                        if (lastSeqNode->IsPseudoField() || lastSeqNode == FieldSeqStore::NotAField())
+                        if (lastSeqNode == FieldSeqStore::NotAField())
                         {
                             haveCorrectFieldForVN = false;
                         }
@@ -683,8 +677,8 @@ private:
         // beyond "this" instance. And calling struct member methods is common enough that attempting to
         // mark the entire struct as address exposed results in CQ regressions.
         GenTreeCall* callTree  = user->IsCall() ? user->AsCall() : nullptr;
-        bool         isThisArg = (callTree != nullptr) && (callTree->gtCallThisArg != nullptr) &&
-                         (val.Node() == callTree->gtCallThisArg->GetNode());
+        bool         isThisArg = (callTree != nullptr) && callTree->gtArgs.HasThisPointer() &&
+                         (val.Node() == callTree->gtArgs.GetThisArg()->GetEarlyNode());
         bool exposeParentLcl = varDsc->lvIsStructField && !isThisArg;
 
         bool hasHiddenStructArg = false;
@@ -692,15 +686,14 @@ private:
         {
             if (varTypeIsStruct(varDsc) && varDsc->lvIsTemp)
             {
-                // We rely here on the fact that the return buffer, if present, is always first in the arg list.
-                if ((callTree != nullptr) && callTree->HasRetBufArg() &&
-                    (val.Node() == callTree->gtCallArgs->GetNode()))
+                if ((callTree != nullptr) && callTree->gtArgs.HasRetBuffer() &&
+                    (val.Node() == callTree->gtArgs.GetRetBufferArg()->GetEarlyNode()))
                 {
                     assert(!exposeParentLcl);
 
                     m_compiler->lvaSetHiddenBufferStructArg(val.LclNum());
                     hasHiddenStructArg = true;
-                    callTree->SetLclRetBufArg(callTree->gtCallArgs);
+                    callTree->gtCallMoreFlags |= GTF_CALL_M_RETBUFFARG_LCLOPT;
                 }
             }
         }
@@ -1026,10 +1019,7 @@ private:
 
         if ((fieldSeq != nullptr) && (fieldSeq != FieldSeqStore::NotAField()))
         {
-            // TODO-ADDR: ObjectAllocator produces FIELD nodes with FirstElemPseudoField as field
-            // handle so we cannot use FieldSeqNode::GetFieldHandle() because it asserts on such
-            // handles. ObjectAllocator should be changed to create LCL_FLD nodes directly.
-            assert(!indir->OperIs(GT_FIELD) || (indir->AsField()->gtFldHnd == fieldSeq->GetTail()->m_fieldHnd));
+            assert(!indir->OperIs(GT_FIELD) || (indir->AsField()->gtFldHnd == fieldSeq->GetTail()->GetFieldHandle()));
         }
         else
         {

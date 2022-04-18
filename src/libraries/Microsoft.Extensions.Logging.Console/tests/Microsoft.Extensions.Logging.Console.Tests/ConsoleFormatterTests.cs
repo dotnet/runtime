@@ -38,37 +38,35 @@ namespace Microsoft.Extensions.Logging.Console.Test
             var errorSink = new ConsoleSink();
             var console = new TestConsole(sink);
             var errorConsole = new TestConsole(errorSink);
-            var consoleLoggerProcessor = new TestLoggerProcessor();
-            consoleLoggerProcessor.Console = console;
-            consoleLoggerProcessor.ErrorConsole = errorConsole;
+            var consoleLoggerProcessor = new TestLoggerProcessor(console, errorConsole);
 
-            var logger = new ConsoleLogger(_loggerName, consoleLoggerProcessor);
-            logger.ScopeProvider = new LoggerExternalScopeProvider();
-            logger.Options = options ?? new ConsoleLoggerOptions();
             var formatters = new ConcurrentDictionary<string, ConsoleFormatter>(ConsoleLoggerTest.GetFormatters(simpleOptions, systemdOptions, jsonOptions).ToDictionary(f => f.Name));
 
+            ConsoleFormatter? formatter = null;
+            var loggerOptions = options ?? new ConsoleLoggerOptions();
             Func<LogLevel, string> levelAsString;
             int writesPerMsg;
-            switch (logger.Options.FormatterName)
+            switch (loggerOptions.FormatterName)
             {
                 case ConsoleFormatterNames.Simple:
                     levelAsString = ConsoleLoggerTest.LogLevelAsStringDefault;
                     writesPerMsg = 2;
-                    logger.Formatter = formatters[ConsoleFormatterNames.Simple];
+                    formatter = formatters[ConsoleFormatterNames.Simple];
                     break;
                 case ConsoleFormatterNames.Systemd:
                     levelAsString = ConsoleLoggerTest.GetSyslogSeverityString;
                     writesPerMsg = 1;
-                    logger.Formatter = formatters[ConsoleFormatterNames.Systemd];
+                    formatter = formatters[ConsoleFormatterNames.Systemd];
                     break;
                 case ConsoleFormatterNames.Json:
                     levelAsString = ConsoleLoggerTest.GetJsonLogLevelString;
                     writesPerMsg = 1;
-                    logger.Formatter = formatters[ConsoleFormatterNames.Json];
+                    formatter = formatters[ConsoleFormatterNames.Json];
                     break;
                 default:
-                    throw new ArgumentOutOfRangeException(nameof(logger.Options.FormatterName));
+                    throw new ArgumentOutOfRangeException(nameof(loggerOptions.FormatterName));
             }
+            var logger = new ConsoleLogger(_loggerName, consoleLoggerProcessor, formatter, new LoggerExternalScopeProvider(), loggerOptions);
 
             return (logger, sink, errorSink, levelAsString, writesPerMsg);
         }

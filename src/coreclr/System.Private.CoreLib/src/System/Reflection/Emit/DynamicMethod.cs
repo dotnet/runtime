@@ -8,6 +8,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.Loader;
 using System.Text;
 using System.Threading;
+using static System.Runtime.CompilerServices.RuntimeHelpers;
 
 namespace System.Reflection.Emit
 {
@@ -22,6 +23,8 @@ namespace System.Reflection.Emit
         private RuntimeModule m_module = null!;
         internal bool m_skipVisibility;
         internal RuntimeType? m_typeOwner; // can be null
+        private DynamicMethodInvoker? _invoker;
+        private Signature? _signature;
 
         // We want the creator of the DynamicMethod to control who has access to the
         // DynamicMethod (just like we do for delegates). However, a user can get to
@@ -417,6 +420,37 @@ namespace System.Reflection.Emit
 
         public override bool IsSecurityTransparent => false;
 
+        private DynamicMethodInvoker Invoker
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                _invoker ??= new DynamicMethodInvoker(this);
+
+                return _invoker;
+            }
+        }
+
+        internal Signature Signature
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                [MethodImpl(MethodImplOptions.NoInlining)] // move lazy sig generation out of the hot path
+                Signature LazyCreateSignature()
+                {
+                    Debug.Assert(m_methodHandle != null);
+                    Debug.Assert(m_parameterTypes != null);
+
+                    Signature newSig = new Signature(m_methodHandle, m_parameterTypes, m_returnType, CallingConvention);
+                    Volatile.Write(ref _signature, newSig);
+                    return newSig;
+                }
+
+                return _signature ?? LazyCreateSignature();
+            }
+        }
+
         public override object? Invoke(object? obj, BindingFlags invokeAttr, Binder? binder, object?[]? parameters, CultureInfo? culture)
         {
             if ((CallingConvention & CallingConventions.VarArgs) == CallingConventions.VarArgs)
@@ -431,36 +465,137 @@ namespace System.Reflection.Emit
             _ = GetMethodDescriptor();
             // ignore obj since it's a static method
 
-            // create a signature object
-            Signature sig = new Signature(
-                this.m_methodHandle!, m_parameterTypes, m_returnType, CallingConvention);
-
-
             // verify arguments
-            int formalCount = sig.Arguments.Length;
-            int actualCount = (parameters != null) ? parameters.Length : 0;
-            if (formalCount != actualCount)
+            int argCount = (parameters != null) ? parameters.Length : 0;
+            if (Signature.Arguments.Length != argCount)
                 throw new TargetParameterCountException(SR.Arg_ParmCnt);
 
-            // if we are here we passed all the previous checks. Time to look at the arguments
-            bool wrapExceptions = (invokeAttr & BindingFlags.DoNotWrapExceptions) == 0;
+            object? retValue;
 
-            StackAllocedArguments stackArgs = default;
-            Span<object?> arguments = default;
-            if (actualCount != 0)
+            unsafe
             {
-                arguments = CheckArguments(ref stackArgs, parameters, binder, invokeAttr, culture, sig.Arguments);
+                if (argCount == 0)
+                {
+                    retValue = Invoker.InvokeUnsafe(obj, args: default, invokeAttr);
+                }
+                else if (argCount > MaxStackAllocArgCount)
+                {
+                    Debug.Assert(parameters != null);
+                    retValue = InvokeWithManyArguments(this, argCount, obj, invokeAttr, binder, parameters, culture);
+                }
+                else
+                {
+                    Debug.Assert(parameters != null);
+                    StackAllocedArguments argStorage = default;
+                    Span<object?> copyOfParameters = new Span<object?>(ref argStorage._arg0, argCount);
+                    Span<bool> shouldCopyBackParameters = new Span<bool>(ref argStorage._copyBack0, argCount);
+
+                    StackAllocatedByRefs byrefStorage = default;
+                    IntPtr* pByRefStorage = (IntPtr*)&byrefStorage;
+
+                    CheckArguments(
+                        copyOfParameters,
+                        pByRefStorage,
+                        shouldCopyBackParameters,
+                        parameters,
+                        Signature.Arguments,
+                        binder,
+                        culture,
+                        invokeAttr);
+
+                    retValue = Invoker.InvokeUnsafe(obj, pByRefStorage, invokeAttr);
+
+                    // Copy modified values out. This should be done only with ByRef or Type.Missing parameters.
+                    for (int i = 0; i < argCount; i++)
+                    {
+                        if (shouldCopyBackParameters[i])
+                        {
+                            parameters[i] = copyOfParameters[i];
+                        }
+                    }
+                }
             }
-
-            object? retValue = RuntimeMethodHandle.InvokeMethod(null, arguments, sig, false, wrapExceptions);
-
-            // copy out. This should be made only if ByRef are present.
-            // n.b. cannot use Span<T>.CopyTo, as parameters.GetType() might not actually be typeof(object[])
-            for (int index = 0; index < arguments.Length; index++)
-                parameters![index] = arguments[index];
 
             GC.KeepAlive(this);
             return retValue;
+        }
+
+        // Slower path that does a heap alloc for copyOfParameters and registers byrefs to those objects.
+        // This is a separate method to support better performance for the faster paths.
+        private static unsafe object? InvokeWithManyArguments(
+            DynamicMethod mi,
+            int argCount,
+            object? obj,
+            BindingFlags invokeAttr,
+            Binder? binder,
+            object?[] parameters,
+            CultureInfo? culture)
+        {
+            object[] objHolder = new object[argCount];
+            Span<object?> copyOfParameters = new Span<object?>(objHolder, 0, argCount);
+
+            // We don't check a max stack size since we are invoking a method which
+            // naturally requires a stack size that is dependent on the arg count\size.
+            IntPtr* pByRefStorage = stackalloc IntPtr[argCount];
+            Buffer.ZeroMemory((byte*)pByRefStorage, (uint)(argCount * sizeof(IntPtr)));
+
+            bool* boolHolder = stackalloc bool[argCount];
+            Span<bool> shouldCopyBackParameters = new Span<bool>(boolHolder, argCount);
+
+            GCFrameRegistration reg = new(pByRefStorage, (uint)argCount, areByRefs: true);
+
+            object? retValue;
+            try
+            {
+                RegisterForGCReporting(&reg);
+                mi.CheckArguments(
+                    copyOfParameters,
+                    pByRefStorage,
+                    shouldCopyBackParameters,
+                    parameters,
+                    mi.Signature.Arguments,
+                    binder,
+                    culture,
+                    invokeAttr);
+
+                retValue = mi.Invoker.InvokeUnsafe(obj, pByRefStorage, invokeAttr);
+            }
+            finally
+            {
+                UnregisterForGCReporting(&reg);
+            }
+
+            // Copy modified values out. This should be done only with ByRef or Type.Missing parameters.
+            for (int i = 0; i < argCount; i++)
+            {
+                if (shouldCopyBackParameters[i])
+                {
+                    parameters[i] = copyOfParameters[i];
+                }
+            }
+
+            return retValue;
+        }
+
+        [DebuggerHidden]
+        [DebuggerStepThrough]
+        internal unsafe object? InvokeNonEmitUnsafe(object? obj, IntPtr* arguments, BindingFlags invokeAttr)
+        {
+            if ((invokeAttr & BindingFlags.DoNotWrapExceptions) == 0)
+            {
+                try
+                {
+                    return RuntimeMethodHandle.InvokeMethod(obj, (void**)arguments, Signature, isConstructor: false);
+                }
+                catch (Exception e)
+                {
+                    throw new TargetInvocationException(e);
+                }
+            }
+            else
+            {
+                return RuntimeMethodHandle.InvokeMethod(obj, (void**)arguments, Signature, isConstructor: false);
+            }
         }
 
         public override object[] GetCustomAttributes(Type attributeType, bool inherit)

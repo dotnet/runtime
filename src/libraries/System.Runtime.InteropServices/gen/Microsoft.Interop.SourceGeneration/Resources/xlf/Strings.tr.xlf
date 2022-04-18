@@ -4,137 +4,137 @@
     <body>
       <trans-unit id="ArraySizeMustBeSpecified">
         <source>Marshalling an array from unmanaged to managed requires either the 'SizeParamIndex' or 'SizeConst' fields to be set on a 'MarshalAsAttribute' or the 'ConstantElementCount' or 'CountElementName' properties to be set on a 'MarshalUsingAttribute'.</source>
-        <target state="new">Marshalling an array from unmanaged to managed requires either the 'SizeParamIndex' or 'SizeConst' fields to be set on a 'MarshalAsAttribute' or the 'ConstantElementCount' or 'CountElementName' properties to be set on a 'MarshalUsingAttribute'.</target>
+        <target state="translated">Bir diziyi yönetilmeyenden yönetilene sıralamak için 'SizeParamIndex' veya 'SizeConst' alanlarının 'MarshalAsAttribute' olarak ya da 'ConstantElementCount' veya 'CountElementName' özelliklerinin bir 'MarshalUsingAttribute' olarak ayarlanmış olması gerekir.</target>
         <note />
       </trans-unit>
       <trans-unit id="ArraySizeParamIndexOutOfRange">
         <source>The 'SizeParamIndex' value in the 'MarshalAsAttribute' is out of range.</source>
-        <target state="new">The 'SizeParamIndex' value in the 'MarshalAsAttribute' is out of range.</target>
+        <target state="translated">'MarshalAsAttribute' öğesindeki 'SizeParamIndex' değeri aralık dışında.</target>
         <note />
       </trans-unit>
       <trans-unit id="CannotHaveMultipleMarshallingAttributesDescription">
         <source>The 'BlittableTypeAttribute' and 'NativeMarshallingAttribute' attributes are mutually exclusive.</source>
-        <target state="new">The 'BlittableTypeAttribute' and 'NativeMarshallingAttribute' attributes are mutually exclusive.</target>
+        <target state="translated">'BlittableTypeAttribute' ve 'NativeMarshallingAttribute' öznitelikleri birlikte kullanılamazlar.</target>
         <note />
       </trans-unit>
       <trans-unit id="CannotHaveMultipleMarshallingAttributesMessage">
         <source>Type '{0}' is marked with 'BlittableTypeAttribute' and 'NativeMarshallingAttribute'. A type can only have one of these two attributes.</source>
-        <target state="new">Type '{0}' is marked with 'BlittableTypeAttribute' and 'NativeMarshallingAttribute'. A type can only have one of these two attributes.</target>
+        <target state="translated">'{0}' türü 'BlittableTypeAttribute' ve 'NativeMarshallingAttribute' ile işaretlendi. Bir tür, bu iki özniteliklerden yalnızca birine sahip olabilir.</target>
         <note />
       </trans-unit>
       <trans-unit id="CollectionNativeTypeMustHaveRequiredShapeDescription">
         <source>A native type with the 'GenericContiguousCollectionMarshallerAttribute' must have at least one of the two marshalling methods as well as a 'ManagedValues' property of type 'Span&lt;T&gt;' for some 'T' and a 'NativeValueStorage' property of type 'Span&lt;byte&gt;' to enable marshalling the managed type.</source>
-        <target state="new">A native type with the 'GenericContiguousCollectionMarshallerAttribute' must have at least one of the two marshalling methods as well as a 'ManagedValues' property of type 'Span&lt;T&gt;' for some 'T' and a 'NativeValueStorage' property of type 'Span&lt;byte&gt;' to enable marshalling the managed type.</target>
+        <target state="translated">Yönetilen türü sıralamayı etkinleştirmek için 'GenericContiguousCollectionMarshallerAttribute' değerine sahip bir yerel türün iki sıralama metodundan en az birine ek olarak, 'T' değeri için 'Span&lt;T&gt;' türünde bir 'ManagedValues' özelliğine ve 'Span&lt;byte&gt; türünde bir 'NativeValueStorage' özelliğine sahip olması gerekir.</target>
         <note />
       </trans-unit>
       <trans-unit id="CollectionNativeTypeMustHaveRequiredShapeMessage">
         <source>The native type '{0}' must be a value type and have a constructor that takes two parameters, one of type '{1}' and an 'int', or have a parameterless instance method named 'ToManaged' that returns '{1}' as well as a 'ManagedValues' property of type 'Span&lt;T&gt;' for some 'T' and a 'NativeValueStorage' property of type 'Span&lt;byte&gt;'</source>
-        <target state="new">The native type '{0}' must be a value type and have a constructor that takes two parameters, one of type '{1}' and an 'int', or have a parameterless instance method named 'ToManaged' that returns '{1}' as well as a 'ManagedValues' property of type 'Span&lt;T&gt;' for some 'T' and a 'NativeValueStorage' property of type 'Span&lt;byte&gt;'</target>
+        <target state="translated">'{0}' yerel türü bir değer türüne sahip olmalı ve '{1}' türünden bir parametre ve 'int' olmak üzere iki parametre alan bir oluşturucuya sahip olmalı ya da 'T' değeri için 'Span&lt;T&gt;' türünde bir 'ManagedValues' özelliğine ve 'Span&lt;byte&gt; türünde bir 'NativeValueStorage' özelliğine ek olarak '{1}' değerini döndüren 'ToManaged' adında bir parametresiz örnek metoduna sahip olmalıdır.</target>
         <note />
       </trans-unit>
       <trans-unit id="CollectionSizeParamTypeMustBeIntegral">
         <source>The specified collection size parameter for an collection must be an integer type. If the size information is applied to a nested collection, the size parameter must be a collection of one less level of nesting with an integral element.</source>
-        <target state="new">The specified collection size parameter for an collection must be an integer type. If the size information is applied to a nested collection, the size parameter must be a collection of one less level of nesting with an integral element.</target>
+        <target state="translated">Bir koleksiyon için belirtilen koleksiyon boyutu parametresi tamsayı türünde olmalıdır. Boyut bilgisi iç içe yerleştirilmiş bir koleksiyona uygulanırsa boyut parametresinin, bir tam sayı öğesiyle daha az iç içe yerleştirme düzeyine sahip bir koleksiyon olması gerekir.</target>
         <note />
       </trans-unit>
       <trans-unit id="ConstantAndElementCountInfoDisallowed">
         <source>Only one of 'ConstantElementCount' or 'ElementCountInfo' may be used in a 'MarshalUsingAttribute' for a given 'ElementIndirectionDepth'</source>
-        <target state="new">Only one of 'ConstantElementCount' or 'ElementCountInfo' may be used in a 'MarshalUsingAttribute' for a given 'ElementIndirectionDepth'</target>
+        <target state="translated">Belirli bir 'ElementIndirectionDepth' için 'MarshalUsingAttribute' içinde 'ConstantElementCount' veya 'ElementCountInfo' değerlerinden yalnızca biri kullanılabilir</target>
         <note />
       </trans-unit>
       <trans-unit id="CustomTypeMarshallingManagedToNativeUnsupported">
         <source>The specified parameter needs to be marshalled from managed to native, but the native type '{0}' does not support it.</source>
-        <target state="new">The specified parameter needs to be marshalled from managed to native, but the native type '{0}' does not support it.</target>
+        <target state="translated">Belirtilen parametrenin yönetilenden yerele doğru sıraya dizilmesi gerekiyor, ancak '{0}' yerel türü bunu desteklemiyor.</target>
         <note />
       </trans-unit>
       <trans-unit id="CustomTypeMarshallingNativeToManagedUnsupported">
         <source>The specified parameter needs to be marshalled from native to managed, but the native type '{0}' does not support it.</source>
-        <target state="new">The specified parameter needs to be marshalled from native to managed, but the native type '{0}' does not support it.</target>
+        <target state="translated">Belirtilen parametrenin yerelden yönetilene doğru sıraya dizilmesi gerekiyor, ancak '{0}' yerel türü bunu desteklemiyor.</target>
         <note />
       </trans-unit>
       <trans-unit id="CyclicalCountInfo">
         <source>This element cannot depend on '{0}' for collection size information without creating a dependency cycle</source>
-        <target state="new">This element cannot depend on '{0}' for collection size information without creating a dependency cycle</target>
+        <target state="translated">Bu öğe, bir bağımlılık döngüsü oluşturmadan koleksiyon boyutu bilgileri için '{0}' değerine bağımlı olamaz</target>
         <note />
       </trans-unit>
       <trans-unit id="DuplicateCountInfo">
         <source>Count information for a given element at a given indirection level can only be specified once</source>
-        <target state="new">Count information for a given element at a given indirection level can only be specified once</target>
+        <target state="translated">Belirli bir yöneltme düzeyindeki belirli bir öğeye ait sayım bilgileri yalnızca bir kez belirtilebilir</target>
         <note />
       </trans-unit>
       <trans-unit id="DuplicateMarshallingInfo">
         <source>Multiple marshalling attributes per element per indirection level is unsupported, but duplicate information was provided for indirection level {0}</source>
-        <target state="new">Multiple marshalling attributes per element per indirection level is unsupported, but duplicate information was provided for indirection level {0}</target>
+        <target state="translated">Her bir yöneltme düzeyi için tek bir öğe için birden çok sıralama özniteliği desteklenmiyor, ancak yöneltme düzeyi {0} için yinelenen bilgiler mevcut</target>
         <note />
       </trans-unit>
       <trans-unit id="ExtraneousMarshallingInfo">
         <source>Marshalling info was specified for 'ElementIndirectionDepth' {0}, but marshalling info was only needed for {1} level(s) of indirection</source>
-        <target state="new">Marshalling info was specified for 'ElementIndirectionDepth' {0}, but marshalling info was only needed for {1} level(s) of indirection</target>
+        <target state="translated">'ElementIndirectionDepth' {0} için sıralama bilgileri belirtildi, ancak sıralama bilgileri yalnızca {1} yöneltme düzeyi için gerekli</target>
         <note />
       </trans-unit>
       <trans-unit id="GraphHasCycles">
         <source>The provided graph has cycles and cannot be topologically sorted.</source>
-        <target state="new">The provided graph has cycles and cannot be topologically sorted.</target>
+        <target state="translated">Sağlanan grafikte döngüler var ve bu grafik topolojik olarak sıralanamıyor.</target>
         <note />
       </trans-unit>
       <trans-unit id="InAttributeNotSupportedWithoutOut">
         <source>The '[In]' attribute is not supported unless the '[Out]' attribute is also used. The behavior of the '[In]' attribute without the '[Out]' attribute is the same as the default behavior.</source>
-        <target state="new">The '[In]' attribute is not supported unless the '[Out]' attribute is also used. The behavior of the '[In]' attribute without the '[Out]' attribute is the same as the default behavior.</target>
+        <target state="translated">'[Out]' özniteliği de kullanılmadığı sürece '[In]' özniteliği desteklenmiyor. '[Out]' özniteliği kullanılmadığında '[In]' özniteliğinin davranışı varsayılan davranışla aynı olacaktır.</target>
         <note />
       </trans-unit>
       <trans-unit id="InOutAttributeByRefNotSupported">
         <source>The '[In]' and '[Out]' attributes are unsupported on parameters passed by reference. Use the 'in', 'ref', or 'out' keywords instead.</source>
-        <target state="new">The '[In]' and '[Out]' attributes are unsupported on parameters passed by reference. Use the 'in', 'ref', or 'out' keywords instead.</target>
+        <target state="translated">'[In]' ve '[Out]' öznitelikleri başvuruya göre aktarılan parametrelerde desteklenmiyor. Bunun yerine 'in', 'ref' veya 'out' anahtar sözcüklerini kullanın.</target>
         <note />
       </trans-unit>
       <trans-unit id="InOutAttributeMarshalerNotSupported">
         <source>The provided '[In]' and '[Out]' attributes on this parameter are unsupported on this parameter.</source>
-        <target state="new">The provided '[In]' and '[Out]' attributes on this parameter are unsupported on this parameter.</target>
+        <target state="translated">Bu parametrede sağlanan '[In]' ve '[Out]' öznitelikleri bu parametrede desteklenmiyor.</target>
         <note />
       </trans-unit>
       <trans-unit id="MarshallingBoolAsUndefinedNotSupported">
         <source>Marshalling bool without explicit marshalling information is not supported. Specify either 'MarshalUsingAttribute' or 'MarshalAsAttribute'.</source>
-        <target state="new">Marshalling bool without explicit marshalling information is not supported. Specify either 'MarshalUsingAttribute' or 'MarshalAsAttribute'.</target>
+        <target state="translated">Açık sıralama bilgileri olmadan bool sıralama desteklenmiyor. 'MarshalUsingAttribute' veya 'MarshalAsAttribute' bilgilerini belirtin.</target>
         <note />
       </trans-unit>
       <trans-unit id="MarshallingCharAsSpecifiedCharSetNotSupported">
         <source>Marshalling char with 'CharSet.{0}' is not supported. Instead, manually convert the char type to the desired byte representation and pass to the source-generated P/Invoke.</source>
-        <target state="new">Marshalling char with 'CharSet.{0}' is not supported. Instead, manually convert the char type to the desired byte representation and pass to the source-generated P/Invoke.</target>
+        <target state="translated">'CharSet.{0}' ile karakter sıralama desteklenmiyor. Bunun yerine, karakter türünü el ile istenen bayt gösterimine dönüştürerek kaynak tarafından oluşturulan P/Invoke'a aktar.</target>
         <note />
       </trans-unit>
       <trans-unit id="MarshallingStringOrCharAsUndefinedNotSupported">
         <source>Marshalling string or char without explicit marshalling information is not supported. Specify either 'LibraryImportAttribute.CharSet' or 'MarshalAsAttribute'.</source>
-        <target state="new">Marshalling string or char without explicit marshalling information is not supported. Specify either 'LibraryImportAttribute.CharSet' or 'MarshalAsAttribute'.</target>
+        <target state="translated">Açık sıralama bilgileri olmadan dize veya karakter sıralaması desteklenmiyor. 'LibraryImportAttribute.CharSet' veya 'MarshalAsAttribute' bilgilerini belirtin.</target>
         <note />
       </trans-unit>
       <trans-unit id="NativeGenericTypeMustBeClosedOrMatchArityMessage">
         <source>The native type '{0}' for managed type '{1}' must be a closed generic type or have the same arity as the managed type.</source>
-        <target state="new">The native type '{0}' for managed type '{1}' must be a closed generic type or have the same arity as the managed type.</target>
+        <target state="translated">'{1}' yönetilen türü için '{0}' yerel türü kapalı bir genel tür olmalıdır veya yönetilen tür ile aynı parametre sayısı değerine sahip olmalıdır.</target>
         <note />
       </trans-unit>
       <trans-unit id="OutByValueNotSupportedDescription">
         <source>The '[Out]' attribute is only supported on array parameters.</source>
-        <target state="new">The '[Out]' attribute is only supported on array parameters.</target>
+        <target state="translated">'[Out]' özniteliği yalnızca dizi parametrelerinde destekleniyor.</target>
         <note />
       </trans-unit>
       <trans-unit id="OutByValueNotSupportedMessage">
         <source>The '[Out]' attribute is not supported on the '{0}' parameter.</source>
-        <target state="new">The '[Out]' attribute is not supported on the '{0}' parameter.</target>
+        <target state="translated">'[Out]' özniteliği '{0}' parametresinde desteklenmiyor.</target>
         <note />
       </trans-unit>
       <trans-unit id="RuntimeMarshallingMustBeDisabled">
         <source>Runtime marshalling must be disabled in this project by applying the 'System.Runtime.InteropServices.DisableRuntimeMarshallingAttribute' to the assembly to enable marshalling this type.</source>
-        <target state="new">Runtime marshalling must be disabled in this project by applying the 'System.Runtime.InteropServices.DisableRuntimeMarshallingAttribute' to the assembly to enable marshalling this type.</target>
+        <target state="translated">Bu türü sıralamayı etkinleştirmek için derlemeye 'System.Runtime.InteropServices.DisableRuntimeMarshallingAttribute' uygulanarak bu projede çalışma zamanı sıralaması devre dışı bırakılmalıdır.</target>
         <note />
       </trans-unit>
       <trans-unit id="SafeHandleByRefMustBeConcrete">
         <source>An abstract type derived from 'SafeHandle' cannot be marshalled by reference. The provided type must be concrete.</source>
-        <target state="new">An abstract type derived from 'SafeHandle' cannot be marshalled by reference. The provided type must be concrete.</target>
+        <target state="translated">'SafeHandle' özelliğinden türetilen soyut türler, başvuruya göre sıralanamaz. Sağlanan tür somut olmalıdır.</target>
         <note />
       </trans-unit>
       <trans-unit id="TypeNotSupportedTitle">
         <source>Specified type is not supported by source-generated P/Invokes</source>
-        <target state="new">Specified type is not supported by source-generated P/Invokes</target>
+        <target state="translated">Belirtilen tür, kaynak tarafından oluşturulan P/Invokes tarafından desteklenmiyor</target>
         <note />
       </trans-unit>
       <trans-unit id="ValueInCallerAllocatedBufferRequiresSpanConstructorMessage">

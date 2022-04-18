@@ -26,6 +26,12 @@ DumpDataTarget::QueryInterface(
         AddRef();
         return S_OK;
     }
+    else if (InterfaceId == IID_ICLRRuntimeLocator)
+    {
+        *Interface = (ICLRRuntimeLocator*)this;
+        AddRef();
+        return S_OK;
+    }
     else
     {
         *Interface = NULL;
@@ -201,4 +207,14 @@ DumpDataTarget::Request(
 {
     assert(false);
     return E_NOTIMPL;
+}
+
+// ICLRRuntimeLocator
+
+HRESULT STDMETHODCALLTYPE 
+DumpDataTarget::GetRuntimeBase(
+    /* [out] */ CLRDATA_ADDRESS* baseAddress)
+{
+    *baseAddress = m_crashInfo.RuntimeBaseAddress();
+    return S_OK;
 }

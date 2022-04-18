@@ -67,13 +67,15 @@ namespace System.Text.RegularExpressions
             RegexTree tree = Init(pattern, RegexOptions.None, s_defaultMatchTimeout, ref culture);
 
             // Create the interpreter factory.
-            factory = new RegexInterpreterFactory(tree, culture);
+            factory = new RegexInterpreterFactory(tree);
 
             // NOTE: This overload _does not_ delegate to the one that takes options, in order
             // to avoid unnecessarily rooting the support for RegexOptions.NonBacktracking/Compiler
             // if no options are ever used.
         }
 
+        [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
+            Justification = "Compiled Regex is only used when RuntimeFeature.IsDynamicCodeCompiled is true. Workaround https://github.com/dotnet/linker/issues/2715.")]
         internal Regex(string pattern, RegexOptions options, TimeSpan matchTimeout, CultureInfo? culture)
         {
             // Validate arguments.
@@ -101,7 +103,7 @@ namespace System.Text.RegularExpressions
                 }
 
                 // If no factory was created, fall back to creating one for the interpreter.
-                factory ??= new RegexInterpreterFactory(tree, culture);
+                factory ??= new RegexInterpreterFactory(tree);
             }
         }
 
@@ -201,6 +203,7 @@ namespace System.Text.RegularExpressions
         /// Regex constructor, we don't load RegexCompiler and its reflection classes when
         /// instantiating a non-compiled regex.
         /// </summary>
+        [RequiresDynamicCode("Compiling a RegEx requires dynamic code.")]
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static RegexRunnerFactory? Compile(string pattern, RegexTree regexTree, RegexOptions options, bool hasTimeout) =>
             RegexCompiler.Compile(pattern, regexTree, options, hasTimeout);
@@ -403,7 +406,7 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>Internal worker which will scan the passed in span <paramref name="input"/> for a match. Used by public APIs.</summary>
-        internal Match? RunSingleMatch(ReadOnlySpan<char> input, int startat)
+        internal Match? RunSingleMatch(bool quick, int prevlen, ReadOnlySpan<char> input, int startat)
         {
             // startat parameter is always either 0 or input.Length since public API for IsMatch doesn't have an overload
             // that takes in startat.
@@ -413,13 +416,45 @@ namespace System.Text.RegularExpressions
             try
             {
                 runner.InitializeTimeout(internalMatchTimeout);
-                runner.InitializeForScan(this, input, startat, quick: true);
+                runner.InitializeForScan(this, input, startat, quick);
+
+                // If previous match was empty or failed, advance by one before matching.
+                if (prevlen == 0)
+                {
+                    if (RightToLeft)
+                    {
+                        if (runner.runtextstart == 0)
+                        {
+                            return RegularExpressions.Match.Empty;
+                        }
+                        runner.runtextpos--;
+                    }
+                    else
+                    {
+                        if (runner.runtextstart == input.Length)
+                        {
+                            return RegularExpressions.Match.Empty;
+                        }
+                        runner.runtextpos++;
+                    }
+                }
 
                 runner.Scan(input);
 
                 // If runmatch is null it means that an override of Scan didn't implement it correctly, so we will
                 // let this null ref since there are lots of ways where you can end up in a erroneous state.
-                return runner.runmatch!.FoundMatch ? null : RegularExpressions.Match.Empty;
+                Match match = runner.runmatch!;
+                if (match!.FoundMatch)
+                {
+                    if (quick)
+                    {
+                        return null;
+                    }
+                    match.Tidy(runner.runtextpos, 0);
+                    return match;
+                }
+
+                return RegularExpressions.Match.Empty;
             }
             finally
             {

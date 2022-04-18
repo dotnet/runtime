@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.Build.NoTargets">
 
   <PropertyGroup>
-    <NativeBuildPartitionPropertiesToRemove>ClrFullNativeBuild;ClrRuntimeSubset;ClrJitSubset;ClrPalTestsSubset;ClrAllJitsSubset;ClrILToolsSubset</NativeBuildPartitionPropertiesToRemove>
+    <NativeBuildPartitionPropertiesToRemove>ClrFullNativeBuild;ClrRuntimeSubset;ClrJitSubset;ClrPalTestsSubset;ClrAllJitsSubset;ClrILToolsSubset;ClrNativeAotSubset;ClrSpmiSubset;ClrCrossComponentsSubset;HostArchitecture;PgoInstrument;NativeOptimizationDataSupported;CMakeArgs</NativeBuildPartitionPropertiesToRemove>
   </PropertyGroup>
 
   <ItemGroup>
@@ -15,8 +15,7 @@
           BeforeTargets="Build">
     <ItemGroup>
       <_CoreClrBuildArg Condition="'$(TargetArchitecture)' != ''" Include="-$(TargetArchitecture)" />
-      <_CoreClrBuildArg Condition="!$([MSBuild]::IsOsPlatform(Windows)) and '$(CMakeArgs)' != ''" Include="$(CMakeArgs)" />
-      <_CoreClrBuildArg Condition="$([MSBuild]::IsOsPlatform(Windows)) and '$(CMakeArgs)' != ''" Include="-cmakeargs &quot;$(CMakeArgs)&quot;" />
+      <_CoreClrBuildArg Condition="'$(CMakeArgs)' != ''" Include="-cmakeargs &quot;$(CMakeArgs)&quot;" />
       <_CoreClrBuildArg Include="-$(Configuration.ToLower())" />
       <_CoreClrBuildArg Include="$(Compiler)" />
       <_CoreClrBuildArg Condition="'$(ConfigureOnly)' == 'true'" Include="-configureonly" />
@@ -24,7 +23,7 @@
       <_CoreClrBuildArg Condition="'$(CrossBuild)' == 'true'" Include="-cross" />
       <_CoreClrBuildArg Condition="'$(PortableBuild)' != 'true'" Include="-portablebuild=false" />
       <_CoreClrBuildArg Condition="'$(KeepNativeSymbols)' != 'false'" Include="-keepnativesymbols" />
-      <_CoreClrBuildArg Condition="!$([MSBuild]::IsOsPlatform(Windows))" Include="-os $(TargetOS)" />
+      <_CoreClrBuildArg Include="-os $(TargetOS)" />
 
       <_CoreClrBuildArg Condition="$([MSBuild]::IsOsPlatform(Windows)) and
                                    ('$(TargetArchitecture)' == 'x86' or '$(TargetArchitecture)' == 'x64') and
@@ -33,11 +32,11 @@
                                    '$(NativeOptimizationDataSupported)' == 'true' and
                                    '$(PgoInstrument)' != 'true'"
                                    Include="-enforcepgo" />
-      <_CoreClrBuildArg Condition="$([MSBuild]::IsOsPlatform(Windows)) and '$(CrossDac)' != ''" Include="-$(CrossDac)dac" />
       <_CoreClrBuildArg Condition="'$(Ninja)' == 'true' and !$([MSBuild]::IsOsPlatform(Windows))" Include="-ninja" />
       <_CoreClrBuildArg Condition="'$(Ninja)' == 'false' and $([MSBuild]::IsOsPlatform(Windows))" Include="-msbuild" />
       <_CoreClrBuildArg Condition="'$(PgoInstrument)' == 'true'" Include="-pgoinstrument" />
-      <_CoreClrBuildArg Condition="'$(NativeOptimizationDataSupported)' == 'true' and '$(PgoInstrument)' != 'true'" Include="-pgodatapath &quot;$(PgoPackagePath)&quot;" />
+      <_CoreClrBuildArg Condition="'$(NativeOptimizationDataSupported)' == 'true' and '$(NoPgoOptimize)' != 'true' and '$(PgoInstrument)' != 'true'" Include="-pgodatapath &quot;$(PgoPackagePath)&quot;" />
+      <_CoreClrBuildArg Condition="'$(HostArchitecture)' != ''" Include="-hostarch $(HostArchitecture)" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(ClrFullNativeBuild)' != 'true'">
@@ -49,6 +48,7 @@
       <_CoreClrBuildArg Condition="'$(ClrILToolsSubset)' == 'true'" Include="-component iltools" />
       <_CoreClrBuildArg Condition="'$(ClrNativeAotSubset)' == 'true'" Include="-component nativeaot" />
       <_CoreClrBuildArg Condition="'$(ClrSpmiSubset)' == 'true'" Include="-component spmi" />
+      <_CoreClrBuildArg Condition="'$(ClrCrossComponentsSubset)' == 'true'" Include="-component crosscomponents" />
     </ItemGroup>
 
     <PropertyGroup>

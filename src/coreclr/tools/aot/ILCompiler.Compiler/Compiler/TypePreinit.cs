@@ -1388,6 +1388,10 @@ namespace ILCompiler
                         }
                         break;
 
+                    case ILOpcode.constrained:
+                        // Fallthrough. If this is ever implemented, make sure delegates to static virtual methods
+                        // are also handled. We currently assume the frozen delegate will not be to a static
+                        // virtual interface method.
                     default:
                         return Status.Fail(methodIL.OwningMethod, opcode);
                 }
@@ -1991,7 +1995,12 @@ namespace ILCompiler
             {
                 Debug.Assert(_methodPointed.Signature.IsStatic == (_firstParameter == null));
 
-                var creationInfo = DelegateCreationInfo.Create(Type.ConvertToCanonForm(CanonicalFormKind.Specific), _methodPointed, factory, followVirtualDispatch: false);
+                var creationInfo = DelegateCreationInfo.Create(
+                    Type.ConvertToCanonForm(CanonicalFormKind.Specific),
+                    _methodPointed,
+                    constrainedType: null,
+                    factory,
+                    followVirtualDispatch: false);
 
                 Debug.Assert(!creationInfo.TargetNeedsVTableLookup);
 

@@ -661,10 +661,11 @@ bool CEEInfo::isValidStringRef (
     return result;
 }
 
-const char16_t* CEEInfo::getStringLiteral (
+int CEEInfo::getStringLiteral (
         CORINFO_MODULE_HANDLE       moduleHnd,
         mdToken                     metaTOK,
-        int*                        length)
+        char16_t*                   buffer,
+        int                         bufferSize)
 {
     CONTRACTL{
         THROWS;
@@ -674,13 +675,25 @@ const char16_t* CEEInfo::getStringLiteral (
 
     Module* module = GetModule(moduleHnd);
 
-    const char16_t* result = nullptr;
+    _ASSERTE(bufferSize >= 0);
+
+    int result = -1;
 
     JIT_TO_EE_TRANSITION();
 
     if (IsDynamicScope(moduleHnd))
     {
-        *length = GetDynamicResolver(moduleHnd)->GetStringLiteralLength(metaTOK);
+        GCX_COOP();
+        STRINGREF strRef = GetDynamicResolver(moduleHnd)->GetStringLiteral(metaTOK);
+        if (strRef != NULL)
+        {
+            StringObject* strObj = STRINGREFToObject(strRef);
+            result = (int)strObj->GetStringLength();
+            if (buffer != NULL)
+            {
+                memcpyNoGCRefs(buffer, strObj->GetBuffer(), min(bufferSize, result) * sizeof(char16_t));
+            }
+        }
     }
     else
     {
@@ -688,13 +701,12 @@ const char16_t* CEEInfo::getStringLiteral (
         LPCWSTR pString;
         if (!FAILED((module)->GetMDImport()->GetUserString(metaTOK, &dwCharCount, NULL, &pString)))
         {
-            // For string.Empty pString will be null
-            *length = dwCharCount;
-            result = (const char16_t *)pString;
-        }
-        else
-        {
-            *length = -1;
+            _ASSERTE(dwCharCount >= 0 && dwCharCount <= INT_MAX);
+            result = (int)dwCharCount;
+            if (buffer != NULL)
+            {
+                memcpyNoGCRefs(buffer, pString, min(bufferSize, result) * sizeof(char16_t));
+            }
         }
     }
 
@@ -3342,12 +3354,12 @@ const char* CEEInfo::getHelperName (CorInfoHelpFunc ftnNum)
 
 
 /*********************************************************************/
-int CEEInfo::appendClassName(_Outptr_result_buffer_(*pnBufLen) char16_t** ppBuf,
-                             int* pnBufLen,
-                             CORINFO_CLASS_HANDLE    clsHnd,
-                             bool fNamespace,
-                             bool fFullInst,
-                             bool fAssembly)
+int CEEInfo::appendClassName(_Outptr_opt_result_buffer_(*pnBufLen) char16_t**   ppBuf,
+                             int*                                               pnBufLen,
+                             CORINFO_CLASS_HANDLE                               clsHnd,
+                             bool                                               fNamespace,
+                             bool                                               fFullInst,
+                             bool                                               fAssembly)
 {
     CONTRACTL {
         MODE_PREEMPTIVE;
@@ -3369,14 +3381,24 @@ int CEEInfo::appendClassName(_Outptr_result_buffer_(*pnBufLen) char16_t** ppBuf,
     nLen = (int)wcslen(szString);
     if (*pnBufLen > 0)
     {
-    wcscpy_s((WCHAR*)*ppBuf, *pnBufLen, szString );
-    (*ppBuf)[(*pnBufLen) - 1] = W('\0');
-    (*ppBuf) += nLen;
-    (*pnBufLen) -= nLen;
+        // Copy as much as will fit.
+        WCHAR* pBuf = (WCHAR*)*ppBuf;
+        int nLenToCopy = min(*pnBufLen, nLen + /* null terminator */ 1);
+        for (int i = 0; i < nLenToCopy - 1; i++)
+        {
+            pBuf[i] = szString[i];
+        }
+        pBuf[nLenToCopy - 1] = 0; // null terminate the string if it wasn't already
+
+        // Update the buffer pointer and buffer size pointer based on the amount actually copied.
+        // Don't include the null terminator. `*ppBuf` will point at the added null terminator.
+        (*ppBuf) += nLenToCopy - 1;
+        (*pnBufLen) -= nLenToCopy - 1;
     }
 
     EE_TO_JIT_TRANSITION();
 
+    // Return the actual length of the string, not including the null terminator.
     return nLen;
 }
 
@@ -5959,6 +5981,7 @@ bool CEEInfo::getReadyToRunHelper(
 /***********************************************************************/
 void CEEInfo::getReadyToRunDelegateCtorHelper(
         CORINFO_RESOLVED_TOKEN * pTargetMethod,
+        mdToken                  targetConstraint,
         CORINFO_CLASS_HANDLE     delegateType,
         CORINFO_LOOKUP *   pLookup
         )

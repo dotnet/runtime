@@ -966,7 +966,7 @@ mono_exception_stackframe_obj_walk (MonoStackFrame *captured_frame, MonoExceptio
 	if (!captured_frame)
 		return TRUE;
 
-	gpointer ip = (gpointer) (captured_frame->method_address + captured_frame->native_offset);
+	gpointer ip = GINT_TO_POINTER (captured_frame->method_address + captured_frame->native_offset);
 	MonoJitInfo *ji = mono_jit_info_table_find_internal (ip, TRUE, TRUE);
 
 	// Other domain maybe?
@@ -974,7 +974,7 @@ mono_exception_stackframe_obj_walk (MonoStackFrame *captured_frame, MonoExceptio
 		return FALSE;
 	MonoMethod *method = jinfo_get_method (ji);
 
-	gboolean r = func (method, (gpointer) captured_frame->method_address, captured_frame->native_offset, TRUE, user_data);
+	gboolean r = func (method, GINT_TO_POINTER (captured_frame->method_address), captured_frame->native_offset, TRUE, user_data);
 	if (r)
 		return TRUE;
 
@@ -1966,9 +1966,6 @@ handle_exception_first_pass (MonoContext *ctx, MonoObject *obj, gint32 *out_filt
 				if (ei->flags == MONO_EXCEPTION_CLAUSE_FILTER) {
 					setup_stack_trace (mono_ex, &dynamic_methods, trace_ips, FALSE);
 
-#ifndef DISABLE_PERFCOUNTERS
-					mono_atomic_inc_i32 (&mono_perfcounters->exceptions_filters);
-#endif
 
 					if (!ji->is_interp) {
 #ifndef MONO_CROSS_COMPILE
@@ -2217,14 +2214,14 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 	if (!resume) {
 		MonoContext ctx_cp = *ctx;
 		if (mono_trace_is_enabled ()) {
-			ERROR_DECL (error);
+			error_init_reuse (error);
 			MonoMethod *system_exception_get_message = mono_class_get_method_from_name_checked (mono_defaults.exception_class, "get_Message", 0, 0, error);
 			mono_error_cleanup (error);
-			error_init (error);
 			MonoMethod *get_message = system_exception_get_message == NULL ? NULL : mono_object_get_virtual_method_internal (obj, system_exception_get_message);
 			MonoObject *message;
 			const char *type_name = m_class_get_name (mono_object_class (mono_ex));
 			char *msg = NULL;
+			error_init_reuse (error);
 			if (get_message == NULL) {
 				message = NULL;
 			} else if (!strcmp (type_name, "OutOfMemoryException") || !strcmp (type_name, "StackOverflowException")) {
@@ -2320,6 +2317,7 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 			first_filter_idx = jit_tls->resume_state.first_filter_idx;
 			filter_idx = jit_tls->resume_state.filter_idx;
 			in_interp = FALSE;
+			frame.native_offset = 0;
 		} else {
 			unwind_res = unwinder_unwind_frame (&unwinder, jit_tls, NULL, ctx, &new_ctx, NULL, &lmf, NULL, &frame);
 			if (!unwind_res) {
@@ -2522,9 +2520,6 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 						MONO_CONTEXT_SET_IP (ctx, ei->handler_start);
 					}
 					mono_set_lmf (lmf);
-#ifndef DISABLE_PERFCOUNTERS
-					mono_atomic_fetch_add_i32 (&mono_perfcounters->exceptions_depth, frame_count);
-#endif
 					if (obj == (MonoObject *)domain->stack_overflow_ex)
 						jit_tls->handling_stack_ovf = FALSE;
 
@@ -2551,9 +2546,6 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 						jit_tls->orig_ex_ctx_set = FALSE;
 					}
 
-#ifndef DISABLE_PERFCOUNTERS
-					mono_atomic_inc_i32 (&mono_perfcounters->exceptions_finallys);
-#endif
 				}
 				if (ei->flags == MONO_EXCEPTION_CLAUSE_FAULT || ei->flags == MONO_EXCEPTION_CLAUSE_FINALLY) {
 					mono_set_lmf (lmf);
@@ -2671,9 +2663,6 @@ mono_handle_exception (MonoContext *ctx, gpointer void_obj)
 
 	MONO_REQ_GC_UNSAFE_MODE;
 
-#ifndef DISABLE_PERFCOUNTERS
-	mono_atomic_inc_i32 (&mono_perfcounters->exceptions_thrown);
-#endif
 	mono_atomic_inc_i32 (&exceptions_thrown);
 
 	return mono_handle_exception_internal (ctx, obj, FALSE, NULL);
@@ -3273,6 +3262,7 @@ mono_thread_state_init_from_sigctx (MonoThreadUnwindState *ctx, void *sigctx)
 	return TRUE;
 }
 
+MONO_DISABLE_WARNING(4740) /* flow in or out of inline asm code suppresses global optimization, x86 only */
 void
 mono_thread_state_init (MonoThreadUnwindState *ctx)
 {
@@ -3293,7 +3283,7 @@ mono_thread_state_init (MonoThreadUnwindState *ctx)
 	ctx->unwind_data [MONO_UNWIND_DATA_JIT_TLS] = thread ? thread->jit_data : NULL;
 	ctx->valid = TRUE;
 }
-
+MONO_RESTORE_WARNING
 
 gboolean
 mono_thread_state_init_from_monoctx (MonoThreadUnwindState *ctx, MonoContext *mctx)
