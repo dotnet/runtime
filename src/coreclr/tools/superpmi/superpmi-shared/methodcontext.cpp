@@ -4823,10 +4823,8 @@ int MethodContext::repGetStringLiteral(CORINFO_MODULE_HANDLE module, unsigned me
         if (buffer != nullptr && srcBufferLength != -1)
         {
             char16_t* srcBuffer = (char16_t*)GetStringLiteral->GetBuffer(value.B);
-            if (srcBuffer != nullptr)
-            {
-                memcpy(buffer, srcBuffer, min(srcBufferLength, bufferSize) * sizeof(char16_t));
-            }
+            Assert(srcBuffer != nullptr);
+            memcpy(buffer, srcBuffer, min(srcBufferLength, bufferSize) * sizeof(char16_t));
         }
         return srcBufferLength;
     }
