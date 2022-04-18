@@ -1025,41 +1025,26 @@ bool Compiler::optDeriveLoopCloningConditions(unsigned loopNum, LoopCloneContext
     LoopDsc*                         loop             = &optLoopTable[loopNum];
     JitExpandArrayStack<LcOptInfo*>* optInfos         = context->GetLoopOptInfo(loopNum);
     bool                             isIncreasingLoop = GenTree::StaticOperIs(loop->lpTestOper(), GT_LT, GT_LE);
+    assert(loop->lpIsIncreasingLoop() || loop->lpIsDecreasingLoop());
 
     if (GenTree::StaticOperIs(loop->lpTestOper(), GT_LT, GT_LE, GT_GT, GT_GE))
     {
-
-        bool isLessThanLimitCheck    = GenTree::StaticOperIs(loop->lpTestOper(), GT_LT, GT_LE);
-        bool isGreaterThanLimitCheck = GenTree::StaticOperIs(loop->lpTestOper(), GT_GT, GT_GE);
-
-        // Increasing loop is the one that has "+=" increament operation and "< or <=" limit check.
-        bool isIncreasingLoop =
-            (isLessThanLimitCheck && (((loop->lpIterOper() == GT_ADD) && (loop->lpIterConst() > 0)) ||
-                                      ((loop->lpIterOper() == GT_SUB) && (loop->lpIterConst() < 0))));
-
-        // Increasing loop is the one that has "-=" decrement operation and "> or >=" limit check. If the operation is
-        // "+=", make sure the constant is negative to give an effect of decrementing the iterator.
-        bool isDecreasingLoop =
-            (isGreaterThanLimitCheck && (((loop->lpIterOper() == GT_ADD) && (loop->lpIterConst() < 0)) ||
-                                         ((loop->lpIterOper() == GT_SUB) && (loop->lpIterConst() > 0))));
-
-        int stride = loop->lpIterConst();
-        if (isIncreasingLoop)
-        {
-            stride = stride > 0 ? stride : -stride;
-        }
-        else if (isDecreasingLoop)
-        {
-            stride = stride < 0 ? -stride : stride;
-        }
-        else
-        {
-            assert("Should not be here. the loop is not detected increasing or decreasing.\n");
-        }
+        // We already know that this is either increasing or decreasing loop and the
+        // stride is (> 0) or (< 0). Here, just take the abs() value and check if it
+        // is beyond the limit.
+        int stride = abs(loop->lpIterConst());
 
         if (stride > 58)
+        {
+            // Array.MaxLength can have maximum of 0X7FFFFFC7 elements, so make sure
+            // the stride increament doesn't overflow or underflow the index. Hence,
+            // the maximum stride limit is set to
+            // (int.MaxValue - (Array.MaxLength - 1) + 1), which is
+            // (0X7FFFFFC7 - 0x7fffffc7 + 2) = 0x3a or 58.
+            return false;
+        }
 
-
+        LC_Ident ident;
         // Init conditions
         if (loop->lpFlags & LPFLG_CONST_INIT)
         {
@@ -1674,25 +1659,13 @@ bool Compiler::optIsLoopClonable(unsigned loopInd)
         return false;
     }
 
-    bool isLessThanLimitCheck    = GenTree::StaticOperIs(loop.lpTestOper(), GT_LT, GT_LE);
-    bool isGreaterThanLimitCheck = GenTree::StaticOperIs(loop.lpTestOper(), GT_GT, GT_GE);
-
-    // Increasing loop is the one that has "+=" increament operation and "< or <=" limit check.
-    bool isIncreasingLoop = (isLessThanLimitCheck && (((loop.lpIterOper() == GT_ADD) && (loop.lpIterConst() > 0)) ||
-                                                      ((loop.lpIterOper() == GT_SUB) && (loop.lpIterConst() < 0))));
-
-    // Increasing loop is the one that has "-=" decrement operation and "> or >=" limit check. If the operation is "+=",
-    // make sure the constant is negative to give an effect of decrementing the iterator.
-    bool isDecreasingLoop = (isGreaterThanLimitCheck && (((loop.lpIterOper() == GT_ADD) && (loop.lpIterConst() < 0)) ||
-                                                         ((loop.lpIterOper() == GT_SUB) && (loop.lpIterConst() > 0))));
-
     // TODO-CQ: Handle other loops like:
     // - The ones whose limit operator is "==" or "!="
     // - The incrementing operator is multiple and divide
     // - The ones that are inverted are not handled here for cases like "i *= 2" because
     //   they are converted to "i + i".
     // bool isOtherLoop = (loop.lpIterOper() == GT_DIV) || (loop.lpIterOper() == GT_MUL);
-    if (!(isIncreasingLoop || isDecreasingLoop))
+    if (!(loop.lpIsIncreasingLoop() || loop.lpIsDecreasingLoop()))
     {
         JITDUMP("Loop cloning: rejecting loop " FMT_LP
                 ". Loop test (%s) doesn't agree with the direction (%s) of the loop.\n",
