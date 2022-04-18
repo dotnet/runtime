@@ -2154,6 +2154,9 @@
     <Compile Include="$(CommonPath)Interop\Android\Interop.Logcat.cs" Condition="'$(TargetsAndroid)' == 'true' or '$(TargetsLinuxBionic)' == 'true'">
       <Link>Common\Interop\Android\Interop.Logcat.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)Interop\Linux\Interop.Libraries.cs" Condition="'$(TargetsLinuxBionic)' == 'true'">
+      <Link>Common\Interop\Linux\Interop.Libraries.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)Interop\Android\Interop.Libraries.cs" Condition="'$(TargetsAndroid)' == 'true'">
       <Link>Common\Interop\Android\Interop.Libraries.cs</Link>
     </Compile>
