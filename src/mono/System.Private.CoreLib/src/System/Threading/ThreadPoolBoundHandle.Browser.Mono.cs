@@ -5,16 +5,55 @@ using System.Runtime.InteropServices;
 
 namespace System.Threading
 {
-    public sealed partial class ThreadPoolBoundHandle : IDisposable
+    public sealed class ThreadPoolBoundHandle : IDisposable
     {
-        private static ThreadPoolBoundHandle BindHandleCore(SafeHandle handle)
+        public SafeHandle Handle => null!;
+
+        private ThreadPoolBoundHandle()
+        {
+        }
+
+        public static ThreadPoolBoundHandle BindHandle(SafeHandle handle!!)
+        {
+            if (handle.IsClosed || handle.IsInvalid)
+                throw new ArgumentException(SR.Argument_InvalidHandle, nameof(handle));
+
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_OverlappedIO);
+        }
+
+        [CLSCompliant(false)]
+        public unsafe NativeOverlapped* AllocateNativeOverlapped(IOCompletionCallback callback!!, object? state, object? pinData)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_OverlappedIO);
         }
-#if !FEATURE_WASM_THREADS
+
+        [CLSCompliant(false)]
+        public unsafe NativeOverlapped* UnsafeAllocateNativeOverlapped(IOCompletionCallback callback, object? state, object? pinData) =>
+            AllocateNativeOverlapped(callback, state, pinData);
+
+        [CLSCompliant(false)]
+        public unsafe NativeOverlapped* AllocateNativeOverlapped(PreAllocatedOverlapped preAllocated)
+        {
+            if (preAllocated == null)
+                throw new ArgumentNullException(nameof(preAllocated));
+
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_OverlappedIO);
+        }
+
+        [CLSCompliant(false)]
+        public unsafe void FreeNativeOverlapped(NativeOverlapped* overlapped!!)
+        {
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_OverlappedIO);
+        }
+
+        [CLSCompliant(false)]
+        public static unsafe object? GetNativeOverlappedState(NativeOverlapped* overlapped!!)
+        {
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_OverlappedIO);
+        }
+
         public void Dispose()
         {
         }
-#endif
     }
 }
