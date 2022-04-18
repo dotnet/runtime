@@ -1,6 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
   </PropertyGroup>
   <PropertyGroup>
     <!-- Set to 'Full' if the Debug? column is marked in the spreadsheet. Leave blank otherwise. -->

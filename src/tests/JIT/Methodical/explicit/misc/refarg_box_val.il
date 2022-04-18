@@ -19,7 +19,7 @@
 }
 .assembly extern xunit.core {}
 // MVID: {27E0B251-2BC1-4652-9A1C-3EFA7F79CFC4}
-.namespace Test
+.namespace Test_refarg_box_val_il
 {
   .class value private auto ansi sealed Val extends ['mscorlib']System.ValueType
   {
@@ -36,28 +36,28 @@
       .locals (int32 V_0)
       IL_0000:  ldarg.0
       IL_0001:  ldc.r8     0.
-      IL_000a:  stfld      float64 Test.Val::padding1
+      IL_000a:  stfld      float64 Test_refarg_box_val_il.Val::padding1
       IL_000f:  ldarg.0
       IL_0010:  ldc.i4.s   11
       IL_0012:  stloc.0
       IL_0013:  ldloc.s   V_0
       IL_0015:  box     ['mscorlib']System.Int32
-      IL_001a:  stfld      class System.Object Test.Val::padding2
+      IL_001a:  stfld      class System.Object Test_refarg_box_val_il.Val::padding2
       IL_001f:  ldarg.0
       IL_0020:  ldc.i4.s   11
-      IL_0022:  stfld      unsigned int8 Test.Val::padding3
+      IL_0022:  stfld      unsigned int8 Test_refarg_box_val_il.Val::padding3
       IL_0027:  ldarg.0
       IL_0028:  ldc.i4.s   11
-      IL_002a:  stfld      unsigned int16 Test.Val::padding4
+      IL_002a:  stfld      unsigned int16 Test_refarg_box_val_il.Val::padding4
       IL_002f:  ldarg.0
       IL_0030:  ldarg.1
-      IL_0031:  stfld      int32 Test.Val::'value'
+      IL_0031:  stfld      int32 Test_refarg_box_val_il.Val::'value'
       IL_0036:  ret
     } // end of method 'Val::.ctor'
 
   } // end of class 'Val'
 
-  .class private auto ansi App extends ['mscorlib']System.Object
+  .class public auto ansi App extends ['mscorlib']System.Object
   {
     .field private static class System.Object s_aa
     .method private hidebysig static void
@@ -88,16 +88,16 @@
     } // end of method 'App::Litter'
 
     .method private hidebysig static int32 
-            Test(value class Test.Val& n) il managed
+            Test_refarg_box_val_il(value class Test_refarg_box_val_il.Val& n) il managed
     {
       // Code size       54 (0x36)
       .maxstack  2
       .locals (int32 V_0)
       IL_0000:  ldnull
-      IL_0001:  stsfld     class System.Object Test.App::s_aa
-      IL_0006:  call       void Test.App::Litter()
+      IL_0001:  stsfld     class System.Object Test_refarg_box_val_il.App::s_aa
+      IL_0006:  call       void Test_refarg_box_val_il.App::Litter()
       IL_000b:  ldarg.0
-      IL_000c:  ldfld      int32 Test.Val::'value'
+      IL_000c:  ldfld      int32 Test_refarg_box_val_il.Val::'value'
       IL_0011:  ldc.i4     0x13a
       IL_0016:  beq.s      IL_0026
 
@@ -115,9 +115,9 @@
 
       IL_0034:  ldloc.0
       IL_0035:  ret
-    } // end of method 'App::Test'
+    } // end of method 'App::Test_refarg_box_val_il'
 
-    .method private hidebysig static int32
+    .method public hidebysig static int32
             Main() il managed
     {
       .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
@@ -126,17 +126,17 @@
       .entrypoint
       // Code size       32 (0x20)
       .maxstack  2
-      .locals (value class Test.Val ZZZz, //not used now
+      .locals (value class Test_refarg_box_val_il.Val ZZZz, //not used now
                int32 V_1,
                int32 V_2)
       //IL_0000:  ldloc.s   V_0
       //IL_0002:  ldc.i4.0
-      //IL_0003:  call       instance void Test.Val::.ctor(int32)
+      //IL_0003:  call       instance void Test_refarg_box_val_il.Val::.ctor(int32)
       //IL_0008:  ldloc.s   V_0
-      			ldsfld     class System.Object Test.App::s_aa
-      			unbox      Test.Val
+      			ldsfld     class System.Object Test_refarg_box_val_il.App::s_aa
+      			unbox      Test_refarg_box_val_il.Val
       			
-      IL_000a:  call       int32 Test.App::Test(value class Test.Val&)
+      IL_000a:  call       int32 Test_refarg_box_val_il.App::Test_refarg_box_val_il(value class Test_refarg_box_val_il.Val&)
       IL_000f:  stloc.1
       IL_0010:  call       void ['mscorlib']System.GC::Collect()
       IL_0015:  call       void ['mscorlib']System.GC::WaitForPendingFinalizers()
@@ -153,13 +153,13 @@
     {
       // Code size       24 (0x18)
       .maxstack  2
-      .locals (value class Test.Val V_0)
+      .locals (value class Test_refarg_box_val_il.Val V_0)
       IL_0000:  ldc.i4     0x13a
-      IL_0005:  newobj     instance void Test.Val::.ctor(int32)
+      IL_0005:  newobj     instance void Test_refarg_box_val_il.Val::.ctor(int32)
       IL_000a:  stloc.0
       IL_000b:  ldloc.s   V_0
-      IL_000d:  box     Test.Val
-      IL_0012:  stsfld     class System.Object Test.App::s_aa
+      IL_000d:  box     Test_refarg_box_val_il.Val
+      IL_0012:  stsfld     class System.Object Test_refarg_box_val_il.App::s_aa
       IL_0017:  ret
     } // end of method 'App::.cctor'
 
@@ -175,6 +175,6 @@
 
   } // end of class 'App'
 
-} // end of namespace 'Test'
+} // end of namespace 'Test_refarg_box_val_il'
 
 //*********** DISASSEMBLY COMPLETE ***********************

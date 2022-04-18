@@ -910,13 +910,13 @@ namespace System
         //
 
         /// <inheritdoc cref="IShiftOperators{TSelf, TResult}.op_LeftShift(TSelf, int)" />
-        static nuint IShiftOperators<nuint, nuint>.operator <<(nuint value, int shiftAmount) => value << (int)shiftAmount;
+        static nuint IShiftOperators<nuint, nuint>.operator <<(nuint value, int shiftAmount) => value << shiftAmount;
 
         /// <inheritdoc cref="IShiftOperators{TSelf, TResult}.op_RightShift(TSelf, int)" />
-        static nuint IShiftOperators<nuint, nuint>.operator >>(nuint value, int shiftAmount) => value >> (int)shiftAmount;
+        static nuint IShiftOperators<nuint, nuint>.operator >>(nuint value, int shiftAmount) => value >> shiftAmount;
 
-        // /// <inheritdoc cref="IShiftOperators{TSelf, TResult}.op_UnsignedRightShift(TSelf, int)" />
-        // static nuint IShiftOperators<nuint, nuint>.operator >>>(nuint value, int shiftAmount) => value >> (int)shiftAmount;
+        /// <inheritdoc cref="IShiftOperators{TSelf, TResult}.op_UnsignedRightShift(TSelf, int)" />
+        static nuint IShiftOperators<nuint, nuint>.operator >>>(nuint value, int shiftAmount) => value >>> shiftAmount;
 
         //
         // ISubtractionOperators

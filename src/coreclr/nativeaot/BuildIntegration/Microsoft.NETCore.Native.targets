@@ -265,7 +265,7 @@ The .NET Foundation licenses this file to you under the MIT license.
       Outputs="%(ManagedBinary.IlcOutputFile)"
       DependsOnTargets="WriteIlcRspFileForCompilation;$(IlcCompileDependsOn)">
     <Message Text="Generating native code" Condition="$(_BuildingInCompatibleMode) != 'true'" Importance="high" />
-    <Message Text="Generating compatible native code. To optimize for size or speed, visit https://aka.ms/OptimizeCoreRT" Condition="$(_BuildingInCompatibleMode) == 'true'" Importance="high" />
+    <Message Text="Generating compatible native code. To optimize for size or speed, visit https://aka.ms/OptimizeNativeAOT" Condition="$(_BuildingInCompatibleMode) == 'true'" Importance="high" />
 
     <Exec Command="&quot;$(IlcToolsPath)\ilc&quot; @&quot;$(NativeIntermediateOutputPath)%(ManagedBinary.Filename).ilc.rsp&quot;" />
 
