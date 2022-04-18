@@ -1,10 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-unsafe class Runtime_58874
+public unsafe class Runtime_58874
 {
     private static int Main(string[] args)
     {
