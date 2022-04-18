@@ -132,6 +132,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
         private void ValidateService(ServiceDescriptor descriptor)
         {
+            // Skip validation for generic service types
             if (descriptor.ServiceType.IsGenericType)
             {
                 return;

@@ -1134,19 +1134,21 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
 
             services.AddTransient<IBB<AA>, BB>();
             services.AddTransient(typeof(IBB<>), typeof(GenericBB<>));
+            services.AddTransient(typeof(IBB<>), typeof(ConstrainedGenericBB<>));
 
             var serviceProvider = services.BuildServiceProvider(new ServiceProviderOptions() { ValidateOnBuild = validateOnBuild });
             var handlers = serviceProvider
                 .GetServices<IBB<AA>>()
                 .ToList();
 
-            Assert.Equal(2, handlers.Count);
+            Assert.Equal(3, handlers.Count);
             var handlersTypes = handlers
                 .Select(h => h.GetType())
                 .ToList();
 
             Assert.Contains(typeof(BB), handlersTypes);
             Assert.Contains(typeof(GenericBB<AA>), handlersTypes);
+            Assert.Contains(typeof(ConstrainedGenericBB<AA>), handlersTypes);
         }
 
         private class FakeDisposable : IDisposable
@@ -1347,6 +1349,8 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
         private interface IBB<T> { }
         private class AA : IAA { }
         private class BB : IBB<AA> { }
-        private class GenericBB<T> : IBB<T> where T : IAA { }
+        private class GenericBB<T> : IBB<T> { }
+        private class ConstrainedGenericBB<T> : IBB<T> where T : IAA { }
+
     }
 }
