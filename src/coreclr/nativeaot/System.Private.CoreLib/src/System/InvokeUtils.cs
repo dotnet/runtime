@@ -96,7 +96,7 @@ namespace System
                         return srcObject;
                 }
 
-                object dstObject;
+                object? dstObject;
                 Exception exception = ConvertOrWidenPrimitivesEnumsAndPointersIfPossible(srcObject, srcEEType, dstEEType, semantics, out dstObject);
                 if (exception == null)
                     return dstObject;
@@ -127,7 +127,7 @@ namespace System
         }
 
         // Special coersion rules for primitives, enums and pointer.
-        private static Exception ConvertOrWidenPrimitivesEnumsAndPointersIfPossible(object srcObject, EETypePtr srcEEType, EETypePtr dstEEType, CheckArgumentSemantics semantics, out object dstObject)
+        private static Exception ConvertOrWidenPrimitivesEnumsAndPointersIfPossible(object srcObject, EETypePtr srcEEType, EETypePtr dstEEType, CheckArgumentSemantics semantics, out object? dstObject)
         {
             if (semantics == CheckArgumentSemantics.SetFieldDirect && (srcEEType.IsEnum || dstEEType.IsEnum))
             {
@@ -509,9 +509,9 @@ namespace System
             }
         }
 
-        internal static object DynamicInvokeBoxedValuetypeReturn(out DynamicInvokeParamLookupType paramLookupType, object? boxedValuetype, object?[]? parameters, int index, RuntimeTypeHandle type, DynamicInvokeParamType paramType, ref object[] nullableCopyBackObjects)
+        internal static object DynamicInvokeBoxedValuetypeReturn(out DynamicInvokeParamLookupType paramLookupType, object? boxedValuetype, object?[] parameters, int index, RuntimeTypeHandle type, DynamicInvokeParamType paramType, ref object[] nullableCopyBackObjects)
         {
-            object finalObjectToReturn = boxedValuetype;
+            object? finalObjectToReturn = boxedValuetype;
             EETypePtr eeType = type.ToEETypePtr();
             bool nullable = eeType.IsNullable;
 
@@ -548,7 +548,7 @@ namespace System
             return finalObjectToReturn;
         }
 
-        internal static object DynamicInvokeUnmanagedPointerReturn(out DynamicInvokeParamLookupType paramLookupType, object? boxedPointerType, int index, RuntimeTypeHandle type, DynamicInvokeParamType paramType)
+        internal static object DynamicInvokeUnmanagedPointerReturn(out DynamicInvokeParamLookupType paramLookupType, object boxedPointerType, int index, RuntimeTypeHandle type, DynamicInvokeParamType paramType)
         {
             object finalObjectToReturn = boxedPointerType;
 
