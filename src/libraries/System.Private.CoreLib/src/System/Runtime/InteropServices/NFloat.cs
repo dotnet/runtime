@@ -907,7 +907,7 @@ namespace System.Runtime.InteropServices
         }
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.GetSignificandByteCount()" />
-        int IFloatingPoint<NFloat>.GetSignificandByteCount() => sizeof(ulong);
+        int IFloatingPoint<NFloat>.GetSignificandByteCount() => sizeof(NativeSignificandType);
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.TryWriteSignificandLittleEndian(Span{byte}, out int)" />
         bool IFloatingPoint<NFloat>.TryWriteSignificandLittleEndian(Span<byte> destination, out int bytesWritten)
