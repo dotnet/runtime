@@ -9,12 +9,10 @@ unsafe class Runtime_58874
     private static int Main(string[] args)
     {
         using EndOfPage endOfPage = EndOfPage.Create();
-        if (endOfPage == null)
+        if (endOfPage != null)
         {
-            return 100;
+            Foo(endOfPage.Pointer);
         }
-
-        Foo(endOfPage.Pointer);
         return 100;
     }
 
