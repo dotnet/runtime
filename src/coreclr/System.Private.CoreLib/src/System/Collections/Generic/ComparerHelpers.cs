@@ -66,12 +66,7 @@ namespace System.Collections.Generic
 
             var embeddedType = (RuntimeType)nullableType.GetGenericArguments()[0];
 
-            if (typeof(IComparable<>).MakeGenericType(embeddedType).IsAssignableFrom(embeddedType))
-            {
-                return RuntimeTypeHandle.CreateInstanceForAnotherGenericParameter((RuntimeType)typeof(NullableComparer<int>), embeddedType);
-            }
-
-            return null;
+            return RuntimeTypeHandle.CreateInstanceForAnotherGenericParameter((RuntimeType)typeof(NullableComparer<int>), embeddedType);
         }
 
         /// <summary>
@@ -163,13 +158,7 @@ namespace System.Collections.Generic
             Debug.Assert(nullableType.IsGenericType && nullableType.GetGenericTypeDefinition() == typeof(Nullable<>));
 
             var embeddedType = (RuntimeType)nullableType.GetGenericArguments()[0];
-
-            if (typeof(IEquatable<>).MakeGenericType(embeddedType).IsAssignableFrom(embeddedType))
-            {
-                return RuntimeTypeHandle.CreateInstanceForAnotherGenericParameter((RuntimeType)typeof(NullableEqualityComparer<int>), embeddedType);
-            }
-
-            return null;
+            return RuntimeTypeHandle.CreateInstanceForAnotherGenericParameter((RuntimeType)typeof(NullableEqualityComparer<int>), embeddedType);
         }
 
         /// <summary>
