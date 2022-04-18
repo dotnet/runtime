@@ -715,5 +715,46 @@ namespace System.Runtime.Serialization.Formatters.Tests
             public Func<string, string, Type> BindToTypeDelegate = null;
             public override Type BindToType(string assemblyName, string typeName) => BindToTypeDelegate?.Invoke(assemblyName, typeName);
         }
+
+        public static IEnumerable<object[]> NullableComparersTestData()
+        {
+            yield return new object[] { "AAEAAAD/////AQAAAAAAAAAEAQAAAJEBU3lzdGVtLkNvbGxlY3Rpb25zLkdlbmVyaWMuTnVsbGFibGVFcXVhbGl0eUNvbXBhcmVyYDFbW1N5c3RlbS5CeXRlLCBtc2NvcmxpYiwgVmVyc2lvbj00LjAuMC4wLCBDdWx0dXJlPW5ldXRyYWwsIFB1YmxpY0tleVRva2VuPWI3N2E1YzU2MTkzNGUwODldXQAAAAAL",
+                EqualityComparer<byte?>.Default };
+            yield return new object[] { "AAEAAAD/////AQAAAAAAAAAEAQAAAJIBU3lzdGVtLkNvbGxlY3Rpb25zLkdlbmVyaWMuTnVsbGFibGVFcXVhbGl0eUNvbXBhcmVyYDFbW1N5c3RlbS5JbnQzMiwgbXNjb3JsaWIsIFZlcnNpb249NC4wLjAuMCwgQ3VsdHVyZT1uZXV0cmFsLCBQdWJsaWNLZXlUb2tlbj1iNzdhNWM1NjE5MzRlMDg5XV0AAAAACw==",
+                EqualityComparer<int?>.Default };
+            yield return new object[] { "AAEAAAD/////AQAAAAAAAAAEAQAAAJMBU3lzdGVtLkNvbGxlY3Rpb25zLkdlbmVyaWMuTnVsbGFibGVFcXVhbGl0eUNvbXBhcmVyYDFbW1N5c3RlbS5TaW5nbGUsIG1zY29ybGliLCBWZXJzaW9uPTQuMC4wLjAsIEN1bHR1cmU9bmV1dHJhbCwgUHVibGljS2V5VG9rZW49Yjc3YTVjNTYxOTM0ZTA4OV1dAAAAAAs=",
+                EqualityComparer<float?>.Default };
+            yield return new object[] { "AAEAAAD/////AQAAAAAAAAAEAQAAAJMBU3lzdGVtLkNvbGxlY3Rpb25zLkdlbmVyaWMuTnVsbGFibGVFcXVhbGl0eUNvbXBhcmVyYDFbW1N5c3RlbS5JbnRQdHIsIG1zY29ybGliLCBWZXJzaW9uPTQuMC4wLjAsIEN1bHR1cmU9bmV1dHJhbCwgUHVibGljS2V5VG9rZW49Yjc3YTVjNTYxOTM0ZTA4OV1dAAAAAAs=",
+                EqualityComparer<IntPtr?>.Default };
+            yield return new object[] { "AAEAAAD/////AQAAAAAAAAAEAQAAAJEBU3lzdGVtLkNvbGxlY3Rpb25zLkdlbmVyaWMuTnVsbGFibGVFcXVhbGl0eUNvbXBhcmVyYDFbW1N5c3RlbS5HdWlkLCBtc2NvcmxpYiwgVmVyc2lvbj00LjAuMC4wLCBDdWx0dXJlPW5ldXRyYWwsIFB1YmxpY0tleVRva2VuPWI3N2E1YzU2MTkzNGUwODldXQAAAAAL",
+                EqualityComparer<Guid?>.Default };
+            yield return new object[] { "AAEAAAD/////AQAAAAAAAAAEAQAAAOsBU3lzdGVtLkNvbGxlY3Rpb25zLkdlbmVyaWMuT2JqZWN0RXF1YWxpdHlDb21wYXJlcmAxW1tTeXN0ZW0uTnVsbGFibGVgMVtbUHJvZytNeVN0cnVjdCwgQ29uc29sZUFwcDIyLCBWZXJzaW9uPTEuMC4wLjAsIEN1bHR1cmU9bmV1dHJhbCwgUHVibGljS2V5VG9rZW49bnVsbF1dLCBtc2NvcmxpYiwgVmVyc2lvbj00LjAuMC4wLCBDdWx0dXJlPW5ldXRyYWwsIFB1YmxpY0tleVRva2VuPWI3N2E1YzU2MTkzNGUwODldXQAAAAAL",
+                EqualityComparer<MyStruct?>.Default };
+            yield return new object[] { "AAEAAAD/////AQAAAAAAAAAEAQAAAIQCU3lzdGVtLkNvbGxlY3Rpb25zLkdlbmVyaWMuT2JqZWN0RXF1YWxpdHlDb21wYXJlcmAxW1tTeXN0ZW0uTnVsbGFibGVgMVtbU3lzdGVtLkRheU9mV2VlaywgU3lzdGVtLlByaXZhdGUuQ29yZUxpYiwgVmVyc2lvbj03LjAuMC4wLCBDdWx0dXJlPW5ldXRyYWwsIFB1YmxpY0tleVRva2VuPTdjZWM4NWQ3YmVhNzc5OGVdXSwgbXNjb3JsaWIsIFZlcnNpb249NC4wLjAuMCwgQ3VsdHVyZT1uZXV0cmFsLCBQdWJsaWNLZXlUb2tlbj1iNzdhNWM1NjE5MzRlMDg5XV0AAAAACw==",
+                EqualityComparer<DayOfWeek?>.Default };
+
+            yield return new object[] { "AAEAAAD/////AQAAAAAAAAAEAQAAAIkBU3lzdGVtLkNvbGxlY3Rpb25zLkdlbmVyaWMuTnVsbGFibGVDb21wYXJlcmAxW1tTeXN0ZW0uQnl0ZSwgbXNjb3JsaWIsIFZlcnNpb249NC4wLjAuMCwgQ3VsdHVyZT1uZXV0cmFsLCBQdWJsaWNLZXlUb2tlbj1iNzdhNWM1NjE5MzRlMDg5XV0AAAAACw==",
+                Comparer<byte?>.Default };
+            yield return new object[] { "AAEAAAD/////AQAAAAAAAAAEAQAAAIoBU3lzdGVtLkNvbGxlY3Rpb25zLkdlbmVyaWMuTnVsbGFibGVDb21wYXJlcmAxW1tTeXN0ZW0uSW50MzIsIG1zY29ybGliLCBWZXJzaW9uPTQuMC4wLjAsIEN1bHR1cmU9bmV1dHJhbCwgUHVibGljS2V5VG9rZW49Yjc3YTVjNTYxOTM0ZTA4OV1dAAAAAAs=",
+                Comparer<int?>.Default };
+            yield return new object[] { "AAEAAAD/////AQAAAAAAAAAEAQAAAIsBU3lzdGVtLkNvbGxlY3Rpb25zLkdlbmVyaWMuTnVsbGFibGVDb21wYXJlcmAxW1tTeXN0ZW0uU2luZ2xlLCBtc2NvcmxpYiwgVmVyc2lvbj00LjAuMC4wLCBDdWx0dXJlPW5ldXRyYWwsIFB1YmxpY0tleVRva2VuPWI3N2E1YzU2MTkzNGUwODldXQAAAAAL",
+                Comparer<float?>.Default };
+            yield return new object[] { "AAEAAAD/////AQAAAAAAAAAEAQAAAIsBU3lzdGVtLkNvbGxlY3Rpb25zLkdlbmVyaWMuTnVsbGFibGVDb21wYXJlcmAxW1tTeXN0ZW0uSW50UHRyLCBtc2NvcmxpYiwgVmVyc2lvbj00LjAuMC4wLCBDdWx0dXJlPW5ldXRyYWwsIFB1YmxpY0tleVRva2VuPWI3N2E1YzU2MTkzNGUwODldXQAAAAAL",
+                Comparer<IntPtr?>.Default };
+            yield return new object[] { "AAEAAAD/////AQAAAAAAAAAEAQAAAIkBU3lzdGVtLkNvbGxlY3Rpb25zLkdlbmVyaWMuTnVsbGFibGVDb21wYXJlcmAxW1tTeXN0ZW0uR3VpZCwgbXNjb3JsaWIsIFZlcnNpb249NC4wLjAuMCwgQ3VsdHVyZT1uZXV0cmFsLCBQdWJsaWNLZXlUb2tlbj1iNzdhNWM1NjE5MzRlMDg5XV0AAAAACw==",
+                Comparer<Guid?>.Default };
+            yield return new object[] { "AAEAAAD/////AQAAAAAAAAAEAQAAAOMBU3lzdGVtLkNvbGxlY3Rpb25zLkdlbmVyaWMuT2JqZWN0Q29tcGFyZXJgMVtbU3lzdGVtLk51bGxhYmxlYDFbW1Byb2crTXlTdHJ1Y3QsIENvbnNvbGVBcHAyMiwgVmVyc2lvbj0xLjAuMC4wLCBDdWx0dXJlPW5ldXRyYWwsIFB1YmxpY0tleVRva2VuPW51bGxdXSwgbXNjb3JsaWIsIFZlcnNpb249NC4wLjAuMCwgQ3VsdHVyZT1uZXV0cmFsLCBQdWJsaWNLZXlUb2tlbj1iNzdhNWM1NjE5MzRlMDg5XV0AAAAACw==",
+                Comparer<MyStruct?>.Default };
+            yield return new object[] { "AAEAAAD/////AQAAAAAAAAAEAQAAAPwBU3lzdGVtLkNvbGxlY3Rpb25zLkdlbmVyaWMuT2JqZWN0Q29tcGFyZXJgMVtbU3lzdGVtLk51bGxhYmxlYDFbW1N5c3RlbS5EYXlPZldlZWssIFN5c3RlbS5Qcml2YXRlLkNvcmVMaWIsIFZlcnNpb249Ny4wLjAuMCwgQ3VsdHVyZT1uZXV0cmFsLCBQdWJsaWNLZXlUb2tlbj03Y2VjODVkN2JlYTc3OThlXV0sIG1zY29ybGliLCBWZXJzaW9uPTQuMC4wLjAsIEN1bHR1cmU9bmV1dHJhbCwgUHVibGljS2V5VG9rZW49Yjc3YTVjNTYxOTM0ZTA4OV1dAAAAAAs=",
+                Comparer<DayOfWeek?>.Default };
+        }
+
+        [Theory]
+        [MemberData(nameof(NullableComparersTestData))]
+        public void NullableComparers(string base64, object expectedObj)
+        {
+            var actualObject = BinaryFormatterHelpers.FromBase64String(base64, FormatterAssemblyStyle.Full);
+            Assert.Equal(expectedObj.GetType(), actualObject.GetType());
+        }
     }
 }
