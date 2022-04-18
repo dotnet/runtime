@@ -66,7 +66,11 @@ struct is_type_template_instantiation<U<T>, U>
 #define DEFINE_ALTERNATENAME_2(part) DEFINE_ALTERNATENAME_3(comment(linker, part))
 #define DEFINE_ALTERNATENAME_1(part) DEFINE_ALTERNATENAME_2(#part)
 #define DEFINE_ALTERNATENAME(alias, func) DEFINE_ALTERNATENAME_1(/ALTERNATENAME:alias=func)
+#ifdef TARGET_X86
+#define VPTR_CLASS(type) DEFINE_ALTERNATENAME(_vtable_ ## type, ??_7 ## type ## @@6B@) extern "C" void* vtable_ ## type;
+#else
 #define VPTR_CLASS(type) DEFINE_ALTERNATENAME(vtable_ ## type, ??_7 ## type ## @@6B@) extern "C" void* vtable_ ## type;
+#endif
 #include "vptr_list.h"
 #undef VPTR_CLASS
 
