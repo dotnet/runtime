@@ -737,6 +737,17 @@ const AffinitySet* GCToOSInterface::SetGCThreadsAffinitySet(uintptr_t configAffi
                 }
             }
         }
+        else if (!configAffinitySet->IsEmpty())
+        {
+            // Update the process affinity set using the configured set
+            for (size_t i = 0; i < MAX_SUPPORTED_CPUS; i++)
+            {
+                if (g_processAffinitySet.Contains(i) && !configAffinitySet->Contains(i))
+                {
+                    g_processAffinitySet.Remove(i);
+                }
+            }
+        }
     }
 #endif // !TARGET_UNIX
 
@@ -1171,12 +1182,25 @@ bool GCToOSInterface::ParseGCHeapAffinitizeRangesEntry(const char** config_strin
         return false;
     }
 
+    // If the user passes in 0 as the CPU group and they don't have > 64 cores, 
+    // honor the afinitized range passed in by bypassing the check.                                                                       
+    bool bypass_cpu_range_check_p = !CanEnableGCCPUGroups() && group_number == 0;
+
     WORD group_begin;
     WORD group_size;
     if (!CPUGroupInfo::GetCPUGroupRange((WORD)group_number, &group_begin, &group_size))
     {
-        // group number out of range
-        return false;
+        if (!bypass_cpu_range_check_p)
+        {
+            // group number out of range
+            return false;
+        }
+        else
+        {
+            // the offset in this case where we bypass this check should be from 0 till the # of Processors.
+            group_begin = 0;
+            group_size = GetTotalProcessorCount();
+        }
     }
 
     index_offset = group_begin;

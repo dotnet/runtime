@@ -81,7 +81,7 @@ bool ParseIndexOrRange(const char** config_string, size_t* start_index, size_t* 
     return true;
 }
 
-bool ParseGCHeapAffinitizeRanges(const char* cpu_index_ranges, AffinitySet* config_affinity_set)
+bool ParseGCHeapAffinitizeRanges(const char* cpu_index_ranges, AffinitySet* config_affinity_set, uintptr_t& config_affinity_mask)
 {
     bool success = true;
 
@@ -124,5 +124,6 @@ bool ParseGCHeapAffinitizeRanges(const char* cpu_index_ranges, AffinitySet* conf
         success = (*number_end == '\0');
     }
 
+    config_affinity_mask = static_cast<uintptr_t>(GCConfig::GetGCHeapAffinitizeMask());
     return success;
 }
