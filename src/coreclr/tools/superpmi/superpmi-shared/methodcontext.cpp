@@ -4777,7 +4777,7 @@ void MethodContext::recGetStringLiteral(CORINFO_MODULE_HANDLE module, unsigned m
     key.C = (DWORD)bufferSize;
 
     DWORD strBuf = (DWORD)-1;
-    if (buffer != nullptr)
+    if (buffer != nullptr && length != -1)
         strBuf = (DWORD)GetStringLiteral->AddBuffer((unsigned char*)buffer, (unsigned int)bufferSize);
 
     DD value;
