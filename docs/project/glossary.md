@@ -43,6 +43,7 @@ terminology.
 | SDK | Software Development Kit. The [.NET SDK](https://docs.microsoft.com/dotnet/core/sdk) contains the .NET CLI, .NET libraries and runtime, and the dotnet driver. |
 | SEH | [Structured Exception Handling](https://docs.microsoft.com/windows/win32/debug/structured-exception-handling). Unified mechanism for handling hardware and software exceptions on Windows. |
 | SOS | [Son of Strike](https://docs.microsoft.com/archive/blogs/jasonz/sos-debugging-of-the-clr-part-1). The debugging extension for DbgEng based debuggers. Uses the DAC as an abstraction layer for its operation. |
+| SPCL | `System.Private.CoreLib` - the lowest managed assembly in the libraries stack that contains `System.Object`, `String`, etc. |
 | SuperPMI | JIT component test framework (super fast JIT testing - it mocks/replays EE in EE-JIT interface) - see [SuperPMI details](https://github.com/dotnet/runtime/blob/main/src/coreclr/tools/superpmi/readme.md). |
 | SVR | The CLR used to be built as two variants, with one called "mscorsvr.dll", to mean the "server" version. In particular, it contained the server GC implementation, which was intended for multi-threaded apps capable of taking advantage of multiple processors. In the .NET Framework 2 release, the two variants were merged into "mscorwks.dll". The WKS version was the default, however the SVR version remained available. |
 | TFM | [Target Framework Moniker](https://docs.microsoft.com/dotnet/standard/frameworks) such as `net6.0` or `netstandard2.0`. |

@@ -192,7 +192,7 @@ test_mono_callspec_main (void)
 		goto out;
 	}
 
-	domain = mono_jit_init_version_for_test_only ("TEST RUNNER", "mobile");
+	domain = mono_jit_init_version_for_test_only ("TEST RUNNER", NULL);
 	assembly = mono_assembly_open (TESTPROG, &status);
 	if (!domain || !assembly) {
 		res = 1;

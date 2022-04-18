@@ -4425,7 +4425,7 @@ static const char*
 mono_get_runtime_build_version (void);
 
 MonoDomain *
-mini_init (const char *filename, const char *runtime_version)
+mini_init (const char *filename)
 {
 	ERROR_DECL (error);
 	MonoDomain *domain;
@@ -4625,10 +4625,7 @@ mini_init (const char *filename, const char *runtime_version)
 		mono_runtime_set_no_exec (TRUE);
 	}
 
-	if (runtime_version)
-		domain = mono_init_version (filename, runtime_version);
-	else
-		domain = mono_init_from_assembly (filename, filename);
+	domain = mono_init (filename);
 
 	if (mono_compile_aot)
 		mono_component_diagnostics_server ()->disable ();

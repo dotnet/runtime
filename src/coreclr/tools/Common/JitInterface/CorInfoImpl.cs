@@ -1876,12 +1876,19 @@ namespace Internal.JitInterface
         private bool isValidStringRef(CORINFO_MODULE_STRUCT_* module, uint metaTOK)
         { throw new NotImplementedException("isValidStringRef"); }
 
-        private char* getStringLiteral(CORINFO_MODULE_STRUCT_* module, uint metaTOK, ref int length)
+        private int getStringLiteral(CORINFO_MODULE_STRUCT_* module, uint metaTOK, char* buffer, int size)
         {
+            Debug.Assert(size >= 0);
+
             MethodILScope methodIL = HandleToObject(module);
-            string s = (string)methodIL.GetObject((int)metaTOK);
-            length = (int)s.Length;
-            return (char*)GetPin(s);
+            string str = (string)methodIL.GetObject((int)metaTOK);
+
+            if (buffer != null)
+            {
+                // Copy str's content to buffer
+                str.AsSpan(0, Math.Min(size, str.Length)).CopyTo(new Span<char>(buffer, size));
+            }
+            return str.Length;
         }
 
         private CorInfoType asCorInfoType(CORINFO_CLASS_STRUCT_* cls)
@@ -2359,8 +2366,6 @@ namespace Internal.JitInterface
         {
             var type = HandleToObject(cls);
 
-            // we shouldn't allow boxing of types that contains stack pointers
-            // csc and vbc already disallow it.
             if (type.IsByRefLike)
                 ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramSpecific, MethodBeingCompiled);
 
@@ -3945,7 +3950,7 @@ namespace Internal.JitInterface
                 if (!isMethodDefinedInCoreLib())
                 {
                     // If a vector instruction set is marked as attempted to be used, but is also explicitly unsupported
-                    // then we need to mark as explicitly unsupported the implied instruction set associated with the vector set. 
+                    // then we need to mark as explicitly unsupported the implied instruction set associated with the vector set.
                     instructionSet = InstructionSetFlags.ConvertToImpliedInstructionSetForVectorInstructionSets(_compilation.TypeSystemContext.Target.Architecture, instructionSet);
 
                     _actualInstructionSetUnsupported.AddInstructionSet(instructionSet);

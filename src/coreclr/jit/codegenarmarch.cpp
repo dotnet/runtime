@@ -738,17 +738,6 @@ void CodeGen::genIntrinsic(GenTree* treeNode)
 void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
 {
     assert(treeNode->OperIs(GT_PUTARG_STK));
-    GenTree*  source = treeNode->gtOp1;
-    var_types targetType;
-
-    if (!compMacOsArm64Abi())
-    {
-        targetType = genActualType(source->TypeGet());
-    }
-    else
-    {
-        targetType = source->TypeGet();
-    }
     emitter* emit = GetEmitter();
 
     // This is the varNum for our store operations,
@@ -792,11 +781,13 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
         argOffsetMax = compiler->lvaOutgoingArgSpaceSize;
     }
 
-    bool isStruct = (targetType == TYP_STRUCT) || (source->OperGet() == GT_FIELD_LIST);
+    GenTree* source = treeNode->gtGetOp1();
+
+    bool isStruct = source->TypeIs(TYP_STRUCT) || (source->OperGet() == GT_FIELD_LIST);
 
     if (!isStruct) // a normal non-Struct argument
     {
-        if (varTypeIsSIMD(targetType))
+        if (varTypeIsSIMD(source->TypeGet()))
         {
             assert(!source->isContained());
 
@@ -815,7 +806,7 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
             else
 #endif // TARGET_ARM64
             {
-                emitAttr storeAttr = emitTypeSize(targetType);
+                emitAttr storeAttr = emitTypeSize(source->TypeGet());
                 emit->emitIns_S_R(INS_str, storeAttr, srcReg, varNumOut, argOffsetOut);
                 argOffsetOut += EA_SIZE_IN_BYTES(storeAttr);
             }
@@ -823,15 +814,18 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
             return;
         }
 
+        var_types slotType = genActualType(source);
         if (compMacOsArm64Abi())
         {
+            // Small typed args do not get their own full stack slots, so make
+            // sure we do not overwrite adjacent arguments.
             switch (treeNode->GetStackByteSize())
             {
                 case 1:
-                    targetType = TYP_BYTE;
+                    slotType = TYP_BYTE;
                     break;
                 case 2:
-                    targetType = TYP_SHORT;
+                    slotType = TYP_SHORT;
                     break;
                 default:
                     assert(treeNode->GetStackByteSize() >= 4);
@@ -839,8 +833,8 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
             }
         }
 
-        instruction storeIns  = ins_Store(targetType);
-        emitAttr    storeAttr = emitTypeSize(targetType);
+        instruction storeIns  = ins_Store(slotType);
+        emitAttr    storeAttr = emitTypeSize(slotType);
 
         // If it is contained then source must be the integer constant zero
         if (source->isContained())
@@ -860,7 +854,7 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
             genConsumeReg(source);
             emit->emitIns_S_R(storeIns, storeAttr, source->GetRegNum(), varNumOut, argOffsetOut);
 #ifdef TARGET_ARM
-            if (targetType == TYP_LONG)
+            if (source->TypeIs(TYP_LONG))
             {
                 // This case currently only occurs for double types that are passed as TYP_LONG;
                 // actual long types would have been decomposed by now.

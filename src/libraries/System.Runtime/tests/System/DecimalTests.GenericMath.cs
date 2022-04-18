@@ -387,7 +387,7 @@ namespace System.Tests
                 Assert.Equal(1.0m, NumberHelper<decimal>.CreateChecked<nuint>(unchecked((nuint)0x0000000000000001)));
                 Assert.Equal(9223372036854775807.0m, NumberHelper<decimal>.CreateChecked<nuint>(unchecked((nuint)0x7FFFFFFFFFFFFFFF)));
                 Assert.Equal(9223372036854775808.0m, NumberHelper<decimal>.CreateChecked<nuint>(unchecked((nuint)0x8000000000000000)));
-                Assert.Equal(18446744073709551615.0m,NumberHelper<decimal>.CreateChecked<nuint>(unchecked((nuint)0xFFFFFFFFFFFFFFFF)));
+                Assert.Equal(18446744073709551615.0m, NumberHelper<decimal>.CreateChecked<nuint>(unchecked((nuint)0xFFFFFFFFFFFFFFFF)));
             }
             else
             {

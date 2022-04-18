@@ -6,6 +6,9 @@
 #pragma hdrstop
 #endif
 
+// For now the max possible size is Vector256<ushort>.Count * 2
+#define MaxPossibleUnrollSize 32
+
 //------------------------------------------------------------------------
 // importer_vectorization.cpp
 //
@@ -145,8 +148,7 @@ static GenTreeHWIntrinsic* CreateConstVector(Compiler* comp, var_types simdType,
 GenTree* Compiler::impExpandHalfConstEqualsSIMD(
     GenTreeLclVar* data, WCHAR* cns, int len, int dataOffset, StringComparison cmpMode)
 {
-    constexpr int maxPossibleLength = 32;
-    assert(len >= 8 && len <= maxPossibleLength);
+    assert(len >= 8 && len <= MaxPossibleUnrollSize);
 
     if (!IsBaselineSimdIsaSupported())
     {
@@ -170,8 +172,8 @@ GenTree* Compiler::impExpandHalfConstEqualsSIMD(
     // Optimization: don't use two vectors for Length == 8 or 16
     bool useSingleVector = false;
 
-    WCHAR cnsValue[maxPossibleLength]    = {};
-    WCHAR toLowerMask[maxPossibleLength] = {};
+    WCHAR cnsValue[MaxPossibleUnrollSize]    = {};
+    WCHAR toLowerMask[MaxPossibleUnrollSize] = {};
 
     memcpy((UINT8*)cnsValue, (UINT8*)cns, len * sizeof(WCHAR));
 
@@ -678,8 +680,8 @@ GenTree* Compiler::impStringEqualsOrStartsWith(bool startsWith, CORINFO_SIG_INFO
         needsNullcheck = false;
     }
 
-    int             cnsLength = -1;
-    const char16_t* str       = nullptr;
+    int      cnsLength;
+    char16_t str[MaxPossibleUnrollSize];
     if (cnsStr->IsStringEmptyField())
     {
         // check for fake "" first
@@ -688,13 +690,13 @@ GenTree* Compiler::impStringEqualsOrStartsWith(bool startsWith, CORINFO_SIG_INFO
     }
     else
     {
-        str = info.compCompHnd->getStringLiteral(cnsStr->gtScpHnd, cnsStr->gtSconCPX, &cnsLength);
-        if ((cnsLength < 0) || (str == nullptr))
+        cnsLength = info.compCompHnd->getStringLiteral(cnsStr->gtScpHnd, cnsStr->gtSconCPX, str, MaxPossibleUnrollSize);
+        if ((cnsLength < 0) || (cnsLength > MaxPossibleUnrollSize))
         {
             // We were unable to get the literal (e.g. dynamic context)
             return nullptr;
         }
-        JITDUMP("Trying to unroll String.Equals|StartsWith(op1, \"%ws\")...\n", str)
+        JITDUMP("Trying to unroll String.Equals|StartsWith(op1, \"cns\")...\n")
     }
 
     // Create a temp which is safe to gtClone for varStr
@@ -816,8 +818,8 @@ GenTree* Compiler::impSpanEqualsOrStartsWith(bool startsWith, CORINFO_SIG_INFO* 
         spanObj = op1;
     }
 
-    int             cnsLength = -1;
-    const char16_t* str       = nullptr;
+    int      cnsLength = -1;
+    char16_t str[MaxPossibleUnrollSize];
     if (cnsStr->IsStringEmptyField())
     {
         // check for fake "" first
@@ -826,8 +828,8 @@ GenTree* Compiler::impSpanEqualsOrStartsWith(bool startsWith, CORINFO_SIG_INFO* 
     }
     else
     {
-        str = info.compCompHnd->getStringLiteral(cnsStr->gtScpHnd, cnsStr->gtSconCPX, &cnsLength);
-        if (cnsLength < 0 || str == nullptr)
+        cnsLength = info.compCompHnd->getStringLiteral(cnsStr->gtScpHnd, cnsStr->gtSconCPX, str, MaxPossibleUnrollSize);
+        if ((cnsLength < 0) || (cnsLength > MaxPossibleUnrollSize))
         {
             // We were unable to get the literal (e.g. dynamic context)
             return nullptr;

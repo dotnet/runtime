@@ -4854,10 +4854,11 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
         const int cnsIndex = static_cast<int>(asIndex->Index()->AsIntConCommon()->IconValue());
         if (cnsIndex >= 0)
         {
-            int             length;
-            const char16_t* str = info.compCompHnd->getStringLiteral(asIndex->Arr()->AsStrCon()->gtScpHnd,
-                                                                     asIndex->Arr()->AsStrCon()->gtSconCPX, &length);
-            if ((cnsIndex < length) && (str != nullptr))
+            const int maxStrSize = 1024;
+            char16_t  str[maxStrSize];
+            int       length = info.compCompHnd->getStringLiteral(asIndex->Arr()->AsStrCon()->gtScpHnd,
+                                                            asIndex->Arr()->AsStrCon()->gtSconCPX, str, maxStrSize);
+            if ((cnsIndex < length))
             {
                 GenTree* cnsCharNode = gtNewIconNode(str[cnsIndex], TYP_INT);
                 INDEBUG(cnsCharNode->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
@@ -11618,7 +11619,10 @@ DONE_MORPHING_CHILDREN:
             effectiveOp1 = op1->gtEffectiveVal();
 
             // If we are storing a small type, we might be able to omit a cast.
-            if (effectiveOp1->OperIs(GT_IND, GT_CLS_VAR) && varTypeIsSmall(effectiveOp1))
+            if ((effectiveOp1->OperIs(GT_IND, GT_CLS_VAR) ||
+                 (effectiveOp1->OperIs(GT_LCL_VAR) &&
+                  lvaGetDesc(effectiveOp1->AsLclVarCommon()->GetLclNum())->lvNormalizeOnLoad())) &&
+                varTypeIsSmall(effectiveOp1))
             {
                 if (!gtIsActiveCSE_Candidate(op2) && op2->OperIs(GT_CAST) &&
                     varTypeIsIntegral(op2->AsCast()->CastOp()) && !op2->gtOverflow())
@@ -12279,9 +12283,21 @@ DONE_MORPHING_CHILDREN:
                 GenTree* addr = commaNode->AsOp()->gtOp2;
                 // TODO-1stClassStructs: we often create a struct IND without a handle, fix it.
                 op1 = gtNewIndir(typ, addr);
-                // This is very conservative
-                op1->gtFlags |= treeFlags & ~GTF_ALL_EFFECT & ~GTF_IND_NONFAULTING;
+
+                // Determine flags on the indir.
+                //
+                op1->gtFlags |= treeFlags & ~GTF_ALL_EFFECT;
                 op1->gtFlags |= (addr->gtFlags & GTF_ALL_EFFECT);
+
+                // if this was a non-faulting indir, clear GTF_EXCEPT,
+                // unless we inherit it from the addr.
+                //
+                if (((treeFlags & GTF_IND_NONFAULTING) != 0) && ((addr->gtFlags & GTF_EXCEPT) == 0))
+                {
+                    op1->gtFlags &= ~GTF_EXCEPT;
+                }
+
+                op1->gtFlags |= treeFlags & GTF_GLOB_REF;
 
 #ifdef DEBUG
                 op1->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED;
