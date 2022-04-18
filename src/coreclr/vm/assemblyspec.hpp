@@ -28,7 +28,6 @@ class AssemblySpec  : public BaseAssemblySpec
 {
   private:
     AppDomain       *m_pAppDomain;
-    DWORD            m_dwHashAlg;
     DomainAssembly  *m_pParentAssembly;
 
     // Contains the reference to the fallback load context associated with RefEmitted assembly requesting the load of another assembly (static or dynamic)
@@ -105,14 +104,7 @@ class AssemblySpec  : public BaseAssemblySpec
     void InitializeSpec(PEAssembly* pPEAssembly);
     void InitializeSpec(StackingAllocator* alloc, ASSEMBLYNAMEREF* pName);
 
-    void AssemblyNameInit(ASSEMBLYNAMEREF* pName, PEImage* pImageInfo); //[in,out], [in]
-
-
-    void SetCodeBase(LPCWSTR szCodeBase)
-    {
-        WRAPPER_NO_CONTRACT;
-        BaseAssemblySpec::SetCodeBase(szCodeBase);
-    }
+    void AssemblyNameInit(ASSEMBLYNAMEREF* pName); //[in,out]
 
     void SetParentAssembly(DomainAssembly *pAssembly)
     {
@@ -174,8 +166,6 @@ class AssemblySpec  : public BaseAssemblySpec
         // Copy the details of the fallback load context binder
         SetFallbackBinderForRequestingAssembly(pSource->GetFallbackBinderForRequestingAssembly());
         m_fPreferFallbackBinder = pSource->GetPreferFallbackBinder();
-
-        m_dwHashAlg = pSource->m_dwHashAlg;
     }
 
     HRESULT CheckFriendAssemblyName();

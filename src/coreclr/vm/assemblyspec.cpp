@@ -22,6 +22,7 @@
 #include "strongnameinternal.h"
 #include "strongnameholders.h"
 #include "eventtrace.h"
+#include "assemblynative.hpp"
 
 #include "../binder/inc/bindertracing.h"
 
@@ -371,7 +372,7 @@ void AssemblySpec::InitializeSpec(StackingAllocator* alloc, ASSEMBLYNAMEREF* pNa
     CloneFieldsToStackingAllocator(alloc);
 }
 
-void AssemblySpec::AssemblyNameInit(ASSEMBLYNAMEREF* pAsmName, PEImage* pImageInfo)
+void AssemblySpec::AssemblyNameInit(ASSEMBLYNAMEREF* pAsmName)
 {
     CONTRACTL
     {
@@ -496,20 +497,7 @@ void AssemblySpec::AssemblyNameInit(ASSEMBLYNAMEREF* pAsmName, PEImage* pImageIn
     if(GetName())
         gc.Name = StringObject::NewString(GetName());
 
-    if (GetCodeBase())
-        gc.CodeBase = StringObject::NewString(GetCodeBase());
-
     BOOL fPublicKey = m_dwFlags & afPublicKey;
-
-    ULONG hashAlgId=0;
-    if (pImageInfo != NULL)
-    {
-        if(!pImageInfo->GetMDImport()->IsValidToken(TokenFromRid(1, mdtAssembly)))
-        {
-            ThrowHR(COR_E_BADIMAGEFORMAT);
-        }
-        IfFailThrow(pImageInfo->GetMDImport()->GetAssemblyProps(TokenFromRid(1, mdtAssembly), NULL, NULL, &hashAlgId, NULL, NULL, NULL));
-    }
 
     MethodDescCallSite init(METHOD__ASSEMBLY_NAME__CTOR);
 
@@ -523,32 +511,10 @@ void AssemblySpec::AssemblyNameInit(ASSEMBLYNAMEREF* pAsmName, PEImage* pImageIn
         ObjToArgSlot(gc.PublicKeyOrToken), // public key token
         ObjToArgSlot(gc.Version),
         ObjToArgSlot(gc.CultureInfo),
-        (ARG_SLOT) hashAlgId,
-        (ARG_SLOT) 1, // AssemblyVersionCompatibility.SameMachine
-        ObjToArgSlot(gc.CodeBase),
         (ARG_SLOT) m_dwFlags,
     };
 
     init.Call(MethodArgs);
-
-    // Only set the processor architecture if we're looking at a newer binary that has
-    // that information in the PE, and we're not looking at a reference assembly.
-    if(pImageInfo && !pImageInfo->HasV1Metadata() && !pImageInfo->IsReferenceAssembly())
-    {
-        DWORD dwMachine, dwKind;
-
-        pImageInfo->GetPEKindAndMachine(&dwMachine,&dwKind);
-
-        MethodDescCallSite setPA(METHOD__ASSEMBLY_NAME__SET_PROC_ARCH_INDEX);
-
-        ARG_SLOT PAMethodArgs[] = {
-            ObjToArgSlot(*pAsmName),
-            (ARG_SLOT)dwMachine,
-            (ARG_SLOT)dwKind
-        };
-
-        setPA.Call(PAMethodArgs);
-    }
 
     GCPROTECT_END();
 }
@@ -579,7 +545,7 @@ void AssemblySpec::InitializeAssemblyNameRef(_In_ BINDER_SPACE::AssemblyName* as
         spec.SetCulture(culture);
     }
 
-    spec.AssemblyNameInit(assemblyNameRef, NULL);
+    spec.AssemblyNameInit(assemblyNameRef);
 }
 
 
@@ -786,9 +752,19 @@ Assembly *AssemblySpec::LoadAssembly(LPCWSTR pFilePath)
     }
     CONTRACT_END;
 
-    AssemblySpec spec;
-    spec.SetCodeBase(pFilePath);
-    RETURN spec.LoadAssembly(FILE_LOADED);
+    GCX_PREEMP();
+
+    PEImageHolder pILImage;
+
+    pILImage = PEImage::OpenImage(pFilePath,
+        MDInternalImport_Default,
+        BundleFileLocation::Invalid());
+
+    // Need to verify that this is a valid CLR assembly.
+    if (!pILImage->CheckILFormat())
+        THROW_BAD_FORMAT(BFA_BAD_IL, pILImage.GetValue());
+
+    RETURN AssemblyNative::LoadFromPEImage(AppDomain::GetCurrentDomain()->GetDefaultBinder(), pILImage);
 }
 
 HRESULT AssemblySpec::CheckFriendAssemblyName()

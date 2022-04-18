@@ -27,7 +27,6 @@ HRESULT CustomAssemblyBinder::BindAssemblyByNameWorker(BINDER_SPACE::AssemblyNam
     // Do we have the assembly already loaded in the context of the current binder?
     hr = AssemblyBinderCommon::BindAssembly(this,
                                             pAssemblyName,
-                                            NULL,  // szCodeBase
                                             false, //excludeAppPaths,
                                             ppCoreCLRFoundAssembly);
     if (!FAILED(hr))

@@ -64,7 +64,7 @@ HRESULT  AssemblySpec::Bind(AppDomain *pAppDomain, BINDER_SPACE::Assembly** ppAs
     ReleaseHolder<BINDER_SPACE::Assembly> pPrivAsm;
     _ASSERTE(pBinder != NULL);
 
-    if (m_wszCodeBase == NULL && IsCoreLibSatellite())
+    if (IsCoreLibSatellite())
     {
         StackSString sSystemDirectory(SystemDomain::System()->SystemDirectory());
         StackSString tmpString;
@@ -83,15 +83,11 @@ HRESULT  AssemblySpec::Bind(AppDomain *pAppDomain, BINDER_SPACE::Assembly** ppAs
 
         hr = BINDER_SPACE::AssemblyBinderCommon::BindToSystemSatellite(sSystemDirectory, sSimpleName, sCultureName, &pPrivAsm);
     }
-    else if (m_wszCodeBase == NULL)
+    else
     {
         AssemblyNameData assemblyNameData = { 0 };
         PopulateAssemblyNameData(assemblyNameData);
         hr = pBinder->BindAssemblyByName(&assemblyNameData, &pPrivAsm);
-    }
-    else
-    {
-        hr = pAppDomain->GetDefaultBinder()->Bind(m_wszCodeBase, &pPrivAsm);
     }
 
     if (SUCCEEDED(hr))
@@ -324,12 +320,6 @@ VOID BaseAssemblySpec::GetFileOrDisplayName(DWORD flags, SString &result) const
         PRECONDITION(result.IsEmpty());
     }
     CONTRACTL_END;
-
-    if (m_wszCodeBase)
-    {
-        result.Set(m_wszCodeBase);
-        return;
-    }
 
     GetDisplayNameInternal(flags, result);
 }
