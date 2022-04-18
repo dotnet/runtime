@@ -3644,7 +3644,7 @@ void Lowering::LowerRetStruct(GenTreeUnOp* ret)
     assert(ret->OperIs(GT_RETURN));
     assert(varTypeIsStruct(ret));
 
-    GenTree* retVal = ret->gtGetOp1();
+    GenTree*  retVal           = ret->gtGetOp1();
     var_types nativeReturnType = comp->info.compRetNativeType;
     // Note: small types are returned as INT.
     ret->ChangeType(genActualType(nativeReturnType));
