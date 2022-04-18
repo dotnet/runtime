@@ -9,8 +9,12 @@ using System.Runtime.Versioning;
 
 #pragma warning disable SA1121 // We use our own aliases since they differ per platform
 #if TARGET_32BIT
+using NativeExponentType = System.SByte;
+using NativeSignificandType = System.UInt32;
 using NativeType = System.Single;
 #else
+using NativeExponentType = System.Int16;
+using NativeSignificandType = System.UInt64;
 using NativeType = System.Double;
 #endif
 
@@ -855,6 +859,73 @@ namespace System.Runtime.InteropServices
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.Truncate(TSelf)" />
         public static NFloat Truncate(NFloat x) => new NFloat(NativeType.Truncate(x._value));
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.GetExponentShortestBitLength()" />
+        long IFloatingPoint<NFloat>.GetExponentShortestBitLength()
+        {
+            NativeExponentType exponent = _value.Exponent;
+
+            if (exponent >= 0)
+            {
+                return (sizeof(NativeExponentType) * 8) - NativeExponentType.LeadingZeroCount(exponent);
+            }
+            else
+            {
+                return (sizeof(NativeExponentType) * 8) + 1 - NativeExponentType.LeadingZeroCount((NativeExponentType)(~exponent));
+            }
+        }
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.GetExponentByteCount()" />
+        int IFloatingPoint<NFloat>.GetExponentByteCount() => sizeof(NativeExponentType);
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.TryWriteExponentLittleEndian(Span{byte}, out int)" />
+        bool IFloatingPoint<NFloat>.TryWriteExponentLittleEndian(Span<byte> destination, out int bytesWritten)
+        {
+            if (destination.Length >= sizeof(NativeExponentType))
+            {
+                NativeExponentType exponent = _value.Exponent;
+                Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), exponent);
+
+                bytesWritten = sizeof(NativeExponentType);
+                return true;
+            }
+            else
+            {
+                bytesWritten = 0;
+                return false;
+            }
+        }
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.GetSignificandBitLength()" />
+        long IFloatingPoint<NFloat>.GetSignificandBitLength()
+        {
+#if TARGET_32BIT
+            return 24;
+#else
+            return 53;
+#endif
+        }
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.GetSignificandByteCount()" />
+        int IFloatingPoint<NFloat>.GetSignificandByteCount() => sizeof(ulong);
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.TryWriteSignificandLittleEndian(Span{byte}, out int)" />
+        bool IFloatingPoint<NFloat>.TryWriteSignificandLittleEndian(Span<byte> destination, out int bytesWritten)
+        {
+            if (destination.Length >= sizeof(NativeSignificandType))
+            {
+                NativeSignificandType significand = _value.Significand;
+                Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), significand);
+
+                bytesWritten = sizeof(NativeSignificandType);
+                return true;
+            }
+            else
+            {
+                bytesWritten = 0;
+                return false;
+            }
+        }
 
         //
         // IFloatingPointIeee754

@@ -105,7 +105,7 @@ namespace System
         internal const ulong MinTrailingSignificand = 0x0000_0000_0000_0000;
         internal const ulong MaxTrailingSignificand = 0x000F_FFFF_FFFF_FFFF;
 
-        private ushort BiasedExponent
+        internal ushort BiasedExponent
         {
             get
             {
@@ -114,7 +114,7 @@ namespace System
             }
         }
 
-        private short Exponent
+        internal short Exponent
         {
             get
             {
@@ -122,7 +122,7 @@ namespace System
             }
         }
 
-        private ulong Significand
+        internal ulong Significand
         {
             get
             {
@@ -130,7 +130,7 @@ namespace System
             }
         }
 
-        private ulong TrailingSignificand
+        internal ulong TrailingSignificand
         {
             get
             {

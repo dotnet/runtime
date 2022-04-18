@@ -104,7 +104,7 @@ namespace System
         internal const uint MinTrailingSignificand = 0x0000_0000;
         internal const uint MaxTrailingSignificand = 0x007F_FFFF;
 
-        private byte BiasedExponent
+        internal byte BiasedExponent
         {
             get
             {
@@ -113,7 +113,7 @@ namespace System
             }
         }
 
-        private sbyte Exponent
+        internal sbyte Exponent
         {
             get
             {
@@ -121,7 +121,7 @@ namespace System
             }
         }
 
-        private uint Significand
+        internal uint Significand
         {
             get
             {
@@ -129,7 +129,7 @@ namespace System
             }
         }
 
-        private uint TrailingSignificand
+        internal uint TrailingSignificand
         {
             get
             {

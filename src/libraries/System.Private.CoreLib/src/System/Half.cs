@@ -100,7 +100,7 @@ namespace System
 
         private Half(bool sign, ushort exp, ushort sig) => _value = (ushort)(((sign ? 1 : 0) << SignShift) + (exp << BiasedExponentShift) + sig);
 
-        private byte BiasedExponent
+        internal byte BiasedExponent
         {
             get
             {
@@ -109,7 +109,7 @@ namespace System
             }
         }
 
-        private sbyte Exponent
+        internal sbyte Exponent
         {
             get
             {
@@ -117,7 +117,7 @@ namespace System
             }
         }
 
-        private ushort Significand
+        internal ushort Significand
         {
             get
             {
@@ -125,7 +125,7 @@ namespace System
             }
         }
 
-        private ushort TrailingSignificand
+        internal ushort TrailingSignificand
         {
             get
             {
