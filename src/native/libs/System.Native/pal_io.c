@@ -22,7 +22,7 @@
 #include <sys/file.h>
 #include <sys/ioctl.h>
 #include <sys/socket.h>
-#if !defined(TARGET_OSX) && !defined(TARGET_FREEBSD)
+#if !HAVE_MAKEDEV_FILEH && HAVE_MAKEDEV_SYSMACROSH
 #include <sys/sysmacros.h>
 #endif
 #include <sys/uio.h>
@@ -770,21 +770,17 @@ int32_t SystemNative_SymLink(const char* target, const char* linkPath)
     return result;
 }
 
-void SystemNative_GetDeviceIdentifiers(uint64_t dev, uint32_t* major, uint32_t* minor)
+int32_t SystemNative_GetDeviceIdentifiers(uint64_t dev, uint32_t* majorNumber, uint32_t* minorNumber)
 {
     dev_t castedDev = (dev_t)dev;
-    *major = major(castedDev);
-    *minor = minor(castedDev);
+    *majorNumber = (uint32_t)major(castedDev);
+    *minorNumber = (uint32_t)minor(castedDev);
+    return ConvertErrorPlatformToPal(errno);
 }
 
 int32_t SystemNative_MkNod(const char* pathName, uint32_t mode, uint32_t major, uint32_t minor)
 {
-#if defined(TARGET_WASM)
-    unsigned long long
-#else
-    dev_t
-#endif
-    dev = makedev(major, minor);
+    dev_t dev = (dev_t)makedev(major, minor);
 
     if (errno > 0)
     {

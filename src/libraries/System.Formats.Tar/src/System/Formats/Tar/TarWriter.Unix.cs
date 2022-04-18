@@ -43,7 +43,13 @@ namespace System.Formats.Tar
 
             if ((entryType is TarEntryType.BlockDevice or TarEntryType.CharacterDevice) && status.Dev > 0)
             {
-                Interop.Sys.GetDeviceIdentifiers((ulong)status.Dev, out uint major, out uint minor);
+                uint major;
+                uint minor;
+                unsafe
+                {
+                    Interop.CheckIo(Interop.Sys.GetDeviceIdentifiers((ulong)status.Dev, &major, &minor));
+                }
+
                 entry._header._devMajor = (int)major;
                 entry._header._devMinor = (int)minor;
             }
