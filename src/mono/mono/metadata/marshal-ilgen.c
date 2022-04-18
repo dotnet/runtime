@@ -94,12 +94,6 @@ get_method_image (MonoMethod *method)
 	return m_class_get_image (method->klass);
 }
 
-static void
-emit_struct_conv (MonoMethodBuilder *mb, MonoClass *klass, gboolean to_object);
-
-static void
-emit_struct_conv_full (MonoMethodBuilder *mb, MonoClass *klass, gboolean to_object, int offset_of_first_child_field, MonoMarshalNative string_encoding);
-
 static MonoJitICallId
 conv_to_icall (MonoMarshalConv conv, int *ind_store_type);
 
@@ -383,7 +377,7 @@ emit_ptr_to_object_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv 
 			mono_mb_emit_stloc (mb, 1);
 
 			/* Do the conversion */
-			emit_struct_conv (mb, eklass, TRUE);
+			mono_marshal_shared_emit_struct_conv (mb, eklass, TRUE);
 
 			/* Loop footer */
 			mono_mb_emit_add_to_local (mb, index_var, 1);
@@ -487,7 +481,7 @@ emit_ptr_to_object_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv 
 		mono_mb_emit_byte (mb, CEE_ADD);
 		mono_mb_emit_stloc (mb, 1);
 
-		emit_struct_conv (mb, klass, TRUE);
+		mono_marshal_shared_emit_struct_conv (mb, klass, TRUE);
 
 		/* restore the old src pointer */
 		mono_mb_emit_ldloc (mb, src_var);
@@ -804,247 +798,6 @@ mono_get_Marshal_GetNativeVariantForObject (void)
 
 	g_assert (get_native_variant_for_object);
 	return get_native_variant_for_object;
-}
-
-static void
-emit_struct_conv_full (MonoMethodBuilder *mb, MonoClass *klass, gboolean to_object,
-						int offset_of_first_child_field, MonoMarshalNative string_encoding)
-{
-	MonoMarshalType *info;
-	int i;
-
-	if (m_class_get_parent (klass))
-		emit_struct_conv_full (mb, m_class_get_parent (klass), to_object, offset_of_first_nonstatic_field (klass), string_encoding);
-
-	info = mono_marshal_load_type_info (klass);
-
-	if (info->native_size == 0)
-		return;
-
-	if (m_class_is_blittable (klass)) {
-		int usize = mono_class_value_size (klass, NULL);
-		g_assert (usize == info->native_size);
-		mono_mb_emit_ldloc (mb, 1);
-		mono_mb_emit_ldloc (mb, 0);
-		mono_mb_emit_icon (mb, usize);
-		mono_mb_emit_byte (mb, CEE_PREFIX1);
-		mono_mb_emit_byte (mb, CEE_CPBLK);
-
-		if (to_object) {
-			mono_mb_emit_add_to_local (mb, 0, usize);
-			mono_mb_emit_add_to_local (mb, 1, offset_of_first_child_field);
-		} else {
-			mono_mb_emit_add_to_local (mb, 0, offset_of_first_child_field);
-			mono_mb_emit_add_to_local (mb, 1, usize);
-		}
-		return;
-	}
-
-	if (klass != mono_class_try_get_safehandle_class ()) {
-		if (mono_class_is_auto_layout (klass)) {
-			char *msg = g_strdup_printf ("Type %s which is passed to unmanaged code must have a StructLayout attribute.",
-										 mono_type_full_name (m_class_get_byval_arg (klass)));
-			mono_marshal_shared_mb_emit_exception_marshal_directive (mb, msg);
-			return;
-		}
-	}
-
-	for (i = 0; i < info->num_fields; i++) {
-		MonoMarshalNative ntype;
-		MonoMarshalConv conv;
-		MonoType *ftype = info->fields [i].field->type;
-		int msize = 0;
-		int usize = 0;
-		gboolean last_field = i < (info->num_fields -1) ? 0 : 1;
-
-		if (ftype->attrs & FIELD_ATTRIBUTE_STATIC)
-			continue;
-
-		ntype = (MonoMarshalNative)mono_type_to_unmanaged (ftype, info->fields [i].mspec, TRUE, m_class_is_unicode (klass), &conv);
-
-		if (last_field) {
-			msize = m_class_get_instance_size (klass) - m_field_get_offset (info->fields [i].field);
-			usize = info->native_size - info->fields [i].offset;
-		} else {
-			msize = m_field_get_offset (info->fields [i + 1].field) - m_field_get_offset (info->fields [i].field);
-			usize = info->fields [i + 1].offset - info->fields [i].offset;
-		}
-
-		if (klass != mono_class_try_get_safehandle_class ()){
-			/*
-			 * FIXME: Should really check for usize==0 and msize>0, but we apply
-			 * the layout to the managed structure as well.
-			 */
-
-			if (mono_class_is_explicit_layout (klass) && (usize == 0)) {
-				if (MONO_TYPE_IS_REFERENCE (info->fields [i].field->type) ||
-				    ((!last_field && MONO_TYPE_IS_REFERENCE (info->fields [i + 1].field->type))))
-					g_error ("Type %s which has an [ExplicitLayout] attribute cannot have a "
-						 "reference field at the same offset as another field.",
-						 mono_type_full_name (m_class_get_byval_arg (klass)));
-			}
-		}
-
-		switch (conv) {
-		case MONO_MARSHAL_CONV_NONE: {
-			int t;
-
-			//XXX a byref field!?!? that's not allowed! and worse, it might miss a WB
-			g_assert (!m_type_is_byref (ftype));
-			if (ftype->type == MONO_TYPE_I || ftype->type == MONO_TYPE_U) {
-				mono_mb_emit_ldloc (mb, 1);
-				mono_mb_emit_ldloc (mb, 0);
-				mono_mb_emit_byte (mb, CEE_LDIND_I);
-				mono_mb_emit_byte (mb, CEE_STIND_I);
-				break;
-			}
-
-		handle_enum:
-			t = ftype->type;
-			switch (t) {
-			case MONO_TYPE_I4:
-			case MONO_TYPE_U4:
-			case MONO_TYPE_I1:
-			case MONO_TYPE_U1:
-			case MONO_TYPE_BOOLEAN:
-			case MONO_TYPE_I2:
-			case MONO_TYPE_U2:
-			case MONO_TYPE_CHAR:
-			case MONO_TYPE_I8:
-			case MONO_TYPE_U8:
-			case MONO_TYPE_PTR:
-			case MONO_TYPE_R4:
-			case MONO_TYPE_R8:
-				mono_mb_emit_ldloc (mb, 1);
-				mono_mb_emit_ldloc (mb, 0);
-				if (t == MONO_TYPE_CHAR && ntype == MONO_NATIVE_U1 && string_encoding != MONO_NATIVE_LPWSTR) {
-					if (to_object) {
-						mono_mb_emit_byte (mb, CEE_LDIND_U1);
-						mono_mb_emit_byte (mb, CEE_STIND_I2);
-					} else {
-						mono_mb_emit_byte (mb, CEE_LDIND_U2);
-						mono_mb_emit_byte (mb, CEE_STIND_I1);
-					}
-				} else {
-					mono_mb_emit_byte (mb, mono_type_to_ldind (ftype));
-					mono_mb_emit_byte (mb, mono_type_to_stind (ftype));
-				}
-				break;
-			case MONO_TYPE_GENERICINST:
-				if (!mono_type_generic_inst_is_valuetype (ftype)) {
-					char *msg = g_strdup_printf ("Generic type %s cannot be marshaled as field in a struct.",
-						mono_type_full_name (ftype));
-					mono_marshal_shared_mb_emit_exception_marshal_directive (mb, msg);
-					break;
-				}
-				/* fall through */
-			case MONO_TYPE_VALUETYPE: {
-				int src_var, dst_var;
-				MonoType *etype;
-				int len;
-
-				if (t == MONO_TYPE_VALUETYPE && m_class_is_enumtype (ftype->data.klass)) {
-					ftype = mono_class_enum_basetype_internal (ftype->data.klass);
-					goto handle_enum;
-				}
-
-				MonoType *int_type = mono_get_int_type ();
-				src_var = mono_mb_add_local (mb, int_type);
-				dst_var = mono_mb_add_local (mb, int_type);
-
-				/* save the old src pointer */
-				mono_mb_emit_ldloc (mb, 0);
-				mono_mb_emit_stloc (mb, src_var);
-				/* save the old dst pointer */
-				mono_mb_emit_ldloc (mb, 1);
-				mono_mb_emit_stloc (mb, dst_var);
-
-				if (get_fixed_buffer_attr (info->fields [i].field, &etype, &len)) {
-					emit_fixed_buf_conv (mb, ftype, etype, len, to_object, &usize);
-				} else {
-					emit_struct_conv (mb, mono_class_from_mono_type_internal (ftype), to_object);
-				}
-
-				/* restore the old src pointer */
-				mono_mb_emit_ldloc (mb, src_var);
-				mono_mb_emit_stloc (mb, 0);
-				/* restore the old dst pointer */
-				mono_mb_emit_ldloc (mb, dst_var);
-				mono_mb_emit_stloc (mb, 1);
-				break;
-			}
-			case MONO_TYPE_OBJECT: {
-#ifndef DISABLE_COM
-				if (to_object) {
-					mono_mb_emit_ldloc (mb, 1);
-					mono_mb_emit_ldloc (mb, 0);
-					mono_mb_emit_managed_call (mb, mono_get_Marshal_GetObjectForNativeVariant (), NULL);
-					mono_mb_emit_byte (mb, CEE_STIND_REF);
-
-					mono_mb_emit_ldloc (mb, 0);
-					mono_mb_emit_managed_call (mb, mono_get_Variant_Clear (), NULL);
-				}
-				else {
-					mono_mb_emit_ldloc (mb, 0);
-					mono_mb_emit_byte(mb, CEE_LDIND_REF);
-					mono_mb_emit_ldloc (mb, 1);
-					mono_mb_emit_managed_call (mb, mono_get_Marshal_GetNativeVariantForObject (), NULL);
-				}
-#else
-				char *msg = g_strdup_printf ("COM support was disabled at compilation time.");
-				mono_marshal_shared_mb_emit_exception_marshal_directive (mb, msg);
-#endif
-				break;
-			}
-
-			default:
-				g_warning ("marshaling type %02x not implemented", ftype->type);
-				g_assert_not_reached ();
-			}
-			break;
-		}
-		default: {
-			int src_var, dst_var;
-
-			MonoType *int_type = mono_get_int_type ();
-			src_var = mono_mb_add_local (mb, int_type);
-			dst_var = mono_mb_add_local (mb, int_type);
-
-			/* save the old src pointer */
-			mono_mb_emit_ldloc (mb, 0);
-			mono_mb_emit_stloc (mb, src_var);
-			/* save the old dst pointer */
-			mono_mb_emit_ldloc (mb, 1);
-			mono_mb_emit_stloc (mb, dst_var);
-
-			if (to_object)
-				mono_marshal_shared_emit_ptr_to_object_conv (mb, ftype, conv, info->fields [i].mspec);
-			else
-				mono_marshal_shared_emit_object_to_ptr_conv (mb, ftype, conv, info->fields [i].mspec);
-
-			/* restore the old src pointer */
-			mono_mb_emit_ldloc (mb, src_var);
-			mono_mb_emit_stloc (mb, 0);
-			/* restore the old dst pointer */
-			mono_mb_emit_ldloc (mb, dst_var);
-			mono_mb_emit_stloc (mb, 1);
-		}
-		}
-
-		if (to_object) {
-			mono_mb_emit_add_to_local (mb, 0, usize);
-			mono_mb_emit_add_to_local (mb, 1, msize);
-		} else {
-			mono_mb_emit_add_to_local (mb, 0, msize);
-			mono_mb_emit_add_to_local (mb, 1, usize);
-		}
-	}
-}
-
-static void
-emit_struct_conv (MonoMethodBuilder *mb, MonoClass *klass, gboolean to_object)
-{
-	emit_struct_conv_full (mb, klass, to_object, 0, (MonoMarshalNative)-1);
 }
 
 static void
@@ -3642,7 +3395,7 @@ emit_struct_to_ptr_ilgen (MonoMethodBuilder *mb, MonoClass *klass)
 		mono_mb_emit_byte (mb, CEE_LDARG_1);
 		mono_mb_emit_stloc (mb, 1);
 
-		emit_struct_conv (mb, klass, FALSE);
+		mono_marshal_shared_emit_struct_conv (mb, klass, FALSE);
 	}
 
 	mono_mb_emit_byte (mb, CEE_RET);
@@ -3675,7 +3428,7 @@ emit_ptr_to_struct_ilgen (MonoMethodBuilder *mb, MonoClass *klass)
 		mono_mb_emit_ldflda (mb, MONO_ABI_SIZEOF (MonoObject));
 		mono_mb_emit_stloc (mb, 1);
 
-		emit_struct_conv (mb, klass, TRUE);
+		mono_marshal_shared_emit_struct_conv (mb, klass, TRUE);
 	}
 
 	mono_mb_emit_byte (mb, CEE_RET);
