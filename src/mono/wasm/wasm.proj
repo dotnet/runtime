@@ -265,6 +265,11 @@
           DestinationFolder="$(MicrosoftNetCoreAppRuntimePackNativeDir)"
           SkipUnchangedFiles="true" />
 
+    <Copy SourceFiles="$(NativeBinDir)dotnet.worker.js"
+          DestinationFolder="$(MicrosoftNetCoreAppRuntimePackNativeDir)"
+	  Condition="Exists('$(NativeBinDir)dotnet.worker.js')"
+          SkipUnchangedFiles="true" />
+
     <Copy SourceFiles="$(NativeBinDir)dotnet.js.symbols"
           DestinationFolder="$(MicrosoftNetCoreAppRuntimePackNativeDir)"
           SkipUnchangedFiles="true" />
