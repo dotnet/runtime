@@ -155,7 +155,7 @@ DWORD   DumpResourceToFile(_In_ __nullterminated WCHAR*   wzFileName)
     DWORD ret = 0;
     DWORD   dwResDirRVA;
     DWORD   dwResDirSize;
-    unsigned ulNumResNodes=0;
+    unsigned short ulNumResNodes=0;
     DynamicArray<ResourceNode*> g_prResNodePtr;
 
     if (g_pPELoader->IsPE32())
