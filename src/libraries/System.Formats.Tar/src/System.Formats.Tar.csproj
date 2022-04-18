@@ -13,10 +13,6 @@
       System.Formats.Tar.TarWriter
     </PackageDescription>
   </PropertyGroup>
-  <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
-  <PropertyGroup>
-    <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
-  </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Formats\Tar\FieldLengths.cs" />
     <Compile Include="System\Formats\Tar\PosixTarEntry.cs" />
