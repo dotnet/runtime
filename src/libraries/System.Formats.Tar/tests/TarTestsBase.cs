@@ -80,18 +80,6 @@ namespace System.Formats.Tar.Tests
             gnu
         }
 
-        // TODO: Remove me
-        protected void Attach()
-        {
-            while (!System.Diagnostics.Debugger.IsAttached)
-            {
-                System.Console.WriteLine($"Attach to {Environment.ProcessId}");
-                System.Threading.Thread.Sleep(1000);
-            }
-            System.Console.WriteLine($"Attached to {Environment.ProcessId}");
-            System.Diagnostics.Debugger.Break();
-        }
-
         protected static string GetTestCaseUnarchivedFolderPath(string testCaseName) =>
             Path.Join(Directory.GetCurrentDirectory(), "unarchived", testCaseName);
 
