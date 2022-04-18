@@ -104,7 +104,7 @@ Now you can debug with WinDbg or `dotnet-dump` as if it was a Windows dump. See 
 
 ## ... and you want to debug with LLDB
 
-Install or update LLDB if necessary ([instructions here](https://github.com/dotnet/diagnostics/blob/master/documentation/lldb/linux-instructions.md))
+Install or update LLDB if necessary ([instructions here](https://github.com/dotnet/diagnostics/blob/master/documentation/lldb/linux-instructions.md)). If you install or update LLDB, you must re-run the appropriate `dotnet sos install` command mentioned earlier. This will ensure that LLDB will load SOS for you.
 
 Load the dump:
 ```sh
