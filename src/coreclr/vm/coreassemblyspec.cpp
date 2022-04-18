@@ -40,7 +40,7 @@ static VOID ThrowLoadError(AssemblySpec * pSpec, HRESULT hr)
     CONTRACTL_END;
 
     StackSString name;
-    pSpec->GetFileOrDisplayName(0, name);
+    pSpec->GetDisplayName(0, name);
     EEFileLoadException::Throw(name, hr);
 }
 
@@ -309,36 +309,6 @@ void BaseAssemblySpec::InitializeWithAssemblyIdentity(BINDER_SPACE::AssemblyIden
     }
 }
 
-VOID BaseAssemblySpec::GetFileOrDisplayName(DWORD flags, SString &result) const
-{
-    CONTRACTL
-    {
-        INSTANCE_CHECK;
-        THROWS;
-        INJECT_FAULT(ThrowOutOfMemory());
-        PRECONDITION(CheckValue(result));
-        PRECONDITION(result.IsEmpty());
-    }
-    CONTRACTL_END;
-
-    GetDisplayNameInternal(flags, result);
-}
-
-VOID BaseAssemblySpec::GetDisplayName(DWORD flags, SString &result) const
-{
-    CONTRACTL
-    {
-        INSTANCE_CHECK;
-        THROWS;
-        INJECT_FAULT(ThrowOutOfMemory());
-        PRECONDITION(CheckValue(result));
-        PRECONDITION(result.IsEmpty());
-    }
-    CONTRACTL_END;
-
-    GetDisplayNameInternal(flags, result);
-}
-
 namespace
 {
     PEKIND GetProcessorArchitectureFromAssemblyFlags(DWORD flags)
@@ -362,7 +332,7 @@ namespace
     }
 }
 
-VOID BaseAssemblySpec::GetDisplayNameInternal(DWORD flags, SString &result) const
+VOID BaseAssemblySpec::GetDisplayName(DWORD flags, SString &result) const
 {
     if (flags==0)
         flags=ASM_DISPLAYF_FULL;

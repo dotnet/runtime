@@ -161,7 +161,7 @@ Assembly* AssemblyNative::LoadFromPEImage(AssemblyBinder* pBinder, PEImage *pIma
         }
 
         StackSString name;
-        spec.GetFileOrDisplayName(0, name);
+        spec.GetDisplayName(0, name);
         COMPlusThrowHR(COR_E_FILELOAD, dwMessageID, name);
     }
 

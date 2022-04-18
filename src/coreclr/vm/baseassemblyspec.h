@@ -108,7 +108,6 @@ public:
     static int CompareStrings(LPCUTF8 string1, LPCUTF8 string2);
     static BOOL RefMatchesDef(const BaseAssemblySpec* pRef, const BaseAssemblySpec* pDef);
 
-    void GetFileOrDisplayName(DWORD flags, SString &result) const;
     void GetDisplayName(DWORD flags, SString &result) const;
 
 protected: // static
@@ -117,9 +116,6 @@ protected: // static
 protected:
     void InitializeWithAssemblyIdentity(BINDER_SPACE::AssemblyIdentity *identity);
     void PopulateAssemblyNameData(AssemblyNameData &data) const;
-
-private:
-    void GetDisplayNameInternal(DWORD flags, SString &result) const;
 };
 
 #endif // __BASE_ASSEMBLY_SPEC_H__
