@@ -25,7 +25,7 @@ namespace System.Numerics.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))]
         public static void LargeNegativeBigIntegerShiftTest()
         {
             // Create a very large negative BigInteger
