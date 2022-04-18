@@ -46,7 +46,7 @@ Follow these steps to prepare your machine to collect a performance trace.
 
 ## Collecting a Trace ##
 1. Have two shell windows available - one for controlling tracing, referred to as **[Trace]**, and one for running the application, referred to as **[App]**.
-2. **[App]** Setup the application shell - this enables tracing configuration inside of CoreCLR.
+2. **[App]** Setup the application shell - this enables tracing configuration inside of CoreCLR. This incurs a significant performance overhead (10-20%).
 
 	> ```bash
 	> export COMPlus_PerfMapEnabled=1
