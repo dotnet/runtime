@@ -16,6 +16,7 @@ namespace Microsoft.WebAssembly.Diagnostics;
 public class FirefoxProxyServer
 {
     private static TcpListener? s_tcpListener;
+    private FirefoxMonoProxy? _firefoxMonoProxy;
 
     [MemberNotNull(nameof(s_tcpListener))]
     public static void StartListener(int proxyPort, ILogger logger)
@@ -49,12 +50,14 @@ public class FirefoxProxyServer
         }
     }
 
-    public static async Task RunForTests(int browserPort, int proxyPort, string testId, ILoggerFactory loggerFactory, ILogger logger)
+    public async Task RunForTests(int browserPort, int proxyPort, string testId, ILoggerFactory loggerFactory, ILogger logger)
     {
         StartListener(proxyPort, logger);
 
         TcpClient ideClient = await s_tcpListener.AcceptTcpClientAsync();
-        var monoProxy = new FirefoxMonoProxy(loggerFactory, testId);
-        await monoProxy.RunForFirefox(ideClient: ideClient, browserPort);
+        _firefoxMonoProxy = new FirefoxMonoProxy(loggerFactory, testId);
+        await _firefoxMonoProxy.RunForFirefox(ideClient: ideClient, browserPort);
     }
+
+    public void Shutdown() => _firefoxMonoProxy?.Shutdown();
 }

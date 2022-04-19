@@ -19,6 +19,7 @@ internal class FirefoxProvider : WasmHostProvider
 {
     private Process? _process;
     private WebSocket? _ideWebSocket;
+    private FirefoxProxyServer? _firefoxProxyServer;
     private bool _isDisposed;
 
     public FirefoxProvider(string id, ILogger logger) : base(id, logger)
@@ -74,13 +75,18 @@ internal class FirefoxProvider : WasmHostProvider
         _ = _ideWebSocket.ReceiveAsync(buff, token)
                     .ContinueWith(t =>
                     {
+                        Console.WriteLine ($"[{Id}] firefox provider - ide connection closed");
                         // client has closed the webserver connection, Or
                         // it has been cancelled.
                         // so, we should kill the proxy, and firefox
                         Dispose();
-                    }, TaskContinuationOptions.NotOnRanToCompletion | TaskContinuationOptions.RunContinuationsAsynchronously).ConfigureAwait(false);
+                    }, TaskContinuationOptions.NotOnRanToCompletion | TaskContinuationOptions.RunContinuationsAsynchronously)
+                    .ConfigureAwait(false);
 
-        await FirefoxProxyServer.RunForTests(remoteDebuggingPort, proxyPort, Id, loggerFactory, _logger).ConfigureAwait(false);
+        _firefoxProxyServer = new FirefoxProxyServer();
+        await _firefoxProxyServer
+                .RunForTests(remoteDebuggingPort, proxyPort, Id, loggerFactory, _logger)
+                .ConfigureAwait(false);
     }
 
     public override void Dispose()
@@ -88,6 +94,9 @@ internal class FirefoxProvider : WasmHostProvider
         if (_isDisposed)
             return;
 
+        _firefoxProxyServer?.Shutdown();
+
+        _logger.LogDebug($"[{Id}] {nameof(FirefoxProvider)} Dispose");
         if (_process is not null && _process.HasExited != true)
         {
             _process.CancelErrorRead();
@@ -106,6 +115,7 @@ internal class FirefoxProvider : WasmHostProvider
             _ideWebSocket = null;
         }
 
+        _logger.LogDebug($"[{Id}] {nameof(FirefoxProvider)} Dispose done");
         _isDisposed = true;
     }
 

@@ -234,7 +234,7 @@ namespace DebuggerTests
                 FirefoxProxyServer.StartListener(6002, _logger);
             }
 
-            await Client.Connect(new Uri(uriStr), OnMessage, _cancellationTokenSource.Token);
+            await Client.Connect(new Uri(uriStr), OnMessage, _cancellationTokenSource);
             Client.RunLoopStopped += (_, args) =>
             {
                 switch (args.reason)

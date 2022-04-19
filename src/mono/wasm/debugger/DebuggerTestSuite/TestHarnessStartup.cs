@@ -130,19 +130,21 @@ namespace DebuggerTests
                         string logFilePath = Path.Combine(DebuggerTestBase.TestLogPath, $"{test_id}-proxy.log");
                         File.Delete(logFilePath);
 
-                        var proxyLoggerFactory = LoggerFactory.Create(
+                        using var proxyLoggerFactory = LoggerFactory.Create(
                             builder => builder
-                                    .AddSimpleConsole(options =>
-                                        {
-                                            options.SingleLine = true;
-                                            options.TimestampFormat = "[HH:mm:ss] ";
-                                        })
-                                .AddFilter(null, LogLevel.Debug))
-                                .AddFile(logFilePath, minimumLevel: LogLevel.Trace);
+                                     .AddSimpleConsole(options =>
+                                         {
+                                             options.SingleLine = true;
+                                             options.TimestampFormat = "[HH:mm:ss] ";
+                                         })
+                                    .AddFilter(null, LogLevel.Debug))
+                                    .AddFile(logFilePath, minimumLevel: LogLevel.Debug);
+
+                        ILogger proxyLogger = proxyLoggerFactory.CreateLogger($"WasmHostProvider-{test_id}");
 
                         if (host == WasmHost.Chrome)
                         {
-                            using var provider = new ChromeProvider(test_id, Logger);
+                            var provider = new ChromeProvider(test_id, proxyLogger);
                             browserPort = options.DevToolsUrl.Port;
                             await provider.StartBrowserAndProxy(context,
                                                 options.BrowserPath,
@@ -153,7 +155,7 @@ namespace DebuggerTests
                         }
                         else if (host == WasmHost.Firefox)
                         {
-                            using var provider = new FirefoxProvider(test_id, Logger);
+                            var provider = new FirefoxProvider(test_id, proxyLogger);
                             browserPort = 6500 + int.Parse(test_id);
                             await provider.StartBrowserAndProxy(context,
                                                 options.BrowserPath,
@@ -163,6 +165,7 @@ namespace DebuggerTests
                                                 message_prefix,
                                                 proxyLoggerFactory).ConfigureAwait(false);
                         }
+                        proxyLogger.LogDebug($"TestHarnessStartup done");
                     }
                     catch (Exception ex)
                     {

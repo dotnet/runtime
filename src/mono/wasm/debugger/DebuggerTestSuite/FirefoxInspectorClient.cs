@@ -22,6 +22,7 @@ class FirefoxInspectorClient : InspectorClient
     internal string? BreakpointActorId {get; set;}
     internal string? ConsoleActorId {get; set;}
     internal string? ThreadActorId {get; set;}
+    private ClientWebSocket? _clientSocket;
 
     public FirefoxInspectorClient(ILogger logger) : base(logger)
     {
@@ -29,18 +30,31 @@ class FirefoxInspectorClient : InspectorClient
 
     protected override async Task<WasmDebuggerConnection> SetupConnection(Uri webserverUri, CancellationToken token)
     {
-        ClientWebSocket clientSocket = await ConnectToWebServer(webserverUri, token);
+        _clientSocket = await ConnectToWebServer(webserverUri, token);
 
+        //FIXME: Close client socket!
         ArraySegment<byte> buff = new(new byte[10]);
-        _ = clientSocket.ReceiveAsync(buff, token)
+        _ = _clientSocket.ReceiveAsync(buff, token)
                         .ContinueWith(t =>
                         {
+                            if (token.IsCancellationRequested)
+                                return;
+
                             logger.LogTrace($"** client socket closed, so stopping the client loop too");
                             // Webserver connection is closed
                             // So, stop the loop here too
                             _clientInitiatedClose.TrySetResult();
                         }, TaskContinuationOptions.NotOnRanToCompletion | TaskContinuationOptions.RunContinuationsAsynchronously)
                         .ConfigureAwait(false);
+
+        RunLoopStopped += (_, _) =>
+        {
+            logger.LogDebug($"RunLoop stopped, closing the websocket, state: {_clientSocket.State}");
+            if (_clientSocket.State == WebSocketState.Open)
+            {
+                _clientSocket.Abort();
+            }
+        };
 
         IPEndPoint endpoint = new (IPAddress.Parse("127.0.0.1"), DebuggerTestBase.FirefoxProxyPort);
         try

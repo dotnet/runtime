@@ -94,6 +94,7 @@ internal class FirefoxMonoProxy : MonoProxy
 
     protected override Task ProcessBrowserMessage(string msg, CancellationToken token)
     {
+        logger.LogTrace($"from-browser: {msg}");
         var res = JObject.Parse(msg);
 
         //if (method != "Debugger.scriptParsed" && method != "Runtime.consoleAPICalled")

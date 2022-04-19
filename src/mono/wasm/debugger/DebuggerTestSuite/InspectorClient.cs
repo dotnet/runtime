@@ -52,7 +52,7 @@ namespace DebuggerTests
         public virtual async Task Connect(
             Uri uri,
             Func<string, JObject, CancellationToken, Task> onEvent,
-            CancellationToken token)
+            CancellationTokenSource cts)
         {
             this.onEvent = onEvent;
 
@@ -71,7 +71,7 @@ namespace DebuggerTests
                 }
             };
 
-            await ConnectWithMainLoops(uri, HandleMessage, token);
+            await ConnectWithMainLoops(uri, HandleMessage, cts);
         }
 
         public Task<Result> SendCommand(string method, JObject args, CancellationToken token)

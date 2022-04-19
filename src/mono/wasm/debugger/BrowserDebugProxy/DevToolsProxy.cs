@@ -19,6 +19,7 @@ namespace Microsoft.WebAssembly.Diagnostics
     {
         protected TaskCompletionSource<Exception> side_exception = new();
         protected TaskCompletionSource client_initiated_close = new TaskCompletionSource();
+        protected TaskCompletionSource shutdown_requested = new();
         protected Dictionary<MessageId, TaskCompletionSource<Result>> pending_cmds = new Dictionary<MessageId, TaskCompletionSource<Result>>();
         protected WasmDebuggerConnection browser;
         protected WasmDebuggerConnection ide;
@@ -267,6 +268,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     pending_ops.Add(ide.ReadOne(client_initiated_close, side_exception, x.Token));
                     pending_ops.Add(side_exception.Task);
                     pending_ops.Add(client_initiated_close.Task);
+                    pending_ops.Add(shutdown_requested.Task);
                     Task<bool> readerTask = _channelReader.WaitToReadAsync(x.Token).AsTask();
                     pending_ops.Add(readerTask);
 
@@ -274,7 +276,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     {
                         while (!x.IsCancellationRequested)
                         {
-                            Task completedTask = await Task.WhenAny(pending_ops.ToArray());
+                            Task completedTask = await Task.WhenAny(pending_ops.ToArray()).ConfigureAwait(false);
 
                             if (client_initiated_close.Task.IsCompleted)
                             {
@@ -282,6 +284,13 @@ namespace Microsoft.WebAssembly.Diagnostics
                                 Log("verbose", $"DevToolsProxy: Client initiated close");
                                 x.Cancel();
 
+                                break;
+                            }
+
+                            if (shutdown_requested.Task.IsCompleted)
+                            {
+                                Log("verbose", $"DevToolsProxy: Shutdown requested");
+                                x.Cancel();
                                 break;
                             }
 
@@ -304,7 +313,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                             // logger.LogDebug("pump {0} {1}", completedTask, pending_ops.IndexOf (completedTask));
                             if (completedTask == pending_ops[0])
                             {
-                                string msg = ((Task<string>)completedTask).Result;
+                                string msg = await (Task<string>)completedTask;
                                 if (msg != null)
                                 {
                                     pending_ops[0] = browser.ReadOne(client_initiated_close, side_exception, x.Token);
@@ -315,7 +324,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                             }
                             else if (completedTask == pending_ops[1])
                             {
-                                string msg = ((Task<string>)completedTask).Result;
+                                string msg = await (Task<string>)completedTask;
                                 if (msg != null)
                                 {
                                     pending_ops[1] = ide.ReadOne(client_initiated_close, side_exception, x.Token);
@@ -345,7 +354,12 @@ namespace Microsoft.WebAssembly.Diagnostics
                     }
                     catch (Exception e)
                     {
-                        Log("error", $"DevToolsProxy::Run: Exception {e}");
+                        if (!client_initiated_close.Task.IsCompleted
+                            && !x.IsCancellationRequested
+                            && !shutdown_requested.Task.IsCompleted)
+                        {
+                            Log("error", $"DevToolsProxy::Run: Exception {e}");
+                        }
                         _channelWriter.Complete(e);
                         //throw;
                     }
@@ -353,10 +367,13 @@ namespace Microsoft.WebAssembly.Diagnostics
                     {
                         if (!x.IsCancellationRequested)
                             x.Cancel();
+                        queues?.Clear();
                     }
                 }
             }
         }
+
+        public void Shutdown() => shutdown_requested.TrySetResult();
 
         protected virtual string GetFromOrTo(JObject o) => string.Empty;
 

@@ -66,7 +66,9 @@ internal class FirefoxDebuggerConnection : WasmDebuggerConnection
 
             bool ShouldFail()
             {
-                if (token.IsCancellationRequested)
+                if (token.IsCancellationRequested
+                    || side_exception.Task.IsCompleted
+                    || client_initiated_close.Task.IsCompleted)
                 {
                     return true;
                 }
@@ -82,8 +84,10 @@ internal class FirefoxDebuggerConnection : WasmDebuggerConnection
         }
         catch (Exception ex)
         {
-            _logger.LogDebug($"FirefoxConnection.ReadOne: ({this}) {ex}, token: {token.IsCancellationRequested}");
-            if (!token.IsCancellationRequested)
+            _logger.LogTrace($"Ignored: {nameof(FirefoxDebuggerConnection)}.ReadOne: ({this}) {ex}, token: {token.IsCancellationRequested}");
+            if (!token.IsCancellationRequested
+                && !client_initiated_close.Task.IsCompleted
+                && !side_exception.Task.IsCompleted)
             {
                 side_exception.TrySetResult(ex);
                 throw;

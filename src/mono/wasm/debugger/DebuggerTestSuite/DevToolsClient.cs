@@ -135,9 +135,9 @@ namespace DebuggerTests
         protected async Task ConnectWithMainLoops(
             Uri uri,
             Func<string, CancellationToken, Task> receive,
-            CancellationToken token)
+            CancellationTokenSource cts)
         {
-            var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(token);
+            CancellationToken token = cts.Token;
             _conn = await SetupConnection(uri, token);
             _queue = new DevToolsQueue(_conn);
 
@@ -150,18 +150,18 @@ namespace DebuggerTests
 
                     try
                     {
-                        (reason, exception) = await RunLoop(receive, linkedCts);
+                        (reason, exception) = await RunLoop(receive, cts);
                     }
                     catch (Exception ex)
                     {
-                        logger.LogDebug($"RunLoop threw an exception. (parentToken: {token.IsCancellationRequested}, linked: {linkedCts.IsCancellationRequested}): {ex} ");
+                        logger.LogDebug($"RunLoop threw an exception. (parentToken: {token.IsCancellationRequested}, linked: {cts.IsCancellationRequested}): {ex} ");
                         RunLoopStopped?.Invoke(this, (RunLoopStopReason.Exception, ex));
                         return;
                     }
 
                     try
                     {
-                        logger.LogDebug($"RunLoop stopped, reason: {reason}. (parentToken: {token.IsCancellationRequested}, linked: {linkedCts.IsCancellationRequested}): {exception?.Message}");
+                        logger.LogDebug($"RunLoop stopped, reason: {reason}. (parentToken: {token.IsCancellationRequested}, linked: {cts.IsCancellationRequested}): {exception?.Message}");
                         RunLoopStopped?.Invoke(this, (reason, exception));
                     }
                     catch (Exception ex)
@@ -171,7 +171,7 @@ namespace DebuggerTests
                 }
                 finally
                 {
-                    linkedCts.Cancel();
+                    cts.Cancel();
                     _conn?.Dispose();
                     if (_conn is DevToolsDebuggerConnection wsc)
                         logger.LogDebug($"Loop ended with socket: {wsc.WebSocket.State}");
@@ -183,11 +183,11 @@ namespace DebuggerTests
 
         private async Task<(RunLoopStopReason, Exception)> RunLoop(
             Func<string, CancellationToken, Task> receive,
-            CancellationTokenSource linkedCts)
+            CancellationTokenSource cts)
         {
             var pending_ops = new List<Task>
             {
-                _conn.ReadOne(_clientInitiatedClose, _failRequested, linkedCts.Token),
+                _conn.ReadOne(_clientInitiatedClose, _failRequested, cts.Token),
                 _newSendTaskAvailable.Task,
                 _clientInitiatedClose.Task,
                 _shutdownRequested.Task,
@@ -195,14 +195,14 @@ namespace DebuggerTests
             };
 
             // In case we had a Send called already
-            if (_queue.TryPumpIfCurrentCompleted(linkedCts.Token, out Task sendTask))
+            if (_queue.TryPumpIfCurrentCompleted(cts.Token, out Task sendTask))
                 pending_ops.Add(sendTask);
 
-            while (!linkedCts.IsCancellationRequested)
+            while (!cts.IsCancellationRequested)
             {
                 var task = await Task.WhenAny(pending_ops).ConfigureAwait(false);
 
-                if (task.IsCanceled && linkedCts.IsCancellationRequested)
+                if (task.IsCanceled && cts.IsCancellationRequested)
                     return (RunLoopStopReason.Cancelled, null);
 
                 if (_shutdownRequested.Task.IsCompleted)
@@ -221,7 +221,7 @@ namespace DebuggerTests
                     _newSendTaskAvailable = new ();
                     pending_ops[1] = _newSendTaskAvailable.Task;
 
-                    _queue.TryPumpIfCurrentCompleted(linkedCts.Token, out _);
+                    _queue.TryPumpIfCurrentCompleted(cts.Token, out _);
                     if (_queue.CurrentSend != null)
                         pending_ops.Add(_queue.CurrentSend);
                 }
@@ -229,11 +229,11 @@ namespace DebuggerTests
                 if (task == pending_ops[0])
                 {
                     var msg = await (Task<string>)pending_ops[0];
-                    pending_ops[0] = _conn.ReadOne(_clientInitiatedClose, _failRequested, linkedCts.Token);
+                    pending_ops[0] = _conn.ReadOne(_clientInitiatedClose, _failRequested, cts.Token);
 
                     if (msg != null)
                     {
-                        Task tsk = receive(msg, linkedCts.Token);
+                        Task tsk = receive(msg, cts.Token);
                         if (tsk != null)
                             pending_ops.Add(tsk);
                     }
@@ -242,12 +242,12 @@ namespace DebuggerTests
                 {
                     //must be a background task
                     pending_ops.Remove(task);
-                    if (task == _queue.CurrentSend && _queue.TryPumpIfCurrentCompleted(linkedCts.Token, out sendTask))
+                    if (task == _queue.CurrentSend && _queue.TryPumpIfCurrentCompleted(cts.Token, out sendTask))
                         pending_ops.Add(sendTask);
                 }
             }
 
-            if (linkedCts.IsCancellationRequested)
+            if (cts.IsCancellationRequested)
                 return (RunLoopStopReason.Cancelled, null);
 
             return (RunLoopStopReason.Exception, new InvalidOperationException($"This shouldn't ever get thrown. Unsure why the loop stopped"));
