@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
@@ -53,13 +54,29 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             public IDictionary<string, ISet<string>> NonInstantiatedDictionaryWithISet { get; set; } = null!;
             public IDictionary<string, HashSet<string>> InstantiatedDictionaryWithHashSet { get; set; } =
                 new Dictionary<string, HashSet<string>>();
+
+            public IDictionary<string, HashSet<string>> InstantiatedDictionaryWithHashSetWithSomeValues { get; set; } =
+                new Dictionary<string, HashSet<string>>
+                {
+                    {"item1", new HashSet<string>(new[] {"existing1", "existing2"})}
+                };
             
             public IEnumerable<string> NonInstantiatedIEnumerable { get; set; } = null!;
             public ISet<string> InstantiatedISet { get; set; } = new HashSet<string>();
-            #if NET5_0_OR_GREATER
+            public ISet<string> InstantiatedISetWithSomeValues { get; set; } =
+                new HashSet<string>(new[] {"existing1", "existing2"});
+
+#if NET5_0_OR_GREATER
             public IReadOnlySet<string> InstantiatedIReadOnlySet { get; set; } = new HashSet<string>();
+            public IReadOnlySet<string> InstantiatedIReadOnlySetWithSomeValues { get; set; } =
+                new HashSet<string>(new[] {"existing1", "existing2"});
             public IReadOnlySet<string> NonInstantiatedIReadOnlySet { get; set; }
-            #endif
+            public IDictionary<string, IReadOnlySet<string>> InstantiatedDictionaryWithReadOnlySetWithSomeValues { get; set; } =
+                new Dictionary<string, IReadOnlySet<string>>
+                {
+                    {"item1", new HashSet<string>(new[] {"existing1", "existing2"})}
+                };
+#endif
             public IEnumerable<string> InstantiatedIEnumerable { get; set; } = new List<string>();
             public ICollection<string> InstantiatedICollection { get; set; } = new List<string>();
             public IReadOnlyCollection<string> InstantiatedIReadOnlyCollection { get; set; } = new List<string>();
@@ -530,6 +547,28 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
         }
 
         [Fact]
+        public void CanBindInstantiatedIReadOnlyWithSomeValues()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"InstantiatedIReadOnlySetWithSomeValues:0", "Yo1"},
+                {"InstantiatedIReadOnlySetWithSomeValues:1", "Yo2"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<ComplexOptions>()!;
+
+            Assert.Equal(4, options.InstantiatedIReadOnlySetWithSomeValues.Count);
+            Assert.Equal("existing1", options.InstantiatedIReadOnlySetWithSomeValues.ElementAt(0));
+            Assert.Equal("existing2", options.InstantiatedIReadOnlySetWithSomeValues.ElementAt(1));
+            Assert.Equal("Yo1", options.InstantiatedIReadOnlySetWithSomeValues.ElementAt(2));
+            Assert.Equal("Yo2", options.InstantiatedIReadOnlySetWithSomeValues.ElementAt(3));
+        }
+
+        [Fact]
         public void CanBindNonInstantiatedIReadOnlySet()
         {
             var dic = new Dictionary<string, string>
@@ -548,7 +587,35 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             Assert.Equal("Yo1", options.NonInstantiatedIReadOnlySet.ElementAt(0));
             Assert.Equal("Yo2", options.NonInstantiatedIReadOnlySet.ElementAt(1));
         }
+
+        [Fact]
+        public void CanBindInstantiatedDictionaryOfIReadOnlySetWithSomeExistingValues()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"InstantiatedDictionaryWithReadOnlySetWithSomeValues:foo:0", "foo-1"},
+                {"InstantiatedDictionaryWithReadOnlySetWithSomeValues:foo:1", "foo-2"},
+                {"InstantiatedDictionaryWithReadOnlySetWithSomeValues:bar:0", "bar-1"},
+                {"InstantiatedDictionaryWithReadOnlySetWithSomeValues:bar:1", "bar-2"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<ComplexOptions>()!;
+
+            Assert.Equal(3, options.InstantiatedDictionaryWithReadOnlySetWithSomeValues.Count);
+            Assert.Equal("existing1", options.InstantiatedDictionaryWithReadOnlySetWithSomeValues["item1"].ElementAt(0));
+            Assert.Equal("existing2", options.InstantiatedDictionaryWithReadOnlySetWithSomeValues["item1"].ElementAt(1));
+
+            Assert.Equal("foo-1", options.InstantiatedDictionaryWithReadOnlySetWithSomeValues["foo"].ElementAt(0));
+            Assert.Equal("foo-2", options.InstantiatedDictionaryWithReadOnlySetWithSomeValues["foo"].ElementAt(1));
+            Assert.Equal("bar-1", options.InstantiatedDictionaryWithReadOnlySetWithSomeValues["bar"].ElementAt(0));
+            Assert.Equal("bar-2", options.InstantiatedDictionaryWithReadOnlySetWithSomeValues["bar"].ElementAt(1));
+        }
 #endif
+
         [Fact]
         public void CanBindNonInstantiatedDictionaryOfISet()
         {
@@ -598,6 +665,33 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
         }
 
         [Fact]
+        public void CanBindInstantiatedDictionaryOfISetWithSomeExistingValues()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"InstantiatedDictionaryWithHashSetWithSomeValues:foo:0", "foo-1"},
+                {"InstantiatedDictionaryWithHashSetWithSomeValues:foo:1", "foo-2"},
+                {"InstantiatedDictionaryWithHashSetWithSomeValues:bar:0", "bar-1"},
+                {"InstantiatedDictionaryWithHashSetWithSomeValues:bar:1", "bar-2"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<ComplexOptions>()!;
+
+            Assert.Equal(3, options.InstantiatedDictionaryWithHashSetWithSomeValues.Count);
+            Assert.Equal("existing1", options.InstantiatedDictionaryWithHashSetWithSomeValues["item1"].ElementAt(0));
+            Assert.Equal("existing2", options.InstantiatedDictionaryWithHashSetWithSomeValues["item1"].ElementAt(1));
+
+            Assert.Equal("foo-1", options.InstantiatedDictionaryWithHashSetWithSomeValues["foo"].ElementAt(0));
+            Assert.Equal("foo-2", options.InstantiatedDictionaryWithHashSetWithSomeValues["foo"].ElementAt(1));
+            Assert.Equal("bar-1", options.InstantiatedDictionaryWithHashSetWithSomeValues["bar"].ElementAt(0));
+            Assert.Equal("bar-2", options.InstantiatedDictionaryWithHashSetWithSomeValues["bar"].ElementAt(1));
+        }
+
+        [Fact]
         public void CanBindInstantiatedISet()
         {
             var dic = new Dictionary<string, string>
@@ -615,6 +709,28 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             Assert.Equal(2, options.InstantiatedISet.Count());
             Assert.Equal("Yo1", options.InstantiatedISet.ElementAt(0));
             Assert.Equal("Yo2", options.InstantiatedISet.ElementAt(1));
+        }
+
+        [Fact]
+        public void CanBindInstantiatedISetWithSomeValues()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"InstantiatedISetWithSomeValues:0", "Yo1"},
+                {"InstantiatedISetWithSomeValues:1", "Yo2"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<ComplexOptions>()!;
+
+            Assert.Equal(4, options.InstantiatedISetWithSomeValues.Count);
+            Assert.Equal("existing1", options.InstantiatedISetWithSomeValues.ElementAt(0));
+            Assert.Equal("existing2", options.InstantiatedISetWithSomeValues.ElementAt(1));
+            Assert.Equal("Yo1", options.InstantiatedISetWithSomeValues.ElementAt(2));
+            Assert.Equal("Yo2", options.InstantiatedISetWithSomeValues.ElementAt(3));
         }
 
         [Fact]

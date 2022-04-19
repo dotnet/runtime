@@ -386,6 +386,16 @@ namespace Microsoft.Extensions.Configuration
                     return;
                 }
 
+                // for sets and read-only set interfaces, we concatenate on to what is already there
+                if (IsSet(type))
+                {
+                    if (!bindingPoint.IsReadOnly)
+                    {
+                        bindingPoint.SetValue(BindSet(type, (IEnumerable?)bindingPoint.Value, config, options));
+                    }
+                    return;
+                }
+
                 // If we don't have an instance, try to create one
                 if (bindingPoint.Value is null)
                 {
@@ -671,6 +681,47 @@ namespace Microsoft.Extensions.Configuration
             return result;
         }
 
+        [RequiresUnreferencedCode("Cannot statically analyze what the element type is of the Array so its members may be trimmed.")]
+        private static object BindSet(Type type, IEnumerable? source, IConfiguration config, BinderOptions options)
+        {
+            Type elementType = type.GetGenericArguments()[0];
+
+            Type genericType = typeof(HashSet<>).MakeGenericType(type.GenericTypeArguments[0]);
+            object instance = Activator.CreateInstance(genericType)!;
+
+            MethodInfo addMethod = genericType.GetMethod("Add", DeclaredOnlyLookup)!;
+
+            if (source != null)
+            {
+                foreach (object? item in source)
+                {
+                    addMethod.Invoke(instance, new[] {item});
+                }
+            }
+
+            foreach (IConfigurationSection section in config.GetChildren())
+            {
+                var itemBindingPoint = new BindingPoint();
+                try
+                {
+                    BindInstance(
+                        type: elementType,
+                        bindingPoint: itemBindingPoint,
+                        config: section,
+                        options: options);
+                    if (itemBindingPoint.HasNewValue)
+                    {
+                        addMethod.Invoke(instance, new[] {itemBindingPoint.Value});
+                    }
+                }
+                catch
+                {
+                }
+            }
+
+            return instance;
+        }
+
         [RequiresUnreferencedCode(TrimmingWarningMessage)]
         private static bool TryConvertValue(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
@@ -746,6 +797,18 @@ namespace Microsoft.Extensions.Configuration
             return genericTypeDefinition == typeof(IEnumerable<>)
                 || genericTypeDefinition == typeof(IReadOnlyCollection<>)
                 || genericTypeDefinition == typeof(IReadOnlyList<>);
+        }
+
+        private static bool IsSet(Type type)
+        {
+            if (!type.IsInterface || !type.IsConstructedGenericType) { return false; }
+
+            Type genericTypeDefinition = type.GetGenericTypeDefinition();
+            return genericTypeDefinition == typeof(ISet<>)
+#if NET5_0_OR_GREATER
+                   || genericTypeDefinition == typeof(IReadOnlySet<>)
+#endif
+                   ;
         }
 
         private static Type? FindOpenGenericInterface(
