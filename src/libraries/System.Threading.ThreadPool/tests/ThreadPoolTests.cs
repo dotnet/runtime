@@ -1053,7 +1053,7 @@ namespace System.Threading.ThreadPools.Tests
                         return result;
                     }
 
-                    for (int j = 0; j < 1000; j++)
+                    for (int j = 0; j < 100; j++)
                     {
                         using var fileStream =
                             new FileStream(
