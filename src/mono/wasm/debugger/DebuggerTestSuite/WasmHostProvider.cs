@@ -34,11 +34,11 @@ internal abstract class WasmHostProvider : IDisposable
             RedirectStandardOutput = true
         };
 
-    protected async Task<(Process?, string?)> LaunchBrowser(ProcessStartInfo psi!!,
+    protected async Task<(Process?, string?)> LaunchHost(ProcessStartInfo psi!!,
                                         HttpContext context!!,
                                         Func<string?, string?> checkBrowserReady!!,
-                                        string message_prefix,
-                                        int browser_ready_timeout_ms)
+                                        string messagePrefix,
+                                        int hostReadyTimeoutMs)
     {
 
         if (!context.WebSockets.IsWebSocketRequest)
@@ -57,14 +57,14 @@ internal abstract class WasmHostProvider : IDisposable
         await Task.Delay(1000);
         try
         {
-            proc.ErrorDataReceived += (sender, e) => ProcessOutput($"{message_prefix} browser-stderr ", e?.Data);
-            proc.OutputDataReceived += (sender, e) => ProcessOutput($"{message_prefix} browser-stdout ", e?.Data);
+            proc.ErrorDataReceived += (sender, e) => ProcessOutput($"{messagePrefix} browser-stderr ", e?.Data);
+            proc.OutputDataReceived += (sender, e) => ProcessOutput($"{messagePrefix} browser-stdout ", e?.Data);
 
             proc.BeginErrorReadLine();
             proc.BeginOutputReadLine();
-            if (await Task.WhenAny(browserReadyTCS.Task, Task.Delay(browser_ready_timeout_ms)) != browserReadyTCS.Task)
+            if (await Task.WhenAny(browserReadyTCS.Task, Task.Delay(hostReadyTimeoutMs)) != browserReadyTCS.Task)
             {
-                _logger.LogError($"{message_prefix} Timed out after {browser_ready_timeout_ms/1000}s waiting for the browser to be ready: {psi.FileName}");
+                _logger.LogError($"{messagePrefix} Timed out after {hostReadyTimeoutMs/1000}s waiting for the browser to be ready: {psi.FileName}");
                 return (proc, null);
             }
 
@@ -72,7 +72,7 @@ internal abstract class WasmHostProvider : IDisposable
         }
         catch (Exception e)
         {
-            _logger.LogDebug($"{message_prefix} got exception {e}");
+            _logger.LogDebug($"{messagePrefix} got exception {e}");
             throw;
         }
 

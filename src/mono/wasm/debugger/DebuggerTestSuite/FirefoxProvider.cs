@@ -25,7 +25,7 @@ internal class FirefoxProvider : WasmHostProvider
     {
     }
 
-    public async Task LaunchAndStartProxy(HttpContext context,
+    public async Task StartBrowserAndProxy(HttpContext context,
                                       string browserPath,
                                       string targetUrl,
                                       int remoteDebuggingPort,
@@ -39,7 +39,7 @@ internal class FirefoxProvider : WasmHostProvider
 
         string args = $"-profile {GetProfilePath(Id)} -headless -new-instance -private -start-debugger-server {remoteDebuggingPort}";
         ProcessStartInfo? psi = GetProcessStartInfo(browserPath, args, targetUrl);
-        (_process, string? line) = await LaunchBrowser(
+        (_process, string? line) = await LaunchHost(
                                 psi,
                                 context,
                                 str =>

@@ -144,7 +144,7 @@ namespace DebuggerTests
                         {
                             using var provider = new ChromeProvider(test_id, Logger);
                             browserPort = options.DevToolsUrl.Port;
-                            await provider.StartHostAndProxy(context,
+                            await provider.StartBrowserAndProxy(context,
                                                 options.BrowserPath,
                                                 $"http://{TestHarnessProxy.Endpoint.Authority}/{options.PagePath}",
                                                 browserPort,
@@ -155,7 +155,7 @@ namespace DebuggerTests
                         {
                             using var provider = new FirefoxProvider(test_id, Logger);
                             browserPort = 6500 + int.Parse(test_id);
-                            await provider.LaunchAndStartProxy(context,
+                            await provider.StartBrowserAndProxy(context,
                                                 options.BrowserPath,
                                                 $"http://{TestHarnessProxy.Endpoint.Authority}/{options.PagePath}",
                                                 browserPort,

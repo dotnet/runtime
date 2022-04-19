@@ -28,16 +28,16 @@ internal class ChromeProvider : WasmHostProvider
     {
     }
 
-    public async Task StartHostAndProxy(HttpContext context,
+    public async Task StartBrowserAndProxy(HttpContext context,
                                       string browserPath,
-                                      string url,
+                                      string targetUrl,
                                       int remoteDebuggingPort,
                                       string messagePrefix,
                                       ILoggerFactory loggerFactory,
                                       int browserReadyTimeoutMs = 20000)
     {
-        ProcessStartInfo psi = GetProcessStartInfo(browserPath, GetInitParms(remoteDebuggingPort), url);
-        (Process? proc, string? line) = await LaunchBrowser(
+        ProcessStartInfo psi = GetProcessStartInfo(browserPath, GetInitParms(remoteDebuggingPort), targetUrl);
+        (Process? proc, string? line) = await LaunchHost(
                                 psi,
                                 context,
                                 str =>
@@ -62,17 +62,8 @@ internal class ChromeProvider : WasmHostProvider
 
         var proxy = new DebuggerProxy(loggerFactory, null, loggerId: Id);
         var browserUri = new Uri(con_str);
-        WebSocket? ideSocket = null;
-        try
-        {
-            ideSocket = await context.WebSockets.AcceptWebSocketAsync().ConfigureAwait(false);
-            await proxy.Run(browserUri, ideSocket).ConfigureAwait(false);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError($"{messagePrefix} {ex}");
-            throw;
-        }
+        WebSocket? ideSocket = await context.WebSockets.AcceptWebSocketAsync().ConfigureAwait(false);
+        await proxy.Run(browserUri, ideSocket).ConfigureAwait(false);
     }
 
     public override void Dispose()
