@@ -47,19 +47,19 @@ namespace System
         public const float NaN = (float)0.0 / (float)0.0;
 
         /// <summary>Represents the additive identity (0).</summary>
-        private const float AdditiveIdentity = 0.0f;
+        internal const float AdditiveIdentity = 0.0f;
 
         /// <summary>Represents the multiplicative identity (1).</summary>
-        private const float MultiplicativeIdentity = 1.0f;
+        internal const float MultiplicativeIdentity = 1.0f;
 
         /// <summary>Represents the number one (1).</summary>
-        private const float One = 1.0f;
+        internal const float One = 1.0f;
 
         /// <summary>Represents the number zero (0).</summary>
-        private const float Zero = 0.0f;
+        internal const float Zero = 0.0f;
 
         /// <summary>Represents the number negative one (-1).</summary>
-        private const float NegativeOne = -1.0f;
+        internal const float NegativeOne = -1.0f;
 
         /// <summary>Represents the number negative zero (-0).</summary>
         public const float NegativeZero = -0.0f;
@@ -104,7 +104,7 @@ namespace System
         internal const uint MinTrailingSignificand = 0x0000_0000;
         internal const uint MaxTrailingSignificand = 0x007F_FFFF;
 
-        private byte BiasedExponent
+        internal byte BiasedExponent
         {
             get
             {
@@ -113,7 +113,7 @@ namespace System
             }
         }
 
-        private sbyte Exponent
+        internal sbyte Exponent
         {
             get
             {
@@ -121,7 +121,7 @@ namespace System
             }
         }
 
-        private uint Significand
+        internal uint Significand
         {
             get
             {
@@ -129,7 +129,7 @@ namespace System
             }
         }
 
-        private uint TrailingSignificand
+        internal uint TrailingSignificand
         {
             get
             {
