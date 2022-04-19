@@ -417,6 +417,11 @@
 			<method signature="System.Void .ctor(System.Object,System.Boolean)" />
 		</type>
 
+		<!-- object.c: create_first_chance_exception_eventargs (assert) -->
+		<type fullname="System.Runtime.ExceptionServices.FirstChanceExceptionEventArgs">
+			<method signature="System.Void .ctor(System.Exception)" />
+		</type>
+
 		<!-- class.c: make_generic_param_class -->
 		<type fullname="System.ValueType" preserve="nothing" />
 
