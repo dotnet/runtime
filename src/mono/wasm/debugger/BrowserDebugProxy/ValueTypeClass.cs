@@ -27,15 +27,20 @@ namespace BrowserDebugProxy
         public DotnetObjectId Id { get; init; }
         public byte[] Buffer { get; init; }
         public int TypeId { get; init; }
+        public bool IsEnum { get; init; }
 
-        public ValueTypeClass(byte[] buffer, string className, JArray fields, int typeId, DotnetObjectId objectId)
+        public ValueTypeClass(byte[] buffer, string className, JArray fields, int typeId, bool isEnum)
         {
+            var valueTypeId = MonoSDBHelper.GetNewObjectId();
+            var objectId = new DotnetObjectId("valuetype", valueTypeId);
+
             Buffer = buffer;
             this.fields = fields;
             ClassName = className;
             TypeId = typeId;
             autoExpand = ShouldAutoExpand(className);
             Id = objectId;
+            IsEnum = isEnum;
         }
 
         public override string ToString() => $"{{ ValueTypeClass: typeId: {TypeId}, Id: {Id}, Id: {Id}, fields: {fields} }}";
@@ -47,6 +52,7 @@ namespace BrowserDebugProxy
                                                 string className,
                                                 int typeId,
                                                 int numValues,
+                                                bool isEnum,
                                                 CancellationToken token)
         {
             var typeInfo = await sdbAgent.GetTypeInfo(typeId, token);
@@ -58,8 +64,6 @@ namespace BrowserDebugProxy
 
             // FIXME: save the field values buffer, and expand on demand
             int numWritableFields = writableFields.Count();
-            // if (numWritableFields != numValues)
-            //     throw new Exception($"Bug: CreateFromReader: writableFields({numWritableFields}) != numValues({numValues}))");
 
             // FIXME: add the static oens too? and tests for that! EvaluateOnCallFrame has some?
             JArray fields = new();
@@ -96,17 +100,13 @@ namespace BrowserDebugProxy
             cmdReader.Read(valueTypeBuffer, 0, (int)(endPos - initialPos));
             cmdReader.BaseStream.Position = endPos;
 
-            // FIXME: e combine into single GetNewValueTypeClass()
-            var valueTypeId = MonoSDBHelper.GetNewObjectId();
-            var dotnetObjectId = new DotnetObjectId("valuetype", valueTypeId);
-            return new ValueTypeClass(valueTypeBuffer, className, fields, typeId, dotnetObjectId);
+            return new ValueTypeClass(valueTypeBuffer, className, fields, typeId, isEnum);
         }
 
-        public async Task<JObject> ToJObject(MonoSDBHelper sdbAgent, bool isEnum, bool forDebuggerDisplayAttribute, CancellationToken token)
+        public async Task<JObject> ToJObject(MonoSDBHelper sdbAgent, bool forDebuggerDisplayAttribute, CancellationToken token)
         {
             string description = ClassName;
-            // FIXME: isEnum to .. some flag, or field?
-            if (ShouldAutoInvokeToString(ClassName) || isEnum)
+            if (ShouldAutoInvokeToString(ClassName) || IsEnum)
             {
                 int methodId = await sdbAgent.GetMethodIdByName(TypeId, "ToString", token);
                 var retMethod = await sdbAgent.InvokeMethod(Buffer, methodId, token);
@@ -121,9 +121,7 @@ namespace BrowserDebugProxy
                     description = displayString;
             }
 
-            // Console.WriteLine ($"* CreateJObjectForVariableValue: *new* (name: {name}) {valueTypeId}: {valueTypes[valueTypeId]}");//, and valuetype.fields: {valueTypeFields}");
-            var obj = MonoSDBHelper.CreateJObject<string>(null, "object", description, false, ClassName, Id.ToString(), null, null, true, true, isEnum);
-            // Console.WriteLine ($"** CreateJObjectFromValueType EXIT, name: {name}, returning {obj}");
+            var obj = MonoSDBHelper.CreateJObject<string>(null, "object", description, false, ClassName, Id.ToString(), null, null, true, true, IsEnum);
             return obj;
         }
 
@@ -137,9 +135,6 @@ namespace BrowserDebugProxy
                 return null;
 
             proxy = new JArray(fields);
-            // fields.Result,
-            // fields.PrivateProperties,
-            // fields.InternalProperties);
 
             var nProperties = retDebuggerCmdReader.ReadInt32();
 

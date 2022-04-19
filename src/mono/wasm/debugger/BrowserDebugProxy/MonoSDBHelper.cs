@@ -1835,7 +1835,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             "object", // object in primitive?
         };
 
-        private static bool IsPrimitiveType(string simplifiedClassName)
+        public static bool IsPrimitiveType(string simplifiedClassName)
             => s_primitiveTypeNames.Contains(simplifiedClassName);
 
         public async Task<JObject> CreateJObjectForValueType(MonoBinaryReader retDebuggerCmdReader, string name, long initialPos, bool forDebuggerDisplayAttribute, CancellationToken token)
@@ -1886,11 +1886,12 @@ namespace Microsoft.WebAssembly.Diagnostics
                                                         className,
                                                         typeId,
                                                         numValues,
+                                                        isEnum,
                                                         token);
             valueTypes[valueType.Id.Value] = valueType;
 
             // FIXME: check if this gets called more than once.. maybe with different values of forDebugg.. ?
-            return await valueType.ToJObject(this, isEnum, forDebuggerDisplayAttribute, token);
+            return await valueType.ToJObject(this, forDebuggerDisplayAttribute, token);
         }
 
         public async Task<JObject> CreateJObjectForNull(MonoBinaryReader retDebuggerCmdReader, CancellationToken token)

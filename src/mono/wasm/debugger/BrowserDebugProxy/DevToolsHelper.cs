@@ -76,7 +76,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
         }
         public int SubValue { get; set; }
-        public bool IsValueType { get; set; }
+        public bool IsValueType => Scheme == "valuetype";
 
         public JObject ValueAsJson { get; init; }
 

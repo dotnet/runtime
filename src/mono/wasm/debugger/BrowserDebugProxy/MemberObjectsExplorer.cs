@@ -89,40 +89,50 @@ namespace BrowserDebugProxy
 
         private static async Task<JArray> GetRootHiddenChildren(MonoSDBHelper sdbHelper, JObject root, string rootNamePrefix, GetObjectCommandOptions getCommandOptions, CancellationToken token)
         {
-            if (root?["value"]?["type"]?.Value<string>() != "object")
+            var rootValue = root?["value"] ?? root["get"];
+
+            if (rootValue?["subtype"]?.Value<string>() == "null")
                 return new JArray();
 
-            if (root?["value"]?["type"]?.Value<string>() == "object" && root?["value"]?["subtype"]?.Value<string>() == "null")
+            var type = rootValue?["type"]?.Value<string>();
+            if (type != "object" && type != "function")
                 return new JArray();
 
-            if (!DotnetObjectId.TryParse(root?["value"]?["objectId"]?.Value<string>(), out DotnetObjectId rootObjectId))
+            if (!DotnetObjectId.TryParse(rootValue?["objectId"]?.Value<string>(), out DotnetObjectId rootObjectId))
                 throw new Exception($"Cannot parse object id from {root} for {rootNamePrefix}");
 
-            // unpack object/valuetype collection to be of array scheme
-            if (rootObjectId.Scheme is "object" or "valuetype")
-            {
-                GetMembersResult members = null;
-                if (rootObjectId.Scheme is "object")
-                {
-                    members = await GetObjectMemberValues(sdbHelper, rootObjectId.Value, getCommandOptions, token);
-                }
-                else
-                {
-                    wasValueType = true;
-                    var valType = sdbHelper.GetValueTypeClass(rootObjectId.Value);
-                    if (valType != null)
-                        members = await valType.GetMemberValues(sdbHelper, getCommandOptions, false, token);
-                }
+            // if it's an accessor
+            if (root["get"] != null)
+                return await GetRootHiddenChildrenForFunction();
 
-                if (members != null)
+            if (rootValue?["type"]?.Value<string>() != "object")
+                return new JArray();
+
+            if (rootObjectId.Scheme is "valuetype")
+            {
+                var valType = sdbHelper.GetValueTypeClass(rootObjectId.Value);
+                if (valType == null || valType.IsEnum)
+                    return new JArray();
+
+                GetMembersResult members = await valType.GetMemberValues(sdbHelper, getCommandOptions, false, token);
+                JArray resultValue = members.Flatten();
+                // indexing valuetype does not make sense so dot is used for creating unique names
+                foreach (var item in resultValue)
+                    item["name"] = $"{rootNamePrefix}.{item["name"]}";
+                return resultValue;
+            }
+
+            // unpack object collection to be of array scheme
+            if (rootObjectId.Scheme is "object")
+            {
+                GetMembersResult members = await GetObjectMemberValues(sdbHelper, rootObjectId.Value, getCommandOptions, token);
+                var memberNamedItems = members.Where(m => m["name"]?.Value<string>() == "Items").FirstOrDefault();
+                if (memberNamedItems is not null &&
+                    (DotnetObjectId.TryParse(memberNamedItems["value"]?["objectId"]?.Value<string>(), out DotnetObjectId itemsObjectId) ||
+                    DotnetObjectId.TryParse(memberNamedItems["get"]?["objectId"]?.Value<string>(), out itemsObjectId)) &&
+                    itemsObjectId.Scheme == "array")
                 {
-                    var memberNamedItems = members.Where(m => m["name"]?.Value<string>() == "Items").FirstOrDefault();
-                    if (memberNamedItems is not null &&
-                        DotnetObjectId.TryParse(memberNamedItems["value"]?["objectId"]?.Value<string>(), out DotnetObjectId itemsObjectId) &&
-                        itemsObjectId.Scheme == "array")
-                    {
-                        rootObjectId = itemsObjectId;
-                    }
+                    rootObjectId = itemsObjectId;
                 }
             }
 
@@ -132,13 +142,19 @@ namespace BrowserDebugProxy
 
                 // root hidden item name has to be unique, so we concatenate the root's name to it
                 foreach (var item in resultValue)
-                    item["name"] = string.Concat(rootNamePrefix, "[", item["name"], "]");
+                    item["name"] = $"{rootNamePrefix}[{item["name"]}]";
 
                 return resultValue;
             }
             else
             {
                 return new JArray();
+            }
+
+            async Task<JArray> GetRootHiddenChildrenForFunction()
+            {
+                var resMethod = await sdbHelper.InvokeMethod(rootObjectId, token);
+                return await GetRootHiddenChildren(sdbHelper, resMethod, rootNamePrefix, getCommandOptions, token);
             }
         }
 
@@ -217,21 +233,18 @@ namespace BrowserDebugProxy
 
         public static async Task<JArray> GetExpandedMemberValues(MonoSDBHelper sdbHelper, string typeName, string namePrefix, JObject value, DebuggerBrowsableState? state, CancellationToken token)
         {
-            //Console.WriteLine ($"- GetExpandedMemberValues: {typeName}, {namePrefix}, {value}, state: {state}");
             if (state == DebuggerBrowsableState.RootHidden)
             {
-                if (IsACollectionType(typeName))
-                    return await GetRootHiddenChildren(sdbHelper, value, namePrefix, GetObjectCommandOptions.None, token);
+                if (MonoSDBHelper.IsPrimitiveType(typeName))
+                    return GetHiddenElement();
 
-                //Console.WriteLine ($"- AddMemberValue: adding hidden obj for {typeName} - {namePrefix} with value: {value}, state: {state}");
-                return GetHiddenElement();
+                return await GetRootHiddenChildren(sdbHelper, value, namePrefix, GetObjectCommandOptions.None, token);
+
             }
             else if (state is DebuggerBrowsableState.Never)
             {
                 return GetHiddenElement();
             }
-
-            // existing.Add(value);
             return new JArray(value);
 
             JArray GetHiddenElement()
@@ -321,7 +334,6 @@ namespace BrowserDebugProxy
                 else if (fields?.FirstOrDefault(f => f.Name == propName && f.IsBackingField) != null)
                 {
                     // no test for it or never happens; either find a testcase or remove
-                    //Console.WriteLine($"\t* {propName} is a backing field.. not adding the corresponding getter");
                 }
                 else
                 {
