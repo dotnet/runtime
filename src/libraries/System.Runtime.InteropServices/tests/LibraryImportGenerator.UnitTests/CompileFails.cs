@@ -10,6 +10,7 @@ using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 
 using Microsoft.CodeAnalysis;
+using Microsoft.Interop.UnitTests;
 using Xunit;
 
 namespace LibraryImportGenerator.UnitTests

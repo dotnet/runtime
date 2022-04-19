@@ -10,9 +10,8 @@ namespace Microsoft.Interop
     /// <summary>
     /// VirtualMethodIndexAttribute data
     /// </summary>
-    internal sealed record VirtualMethodIndexData : InteropAttributeData
+    internal sealed record VirtualMethodIndexData(int Index) : InteropAttributeData
     {
-        public int Index { get; init; }
         public bool ImplicitThisParameter { get; init; }
 
         public CustomTypeMarshallerDirection Direction { get; init; }

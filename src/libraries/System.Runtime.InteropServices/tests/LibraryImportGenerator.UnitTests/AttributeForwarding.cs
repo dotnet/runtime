@@ -4,6 +4,7 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.Interop;
+using Microsoft.Interop.UnitTests;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;

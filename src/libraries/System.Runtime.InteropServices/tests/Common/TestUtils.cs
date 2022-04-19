@@ -17,7 +17,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
-namespace LibraryImportGenerator.UnitTests
+namespace Microsoft.Interop.UnitTests
 {
     /// <summary>
     /// The target framework to compile against.

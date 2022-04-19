@@ -13,6 +13,7 @@ using Microsoft.CodeAnalysis.CSharp.Testing.XUnit;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Testing;
 using Microsoft.CodeAnalysis.Testing.Verifiers;
+using Microsoft.Interop.UnitTests;
 
 namespace LibraryImportGenerator.UnitTests.Verifiers
 {

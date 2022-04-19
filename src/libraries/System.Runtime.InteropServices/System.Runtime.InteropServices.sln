@@ -40,6 +40,8 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "gen", "gen", "{E1AEBD5D-AE4E-4F61-B9ED-AEF950B0CC33}"
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ComInterfaceGenerator", "gen\ComInterfaceGenerator\ComInterfaceGenerator.csproj", "{C3EA0A28-A597-4946-9E08-EBBBFA94BFA5}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ComInterfaceGenerator.Unit.Tests", "tests\ComInterfaceGenerator.Unit.Tests\ComInterfaceGenerator.Unit.Tests.csproj", "{1D771995-D475-429B-AC31-2B1F618AA45F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -359,6 +361,24 @@ Global
 		{C3EA0A28-A597-4946-9E08-EBBBFA94BFA5}.Release|x64.Build.0 = Release|Any CPU
 		{C3EA0A28-A597-4946-9E08-EBBBFA94BFA5}.Release|x86.ActiveCfg = Release|Any CPU
 		{C3EA0A28-A597-4946-9E08-EBBBFA94BFA5}.Release|x86.Build.0 = Release|Any CPU
+		{1D771995-D475-429B-AC31-2B1F618AA45F}.Checked|Any CPU.ActiveCfg = Debug|Any CPU
+		{1D771995-D475-429B-AC31-2B1F618AA45F}.Checked|Any CPU.Build.0 = Debug|Any CPU
+		{1D771995-D475-429B-AC31-2B1F618AA45F}.Checked|x64.ActiveCfg = Debug|Any CPU
+		{1D771995-D475-429B-AC31-2B1F618AA45F}.Checked|x64.Build.0 = Debug|Any CPU
+		{1D771995-D475-429B-AC31-2B1F618AA45F}.Checked|x86.ActiveCfg = Debug|Any CPU
+		{1D771995-D475-429B-AC31-2B1F618AA45F}.Checked|x86.Build.0 = Debug|Any CPU
+		{1D771995-D475-429B-AC31-2B1F618AA45F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1D771995-D475-429B-AC31-2B1F618AA45F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1D771995-D475-429B-AC31-2B1F618AA45F}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{1D771995-D475-429B-AC31-2B1F618AA45F}.Debug|x64.Build.0 = Debug|Any CPU
+		{1D771995-D475-429B-AC31-2B1F618AA45F}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{1D771995-D475-429B-AC31-2B1F618AA45F}.Debug|x86.Build.0 = Debug|Any CPU
+		{1D771995-D475-429B-AC31-2B1F618AA45F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1D771995-D475-429B-AC31-2B1F618AA45F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1D771995-D475-429B-AC31-2B1F618AA45F}.Release|x64.ActiveCfg = Release|Any CPU
+		{1D771995-D475-429B-AC31-2B1F618AA45F}.Release|x64.Build.0 = Release|Any CPU
+		{1D771995-D475-429B-AC31-2B1F618AA45F}.Release|x86.ActiveCfg = Release|Any CPU
+		{1D771995-D475-429B-AC31-2B1F618AA45F}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -381,6 +401,7 @@ Global
 		{90CDAD9F-3ACC-43B0-9696-0C849FCD8C40} = {E1AEBD5D-AE4E-4F61-B9ED-AEF950B0CC33}
 		{768B77B0-EA45-469D-B39E-545EB72F5A43} = {E1AEBD5D-AE4E-4F61-B9ED-AEF950B0CC33}
 		{C3EA0A28-A597-4946-9E08-EBBBFA94BFA5} = {E1AEBD5D-AE4E-4F61-B9ED-AEF950B0CC33}
+		{1D771995-D475-429B-AC31-2B1F618AA45F} = {FB99AC59-1744-4F12-A4B0-0D54FCA048BF}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {D4031401-FEB5-4CCF-91C1-38F5646B2BFD}

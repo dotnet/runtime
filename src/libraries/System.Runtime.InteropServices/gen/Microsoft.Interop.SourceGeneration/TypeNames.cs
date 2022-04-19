@@ -29,6 +29,8 @@ namespace Microsoft.Interop
 
         public const string VirtualMethodIndexAttribute = "System.Runtime.InteropServices.VirtualMethodIndexAttribute";
 
+        public const string IUnmanagedVirtualMethodTableProvider = "System.Runtime.InteropServices.IUnmanagedVirtualMethodTableProvider";
+
         public const string System_Span_Metadata = "System.Span`1";
         public const string System_Span = "System.Span";
         public const string System_ReadOnlySpan_Metadata = "System.ReadOnlySpan`1";
@@ -78,5 +80,7 @@ namespace Microsoft.Interop
         public const string DllImportSearchPath = "System.Runtime.InteropServices.DllImportSearchPath";
 
         public const string System_CodeDom_Compiler_GeneratedCodeAttribute = "System.CodeDom.Compiler.GeneratedCodeAttribute";
+
+        public const string System_Runtime_InteropServices_DynamicInterfaceCastableImplementationAttribute = "System.Runtime.InteropServices.DynamicInterfaceCastableImplementationAttribute";
     }
 }

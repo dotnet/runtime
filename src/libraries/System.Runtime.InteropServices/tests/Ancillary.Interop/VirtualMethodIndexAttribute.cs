@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 namespace System.Runtime.InteropServices
 {
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
-    internal class VirtualMethodIndexAttribute : Attribute
+    public class VirtualMethodIndexAttribute : Attribute
     {
         public VirtualMethodIndexAttribute(int index)
         {

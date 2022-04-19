@@ -54,7 +54,7 @@ namespace Microsoft.Interop
         public static class StepNames
         {
             public const string CalculateStubInformation = nameof(CalculateStubInformation);
-            public const string GenerateSingleStub = nameof(GenerateSingleStub);
+            public const string GenerateManagedToNativeStub = nameof(GenerateManagedToNativeStub);
         }
 
         public void Initialize(IncrementalGeneratorInitializationContext context)
@@ -66,7 +66,7 @@ namespace Microsoft.Interop
                     {
                         MethodDeclarationSyntax syntax = (MethodDeclarationSyntax)context.Node;
                         if (context.SemanticModel.GetDeclaredSymbol(syntax, ct) is IMethodSymbol methodSymbol
-                            && methodSymbol.GetAttributes().Any(static attribute => attribute.AttributeClass?.ToDisplayString() == TypeNames.LibraryImportAttribute))
+                            && methodSymbol.GetAttributes().Any(static attribute => attribute.AttributeClass?.ToDisplayString() == TypeNames.VirtualMethodIndexAttribute))
                         {
                             return new { Syntax = syntax, Symbol = methodSymbol };
                         }
@@ -90,7 +90,7 @@ namespace Microsoft.Interop
                 context.ReportDiagnostic(invalidMethod.Diagnostic);
             });
 
-            IncrementalValuesProvider<(MemberDeclarationSyntax, ImmutableArray<Diagnostic>)> generateSingleStub = methodsToGenerate
+            IncrementalValuesProvider<IncrementalStubGenerationContext> generateStubInformation = methodsToGenerate
                 .Combine(context.CreateStubEnvironmentProvider())
                 .Select(static (data, ct) => new
                 {
@@ -101,16 +101,26 @@ namespace Microsoft.Interop
                 .Select(
                     static (data, ct) => CalculateStubInformation(data.Syntax, data.Symbol, data.Environment, ct)
                 )
-                .WithTrackingName(StepNames.CalculateStubInformation)
+                .WithTrackingName(StepNames.CalculateStubInformation);
+
+            IncrementalValuesProvider<(MemberDeclarationSyntax, ImmutableArray<Diagnostic>)> generateSingleStub = generateStubInformation
                 .Select(
-                    static (data, ct) => GenerateSource(data)
+                    static (data, ct) => GenerateManagedToNativeStub(data)
                 )
                 .WithComparer(Comparers.GeneratedSyntax)
-                .WithTrackingName(StepNames.GenerateSingleStub);
+                .WithTrackingName(StepNames.GenerateManagedToNativeStub);
 
             context.RegisterDiagnostics(generateSingleStub.SelectMany((stubInfo, ct) => stubInfo.Item2));
 
-            context.RegisterConcatenatedSyntaxOutputs(generateSingleStub.Select((data, ct) => data.Item1), "LibraryImports.g.cs");
+            context.RegisterConcatenatedSyntaxOutputs(generateSingleStub.Select((data, ct) => data.Item1), "ManagedToNativeStubs.g.cs");
+
+            IncrementalValuesProvider<MemberDeclarationSyntax> generateNativeInterface = generateStubInformation
+                .Select(static (context, ct) => context.ContainingSyntaxContext)
+                .Collect()
+                .SelectMany(static (syntaxContexts, ct) => syntaxContexts.Distinct())
+                .Select(static (context, ct) => GenerateNativeInterfaceMetadata(context));
+
+            context.RegisterConcatenatedSyntaxOutputs(generateNativeInterface, "NativeInterfaces.g.cs");
         }
 
         private static ImmutableArray<FunctionPointerUnmanagedCallingConventionSyntax> GenerateCallConvSyntaxFromAttributes(AttributeData? suppressGCTransitionAttribute, AttributeData? unmanagedCallConvAttribute)
@@ -131,7 +141,7 @@ namespace Microsoft.Interop
                         foreach (TypedConstant callConv in arg.Value.Values)
                         {
                             ITypeSymbol callConvSymbol = (ITypeSymbol)callConv.Value!;
-                            if (callConvSymbol.Name.StartsWith("CallConv"))
+                            if (callConvSymbol.Name.StartsWith("CallConv", StringComparison.Ordinal))
                             {
                                 callingConventions.Add(FunctionPointerUnmanagedCallingConvention(Identifier(callConvSymbol.Name.Substring("CallConv".Length))));
                             }
@@ -152,34 +162,15 @@ namespace Microsoft.Interop
             return new SyntaxTokenList(strippedTokens);
         }
 
-        private static SyntaxTokenList AddToModifiers(SyntaxTokenList modifiers, SyntaxKind modifierToAdd)
-        {
-            if (modifiers.IndexOf(modifierToAdd) >= 0)
-                return modifiers;
-
-            int idx = modifiers.IndexOf(SyntaxKind.PartialKeyword);
-            return idx >= 0
-                ? modifiers.Insert(idx, Token(modifierToAdd))
-                : modifiers.Add(Token(modifierToAdd));
-        }
-
-        private static TypeDeclarationSyntax CreateTypeDeclarationWithoutTrivia(TypeDeclarationSyntax typeDeclaration)
-        {
-            return TypeDeclaration(
-                typeDeclaration.Kind(),
-                typeDeclaration.Identifier)
-                .WithTypeParameterList(typeDeclaration.TypeParameterList)
-                .WithModifiers(StripTriviaFromModifiers(typeDeclaration.Modifiers));
-        }
-
-
         private static MemberDeclarationSyntax PrintGeneratedSource(
             ContainingSyntax userDeclaredMethod,
+            ContainingSyntax originalInterfaceType,
             SignatureContext stub,
             BlockSyntax stubCode)
         {
             // Create stub function
             return MethodDeclaration(stub.StubReturnType, userDeclaredMethod.Identifier)
+                .WithExplicitInterfaceSpecifier(ExplicitInterfaceSpecifier(IdentifierName(originalInterfaceType.Identifier)))
                 .AddAttributeLists(stub.AdditionalAttributes.ToArray())
                 .WithModifiers(StripTriviaFromModifiers(userDeclaredMethod.Modifiers))
                 .WithParameterList(ParameterList(SeparatedList(stub.StubParameters)))
@@ -206,7 +197,7 @@ namespace Microsoft.Interop
 
         private static VirtualMethodIndexData? ProcessVirtualMethodIndexAttribute(AttributeData attrData)
         {
-            // Found the LibraryImport, but it has an error so report the error.
+            // Found the attribute, but it has an error so report the error.
             // This is most likely an issue with targeting an incorrect TFM.
             if (attrData.AttributeClass?.TypeKind is null or TypeKind.Error)
             {
@@ -215,10 +206,12 @@ namespace Microsoft.Interop
 
             var namedArguments = ImmutableDictionary.CreateRange(attrData.NamedArguments);
 
-            var data = new VirtualMethodIndexData();
+            if (attrData.ConstructorArguments.Length == 0 || attrData.ConstructorArguments[0].Value is not int)
+            {
+                return null;
+            }
 
             CustomTypeMarshallerDirection direction = CustomTypeMarshallerDirection.Ref;
-            int index = -1;
             bool implicitThis = true;
             if (namedArguments.TryGetValue(nameof(VirtualMethodIndexData.Direction), out TypedConstant directionValue))
             {
@@ -230,14 +223,6 @@ namespace Microsoft.Interop
                 // A boxed primitive can be unboxed to an enum with the same underlying type.
                 direction = (CustomTypeMarshallerDirection)directionValue.Value!;
             }
-            if (namedArguments.TryGetValue(nameof(VirtualMethodIndexData.Index), out TypedConstant indexValue))
-            {
-                if (directionValue.Value is not int)
-                {
-                    return null;
-                }
-                index = (int)indexValue.Value!;
-            }
             if (namedArguments.TryGetValue(nameof(VirtualMethodIndexData.ImplicitThisParameter), out TypedConstant implicitThisValue))
             {
                 if (directionValue.Value is not bool)
@@ -247,10 +232,9 @@ namespace Microsoft.Interop
                 implicitThis = (bool)implicitThisValue.Value!;
             }
 
-            return data.WithValuesFromNamedArguments(namedArguments) with
+            return new VirtualMethodIndexData((int)attrData.ConstructorArguments[0].Value).WithValuesFromNamedArguments(namedArguments) with
             {
                 Direction = direction,
-                Index = index,
                 ImplicitThisParameter = implicitThis
             };
         }
@@ -297,7 +281,7 @@ namespace Microsoft.Interop
             if (virtualMethodIndexData is null)
             {
                 generatorDiagnostics.ReportConfigurationNotSupported(virtualMethodIndexAttr!, "Invalid syntax");
-                virtualMethodIndexData = new VirtualMethodIndexData();
+                virtualMethodIndexData = new VirtualMethodIndexData(-1);
             }
 
             if (virtualMethodIndexData.IsUserDefined.HasFlag(InteropAttributeMember.StringMarshalling))
@@ -336,13 +320,8 @@ namespace Microsoft.Interop
             // Create the stub.
             var signatureContext = SignatureContext.Create(symbol, virtualMethodIndexData, environment, generatorDiagnostics, typeof(VtableIndexStubGenerator).Assembly);
 
-            var containingSyntaxContext = new ContainingSyntaxContext(syntax)
-                .AddContainingSyntax(
-                    new ContainingSyntax(
-                        TokenList(Token(SyntaxKind.PartialKeyword)),
-                        SyntaxKind.InterfaceDeclaration,
-                        Identifier("Native"),
-                        null));
+            var containingSyntaxContext = new ContainingSyntaxContext(syntax);
+
             var methodSyntaxTemplate = new ContainingSyntax(syntax.Modifiers.StripTriviaFromTokens(), SyntaxKind.MethodDeclaration, syntax.Identifier, syntax.TypeParameterList);
 
             ImmutableArray<FunctionPointerUnmanagedCallingConventionSyntax> callConv = GenerateCallConvSyntaxFromAttributes(suppressGCTransitionAttribute, unmanagedCallConvAttribute);
@@ -397,7 +376,7 @@ namespace Microsoft.Interop
             return generatorFactory;
         }
 
-        private static (MemberDeclarationSyntax, ImmutableArray<Diagnostic>) GenerateSource(
+        private static (MemberDeclarationSyntax, ImmutableArray<Diagnostic>) GenerateManagedToNativeStub(
             IncrementalStubGenerationContext methodStub)
         {
             var diagnostics = new GeneratorDiagnostics();
@@ -420,7 +399,20 @@ namespace Microsoft.Interop
                 methodStub.TypeKeyOwner.Syntax,
                 methodStub.TypeKeyType);
 
-            return (methodStub.ContainingSyntaxContext.WrapMemberInContainingSyntaxWithUnsafeModifier(PrintGeneratedSource(methodStub.StubMethodSyntaxTemplate, methodStub.SignatureContext, code)), methodStub.Diagnostics.AddRange(diagnostics.Diagnostics));
+            return (
+                methodStub.ContainingSyntaxContext.AddContainingSyntax(
+                    new ContainingSyntax(
+                        TokenList(Token(SyntaxKind.InternalKeyword), Token(SyntaxKind.PartialKeyword)),
+                        SyntaxKind.InterfaceDeclaration,
+                        Identifier("Native"),
+                        null))
+                .WrapMemberInContainingSyntaxWithUnsafeModifier(
+                    PrintGeneratedSource(
+                        methodStub.StubMethodSyntaxTemplate,
+                        methodStub.ContainingSyntaxContext.ContainingSyntax[0],
+                        methodStub.SignatureContext,
+                        code)),
+                methodStub.Diagnostics.AddRange(diagnostics.Diagnostics));
         }
 
         private static bool ShouldVisitNode(SyntaxNode syntaxNode)
@@ -439,11 +431,11 @@ namespace Microsoft.Interop
         private static Diagnostic? GetDiagnosticIfInvalidMethodForGeneration(MethodDeclarationSyntax methodSyntax, IMethodSymbol method)
         {
             // Verify the method has no generic types or defined implementation
-            // and is marked static and partial.
+            // and is not marked static or sealed
             if (methodSyntax.TypeParameterList is not null
                 || methodSyntax.Body is not null
-                || !methodSyntax.Modifiers.Any(SyntaxKind.StaticKeyword)
-                || !methodSyntax.Modifiers.Any(SyntaxKind.PartialKeyword))
+                || methodSyntax.Modifiers.Any(SyntaxKind.StaticKeyword)
+                || methodSyntax.Modifiers.Any(SyntaxKind.SealedKeyword))
             {
                 return Diagnostic.Create(GeneratorDiagnostics.InvalidAttributedMethodSignature, methodSyntax.Identifier.GetLocation(), method.Name);
             }
@@ -464,6 +456,15 @@ namespace Microsoft.Interop
             }
 
             return null;
+        }
+
+        private static MemberDeclarationSyntax GenerateNativeInterfaceMetadata(ContainingSyntaxContext context)
+        {
+            return context.WrapMemberInContainingSyntaxWithUnsafeModifier(
+                InterfaceDeclaration("Native")
+                .WithModifiers(TokenList(Token(SyntaxKind.InternalKeyword), Token(SyntaxKind.PartialKeyword)))
+                .WithBaseList(BaseList(SingletonSeparatedList((BaseTypeSyntax)SimpleBaseType(IdentifierName(context.ContainingSyntax[0].Identifier)))))
+                .AddAttributeLists(AttributeList(SingletonSeparatedList(Attribute(ParseName(TypeNames.System_Runtime_InteropServices_DynamicInterfaceCastableImplementationAttribute))))));
         }
     }
 }

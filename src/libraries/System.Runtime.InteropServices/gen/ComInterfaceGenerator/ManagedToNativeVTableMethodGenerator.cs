@@ -136,7 +136,7 @@ namespace Microsoft.Interop
                                 ParenthesizedExpression(
                                     CastExpression(
                                         GenericName(
-                                            Identifier("IUnmanagedVirtualMethodTableProvider"))
+                                            Identifier(TypeNames.IUnmanagedVirtualMethodTableProvider))
                                         .WithTypeArgumentList(
                                             TypeArgumentList(
                                                 SingletonSeparatedList(typeKeyType.Syntax))),
