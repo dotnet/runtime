@@ -340,11 +340,10 @@ namespace System.Text
 
                     if (_encodingName.StartsWith("Globalization_cp_", StringComparison.OrdinalIgnoreCase))
                     {
-                        // On ProjectN, resource strings are stripped from retail builds and replaced by
+                        // Resource strings may be stripped from retail builds and replaced by
                         // their identifier names. Since this property is meant to be a localized string,
-                        // but we don't localize ProjectN, we specifically need to do something reasonable
-                        // in this case. This currently returns the English name of the encoding from a
-                        // static data table.
+                        // we specifically need to do something reasonable in this case. This currently
+                        // returns the English name of the encoding from a static data table.
                         _encodingName = EncodingTable.GetEnglishNameFromCodePage(CodePage);
                         if (_encodingName == null)
                         {
