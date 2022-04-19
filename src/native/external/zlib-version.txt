@@ -1,3 +1,5 @@
-v1.2.11
+v1.2.12
 
-https://github.com/madler/zlib/releases/tag/v1.2.11
+https://github.com/madler/zlib/releases/tag/v1.2.12
+
+Apply https://github.com/madler/zlib/commit/ec3df00224d4b396e2ac6586ab5d25f673caa4c2
