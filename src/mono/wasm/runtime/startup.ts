@@ -467,7 +467,7 @@ async function mono_download_assets(config: MonoConfig | MonoConfigError | undef
                 });
             }
 
-            let moduleDependencyId = asset.name + (asset.culture || "");
+            const moduleDependencyId = asset.name + (asset.culture || "");
             Module.addRunDependency(moduleDependencyId);
 
             const sourcesList = asset.load_remote ? config.remote_sources! : [""];
