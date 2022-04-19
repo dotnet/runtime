@@ -1218,10 +1218,10 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
                 CORINFO_CLASS_HANDLE classHnd = srcVarDsc->GetStructHnd();
                 CORINFO_FIELD_HANDLE fieldHnd =
                     m_comp->info.compCompHnd->getFieldInClass(classHnd, srcFieldVarDsc->lvFldOrdinal);
-                FieldSeqNode* curFieldSeq = m_comp->GetFieldSeqStore()->CreateSingleton(fieldHnd);
 
-                unsigned  srcFieldOffset = m_comp->lvaGetDesc(srcFieldLclNum)->lvFldOffset;
-                var_types srcType        = srcFieldVarDsc->TypeGet();
+                unsigned      srcFieldOffset = m_comp->lvaGetDesc(srcFieldLclNum)->lvFldOffset;
+                var_types     srcType        = srcFieldVarDsc->TypeGet();
+                FieldSeqNode* curFieldSeq    = m_comp->GetFieldSeqStore()->CreateSingleton(fieldHnd, srcFieldOffset);
 
                 if (!m_dstUseLclFld)
                 {
@@ -1317,11 +1317,13 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
                 CORINFO_FIELD_HANDLE fieldHnd =
                     m_comp->info.compCompHnd->getFieldInClass(classHnd,
                                                               m_comp->lvaGetDesc(dstFieldLclNum)->lvFldOrdinal);
-                FieldSeqNode* curFieldSeq = m_comp->GetFieldSeqStore()->CreateSingleton(fieldHnd);
+
+                unsigned      fldOffset   = m_comp->lvaGetDesc(dstFieldLclNum)->lvFldOffset;
                 var_types     destType    = m_comp->lvaGetDesc(dstFieldLclNum)->lvType;
+                FieldSeqNode* curFieldSeq = m_comp->GetFieldSeqStore()->CreateSingleton(fieldHnd, fldOffset);
 
                 bool done = false;
-                if (m_comp->lvaGetDesc(dstFieldLclNum)->lvFldOffset == 0)
+                if (fldOffset == 0)
                 {
                     // If this is a full-width use of the src via a different type, we need to create a
                     // GT_LCL_FLD.
@@ -1348,7 +1350,6 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
                 }
                 if (!done)
                 {
-                    unsigned fldOffset = m_comp->lvaGetDesc(dstFieldLclNum)->lvFldOffset;
                     if (!m_srcUseLclFld)
                     {
                         assert(srcAddrClone != nullptr);

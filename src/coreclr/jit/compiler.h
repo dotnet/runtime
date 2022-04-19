@@ -4737,6 +4737,15 @@ public:
                                  ValueNumPair         value,
                                  bool                 normalize = true);
 
+    void fgValueNumberFieldLoad(GenTree* loadTree, GenTree* baseAddr, FieldSeqNode* fieldSeq, ssize_t offset);
+
+    void fgValueNumberFieldStore(GenTree*      storeNode,
+                                 GenTree*      baseAddr,
+                                 FieldSeqNode* fieldSeq,
+                                 ssize_t       offset,
+                                 unsigned      storeSize,
+                                 ValueNum      value);
+
     unsigned fgVNPassesCompleted; // Number of times fgValueNumber has been run.
 
     // Utility functions for fgValueNumber.

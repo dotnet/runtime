@@ -3465,9 +3465,11 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
             // (tmp.ptr=argx),(tmp.type=handle)
             GenTreeLclFld* destPtrSlot  = gtNewLclFldNode(tmp, TYP_I_IMPL, OFFSETOF__CORINFO_TypedReference__dataPtr);
             GenTreeLclFld* destTypeSlot = gtNewLclFldNode(tmp, TYP_I_IMPL, OFFSETOF__CORINFO_TypedReference__type);
-            destPtrSlot->SetFieldSeq(GetFieldSeqStore()->CreateSingleton(GetRefanyDataField()));
+            destPtrSlot->SetFieldSeq(GetFieldSeqStore()->CreateSingleton(GetRefanyDataField(),
+                                                                         OFFSETOF__CORINFO_TypedReference__dataPtr));
             destPtrSlot->gtFlags |= GTF_VAR_DEF;
-            destTypeSlot->SetFieldSeq(GetFieldSeqStore()->CreateSingleton(GetRefanyTypeField()));
+            destTypeSlot->SetFieldSeq(GetFieldSeqStore()->CreateSingleton(GetRefanyTypeField(),
+                                                                          OFFSETOF__CORINFO_TypedReference__type));
             destTypeSlot->gtFlags |= GTF_VAR_DEF;
 
             GenTree* asgPtrSlot  = gtNewAssignNode(destPtrSlot, argx->AsOp()->gtOp1);
@@ -5290,24 +5292,12 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
 {
     assert(tree->gtOper == GT_FIELD);
 
-    CORINFO_FIELD_HANDLE symHnd     = tree->AsField()->gtFldHnd;
-    unsigned             fldOffset  = tree->AsField()->gtFldOffset;
-    GenTree*             objRef     = tree->AsField()->GetFldObj();
-    bool                 objIsLocal = false;
-
-    FieldSeqNode* fieldSeq = FieldSeqStore::NotAField();
-    if (!tree->AsField()->gtFldMayOverlap)
-    {
-        if (objRef != nullptr)
-        {
-            fieldSeq = GetFieldSeqStore()->CreateSingleton(symHnd, FieldSeqNode::FieldKind::Instance);
-        }
-        else
-        {
-            // Only simple statics get imported as GT_FIELDs.
-            fieldSeq = GetFieldSeqStore()->CreateSingleton(symHnd, FieldSeqNode::FieldKind::SimpleStatic);
-        }
-    }
+    CORINFO_FIELD_HANDLE symHnd        = tree->AsField()->gtFldHnd;
+    unsigned             fldOffset     = tree->AsField()->gtFldOffset;
+    GenTree*             objRef        = tree->AsField()->GetFldObj();
+    bool                 objIsLocal    = false;
+    bool                 fldMayOverlap = tree->AsField()->gtFldMayOverlap;
+    FieldSeqNode*        fieldSeq      = FieldSeqStore::NotAField();
 
     // Reset the flag because we may reuse the node.
     tree->AsField()->gtFldMayOverlap = false;
@@ -5573,6 +5563,12 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
             addr              = gtNewOperNode(GT_ADD, addType, addr, offsetNode);
         }
 #endif
+
+        if (!fldMayOverlap)
+        {
+            fieldSeq = GetFieldSeqStore()->CreateSingleton(symHnd, fldOffset, FieldSeqNode::FieldKind::Instance);
+        }
+
         if (fldOffset != 0)
         {
             // Generate the "addr" node.
@@ -5687,6 +5683,9 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
             /* indirect to have tlsRef point at the base of the DLLs Thread Local Storage */
             tlsRef = gtNewOperNode(GT_IND, TYP_I_IMPL, tlsRef);
 
+            assert(!fldMayOverlap);
+            fieldSeq = GetFieldSeqStore()->CreateSingleton(symHnd, fldOffset, FieldSeqNode::FieldKind::SimpleStatic);
+
             if (fldOffset != 0)
             {
                 GenTree* fldOffsetNode = new (this, GT_CNS_INT) GenTreeIntCon(TYP_INT, fldOffset, fieldSeq);
@@ -5721,9 +5720,11 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
             // For boxed statics, this direct address will be for the box. We have already added
             // the indirection for the field itself and attached the sequence, in importation.
             bool isBoxedStatic = gtIsStaticFieldPtrToBoxedStruct(tree->TypeGet(), symHnd);
-            if (isBoxedStatic)
+            if (!isBoxedStatic)
             {
-                fieldSeq = FieldSeqStore::NotAField();
+                // Only simple statics get importred as GT_FIELDs.
+                fieldSeq = GetFieldSeqStore()->CreateSingleton(symHnd, reinterpret_cast<size_t>(fldAddr),
+                                                               FieldSeqNode::FieldKind::SimpleStatic);
             }
 
             // TODO-CQ: enable this optimization for 32 bit targets.

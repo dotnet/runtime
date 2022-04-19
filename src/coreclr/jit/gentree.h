@@ -243,9 +243,10 @@ private:
 
     uintptr_t     m_fieldHandleAndKind;
     FieldSeqNode* m_next;
+    size_t        m_offset;
 
 public:
-    FieldSeqNode(CORINFO_FIELD_HANDLE fieldHnd, FieldSeqNode* next, FieldKind fieldKind);
+    FieldSeqNode(CORINFO_FIELD_HANDLE fieldHnd, FieldSeqNode* next, size_t offset, FieldKind fieldKind);
 
     FieldKind GetKind() const
     {
@@ -266,6 +267,18 @@ public:
     FieldSeqNode* GetNext() const
     {
         return m_next;
+    }
+
+    //------------------------------------------------------------------------
+    // GetOffset: Retrieve "the offset" for the field this node represents.
+    //
+    // For statics with a known (constant) address it will be the value of that address.
+    // For boxed statics, it will be TARGET_POINTER_SIZE (the method table pointer size).
+    // For other fields, it will be equal to the value "getFieldOffset" would return.
+    //
+    size_t GetOffset() const
+    {
+        return m_offset;
     }
 
     bool IsStaticField() const
@@ -290,7 +303,8 @@ public:
 
     // Make sure this provides methods that allow it to be used as a KeyFuncs type in JitHashTable.
     // Note that there is a one-to-one relationship between the field handle and the field kind, so
-    // we do not need to mask away the latter for comparison purposes.
+    // we do not need to mask away the latter for comparison purposes. Likewise, we do not need to
+    // include the offset.
     static int GetHashCode(FieldSeqNode fsn)
     {
         return static_cast<int>(fsn.m_fieldHandleAndKind) ^ static_cast<int>(reinterpret_cast<intptr_t>(fsn.m_next));
@@ -317,6 +331,7 @@ public:
 
     // Returns the (canonical in the store) singleton field sequence for the given handle.
     FieldSeqNode* CreateSingleton(CORINFO_FIELD_HANDLE    fieldHnd,
+                                  size_t                  offset,
                                   FieldSeqNode::FieldKind fieldKind = FieldSeqNode::FieldKind::Instance);
 
     // This is a special distinguished FieldSeqNode indicating that a constant does *not*
@@ -1931,7 +1946,7 @@ public:
     // Determine whether this tree is a basic block profile count update.
     bool IsBlockProfileUpdate();
 
-    bool IsFieldAddr(Compiler* comp, GenTree** pBaseAddr, FieldSeqNode** pFldSeq);
+    bool IsFieldAddr(Compiler* comp, GenTree** pBaseAddr, FieldSeqNode** pFldSeq, ssize_t* pOffset);
 
     bool IsArrayAddr(GenTreeArrAddr** pArrAddr);
 

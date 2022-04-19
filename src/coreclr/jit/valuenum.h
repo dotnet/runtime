@@ -390,6 +390,7 @@ public:
 
     // This block of methods gets value numbers for constants of primitive types.
     ValueNum VNForIntCon(INT32 cnsVal);
+    ValueNum VNForIntPtrCon(ssize_t cnsVal);
     ValueNum VNForLongCon(INT64 cnsVal);
     ValueNum VNForFloatCon(float cnsVal);
     ValueNum VNForDoubleCon(double cnsVal);
@@ -602,7 +603,7 @@ public:
 
     unsigned DecodePhysicalSelector(ValueNum selector, unsigned* pSize);
 
-    ValueNum VNForFieldSelector(CORINFO_FIELD_HANDLE fieldHnd, var_types* pFieldType, size_t* pStructSize = nullptr);
+    ValueNum VNForFieldSelector(CORINFO_FIELD_HANDLE fieldHnd, var_types* pFieldType, unsigned* pSize);
 
     // These functions parallel the ones above, except that they take liberal/conservative VN pairs
     // as arguments, and return such a pair (the pair of the function applied to the liberal args, and
@@ -683,7 +684,12 @@ public:
                                 unsigned     storeSize,
                                 ValueNumPair value);
 
-    ValueNum VNForLoadStoreBitcast(ValueNumKind vnk, ValueNum value, var_types indType, unsigned indSize);
+    bool LoadStoreIsEntire(unsigned locationSize, ssize_t offset, unsigned indSize) const
+    {
+        return (offset == 0) && (locationSize == indSize);
+    }
+
+    ValueNum VNForLoadStoreBitcast(ValueNum value, var_types indType, unsigned indSize);
 
     ValueNumPair VNPairForLoadStoreBitcast(ValueNumPair value, var_types indType, unsigned indSize);
 
@@ -716,6 +722,8 @@ public:
                                bool         srcIsUnsigned    = false,
                                bool         hasOverflowCheck = false);
 
+    ValueNum VNForBitCast(ValueNum srcVN, var_types castToType);
+
     bool IsVNNotAField(ValueNum vn);
 
     ValueNum VNForFieldSeq(FieldSeqNode* fieldSeq);
@@ -729,7 +737,7 @@ public:
     ValueNum ExtendPtrVN(GenTree* opA, GenTree* opB);
     // If "opA" has a PtrToLoc, PtrToArrElem, or PtrToStatic application as its value numbers, returns the VN for the
     // pointer form extended with "fieldSeq"; or else NoVN.
-    ValueNum ExtendPtrVN(GenTree* opA, FieldSeqNode* fieldSeq);
+    ValueNum ExtendPtrVN(GenTree* opA, FieldSeqNode* fieldSeq, ssize_t offset);
 
     // Queries on value numbers.
     // All queries taking value numbers require that those value numbers are valid, that is, that
@@ -1081,6 +1089,8 @@ public:
     // Requires "castVN" to represent VNF_Cast or VNF_CastOvf.
     // Prints the cast's representation mirroring GT_CAST's dump format.
     void vnDumpCast(Compiler* comp, ValueNum castVN);
+
+    void vnDumpBitCast(Compiler* comp, VNFuncApp* bitCast);
 
     // Requires "zeroObj" to be a VNF_ZeroObj. Prints its representation.
     void vnDumpZeroObj(Compiler* comp, VNFuncApp* zeroObj);

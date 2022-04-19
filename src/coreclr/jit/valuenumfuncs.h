@@ -9,18 +9,21 @@
 ValueNumFuncDef(MemOpaque, 1, false, false, false)          // Args: 0: loop num
 ValueNumFuncDef(MapStore, 4, false, false, false)           // Args: 0: map, 1: index (e. g. field handle), 2: value being stored, 3: loop num.
 ValueNumFuncDef(MapPhysicalStore, 3, false, false, false)   // Args: 0: map, 1: "physical selector": offset and size, 2: value being stored
+ValueNumFuncDef(BitCast, 2, false, false, false)            // Args: 0: VN of the arg, 1: VN of the target type
+ValueNumFuncDef(ZeroObj, 1, false, false, false)            // Args: 0: VN of the class handle.
 ValueNumFuncDef(MapSelect, 2, false, false, false)          // Args: 0: map, 1: key.
 
 ValueNumFuncDef(PtrToLoc, 2, false, true, false)            // Pointer (byref) to a local variable.  Args: VN's of: 0: var num, 1: FieldSeq.
 ValueNumFuncDef(PtrToArrElem, 4, false, false, false)       // Pointer (byref) to an array element.  Args: 0: array elem type eq class var_types value, VN's of: 1: array, 2: index, 3: FieldSeq.
-ValueNumFuncDef(PtrToStatic, 2, false, true, false)         // Pointer (byref) to a static variable (or possibly a field thereof, if the static variable is a struct).
-                                                            // Args: 0: (VN of) the box's address if the static is "boxed", 1: the field sequence, of which the first element is the static itself.
+ValueNumFuncDef(PtrToStatic, 3, false, true, false)         // Pointer (byref) to a static variable (or possibly a field thereof, if the static variable is a struct).
+                                                            // Args: 0: (VN of) the box's address if the static is "boxed",
+                                                            //       1: (VN of) the field sequence, of which the first element is the static itself.
+                                                            //       2: (VN of) offset for the constituent struct fields
 
 ValueNumFuncDef(Phi, 2, false, false, false)        // A phi function.  Only occurs as arg of PhiDef or PhiMemoryDef.  Arguments are SSA numbers of var being defined.
 ValueNumFuncDef(PhiDef, 3, false, false, false)     // Args: 0: local var # (or -1 for memory), 1: SSA #, 2: VN of definition.
 // Wouldn't need this if I'd made memory a regular local variable...
 ValueNumFuncDef(PhiMemoryDef, 2, false, false, false) // Args: 0: VN for basic block pointer, 1: VN of definition
-ValueNumFuncDef(ZeroObj, 1, false, false, false)    // Zero-initialized struct. Args: 0: VN of the class handle.
 ValueNumFuncDef(InitVal, 1, false, false, false)    // An input arg, or init val of a local Args: 0: a constant VN.
 
 
