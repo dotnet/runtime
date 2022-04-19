@@ -2851,7 +2851,6 @@ ep_rt_mono_execute_rundown (ep_rt_execution_checkpoint_array_t *execution_checkp
 bool
 ep_rt_mono_write_event_ee_startup_start (void)
 {
-	mono_trace (G_LOG_LEVEL_WARNING, MONO_TRACE_DIAGNOSTICS, "STEVE: FIRING ep_rt_mono_write_event_ee_startup_start");
 	return FireEtwEEStartupStart_V1 (
 		clr_instance_get_id (),
 		NULL,

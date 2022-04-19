@@ -1026,7 +1026,7 @@ ep_enable_2 (
 
 		ep_provider_config_init (&providers [0], ep_rt_utf8_string_dup (ep_config_get_public_provider_name_utf8 ()), 0x4c14fccbd, EP_EVENT_LEVEL_VERBOSE, NULL);
 		ep_provider_config_init (&providers [1], ep_rt_utf8_string_dup (ep_config_get_private_provider_name_utf8 ()), 0x4002000b, EP_EVENT_LEVEL_VERBOSE, NULL);
-		//ep_provider_config_init (&providers [2], ep_rt_utf8_string_dup (ep_config_get_sample_profiler_provider_name_utf8 ()), 0x0, EP_EVENT_LEVEL_VERBOSE, NULL);
+		ep_provider_config_init (&providers [2], ep_rt_utf8_string_dup (ep_config_get_sample_profiler_provider_name_utf8 ()), 0x0, EP_EVENT_LEVEL_VERBOSE, NULL);
 	} else {
 		// Count number of providers to parse.
 		while (*providers_config_to_parse != '\0') {

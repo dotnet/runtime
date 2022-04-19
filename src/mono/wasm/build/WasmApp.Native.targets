@@ -208,7 +208,7 @@
       <_EmccCFlags Include="$(EmccCompileOptimizationFlag)" />
       <_EmccCFlags Include="@(_EmccCommonFlags)" />
 
-      <!-- <_EmccCFlags Include="-DDISABLE_PERFTRACING_LISTEN_PORTS=1" /> -->
+      <_EmccCFlags Include="-DDISABLE_PERFTRACING_LISTEN_PORTS=1" />
       <_EmccCFlags Include="-DENABLE_AOT=1"                    Condition="'$(_WasmShouldAOT)' == 'true'" />
       <_EmccCFlags Include="-DDRIVER_GEN=1"                    Condition="'$(_WasmShouldAOT)' == 'true'" />
       <_EmccCFlags Include="-DINVARIANT_GLOBALIZATION=1"       Condition="'$(InvariantGlobalization)' == 'true'" />

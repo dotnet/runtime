@@ -847,22 +847,14 @@ inline
 bool
 ep_rt_config_value_get_enable (void)
 {
-	/*
 	bool enable = false;
 	gchar *value = g_getenv ("DOTNET_EnableEventPipe");
 	if (!value)
 		value = g_getenv ("COMPlus_EnableEventPipe");
-	if (value && atoi (value) == 1) {
-		mono_trace (G_LOG_LEVEL_WARNING, MONO_TRACE_DIAGNOSTICS, "STEVE: EnableEventPipe: TRUE");
+	if (value && atoi (value) == 1)
 		enable = true;
-	}
-	else {
-		mono_trace (G_LOG_LEVEL_WARNING, MONO_TRACE_DIAGNOSTICS, "STEVE: EnableEventPipe: FALSE");
-	}
 	g_free (value);
 	return enable;
-	*/
-	return true;
 }
 
 static

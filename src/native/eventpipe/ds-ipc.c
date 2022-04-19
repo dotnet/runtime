@@ -263,7 +263,7 @@ ds_ipc_stream_factory_configure (ds_ipc_error_callback_func callback)
 	bool result = true;
 
 	ep_char8_t *ports = ds_rt_config_value_get_ports ();
-	if (0 && ports) {
+	if (ports) {
 		DS_RT_DECLARE_LOCAL_PORT_CONFIG_ARRAY (port_configs);
 		DS_RT_DECLARE_LOCAL_PORT_CONFIG_ARRAY (port_config_parts);
 
@@ -319,7 +319,25 @@ ds_ipc_stream_factory_configure (ds_ipc_error_callback_func callback)
 		ep_rt_utf8_string_free (ports);
 	}
 
+#ifndef DS_IPC_DISABLE_DEFAULT_LISTEN_PORT
+	// create the default listen port
+	uint32_t port_suspend = ds_rt_config_value_get_default_port_suspend ();
+
+	DiagnosticsPortBuilder default_port_builder;
+	if (ds_port_builder_init (&default_port_builder)) {
+		default_port_builder.path = NULL;
+		default_port_builder.suspend_mode = port_suspend > 0 ? DS_PORT_SUSPEND_MODE_SUSPEND : DS_PORT_SUSPEND_MODE_NOSUSPEND;
+		default_port_builder.type = DS_PORT_TYPE_LISTEN;
+
+		result &= ipc_stream_factory_build_and_add_port (&default_port_builder, callback, true);
+
+		ds_port_builder_fini (&default_port_builder);
+	} else {
+		result &= false;
+	}
+#else
 	DS_LOG_DEBUG_0 ("ds_ipc_stream_factory_configure - Ignoring default LISTEN port");
+#endif
 
 	return result;
 }

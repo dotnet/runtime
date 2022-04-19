@@ -962,7 +962,6 @@ mono_thread_detach_internal (MonoInternalThread *thread)
 
 #ifndef HOST_WIN32
 	add_exiting_thread (thread);
-
 	mono_gc_finalize_notify ();
 #endif
 

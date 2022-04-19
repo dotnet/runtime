@@ -48,8 +48,6 @@ namespace System.Diagnostics.Tracing
 #endif
         internal override void WritePayload(float intervalSec, int pollingIntervalMillisec)
         {
-            Internal.Console.WriteLine("STEVE: WRITING POLLING PAYLOAD");
-
             lock (this)
             {
                 double value = 0;
