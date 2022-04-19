@@ -307,21 +307,21 @@
         Condition="'@(_MergedWrapperOutOfProcessTestMarkers)' != ''" />
     </ItemGroup>
 
-    <ItemGroup>
+    <ItemGroup Condition="'@(_MergedWrapperMarker)' != ''" >
       <_MergedPayloadGroups Include="$(_MergedWrapperName)" />
       <_MergedPayloadFiles Include="$(_MergedWrapperDirectory)/**" />
       <_MergedPayloadFiles Include="@(_MergedWrapperOutOfProcessTestFiles)" />
-      <_MergedPayloadFiles Update="@(_MergedPayloadFiles)">
+      <_MergedPayloadFiles Update="@(_MergedPayloadFiles)" Condition="'@(_MergedPayloadFiles)' != ''" >
         <!-- Never use [MSBuild]::MakeRelative here! We have some files containing Unicode characters in their %(FullPath) and
              MakeRelative function calls Escape function internally that replaces all the Unicode characters with %<xx>. -->
         <FileRelativeToPayloadsRootDirectory>$([System.IO.Path]::GetRelativePath($(TestBinDir), %(FullPath)))</FileRelativeToPayloadsRootDirectory>
       </_MergedPayloadFiles>
     </ItemGroup>
 
-    <ItemGroup>
+    <ItemGroup Condition="'@(_MergedPayloadFiles)' != ''" >
       <!-- Remove the managed pdbs from our payloads.
            This is for performance reasons to reduce our helix payload size  -->
-      <ReducedMergedPayloadFilesFinal Include="@(_MergedPayloadFiles)" Condition=" '%(Extension)' != '.pdb' and '%(Extension)' != '.OutOfProcessTest' " />
+      <ReducedMergedPayloadFilesFinal Include="@(_MergedPayloadFiles)" Condition=" '%(Extension)' != '.pdb' and '%(Extension)' != '.OutOfProcessTest'" />
     </ItemGroup>
 
     <ItemGroup>
@@ -332,7 +332,7 @@
       <HelixCommandLines Condition="'$(RuntimeVariant)' != 'llvmfullaot'" Include="$(_MergedWrapperRunScriptRelative)" />
     </ItemGroup>
 
-    <Copy SourceFiles="@(ReducedMergedPayloadFilesFinal)" DestinationFiles="@(ReducedMergedPayloadFilesFinal->'$(MergedPayloadsRootDirectory)\$(_MergedWrapperName)\%(FileRelativeToPayloadsRootDirectory)')" />
+    <Copy SourceFiles="@(ReducedMergedPayloadFilesFinal)" DestinationFiles="@(ReducedMergedPayloadFilesFinal->'$(MergedPayloadsRootDirectory)\$(_MergedWrapperName)\%(FileRelativeToPayloadsRootDirectory)')" Condition="'@(ReducedMergedPayloadFilesFinal)' != ''" />
     <WriteLinesToFile File="$(MergedPayloadsRootDirectory)\$(_MergedWrapperName)\HelixCommand.txt" Lines="@(HelixCommandLines)" />
   </Target>
 
