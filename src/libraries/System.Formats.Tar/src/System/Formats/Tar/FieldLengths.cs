@@ -17,7 +17,7 @@ namespace System.Formats.Tar
         internal const ushort Size = 12;
         internal const ushort MTime = 12;
         internal const ushort Checksum = 8;
-        // TypeFlag is 1 byte
+        internal const ushort TypeFlag = 1;
         internal const ushort LinkName = Path;
 
         // POSIX and GNU shared attributes

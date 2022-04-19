@@ -101,11 +101,11 @@ namespace System.Formats.Tar
         }
 
         // Returns true if all the bytes in the specified array are nulls, false otherwise.
-        internal static bool IsAllNullBytes(byte[] array)
+        internal static bool IsAllNullBytes(Span<byte> buffer)
         {
-            for (int i = 0; i < array.Length; i++)
+            for (int i = 0; i < buffer.Length; i++)
             {
-                if (array[i] != 0)
+                if (buffer[i] != 0)
                 {
                     return false;
                 }
@@ -183,19 +183,19 @@ namespace System.Formats.Tar
             timestamp = default;
             if (!string.IsNullOrEmpty(value))
             {
-                if (!double.TryParse(value, NumberStyles.Any, CultureInfo.InvariantCulture, out double longTime))
+                if (!double.TryParse(value, NumberStyles.Any, CultureInfo.InvariantCulture, out double doubleTime))
                 {
                     return false;
                 }
 
                 try
                 {
-                    timestamp = GetDateTimeFromSecondsSinceEpoch(longTime);
+                    timestamp = GetDateTimeFromSecondsSinceEpoch(doubleTime);
                 }
-                catch
+                catch // TODO: Remove this temporary exception to verify unexpected culture value
                 {
-                    long calc = (long)(longTime * TimeSpan.TicksPerSecond) + DateTime.UnixEpoch.Ticks;
-                    throw new FormatException($"str: '{value}', double: '{longTime}', calc: '{calc}'");
+                    long calc = (long)(doubleTime * TimeSpan.TicksPerSecond) + DateTime.UnixEpoch.Ticks;
+                    throw new FormatException($"str: '{value}', double: '{doubleTime}', calc: '{calc}'");
                 }
             }
             return timestamp != default;
