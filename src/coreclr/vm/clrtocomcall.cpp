@@ -616,8 +616,8 @@ UINT32 CLRToCOMLateBoundWorker(
         hr = pItfMD->GetMDImport()->GetDispIdOfMemberDef(tkMember, (ULONG*)&dispId);
         if (hr == S_OK)
         {
-            WCHAR strTmp[ARRAY_SIZE(DISPID_NAME_FORMAT_STRING W("4294967295"))];
-            _snwprintf_s(strTmp, ARRAY_SIZE(strTmp), _TRUNCATE, DISPID_NAME_FORMAT_STRING, dispId);
+            UTF8 strTmp[ARRAY_SIZE(DISPID_NAME_FORMAT_STRING "4294967295")];
+            _snprintf_s(strTmp, ARRAY_SIZE(strTmp), _TRUNCATE, DISPID_NAME_FORMAT_STRING, dispId);
             gc.MemberName = StringObject::NewString(strTmp);
         }
         else

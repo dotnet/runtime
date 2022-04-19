@@ -119,39 +119,6 @@ void InitEventForDebuggerNotification(DEBUG_EVENT *      pDebugEvent,
 #endif // defined(FEATURE_DBGIPC_TRANSPORT_VM) || defined(FEATURE_DBGIPC_TRANSPORT_DI)
 
 //-----------------------------------------------------------------------------
-// Helper to get the proper decorated name
-// Caller ensures that pBufSize is large enough. We'll assert just to check,
-// but no runtime failure.
-// pBuf - the output buffer to write the decorated name in
-// cBufSizeInChars - the size of the buffer in characters, including the null.
-// pPrefx - The undecorated name of the event.
-//-----------------------------------------------------------------------------
-void GetPidDecoratedName(_Out_writes_z_(cBufSizeInChars) WCHAR * pBuf, int cBufSizeInChars, const WCHAR * pPrefix, DWORD pid)
-{
-    const WCHAR szGlobal[] = W("Global\\");
-    int szGlobalLen;
-    szGlobalLen = STRING_LENGTH(szGlobal);
-
-    // Caller should always give us a big enough buffer.
-    _ASSERTE(cBufSizeInChars > (int) wcslen(pPrefix) + szGlobalLen);
-
-    // PERF: We are no longer calling GetSystemMetrics in an effort to prevent
-    //       superfluous DLL loading on startup.  Instead, we're prepending
-    //       "Global\" to named kernel objects if we are on NT5 or above.  The
-    //       only bad thing that results from this is that you can't debug
-    //       cross-session on NT4.  Big bloody deal.
-    wcscpy_s(pBuf, cBufSizeInChars, szGlobal);
-    pBuf += szGlobalLen;
-    cBufSizeInChars -= szGlobalLen;
-
-    int ret;
-    ret = _snwprintf_s(pBuf, cBufSizeInChars, _TRUNCATE, pPrefix, pid);
-
-    // Since this is all determined at compile time, we know we should have enough buffer.
-    _ASSERTE (ret != STRUNCATE);
-}
-
-//-----------------------------------------------------------------------------
 // The 'internal' version of our IL to Native map (the DebuggerILToNativeMap struct)
 // has an extra field - ICorDebugInfo::SourceTypes source.  The 'external/user-visible'
 // version (COR_DEBUG_IL_TO_NATIVE_MAP) lacks that field, so we need to translate our

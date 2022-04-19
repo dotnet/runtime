@@ -21,7 +21,7 @@ do {if ((EXPR) == 0) {ThrowOutOfMemory();} } while (0)
 #ifdef FEATURE_COMINTEROP
 // The format string to use to format unknown members to be passed to
 // invoke member
-#define DISPID_NAME_FORMAT_STRING                       W("[DISPID=%i]")
+#define DISPID_NAME_FORMAT_STRING                       "[DISPID=%i]"
 
 //---------------------------------------------------------------------------
 // This method returns the default interface for the class as well as the
@@ -359,7 +359,6 @@ ClassFactoryBase *GetComClassFactory(MethodTable* pClassMT);
 #ifdef _DEBUG
 
 VOID LogInterop(_In_z_ LPCSTR szMsg);
-VOID LogInterop(_In_z_ LPCWSTR szMsg);
 
 VOID LogInteropLeak(IUnkEntry * pEntry);
 VOID LogInteropLeak(IUnknown* pItf);

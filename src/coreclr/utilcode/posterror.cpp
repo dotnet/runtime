@@ -144,13 +144,7 @@ HRESULT __cdecl FormatRuntimeErrorVa(
             hr = HRESULT_FROM_GetLastError();
     }
 
-    // If we failed to find the message anywhere, then issue a hard coded message.
-    if (FAILED(hr))
-    {
-        _snwprintf_s(rcMsg, cchMsg, _TRUNCATE, W("Common Language Runtime Internal error: 0x%08x"), hrRpt);
-        DEBUG_STMT(DbgWriteEx(rcMsg));
-    }
-
+    _ASSERTE(SUCCEEDED(hr));
     return hrRpt;
 } // FormatRuntimeErrorVa
 

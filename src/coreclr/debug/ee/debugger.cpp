@@ -6878,7 +6878,11 @@ HRESULT Debugger::EDAHelper(PROCESS_INFORMATION *pProcessInfo)
 
             LOG((LF_CORDB, LL_INFO10000, "D::EDA: launching with command [%S]\n", wszDbgCommand));
 
-            ClrGetCurrentDirectory(strCurrentDir);
+            // Get size needed
+            DWORD len = WszGetCurrentDirectory(strCurrentDir);
+            if (len == 0)
+                ThrowLastError();
+
             wszCurrentDir = strCurrentDir.GetUnicode();
         }
     }

@@ -25,9 +25,7 @@ consistency's sake.
     Return non-oom failure codes because callees actually freqeuntly expect an API to fail.
     For example, the callee will have special handling for file-not-found.
 
-    For convenience, you could add a no-throwing wrapper version of the API:
-        ClrGetEnvironmentVariable   <-- default throws on oom.
-        ClrGetEnvironmentVariableNoThrow <-- never throws.
+    For convenience, you could add a no-throwing wrapper version of the API.
 
 - NAMING: Prefix the name with 'Clr', just like we do for win32 APIs going through hosting.
 
@@ -57,14 +55,6 @@ consistency's sake.
 #define _safewrap_h_
 
 #include "holder.h"
-
-class SString;
-bool ClrGetEnvironmentVariable(LPCSTR szEnvVarName, SString & value);
-bool ClrGetEnvironmentVariableNoThrow(LPCSTR szEnvVarName, SString & value);
-void ClrGetModuleFileName(HMODULE hModule, SString & value);
-
-void ClrGetCurrentDirectory(SString & value);
-
 
 /* --------------------------------------------------------------------------- *
  * Simple wrapper around WszFindFirstFile/WszFindNextFile

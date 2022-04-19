@@ -1755,8 +1755,8 @@ void DispatchInfo::InvokeMemberWorker(DispatchMemberInfo*   pDispMemberInfo,
         // Allocate the string that will contain the name of the member.
         if (!pDispMemberInfo)
         {
-            WCHAR strTmp[64];
-            _snwprintf_s(strTmp, ARRAY_SIZE(strTmp), _TRUNCATE, DISPID_NAME_FORMAT_STRING, id);
+            UTF8 strTmp[ARRAY_SIZE(DISPID_NAME_FORMAT_STRING "4294967295")];
+            _snprintf_s(strTmp, ARRAY_SIZE(strTmp), _TRUNCATE, DISPID_NAME_FORMAT_STRING, id);
             pObjs->MemberName = (OBJECTREF)StringObject::NewString(strTmp);
         }
         else
@@ -2487,10 +2487,9 @@ void DispatchInfo::SetUpNamedParamArray(DispatchMemberInfo *pMemberInfo, DISPID 
             // If we haven't set the param name yet, then set it to [DISP=XXXX].
             if (!bParamNameSet)
             {
-                WCHAR wszTmp[64];
-
-                _snwprintf_s(wszTmp, ARRAY_SIZE(wszTmp), _TRUNCATE, DISPID_NAME_FORMAT_STRING, pSrcArgNames[iSrcArg]);
-                STRINGREF strTmp = StringObject::NewString(wszTmp);
+                UTF8 szTmp[ARRAY_SIZE(DISPID_NAME_FORMAT_STRING "4294967295")];
+                _snprintf_s(szTmp, ARRAY_SIZE(szTmp), _TRUNCATE, DISPID_NAME_FORMAT_STRING, pSrcArgNames[iSrcArg]);
+                STRINGREF strTmp = StringObject::NewString(szTmp);
                 (*pNamedParamArray)->SetAt(iDestArg, (OBJECTREF)strTmp);
             }
         }

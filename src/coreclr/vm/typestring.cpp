@@ -365,13 +365,16 @@ HRESULT TypeNameBuilder::AddArray(DWORD rank)
         return E_INVALIDARG;
 
     if (rank == 1)
+    {
         Append(W("[*]"));
+    }
     else if (rank > 64)
     {
         // Only taken in an error path, runtime will not load arrays of more than 32 dimensions
-        WCHAR wzDim[128];
-        _snwprintf_s(wzDim, 128, _TRUNCATE, W("[%d]"), rank);
-        Append(wzDim);
+        const UTF8 fmt[] = "[%d]";
+        UTF8 strTmp[ARRAY_SIZE(fmt) + ARRAY_SIZE("4294967295")];
+        _snprintf_s(strTmp, ARRAY_SIZE(strTmp), _TRUNCATE, fmt, rank);
+        Append(strTmp);
     }
     else
     {
@@ -387,10 +390,11 @@ HRESULT TypeNameBuilder::AddArray(DWORD rank)
         else             // allocation OK, do it the fast way
         {
             WCHAR* pwz = wzDim+1;
-            *wzDim = '[';
-            for(COUNT_T i = 1; i < rank; i++, pwz++) *pwz=',';
-            *pwz = ']';
-            *(++pwz) = 0;
+            *wzDim = W('[');
+            for(COUNT_T i = 1; i < rank; i++, pwz++)
+                *pwz=',';
+            *pwz = W(']');
+            *(++pwz) = W('\0');
             Append(wzDim);
             delete [] wzDim;
         }
