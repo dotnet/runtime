@@ -2637,16 +2637,16 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
         srcReg = REG_ZR;
     }
 
-    regNumber dstReg                     = dstAddrBaseReg;
-    int       dstRegAddrAlignment        = 0;
+    regNumber dstReg              = dstAddrBaseReg;
+    int       dstRegAddrAlignment = 0;
 
     if (dstLclNum != BAD_VAR_NUM)
     {
         bool      fpBased;
         const int baseAddr = compiler->lvaFrameAddress(dstLclNum, &fpBased);
 
-        dstReg                     = fpBased ? REG_FPBASE : REG_SPBASE;
-        dstRegAddrAlignment        = fpBased ? (genSPtoFPdelta() % 16) : 0;
+        dstReg              = fpBased ? REG_FPBASE : REG_SPBASE;
+        dstRegAddrAlignment = fpBased ? (genSPtoFPdelta() % 16) : 0;
 
         helper.SetDstOffset(baseAddr + dstOffset);
     }
@@ -2819,14 +2819,14 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
 
 #ifdef TARGET_ARM64
     CopyBlockUnrollHelper helper(srcOffset, dstOffset, size);
-    regNumber srcReg                     = srcAddrBaseReg;
+    regNumber             srcReg = srcAddrBaseReg;
 
     if (srcLclNum != BAD_VAR_NUM)
     {
         bool      fpBased;
         const int baseAddr = compiler->lvaFrameAddress(srcLclNum, &fpBased);
 
-        srcReg                     = fpBased ? REG_FPBASE : REG_SPBASE;
+        srcReg = fpBased ? REG_FPBASE : REG_SPBASE;
 
         helper.SetSrcOffset(baseAddr + srcOffset);
     }
@@ -2838,7 +2838,7 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
         bool      fpBased;
         const int baseAddr = compiler->lvaFrameAddress(dstLclNum, &fpBased);
 
-        dstReg                     = fpBased ? REG_FPBASE : REG_SPBASE;
+        dstReg = fpBased ? REG_FPBASE : REG_SPBASE;
 
         helper.SetDstOffset(baseAddr + dstOffset);
     }
