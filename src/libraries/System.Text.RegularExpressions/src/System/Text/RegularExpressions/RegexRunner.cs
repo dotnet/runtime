@@ -62,8 +62,7 @@ namespace System.Text.RegularExpressions
         protected internal Match? runmatch;        // result object
         protected internal Regex? runregex;        // regex object
 
-        // TODO: Expose something as protected internal: https://github.com/dotnet/runtime/issues/59629
-        private protected bool quick;              // false if match details matter, true if only the fact that match occurred matters
+        private protected RegexRunnerMode _mode;   // the mode in which the runner is currently operating
 
         private int _timeout;                      // timeout in milliseconds
         private bool _checkTimeout;
@@ -135,10 +134,12 @@ namespace System.Text.RegularExpressions
         {
             InitializeTimeout(timeout);
 
+            RegexRunnerMode mode = quick ? RegexRunnerMode.Existence : RegexRunnerMode.CapturesRequired;
+
             // We set runtext before calling InitializeForScan so that runmatch object is initialized with the text
             runtext = text;
 
-            InitializeForScan(regex, text, textstart, quick);
+            InitializeForScan(regex, text, textstart, mode);
 
             // InitializeForScan will default runtextstart and runtextend to 0 and length of string
             // since it is configured to work over a sliced portion of text so we adjust those values.
@@ -178,7 +179,7 @@ namespace System.Text.RegularExpressions
                 }
 
                 runmatch = null;
-                match.Tidy(runtextpos, 0);
+                match.Tidy(runtextpos, 0, mode);
             }
             else
             {
@@ -240,11 +241,11 @@ namespace System.Text.RegularExpressions
             }
         }
 
-        internal void InitializeForScan(Regex regex, ReadOnlySpan<char> text, int textstart, bool quick)
+        internal void InitializeForScan(Regex regex, ReadOnlySpan<char> text, int textstart, RegexRunnerMode mode)
         {
             // Store remaining arguments into fields now that we're going to start the scan.
             // These are referenced by the derived runner.
-            this.quick = quick;
+            _mode = mode;
             runregex = regex;
             runtextstart = textstart;
             runtextbeg = 0;
