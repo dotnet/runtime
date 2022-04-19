@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using Xunit;
 
@@ -216,8 +217,8 @@ namespace System.Formats.Tar.Tests
         public void WritePaxAttributes_Timestamps()
         {
             Dictionary<string, string> extendedAttributes = new();
-            extendedAttributes.Add("atime", ConvertDateTimeOffsetToDouble(TestAccessTime).ToString("F6"));
-            extendedAttributes.Add("ctime", ConvertDateTimeOffsetToDouble(TestChangeTime).ToString("F6"));
+            extendedAttributes.Add("atime", ConvertDateTimeOffsetToDouble(TestAccessTime).ToString("F6", CultureInfo.InvariantCulture));
+            extendedAttributes.Add("ctime", ConvertDateTimeOffsetToDouble(TestChangeTime).ToString("F6", CultureInfo.InvariantCulture));
 
             using MemoryStream archiveStream = new MemoryStream();
             using (TarWriter writer = new TarWriter(archiveStream, TarFormat.Pax, leaveOpen: true))

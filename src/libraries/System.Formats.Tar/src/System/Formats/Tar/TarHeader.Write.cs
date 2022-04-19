@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Text;
 
@@ -416,8 +417,8 @@ namespace System.Formats.Tar
                 // Avoid overwriting if the user already added it before
                 if (!extendedAttributes.ContainsKey(key))
                 {
-                    double unixTimeSeconds = ((double)(value.UtcDateTime - DateTime.UnixEpoch).Ticks)/TimeSpan.TicksPerSecond;
-                    extendedAttributes.Add(key, unixTimeSeconds.ToString("F6")); // 6 decimals, no commas
+                    double unixTimeSeconds = ((double)(value.UtcDateTime - DateTime.UnixEpoch).Ticks) / TimeSpan.TicksPerSecond;
+                    extendedAttributes.Add(key, unixTimeSeconds.ToString("F6", CultureInfo.InvariantCulture)); // 6 decimals, no commas
                 }
             }
 
