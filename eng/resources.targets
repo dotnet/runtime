@@ -25,6 +25,5 @@
     <Compile Include="$(CommonPath)/System/SR$(DefaultLanguageSourceExtension)"
              Visible="true" />
              Link="Resources/Common/SR$(DefaultLanguageSourceExtension)" />
-    </Compile>
   </ItemGroup>
 </Project>
