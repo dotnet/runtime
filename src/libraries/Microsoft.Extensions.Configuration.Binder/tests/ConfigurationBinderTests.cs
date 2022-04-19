@@ -251,6 +251,7 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
         {
             public void Bar(string s1, string s2)
             {
+                ArgumentNullException.ThrowIfNull(s1, s2); // won't call the new overload, because it matches the original method signature.
                 ArgumentNullException.ThrowIfNull(s1, (object?)s2); // sadly, have to cast to force the correct overload.
             }
         }
