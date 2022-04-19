@@ -22,6 +22,7 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(MyTypeWithPropertyOrdering))]
     [JsonSerializable(typeof(MyIntermediateType))]
     [JsonSerializable(typeof(HighLowTempsImmutable))]
+    [JsonSerializable(typeof(HighLowTempsRecord))]
     [JsonSerializable(typeof(RealWorldContextTests.MyNestedClass))]
     [JsonSerializable(typeof(RealWorldContextTests.MyNestedClass.MyNestedNestedClass))]
     [JsonSerializable(typeof(object[]))]
@@ -64,6 +65,7 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(MyTypeWithPropertyOrdering), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(MyIntermediateType), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(HighLowTempsImmutable), GenerationMode = JsonSourceGenerationMode.Serialization)]
+    [JsonSerializable(typeof(HighLowTempsRecord), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(RealWorldContextTests.MyNestedClass), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(RealWorldContextTests.MyNestedClass.MyNestedNestedClass), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(object[]), GenerationMode = JsonSourceGenerationMode.Serialization)]
@@ -107,6 +109,7 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(MyTypeWithPropertyOrdering), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(MyIntermediateType), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(HighLowTempsImmutable), GenerationMode = JsonSourceGenerationMode.Serialization)]
+    [JsonSerializable(typeof(HighLowTempsRecord), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(RealWorldContextTests.MyNestedClass), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(RealWorldContextTests.MyNestedClass.MyNestedNestedClass), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(object[]), GenerationMode = JsonSourceGenerationMode.Serialization)]
@@ -161,6 +164,7 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.NotNull(SerializationContext.Default.MyTypeWithPropertyOrdering.SerializeHandler);
             Assert.NotNull(SerializationContext.Default.MyIntermediateType.SerializeHandler);
             Assert.NotNull(SerializationContext.Default.HighLowTempsImmutable.SerializeHandler);
+            Assert.NotNull(SerializationContext.Default.HighLowTempsRecord.SerializeHandler);
             Assert.NotNull(SerializationContext.Default.MyNestedClass.SerializeHandler);
             Assert.NotNull(SerializationContext.Default.MyNestedNestedClass.SerializeHandler);
             Assert.Null(SerializationContext.Default.ObjectArray.SerializeHandler);
@@ -440,6 +444,16 @@ namespace System.Text.Json.SourceGeneration.Tests
         }
 
         [Fact]
+        public override void PositionalRecord()
+        {
+            string json = JsonSerializer.Serialize(new HighLowTempsRecord(1, 2), DefaultContext.HighLowTempsRecord);
+            Assert.Contains(@"""High"":1", json);
+            Assert.Contains(@"""Low"":2", json);
+
+            JsonTestHelper.AssertThrows_PropMetadataInit(() => JsonSerializer.Deserialize(json, DefaultContext.HighLowTempsRecord), typeof(HighLowTempsRecord));
+        }
+
+        [Fact]
         public void OnSerializeCallbacks()
         {
             MyTypeWithCallbacks obj = new();
@@ -485,6 +499,7 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.NotNull(SerializationWithPerTypeAttributeContext.Default.MyType2.SerializeHandler);
             Assert.NotNull(SerializationWithPerTypeAttributeContext.Default.MyIntermediateType.SerializeHandler);
             Assert.NotNull(SerializationWithPerTypeAttributeContext.Default.HighLowTempsImmutable.SerializeHandler);
+            Assert.NotNull(SerializationWithPerTypeAttributeContext.Default.HighLowTempsRecord.SerializeHandler);
             Assert.NotNull(SerializationWithPerTypeAttributeContext.Default.MyNestedClass.SerializeHandler);
             Assert.NotNull(SerializationWithPerTypeAttributeContext.Default.MyNestedNestedClass.SerializeHandler);
             Assert.Null(SerializationWithPerTypeAttributeContext.Default.ObjectArray.SerializeHandler);

@@ -28,6 +28,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         public JsonTypeInfo<MyTypeWithPropertyOrdering> MyTypeWithPropertyOrdering { get; }
         public JsonTypeInfo<MyIntermediateType> MyIntermediateType { get; }
         public JsonTypeInfo<HighLowTempsImmutable> HighLowTempsImmutable { get; }
+        public JsonTypeInfo<HighLowTempsRecord> HighLowTempsRecord { get; }
         public JsonTypeInfo<RealWorldContextTests.MyNestedClass> MyNestedClass { get; }
         public JsonTypeInfo<RealWorldContextTests.MyNestedClass.MyNestedNestedClass> MyNestedNestedClass { get; }
         public JsonTypeInfo<object[]> ObjectArray { get; }
