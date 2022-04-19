@@ -68,7 +68,7 @@ namespace System.Formats.Tar.Tests
         private void VerifyTimestamp(DateTime expected, DateTimeOffset actual)
         {
             // TODO: Find out best way to compare DateTime vs DateTimeOffset,
-            // because DateTime seems to truncate the miliseconds
+            // because DateTime seems to truncate the miliseconds https://github.com/dotnet/runtime/issues/68230
             Assert.Equal(expected.Date, actual.Date);
             Assert.Equal(expected.Hour, actual.Hour);
             Assert.Equal(expected.Minute, actual.Minute);

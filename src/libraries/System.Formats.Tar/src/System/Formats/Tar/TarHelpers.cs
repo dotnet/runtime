@@ -188,15 +188,7 @@ namespace System.Formats.Tar
                     return false;
                 }
 
-                try
-                {
-                    timestamp = GetDateTimeFromSecondsSinceEpoch(doubleTime);
-                }
-                catch // TODO: Remove this temporary exception to verify unexpected culture value
-                {
-                    long calc = (long)(doubleTime * TimeSpan.TicksPerSecond) + DateTime.UnixEpoch.Ticks;
-                    throw new FormatException($"str: '{value}', double: '{doubleTime}', calc: '{calc}'");
-                }
+                timestamp = GetDateTimeFromSecondsSinceEpoch(doubleTime);
             }
             return timestamp != default;
         }

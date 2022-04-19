@@ -445,7 +445,7 @@ namespace System.Formats.Tar
             int cTime = TarHelpers.GetTenBaseNumberFromOctalAsciiChars(buffer.Slice(FieldLocations.CTime, FieldLengths.CTime));
             _cTime = TarHelpers.GetDateTimeFromSecondsSinceEpoch(cTime);
 
-            // TODO: Read the bytes of the currently unsupported GNU fields, in case user wants to write this entry into another GNU archive, they need to be preserved.
+            // TODO: Read the bytes of the currently unsupported GNU fields, in case user wants to write this entry into another GNU archive, they need to be preserved. https://github.com/dotnet/runtime/issues/68230
         }
 
         // Reads the ustar prefix attribute.

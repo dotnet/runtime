@@ -42,7 +42,7 @@ namespace System.Formats.Tar
         partial void SetModeOnFile(SafeFileHandle handle, string destinationFileName)
 #pragma warning restore CA1822
         {
-            // TODO: Verify that executables get their 'executable' permission applied on Windows when extracted, if applicable.
+            // TODO: Verify that executables get their 'executable' permission applied on Windows when extracted, if applicable. https://github.com/dotnet/runtime/issues/68230
         }
     }
 }

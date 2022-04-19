@@ -63,7 +63,7 @@ namespace System.Formats.Tar
             entry.Uid = (int)status.Uid;
             entry.Gid = (int)status.Gid;
 
-            // TODO: Add these p/invokes
+            // TODO: Add these p/invokes https://github.com/dotnet/runtime/issues/68230
             entry._header._uName = "";// Interop.Sys.GetUName();
             entry._header._gName = "";// Interop.Sys.GetGName();
 

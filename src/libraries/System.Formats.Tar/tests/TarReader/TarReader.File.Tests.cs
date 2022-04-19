@@ -652,7 +652,7 @@ namespace System.Formats.Tar.Tests
 
             if (symbolicLink is PaxTarEntry pax)
             {
-                // TODO: Check ext attrs
+                // TODO: Check ext attrs https://github.com/dotnet/runtime/issues/68230
             }
             else if (symbolicLink is GnuTarEntry gnu)
             {
@@ -688,7 +688,7 @@ namespace System.Formats.Tar.Tests
 
             if (directory is PaxTarEntry pax)
             {
-                // TODO: Check ext attrs
+                // TODO: Check ext attrs https://github.com/dotnet/runtime/issues/68230
             }
             else if (directory is GnuTarEntry gnu)
             {
@@ -713,7 +713,7 @@ namespace System.Formats.Tar.Tests
             Assert.Equal(expectedFileName, blockDevice.Name);
             Assert.Equal(AssetUid, blockDevice.Uid);
 
-            // TODO: Figure out why the numbers don't match
+            // TODO: Figure out why the numbers don't match https://github.com/dotnet/runtime/issues/68230
             // Assert.Equal(AssetBlockDeviceMajor, blockDevice.DeviceMajor);
             // Assert.Equal(AssetBlockDeviceMinor, blockDevice.DeviceMinor);
             // Remove these two temporary checks when the above is fixed
@@ -724,7 +724,7 @@ namespace System.Formats.Tar.Tests
 
             if (blockDevice is PaxTarEntry pax)
             {
-                // TODO: Check ext attrs
+                // TODO: Check ext attrs https://github.com/dotnet/runtime/issues/68230
             }
             else if (blockDevice is GnuTarEntry gnu)
             {
@@ -749,7 +749,7 @@ namespace System.Formats.Tar.Tests
             Assert.Equal(expectedFileName, characterDevice.Name);
             Assert.Equal(AssetUid, characterDevice.Uid);
 
-            // TODO: Figure out why the numbers don't match
+            // TODO: Figure out why the numbers don't match https://github.com/dotnet/runtime/issues/68230
             //Assert.Equal(AssetBlockDeviceMajor, characterDevice.DeviceMajor);
             //Assert.Equal(AssetBlockDeviceMinor, characterDevice.DeviceMinor);
             // Remove these two temporary checks when the above is fixed
@@ -760,7 +760,7 @@ namespace System.Formats.Tar.Tests
 
             if (characterDevice is PaxTarEntry pax)
             {
-                // TODO: Check ext attrs
+                // TODO: Check ext attrs https://github.com/dotnet/runtime/issues/68230
             }
             else if (characterDevice is GnuTarEntry gnu)
             {
@@ -793,7 +793,7 @@ namespace System.Formats.Tar.Tests
 
             if (fifo is PaxTarEntry pax)
             {
-                // TODO: Check ext attrs
+                // TODO: Check ext attrs https://github.com/dotnet/runtime/issues/68230
             }
             else if (fifo is GnuTarEntry gnu)
             {
