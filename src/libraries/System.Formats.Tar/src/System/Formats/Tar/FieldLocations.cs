@@ -42,6 +42,8 @@ namespace System.Formats.Tar
         internal const ushort IsExtended = Sparse + FieldLengths.Sparse;
         internal const ushort RealSize = IsExtended + FieldLengths.IsExtended;
 
+        internal const ushort GnuUnused = CTime + FieldLengths.CTime;
+
         // Padding lengths depending on format
 
         internal const ushort V7Padding = LinkName + FieldLengths.LinkName;

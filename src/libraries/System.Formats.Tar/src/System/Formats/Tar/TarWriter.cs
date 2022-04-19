@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -170,27 +171,38 @@ namespace System.Formats.Tar
 
             WriteGlobalExtendedAttributesEntryIfNeeded();
 
-            switch (Format)
+            byte[] rented = ArrayPool<byte>.Shared.Rent(minimumLength: TarHelpers.RecordSize);
+            Span<byte> buffer = rented.AsSpan(0, TarHelpers.RecordSize); // minimumLength means the array could've been larger
+            buffer.Clear(); // Rented arrays aren't clean
+            try
             {
-                case TarFormat.V7:
-                    entry._header.WriteAsV7(_archiveStream);
-                    break;
-                case TarFormat.Ustar:
-                    entry._header.WriteAsUstar(_archiveStream);
-                    break;
-                case TarFormat.Pax:
-                    entry._header.WriteAsPax(_archiveStream);
-                    break;
-                case TarFormat.Gnu:
-                    entry._header.WriteAsGnu(_archiveStream);
-                    break;
-                case TarFormat.Unknown:
-                default:
-                    throw new FormatException(string.Format(SR.TarInvalidFormat, Format));
+                switch (Format)
+                {
+                    case TarFormat.V7:
+                        entry._header.WriteAsV7(_archiveStream, buffer);
+                        break;
+                    case TarFormat.Ustar:
+                        entry._header.WriteAsUstar(_archiveStream, buffer);
+                        break;
+                    case TarFormat.Pax:
+                        entry._header.WriteAsPax(_archiveStream, buffer);
+                        break;
+                    case TarFormat.Gnu:
+                        entry._header.WriteAsGnu(_archiveStream, buffer);
+                        break;
+                    case TarFormat.Unknown:
+                    default:
+                        throw new FormatException(string.Format(SR.TarInvalidFormat, Format));
+                }
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(rented);
             }
 
             _wroteEntries = true;
         }
+
         /// <summary>
         /// Asynchronously writes the specified entry into the archive stream.
         /// </summary>
@@ -269,7 +281,7 @@ namespace System.Formats.Tar
         {
             Debug.Assert(!_isDisposed);
 
-            if (_wroteGEA)
+            if (_wroteGEA || Format != TarFormat.Pax)
             {
                 return;
             }
@@ -278,8 +290,18 @@ namespace System.Formats.Tar
 
             if (_globalExtendedAttributes != null)
             {
-                // Write the GEA entry regardless if it has values or not
-                TarHeader.WriteGlobalExtendedAttributesHeader(_archiveStream, _globalExtendedAttributes);
+                byte[] rented = ArrayPool<byte>.Shared.Rent(minimumLength: TarHelpers.RecordSize);
+                try
+                {
+                    Span<byte> buffer = rented.AsSpan(0, TarHelpers.RecordSize);
+                    buffer.Clear(); // Rented arrays aren't clean
+                    // Write the GEA entry regardless if it has values or not
+                    TarHeader.WriteGlobalExtendedAttributesHeader(_archiveStream, buffer, _globalExtendedAttributes);
+                }
+                finally
+                {
+                    ArrayPool<byte>.Shared.Return(rented);
+                }
             }
             _wroteGEA = true;
         }

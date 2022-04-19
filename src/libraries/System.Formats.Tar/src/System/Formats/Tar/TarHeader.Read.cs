@@ -23,7 +23,9 @@ namespace System.Formats.Tar
             // The four supported formats have a header that fits in the default record size
             byte[] rented = ArrayPool<byte>.Shared.Rent(minimumLength: TarHelpers.RecordSize);
 
-            Span<byte> buffer = rented.AsSpan(0, TarHelpers.RecordSize);
+            Span<byte> buffer = rented.AsSpan(0, TarHelpers.RecordSize); // minimumLength means the array could've been larger
+            buffer.Clear(); // Rented arrays aren't clean
+
             TarHelpers.ReadOrThrow(archiveStream, buffer);
 
             try
@@ -442,6 +444,8 @@ namespace System.Formats.Tar
 
             int cTime = TarHelpers.GetTenBaseNumberFromOctalAsciiChars(buffer.Slice(FieldLocations.CTime, FieldLengths.CTime));
             _cTime = TarHelpers.GetDateTimeFromSecondsSinceEpoch(cTime);
+
+            // TODO: Read the bytes of the currently unsupported GNU fields, in case user wants to write this entry into another GNU archive, they need to be preserved.
         }
 
         // Reads the ustar prefix attribute.
