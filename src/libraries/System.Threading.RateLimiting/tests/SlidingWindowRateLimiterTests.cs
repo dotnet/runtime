@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Threading.RateLimiting.Test
@@ -504,7 +505,7 @@ namespace System.Threading.RateLimiting.Test
         {
             var options = new SlidingWindowRateLimiterOptions(2, QueueProcessingOrder.OldestFirst, 1,
                 TimeSpan.FromSeconds(20), 1, autoReplenishment: false);
-            var limiter = new SlidingWindowRateLimiterOptions(options);
+            var limiter = new SlidingWindowRateLimiter(options);
 
             using var lease = limiter.Acquire(2);
             // Queue item which changes the retry after time for failed items
@@ -684,13 +685,13 @@ namespace System.Threading.RateLimiting.Test
             using ReplenishingRateLimiter limiter = new SlidingWindowRateLimiter(new SlidingWindowRateLimiterOptions(1, QueueProcessingOrder.OldestFirst, 2,
                 replenishPeriod, 1, autoReplenishment: true));
             Assert.True(limiter.IsAutoReplenishing);
-            Assert.Equal(replenishPeriod, limiter.Window);
+            Assert.Equal(replenishPeriod, limiter.ReplenishmentPeriod);
 
             replenishPeriod = TimeSpan.FromSeconds(2);
             using ReplenishingRateLimiter limiter2 = new SlidingWindowRateLimiter(new SlidingWindowRateLimiterOptions(1, QueueProcessingOrder.OldestFirst, 2,
                 replenishPeriod, 1, autoReplenishment: false));
             Assert.False(limiter2.IsAutoReplenishing);
-            Assert.Equal(replenishPeriod, limiter2.Window);
+            Assert.Equal(replenishPeriod, limiter2.ReplenishmentPeriod);
         }
     }
 }

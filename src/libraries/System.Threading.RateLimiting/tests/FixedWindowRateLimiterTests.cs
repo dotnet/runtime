@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Threading.RateLimiting.Test
@@ -682,13 +683,13 @@ namespace System.Threading.RateLimiting.Test
             using ReplenishingRateLimiter limiter = new FixedWindowRateLimiter(new FixedWindowRateLimiterOptions(1, QueueProcessingOrder.OldestFirst, 2,
                 replenishPeriod, autoReplenishment: true));
             Assert.True(limiter.IsAutoReplenishing);
-            Assert.Equal(replenishPeriod, limiter.Window);
+            Assert.Equal(replenishPeriod, limiter.ReplenishmentPeriod);
 
             replenishPeriod = TimeSpan.FromSeconds(2);
             using ReplenishingRateLimiter limiter2 = new FixedWindowRateLimiter(new FixedWindowRateLimiterOptions(1, QueueProcessingOrder.OldestFirst, 2,
-                replenishPeriod, 1, autoReplenishment: false));
+                replenishPeriod, autoReplenishment: false));
             Assert.False(limiter2.IsAutoReplenishing);
-            Assert.Equal(replenishPeriod, limiter2.Window);
+            Assert.Equal(replenishPeriod, limiter2.ReplenishmentPeriod);
         }
     }
 }
