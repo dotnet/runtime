@@ -819,7 +819,7 @@ namespace System.IO.Compression.Tests
         public void ReadArchive_WithUnexpectedZip64ExtraFieldSize()
         {
             using var archive = new ZipArchive(new MemoryStream(s_tinyZip64));
-            ZipArchiveEntry entry = archive.GetEntry(@"file.txt");
+            ZipArchiveEntry entry = archive.GetEntry("file.txt");
             Assert.Equal(4, entry.Length);
             Assert.Equal(6, entry.CompressedLength);
             using var stream = entry.Open();
@@ -838,7 +838,7 @@ namespace System.IO.Compression.Tests
             BinaryPrimitives.WriteInt32LittleEndian(input.AsSpan(120), 9); // change 32-bit compressed size from -1
 
             using var archive = new ZipArchive(new MemoryStream(input));
-            ZipArchiveEntry entry = archive.GetEntry(@"file.txt");
+            ZipArchiveEntry entry = archive.GetEntry("file.txt");
             Assert.Equal(4, entry.Length);
             Assert.Equal(9, entry.CompressedLength); // it should have used 32-bit size
         }
@@ -854,7 +854,7 @@ namespace System.IO.Compression.Tests
             BinaryPrimitives.WriteInt32LittleEndian(input.AsSpan(124), 9); // change 32-bit uncompressed size from -1
 
             using var archive = new ZipArchive(new MemoryStream(input));
-            ZipArchiveEntry entry = archive.GetEntry(@"file.txt");
+            ZipArchiveEntry entry = archive.GetEntry("file.txt");
             Assert.Equal(9, entry.Length);
             Assert.Equal(6, entry.CompressedLength); // it should have used 32-bit size
         }
