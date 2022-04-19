@@ -30,11 +30,6 @@ CannotRemoveAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatfo
 Compat issues with assembly netstandard:
 CannotChangeAttribute : Attribute 'System.Runtime.Versioning.SupportedOSPlatformAttribute' on 'System.Diagnostics.Process.MaxWorkingSet.set(System.IntPtr)' changed from '[SupportedOSPlatformAttribute("freebsd")]' in the contract to '[SupportedOSPlatformAttribute("freebsd")]' in the implementation.
 CannotChangeAttribute : Attribute 'System.Runtime.Versioning.SupportedOSPlatformAttribute' on 'System.Diagnostics.Process.MinWorkingSet.set(System.IntPtr)' changed from '[SupportedOSPlatformAttribute("freebsd")]' in the contract to '[SupportedOSPlatformAttribute("freebsd")]' in the implementation.
-CannotRemoveAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatformAttribute' exists on 'System.Diagnostics.Tracing.DiagnosticCounter' in the contract but not the implementation.
-CannotRemoveAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatformAttribute' exists on 'System.Diagnostics.Tracing.EventCounter' in the contract but not the implementation.
-CannotRemoveAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatformAttribute' exists on 'System.Diagnostics.Tracing.IncrementingEventCounter' in the contract but not the implementation.
-CannotRemoveAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatformAttribute' exists on 'System.Diagnostics.Tracing.IncrementingPollingCounter' in the contract but not the implementation.
-CannotRemoveAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatformAttribute' exists on 'System.Diagnostics.Tracing.PollingCounter' in the contract but not the implementation.
 CannotRemoveAttribute : Attribute 'System.Runtime.CompilerServices.IsReadOnlyAttribute' exists on 'System.Numerics.Vector<T>.CopyTo(System.Span<System.Byte>)' in the contract but not the implementation.
 CannotRemoveAttribute : Attribute 'System.Runtime.CompilerServices.IsReadOnlyAttribute' exists on 'System.Numerics.Vector<T>.CopyTo(System.Span<T>)' in the contract but not the implementation.
 CannotRemoveAttribute : Attribute 'System.Runtime.CompilerServices.IsReadOnlyAttribute' exists on 'System.Numerics.Vector<T>.CopyTo(T[])' in the contract but not the implementation.

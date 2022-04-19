@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>System.Diagnostics.Tracing</AssemblyName>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <Nullable>enable</Nullable>
+    <FeatureWasmPerfTracing>true</FeatureWasmPerfTracing>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(FeatureWasmPerfTracing)' == 'true'">
+    <!-- Place this assembly in the nuget ref folder -->
+    <BuildOutputTargetFolder>ref</BuildOutputTargetFolder>
+    <DefineConstants>$(DefineConstants);FEATURE_WASM_PERFTRACING</DefineConstants>
+    <IsPackable>false</IsPackable>
+    <DisablePackageBaselineValidation>true</DisablePackageBaselineValidation>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\..\System.Diagnostics.Tracing\ref\System.Diagnostics.Tracing.cs" />
+    <Compile Include="..\..\System.Diagnostics.Tracing\ref\System.Diagnostics.Tracing.Counters.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\System.Runtime\ref\System.Runtime.csproj" PrivateAssets="all" />
+  </ItemGroup>
+  <Target Name="_ExperimentalUpdateFileVersion"
+          AfterTargets="_InitializeAssemblyVersion">
+    <PropertyGroup>
+      <_FileVersionMaj>$(FileVersion.Split('.')[0])</_FileVersionMaj>
+      <_FileVersionMin>$(FileVersion.Split('.')[1])</_FileVersionMin>
+      <_FileVersionBld>$(FileVersion.Split('.')[2])</_FileVersionBld>
+      <_FileVersionRev>$(FileVersion.Split('.')[3])</_FileVersionRev>
+      <FileVersion>$(_FileVersionMaj).$([MSBuild]::Add($(_FileVersionMin), 100)).$(_FileVersionBld).$(_FileVersionRev)</FileVersion>
+    </PropertyGroup>
+  </Target>
+</Project>
