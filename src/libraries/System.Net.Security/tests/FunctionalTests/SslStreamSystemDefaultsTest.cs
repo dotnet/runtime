@@ -76,6 +76,7 @@ namespace System.Net.Security.Tests
 
         [ConditionalTheory]
         [MemberData(nameof(OneOrBothUseDefaulData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         public async Task ClientAndServer_OneOrBothUseDefault_Ok(SslProtocols? clientProtocols, SslProtocols? serverProtocols)
         {
             if (PlatformDetection.IsWindows10Version20348OrGreater)

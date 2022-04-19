@@ -40,6 +40,7 @@ namespace System.Net.Security.Tests
         [InlineData(false, true)]
         [InlineData(true, false)]
         [InlineData(false, false)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         public async Task CertificateSelectionCallback_DelayedCertificate_OK(bool delayCertificate, bool sendClientCertificate)
         {
             X509Certificate? remoteCertificate = null;
