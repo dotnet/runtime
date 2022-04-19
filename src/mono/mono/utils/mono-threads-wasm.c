@@ -115,8 +115,6 @@ mono_native_thread_id_equals (MonoNativeThreadId id1, MonoNativeThreadId id2)
 	return id1 == id2;
 }
 
-static int pthread_warning_count = 0;
-
 MonoNativeThreadId
 mono_native_thread_id_get (void)
 {
