@@ -13,13 +13,20 @@ namespace System.Formats.Tar.Tests
         [Fact]
         public void Extract_SpecialFiles_Unix_Unelevated_ThrowsUnauthorizedAccess()
         {
-            string sourceArchiveFileName = GetTarFilePath(CompressionMethod.Uncompressed, TestTarFormat.ustar, "specialfiles");
+            string originalFileName = GetTarFilePath(CompressionMethod.Uncompressed, TestTarFormat.ustar, "specialfiles");
+            using TempDirectory root = new TempDirectory();
 
-            using TempDirectory destination = new TempDirectory();
+            string archive = Path.Join(root.Path, "input.tar");
+            string destination = Path.Join(root.Path, "dir");
 
-            Assert.Throws<UnauthorizedAccessException>(() => TarFile.ExtractToDirectory(sourceArchiveFileName, destination.Path, overwriteFiles: false));
+            // Copying the tar to reduce the chance of other tests failing due to being used by another process
+            File.Copy(originalFileName, archive);
 
-            Assert.Equal(0, Directory.GetFiles(destination.Path).Count());
+            Directory.CreateDirectory(destination);
+
+            Assert.Throws<UnauthorizedAccessException>(() => TarFile.ExtractToDirectory(archive, destination, overwriteFiles: false));
+
+            Assert.Equal(0, Directory.GetFiles(destination).Count());
         }
     }
 }
