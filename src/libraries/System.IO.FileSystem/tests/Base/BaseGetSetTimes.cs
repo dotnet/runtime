@@ -55,33 +55,39 @@ namespace System.IO.Tests
             public SetTime Setter => Item1;
             public GetTime Getter => Item2;
             public DateTimeKind Kind => Item3;
+
+            public override string ToString()
+            {
+                return $"TimeFunction DateTimeKind.{Kind} Setter: {Setter.Method.Name} Getter: {Getter.Method.Name}";
+            }
         }
 
-        protected virtual void SettingUpdatesPropertiesCore(T item, bool isLink)
+        private void SettingUpdatesPropertiesCore(T item, T? linkTarget)
         {
             Assert.All(TimeFunctions(requiresRoundtripping: true), (function) =>
             {
+                bool isLink = linkTarget is not null;
+                T target = !isLink || SettingPropertiesUpdatesLink ? item : linkTarget;
+
                 // Checking that milliseconds are not dropped after setter.
                 // Emscripten drops milliseconds in Browser
                 DateTime dt = new DateTime(2014, 12, 1, 12, 3, 3, LowTemporalResolution ? 0 : 321, function.Kind);
-                function.Setter(item, dt);
-                DateTime result = function.Getter(item);
-                
-                if (!isLink || SettingPropertiesUpdatesLink)
-                {
-                    Assert.Equal(dt, result);
-                    Assert.Equal(dt.ToLocalTime(), result.ToLocalTime());
+                function.Setter(target, dt);
 
-                    // File and Directory UTC APIs treat a DateTimeKind.Unspecified as UTC whereas
-                    // ToUniversalTime treats it as local.
-                    if (function.Kind == DateTimeKind.Unspecified)
-                    {
-                        Assert.Equal(dt, result.ToUniversalTime());
-                    }
-                    else
-                    {
-                        Assert.Equal(dt.ToUniversalTime(), result.ToUniversalTime());
-                    }
+                DateTime result = function.Getter(target);
+
+                Assert.Equal(dt, result);
+                Assert.Equal(dt.ToLocalTime(), result.ToLocalTime());
+
+                // File and Directory UTC APIs treat a DateTimeKind.Unspecified as UTC whereas
+                // ToUniversalTime treats it as local.
+                if (function.Kind == DateTimeKind.Unspecified)
+                {
+                    Assert.Equal(dt, result.ToUniversalTime());
+                }
+                else
+                {
+                    Assert.Equal(dt.ToUniversalTime(), result.ToUniversalTime());
                 }
             });
         }
@@ -90,7 +96,7 @@ namespace System.IO.Tests
         public void SettingUpdatesProperties()
         {
             T item = GetExistingItem();
-            SettingUpdatesPropertiesCore(item, false);
+            SettingUpdatesPropertiesCore(item, default);
         }
 
         [Fact]
@@ -102,7 +108,7 @@ namespace System.IO.Tests
             }
 
             T item = GetExistingItem(readOnly: true);
-            SettingUpdatesPropertiesCore(item, false);
+            SettingUpdatesPropertiesCore(item, default);
         }
 
         [ConditionalTheory(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
@@ -126,15 +132,20 @@ namespace System.IO.Tests
             T link = CreateSymlinkToItem(target);
             if (!targetExists)
             {
-                SettingUpdatesPropertiesCore(link, true);
+                if (!SettingPropertiesUpdatesLink)
+                {
+                    SettingUpdatesPropertiesCore(target, link);
+                }
             }
             else
             {
                 // Get the target's initial times
                 IEnumerable<TimeFunction> timeFunctions = TimeFunctions(requiresRoundtripping: true);
-                DateTime[] initialTimes = timeFunctions.Select((funcs) => funcs.Getter(target)).ToArray();
+                DateTime[] initialTimes = timeFunctions
+                    .Select((func) => func.Getter(target))
+                    .ToArray();
 
-                SettingUpdatesPropertiesCore(link, true);
+                SettingUpdatesPropertiesCore(target, link);
 
                 // Ensure that we have the latest times.
                 if (target is FileSystemInfo fsi)
@@ -142,11 +153,25 @@ namespace System.IO.Tests
                     fsi.Refresh();
                 }
 
+                T getTarget = SettingPropertiesUpdatesLink ? link : target;
+
                 // Ensure the target's times haven't changed.
-                DateTime[] updatedTimes = timeFunctions.Select((funcs) => funcs.Getter(target)).ToArray();
+                DateTime[] updatedTimes = timeFunctions
+                    .Select(func => func.Getter(getTarget))
+                    .ToArray();
                 if (SettingPropertiesUpdatesLink)
                 {
-                    Assert.Equal(initialTimes, updatedTimes);
+                    for (int i = 0; i < initialTimes.Length; i++)
+                    {
+                        DateTime initialTime = initialTimes[i];
+                        DateTime updatedTime = updatedTimes[i];
+
+                        // There is some precision loss between initialTimes and updatedTimes,
+                        // so we check for a delta of max 1.5 seconds (15,000,000 ticks)
+                        Assert.True(
+                            Math.Abs(updatedTime.Ticks - initialTime.Ticks) < 1.5 * TimeSpan.TicksPerSecond,
+                            $"{nameof(updatedTime)} ({updatedTime}) is not similar to {nameof(initialTime)} ({initialTime})");
+                    }
                 }
                 else
                 {
