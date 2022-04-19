@@ -15,13 +15,12 @@ namespace System.Threading.RateLimiting
         /// <param name="queueProcessingOrder"></param>
         /// <param name="queueLimit">Maximum number of unprocessed request counters waiting via <see cref="RateLimiter.WaitAsync(int, CancellationToken)"/>.</param>
         /// <param name="window">
-        /// Specifies how often request counters can be replenished. Replenishing is triggered either by an internal timer if <paramref name="autoReplenishment"/> is true, or by calling <see cref="FixedWindowRateLimiter.TryRefresh"/>.
+        /// Specifies how often request counters can be replenished. Replenishing is triggered either by an internal timer if <paramref name="autoReplenishment"/> is true, or by calling <see cref="FixedWindowRateLimiter.TryReplenish"/>.
         /// </param>
         /// <param name="autoReplenishment">
         /// Specifies whether request replenishment will be handled by the <see cref="FixedWindowRateLimiter"/> or by another party via <see cref="FixedWindowRateLimiter.TryReplenish"/>.
         /// </param>
-        /// <exception cref="ArgumentOutOfRangeException">When <paramref name="permitLimit"/> or <paramref name="queueLimit"/> are less than 0
-        /// or when <paramref name="window"/> is more than 49 days.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">When <paramref name="permitLimit"/> or <paramref name="queueLimit"/> are less than 0. </exception>
         public FixedWindowRateLimiterOptions(
             int permitLimit,
             QueueProcessingOrder queueProcessingOrder,

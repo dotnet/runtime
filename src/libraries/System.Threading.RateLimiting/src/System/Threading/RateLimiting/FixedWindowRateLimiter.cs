@@ -38,13 +38,11 @@ namespace System.Threading.RateLimiting
         /// <inheritdoc />
         public override TimeSpan ReplenishmentPeriod => _options.Window;
 
-
-
         /// <summary>
         /// Initializes the <see cref="FixedWindowRateLimiter"/>.
         /// </summary>
         /// <param name="options">Options to specify the behavior of the <see cref="FixedWindowRateLimiter"/>.</param>
-        public FixedWindowRateLimiter(FixedWindowRateLimiterOptions options!!)
+        public FixedWindowRateLimiter(FixedWindowRateLimiterOptions options)
         {
             _options = options;
             _requestCount = options.PermitLimit;

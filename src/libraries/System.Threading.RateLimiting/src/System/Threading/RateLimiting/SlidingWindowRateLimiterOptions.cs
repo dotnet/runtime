@@ -21,8 +21,7 @@ namespace System.Threading.RateLimiting
         /// <param name="autoReplenishment">
         /// Specifies whether request replenishment will be handled by the <see cref="SlidingWindowRateLimiter"/> or by another party via <see cref="SlidingWindowRateLimiter.TryReplenish"/>.
         /// </param>
-        /// <exception cref="ArgumentOutOfRangeException">When <paramref name="permitLimit"/>, <paramref name="queueLimit"/>, or <paramref name="segmentsPerWindow"/> are less than 0
-        /// or when <paramref name="window"/> is more than 49 days.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">When <paramref name="permitLimit"/>, <paramref name="queueLimit"/>, or <paramref name="segmentsPerWindow"/> are less than 0. </exception>
         public SlidingWindowRateLimiterOptions(
             int permitLimit,
             QueueProcessingOrder queueProcessingOrder,

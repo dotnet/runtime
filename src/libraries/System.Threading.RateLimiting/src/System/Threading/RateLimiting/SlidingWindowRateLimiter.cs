@@ -39,7 +39,7 @@ namespace System.Threading.RateLimiting
         public override bool IsAutoReplenishing => _options.AutoReplenishment;
 
         /// <inheritdoc />
-        public override TimeSpan ReplenishmentPeriod => _options.Window;
+        public override TimeSpan ReplenishmentPeriod => _options.Window / _options.SegmentsPerWindow;
 
         /// <summary>
         /// Initializes the <see cref="SlidingWindowRateLimiter"/>.
@@ -50,17 +50,16 @@ namespace System.Threading.RateLimiting
             _options = options;
             _requestCount = options.PermitLimit;
             _requestsPerSegment = new int[options.SegmentsPerWindow];
-            TimeSpan _windowSegmentInterval = _options.Window / _options.SegmentsPerWindow;
             _currentSegmentIndex = 0;
 
             if (_options.AutoReplenishment)
             {
-                _renewTimer = new Timer(Replenish, this, _windowSegmentInterval, _windowSegmentInterval);
+                _renewTimer = new Timer(Replenish, this, ReplenishmentPeriod, ReplenishmentPeriod);
             }
         }
 
         /// <inheritdoc/>
-        public override int GetAvailablePermits() => _options.PermitLimit - _requestCount;
+        public override int GetAvailablePermits() => _requestCount;
 
         /// <inheritdoc/>
         protected override RateLimitLease AcquireCore(int requestCount)
@@ -220,8 +219,6 @@ namespace System.Threading.RateLimiting
         // Used in tests that test behavior with specific time intervals
         private void ReplenishInternal(long nowTicks)
         {
-            TimeSpan _windowSegmentInterval = _options.Window / _options.SegmentsPerWindow;
-
             // method is re-entrant (from Timer), lock to avoid multiple simultaneous replenishes
             lock (Lock)
             {
@@ -230,24 +227,24 @@ namespace System.Threading.RateLimiting
                     return;
                 }
 
-                if ((long)((nowTicks - _lastReplenishmentTick) * TickFrequency) < _windowSegmentInterval.Ticks)
+                if ((long)((nowTicks - _lastReplenishmentTick) * TickFrequency) < ReplenishmentPeriod.Ticks)
                 {
                     return;
                 }
 
-                _lastReplenishmentTick = nowTicks + _windowSegmentInterval.Ticks;
+                _lastReplenishmentTick = nowTicks;
 
                 _currentSegmentIndex = (_currentSegmentIndex + 1) % _options.SegmentsPerWindow;
-                int _oldSegmentRequestCount = _requestsPerSegment[_currentSegmentIndex];
+                int oldSegmentRequestCount = _requestsPerSegment[_currentSegmentIndex];
                 _requestsPerSegment[_currentSegmentIndex] = 0;
 
-                if (_oldSegmentRequestCount == 0)
+                if (oldSegmentRequestCount == 0)
                 {
                     return;
                 }
 
                 // Process queued requests
-                _requestCount += _oldSegmentRequestCount;
+                _requestCount += oldSegmentRequestCount;
                 Debug.Assert(_requestCount <= _options.PermitLimit);
                 while (_queue.Count > 0)
                 {
@@ -274,7 +271,7 @@ namespace System.Threading.RateLimiting
                         {
                             // Queued item was canceled so add count back
                             _requestCount += nextPendingRequest.Count;
-                            _requestsPerSegment[_currentSegmentIndex] += _requestCount;
+                            _requestsPerSegment[_currentSegmentIndex] -= _requestCount;
                             // Updating queue count is handled by the cancellation code
                             _queueCount += nextPendingRequest.Count;
                         }
