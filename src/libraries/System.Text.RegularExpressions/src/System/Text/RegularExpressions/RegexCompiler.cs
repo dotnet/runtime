@@ -3526,8 +3526,10 @@ namespace System.Text.RegularExpressions
                 // goto endLoop;
                 BrFar(endLoop);
 
-                // Now handle what happens when an iteration fails.  We need to reset state to what it was before just that iteration
-                // started.  That includes resetting pos and clearing out any captures from that iteration.
+                // Now handle what happens when an iteration fails (and since a lazy loop only executes an iteration
+                // when it's required to satisfy the loop (by definition of being lazy), the loop is failing).  We need
+                // to reset state to what it was before just that iteration started.  That includes resetting pos and
+                // clearing out any captures from that iteration.
                 MarkLabel(iterationFailedLabel);
 
                 // iterationCount--;
@@ -3563,11 +3565,27 @@ namespace System.Text.RegularExpressions
 
                 if (doneLabel == originalDoneLabel)
                 {
+                    // Since the only reason we'd end up revisiting previous iterations of the lazy loop is if the child had backtracking constructs
+                    // we'd backtrack into, and the child doesn't, the whole loop is failed and done. If we successfully processed any iterations,
+                    // we thus need to pop all of the state we pushed onto the stack for those iterations, as we're exiting out to the parent who
+                    // will expect the stack to be cleared of any child state.
+                    int entriesPerIteration = 3 + (expressionHasCaptures ? 1 : 0);
+
+                    // stackpos -= entriesPerIteration * iterationCount;
                     // goto originalDoneLabel;
+                    Ldloc(stackpos);
+                    Ldc(entriesPerIteration);
+                    Ldloc(iterationCount);
+                    Mul();
+                    Sub();
+                    Stloc(stackpos);
                     BrFar(originalDoneLabel);
                 }
                 else
                 {
+                    // The child has backtracking constructs.  If we have no successful iterations previously processed, just bail.
+                    // If we do have successful iterations previously processed, however, we need to backtrack back into the last one.
+
                     // if (iterationCount == 0) goto originalDoneLabel;
                     // goto doneLabel;
                     Ldloc(iterationCount);

@@ -9710,7 +9710,7 @@ void Compiler::fgValueNumberHelperCallFunc(GenTreeCall* call, VNFunc vnf, ValueN
         case VNF_Box:
         case VNF_BoxNullable:
         {
-            // Generate unique VN so, VNForFunc generates a uniq value number for box nullable.
+            // Generate unique VN so, VNForFunc generates a unique value number for box nullable.
             // Alternatively instead of using vnpUniq below in VNPairForFunc(...),
             // we could use the value number of what the byref arg0 points to.
             //

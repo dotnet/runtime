@@ -344,6 +344,42 @@ namespace System
         /// </summary>
         public byte Scale => (byte)(_flags >> ScaleShift);
 
+        private sbyte Exponent
+        {
+            get
+            {
+                // Decimal tracks its exponent as a scale between 0 and 28. This scale is used
+                // with the significand as `significand / 10^scale`
+                //
+                // The IFloatingPoint contract however follows the general IEEE 754 algorithm
+                // which is `-1^s * b^e * (b^(1-p) * m)`
+                //
+                // In this algorithm
+                // * `s` is the sign
+                // * `b` is the radix (10 for decimal)
+                // * `e` is the exponent
+                // * `p` is the number of bits in the significand
+                // * `m` is the significand itself
+                //
+                // For a value such as decimal.MaxValue, the significand is 79228162514264337593543950335
+                // and the scale is 0. Since decimal tracks 96 significand bits, the required algorithm (simplified)
+                // gives us 7.9228162514264337593543950335 * 10^-67 * 10^e. To get back to our original value we
+                // then need the exponent to be 95.
+                //
+                // For a value such as 1E-28, the significand is 1 and the scale is 28. The required algorithm (simplified)
+                // gives us 1.0 * 10^-95 * 10^e. To get back to our original value we need the exponent to be 67.
+                //
+                // Given that scale is bound by 0 and 28, inclusive, the returned exponent will be between 95
+                // and 67, inclusive. That is between `(p - 1)` and `(p - 1) - MaxScale`.
+                //
+                // The generalized algorithm for converting from scale to exponent is then `exponent = 95 - scale`.
+
+                sbyte exponent = (sbyte)(95 - Scale);
+                Debug.Assert((exponent >= 67) && (exponent <= 95));
+                return exponent;
+            }
+        }
+
         // Adds two Decimal values.
         //
         public static decimal Add(decimal d1, decimal d2)
@@ -1105,6 +1141,64 @@ namespace System
 
         /// <inheritdoc cref="IDivisionOperators{TSelf, TOther, TResult}.op_CheckedDivision(TSelf, TOther)" />
         static decimal IDivisionOperators<decimal, decimal, decimal>.operator checked /(decimal left, decimal right) => left / right;
+
+        //
+        // IFloatingPoint
+        //
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.GetExponentShortestBitLength()" />
+        long IFloatingPoint<decimal>.GetExponentShortestBitLength()
+        {
+            sbyte exponent = Exponent;
+            return (sizeof(sbyte) * 8) - sbyte.LeadingZeroCount(exponent);
+        }
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.GetExponentByteCount()" />
+        int IFloatingPoint<decimal>.GetExponentByteCount() => sizeof(sbyte);
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.TryWriteExponentLittleEndian(Span{byte}, out int)" />
+        bool IFloatingPoint<decimal>.TryWriteExponentLittleEndian(Span<byte> destination, out int bytesWritten)
+        {
+            if (destination.Length >= sizeof(sbyte))
+            {
+                sbyte exponent = Exponent;
+                Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), exponent);
+
+                bytesWritten = sizeof(sbyte);
+                return true;
+            }
+            else
+            {
+                bytesWritten = 0;
+                return false;
+            }
+        }
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.GetSignificandBitLength()" />
+        long IFloatingPoint<decimal>.GetSignificandBitLength() => 96;
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.GetSignificandByteCount()" />
+        int IFloatingPoint<decimal>.GetSignificandByteCount() => sizeof(ulong) + sizeof(uint);
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.TryWriteSignificandLittleEndian(Span{byte}, out int)" />
+        bool IFloatingPoint<decimal>.TryWriteSignificandLittleEndian(Span<byte> destination, out int bytesWritten)
+        {
+            if (destination.Length >= (sizeof(ulong) + sizeof(uint)))
+            {
+                ref byte address = ref MemoryMarshal.GetReference(destination);
+
+                Unsafe.WriteUnaligned(ref address, _lo64);
+                Unsafe.WriteUnaligned(ref Unsafe.AddByteOffset(ref address, sizeof(ulong)), _hi32);
+
+                bytesWritten = sizeof(ulong) + sizeof(uint);
+                return true;
+            }
+            else
+            {
+                bytesWritten = 0;
+                return false;
+            }
+        }
 
         //
         // IIncrementOperators
