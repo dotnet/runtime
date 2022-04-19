@@ -40,8 +40,6 @@ namespace System.Net.Quic.Implementations.MsQuic
             public MsQuicConnection.State ConnectionState = null!; // set in ctor.
             public string TraceId = null!; // set in ctor.
 
-            public uint StartStatus = unchecked((uint)-1);
-
             public ReadState ReadState;
 
             // set when ReadState.Aborted:
@@ -1116,24 +1114,27 @@ namespace System.Net.Quic.Implementations.MsQuic
             // The way we expose Open(Uni|Bi)directionalStreamAsync operations is that the stream
             // is also accepted by the peer (i.e. it is within advertised stream limits). However,
             // We may receive START_COMPLETE notification before the stream is accepted, so we defer
-            // setting state.StartStatus until the stream is accepted or we meet failure along the way.
+            // completing the StartcompletionSource until we get PeerAccepted notification.
 
             if (status != MsQuicStatusCodes.Success)
             {
-                // Start failed, stream not accepted. Store the start status code and check it
-                // when propagating shutdown event, which we'll get since we set SHUTDOWN_ON_FAIL
-                // in StreamStart.
-                // state.StartCompletionSource will be set when handling shutdown event as well.
-                state.StartStatus = status;
-                // TODO: can we complete the StartCompletionSource here?
+                // Start irrecoverably failed. The possible status codes are:
+                //   - Aborted - connection aborted by peer
+                //   - InvalidState - stream already started before, or connection aborted locally
+                //   - StreamLimitReached - only if QUIC_STREAM_START_FLAG_FAIL_BLOCKED was specified (not in our case).
+                //
+                // We disregard duplicate StreamStart calls
+                Debug.Assert(status == MsQuicStatusCodes.Aborted || status == MsQuicStatusCodes.InvalidState);
+                state.StartCompletionSource.SetException(
+                    ExceptionDispatchInfo.SetCurrentStackTrace(GetConnectionAbortedException(state)));
             }
             else if ((evt.Data.StartComplete.PeerAccepted & 1) != 0)
             {
                 // Start succeeded and we were within stream limits, stream already usable.
-                state.StartStatus = status;
-                state.StartCompletionSource.TrySetResult();
-                // TODO: comment when the source is completed when PeerAccepted is 0
+                state.StartCompletionSource.SetResult();
             }
+            // if PeerAccepted == 0, we will later receive PEER_ACCEPTED event, which will
+            // complete the StartCompletionSource
 
             return MsQuicStatusCodes.Success;
         }
@@ -1208,27 +1209,27 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             if (shouldReadComplete)
             {
-                if (state.StartStatus == MsQuicStatusCodes.Success)
+                if (state.StartCompletionSource.Task.IsCompletedSuccessfully)
                 {
                     state.ReceiveResettableCompletionSource.Complete(0);
                 }
                 else
                 {
                     state.ReceiveResettableCompletionSource.CompleteException(
-                        ExceptionDispatchInfo.SetCurrentStackTrace(new QuicOperationAbortedException($"Stream start failed with {MsQuicStatusCodes.GetError(state.StartStatus)}")));
+                        ExceptionDispatchInfo.SetCurrentStackTrace(new QuicOperationAbortedException($"Stream start failed")));
                 }
             }
 
             if (shouldShutdownWriteComplete)
             {
-                if (state.StartStatus == MsQuicStatusCodes.Success)
+                if (state.StartCompletionSource.Task.IsCompletedSuccessfully)
                 {
                     state.ShutdownWriteCompletionSource.SetResult();
                 }
                 else
                 {
                     state.ShutdownWriteCompletionSource.SetException(
-                        ExceptionDispatchInfo.SetCurrentStackTrace(new QuicOperationAbortedException($"Stream start failed with {MsQuicStatusCodes.GetError(state.StartStatus)}")));
+                        ExceptionDispatchInfo.SetCurrentStackTrace(new QuicOperationAbortedException($"Stream start failed")));
                 }
             }
 
@@ -1249,7 +1250,6 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         private static uint HandleEventPeerAccepted(State state)
         {
-            state.StartStatus = MsQuicStatusCodes.Success;
             state.StartCompletionSource.TrySetResult();
             return MsQuicStatusCodes.Success;
         }
@@ -1618,14 +1618,14 @@ namespace System.Net.Quic.Implementations.MsQuic
                     ExceptionDispatchInfo.SetCurrentStackTrace(GetConnectionAbortedException(state)));
             }
 
-            if (state.StartStatus != MsQuicStatusCodes.Success)
+            if (!state.StartCompletionSource.Task.IsCompleted)
             {
-                state.StartCompletionSource.TrySetException(
+                state.StartCompletionSource.SetException(
                     ExceptionDispatchInfo.SetCurrentStackTrace(GetConnectionAbortedException(state)));
             }
 
             // Dispose was called before complete event.
-            bool releaseHandles = Interlocked.Exchange(ref state.ShutdownDone, 2) == 1;
+            bool releaseHandles = Interlocked.Exchange(ref state.ShutdownDone, State.ShutdownDone_NotificationReceived) == State.ShutdownDone_Disposed;
             if (releaseHandles)
             {
                 state.Cleanup();
