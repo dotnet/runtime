@@ -32,7 +32,7 @@ namespace ILLink.Shared.TypeSystemProxy
 
 		internal partial bool IsStatic () => Method.IsStatic;
 
-		internal partial bool ReturnsVoid () => Method.ReturnType.MetadataType == MetadataType.Void;
+		internal partial bool ReturnsVoid () => Method.ReturnsVoid ();
 
 		public override string ToString () => Method.ToString ();
 	}

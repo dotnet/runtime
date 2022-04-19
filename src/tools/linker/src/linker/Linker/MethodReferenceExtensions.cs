@@ -74,6 +74,11 @@ namespace Mono.Linker
 			return method.ReturnType;
 		}
 
+		public static bool ReturnsVoid (this IMethodSignature method)
+		{
+			return method.ReturnType.WithoutModifiers ().MetadataType == MetadataType.Void;
+		}
+
 		public static TypeReference? GetParameterType (this MethodReference method, int parameterIndex, LinkContext context)
 		{
 			if (method.DeclaringType is GenericInstanceType genericInstance)

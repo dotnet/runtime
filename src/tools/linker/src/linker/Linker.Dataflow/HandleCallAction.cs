@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using ILLink.Shared.TypeSystemProxy;
@@ -37,6 +38,19 @@ namespace ILLink.Shared.TrimAnalysis
 		private partial bool MethodRequiresDataFlowAnalysis (MethodProxy method)
 			=> _context.Annotations.FlowAnnotations.RequiresDataFlowAnalysis (method.Method);
 
+		private partial bool MethodIsTypeConstructor (MethodProxy method)
+		{
+			if (!method.Method.IsConstructor)
+				return false;
+			TypeDefinition? type = method.Method.DeclaringType;
+			while (type is not null) {
+				if (type.IsTypeOf (WellKnownType.System_Type))
+					return true;
+				type = _context.Resolve (type.BaseType);
+			}
+			return false;
+		}
+
 		private partial DynamicallyAccessedMemberTypes GetReturnValueAnnotation (MethodProxy method)
 			=> _context.Annotations.FlowAnnotations.GetReturnParameterAnnotation (method.Method);
 
@@ -46,8 +60,17 @@ namespace ILLink.Shared.TrimAnalysis
 		private partial GenericParameterValue GetGenericParameterValue (GenericParameterProxy genericParameter)
 			=> new (genericParameter.GenericParameter, _context.Annotations.FlowAnnotations.GetGenericParameterAnnotation (genericParameter.GenericParameter));
 
+		private partial MethodThisParameterValue GetMethodThisParameterValue (MethodProxy method)
+			=> GetMethodThisParameterValue (method, _context.Annotations.FlowAnnotations.GetParameterAnnotation (method.Method, 0));
+
 		private partial MethodThisParameterValue GetMethodThisParameterValue (MethodProxy method, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
 			=> new (method.Method, dynamicallyAccessedMemberTypes);
+
+		private partial DynamicallyAccessedMemberTypes GetMethodParameterAnnotation (MethodProxy method, int parameterIndex)
+		{
+			Debug.Assert (method.Method.Parameters.Count > parameterIndex);
+			return _context.Annotations.FlowAnnotations.GetParameterAnnotation (method.Method, parameterIndex + (method.IsStatic () ? 0 : 1));
+		}
 
 		private partial MethodParameterValue GetMethodParameterValue (MethodProxy method, int parameterIndex, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
 			=> new (

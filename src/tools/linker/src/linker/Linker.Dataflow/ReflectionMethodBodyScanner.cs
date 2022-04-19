@@ -70,7 +70,7 @@ namespace Mono.Linker.Dataflow
 		{
 			Scan (methodBody);
 
-			if (GetReturnTypeWithoutModifiers (methodBody.Method.ReturnType).MetadataType != MetadataType.Void) {
+			if (!methodBody.Method.ReturnsVoid ()) {
 				var method = methodBody.Method;
 				var methodReturnValue = GetMethodReturnValue (method);
 				if (methodReturnValue.DynamicallyAccessedMemberTypes != 0) {
@@ -302,6 +302,29 @@ namespace Mono.Linker.Dataflow
 			case var fieldOrPropertyInstrinsic when fieldOrPropertyInstrinsic == IntrinsicId.Expression_Field || fieldOrPropertyInstrinsic == IntrinsicId.Expression_Property:
 			case IntrinsicId.Type_get_BaseType:
 			case IntrinsicId.Type_GetConstructor: {
+					var instanceValue = MultiValueLattice.Top;
+					IReadOnlyList<MultiValue> parameterValues = methodParams;
+					if (calledMethodDefinition.HasImplicitThis ()) {
+						instanceValue = methodParams[0];
+						parameterValues = parameterValues.Skip (1).ToImmutableList ();
+					}
+					return handleCallAction.Invoke (calledMethodDefinition, instanceValue, parameterValues, out methodReturnValue, out _);
+				}
+
+			case IntrinsicId.None: {
+					if (calledMethodDefinition.IsPInvokeImpl) {
+						// Is the PInvoke dangerous?
+						bool comDangerousMethod = IsComInterop (calledMethodDefinition.MethodReturnType, calledMethodDefinition.ReturnType);
+						foreach (ParameterDefinition pd in calledMethodDefinition.Parameters) {
+							comDangerousMethod |= IsComInterop (pd, pd.ParameterType);
+						}
+
+						if (comDangerousMethod) {
+							analysisContext.ReportWarning (DiagnosticId.CorrectnessOfCOMCannotBeGuaranteed, calledMethodDefinition.GetDisplayName ());
+						}
+					}
+					_markStep.CheckAndReportRequiresUnreferencedCode (calledMethodDefinition);
+
 					var instanceValue = MultiValueLattice.Top;
 					IReadOnlyList<MultiValue> parameterValues = methodParams;
 					if (calledMethodDefinition.HasImplicitThis ()) {
@@ -757,46 +780,13 @@ namespace Mono.Linker.Dataflow
 				break;
 
 			default:
-
-				if (calledMethodDefinition.IsPInvokeImpl) {
-					// Is the PInvoke dangerous?
-					bool comDangerousMethod = IsComInterop (calledMethodDefinition.MethodReturnType, calledMethodDefinition.ReturnType);
-					foreach (ParameterDefinition pd in calledMethodDefinition.Parameters) {
-						comDangerousMethod |= IsComInterop (pd, pd.ParameterType);
-					}
-
-					if (comDangerousMethod) {
-						analysisContext.ReportWarning (DiagnosticId.CorrectnessOfCOMCannotBeGuaranteed, calledMethodDefinition.GetDisplayName ());
-					}
-				}
-
-				if (requiresDataFlowAnalysis) {
-					for (int parameterIndex = 0; parameterIndex < methodParams.Count; parameterIndex++) {
-						var targetValue = GetMethodParameterValue (calledMethodDefinition, parameterIndex);
-
-						if (targetValue.DynamicallyAccessedMemberTypes != DynamicallyAccessedMemberTypes.None) {
-							RequireDynamicallyAccessedMembers (analysisContext, methodParams[parameterIndex], targetValue);
-						}
-					}
-				}
-
-				_markStep.CheckAndReportRequiresUnreferencedCode (calledMethodDefinition);
-
-				// To get good reporting of errors we need to track the origin of the value for all method calls
-				// but except Newobj as those are special.
-				if (GetReturnTypeWithoutModifiers (calledMethodDefinition.ReturnType).MetadataType != MetadataType.Void) {
-					methodReturnValue = GetMethodReturnValue (calledMethodDefinition, returnValueDynamicallyAccessedMemberTypes);
-
-					return true;
-				}
-
-				return false;
+				throw new NotImplementedException ("Unhandled instrinsic");
 			}
 
 			// If we get here, we handled this as an intrinsic.  As a convenience, if the code above
 			// didn't set the return value (and the method has a return value), we will set it to be an
 			// unknown value with the return type of the method.
-			bool returnsVoid = GetReturnTypeWithoutModifiers (calledMethod.ReturnType).MetadataType == MetadataType.Void;
+			bool returnsVoid = calledMethod.ReturnsVoid ();
 			methodReturnValue = maybeMethodReturnValue ?? (returnsVoid ?
 				MultiValueLattice.Top :
 				GetMethodReturnValue (calledMethodDefinition, returnValueDynamicallyAccessedMemberTypes));
