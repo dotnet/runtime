@@ -1360,15 +1360,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     numRegistersUsed++;
                 }
 
-                // DESKTOP BEHAVIOR - This block is disabled for x86 as the param arg is the last argument on .NET Framework x86.
-                if (HasParamType)
-                {
-                    numRegistersUsed++;
-                    _paramTypeLoc = (numRegistersUsed == 1) ?
-                        ParamTypeLocation.Ecx : ParamTypeLocation.Edx;
-                    Debug.Assert(numRegistersUsed <= 2);
-                }
-
                 if (IsVarArg)
                 {
                     nSizeOfArgStack += _transitionBlock.PointerSize;
