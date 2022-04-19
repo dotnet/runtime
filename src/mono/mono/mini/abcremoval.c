@@ -1191,6 +1191,8 @@ process_block (MonoCompile *cfg, MonoBasicBlock *bb, MonoVariableRelationsEvalua
 			}
 		}
 
+MONO_DISABLE_WARNING(4127) /* conditional expression is constant */
+
 		/*
 		 * Eliminate MONO_INST_FAULT flags if possible.
 		 */
@@ -1229,6 +1231,8 @@ process_block (MonoCompile *cfg, MonoBasicBlock *bb, MonoVariableRelationsEvalua
 			}
 			*/
 		}
+
+MONO_RESTORE_WARNING
 	}
 
 	for (dominated_bb = bb->dominated; dominated_bb != NULL; dominated_bb = dominated_bb->next) {

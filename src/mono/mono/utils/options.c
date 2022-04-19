@@ -99,7 +99,6 @@ void
 mono_options_parse_options (const char **argv, int argc, int *out_argc, MonoError *error)
 {
 	int aindex = 0;
-	int i;
 	GHashTable *option_hash = NULL;
 
 	while (aindex < argc) {
@@ -114,7 +113,7 @@ mono_options_parse_options (const char **argv, int argc, int *out_argc, MonoErro
 		if (option_hash == NULL) {
 			/* Compute a hash to avoid n^2 behavior */
 			option_hash = g_hash_table_new (g_str_hash, g_str_equal);
-			for (i = 0; i < G_N_ELEMENTS (option_meta); ++i) {
+			for (size_t i = 0; i < G_N_ELEMENTS (option_meta); ++i) {
 				g_hash_table_insert (option_hash, (gpointer)option_meta [i].cmd_name, &option_meta [i]);
 			}
 		}
@@ -216,7 +215,7 @@ mono_options_parse_options (const char **argv, int argc, int *out_argc, MonoErro
 
 	/* Remove processed arguments */
 	aindex = 0;
-	for (i = 0; i < argc; ++i) {
+	for (int i = 0; i < argc; ++i) {
 		if (argv [i])
 			argv [aindex ++] = argv [i];
 	}

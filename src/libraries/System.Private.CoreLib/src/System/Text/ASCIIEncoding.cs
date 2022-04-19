@@ -236,7 +236,7 @@ namespace System.Text
 
             if ((uint)byteIndex > bytes!.Length)
             {
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.byteIndex, ExceptionResource.ArgumentOutOfRange_Index);
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.byteIndex, ExceptionResource.ArgumentOutOfRange_IndexMustBeLessOrEqual);
             }
 
             fixed (char* pChars = chars)
@@ -286,7 +286,7 @@ namespace System.Text
 
             if ((uint)byteIndex > bytes!.Length)
             {
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.byteIndex, ExceptionResource.ArgumentOutOfRange_Index);
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.byteIndex, ExceptionResource.ArgumentOutOfRange_IndexMustBeLessOrEqual);
             }
 
             fixed (char* pChars = chars)
@@ -570,7 +570,7 @@ namespace System.Text
 
             if ((uint)charIndex > (uint)chars!.Length)
             {
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.charIndex, ExceptionResource.ArgumentOutOfRange_Index);
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.charIndex, ExceptionResource.ArgumentOutOfRange_IndexMustBeLessOrEqual);
             }
 
             fixed (byte* pBytes = bytes)

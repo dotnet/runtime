@@ -4,10 +4,11 @@
 // non-local exits in a catch handler nested in another catch handler
 
 using System;
+using Xunit;
 
-namespace hello
+namespace hello_cascadedcatch_general_cs
 {
-    class Class1
+    public class Class1
     {
         private static TestUtil.TestLog testLog;
 
@@ -57,7 +58,8 @@ namespace hello
             Console.WriteLine("in Finally");
         }
 
-        static public int Main()
+        [Fact]
+        static public int TestEntryPoint()
         {
             string[] args = new string[] {};
 

@@ -246,6 +246,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             internal IntPtr Reserved; // Currently unused
             // TODO: define delegate for AsyncHandler and make proper use of it.
             internal IntPtr AsyncHandler;
+            internal QUIC_ALLOWED_CIPHER_SUITE_FLAGS AllowedCipherSuites;
 
             [CustomTypeMarshaller(typeof(CredentialConfig), Features = CustomTypeMarshallerFeatures.UnmanagedResources)]
             [StructLayout(LayoutKind.Sequential)]
@@ -258,6 +259,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                 internal IntPtr Principal;
                 internal IntPtr Reserved;
                 internal IntPtr AsyncHandler;
+                internal QUIC_ALLOWED_CIPHER_SUITE_FLAGS AllowedCipherSuites;
 
                 public Native(CredentialConfig managed)
                 {
@@ -267,6 +269,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                     Principal = Marshal.StringToCoTaskMemUTF8(managed.Principal);
                     Reserved = managed.Reserved;
                     AsyncHandler = managed.AsyncHandler;
+                    AllowedCipherSuites = managed.AllowedCipherSuites;
                 }
 
                 public CredentialConfig ToManaged()
@@ -278,7 +281,8 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                         Certificate = Certificate,
                         Principal = Marshal.PtrToStringUTF8(Principal)!,
                         Reserved = Reserved,
-                        AsyncHandler = AsyncHandler
+                        AsyncHandler = AsyncHandler,
+                        AllowedCipherSuites = AllowedCipherSuites
                     };
                 }
 
@@ -696,7 +700,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             QUIC_SEND_FLAGS flags,
             IntPtr clientSendContext);
 
-        internal delegate uint StreamReceiveCompleteDelegate(
+        internal delegate void StreamReceiveCompleteDelegate(
             SafeMsQuicStreamHandle stream,
             ulong bufferLength);
 
@@ -1376,9 +1380,8 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
 
                 return __retVal;
             }
-            internal uint StreamReceiveComplete(SafeMsQuicStreamHandle stream, ulong bufferLength)
+            internal void StreamReceiveComplete(SafeMsQuicStreamHandle stream, ulong bufferLength)
             {
-                uint __retVal;
                 //
                 // Setup
                 //
@@ -1390,7 +1393,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                     //
                     stream.DangerousAddRef(ref stream__addRefd);
                     IntPtr __stream_gen_native = stream.DangerousGetHandle();
-                    __retVal = ((delegate* unmanaged[Cdecl]<IntPtr, ulong, uint>)_functionPointer)(__stream_gen_native, bufferLength);
+                    ((delegate* unmanaged[Cdecl]<IntPtr, ulong, void>)_functionPointer)(__stream_gen_native, bufferLength);
                 }
                 finally
                 {
@@ -1400,8 +1403,6 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                     if (stream__addRefd)
                         stream.DangerousRelease();
                 }
-
-                return __retVal;
             }
             internal uint StreamReceiveSetEnabled(SafeMsQuicStreamHandle stream, bool enabled)
             {

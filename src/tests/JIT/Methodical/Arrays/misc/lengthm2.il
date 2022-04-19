@@ -23,12 +23,12 @@
 }
 .assembly extern xunit.core {}
 // MVID: {23E3D49B-6CFD-4DA0-8C9D-A611CE0BA103}
-.namespace JitTest
+.namespace JitTest_lengthm2_misc_il
 {
-  .class private auto ansi Test
+  .class public auto ansi Test
          extends [mscorlib]System.Object
   {
-    .method private hidebysig static int32
+    .method public hidebysig static int32
             Main() il managed
     {
 		.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
@@ -99,6 +99,6 @@
 
   } // end of class 'Test'
 
-} // end of namespace 'JitTest'
+} // end of namespace 'JitTest_lengthm2_misc_il'
 
 //*********** DISASSEMBLY COMPLETE ***********************

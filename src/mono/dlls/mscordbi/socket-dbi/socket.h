@@ -7,8 +7,17 @@
 #ifndef __SOCKET_DBI_H__
 #define __SOCKET_DBI_H__
 
+#ifdef WIN32
+#include <winsock2.h>
+#endif
+
 class Socket {
+#ifdef WIN32
+    SOCKET socketId;
+#else
     long long socketId;
+#endif
+
 public:
     ~Socket();
     int OpenSocketAcceptConnection(const char *address, const char *port);

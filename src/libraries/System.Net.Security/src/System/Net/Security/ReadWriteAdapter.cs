@@ -7,7 +7,6 @@ using System.Threading.Tasks;
 
 namespace System.Net.Security
 {
-#pragma warning disable CA2252 // This API requires opting into preview features
     internal interface IReadWriteAdapter
     {
         static abstract ValueTask<int> ReadAsync(Stream stream, Memory<byte> buffer, CancellationToken cancellationToken);
@@ -15,7 +14,6 @@ namespace System.Net.Security
         static abstract Task FlushAsync(Stream stream, CancellationToken cancellationToken);
         static abstract Task WaitAsync(TaskCompletionSource<bool> waiter);
     }
-#pragma warning restore CA2252
 
     internal readonly struct AsyncReadWriteAdapter : IReadWriteAdapter
     {

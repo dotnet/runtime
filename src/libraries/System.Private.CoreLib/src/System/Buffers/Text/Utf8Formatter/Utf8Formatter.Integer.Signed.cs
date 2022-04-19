@@ -25,8 +25,12 @@ namespace System.Buffers.Text
             {
                 case 'G':
                 case 'g':
+                case 'R':
+                case 'r': // treat 'r' (which historically was only for floating-point) as being equivalent to 'g', rather than throwing
                     if (format.HasPrecision)
+                    {
                         throw new NotSupportedException(SR.Argument_GWithPrecisionNotSupported); // With a precision, 'G' can produce exponential format, even for integers.
+                    }
                     return TryFormatInt64D(value, format.Precision, destination, out bytesWritten);
 
                 case 'd':

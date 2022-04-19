@@ -5,6 +5,7 @@ using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
@@ -66,8 +67,8 @@ namespace System
           IEquatable<decimal>,
           ISerializable,
           IDeserializationCallback,
-          IMinMaxValue<decimal>,
-          ISignedNumber<decimal>
+          IFloatingPoint<decimal>,
+          IMinMaxValue<decimal>
     {
         // Sign mask for the flags field. A value of zero in this bit indicates a
         // positive Decimal value, and a value of one in this bit indicates a
@@ -103,13 +104,13 @@ namespace System
         public const decimal MinValue = -79228162514264337593543950335m;
 
         /// <summary>Represents the additive identity (0).</summary>
-        public const decimal AdditiveIdentity = 0m;
+        private const decimal AdditiveIdentity = 0m;
 
         /// <summary>Represents the multiplicative identity (1).</summary>
-        public const decimal MultiplicativeIdentity = 1m;
+        private const decimal MultiplicativeIdentity = 1m;
 
         /// <summary>Represents the number negative one (-1).</summary>
-        public const decimal NegativeOne = -1m;
+        private const decimal NegativeOne = -1m;
 
         // The lo, mid, hi, and flags fields contain the representation of the
         // Decimal value. The lo, mid, and hi fields contain the 96-bit integer
@@ -343,6 +344,42 @@ namespace System
         /// </summary>
         public byte Scale => (byte)(_flags >> ScaleShift);
 
+        private sbyte Exponent
+        {
+            get
+            {
+                // Decimal tracks its exponent as a scale between 0 and 28. This scale is used
+                // with the significand as `significand / 10^scale`
+                //
+                // The IFloatingPoint contract however follows the general IEEE 754 algorithm
+                // which is `-1^s * b^e * (b^(1-p) * m)`
+                //
+                // In this algorithm
+                // * `s` is the sign
+                // * `b` is the radix (10 for decimal)
+                // * `e` is the exponent
+                // * `p` is the number of bits in the significand
+                // * `m` is the significand itself
+                //
+                // For a value such as decimal.MaxValue, the significand is 79228162514264337593543950335
+                // and the scale is 0. Since decimal tracks 96 significand bits, the required algorithm (simplified)
+                // gives us 7.9228162514264337593543950335 * 10^-67 * 10^e. To get back to our original value we
+                // then need the exponent to be 95.
+                //
+                // For a value such as 1E-28, the significand is 1 and the scale is 28. The required algorithm (simplified)
+                // gives us 1.0 * 10^-95 * 10^e. To get back to our original value we need the exponent to be 67.
+                //
+                // Given that scale is bound by 0 and 28, inclusive, the returned exponent will be between 95
+                // and 67, inclusive. That is between `(p - 1)` and `(p - 1) - MaxScale`.
+                //
+                // The generalized algorithm for converting from scale to exponent is then `exponent = 95 - scale`.
+
+                sbyte exponent = (sbyte)(95 - Scale);
+                Debug.Assert((exponent >= 67) && (exponent <= 95));
+                return exponent;
+            }
+        }
+
         // Adds two Decimal values.
         //
         public static decimal Add(decimal d1, decimal d2)
@@ -443,7 +480,7 @@ namespace System
             return Number.FormatDecimal(this, null, NumberFormatInfo.CurrentInfo);
         }
 
-        public string ToString(string? format)
+        public string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format)
         {
             return Number.FormatDecimal(this, format, NumberFormatInfo.CurrentInfo);
         }
@@ -453,12 +490,12 @@ namespace System
             return Number.FormatDecimal(this, null, NumberFormatInfo.GetInstance(provider));
         }
 
-        public string ToString(string? format, IFormatProvider? provider)
+        public string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format, IFormatProvider? provider)
         {
             return Number.FormatDecimal(this, format, NumberFormatInfo.GetInstance(provider));
         }
 
-        public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format = default, IFormatProvider? provider = null)
+        public bool TryFormat(Span<char> destination, out int charsWritten, [StringSyntax(StringSyntaxAttribute.NumericFormat)] ReadOnlySpan<char> format = default, IFormatProvider? provider = null)
         {
             return Number.TryFormatDecimal(this, format, NumberFormatInfo.GetInstance(provider), destination, out charsWritten);
         }
@@ -664,8 +701,6 @@ namespace System
             return d;
         }
 
-        internal static int Sign(in decimal d) => (d.Low64 | d.High) == 0 ? 0 : (d._flags >> 31) | 1;
-
         // Subtracts two Decimal values.
         //
         public static decimal Subtract(decimal d1, decimal d2)
@@ -753,7 +788,7 @@ namespace System
             if ((d.High | d.Mid) == 0)
             {
                 int i = (int)d.Low;
-                if (!d.IsNegative)
+                if (!IsNegative(d))
                 {
                     if (i >= 0) return i;
                 }
@@ -776,7 +811,7 @@ namespace System
             if (d.High == 0)
             {
                 long l = (long)d.Low64;
-                if (!d.IsNegative)
+                if (!IsNegative(d))
                 {
                     if (l >= 0) return l;
                 }
@@ -821,7 +856,7 @@ namespace System
             if ((d.High| d.Mid) == 0)
             {
                 uint i = d.Low;
-                if (!d.IsNegative || i == 0)
+                if (!IsNegative(d) || i == 0)
                     return i;
             }
             throw new OverflowException(SR.Overflow_UInt32);
@@ -838,7 +873,7 @@ namespace System
             if (d.High == 0)
             {
                 ulong l = d.Low64;
-                if (!d.IsNegative || l == 0)
+                if (!IsNegative(d) || l == 0)
                     return l;
             }
             throw new OverflowException(SR.Overflow_UInt64);
@@ -1083,8 +1118,8 @@ namespace System
         // IAdditionOperators
         //
 
-        // /// <inheritdoc cref="IAdditionOperators{TSelf, TOther, TResult}.op_Addition(TSelf, TOther)" />
-        // static decimal IAdditionOperators<decimal, decimal, decimal>.operator checked +(decimal left, decimal right) => checked(left + right);
+        /// <inheritdoc cref="IAdditionOperators{TSelf, TOther, TResult}.op_Addition(TSelf, TOther)" />
+        static decimal IAdditionOperators<decimal, decimal, decimal>.operator checked +(decimal left, decimal right) => left + right;
 
         //
         // IAdditiveIdentity
@@ -1097,22 +1132,80 @@ namespace System
         // IDecrementOperators
         //
 
-        // /// <inheritdoc cref="IDecrementOperators{TSelf}.op_CheckedDecrement(TSelf)" />
-        // static decimal IDecrementOperators<decimal>.operator checked --(decimal value) => checked(--value);
+        /// <inheritdoc cref="IDecrementOperators{TSelf}.op_CheckedDecrement(TSelf)" />
+        static decimal IDecrementOperators<decimal>.operator checked --(decimal value) => --value;
 
         //
         // IDivisionOperators
         //
 
-        // /// <inheritdoc cref="IDivisionOperators{TSelf, TOther, TResult}.op_CheckedDivision(TSelf, TOther)" />
-        // static decimal IDivisionOperators<decimal, decimal, decimal>.operator checked /(decimal left, decimal right) => checked(left / right);
+        /// <inheritdoc cref="IDivisionOperators{TSelf, TOther, TResult}.op_CheckedDivision(TSelf, TOther)" />
+        static decimal IDivisionOperators<decimal, decimal, decimal>.operator checked /(decimal left, decimal right) => left / right;
+
+        //
+        // IFloatingPoint
+        //
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.GetExponentShortestBitLength()" />
+        long IFloatingPoint<decimal>.GetExponentShortestBitLength()
+        {
+            sbyte exponent = Exponent;
+            return (sizeof(sbyte) * 8) - sbyte.LeadingZeroCount(exponent);
+        }
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.GetExponentByteCount()" />
+        int IFloatingPoint<decimal>.GetExponentByteCount() => sizeof(sbyte);
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.TryWriteExponentLittleEndian(Span{byte}, out int)" />
+        bool IFloatingPoint<decimal>.TryWriteExponentLittleEndian(Span<byte> destination, out int bytesWritten)
+        {
+            if (destination.Length >= sizeof(sbyte))
+            {
+                sbyte exponent = Exponent;
+                Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), exponent);
+
+                bytesWritten = sizeof(sbyte);
+                return true;
+            }
+            else
+            {
+                bytesWritten = 0;
+                return false;
+            }
+        }
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.GetSignificandBitLength()" />
+        long IFloatingPoint<decimal>.GetSignificandBitLength() => 96;
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.GetSignificandByteCount()" />
+        int IFloatingPoint<decimal>.GetSignificandByteCount() => sizeof(ulong) + sizeof(uint);
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.TryWriteSignificandLittleEndian(Span{byte}, out int)" />
+        bool IFloatingPoint<decimal>.TryWriteSignificandLittleEndian(Span<byte> destination, out int bytesWritten)
+        {
+            if (destination.Length >= (sizeof(ulong) + sizeof(uint)))
+            {
+                ref byte address = ref MemoryMarshal.GetReference(destination);
+
+                Unsafe.WriteUnaligned(ref address, _lo64);
+                Unsafe.WriteUnaligned(ref Unsafe.AddByteOffset(ref address, sizeof(ulong)), _hi32);
+
+                bytesWritten = sizeof(ulong) + sizeof(uint);
+                return true;
+            }
+            else
+            {
+                bytesWritten = 0;
+                return false;
+            }
+        }
 
         //
         // IIncrementOperators
         //
 
-        // /// <inheritdoc cref="IIncrementOperators{TSelf}.op_CheckedIncrement(TSelf)" />
-        // static decimal IIncrementOperators<decimal>.operator checked ++(decimal value) => checked(++value);
+        /// <inheritdoc cref="IIncrementOperators{TSelf}.op_CheckedIncrement(TSelf)" />
+        static decimal IIncrementOperators<decimal>.operator checked ++(decimal value) => ++value;
 
         //
         // IMinMaxValue
@@ -1135,18 +1228,12 @@ namespace System
         // IMultiplyOperators
         //
 
-        // /// <inheritdoc cref="IMultiplyOperators{TSelf, TOther, TResult}.op_CheckedMultiply(TSelf, TOther)" />
-        // public static decimal operator checked *(decimal left, decimal right) => checked(left * right);
+        /// <inheritdoc cref="IMultiplyOperators{TSelf, TOther, TResult}.op_CheckedMultiply(TSelf, TOther)" />
+        public static decimal operator checked *(decimal left, decimal right) => left * right;
 
         //
         // INumber
         //
-
-        /// <inheritdoc cref="INumber{TSelf}.One" />
-        static decimal INumber<decimal>.One => One;
-
-        /// <inheritdoc cref="INumber{TSelf}.Zero" />
-        static decimal INumber<decimal>.Zero => Zero;
 
         /// <inheritdoc cref="INumber{TSelf}.Abs(TSelf)" />
         public static decimal Abs(decimal value)
@@ -1154,9 +1241,18 @@ namespace System
             return new decimal(in value, value._flags & ~SignMask);
         }
 
-        /// <inheritdoc cref="INumber{TSelf}.Create{TOther}(TOther)" />
+        /// <inheritdoc cref="INumber{TSelf}.Clamp(TSelf, TSelf, TSelf)" />
+        public static decimal Clamp(decimal value, decimal min, decimal max) => Math.Clamp(value, min, max);
+
+        /// <inheritdoc cref="INumber{TSelf}.CopySign(TSelf, TSelf)" />
+        public static decimal CopySign(decimal value, decimal sign)
+        {
+            return new decimal(in value, (value._flags & ~SignMask) | (sign._flags & SignMask));
+        }
+
+        /// <inheritdoc cref="INumber{TSelf}.CreateChecked{TOther}(TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static decimal Create<TOther>(TOther value)
+        public static decimal CreateChecked<TOther>(TOther value)
             where TOther : INumber<TOther>
         {
             if (typeof(TOther) == typeof(byte))
@@ -1358,11 +1454,8 @@ namespace System
             }
         }
 
-        /// <inheritdoc cref="INumber{TSelf}.Clamp(TSelf, TSelf, TSelf)" />
-        public static decimal Clamp(decimal value, decimal min, decimal max) => Math.Clamp(value, min, max);
-
-        /// <inheritdoc cref="INumber{TSelf}.DivRem(TSelf, TSelf)" />
-        public static (decimal Quotient, decimal Remainder) DivRem(decimal left, decimal right) => (left / right, left % right);
+        /// <inheritdoc cref="INumber{TSelf}.IsNegative(TSelf)" />
+        public static bool IsNegative(decimal value) => value._flags < 0;
 
         /// <inheritdoc cref="INumber{TSelf}.Max(TSelf, TSelf)" />
         public static decimal Max(decimal x, decimal y)
@@ -1370,14 +1463,20 @@ namespace System
             return DecCalc.VarDecCmp(in x, in y) >= 0 ? x : y;
         }
 
+        /// <inheritdoc cref="INumber{TSelf}.MaxMagnitude(TSelf, TSelf)" />
+        public static decimal MaxMagnitude(decimal x, decimal y) => (Abs(x) >= Abs(y)) ? x : y;
+
         /// <inheritdoc cref="INumber{TSelf}.Min(TSelf, TSelf)" />
         public static decimal Min(decimal x, decimal y)
         {
             return DecCalc.VarDecCmp(in x, in y) < 0 ? x : y;
         }
 
+        /// <inheritdoc cref="INumber{TSelf}.MinMagnitude(TSelf, TSelf)" />
+        public static decimal MinMagnitude(decimal x, decimal y) => (Abs(x) <= Abs(y)) ? x : y;
+
         /// <inheritdoc cref="INumber{TSelf}.Sign(TSelf)" />
-        static decimal INumber<decimal>.Sign(decimal value) => Math.Sign(value);
+        public static int Sign(decimal d) => (d.Low64 | d.High) == 0 ? 0 : (d._flags >> 31) | 1;
 
         /// <inheritdoc cref="INumber{TSelf}.TryCreate{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1463,7 +1562,17 @@ namespace System
         }
 
         //
-        // IParseable
+        // INumberBase
+        //
+
+        /// <inheritdoc cref="INumberBase{TSelf}.One" />
+        static decimal INumberBase<decimal>.One => One;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.Zero" />
+        static decimal INumberBase<decimal>.Zero => Zero;
+
+        //
+        // IParsable
         //
 
         public static bool TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out decimal result) => TryParse(s, NumberStyles.Number, provider, out result);
@@ -1476,34 +1585,27 @@ namespace System
         static decimal ISignedNumber<decimal>.NegativeOne => NegativeOne;
 
         //
-        // ISpanParseable
+        // ISpanParsable
         //
 
-        /// <inheritdoc cref="ISpanParseable{TSelf}.Parse(ReadOnlySpan{char}, IFormatProvider?)" />
+        /// <inheritdoc cref="ISpanParsable{TSelf}.Parse(ReadOnlySpan{char}, IFormatProvider?)" />
         public static decimal Parse(ReadOnlySpan<char> s, IFormatProvider? provider) => Parse(s, NumberStyles.Number, provider);
 
-        /// <inheritdoc cref="ISpanParseable{TSelf}.TryParse(ReadOnlySpan{char}, IFormatProvider?, out TSelf)" />
+        /// <inheritdoc cref="ISpanParsable{TSelf}.TryParse(ReadOnlySpan{char}, IFormatProvider?, out TSelf)" />
         public static bool TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out decimal result) => TryParse(s, NumberStyles.Number, provider, out result);
 
         //
         // ISubtractionOperators
         //
 
-        // /// <inheritdoc cref="ISubtractionOperators{TSelf, TOther, TResult}.op_CheckedSubtraction(TSelf, TOther)" />
-        // static decimal ISubtractionOperators<decimal, decimal, decimal>.operator checked -(decimal left, decimal right) => checked(left - right);
+        /// <inheritdoc cref="ISubtractionOperators{TSelf, TOther, TResult}.op_CheckedSubtraction(TSelf, TOther)" />
+        static decimal ISubtractionOperators<decimal, decimal, decimal>.operator checked -(decimal left, decimal right) => left - right;
 
         //
         // IUnaryNegationOperators
         //
 
-        // /// <inheritdoc cref="IUnaryNegationOperators{TSelf, TResult}.op_CheckedUnaryNegation(TSelf)" />
-        // static decimal IUnaryNegationOperators<decimal, decimal>.operator checked -(decimal value) => checked(-value);
-
-        //
-        // IUnaryPlusOperators
-        //
-
-        // /// <inheritdoc cref="IUnaryPlusOperators{TSelf, TResult}.op_CheckedUnaryPlus(TSelf)" />
-        // static decimal IUnaryPlusOperators<decimal, decimal>.operator checked +(decimal value) => checked(+value);
+        /// <inheritdoc cref="IUnaryNegationOperators{TSelf, TResult}.op_CheckedUnaryNegation(TSelf)" />
+        static decimal IUnaryNegationOperators<decimal, decimal>.operator checked -(decimal value) => -value;
     }
 }
