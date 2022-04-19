@@ -5322,14 +5322,12 @@ void CodeGen::genCall(GenTreeCall* call)
     }
 
     // Consume all the arg regs
-    for (GenTreeCall::Use& use : call->LateArgs())
+    for (CallArg& arg : call->gtArgs.LateArgs())
     {
-        GenTree* argNode = use.GetNode();
+        CallArgABIInformation& abiInfo = arg.AbiInfo;
+        GenTree*               argNode = arg.GetLateNode();
 
-        fgArgTabEntry* curArgTabEntry = compiler->gtArgEntryByNode(call, argNode->gtSkipReloadOrCopy());
-        assert(curArgTabEntry);
-
-        if (curArgTabEntry->GetRegNum() == REG_STK)
+        if (abiInfo.GetRegNum() == REG_STK)
         {
             continue;
         }
@@ -5343,7 +5341,7 @@ void CodeGen::genCall(GenTreeCall* call)
             {
                 GenTree* putArgRegNode = use.GetNode();
                 assert(putArgRegNode->gtOper == GT_PUTARG_REG);
-                regNumber argReg = curArgTabEntry->GetRegNum(regIndex++);
+                regNumber argReg = abiInfo.GetRegNum(regIndex++);
 
                 genConsumeReg(putArgRegNode);
 
@@ -5356,7 +5354,7 @@ void CodeGen::genCall(GenTreeCall* call)
         else
 #endif // UNIX_AMD64_ABI
         {
-            regNumber argReg = curArgTabEntry->GetRegNum();
+            regNumber argReg = abiInfo.GetRegNum();
             genConsumeReg(argNode);
             inst_Mov_Extend(argNode->TypeGet(), /* srcInReg */ false, argReg, argNode->GetRegNum(), /* canSkip */ true,
                             emitActualTypeSize(TYP_I_IMPL));
@@ -5378,18 +5376,16 @@ void CodeGen::genCall(GenTreeCall* call)
     // The call will pop its arguments.
     // for each putarg_stk:
     target_ssize_t stackArgBytes = 0;
-    for (GenTreeCall::Use& use : call->Args())
+    for (CallArg& arg : call->gtArgs.Args())
     {
-        GenTree* arg = use.GetNode();
-        if (arg->OperIs(GT_PUTARG_STK) && ((arg->gtFlags & GTF_LATE_ARG) == 0))
+        GenTree* argNode = arg.GetEarlyNode();
+        if (argNode->OperIs(GT_PUTARG_STK) && ((argNode->gtFlags & GTF_LATE_ARG) == 0))
         {
-            GenTree* source = arg->AsPutArgStk()->gtGetOp1();
-            unsigned size   = arg->AsPutArgStk()->GetStackByteSize();
+            GenTree* source = argNode->AsPutArgStk()->gtGetOp1();
+            unsigned size   = argNode->AsPutArgStk()->GetStackByteSize();
             stackArgBytes += size;
 #ifdef DEBUG
-            fgArgTabEntry* curArgTabEntry = compiler->gtArgEntryByNode(call, arg);
-            assert(curArgTabEntry != nullptr);
-            assert(size == (curArgTabEntry->numSlots * TARGET_POINTER_SIZE));
+            assert(size == (arg.AbiInfo.NumSlots * TARGET_POINTER_SIZE));
 #ifdef FEATURE_PUT_STRUCT_ARG_STK
             if (!source->OperIs(GT_FIELD_LIST) && (source->TypeGet() == TYP_STRUCT))
             {
@@ -5401,7 +5397,7 @@ void CodeGen::genCall(GenTreeCall* call)
                 // Note that on x64/ux this will be handled by unrolling in genStructPutArgUnroll.
                 assert((argBytes == obj->GetLayout()->GetSize()) || obj->Addr()->IsLocalAddrExpr());
 #endif // TARGET_X86
-                assert((curArgTabEntry->numSlots * TARGET_POINTER_SIZE) == argBytes);
+                assert((arg.AbiInfo.NumSlots * TARGET_POINTER_SIZE) == argBytes);
             }
 #endif // FEATURE_PUT_STRUCT_ARG_STK
 #endif // DEBUG
@@ -7551,17 +7547,17 @@ void CodeGen::genAlignStackBeforeCall(GenTreeCall* call)
 #if defined(UNIX_X86_ABI)
 
     // Have we aligned the stack yet?
-    if (!call->fgArgInfo->IsStkAlignmentDone())
+    if (!call->gtArgs.IsStkAlignmentDone())
     {
         // We haven't done any stack alignment yet for this call.  We might need to create
         // an alignment adjustment, even if this function itself doesn't have any stack args.
         // This can happen if this function call is part of a nested call sequence, and the outer
         // call has already pushed some arguments.
 
-        unsigned stkLevel = genStackLevel + call->fgArgInfo->GetStkSizeBytes();
-        call->fgArgInfo->ComputeStackAlignment(stkLevel);
+        unsigned stkLevel = genStackLevel + call->gtArgs.GetStkSizeBytes();
+        call->gtArgs.ComputeStackAlignment(stkLevel);
 
-        unsigned padStkAlign = call->fgArgInfo->GetStkAlign();
+        unsigned padStkAlign = call->gtArgs.GetStkAlign();
         if (padStkAlign != 0)
         {
             // Now generate the alignment
@@ -7570,7 +7566,7 @@ void CodeGen::genAlignStackBeforeCall(GenTreeCall* call)
             AddNestedAlignment(padStkAlign);
         }
 
-        call->fgArgInfo->SetStkAlignmentDone();
+        call->gtArgs.SetStkAlignmentDone();
     }
 
 #endif // UNIX_X86_ABI
@@ -7593,7 +7589,7 @@ void CodeGen::genRemoveAlignmentAfterCall(GenTreeCall* call, unsigned bias)
 #if defined(TARGET_X86)
 #if defined(UNIX_X86_ABI)
     // Put back the stack pointer if there was any padding for stack alignment
-    unsigned padStkAlign  = call->fgArgInfo->GetStkAlign();
+    unsigned padStkAlign  = call->gtArgs.GetStkAlign();
     unsigned padStkAdjust = padStkAlign + bias;
 
     if (padStkAdjust != 0)
@@ -7965,12 +7961,12 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* putArgStk)
         // Get argument offset on stack.
         // Here we cross check that argument offset hasn't changed from lowering to codegen since
         // we are storing arg slot number in GT_PUTARG_STK node in lowering phase.
-        unsigned       argOffset      = putArgStk->getArgOffset();
+        unsigned argOffset = putArgStk->getArgOffset();
 
 #ifdef DEBUG
-        fgArgTabEntry* curArgTabEntry = compiler->gtArgEntryByNode(putArgStk->gtCall, putArgStk);
-        assert(curArgTabEntry != nullptr);
-        assert(argOffset == curArgTabEntry->slotNum * TARGET_POINTER_SIZE);
+        CallArg* callArg   = putArgStk->gtCall->gtArgs.FindByNode(putArgStk);
+        assert(callArg != nullptr);
+        assert(argOffset == callArg->AbiInfo.SlotNum * TARGET_POINTER_SIZE);
 #endif
 
         if (data->isContainedIntOrIImmed())

@@ -19,11 +19,11 @@
 }
 .assembly extern xunit.core {}
 // MVID: {3CF0A869-1266-4091-97CF-DEFA0C36E038}
-.namespace Test
+.namespace Test_refloc_o2_il
 {
   .class private auto ansi AA extends ['mscorlib']System.Object
   {
-    .field public class Test.AA m_aa
+    .field public class Test_refloc_o2_il.AA m_aa
     .field public int32 m_nn
     .field public static bool finalizerCalled
     .method public hidebysig specialname rtspecialname 
@@ -35,15 +35,15 @@
       IL_0001:  call       instance void ['mscorlib']System.Object::.ctor()
       IL_0006:  ldarg.0
       IL_0007:  ldnull
-      IL_0008:  stfld      class Test.AA Test.AA::m_aa
+      IL_0008:  stfld      class Test_refloc_o2_il.AA Test_refloc_o2_il.AA::m_aa
       IL_000d:  ldarg.0
       IL_000e:  ldarg.1
-      IL_000f:  stfld      int32 Test.AA::m_nn
+      IL_000f:  stfld      int32 Test_refloc_o2_il.AA::m_nn
       IL_0014:  ret
     } // end of method 'AA::.ctor'
 
     .method public hidebysig specialname rtspecialname 
-            instance void  .ctor(class Test.AA aa) il managed
+            instance void  .ctor(class Test_refloc_o2_il.AA aa) il managed
     {
       // Code size       21 (0x15)
       .maxstack  8
@@ -51,10 +51,10 @@
       IL_0001:  call       instance void ['mscorlib']System.Object::.ctor()
       IL_0006:  ldarg.0
       IL_0007:  ldarg.1
-      IL_0008:  stfld      class Test.AA Test.AA::m_aa
+      IL_0008:  stfld      class Test_refloc_o2_il.AA Test_refloc_o2_il.AA::m_aa
       IL_000d:  ldarg.0
       IL_000e:  ldc.i4.0
-      IL_000f:  stfld      int32 Test.AA::m_nn
+      IL_000f:  stfld      int32 Test_refloc_o2_il.AA::m_nn
       IL_0014:  ret
     } // end of method 'AA::.ctor'
 
@@ -63,13 +63,13 @@
     {
       // Code size       60 (0x3c)
       .maxstack  3
-      .locals (class Test.AA V_0)
+      .locals (class Test_refloc_o2_il.AA V_0)
       IL_0000:  ldstr      "finalizer called."
       IL_0005:  call       void [System.Console]System.Console::WriteLine(class System.String)
       
       all_done: ldc.i4.1
       
-      IL_0036:  stsfld     bool Test.AA::finalizerCalled
+      IL_0036:  stsfld     bool Test_refloc_o2_il.AA::finalizerCalled
       IL_003b:  ret
     } // end of method 'AA::Finalize'
 
@@ -79,15 +79,15 @@
       // Code size       7 (0x7)
       .maxstack  8
       IL_0000:  ldc.i4.0
-      IL_0001:  stsfld     bool Test.AA::finalizerCalled
+      IL_0001:  stsfld     bool Test_refloc_o2_il.AA::finalizerCalled
       IL_0006:  ret
     } // end of method 'AA::.cctor'
 
   } // end of class 'AA'
 
-  .class private auto ansi App extends ['mscorlib']System.Object
+  .class public auto ansi App extends ['mscorlib']System.Object
   {
-    .field private static class Test.AA s_aa
+    .field private static class Test_refloc_o2_il.AA s_aa
     .method private hidebysig static void
             Litter() il managed
     {
@@ -116,7 +116,7 @@
       IL_002a:  ret
     } // end of method 'App::Litter'
 
-    .method private hidebysig static int32
+    .method public hidebysig static int32
             Main() il managed
     {
       .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
@@ -125,29 +125,29 @@
       .entrypoint
       // Code size       72 (0x48)
       .maxstack  2
-      .locals (class Test.AA & V_0,
+      .locals (class Test_refloc_o2_il.AA & V_0,
                int32 V_1)
-      IL_0000:  ldsfld     class Test.AA Test.App::s_aa
-      IL_0005:  ldflda      class Test.AA Test.AA::m_aa
+      IL_0000:  ldsfld     class Test_refloc_o2_il.AA Test_refloc_o2_il.App::s_aa
+      IL_0005:  ldflda      class Test_refloc_o2_il.AA Test_refloc_o2_il.AA::m_aa
       IL_000a:  stloc.0
       IL_000b:  ldnull
-      IL_000c:  stsfld     class Test.AA Test.App::s_aa
-      IL_0011:  call       void Test.App::Litter()
-      IL_0016:  ldsfld     bool Test.AA::finalizerCalled
+      IL_000c:  stsfld     class Test_refloc_o2_il.AA Test_refloc_o2_il.App::s_aa
+      IL_0011:  call       void Test_refloc_o2_il.App::Litter()
+      IL_0016:  ldsfld     bool Test_refloc_o2_il.AA::finalizerCalled
       IL_001b:  brtrue.s   IL_002a
 
       IL_001d:  ldloc.0
       			ldind.ref
-      IL_001e:  ldfld      int32 Test.AA::m_nn
+      IL_001e:  ldfld      int32 Test_refloc_o2_il.AA::m_nn
       IL_0023:  ldc.i4     0x6819
       IL_0028:  beq.s      IL_0038
 
       			ldloc.0
       			ldc.i4		0x9186
-      			newobj     instance void Test.AA::.ctor(int32)
+      			newobj     instance void Test_refloc_o2_il.AA::.ctor(int32)
       			stind.ref
       			
-      			call       void Test.App::Litter()
+      			call       void Test_refloc_o2_il.App::Litter()
       			
       IL_002a:  ldstr      "*** failed ***"
       IL_002f:  call       void [System.Console]System.Console::WriteLine(class System.String)
@@ -171,9 +171,9 @@
       // Code size       21 (0x15)
       .maxstack  8
       IL_0000:  ldc.i4     0x6819
-      IL_0005:  newobj     instance void Test.AA::.ctor(int32)
-      IL_000a:  newobj     instance void Test.AA::.ctor(class Test.AA)
-      IL_000f:  stsfld     class Test.AA Test.App::s_aa
+      IL_0005:  newobj     instance void Test_refloc_o2_il.AA::.ctor(int32)
+      IL_000a:  newobj     instance void Test_refloc_o2_il.AA::.ctor(class Test_refloc_o2_il.AA)
+      IL_000f:  stsfld     class Test_refloc_o2_il.AA Test_refloc_o2_il.App::s_aa
       IL_0014:  ret
     } // end of method 'App::.cctor'
 
@@ -189,6 +189,6 @@
 
   } // end of class 'App'
 
-} // end of namespace 'Test'
+} // end of namespace 'Test_refloc_o2_il'
 
 //*********** DISASSEMBLY COMPLETE ***********************

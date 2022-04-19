@@ -910,6 +910,15 @@ partial class Test
     public static partial {typeName} Method();
 }}";
 
+        public static string BasicReturnAndParameterByValue(string returnType, string parameterType, string preDeclaration = "") => @$"
+using System.Runtime.InteropServices;
+{preDeclaration}
+partial class Test
+{{
+    [LibraryImport(""DoesNotExist"")]
+    public static partial {returnType} Method({parameterType} p);
+}}";
+
         public static string CustomStructMarshallingManagedToNativeOnlyOutParameter => BasicParameterWithByRefModifier("out", "S", DisableRuntimeMarshalling)  + @"
 [NativeMarshalling(typeof(Native))]
 [StructLayout(LayoutKind.Sequential)]

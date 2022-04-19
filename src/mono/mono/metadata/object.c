@@ -1528,8 +1528,11 @@ build_imt_slots (MonoClass *klass, MonoVTable *vt, gpointer* imt, GSList *extra_
 				 * add_imt_builder_entry anyway.
 				 */
 				method = mono_class_get_method_by_index (mono_class_get_generic_class (iface)->container_class, method_slot_in_interface);
-				if (m_method_is_static (method))
+				if (m_method_is_static (method)) {
+					if (m_method_is_virtual (method))
+						vt_slot ++;
 					continue;
+				}
 				if (mono_method_get_imt_slot (method) != slot_num) {
 					vt_slot ++;
 					continue;
@@ -1542,8 +1545,11 @@ build_imt_slots (MonoClass *klass, MonoVTable *vt, gpointer* imt, GSList *extra_
 				continue;
 			}
 
-			if (m_method_is_static (method))
+			if (m_method_is_static (method)) {
+				if (m_method_is_virtual (method))
+					vt_slot ++;
 				continue;
+			}
 
 			if (method->flags & METHOD_ATTRIBUTE_VIRTUAL) {
 				add_imt_builder_entry (imt_builder, method, &imt_collisions_bitmap, vt_slot, slot_num);

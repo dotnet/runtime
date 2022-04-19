@@ -118,6 +118,7 @@ set(mini_common_sources
     aot-compiler.h
     aot-compiler.c
     aot-runtime.c
+    aot-runtime-wasm.c
     graph.c
     mini-codegen.c
     mini-exceptions.c
@@ -212,7 +213,6 @@ set(wasm_sources
     mini-wasm.c
     tramp-wasm.c
     exceptions-wasm.c
-    aot-runtime-wasm.c
     wasm_m2n_invoke.g.h
     cpu-wasm.h)
 
@@ -497,6 +497,11 @@ if(NOT DISABLE_EXECUTABLES)
   if(ICU_LDFLAGS)
     set_property(TARGET mono-sgen APPEND_STRING PROPERTY LINK_FLAGS " ${ICU_LDFLAGS}")
   endif()
+
+  if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    target_sources(mono-sgen PRIVATE ${mono_validate_apis_source})
+  endif()
+
   install(TARGETS mono-sgen RUNTIME)
   if(HOST_WIN32)
     install(FILES $<TARGET_PDB_FILE:mono-sgen> DESTINATION bin OPTIONAL)
