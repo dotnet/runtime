@@ -820,20 +820,20 @@ namespace System.Runtime.InteropServices
         /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp" />
         public static NFloat Exp(NFloat x) => new NFloat(NativeType.Exp(x._value));
 
-        // /// <inheritdoc cref="IExponentialFunctions{TSelf}.ExpM1(TSelf)" />
-        // public static NFloat ExpM1(NFloat x) => new NFloat(NativeType.ExpM1(x._value));
+        /// <inheritdoc cref="IExponentialFunctions{TSelf}.ExpM1(TSelf)" />
+        public static NFloat ExpM1(NFloat x) => new NFloat(NativeType.ExpM1(x._value));
 
-        // /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp2(TSelf)" />
-        // public static NFloat Exp2(NFloat x) => new NFloat(NativeType.Exp2(x._value));
+        /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp2(TSelf)" />
+        public static NFloat Exp2(NFloat x) => new NFloat(NativeType.Exp2(x._value));
 
-        // /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp2M1(TSelf)" />
-        // public static NFloat Exp2M1(NFloat x) => new NFloat(NativeType.Exp2M1(x._value));
+        /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp2M1(TSelf)" />
+        public static NFloat Exp2M1(NFloat x) => new NFloat(NativeType.Exp2M1(x._value));
 
-        // /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp10(TSelf)" />
-        // public static NFloat Exp10(NFloat x) => new NFloat(NativeType.Exp10(x._value))(x);
+        /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp10(TSelf)" />
+        public static NFloat Exp10(NFloat x) => new NFloat(NativeType.Exp10(x._value));
 
-        // /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp10M1(TSelf)" />
-        // public static NFloat Exp10M1(NFloat x) => new NFloat(NativeType.Exp10M1(x._value));
+        /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp10M1(TSelf)" />
+        public static NFloat Exp10M1(NFloat x) => new NFloat(NativeType.Exp10M1(x._value));
 
         //
         // IFloatingPoint
@@ -1021,17 +1021,17 @@ namespace System.Runtime.InteropServices
         /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log(TSelf, TSelf)" />
         public static NFloat Log(NFloat x, NFloat newBase) => new NFloat(NativeType.Log(x._value, newBase._value));
 
+        /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.LogP1(TSelf)" />
+        public static NFloat LogP1(NFloat x) => new NFloat(NativeType.LogP1(x._value));
+
+        /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log2P1(TSelf)" />
+        public static NFloat Log2P1(NFloat x) => new NFloat(NativeType.Log2P1(x._value));
+
         /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log10(TSelf)" />
         public static NFloat Log10(NFloat x) => new NFloat(NativeType.Log10(x._value));
 
-        // /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.LogP1(TSelf)" />
-        // public static NFloat LogP1(NFloat x) => new NFloat(NativeType.LogP1(x._value));
-
-        // /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log2P1(TSelf)" />
-        // public static NFloat Log2P1(NFloat x) => new NFloat(NativeType.Log2P1(x._value));
-
-        // /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log10P1(TSelf)" />
-        // public static NFloat Log10P1(NFloat x) => new NFloat(NativeType.Log10P1(x._value));
+        /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log10P1(TSelf)" />
+        public static NFloat Log10P1(NFloat x) => new NFloat(NativeType.Log10P1(x._value));
 
         //
         // IMultiplicativeIdentity

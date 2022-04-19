@@ -841,20 +841,20 @@ namespace System
         /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp" />
         public static Half Exp(Half x) => (Half)MathF.Exp((float)x);
 
-        // /// <inheritdoc cref="IExponentialFunctions{TSelf}.ExpM1(TSelf)" />
-        // public static Half ExpM1(Half x) => (Half)MathF.ExpM1((float)x);
+        /// <inheritdoc cref="IExponentialFunctions{TSelf}.ExpM1(TSelf)" />
+        public static Half ExpM1(Half x) => (Half)float.ExpM1((float)x);
 
-        // /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp2(TSelf)" />
-        // public static Half Exp2(Half x) => (Half)MathF.Exp2((float)x);
+        /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp2(TSelf)" />
+        public static Half Exp2(Half x) => (Half)float.Exp2((float)x);
 
-        // /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp2M1(TSelf)" />
-        // public static Half Exp2M1(Half x) => (Half)MathF.Exp2M1((float)x);
+        /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp2M1(TSelf)" />
+        public static Half Exp2M1(Half x) => (Half)float.Exp2M1((float)x);
 
-        // /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp10(TSelf)" />
-        // public static Half Exp10(Half x) => (Half)MathF.Exp10((float)x);
+        /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp10(TSelf)" />
+        public static Half Exp10(Half x) => (Half)float.Exp10((float)x);
 
-        // /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp10M1(TSelf)" />
-        // public static Half Exp10M1(Half x) => (Half)MathF.Exp10M1((float)x);
+        /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp10M1(TSelf)" />
+        public static Half Exp10M1(Half x) => (Half)float.Exp10M1((float)x);
 
         //
         // IFloatingPoint
@@ -1128,14 +1128,14 @@ namespace System
         /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log10(TSelf)" />
         public static Half Log10(Half x) => (Half)MathF.Log10((float)x);
 
-        // /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.LogP1(TSelf)" />
-        // public static Half LogP1(Half x) => (Half)MathF.LogP1((float)x);
+        /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.LogP1(TSelf)" />
+        public static Half LogP1(Half x) => (Half)float.LogP1((float)x);
 
-        // /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log2P1(TSelf)" />
-        // public static Half Log2P1(Half x) => (Half)MathF.Log2P1((float)x);
+        /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log2P1(TSelf)" />
+        public static Half Log2P1(Half x) => (Half)float.Log2P1((float)x);
 
-        // /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log10P1(TSelf)" />
-        // public static Half Log10P1(Half x) => (Half)MathF.Log10P1((float)x);
+        /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log10P1(TSelf)" />
+        public static Half Log10P1(Half x) => (Half)float.Log10P1((float)x);
 
         //
         // IModulusOperators
