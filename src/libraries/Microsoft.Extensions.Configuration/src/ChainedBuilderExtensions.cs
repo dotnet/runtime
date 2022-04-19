@@ -27,8 +27,12 @@ namespace Microsoft.Extensions.Configuration
         /// <param name="config">The <see cref="IConfiguration"/> to add.</param>
         /// <param name="shouldDisposeConfiguration">Whether the configuration should get disposed when the configuration provider is disposed.</param>
         /// <returns>The <see cref="IConfigurationBuilder"/>.</returns>
-        public static IConfigurationBuilder AddConfiguration(this IConfigurationBuilder configurationBuilder!!, IConfiguration config!!, bool shouldDisposeConfiguration)
+        public static IConfigurationBuilder AddConfiguration(this IConfigurationBuilder configurationBuilder, IConfiguration config, bool shouldDisposeConfiguration)
         {
+            #if NET7_0_OR_GREATER
+            ArgumentNullException.ThrowIfNull(configurationBuilder, config);
+            #endif
+
             configurationBuilder.Add(new ChainedConfigurationSource
             {
                 Configuration = config,

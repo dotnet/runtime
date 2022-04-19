@@ -246,6 +246,24 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             Assert.Equal("Yo2", options.NonInstantiatedIEnumerable.ElementAt(1));
         }
 
+#if NET7_0_OR_GREATER        
+        public class Foo
+        {
+            public void Bar(string s1, string s2)
+            {
+                ArgumentNullException.ThrowIfNull(s1, s2);
+            }
+        }
+        
+        [Fact]
+        public void ArgumentNullExceptionTests()
+        {
+            var ex = Assert.Throws<ArgumentNullException>(
+                () => new Foo().Bar(null, null));
+            Assert.Equal("aaa", ex.Message);
+        }
+#endif
+
         [Fact]
         public void CanBindInstantiatedIEnumerableWithItems()
         {
