@@ -49,6 +49,7 @@ namespace System.Net.Security.Tests
         }
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
     public sealed class SslStreamMemoryConformanceTests : SslStreamConformanceTests
     {
         protected override Task<StreamPair> CreateConnectedStreamsAsync() =>

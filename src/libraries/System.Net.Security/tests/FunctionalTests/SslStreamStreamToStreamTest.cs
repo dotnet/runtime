@@ -240,6 +240,7 @@ namespace System.Net.Security.Tests
 
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         public async Task SslStream_StreamToStream_Dispose_Throws()
         {
             if (this is SslStreamStreamToStreamTest_SyncBase)
@@ -292,6 +293,7 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         public async Task SslStream_StreamToStream_EOFDuringFrameRead_ThrowsIOException()
         {
             (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
