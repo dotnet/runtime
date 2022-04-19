@@ -111,7 +111,7 @@ namespace System
         {
             // This api is a nop unless the array element type is a value type with an explicit nullary constructor.
             // Such a type could not be expressed in C# up until recently.
-            // The AOT toolchain fails the build if it encounters such a type.
+            // TODO: Implement this
             return;
         }
 
