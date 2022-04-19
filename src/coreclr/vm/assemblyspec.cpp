@@ -147,38 +147,6 @@ AssemblySpecHash::~AssemblySpecHash()
     }
 }
 
-// Check assembly name for invalid characters
-// Return value:
-//      TRUE: If no invalid characters were found, or if the assembly name isn't set
-//      FALSE: If invalid characters were found
-// This is needed to prevent security loopholes with ':', '/' and '\' in the assembly name
-BOOL AssemblySpec::IsValidAssemblyName()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END;
-
-    if (GetName())
-    {
-        SString ssAssemblyName(SString::Utf8, GetName());
-        for (SString::Iterator i = ssAssemblyName.Begin(); i[0] != W('\0'); i++) {
-            switch (i[0]) {
-                case W(':'):
-                case W('\\'):
-                case W('/'):
-                    return FALSE;
-
-                default:
-                    break;
-            }
-        }
-    }
-    return TRUE;
-}
-
 HRESULT AssemblySpec::InitializeSpecInternal(mdToken kAssemblyToken,
                                   IMDInternalImport *pImport,
                                   DomainAssembly *pStaticParent,

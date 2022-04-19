@@ -36,8 +36,6 @@ class AssemblySpec  : public BaseAssemblySpec
     // Flag to indicate if we should prefer the fallback load context binder for binding or not.
     bool m_fPreferFallbackBinder;
 
-    BOOL IsValidAssemblyName();
-
     HRESULT InitializeSpecInternal(mdToken kAssemblyRefOrDef,
                                    IMDInternalImport *pImport,
                                    DomainAssembly *pStaticParent,
