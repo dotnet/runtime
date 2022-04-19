@@ -113,16 +113,6 @@ namespace System.Formats.Tar
             return true;
         }
 
-        // BitConverter.GetBytes returns a byte array with more cells than necessary, while Encoding.*.GetBytes
-        // returns an array of the exact number of cells required to store the converted number value.
-        // int overload.
-        internal static byte[] GetAsciiBytes(int number) => Encoding.ASCII.GetBytes(number.ToString());
-
-        // BitConverter.GetBytes returns a byte array with more cells than necessary, while Encoding.*.GetBytes
-        // returns an array of the exact number of cells required to store the converted number value.
-        // long overload.
-        internal static byte[] GetAsciiBytes(long number) => Encoding.ASCII.GetBytes(number.ToString());
-
         // Returns a DateTimeOffset instance representing the number of seconds that have passed since the Unix Epoch.
         internal static DateTimeOffset GetDateTimeFromSecondsSinceEpoch(double secondsSinceUnixEpoch)
         {
