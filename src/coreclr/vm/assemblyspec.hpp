@@ -280,7 +280,7 @@ class AssemblySpecHash
 
             GCX_PREEMP();
             entry->CopyFrom(pSpec);
-            entry->CloneFields(AssemblySpec::ALL_OWNED);
+            entry->CloneFields();
 
             m_map.InsertValue(key, entry);
 
@@ -364,11 +364,11 @@ class AssemblySpecBindingCache
             InitInternal(pSpec,pPEAssembly,pAssembly);
             if (pHeap != NULL)
             {
-                m_spec.CloneFieldsToLoaderHeap(AssemblySpec::ALL_OWNED,pHeap, pamTracker);
+                m_spec.CloneFieldsToLoaderHeap(pHeap, pamTracker);
             }
             else
             {
-                m_spec.CloneFields(m_spec.ALL_OWNED);
+                m_spec.CloneFields();
             }
             InitException(pEx);
 

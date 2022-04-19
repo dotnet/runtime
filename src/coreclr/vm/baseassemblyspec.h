@@ -38,7 +38,6 @@ public:
         // Set if ParseName() returned illegal textual identity.
         // Cannot process the string any further.
         BAD_NAME_OWNED              = 0x40,
-        ALL_OWNED                   = 0xFF,
     };
 
     BaseAssemblySpec();
@@ -56,8 +55,8 @@ public:
     // Note that this method does not clone the fields!
     VOID CopyFrom(const BaseAssemblySpec *pSpec);
 
-    VOID    CloneFields(int flags=ALL_OWNED);
-    VOID    CloneFieldsToLoaderHeap(int flags, LoaderHeap *pHeap, AllocMemTracker *pamTracker);
+    VOID    CloneFields();
+    VOID    CloneFieldsToLoaderHeap(LoaderHeap *pHeap, AllocMemTracker *pamTracker);
     VOID    CloneFieldsToStackingAllocator(StackingAllocator* alloc);
 
     inline void SetBinder(AssemblyBinder *pBinder)

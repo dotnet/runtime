@@ -32,7 +32,7 @@ VOID BaseAssemblySpec::CloneFieldsToStackingAllocator( StackingAllocator* alloc)
     DWORD hash = Hash();
 #endif
 
-    if ((~m_ownedFlags & NAME_OWNED)  &&
+    if ((~m_ownedFlags & NAME_OWNED) &&
         m_pAssemblyName) {
         S_UINT32 len = S_UINT32((DWORD) strlen(m_pAssemblyName)) + S_UINT32(1);
         if(len.IsOverflow()) COMPlusThrowHR(COR_E_OVERFLOW);
@@ -48,7 +48,7 @@ VOID BaseAssemblySpec::CloneFieldsToStackingAllocator( StackingAllocator* alloc)
         m_pbPublicKeyOrToken = temp;
     }
 
-    if ((~m_ownedFlags & LOCALE_OWNED)  &&
+    if ((~m_ownedFlags & LOCALE_OWNED) &&
         m_context.szLocale) {
         S_UINT32 len = S_UINT32((DWORD) strlen(m_context.szLocale)) + S_UINT32(1);
         if(len.IsOverflow()) COMPlusThrowHR(COR_E_OVERFLOW);

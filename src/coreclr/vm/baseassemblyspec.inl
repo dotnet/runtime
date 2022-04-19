@@ -74,7 +74,7 @@ inline HRESULT BaseAssemblySpec::Init(LPCSTR pAssemblyDisplayName)
     return ParseName();
 }
 
-inline VOID BaseAssemblySpec::CloneFields(int ownedFlags)
+inline VOID BaseAssemblySpec::CloneFields()
 {
     CONTRACTL
     {
@@ -89,7 +89,7 @@ inline VOID BaseAssemblySpec::CloneFields(int ownedFlags)
     DWORD hash = Hash();
 #endif
 
-    if ((~m_ownedFlags & NAME_OWNED) && (ownedFlags & NAME_OWNED) &&
+    if ((~m_ownedFlags & NAME_OWNED) &&
         m_pAssemblyName) {
         size_t len = strlen(m_pAssemblyName) + 1;
         LPSTR temp = new char [len];
@@ -99,14 +99,14 @@ inline VOID BaseAssemblySpec::CloneFields(int ownedFlags)
     }
 
     if ((~m_ownedFlags & PUBLIC_KEY_OR_TOKEN_OWNED) &&
-        (ownedFlags & PUBLIC_KEY_OR_TOKEN_OWNED) && m_pbPublicKeyOrToken) {
+        m_pbPublicKeyOrToken) {
         BYTE *temp = new BYTE [m_cbPublicKeyOrToken];
         memcpy(temp, m_pbPublicKeyOrToken, m_cbPublicKeyOrToken);
         m_pbPublicKeyOrToken = temp;
         m_ownedFlags |= PUBLIC_KEY_OR_TOKEN_OWNED;
     }
 
-    if ((~m_ownedFlags & LOCALE_OWNED) && (ownedFlags & LOCALE_OWNED) &&
+    if ((~m_ownedFlags & LOCALE_OWNED) &&
         m_context.szLocale) {
         size_t len = strlen(m_context.szLocale) + 1;
         LPSTR temp = new char [len];
@@ -118,7 +118,7 @@ inline VOID BaseAssemblySpec::CloneFields(int ownedFlags)
     _ASSERTE(hash == Hash());
 }
 
-inline VOID BaseAssemblySpec::CloneFieldsToLoaderHeap(int flags, LoaderHeap *pHeap, AllocMemTracker *pamTracker)
+inline VOID BaseAssemblySpec::CloneFieldsToLoaderHeap(LoaderHeap *pHeap, AllocMemTracker *pamTracker)
 {
     CONTRACTL
     {
@@ -134,7 +134,7 @@ inline VOID BaseAssemblySpec::CloneFieldsToLoaderHeap(int flags, LoaderHeap *pHe
     DWORD hash = Hash();
 #endif
 
-    if ((~m_ownedFlags & NAME_OWNED)  && (flags &NAME_OWNED) &&
+    if ((~m_ownedFlags & NAME_OWNED) &&
         m_pAssemblyName) {
         size_t len = strlen(m_pAssemblyName) + 1;
         LPSTR temp = (LPSTR)pamTracker->Track( pHeap->AllocMem(S_SIZE_T (len)) );
@@ -142,14 +142,14 @@ inline VOID BaseAssemblySpec::CloneFieldsToLoaderHeap(int flags, LoaderHeap *pHe
         m_pAssemblyName = temp;
     }
 
-    if ((~m_ownedFlags & PUBLIC_KEY_OR_TOKEN_OWNED) && (flags &PUBLIC_KEY_OR_TOKEN_OWNED) &&
+    if ((~m_ownedFlags & PUBLIC_KEY_OR_TOKEN_OWNED) &&
         m_pbPublicKeyOrToken && m_cbPublicKeyOrToken > 0) {
         BYTE *temp = (BYTE *)pamTracker->Track( pHeap->AllocMem(S_SIZE_T (m_cbPublicKeyOrToken)) );
         memcpy(temp, m_pbPublicKeyOrToken, m_cbPublicKeyOrToken);
         m_pbPublicKeyOrToken = temp;
     }
 
-    if ((~m_ownedFlags & LOCALE_OWNED)  && (flags &LOCALE_OWNED) &&
+    if ((~m_ownedFlags & LOCALE_OWNED) &&
         m_context.szLocale) {
         size_t len = strlen(m_context.szLocale) + 1;
         LPSTR temp = (char *)pamTracker->Track( pHeap->AllocMem(S_SIZE_T (len)) );
