@@ -13,16 +13,11 @@ namespace System.Reflection
         // This is an instance method to avoid overhead of shuffle thunk.
         internal unsafe delegate object? InvokeFunc<T>(T obj, object? target, IntPtr* arguments);
 
-        // Avoid high arg count due to increased stack.
-        // This also allows the local variables to use that more smaller encoded _S opcode variants.
-        public const int MaxArgumentCount = 64;
-
         public static unsafe InvokeFunc<T> CreateInvokeDelegate<T>(MethodBase method)
         {
             Debug.Assert(!method.ContainsGenericParameters);
 
             ParameterInfo[] parameters = method.GetParametersNoCopy();
-            Debug.Assert(parameters.Length <= MaxArgumentCount);
 
             Type[] delegateParameters = new Type[3] { typeof(T), typeof(object), typeof(IntPtr*) };
 
@@ -44,14 +39,8 @@ namespace System.Reflection
             else
             {
                 HandleThisPointer(il, method);
-                PushArguments(il, parameters, out NullableRefInfo[]? byRefNullables, out int byRefNullableCount);
+                PushArguments(il, parameters);
                 Invoke(il, method);
-
-                if (byRefNullableCount > 0)
-                {
-                    Debug.Assert(byRefNullables != null); ;
-                    UpdateNullables(il, parameters, byRefNullables, byRefNullableCount);
-                }
             }
 
             HandleReturn(il, method);
@@ -77,144 +66,33 @@ namespace System.Reflection
         /// <summary>
         /// Push each argument.
         /// </summary>
-        private static void PushArguments(
-            ILGenerator il,
-            ParameterInfo[] parameters,
-            out NullableRefInfo[]? byRefNullables,
-            out int byRefNullablesCount
-            )
+        private static void PushArguments(ILGenerator il, ParameterInfo[] parameters)
         {
-            byRefNullables = null;
-            byRefNullablesCount = 0;
-
-            LocalBuilder? local_pArg = il.DeclareLocal(typeof(IntPtr*));
-            il.Emit(OpCodes.Ldarg_2);
-            il.Emit(OpCodes.Stloc_S, local_pArg);
-
             for (int i = 0; i < parameters.Length; i++)
             {
                 RuntimeType parameterType = (RuntimeType)parameters[i].ParameterType;
-
-                // Get the argument as a ref
-                il.Emit(OpCodes.Ldloc_S, local_pArg);
-                il.Emit(OpCodes.Ldind_Ref);
-
-                if (parameterType.IsByRef)
+                if (parameterType.IsPointer)
                 {
-                    RuntimeType elementType = (RuntimeType)parameterType.GetElementType();
-
-                    if (elementType.IsNullableOfT)
-                    {
-                        byRefNullables ??= new NullableRefInfo[MaxArgumentCount - i];
-
-                        LocalBuilder tmp = il.DeclareLocal(typeof(object).MakeByRefType());
-                        il.Emit(OpCodes.Stloc_S, tmp);
-                        il.Emit(OpCodes.Ldloc_S, tmp);
-
-                        // Get the raw pointer.
-                        il.Emit(OpCodes.Ldobj, typeof(object));
-                        il.Emit(OpCodes.Unbox, elementType);
-
-                        // Copy the pointer to the temp variable and load as a ref.
-                        LocalBuilder byRefPtr = il.DeclareLocal(elementType.MakePointerType());
-                        il.Emit(OpCodes.Stloc_S, byRefPtr);
-                        il.Emit(OpCodes.Ldloca_S, byRefPtr);
-                        il.Emit(OpCodes.Ldind_Ref);
-
-                        byRefNullables[byRefNullablesCount++] = new NullableRefInfo { ParameterIndex = i, LocalIndex = byRefPtr.LocalIndex };
-                    }
-                    else if (elementType.IsPointer)
-                    {
-                        LocalBuilder tmp = il.DeclareLocal(typeof(IntPtr).MakeByRefType());
-                        il.Emit(OpCodes.Stloc_S, tmp);
-                        il.Emit(OpCodes.Ldloc_S, tmp);
-                        il.Emit(OpCodes.Ldobj, typeof(IntPtr).MakeByRefType());
-                    }
-                    else
-                    {
-                        LocalBuilder tmp = il.DeclareLocal(parameterType);
-                        il.Emit(OpCodes.Stloc_S, tmp);
-                        il.Emit(OpCodes.Ldloca_S, tmp);
-                        il.Emit(OpCodes.Ldind_Ref); //keep this or remove and use ldloca?
-                    }
-                }
-                else if (parameterType.IsNullableOfT)
-                {
-                    // Nullable<T> is the only incoming value type that is boxed.
-                    LocalBuilder tmp = il.DeclareLocal(typeof(object).MakeByRefType());
-                    il.Emit(OpCodes.Stloc_S, tmp);
-                    il.Emit(OpCodes.Ldloc_S, tmp);
-
-                    il.Emit(OpCodes.Ldobj, typeof(object));
-                    il.Emit(OpCodes.Unbox, parameterType);
-                    il.Emit(OpCodes.Ldobj, parameterType);
-                }
-                else if (parameterType.IsPointer)
-                {
-                    LocalBuilder tmp = il.DeclareLocal(typeof(IntPtr).MakeByRefType());
-                    il.Emit(OpCodes.Stloc_S, tmp);
-                    il.Emit(OpCodes.Ldloc_S, tmp);
-                    il.Emit(OpCodes.Ldobj, typeof(IntPtr));
-                }
-                else
-                {
-                    LocalBuilder tmp = il.DeclareLocal(parameterType.MakeByRefType());
-                    il.Emit(OpCodes.Stloc_S, tmp);
-                    il.Emit(OpCodes.Ldloc_S, tmp);
-                    il.Emit(OpCodes.Ldobj, parameterType);
+                    parameterType = (RuntimeType)typeof(IntPtr);
                 }
 
-                // Move to the next argument.
-                if (i < parameters.Length - 1)
-                {
-                    il.Emit(OpCodes.Ldloc_S, local_pArg);
-                    il.Emit(OpCodes.Sizeof, typeof(IntPtr));
-                    il.Emit(OpCodes.Add);
-                    il.Emit(OpCodes.Stloc_S, local_pArg);
-                }
-            }
-        }
-
-        /// <summary>
-        /// Update any nullables that were passed by reference.
-        /// </summary>
-        private static void UpdateNullables(
-            ILGenerator il,
-            ParameterInfo[] parameters,
-            NullableRefInfo[] byRefNullables,
-            int byRefNullablesCount)
-        {
-            for (int i = 0; i < byRefNullablesCount; i++)
-            {
-                NullableRefInfo info = byRefNullables[i];
-
-                RuntimeType parameterType = (RuntimeType)parameters[info.ParameterIndex].ParameterType;
-                Debug.Assert(parameterType.IsByRef);
-
-                RuntimeType? elementType = (RuntimeType)parameterType.GetElementType()!;
-                Debug.Assert(elementType.IsNullableOfT);
-
-                // Get the original byref location.
-                il.Emit(OpCodes.Ldc_I4_S, info.ParameterIndex);
-                il.Emit(OpCodes.Conv_I);
-                il.Emit(OpCodes.Sizeof, typeof(IntPtr));
-                il.Emit(OpCodes.Mul);
                 il.Emit(OpCodes.Ldarg_2);
-                il.Emit(OpCodes.Add);
-                il.Emit(OpCodes.Ldind_I);
+                if (i != 0)
+                {
+                    il.Emit(OpCodes.Ldc_I4, i * IntPtr.Size);
+                    il.Emit(OpCodes.Add);
+                }
 
-                // Get the Nullable<T>& value and update the original.
-                il.Emit(OpCodes.Ldloc_S, info.LocalIndex);
-                il.Emit(OpCodes.Ldobj, elementType);
-                il.Emit(OpCodes.Box, elementType);
-                il.Emit(OpCodes.Stind_Ref);
+                il.Emit(OpCodes.Call, Methods.ByReferenceOfByte_Value()); // This can be replaced by ldfld once byref fields are available in C#
+                if (!parameterType.IsByRef)
+                {
+                    il.Emit(OpCodes.Ldobj, parameterType);
+                }
             }
         }
 
         private static void Invoke(ILGenerator il, MethodBase method)
         {
-            // todo: once we return the value without boxing add support for OpCodes.Tailcall for perf.
-
             bool emitNew = method is RuntimeConstructorInfo;
             if (emitNew)
             {
@@ -310,6 +188,12 @@ namespace System.Reflection
 
         private static class Methods
         {
+            private static MethodInfo? s_ByReferenceOfByte_Value;
+            [DynamicDependency(DynamicallyAccessedMemberTypes.PublicMethods, typeof(ByReference<>))]
+            public static MethodInfo ByReferenceOfByte_Value() =>
+                                      s_ByReferenceOfByte_Value ??
+                                     (s_ByReferenceOfByte_Value = typeof(ByReference<byte>).GetMethod("get_Value")!);
+
             private static MethodInfo? s_ThrowHelper_Throw_NullReference_InvokeNullRefReturned;
             [DynamicDependency(DynamicallyAccessedMemberTypes.PublicMethods, typeof(ThrowHelper))]
             public static MethodInfo ThrowHelper_Throw_NullReference_InvokeNullRefReturned() =>

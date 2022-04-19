@@ -35,12 +35,10 @@ namespace System.Reflection
             if (!_strategyDetermined)
             {
                 if (RuntimeFeature.IsDynamicCodeCompiled &&
-                    _methodInfo.GetParametersNoCopy().Length <= InvokerEmitUtil.MaxArgumentCount &&
-                    _methodInfo.DeclaringType != typeof(Type) // Avoid stack crawl issue with GetType().
-                    )
+                    _methodInfo.DeclaringType != typeof(Type)) // Avoid stack crawl issue with GetType().
                 {
                     // For testing slow path, disable Emit for now
-                    //_emitInvoke = InvokerEmitUtil.CreateInvokeDelegate<MethodInvoker>(_methodInfo);
+                    // _emitInvoke = InvokerEmitUtil.CreateInvokeDelegate<MethodInvoker>(_methodInfo);
                 }
 
                 _strategyDetermined = true;
