@@ -93,9 +93,6 @@ namespace System.Formats.Tar.Tests
                     // they come from stat's dev and from the major/minor syscalls
                     // Assert.Equal(TestBlockDeviceMajor, entry.DeviceMajor);
                     // Assert.Equal(TestBlockDeviceMinor, entry.DeviceMinor);
-                    // Remove these temporary checks when the above is fixed:
-                    Assert.True(entry.DeviceMajor > 0);
-                    Assert.True(entry.DeviceMinor > 0);
 
                     Assert.Null(reader.GetNextEntry());
                 }
@@ -143,9 +140,6 @@ namespace System.Formats.Tar.Tests
                     // they come from stat's dev and from the major/minor syscalls
                     // Assert.Equal(TestCharacterDeviceMajor, entry.DeviceMajor);
                     // Assert.Equal(TestCharacterDeviceMinor, entry.DeviceMinor);
-                    // Remove these temporary checks when the above is fixed:
-                    Assert.True(entry.DeviceMajor > 0);
-                    Assert.True(entry.DeviceMinor > 0);
 
                     Assert.Null(reader.GetNextEntry());
                 }
