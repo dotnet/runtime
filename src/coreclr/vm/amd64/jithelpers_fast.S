@@ -355,34 +355,6 @@ LEAF_ENTRY JIT_ByRefWriteBarrier, _TEXT
         cmp     rcx, [rax]
         jnb     Exit_ByRefWriteBarrier
 
-        mov     rax, rcx
-
-        PREPARE_EXTERNAL_VAR g_region_shr, rcx
-        mov     cl, [rcx]
-        test    cl, cl
-        je      SkipCheck_ByRefWriteBarrier
-
-        // check if the source is in gen 2 - then it's not an ephemeral pointer
-        shr     rax, cl
-        PREPARE_EXTERNAL_VAR g_region_to_generation_table, r10
-        mov     r10, [r10]
-        cmp     byte ptr [rax + r10], 0x22
-        je      Exit_ByRefWriteBarrier
-
-        // check if the destination happens to be in gen 0
-        mov     rax, rdi
-        shr     rax, cl
-        cmp     byte ptr [rax + r10], 0
-        je      Exit_ByRefWriteBarrier
-    SkipCheck_ByRefWriteBarrier:
-
-        // compute card table bit
-        mov     rcx, rdi
-        mov     al, 1
-        shr     rcx, 8
-        and     cl, 7
-        shl     al, cl
-
         // move current rdi value into rcx and then increment the pointers
         mov     rcx, rdi
         add     rsi, 0x8
@@ -390,17 +362,19 @@ LEAF_ENTRY JIT_ByRefWriteBarrier, _TEXT
 
         // Check if we need to update the card table
         // Calc pCardByte
-        shr     rcx, 0xB
-        PREPARE_EXTERNAL_VAR g_card_table, r10
-        mov     r10, [r10]
+        shr     rcx, 0x0B
 
-        // Check if this card table bit is already set
-        test    byte ptr [rcx + r10], al
-        je      SetCardTableBit_ByRefWriteBarrier
+        PREPARE_EXTERNAL_VAR g_card_table, rax
+        mov     rax, [rax]
+
+        // Check if this card is dirty
+        cmp     byte ptr [rcx + rax], 0xFF
+
+        jne     UpdateCardTable_ByRefWriteBarrier
         REPRET
 
-    SetCardTableBit_ByRefWriteBarrier:
-        lock or byte ptr [rcx + r10], al
+    UpdateCardTable_ByRefWriteBarrier:
+        mov     byte ptr [rcx + rax], 0xFF
 
 #ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
         // Shift rcx by 0x0A more to get the card bundle byte (we shifted by 0x0B already)
