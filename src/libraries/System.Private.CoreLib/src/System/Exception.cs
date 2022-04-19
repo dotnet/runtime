@@ -3,6 +3,7 @@
 
 using System.Collections;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.Serialization;
 using System.Text;
 
@@ -86,7 +87,9 @@ namespace System
 
         public virtual string? Source
         {
-            get => _source ??= CreateSourceName();
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+                Justification = "The API will return <unknown> if the metadata for current method cannot be established.")]
+            get => _source ??= HasBeenThrown ? (TargetSite?.Module.Assembly.GetName().Name ?? "<unknown>") : null;
             set => _source = value;
         }
 
