@@ -123,13 +123,6 @@ namespace System.Formats.Tar
         internal static byte[] GetAsciiBytes(long number) => Encoding.ASCII.GetBytes(number.ToString());
 
         // Returns a DateTimeOffset instance representing the number of seconds that have passed since the Unix Epoch.
-        internal static DateTimeOffset GetDateTimeFromSecondsSinceEpoch(long secondsSinceUnixEpoch)
-        {
-            DateTimeOffset offset = DateTimeOffset.UnixEpoch.AddSeconds(secondsSinceUnixEpoch);
-            return offset;
-        }
-
-        // Returns a DateTimeOffset instance representing the number of seconds that have passed since the Unix Epoch.
         internal static DateTimeOffset GetDateTimeFromSecondsSinceEpoch(double secondsSinceUnixEpoch)
         {
             DateTimeOffset offset = new DateTimeOffset((long)(secondsSinceUnixEpoch * TimeSpan.TicksPerSecond) + DateTime.UnixEpoch.Ticks, TimeSpan.Zero);
