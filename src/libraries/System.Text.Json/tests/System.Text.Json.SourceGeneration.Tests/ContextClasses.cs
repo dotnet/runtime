@@ -49,6 +49,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         public JsonTypeInfo<PersonStruct?> NullablePersonStruct { get; }
         public JsonTypeInfo<TypeWithValidationAttributes> TypeWithValidationAttributes { get; }
         public JsonTypeInfo<TypeWithDerivedAttribute> TypeWithDerivedAttribute { get; }
+        public JsonTypeInfo<PolymorphicClass> PolymorphicClass { get; }
     }
 
     internal partial class JsonContext : JsonSerializerContext

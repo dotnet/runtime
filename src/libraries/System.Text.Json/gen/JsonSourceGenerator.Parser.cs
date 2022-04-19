@@ -28,6 +28,7 @@ namespace System.Text.Json.SourceGeneration
             private const string JsonConverterFactoryFullName = "System.Text.Json.Serialization.JsonConverterFactory";
             private const string JsonConverterOfTFullName = "System.Text.Json.Serialization.JsonConverter`1";
             private const string JsonArrayFullName = "System.Text.Json.Nodes.JsonArray";
+            private const string JsonDerivedTypeAttributeFullName = "System.Text.Json.Serialization.JsonDerivedTypeAttribute";
             private const string JsonElementFullName = "System.Text.Json.JsonElement";
             private const string JsonExtensionDataAttributeFullName = "System.Text.Json.Serialization.JsonExtensionDataAttribute";
             private const string JsonNodeFullName = "System.Text.Json.Nodes.JsonNode";
@@ -40,7 +41,7 @@ namespace System.Text.Json.SourceGeneration
             private const string JsonPropertyNameAttributeFullName = "System.Text.Json.Serialization.JsonPropertyNameAttribute";
             private const string JsonPropertyOrderAttributeFullName = "System.Text.Json.Serialization.JsonPropertyOrderAttribute";
             private const string JsonSerializerContextFullName = "System.Text.Json.Serialization.JsonSerializerContext";
-            private const string JsonSerializerAttributeFullName = "System.Text.Json.Serialization.JsonSerializableAttribute";
+            private const string JsonSerializableAttributeFullName = "System.Text.Json.Serialization.JsonSerializableAttribute";
             private const string JsonSourceGenerationOptionsAttributeFullName = "System.Text.Json.Serialization.JsonSourceGenerationOptionsAttribute";
 
             private const string DateOnlyFullName = "System.DateOnly";
@@ -176,6 +177,14 @@ namespace System.Text.Json.SourceGeneration
                 defaultSeverity: DiagnosticSeverity.Warning,
                 isEnabledByDefault: true);
 
+            private static DiagnosticDescriptor PolymorphismNotSupported { get; } = new DiagnosticDescriptor(
+                id: "SYSLIB1039",
+                title: new LocalizableResourceString(nameof(SR.FastPathPolymorphismNotSupportedTitle), SR.ResourceManager, typeof(FxResources.System.Text.Json.SourceGeneration.SR)),
+                messageFormat: new LocalizableResourceString(nameof(SR.FastPathPolymorphismNotSupportedMessageFormat), SR.ResourceManager, typeof(FxResources.System.Text.Json.SourceGeneration.SR)),
+                category: JsonConstants.SystemTextJsonSourceGenerationName,
+                defaultSeverity: DiagnosticSeverity.Warning,
+                isEnabledByDefault: true);
+
             public Parser(Compilation compilation, in JsonSourceGenerationContext sourceGenerationContext)
             {
                 _compilation = compilation;
@@ -240,7 +249,7 @@ namespace System.Text.Json.SourceGeneration
             {
                 Compilation compilation = _compilation;
                 INamedTypeSymbol jsonSerializerContextSymbol = compilation.GetBestTypeByMetadataName(JsonSerializerContextFullName);
-                INamedTypeSymbol jsonSerializableAttributeSymbol = compilation.GetBestTypeByMetadataName(JsonSerializerAttributeFullName);
+                INamedTypeSymbol jsonSerializableAttributeSymbol = compilation.GetBestTypeByMetadataName(JsonSerializableAttributeFullName);
                 INamedTypeSymbol jsonSourceGenerationOptionsAttributeSymbol = compilation.GetBestTypeByMetadataName(JsonSourceGenerationOptionsAttributeFullName);
                 INamedTypeSymbol jsonConverterOfTAttributeSymbol = compilation.GetBestTypeByMetadataName(JsonConverterOfTFullName);
 
@@ -551,7 +560,7 @@ namespace System.Text.Json.SourceGeneration
                         INamedTypeSymbol attributeContainingTypeSymbol = attributeSymbol.ContainingType;
                         string fullName = attributeContainingTypeSymbol.ToDisplayString();
 
-                        if (fullName == "System.Text.Json.Serialization.JsonSerializableAttribute")
+                        if (fullName == JsonSerializableAttributeFullName)
                         {
                             return classDeclarationSyntax;
                         }
@@ -694,6 +703,7 @@ namespace System.Text.Json.SourceGeneration
                 string? converterInstatiationLogic = null;
                 bool implementsIJsonOnSerialized = false;
                 bool implementsIJsonOnSerializing = false;
+                bool isPolymorphic = false;
                 bool hasInitOnlyProperties = false;
                 bool hasTypeFactoryConverter = false;
                 bool hasPropertyFactoryConverters = false;
@@ -703,7 +713,9 @@ namespace System.Text.Json.SourceGeneration
                 foreach (CustomAttributeData attributeData in attributeDataList)
                 {
                     Type attributeType = attributeData.AttributeType;
-                    if (attributeType.FullName == JsonNumberHandlingAttributeFullName)
+                    string attributeTypeFullName = attributeType.FullName;
+
+                    if (attributeTypeFullName == JsonNumberHandlingAttributeFullName)
                     {
                         IList<CustomAttributeTypedArgument> ctorArgs = attributeData.ConstructorArguments;
                         numberHandling = (JsonNumberHandling)ctorArgs[0].Value;
@@ -717,6 +729,22 @@ namespace System.Text.Json.SourceGeneration
                             attributeData,
                             forType: true,
                             ref hasTypeFactoryConverter);
+                    }
+
+                    if (attributeTypeFullName == JsonDerivedTypeAttributeFullName)
+                    {
+                        Debug.Assert(attributeData.ConstructorArguments.Count > 0);
+                        ITypeSymbol derivedTypeSymbol = (ITypeSymbol)attributeData.ConstructorArguments[0].Value;
+                        Type derivedType = derivedTypeSymbol.AsType(_metadataLoadContext);
+                        TypeGenerationSpec derivedTypeSpec = GetOrAddTypeGenerationSpec(derivedType, generationMode);
+                        _implicitlyRegisteredTypes.Add(derivedTypeSpec);
+
+                        if (!isPolymorphic && generationMode == JsonSourceGenerationMode.Serialization)
+                        {
+                            _typeLevelDiagnostics.Add((type, PolymorphismNotSupported, new string[] { type.FullName }));
+                        }
+
+                        isPolymorphic = true;
                     }
                 }
 
@@ -1067,7 +1095,8 @@ namespace System.Text.Json.SourceGeneration
                     implementsIJsonOnSerializing : implementsIJsonOnSerializing,
                     canContainNullableReferenceAnnotations: canContainNullableReferenceAnnotations,
                     hasTypeFactoryConverter : hasTypeFactoryConverter,
-                    hasPropertyFactoryConverters : hasPropertyFactoryConverters);
+                    hasPropertyFactoryConverters : hasPropertyFactoryConverters,
+                    isPolymorphic : isPolymorphic);
 
                 return typeMetadata;
             }

@@ -180,4 +180,15 @@ namespace System.Text.Json.SourceGeneration.Tests
     [Derived(TestProperty = "Test")]
     public class TypeWithDerivedAttribute
     { }
+
+    [JsonDerivedType(typeof(DerivedClass), "derivedClass")]
+    public class PolymorphicClass
+    {
+        public int Number { get; set; }
+
+        public class DerivedClass : PolymorphicClass
+        {
+            public bool Boolean { get; set; }
+        }
+    }
 }
