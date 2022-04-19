@@ -2111,6 +2111,95 @@ namespace System
             return firstLength - secondLength;
         }
 
+        public static nuint CommonPrefixLength(ref byte first, ref byte second, nuint length)
+        {
+            nuint i;
+
+            if (!Vector128.IsHardwareAccelerated || length < (nuint)Vector128<byte>.Count)
+            {
+                // To have kind of fast path for small inputs, we handle as much elements needed
+                // so that either we are done or can use the unrolled loop below.
+                i = length % 4;
+
+                if (i > 0)
+                {
+                    if (first != second)
+                    {
+                        return 0;
+                    }
+
+                    if (i > 1)
+                    {
+                        if (Unsafe.Add(ref first, 1) != Unsafe.Add(ref second, 1))
+                        {
+                            return 1;
+                        }
+
+                        if (i > 2 && Unsafe.Add(ref first, 2) != Unsafe.Add(ref second, 2))
+                        {
+                            return 2;
+                        }
+                    }
+                }
+
+                for (; (nint)i <= (nint)length - 4; i += 4)
+                {
+                    if (Unsafe.Add(ref first, i + 0) != Unsafe.Add(ref second, i + 0)) return i + 0;
+                    if (Unsafe.Add(ref first, i + 1) != Unsafe.Add(ref second, i + 1)) return i + 1;
+                    if (Unsafe.Add(ref first, i + 2) != Unsafe.Add(ref second, i + 2)) return i + 2;
+                    if (Unsafe.Add(ref first, i + 3) != Unsafe.Add(ref second, i + 3)) return i + 3;
+                }
+
+                return length;
+            }
+
+            Debug.Assert(length >= (uint)Vector128<byte>.Count);
+
+            int mask;
+            nuint lengthToExamine = length - (nuint)Vector128<byte>.Count;
+
+            Vector128<byte> firstVec;
+            Vector128<byte> secondVec;
+            Vector128<byte> maskVec;
+            i = 0;
+
+            if (lengthToExamine != 0)
+            {
+                do
+                {
+                    firstVec = Vector128.LoadUnsafe(ref first, i);
+                    secondVec = Vector128.LoadUnsafe(ref second, i);
+                    maskVec = Vector128.Equals(firstVec, secondVec);
+                    mask = (int)maskVec.ExtractMostSignificantBits();
+
+                    if (mask != 0xFFFF)
+                    {
+                        goto Found;
+                    }
+
+                    i += (nuint)Vector128<byte>.Count;
+                } while (i < lengthToExamine);
+            }
+
+            // Do final compare as Vector128<byte>.Count from end rather than start
+            i = lengthToExamine;
+            firstVec = Vector128.LoadUnsafe(ref first, i);
+            secondVec = Vector128.LoadUnsafe(ref second, i);
+            maskVec = Vector128.Equals(firstVec, secondVec);
+            mask = (int)maskVec.ExtractMostSignificantBits();
+
+            if (mask != 0xFFFF)
+            {
+                goto Found;
+            }
+
+            return length;
+
+        Found:
+            mask = ~mask;
+            return i + (uint)BitOperations.TrailingZeroCount(mask);
+        }
+
         // Vector sub-search adapted from https://github.com/aspnet/KestrelHttpServer/pull/1138
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static int LocateLastFoundByte(Vector<byte> match)

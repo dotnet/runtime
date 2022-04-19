@@ -2033,6 +2033,18 @@ namespace System
         /// <returns>The length of the common prefix shared by the two spans.  If there's no shared prefix, 0 is returned.</returns>
         public static int CommonPrefixLength<T>(this ReadOnlySpan<T> span, ReadOnlySpan<T> other)
         {
+            if (RuntimeHelpers.IsBitwiseEquatable<T>())
+            {
+                nuint length = Math.Min((nuint)(uint)span.Length, (nuint)(uint)other.Length);
+                nuint size = (uint)Unsafe.SizeOf<T>();
+                nuint index = SpanHelpers.CommonPrefixLength(
+                    ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span)),
+                    ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(other)),
+                    length * size);
+
+                return (int)(index / size);
+            }
+
             // Shrink one of the spans if necessary to ensure they're both the same length. We can then iterate until
             // the Length of one of them and at least have bounds checks removed from that one.
             SliceLongerSpanToMatchShorterLength(ref span, ref other);
