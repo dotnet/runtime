@@ -3,30 +3,33 @@
 
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace System.Text.Json.Serialization
 {
     /// <summary>
-    /// A list of JsonConverters that respects the options class being immuttable once (de)serialization occurs.
+    /// A list of configuration items that respects the options class being immutable once (de)serialization occurs.
     /// </summary>
-    internal sealed class ConverterList : IList<JsonConverter>
+    internal sealed class ConfigurationList<TItem> : IList<TItem>
     {
-        private readonly List<JsonConverter> _list;
+        private readonly List<TItem> _list;
         private readonly JsonSerializerOptions _options;
 
-        public ConverterList(JsonSerializerOptions options)
+        public Action<TItem>? OnElementAdded { get; set; }
+
+        public ConfigurationList(JsonSerializerOptions options)
         {
             _options = options;
-            _list = new List<JsonConverter>();
+            _list = new List<TItem>();
         }
 
-        public ConverterList(JsonSerializerOptions options, ConverterList source)
+        public ConfigurationList(JsonSerializerOptions options, IList<TItem> source)
         {
             _options = options;
-            _list = new List<JsonConverter>(source._list);
+            _list = new List<TItem>(source is ConfigurationList<TItem> cl ? cl._list : source);
         }
 
-        public JsonConverter this[int index]
+        public TItem this[int index]
         {
             get
             {
@@ -41,6 +44,7 @@ namespace System.Text.Json.Serialization
 
                 _options.VerifyMutable();
                 _list[index] = value;
+                OnElementAdded?.Invoke(value);
             }
         }
 
@@ -48,10 +52,11 @@ namespace System.Text.Json.Serialization
 
         public bool IsReadOnly => false;
 
-        public void Add(JsonConverter item!!)
+        public void Add(TItem item!!)
         {
             _options.VerifyMutable();
             _list.Add(item);
+            OnElementAdded?.Invoke(item);
         }
 
         public void Clear()
@@ -60,33 +65,34 @@ namespace System.Text.Json.Serialization
             _list.Clear();
         }
 
-        public bool Contains(JsonConverter item)
+        public bool Contains(TItem item)
         {
             return _list.Contains(item);
         }
 
-        public void CopyTo(JsonConverter[] array, int arrayIndex)
+        public void CopyTo(TItem[] array, int arrayIndex)
         {
             _list.CopyTo(array, arrayIndex);
         }
 
-        public IEnumerator<JsonConverter> GetEnumerator()
+        public IEnumerator<TItem> GetEnumerator()
         {
             return _list.GetEnumerator();
         }
 
-        public int IndexOf(JsonConverter item)
+        public int IndexOf(TItem item)
         {
             return _list.IndexOf(item);
         }
 
-        public void Insert(int index, JsonConverter item!!)
+        public void Insert(int index, TItem item!!)
         {
             _options.VerifyMutable();
             _list.Insert(index, item);
+            OnElementAdded?.Invoke(item);
         }
 
-        public bool Remove(JsonConverter item)
+        public bool Remove(TItem item)
         {
             _options.VerifyMutable();
             return _list.Remove(item);

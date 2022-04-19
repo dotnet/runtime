@@ -320,6 +320,7 @@ namespace System.Text.Json
         public System.Text.Json.JsonNamingPolicy? PropertyNamingPolicy { get { throw null; } set { } }
         public System.Text.Json.JsonCommentHandling ReadCommentHandling { get { throw null; } set { } }
         public System.Text.Json.Serialization.ReferenceHandler? ReferenceHandler { get { throw null; } set { } }
+        public System.Collections.Generic.IList<System.Text.Json.Serialization.JsonPolymorphicTypeConfiguration> PolymorphicTypeConfigurations { get { throw null; } }
         public System.Text.Json.Serialization.JsonUnknownTypeHandling UnknownTypeHandling { get { throw null; } set { } }
         public bool WriteIndented { get { throw null; } set { } }
         public void AddContext<TContext>() where TContext : System.Text.Json.Serialization.JsonSerializerContext, new() { }
@@ -829,6 +830,14 @@ namespace System.Text.Json.Serialization
             System.Text.Json.JsonSerializerOptions options);
         public virtual void WriteAsPropertyName(System.Text.Json.Utf8JsonWriter writer, T value, System.Text.Json.JsonSerializerOptions options) { }
     }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Interface, AllowMultiple = true, Inherited = false)]
+    public partial class JsonDerivedTypeAttribute : System.Text.Json.Serialization.JsonAttribute
+    {
+        public JsonDerivedTypeAttribute(System.Type derivedType) { }
+        public JsonDerivedTypeAttribute(System.Type derivedType, string typeDiscriminatorId) { }
+        public System.Type DerivedType { get { throw null; } }
+        public string? TypeDiscriminatorId { get { throw null; } }
+    }
     [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Property, AllowMultiple=false)]
     public sealed partial class JsonExtensionDataAttribute : System.Text.Json.Serialization.JsonAttribute
     {
@@ -870,6 +879,14 @@ namespace System.Text.Json.Serialization
     {
         public JsonNumberHandlingAttribute(System.Text.Json.Serialization.JsonNumberHandling handling) { }
         public System.Text.Json.Serialization.JsonNumberHandling Handling { get { throw null; } }
+    }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Interface, AllowMultiple = false, Inherited = false)]
+    public sealed partial class JsonPolymorphicAttribute : System.Text.Json.Serialization.JsonAttribute
+    {
+        public JsonPolymorphicAttribute() { }
+        public string? CustomTypeDiscriminatorPropertyName { get { throw null; } set { } }
+        public bool IgnoreUnrecognizedTypeDiscriminators { get { throw null; } set { } }
+        public System.Text.Json.Serialization.JsonUnknownDerivedTypeHandling UnknownDerivedTypeHandling { get { throw null; } set { } }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Property, AllowMultiple=false)]
     public sealed partial class JsonPropertyNameAttribute : System.Text.Json.Serialization.JsonAttribute
@@ -923,10 +940,39 @@ namespace System.Text.Json.Serialization
         public sealed override bool CanConvert(System.Type typeToConvert) { throw null; }
         public sealed override System.Text.Json.Serialization.JsonConverter CreateConverter(System.Type typeToConvert, System.Text.Json.JsonSerializerOptions options) { throw null; }
     }
+    public enum JsonUnknownDerivedTypeHandling
+    {
+        FailSerialization = 0,
+        FallbackToBaseType = 1,
+        FallbackToNearestAncestor = 2
+    }
     public enum JsonUnknownTypeHandling
     {
         JsonElement = 0,
         JsonNode = 1,
+    }
+    public partial class JsonPolymorphicTypeConfiguration : System.Collections.Generic.ICollection<(System.Type DerivedType, string? TypeDiscriminatorId)>, System.Collections.Generic.IEnumerable<(System.Type DerivedType, string? TypeDiscriminatorId)>, System.Collections.IEnumerable
+    {
+        public JsonPolymorphicTypeConfiguration(System.Type baseType) { }
+        public System.Type BaseType { get { throw null; } }
+        public string? CustomTypeDiscriminatorPropertyName { get { throw null; } set { } }
+        public bool IgnoreUnrecognizedTypeDiscriminators { get { throw null; } set { } }
+        int System.Collections.Generic.ICollection<(System.Type DerivedType, string? TypeDiscriminatorId)>.Count { get { throw null; } }
+        public System.Text.Json.Serialization.JsonUnknownDerivedTypeHandling UnknownDerivedTypeHandling { get { throw null; } set { } }
+        bool System.Collections.Generic.ICollection<(System.Type DerivedType, string? TypeDiscriminatorId)>.IsReadOnly { get { throw null; } }
+        void System.Collections.Generic.ICollection<(System.Type DerivedType, string? TypeDiscriminatorId)>.Add((System.Type DerivedType, string TypeDiscriminatorId) item) { }
+        void System.Collections.Generic.ICollection<(System.Type DerivedType, string? TypeDiscriminatorId)>.Clear() { }
+        bool System.Collections.Generic.ICollection<(System.Type DerivedType, string? TypeDiscriminatorId)>.Contains((System.Type DerivedType, string TypeDiscriminatorId) item) { throw null; }
+        void System.Collections.Generic.ICollection<(System.Type DerivedType, string? TypeDiscriminatorId)>.CopyTo((System.Type DerivedType, string TypeDiscriminatorId)[] array, int arrayIndex) { }
+        bool System.Collections.Generic.ICollection<(System.Type DerivedType, string? TypeDiscriminatorId)>.Remove((System.Type DerivedType, string TypeDiscriminatorId) item) { throw null; }
+        System.Collections.Generic.IEnumerator<(System.Type DerivedType, string? TypeDiscriminatorId)> System.Collections.Generic.IEnumerable<(System.Type DerivedType, string? TypeDiscriminatorId)>.GetEnumerator() { throw null; }
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
+        public System.Text.Json.Serialization.JsonPolymorphicTypeConfiguration WithDerivedType(System.Type derivedType, string? typeDiscriminatorId = null) { throw null; }
+    }
+    public partial class JsonPolymorphicTypeConfiguration<TBaseType> : System.Text.Json.Serialization.JsonPolymorphicTypeConfiguration where TBaseType : class
+    {
+        public JsonPolymorphicTypeConfiguration() : base(default(System.Type)) { }
+        public System.Text.Json.Serialization.JsonPolymorphicTypeConfiguration<TBaseType> WithDerivedType<TDerivedType>(string? typeDiscriminatorId = null) where TDerivedType : TBaseType { throw null; }
     }
     public abstract partial class ReferenceHandler
     {

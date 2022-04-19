@@ -42,7 +42,10 @@ namespace System.Text.Json
         private JsonCommentHandling _readCommentHandling;
         private ReferenceHandler? _referenceHandler;
         private JavaScriptEncoder? _encoder;
-        private ConverterList _converters;
+        private ConfigurationList<JsonConverter> _converters;
+#pragma warning disable CA2252 // This API requires opting into preview features
+        private ConfigurationList<JsonPolymorphicTypeConfiguration> _polymorphicTypeConfigurations;
+#pragma warning restore CA2252 // This API requires opting into preview features
         private JsonIgnoreCondition _defaultIgnoreCondition;
         private JsonNumberHandling _numberHandling;
         private JsonUnknownTypeHandling _unknownTypeHandling;
@@ -62,7 +65,15 @@ namespace System.Text.Json
         /// </summary>
         public JsonSerializerOptions()
         {
-            _converters = new ConverterList(this);
+            _converters = new ConfigurationList<JsonConverter>(this);
+
+#pragma warning disable CA2252 // This API requires opting into preview features
+            _polymorphicTypeConfigurations = new ConfigurationList<JsonPolymorphicTypeConfiguration>(this)
+            {
+                OnElementAdded = static config => { config.IsAssignedToOptionsInstance = true; }
+            };
+#pragma warning restore CA2252 // This API requires opting into preview features
+
             TrackOptionsInstance(this);
         }
 
@@ -80,6 +91,10 @@ namespace System.Text.Json
             _jsonPropertyNamingPolicy = options._jsonPropertyNamingPolicy;
             _readCommentHandling = options._readCommentHandling;
             _referenceHandler = options._referenceHandler;
+            _converters = new ConfigurationList<JsonConverter>(this, options._converters);
+#pragma warning disable CA2252 // This API requires opting into preview features
+            _polymorphicTypeConfigurations = new ConfigurationList<JsonPolymorphicTypeConfiguration>(this, options._polymorphicTypeConfigurations);
+#pragma warning restore CA2252 // This API requires opting into preview features
             _encoder = options._encoder;
             _defaultIgnoreCondition = options._defaultIgnoreCondition;
             _numberHandling = options._numberHandling;
@@ -95,14 +110,11 @@ namespace System.Text.Json
             _propertyNameCaseInsensitive = options._propertyNameCaseInsensitive;
             _writeIndented = options._writeIndented;
 
-            _converters = new ConverterList(this, options._converters);
             EffectiveMaxDepth = options.EffectiveMaxDepth;
             ReferenceHandlingStrategy = options.ReferenceHandlingStrategy;
 
-            // _classes is not copied as sharing the JsonTypeInfo and JsonPropertyInfo caches can result in
+            // _cachingContext is not copied as sharing the JsonTypeInfo and JsonPropertyInfo caches can result in
             // unnecessary references to type metadata, potentially hindering garbage collection on the source options.
-
-            // _haveTypesBeenCreated is not copied; it's okay to make changes to this options instance as (de)serialization has not occurred.
 
             TrackOptionsInstance(this);
         }
