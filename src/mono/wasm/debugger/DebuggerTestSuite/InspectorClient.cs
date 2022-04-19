@@ -3,6 +3,9 @@
 
 using System;
 using System.Collections.Generic;
+using System.Net;
+using System.Net.Sockets;
+using System.Net.WebSockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -19,6 +22,12 @@ namespace DebuggerTests
         protected int next_cmd_id;
 
         public InspectorClient(ILogger logger) : base(logger) { }
+
+        protected override async Task<WasmDebuggerConnection> SetupConnection(Uri webserverUri, CancellationToken token)
+            => new DevToolsDebuggerConnection(
+                        await ConnectToWebServer(webserverUri, token),
+                        "client",
+                         logger);
 
         protected virtual Task HandleMessage(string msg, CancellationToken token)
         {

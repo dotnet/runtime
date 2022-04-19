@@ -4,9 +4,6 @@
 using System;
 using System.Collections.Concurrent;
 using System.Diagnostics.CodeAnalysis;
-using System.Net.Sockets;
-using System.Net.WebSockets;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -21,9 +18,9 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         public Task? CurrentSend { get { return current_send; } }
 
-        public AbstractConnection Connection { get; init; }
+        public WasmDebuggerConnection Connection { get; init; }
 
-        public DevToolsQueue(AbstractConnection conn)
+        public DevToolsQueue(WasmDebuggerConnection conn)
         {
             Connection = conn;
             pending = new ConcurrentQueue<byte[]>();

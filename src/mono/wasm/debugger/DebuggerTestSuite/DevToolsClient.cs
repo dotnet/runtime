@@ -16,7 +16,7 @@ namespace DebuggerTests
     internal class DevToolsClient : IDisposable
     {
         DevToolsQueue _queue;
-        protected AbstractConnection _conn;
+        protected WasmDebuggerConnection _conn;
         protected TaskCompletionSource _clientInitiatedClose = new TaskCompletionSource();
         TaskCompletionSource _shutdownRequested = new TaskCompletionSource();
         readonly TaskCompletionSource<Exception> _failRequested = new();
@@ -55,7 +55,7 @@ namespace DebuggerTests
                 return;
             }
 
-            await _conn.Shutdown(cancellationToken);
+            await _conn.ShutdownAsync(cancellationToken);
             _shutdownRequested.SetResult();
        }
 
@@ -119,32 +119,27 @@ namespace DebuggerTests
                 _newSendTaskAvailable.TrySetResult();
         }
 
+        protected async Task<ClientWebSocket> ConnectToWebServer(Uri uri, CancellationToken token)
+        {
+            // connects to the webserver to start the proxy
+            ClientWebSocket clientSocket = new ();
+            clientSocket.Options.KeepAliveInterval = Timeout.InfiniteTimeSpan;
+            logger.LogDebug("Client connecting to {0}", uri);
+            await clientSocket.ConnectAsync(uri, token);
+            return clientSocket;
+        }
+
+        protected virtual Task<WasmDebuggerConnection> SetupConnection(Uri webserverUri, CancellationToken token)
+            => throw new NotImplementedException();
+
         protected async Task ConnectWithMainLoops(
             Uri uri,
             Func<string, CancellationToken, Task> receive,
             CancellationToken token)
         {
-            ClientWebSocket clientSocket = new ();
-            clientSocket.Options.KeepAliveInterval = Timeout.InfiniteTimeSpan;
-            logger.LogDebug("Client connecting to {0}", uri);
-            await clientSocket.ConnectAsync(uri, token);
-
-            if (_useWebSockets)
-            {
-                _conn = new WebSocketConnection(clientSocket, logger);
-            }
-            else
-            {
-                TcpClient tcpClient = new();
-                IPEndPoint endpoint = new (IPAddress.Parse("127.0.0.1"), 6002);
-                logger.LogDebug($"Connecting to the proxy at tcp://{endpoint} ..");
-                await tcpClient.ConnectAsync(endpoint, token);
-                logger.LogDebug($".. connected to the proxy!");
-                _conn = new TcpClientConnection(tcpClient, logger);
-            }
-
-            _queue = new DevToolsQueue(_conn);
             var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(token);
+            _conn = await SetupConnection(uri, token);
+            _queue = new DevToolsQueue(_conn);
 
             _ = Task.Run(async () =>
             {
@@ -176,11 +171,12 @@ namespace DebuggerTests
                 }
                 finally
                 {
-                    if (_conn is WebSocketConnection wsc)
+                    linkedCts.Cancel();
+                    _conn?.Dispose();
+                    if (_conn is DevToolsDebuggerConnection wsc)
                         logger.LogDebug($"Loop ended with socket: {wsc.WebSocket.State}");
                     else
                         logger.LogDebug($"Loop ended");
-                    linkedCts.Cancel();
                 }
             });
         }
@@ -191,7 +187,7 @@ namespace DebuggerTests
         {
             var pending_ops = new List<Task>
             {
-                _conn.ReadOne(_clientInitiatedClose, linkedCts.Token),
+                _conn.ReadOne(_clientInitiatedClose, _failRequested, linkedCts.Token),
                 _newSendTaskAvailable.Task,
                 _clientInitiatedClose.Task,
                 _shutdownRequested.Task,
@@ -213,7 +209,7 @@ namespace DebuggerTests
                     return (RunLoopStopReason.Shutdown, null);
 
                 if (_clientInitiatedClose.Task.IsCompleted)
-                    return (RunLoopStopReason.ClientInitiatedClose, new TaskCanceledException("Proxy or the browser closed the connection"));
+                    return (RunLoopStopReason.ClientInitiatedClose, new TaskCanceledException("Proxy closed the connection"));
 
                 if (_failRequested.Task.IsCompleted)
                     return (RunLoopStopReason.Exception, _failRequested.Task.Result);
@@ -233,7 +229,7 @@ namespace DebuggerTests
                 if (task == pending_ops[0])
                 {
                     var msg = await (Task<string>)pending_ops[0];
-                    pending_ops[0] = _conn.ReadOne(_clientInitiatedClose, linkedCts.Token);
+                    pending_ops[0] = _conn.ReadOne(_clientInitiatedClose, _failRequested, linkedCts.Token);
 
                     if (msg != null)
                     {

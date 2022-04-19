@@ -3,13 +3,15 @@
 
 using System.Threading;
 
+#nullable enable
+
 namespace Microsoft.WebAssembly.Diagnostics;
 
 internal class FirefoxExecutionContext : ExecutionContext
 {
-    internal string ActorName { get; set; }
-    internal string ThreadName { get; set; }
-    internal string GlobalName { get; set; }
+    public string? ActorName { get; set; }
+    public string? ThreadName { get; set; }
+    public string? GlobalName { get; set; }
 
     public FirefoxExecutionContext(MonoSDBHelper sdbAgent, int id, string actorName) : base(sdbAgent, id, actorName)
     {

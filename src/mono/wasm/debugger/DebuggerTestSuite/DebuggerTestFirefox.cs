@@ -3,27 +3,20 @@
 
 using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Net.Sockets;
-using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Logging;
 using Microsoft.WebAssembly.Diagnostics;
-using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Xunit;
-using Xunit.Sdk;
 
 namespace DebuggerTests;
 
 public class DebuggerTestFirefox : DebuggerTestBase
 {
-    internal FirefoxInspectorClient client;
+    internal FirefoxInspectorClient _client;
     public DebuggerTestFirefox(string driver = "debugger-driver.html"):base(driver)
     {
-        client = insp.Client as FirefoxInspectorClient;
+        _client = insp.Client as FirefoxInspectorClient;
     }
 
     protected override string BrowserName()
@@ -55,6 +48,7 @@ public class DebuggerTestFirefox : DebuggerTestBase
             //"/Applications/Google Chrome Canary.app/Contents/MacOS/Google Chrome Canary",
             //"/usr/bin/chromium",
             "C:/Program Files/Mozilla Firefox/firefox.exe",
+            "/Applications/Firefox.app/Contents/MacOS/firefox"
             //"/usr/bin/chromium-browser",
         };
         return ret;
@@ -137,7 +131,7 @@ public class DebuggerTestFirefox : DebuggerTestBase
                    column,
                    sourceUrl = dicFileToUrl[url_key]
                 }),
-                to = client.BreakpointActorId
+                to = _client.BreakpointActorId
             });
 
         var bp1_res = await cli.SendCommand("setBreakpoint", bp1_req, token);
@@ -150,7 +144,7 @@ public class DebuggerTestFirefox : DebuggerTestBase
     {
         var o = JObject.FromObject(new
             {
-                to = client.ConsoleActorId,
+                to = _client.ConsoleActorId,
                 type = "evaluateJSAsync",
                 text = expression,
                 options = new { eager = true, mapped = new { @await = true } }
@@ -398,7 +392,7 @@ public class DebuggerTestFirefox : DebuggerTestBase
         }
         var o = JObject.FromObject(new
         {
-            to = client.ThreadActorId,
+            to = _client.ThreadActorId,
             type = "resume",
             resumeLimit
         });
@@ -434,7 +428,7 @@ public class DebuggerTestFirefox : DebuggerTestBase
                    column = col,
                    sourceUrl = m_url
                 }),
-                to = client.BreakpointActorId
+                to = _client.BreakpointActorId
             });
 
         if (condition != "")
@@ -456,7 +450,7 @@ public class DebuggerTestFirefox : DebuggerTestBase
     {
         var o = JObject.FromObject(new
         {
-            to = client.ConsoleActorId,
+            to = _client.ConsoleActorId,
             type = "evaluateJSAsync",
             text = expression,
             options = new { eager = true, mapped = new { @await = true } }
@@ -505,7 +499,7 @@ public class DebuggerTestFirefox : DebuggerTestBase
     {
         return JObject.FromObject(new
         {
-            to = client.ConsoleActorId,
+            to = _client.ConsoleActorId,
             type = "evaluateJSAsync",
             text = expression,
             options = new { eager = true, mapped = new { @await = true } }

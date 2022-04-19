@@ -41,7 +41,7 @@ namespace DebuggerTests
                                     options.SingleLine = true;
                                     options.TimestampFormat = "[HH:mm:ss] ";
                                 })
-                               .AddFilter(null, LogLevel.Information);
+                               .AddFilter(null, LogLevel.Trace);
                     })
                     .ConfigureServices((ctx, services) =>
                     {

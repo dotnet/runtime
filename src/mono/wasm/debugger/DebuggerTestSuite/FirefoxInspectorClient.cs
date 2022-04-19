@@ -8,6 +8,10 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json;
 using Microsoft.WebAssembly.Diagnostics;
+using System;
+using System.Net.WebSockets;
+using System.Net.Sockets;
+using System.Net;
 
 #nullable enable
 
@@ -21,7 +25,37 @@ class FirefoxInspectorClient : InspectorClient
 
     public FirefoxInspectorClient(ILogger logger) : base(logger)
     {
-        _useWebSockets = false;
+    }
+
+    protected override async Task<WasmDebuggerConnection> SetupConnection(Uri webserverUri, CancellationToken token)
+    {
+        ClientWebSocket clientSocket = await ConnectToWebServer(webserverUri, token);
+
+        ArraySegment<byte> buff = new(new byte[10]);
+        _ = clientSocket.ReceiveAsync(buff, token)
+                        .ContinueWith(t =>
+                        {
+                            logger.LogTrace($"** client socket closed, so stopping the client loop too");
+                            // Webserver connection is closed
+                            // So, stop the loop here too
+                            _clientInitiatedClose.TrySetResult();
+                        }, TaskContinuationOptions.NotOnRanToCompletion | TaskContinuationOptions.RunContinuationsAsynchronously)
+                        .ConfigureAwait(false);
+
+        IPEndPoint endpoint = new (IPAddress.Parse("127.0.0.1"), DebuggerTestBase.FirefoxProxyPort);
+        try
+        {
+            TcpClient tcpClient = new();
+
+            logger.LogDebug($"Connecting to the proxy at tcp://{endpoint} ..");
+            await tcpClient.ConnectAsync(endpoint, token);
+            logger.LogDebug($".. connected to the proxy!");
+            return new FirefoxDebuggerConnection(tcpClient, "client", logger);
+        }
+        catch (SocketException se)
+        {
+            throw new Exception($"Failed to connect to the proxy at {endpoint}", se);
+        }
     }
 
     public override async Task ProcessCommand(Result command, CancellationToken token)
@@ -72,15 +106,21 @@ class FirefoxInspectorClient : InspectorClient
         {
             if (res["type"]?.Value<string>() == "evaluationResult")
             {
-                var messageId = new FirefoxMessageId("", 0, res["from"]?.Value<string>());
+                if (res["from"]?.Value<string>() is not string from_str)
+                    return null;
+
+                var messageId = new FirefoxMessageId("", 0, from_str);
                 if (pending_cmds.Remove(messageId, out var item))
                     item.SetResult(Result.FromJsonFirefox(res));
             }
             return null;
         }
-        if (res["from"] != null)
+        if (res["from"] is not null)
         {
-            var messageId = new FirefoxMessageId("", 0, res["from"]?.Value<string>());
+            if (res["from"]?.Value<string>() is not string from_str)
+                return null;
+
+            var messageId = new FirefoxMessageId("", 0, from_str);
             if (pending_cmds.Remove(messageId, out var item))
             {
                 item.SetResult(Result.FromJsonFirefox(res));
@@ -122,21 +162,21 @@ class FirefoxInspectorClient : InspectorClient
         return null;
     }
 
-    public override Task<Result> SendCommand(SessionId sessionId, string method, JObject args, CancellationToken token)
+    public override Task<Result> SendCommand(SessionId sessionId, string method, JObject? args, CancellationToken token)
     {
         if (args == null)
             args = new JObject();
 
         var tcs = new TaskCompletionSource<Result>();
         MessageId msgId;
-        msgId = new FirefoxMessageId("", 0, args["to"]?.Value<string>());
+        if (args["to"]?.Value<string>() is not string to_str)
+            throw new System.Exception($"No 'to' field found in '{args}'");
+
+        msgId = new FirefoxMessageId("", 0, to_str);
         pending_cmds[msgId] = tcs;
 
         var msg = args.ToString(Formatting.None);
         var bytes = Encoding.UTF8.GetBytes(msg);
-        // var bytesWithHeader = Encoding.UTF8.GetBytes($"{bytes.Length}:").Concat(bytes).ToArray();
-        // var msg = args.ToString(Formatting.None);
-        // var bytes = Encoding.UTF8.GetBytes(msg);
         Send(bytes, token);
 
         return tcs.Task;

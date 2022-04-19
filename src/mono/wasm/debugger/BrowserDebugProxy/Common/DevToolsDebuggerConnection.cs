@@ -13,18 +13,19 @@ using Microsoft.Extensions.Logging;
 
 namespace Microsoft.WebAssembly.Diagnostics;
 
-internal class WebSocketConnection : AbstractConnection
+internal class DevToolsDebuggerConnection : WasmDebuggerConnection
 {
     public WebSocket WebSocket { get; init; }
     private readonly ILogger _logger;
 
-    public WebSocketConnection(WebSocket webSocket!!, ILogger logger!!)
+    public DevToolsDebuggerConnection(WebSocket webSocket!!, string id, ILogger logger!!)
+            : base(id)
     {
         WebSocket = webSocket;
         _logger = logger;
     }
 
-    public override async Task<string?> ReadOne(TaskCompletionSource client_initiated_close, CancellationToken token)
+    public override async Task<string?> ReadOne(TaskCompletionSource client_initiated_close, TaskCompletionSource<Exception> side_exception, CancellationToken token)
     {
         byte[] buff = new byte[4000];
         var mem = new MemoryStream();
@@ -70,7 +71,7 @@ internal class WebSocketConnection : AbstractConnection
                                true,
                                token);
 
-    public override async Task Shutdown(CancellationToken cancellationToken)
+    public override async Task ShutdownAsync(CancellationToken cancellationToken)
     {
         try
         {
@@ -88,4 +89,6 @@ internal class WebSocketConnection : AbstractConnection
         WebSocket.Dispose();
         base.Dispose();
     }
+
+    public override string ToString() => $"[ {Id} connection: state: {WebSocket?.State} ]";
 }

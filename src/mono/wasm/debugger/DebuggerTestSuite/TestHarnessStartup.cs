@@ -99,7 +99,7 @@ namespace DebuggerTests
             var devToolsUrl = options.DevToolsUrl;
             app.UseRouter(router =>
             {
-                router.MapGet("launch-browser-and-connect", async context =>
+                router.MapGet("launch-host-and-connect", async context =>
                 {
                     string test_id;
                     if (context.Request.Query.TryGetValue("test_id", out var value) && value.Count == 1)
@@ -107,9 +107,12 @@ namespace DebuggerTests
                     else
                         test_id = "unknown";
 
-                    string browser_name = "chrome";
-                    if (context.Request.Query.TryGetValue("browser", out value) && value.Count == 1)
-                        browser_name = value[0];
+                    WasmHost host = WasmHost.Chrome;
+                    if (context.Request.Query.TryGetValue("host", out value) && value.Count == 1)
+                    {
+                        if (!Enum.TryParse<WasmHost>(value[0], true, out host))
+                            throw new ArgumentException($"Unknown wasm host - {value[0]}");
+                    }
 
                     int firefox_proxy_port = 6002;
                     if (context.Request.Query.TryGetValue("firefox-proxy-port", out value) && value.Count == 1 &&
@@ -122,40 +125,52 @@ namespace DebuggerTests
                     Logger.LogInformation($"{message_prefix} New test request for test id {test_id}");
                     try
                     {
-                        // BrowserBase browser;
-                        int browserPort;
 
-                        if (browser_name == "chrome")
+                        int browserPort;
+                        string logFilePath = Path.Combine(DebuggerTestBase.TestLogPath, $"{test_id}-proxy.log");
+                        File.Delete(logFilePath);
+
+                        var proxyLoggerFactory = LoggerFactory.Create(
+                            builder => builder
+                                    .AddSimpleConsole(options =>
+                                        {
+                                            options.SingleLine = true;
+                                            options.TimestampFormat = "[HH:mm:ss] ";
+                                        })
+                                .AddFilter(null, LogLevel.Debug))
+                                .AddFile(logFilePath, minimumLevel: LogLevel.Trace);
+
+                        if (host == WasmHost.Chrome)
                         {
-                            var browser = new ChromeBrowser(Logger);
+                            using var provider = new ChromeProvider(test_id, Logger);
                             browserPort = options.DevToolsUrl.Port;
-                            await browser.LaunchAndStartProxy(context,
+                            await provider.StartHostAndProxy(context,
                                                 options.BrowserPath,
                                                 $"http://{TestHarnessProxy.Endpoint.Authority}/{options.PagePath}",
                                                 browserPort,
-                                                test_id,
-                                                message_prefix);
+                                                message_prefix,
+                                                proxyLoggerFactory).ConfigureAwait(false);
                         }
-                        else if (browser_name == "firefox")
+                        else if (host == WasmHost.Firefox)
                         {
-                            var browser = new FirefoxBrowser(Logger);
-                            browserPort = 6000;
-                            await browser.LaunchAndStartProxy(context,
+                            using var provider = new FirefoxProvider(test_id, Logger);
+                            browserPort = 6500 + int.Parse(test_id);
+                            await provider.LaunchAndStartProxy(context,
                                                 options.BrowserPath,
                                                 $"http://{TestHarnessProxy.Endpoint.Authority}/{options.PagePath}",
                                                 browserPort,
                                                 firefox_proxy_port,
-                                                test_id,
-                                                message_prefix);
-                        }
-                        else
-                        {
-                            throw new NotSupportedException($"Unknown browser {browser_name}");
+                                                message_prefix,
+                                                proxyLoggerFactory).ConfigureAwait(false);
                         }
                     }
                     catch (Exception ex)
                     {
-                        Logger.LogError($"{message_prefix} launch-chrome-and-connect failed with {ex.ToString()}");
+                        Logger.LogError($"{message_prefix} launch-host-and-connect failed with {ex.ToString()}");
+                    }
+                    finally
+                    {
+                        Logger.LogDebug($"TestHarnessStartup: closing for {test_id}");
                     }
                 });
             });

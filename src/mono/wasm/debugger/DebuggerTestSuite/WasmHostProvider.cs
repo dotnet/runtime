@@ -13,11 +13,16 @@ using Microsoft.Extensions.Logging;
 
 namespace DebuggerTests;
 
-internal abstract class BrowserBase
+internal abstract class WasmHostProvider : IDisposable
 {
-    protected ILogger logger { get; init; }
+    protected ILogger _logger;
+    public string Id { get; init; }
 
-    public BrowserBase(ILogger logger) => this.logger = logger;
+    public WasmHostProvider(string id, ILogger logger)
+    {
+        Id = id;
+        this._logger = logger;
+    }
 
     protected ProcessStartInfo GetProcessStartInfo(string browserPath, string arguments, string url)
         => new()
@@ -28,15 +33,6 @@ internal abstract class BrowserBase
             RedirectStandardError = true,
             RedirectStandardOutput = true
         };
-
-    // public virtual Task LaunchAndStartProxy(HttpContext context,
-    //                                         string browserPath,
-    //                                         string url,
-    //                                         int remoteDebuggingPort,
-    //                                         string test_id,
-    //                                         string message_prefix,
-    //                                         int browser_ready_timeout_ms = 20000)
-    //     => Task.CompletedTask;
 
     protected async Task<(Process?, string?)> LaunchBrowser(ProcessStartInfo psi!!,
                                         HttpContext context!!,
@@ -53,7 +49,7 @@ internal abstract class BrowserBase
 
         var browserReadyTCS = new TaskCompletionSource<string>();
 
-        logger.LogDebug($"Starting {psi.FileName} with {psi.Arguments}");
+        _logger.LogDebug($"Starting {psi.FileName} with {psi.Arguments}");
         var proc = Process.Start(psi);
         if (proc is null)
             return (null, null);
@@ -68,7 +64,7 @@ internal abstract class BrowserBase
             proc.BeginOutputReadLine();
             if (await Task.WhenAny(browserReadyTCS.Task, Task.Delay(browser_ready_timeout_ms)) != browserReadyTCS.Task)
             {
-                logger.LogError($"{message_prefix} Timed out after {browser_ready_timeout_ms/1000}s waiting for the browser to be ready: {psi.FileName}");
+                _logger.LogError($"{message_prefix} Timed out after {browser_ready_timeout_ms/1000}s waiting for the browser to be ready: {psi.FileName}");
                 return (proc, null);
             }
 
@@ -76,13 +72,13 @@ internal abstract class BrowserBase
         }
         catch (Exception e)
         {
-            logger.LogDebug($"{message_prefix} got exception {e}");
+            _logger.LogDebug($"{message_prefix} got exception {e}");
             throw;
         }
 
         void ProcessOutput(string prefix, string? msg)
         {
-            logger.LogDebug($"{prefix}{msg}");
+            _logger.LogDebug($"{prefix}{msg}");
 
             if (string.IsNullOrEmpty(msg) || browserReadyTCS.Task.IsCompleted)
                 return;
@@ -93,4 +89,6 @@ internal abstract class BrowserBase
         }
     }
 
+    public virtual void Dispose()
+    {}
 }

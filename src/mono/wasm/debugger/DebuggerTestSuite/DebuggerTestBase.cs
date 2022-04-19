@@ -5,16 +5,13 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Net.Http;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Logging;
 using Microsoft.WebAssembly.Diagnostics;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Xunit;
-using Xunit.Abstractions;
 using Xunit.Sdk;
 
 namespace DebuggerTests
@@ -29,11 +26,15 @@ namespace DebuggerTests
 
     public class DebuggerTestBase : IAsyncLifetime
     {
+        public static WasmHost RunningOn
 #if RUN_IN_CHROME
-        public static bool RunningOnChrome { get { return true; } }
+            => WasmHost.Chrome;
 #else
-        public static bool RunningOnChrome { get { return false; } }
+            => WasmHost.Firefox;
 #endif
+        public static bool RunningOnChrome => RunningOn == WasmHost.Chrome;
+
+        public const int FirefoxProxyPort = 6002;
 
         internal InspectorClient cli;
         internal Inspector insp;

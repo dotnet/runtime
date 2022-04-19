@@ -124,7 +124,6 @@ namespace Microsoft.WebAssembly.Diagnostics
                             context.Response.ContentLength = response.Content.Headers.ContentLength;
                         byte[] bytes = await response.Content.ReadAsByteArrayAsync();
                         await context.Response.Body.WriteAsync(bytes);
-
                     }
                 }
 

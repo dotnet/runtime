@@ -24,7 +24,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         public Task Run(Uri browserUri, WebSocket ideSocket)
         {
-            return proxy.Run(browserUri, ideSocket);
+            return proxy.RunForDevTools(browserUri, ideSocket);
         }
     }
 }

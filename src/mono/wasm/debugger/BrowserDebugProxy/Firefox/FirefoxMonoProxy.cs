@@ -15,42 +15,48 @@ namespace Microsoft.WebAssembly.Diagnostics;
 
 internal class FirefoxMonoProxy : MonoProxy
 {
-    private readonly int portBrowser;
-
-    public FirefoxMonoProxy(ILoggerFactory loggerFactory, int portBrowser, string loggerId = null) : base(loggerFactory, null, loggerId: loggerId)
+    public FirefoxMonoProxy(ILoggerFactory loggerFactory, string loggerId = null) : base(loggerFactory, null, loggerId: loggerId)
     {
-        this.portBrowser = portBrowser;
     }
 
-    internal FirefoxExecutionContext GetContextFixefox(SessionId sessionId)
+    public FirefoxExecutionContext GetContextFixefox(SessionId sessionId)
     {
         if (contexts.TryGetValue(sessionId, out ExecutionContext context))
             return context as FirefoxExecutionContext;
-        Console.WriteLine("vou dar erro");
+        logger.LogDebug("vou dar erro");
         throw new ArgumentException($"Invalid Session: \"{sessionId}\"", nameof(sessionId));
     }
 
-    public async Task Run(TcpClient ideClient = null)
+    public async Task RunForFirefox(TcpClient ideClient, int portBrowser)
     {
-        using var ideConn = new TcpClientConnection(ideClient, logger);
-        TcpClient browserClient = new TcpClient();
-        using var browserConn = new TcpClientConnection(browserClient, logger);
+        TcpClient browserClient = null;
+        try
+        {
+            using var ideConn = new FirefoxDebuggerConnection(ideClient, "ide", logger);
+            browserClient = new TcpClient();
+            using var browserConn = new FirefoxDebuggerConnection(browserClient, "browser", logger);
 
-        logger.LogDebug($"Connecting to the browser at tcp://127.0.0.1:{portBrowser} ..");
-        await browserClient.ConnectAsync("127.0.0.1", portBrowser);
-        logger.LogDebug($".. connected to the browser!");
+            logger.LogDebug($"Connecting to the browser at tcp://127.0.0.1:{portBrowser} ..");
+            await browserClient.ConnectAsync("127.0.0.1", portBrowser);
+            logger.LogTrace($".. connected to the browser!");
 
-        await RunInternal(ideConn, browserConn);
+            await RunInternal(ideConn, browserConn);
+        }
+        finally
+        {
+            browserClient?.Close();
+            ideClient?.Close();
+        }
     }
 
-    internal override async Task OnEvent(SessionId sessionId, JObject parms, CancellationToken token)
+    protected override async Task OnEvent(SessionId sessionId, JObject parms, CancellationToken token)
     {
         try
         {
+            // logger.LogTrace($"OnEvent: {parms}");
             if (!await AcceptEvent(sessionId, parms, token))
             {
-                //logger.LogDebug ("proxy browser: {0}::{1}",method, args);
-                await SendEventInternal(sessionId, "", parms, token);
+                await ForwardMessageToIde(parms, token);
             }
         }
         catch (Exception e)
@@ -59,99 +65,102 @@ internal class FirefoxMonoProxy : MonoProxy
         }
     }
 
-    internal override async Task OnCommand(MessageId id, JObject parms, CancellationToken token)
+    protected override async Task OnCommand(MessageId id, JObject parms, CancellationToken token)
     {
         try
         {
+            // logger.LogDebug($"OnCommand: id: {id}, {parms}");
             if (!await AcceptCommand(id, parms, token))
             {
-                var ret = await SendCommandInternal(id, parms["type"]?.Value<string>(), parms, token);
-                await SendEvent(id, "", ret.FullContent, token);
+                await ForwardMessageToBrowser(parms, token);
             }
         }
         catch (Exception e)
         {
+            logger.LogError($"OnCommand for id: {id}, {parms} failed: {e}");
             side_exception.TrySetException(e);
         }
     }
 
-    internal override void OnResponse(MessageId id, Result result)
+    protected override void OnResponse(MessageId id, Result result)
     {
-        //logger.LogTrace ("got id {0} res {1}", id, result);
-        // Fixme
         if (pending_cmds.Remove(id, out TaskCompletionSource<Result> task))
         {
             task.SetResult(result);
             return;
         }
-        logger.LogError("Cannot respond to command: {id} with result: {result} - command is not pending", id, result);
+        logger.LogError($"Cannot respond to command: {id} with result: {result} - command is not pending");
     }
 
-    internal override Task ProcessBrowserMessage(string msg, CancellationToken token)
+    protected override Task ProcessBrowserMessage(string msg, CancellationToken token)
     {
         var res = JObject.Parse(msg);
 
         //if (method != "Debugger.scriptParsed" && method != "Runtime.consoleAPICalled")
-        Log("protocol", $"from-browser: {msg}");
 
         if (res["prototype"] != null || res["frames"] != null)
         {
             var msgId = new FirefoxMessageId(null, 0, res["from"].Value<string>());
-            OnResponse(msgId, Result.FromJsonFirefox(res));
+            if (pending_cmds.ContainsKey(msgId))
+            {
+                // HACK for now, as we don't correctly handle responses yet
+                OnResponse(msgId, Result.FromJsonFirefox(res));
+            }
         }
         else if (res["resultID"] == null)
+        {
             return OnEvent(res.ToObject<SessionId>(), res, token);
+        }
+        else if (res["type"] == null || res["type"].Value<string>() != "evaluationResult")
+        {
+            var o = JObject.FromObject(new
+            {
+                type = "evaluationResult",
+                resultID = res["resultID"].Value<string>()
+            });
+            var id = int.Parse(res["resultID"].Value<string>().Split('-')[1]);
+            var msgId = new MessageId(null, id + 1);
+
+            return SendCommandInternal(msgId, "", o, token);
+        }
+        else if (res["result"] is JObject && res["result"]["type"].Value<string>() == "object" && res["result"]["class"].Value<string>() == "Array")
+        {
+            var msgIdNew = new FirefoxMessageId(null, 0, res["result"]["actor"].Value<string>());
+            var id = int.Parse(res["resultID"].Value<string>().Split('-')[1]);
+
+            var msgId = new FirefoxMessageId(null, id + 1, "");
+            var pendingTask = pending_cmds[msgId];
+            // logger.LogDebug($"ProcessBrowserMessage: removing msg {msgId}");
+            pending_cmds.Remove(msgId);
+            // logger.LogDebug($"ProcessBrowserMessage: adding msg {msgIdNew} to pending_cmds");
+            pending_cmds.Add(msgIdNew, pendingTask);
+            return SendCommandInternal(msgIdNew, "", JObject.FromObject(new
+                                                        {
+                                                            type = "prototypeAndProperties",
+                                                            to = res["result"]["actor"].Value<string>()
+                                                        }), token);
+        }
         else
         {
-            if (res["type"] == null || res["type"].Value<string>() != "evaluationResult")
-            {
-                var o = JObject.FromObject(new
-                {
-                    type = "evaluationResult",
-                    resultID = res["resultID"].Value<string>()
-                });
-                var id = int.Parse(res["resultID"].Value<string>().Split('-')[1]);
-                var msgId = new MessageId(null, id + 1);
-
-                return SendCommandInternal(msgId, "", o, token);
-            }
-            else if (res["result"] is JObject && res["result"]["type"].Value<string>() == "object" && res["result"]["class"].Value<string>() == "Array")
-            {
-                var msgIdNew = new FirefoxMessageId(null, 0, res["result"]["actor"].Value<string>());
-                var id = int.Parse(res["resultID"].Value<string>().Split('-')[1]);
-
-                var msgId = new FirefoxMessageId(null, id + 1, "");
-                var pendingTask = pending_cmds[msgId];
-                pending_cmds.Remove(msgId);
-                pending_cmds.Add(msgIdNew, pendingTask);
-                return SendCommandInternal(msgIdNew, "", JObject.FromObject(new
-                                                            {
-                                                                type = "prototypeAndProperties",
-                                                                to = res["result"]["actor"].Value<string>()
-                                                            }), token);
-
-            }
+            var id = int.Parse(res["resultID"].Value<string>().Split('-')[1]);
+            var msgId = new FirefoxMessageId(null, id + 1, "");
+            if (pending_cmds.ContainsKey(msgId))
+                OnResponse(msgId, Result.FromJsonFirefox(res));
             else
-            {
-                var id = int.Parse(res["resultID"].Value<string>().Split('-')[1]);
-                var msgId = new FirefoxMessageId(null, id + 1, "");
-                if (pending_cmds.ContainsKey(msgId))
-                    OnResponse(msgId, Result.FromJsonFirefox(res));
-                else
-                    return SendCommandInternal(msgId, "", res, token);
-                return null;
-            }
-            //{"type":"evaluationResult","resultID":"1634575904746-0","hasException":false,"input":"ret = 10","result":10,"startTime":1634575904746,"timestamp":1634575904748,"from":"server1.conn21.child10/consoleActor2"}
+                return SendCommandInternal(msgId, "", res, token);
+            return null;
         }
+        //{"type":"evaluationResult","resultID":"1634575904746-0","hasException":false,"input":"ret = 10","result":10,"startTime":1634575904746,"timestamp":1634575904748,"from":"server1.conn21.child10/consoleActor2"}
+
         return null;
     }
 
-    internal override Task ProcessIdeMessage(string msg, CancellationToken token)
+    protected override Task ProcessIdeMessage(string msg, CancellationToken token)
     {
-        Log("protocol", $"ide: {msg}");
         if (!string.IsNullOrEmpty(msg))
         {
             var res = JObject.Parse(msg);
+            Log("protocol", $"from-ide: {GetFromOrTo(res)} {msg}");
             var id = res.ToObject<MessageId>();
             return OnCommand(
                 id,
@@ -161,26 +170,32 @@ internal class FirefoxMonoProxy : MonoProxy
         return null;
     }
 
-    internal override async Task<Result> SendCommand(SessionId id, string method, JObject args, CancellationToken token)
+    protected override string GetFromOrTo(JObject o)
     {
-        //Log ("verbose", $"sending command {method}: {args}");
-        return await SendCommandInternal(id, method, args, token);
+        if (o?["to"]?.Value<string>() is string to)
+            return $"[ to: {to} ]";
+        if (o?["from"]?.Value<string>() is string from)
+            return $"[ from: {from} ]";
+        return string.Empty;
     }
 
-    internal override async Task<Result> SendCommandInternal(SessionId sessionId, string method, JObject args, CancellationToken token)
+    protected override async Task<Result> SendCommandInternal(SessionId sessionId, string method, JObject args, CancellationToken token)
     {
+        logger.LogTrace($"SendCommandInternal: {method}, {args}");
         if (method != null && method != "")
         {
             var tcs = new TaskCompletionSource<Result>();
             MessageId msgId;
             if (method == "evaluateJSAsync")
             {
-                int id = Interlocked.Increment(ref next_cmd_id);
+                int id = GetNewCmdId();
                 msgId = new FirefoxMessageId(sessionId.sessionId, id, "");
             }
             else
+            {
                 msgId = new FirefoxMessageId(sessionId.sessionId, 0, args["to"].Value<string>());
-            pending_cmds[msgId] = tcs;
+            }
+            pending_cmds.Add(msgId, tcs);
             await Send(browser, args, token);
 
             return await tcs.Task;
@@ -189,23 +204,19 @@ internal class FirefoxMonoProxy : MonoProxy
         return await Task.FromResult(Result.OkFromObject(new { }));
     }
 
-    internal override Task SendEvent(SessionId sessionId, string method, JObject args, CancellationToken token)
+    protected override Task SendEventInternal(SessionId sessionId, string method, JObject args, CancellationToken token)
     {
-        //Log ("verbose", $"sending event {method}: {args}");
-        return SendEventInternal(sessionId, method, args, token);
-    }
-
-    internal override Task SendEventInternal(SessionId sessionId, string method, JObject args, CancellationToken token)
-    {
-        if (method != "")
-            return Send(ide, new JObject(JObject.FromObject(new {type = method})), token);
-        return Send(ide, args, token);
+        // logger.LogTrace($"to-ide {method}: {args}");
+        return method != ""
+                ? Send(ide, new JObject(JObject.FromObject(new { type = method })), token)
+                : Send(ide, args, token);
     }
 
     protected override async Task<bool> AcceptEvent(SessionId sessionId, JObject args, CancellationToken token)
     {
         if (args["messages"] != null)
         {
+            // FIXME: duplicate, and will miss any non-runtime-ready messages being forwarded
             var messages = args["messages"].Value<JArray>();
             foreach (var message in messages)
             {
@@ -271,7 +282,11 @@ internal class FirefoxMonoProxy : MonoProxy
                         if (messageArgs != null && messageArgs.Count == 2)
                         {
                             if (messageArgs[0].Value<string>() == MonoConstants.RUNTIME_IS_READY && messageArgs[1].Value<string>() == MonoConstants.RUNTIME_IS_READY_ID)
-                                await RuntimeReady(sessionId, token);
+                            {
+                                await Task.WhenAll(
+                                    ForwardMessageToIde(args, token),
+                                    RuntimeReady(sessionId, token));
+                            }
                         }
                     }
                     break;
@@ -743,7 +758,7 @@ internal class FirefoxMonoProxy : MonoProxy
     {
         //different behavior when debugging from VSCode and from Firefox
         var ctx = context as FirefoxExecutionContext;
-        Log("debug", $"sending {source.Url} {context.Id} {sessionId.sessionId}");
+        logger.LogTrace($"sending {source.Url} {context.Id} {sessionId.sessionId}");
         var obj = JObject.FromObject(new
         {
             actor = source.SourceId.ToString(),

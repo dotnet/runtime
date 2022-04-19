@@ -17,21 +17,24 @@ using Microsoft.WebAssembly.Diagnostics;
 
 namespace DebuggerTests;
 
-internal class ChromeBrowser : BrowserBase
+internal class ChromeProvider : WasmHostProvider
 {
     static readonly Regex s_parseConnection = new (@"listening on (ws?s://[^\s]*)");
+    private Process? _process;
+    private WebSocket? _ideWebSocket;
+    private bool _isDisposed;
 
-    public ChromeBrowser(ILogger logger) : base(logger)
+    public ChromeProvider(string id, ILogger logger) : base(id, logger)
     {
     }
 
-    public async Task LaunchAndStartProxy(HttpContext context,
+    public async Task StartHostAndProxy(HttpContext context,
                                       string browserPath,
                                       string url,
                                       int remoteDebuggingPort,
-                                      string test_id,
-                                      string message_prefix,
-                                      int browser_ready_timeout_ms = 20000)
+                                      string messagePrefix,
+                                      ILoggerFactory loggerFactory,
+                                      int browserReadyTimeoutMs = 20000)
     {
         ProcessStartInfo psi = GetProcessStartInfo(browserPath, GetInitParms(remoteDebuggingPort), url);
         (Process? proc, string? line) = await LaunchBrowser(
@@ -47,29 +50,17 @@ internal class ChromeBrowser : BrowserBase
                                                 ? match.Groups[1].Captures[0].Value
                                                 : null;
                                 },
-                                message_prefix,
-                                browser_ready_timeout_ms);
+                                messagePrefix,
+                                browserReadyTimeoutMs);
 
         if (proc is null || line is null)
             throw new Exception($"Failed to launch chrome");
 
-        string con_str = await ExtractConnUrl(line, logger);
+        string con_str = await ExtractConnUrl(line, _logger);
 
-        logger.LogInformation($"{message_prefix} launching proxy for {con_str}");
-        string logFilePath = Path.Combine(DebuggerTestBase.TestLogPath, $"{test_id}-proxy.log");
-        File.Delete(logFilePath);
+        _logger.LogInformation($"{messagePrefix} launching proxy for {con_str}");
 
-        var proxyLoggerFactory = LoggerFactory.Create(
-            builder => builder
-                    .AddSimpleConsole(options =>
-                        {
-                            // options.SingleLine = true;
-                            options.TimestampFormat = "[HH:mm:ss] ";
-                        })
-                .AddFilter(null, LogLevel.Information)
-                .AddFile(logFilePath, minimumLevel: LogLevel.Trace));
-
-        var proxy = new DebuggerProxy(proxyLoggerFactory, null, loggerId: test_id);
+        var proxy = new DebuggerProxy(loggerFactory, null, loggerId: Id);
         var browserUri = new Uri(con_str);
         WebSocket? ideSocket = null;
         try
@@ -79,24 +70,38 @@ internal class ChromeBrowser : BrowserBase
         }
         catch (Exception ex)
         {
-            logger.LogError($"{message_prefix} {ex}");
-            logger.LogDebug($"aborting the socket");
-            ideSocket?.Abort();
-            ideSocket?.Dispose();
+            _logger.LogError($"{messagePrefix} {ex}");
             throw;
-        }
-        finally
-        {
-            logger.LogDebug($"Killing process");
-            proc.CancelErrorRead();
-            proc.CancelOutputRead();
-            proc.Kill();
-            proc.WaitForExit();
-            proc.Close();
         }
     }
 
-    internal virtual async Task<string> ExtractConnUrl (string str, ILogger logger)
+    public override void Dispose()
+    {
+        if (_isDisposed)
+            return;
+
+        if (_process is not null && _process.HasExited != true)
+        {
+            _process.CancelErrorRead();
+            _process.CancelOutputRead();
+            _process.Kill(entireProcessTree: true);
+            _process.WaitForExit();
+            _process.Close();
+
+            _process = null;
+        }
+
+        if (_ideWebSocket is not null)
+        {
+            _ideWebSocket.Abort();
+            _ideWebSocket.Dispose();
+            _ideWebSocket = null;
+        }
+
+        _isDisposed = true;
+    }
+
+    private async Task<string> ExtractConnUrl (string str, ILogger logger)
     {
         var client = new HttpClient();
         var start = DateTime.Now;

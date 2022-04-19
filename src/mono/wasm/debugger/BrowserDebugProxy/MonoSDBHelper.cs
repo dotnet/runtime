@@ -986,7 +986,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         {
             Result res = await proxy.SendMonoCommand(sessionId, MonoCommands.SendDebuggerAgentCommand(proxy.RuntimeId, GetNewId(), (int)GetCommandSetForCommand(command), (int)(object)command, arguments?.ToBase64().data ?? string.Empty), token);
             return !res.IsOk && throwOnError
-                        ? throw new DebuggerAgentException($"SendDebuggerAgentCommand failed for {command}")
+                        ? throw new DebuggerAgentException($"SendDebuggerAgentCommand failed for {command}: {res}")
                         : MonoBinaryReader.From(res);
         }
 
