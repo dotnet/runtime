@@ -274,8 +274,8 @@ namespace System.Net.Http
                     throw WinHttpException.CreateExceptionUsingError(lastError, "WINHTTP_CALLBACK_STATUS_SENDING_REQUEST/WinHttpQueryOption");
                 }
 
-                // Get any additional certificates sent from the remote server during the TLS/SSL handshake.
-                X509Certificate2Collection remoteCertificateStore = new X509Certificate2Collection();
+                    // Get any additional certificates sent from the remote server during the TLS/SSL handshake.
+                    X509Certificate2Collection remoteCertificateStore = new X509Certificate2Collection();
                     UnmanagedCertificateContext.GetRemoteCertificatesFromStoreContext(certHandle, remoteCertificateStore);
 
                 // Create a managed wrapper around the certificate handle. Since this results in duplicating
