@@ -2599,7 +2599,7 @@ public class name<, name, [attribute()]  name, name, name, [()] [name1()] [name2
 
                 var s = new StringBuilder();
                 s.AppendLine();
-                s.AppendLine($"Expected: {Environment.NewLine}$@\"{Normalize(expected)}\"");
+                s.AppendLine($"Expected: {Environment.NewLine}$@\"{Normalize(LineEndingsHelper.Normalize(expected))}\"");
                 s.AppendLine($"Actual:   {Environment.NewLine}$@\"{Normalize(actual)}\"");
 
                 throw new Exception(s.ToString());
