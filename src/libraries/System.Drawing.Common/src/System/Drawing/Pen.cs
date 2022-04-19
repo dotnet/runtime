@@ -77,8 +77,10 @@ namespace System.Drawing
         /// <summary>
         /// Initializes a new instance of the <see cref='Pen'/> class with the specified <see cref='Drawing.Brush'/> and width.
         /// </summary>
-        public Pen(Brush brush!!, float width)
+        public Pen(Brush brush, float width)
         {
+            ArgumentNullException.ThrowIfNull(brush);
+
             IntPtr pen;
             int status = Gdip.GdipCreatePen2(new HandleRef(brush, brush.NativeBrush),
                 width,

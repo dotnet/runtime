@@ -314,8 +314,10 @@ namespace System.Drawing.Imaging
         /// <summary>
         /// Initializes a new instance of the <see cref='Metafile'/> class from the specified stream.
         /// </summary>
-        public unsafe Metafile(Stream stream!!)
+        public unsafe Metafile(Stream stream)
         {
+            ArgumentNullException.ThrowIfNull(stream);
+
             using DrawingCom.IStreamWrapper streamWrapper = DrawingCom.GetComWrapper(new GPStream(stream));
 
             IntPtr metafile = IntPtr.Zero;

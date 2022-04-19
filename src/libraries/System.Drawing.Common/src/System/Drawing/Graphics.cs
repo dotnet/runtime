@@ -133,8 +133,10 @@ namespace System.Drawing
         /// <summary>
         /// Creates an instance of the <see cref='Graphics'/> class from an existing <see cref='Image'/>.
         /// </summary>
-        public static Graphics FromImage(Image image!!)
+        public static Graphics FromImage(Image image)
         {
+            ArgumentNullException.ThrowIfNull(image);
+
             if ((image.PixelFormat & PixelFormat.Indexed) != 0)
                 throw new ArgumentException(SR.GdiplusCannotCreateGraphicsFromIndexedPixelFormat, nameof(image));
 
@@ -583,8 +585,10 @@ namespace System.Drawing
 
         public void SetClip(Graphics g) => SetClip(g, CombineMode.Replace);
 
-        public void SetClip(Graphics g!!, CombineMode combineMode)
+        public void SetClip(Graphics g, CombineMode combineMode)
         {
+            ArgumentNullException.ThrowIfNull(g);
+
             Gdip.CheckStatus(Gdip.GdipSetClipGraphics(
                 new HandleRef(this, NativeGraphics),
                 new HandleRef(g, g.NativeGraphics),
@@ -613,16 +617,20 @@ namespace System.Drawing
 
         public void SetClip(GraphicsPath path) => SetClip(path, CombineMode.Replace);
 
-        public void SetClip(GraphicsPath path!!, CombineMode combineMode)
+        public void SetClip(GraphicsPath path, CombineMode combineMode)
         {
+            ArgumentNullException.ThrowIfNull(path);
+
             Gdip.CheckStatus(Gdip.GdipSetClipPath(
                 new HandleRef(this, NativeGraphics),
                 new HandleRef(path, path._nativePath),
                 combineMode));
         }
 
-        public void SetClip(Region region!!, CombineMode combineMode)
+        public void SetClip(Region region, CombineMode combineMode)
         {
+            ArgumentNullException.ThrowIfNull(region);
+
             Gdip.CheckStatus(Gdip.GdipSetClipRegion(
                 new HandleRef(this, NativeGraphics),
                 new HandleRef(region, region.NativeRegion),
@@ -645,8 +653,10 @@ namespace System.Drawing
                 CombineMode.Intersect));
         }
 
-        public void IntersectClip(Region region!!)
+        public void IntersectClip(Region region)
         {
+            ArgumentNullException.ThrowIfNull(region);
+
             Gdip.CheckStatus(Gdip.GdipSetClipRegion(
                 new HandleRef(this, NativeGraphics),
                 new HandleRef(region, region.NativeRegion),
@@ -661,8 +671,10 @@ namespace System.Drawing
                 CombineMode.Exclude));
         }
 
-        public void ExcludeClip(Region region!!)
+        public void ExcludeClip(Region region)
         {
+            ArgumentNullException.ThrowIfNull(region);
+
             Gdip.CheckStatus(Gdip.GdipSetClipRegion(
                 new HandleRef(this, NativeGraphics),
                 new HandleRef(region, region.NativeRegion),
@@ -754,8 +766,10 @@ namespace System.Drawing
         /// <summary>
         /// Multiplies the <see cref='Matrix'/> that represents the world transform and <paramref name="matrix"/>.
         /// </summary>
-        public void MultiplyTransform(Matrix matrix!!, MatrixOrder order)
+        public void MultiplyTransform(Matrix matrix, MatrixOrder order)
         {
+            ArgumentNullException.ThrowIfNull(matrix);
+
             // Multiplying the transform by a disposed matrix is a nop in GDI+, but throws
             // with the libgdiplus backend. Simulate a nop for compatability with GDI+.
             if (matrix.NativeMatrix == IntPtr.Zero)
@@ -789,8 +803,10 @@ namespace System.Drawing
         /// <summary>
         /// Draws an arc from the specified ellipse.
         /// </summary>
-        public void DrawArc(Pen pen!!, float x, float y, float width, float height, float startAngle, float sweepAngle)
+        public void DrawArc(Pen pen, float x, float y, float width, float height, float startAngle, float sweepAngle)
         {
+            ArgumentNullException.ThrowIfNull(pen);
+
             CheckErrorStatus(Gdip.GdipDrawArc(
                 new HandleRef(this, NativeGraphics),
                 new HandleRef(pen, pen.NativePen),
@@ -810,8 +826,10 @@ namespace System.Drawing
         /// <summary>
         /// Draws an arc from the specified ellipse.
         /// </summary>
-        public void DrawArc(Pen pen!!, int x, int y, int width, int height, int startAngle, int sweepAngle)
+        public void DrawArc(Pen pen, int x, int y, int width, int height, int startAngle, int sweepAngle)
         {
+            ArgumentNullException.ThrowIfNull(pen);
+
             CheckErrorStatus(Gdip.GdipDrawArcI(
                 new HandleRef(this, NativeGraphics),
                 new HandleRef(pen, pen.NativePen),
@@ -831,8 +849,10 @@ namespace System.Drawing
         /// <summary>
         /// Draws a cubic bezier curve defined by four ordered pairs that represent points.
         /// </summary>
-        public void DrawBezier(Pen pen!!, float x1, float y1, float x2, float y2, float x3, float y3, float x4, float y4)
+        public void DrawBezier(Pen pen, float x1, float y1, float x2, float y2, float x3, float y3, float x4, float y4)
         {
+            ArgumentNullException.ThrowIfNull(pen);
+
             CheckErrorStatus(Gdip.GdipDrawBezier(
                 new HandleRef(this, NativeGraphics), new HandleRef(pen, pen.NativePen),
                 x1, y1, x2, y2, x3, y3, x4, y4));
@@ -875,8 +895,10 @@ namespace System.Drawing
         /// <summary>
         /// Draws the outline of the specified rectangle.
         /// </summary>
-        public void DrawRectangle(Pen pen!!, float x, float y, float width, float height)
+        public void DrawRectangle(Pen pen, float x, float y, float width, float height)
         {
+            ArgumentNullException.ThrowIfNull(pen);
+
             CheckErrorStatus(Gdip.GdipDrawRectangle(
                 new HandleRef(this, NativeGraphics), new HandleRef(pen, pen.NativePen),
                 x, y, width, height));
@@ -885,8 +907,10 @@ namespace System.Drawing
         /// <summary>
         /// Draws the outline of the specified rectangle.
         /// </summary>
-        public void DrawRectangle(Pen pen!!, int x, int y, int width, int height)
+        public void DrawRectangle(Pen pen, int x, int y, int width, int height)
         {
+            ArgumentNullException.ThrowIfNull(pen);
+
             CheckErrorStatus(Gdip.GdipDrawRectangleI(
                 new HandleRef(this, NativeGraphics), new HandleRef(pen, pen.NativePen),
                 x, y, width, height));
@@ -895,8 +919,11 @@ namespace System.Drawing
         /// <summary>
         /// Draws the outlines of a series of rectangles.
         /// </summary>
-        public unsafe void DrawRectangles(Pen pen!!, RectangleF[] rects!!)
+        public unsafe void DrawRectangles(Pen pen, RectangleF[] rects)
         {
+            ArgumentNullException.ThrowIfNull(pen);
+            ArgumentNullException.ThrowIfNull(rects);
+
             fixed (RectangleF* r = rects)
             {
                 CheckErrorStatus(Gdip.GdipDrawRectangles(
@@ -908,8 +935,11 @@ namespace System.Drawing
         /// <summary>
         /// Draws the outlines of a series of rectangles.
         /// </summary>
-        public unsafe void DrawRectangles(Pen pen!!, Rectangle[] rects!!)
+        public unsafe void DrawRectangles(Pen pen, Rectangle[] rects)
         {
+            ArgumentNullException.ThrowIfNull(pen);
+            ArgumentNullException.ThrowIfNull(rects);
+
             fixed (Rectangle* r = rects)
             {
                 CheckErrorStatus(Gdip.GdipDrawRectanglesI(
@@ -929,8 +959,10 @@ namespace System.Drawing
         /// <summary>
         /// Draws the outline of an ellipse defined by a bounding rectangle.
         /// </summary>
-        public void DrawEllipse(Pen pen!!, float x, float y, float width, float height)
+        public void DrawEllipse(Pen pen, float x, float y, float width, float height)
         {
+            ArgumentNullException.ThrowIfNull(pen);
+
             CheckErrorStatus(Gdip.GdipDrawEllipse(
                 new HandleRef(this, NativeGraphics),
                 new HandleRef(pen, pen.NativePen),
@@ -948,8 +980,10 @@ namespace System.Drawing
         /// <summary>
         /// Draws the outline of an ellipse defined by a bounding rectangle.
         /// </summary>
-        public void DrawEllipse(Pen pen!!, int x, int y, int width, int height)
+        public void DrawEllipse(Pen pen, int x, int y, int width, int height)
         {
+            ArgumentNullException.ThrowIfNull(pen);
+
             CheckErrorStatus(Gdip.GdipDrawEllipseI(
                 new HandleRef(this, NativeGraphics),
                 new HandleRef(pen, pen.NativePen),
@@ -967,8 +1001,10 @@ namespace System.Drawing
         /// <summary>
         /// Draws the outline of a pie section defined by an ellipse and two radial lines.
         /// </summary>
-        public void DrawPie(Pen pen!!, float x, float y, float width, float height, float startAngle, float sweepAngle)
+        public void DrawPie(Pen pen, float x, float y, float width, float height, float startAngle, float sweepAngle)
         {
+            ArgumentNullException.ThrowIfNull(pen);
+
             CheckErrorStatus(Gdip.GdipDrawPie(
                 new HandleRef(this, NativeGraphics),
                 new HandleRef(pen, pen.NativePen),
@@ -988,8 +1024,10 @@ namespace System.Drawing
         /// <summary>
         /// Draws the outline of a pie section defined by an ellipse and two radial lines.
         /// </summary>
-        public void DrawPie(Pen pen!!, int x, int y, int width, int height, int startAngle, int sweepAngle)
+        public void DrawPie(Pen pen, int x, int y, int width, int height, int startAngle, int sweepAngle)
         {
+            ArgumentNullException.ThrowIfNull(pen);
+
             CheckErrorStatus(Gdip.GdipDrawPieI(
                 new HandleRef(this, NativeGraphics),
                 new HandleRef(pen, pen.NativePen),
@@ -1001,8 +1039,11 @@ namespace System.Drawing
         /// <summary>
         /// Draws the outline of a polygon defined by an array of points.
         /// </summary>
-        public unsafe void DrawPolygon(Pen pen!!, PointF[] points!!)
+        public unsafe void DrawPolygon(Pen pen, PointF[] points)
         {
+            ArgumentNullException.ThrowIfNull(pen);
+            ArgumentNullException.ThrowIfNull(points);
+
             fixed (PointF* p = points)
             {
                 CheckErrorStatus(Gdip.GdipDrawPolygon(
@@ -1014,8 +1055,11 @@ namespace System.Drawing
         /// <summary>
         /// Draws the outline of a polygon defined by an array of points.
         /// </summary>
-        public unsafe void DrawPolygon(Pen pen!!, Point[] points!!)
+        public unsafe void DrawPolygon(Pen pen, Point[] points)
         {
+            ArgumentNullException.ThrowIfNull(pen);
+            ArgumentNullException.ThrowIfNull(points);
+
             fixed (Point* p = points)
             {
                 CheckErrorStatus(Gdip.GdipDrawPolygonI(
@@ -1027,8 +1071,11 @@ namespace System.Drawing
         /// <summary>
         /// Draws the lines and curves defined by a <see cref='GraphicsPath'/>.
         /// </summary>
-        public void DrawPath(Pen pen!!, GraphicsPath path!!)
+        public void DrawPath(Pen pen, GraphicsPath path)
         {
+            ArgumentNullException.ThrowIfNull(pen);
+            ArgumentNullException.ThrowIfNull(path);
+
             CheckErrorStatus(Gdip.GdipDrawPath(
                 new HandleRef(this, NativeGraphics),
                 new HandleRef(pen, pen.NativePen),
@@ -1038,8 +1085,11 @@ namespace System.Drawing
         /// <summary>
         /// Draws a curve defined by an array of points.
         /// </summary>
-        public unsafe void DrawCurve(Pen pen!!, PointF[] points!!)
+        public unsafe void DrawCurve(Pen pen, PointF[] points)
         {
+            ArgumentNullException.ThrowIfNull(pen);
+            ArgumentNullException.ThrowIfNull(points);
+
             fixed (PointF* p = points)
             {
                 CheckErrorStatus(Gdip.GdipDrawCurve(
@@ -1052,8 +1102,11 @@ namespace System.Drawing
         /// <summary>
         /// Draws a curve defined by an array of points.
         /// </summary>
-        public unsafe void DrawCurve(Pen pen!!, PointF[] points!!, float tension)
+        public unsafe void DrawCurve(Pen pen, PointF[] points, float tension)
         {
+            ArgumentNullException.ThrowIfNull(pen);
+            ArgumentNullException.ThrowIfNull(points);
+
             fixed (PointF* p = points)
             {
                 CheckErrorStatus(Gdip.GdipDrawCurve2(
@@ -1072,8 +1125,11 @@ namespace System.Drawing
         /// <summary>
         /// Draws a curve defined by an array of points.
         /// </summary>
-        public unsafe void DrawCurve(Pen pen!!, PointF[] points!!, int offset, int numberOfSegments, float tension)
+        public unsafe void DrawCurve(Pen pen, PointF[] points, int offset, int numberOfSegments, float tension)
         {
+            ArgumentNullException.ThrowIfNull(pen);
+            ArgumentNullException.ThrowIfNull(points);
+
             fixed (PointF* p = points)
             {
                 CheckErrorStatus(Gdip.GdipDrawCurve3(
@@ -1089,8 +1145,11 @@ namespace System.Drawing
         /// <summary>
         /// Draws a curve defined by an array of points.
         /// </summary>
-        public unsafe void DrawCurve(Pen pen!!, Point[] points!!)
+        public unsafe void DrawCurve(Pen pen, Point[] points)
         {
+            ArgumentNullException.ThrowIfNull(pen);
+            ArgumentNullException.ThrowIfNull(points);
+
             fixed (Point* p = points)
             {
                 CheckErrorStatus(Gdip.GdipDrawCurveI(
@@ -1103,8 +1162,11 @@ namespace System.Drawing
         /// <summary>
         /// Draws a curve defined by an array of points.
         /// </summary>
-        public unsafe void DrawCurve(Pen pen!!, Point[] points!!, float tension)
+        public unsafe void DrawCurve(Pen pen, Point[] points, float tension)
         {
+            ArgumentNullException.ThrowIfNull(pen);
+            ArgumentNullException.ThrowIfNull(points);
+
             fixed (Point* p = points)
             {
                 CheckErrorStatus(Gdip.GdipDrawCurve2I(
@@ -1118,8 +1180,11 @@ namespace System.Drawing
         /// <summary>
         /// Draws a curve defined by an array of points.
         /// </summary>
-        public unsafe void DrawCurve(Pen pen!!, Point[] points!!, int offset, int numberOfSegments, float tension)
+        public unsafe void DrawCurve(Pen pen, Point[] points, int offset, int numberOfSegments, float tension)
         {
+            ArgumentNullException.ThrowIfNull(pen);
+            ArgumentNullException.ThrowIfNull(points);
+
             fixed (Point* p = points)
             {
                 CheckErrorStatus(Gdip.GdipDrawCurve3I(
@@ -1135,8 +1200,11 @@ namespace System.Drawing
         /// <summary>
         /// Draws a closed curve defined by an array of points.
         /// </summary>
-        public unsafe void DrawClosedCurve(Pen pen!!, PointF[] points!!)
+        public unsafe void DrawClosedCurve(Pen pen, PointF[] points)
         {
+            ArgumentNullException.ThrowIfNull(pen);
+            ArgumentNullException.ThrowIfNull(points);
+
             fixed (PointF* p = points)
             {
                 CheckErrorStatus(Gdip.GdipDrawClosedCurve(
@@ -1149,8 +1217,11 @@ namespace System.Drawing
         /// <summary>
         /// Draws a closed curve defined by an array of points.
         /// </summary>
-        public unsafe void DrawClosedCurve(Pen pen!!, PointF[] points!!, float tension, FillMode fillmode)
+        public unsafe void DrawClosedCurve(Pen pen, PointF[] points, float tension, FillMode fillmode)
         {
+            ArgumentNullException.ThrowIfNull(pen);
+            ArgumentNullException.ThrowIfNull(points);
+
             fixed (PointF* p = points)
             {
                 CheckErrorStatus(Gdip.GdipDrawClosedCurve2(
@@ -1164,8 +1235,11 @@ namespace System.Drawing
         /// <summary>
         /// Draws a closed curve defined by an array of points.
         /// </summary>
-        public unsafe void DrawClosedCurve(Pen pen!!, Point[] points!!)
+        public unsafe void DrawClosedCurve(Pen pen, Point[] points)
         {
+            ArgumentNullException.ThrowIfNull(pen);
+            ArgumentNullException.ThrowIfNull(points);
+
             fixed (Point* p = points)
             {
                 CheckErrorStatus(Gdip.GdipDrawClosedCurveI(
@@ -1178,8 +1252,11 @@ namespace System.Drawing
         /// <summary>
         /// Draws a closed curve defined by an array of points.
         /// </summary>
-        public unsafe void DrawClosedCurve(Pen pen!!, Point[] points!!, float tension, FillMode fillmode)
+        public unsafe void DrawClosedCurve(Pen pen, Point[] points, float tension, FillMode fillmode)
         {
+            ArgumentNullException.ThrowIfNull(pen);
+            ArgumentNullException.ThrowIfNull(points);
+
             fixed (Point* p = points)
             {
                 CheckErrorStatus(Gdip.GdipDrawClosedCurve2I(
@@ -1209,8 +1286,10 @@ namespace System.Drawing
         /// <summary>
         /// Fills the interior of a rectangle with a <see cref='Brush'/>.
         /// </summary>
-        public void FillRectangle(Brush brush!!, float x, float y, float width, float height)
+        public void FillRectangle(Brush brush, float x, float y, float width, float height)
         {
+            ArgumentNullException.ThrowIfNull(brush);
+
             CheckErrorStatus(Gdip.GdipFillRectangle(
                 new HandleRef(this, NativeGraphics),
                 new HandleRef(brush, brush.NativeBrush),
@@ -1228,8 +1307,10 @@ namespace System.Drawing
         /// <summary>
         /// Fills the interior of a rectangle with a <see cref='Brush'/>.
         /// </summary>
-        public void FillRectangle(Brush brush!!, int x, int y, int width, int height)
+        public void FillRectangle(Brush brush, int x, int y, int width, int height)
         {
+            ArgumentNullException.ThrowIfNull(brush);
+
             CheckErrorStatus(Gdip.GdipFillRectangleI(
                 new HandleRef(this, NativeGraphics),
                 new HandleRef(brush, brush.NativeBrush),
@@ -1239,8 +1320,11 @@ namespace System.Drawing
         /// <summary>
         /// Fills the interiors of a series of rectangles with a <see cref='Brush'/>.
         /// </summary>
-        public unsafe void FillRectangles(Brush brush!!, RectangleF[] rects!!)
+        public unsafe void FillRectangles(Brush brush, RectangleF[] rects)
         {
+            ArgumentNullException.ThrowIfNull(brush);
+            ArgumentNullException.ThrowIfNull(rects);
+
             fixed (RectangleF* r = rects)
             {
                 CheckErrorStatus(Gdip.GdipFillRectangles(
@@ -1253,8 +1337,11 @@ namespace System.Drawing
         /// <summary>
         /// Fills the interiors of a series of rectangles with a <see cref='Brush'/>.
         /// </summary>
-        public unsafe void FillRectangles(Brush brush!!, Rectangle[] rects!!)
+        public unsafe void FillRectangles(Brush brush, Rectangle[] rects)
         {
+            ArgumentNullException.ThrowIfNull(brush);
+            ArgumentNullException.ThrowIfNull(rects);
+
             fixed (Rectangle* r = rects)
             {
                 CheckErrorStatus(Gdip.GdipFillRectanglesI(
@@ -1275,8 +1362,11 @@ namespace System.Drawing
         /// <summary>
         /// Fills the interior of a polygon defined by an array of points.
         /// </summary>
-        public unsafe void FillPolygon(Brush brush!!, PointF[] points!!, FillMode fillMode)
+        public unsafe void FillPolygon(Brush brush, PointF[] points, FillMode fillMode)
         {
+            ArgumentNullException.ThrowIfNull(brush);
+            ArgumentNullException.ThrowIfNull(points);
+
             fixed (PointF* p = points)
             {
                 CheckErrorStatus(Gdip.GdipFillPolygon(
@@ -1298,8 +1388,11 @@ namespace System.Drawing
         /// <summary>
         /// Fills the interior of a polygon defined by an array of points.
         /// </summary>
-        public unsafe void FillPolygon(Brush brush!!, Point[] points!!, FillMode fillMode)
+        public unsafe void FillPolygon(Brush brush, Point[] points, FillMode fillMode)
         {
+            ArgumentNullException.ThrowIfNull(brush);
+            ArgumentNullException.ThrowIfNull(points);
+
             fixed (Point* p = points)
             {
                 CheckErrorStatus(Gdip.GdipFillPolygonI(
@@ -1321,8 +1414,10 @@ namespace System.Drawing
         /// <summary>
         /// Fills the interior of an ellipse defined by a bounding rectangle.
         /// </summary>
-        public void FillEllipse(Brush brush!!, float x, float y, float width, float height)
+        public void FillEllipse(Brush brush, float x, float y, float width, float height)
         {
+            ArgumentNullException.ThrowIfNull(brush);
+
             CheckErrorStatus(Gdip.GdipFillEllipse(
                 new HandleRef(this, NativeGraphics),
                 new HandleRef(brush, brush.NativeBrush),
@@ -1340,8 +1435,10 @@ namespace System.Drawing
         /// <summary>
         /// Fills the interior of an ellipse defined by a bounding rectangle.
         /// </summary>
-        public void FillEllipse(Brush brush!!, int x, int y, int width, int height)
+        public void FillEllipse(Brush brush, int x, int y, int width, int height)
         {
+            ArgumentNullException.ThrowIfNull(brush);
+
             CheckErrorStatus(Gdip.GdipFillEllipseI(
                 new HandleRef(this, NativeGraphics),
                 new HandleRef(brush, brush.NativeBrush),
@@ -1371,8 +1468,10 @@ namespace System.Drawing
         /// <summary>
         /// Fills the interior of a pie section defined by an ellipse and two radial lines.
         /// </summary>
-        public void FillPie(Brush brush!!, float x, float y, float width, float height, float startAngle, float sweepAngle)
+        public void FillPie(Brush brush, float x, float y, float width, float height, float startAngle, float sweepAngle)
         {
+            ArgumentNullException.ThrowIfNull(brush);
+
             CheckErrorStatus(Gdip.GdipFillPie(
                 new HandleRef(this, NativeGraphics),
                 new HandleRef(brush, brush.NativeBrush),
@@ -1384,8 +1483,10 @@ namespace System.Drawing
         /// <summary>
         /// Fills the interior of a pie section defined by an ellipse and two radial lines.
         /// </summary>
-        public void FillPie(Brush brush!!, int x, int y, int width, int height, int startAngle, int sweepAngle)
+        public void FillPie(Brush brush, int x, int y, int width, int height, int startAngle, int sweepAngle)
         {
+            ArgumentNullException.ThrowIfNull(brush);
+
             CheckErrorStatus(Gdip.GdipFillPieI(
                 new HandleRef(this, NativeGraphics),
                 new HandleRef(brush, brush.NativeBrush),
@@ -1397,8 +1498,11 @@ namespace System.Drawing
         /// <summary>
         /// Fills the interior a closed curve defined by an array of points.
         /// </summary>
-        public unsafe void FillClosedCurve(Brush brush!!, PointF[] points!!)
+        public unsafe void FillClosedCurve(Brush brush, PointF[] points)
         {
+            ArgumentNullException.ThrowIfNull(brush);
+            ArgumentNullException.ThrowIfNull(points);
+
             fixed (PointF* p = points)
             {
                 CheckErrorStatus(Gdip.GdipFillClosedCurve(
@@ -1416,8 +1520,10 @@ namespace System.Drawing
             FillClosedCurve(brush, points, fillmode, 0.5f);
         }
 
-        public unsafe void FillClosedCurve(Brush brush!!, PointF[] points!!, FillMode fillmode, float tension)
+        public unsafe void FillClosedCurve(Brush brush, PointF[] points, FillMode fillmode, float tension)
         {
+            ArgumentNullException.ThrowIfNull(points);
+
             fixed (PointF* p = points)
             {
                 CheckErrorStatus(Gdip.GdipFillClosedCurve2(
@@ -1432,8 +1538,11 @@ namespace System.Drawing
         /// <summary>
         /// Fills the interior a closed curve defined by an array of points.
         /// </summary>
-        public unsafe void FillClosedCurve(Brush brush!!, Point[] points!!)
+        public unsafe void FillClosedCurve(Brush brush, Point[] points)
         {
+            ArgumentNullException.ThrowIfNull(brush);
+            ArgumentNullException.ThrowIfNull(points);
+
             fixed (Point* p = points)
             {
                 CheckErrorStatus(Gdip.GdipFillClosedCurveI(
@@ -1448,8 +1557,11 @@ namespace System.Drawing
             FillClosedCurve(brush, points, fillmode, 0.5f);
         }
 
-        public unsafe void FillClosedCurve(Brush brush!!, Point[] points!!, FillMode fillmode, float tension)
+        public unsafe void FillClosedCurve(Brush brush, Point[] points, FillMode fillmode, float tension)
         {
+            ArgumentNullException.ThrowIfNull(brush);
+            ArgumentNullException.ThrowIfNull(points);
+
             fixed (Point* p = points)
             {
                 CheckErrorStatus(Gdip.GdipFillClosedCurve2I(
@@ -1489,12 +1601,12 @@ namespace System.Drawing
             DrawString(s, font, brush, layoutRectangle, null);
         }
 
-        public void DrawString(string? s, Font font, Brush brush!!, RectangleF layoutRectangle, StringFormat? format)
+        public void DrawString(string? s, Font font, Brush brush, RectangleF layoutRectangle, StringFormat? format)
         {
+            ArgumentNullException.ThrowIfNull(brush);
             if (string.IsNullOrEmpty(s))
                 return;
-            if (font == null)
-                throw new ArgumentNullException(nameof(font));
+            ArgumentNullException.ThrowIfNull(font);
 
             CheckErrorStatus(Gdip.GdipDrawString(
                 new HandleRef(this, NativeGraphics),
@@ -1647,8 +1759,10 @@ namespace System.Drawing
             DrawImage(image, point.X, point.Y);
         }
 
-        public void DrawImage(Image image!!, float x, float y)
+        public void DrawImage(Image image, float x, float y)
         {
+            ArgumentNullException.ThrowIfNull(image);
+
             int status = Gdip.GdipDrawImage(
                 new HandleRef(this, NativeGraphics), new HandleRef(image, image.nativeImage),
                 x, y);
@@ -1662,8 +1776,10 @@ namespace System.Drawing
             DrawImage(image, rect.X, rect.Y, rect.Width, rect.Height);
         }
 
-        public void DrawImage(Image image!!, float x, float y, float width, float height)
+        public void DrawImage(Image image, float x, float y, float width, float height)
         {
+            ArgumentNullException.ThrowIfNull(image);
+
             int status = Gdip.GdipDrawImageRect(
                 new HandleRef(this, NativeGraphics),
                 new HandleRef(image, image.nativeImage),
@@ -1679,8 +1795,10 @@ namespace System.Drawing
             DrawImage(image, point.X, point.Y);
         }
 
-        public void DrawImage(Image image!!, int x, int y)
+        public void DrawImage(Image image, int x, int y)
         {
+            ArgumentNullException.ThrowIfNull(image);
+
             int status = Gdip.GdipDrawImageI(
                 new HandleRef(this, NativeGraphics),
                 new HandleRef(image, image.nativeImage),
@@ -1695,8 +1813,10 @@ namespace System.Drawing
             DrawImage(image, rect.X, rect.Y, rect.Width, rect.Height);
         }
 
-        public void DrawImage(Image image!!, int x, int y, int width, int height)
+        public void DrawImage(Image image, int x, int y, int width, int height)
         {
+            ArgumentNullException.ThrowIfNull(image);
+
             int status = Gdip.GdipDrawImageRectI(
                 new HandleRef(this, NativeGraphics),
                 new HandleRef(image, image.nativeImage),
@@ -1727,8 +1847,10 @@ namespace System.Drawing
             DrawImage(image, x, y);
         }
 
-        public void DrawImageUnscaledAndClipped(Image image!!, Rectangle rect)
+        public void DrawImageUnscaledAndClipped(Image image, Rectangle rect)
         {
+            ArgumentNullException.ThrowIfNull(image);
+
             int width = Math.Min(rect.Width, image.Width);
             int height = Math.Min(rect.Height, image.Height);
 
@@ -1747,8 +1869,11 @@ namespace System.Drawing
         //
         //  @notes Perspective blt only works for bitmap images.
 
-        public unsafe void DrawImage(Image image!!, PointF[] destPoints!!)
+        public unsafe void DrawImage(Image image, PointF[] destPoints)
         {
+            ArgumentNullException.ThrowIfNull(image);
+            ArgumentNullException.ThrowIfNull(destPoints);
+
             int count = destPoints.Length;
             if (count != 3 && count != 4)
                 throw new ArgumentException(SR.GdiplusDestPointsInvalidLength);
@@ -1765,8 +1890,11 @@ namespace System.Drawing
             }
         }
 
-        public unsafe void DrawImage(Image image!!, Point[] destPoints!!)
+        public unsafe void DrawImage(Image image, Point[] destPoints)
         {
+            ArgumentNullException.ThrowIfNull(image);
+            ArgumentNullException.ThrowIfNull(destPoints);
+
             int count = destPoints.Length;
             if (count != 3 && count != 4)
                 throw new ArgumentException(SR.GdiplusDestPointsInvalidLength);
@@ -1783,8 +1911,10 @@ namespace System.Drawing
             }
         }
 
-        public void DrawImage(Image image!!, float x, float y, RectangleF srcRect, GraphicsUnit srcUnit)
+        public void DrawImage(Image image, float x, float y, RectangleF srcRect, GraphicsUnit srcUnit)
         {
+            ArgumentNullException.ThrowIfNull(image);
+
             int status = Gdip.GdipDrawImagePointRect(
                 new HandleRef(this, NativeGraphics),
                 new HandleRef(image, image.nativeImage),
@@ -1796,8 +1926,10 @@ namespace System.Drawing
             CheckErrorStatus(status);
         }
 
-        public void DrawImage(Image image!!, int x, int y, Rectangle srcRect, GraphicsUnit srcUnit)
+        public void DrawImage(Image image, int x, int y, Rectangle srcRect, GraphicsUnit srcUnit)
         {
+            ArgumentNullException.ThrowIfNull(image);
+
             int status = Gdip.GdipDrawImagePointRectI(
                 new HandleRef(this, NativeGraphics),
                 new HandleRef(image, image.nativeImage),
@@ -1809,8 +1941,10 @@ namespace System.Drawing
             CheckErrorStatus(status);
         }
 
-        public void DrawImage(Image image!!, RectangleF destRect, RectangleF srcRect, GraphicsUnit srcUnit)
+        public void DrawImage(Image image, RectangleF destRect, RectangleF srcRect, GraphicsUnit srcUnit)
         {
+            ArgumentNullException.ThrowIfNull(image);
+
             int status = Gdip.GdipDrawImageRectRect(
                 new HandleRef(this, NativeGraphics),
                 new HandleRef(image, image.nativeImage),
@@ -1825,8 +1959,10 @@ namespace System.Drawing
             CheckErrorStatus(status);
         }
 
-        public void DrawImage(Image image!!, Rectangle destRect, Rectangle srcRect, GraphicsUnit srcUnit)
+        public void DrawImage(Image image, Rectangle destRect, Rectangle srcRect, GraphicsUnit srcUnit)
         {
+            ArgumentNullException.ThrowIfNull(image);
+
             int status = Gdip.GdipDrawImageRectRectI(
                 new HandleRef(this, NativeGraphics),
                 new HandleRef(image, image.nativeImage),
@@ -1841,8 +1977,11 @@ namespace System.Drawing
             CheckErrorStatus(status);
         }
 
-        public unsafe void DrawImage(Image image!!, PointF[] destPoints!!, RectangleF srcRect, GraphicsUnit srcUnit)
+        public unsafe void DrawImage(Image image, PointF[] destPoints, RectangleF srcRect, GraphicsUnit srcUnit)
         {
+            ArgumentNullException.ThrowIfNull(image);
+            ArgumentNullException.ThrowIfNull(destPoints);
+
             int count = destPoints.Length;
             if (count != 3 && count != 4)
                 throw new ArgumentException(SR.GdiplusDestPointsInvalidLength);
@@ -1881,14 +2020,17 @@ namespace System.Drawing
         }
 
         public unsafe void DrawImage(
-            Image image!!,
-            PointF[] destPoints!!,
+            Image image,
+            PointF[] destPoints,
             RectangleF srcRect,
             GraphicsUnit srcUnit,
             ImageAttributes? imageAttr,
             DrawImageAbort? callback,
             int callbackData)
         {
+            ArgumentNullException.ThrowIfNull(image);
+            ArgumentNullException.ThrowIfNull(destPoints);
+
             int count = destPoints.Length;
             if (count != 3 && count != 4)
                 throw new ArgumentException(SR.GdiplusDestPointsInvalidLength);
@@ -1937,14 +2079,17 @@ namespace System.Drawing
         }
 
         public unsafe void DrawImage(
-            Image image!!,
-            Point[] destPoints!!,
+            Image image,
+            Point[] destPoints,
             Rectangle srcRect,
             GraphicsUnit srcUnit,
             ImageAttributes? imageAttr,
             DrawImageAbort? callback,
             int callbackData)
         {
+            ArgumentNullException.ThrowIfNull(image);
+            ArgumentNullException.ThrowIfNull(destPoints);
+
             int count = destPoints.Length;
             if (count != 3 && count != 4)
                 throw new ArgumentException(SR.GdiplusDestPointsInvalidLength);
@@ -2006,7 +2151,7 @@ namespace System.Drawing
         }
 
         public void DrawImage(
-            Image image!!,
+            Image image,
             Rectangle destRect,
             float srcX,
             float srcY,
@@ -2017,6 +2162,8 @@ namespace System.Drawing
             DrawImageAbort? callback,
             IntPtr callbackData)
         {
+            ArgumentNullException.ThrowIfNull(image);
+
             int status = Gdip.GdipDrawImageRectRect(
                 new HandleRef(this, NativeGraphics),
                 new HandleRef(image, image.nativeImage),
@@ -2071,7 +2218,7 @@ namespace System.Drawing
         }
 
         public void DrawImage(
-            Image image!!,
+            Image image,
             Rectangle destRect,
             int srcX,
             int srcY,
@@ -2082,6 +2229,8 @@ namespace System.Drawing
             DrawImageAbort? callback,
             IntPtr callbackData)
         {
+            ArgumentNullException.ThrowIfNull(image);
+
             int status = Gdip.GdipDrawImageRectRectI(
                 new HandleRef(this, NativeGraphics),
                 new HandleRef(image, image.nativeImage),
@@ -2107,8 +2256,11 @@ namespace System.Drawing
         /// <summary>
         /// Draws a series of line segments that connect an array of points.
         /// </summary>
-        public unsafe void DrawLines(Pen pen!!, PointF[] points!!)
+        public unsafe void DrawLines(Pen pen, PointF[] points)
         {
+            ArgumentNullException.ThrowIfNull(pen);
+            ArgumentNullException.ThrowIfNull(points);
+
             fixed (PointF* p = points)
             {
                 CheckErrorStatus(Gdip.GdipDrawLines(
@@ -2122,8 +2274,10 @@ namespace System.Drawing
         /// <summary>
         /// Draws a line connecting the two specified points.
         /// </summary>
-        public void DrawLine(Pen pen!!, int x1, int y1, int x2, int y2)
+        public void DrawLine(Pen pen, int x1, int y1, int x2, int y2)
         {
+            ArgumentNullException.ThrowIfNull(pen);
+
             CheckErrorStatus(Gdip.GdipDrawLineI(new HandleRef(this, NativeGraphics), new HandleRef(pen, pen.NativePen), x1, y1, x2, y2));
         }
 
@@ -2138,8 +2292,11 @@ namespace System.Drawing
         /// <summary>
         /// Draws a series of line segments that connect an array of points.
         /// </summary>
-        public unsafe void DrawLines(Pen pen!!, Point[] points!!)
+        public unsafe void DrawLines(Pen pen, Point[] points)
         {
+            ArgumentNullException.ThrowIfNull(pen);
+            ArgumentNullException.ThrowIfNull(points);
+
             fixed (Point* p = points)
             {
                 CheckErrorStatus(Gdip.GdipDrawLinesI(
@@ -2365,8 +2522,10 @@ namespace System.Drawing
             EnumerateMetafile(metafile, destPoints, srcRect, srcUnit, callback, callbackData, null);
         }
 
-        public unsafe void TransformPoints(CoordinateSpace destSpace, CoordinateSpace srcSpace, PointF[] pts!!)
+        public unsafe void TransformPoints(CoordinateSpace destSpace, CoordinateSpace srcSpace, PointF[] pts)
         {
+            ArgumentNullException.ThrowIfNull(pts);
+
             fixed (PointF* p = pts)
             {
                 Gdip.CheckStatus(Gdip.GdipTransformPoints(
@@ -2378,8 +2537,10 @@ namespace System.Drawing
             }
         }
 
-        public unsafe void TransformPoints(CoordinateSpace destSpace, CoordinateSpace srcSpace, Point[] pts!!)
+        public unsafe void TransformPoints(CoordinateSpace destSpace, CoordinateSpace srcSpace, Point[] pts)
         {
+            ArgumentNullException.ThrowIfNull(pts);
+
             fixed (Point* p = pts)
             {
                 Gdip.CheckStatus(Gdip.GdipTransformPointsI(
@@ -2522,16 +2683,21 @@ namespace System.Drawing
         /// <summary>
         /// Draws a line connecting the two specified points.
         /// </summary>
-        public void DrawLine(Pen pen!!, float x1, float y1, float x2, float y2)
+        public void DrawLine(Pen pen, float x1, float y1, float x2, float y2)
         {
+            ArgumentNullException.ThrowIfNull(pen);
+
             CheckErrorStatus(Gdip.GdipDrawLine(new HandleRef(this, NativeGraphics), new HandleRef(pen, pen.NativePen), x1, y1, x2, y2));
         }
 
         /// <summary>
         /// Draws a series of cubic Bezier curves from an array of points.
         /// </summary>
-        public unsafe void DrawBeziers(Pen pen!!, PointF[] points!!)
+        public unsafe void DrawBeziers(Pen pen, PointF[] points)
         {
+            ArgumentNullException.ThrowIfNull(pen);
+            ArgumentNullException.ThrowIfNull(points);
+
             fixed (PointF* p = points)
             {
                 CheckErrorStatus(Gdip.GdipDrawBeziers(
@@ -2544,8 +2710,11 @@ namespace System.Drawing
         /// <summary>
         /// Draws a series of cubic Bezier curves from an array of points.
         /// </summary>
-        public unsafe void DrawBeziers(Pen pen!!, Point[] points!!)
+        public unsafe void DrawBeziers(Pen pen, Point[] points)
         {
+            ArgumentNullException.ThrowIfNull(pen);
+            ArgumentNullException.ThrowIfNull(points);
+
             fixed (Point* p = points)
             {
                 CheckErrorStatus(Gdip.GdipDrawBeziersI(
@@ -2559,8 +2728,11 @@ namespace System.Drawing
         /// <summary>
         /// Fills the interior of a path.
         /// </summary>
-        public void FillPath(Brush brush!!, GraphicsPath path!!)
+        public void FillPath(Brush brush, GraphicsPath path)
         {
+            ArgumentNullException.ThrowIfNull(brush);
+            ArgumentNullException.ThrowIfNull(path);
+
             CheckErrorStatus(Gdip.GdipFillPath(
                 new HandleRef(this, NativeGraphics),
                 new HandleRef(brush, brush.NativeBrush),
@@ -2570,16 +2742,21 @@ namespace System.Drawing
         /// <summary>
         /// Fills the interior of a <see cref='Region'/>.
         /// </summary>
-        public void FillRegion(Brush brush!!, Region region!!)
+        public void FillRegion(Brush brush, Region region)
         {
+            ArgumentNullException.ThrowIfNull(brush);
+            ArgumentNullException.ThrowIfNull(region);
+
             CheckErrorStatus(Gdip.GdipFillRegion(
                 new HandleRef(this, NativeGraphics),
                 new HandleRef(brush, brush.NativeBrush),
                 new HandleRef(region, region.NativeRegion)));
         }
 
-        public void DrawIcon(Icon icon!!, int x, int y)
+        public void DrawIcon(Icon icon, int x, int y)
         {
+            ArgumentNullException.ThrowIfNull(icon);
+
             if (_backingImage != null)
             {
                 // We don't call the icon directly because we want to stay in GDI+ all the time
@@ -2599,8 +2776,10 @@ namespace System.Drawing
         /// it passes the call to the actual image. This version crops the image to the given
         /// dimensions and allows the user to specify a rectangle within the image to draw.
         /// </summary>
-        public void DrawIcon(Icon icon!!, Rectangle targetRect)
+        public void DrawIcon(Icon icon, Rectangle targetRect)
         {
+            ArgumentNullException.ThrowIfNull(icon);
+
             if (_backingImage != null)
             {
                 // We don't call the icon directly because we want to stay in GDI+ all the time
@@ -2620,8 +2799,10 @@ namespace System.Drawing
         /// it passes the call to the actual image. This version stretches the image to the given
         /// dimensions and allows the user to specify a rectangle within the image to draw.
         /// </summary>
-        public void DrawIconUnstretched(Icon icon!!, Rectangle targetRect)
+        public void DrawIconUnstretched(Icon icon, Rectangle targetRect)
         {
+            ArgumentNullException.ThrowIfNull(icon);
+
             if (_backingImage != null)
             {
                 DrawImageUnscaled(icon.ToBitmap(), targetRect);
@@ -2697,11 +2878,13 @@ namespace System.Drawing
 
         public unsafe void EnumerateMetafile(
             Metafile metafile,
-            PointF[] destPoints!!,
+            PointF[] destPoints,
             EnumerateMetafileProc callback,
             IntPtr callbackData,
             ImageAttributes? imageAttr)
         {
+            ArgumentNullException.ThrowIfNull(destPoints);
+
             if (destPoints.Length != 3)
                 throw new ArgumentException(SR.GdiplusDestPointsInvalidParallelogram);
 
@@ -2719,11 +2902,13 @@ namespace System.Drawing
 
         public unsafe void EnumerateMetafile(
             Metafile metafile,
-            Point[] destPoints!!,
+            Point[] destPoints,
             EnumerateMetafileProc callback,
             IntPtr callbackData,
             ImageAttributes? imageAttr)
         {
+            ArgumentNullException.ThrowIfNull(destPoints);
+
             if (destPoints.Length != 3)
                 throw new ArgumentException(SR.GdiplusDestPointsInvalidParallelogram);
 
@@ -2821,13 +3006,15 @@ namespace System.Drawing
 
         public unsafe void EnumerateMetafile(
             Metafile metafile,
-            PointF[] destPoints!!,
+            PointF[] destPoints,
             RectangleF srcRect,
             GraphicsUnit unit,
             EnumerateMetafileProc callback,
             IntPtr callbackData,
             ImageAttributes? imageAttr)
         {
+            ArgumentNullException.ThrowIfNull(destPoints);
+
             if (destPoints.Length != 3)
                 throw new ArgumentException(SR.GdiplusDestPointsInvalidParallelogram);
 
@@ -2847,13 +3034,15 @@ namespace System.Drawing
 
         public unsafe void EnumerateMetafile(
             Metafile metafile,
-            Point[] destPoints!!,
+            Point[] destPoints,
             Rectangle srcRect,
             GraphicsUnit unit,
             EnumerateMetafileProc callback,
             IntPtr callbackData,
             ImageAttributes? imageAttr)
         {
+            ArgumentNullException.ThrowIfNull(destPoints);
+
             if (destPoints.Length != 3)
                 throw new ArgumentException(SR.GdiplusDestPointsInvalidParallelogram);
 
@@ -3106,8 +3295,10 @@ namespace System.Drawing
             return new GraphicsContainer(state);
         }
 
-        public void EndContainer(GraphicsContainer container!!)
+        public void EndContainer(GraphicsContainer container)
         {
+            ArgumentNullException.ThrowIfNull(container);
+
             Gdip.CheckStatus(Gdip.GdipEndContainer(new HandleRef(this, NativeGraphics), container.nativeGraphicsContainer));
             PopContext(container.nativeGraphicsContainer);
         }
@@ -3131,8 +3322,10 @@ namespace System.Drawing
             return new GraphicsContainer(state);
         }
 
-        public void AddMetafileComment(byte[] data!!)
+        public void AddMetafileComment(byte[] data)
         {
+            ArgumentNullException.ThrowIfNull(data);
+
             Gdip.CheckStatus(Gdip.GdipComment(new HandleRef(this, NativeGraphics), data.Length, data));
         }
 

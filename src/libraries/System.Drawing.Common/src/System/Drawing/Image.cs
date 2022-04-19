@@ -140,8 +140,10 @@ namespace System.Drawing
 
         public static Image FromStream(Stream stream, bool useEmbeddedColorManagement) => FromStream(stream, useEmbeddedColorManagement, true);
 
-        public static Image FromStream(Stream stream!!, bool useEmbeddedColorManagement, bool validateImageData)
+        public static Image FromStream(Stream stream, bool useEmbeddedColorManagement, bool validateImageData)
         {
+            ArgumentNullException.ThrowIfNull(stream);
+
             IntPtr image = LoadGdipImageFromStream(new GPStream(stream), useEmbeddedColorManagement);
 
             if (validateImageData)
@@ -252,8 +254,10 @@ namespace System.Drawing
         /// <summary>
         /// Saves this <see cref='Image'/> to the specified file in the specified format.
         /// </summary>
-        public void Save(string filename, ImageFormat format!!)
+        public void Save(string filename, ImageFormat format)
         {
+            ArgumentNullException.ThrowIfNull(format);
+
             ImageCodecInfo? codec = format.FindEncoder();
 
             if (codec == null)
@@ -265,8 +269,10 @@ namespace System.Drawing
         /// <summary>
         /// Saves this <see cref='Image'/> to the specified file in the specified format and with the specified encoder parameters.
         /// </summary>
-        public void Save(string filename!!, ImageCodecInfo encoder!!, EncoderParameters? encoderParams)
+        public void Save(string filename, ImageCodecInfo encoder, EncoderParameters? encoderParams)
         {
+            ArgumentNullException.ThrowIfNull(filename);
+            ArgumentNullException.ThrowIfNull(encoder);
             ThrowIfDirectoryDoesntExist(filename);
 
             IntPtr encoderParamsMemory = IntPtr.Zero;
@@ -329,8 +335,10 @@ namespace System.Drawing
         /// <summary>
         /// Saves this <see cref='Image'/> to the specified stream in the specified format.
         /// </summary>
-        public void Save(Stream stream, ImageFormat format!!)
+        public void Save(Stream stream, ImageFormat format)
         {
+            ArgumentNullException.ThrowIfNull(format);
+
             ImageCodecInfo codec = format.FindEncoder()!;
             Save(stream, codec, null);
         }
@@ -338,8 +346,11 @@ namespace System.Drawing
         /// <summary>
         /// Saves this <see cref='Image'/> to the specified stream in the specified format.
         /// </summary>
-        public void Save(Stream stream!!, ImageCodecInfo encoder!!, EncoderParameters? encoderParams)
+        public void Save(Stream stream, ImageCodecInfo encoder, EncoderParameters? encoderParams)
         {
+            ArgumentNullException.ThrowIfNull(stream);
+            ArgumentNullException.ThrowIfNull(encoder);
+
             IntPtr encoderParamsMemory = IntPtr.Zero;
 
             if (encoderParams != null)
@@ -412,8 +423,10 @@ namespace System.Drawing
         /// <summary>
         /// Adds an <see cref='EncoderParameters'/> to the specified <see cref='Image'/>.
         /// </summary>
-        public void SaveAdd(Image image!!, EncoderParameters? encoderParams)
+        public void SaveAdd(Image image, EncoderParameters? encoderParams)
         {
+            ArgumentNullException.ThrowIfNull(image);
+
             IntPtr encoder = IntPtr.Zero;
 
             if (encoderParams != null)

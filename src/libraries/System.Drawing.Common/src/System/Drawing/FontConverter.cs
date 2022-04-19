@@ -270,8 +270,10 @@ namespace System.Drawing
                 _ => throw new ArgumentException(SR.Format(SR.InvalidArgumentValueFontConverter, units), nameof(units)),
             };
 
-        public override object CreateInstance(ITypeDescriptorContext? context, IDictionary propertyValues!!)
+        public override object CreateInstance(ITypeDescriptorContext? context, IDictionary propertyValues)
         {
+            ArgumentNullException.ThrowIfNull(propertyValues);
+
             object? value;
             byte charSet = 1;
             float size = 8;
