@@ -22,11 +22,13 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			TestArraySetElementOneElementStaticType ();
 			TestArraySetElementOneElementParameter (typeof (TestType));
 			TestArraySetElementMultipleElementsStaticType ();
+			TestMergedArrayElement (1);
 			TestArraySetElementMultipleElementsMix<TestType> (typeof (TestType));
 
 			TestArraySetElementAndInitializerMultipleElementsMix<TestType> (typeof (TestType));
 
 			TestGetElementAtUnknownIndex ();
+			TestMergedArrayElementWithUnknownIndex (0);
 
 			// Array reset - certain operations on array are not tracked fully (or impossible due to unknown inputs)
 			// and sometimes the only valid thing to do is to reset the array to all unknowns as it's impossible
@@ -109,6 +111,24 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			arr[3].RequiresPublicMethods (); // Should warn - unknown value at this index
 		}
 
+		[ExpectedWarning ("IL2072", nameof (ArrayDataFlow.GetMethods))]
+		[ExpectedWarning ("IL2072", nameof (ArrayDataFlow.GetFields))]
+		static void TestMergedArrayElement (int i)
+		{
+			Type[] arr = new Type[] { null };
+			if (i == 1)
+				arr[0] = GetMethods ();
+			else
+				arr[0] = GetFields ();
+			arr[0].RequiresAll (); // Should warn - Methods/Fields does not have match annotations with All.
+		}
+
+		[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+		static Type GetMethods () => null;
+
+		[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)]
+		static Type GetFields () => null;
+
 		[ExpectedWarning ("IL2087", nameof (DataFlowTypeExtensions.RequiresPublicFields))]
 		[ExpectedWarning ("IL2062", nameof (DataFlowTypeExtensions.RequiresPublicMethods))]
 		static void TestArraySetElementMultipleElementsMix<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicProperties)] TProperties> (
@@ -146,6 +166,19 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		{
 			Type[] arr = new Type[] { typeof (TestType) };
 			arr[i].RequiresPublicFields ();
+		}
+
+		// Trimmer code doesnt handle locals from different branches separetely, therefore merges incorrectly GetMethods with Unknown producing both warnings
+		[ExpectedWarning ("IL2072", nameof (ArrayDataFlow.GetMethods), ProducedBy = ProducedBy.Trimmer)]
+		[ExpectedWarning ("IL2062", nameof (DataFlowTypeExtensions.RequiresAll))]
+		static void TestMergedArrayElementWithUnknownIndex (int i)
+		{
+			Type[] arr = new Type[] { null };
+			if (i == 1)
+				arr[0] = GetMethods ();
+			else
+				arr[i] = GetFields ();
+			arr[0].RequiresAll (); // Should warn - there is an unknown value on fields therefore the merged value should be unknown
 		}
 
 		[ExpectedWarning ("IL2062", nameof (DataFlowTypeExtensions.RequiresPublicFields))]
