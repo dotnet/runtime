@@ -1488,6 +1488,480 @@
     }
   },
   {
+    "taskType": "trigger",
+    "capabilityId": "IssueResponder",
+    "subCapability": "IssuesOnlyResponder",
+    "version": "1.0",
+    "config": {
+      "conditions": {
+        "operator": "and",
+        "operands": [
+          {
+            "name": "isOpen",
+            "parameters": {}
+          },
+          {
+            "operator": "not",
+            "operands": [
+              {
+                "name": "isInProject",
+                "parameters": {
+                  "projectName": "WCF Owned Areas",
+                  "isOrgProject": false
+                }
+              }
+            ]
+          },
+          {
+            "operator": "or",
+            "operands": [
+              {
+                "operator": "or",
+                "operands": [
+                  {
+                    "name": "labelAdded",
+                    "parameters": {
+                      "label": "area-Serialization"
+                    }
+                  },
+                  {
+                    "name": "labelAdded",
+                    "parameters": {
+                      "label": "area-System.Runtime.Caching"
+                    }
+                  },
+                  {
+                    "name": "labelAdded",
+                    "parameters": {
+                      "label": "area-System.ServiceModel.Syndication"
+                    }
+                  },
+                  {
+                    "name": "labelAdded",
+                    "parameters": {
+                      "label": "area-System.Transactions"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "and",
+                "operands": [
+                  {
+                    "name": "isAction",
+                    "parameters": {
+                      "action": "reopened"
+                    }
+                  },
+                  {
+                    "operator": "or",
+                    "operands": [
+                      {
+                        "name": "hasLabel",
+                        "parameters": {
+                          "label": "area-Serialization"
+                        }
+                      },
+                      {
+                        "name": "hasLabel",
+                        "parameters": {
+                          "label": "area-System.Runtime.Caching"
+                        }
+                      },
+                      {
+                        "name": "hasLabel",
+                        "parameters": {
+                          "label": "area-System.ServiceModel.Syndication"
+                        }
+                      },
+                      {
+                        "name": "hasLabel",
+                        "parameters": {
+                          "label": "area-System.Transactions"
+                        }
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "eventType": "issue",
+      "eventNames": [
+        "issues",
+        "project_card"
+      ],
+      "taskName": "[Tellurium] Untriaged Issues",
+      "actions": [
+        {
+          "name": "addToProject",
+          "parameters": {
+            "projectName": "WCF Owned Areas",
+            "isOrgProject": false,
+            "columnName": "Needs Triage"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "taskType": "trigger",
+    "capabilityId": "IssueResponder",
+    "subCapability": "PullRequestResponder",
+    "version": "1.0",
+    "config": {
+      "conditions": {
+        "operator": "and",
+        "operands": [
+          {
+            "name": "isOpen",
+            "parameters": {}
+          },
+          {
+            "operator": "not",
+            "operands": [
+              {
+                "name": "isInProject",
+                "parameters": {
+                  "projectName": "WCF Owned Areas"
+                }
+              }
+            ]
+          },
+          {
+            "operator": "or",
+            "operands": [
+              {
+                "operator": "or",
+                "operands": [
+                  {
+                    "name": "labelAdded",
+                    "parameters": {
+                      "label": "area-Serialization"
+                    }
+                  },
+                  {
+                    "name": "labelAdded",
+                    "parameters": {
+                      "label": "area-System.Runtime.Caching"
+                    }
+                  },
+                  {
+                    "name": "labelAdded",
+                    "parameters": {
+                      "label": "area-System.ServiceModel.Syndication"
+                    }
+                  },
+                  {
+                    "name": "labelAdded",
+                    "parameters": {
+                      "label": "area-System.Transactions"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "and",
+                "operands": [
+                  {
+                    "operator": "or",
+                    "operands": [
+                      {
+                        "name": "hasLabel",
+                        "parameters": {
+                          "label": "area-Serialization"
+                        }
+                      },
+                      {
+                        "name": "hasLabel",
+                        "parameters": {
+                          "label": "area-System.Runtime.Caching"
+                        }
+                      },
+                      {
+                        "name": "hasLabel",
+                        "parameters": {
+                          "label": "area-System.ServiceModel.Syndication"
+                        }
+                      },
+                      {
+                        "name": "hasLabel",
+                        "parameters": {
+                          "label": "area-System.Transactions"
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "name": "isAction",
+                    "parameters": {
+                      "action": "reopened"
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "eventType": "pull_request",
+      "eventNames": [
+        "pull_request",
+        "issues",
+        "project_card"
+      ],
+      "taskName": "[Tellurium] New PRs",
+      "actions": [
+        {
+          "name": "addToProject",
+          "parameters": {
+            "projectName": "WCF Owned Areas",
+            "columnName": "Open PRs"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "taskType": "trigger",
+    "capabilityId": "IssueResponder",
+    "subCapability": "IssuesOnlyResponder",
+    "version": "1.0",
+    "config": {
+      "conditions": {
+        "operator": "and",
+        "operands": [
+          {
+            "name": "isOpen",
+            "parameters": {}
+          },
+          {
+            "operator": "not",
+            "operands": [
+              {
+                "name": "isInProject",
+                "parameters": {
+                  "projectName": "WCF Owned Areas",
+                  "isOrgProject": false
+                }
+              }
+            ]
+          },
+          {
+            "operator": "or",
+            "operands": [
+              {
+                "operator": "or",
+                "operands": [
+                  {
+                    "name": "labelAdded",
+                    "parameters": {
+                      "label": "area-Serialization"
+                    }
+                  },
+                  {
+                    "name": "labelAdded",
+                    "parameters": {
+                      "label": "area-System.Runtime.Caching"
+                    }
+                  },
+                  {
+                    "name": "labelAdded",
+                    "parameters": {
+                      "label": "area-System.ServiceModel.Syndication"
+                    }
+                  },
+                  {
+                    "name": "labelAdded",
+                    "parameters": {
+                      "label": "area-System.Transactions"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "and",
+                "operands": [
+                  {
+                    "name": "isAction",
+                    "parameters": {
+                      "action": "reopened"
+                    }
+                  },
+                  {
+                    "operator": "or",
+                    "operands": [
+                      {
+                        "name": "hasLabel",
+                        "parameters": {
+                          "label": "area-Serialization"
+                        }
+                      },
+                      {
+                        "name": "hasLabel",
+                        "parameters": {
+                          "label": "area-System.Runtime.Caching"
+                        }
+                      },
+                      {
+                        "name": "hasLabel",
+                        "parameters": {
+                          "label": "area-System.ServiceModel.Syndication"
+                        }
+                      },
+                      {
+                        "name": "hasLabel",
+                        "parameters": {
+                          "label": "area-System.Transactions"
+                        }
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "eventType": "issue",
+      "eventNames": [
+        "issues",
+        "project_card"
+      ],
+      "taskName": "[Tellurium] Untriaged Issues",
+      "actions": [
+        {
+          "name": "addToProject",
+          "parameters": {
+            "projectName": "WCF Owned Areas",
+            "isOrgProject": false,
+            "columnName": "Needs Triage"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "taskType": "trigger",
+    "capabilityId": "IssueResponder",
+    "subCapability": "PullRequestResponder",
+    "version": "1.0",
+    "config": {
+      "conditions": {
+        "operator": "and",
+        "operands": [
+          {
+            "name": "isOpen",
+            "parameters": {}
+          },
+          {
+            "operator": "not",
+            "operands": [
+              {
+                "name": "isInProject",
+                "parameters": {
+                  "projectName": "WCF Owned Areas"
+                }
+              }
+            ]
+          },
+          {
+            "operator": "or",
+            "operands": [
+              {
+                "operator": "or",
+                "operands": [
+                  {
+                    "name": "labelAdded",
+                    "parameters": {
+                      "label": "area-Serialization"
+                    }
+                  },
+                  {
+                    "name": "labelAdded",
+                    "parameters": {
+                      "label": "area-System.Runtime.Caching"
+                    }
+                  },
+                  {
+                    "name": "labelAdded",
+                    "parameters": {
+                      "label": "area-System.ServiceModel.Syndication"
+                    }
+                  },
+                  {
+                    "name": "labelAdded",
+                    "parameters": {
+                      "label": "area-System.Transactions"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "and",
+                "operands": [
+                  {
+                    "operator": "or",
+                    "operands": [
+                      {
+                        "name": "hasLabel",
+                        "parameters": {
+                          "label": "area-Serialization"
+                        }
+                      },
+                      {
+                        "name": "hasLabel",
+                        "parameters": {
+                          "label": "area-System.Runtime.Caching"
+                        }
+                      },
+                      {
+                        "name": "hasLabel",
+                        "parameters": {
+                          "label": "area-System.ServiceModel.Syndication"
+                        }
+                      },
+                      {
+                        "name": "hasLabel",
+                        "parameters": {
+                          "label": "area-System.Transactions"
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "name": "isAction",
+                    "parameters": {
+                      "action": "reopened"
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "eventType": "pull_request",
+      "eventNames": [
+        "pull_request",
+        "issues",
+        "project_card"
+      ],
+      "taskName": "[Tellurium] New PRs",
+      "actions": [
+        {
+          "name": "addToProject",
+          "parameters": {
+            "projectName": "WCF Owned Areas",
+            "columnName": "Open PRs"
+          }
+        }
+      ]
+    }
+  },
+  {
     "taskSource": "fabricbot-config",
     "taskType": "trigger",
     "capabilityId": "IssueResponder",
