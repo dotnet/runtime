@@ -754,6 +754,9 @@ namespace System.Text.RegularExpressions.Tests
                 yield return (@".*?\dFo{2}", "This1Foo should 2fOo match", RegexOptions.IgnoreCase, 0, 26, true, "This1Foo");
                 yield return (@".*?\dfoo", "1fooThis1FOO should 1foo match", RegexOptions.IgnoreCase, 4, 9, true, "This1FOO");
 
+                // Earliest match, not match with earliest end
+                yield return (@".{5}Foo|Bar", "FooBarFoo", RegexOptions.None, 1, 8, true, "ooBarFoo");
+
                 if (!RegexHelpers.IsNonBacktracking(engine))
                 {
                     // RightToLeft
