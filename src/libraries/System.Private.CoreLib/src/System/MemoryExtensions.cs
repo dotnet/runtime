@@ -446,7 +446,7 @@ namespace System
         /// <summary>Searches for the first index of any value other than the specified <paramref name="value"/>.</summary>
         /// <typeparam name="T">The type of the span and values.</typeparam>
         /// <param name="span">The span to search.</param>
-        /// <param name="value">The value for which to search.</param>
+        /// <param name="value">A value to avoid.</param>
         /// <returns>
         /// The index in the span of the first occurrence of any value other than <paramref name="value"/>.
         /// If all of the values are <paramref name="value"/>, returns -1.
@@ -493,7 +493,7 @@ namespace System
         /// <summary>Searches for the first index of any value other than the specified <paramref name="value"/>.</summary>
         /// <typeparam name="T">The type of the span and values.</typeparam>
         /// <param name="span">The span to search.</param>
-        /// <param name="value">The value for which to search.</param>
+        /// <param name="value">A value to avoid.</param>
         /// <returns>
         /// The index in the span of the first occurrence of any value other than <paramref name="value"/>.
         /// If all of the values are <paramref name="value"/>, returns -1.
@@ -599,7 +599,7 @@ namespace System
         /// <summary>Searches for the last index of any value other than the specified <paramref name="value"/>.</summary>
         /// <typeparam name="T">The type of the span and values.</typeparam>
         /// <param name="span">The span to search.</param>
-        /// <param name="value">The value for which to search.</param>
+        /// <param name="value">A value to avoid.</param>
         /// <returns>
         /// The index in the span of the last occurrence of any value other than <paramref name="value"/>.
         /// If all of the values are <paramref name="value"/>, returns -1.
@@ -646,7 +646,7 @@ namespace System
         /// <summary>Searches for the last index of any value other than the specified <paramref name="value"/>.</summary>
         /// <typeparam name="T">The type of the span and values.</typeparam>
         /// <param name="span">The span to search.</param>
-        /// <param name="value">The value for which to search.</param>
+        /// <param name="value">A value to avoid.</param>
         /// <returns>
         /// The index in the span of the last occurrence of any value other than <paramref name="value"/>.
         /// If all of the values are <paramref name="value"/>, returns -1.
