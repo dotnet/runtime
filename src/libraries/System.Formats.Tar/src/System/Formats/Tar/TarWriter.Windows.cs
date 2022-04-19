@@ -7,7 +7,7 @@ using System.IO;
 namespace System.Formats.Tar
 {
     // Windows specific methods for the TarWriter class.
-    public sealed partial class TarWriter : IDisposable, IAsyncDisposable
+    public sealed partial class TarWriter : IDisposable
     {
         // Creating archives in Windows always sets the mode to 777
         private const TarFileMode DefaultWindowsMode = TarFileMode.UserRead | TarFileMode.UserWrite | TarFileMode.UserExecute | TarFileMode.GroupRead | TarFileMode.GroupWrite | TarFileMode.GroupExecute | TarFileMode.OtherRead | TarFileMode.OtherWrite | TarFileMode.UserExecute;

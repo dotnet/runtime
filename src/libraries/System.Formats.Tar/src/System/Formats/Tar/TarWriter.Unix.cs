@@ -7,7 +7,7 @@ using System.IO;
 namespace System.Formats.Tar
 {
     // Unix specific methods for the TarWriter class.
-    public sealed partial class TarWriter : IDisposable, IAsyncDisposable
+    public sealed partial class TarWriter : IDisposable
     {
         // Unix specific implementation of the method that reads an entry from disk and writes it into the archive stream.
         partial void ReadFileFromDiskAndWriteToArchiveStreamAsEntry(string fullPath, string entryName)

@@ -4,15 +4,13 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace System.Formats.Tar
 {
     /// <summary>
     /// Reads a tar archive from a stream.
     /// </summary>
-    public sealed class TarReader : IDisposable, IAsyncDisposable
+    public sealed class TarReader : IDisposable
     {
         private bool _isDisposed;
         private readonly bool _leaveOpen;
@@ -48,14 +46,14 @@ namespace System.Formats.Tar
         }
 
         /// <summary>
-        /// The format of the archive. It is initially <see cref="TarFormat.Unknown"/>. The archive format is detected after the first call to <see cref="GetNextEntry(bool)"/> or <see cref="GetNextEntryAsync(bool, CancellationToken)"/>.
+        /// The format of the archive. It is initially <see cref="TarFormat.Unknown"/>. The archive format is detected after the first call to <see cref="GetNextEntry(bool)"/>.
         /// </summary>
         public TarFormat Format { get; private set; }
 
         /// <summary>
         /// <para>If the archive format is <see cref="TarFormat.Pax"/>, returns a read-only dictionary containing the string key-value pairs of the Global Extended Attributes in the first entry of the archive.</para>
         /// <para>If there is no Global Extended Attributes entry at the beginning of the archive, this returns an empty read-only dictionary.</para>
-        /// <para>If the first entry has not been read by calling <see cref="GetNextEntry(bool)"/> or <see cref="GetNextEntryAsync(bool, CancellationToken)"/>, this returns <see langword="null"/>.</para>
+        /// <para>If the first entry has not been read by calling <see cref="GetNextEntry(bool)"/>, this returns <see langword="null"/>.</para>
         /// </summary>
         public IReadOnlyDictionary<string, string>? GlobalExtendedAttributes { get; private set; }
 
@@ -69,14 +67,14 @@ namespace System.Formats.Tar
             GC.SuppressFinalize(this);
         }
 
-        /// <summary>
-        /// Asynchronously disposes the current <see cref="TarReader"/> instance, and disposes the streams of all the entries that were read from the archive.
-        /// </summary>
-        /// <remarks>The <see cref="TarEntry.DataStream"/> property of any entry can be replaced with a new stream. If the user decides to replace it on a <see cref="TarEntry"/> instance that was obtained using a <see cref="TarReader"/>, the underlying stream gets disposed immediately, freeing the <see cref="TarReader"/> of origin from the responsibility of having to dispose it.</remarks>
-        public ValueTask DisposeAsync()
-        {
-            throw new NotImplementedException();
-        }
+        // /// <summary>
+        // /// Asynchronously disposes the current <see cref="TarReader"/> instance, and disposes the streams of all the entries that were read from the archive.
+        // /// </summary>
+        // /// <remarks>The <see cref="TarEntry.DataStream"/> property of any entry can be replaced with a new stream. If the user decides to replace it on a <see cref="TarEntry"/> instance that was obtained using a <see cref="TarReader"/>, the underlying stream gets disposed immediately, freeing the <see cref="TarReader"/> of origin from the responsibility of having to dispose it.</remarks>
+        // public ValueTask DisposeAsync()
+        // {
+        //     throw new NotImplementedException();
+        // }
 
         /// <summary>
         /// Retrieves the next entry from the archive stream.
@@ -134,18 +132,18 @@ namespace System.Formats.Tar
             return null;
         }
 
-        /// <summary>
-        /// Asynchronously retrieves the next entry from the archive stream.
-        /// </summary>
-        /// <param name="copyData"><para>Set it to <see langword="true"/> to copy the data of the entry into a new <see cref="MemoryStream"/>. This is helpful when the underlying archive stream is unseekable, and the data needs to be accessed later.</para>
-        /// <para>Set it to <see langword="false"/> if the data should not be copied into a new stream. If the underlying stream is unseekable, the user has the responsibility of reading and processing the <see cref="TarEntry.DataStream"/> immediately after calling this method.</para>
-        /// <para>The default value is <see langword="false"/>.</para></param>
-        /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.</param>
-        /// <returns>A value task containing a <see cref="TarEntry"/> instance if a valid entry was found, or <see langword="null"/> if the end of the archive has been reached.</returns>
-        public ValueTask<TarEntry?> GetNextEntryAsync(bool copyData = false, CancellationToken cancellationToken = default)
-        {
-            throw new NotImplementedException();
-        }
+        // /// <summary>
+        // /// Asynchronously retrieves the next entry from the archive stream.
+        // /// </summary>
+        // /// <param name="copyData"><para>Set it to <see langword="true"/> to copy the data of the entry into a new <see cref="MemoryStream"/>. This is helpful when the underlying archive stream is unseekable, and the data needs to be accessed later.</para>
+        // /// <para>Set it to <see langword="false"/> if the data should not be copied into a new stream. If the underlying stream is unseekable, the user has the responsibility of reading and processing the <see cref="TarEntry.DataStream"/> immediately after calling this method.</para>
+        // /// <para>The default value is <see langword="false"/>.</para></param>
+        // /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.</param>
+        // /// <returns>A value task containing a <see cref="TarEntry"/> instance if a valid entry was found, or <see langword="null"/> if the end of the archive has been reached.</returns>
+        // public ValueTask<TarEntry?> GetNextEntryAsync(bool copyData = false, CancellationToken cancellationToken = default)
+        // {
+        //     throw new NotImplementedException();
+        // }
 
         // Moves the underlying archive stream position pointer to the beginning of the next header.
         internal void AdvanceDataStreamIfNeeded()

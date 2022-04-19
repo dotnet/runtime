@@ -4,9 +4,6 @@
 using System.Buffers;
 using System.Diagnostics;
 using System.IO;
-using System.Reflection;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace System.Formats.Tar
 {
@@ -42,18 +39,18 @@ namespace System.Formats.Tar
             CreateFromDirectoryInternal(sourceDirectoryName, destination, includeBaseDirectory, leaveOpen: true);
         }
 
-        /// <summary>
-        /// Asynchronously creates a tar stream that contains all the filesystem entries from the specified directory.
-        /// </summary>
-        /// <param name="sourceDirectoryName">The path of the directory to archive.</param>
-        /// <param name="destination">The destination stream of the archive.</param>
-        /// <param name="includeBaseDirectory"><see langword="true"/> to include the base directory name as the first path segment in all the names of the archive entries. <see langword="false"/> to exclude the base directory name from the entry name paths.</param>
-        /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.</param>
-        /// <returns>A task that represents the asynchronous creation operation.</returns>
-        public static Task CreateFromDirectoryAsync(string sourceDirectoryName, Stream destination, bool includeBaseDirectory, CancellationToken cancellationToken = default)
-        {
-            throw new NotImplementedException();
-        }
+        // /// <summary>
+        // /// Asynchronously creates a tar stream that contains all the filesystem entries from the specified directory.
+        // /// </summary>
+        // /// <param name="sourceDirectoryName">The path of the directory to archive.</param>
+        // /// <param name="destination">The destination stream of the archive.</param>
+        // /// <param name="includeBaseDirectory"><see langword="true"/> to include the base directory name as the first path segment in all the names of the archive entries. <see langword="false"/> to exclude the base directory name from the entry name paths.</param>
+        // /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.</param>
+        // /// <returns>A task that represents the asynchronous creation operation.</returns>
+        // public static Task CreateFromDirectoryAsync(string sourceDirectoryName, Stream destination, bool includeBaseDirectory, CancellationToken cancellationToken = default)
+        // {
+        //     throw new NotImplementedException();
+        // }
 
         /// <summary>
         /// Creates a tar file that contains all the filesystem entries from the specified directory.
@@ -85,18 +82,18 @@ namespace System.Formats.Tar
             CreateFromDirectoryInternal(sourceDirectoryName, fs, includeBaseDirectory, leaveOpen: false);
         }
 
-        /// <summary>
-        /// Asynchronously creates a tar archive from the contents of the specified directory, and outputs them into the specified path. Can optionally include the base directory as the prefix for the the entry names.
-        /// </summary>
-        /// <param name="sourceDirectoryName">The path of the directory to archive.</param>
-        /// <param name="destinationFileName">The path of the destination archive file.</param>
-        /// <param name="includeBaseDirectory"><see langword="true"/> to include the base directory name as the first path segment in all the names of the archive entries. <see langword="false"/> to exclude the base directory name from the entry name paths.</param>
-        /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.</param>
-        /// <returns>A task that represents the asynchronous creation operation.</returns>
-        public static Task CreateFromDirectoryAsync(string sourceDirectoryName, string destinationFileName, bool includeBaseDirectory, CancellationToken cancellationToken = default)
-        {
-            throw new NotImplementedException();
-        }
+        // /// <summary>
+        // /// Asynchronously creates a tar archive from the contents of the specified directory, and outputs them into the specified path. Can optionally include the base directory as the prefix for the the entry names.
+        // /// </summary>
+        // /// <param name="sourceDirectoryName">The path of the directory to archive.</param>
+        // /// <param name="destinationFileName">The path of the destination archive file.</param>
+        // /// <param name="includeBaseDirectory"><see langword="true"/> to include the base directory name as the first path segment in all the names of the archive entries. <see langword="false"/> to exclude the base directory name from the entry name paths.</param>
+        // /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.</param>
+        // /// <returns>A task that represents the asynchronous creation operation.</returns>
+        // public static Task CreateFromDirectoryAsync(string sourceDirectoryName, string destinationFileName, bool includeBaseDirectory, CancellationToken cancellationToken = default)
+        // {
+        //     throw new NotImplementedException();
+        // }
 
         /// <summary>
         /// Extracts the contents of a stream that represents a tar archive into the specified directory.
@@ -129,21 +126,21 @@ namespace System.Formats.Tar
             ExtractToDirectoryInternal(source, destinationDirectoryName, overwriteFiles, leaveOpen: true);
         }
 
-        /// <summary>
-        /// Asynchronously extracts the contents of a stream that represents a tar archive into the specified directory.
-        /// </summary>
-        /// <param name="source">The stream containing the tar archive.</param>
-        /// <param name="destinationDirectoryName">The path of the destination directory where the filesystem entries should be extracted.</param>
-        /// <param name="overwriteFiles"><see langword="true"/> to overwrite files and directories in <paramref name="destinationDirectoryName"/>; <see langword="false"/> to avoid overwriting, and throw if any files or directories are found with existing names.</param>
-        /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.</param>
-        /// <returns>A task that represents the asynchronous extraction operation.</returns>
-        /// <remarks><para>Files of type <see cref="TarEntryType.BlockDevice"/>, <see cref="TarEntryType.CharacterDevice"/> or <see cref="TarEntryType.Fifo"/> can only be extracted in Unix platforms.</para>
-        /// <para>Elevation is required to extract a <see cref="TarEntryType.BlockDevice"/> or <see cref="TarEntryType.CharacterDevice"/> to disk.</para></remarks>
-        /// <exception cref="UnauthorizedAccessException">Operation not permitted due to insufficient permissions.</exception>
-        public static Task ExtractToDirectoryAsync(Stream source, string destinationDirectoryName, bool overwriteFiles, CancellationToken cancellationToken = default)
-        {
-            throw new NotImplementedException();
-        }
+        // /// <summary>
+        // /// Asynchronously extracts the contents of a stream that represents a tar archive into the specified directory.
+        // /// </summary>
+        // /// <param name="source">The stream containing the tar archive.</param>
+        // /// <param name="destinationDirectoryName">The path of the destination directory where the filesystem entries should be extracted.</param>
+        // /// <param name="overwriteFiles"><see langword="true"/> to overwrite files and directories in <paramref name="destinationDirectoryName"/>; <see langword="false"/> to avoid overwriting, and throw if any files or directories are found with existing names.</param>
+        // /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.</param>
+        // /// <returns>A task that represents the asynchronous extraction operation.</returns>
+        // /// <remarks><para>Files of type <see cref="TarEntryType.BlockDevice"/>, <see cref="TarEntryType.CharacterDevice"/> or <see cref="TarEntryType.Fifo"/> can only be extracted in Unix platforms.</para>
+        // /// <para>Elevation is required to extract a <see cref="TarEntryType.BlockDevice"/> or <see cref="TarEntryType.CharacterDevice"/> to disk.</para></remarks>
+        // /// <exception cref="UnauthorizedAccessException">Operation not permitted due to insufficient permissions.</exception>
+        // public static Task ExtractToDirectoryAsync(Stream source, string destinationDirectoryName, bool overwriteFiles, CancellationToken cancellationToken = default)
+        // {
+        //     throw new NotImplementedException();
+        // }
 
         /// <summary>
         /// Extracts the contents of a tar file into the specified directory.
@@ -186,21 +183,21 @@ namespace System.Formats.Tar
             ExtractToDirectoryInternal(archive, destinationDirectoryName, overwriteFiles, leaveOpen: false);
         }
 
-        /// <summary>
-        /// Asynchronously extracts the contents of a tar file into the specified directory.
-        /// </summary>
-        /// <param name="sourceFileName">The path of the tar file to extract.</param>
-        /// <param name="destinationDirectoryName">The path of the destination directory where the filesystem entries should be extracted.</param>
-        /// <param name="overwriteFiles"><see langword="true"/> to overwrite files and directories in <paramref name="destinationDirectoryName"/>; <see langword="false"/> to avoid overwriting, and throw if any files or directories are found with existing names.</param>
-        /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.</param>
-        /// <returns>A task that represents the asynchronous extraction operation.</returns>
-        /// <remarks><para>Files of type <see cref="TarEntryType.BlockDevice"/>, <see cref="TarEntryType.CharacterDevice"/> or <see cref="TarEntryType.Fifo"/> can only be extracted in Unix platforms.</para>
-        /// <para>Elevation is required to extract a <see cref="TarEntryType.BlockDevice"/> or <see cref="TarEntryType.CharacterDevice"/> to disk.</para></remarks>
-        /// <exception cref="UnauthorizedAccessException">Operation not permitted due to insufficient permissions.</exception>
-        public static Task ExtractToDirectoryAsync(string sourceFileName, string destinationDirectoryName, bool overwriteFiles, CancellationToken cancellationToken = default)
-        {
-            throw new NotImplementedException();
-        }
+        // /// <summary>
+        // /// Asynchronously extracts the contents of a tar file into the specified directory.
+        // /// </summary>
+        // /// <param name="sourceFileName">The path of the tar file to extract.</param>
+        // /// <param name="destinationDirectoryName">The path of the destination directory where the filesystem entries should be extracted.</param>
+        // /// <param name="overwriteFiles"><see langword="true"/> to overwrite files and directories in <paramref name="destinationDirectoryName"/>; <see langword="false"/> to avoid overwriting, and throw if any files or directories are found with existing names.</param>
+        // /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.</param>
+        // /// <returns>A task that represents the asynchronous extraction operation.</returns>
+        // /// <remarks><para>Files of type <see cref="TarEntryType.BlockDevice"/>, <see cref="TarEntryType.CharacterDevice"/> or <see cref="TarEntryType.Fifo"/> can only be extracted in Unix platforms.</para>
+        // /// <para>Elevation is required to extract a <see cref="TarEntryType.BlockDevice"/> or <see cref="TarEntryType.CharacterDevice"/> to disk.</para></remarks>
+        // /// <exception cref="UnauthorizedAccessException">Operation not permitted due to insufficient permissions.</exception>
+        // public static Task ExtractToDirectoryAsync(string sourceFileName, string destinationDirectoryName, bool overwriteFiles, CancellationToken cancellationToken = default)
+        // {
+        //     throw new NotImplementedException();
+        // }
 
         // Creates an archive from the contents of a directory.
         // It assumes the sourceDirectoryName is a fully qualified path, and allows choosing if the archive stream should be left open or not.

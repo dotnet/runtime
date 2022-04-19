@@ -4,8 +4,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Threading;
-using System.Threading.Tasks;
 using Microsoft.Win32.SafeHandles;
 
 namespace System.Formats.Tar
@@ -235,36 +233,36 @@ namespace System.Formats.Tar
             }
         }
 
-        /// <summary>
-        /// Asynchronously extracts the current entry to the filesystem.
-        /// </summary>
-        /// <param name="destinationFileName">The path to the destination file.</param>
-        /// <param name="overwrite"><see langword="true"/> if this method should overwrite any existing filesystem object located in the <paramref name="destinationFileName"/> path; <see langword="false"/> to prevent overwriting.</param>
-        /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.</param>
-        /// <returns>A task that represents the asynchronous extraction operation.</returns>
-        /// <remarks><para>Files of type <see cref="TarEntryType.BlockDevice"/>, <see cref="TarEntryType.CharacterDevice"/> or <see cref="TarEntryType.Fifo"/> can only be extracted in Unix platforms.</para>
-        /// <para>Elevation is required to extract a <see cref="TarEntryType.BlockDevice"/> or <see cref="TarEntryType.CharacterDevice"/> to disk.</para></remarks>
-        /// <exception cref="ArgumentException"><paramref name="destinationFileName"/> is <see langword="null"/> or empty.</exception>
-        /// <exception cref="IOException"><para>The parent directory of <paramref name="destinationFileName"/> does not exist.</para>
-        /// <para>-or-</para>
-        /// <para><paramref name="overwrite"/> is <see langword="false"/> and a file already exists in <paramref name="destinationFileName"/>.</para>
-        /// <para>-or-</para>
-        /// <para>A directory exists with the same name as <paramref name="destinationFileName"/>.</para>
-        /// <para>-or-</para>
-        /// <para>An I/O problem occurred.</para></exception>
-        /// <exception cref="InvalidOperationException">Attempted to extract an unsupported entry type.</exception>
-        /// <exception cref="UnauthorizedAccessException">Operation not permitted due to insufficient permissions.</exception>
-        public Task ExtractToFileAsync(string destinationFileName, bool overwrite, CancellationToken cancellationToken = default)
-        {
-            throw new NotImplementedException();
-        }
+        // /// <summary>
+        // /// Asynchronously extracts the current entry to the filesystem.
+        // /// </summary>
+        // /// <param name="destinationFileName">The path to the destination file.</param>
+        // /// <param name="overwrite"><see langword="true"/> if this method should overwrite any existing filesystem object located in the <paramref name="destinationFileName"/> path; <see langword="false"/> to prevent overwriting.</param>
+        // /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.</param>
+        // /// <returns>A task that represents the asynchronous extraction operation.</returns>
+        // /// <remarks><para>Files of type <see cref="TarEntryType.BlockDevice"/>, <see cref="TarEntryType.CharacterDevice"/> or <see cref="TarEntryType.Fifo"/> can only be extracted in Unix platforms.</para>
+        // /// <para>Elevation is required to extract a <see cref="TarEntryType.BlockDevice"/> or <see cref="TarEntryType.CharacterDevice"/> to disk.</para></remarks>
+        // /// <exception cref="ArgumentException"><paramref name="destinationFileName"/> is <see langword="null"/> or empty.</exception>
+        // /// <exception cref="IOException"><para>The parent directory of <paramref name="destinationFileName"/> does not exist.</para>
+        // /// <para>-or-</para>
+        // /// <para><paramref name="overwrite"/> is <see langword="false"/> and a file already exists in <paramref name="destinationFileName"/>.</para>
+        // /// <para>-or-</para>
+        // /// <para>A directory exists with the same name as <paramref name="destinationFileName"/>.</para>
+        // /// <para>-or-</para>
+        // /// <para>An I/O problem occurred.</para></exception>
+        // /// <exception cref="InvalidOperationException">Attempted to extract an unsupported entry type.</exception>
+        // /// <exception cref="UnauthorizedAccessException">Operation not permitted due to insufficient permissions.</exception>
+        // public Task ExtractToFileAsync(string destinationFileName, bool overwrite, CancellationToken cancellationToken = default)
+        // {
+        //     throw new NotImplementedException();
+        // }
 
         /// <summary>
         /// The data section of this entry. If the <see cref="EntryType"/> does not support containing data, then returns <see langword="null"/>.
         /// </summary>
         /// <value><para>Gets a stream that represents the data section of this entry.</para>
         /// <para>Sets a new stream that represents the data section, if it makes sense for the <see cref="EntryType"/> to contain data; if a stream already existed, the old stream gets disposed before substituting it with the new stream. Setting a <see langword="null"/> stream is allowed.</para></value>
-        /// <remarks>If you write data to this data stream, make sure to rewind it to the desired start position before writing this entry into an archive using <see cref="TarWriter.WriteEntry(TarEntry)"/> or <see cref="TarWriter.WriteEntryAsync(TarEntry, CancellationToken)"/>.</remarks>
+        /// <remarks>If you write data to this data stream, make sure to rewind it to the desired start position before writing this entry into an archive using <see cref="TarWriter.WriteEntry(TarEntry)"/>.</remarks>
         /// <exception cref="InvalidOperationException">Setting a data section is not supported because the <see cref="EntryType"/> is not <see cref="TarEntryType.RegularFile"/> (or <see cref="TarEntryType.V7RegularFile"/> for an archive of <see cref="TarFormat.V7"/> format).</exception>
         /// <exception cref="IOException"><para>Cannot set an unreadable stream.</para>
         /// <para>-or-</para>
