@@ -2315,7 +2315,7 @@ namespace System
         public static string ToBase64String(byte[] inArray!!, int offset, int length, Base64FormattingOptions options)
         {
             if (length < 0)
-                throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
             if (offset < 0)
                 throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_GenericPositive);
             if (offset > (inArray.Length - length))
@@ -2360,7 +2360,7 @@ namespace System
         public static unsafe int ToBase64CharArray(byte[] inArray!!, int offsetIn, int length, char[] outArray!!, int offsetOut, Base64FormattingOptions options)
         {
             if (length < 0)
-                throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
             if (offsetIn < 0)
                 throw new ArgumentOutOfRangeException(nameof(offsetIn), SR.ArgumentOutOfRange_GenericPositive);
             if (offsetOut < 0)
@@ -2685,7 +2685,7 @@ namespace System
         public static byte[] FromBase64CharArray(char[] inArray!!, int offset, int length)
         {
             if (length < 0)
-                throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
 
             if (offset < 0)
                 throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_GenericPositive);
@@ -2877,7 +2877,7 @@ namespace System
         public static string ToHexString(byte[] inArray!!, int offset, int length)
         {
             if (length < 0)
-                throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
             if (offset < 0)
                 throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_GenericPositive);
             if (offset > (inArray.Length - length))

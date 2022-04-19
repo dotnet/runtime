@@ -981,7 +981,7 @@ namespace System.Collections
 
         private static void ThrowArgumentOutOfRangeException(int index)
         {
-            throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_Index);
+            throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_IndexMustBeLess);
         }
 
         private sealed class BitArrayEnumeratorSimple : IEnumerator, ICloneable

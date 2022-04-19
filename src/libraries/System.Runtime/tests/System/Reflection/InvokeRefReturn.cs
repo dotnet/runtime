@@ -38,12 +38,14 @@ namespace System.Reflection.Tests
 
         [Theory]
         [MemberData(nameof(RefReturnInvokeTestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/67457", TestRuntimes.Mono)]
         public static void TestNullRefReturnInvoke<T>(T value)
         {
             TestClass<T> tc = new TestClass<T>(value);
             PropertyInfo p = typeof(TestClass<T>).GetProperty(nameof(TestClass<T>.NullRefReturningProp));
             Assert.NotNull(p);
-            Assert.Throws<NullReferenceException>(() => p.GetValue(tc));
+            Exception ex = Assert.Throws<TargetInvocationException>(() => p.GetValue(tc));
+            Assert.IsType<NullReferenceException>(ex.InnerException);
         }
 
         [Fact]
@@ -59,13 +61,15 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/67457", TestRuntimes.Mono)]
         public static unsafe void TestNullRefReturnOfPointer()
         {
             TestClassIntPointer tc = new TestClassIntPointer(null);
 
             PropertyInfo p = typeof(TestClassIntPointer).GetProperty(nameof(TestClassIntPointer.NullRefReturningProp));
             Assert.NotNull(p);
-            Assert.Throws<NullReferenceException>(() => p.GetValue(tc));
+            Exception ex = Assert.Throws<TargetInvocationException>(() => p.GetValue(tc));
+            Assert.IsType<NullReferenceException>(ex.InnerException);
         }
 
         [Fact]

@@ -35,10 +35,14 @@ namespace System.Net
                         break;
                     }
 
-                    var cert = new X509Certificate2(new IntPtr(next));
-                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(certContext, $"Adding remote certificate:{cert}");
+                    if ((IntPtr)next != certContext)
+                    {
+                        var cert = new X509Certificate2(new IntPtr(next));
+                        if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(certContext, $"Adding remote certificate:{cert}");
 
-                    result.Add(cert);
+                        result.Add(cert);
+                    }
+
                     last = next;
                 }
             }

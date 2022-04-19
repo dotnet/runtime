@@ -44,6 +44,18 @@ inline bool isPow2(T i)
     return (i > 0 && ((i - 1) & i) == 0);
 }
 
+template <typename T>
+constexpr bool AreContiguous(T val1, T val2)
+{
+    return (val1 + 1) == val2;
+}
+
+template <typename T, typename... Ts>
+constexpr bool AreContiguous(T val1, T val2, Ts... rest)
+{
+    return ((val1 + 1) == val2) && AreContiguous(val2, rest...);
+}
+
 // Adapter for iterators to a type that is compatible with C++11
 // range-based for loops.
 template <typename TIterator>

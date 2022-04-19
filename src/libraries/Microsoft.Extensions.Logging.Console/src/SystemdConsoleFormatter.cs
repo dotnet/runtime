@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Text;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -11,7 +12,7 @@ namespace Microsoft.Extensions.Logging.Console
 {
     internal sealed class SystemdConsoleFormatter : ConsoleFormatter, IDisposable
     {
-        private IDisposable _optionsReloadToken;
+        private IDisposable? _optionsReloadToken;
 
         public SystemdConsoleFormatter(IOptionsMonitor<ConsoleFormatterOptions> options)
             : base(ConsoleFormatterNames.Systemd)
@@ -20,6 +21,7 @@ namespace Microsoft.Extensions.Logging.Console
             _optionsReloadToken = options.OnChange(ReloadLoggerOptions);
         }
 
+        [MemberNotNull(nameof(FormatterOptions))]
         private void ReloadLoggerOptions(ConsoleFormatterOptions options)
         {
             FormatterOptions = options;
@@ -32,7 +34,7 @@ namespace Microsoft.Extensions.Logging.Console
 
         internal ConsoleFormatterOptions FormatterOptions { get; set; }
 
-        public override void Write<TState>(in LogEntry<TState> logEntry, IExternalScopeProvider scopeProvider, TextWriter textWriter)
+        public override void Write<TState>(in LogEntry<TState> logEntry, IExternalScopeProvider? scopeProvider, TextWriter textWriter)
         {
             string message = logEntry.Formatter(logEntry.State, logEntry.Exception);
             if (logEntry.Exception == null && message == null)
@@ -42,7 +44,7 @@ namespace Microsoft.Extensions.Logging.Console
             LogLevel logLevel = logEntry.LogLevel;
             string category = logEntry.Category;
             int eventId = logEntry.EventId.Id;
-            Exception exception = logEntry.Exception;
+            Exception? exception = logEntry.Exception;
             // systemd reads messages from standard out line-by-line in a '<pri>message' format.
             // newline characters are treated as message delimiters, so we must replace them.
             // Messages longer than the journal LineMax setting (default: 48KB) are cropped.
@@ -54,7 +56,7 @@ namespace Microsoft.Extensions.Logging.Console
             textWriter.Write(logLevelString);
 
             // timestamp
-            string timestampFormat = FormatterOptions.TimestampFormat;
+            string? timestampFormat = FormatterOptions.TimestampFormat;
             if (timestampFormat != null)
             {
                 DateTimeOffset dateTimeOffset = GetCurrentDateTime();
@@ -116,7 +118,7 @@ namespace Microsoft.Extensions.Logging.Console
             };
         }
 
-        private void WriteScopeInformation(TextWriter textWriter, IExternalScopeProvider scopeProvider)
+        private void WriteScopeInformation(TextWriter textWriter, IExternalScopeProvider? scopeProvider)
         {
             if (FormatterOptions.IncludeScopes && scopeProvider != null)
             {

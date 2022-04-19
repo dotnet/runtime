@@ -49,7 +49,7 @@ namespace System
 
         public override bool Equals([NotNullWhen(true)] object? obj)
         {
-            if (obj == null || obj.EETypePtr != this.EETypePtr)
+            if (obj == null || obj.GetEETypePtr() != this.GetEETypePtr())
                 return false;
 
             int numFields = __GetFieldHelper(GetNumFields, out _);
@@ -60,10 +60,10 @@ namespace System
             if (numFields == UseFastHelper)
             {
                 // Sanity check - if there are GC references, we should not be comparing bytes
-                Debug.Assert(!this.EETypePtr.HasPointers);
+                Debug.Assert(!this.GetEETypePtr().HasPointers);
 
                 // Compare the memory
-                int valueTypeSize = (int)this.EETypePtr.ValueTypeSize;
+                int valueTypeSize = (int)this.GetEETypePtr().ValueTypeSize;
                 for (int i = 0; i < valueTypeSize; i++)
                 {
                     if (Unsafe.Add(ref thisRawData, i) != Unsafe.Add(ref thatRawData, i))
@@ -99,7 +99,7 @@ namespace System
 
         public override int GetHashCode()
         {
-            int hashCode = this.EETypePtr.GetHashCode();
+            int hashCode = this.GetEETypePtr().GetHashCode();
 
             hashCode ^= GetHashCodeImpl();
 
@@ -111,9 +111,9 @@ namespace System
             int numFields = __GetFieldHelper(GetNumFields, out _);
 
             if (numFields == UseFastHelper)
-                return FastGetValueTypeHashCodeHelper(this.EETypePtr, ref this.GetRawData());
+                return FastGetValueTypeHashCodeHelper(this.GetEETypePtr(), ref this.GetRawData());
 
-            return RegularGetValueTypeHashCode(this.EETypePtr, ref this.GetRawData(), numFields);
+            return RegularGetValueTypeHashCode(this.GetEETypePtr(), ref this.GetRawData(), numFields);
         }
 
         private static int FastGetValueTypeHashCodeHelper(EETypePtr type, ref byte data)

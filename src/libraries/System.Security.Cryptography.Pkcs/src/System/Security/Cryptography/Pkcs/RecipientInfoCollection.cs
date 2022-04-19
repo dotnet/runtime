@@ -31,7 +31,7 @@ namespace System.Security.Cryptography.Pkcs
             get
             {
                 if (index < 0 || index >= _recipientInfos.Length)
-                    throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
+                    throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_IndexMustBeLess);
                 return _recipientInfos[index];
             }
         }
@@ -59,7 +59,7 @@ namespace System.Security.Cryptography.Pkcs
             if (array.Rank != 1)
                 throw new ArgumentException(SR.Arg_RankMultiDimNotSupported);
             if (index < 0 || index >= array.Length)
-                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_IndexMustBeLess);
             if (index > array.Length - Count)
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
             for (int i = 0; i < Count; i++)
@@ -72,7 +72,7 @@ namespace System.Security.Cryptography.Pkcs
         public void CopyTo(RecipientInfo[] array!!, int index)
         {
             if (index < 0 || index >= array.Length)
-                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_IndexMustBeLess);
             _recipientInfos.CopyTo(array, index);
         }
 

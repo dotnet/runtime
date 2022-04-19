@@ -569,7 +569,7 @@ mono_method_desc_full_match (MonoMethodDesc *desc, MonoMethod *method)
 		return FALSE;
 	if (!desc->klass)
 		return FALSE;
-	if (!match_class (desc, strlen (desc->klass), method->klass))
+	if (!match_class (desc, (int)strlen (desc->klass), method->klass))
 		return FALSE;
 
 	return mono_method_desc_match (desc, method);
@@ -715,11 +715,11 @@ dis_one (GString *str, MonoDisHelper *dh, MonoMethod *method, const unsigned cha
 
 				for (i = 0; i < len2; ++i)
 					buf [i] = GUINT16_FROM_LE (((guint16*)blob2) [i]);
-				s = g_utf16_to_utf8 (buf, len2, NULL, NULL, NULL);
+				s = g_utf16_to_utf8 (buf, (glong)len2, NULL, NULL, NULL);
 				g_free (buf);
 			}
 #else
-				s = g_utf16_to_utf8 ((gunichar2*)blob2, len2, NULL, NULL, NULL);
+				s = g_utf16_to_utf8 ((gunichar2*)blob2, (glong)len2, NULL, NULL, NULL);
 #endif
 
 			g_string_append_printf (str, "\"%s\"", s);
@@ -755,17 +755,17 @@ dis_one (GString *str, MonoDisHelper *dh, MonoMethod *method, const unsigned cha
 			g_string_append_printf (str, "%d", sval);
 		break;
 	case MonoInlineSwitch: {
-		const unsigned char *end;
+		const unsigned char *sval_end;
 		sval = read32 (ip);
 		ip += 4;
-		end = ip + sval * 4;
+		sval_end = ip + sval * 4;
 		g_string_append_c (str, '(');
 		for (i = 0; i < sval; ++i) {
 			if (i > 0)
 				g_string_append (str, ", ");
 			label = read32 (ip);
 			if (dh->label_target)
-				g_string_append_printf (str, dh->label_target, end + label - il_code);
+				g_string_append_printf (str, dh->label_target, sval_end + label - il_code);
 			else
 				g_string_append_printf (str, "%d", label);
 			ip += 4;
@@ -1235,7 +1235,7 @@ mono_class_describe_statics (MonoClass* klass)
 			/* TODO: metadata-update: print something for added fields? */
 			if (m_field_is_from_update (field))
 				continue;
-			
+
 			field_ptr = (const char*)addr + m_field_get_offset (field);
 
 			print_field_value (field_ptr, field, 0);

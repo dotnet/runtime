@@ -131,6 +131,7 @@ namespace System.Text.RegularExpressions.Generator
             }
 
             if (!regexMethodSymbol.IsPartialDefinition ||
+                regexMethodSymbol.IsAbstract ||
                 regexMethodSymbol.Parameters.Length != 0 ||
                 regexMethodSymbol.Arity != 0 ||
                 !regexMethodSymbol.ReturnType.Equals(regexSymbol))
@@ -179,9 +180,11 @@ namespace System.Text.RegularExpressions.Generator
 
             // Parse the input pattern
             RegexTree regexTree;
+            AnalysisResults analysis;
             try
             {
                 regexTree = RegexParser.Parse(pattern, regexOptions | RegexOptions.Compiled, culture); // make sure Compiled is included to get all optimizations applied to it
+                analysis = RegexTreeAnalyzer.Analyze(regexTree);
             }
             catch (Exception e)
             {
@@ -204,8 +207,9 @@ namespace System.Text.RegularExpressions.Generator
                 methodSyntax.Modifiers.ToString(),
                 pattern,
                 regexOptions,
-                matchTimeout ?? Timeout.Infinite,
-                regexTree);
+                matchTimeout,
+                regexTree,
+                analysis);
 
             RegexType current = regexType;
             var parent = typeDec.Parent as TypeDeclarationSyntax;
@@ -232,10 +236,10 @@ namespace System.Text.RegularExpressions.Generator
         }
 
         /// <summary>A regex method.</summary>
-        internal sealed record RegexMethod(RegexType DeclaringType, MethodDeclarationSyntax MethodSyntax, string MethodName, string Modifiers, string Pattern, RegexOptions Options, int MatchTimeout, RegexTree Tree)
+        internal sealed record RegexMethod(RegexType DeclaringType, MethodDeclarationSyntax MethodSyntax, string MethodName, string Modifiers, string Pattern, RegexOptions Options, int? MatchTimeout, RegexTree Tree, AnalysisResults Analysis)
         {
-            public int GeneratedId { get; set; }
-            public string GeneratedName => $"{MethodName}_{GeneratedId}";
+            public string GeneratedName { get; set; }
+            public bool IsDuplicate { get; set; }
         }
 
         /// <summary>A type holding a regex method.</summary>

@@ -59,7 +59,7 @@ namespace Microsoft.Interop.Analyzers
             // Register code fix
             context.RegisterCodeFix(
                 CodeAction.Create(
-                    Resources.ConvertToLibraryImport,
+                    SR.ConvertToLibraryImport,
                     cancelToken => ConvertToLibraryImport(
                         context.Document,
                         methodSyntax,
@@ -81,7 +81,7 @@ namespace Microsoft.Interop.Analyzers
                     {
                         context.RegisterCodeFix(
                             CodeAction.Create(
-                                string.Format(Resources.ConvertToLibraryImportWithSuffix, "A"),
+                                string.Format(SR.ConvertToLibraryImportWithSuffix, "A"),
                                 cancelToken => ConvertToLibraryImport(
                                     context.Document,
                                     methodSyntax,
@@ -94,7 +94,7 @@ namespace Microsoft.Interop.Analyzers
                     {
                         context.RegisterCodeFix(
                             CodeAction.Create(
-                                string.Format(Resources.ConvertToLibraryImportWithSuffix, "W"),
+                                string.Format(SR.ConvertToLibraryImportWithSuffix, "W"),
                                 cancelToken => ConvertToLibraryImport(
                                     context.Document,
                                     methodSyntax,
@@ -135,7 +135,7 @@ namespace Microsoft.Interop.Analyzers
                         bool shouldWarn = await TransformCallersOfNoPreserveSigMethod(editor, methodSymbol, fixAllContext.CancellationToken).ConfigureAwait(false);
                         if (shouldWarn)
                         {
-                            generatedDeclaration = generatedDeclaration.WithAdditionalAnnotations(WarningAnnotation.Create(Resources.ConvertNoPreserveSigDllImportToGeneratedMayProduceInvalidCode));
+                            generatedDeclaration = generatedDeclaration.WithAdditionalAnnotations(WarningAnnotation.Create(SR.ConvertNoPreserveSigDllImportToGeneratedMayProduceInvalidCode));
                         }
                     }
 
@@ -176,7 +176,7 @@ namespace Microsoft.Interop.Analyzers
                 bool shouldWarn = await TransformCallersOfNoPreserveSigMethod(editor, methodSymbol, cancellationToken).ConfigureAwait(false);
                 if (shouldWarn)
                 {
-                    generatedDeclaration = generatedDeclaration.WithAdditionalAnnotations(WarningAnnotation.Create(Resources.ConvertNoPreserveSigDllImportToGeneratedMayProduceInvalidCode));
+                    generatedDeclaration = generatedDeclaration.WithAdditionalAnnotations(WarningAnnotation.Create(SR.ConvertNoPreserveSigDllImportToGeneratedMayProduceInvalidCode));
                 }
             }
 
@@ -221,7 +221,7 @@ namespace Microsoft.Interop.Analyzers
 
             // Add annotation about potential behavioural and compatibility changes
             libraryImportSyntax = libraryImportSyntax.WithAdditionalAnnotations(
-                WarningAnnotation.Create(string.Format(Resources.ConvertToLibraryImportWarning, "[TODO] Documentation link")));
+                WarningAnnotation.Create(string.Format(SR.ConvertToLibraryImportWarning, "[TODO] Documentation link")));
 
             // Replace DllImport with LibraryImport
             SyntaxNode generatedDeclaration = generator.ReplaceNode(methodSyntax, dllImportSyntax, libraryImportSyntax);

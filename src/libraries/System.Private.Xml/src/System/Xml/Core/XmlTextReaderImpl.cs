@@ -3269,18 +3269,9 @@ namespace System.Xml
             Debug.Assert(_ps.encoding != null);
             Debug.Assert(_ps.bytes != null);
             ReadOnlySpan<byte> preamble = _ps.encoding.Preamble;
-            int preambleLen = preamble.Length;
-            int i;
-            for (i = 0; i < preambleLen && i < _ps.bytesUsed; i++)
+            if (_ps.bytes.AsSpan(0, _ps.bytesUsed).StartsWith(preamble))
             {
-                if (_ps.bytes[i] != preamble[i])
-                {
-                    break;
-                }
-            }
-            if (i == preambleLen)
-            {
-                _ps.bytePos = preambleLen;
+                _ps.bytePos = preamble.Length;
             }
         }
 
@@ -5455,7 +5446,7 @@ namespace System.Xml
             _stringBuilder.Length = 0;
         }
 
-        private void AddAttributeChunkToList(NodeData attr, NodeData chunk, ref NodeData? lastChunk)
+        private static void AddAttributeChunkToList(NodeData attr, NodeData chunk, ref NodeData? lastChunk)
         {
             if (lastChunk == null)
             {
@@ -9618,7 +9609,7 @@ namespace System.Xml
         }
 
         // SxS: URIs are resolved only to be compared. No resource exposure. It's OK to suppress the SxS warning.
-        private bool UriEqual(Uri? uri1, string? uri1Str, string? uri2Str, XmlResolver? resolver)
+        private static bool UriEqual(Uri? uri1, string? uri1Str, string? uri2Str, XmlResolver? resolver)
         {
             if (resolver == null)
             {

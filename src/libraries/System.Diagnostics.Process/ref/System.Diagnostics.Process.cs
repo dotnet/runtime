@@ -168,9 +168,11 @@ namespace System.Diagnostics
         public override string ToString() { throw null; }
         public void WaitForExit() { }
         public bool WaitForExit(int milliseconds) { throw null; }
+        public bool WaitForExit(System.TimeSpan timeout) { throw null; }
         public System.Threading.Tasks.Task WaitForExitAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public bool WaitForInputIdle() { throw null; }
         public bool WaitForInputIdle(int milliseconds) { throw null; }
+        public bool WaitForInputIdle(System.TimeSpan timeout) { throw null; }
     }
     [System.ComponentModel.DesignerAttribute("System.Diagnostics.Design.ProcessModuleDesigner, System.Design, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     public partial class ProcessModule : System.ComponentModel.Component

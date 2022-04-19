@@ -32,18 +32,10 @@ else()
 endif()
 
 set(metadata_win32_sources
-    w32file-win32.c
-    w32event-win32.c
-    w32error-win32.c)
+    w32event-win32.c)
 
 set(metadata_unix_sources
-    w32event-unix.c
-    w32process-unix-osx.c
-    w32process-unix-bsd.c
-    w32process-unix-haiku.c
-    w32process-unix-default.c
-    w32file-unix.c
-    w32error-unix.c)
+    w32event-unix.c)
 
 if(HOST_WIN32)
 set(metadata_platform_sources ${metadata_win32_sources})
@@ -83,7 +75,6 @@ set(metadata_common_sources
     environment.c
     exception.c
     exception-internals.h
-    w32file.h
     gc-internals.h
     gc_wrapper.h
     icall.c
@@ -123,9 +114,6 @@ set(metadata_common_sources
     mono-hash.h
     mono-conc-hash.c
     mono-conc-hash.h
-    mono-perfcounters.c
-    mono-perfcounters.h
-    mono-perfcounters-def.h
     mono-ptr-array.h
     monitor.h
     object.c
@@ -133,7 +121,6 @@ set(metadata_common_sources
     opcodes.c
     property-bag.h
     property-bag.c
-    w32process.h
     profiler.c
     profiler-private.h
     runtime.c
@@ -163,14 +150,11 @@ set(metadata_common_sources
     w32event.h
     w32handle.h
     w32handle.c
-    w32error.h
     reflection.c
     dynamic-image.c
     sre.c
     sre-encode.c
     custom-attrs.c
-    fdhandle.h
-    fdhandle.c
     callspec.h
     callspec.c
     assembly-load-context.c
@@ -183,8 +167,6 @@ set(metadata_common_sources
     abi-details.h
     abi.c
     memory-manager.c
-    mono-config-dirs.h
-    mono-config-dirs.c
     icall-table.h
     ${icall_table_sources})
 
@@ -197,7 +179,6 @@ if(MONO_GC STREQUAL "sgen")
     set(metadata_gc_sources
         sgen-bridge.c
         sgen-bridge-internals.h
-        sgen-old-bridge.c
         sgen-new-bridge.c
         sgen-tarjan-bridge.c
         sgen-toggleref.c
@@ -217,16 +198,5 @@ addprefix(metadata_gc_dependent_real_sources ../metadata "${metadata_gc_dependen
 addprefix(metadata_gc_real_sources ../metadata "${metadata_gc_sources}")
 addprefix(ilgen_real_sources ../metadata "${ilgen_sources}")
 set_source_files_properties(${metadata_gc_real_sources};${metadata_gc_dependent_real_sources};${ilgen_real_sources} PROPERTIES COMPILE_DEFINITIONS "${metadata_compile_definitions}")
-
-#
-# We localize the usage of MONO_BINDIR etc. to just one source file, thus enabling
-# ccache to work even if the value of these defines change.
-#
-set(bindir "${CMAKE_INSTALL_FULL_BINDIR}")
-set(assembliesdir "${CMAKE_INSTALL_FULL_LIBDIR}")
-set(confdir "${CMAKE_INSTALL_FULL_SYSCONFDIR}")
-set(reloc_libdir "${CMAKE_INSTALL_LIBDIR}")
-
-set_source_files_properties(../metadata/mono-config-dirs.c PROPERTIES COMPILE_DEFINITIONS "MONO_BINDIR=\"${bindir}\";MONO_ASSEMBLIES=\"${assembliesdir}\";MONO_CFG_DIR=\"${confdir}\";MONO_RELOC_LIBDIR=\"../${reloc_libdir}\"")
 
 addprefix(metadata_sources ../metadata/ "${metadata_platform_sources};${metadata_common_sources};${metadata_gc_dependent_sources};${metadata_gc_sources};${ilgen_sources}")

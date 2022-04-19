@@ -169,7 +169,7 @@ namespace Microsoft.NET.HostModel.Bundle
             }
         }
 
-        private bool IsAssembly(string path, out bool isPE)
+        private static bool IsAssembly(string path, out bool isPE)
         {
             isPE = false;
 

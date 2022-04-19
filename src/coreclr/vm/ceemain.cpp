@@ -666,11 +666,25 @@ void EEStartupHelper()
         Thread::StaticInitialize();
         ThreadpoolMgr::StaticInitialize();
 
+        JITInlineTrackingMap::StaticInitialize();
         MethodDescBackpatchInfoTracker::StaticInitialize();
         CodeVersionManager::StaticInitialize();
         TieredCompilationManager::StaticInitialize();
         CallCountingManager::StaticInitialize();
         OnStackReplacementManager::StaticInitialize();
+
+#ifdef TARGET_UNIX
+        ExecutableAllocator::InitPreferredRange();
+#else
+        {
+            // Record coreclr.dll geometry
+            PEDecoder pe(GetClrModuleBase());
+
+            g_runtimeLoadedBaseAddress = (SIZE_T)pe.GetBase();
+            g_runtimeVirtualSize = (SIZE_T)pe.GetVirtualSize();
+            ExecutableAllocator::InitLazyPreferredRange(g_runtimeLoadedBaseAddress, g_runtimeVirtualSize, GetRandomInt(64));
+        }
+#endif // !TARGET_UNIX
 
         InitThreadManager();
         STRESS_LOG0(LF_STARTUP, LL_ALWAYS, "Returned successfully from InitThreadManager");
@@ -807,20 +821,6 @@ void EEStartupHelper()
 
         StubManager::InitializeStubManagers();
 
-#ifdef TARGET_UNIX
-        ExecutableAllocator::InitPreferredRange();
-#else
-        {
-            // Record coreclr.dll geometry
-            PEDecoder pe(GetClrModuleBase());
-
-            g_runtimeLoadedBaseAddress = (SIZE_T)pe.GetBase();
-            g_runtimeVirtualSize = (SIZE_T)pe.GetVirtualSize();
-            ExecutableAllocator::InitLazyPreferredRange(g_runtimeLoadedBaseAddress, g_runtimeVirtualSize, GetRandomInt(64));
-        }
-#endif // !TARGET_UNIX
-
-
         // Set up the cor handle map. This map is used to load assemblies in
         // memory instead of using the normal system load
         PEImage::Startup();
@@ -831,7 +831,8 @@ void EEStartupHelper()
 
         Stub::Init();
         StubLinkerCPU::Init();
-
+        StubPrecode::StaticInitialize();
+        FixupPrecode::StaticInitialize();
 
         InitializeGarbageCollector();
 

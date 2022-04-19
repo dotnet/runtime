@@ -60,7 +60,7 @@ namespace System.Threading
             RegisterThreadExitCallback();
         }
 
-        private unsafe void RegisterThreadExitCallback()
+        private static unsafe void RegisterThreadExitCallback()
         {
             RuntimeImports.RhSetThreadExitCallback(&OnThreadExit);
         }
@@ -196,10 +196,8 @@ namespace System.Threading
             get => _managedThreadId.Id;
         }
 
-        partial void ThreadNameChanged(string? value)
-        {
-            // TODO: Inform the debugger and the profiler
-        }
+        // TODO: Inform the debugger and the profiler
+        // private void ThreadNameChanged(string? value) {}
 
         public ThreadPriority Priority
         {
@@ -378,7 +376,7 @@ namespace System.Threading
         private static void StartThread(IntPtr parameter)
         {
             GCHandle threadHandle = (GCHandle)parameter;
-            Thread thread = (Thread)threadHandle.Target;
+            Thread thread = (Thread)threadHandle.Target!;
 
             try
             {

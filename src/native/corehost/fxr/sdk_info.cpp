@@ -45,7 +45,7 @@ void sdk_info::get_all_sdk_infos(
     std::vector<sdk_info>* sdk_infos)
 {
     std::vector<pal::string_t> hive_dir;
-    get_framework_and_sdk_locations(own_dir, &hive_dir);
+    get_framework_and_sdk_locations(own_dir, /*disable_multilevel_lookup*/ true, &hive_dir);
 
     int32_t hive_depth = 0;
 

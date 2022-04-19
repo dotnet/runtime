@@ -36,7 +36,7 @@ namespace System.Net
         private ResponseDescription? _currentResponseDescription;
         protected string? _abortReason;
 
-        internal CommandStream(TcpClient client)
+        internal CommandStream(NetworkStream client)
             : base(client)
         {
             _decoder = _encoding.GetDecoder();
@@ -130,7 +130,7 @@ namespace System.Net
             return null;
         }
 
-        protected Exception GenerateException(string message, WebExceptionStatus status, Exception? innerException)
+        protected static Exception GenerateException(string message, WebExceptionStatus status, Exception? innerException)
         {
             return new WebException(
                             message,
@@ -139,7 +139,7 @@ namespace System.Net
                             null /* no response */ );
         }
 
-        protected Exception GenerateException(FtpStatusCode code, string? statusDescription, Exception? innerException)
+        protected static Exception GenerateException(FtpStatusCode code, string? statusDescription, Exception? innerException)
         {
             return new WebException(SR.Format(SR.net_ftp_servererror, NetRes.GetWebStatusCodeString(code, statusDescription)),
                                     innerException, WebExceptionStatus.ProtocolError, null);

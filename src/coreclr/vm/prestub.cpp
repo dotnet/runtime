@@ -90,8 +90,7 @@ PCODE MethodDesc::DoBackpatch(MethodTable * pMT, MethodTable *pDispatchingMT, BO
 
     // Only take the lock if the method is versionable with vtable slot backpatch, for recording slots and synchronizing with
     // backpatching slots
-    MethodDescBackpatchInfoTracker::ConditionalLockHolderForGCCoop slotBackpatchLockHolder(
-        isVersionableWithVtableSlotBackpatch);
+    MethodDescBackpatchInfoTracker::ConditionalLockHolder slotBackpatchLockHolder(isVersionableWithVtableSlotBackpatch);
 
     // Get the method entry point inside the lock above to synchronize with backpatching in
     // MethodDesc::BackpatchEntryPointSlots()

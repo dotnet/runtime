@@ -1,20 +1,17 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.IO;
+using System.Text;
+
 using FluentAssertions;
 using Microsoft.DotNet.Cli.Build.Framework;
 using Microsoft.DotNet.CoreSetup.Test;
 using Microsoft.NET.HostModel.AppHost;
-using System;
-using System.Diagnostics;
-using System.IO;
-using System.Runtime.InteropServices;
-using System.Security.Cryptography;
-using System.Text;
-using System.Threading;
 using Xunit;
 
-namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
+namespace HostActivation.Tests
 {
     public class StandaloneAppActivation : IClassFixture<StandaloneAppActivation.SharedTestState>
     {
@@ -203,15 +200,12 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             // This verifies a self-contained apphost cannot use DOTNET_ROOT to reference a flat
             // self-contained layout since a flat layout of the shared framework is not supported.
             Command.Create(appExe)
-                .EnvironmentVariable("COREHOST_TRACE", "1")
+                .EnableTracingAndCaptureOutputs()
                 .DotNetRoot(newOutDir)
-                .CaptureStdErr()
-                .CaptureStdOut()
                 .Execute(fExpectedToFail: true)
                 .Should().Fail()
-                .And.HaveStdErrContaining($"Using environment variable DOTNET_ROOT") // use the first part avoiding "(x86)" if present
-                .And.HaveStdErrContaining($"=[{Path.GetFullPath(newOutDir)}] as runtime location.") // use the last part
-                .And.HaveStdErrContaining("A fatal error occurred");
+                .And.HaveUsedDotNetRootInstallLocation(Path.GetFullPath(newOutDir), fixture.CurrentRid)
+                .And.HaveStdErrContaining($"The required library {RuntimeInformationExtensions.GetSharedLibraryFileNameForCurrentPlatform("hostfxr")} could not be found.");
         }
 
         [Fact]
@@ -226,9 +220,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             AppHostExtensions.BindAppHost(appExe);
 
             Command.Create(appExe)
-                .EnvironmentVariable("COREHOST_TRACE", "1")
-                .CaptureStdErr()
-                .CaptureStdOut()
+                .EnableTracingAndCaptureOutputs()
                 .Execute()
                 .Should().Pass()
                 .And.HaveStdOutContaining("Hello World")

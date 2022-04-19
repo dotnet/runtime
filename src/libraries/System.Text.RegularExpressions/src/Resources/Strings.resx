@@ -281,10 +281,6 @@
     <value>Regex replacements with substitutions of groups are not supported with RegexOptions.NonBacktracking.</value>
     <comment>{Locked="RegexOptions.NonBacktracking"}</comment>
   </data>
-  <data name="NotSupported_NonBacktrackingConflictingOption" xml:space="preserve">
-    <value>RegexOptions.NonBacktracking is not supported in conjunction with RegexOptions.{0}.</value>
-    <comment>{Locked="RegexOptions.NonBacktracking"}</comment>
-  </data>
   <data name="NotSupported_NonBacktrackingConflictingExpression" xml:space="preserve">
     <value>RegexOptions.NonBacktracking is not supported in conjunction with expressions containing: '{0}'.</value>
     <comment>{Locked="RegexOptions.NonBacktracking"}</comment>

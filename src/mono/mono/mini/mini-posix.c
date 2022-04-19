@@ -811,7 +811,7 @@ dump_native_stacktrace (const char *signal, MonoContext *mctx)
 		}
 	}
 
-#if !defined(HOST_WIN32) && defined(HAVE_SYS_SYSCALL_H) && (defined(SYS_fork) || HAVE_FORK)
+#if !defined(HOST_WIN32) && defined(HAVE_SYS_SYSCALL_H) && ((!defined(HOST_DARWIN) && defined(SYS_fork)) || HAVE_FORK)
 	pid_t crashed_pid = getpid ();
 
 	pid_t pid = crashed_pid; /* init to some >0 value */

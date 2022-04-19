@@ -538,5 +538,32 @@ namespace System.Threading.RateLimiting.Test
             Assert.Equal("Queue limit reached", typedMetadata);
             Assert.Collection(failedLease.MetadataNames, item => item.Equals(MetadataName.ReasonPhrase.Name));
         }
+
+        [Fact]
+        public override void NullIdleDurationWhenActive()
+        {
+            var limiter = new ConcurrencyLimiter(new ConcurrencyLimiterOptions(1, QueueProcessingOrder.OldestFirst, 1));
+            using var lease = limiter.Acquire(1);
+            Assert.Null(limiter.IdleDuration);
+        }
+
+        [Fact]
+        public override async Task IdleDurationUpdatesWhenIdle()
+        {
+            var limiter = new ConcurrencyLimiter(new ConcurrencyLimiterOptions(1, QueueProcessingOrder.OldestFirst, 1));
+            Assert.NotNull(limiter.IdleDuration);
+            var previousDuration = limiter.IdleDuration;
+            await Task.Delay(15);
+            Assert.True(previousDuration < limiter.IdleDuration);
+        }
+
+        [Fact]
+        public override void IdleDurationUpdatesWhenChangingFromActive()
+        {
+            var limiter = new ConcurrencyLimiter(new ConcurrencyLimiterOptions(1, QueueProcessingOrder.OldestFirst, 1));
+            var lease = limiter.Acquire(1);
+            lease.Dispose();
+            Assert.NotNull(limiter.IdleDuration);
+        }
     }
 }

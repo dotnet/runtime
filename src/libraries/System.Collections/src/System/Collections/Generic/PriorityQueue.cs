@@ -563,12 +563,12 @@ namespace System.Collections.Generic
         /// <summary>
         /// Gets the index of an element's parent.
         /// </summary>
-        private int GetParentIndex(int index) => (index - 1) >> Log2Arity;
+        private static int GetParentIndex(int index) => (index - 1) >> Log2Arity;
 
         /// <summary>
         /// Gets the index of the first child of an element.
         /// </summary>
-        private int GetFirstChildIndex(int index) => (index << Log2Arity) + 1;
+        private static int GetFirstChildIndex(int index) => (index << Log2Arity) + 1;
 
         /// <summary>
         /// Converts an unordered list into a heap.
@@ -814,7 +814,7 @@ namespace System.Collections.Generic
 
                 if (index < 0 || index > array.Length)
                 {
-                    throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_Index);
+                    throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
                 }
 
                 if (array.Length - index < _queue._size)

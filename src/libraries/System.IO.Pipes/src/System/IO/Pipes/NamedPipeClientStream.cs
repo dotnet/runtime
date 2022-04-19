@@ -125,6 +125,8 @@ namespace System.IO.Pipes
             ConnectInternal(timeout, CancellationToken.None, Environment.TickCount);
         }
 
+        public void Connect(TimeSpan timeout) => Connect(ToTimeoutMilliseconds(timeout));
+
         private void ConnectInternal(int timeout, CancellationToken cancellationToken, int startTime)
         {
             // This is the main connection loop. It will loop until the timeout expires.
@@ -135,7 +137,7 @@ namespace System.IO.Pipes
                 cancellationToken.ThrowIfCancellationRequested();
 
                 // Determine how long we should wait in this connection attempt
-                int waitTime = timeout - elapsed;
+                int waitTime = timeout == Timeout.Infinite ? CancellationCheckInterval : timeout - elapsed;
                 if (cancellationToken.CanBeCanceled && waitTime > CancellationCheckInterval)
                 {
                     waitTime = CancellationCheckInterval;
@@ -191,6 +193,19 @@ namespace System.IO.Pipes
 
             int startTime = Environment.TickCount; // We need to measure time here, not in the lambda
             return Task.Run(() => ConnectInternal(timeout, cancellationToken, startTime), cancellationToken);
+        }
+
+        public Task ConnectAsync(TimeSpan timeout, CancellationToken cancellationToken = default) =>
+            ConnectAsync(ToTimeoutMilliseconds(timeout), cancellationToken);
+
+        private static int ToTimeoutMilliseconds(TimeSpan timeout)
+        {
+            long totalMilliseconds = (long)timeout.TotalMilliseconds;
+            if (totalMilliseconds < -1 || totalMilliseconds > int.MaxValue)
+            {
+                throw new ArgumentOutOfRangeException(nameof(timeout));
+            }
+            return (int)totalMilliseconds;
         }
 
         // override because named pipe clients can't get/set properties when waiting to connect
