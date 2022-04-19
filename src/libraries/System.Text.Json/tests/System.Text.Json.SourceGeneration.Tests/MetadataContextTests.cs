@@ -21,6 +21,7 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(MyTypeWithPropertyOrdering), GenerationMode = JsonSourceGenerationMode.Metadata)]
     [JsonSerializable(typeof(MyIntermediateType), GenerationMode = JsonSourceGenerationMode.Metadata)]
     [JsonSerializable(typeof(HighLowTempsImmutable), GenerationMode = JsonSourceGenerationMode.Metadata)]
+    [JsonSerializable(typeof(HighLowTempsRecord), GenerationMode = JsonSourceGenerationMode.Metadata)]
     [JsonSerializable(typeof(RealWorldContextTests.MyNestedClass), GenerationMode = JsonSourceGenerationMode.Metadata)]
     [JsonSerializable(typeof(RealWorldContextTests.MyNestedClass.MyNestedNestedClass), GenerationMode = JsonSourceGenerationMode.Metadata)]
     [JsonSerializable(typeof(object[]), GenerationMode = JsonSourceGenerationMode.Metadata)]
@@ -68,6 +69,7 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.Null(MetadataWithPerTypeAttributeContext.Default.MyType2.SerializeHandler);
             Assert.Null(MetadataWithPerTypeAttributeContext.Default.MyIntermediateType.SerializeHandler);
             Assert.Null(MetadataWithPerTypeAttributeContext.Default.HighLowTempsImmutable.SerializeHandler);
+            Assert.Null(MetadataWithPerTypeAttributeContext.Default.HighLowTempsRecord.SerializeHandler);
             Assert.Null(MetadataWithPerTypeAttributeContext.Default.MyNestedClass.SerializeHandler);
             Assert.Null(MetadataWithPerTypeAttributeContext.Default.MyNestedNestedClass.SerializeHandler);
             Assert.Null(MetadataWithPerTypeAttributeContext.Default.ObjectArray.SerializeHandler);
@@ -110,6 +112,7 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(MyTypeWithPropertyOrdering))]
     [JsonSerializable(typeof(MyIntermediateType))]
     [JsonSerializable(typeof(HighLowTempsImmutable))]
+    [JsonSerializable(typeof(HighLowTempsRecord))]
     [JsonSerializable(typeof(RealWorldContextTests.MyNestedClass))]
     [JsonSerializable(typeof(RealWorldContextTests.MyNestedClass.MyNestedNestedClass))]
     [JsonSerializable(typeof(object[]))]
@@ -180,6 +183,7 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.Null(MetadataContext.Default.MyTypeWithPropertyOrdering.SerializeHandler);
             Assert.Null(MetadataContext.Default.MyIntermediateType.SerializeHandler);
             Assert.Null(MetadataContext.Default.HighLowTempsImmutable.SerializeHandler);
+            Assert.Null(MetadataContext.Default.HighLowTempsRecord.SerializeHandler);
             Assert.Null(MetadataContext.Default.MyNestedClass.SerializeHandler);
             Assert.Null(MetadataContext.Default.MyNestedNestedClass.SerializeHandler);
             Assert.Null(MetadataContext.Default.ObjectArray.SerializeHandler);

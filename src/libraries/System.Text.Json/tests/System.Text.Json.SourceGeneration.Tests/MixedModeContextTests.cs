@@ -22,6 +22,7 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(MyTypeWithPropertyOrdering), GenerationMode = JsonSourceGenerationMode.Metadata | JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(MyIntermediateType), GenerationMode = JsonSourceGenerationMode.Metadata | JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(HighLowTempsImmutable), GenerationMode = JsonSourceGenerationMode.Metadata)]
+    [JsonSerializable(typeof(HighLowTempsRecord), GenerationMode = JsonSourceGenerationMode.Metadata)]
     [JsonSerializable(typeof(RealWorldContextTests.MyNestedClass), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(RealWorldContextTests.MyNestedClass.MyNestedNestedClass), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(object[]), GenerationMode = JsonSourceGenerationMode.Metadata)]
@@ -70,6 +71,7 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.NotNull(MixedModeContext.Default.MyTypeWithPropertyOrdering.SerializeHandler);
             Assert.NotNull(MixedModeContext.Default.MyIntermediateType.SerializeHandler);
             Assert.Null(MixedModeContext.Default.HighLowTempsImmutable.SerializeHandler);
+            Assert.Null(MixedModeContext.Default.HighLowTempsRecord.SerializeHandler);
             Assert.NotNull(MixedModeContext.Default.MyNestedClass.SerializeHandler);
             Assert.NotNull(MixedModeContext.Default.MyNestedNestedClass.SerializeHandler);
             Assert.Null(MixedModeContext.Default.ObjectArray.SerializeHandler);

@@ -737,6 +737,18 @@ namespace System.Text.Json.SourceGeneration.Tests
         }
 
         [Fact]
+        public virtual void PositionalRecord()
+        {
+            string json = JsonSerializer.Serialize(new HighLowTempsRecord(1, 2), DefaultContext.HighLowTempsRecord);
+            Assert.Contains(@"""High"":1", json);
+            Assert.Contains(@"""Low"":2", json);
+
+            HighLowTempsRecord obj = JsonSerializer.Deserialize(json, DefaultContext.HighLowTempsRecord);
+            Assert.Equal(1, obj.High);
+            Assert.Equal(2, obj.Low);
+        }
+
+        [Fact]
         public virtual void EnumAndNullable()
         {
             RunTest(new ClassWithEnumAndNullable() { Day = DayOfWeek.Monday, NullableDay = DayOfWeek.Tuesday });
