@@ -29,6 +29,22 @@ void CreateCrashDumpIfEnabled(bool stackoverflow = false);
 // Global state counter to implement SUPPRESS_ALLOCATION_ASSERTS_IN_THIS_SCOPE.
 Volatile<LONG> g_DbgSuppressAllocationAsserts = 0;
 
+static void GetExecutableFileNameUtf8(SString& value)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
+
+    SString tmp;
+    WCHAR * pCharBuf = tmp.OpenUnicodeBuffer(_MAX_PATH);
+    DWORD numChars = GetModuleFileNameW(0 /* Get current executable */, pCharBuf, _MAX_PATH);
+    tmp.CloseBuffer(numChars);
+
+    tmp.ConvertToUTF8(value);
+}
 
 #ifdef _DEBUG
 
@@ -306,23 +322,6 @@ HRESULT _OutOfMemory(LPCSTR szFile, int iLine)
 
 int _DbgBreakCount = 0;
 static const char * szLowMemoryAssertMessage = "Assert failure (unable to format)";
-
-static void GetExecutableFileNameUtf8(SString& value)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    SString tmp;
-    WCHAR * pCharBuf = tmp.OpenUnicodeBuffer(_MAX_PATH);
-    DWORD numChars = GetModuleFileNameW(0 /* Get current executable */, pCharBuf, _MAX_PATH);
-    tmp.CloseBuffer(numChars);
-
-    tmp.ConvertToUTF8(value);
-}
 
 //*****************************************************************************
 // This function will handle ignore codes and tell the user what is happening.
