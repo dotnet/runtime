@@ -31,6 +31,9 @@ namespace Microsoft.XmlSerializer.Generator.Tests
 
             const string CodeFile = "SerializableAssembly.XmlSerializers.cs";
             const string LKGCodeFile = "Expected.SerializableAssembly.XmlSerializers.cs";
+
+            File.WriteAllText(LKGCodeFile, LineEndingsHelper.Normalize(File.ReadAllText(LKGCodeFile)));
+
             var type = Type.GetType("Microsoft.XmlSerializer.Generator.Sgen, dotnet-Microsoft.XmlSerializer.Generator");
             MethodInfo md = type.GetMethod("Main", BindingFlags.Static | BindingFlags.Public);
             string[] args = new string[] { "SerializableAssembly.dll", "--force", "--quiet" };
