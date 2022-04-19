@@ -1014,12 +1014,12 @@ namespace System
 
             static unsafe bool IsNegativeZero(Half value)
             {
-                return (*(uint*)(&value)) == 0x80000000;
+                return (*(ushort*)(&value)) == 0x8000;
             }
 
             static unsafe bool IsPositiveZero(Half value)
             {
-                return (*(uint*)(&value)) == 0x00000000;
+                return (*(ushort*)(&value)) == 0x0000;
             }
 
             // We have a custom ToString here to ensure that edge cases (specifically +-0.0,
