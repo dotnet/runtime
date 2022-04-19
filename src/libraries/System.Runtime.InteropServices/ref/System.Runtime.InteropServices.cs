@@ -99,7 +99,7 @@ namespace System.Runtime.InteropServices
         public AllowReversePInvokeCallsAttribute() { }
     }
     [System.CLSCompliant(false)]
-    [System.Runtime.InteropServices.CustomTypeMarshaller(typeof(string), BufferSize = 0x100,
+    [System.Runtime.InteropServices.CustomTypeMarshallerAttribute(typeof(string), BufferSize = 0x100,
         Features = System.Runtime.InteropServices.CustomTypeMarshallerFeatures.UnmanagedResources
             | System.Runtime.InteropServices.CustomTypeMarshallerFeatures.CallerAllocatedBuffer
             | System.Runtime.InteropServices.CustomTypeMarshallerFeatures.TwoStageMarshalling )]
@@ -110,6 +110,27 @@ namespace System.Runtime.InteropServices
         public byte* ToNativeValue() { throw null; }
         public void FromNativeValue(byte* value) { }
         public string? ToManaged() { throw null; }
+        public void FreeNative() { }
+    }
+    [System.CLSCompliantAttribute(false)]
+    [System.Runtime.InteropServices.CustomTypeMarshallerAttribute(typeof(System.Runtime.InteropServices.CustomTypeMarshallerAttribute.GenericPlaceholder[]),
+        System.Runtime.InteropServices.CustomTypeMarshallerKind.LinearCollection, BufferSize = 0x200,
+        Features = System.Runtime.InteropServices.CustomTypeMarshallerFeatures.UnmanagedResources
+            | System.Runtime.InteropServices.CustomTypeMarshallerFeatures.CallerAllocatedBuffer
+            | System.Runtime.InteropServices.CustomTypeMarshallerFeatures.TwoStageMarshalling)]
+    public unsafe ref struct ArrayMarshaller<T>
+    {
+        public ArrayMarshaller(int sizeOfNativeElement) { }
+        public ArrayMarshaller(T[]? array, int sizeOfNativeElement) { }
+        public ArrayMarshaller(T[]? array, System.Span<byte> buffer, int sizeOfNativeElement) { }
+        public System.ReadOnlySpan<T> GetManagedValuesSource() { throw null; }
+        public System.Span<T> GetManagedValuesDestination(int length) { throw null; }
+        public System.ReadOnlySpan<byte> GetNativeValuesSource(int length) { throw null; }
+        public System.Span<byte> GetNativeValuesDestination() { throw null; }
+        public ref byte GetPinnableReference() { throw null; }
+        public byte* ToNativeValue() { throw null; }
+        public void FromNativeValue(byte* value) { }
+        public T[]? ToManaged() { throw null; }
         public void FreeNative() { }
     }
     public readonly partial struct ArrayWithOffset : System.IEquatable<System.Runtime.InteropServices.ArrayWithOffset>
@@ -1054,6 +1075,27 @@ namespace System.Runtime.InteropServices
     {
         public OptionalAttribute() { }
     }
+    [System.CLSCompliantAttribute(false)]
+    [System.Runtime.InteropServices.CustomTypeMarshallerAttribute(typeof(System.Runtime.InteropServices.CustomTypeMarshallerAttribute.GenericPlaceholder*[]),
+        System.Runtime.InteropServices.CustomTypeMarshallerKind.LinearCollection, BufferSize = 0x200,
+        Features = System.Runtime.InteropServices.CustomTypeMarshallerFeatures.UnmanagedResources
+            | System.Runtime.InteropServices.CustomTypeMarshallerFeatures.CallerAllocatedBuffer
+            | System.Runtime.InteropServices.CustomTypeMarshallerFeatures.TwoStageMarshalling)]
+    public unsafe ref struct PointerArrayMarshaller<T> where T : unmanaged
+    {
+        public PointerArrayMarshaller(int sizeOfNativeElement) { }
+        public PointerArrayMarshaller(T*[]? array, int sizeOfNativeElement) { }
+        public PointerArrayMarshaller(T*[]? array, System.Span<byte> buffer, int sizeOfNativeElement) { }
+        public System.ReadOnlySpan<IntPtr> GetManagedValuesSource() { throw null; }
+        public System.Span<IntPtr> GetManagedValuesDestination(int length) { throw null; }
+        public System.ReadOnlySpan<byte> GetNativeValuesSource(int length) { throw null; }
+        public System.Span<byte> GetNativeValuesDestination() { throw null; }
+        public ref byte GetPinnableReference() { throw null; }
+        public byte* ToNativeValue() { throw null; }
+        public void FromNativeValue(byte* value) { }
+        public T*[]? ToManaged() { throw null; }
+        public void FreeNative() { }
+    }
     public enum PosixSignal
     {
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("windows")]
@@ -1375,7 +1417,7 @@ namespace System.Runtime.InteropServices
         public string? EntryPoint;
     }
     [System.CLSCompliant(false)]
-    [System.Runtime.InteropServices.CustomTypeMarshaller(typeof(string), BufferSize = 0x100,
+    [System.Runtime.InteropServices.CustomTypeMarshallerAttribute(typeof(string), BufferSize = 0x100,
         Features = System.Runtime.InteropServices.CustomTypeMarshallerFeatures.UnmanagedResources
             | System.Runtime.InteropServices.CustomTypeMarshallerFeatures.CallerAllocatedBuffer
             | System.Runtime.InteropServices.CustomTypeMarshallerFeatures.TwoStageMarshalling )]
@@ -1389,7 +1431,7 @@ namespace System.Runtime.InteropServices
         public void FreeNative() { }
     }
     [System.CLSCompliant(false)]
-    [System.Runtime.InteropServices.CustomTypeMarshaller(typeof(string), BufferSize = 0x100,
+    [System.Runtime.InteropServices.CustomTypeMarshallerAttribute(typeof(string), BufferSize = 0x100,
         Features = System.Runtime.InteropServices.CustomTypeMarshallerFeatures.UnmanagedResources
             | System.Runtime.InteropServices.CustomTypeMarshallerFeatures.CallerAllocatedBuffer
             | System.Runtime.InteropServices.CustomTypeMarshallerFeatures.TwoStageMarshalling )]

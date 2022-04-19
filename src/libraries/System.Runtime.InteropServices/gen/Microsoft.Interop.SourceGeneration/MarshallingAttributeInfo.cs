@@ -798,11 +798,11 @@ namespace Microsoft.Interop
             INamedTypeSymbol? arrayMarshaller;
             if (elementType is IPointerTypeSymbol { PointedAtType: ITypeSymbol pointedAt })
             {
-                arrayMarshaller = _compilation.GetTypeByMetadataName(TypeNames.System_Runtime_InteropServices_GeneratedMarshalling_PtrArrayMarshaller_Metadata)?.Construct(pointedAt);
+                arrayMarshaller = _compilation.GetTypeByMetadataName(TypeNames.System_Runtime_InteropServices_PointerArrayMarshaller_Metadata)?.Construct(pointedAt);
             }
             else
             {
-                arrayMarshaller = _compilation.GetTypeByMetadataName(TypeNames.System_Runtime_InteropServices_GeneratedMarshalling_ArrayMarshaller_Metadata)?.Construct(elementType);
+                arrayMarshaller = _compilation.GetTypeByMetadataName(TypeNames.System_Runtime_InteropServices_ArrayMarshaller_Metadata)?.Construct(elementType);
             }
 
             if (arrayMarshaller is null)
