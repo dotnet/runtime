@@ -187,7 +187,15 @@ namespace System.Formats.Tar
                     return false;
                 }
 
-                timestamp = GetDateTimeFromSecondsSinceEpoch(longTime);
+                try
+                {
+                    timestamp = GetDateTimeFromSecondsSinceEpoch(longTime);
+                }
+                catch
+                {
+                    long calc = (long)(longTime * TimeSpan.TicksPerSecond) + DateTime.UnixEpoch.Ticks;
+                    throw new FormatException($"str: '{value}', double: '{longTime}', calc: '{calc}'");
+                }
             }
             return timestamp != default;
         }
