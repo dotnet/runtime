@@ -787,8 +787,16 @@ namespace ILLink.Shared.TrimAnalysis
 				break;
 
 			case IntrinsicId.None:
-				methodReturnValue = MultiValueLattice.Top;
-				return false;
+				// Verify the argument values match the annotations on the parameter definition
+				if (requiresDataFlowAnalysis) {
+					if (!calledMethod.IsStatic ()) {
+						_requireDynamicallyAccessedMembersAction.Invoke (instanceValue, GetMethodThisParameterValue (calledMethod));
+					}
+					for (int argumentIndex = 0; argumentIndex < argumentValues.Count; argumentIndex++) {
+						_requireDynamicallyAccessedMembersAction.Invoke (argumentValues[argumentIndex], GetMethodParameterValue (calledMethod, argumentIndex));
+					}
+				}
+				break;
 
 			// Disable warnings for all unimplemented intrinsics. Some intrinsic methods have annotations, but analyzing them
 			// would produce unnecessary warnings even for cases that are intrinsically handled. So we disable handling these calls
@@ -801,6 +809,9 @@ namespace ILLink.Shared.TrimAnalysis
 			// For now, if the intrinsic doesn't set a return value, fall back on the annotations.
 			// Note that this will be DynamicallyAccessedMembers.None for the intrinsics which don't return types.
 			returnValue ??= calledMethod.ReturnsVoid () ? MultiValueLattice.Top : GetMethodReturnValue (calledMethod, returnValueDynamicallyAccessedMemberTypes);
+
+			if (MethodIsTypeConstructor (calledMethod))
+				returnValue = UnknownValue.Instance;
 
 			// Validate that the return value has the correct annotations as per the method return value annotations
 			if (returnValueDynamicallyAccessedMemberTypes != 0) {
@@ -918,6 +929,11 @@ namespace ILLink.Shared.TrimAnalysis
 
 		private partial bool MethodRequiresDataFlowAnalysis (MethodProxy method);
 
+		/// <Summary>
+		/// Returns true if the method is a .ctor for System.Type or a type that derives from System.Type (i.e. fields and params of this type can have DynamicallyAccessedMembers annotations)
+		/// </Summary>
+		private partial bool MethodIsTypeConstructor (MethodProxy method);
+
 		private partial DynamicallyAccessedMemberTypes GetReturnValueAnnotation (MethodProxy method);
 
 		private partial MethodReturnValue GetMethodReturnValue (MethodProxy method, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes);
@@ -926,7 +942,14 @@ namespace ILLink.Shared.TrimAnalysis
 
 		private partial MethodThisParameterValue GetMethodThisParameterValue (MethodProxy method, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes);
 
+		private partial MethodThisParameterValue GetMethodThisParameterValue (MethodProxy method);
+
+		private partial DynamicallyAccessedMemberTypes GetMethodParameterAnnotation (MethodProxy method, int parameterIndex);
+
 		private partial MethodParameterValue GetMethodParameterValue (MethodProxy method, int parameterIndex, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes);
+
+		private MethodParameterValue GetMethodParameterValue (MethodProxy method, int parameterIndex)
+			=> GetMethodParameterValue (method, parameterIndex, GetMethodParameterAnnotation (method, parameterIndex)!);
 
 		private partial IEnumerable<SystemReflectionMethodBaseValue> GetMethodsOnTypeHierarchy (TypeProxy type, string name, BindingFlags? bindingFlags);
 

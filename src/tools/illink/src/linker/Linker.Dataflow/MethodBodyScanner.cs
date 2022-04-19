@@ -537,7 +537,7 @@ namespace Mono.Linker.Dataflow
 						// Pop function pointer
 						PopUnknown (currentStack, 1, methodBody, operation.Offset);
 
-						if (GetReturnTypeWithoutModifiers (signature.ReturnType).MetadataType != MetadataType.Void)
+						if (!signature.ReturnsVoid ())
 							PushUnknown (currentStack);
 					}
 					break;
@@ -573,7 +573,7 @@ namespace Mono.Linker.Dataflow
 
 				case Code.Ret: {
 
-						bool hasReturnValue = GetReturnTypeWithoutModifiers (methodBody.Method.ReturnType).MetadataType != MetadataType.Void;
+						bool hasReturnValue = !methodBody.Method.ReturnsVoid ();
 
 						if (currentStack.Count != (hasReturnValue ? 1 : 0)) {
 							WarnAboutInvalidILInMethod (methodBody, operation.Offset);
@@ -917,13 +917,13 @@ namespace Mono.Linker.Dataflow
 					else
 						methodReturnValue = newObjValue;
 				} else {
-					if (GetReturnTypeWithoutModifiers (calledMethod.ReturnType).MetadataType != MetadataType.Void) {
+					if (!calledMethod.ReturnsVoid ()) {
 						methodReturnValue = UnknownValue.Instance;
 					}
 				}
 			}
 
-			if (isNewObj || GetReturnTypeWithoutModifiers (calledMethod.ReturnType).MetadataType != MetadataType.Void)
+			if (isNewObj || !calledMethod.ReturnsVoid ())
 				currentStack.Push (new StackSlot (methodReturnValue, calledMethod.ReturnType.IsByRefOrPointer ()));
 
 			foreach (var param in methodParams) {
@@ -933,14 +933,6 @@ namespace Mono.Linker.Dataflow
 					}
 				}
 			}
-		}
-
-		protected static TypeReference GetReturnTypeWithoutModifiers (TypeReference returnType)
-		{
-			while (returnType is IModifierType) {
-				returnType = ((IModifierType) returnType).ElementType;
-			}
-			return returnType;
 		}
 
 		// Array types that are dynamically accessed should resolve to System.Array instead of its element type - which is what Cecil resolves to.
