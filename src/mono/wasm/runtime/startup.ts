@@ -467,7 +467,8 @@ async function mono_download_assets(config: MonoConfig | MonoConfigError | undef
                 });
             }
 
-            Module.addRunDependency(asset.name);
+            let moduleDependencyId = asset.name + (asset.culture || "");
+            Module.addRunDependency(moduleDependencyId);
 
             const sourcesList = asset.load_remote ? config.remote_sources! : [""];
             let error = undefined;
@@ -538,7 +539,7 @@ async function mono_download_assets(config: MonoConfig | MonoConfigError | undef
                 if (!isOkToFail)
                     throw error;
             }
-            Module.removeRunDependency(asset.name);
+            Module.removeRunDependency(moduleDependencyId);
 
             return result;
         };
