@@ -4,7 +4,7 @@
 using System.Globalization;
 using System.Numerics;
 
-namespace System.Tests
+namespace System
 {
     public static class AdditionOperatorsHelper<TSelf, TOther, TResult>
         where TSelf : IAdditionOperators<TSelf, TOther, TResult>
