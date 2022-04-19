@@ -158,14 +158,14 @@ namespace System.Linq
                 value = span[0];
                 for (int i = 1; (uint)i < (uint)span.Length; i++)
                 {
-                    T f = span[i];
-                    if (f < value)
+                    T current = span[i];
+                    if (current < value)
                     {
-                        value = f;
+                        value = current;
                     }
-                    else if (T.IsNaN(f))
+                    else if (T.IsNaN(current))
                     {
-                        return f;
+                        return current;
                     }
                 }
 
