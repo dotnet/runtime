@@ -18,6 +18,15 @@ namespace Microsoft.Extensions.Hosting
         public TimeSpan ShutdownTimeout { get; set; } = TimeSpan.FromSeconds(30);
 
         /// <summary>
+        /// The behavior the <see cref="IHost"/> will follow when stopping registered instances of <see cref="IHostedService"/>
+        /// </summary>
+        /// <remarks>
+        /// Defaults to <see cref="BackgroundServiceStopBehavior.Asynchronous"/>
+        /// </remarks>
+        public BackgroundServiceStopBehavior BackgroundServiceStopBehavior { get; set; } =
+            BackgroundServiceStopBehavior.Asynchronous;
+
+        /// <summary>
         /// The behavior the <see cref="IHost"/> will follow when any of
         /// its <see cref="BackgroundService"/> instances throw an unhandled exception.
         /// </summary>

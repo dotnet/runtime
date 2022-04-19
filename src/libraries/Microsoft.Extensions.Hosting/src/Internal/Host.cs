@@ -123,11 +123,33 @@ namespace Microsoft.Extensions.Hosting.Internal
                 IList<Exception> exceptions = new List<Exception>();
                 if (_hostedServices != null) // Started?
                 {
+                    Queue<Task> tasks = new Queue<Task>();
                     foreach (IHostedService hostedService in _hostedServices.Reverse())
+                    {
+                        switch (_options.BackgroundServiceStopBehavior)
+                        {
+                            case BackgroundServiceStopBehavior.Sequential:
+                                try
+                                {
+                                    await hostedService.StopAsync(token).ConfigureAwait(false);
+                                }
+                                catch (Exception ex)
+                                {
+                                    exceptions.Add(ex);
+                                }
+                                break;
+                            case BackgroundServiceStopBehavior.Asynchronous:
+                            default:
+                                tasks.Enqueue(hostedService.StopAsync(token));
+                                break;
+                        }
+                    }
+
+                    foreach (Task task in tasks)
                     {
                         try
                         {
-                            await hostedService.StopAsync(token).ConfigureAwait(false);
+                            await task.ConfigureAwait(false);
                         }
                         catch (Exception ex)
                         {
