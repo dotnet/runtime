@@ -8,7 +8,6 @@ using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Runtime.InteropServices;
 
-
 namespace System.Net
 {
     internal static partial class CertificateValidationPal
@@ -24,7 +23,6 @@ namespace System.Net
 
         internal static X509Certificate2? GetRemoteCertificate(SafeDeleteContext securityContext, ref X509Chain? chain) =>
             GetRemoteCertificate(securityContext, retrieveChainCertificates: true, ref chain);
-
 
         static partial void CheckSupportsStore(StoreLocation storeLocation, ref bool hasSupport);
 

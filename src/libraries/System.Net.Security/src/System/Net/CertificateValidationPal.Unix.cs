@@ -47,10 +47,7 @@ namespace System.Net
 
                 if (retrieveChainCertificates)
                 {
-                    if (chain == null)
-                    {
-                        chain = new X509Chain();
-                    }
+                    chain ??= new X509Chain();
 
                     using (SafeSharedX509StackHandle chainStack =
                         Interop.OpenSsl.GetPeerCertificateChain(((SafeDeleteSslContext)securityContext).SslContext))

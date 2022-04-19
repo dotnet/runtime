@@ -44,8 +44,6 @@ namespace System.Net
                     last = next;
                 }
             }
-
-            return;
         }
     }
 }

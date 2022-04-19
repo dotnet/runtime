@@ -64,11 +64,7 @@ namespace System.Net
             }
             else
             {
-                if (chain == null)
-                {
-                    chain = new X509Chain();
-                }
-
+                chain ??= new X509Chain();
                 IntPtr[]? ptrs = Interop.AndroidCrypto.SSLStreamGetPeerCertificates(sslContext);
                 if (ptrs != null && ptrs.Length > 0)
                 {

@@ -66,10 +66,7 @@ namespace System.Net
                 {
                     if (retrieveChainCertificates)
                     {
-                        if (chain == null)
-                        {
-                            chain = new X509Chain();
-                        }
+                        chain ??= new X509Chain();
 
                         UnmanagedCertificateContext.GetRemoteCertificatesFromStoreContext(remoteContext, chain.ChainPolicy.ExtraStore);
                     }
