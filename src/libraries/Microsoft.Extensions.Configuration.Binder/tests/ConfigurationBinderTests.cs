@@ -251,7 +251,7 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
         {
             public void Bar(string s1, string s2)
             {
-                ArgumentNullException.ThrowIfNull(s1, s2);
+                ArgumentNullException.ThrowIfNull(s1, (object?)s2); // sadly, have to cast to force the correct overload.
             }
         }
         
@@ -260,7 +260,11 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
         {
             var ex = Assert.Throws<ArgumentNullException>(
                 () => new Foo().Bar(null, null));
-            Assert.Equal("aaa", ex.Message);
+            Assert.Equal("Value cannot be null. (Parameter 's1')", ex.Message);
+
+            ex = Assert.Throws<ArgumentNullException>(
+                () => new Foo().Bar("aaa", null));
+            Assert.Equal("Value cannot be null. (Parameter 's2')", ex.Message); // fails, actual error message is: Value cannot be null. (Parameter '(object?)s2')
         }
 #endif
 
