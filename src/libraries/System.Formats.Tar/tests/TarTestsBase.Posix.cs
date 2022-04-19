@@ -27,11 +27,13 @@ namespace System.Formats.Tar.Tests
             // DeviceMajor
             Assert.Equal(DefaultDeviceMajor, device.DeviceMajor);
             Assert.Throws<ArgumentOutOfRangeException>(() => device.DeviceMajor = -1);
+            Assert.Throws<ArgumentOutOfRangeException>(() => device.DeviceMajor = 2097152);
             device.DeviceMajor = TestBlockDeviceMajor;
 
             // DeviceMinor
             Assert.Equal(DefaultDeviceMinor, device.DeviceMinor);
             Assert.Throws<ArgumentOutOfRangeException>(() => device.DeviceMinor = -1);
+            Assert.Throws<ArgumentOutOfRangeException>(() => device.DeviceMinor = 2097152);
             device.DeviceMinor = TestBlockDeviceMinor;
         }
 
@@ -45,11 +47,13 @@ namespace System.Formats.Tar.Tests
             // DeviceMajor
             Assert.Equal(DefaultDeviceMajor, device.DeviceMajor);
             Assert.Throws<ArgumentOutOfRangeException>(() => device.DeviceMajor = -1);
+            Assert.Throws<ArgumentOutOfRangeException>(() => device.DeviceMajor = 2097152);
             device.DeviceMajor = TestCharacterDeviceMajor;
 
             // DeviceMinor
             Assert.Equal(DefaultDeviceMinor, device.DeviceMinor);
             Assert.Throws<ArgumentOutOfRangeException>(() => device.DeviceMinor = -1);
+            Assert.Throws<ArgumentOutOfRangeException>(() => device.DeviceMinor = 2097152);
             device.DeviceMinor = TestCharacterDeviceMinor;
         }
 

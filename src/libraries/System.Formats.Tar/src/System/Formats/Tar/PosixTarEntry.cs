@@ -27,7 +27,7 @@ namespace System.Formats.Tar
         /// </summary>
         /// <remarks>Character and block devices are Unix-specific entry types.</remarks>
         /// <exception cref="InvalidOperationException">The entry does not represent a block device or a character device.</exception>
-        /// <exception cref="ArgumentOutOfRangeException">Cannot set a negative value.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">The value is negative, or larger than 2097151.</exception>
         public int DeviceMajor
         {
             get => _header._devMajor;
@@ -38,7 +38,7 @@ namespace System.Formats.Tar
                     throw new InvalidOperationException(SR.TarEntryBlockOrCharacterExpected);
                 }
 
-                if (value < 0 || value > 99_999_999)
+                if (value < 0 || value > 2097151) // 7777777 in octal
                 {
                     throw new ArgumentOutOfRangeException(nameof(value));
                 }
@@ -51,7 +51,7 @@ namespace System.Formats.Tar
         /// </summary>
         /// <remarks>Character and block devices are Unix-specific entry types.</remarks>
         /// <exception cref="InvalidOperationException">The entry does not represent a block device or a character device.</exception>
-        /// <exception cref="ArgumentOutOfRangeException">Cannot set a negative value.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">The value is negative, or larger than 2097151.</exception>
         public int DeviceMinor
         {
             get => _header._devMinor;
@@ -61,7 +61,7 @@ namespace System.Formats.Tar
                 {
                     throw new InvalidOperationException(SR.TarEntryBlockOrCharacterExpected);
                 }
-                if (value < 0 || value > 99_999_999)
+                if (value < 0 || value > 2097151) // 7777777 in octal
                 {
                     throw new ArgumentOutOfRangeException(nameof(value));
                 }
