@@ -4,7 +4,6 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -260,6 +259,15 @@ namespace Microsoft.Extensions.Configuration
         }
 
         [RequiresUnreferencedCode("Cannot statically analyze what the element type is of the object collection in type so its members may be trimmed.")]
+        private static object BindToSet(Type type, IConfiguration config, BinderOptions options)
+        {
+            Type genericType = typeof(HashSet<>).MakeGenericType(type.GenericTypeArguments[0]);
+            object instance = Activator.CreateInstance(genericType)!;
+            BindCollection(instance, genericType, config, options);
+            return instance;
+        }
+
+        [RequiresUnreferencedCode("Cannot statically analyze what the element type is of the object collection in type so its members may be trimmed.")]
         private static object BindToCollection(Type type, IConfiguration config, BinderOptions options)
         {
             Type genericType = typeof(List<>).MakeGenericType(type.GenericTypeArguments[0]);
@@ -312,6 +320,13 @@ namespace Microsoft.Extensions.Configuration
             {
                 // ISet<T> is guaranteed to have exactly one parameter
                 return BindToSet(type, config, options);
+            }
+
+            collectionInterface = FindOpenGenericInterface(typeof(IReadOnlyCollection<>), type);
+            if (collectionInterface != null)
+            {
+                // IReadOnlyCollection<T> is guaranteed to have exactly one parameter
+                return BindToCollection(type, config, options);
             }
 
             collectionInterface = FindOpenGenericInterface(typeof(ICollection<>), type);
@@ -619,11 +634,7 @@ namespace Microsoft.Extensions.Configuration
             else // e. g. IEnumerable<T>
             {
                 elementType = type.GetGenericArguments()[0];
-
-                if ((type = sourceType.GetInterface("IReadOnlySet`1", false)) != null)
-                {
-                    return (typeof(HashSet<>), type.GenericTypeArguments[0]);
-                }
+            }
 
             IList list = new List<object?>();
 
