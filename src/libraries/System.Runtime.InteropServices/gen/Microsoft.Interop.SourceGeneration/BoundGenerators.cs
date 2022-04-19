@@ -101,10 +101,16 @@ namespace Microsoft.Interop
 
             static int GetInfoIndex(TypePositionInfo info)
             {
+                // A TypePositionInfo needs to have either a managed or native index.
+                // We use negative values of the native index to distinguish them from the managed index.
                 if (info.ManagedIndex == TypePositionInfo.UnsetIndex)
                 {
-                    // A TypePositionInfo needs to have either a managed or native index.
-                    // We use negative values of the native index to distinguish them from the managed index.
+                    if (info.NativeIndex == 0)
+                    {
+                        // If we don't have a managed index and the native index is zero, use ReturnIndex + 1 as our
+                        // index to avoid conflict with managed parameter 0.
+                        return TypePositionInfo.ReturnIndex + 1;
+                    }
                     return -info.NativeIndex;
                 }
                 return info.ManagedIndex;

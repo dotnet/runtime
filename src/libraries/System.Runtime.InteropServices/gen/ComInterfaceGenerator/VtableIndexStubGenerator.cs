@@ -103,16 +103,17 @@ namespace Microsoft.Interop
                 )
                 .WithTrackingName(StepNames.CalculateStubInformation);
 
-            IncrementalValuesProvider<(MemberDeclarationSyntax, ImmutableArray<Diagnostic>)> generateSingleStub = generateStubInformation
+            IncrementalValuesProvider<(MemberDeclarationSyntax, ImmutableArray<Diagnostic>)> generateManagedToNativeStub = generateStubInformation
+                .Where(data => data.VtableIndexData.Direction.HasFlag(CustomTypeMarshallerDirection.In))
                 .Select(
                     static (data, ct) => GenerateManagedToNativeStub(data)
                 )
                 .WithComparer(Comparers.GeneratedSyntax)
                 .WithTrackingName(StepNames.GenerateManagedToNativeStub);
 
-            context.RegisterDiagnostics(generateSingleStub.SelectMany((stubInfo, ct) => stubInfo.Item2));
+            context.RegisterDiagnostics(generateManagedToNativeStub.SelectMany((stubInfo, ct) => stubInfo.Item2));
 
-            context.RegisterConcatenatedSyntaxOutputs(generateSingleStub.Select((data, ct) => data.Item1), "ManagedToNativeStubs.g.cs");
+            context.RegisterConcatenatedSyntaxOutputs(generateManagedToNativeStub.Select((data, ct) => data.Item1), "ManagedToNativeStubs.g.cs");
 
             IncrementalValuesProvider<MemberDeclarationSyntax> generateNativeInterface = generateStubInformation
                 .Select(static (context, ct) => context.ContainingSyntaxContext)

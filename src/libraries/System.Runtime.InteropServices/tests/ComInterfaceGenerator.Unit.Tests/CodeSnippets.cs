@@ -85,5 +85,90 @@ sealed class NativeAPI : IUnmanagedVirtualMethodTableProvider<NoCasting>, INativ
 }
 ";
 
+        public static string BasicParametersAndModifiers(string typeName) => $@"
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+
+[assembly:DisableRuntimeMarshalling]
+
+readonly record struct NoCasting {{}}
+partial interface INativeAPI
+{{
+    public static readonly NoCasting TypeKey = default;
+    [VirtualMethodIndex(0)]
+    {typeName} Method({typeName} value, in {typeName} inValue, ref {typeName} refValue, out {typeName} outValue);
+}}
+
+// Try using the generated native interface
+sealed class NativeAPI : IUnmanagedVirtualMethodTableProvider<NoCasting>, INativeAPI.Native
+{{
+    public VirtualMethodTableInfo GetFunctionPointerForIndex(NoCasting typeKey) => throw null;
+}}
+";
+
+        public static string BasicParametersAndModifiers<T>() => BasicParametersAndModifiers(typeof(T).FullName!);
+
+        public const string CustomTypeMarshallingTestsTypeName = "S";
+
+        public static string SimpleCustomTypeMarshallingDeclaration = $@"
+[NativeMarshalling(typeof(Marshaller))]
+struct {CustomTypeMarshallingTestsTypeName} {{}}
+
+[CustomTypeMarshaller(typeof({CustomTypeMarshallingTestsTypeName}))]
+struct Marshaller
+{{
+    public Marshaller({CustomTypeMarshallingTestsTypeName} managed) {{}}
+
+    public {CustomTypeMarshallingTestsTypeName} ToManaged() => throw null;
+}}
+";
+
+        public static string TwoStageCustomTypeMarshallingDeclaration = $@"
+[NativeMarshalling(typeof(Marshaller))]
+struct {CustomTypeMarshallingTestsTypeName} {{}}
+
+[CustomTypeMarshaller(typeof({CustomTypeMarshallingTestsTypeName}), Features = CustomTypeMarshallerFeatures.TwoStageMarshalling)]
+struct Marshaller
+{{
+    public Marshaller({CustomTypeMarshallingTestsTypeName} managed) {{}}
+
+    public {CustomTypeMarshallingTestsTypeName} ToManaged() => throw null;
+
+    public int ToNativeValue() => throw null;
+
+    public void FromNativeValue(int i) => throw null;
+}}
+";
+
+        public static string OptionalCallerAllocatedBufferMarshallingDeclaration = $@"
+[NativeMarshalling(typeof(Marshaller))]
+struct {CustomTypeMarshallingTestsTypeName}
+{{
+}}
+
+[CustomTypeMarshaller(typeof({CustomTypeMarshallingTestsTypeName}), Features = CustomTypeMarshallerFeatures.CallerAllocatedBuffer, BufferSize = 1)]
+struct Marshaller
+{{
+    public Marshaller({CustomTypeMarshallingTestsTypeName} s, System.Span<byte> b) {{}}
+    public Marshaller({CustomTypeMarshallingTestsTypeName} managed) {{}}
+
+    public {CustomTypeMarshallingTestsTypeName} ToManaged() => throw null;
+}}
+";
+
+        public static string UnmanagedResourcesCustomTypeMarshallingDeclaration = $@"
+[NativeMarshalling(typeof(Marshaller))]
+struct {CustomTypeMarshallingTestsTypeName} {{}}
+
+[CustomTypeMarshaller(typeof({CustomTypeMarshallingTestsTypeName}), Features = CustomTypeMarshallerFeatures.UnmanagedResources)]
+struct Marshaller
+{{
+    public Marshaller({CustomTypeMarshallingTestsTypeName} managed) {{}}
+
+    public {CustomTypeMarshallingTestsTypeName} ToManaged() => throw null;
+
+    public void FreeNative() {{}}
+}}
+";
     }
 }
