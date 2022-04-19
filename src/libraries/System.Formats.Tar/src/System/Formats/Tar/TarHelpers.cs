@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
+using System.Globalization;
 using System.IO;
 using System.Text;
 
@@ -182,7 +183,7 @@ namespace System.Formats.Tar
             timestamp = default;
             if (!string.IsNullOrEmpty(value))
             {
-                if (!double.TryParse(value, out double longTime))
+                if (!double.TryParse(value, NumberStyles.Any, CultureInfo.InvariantCulture, out double longTime))
                 {
                     return false;
                 }
