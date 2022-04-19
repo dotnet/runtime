@@ -1118,7 +1118,9 @@ namespace System.Tests
             // https://github.com/dotnet/runtime/issues/67993
             // yield return new object[] { (Half)(-0.0f), (Half)0.0f, (Half)0.0f };
 
-            yield return new object[] { (Half)0.0f, (Half)(-0.0f), (Half)0.0f };
+            // https://github.com/dotnet/runtime/issues/67993
+            // yield return new object[] { (Half)0.0f, (Half)(-0.0f), (Half)0.0f };
+
             yield return new object[] { (Half)2.0f, (Half)(-3.0f), (Half)(-3.0f) };
             yield return new object[] { (Half)(-3.0f), (Half)2.0f, (Half)(-3.0f) };
             yield return new object[] { (Half)3.0f, (Half)(-2.0f), (Half)3.0f };
@@ -1149,7 +1151,9 @@ namespace System.Tests
             // https://github.com/dotnet/runtime/issues/67993
             // yield return new object[] { (Half)(-0.0f), (Half)0.0f, (Half)0.0f };
 
-            yield return new object[] { (Half)0.0f, (Half)(-0.0f), (Half)0.0f };
+            // https://github.com/dotnet/runtime/issues/67993
+            // yield return new object[] { (Half)0.0f, (Half)(-0.0f), (Half)0.0f };
+
             yield return new object[] { (Half)2.0f, (Half)(-3.0f), (Half)2.0f };
             yield return new object[] { (Half)(-3.0f), (Half)2.0f, (Half)2.0f };
             yield return new object[] { (Half)3.0f, (Half)(-2.0f), (Half)3.0f };
@@ -1180,7 +1184,9 @@ namespace System.Tests
             // https://github.com/dotnet/runtime/issues/67993
             // yield return new object[] { (Half)(-0.0f), (Half)0.0f, (Half)(-0.0f) };
 
-            yield return new object[] { (Half)0.0f, (Half)(-0.0f), (Half)(-0.0f) };
+            // https://github.com/dotnet/runtime/issues/67993
+            // yield return new object[] { (Half)0.0f, (Half)(-0.0f), (Half)(-0.0f) };
+
             yield return new object[] { (Half)2.0f, (Half)(-3.0f), (Half)2.0f };
             yield return new object[] { (Half)(-3.0f), (Half)2.0f, (Half)2.0f };
             yield return new object[] { (Half)3.0f, (Half)(-2.0f), (Half)(-2.0f) };
@@ -1211,7 +1217,9 @@ namespace System.Tests
             // https://github.com/dotnet/runtime/issues/67993
             // yield return new object[] { (Half)(-0.0f), (Half)0.0f, (Half)(-0.0f) };
 
-            yield return new object[] { (Half)0.0f, (Half)(-0.0f), (Half)(-0.0f) };
+            // https://github.com/dotnet/runtime/issues/67993
+            // yield return new object[] { (Half)0.0f, (Half)(-0.0f), (Half)(-0.0f) };
+
             yield return new object[] { (Half)2.0f, (Half)(-3.0f), (Half)(-3.0f) };
             yield return new object[] { (Half)(-3.0f), (Half)2.0f, (Half)(-3.0f) };
             yield return new object[] { (Half)3.0f, (Half)(-2.0f), (Half)(-2.0f) };

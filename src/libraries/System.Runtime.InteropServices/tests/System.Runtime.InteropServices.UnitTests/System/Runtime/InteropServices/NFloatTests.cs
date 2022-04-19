@@ -1075,7 +1075,7 @@ namespace System.Runtime.InteropServices.Tests
         [InlineData(-3.0, 2.0, 2.0)]
         [InlineData(3.0, -2.0, -2.0)]
         [InlineData(-2.0, 3.0, -2.0)]
-        public static void MinMagnitudeNumberTest(double x, double y, double expectedResult)
+        public static void MinMagnitudeNumberTest64(double x, double y, double expectedResult)
         {
             AssertExtensions.Equal(expectedResult, NFloat.MinMagnitudeNumber((NFloat)x, (NFloat)y), 0.0);
         }
@@ -1098,7 +1098,7 @@ namespace System.Runtime.InteropServices.Tests
         [InlineData(-3.0, 2.0, -3.0)]
         [InlineData(3.0, -2.0, -2.0)]
         [InlineData(-2.0, 3.0, -2.0)]
-        public static void MinNumberTest(double x, double y, double expectedResult)
+        public static void MinNumberTest64(double x, double y, double expectedResult)
         {
             AssertExtensions.Equal(expectedResult, NFloat.MinNumber((NFloat)x, (NFloat)y), 0.0);
         }
