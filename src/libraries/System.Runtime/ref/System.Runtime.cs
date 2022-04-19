@@ -287,6 +287,7 @@ namespace System
         public ArgumentNullException(string? message, System.Exception? innerException) { }
         public ArgumentNullException(string? paramName, string? message) { }
         public static void ThrowIfNull([System.Diagnostics.CodeAnalysis.NotNullAttribute] object? argument, [System.Runtime.CompilerServices.CallerArgumentExpressionAttribute("argument")] string? paramName = null) { throw null; }
+        public static void ThrowIfNull(            [System.Diagnostics.CodeAnalysis.NotNullAttribute] object? argument1, [System.Diagnostics.CodeAnalysis.NotNullAttribute] object? argument2, [System.Runtime.CompilerServices.CallerArgumentExpressionAttribute("argument1")] string? paramName1 = null, [System.Runtime.CompilerServices.CallerArgumentExpressionAttribute("argument2")] string? paramName2 = null) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public unsafe static void ThrowIfNull([System.Diagnostics.CodeAnalysis.NotNullAttribute] void* argument, [System.Runtime.CompilerServices.CallerArgumentExpressionAttribute("argument")] string? paramName = null) { throw null; }
     }
