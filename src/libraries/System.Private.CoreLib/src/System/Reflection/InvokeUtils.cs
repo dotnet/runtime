@@ -16,7 +16,7 @@ namespace System.Reflection
 
             if (dstType.IsPointer)
             {
-                if (TryConvertPointer(srcObject, srcElementType, dstElementType, out IntPtr dstIntPtr))
+                if (TryConvertPointer(srcObject, out IntPtr dstIntPtr))
                 {
                     return dstIntPtr;
                 }
@@ -109,7 +109,7 @@ namespace System.Reflection
             return dstObject;
         }
 
-        private static bool TryConvertPointer(object srcObject, CorElementType srcEEType, CorElementType dstEEType, out IntPtr dstIntPtr)
+        private static bool TryConvertPointer(object srcObject, out IntPtr dstIntPtr)
         {
             if (srcObject is IntPtr srcIntPtr)
             {

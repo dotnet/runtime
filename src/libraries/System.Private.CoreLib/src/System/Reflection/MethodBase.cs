@@ -163,7 +163,7 @@ namespace System.Reflection
 
                 if (arg is null)
                 {
-                    // Fast path that avoids calling CheckValue() for reference types.
+                    // A fast path that avoids calling CheckValue() for null reference types.
                     isValueType = RuntimeTypeHandle.IsValueType(sigType);
                     if (isValueType || RuntimeTypeHandle.IsByRef(sigType))
                     {
@@ -185,6 +185,7 @@ namespace System.Reflection
                     }
                     else
                     {
+                        // Convert Type.Missing to the default value.
                         if (paramInfo.DefaultValue == DBNull.Value)
                         {
                             throw new ArgumentException(SR.Arg_VarMissNull, nameof(parameters));

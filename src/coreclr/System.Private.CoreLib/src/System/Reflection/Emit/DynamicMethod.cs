@@ -510,7 +510,7 @@ namespace System.Reflection.Emit
                     {
                         if (shouldCopyBackParameters[i])
                         {
-                            parameters[i] = copyOfParameters[i];
+                            parameters[i] = RuntimeMethodHandle.ReboxFromNullable(copyOfParameters[i]);
                         }
                     }
                 }
@@ -570,7 +570,7 @@ namespace System.Reflection.Emit
             {
                 if (shouldCopyBackParameters[i])
                 {
-                    parameters[i] = copyOfParameters[i];
+                    parameters[i] = RuntimeMethodHandle.ReboxFromNullable(copyOfParameters[i]);
                 }
             }
 

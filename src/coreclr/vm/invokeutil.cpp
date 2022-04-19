@@ -180,20 +180,8 @@ void InvokeUtil::CopyArg(TypeHandle th, PVOID argRef, ArgDestination *argDest) {
 
     case ELEMENT_TYPE_VALUETYPE:
     {
-        if (Nullable::IsNullableType(th))
-        {
-            // ASSUMPTION: we only receive T or NULL values, not Nullable<T> values
-            // and the values are boxed, unlike other value types.
-            MethodTable* pMT = th.AsMethodTable();
-            OBJECTREF src = (OBJECTREF)(Object*)*(PVOID*)argRef;
-            if (!pMT->UnBoxIntoArg(argDest, src))
-                COMPlusThrow(kArgumentException, W("Arg_ObjObj"));
-        }
-        else
-        {
-            MethodTable* pMT = th.GetMethodTable();
-            CopyValueClassArg(argDest, argRef, pMT, 0);
-        }
+        MethodTable* pMT = th.GetMethodTable();
+        CopyValueClassArg(argDest, argRef, pMT, 0);
         break;
     }
 
@@ -213,10 +201,6 @@ void InvokeUtil::CopyArg(TypeHandle th, PVOID argRef, ArgDestination *argDest) {
 
     case ELEMENT_TYPE_BYREF:
     {
-        // We should never get here for nullable types.  Instead invoke
-        // heads these off and morphs the type handle to not be byref anymore
-        _ASSERTE(!Nullable::IsNullableType(th.AsTypeDesc()->GetTypeParam()));
-
         *(PVOID *)pArgDst = argRef;
         break;
     }
@@ -1076,8 +1060,8 @@ OBJECTREF InvokeUtil::GetFieldValue(FieldDesc* pField, TypeHandle fieldType, OBJ
             CopyValueClass(obj->GetData(), p, fieldType.AsMethodTable());
         }
 
-            // If it is a Nullable<T>, box it using Nullable<T> conventions.
-            // TODO: this double allocates on constructions which is wastefull
+        // If it is a Nullable<T>, box it using Nullable<T> conventions.
+        // TODO: this double allocates on constructions which is wastefull
         obj = Nullable::NormalizeBox(obj);
         break;
     }
@@ -1115,5 +1099,3 @@ OBJECTREF InvokeUtil::GetFieldValue(FieldDesc* pField, TypeHandle fieldType, OBJ
 
     return obj;
 }
-
-

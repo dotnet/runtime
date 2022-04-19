@@ -39,7 +39,8 @@ namespace System.Reflection
                     _methodInfo.DeclaringType != typeof(Type) // Avoid stack crawl issue with GetType().
                     )
                 {
-                    _emitInvoke = InvokerEmitUtil.CreateInvokeDelegate<MethodInvoker>(_methodInfo);
+                    // For testing slow path, disable Emit for now
+                    //_emitInvoke = InvokerEmitUtil.CreateInvokeDelegate<MethodInvoker>(_methodInfo);
                 }
 
                 _strategyDetermined = true;

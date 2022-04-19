@@ -162,7 +162,7 @@ namespace System.Reflection
                     {
                         if (shouldCopyBackParameters[i])
                         {
-                            parameters[i] = copyOfParameters[i];
+                            parameters[i] = RuntimeMethodHandle.ReboxFromNullable(copyOfParameters[i]);
                         }
                     }
                 }
@@ -222,7 +222,7 @@ namespace System.Reflection
             {
                 if (shouldCopyBackParameters[i])
                 {
-                    parameters[i] = copyOfParameters[i];
+                    parameters[i] = RuntimeMethodHandle.ReboxFromNullable(copyOfParameters[i]);
                 }
             }
         }
@@ -285,7 +285,7 @@ namespace System.Reflection
                     {
                         if (shouldCopyBackParameters[i])
                         {
-                            parameters[i] = copyOfParameters[i];
+                            parameters[i] = RuntimeMethodHandle.ReboxFromNullable(copyOfParameters[i]);
                         }
                     }
                 }
@@ -348,7 +348,7 @@ namespace System.Reflection
             {
                 if (shouldCopyBackParameters[i])
                 {
-                    parameters[i] = copyOfParameters[i];
+                    parameters[i] = RuntimeMethodHandle.ReboxFromNullable(copyOfParameters[i]);
                 }
             }
 
