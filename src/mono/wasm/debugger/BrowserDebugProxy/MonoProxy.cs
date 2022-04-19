@@ -761,7 +761,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         Result resScope = await GetScopeProperties(id, objectId.Value, token);
                         return resScope.IsOk
                             ? ValueOrError<GetMembersResult>.WithValue(
-                                new GetMembersResult((JArray)resScope.Value?["result"], IsFlattened: false))
+                                new GetMembersResult((JArray)resScope.Value?["result"], sortByAccessLevel: false))
                             : ValueOrError<GetMembersResult>.WithError(resScope);
                     case "valuetype":
                         var valType = context.SdbAgent.GetValueTypeClass(objectId.Value);

@@ -90,47 +90,39 @@ namespace BrowserDebugProxy
         private static async Task<JArray> GetRootHiddenChildren(MonoSDBHelper sdbHelper, JObject root, string rootNamePrefix, GetObjectCommandOptions getCommandOptions, CancellationToken token)
         {
             if (root?["value"]?["type"]?.Value<string>() != "object")
-            {
-                //Console.WriteLine ($"GetRootHiddenChildren: not an object: {root} - name: {rootNamePrefix}");
                 return new JArray();
-            }
 
             if (root?["value"]?["type"]?.Value<string>() == "object" && root?["value"]?["subtype"]?.Value<string>() == "null")
-            {
-                // FIXME: test for this
-                //Console.WriteLine ($"GetRootHiddenChildren: null root named {rootNamePrefix}: {root}");
                 return new JArray();
-            }
 
             if (!DotnetObjectId.TryParse(root?["value"]?["objectId"]?.Value<string>(), out DotnetObjectId rootObjectId))
-            {
                 throw new Exception($"Cannot parse object id from {root} for {rootNamePrefix}");
-                // return null;
-            }
 
-            // collections require extracting items to get inner values; items are of array type
-            // arrays have "subtype": "array" field, collections don't
-            // var subtype = root?["value"]?["subtype"];
-            //var rootHiddenObjectIdInt = rootHiddenObjectId.Value;
-
-            // DotnetObjectId rootObjectId = rootObjectId;
-            //Console.WriteLine ($"GetRootHiddenChildren: rootName: {rootNamePrefix}: {root}");
-            // FIXME: this just assumes that the first returned member will be an array `Items`!
-            // if (subtype == null || subtype?.Value<string>() != "array")
-
-            // FIXME: test for valuetype collection
+            // unpack object/valuetype collection to be of array scheme
             if (rootObjectId.Scheme is "object" or "valuetype")
             {
-                // it does not work, SendDebuggerAgentCommand fails
-                GetMembersResult members = await GetObjectMemberValues(sdbHelper, rootObjectId.Value, getCommandOptions, token);
-                //Console.WriteLine ($"GetObjectMemberValues on that returned: {members}");
-
-                var memberNamedItems = members.Where(m => m["name"]?.Value<string>() == "Items").FirstOrDefault();
-                if (memberNamedItems is not null &&
-                    DotnetObjectId.TryParse(memberNamedItems["value"]?["objectId"]?.Value<string>(), out DotnetObjectId itemsObjectId) &&
-                    itemsObjectId.Scheme == "array")
+                GetMembersResult members = null;
+                if (rootObjectId.Scheme is "object")
                 {
-                    rootObjectId = itemsObjectId;
+                    members = await GetObjectMemberValues(sdbHelper, rootObjectId.Value, getCommandOptions, token);
+                }
+                else
+                {
+                    wasValueType = true;
+                    var valType = sdbHelper.GetValueTypeClass(rootObjectId.Value);
+                    if (valType != null)
+                        members = await valType.GetMemberValues(sdbHelper, getCommandOptions, false, token);
+                }
+
+                if (members != null)
+                {
+                    var memberNamedItems = members.Where(m => m["name"]?.Value<string>() == "Items").FirstOrDefault();
+                    if (memberNamedItems is not null &&
+                        DotnetObjectId.TryParse(memberNamedItems["value"]?["objectId"]?.Value<string>(), out DotnetObjectId itemsObjectId) &&
+                        itemsObjectId.Scheme == "array")
+                    {
+                        rootObjectId = itemsObjectId;
+                    }
                 }
             }
 
@@ -515,11 +507,12 @@ namespace BrowserDebugProxy
             OtherMembers = new JArray();
         }
 
-        public GetMembersResult(JArray value, bool IsFlattened = false)
+        public GetMembersResult(JArray value, bool sortByAccessLevel)
         {
-            Result = value;
-            PrivateMembers = new JArray();
-            OtherMembers = new JArray();
+            var t = FromValues(value, sortByAccessLevel);
+            Result = t.Result;
+            PrivateMembers = t.PrivateMembers;
+            OtherMembers = t.OtherMembers;
         }
 
         public static GetMembersResult FromValues(IEnumerable<JToken> values, bool splitMembersByAccessLevel = false) =>
