@@ -133,6 +133,8 @@ sgen_card_table_wbarrier_generic_nostore (gpointer ptr)
 	sgen_card_table_mark_address ((mword)ptr);
 }
 
+MONO_DISABLE_WARNING(4189) /* local variable is initialized but not referenced */
+
 static void
 sgen_card_table_wbarrier_range_copy (gpointer _dest, gconstpointer _src, int size)
 {
@@ -162,6 +164,8 @@ sgen_card_table_wbarrier_range_copy (gpointer _dest, gconstpointer _src, int siz
 		size -= SIZEOF_VOID_P;
 	}
 }
+
+MONO_RESTORE_WARNING
 
 #ifdef SGEN_HAVE_OVERLAPPING_CARDS
 

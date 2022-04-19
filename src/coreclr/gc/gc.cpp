@@ -1107,7 +1107,7 @@ class exclusive_sync
 
     int spin_count;
 
-    uint8_t cache_separator[HS_CACHE_LINE_SIZE - sizeof (int) - sizeof (int32_t)];
+    uint8_t cache_separator[HS_CACHE_LINE_SIZE - (sizeof (spin_count) + sizeof (needs_checking) + sizeof (rwp_object))];
 
     // TODO - perhaps each object should be on its own cache line...
     VOLATILE(uint8_t*) alloc_objects[max_pending_allocs];
@@ -6803,7 +6803,7 @@ bool gc_heap::virtual_alloc_commit_for_heap (void* addr, size_t size, int h_numb
     return GCToOSInterface::VirtualCommit(addr, size);
 }
 
-bool gc_heap::virtual_commit (void* address, size_t size, gc_oh_num oh, int h_number)
+bool gc_heap::virtual_commit (void* address, size_t size, gc_oh_num oh, int h_number, bool* hard_limit_exceeded_p)
 {
 #ifndef HOST_64BIT
     assert (heap_hard_limit == 0);
@@ -6840,6 +6840,9 @@ bool gc_heap::virtual_commit (void* address, size_t size, gc_oh_num oh, int h_nu
         }
 
         check_commit_cs.Leave();
+
+        if (hard_limit_exceeded_p)
+            *hard_limit_exceeded_p = exceeded_p;
 
         if (exceeded_p)
         {
@@ -14217,9 +14220,12 @@ BOOL gc_heap::a_size_fit_p (size_t size, uint8_t* alloc_pointer, uint8_t* alloc_
 }
 
 // Grow by committing more pages
-BOOL gc_heap::grow_heap_segment (heap_segment* seg, uint8_t* high_address)
+BOOL gc_heap::grow_heap_segment (heap_segment* seg, uint8_t* high_address, bool* hard_limit_exceeded_p)
 {
     assert (high_address <= heap_segment_reserved (seg));
+
+    if (hard_limit_exceeded_p)
+        *hard_limit_exceeded_p = false;
 
     //return 0 if we are at the end of the segment.
     if (align_on_page (high_address) > heap_segment_reserved (seg))
@@ -14239,7 +14245,7 @@ BOOL gc_heap::grow_heap_segment (heap_segment* seg, uint8_t* high_address)
                 "Growing heap_segment: %Ix high address: %Ix\n",
                 (size_t)seg, (size_t)high_address);
 
-    bool ret = virtual_commit (heap_segment_committed (seg), c_size, heap_segment_oh (seg), heap_number);
+    bool ret = virtual_commit (heap_segment_committed (seg), c_size, heap_segment_oh (seg), heap_number, hard_limit_exceeded_p);
     if (ret)
     {
         heap_segment_committed (seg) += c_size;
@@ -16124,6 +16130,7 @@ BOOL gc_heap::a_fit_segment_end_p (int gen_number,
 {
     *commit_failed_p = FALSE;
     size_t limit = 0;
+    bool hard_limit_short_seg_end_p = false;
 #ifdef BACKGROUND_GC
     int cookie = -1;
 #endif //BACKGROUND_GC
@@ -16162,13 +16169,26 @@ BOOL gc_heap::a_fit_segment_end_p (int gen_number,
                                  (end - allocated),
                                  gen_number, align_const);
 
-        if (grow_heap_segment (seg, (allocated + limit)))
+        if (grow_heap_segment (seg, (allocated + limit), &hard_limit_short_seg_end_p))
         {
             goto found_fit;
         }
+
         else
         {
+#ifdef USE_REGIONS
             *commit_failed_p = TRUE;
+#else 
+            if (!hard_limit_short_seg_end_p)
+            {
+                dprintf (2, ("can't grow segment, doing a full gc"));
+                *commit_failed_p = TRUE;
+            }
+            else
+            {
+                assert (heap_hard_limit);
+            }
+#endif // USE_REGIONS
         }
     }
 
@@ -32129,6 +32149,11 @@ void gc_heap::walk_relocation (void* profiling_context, record_surv_fn fn)
     {
         generation* condemned_gen = generation_of (i);
         heap_segment*  current_heap_segment = heap_segment_rw (generation_start_segment (condemned_gen));
+#ifdef USE_REGIONS
+        current_heap_segment = walk_relocation_sip (current_heap_segment, profiling_context, fn);
+        if (!current_heap_segment)
+            continue;
+#endif // USE_REGIONS
         uint8_t*  start_address = get_soh_start_object (current_heap_segment, condemned_gen);
         size_t  current_brick = brick_of (start_address);
 
@@ -32156,9 +32181,12 @@ void gc_heap::walk_relocation (void* profiling_context, record_surv_fn fn)
                             &args);
                     args.last_plug = 0;
                 }
-                if (heap_segment_next_rw (current_heap_segment))
+                current_heap_segment = heap_segment_next_rw (current_heap_segment);
+#ifdef USE_REGIONS
+                current_heap_segment = walk_relocation_sip (current_heap_segment, profiling_context, fn);
+#endif // USE_REGIONS
+                if (current_heap_segment)
                 {
-                    current_heap_segment = heap_segment_next_rw (current_heap_segment);
                     current_brick = brick_of (heap_segment_mem (current_heap_segment));
                     end_brick = brick_of (heap_segment_allocated (current_heap_segment)-1);
                     continue;
@@ -32181,6 +32209,45 @@ void gc_heap::walk_relocation (void* profiling_context, record_surv_fn fn)
         }
     }
 }
+
+#ifdef USE_REGIONS
+heap_segment* gc_heap::walk_relocation_sip (heap_segment* current_heap_segment, void* profiling_context, record_surv_fn fn)
+{
+    while (current_heap_segment && heap_segment_swept_in_plan (current_heap_segment))
+    {
+        uint8_t* start = heap_segment_mem (current_heap_segment);
+        uint8_t* end = heap_segment_allocated (current_heap_segment);
+        uint8_t* obj = start;
+        uint8_t* plug_start = nullptr;
+        while (obj < end)
+        {
+            if (((CObjectHeader*)obj)->IsFree())
+            {
+                if (plug_start)
+                {
+                    fn (plug_start, obj, 0, profiling_context, false, false);
+                    plug_start = nullptr;
+                }
+            }
+            else
+            {
+                if (!plug_start) 
+                {
+                    plug_start = obj;
+                }
+            }
+
+            obj += Align (size (obj));
+        }
+        if (plug_start)
+        {
+            fn (plug_start, end, 0, profiling_context, false, false);
+        }
+        current_heap_segment = heap_segment_next_rw (current_heap_segment);
+    }
+    return current_heap_segment;
+}
+#endif // USE_REGIONS
 
 void gc_heap::walk_survivors (record_surv_fn fn, void* context, walk_surv_type type)
 {
@@ -43062,7 +43129,7 @@ BOOL gc_heap::check_need_card (uint8_t* child_obj, int gen_num_for_cards,
                                uint8_t* low, uint8_t* high)
 {
 #ifdef USE_REGIONS
-    return (get_region_gen_num (child_obj) < gen_num_for_cards);
+    return (is_in_heap_range (child_obj) && (get_region_gen_num (child_obj) < gen_num_for_cards));
 #else
     return ((child_obj < high) && (child_obj >= low));
 #endif //USE_REGIONS

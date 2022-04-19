@@ -1586,6 +1586,11 @@ void EEJitManager::SetCpuInfo()
         CPUCompileFlags.Clear(InstructionSet_Atomics);
     }
 
+    if (!CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableArm64Rcpc))
+    {
+        CPUCompileFlags.Clear(InstructionSet_Rcpc);
+    }
+
     if (!CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableArm64Crc32))
     {
         CPUCompileFlags.Clear(InstructionSet_Crc32);

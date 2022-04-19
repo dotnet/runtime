@@ -22,11 +22,11 @@ namespace System.Numerics
         /// <remarks>This operation is meant to perform a signed (otherwise known as an arithmetic) right shift on signed types.</remarks>
         static abstract TResult operator >>(TSelf value, int shiftAmount); // TODO_GENERIC_MATH: shiftAmount should be TOther
 
-        // /// <summary>Shifts a value right by a given amount.</summary>
-        // /// <param name="value">The value which is shifted right by <paramref name="shiftAmount" />.</param>
-        // /// <param name="shiftAmount">The amount by which <paramref name="value" /> is shifted right.</param>
-        // /// <returns>The result of shifting <paramref name="value" /> right by <paramref name="shiftAmount" />.</returns>
-        // /// <remarks>This operation is meant to perform n unsigned (otherwise known as a logical) right shift on all types.</remarks>
-        // static abstract TResult operator >>>(TSelf value, int shiftAmount); // TODO_GENERIC_MATH: shiftAmount should be TOther
+        /// <summary>Shifts a value right by a given amount.</summary>
+        /// <param name="value">The value which is shifted right by <paramref name="shiftAmount" />.</param>
+        /// <param name="shiftAmount">The amount by which <paramref name="value" /> is shifted right.</param>
+        /// <returns>The result of shifting <paramref name="value" /> right by <paramref name="shiftAmount" />.</returns>
+        /// <remarks>This operation is meant to perform n unsigned (otherwise known as a logical) right shift on all types.</remarks>
+        static abstract TResult operator >>>(TSelf value, int shiftAmount); // TODO_GENERIC_MATH: shiftAmount should be TOther
     }
 }

@@ -26,9 +26,9 @@
 .subsystem 0x00000003
 .file alignment 512
 .corflags 0x00000001
-.namespace hello
+.namespace hello_filterfiltercatchcatch_mixedhandler_il
 {
-  .class private auto ansi beforefieldinit Class1
+  .class public auto ansi beforefieldinit Class1
          extends [mscorlib]System.Object
   {
     .method public hidebysig static void 

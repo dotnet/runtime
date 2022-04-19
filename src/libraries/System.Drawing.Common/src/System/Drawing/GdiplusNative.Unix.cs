@@ -412,7 +412,7 @@ namespace System.Drawing
 
             [LibraryImport(LibraryName)]
             internal static partial int GdipGetPostScriptGraphicsContext(
-                [MarshalAs(UnmanagedType.LPStr)] string filename,
+                [MarshalAs(UnmanagedType.LPUTF8Str)] string filename,
                 int width, int height, double dpix, double dpiy, ref IntPtr graphics);
 
             [LibraryImport(LibraryName)]

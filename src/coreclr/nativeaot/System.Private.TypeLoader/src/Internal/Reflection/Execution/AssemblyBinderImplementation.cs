@@ -17,7 +17,7 @@ using Internal.Metadata.NativeFormat;
 namespace Internal.Reflection.Execution
 {
     //=============================================================================================================================
-    // The assembly resolution policy for Project N's emulation of "classic reflection."
+    // The assembly resolution policy for emulation of "classic reflection."
     //
     // The policy is very simple: the only assemblies that can be "loaded" are those that are statically linked into the running
     // native process. There is no support for probing for assemblies in directories, user-supplied files, GACs, NICs or any

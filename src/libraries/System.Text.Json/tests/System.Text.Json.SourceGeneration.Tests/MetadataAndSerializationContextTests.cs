@@ -22,6 +22,7 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(MyTypeWithPropertyOrdering))]
     [JsonSerializable(typeof(MyIntermediateType))]
     [JsonSerializable(typeof(HighLowTempsImmutable))]
+    [JsonSerializable(typeof(HighLowTempsRecord))]
     [JsonSerializable(typeof(byte[]))]
     [JsonSerializable(typeof(RealWorldContextTests.MyNestedClass))]
     [JsonSerializable(typeof(RealWorldContextTests.MyNestedClass.MyNestedNestedClass))]
@@ -43,6 +44,7 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(PersonStruct?))]
     [JsonSerializable(typeof(TypeWithValidationAttributes))]
     [JsonSerializable(typeof(TypeWithDerivedAttribute))]
+    [JsonSerializable(typeof(PolymorphicClass))]
     internal partial class MetadataAndSerializationContext : JsonSerializerContext, ITestContext
     {
         public JsonSourceGenerationMode JsonSourceGenerationMode => JsonSourceGenerationMode.Default;
@@ -70,6 +72,7 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.NotNull(MetadataAndSerializationContext.Default.MyTypeWithPropertyOrdering.SerializeHandler);
             Assert.NotNull(MetadataAndSerializationContext.Default.MyIntermediateType.SerializeHandler);
             Assert.NotNull(MetadataAndSerializationContext.Default.HighLowTempsImmutable.SerializeHandler);
+            Assert.NotNull(MetadataAndSerializationContext.Default.HighLowTempsRecord.SerializeHandler);
             Assert.NotNull(MetadataAndSerializationContext.Default.MyNestedClass.SerializeHandler);
             Assert.NotNull(MetadataAndSerializationContext.Default.MyNestedNestedClass.SerializeHandler);
             Assert.Null(MetadataAndSerializationContext.Default.ObjectArray.SerializeHandler);
