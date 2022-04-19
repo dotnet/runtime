@@ -150,39 +150,6 @@ namespace System.Net.Quic.Implementations.MsQuic
             }
         }
 
-        // return QuicStreamProvider to avoid async/await state machine on the caller's side just to perform the cast
-        internal static async ValueTask<QuicStreamProvider> CreateOutbound(MsQuicConnection.State connectionState, QUIC_STREAM_OPEN_FLAGS flags, CancellationToken cancellationToken)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            var stream = new MsQuicStream(connectionState, flags);
-            State state = stream._state;
-
-            try
-            {
-                Debug.Assert(!Monitor.IsEntered(state));
-
-                cancellationToken.ThrowIfCancellationRequested();
-                using CancellationTokenRegistration registration = cancellationToken.UnsafeRegister(static (s, token) =>
-                {
-                    ((State)s!).StartCompletionSource.TrySetException(new OperationCanceledException(token));
-                }, state);
-
-                // Fire of start of the stream
-                uint status = MsQuicApi.Api.StreamStartDelegate(state.Handle, QUIC_STREAM_START_FLAGS.SHUTDOWN_ON_FAIL | QUIC_STREAM_START_FLAGS.INDICATE_PEER_ACCEPT);
-                QuicExceptionHelpers.ThrowIfFailed(status, "Could not start stream.");
-
-                // wait unit start completes.
-                await state.StartCompletionSource.Task.ConfigureAwait(false);
-            }
-            catch
-            {
-                stream.Dispose();
-                throw;
-            }
-
-            return stream;
-        }
-
         // outbound.
         internal MsQuicStream(MsQuicConnection.State connectionState, QUIC_STREAM_OPEN_FLAGS flags)
         {
@@ -1158,12 +1125,14 @@ namespace System.Net.Quic.Implementations.MsQuic
                 // in StreamStart.
                 // state.StartCompletionSource will be set when handling shutdown event as well.
                 state.StartStatus = status;
+                // TODO: can we complete the StartCompletionSource here?
             }
             else if ((evt.Data.StartComplete.PeerAccepted & 1) != 0)
             {
                 // Start succeeded and we were within stream limits, stream already usable.
                 state.StartStatus = status;
                 state.StartCompletionSource.TrySetResult();
+                // TODO: comment when the source is completed when PeerAccepted is 0
             }
 
             return MsQuicStatusCodes.Success;
@@ -1686,6 +1655,23 @@ namespace System.Net.Quic.Implementations.MsQuic
                 state.ReadState = finalState;
             }
             return shouldComplete;
+        }
+
+        internal async Task StartAsync(CancellationToken cancellationToken)
+        {
+            Debug.Assert(!Monitor.IsEntered(_state));
+
+            using CancellationTokenRegistration registration = cancellationToken.UnsafeRegister(static (s, token) =>
+            {
+                ((State)s!).StartCompletionSource.TrySetException(new OperationCanceledException(token));
+            }, _state);
+
+            // Fire of start of the stream
+            uint status = MsQuicApi.Api.StreamStartDelegate(_state.Handle, QUIC_STREAM_START_FLAGS.SHUTDOWN_ON_FAIL | QUIC_STREAM_START_FLAGS.INDICATE_PEER_ACCEPT);
+            QuicExceptionHelpers.ThrowIfFailed(status, "Could not start stream.");
+
+            // wait unit start completes.
+            await _state.StartCompletionSource.Task.ConfigureAwait(false);
         }
 
         // Read state transitions:
