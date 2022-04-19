@@ -25,7 +25,6 @@ protected:
     PBYTE                       m_pbPublicKeyOrToken;
     DWORD                       m_cbPublicKeyOrToken;
     DWORD                       m_dwFlags;             // CorAssemblyFlags
-    LPCWSTR                     m_wszCodeBase;         // URL to the code
     int                         m_ownedFlags;
     AssemblyBinder             *m_pBinder;
 
@@ -34,14 +33,11 @@ public:
     {
         NAME_OWNED                  = 0x01,
         PUBLIC_KEY_OR_TOKEN_OWNED   = 0x02,
-        CODE_BASE_OWNED             = 0x04,
         LOCALE_OWNED                = 0x08,
-        CODEBASE_OWNED              = 0x10,
         // unused                   = 0x20,
         // Set if ParseName() returned illegal textual identity.
         // Cannot process the string any further.
         BAD_NAME_OWNED              = 0x40,
-        ALL_OWNED                   = 0xFF,
     };
 
     BaseAssemblySpec();
@@ -59,8 +55,8 @@ public:
     // Note that this method does not clone the fields!
     VOID CopyFrom(const BaseAssemblySpec *pSpec);
 
-    VOID    CloneFields(int flags=ALL_OWNED);
-    VOID    CloneFieldsToLoaderHeap(int flags, LoaderHeap *pHeap, AllocMemTracker *pamTracker);
+    VOID    CloneFields();
+    VOID    CloneFieldsToLoaderHeap(LoaderHeap *pHeap, AllocMemTracker *pamTracker);
     VOID    CloneFieldsToStackingAllocator(StackingAllocator* alloc);
 
     inline void SetBinder(AssemblyBinder *pBinder)
@@ -85,9 +81,6 @@ public:
 
     void SetName(LPCSTR szName);
     void SetName(SString const & ssName);
-
-    LPCWSTR GetCodeBase() const;
-    void SetCodeBase(LPCWSTR szCodeBase);
 
     VOID SetCulture(LPCSTR szCulture);
 
@@ -114,7 +107,6 @@ public:
     static int CompareStrings(LPCUTF8 string1, LPCUTF8 string2);
     static BOOL RefMatchesDef(const BaseAssemblySpec* pRef, const BaseAssemblySpec* pDef);
 
-    void GetFileOrDisplayName(DWORD flags, SString &result) const;
     void GetDisplayName(DWORD flags, SString &result) const;
 
 protected: // static
@@ -123,9 +115,6 @@ protected: // static
 protected:
     void InitializeWithAssemblyIdentity(BINDER_SPACE::AssemblyIdentity *identity);
     void PopulateAssemblyNameData(AssemblyNameData &data) const;
-
-private:
-    void GetDisplayNameInternal(DWORD flags, SString &result) const;
 };
 
 #endif // __BASE_ASSEMBLY_SPEC_H__

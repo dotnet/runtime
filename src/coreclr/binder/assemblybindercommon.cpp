@@ -107,53 +107,6 @@ namespace BINDER_SPACE
             return true;
         }
 
-        const WCHAR* s_httpURLPrefix = W("http://");
-        HRESULT URLToFullPath(PathString &assemblyPath)
-        {
-            HRESULT hr = S_OK;
-
-            SString::Iterator pos = assemblyPath.Begin();
-            if (assemblyPath.MatchCaseInsensitive(pos, s_httpURLPrefix))
-            {
-                // HTTP downloads are unsupported
-                hr = FUSION_E_CODE_DOWNLOAD_DISABLED;
-            }
-            else
-            {
-                SString fullAssemblyPath;
-                WCHAR *pwzFullAssemblyPath = fullAssemblyPath.OpenUnicodeBuffer(MAX_LONGPATH);
-                DWORD dwCCFullAssemblyPath = MAX_LONGPATH + 1; // SString allocates extra byte for null.
-
-                MutateUrlToPath(assemblyPath);
-
-                dwCCFullAssemblyPath = WszGetFullPathName(assemblyPath.GetUnicode(),
-                                                          dwCCFullAssemblyPath,
-                                                          pwzFullAssemblyPath,
-                                                          NULL);
-                if (dwCCFullAssemblyPath > MAX_LONGPATH)
-                {
-                    fullAssemblyPath.CloseBuffer();
-                    pwzFullAssemblyPath = fullAssemblyPath.OpenUnicodeBuffer(dwCCFullAssemblyPath - 1);
-                    dwCCFullAssemblyPath = WszGetFullPathName(assemblyPath.GetUnicode(),
-                                                              dwCCFullAssemblyPath,
-                                                              pwzFullAssemblyPath,
-                                                              NULL);
-                }
-                fullAssemblyPath.CloseBuffer(dwCCFullAssemblyPath);
-
-                if (dwCCFullAssemblyPath == 0)
-                {
-                    hr = HRESULT_FROM_GetLastError();
-                }
-                else
-                {
-                    assemblyPath.Set(fullAssemblyPath);
-                }
-            }
-
-            return hr;
-        }
-
         HRESULT CreateImageAssembly(PEImage                 *pPEImage,
                                     BindResult              *pBindResult)
         {
@@ -238,7 +191,6 @@ namespace BINDER_SPACE
 
     HRESULT AssemblyBinderCommon::BindAssembly(/* in */  AssemblyBinder      *pBinder,
                                                /* in */  AssemblyName        *pAssemblyName,
-                                               /* in */  LPCWSTR              szCodeBase,
                                                /* in */  bool                 excludeAppPaths,
                                                /* out */ Assembly           **ppAssembly)
     {
@@ -255,28 +207,13 @@ namespace BINDER_SPACE
             // Lock the binding application context
             CRITSEC_Holder contextLock(pApplicationContext->GetCriticalSectionCookie());
 
-            if (szCodeBase == NULL)
-            {
-                _ASSERTE(pAssemblyName != NULL);
-                IF_FAIL_GO(BindByName(pApplicationContext,
-                                      pAssemblyName,
-                                      false, // skipFailureCaching
-                                      false, // skipVersionCompatibilityCheck
-                                      excludeAppPaths,
-                                      &bindResult));
-            }
-            else
-            {
-                PathString assemblyPath(szCodeBase);
-
-                // Convert URL to full path and block HTTP downloads
-                IF_FAIL_GO(URLToFullPath(assemblyPath));
-
-                IF_FAIL_GO(BindWhereRef(pApplicationContext,
-                                        assemblyPath,
-                                        excludeAppPaths,
-                                        &bindResult));
-            }
+            _ASSERTE(pAssemblyName != NULL);
+            IF_FAIL_GO(BindByName(pApplicationContext,
+                                    pAssemblyName,
+                                    false, // skipFailureCaching
+                                    false, // skipVersionCompatibilityCheck
+                                    excludeAppPaths,
+                                    &bindResult));
 
             // Remember the post-bind version
             kContextVersion = pApplicationContext->GetVersion();
@@ -520,61 +457,6 @@ namespace BINDER_SPACE
             }
 
             hr = pApplicationContext->AddToFailureCache(assemblyDisplayName, hr);
-        }
-
-    LogExit:
-        return hr;
-    }
-
-    /* static */
-    HRESULT AssemblyBinderCommon::BindWhereRef(ApplicationContext *pApplicationContext,
-                                         PathString         &assemblyPath,
-                                         bool                excludeAppPaths,
-                                         BindResult         *pBindResult)
-    {
-        HRESULT hr = S_OK;
-
-        ReleaseHolder<Assembly> pAssembly;
-        BindResult lockedBindResult;
-
-        // Look for already cached binding failure
-        hr = pApplicationContext->GetFailureCache()->Lookup(assemblyPath);
-        if (FAILED(hr))
-        {
-            goto LogExit;
-        }
-
-        // If we return this assembly, then it is guaranteed to be not in GAC
-        // Design decision. For now, keep the V2 model of Fusion being oblivious of the strong name.
-        // Security team did not see any security concern with interpreting the version information.
-        IF_FAIL_GO(GetAssembly(assemblyPath,
-                               FALSE /* fIsInTPA */,
-                               &pAssembly,
-                               Bundle::ProbeAppBundle(assemblyPath)));
-
-        AssemblyName *pAssemblyName;
-        pAssemblyName = pAssembly->GetAssemblyName();
-
-        IF_FAIL_GO(BindLocked(pApplicationContext,
-                                pAssemblyName,
-                                false, // skipVersionCompatibilityCheck
-                                excludeAppPaths,
-                                &lockedBindResult));
-        if (lockedBindResult.HaveResult())
-        {
-            pBindResult->SetResult(&lockedBindResult);
-            GO_WITH_HRESULT(S_OK);
-        }
-
-        hr = S_OK;
-        pBindResult->SetResult(pAssembly);
-
-    Exit:
-
-        if (FAILED(hr))
-        {
-            // Always cache binding failures
-            hr = pApplicationContext->AddToFailureCache(assemblyPath, hr);
         }
 
     LogExit:
