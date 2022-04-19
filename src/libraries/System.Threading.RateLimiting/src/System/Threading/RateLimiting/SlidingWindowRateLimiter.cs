@@ -39,7 +39,7 @@ namespace System.Threading.RateLimiting
         public override bool IsAutoReplenishing => _options.AutoReplenishment;
 
         /// <inheritdoc />
-        public override TimeSpan ReplenishmentPeriod => _options.Window / _options.SegmentsPerWindow;
+        public override TimeSpan ReplenishmentPeriod => new TimeSpan(_options.Window.Ticks / _options.SegmentsPerWindow);
 
         /// <summary>
         /// Initializes the <see cref="SlidingWindowRateLimiter"/>.
