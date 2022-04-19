@@ -682,7 +682,7 @@ namespace System
             }
         }
 
-#if false // Reflection-based implementation does not work for CoreRT/ProjectN
+#if false // Reflection-based implementation does not work for NativeAOT
         // This function will convert an ExceptionArgument enum value to the argument name string.
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static string GetArgumentName(ExceptionArgument argument)
@@ -900,7 +900,7 @@ namespace System
             }
         }
 
-#if false // Reflection-based implementation does not work for CoreRT/ProjectN
+#if false // Reflection-based implementation does not work for NativeAOT
         // This function will convert an ExceptionResource enum value to the resource string.
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static string GetResourceString(ExceptionResource resource)
