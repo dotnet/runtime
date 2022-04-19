@@ -19,9 +19,9 @@ namespace System.Runtime.InteropServices
 
         public int Index { get; }
 
-        public bool ImplicitThisParameter { get; init; } = true;
+        public bool ImplicitThisParameter { get; set; } = true;
 
-        public CustomTypeMarshallerDirection Direction { get; init; } = CustomTypeMarshallerDirection.Ref;
+        public CustomTypeMarshallerDirection Direction { get; set; } = CustomTypeMarshallerDirection.Ref;
 
         /// <summary>
         /// Gets or sets how to marshal string arguments to the method.

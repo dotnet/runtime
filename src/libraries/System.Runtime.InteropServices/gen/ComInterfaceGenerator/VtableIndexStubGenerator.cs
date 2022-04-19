@@ -225,7 +225,7 @@ namespace Microsoft.Interop
             }
             if (namedArguments.TryGetValue(nameof(VirtualMethodIndexData.ImplicitThisParameter), out TypedConstant implicitThisValue))
             {
-                if (directionValue.Value is not bool)
+                if (implicitThisValue.Value is not bool)
                 {
                     return null;
                 }

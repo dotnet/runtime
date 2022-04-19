@@ -14,6 +14,8 @@ namespace ComInterfaceGenerator.Unit.Tests
         public static IEnumerable<object[]> VTableIndexCodeSnippetsToCompile()
         {
             yield return new[] { CodeSnippets.SpecifiedMethodIndexNoExplicitParameters };
+            yield return new[] { CodeSnippets.SpecifiedMethodIndexNoExplicitParametersNoImplicitThis };
+            yield return new[] { CodeSnippets.SpecifiedMethodIndexNoExplicitParametersCallConvWithCallingConventions };
         }
 
         [Theory]
