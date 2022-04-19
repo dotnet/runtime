@@ -756,10 +756,9 @@ namespace System.Runtime.Serialization.Formatters.Tests
 
         [Theory]
         [MemberData(nameof(NullableComparersTestData))]
-        public void NullableComparers(string base64, object expectedObj)
+        public void NullableComparers(string base64, object obj)
         {
-            var actualObject = BinaryFormatterHelpers.FromBase64String(base64, FormatterAssemblyStyle.Full);
-            Assert.Equal(expectedObj.GetType(), actualObject.GetType());
+            Assert.Equal(base64, BinaryFormatterHelpers.ToBase64String(obj, FormatterAssemblyStyle.Full));
         }
     }
 }

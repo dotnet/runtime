@@ -263,7 +263,7 @@ namespace System.Collections.Generic.Tests
                 { Int32Enum.Two, Int32Enum.Two, true },
                 { Int32Enum.Min, Int32Enum.Max, false },
                 { Int32Enum.Min, Int32Enum.Min, true },
-                { Int32Enum.One, Int32Enum.Min + 1, false }
+                { Int32Enum.One, Int32Enum.Min + 1, false },
                 { (Int32Enum)(-2), null, false },
                 { Int32Enum.Two, null, false },
                 { null, Int32Enum.Max, false },
@@ -311,7 +311,7 @@ namespace System.Collections.Generic.Tests
                 { new NonEquatableValueType(), new NonEquatableValueType(), true },
                 { one, one, true },
                 { new NonEquatableValueType(-1), new NonEquatableValueType(), false },
-                { new NonEquatableValueType(2), new NonEquatableValueType(2), true }
+                { new NonEquatableValueType(2), new NonEquatableValueType(2), true },
                 { new NonEquatableValueType(-1), null, false },
                 { null, new NonEquatableValueType(2), false }
             };
