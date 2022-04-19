@@ -134,17 +134,17 @@ jobs:
         - name: LogNamePrefix
           value: TestRunLogs_R2R_CG2_Composite
 
-      - name: testTreeFilterArg
-        value: ''
-      
-      # Only build GCSimulator tests when the gc-simulator group is specified.
-      - ${{ if eq(parameters.testGroup, 'gc-simulator') }}:
-        - ${{ if eq(parameters.osGroup, 'windows') }}:
-          - name: testTreeFilterArg
-            value: '-tree GC/Scenarios/GCSimulator'
-        - ${{ if ne(parameters.osGroup, 'windows') }}:
-          - name: testTreeFilterArg
-            value: '-tree:GC/Scenarios/GCSimulator'
+    - name: testTreeFilterArg
+      value: ''
+    
+    # Only build GCSimulator tests when the gc-simulator group is specified.
+    - ${{ if eq(parameters.testGroup, 'gc-simulator') }}:
+      - ${{ if eq(parameters.osGroup, 'windows') }}:
+        - name: testTreeFilterArg
+          value: '-tree GC/Scenarios/GCSimulator'
+      - ${{ if ne(parameters.osGroup, 'windows') }}:
+        - name: testTreeFilterArg
+          value: '-tree:GC/Scenarios/GCSimulator'
 
     # Set job timeouts
     #
