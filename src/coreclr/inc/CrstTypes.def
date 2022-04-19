@@ -582,8 +582,5 @@ Crst PgoData
     AcquiredBefore LoaderHeap
 End
 
-Crst MonoHandles
-End
-
 Crst MonoICalls
 End

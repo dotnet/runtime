@@ -212,12 +212,6 @@ DO_API_OPTIONAL(void, mono_gc_set_max_time_slice_ns, (gint64 maxTimeSlice));
 DO_API_OPTIONAL(gboolean, mono_gc_is_incremental, ());
 DO_API_OPTIONAL(void, mono_gc_set_incremental, (gboolean value));
 
-DO_API(guint32, mono_gchandle_new, (MonoObject * obj, gboolean pinned))
-DO_API(guint32, mono_gchandle_new_weakref, (MonoObject * obj, gboolean track_resurrection))
-DO_API(MonoObject*, mono_gchandle_get_target, (guint32 gchandle))
-DO_API(void, mono_gchandle_free, (guint32 gchandle))
-DO_API(gboolean, mono_gchandle_is_in_domain, (guint32 gchandle, MonoDomain * domain))
-
 DO_API(uintptr_t, mono_gchandle_new_v2, (MonoObject * obj, gboolean pinned))
 DO_API(uintptr_t, mono_gchandle_new_weakref_v2, (MonoObject * obj, gboolean track_resurrection))
 DO_API(MonoObject*, mono_gchandle_get_target_v2, (uintptr_t gchandle))
