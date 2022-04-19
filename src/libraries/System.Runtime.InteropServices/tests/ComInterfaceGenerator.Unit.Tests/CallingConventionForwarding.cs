@@ -64,7 +64,7 @@ partial interface INativeAPI
             var signature = await FindFunctionPointerInvocationSignature(newComp, "INativeAPI", "Method");
 
             Assert.Equal(SignatureCallingConvention.Unmanaged, signature.CallingConvention);
-            Assert.Equal(newComp.GetTypeByMetadataName("System.Runtime.CompilerServices.CallConvSuppressGCTransition"), Assert.Single(signature.UnmanagedCallingConventionTypes));
+            Assert.Equal(newComp.GetTypeByMetadataName("System.Runtime.CompilerServices.CallConvSuppressGCTransition"), Assert.Single(signature.UnmanagedCallingConventionTypes), SymbolEqualityComparer.Default);
         }
 
         [Fact]
@@ -146,7 +146,9 @@ partial interface INativeAPI
             {
                 newComp.GetTypeByMetadataName("System.Runtime.CompilerServices.CallConvCdecl"),
                 newComp.GetTypeByMetadataName("System.Runtime.CompilerServices.CallConvMemberFunction"),
-            }, signature.UnmanagedCallingConventionTypes);
+            },
+            signature.UnmanagedCallingConventionTypes,
+            SymbolEqualityComparer.Default);
         }
 
         [Fact]
@@ -178,7 +180,9 @@ partial interface INativeAPI
                 newComp.GetTypeByMetadataName("System.Runtime.CompilerServices.CallConvSuppressGCTransition"),
                 newComp.GetTypeByMetadataName("System.Runtime.CompilerServices.CallConvCdecl"),
                 newComp.GetTypeByMetadataName("System.Runtime.CompilerServices.CallConvMemberFunction"),
-            }, signature.UnmanagedCallingConventionTypes);
+            },
+            signature.UnmanagedCallingConventionTypes,
+            SymbolEqualityComparer.Default);
         }
 
         private static async Task<IMethodSymbol> FindFunctionPointerInvocationSignature(Compilation compilation, string userDefinedInterfaceName, string methodName)
