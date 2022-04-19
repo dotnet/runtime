@@ -95,8 +95,8 @@ namespace System.Formats.Tar.Tests
             return Path.Join(Directory.GetCurrentDirectory(), compressionMethodFolder, format.ToString(), testCaseName + fileExtension);
         }
 
-        // Opened in read-only mode to avoid modifying the original file.
-        protected static FileStream GetTarFileStream(CompressionMethod compressionMethod, TestTarFormat format, string testCaseName)
+        // MemoryStream containing the copied contents of the specified file. Meant for reading and writing.
+        protected static MemoryStream GetTarMemoryStream(CompressionMethod compressionMethod, TestTarFormat format, string testCaseName)
         {
             string path = GetTarFilePath(compressionMethod, format, testCaseName);
             FileStreamOptions options = new()
@@ -106,15 +106,11 @@ namespace System.Formats.Tar.Tests
                 Share = FileShare.Read
 
             };
-            return File.Open(path, options);
-        }
-
-        // MemoryStream containing the copied contents of the specified file. Meant for reading and writing.
-        protected static MemoryStream GetTarMemoryStream(CompressionMethod compressionMethod, TestTarFormat format, string testCaseName)
-        {
-            using FileStream fs = GetTarFileStream(compressionMethod, format, testCaseName);
             MemoryStream ms = new();
-            fs.CopyTo(ms);
+            using (FileStream fs = new FileStream(path, options))
+            {
+                fs.CopyTo(ms);
+            }
             ms.Seek(0, SeekOrigin.Begin);
             return ms;
         }

@@ -93,9 +93,8 @@ namespace System.Formats.Tar.Tests
             {
                 Assert.Equal(TarFormat.Unknown, reader.Format);
                 TarEntry entry = reader.GetNextEntry();
-                Assert.Equal(format, reader.Format);
-
                 Assert.NotNull(entry);
+                Assert.Equal(format, reader.Format);
                 Assert.Equal(fileName, entry.Name);
                 TarEntryType expectedEntryType = format is TarFormat.V7 ? TarEntryType.V7RegularFile : TarEntryType.RegularFile;
                 Assert.Equal(expectedEntryType, entry.EntryType);
