@@ -33,6 +33,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			instance.WriteUnknownValue ();
 
+			WriteCapturedField.Test ();
+
 			_ = _annotationOnWrongType;
 
 			TestStringEmpty ();
@@ -153,6 +155,39 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		private static void TestStringEmpty ()
 		{
 			RequirePublicMethods (string.Empty);
+		}
+
+		class WriteCapturedField
+		{
+			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.All)]
+			static Type field;
+
+			[ExpectedWarning ("IL2074", nameof (GetUnknownType), nameof (field))]
+			[ExpectedWarning ("IL2074", nameof (GetTypeWithPublicConstructors), nameof (field))]
+			static void TestNullCoalesce ()
+			{
+				field = GetUnknownType () ?? GetTypeWithPublicConstructors ();
+			}
+
+			[ExpectedWarning ("IL2074", nameof (GetUnknownType), nameof (field))]
+			static void TestNullCoalescingAssignment ()
+			{
+				field ??= GetUnknownType ();
+			}
+
+			[ExpectedWarning ("IL2074", nameof (GetUnknownType), nameof (field))]
+			[ExpectedWarning ("IL2074", nameof (GetTypeWithPublicConstructors), nameof (field))]
+			static void TestNullCoalescingAssignmentComplex ()
+			{
+				field ??= GetUnknownType () ?? GetTypeWithPublicConstructors ();
+			}
+
+			public static void Test ()
+			{
+				TestNullCoalesce ();
+				TestNullCoalescingAssignment ();
+				TestNullCoalescingAssignmentComplex ();
+			}
 		}
 
 		private static void RequirePublicMethods (

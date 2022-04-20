@@ -9,6 +9,7 @@ using ILLink.Shared.TrimAnalysis;
 using ILLink.Shared.TypeSystemProxy;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
+using Microsoft.CodeAnalysis.FlowAnalysis;
 using Microsoft.CodeAnalysis.Operations;
 
 using MultiValue = ILLink.Shared.DataFlow.ValueSet<ILLink.Shared.DataFlow.SingleValue>;
@@ -32,8 +33,9 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 
 		public TrimAnalysisVisitor (
 			LocalStateLattice<MultiValue, ValueSetLattice<SingleValue>> lattice,
-			OperationBlockAnalysisContext context
-		) : base (lattice, context)
+			OperationBlockAnalysisContext context,
+			ImmutableDictionary<CaptureId, FlowCaptureKind> lValueFlowCaptures
+		) : base (lattice, context, lValueFlowCaptures)
 		{
 			_multiValueLattice = lattice.Lattice.ValueLattice;
 			TrimAnalysisPatterns = new TrimAnalysisPatternStore (_multiValueLattice);
