@@ -110,8 +110,6 @@ ac_check_funcs(
 
 check_symbol_exists(madvise "sys/mman.h" HAVE_MADVISE)
 check_symbol_exists(pthread_mutexattr_setprotocol "pthread.h" HAVE_DECL_PTHREAD_MUTEXATTR_SETPROTOCOL)
-check_symbol_exists(pthread_getattr_np "pthread.h" HAVE_PTHREAD_GETATTR_NP)
-check_symbol_exists(pthread_create "pthread.h" HAVE_STEVE_PTHREAD_CHECK)
 check_symbol_exists(CLOCK_MONOTONIC "time.h" HAVE_CLOCK_MONOTONIC)
 check_symbol_exists(CLOCK_MONOTONIC_COARSE "time.h" HAVE_CLOCK_MONOTONIC_COARSE)
 
