@@ -10,6 +10,9 @@ CONFIG?=Release
 
 WASM_DEFAULT_BUILD_ARGS?=/p:TargetArchitecture=wasm /p:TargetOS=Browser /p:Configuration=$(CONFIG)
 
+# we set specific headers to enable SharedArrayBuffer support in browsers for threading: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/SharedArrayBuffer#security_requirements
+CORS_HEADERS?= -h "Cross-Origin-Opener-Policy:same-origin" -h "Cross-Origin-Embedder-Policy:require-corp"
+
 # if we're in a container, don't try to open the browser
 ifneq ("$(wildcard /.dockerenv)", "")
   OPEN_BROWSER=
@@ -35,7 +38,7 @@ run-browser:
 		echo "The tool dotnet-serve could not be found. Install with: $(DOTNET) tool install --global dotnet-serve"; \
 		exit 1; \
 	else  \
-		$(DOTNET) serve -d:bin/$(CONFIG)/AppBundle -h "Cross-Origin-Opener-Policy:same-origin" -h "Cross-Origin-Embedder-Policy:require-corp" $(OPEN_BROWSER) -p:8000; \
+		$(DOTNET) serve -d:bin/$(CONFIG)/AppBundle $(CORS_HEADERS) $(OPEN_BROWSER) -p:8000; \
 	fi
 
 run-console:

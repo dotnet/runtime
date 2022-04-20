@@ -46,8 +46,7 @@ export function configure_emscripten_startup(module: DotnetModule, exportedAPI: 
         console.log("determined url of main script to be " + temp.href);
         (<any>module)["mainScriptUrlOrBlob"] = temp.href;
       }
-    } else
-        console.log("could not determine url of main script for workers");
+    }
 
     // these could be overriden on DotnetModuleConfig
     if (!module.preInit) {

@@ -134,7 +134,6 @@
 
     <ItemGroup>
       <_EmccLinkFlags Include="-s EXPORT_ES6=1" Condition="'$(WasmEnableES6)' == 'true'" />
-      <_EmccLinkFlags Include="-s LLD_REPORT_UNDEFINED" />
       <_EmccLinkFlags Include="-s ALLOW_MEMORY_GROWTH=1" />
       <_EmccLinkFlags Include="-s NO_EXIT_RUNTIME=1" />
       <_EmccLinkFlags Include="-s FORCE_FILESYSTEM=1" />
