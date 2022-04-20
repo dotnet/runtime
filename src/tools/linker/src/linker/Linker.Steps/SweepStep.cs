@@ -453,6 +453,8 @@ namespace Mono.Linker.Steps
 
 				SweepCustomAttributes (method.MethodReturnType);
 
+				SweepOverrides (method);
+
 				if (!method.HasParameters)
 					continue;
 
@@ -467,6 +469,15 @@ namespace Mono.Linker.Steps
 			}
 		}
 
+		void SweepOverrides (MethodDefinition method)
+		{
+			for (int i = 0; i < method.Overrides.Count;) {
+				if (Context.Resolve (method.Overrides[i]) is MethodDefinition ov && ShouldRemove (ov))
+					method.Overrides.RemoveAt (i);
+				else
+					i++;
+			}
+		}
 		void SweepDebugInfo (Collection<MethodDefinition> methods)
 		{
 			List<ScopeDebugInformation>? sweptScopes = null;

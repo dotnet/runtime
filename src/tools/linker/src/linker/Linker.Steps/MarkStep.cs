@@ -573,6 +573,10 @@ namespace Mono.Linker.Steps
 			}
 		}
 
+		/// <summary>
+		/// Does extra handling of marked types that have interfaces when it's necessary to know what types are marked or instantiated.
+		/// e.g. Marks the "implements interface" annotations and removes override annotations for static interface methods.
+		/// </summary>
 		void ProcessMarkedTypesWithInterfaces ()
 		{
 			// We may mark an interface type later on.  Which means we need to reprocess any time with one or more interface implementations that have not been marked
@@ -2288,7 +2292,7 @@ namespace Mono.Linker.Steps
 
 		/// <summary>
 		/// Returns true if any of the base methods of the <paramref name="method"/> passed is in an assembly that is not trimmed (i.e. action != trim).
-		/// Meant to be used to determine whether methods should be marked regardless of whether it is instantiated or not. 
+		/// Meant to be used to determine whether methods should be marked regardless of whether it is instantiated or not.
 		/// </summary>
 		/// <remarks>
 		/// When the unusedinterfaces optimization is on, this is used to mark methods that override an abstract method from a non-link assembly and must be kept.
@@ -3049,8 +3053,16 @@ namespace Mono.Linker.Steps
 				}
 			}
 
+			// Mark overridden methods except for static interface methods
 			if (method.HasOverrides) {
 				foreach (MethodReference ov in method.Overrides) {
+					// Method implementing a static interface method will have an override to it - note nonstatic methods usually don't unless they're explicit.
+					// Calling the implementation method directly has no impact on the interface, and as such it should not mark the interface or its method.
+					// Only if the interface method is referenced, then all the methods which implemented must be kept, but not the other way round.
+					if (Context.Resolve (ov)?.IsStatic == true
+						&& Context.Resolve (ov.DeclaringType)?.IsInterface == true) {
+						continue;
+					}
 					MarkMethod (ov, new DependencyInfo (DependencyKind.MethodImplOverride, method));
 					MarkExplicitInterfaceImplementation (method, ov);
 				}
