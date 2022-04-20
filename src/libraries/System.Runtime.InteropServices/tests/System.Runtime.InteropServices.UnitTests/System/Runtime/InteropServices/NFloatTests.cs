@@ -1716,7 +1716,7 @@ namespace System.Runtime.InteropServices.Tests
             AssertExtensions.Equal(expectedResult, NFloat.Log2P1((NFloat)value), allowedVariance);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))]
         [InlineData( double.NegativeInfinity,  double.NaN,              0.0)]
         [InlineData(-3.1415926535897932,       double.NaN,              0.0)]                               //                              value: -(pi)
         [InlineData(-2.7182818284590452,       double.NaN,              0.0)]                               //                              value: -(e)
