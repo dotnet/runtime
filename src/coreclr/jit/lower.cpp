@@ -3644,15 +3644,15 @@ void Lowering::LowerRetStruct(GenTreeUnOp* ret)
     assert(ret->OperIs(GT_RETURN));
     assert(varTypeIsStruct(ret));
 
-    GenTree* retVal = ret->gtGetOp1();
+    GenTree*  retVal           = ret->gtGetOp1();
+    var_types nativeReturnType = comp->info.compRetNativeType;
     // Note: small types are returned as INT.
-    var_types nativeReturnType = genActualType(comp->info.compRetNativeType);
-    ret->ChangeType(nativeReturnType);
+    ret->ChangeType(genActualType(nativeReturnType));
 
     switch (retVal->OperGet())
     {
         case GT_CALL:
-            assert(retVal->TypeIs(nativeReturnType)); // Type should be changed during call processing.
+            assert(retVal->TypeIs(genActualType(nativeReturnType))); // Type should be changed during call processing.
             break;
 
         case GT_CNS_INT:
