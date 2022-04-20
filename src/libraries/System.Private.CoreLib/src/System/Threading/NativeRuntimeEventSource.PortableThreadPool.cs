@@ -377,7 +377,7 @@ namespace System.Diagnostics.Tracing
             if (!IsEnabled(EventLevel.Verbose, Keywords.ThreadingKeyword))
                 return;
 
-            EventData* data = stackalloc EventData[3]
+            EventData* data = stackalloc EventData[3];
             data[0].DataPointer = (IntPtr)(&NativeOverlapped);
             data[0].Size        = sizeof(IntPtr);
             data[0].Reserved    = 0;
