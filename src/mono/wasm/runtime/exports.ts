@@ -294,7 +294,11 @@ function initializeImportsAndExports(
 
     configure_emscripten_startup(module, exportedAPI);
 
-    // HACK: Maintain compatibility with emscripten's generated dotnet.worker.js
+    // HACK: Emscripten expects the return value of this function to always be the Module object,
+    // but we changed ours to return a set of exported namespaces. In order for the emscripten
+    // generated worker code to keep working, we detect that we're running in a worker (via the
+    // presence of globalThis.importScripts) and emulate the old behavior. Note that this will
+    // impact anyone trying to load us in a web worker directly, not just emscripten!
     if (typeof ((<any>globalThis)["importScripts"]) === "function")
         return <any>exportedAPI.Module;
 
