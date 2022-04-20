@@ -4,7 +4,7 @@ parameters:
   osGroup: ''                     # required -- operating system for the job
   osSubgroup: ''                  # optional -- operating system subgroup
   pool: ''
-  timeoutInMinutes: 240           # build timeout
+  timeoutInMinutes: 180           # build timeout
   variables: {}
   helixQueues: ''
   dependOnEvaluatePaths: false
@@ -35,7 +35,7 @@ jobs:
           value: ${{ variable.value }}
       - ${{ if ne(variable.group, '') }}:
         - group: ${{ variable.group }}
-        
+
     - name: releaseProductRootFolderPath
       value: '$(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).$(archType).Release'
     - name: releaseProductArtifactName
