@@ -134,7 +134,7 @@ namespace System.Text.RegularExpressions
 
         private void Backtrack()
         {
-            CheckTimeout();
+            CheckTimeout(); // to ensure that any backtracking operation has a timeout check
 
             int newpos = runtrack![runtrackpos];
             runtrackpos++;
@@ -685,6 +685,7 @@ namespace System.Text.RegularExpressions
                         break;                                    // Backtrack
 
                     case RegexOpcode.Setjump:
+                        CheckTimeout(); // to ensure that positive/negative lookarounds have a timeout check
                         StackPush(Trackpos(), Crawlpos());
                         TrackPush();
                         advance = 0;

@@ -9,7 +9,7 @@ namespace System.Text.RegularExpressions
     {
         /// <summary>The maximum allowed timeout duration.</summary>
         /// <remarks>
-        /// Previously the timeout was based on Environment.TickCount, which can overflow.  The implementation now uses Environment.TickCount64,
+        /// Previously the timeout was based on Environment.TickCount, which can overflow. The implementation now uses Environment.TickCount64,
         /// such that this constraint could be relaxed in the future if desired.
         /// </remarks>
         private const ulong MaximumMatchTimeoutTicks = 10_000UL * (int.MaxValue - 1); // TimeSpan.FromMilliseconds(int.MaxValue - 1).Ticks;
@@ -17,7 +17,7 @@ namespace System.Text.RegularExpressions
         /// <summary>Name of the AppContext slot that may be set to a default timeout override.</summary>
         /// <remarks>
         /// Setting this to a valid TimeSpan will cause that TimeSpan to be used as the timeout for <see cref="Regex"/> instances created
-        /// without a timeout.  If a timeout is explicitly provided, even if it's infinite, this value will be ignored.
+        /// without a timeout. If a timeout is explicitly provided, even if it's infinite, this value will be ignored.
         /// </remarks>
         private const string DefaultMatchTimeout_ConfigKeyName = "REGEX_DEFAULT_MATCH_TIMEOUT";
 
@@ -51,10 +51,10 @@ namespace System.Text.RegularExpressions
         /// The <see cref="MatchTimeout"/> property defines the approximate maximum time interval for a <see cref="Regex"/> instance to execute a single matching
         /// operation before the operation times out. The regular expression engine throws a <see cref="RegexMatchTimeoutException"/> exception during
         /// its next timing check after the timeout interval has elapsed. This prevents the regular expression engine from processing input strings
-        /// that require excessive backtracking.  The backtracking implementations guarantee that no more than O(N) work (N == length of the input)
-        /// will be performed between timeout checks, though may check more frequently.  This enables the implementations to use mechanisms like
-        /// <see cref="string.IndexOf(char)"/> to search the input.  Timeouts are considered optional for non-backtracking implementations
-        /// (<see cref="RegexOptions.NonBacktracking"/>), as the purpose of the timeout is to thwart excessive backtracking.  Such implementations
+        /// that require excessive backtracking. The backtracking implementations guarantee that no more than O(N) work (N == length of the input)
+        /// will be performed between timeout checks, though may check more frequently. This enables the implementations to use mechanisms like
+        /// <see cref="string.IndexOf(char)"/> to search the input. Timeouts are considered optional for non-backtracking implementations
+        /// (<see cref="RegexOptions.NonBacktracking"/>), as the purpose of the timeout is to thwart excessive backtracking. Such implementations
         /// may incur up to O(N * M) operations (N == length of the input, M == length of the pattern) as part of processing input.
         /// </remarks>
         public TimeSpan MatchTimeout => internalMatchTimeout;
