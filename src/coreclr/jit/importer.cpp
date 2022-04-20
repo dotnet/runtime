@@ -7100,7 +7100,7 @@ int Compiler::impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                     }
                                 }
                             }
-                        }
+                        }//
                         break;
 
                     // box + isinst + unbox.any
