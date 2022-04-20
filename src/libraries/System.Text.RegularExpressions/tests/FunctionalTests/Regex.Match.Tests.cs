@@ -1036,20 +1036,47 @@ namespace System.Text.RegularExpressions.Tests
             Assert.Throws<RegexMatchTimeoutException>(() => { re.Match(input); });
         }
 
-        [Theory]
-        [MemberData(nameof(RegexHelpers.AvailableEngines_MemberData), MemberType = typeof(RegexHelpers))]
-        public async Task Match_Timeout_Throws(RegexEngine engine)
+        public static IEnumerable<object[]> Match_Timeout_Throws_MemberData()
         {
-            if (RegexHelpers.IsNonBacktracking(engine))
+            foreach (RegexEngine engine in RegexHelpers.AvailableEngines)
             {
-                // test relies on backtracking taking a long time
-                return;
+                if (RegexHelpers.IsNonBacktracking(engine))
+                {
+                    continue;
+                }
+
+                // All of the below tests have catastrophic backtracking...
+
+                string a50 = new string('a', 50);
+                string a64 = new string('a', 64);
+                string a100 = new string('a', 100);
+                string b50 = new string('b', 50);
+
+                foreach (string lazyInner in new[] { "", "?" })
+                {
+                    foreach (string lazyOuter in new[] { "", "?" })
+                    {
+                        // Loop around a single-char loop
+                        yield return new object[] { engine, @$"(a+{lazyInner})+{lazyOuter}$", $"{a50}b" };
+                        yield return new object[] { engine, @$"([^a]+{lazyInner})+{lazyOuter}$", $"{b50}a" };
+                        yield return new object[] { engine, @$"(\w+{lazyInner})+{lazyOuter}$", $"{a50}!" };
+
+                        // Loop around a loop (w/ and w/out inner capture)
+                        yield return new object[] { engine, @$"((?:aa)+{lazyInner})+{lazyOuter}$", $"{a100}b" };
+                        yield return new object[] { engine, @$"((aa)+{lazyInner})+{lazyOuter}$", $"{a100}b" };
+                    }
+                }
+
+                // Excessive alternations
+                yield return new object[] { engine, string.Concat(Enumerable.Repeat(@"(?:a||\w)", 64)) + "$", $"{a64}b" };
             }
+        }
 
-            const string Pattern = @"^([0-9a-zA-Z]([-.\w]*[0-9a-zA-Z])*@(([0-9a-zA-Z])+([-\w]*[0-9a-zA-Z])*\.)+[a-zA-Z]{2,9})$";
-            string input = new string('a', 50) + "@a.a";
-
-            Regex r = await RegexHelpers.GetRegexAsync(engine, Pattern, RegexOptions.None, TimeSpan.FromMilliseconds(100));
+        [Theory]
+        [MemberData(nameof(Match_Timeout_Throws_MemberData))]
+        public async Task Match_Timeout_Throws(RegexEngine engine, string pattern, string input)
+        {
+            Regex r = await RegexHelpers.GetRegexAsync(engine, pattern, RegexOptions.None, TimeSpan.FromMilliseconds(1));
             Assert.Throws<RegexMatchTimeoutException>(() => r.Match(input));
         }
 
@@ -1060,7 +1087,7 @@ namespace System.Text.RegularExpressions.Tests
         {
             if (RegexHelpers.IsNonBacktracking(engine))
             {
-                // test relies on backtracking taking a long time
+                // Test relies on backtracking triggering timeout checks
                 return;
             }
 
@@ -1109,7 +1136,6 @@ namespace System.Text.RegularExpressions.Tests
             }, ((int)options).ToString(CultureInfo.InvariantCulture)).Dispose();
         }
 
-        // TODO: Figure out what to do with default timeouts for source generated regexes
         [Theory]
         [InlineData(RegexOptions.None)]
         [InlineData(RegexOptions.Compiled)]
@@ -1120,37 +1146,6 @@ namespace System.Text.RegularExpressions.Tests
             var sw = Stopwatch.StartNew();
             VerifyIsMatchThrows<RegexMatchTimeoutException>(null, "An input string that takes a very very very very very very very very very very very long time!", TimeSpan.FromMilliseconds(1), PatternLeadingToLotsOfBacktracking, options);
             Assert.InRange(sw.Elapsed.TotalSeconds, 0, 10); // arbitrary upper bound that should be well above what's needed with a 1ms timeout
-        }
-
-        // On 32-bit we can't test these high inputs as they cause OutOfMemoryExceptions.
-        // On Linux, we may get killed by the OOM Killer; on Windows, it will swap instead
-        [OuterLoop("Can take several seconds")]
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess), nameof(PlatformDetection.IsWindows))]
-        [MemberData(nameof(RegexHelpers.AvailableEngines_MemberData), MemberType = typeof(RegexHelpers))]
-        public async Task Match_Timeout_Loop_Throws(RegexEngine engine)
-        {
-            if (RegexHelpers.IsNonBacktracking(engine))
-            {
-                // [ActiveIssue("https://github.com/dotnet/runtime/issues/60623")]
-                return;
-            }
-
-            Regex regex = await RegexHelpers.GetRegexAsync(engine, @"a\s+", RegexOptions.None, TimeSpan.FromSeconds(1));
-            string input = "a" + new string(' ', 800_000_000) + " ";
-            Assert.Throws<RegexMatchTimeoutException>(() => regex.Match(input));
-        }
-
-        // On 32-bit we can't test these high inputs as they cause OutOfMemoryExceptions.
-        // On Linux, we may get killed by the OOM Killer; on Windows, it will swap instead
-        [OuterLoop("Can take several seconds")]
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess), nameof(PlatformDetection.IsWindows))]
-        [MemberData(nameof(RegexHelpers.AvailableEngines_MemberData), MemberType = typeof(RegexHelpers))]
-        public async Task Match_Timeout_Repetition_Throws(RegexEngine engine)
-        {
-            int repetitionCount = 800_000_000;
-            Regex regex = await RegexHelpers.GetRegexAsync(engine, @"a\s{" + repetitionCount + "}", RegexOptions.None, TimeSpan.FromSeconds(1));
-            string input = @"a" + new string(' ', repetitionCount) + @"b";
-            Assert.Throws<RegexMatchTimeoutException>(() => regex.Match(input));
         }
 
         public static IEnumerable<object[]> Match_Advanced_TestData()
