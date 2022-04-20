@@ -391,7 +391,7 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
             }
         }
 
-        private class Bar
+        private sealed class Bar
         {
             public Bar()
             {
@@ -399,7 +399,7 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
             }
         }
 
-        private class StaticConstructorClass
+        private sealed class StaticConstructorClass
         {
             static StaticConstructorClass() { }
 

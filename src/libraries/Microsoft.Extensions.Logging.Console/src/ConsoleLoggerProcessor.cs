@@ -10,7 +10,7 @@ using System.Threading;
 namespace Microsoft.Extensions.Logging.Console
 {
     [UnsupportedOSPlatform("browser")]
-    internal class ConsoleLoggerProcessor : IDisposable
+    internal sealed class ConsoleLoggerProcessor : IDisposable
     {
         private const int _maxQueuedMessages = 1024;
 
@@ -33,7 +33,7 @@ namespace Microsoft.Extensions.Logging.Console
             _outputThread.Start();
         }
 
-        public virtual void EnqueueMessage(LogMessageEntry message)
+        public void EnqueueMessage(LogMessageEntry message)
         {
             if (!_messageQueue.IsAddingCompleted)
             {
@@ -54,7 +54,7 @@ namespace Microsoft.Extensions.Logging.Console
         }
 
         // for testing
-        internal virtual void WriteMessage(LogMessageEntry entry)
+        internal void WriteMessage(LogMessageEntry entry)
         {
             IConsole console = entry.LogAsError ? ErrorConsole : Console;
             console.Write(entry.Message);

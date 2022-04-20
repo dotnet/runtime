@@ -11,7 +11,7 @@ internal static partial class Interop
 {
     internal static partial class WinHttp
     {
-        internal class SafeWinHttpHandle : SafeHandleZeroOrMinusOneIsInvalid
+        internal sealed class SafeWinHttpHandle : SafeHandleZeroOrMinusOneIsInvalid
         {
             private SafeWinHttpHandle? _parentHandle;
 

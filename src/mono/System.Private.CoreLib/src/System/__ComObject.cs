@@ -3,7 +3,7 @@
 
 namespace System
 {
-    internal class __ComObject
+    internal sealed class __ComObject
     {
         private __ComObject()
         {
