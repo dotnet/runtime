@@ -5969,15 +5969,15 @@ protected:
     // Do hoisting for loop "lnum" (an index into the optLoopTable), and all loops nested within it.
     // Tracks the expressions that have been hoisted by containing loops by temporarily recording their
     // value numbers in "m_hoistedInParentLoops".  This set is not modified by the call.
+    // 
     // Returns the list of basic blocks that were added as preheaders as part of hoisting the current loop.
     ArrayStack<BasicBlock*> optHoistLoopNest(unsigned lnum, LoopHoistContext* hoistCtxt);
-    // void optHoistLoopNest(unsigned lnum, LoopHoistContext* hoistCtxt, ArrayStack<BasicBlock*>* newPreHeaders);
 
     // Do hoisting for a particular loop ("lnum" is an index into the optLoopTable.)
     // Assumes that expressions have been hoisted in containing loops if their value numbers are in
     // "m_hoistedInParentLoops".
     //
-    // Returns the new preheaders created
+    // Returns the new preheaders created.
     ArrayStack<BasicBlock*> optHoistThisLoop(unsigned                lnum,
                                              LoopHoistContext*       hoistCtxt,
                                              ArrayStack<BasicBlock*> existingPreHeaders);

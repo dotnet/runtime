@@ -6200,7 +6200,6 @@ void Compiler::optHoistLoopCode()
 
         if (optLoopTable[lnum].lpParent == BasicBlock::NOT_IN_LOOP)
         {
-            // ArrayStack<BasicBlock*> abc(getAllocatorLoopHoist());
             optHoistLoopNest(lnum, &hoistCtxt);
         }
     }
@@ -6251,12 +6250,8 @@ void Compiler::optHoistLoopCode()
 #endif // DEBUG
 }
 
-// void Compiler::optHoistLoopNest(unsigned lnum, LoopHoistContext* hoistCtxt, ArrayStack<BasicBlock*>* preHeadersList)
 ArrayStack<BasicBlock*> Compiler::optHoistLoopNest(unsigned lnum, LoopHoistContext* hoistCtxt)
 {
-    // BlockSet newPreHeaders(BlockSetOps::MakeEmpty(this));
-    // ArrayStack<BasicBlock*> preHeadersList(getAllocatorLoopHoist());
-
     // Do this loop, then recursively do all nested loops.
     JITDUMP("\n%s " FMT_LP "\n", optLoopTable[lnum].lpParent == BasicBlock::NOT_IN_LOOP ? "Loop Nest" : "Nested Loop",
             lnum);
@@ -6327,9 +6322,6 @@ ArrayStack<BasicBlock*> Compiler::optHoistLoopNest(unsigned lnum, LoopHoistConte
     }
 
     return optHoistThisLoop(lnum, hoistCtxt, preHeadersOfChildLoops);
-
-    //// Reset the preHeaders list that we found out from this loop.
-    //*preHeadersList = preHeadersListForCurrLoop;
 }
 
 ArrayStack<BasicBlock*> Compiler::optHoistThisLoop(unsigned                lnum,
@@ -6487,15 +6479,6 @@ ArrayStack<BasicBlock*> Compiler::optHoistThisLoop(unsigned                lnum,
         // We could in the future do better.
         defExec.Push(pLoopDsc->lpEntry);
     }
-
-    /* for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
-     {
-         if (BlockSetOps::IsMember(this, newPreHeaders, block->bbNum))
-         {
-             defExec.Push(block);
-
-         }
-     }*/
 
     return optHoistLoopBlocks(lnum, &defExec, hoistCtxt);
 }
@@ -6775,8 +6758,6 @@ ArrayStack<BasicBlock*> Compiler::optHoistLoopBlocks(unsigned                 lo
         unsigned          m_loopNum;
         LoopHoistContext* m_hoistContext;
         BasicBlock*       m_currentBlock;
-        /*BitVecTraits             m_visitedTraits;
-        BitVec                   m_visited;*/
         ArrayStack<BasicBlock*> m_preHeadersList;
 
         bool IsNodeHoistable(GenTree* node)
@@ -6906,12 +6887,7 @@ ArrayStack<BasicBlock*> Compiler::optHoistLoopBlocks(unsigned                 lo
                     m_compiler->optHoistCandidate(stmt->GetRootNode(), block, m_loopNum, m_hoistContext);
                     if ((m_compiler->optLoopTable[m_loopNum].lpFlags & LPFLG_HAS_PREHEAD) != 0)
                     {
-                        BasicBlock* loopHead = m_compiler->optLoopTable[m_loopNum].lpHead;
-                        /*if (!BitVecOps::IsMember(&m_visitedTraits, m_visited, loopHead->bbNum))
-                        {
-                            preHeadersList->Push(loopHead);
-                        }*/
-                        m_preHeadersList.Push(loopHead);
+                        m_preHeadersList.Push(m_compiler->optLoopTable[m_loopNum].lpHead);
                     }
                 }
                 else
@@ -7258,22 +7234,7 @@ ArrayStack<BasicBlock*> Compiler::optHoistLoopBlocks(unsigned                 lo
                         value.m_invariant = false;
 
                         m_compiler->optHoistCandidate(value.Node(), m_currentBlock, m_loopNum, m_hoistContext);
-
-                        BasicBlock* loopHead = m_compiler->optLoopTable[m_loopNum].lpHead;
-
-                        // if (BitVecTraits::GetSize(&m_visitedTraits) < loopHead->bbNum)
-                        //{
-                        //    // We don't know how many blocks will be added and hence we would grow
-                        //    // the bitset here.
-                        //    m_visitedTraits = BitVecTraits(m_compiler->fgBBNumMax * 2, m_compiler);
-                        //    m_visited       = BitVecOps::MakeCopy(&m_visitedTraits, m_visited);
-                        //}
-
-                        // if (!BitVecOps::IsMember(&m_visitedTraits, m_visited, loopHead->bbNum))
-                        //{
-                        //    BitVecOps::AddElemD(&m_visitedTraits, m_visited, loopHead->bbNum);
-                        m_preHeadersList.Push(loopHead);
-                        //}
+                        m_preHeadersList.Push(m_compiler->optLoopTable[m_loopNum].lpHead);
                     }
                     else if (value.Node() != tree)
                     {
@@ -7301,10 +7262,6 @@ ArrayStack<BasicBlock*> Compiler::optHoistLoopBlocks(unsigned                 lo
             return fgWalkResult::WALK_CONTINUE;
         }
 
-        // ArrayStack<BasicBlock*>* GetPreHeaders()
-        //{
-        //    return &preHeadersList;
-        //}
     };
 
     LoopDsc* loopDsc = &optLoopTable[loopNum];
