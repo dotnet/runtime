@@ -84,7 +84,7 @@ namespace System.Diagnostics.Tests
             RetryHelper.Execute(() =>
             {
                 modulesCollection = process.Modules;
-            }, maxAttempts:5, backoffFunc:null, retryWhen:e => { return (e.GetType() == typeof(Win32Exception)); });
+            }, maxAttempts: 5, backoffFunc: null, retryWhen: e => e.GetType() == typeof(Win32Exception));
 
             int expectedCount = 0;
             int disposedCount = 0;
