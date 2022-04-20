@@ -98,6 +98,8 @@ namespace System.Threading
                 *(GCHandle*)(_pNativeOverlapped + 1) = GCHandle.Alloc(this);
 
                 success = true;
+                if (NativeRuntimeEventSource.Log.IsEnabled())
+                    NativeRuntimeEventSource.Log.ThreadPoolIOPack((IntPtr)(&pNativeOverlapped), (IntPtr)(&pNativeOverlapped));
                 return _pNativeOverlapped;
             }
             finally

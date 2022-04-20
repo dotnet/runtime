@@ -374,7 +374,20 @@ namespace System.Diagnostics.Tracing
             IntPtr Overlapped,
             ushort ClrInstanceID = DefaultClrInstanceId)
         {
-            throw new NotImplementedException();
+            if (!IsEnabled(EventLevel.Verbose, Keywords.ThreadingKeyword))
+                return;
+
+            EventData* data = stackalloc EventData[3]
+            data[0].DataPointer = (IntPtr)(&NativeOverlapped);
+            data[0].Size        = sizeof(IntPtr);
+            data[0].Reserved    = 0;
+            data[1].DataPointer = (IntPtr)(&Overlapped);
+            data[1].Size        = sizeof(IntPtr);
+            data[1].Reserved    = 0;
+            data[2].DataPointer = (IntPtr)(&ClrInstanceId);
+            data[2].Size        = sizeof(ushort);
+            data[2].Reserved    = 0;
+            WriteEventCore(65, 3, data);
         }
     }
 }
