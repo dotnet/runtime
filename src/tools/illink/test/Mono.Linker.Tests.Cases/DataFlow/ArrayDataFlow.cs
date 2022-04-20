@@ -93,13 +93,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			arr[1].RequiresPublicMethods (); // Should warn - unknown value at this index
 		}
 
-		[ExpectedWarning ("IL2072", nameof (GetUnknownType), nameof (DataFlowTypeExtensions.RequiresAll),
-			ProducedBy = ProducedBy.Trimmer)]
-		[ExpectedWarning ("IL2072", nameof (GetTypeWithPublicConstructors), nameof (DataFlowTypeExtensions.RequiresAll),
-			ProducedBy = ProducedBy.Trimmer)]
-		// https://github.com/dotnet/linker/issues/2736
-		[ExpectedWarning ("IL2062", nameof (DataFlowTypeExtensions.RequiresAll),
-			ProducedBy = ProducedBy.Analyzer)]
+		[ExpectedWarning ("IL2072", nameof (GetUnknownType), nameof (DataFlowTypeExtensions.RequiresAll))]
+		[ExpectedWarning ("IL2072", nameof (GetTypeWithPublicConstructors), nameof (DataFlowTypeExtensions.RequiresAll))]
 		static void TestArraySetElementOneElementMix ()
 		{
 			Type[] arr = new Type[1];
@@ -534,23 +529,46 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				arr[0].RequiresAll ();
 			}
 
-			[ExpectedWarning ("IL2072", nameof (GetUnknownType), nameof (DataFlowTypeExtensions.RequiresAll),
-				ProducedBy = ProducedBy.Trimmer)]
-			// https://github.com/dotnet/linker/issues/2736
+			[ExpectedWarning ("IL2072", nameof (GetUnknownType), nameof (DataFlowTypeExtensions.RequiresAll))]
+			[ExpectedWarning ("IL2072", nameof (GetTypeWithPublicConstructors), nameof (DataFlowTypeExtensions.RequiresAll))]
+			static void TestNullCoalescingAssignment ()
+			{
+				Type[] arr = new Type[1];
+				arr[0] = GetTypeWithPublicConstructors ();
+				arr[0] ??= GetUnknownType ();
+				arr[0].RequiresAll ();
+			}
+
 			[ExpectedWarning ("IL2062", nameof (DataFlowTypeExtensions.RequiresAll),
 				ProducedBy = ProducedBy.Analyzer)]
-			static void TestNullCoalescingAssignment ()
+			// https://github.com/dotnet/linker/issues/2746
+			[ExpectedWarning ("IL2072", nameof (GetUnknownType), nameof (DataFlowTypeExtensions.RequiresAll),
+				ProducedBy = ProducedBy.Trimmer)]
+			static void TestNullCoalescingAssignmentToEmpty ()
 			{
 				Type[] arr = new Type[1];
 				arr[0] ??= GetUnknownType ();
 				arr[0].RequiresAll ();
 			}
 
-			// Both linker and analyzer get this wrong. They should produce IL2072 instead.
-			// https://github.com/dotnet/linker/issues/2736
+			[ExpectedWarning ("IL2072", nameof (GetWithPublicMethods), nameof (DataFlowTypeExtensions.RequiresAll))]
+			// https://github.com/dotnet/linker/issues/2746 (Linker produces incomplete set of IL2072 warnings)
+			[ExpectedWarning ("IL2072", nameof (GetUnknownType), nameof (DataFlowTypeExtensions.RequiresAll),
+				ProducedBy = ProducedBy.Analyzer)]
+			[ExpectedWarning ("IL2072", nameof (GetTypeWithPublicConstructors), nameof (DataFlowTypeExtensions.RequiresAll),
+				ProducedBy = ProducedBy.Analyzer)]
+			static void TestNullCoalescingAssignmentComplex ()
+			{
+				Type[] arr = new Type[1];
+				arr[0] = GetWithPublicMethods ();
+				arr[0] ??= (GetUnknownType () ?? GetTypeWithPublicConstructors ());
+				arr[0].RequiresAll ();
+			}
+
+			// Linker only incidentally matches the analyzer behavior here.
 			// https://github.com/dotnet/linker/issues/2737
 			[ExpectedWarning ("IL2062", nameof (DataFlowTypeExtensions.RequiresAll))]
-			static void TestNullCoalescingAssignmentComplex ()
+			static void TestNullCoalescingAssignmentToEmptyComplex ()
 			{
 				Type[] arr = new Type[1];
 				arr[0] ??= (GetUnknownType () ?? GetTypeWithPublicConstructors ());
@@ -561,12 +579,20 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			{
 				TestNullCoalesce ();
 				TestNullCoalescingAssignment ();
+				TestNullCoalescingAssignmentToEmpty ();
 				TestNullCoalescingAssignmentComplex ();
+				TestNullCoalescingAssignmentToEmptyComplex ();
 			}
 		}
 
 		[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicConstructors)]
 		private static Type GetTypeWithPublicConstructors ()
+		{
+			return null;
+		}
+
+		[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+		private static Type GetWithPublicMethods ()
 		{
 			return null;
 		}
