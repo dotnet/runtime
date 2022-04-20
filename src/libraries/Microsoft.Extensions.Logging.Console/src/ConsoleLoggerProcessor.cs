@@ -7,10 +7,12 @@ using System.Diagnostics.CodeAnalysis;
 using System.Runtime.Versioning;
 using System.Threading;
 
+#pragma warning disable CA1852 // TODO InternalsVisibleTo: https://github.com/dotnet/roslyn-analyzers/pull/5972
+
 namespace Microsoft.Extensions.Logging.Console
 {
     [UnsupportedOSPlatform("browser")]
-    internal sealed class ConsoleLoggerProcessor : IDisposable
+    internal class ConsoleLoggerProcessor : IDisposable
     {
         private const int _maxQueuedMessages = 1024;
 
@@ -33,7 +35,7 @@ namespace Microsoft.Extensions.Logging.Console
             _outputThread.Start();
         }
 
-        public void EnqueueMessage(LogMessageEntry message)
+        public virtual void EnqueueMessage(LogMessageEntry message)
         {
             if (!_messageQueue.IsAddingCompleted)
             {

@@ -399,7 +399,7 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
             }
         }
 
-        private sealed class StaticConstructorClass
+        private class StaticConstructorClass
         {
             static StaticConstructorClass() { }
 

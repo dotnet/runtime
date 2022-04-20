@@ -13,9 +13,11 @@ using Microsoft.Extensions.Internal;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
+#pragma warning disable CA1852 // TODO InternalsVisibleTo: https://github.com/dotnet/roslyn-analyzers/pull/5972
+
 namespace Microsoft.Extensions.Http
 {
-    internal sealed class DefaultHttpClientFactory : IHttpClientFactory, IHttpMessageHandlerFactory
+    internal class DefaultHttpClientFactory : IHttpClientFactory, IHttpMessageHandlerFactory
     {
         private static readonly TimerCallback _cleanupCallback = (s) => ((DefaultHttpClientFactory)s!).CleanupTimer_Tick();
         private readonly ILogger _logger;
@@ -194,13 +196,13 @@ namespace Microsoft.Extensions.Http
         }
 
         // Internal so it can be overridden in tests
-        internal void StartHandlerEntryTimer(ActiveHandlerTrackingEntry entry)
+        internal virtual void StartHandlerEntryTimer(ActiveHandlerTrackingEntry entry)
         {
             entry.StartExpiryTimer(_expiryCallback);
         }
 
         // Internal so it can be overridden in tests
-        internal void StartCleanupTimer()
+        internal virtual void StartCleanupTimer()
         {
             lock (_cleanupTimerLock)
             {
@@ -212,7 +214,7 @@ namespace Microsoft.Extensions.Http
         }
 
         // Internal so it can be overridden in tests
-        internal void StopCleanupTimer()
+        internal virtual void StopCleanupTimer()
         {
             lock (_cleanupTimerLock)
             {
