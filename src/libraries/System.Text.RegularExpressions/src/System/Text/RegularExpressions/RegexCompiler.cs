@@ -76,11 +76,6 @@ namespace System.Text.RegularExpressions
         /// <summary>Pool of ReadOnlySpan of char locals.</summary>
         private Stack<LocalBuilder>? _readOnlySpanCharLocalsPool;
 
-        /// <summary>Local representing a timeout counter for loops (set loops and node loops).</summary>
-        private LocalBuilder? _loopTimeoutCounter;
-        /// <summary>A frequency with which the timeout should be validated.</summary>
-        private const int LoopTimeoutCheckCount = 2048;
-
         private static FieldInfo RegexRunnerField(string fieldname) => typeof(RegexRunner).GetField(fieldname, BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static)!;
 
         private static MethodInfo RegexRunnerMethod(string methname) => typeof(RegexRunner).GetMethod(methname, BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static)!;
@@ -1275,10 +1270,6 @@ namespace System.Text.RegularExpressions
             LocalBuilder slice = DeclareReadOnlySpanChar();
             Label doneLabel = DefineLabel();
             Label originalDoneLabel = doneLabel;
-            if (_hasTimeout)
-            {
-                _loopTimeoutCounter = DeclareInt32();
-            }
 
             // ReadOnlySpan<char> inputSpan = input;
             Ldarg_1();
@@ -1599,6 +1590,9 @@ namespace System.Text.RegularExpressions
                 {
                     doneLabel = backtrackLabel;
                     MarkLabel(backtrackLabel);
+
+                    // We're backtracking.  Check the timeout.
+                    EmitTimeoutCheckIfNeeded();
 
                     // startingPos = base.runstack[--stackpos];
                     // startingCapturePos = base.runstack[--stackpos];
@@ -2213,6 +2207,10 @@ namespace System.Text.RegularExpressions
                 Stloc(startingPos);
                 int startingTextSpanPos = sliceStaticPos;
 
+                // Check for timeout. Lookarounds result in re-processing the same input, so while not
+                // technically backtracking, it's appropriate to have a timeout check.
+                EmitTimeoutCheckIfNeeded();
+
                 // Emit the child.
                 RegexNode child = node.Child(0);
                 if (analysis.MayBacktrack(child))
@@ -2264,6 +2262,10 @@ namespace System.Text.RegularExpressions
 
                 Label negativeLookaheadDoneLabel = DefineLabel();
                 doneLabel = negativeLookaheadDoneLabel;
+
+                // Check for timeout. Lookarounds result in re-processing the same input, so while not
+                // technically backtracking, it's appropriate to have a timeout check.
+                EmitTimeoutCheckIfNeeded();
 
                 // Emit the child.
                 RegexNode child = node.Child(0);
@@ -2973,6 +2975,9 @@ namespace System.Text.RegularExpressions
                 EmitStackPop();
                 Stloc(startingPos);
 
+                // We're backtracking.  Check the timeout.
+                EmitTimeoutCheckIfNeeded();
+
                 // if (startingPos >= endingPos) goto doneLabel; // or <= for rtl
                 Ldloc(startingPos);
                 Ldloc(endingPos);
@@ -3171,6 +3176,9 @@ namespace System.Text.RegularExpressions
                     Add();
                     Stloc(iterationCount!);
                 }
+
+                // We're backtracking.  Check the timeout.
+                EmitTimeoutCheckIfNeeded();
 
                 // Now match the next item in the lazy loop.  We need to reset the pos to the position
                 // just after the last character in this loop was matched, and we need to store the resulting position
@@ -3445,7 +3453,6 @@ namespace System.Text.RegularExpressions
 
                 // Iteration body
                 MarkLabel(body);
-                EmitTimeoutCheck();
 
                 // We need to store the starting pos and crawl position so that it may
                 // be backtracked through later.  This needs to be the starting position from
@@ -3610,6 +3617,9 @@ namespace System.Text.RegularExpressions
                     Label backtrack = DefineLabel();
                     MarkLabel(backtrack);
 
+                    // We're backtracking.  Check the timeout.
+                    EmitTimeoutCheckIfNeeded();
+
                     // sawEmpty = base.runstack[--stackpos];
                     // iterationCount = base.runstack[--stackpos];
                     // startingPos = base.runstack[--stackpos];
@@ -3689,7 +3699,6 @@ namespace System.Text.RegularExpressions
                     // TimeoutCheck();
                     // HandleSingleChar();
                     MarkLabel(bodyLabel);
-                    EmitTimeoutCheck();
                     EmitSingleChar(node);
 
                     // for (...; ...; i++)
@@ -3754,7 +3763,6 @@ namespace System.Text.RegularExpressions
                     BrFar(conditionLabel);
 
                     MarkLabel(bodyLabel);
-                    EmitTimeoutCheck();
 
                     LocalBuilder tmpTextSpanLocal = slice; // we want EmitSingleChar to refer to this temporary
                     int tmpTextSpanPos = sliceStaticPos;
@@ -3825,7 +3833,6 @@ namespace System.Text.RegularExpressions
                     // Body:
                     // TimeoutCheck();
                     MarkLabel(bodyLabel);
-                    EmitTimeoutCheck();
 
                     // if (pos <= iterationLocal) goto atomicLoopDoneLabel;
                     Ldloc(pos);
@@ -4007,7 +4014,6 @@ namespace System.Text.RegularExpressions
                     // Body:
                     // TimeoutCheck();
                     MarkLabel(bodyLabel);
-                    EmitTimeoutCheck();
 
                     // if ((uint)i >= (uint)slice.Length) goto atomicLoopDoneLabel;
                     Ldloc(iterationLocal);
@@ -4264,7 +4270,6 @@ namespace System.Text.RegularExpressions
 
                 // Iteration body
                 MarkLabel(body);
-                EmitTimeoutCheck();
 
                 // We need to store the starting pos and crawl position so that it may
                 // be backtracked through later.  This needs to be the starting position from
@@ -4425,6 +4430,9 @@ namespace System.Text.RegularExpressions
                         Label backtrack = DefineLabel();
                         MarkLabel(backtrack);
 
+                        // We're backtracking.  Check the timeout.
+                        EmitTimeoutCheckIfNeeded();
+
                         // if (iterationCount == 0) goto originalDoneLabel;
                         Ldloc(iterationCount);
                         Ldc(0);
@@ -4453,6 +4461,9 @@ namespace System.Text.RegularExpressions
                         // Emit a backtracking section that restores the loop's state and then jumps to the previous done label
                         Label backtrack = DefineLabel();
                         MarkLabel(backtrack);
+
+                        // We're backtracking.  Check the timeout.
+                        EmitTimeoutCheckIfNeeded();
 
                         // iterationCount = base.runstack[--runstack];
                         // startingPos = base.runstack[--runstack];
@@ -4617,12 +4628,9 @@ namespace System.Text.RegularExpressions
                 Call(tryFindNextStartingPositionMethod);
                 BrfalseFar(returnLabel);
 
-                if (_hasTimeout)
-                {
-                    // CheckTimeout();
-                    Ldthis();
-                    Call(s_checkTimeoutMethod);
-                }
+                // Check the timeout every time we run the whole match logic at a new starting location, as each such
+                // operation could do work at least linear in the length of the input.
+                EmitTimeoutCheckIfNeeded();
 
                 // if (TryMatchAtCurrentPosition(text) || runtextpos == text.length) // or == 0 for rtl
                 //   return;
@@ -5106,31 +5114,26 @@ namespace System.Text.RegularExpressions
             Ldloc(resultLocal);
         }
 
-        /// <summary>Emits a timeout check.</summary>
-        private void EmitTimeoutCheck()
+        /// <summary>Emits a timeout check if one has been set explicitly or implicitly via a default setting.</summary>
+        /// <remarks>
+        /// Regex timeouts exist to avoid catastrophic backtracking.  The goal with timeouts isn't to be accurate to the timeout value,
+        /// but to ensure that significant backtracking can be stopped.  As such, we allow for up to O(n) work in the length of the input
+        /// between checks, which means we emit checks anywhere backtracking is introduced, such that every check can have O(n) work
+        /// associated with it.  This means checks:
+        /// - when restarting the whole match evaluation at a new index
+        /// - when backtracking backwards in a loop
+        /// - when backtracking forwards in a lazy loop
+        /// - when backtracking to the next branch of an alternation
+        /// - when processing a lookaround
+        /// </remarks>
+        private void EmitTimeoutCheckIfNeeded()
         {
-            if (!_hasTimeout)
+            if (_hasTimeout)
             {
-                return;
+                // base.CheckTimeout();
+                Ldthis();
+                Call(s_checkTimeoutMethod);
             }
-
-            Debug.Assert(_loopTimeoutCounter != null);
-
-            // Increment counter for each loop iteration.
-            Ldloc(_loopTimeoutCounter);
-            Ldc(1);
-            Add();
-            Stloc(_loopTimeoutCounter);
-
-            // Emit code to check the timeout every 2048th iteration.
-            Label label = DefineLabel();
-            Ldloc(_loopTimeoutCounter);
-            Ldc(LoopTimeoutCheckCount);
-            RemUn();
-            Brtrue(label);
-            Ldthis();
-            Call(s_checkTimeoutMethod);
-            MarkLabel(label);
         }
     }
 }

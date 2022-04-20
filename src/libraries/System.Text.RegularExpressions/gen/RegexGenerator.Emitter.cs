@@ -428,11 +428,9 @@ namespace System.Text.RegularExpressions.Generator
                 writer.WriteLine("// Search until we can't find a valid starting position, we find a match, or we reach the end of the input.");
                 using (EmitBlock(writer, "while (TryFindNextPossibleStartingPosition(inputSpan))"))
                 {
-                    using (rm.MatchTimeout is null ? EmitBlock(writer, $"if ({HelpersTypeName}.{HasDefaultTimeoutFieldName})") : default)
-                    {
-                        writer.WriteLine("base.CheckTimeout();");
-                    }
-                    writer.WriteLine();
+                    // Check the timeout every time we run the whole match logic at a new starting location, as each such
+                    // operation could do work at least linear in the length of the input.
+                    EmitTimeoutCheckIfNeeded(writer, rm);
 
                     using (EmitBlock(writer, $"if (TryMatchAtCurrentPosition(inputSpan) || base.runtextpos == {(!rtl ? "inputSpan.Length" : "0")})"))
                     {
@@ -1069,12 +1067,6 @@ namespace System.Text.RegularExpressions.Generator
             string sliceSpan = "slice";
             writer.WriteLine("int pos = base.runtextpos;");
             writer.WriteLine($"int matchStart = pos;");
-            if (rm.MatchTimeout != Timeout.Infinite)
-            {
-                // Either an explicit timeout was set, or the timeout was left null and the default process-wide
-                // timeout value needs to be consulted at run-time.  Either way, the code for timeouts needs to be emitted.
-                writer.WriteLine("int loopTimeoutCounter = 0;");
-            }
             writer.Flush();
             int additionalDeclarationsPosition = ((StringWriter)writer.InnerWriter).GetStringBuilder().Length;
             int additionalDeclarationsIndent = writer.Indent;
@@ -1569,6 +1561,9 @@ namespace System.Text.RegularExpressions.Generator
                     {
                         doneLabel = backtrackLabel;
                         MarkLabel(backtrackLabel, emitSemicolon: false);
+
+                        // We're backtracking.  Check the timeout.
+                        EmitTimeoutCheckIfNeeded(writer, rm);
 
                         EmitStackPop(startingCapturePos is not null ?
                             new[] { startingCapturePos, startingPos } :
@@ -2110,6 +2105,10 @@ namespace System.Text.RegularExpressions.Generator
                 writer.WriteLine();
                 int startingSliceStaticPos = sliceStaticPos;
 
+                // Check for timeout. Lookarounds result in re-processing the same input, so while not
+                // technically backtracking, it's appropriate to have a timeout check.
+                EmitTimeoutCheckIfNeeded(writer, rm);
+
                 // Emit the child.
                 RegexNode child = node.Child(0);
                 if (rm.Analysis.MayBacktrack(child))
@@ -2157,6 +2156,10 @@ namespace System.Text.RegularExpressions.Generator
 
                 string negativeLookaroundDoneLabel = ReserveName("NegativeLookaroundMatch");
                 doneLabel = negativeLookaroundDoneLabel;
+
+                // Check for timeout. Lookarounds result in re-processing the same input, so while not
+                // technically backtracking, it's appropriate to have a timeout check.
+                EmitTimeoutCheckIfNeeded(writer, rm);
 
                 // Emit the child.
                 RegexNode child = node.Child(0);
@@ -2780,6 +2783,9 @@ namespace System.Text.RegularExpressions.Generator
                 EmitStackPop(endingPos, startingPos);
                 writer.WriteLine();
 
+                // We're backtracking.  Check the timeout.
+                EmitTimeoutCheckIfNeeded(writer, rm);
+
                 if (!rtl && subsequent?.FindStartingLiteral() is ValueTuple<char, string?, string?> literal)
                 {
                     writer.WriteLine($"if ({startingPos} >= {endingPos} ||");
@@ -2906,6 +2912,9 @@ namespace System.Text.RegularExpressions.Generator
                     }
                     writer.WriteLine($"{iterationCount}++;");
                 }
+
+                // We're backtracking.  Check the timeout.
+                EmitTimeoutCheckIfNeeded(writer, rm);
 
                 // Now match the next item in the lazy loop.  We need to reset the pos to the position
                 // just after the last character in this loop was matched, and we need to store the resulting position
@@ -3083,7 +3092,6 @@ namespace System.Text.RegularExpressions.Generator
 
                 // Iteration body
                 MarkLabel(body, emitSemicolon: false);
-                EmitTimeoutCheckIfNeeded();
 
                 // We need to store the starting pos and crawl position so that it may
                 // be backtracked through later.  This needs to be the starting position from
@@ -3197,6 +3205,9 @@ namespace System.Text.RegularExpressions.Generator
                     string backtrack = ReserveName($"LazyLoopBacktrack");
                     MarkLabel(backtrack, emitSemicolon: false);
 
+                    // We're backtracking.  Check the timeout.
+                    EmitTimeoutCheckIfNeeded(writer, rm);
+
                     EmitStackPop(sawEmpty, iterationCount, startingPos);
 
                     if (maxIterations == int.MaxValue)
@@ -3255,7 +3266,6 @@ namespace System.Text.RegularExpressions.Generator
                     TransferSliceStaticPosToPos(); // we don't use static position with rtl
                     using (EmitBlock(writer, $"for (int i = 0; i < {iterations}; i++)"))
                     {
-                        EmitTimeoutCheckIfNeeded();
                         EmitSingleChar(node);
                     }
                 }
@@ -3299,8 +3309,6 @@ namespace System.Text.RegularExpressions.Generator
                     writer.WriteLine($"ReadOnlySpan<char> {repeaterSpan} = {sliceSpan}.Slice({sliceStaticPos}, {iterations});");
                     using (EmitBlock(writer, $"for (int i = 0; i < {repeaterSpan}.Length; i++)"))
                     {
-                        EmitTimeoutCheckIfNeeded();
-
                         string tmpTextSpanLocal = sliceSpan; // we want EmitSingleChar to refer to this temporary
                         int tmpSliceStaticPos = sliceStaticPos;
                         sliceSpan = repeaterSpan;
@@ -3360,7 +3368,6 @@ namespace System.Text.RegularExpressions.Generator
                     string maxClause = maxIterations != int.MaxValue ? $"{CountIsLessThan(iterationLocal, maxIterations)} && " : "";
                     using (EmitBlock(writer, $"while ({maxClause}pos > {iterationLocal} && {expr})"))
                     {
-                        EmitTimeoutCheckIfNeeded();
                         writer.WriteLine($"{iterationLocal}++;");
                     }
                     writer.WriteLine();
@@ -3453,7 +3460,6 @@ namespace System.Text.RegularExpressions.Generator
                     string maxClause = maxIterations != int.MaxValue ? $"{CountIsLessThan(iterationLocal, maxIterations)} && " : "";
                     using (EmitBlock(writer, $"while ({maxClause}(uint){iterationLocal} < (uint){sliceSpan}.Length && {expr})"))
                     {
-                        EmitTimeoutCheckIfNeeded();
                         writer.WriteLine($"{iterationLocal}++;");
                     }
                     writer.WriteLine();
@@ -3585,7 +3591,6 @@ namespace System.Text.RegularExpressions.Generator
 
                 // Iteration body
                 MarkLabel(body, emitSemicolon: false);
-                EmitTimeoutCheckIfNeeded();
 
                 // We need to store the starting pos and crawl position so that it may
                 // be backtracked through later.  This needs to be the starting position from
@@ -3682,6 +3687,10 @@ namespace System.Text.RegularExpressions.Generator
 
                         string backtrack = ReserveName("LoopBacktrack");
                         MarkLabel(backtrack, emitSemicolon: false);
+
+                        // We're backtracking.  Check the timeout.
+                        EmitTimeoutCheckIfNeeded(writer, rm);
+
                         using (EmitBlock(writer, $"if ({iterationCount} == 0)"))
                         {
                             Goto(originalDoneLabel);
@@ -3708,6 +3717,9 @@ namespace System.Text.RegularExpressions.Generator
                         string backtrack = ReserveName("LoopBacktrack");
                         MarkLabel(backtrack, emitSemicolon: false);
                         EmitStackPop(iterationCount, startingPos);
+
+                        // We're backtracking.  Check the timeout.
+                        EmitTimeoutCheckIfNeeded(writer, rm);
 
                         Goto(doneLabel);
                         writer.WriteLine();
@@ -3834,38 +3846,39 @@ namespace System.Text.RegularExpressions.Generator
             static string FormatN(string format, int count) =>
                 string.Concat(from i in Enumerable.Range(0, count)
                               select string.Format(format, i));
+        }
 
-            /// <summary>Emits a timeout check.</summary>
-            void EmitTimeoutCheckIfNeeded()
+        /// <summary>Emits a timeout check if the regex timeout wasn't explicitly set to infinite.</summary>
+        /// <remarks>
+        /// Regex timeouts exist to avoid catastrophic backtracking.  The goal with timeouts isn't to be accurate to the timeout value,
+        /// but to ensure that significant backtracking can be stopped.  As such, we allow for up to O(n) work in the length of the input
+        /// between checks, which means we emit checks anywhere backtracking is introduced, such that every check can have O(n) work
+        /// associated with it.  This means checks:
+        /// - when restarting the whole match evaluation at a new index
+        /// - when backtracking backwards in a loop
+        /// - when backtracking forwards in a lazy loop
+        /// - when backtracking to the next branch of an alternation
+        /// - when processing a lookaround
+        /// Note that some other constructs have code that needs to deal with backtracking, e.g. conditionals needing to ensure
+        /// that if any of their children have backtracking that code which backtracks back into the conditional is appropriately
+        /// routed to the correct child, but such constructs aren't actually introducing backtracking and thus don't need to be
+        /// instrumented for timeouts.
+        /// </remarks>
+        private static void EmitTimeoutCheckIfNeeded(IndentedTextWriter writer, RegexMethod rm)
+        {
+            // If the match timeout was explicitly set to infinite, then no timeout code needs to be emitted.
+            if (rm.MatchTimeout != Timeout.Infinite)
             {
-                // If the match timeout was explicitly set to infinite, then no timeout code needs to be emitted.
-                if (rm.MatchTimeout != Timeout.Infinite)
+                // If the timeout was explicitly set to non-infinite, then we always want to do the timeout check count tracking
+                // and actual timeout checks now and then.  If, however, the timeout was left null, we only want to do the timeout
+                // checks if they've been enabled by an AppContext switch being set before any of the regex code was used.
+                // Whether these checks are needed are stored into a static readonly bool on the helpers class, such that
+                // tiered-up code can eliminate the whole block in the vast majority case where the AppContext switch isn't set.
+                using (rm.MatchTimeout is null ? EmitBlock(writer, $"if ({HelpersTypeName}.{HasDefaultTimeoutFieldName})") : default)
                 {
-                    // Increment counter for each loop iteration. Emit code to check the timeout every 2048th iteration.
-                    const int IterationsPerTimeoutCheck = 2048; // A conservative value to guarantee the correct timeout handling.
-                    if (!requiredHelpers.ContainsKey(nameof(IterationsPerTimeoutCheck)))
-                    {
-                        requiredHelpers.Add(nameof(IterationsPerTimeoutCheck), new string[]
-                        {
-                            $"/// <summary>Number of iterations through loops at which point a timeout check should be performed.</summary>",
-                            $"internal const int {nameof(IterationsPerTimeoutCheck)} = {IterationsPerTimeoutCheck};"
-                        });
-                    }
-
-                    // If the timeout was explicitly set to non-infinite, then we always want to do the timeout check count tracking
-                    // and actual timeout checks now and then.  If, however, the timeout was left null, we only want to do the timeout
-                    // checks if they've been enabled by an AppContext switch being set before any of the regex code was used.
-                    // Whether these checks are needed are stored into a static readonly bool on the helpers class, such that
-                    // tiered-up code can eliminate the whole block in the vast majority case where the AppContext switch isn't set.
-                    using (EmitBlock(writer, rm.MatchTimeout is null ?
-                        $"if ({HelpersTypeName}.{HasDefaultTimeoutFieldName} && ++loopTimeoutCounter == {HelpersTypeName}.{nameof(IterationsPerTimeoutCheck)})" :
-                        $"if (++loopTimeoutCounter == {HelpersTypeName}.{nameof(IterationsPerTimeoutCheck)})"))
-                    {
-                        writer.WriteLine("loopTimeoutCounter = 0;");
-                        writer.WriteLine("base.CheckTimeout();");
-                    }
-                    writer.WriteLine();
+                    writer.WriteLine("base.CheckTimeout();");
                 }
+                writer.WriteLine();
             }
         }
 

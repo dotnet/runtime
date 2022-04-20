@@ -307,12 +307,10 @@ namespace System.Text.RegularExpressions.Symbolic
             }
         }
 
-        private void DoCheckTimeout(int timeoutOccursAt)
+        private void CheckTimeout(long timeoutOccursAt)
         {
-            // This logic is identical to RegexRunner.DoCheckTimeout, with the exception of check skipping. RegexRunner calls
-            // DoCheckTimeout potentially on every iteration of a loop, whereas this calls it only once per transition.
-            int currentMillis = Environment.TickCount;
-            if (currentMillis >= timeoutOccursAt && (0 <= timeoutOccursAt || 0 >= currentMillis))
+            Debug.Assert(_checkTimeout);
+            if (Environment.TickCount64 >= timeoutOccursAt)
             {
                 throw new RegexMatchTimeoutException(string.Empty, string.Empty, TimeSpan.FromMilliseconds(_timeout));
             }
@@ -329,11 +327,11 @@ namespace System.Text.RegularExpressions.Symbolic
             Debug.Assert(perThreadData is not null);
 
             // If we need to perform timeout checks, store the absolute timeout value.
-            int timeoutOccursAt = 0;
+            long timeoutOccursAt = 0;
             if (_checkTimeout)
             {
                 // Using Environment.TickCount for efficiency instead of Stopwatch -- as in the non-DFA case.
-                timeoutOccursAt = Environment.TickCount + (int)(_timeout + 0.5);
+                timeoutOccursAt = Environment.TickCount64 + _timeout;
             }
 
             // Phase 1:
@@ -408,7 +406,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <returns>
         /// A one-past-the-end index into input for the preferred match, or first final state position if isMatch is true, or NoMatchExists if no match exists.
         /// </returns>
-        private int FindEndPosition(ReadOnlySpan<char> input, int i, int timeoutOccursAt, bool isMatch, out int initialStateIndex, out int matchLength, PerThreadData perThreadData)
+        private int FindEndPosition(ReadOnlySpan<char> input, int i, long timeoutOccursAt, bool isMatch, out int initialStateIndex, out int matchLength, PerThreadData perThreadData)
         {
             int endPosition = NoMatchExists;
 
@@ -441,7 +439,11 @@ namespace System.Text.RegularExpressions.Symbolic
                 }
 
                 // Now run the DFA or NFA traversal from the current point using the current state. If timeouts are being checked,
-                // we need to pop out of the inner loop every now and then to do the timeout check in this outer loop.
+                // we need to pop out of the inner loop every now and then to do the timeout check in this outer loop. Note that
+                // the timeout exists not to provide perfect guarantees around execution time but rather as a mitigation against
+                // catastrophic backtracking.  Catastrophic backtracking is not an issue for the NonBacktracking engine, but we
+                // still check the timeout now and again to provide some semblance of the behavior a developer experiences with
+                // the backtracking engines.  We can, however, choose a large number here, since it's not actually needed for security.
                 const int CharsPerTimeoutCheck = 1_000;
                 ReadOnlySpan<char> inputForInnerLoop = _checkTimeout && input.Length - i > CharsPerTimeoutCheck ?
                     input.Slice(0, i + CharsPerTimeoutCheck) :
@@ -490,7 +492,7 @@ namespace System.Text.RegularExpressions.Symbolic
                 // Check for a timeout before continuing.
                 if (_checkTimeout)
                 {
-                    DoCheckTimeout(timeoutOccursAt);
+                    CheckTimeout(timeoutOccursAt);
                 }
             }
 
