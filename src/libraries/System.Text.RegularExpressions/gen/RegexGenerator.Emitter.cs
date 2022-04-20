@@ -181,27 +181,6 @@ namespace System.Text.RegularExpressions.Generator
             writer.WriteLine($"    /// <summary>Provides the runner that contains the custom logic implementing the specified regular expression.</summary>");
             writer.WriteLine($"    private sealed class Runner : RegexRunner");
             writer.WriteLine($"    {{");
-            if (rm.Tree.Culture != null)
-            {
-                // If the RegexTree has Culture set, then we need to emit the _textInfo field that should be used at match time for casing operations.
-                // Instead of just using the culture set on the tree, we use it to check which behavior corresponds to the culture, and based on that we
-                // create a TextInfo based on a well-known culture that has the same behavior. This is done in order to ensure that the culture being used at
-                // runtime will be supported no matter where the code ends up running.
-                writer.WriteLine($"        /// <summary>TextInfo that will be used for Backreference case comparisons.</summary>");
-                switch (RegexCaseEquivalences.GetRegexBehavior(rm.Tree.Culture))
-                {
-                    case RegexCaseBehavior.Invariant:
-                        writer.WriteLine($"        private readonly TextInfo _textInfo = CultureInfo.InvariantCulture.TextInfo;");
-                        break;
-                    case RegexCaseBehavior.NonTurkish:
-                        writer.WriteLine($"        private readonly TextInfo _textInfo = CultureInfo.GetCultureInfo(\"en-US\").TextInfo;");
-                        break;
-                    case RegexCaseBehavior.Turkish:
-                        writer.WriteLine($"        private readonly TextInfo _textInfo = CultureInfo.GetCultureInfo(\"tr-TR\").TextInfo;");
-                        break;
-                }
-                writer.WriteLine();
-            }
             if (rm.MatchTimeout is null)
             {
                 // We need to emit timeout checks for everything other than the developer explicitly setting Timeout.Infinite.
@@ -1625,38 +1604,14 @@ namespace System.Text.RegularExpressions.Generator
                     additionalDeclarations.Add("int matchLength = 0;");
                     writer.WriteLine($"matchLength = base.MatchLength({capnum});");
 
-                    bool caseInsensitive = (node.Options & RegexOptions.IgnoreCase) != 0;
-
                     if ((node.Options & RegexOptions.RightToLeft) == 0)
                     {
-                        if (!caseInsensitive)
+                        // Validate that the remaining length of the slice is sufficient
+                        // to possibly match, and then do a SequenceEqual against the matched text.
+                        writer.WriteLine($"if ({sliceSpan}.Length < matchLength || ");
+                        using (EmitBlock(writer, $"    !inputSpan.Slice(base.MatchIndex({capnum}), matchLength).SequenceEqual({sliceSpan}.Slice(0, matchLength)))"))
                         {
-                            // If we're case-sensitive, we can simply validate that the remaining length of the slice is sufficient
-                            // to possibly match, and then do a SequenceEqual against the matched text.
-                            writer.WriteLine($"if ({sliceSpan}.Length < matchLength || ");
-                            using (EmitBlock(writer, $"    !inputSpan.Slice(base.MatchIndex({capnum}), matchLength).SequenceEqual({sliceSpan}.Slice(0, matchLength)))"))
-                            {
-                                Goto(doneLabel);
-                            }
-                        }
-                        else
-                        {
-                            // For case-insensitive, we have to walk each character individually.
-                            using (EmitBlock(writer, $"if ({sliceSpan}.Length < matchLength)"))
-                            {
-                                Goto(doneLabel);
-                            }
-                            writer.WriteLine();
-
-                            additionalDeclarations.Add("int matchIndex = 0;");
-                            writer.WriteLine($"matchIndex = base.MatchIndex({capnum});");
-                            using (EmitBlock(writer, $"for (int i = 0; i < matchLength; i++)"))
-                            {
-                                using (EmitBlock(writer, $"if (_textInfo.ToLower(inputSpan[matchIndex + i]) != _textInfo.ToLower({sliceSpan}[i]))"))
-                                {
-                                    Goto(doneLabel);
-                                }
-                            }
+                            Goto(doneLabel);
                         }
 
                         writer.WriteLine();
@@ -1675,9 +1630,7 @@ namespace System.Text.RegularExpressions.Generator
                         writer.WriteLine($"matchIndex = base.MatchIndex({capnum});");
                         using (EmitBlock(writer, $"for (int i = 0; i < matchLength; i++)"))
                         {
-                            using (EmitBlock(writer, caseInsensitive ?
-                                $"if (_textInfo.ToLower(inputSpan[matchIndex + i]) != _textInfo.ToLower(inputSpan[pos - matchLength + i]))" :
-                                $"if (inputSpan[matchIndex + i] != inputSpan[pos - matchLength + i])"))
+                            using (EmitBlock(writer, $"if (inputSpan[matchIndex + i] != inputSpan[pos - matchLength + i])"))
                             {
                                 Goto(doneLabel);
                             }

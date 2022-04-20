@@ -87,15 +87,16 @@ namespace System.Text.RegularExpressions
         /// <param name="ch">The character.</param>
         /// <param name="options">The node's options.</param>
         /// <param name="culture">The culture to use to perform any required transformations.</param>
+        /// <param name="caseBehavior">The behavior to be used for case comparisons. If the value hasn't been set yet, it will get initialized in the first lookup.</param>
         /// <returns>The created RegexNode.  This might be a RegexNode.One or a RegexNode.Set.</returns>
-        public static RegexNode CreateOneWithCaseConversion(char ch, RegexOptions options, CultureInfo? culture)
+        public static RegexNode CreateOneWithCaseConversion(char ch, RegexOptions options, CultureInfo? culture, ref RegexCaseBehavior caseBehavior)
         {
             // If the options specify case-insensitivity, we try to create a node that fully encapsulates that.
             if ((options & RegexOptions.IgnoreCase) != 0)
             {
                 Debug.Assert(culture is not null);
 
-                if (!RegexCaseEquivalences.TryFindCaseEquivalencesForCharWithIBehavior(ch, culture, out ReadOnlySpan<char> equivalences))
+                if (!RegexCaseEquivalences.TryFindCaseEquivalencesForCharWithIBehavior(ch, culture, ref caseBehavior, out ReadOnlySpan<char> equivalences))
                 {
                     // If we reach here, then we know that ch does not participate in case conversion, so we just
                     // create a One node with it and strip out the IgnoreCase option.
@@ -2662,7 +2663,7 @@ namespace System.Text.RegularExpressions
             return 1;
         }
 
-        // Determines whether the node supports a compilation / code generation strategy based on walking the node tree.
+        // Determines whether the node supports a compilation strategy based on walking the node tree.
         // Also returns a human-readable string to explain the reason (it will be emitted by the source generator, hence
         // there's no need to localize).
         internal bool SupportsCompilation([NotNullWhen(false)] out string? reason)

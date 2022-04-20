@@ -22,7 +22,8 @@ namespace System.Text.RegularExpressions
         private static readonly FieldInfo s_runtextposField = RegexRunnerField("runtextpos");
         private static readonly FieldInfo s_runtrackposField = RegexRunnerField("runtrackpos");
         private static readonly FieldInfo s_runstackField = RegexRunnerField("runstack");
-        private static readonly FieldInfo s_textInfo = typeof(CompiledRegexRunner).GetField("_textInfo", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        private static readonly FieldInfo s_cultureField = typeof(CompiledRegexRunner).GetField("_culture", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        private static readonly FieldInfo s_caseBehaviorField = typeof(CompiledRegexRunner).GetField("_caseBehavior", BindingFlags.Instance | BindingFlags.NonPublic)!;
 
         private static readonly MethodInfo s_captureMethod = RegexRunnerMethod("Capture");
         private static readonly MethodInfo s_transferCaptureMethod = RegexRunnerMethod("TransferCapture");
@@ -37,6 +38,7 @@ namespace System.Text.RegularExpressions
         private static readonly MethodInfo s_charInClassMethod = RegexRunnerMethod("CharInClass");
         private static readonly MethodInfo s_checkTimeoutMethod = RegexRunnerMethod("CheckTimeout");
 
+        private static readonly MethodInfo s_regexCaseEquivalencesTryFindCaseEquivalencesForCharWithIBehaviorMethod = typeof(RegexCaseEquivalences).GetMethod("TryFindCaseEquivalencesForCharWithIBehavior", BindingFlags.Static | BindingFlags.Public)!;
         private static readonly MethodInfo s_charIsDigitMethod = typeof(char).GetMethod("IsDigit", new Type[] { typeof(char) })!;
         private static readonly MethodInfo s_charIsWhiteSpaceMethod = typeof(char).GetMethod("IsWhiteSpace", new Type[] { typeof(char) })!;
         private static readonly MethodInfo s_charGetUnicodeInfo = typeof(char).GetMethod("GetUnicodeCategory", new Type[] { typeof(char) })!;
@@ -58,7 +60,6 @@ namespace System.Text.RegularExpressions
         private static readonly MethodInfo s_spanStartsWithSpanComparison = typeof(MemoryExtensions).GetMethod("StartsWith", new Type[] { typeof(ReadOnlySpan<char>), typeof(ReadOnlySpan<char>), typeof(StringComparison) })!;
         private static readonly MethodInfo s_stringAsSpanMethod = typeof(MemoryExtensions).GetMethod("AsSpan", new Type[] { typeof(string) })!;
         private static readonly MethodInfo s_stringGetCharsMethod = typeof(string).GetMethod("get_Chars", new Type[] { typeof(int) })!;
-        private static readonly MethodInfo s_textInfoToLowerMethod = typeof(TextInfo).GetMethod("ToLower", new Type[] { typeof(char) })!;
         private static readonly MethodInfo s_arrayResize = typeof(Array).GetMethod("Resize")!.MakeGenericMethod(typeof(int));
         private static readonly MethodInfo s_mathMinIntInt = typeof(Math).GetMethod("Min", new Type[] { typeof(int), typeof(int) })!;
 
@@ -179,6 +180,13 @@ namespace System.Text.RegularExpressions
         {
             Ldthis();
             _ilg!.Emit(OpCodes.Ldfld, ft);
+        }
+
+        /// <summary>A macro for Ldthis(); Ldflda();</summary>
+        protected void Ldthisflda(FieldInfo ft)
+        {
+            Ldthis();
+            _ilg!.Emit(OpCodes.Ldflda, ft);
         }
 
         /// <summary>Fetches the address of argument in passed in <paramref name="position"/></summary>
@@ -326,16 +334,6 @@ namespace System.Text.RegularExpressions
                 _pool.Push(_local);
                 this = default;
             }
-        }
-
-        /// <summary>Invokes textInfo.ToLower(c).</summary>
-        private void CallToLower()
-        {
-            using RentedLocalBuilder currentCharLocal = RentInt32Local();
-            Stloc(currentCharLocal);
-            Ldthisfld(s_textInfo);
-            Ldloc(currentCharLocal);
-            Callvirt(s_textInfoToLowerMethod);
         }
 
         /// <summary>Generates the implementation for TryFindNextPossibleStartingPosition.</summary>
@@ -1663,6 +1661,9 @@ namespace System.Text.RegularExpressions
 
                 Label condition = DefineLabel();
                 Label body = DefineLabel();
+                Label charactersMatched = DefineLabel();
+                LocalBuilder backreferenceCharacter = _ilg!.DeclareLocal(typeof(char));
+                LocalBuilder currentCharacter = _ilg!.DeclareLocal(typeof(char));
 
                 // for (int i = 0; ...)
                 Ldc(0);
@@ -1671,24 +1672,23 @@ namespace System.Text.RegularExpressions
 
                 MarkLabel(body);
 
-                // if (inputSpan[matchIndex + i] != slice[i]) goto doneLabel; // for rtl, instead of slice[i] using inputSpan[pos - matchLength + i]
+                // char backreferenceChar = inputSpan[matchIndex + i];
                 Ldloca(inputSpan);
                 Ldloc(matchIndex);
                 Ldloc(i);
                 Add();
                 Call(s_spanGetItemMethod);
                 LdindU2();
-                if ((node.Options & RegexOptions.IgnoreCase) != 0)
-                {
-                    CallToLower();
-                }
+                Stloc(backreferenceCharacter);
                 if (!rtl)
                 {
+                    // char currentChar = slice[i];
                     Ldloca(slice);
                     Ldloc(i);
                 }
                 else
                 {
+                    // char currentChar = inputSpan[pos - matchLength + i];
                     Ldloca(inputSpan);
                     Ldloc(pos);
                     Ldloc(matchLength);
@@ -1698,11 +1698,61 @@ namespace System.Text.RegularExpressions
                 }
                 Call(s_spanGetItemMethod);
                 LdindU2();
+                Stloc(currentCharacter);
+
                 if ((node.Options & RegexOptions.IgnoreCase) != 0)
                 {
-                    CallToLower();
+                    LocalBuilder caseEquivalences = DeclareReadOnlySpanChar();
+
+                    // if (backreferenceChar != currentChar)
+                    Ldloc(backreferenceCharacter);
+                    Ldloc(currentCharacter);
+                    Ceq();
+                    BrtrueFar(charactersMatched);
+
+                    // if (RegexCaseEquivalences.TryFindCaseEquivalencesForCharWithIBehavior(backreferenceChar, _culture, ref _caseBehavior, out ReadOnlySpan<char> equivalences))
+                    Ldloc(backreferenceCharacter);
+                    Ldthisfld(s_cultureField);
+                    Ldthisflda(s_caseBehaviorField);
+                    Ldloca(caseEquivalences);
+                    Call(s_regexCaseEquivalencesTryFindCaseEquivalencesForCharWithIBehaviorMethod);
+                    BrfalseFar(doneLabel);
+
+                    // if (equivalences.IndexOf(slice[i]) == -1) // Or if (equivalences.IndexOf(inputSpan[pos - matchLength + i]) == -1) when rtl
+                    Ldloc(caseEquivalences);
+                    if (!rtl)
+                    {
+                        Ldloca(slice);
+                        Ldloc(i);
+                    }
+                    else
+                    {
+                        Ldloca(inputSpan);
+                        Ldloc(pos);
+                        Ldloc(matchLength);
+                        Sub();
+                        Ldloc(i);
+                        Add();
+                    }
+                    Call(s_spanGetItemMethod);
+                    LdindU2();
+                    Call(s_spanIndexOfChar);
+                    Ldc(-1);
+                    Ceq();
+                    // return false; // input didn't match.
+                    BrtrueFar(doneLabel);
                 }
-                BneFar(doneLabel);
+                else
+                {
+                    // if (backreferenceCharacter != currentCharacter)
+                    Ldloc(backreferenceCharacter);
+                    Ldloc(currentCharacter);
+                    Ceq();
+                    // return false; // input didn't match.
+                    BrfalseFar(doneLabel);
+                }
+
+                MarkLabel(charactersMatched);
 
                 // for (...; ...; i++)
                 Ldloc(i);
