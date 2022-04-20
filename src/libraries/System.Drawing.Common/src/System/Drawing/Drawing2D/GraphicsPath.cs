@@ -26,8 +26,10 @@ namespace System.Drawing.Drawing2D
 
         public GraphicsPath(PointF[] pts, byte[] types) : this(pts, types, FillMode.Alternate) { }
 
-        public unsafe GraphicsPath(PointF[] pts!!, byte[] types, FillMode fillMode)
+        public unsafe GraphicsPath(PointF[] pts, byte[] types, FillMode fillMode)
         {
+            ArgumentNullException.ThrowIfNull(pts);
+
             if (pts.Length != types.Length)
                 throw Gdip.StatusException(Gdip.InvalidParameter);
 
@@ -43,8 +45,10 @@ namespace System.Drawing.Drawing2D
 
         public GraphicsPath(Point[] pts, byte[] types) : this(pts, types, FillMode.Alternate) { }
 
-        public unsafe GraphicsPath(Point[] pts!!, byte[] types, FillMode fillMode)
+        public unsafe GraphicsPath(Point[] pts, byte[] types, FillMode fillMode)
         {
+            ArgumentNullException.ThrowIfNull(pts);
+
             if (pts.Length != types.Length)
                 throw Gdip.StatusException(Gdip.InvalidParameter);
 
@@ -242,8 +246,10 @@ namespace System.Drawing.Drawing2D
             return IsOutlineVisible(new PointF(x, y), pen, graphics);
         }
 
-        public bool IsOutlineVisible(PointF pt, Pen pen!!, Graphics? graphics)
+        public bool IsOutlineVisible(PointF pt, Pen pen, Graphics? graphics)
         {
+            ArgumentNullException.ThrowIfNull(pen);
+
             Gdip.CheckStatus(Gdip.GdipIsOutlineVisiblePathPoint(
                 new HandleRef(this, _nativePath),
                 pt.X, pt.Y,
@@ -260,8 +266,10 @@ namespace System.Drawing.Drawing2D
 
         public bool IsOutlineVisible(int x, int y, Pen pen, Graphics? graphics) => IsOutlineVisible(new Point(x, y), pen, graphics);
 
-        public bool IsOutlineVisible(Point pt, Pen pen!!, Graphics? graphics)
+        public bool IsOutlineVisible(Point pt, Pen pen, Graphics? graphics)
         {
+            ArgumentNullException.ThrowIfNull(pen);
+
             Gdip.CheckStatus(Gdip.GdipIsOutlineVisiblePathPointI(
                 new HandleRef(this, _nativePath),
                 pt.X, pt.Y,
@@ -279,8 +287,10 @@ namespace System.Drawing.Drawing2D
             Gdip.CheckStatus(Gdip.GdipAddPathLine(new HandleRef(this, _nativePath), x1, y1, x2, y2));
         }
 
-        public unsafe void AddLines(PointF[] points!!)
+        public unsafe void AddLines(PointF[] points)
         {
+            ArgumentNullException.ThrowIfNull(points);
+
             if (points.Length == 0)
                 throw new ArgumentException(null, nameof(points));
 
@@ -297,8 +307,10 @@ namespace System.Drawing.Drawing2D
             Gdip.CheckStatus(Gdip.GdipAddPathLineI(new HandleRef(this, _nativePath), x1, y1, x2, y2));
         }
 
-        public unsafe void AddLines(Point[] points!!)
+        public unsafe void AddLines(Point[] points)
         {
+            ArgumentNullException.ThrowIfNull(points);
+
             if (points.Length == 0)
                 throw new ArgumentException(null, nameof(points));
 
@@ -348,8 +360,10 @@ namespace System.Drawing.Drawing2D
                 x1, y1, x2, y2, x3, y3, x4, y4));
         }
 
-        public unsafe void AddBeziers(PointF[] points!!)
+        public unsafe void AddBeziers(PointF[] points)
         {
+            ArgumentNullException.ThrowIfNull(points);
+
             fixed (PointF* p = points)
             {
                 Gdip.CheckStatus(Gdip.GdipAddPathBeziers(new HandleRef(this, _nativePath), p, points.Length));
@@ -368,8 +382,10 @@ namespace System.Drawing.Drawing2D
                 x1, y1, x2, y2, x3, y3, x4, y4));
         }
 
-        public unsafe void AddBeziers(params Point[] points!!)
+        public unsafe void AddBeziers(params Point[] points)
         {
+            ArgumentNullException.ThrowIfNull(points);
+
             if (points.Length == 0)
                 return;
 
@@ -382,16 +398,20 @@ namespace System.Drawing.Drawing2D
         /// <summary>
         /// Add cardinal splines to the path object
         /// </summary>
-        public unsafe void AddCurve(PointF[] points!!)
+        public unsafe void AddCurve(PointF[] points)
         {
+            ArgumentNullException.ThrowIfNull(points);
+
             fixed (PointF* p = points)
             {
                 Gdip.CheckStatus(Gdip.GdipAddPathCurve(new HandleRef(this, _nativePath), p, points.Length));
             }
         }
 
-        public unsafe void AddCurve(PointF[] points!!, float tension)
+        public unsafe void AddCurve(PointF[] points, float tension)
         {
+            ArgumentNullException.ThrowIfNull(points);
+
             if (points.Length == 0)
                 return;
 
@@ -401,8 +421,10 @@ namespace System.Drawing.Drawing2D
             }
         }
 
-        public unsafe void AddCurve(PointF[] points!!, int offset, int numberOfSegments, float tension)
+        public unsafe void AddCurve(PointF[] points, int offset, int numberOfSegments, float tension)
         {
+            ArgumentNullException.ThrowIfNull(points);
+
             fixed (PointF* p = points)
             {
                 Gdip.CheckStatus(Gdip.GdipAddPathCurve3(
@@ -410,16 +432,20 @@ namespace System.Drawing.Drawing2D
             }
         }
 
-        public unsafe void AddCurve(Point[] points!!)
+        public unsafe void AddCurve(Point[] points)
         {
+            ArgumentNullException.ThrowIfNull(points);
+
             fixed (Point* p = points)
             {
                 Gdip.CheckStatus(Gdip.GdipAddPathCurveI(new HandleRef(this, _nativePath), p, points.Length));
             }
         }
 
-        public unsafe void AddCurve(Point[] points!!, float tension)
+        public unsafe void AddCurve(Point[] points, float tension)
         {
+            ArgumentNullException.ThrowIfNull(points);
+
             fixed (Point* p = points)
             {
                 Gdip.CheckStatus(Gdip.GdipAddPathCurve2I(
@@ -427,8 +453,10 @@ namespace System.Drawing.Drawing2D
             }
         }
 
-        public unsafe void AddCurve(Point[] points!!, int offset, int numberOfSegments, float tension)
+        public unsafe void AddCurve(Point[] points, int offset, int numberOfSegments, float tension)
         {
+            ArgumentNullException.ThrowIfNull(points);
+
             fixed (Point* p = points)
             {
                 Gdip.CheckStatus(Gdip.GdipAddPathCurve3I(
@@ -436,8 +464,10 @@ namespace System.Drawing.Drawing2D
             }
         }
 
-        public unsafe void AddClosedCurve(PointF[] points!!)
+        public unsafe void AddClosedCurve(PointF[] points)
         {
+            ArgumentNullException.ThrowIfNull(points);
+
             fixed (PointF* p = points)
             {
                 Gdip.CheckStatus(Gdip.GdipAddPathClosedCurve(
@@ -445,24 +475,30 @@ namespace System.Drawing.Drawing2D
             }
         }
 
-        public unsafe void AddClosedCurve(PointF[] points!!, float tension)
+        public unsafe void AddClosedCurve(PointF[] points, float tension)
         {
+            ArgumentNullException.ThrowIfNull(points);
+
             fixed (PointF* p = points)
             {
                 Gdip.CheckStatus(Gdip.GdipAddPathClosedCurve2(new HandleRef(this, _nativePath), p, points.Length, tension));
             }
         }
 
-        public unsafe void AddClosedCurve(Point[] points!!)
+        public unsafe void AddClosedCurve(Point[] points)
         {
+            ArgumentNullException.ThrowIfNull(points);
+
             fixed (Point* p = points)
             {
                 Gdip.CheckStatus(Gdip.GdipAddPathClosedCurveI(new HandleRef(this, _nativePath), p, points.Length));
             }
         }
 
-        public unsafe void AddClosedCurve(Point[] points!!, float tension)
+        public unsafe void AddClosedCurve(Point[] points, float tension)
         {
+            ArgumentNullException.ThrowIfNull(points);
+
             fixed (Point* p = points)
             {
                 Gdip.CheckStatus(Gdip.GdipAddPathClosedCurve2I(new HandleRef(this, _nativePath), p, points.Length, tension));
@@ -476,8 +512,10 @@ namespace System.Drawing.Drawing2D
                 rect.X, rect.Y, rect.Width, rect.Height));
         }
 
-        public unsafe void AddRectangles(RectangleF[] rects!!)
+        public unsafe void AddRectangles(RectangleF[] rects)
         {
+            ArgumentNullException.ThrowIfNull(rects);
+
             if (rects.Length == 0)
                 throw new ArgumentException(null, nameof(rects));
 
@@ -495,8 +533,10 @@ namespace System.Drawing.Drawing2D
                 rect.X, rect.Y, rect.Width, rect.Height));
         }
 
-        public unsafe void AddRectangles(Rectangle[] rects!!)
+        public unsafe void AddRectangles(Rectangle[] rects)
         {
+            ArgumentNullException.ThrowIfNull(rects);
+
             if (rects.Length == 0)
                 throw new ArgumentException(null, nameof(rects));
 
@@ -547,8 +587,10 @@ namespace System.Drawing.Drawing2D
                 sweepAngle));
         }
 
-        public unsafe void AddPolygon(PointF[] points!!)
+        public unsafe void AddPolygon(PointF[] points)
         {
+            ArgumentNullException.ThrowIfNull(points);
+
             fixed (PointF* p = points)
             {
                 Gdip.CheckStatus(Gdip.GdipAddPathPolygon(new HandleRef(this, _nativePath), p, points.Length));
@@ -558,16 +600,20 @@ namespace System.Drawing.Drawing2D
         /// <summary>
         /// Adds a polygon to the current figure.
         /// </summary>
-        public unsafe void AddPolygon(Point[] points!!)
+        public unsafe void AddPolygon(Point[] points)
         {
+            ArgumentNullException.ThrowIfNull(points);
+
             fixed (Point* p = points)
             {
                 Gdip.CheckStatus(Gdip.GdipAddPathPolygonI(new HandleRef(this, _nativePath), p, points.Length));
             }
         }
 
-        public void AddPath(GraphicsPath addingPath!!, bool connect)
+        public void AddPath(GraphicsPath addingPath, bool connect)
         {
+            ArgumentNullException.ThrowIfNull(addingPath);
+
             Gdip.CheckStatus(Gdip.GdipAddPathPath(
                 new HandleRef(this, _nativePath), new HandleRef(addingPath, addingPath._nativePath), connect));
         }
@@ -582,8 +628,10 @@ namespace System.Drawing.Drawing2D
             AddString(s, family, style, emSize, new Rectangle(origin.X, origin.Y, 0, 0), format);
         }
 
-        public void AddString(string s, FontFamily family!!, int style, float emSize, RectangleF layoutRect, StringFormat? format)
+        public void AddString(string s, FontFamily family, int style, float emSize, RectangleF layoutRect, StringFormat? format)
         {
+            ArgumentNullException.ThrowIfNull(family);
+
             Gdip.CheckStatus(Gdip.GdipAddPathString(
                 new HandleRef(this, _nativePath),
                 s,
@@ -595,8 +643,10 @@ namespace System.Drawing.Drawing2D
                 new HandleRef(format, format?.nativeFormat ?? IntPtr.Zero)));
         }
 
-        public void AddString(string s, FontFamily family!!, int style, float emSize, Rectangle layoutRect, StringFormat? format)
+        public void AddString(string s, FontFamily family, int style, float emSize, Rectangle layoutRect, StringFormat? format)
         {
+            ArgumentNullException.ThrowIfNull(family);
+
             Gdip.CheckStatus(Gdip.GdipAddPathStringI(
                 new HandleRef(this, _nativePath),
                 s,
@@ -608,8 +658,10 @@ namespace System.Drawing.Drawing2D
                 new HandleRef(format, format?.nativeFormat ?? IntPtr.Zero)));
         }
 
-        public void Transform(Matrix matrix!!)
+        public void Transform(Matrix matrix)
         {
+            ArgumentNullException.ThrowIfNull(matrix);
+
             if (matrix.NativeMatrix == IntPtr.Zero)
                 return;
 
@@ -649,8 +701,10 @@ namespace System.Drawing.Drawing2D
 
         public void Widen(Pen pen, Matrix? matrix) => Widen(pen, matrix, Flatness);
 
-        public void Widen(Pen pen!!, Matrix? matrix, float flatness)
+        public void Widen(Pen pen, Matrix? matrix, float flatness)
         {
+            ArgumentNullException.ThrowIfNull(pen);
+
             // GDI+ wrongly returns an out of memory status when there is nothing in the path, so we have to check
             // before calling the widen method and do nothing if we dont have anything in the path.
             if (PointCount == 0)
@@ -672,8 +726,10 @@ namespace System.Drawing.Drawing2D
             Warp(destPoints, srcRect, matrix, warpMode, 0.25f);
         }
 
-        public unsafe void Warp(PointF[] destPoints!!, RectangleF srcRect, Matrix? matrix, WarpMode warpMode, float flatness)
+        public unsafe void Warp(PointF[] destPoints, RectangleF srcRect, Matrix? matrix, WarpMode warpMode, float flatness)
         {
+            ArgumentNullException.ThrowIfNull(destPoints);
+
             fixed (PointF* p = destPoints)
             {
                 Gdip.CheckStatus(Gdip.GdipWarpPath(

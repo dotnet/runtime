@@ -1,10 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.ComponentModel;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
-using System.Runtime.InteropServices;
 using Microsoft.Win32;
 
 namespace System.Drawing.Internal
@@ -39,7 +36,6 @@ namespace System.Drawing.Internal
 
                 if (!addedTracker)
                 {
-                    Debug.Assert(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
                     addedTracker = true;
                     SystemEvents.UserPreferenceChanged += new UserPreferenceChangedEventHandler(OnUserPreferenceChanged);
                 }
@@ -132,8 +128,6 @@ namespace System.Drawing.Internal
 
         private static void OnUserPreferenceChanged(object sender, UserPreferenceChangedEventArgs e)
         {
-            Debug.Assert(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
-
             // Update pens and brushes
             if (e.Category == UserPreferenceCategory.Color)
             {
