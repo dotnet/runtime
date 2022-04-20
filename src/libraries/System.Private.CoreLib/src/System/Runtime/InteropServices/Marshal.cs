@@ -817,20 +817,10 @@ namespace System.Runtime.InteropServices
                             HResult = errorCode
                         };
                     }
-                case HResults.FUSION_E_INVALID_PRIVATE_ASM_LOCATION:
-                case HResults.FUSION_E_SIGNATURE_CHECK_FAILED:
-                case HResults.FUSION_E_LOADFROM_BLOCKED:
                 case HResults.FUSION_E_CACHEFILE_FAILED:
-                case HResults.FUSION_E_ASM_MODULE_MISSING:
                 case HResults.FUSION_E_INVALID_NAME:
                 case HResults.FUSION_E_PRIVATE_ASM_DISALLOWED:
-                case HResults.FUSION_E_HOST_GAC_ASM_MISMATCH:
-                case HResults.COR_E_MODULE_HASH_CHECK_FAILED:
                 case HResults.FUSION_E_REF_DEF_MISMATCH:
-                case HResults.SECURITY_E_INCOMPATIBLE_SHARE:
-                case HResults.SECURITY_E_INCOMPATIBLE_EVIDENCE:
-                case HResults.SECURITY_E_UNVERIFIABLE:
-                case HResults.COR_E_FIXUPSINEXE:
                 case HResults.ERROR_TOO_MANY_OPEN_FILES:
                 case HResults.ERROR_SHARING_VIOLATION:
                 case HResults.ERROR_LOCK_VIOLATION:
@@ -838,8 +828,6 @@ namespace System.Runtime.InteropServices
                 case HResults.ERROR_DISK_CORRUPT:
                 case HResults.ERROR_UNRECOGNIZED_VOLUME:
                 case HResults.ERROR_DLL_INIT_FAILED:
-                case HResults.FUSION_E_CODE_DOWNLOAD_DISABLED:
-                case HResults.CORSEC_E_MISSING_STRONGNAME:
                 case HResults.MSEE_E_ASSEMBLYLOADINPROGRESS:
                 case HResults.ERROR_FILE_INVALID:
                     {

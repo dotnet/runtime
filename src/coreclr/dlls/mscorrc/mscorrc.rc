@@ -111,26 +111,15 @@ BEGIN
 
     COR_E_APPDOMAINUNLOADED                 "Error: Attempt to access unloaded AppDomain."
     COR_E_MISSINGMETHOD                     "Error: Missing method '%2' from class '%1'."
-    COR_E_FIXUPSINEXE                       "Cannot load executable '%1' because it contains extra relocations or has relocations stripped."
 
     COR_E_FILELOAD                          "Unable to load file '%1'."
     COR_E_ASSEMBLYEXPECTED                  "The module '%1' was expected to contain an assembly manifest."
     FUSION_E_REF_DEF_MISMATCH               "The located assembly's manifest definition with name '%1' does not match the assembly reference."
-    FUSION_E_INVALID_PRIVATE_ASM_LOCATION   "The found private assembly, '%1', was located outside the ApplicationBase."
-    FUSION_E_SIGNATURE_CHECK_FAILED         "Strong name signature verification failed for assembly '%1'.  The assembly may have been tampered with, or it was delay signed but not fully signed with the correct private key."
-    COR_E_MODULE_HASH_CHECK_FAILED          "The check of the module's hash failed for file '%1'."
     FUSION_E_PRIVATE_ASM_DISALLOWED         "Assembly '%1' is required to be strongly named."
     FUSION_E_INVALID_NAME                   "The given assembly name, '%1', was invalid."
-    FUSION_E_ASM_MODULE_MISSING             "A module specified in the manifest of assembly '%1' could not be found."
-    FUSION_E_CODE_DOWNLOAD_DISABLED         "HTTP download of assemblies has been disabled for this appdomain."
-    FUSION_E_HOST_GAC_ASM_MISMATCH          "The assembly returned from the host store has a different strong name signature than the corresponding one in GAC. Assembly: '%1'"
-    FUSION_E_LOADFROM_BLOCKED               "LoadFrom(), LoadFile(), Load(byte[]) and LoadModule() have been disabled by the host."
     FUSION_E_CACHEFILE_FAILED               "Failed to add file to AppDomain cache."
     FUSION_E_APP_DOMAIN_LOCKED              "The requested assembly version conflicts with what is already bound in the app domain or specified in the manifest."
-    FUSION_E_CONFIGURATION_ERROR            "The requested assembly name was neither found in the GAC nor in the manifest or the manifest's specified location is wrong."
-    FUSION_E_MANIFEST_PARSE_ERROR           "Unexpected error while parsing the specified manifest."
     IDS_EE_HASH_VAL_FAILED                  "Hash validation failed for file or assembly '%1'."
-    CORSEC_E_MISSING_STRONGNAME             "Assembly '%1' is missing the required strong name."
     CORSEC_E_INVALID_PUBLICKEY              "The public key for assembly '%1' was invalid."
     CORSEC_E_INVALID_STRONGNAME             "Strong name validation failed for assembly '%1'."
     CORSEC_E_SIGNATURE_MISMATCH             "The allocated signature slot for assembly '%1' does not correspond to the generated signature size."
@@ -164,7 +153,6 @@ BEGIN
 // These strings are generated from within the EE.
 STRINGTABLE DISCARDABLE
 BEGIN
-    CEE_E_CVTRES_NOT_FOUND                  "Could not execute CVTRES.EXE."
     IDS_EE_THREAD_APARTMENT_NOT_SUPPORTED   "The system does not support the %1 thread apartment."
     IDS_EE_NDIRECT_UNSUPPORTED_SIG          "Method's type signature is not PInvoke compatible."
     IDS_EE_COM_UNSUPPORTED_SIG              "Method's type signature is not Interop compatible."
@@ -376,9 +364,6 @@ BEGIN
     IDS_CLASSLOAD_METHOD_NOT_IMPLEMENTED    "Could not call method '%1' on type '%2' with an instance of '%3' from assembly '%4' because there is no implementation for the method."
 
     IDS_CLASSLOAD_MISSINGMETHODRVA          "Could not load type '%1' from assembly '%2' because the method '%3' has no implementation (no RVA)."
-    SECURITY_E_INCOMPATIBLE_EVIDENCE        "Assembly '%1' already loaded without additional security evidence."
-    SECURITY_E_INCOMPATIBLE_SHARE           "Assembly '%1' security permission grant set is incompatible between appdomains."
-    SECURITY_E_UNVERIFIABLE                 "Unverifiable assembly '%1' failed policy check."
     IDS_CLASSLOAD_BAD_FIELD                 "Type '%1' from assembly '%2' has a field of an illegal type."
     IDS_CLASSLOAD_MI_ILLEGAL_BODY           "Body referenced in a method implementation must be defined in the same type.  Type: '%1'.  Assembly: '%2'."
     IDS_CLASSLOAD_MI_ILLEGAL_TOKEN_BODY     "Body token used in a method implementation is out of range.  Type: '%1'.  Assembly: '%2'."
