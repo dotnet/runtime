@@ -56,7 +56,7 @@ namespace System
                     if (NotAny(Flags.DosPath) &&
                         uriKind != UriKind.Absolute &&
                        ((uriKind == UriKind.Relative || (_string.Length >= 2 && (_string[0] != '\\' || _string[1] != '\\')))
-                    || (!IsWindowsSystem && InFact(Flags.UnixPath))))
+                    || (!OperatingSystem.IsWindows() && InFact(Flags.UnixPath))))
                     {
                         _syntax = null!; //make it be relative Uri
                         _flags &= Flags.UserEscaped; // the only flag that makes sense for a relative uri
