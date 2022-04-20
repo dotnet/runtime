@@ -8830,7 +8830,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
         // <NICE> Factor this into getCallInfo </NICE>
         bool isSpecialIntrinsic = false;
-        if ((mflags & (CORINFO_FLG_INTRINSIC | CORINFO_FLG_INTRINSIC)) != 0)
+        if ((mflags & CORINFO_FLG_INTRINSIC) != 0)
         {
             const bool isTailCall = canTailCall && (tailCallFlags != 0);
 
