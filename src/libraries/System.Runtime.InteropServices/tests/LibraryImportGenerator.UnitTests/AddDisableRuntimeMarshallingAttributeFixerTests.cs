@@ -102,21 +102,25 @@ using System.Reflection;
         private static async Task VerifyCodeFixAsync(string source, string? propertiesFile, string? expectedPropertiesFile, DiagnosticResult diagnostic)
         {
             var test = new Test();
+
+            string normalizedSource = LineEndingsHelper.Normalize(source);
             // We don't care about validating the settings for the MockAnalyzer and we're also hitting failures on Mono
             // with this check in this case, so skip the check for now.
             test.TestBehaviors = TestBehaviors.SkipGeneratedCodeCheck;
-            test.TestCode = source;
-            test.FixedCode = source;
-            test.BatchFixedCode = source;
+            test.TestCode = normalizedSource;
+            test.FixedCode = normalizedSource;
+            test.BatchFixedCode = normalizedSource;
             test.ExpectedDiagnostics.Add(diagnostic);
             if (propertiesFile is not null)
             {
-                test.TestState.Sources.Add(($"{Test.FilePathPrefix}Properties{Path.DirectorySeparatorChar}AssemblyInfo.cs", propertiesFile));
+                test.TestState.Sources.Add(($"{Test.FilePathPrefix}Properties{Path.DirectorySeparatorChar}AssemblyInfo.cs", LineEndingsHelper.Normalize(propertiesFile)));
             }
             if (expectedPropertiesFile is not null)
             {
-                test.FixedState.Sources.Add(($"{Test.FilePathPrefix}Properties{Path.DirectorySeparatorChar}AssemblyInfo.cs", expectedPropertiesFile));
-                test.BatchFixedState.Sources.Add(($"{Test.FilePathPrefix}Properties{Path.DirectorySeparatorChar}AssemblyInfo.cs", expectedPropertiesFile));
+                string normalizedExpectedPropertiesFile = LineEndingsHelper.Normalize(expectedPropertiesFile);
+
+                test.FixedState.Sources.Add(($"{Test.FilePathPrefix}Properties{Path.DirectorySeparatorChar}AssemblyInfo.cs", normalizedExpectedPropertiesFile));
+                test.BatchFixedState.Sources.Add(($"{Test.FilePathPrefix}Properties{Path.DirectorySeparatorChar}AssemblyInfo.cs", normalizedExpectedPropertiesFile));
             }
             await test.RunAsync();
         }

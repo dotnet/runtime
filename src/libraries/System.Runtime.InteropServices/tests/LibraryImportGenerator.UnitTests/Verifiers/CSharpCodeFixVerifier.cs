@@ -37,7 +37,7 @@ namespace LibraryImportGenerator.UnitTests.Verifiers
         {
             var test = new Test
             {
-                TestCode = source,
+                TestCode = LineEndingsHelper.Normalize(source),
             };
 
             test.ExpectedDiagnostics.AddRange(expected);
@@ -57,8 +57,8 @@ namespace LibraryImportGenerator.UnitTests.Verifiers
         {
             var test = new Test
             {
-                TestCode = source,
-                FixedCode = fixedSource,
+                TestCode = LineEndingsHelper.Normalize(source),
+                FixedCode = LineEndingsHelper.Normalize(fixedSource),
                 CodeActionEquivalenceKey = fixEquivalenceKey,
             };
 
@@ -71,8 +71,8 @@ namespace LibraryImportGenerator.UnitTests.Verifiers
         {
             var test = new Test
             {
-                TestCode = source,
-                FixedCode = fixedSource,
+                TestCode = LineEndingsHelper.Normalize(source),
+                FixedCode = LineEndingsHelper.Normalize(fixedSource),
             };
 
             test.ExpectedDiagnostics.AddRange(expected);
@@ -84,8 +84,8 @@ namespace LibraryImportGenerator.UnitTests.Verifiers
         {
             var test = new Test
             {
-                TestCode = source,
-                FixedCode = fixedSource,
+                TestCode = LineEndingsHelper.Normalize(source),
+                FixedCode = LineEndingsHelper.Normalize(fixedSource),
                 NumberOfIncrementalIterations = numIncrementalIterations,
                 NumberOfFixAllIterations = numFixAllIterations
             };
