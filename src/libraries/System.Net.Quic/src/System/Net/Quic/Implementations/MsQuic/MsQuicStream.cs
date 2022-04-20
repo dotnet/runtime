@@ -1071,7 +1071,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             int ret = (uint)readLength == receiveEvent.TotalBufferLength
                 ? QUIC_STATUS_SUCCESS
-                : QUIC_STATUS_PENDING;
+                : QUIC_STATUS_CONTINUE;
 
             receiveEvent.TotalBufferLength = (uint)readLength;
             return ret;
