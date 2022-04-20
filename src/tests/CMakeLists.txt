@@ -14,6 +14,16 @@ include_directories("${CLR_SRC_NATIVE_DIR}")
 # Add this subdir. We install the headers for the jit.
 add_subdirectory(../coreclr/pal/prebuilt/inc ../coreclr/pal/prebuilt/inc)
 
+
+# tests in the Debug configuration depend on the coreclrpal static library if they use assert
+if (NOT CLR_CMAKE_HOST_WIN32)
+  # Add component names that the pal build expects
+  add_component(${CMAKE_INSTALL_DEFAULT_COMPONENT_NAME})
+  add_definitions(-DUSE_STL)
+  include_directories(../coreclr/pal/inc/rt ../coreclr/pal/inc ../coreclr/inc)
+  add_subdirectory(../coreclr/pal/src ../coreclr/pal/src)
+endif()
+
 set(INC_PLATFORM_DIR ${CMAKE_CURRENT_SOURCE_DIR}/Common/Platform)
 if (CLR_CMAKE_TARGET_WIN32)
     add_definitions(-DWINDOWS)

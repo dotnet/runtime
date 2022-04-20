@@ -806,15 +806,3 @@ extern "C" EXPORT void STDMETHODCALLTYPE PassCallbackToProfiler(ProfilerCallback
     Profiler::SetCallback(callback);
 }
 
-#ifndef WIN32
-// pal_assert expects DebugBreak and GetCurrentProcessID
-void DebugBreak()
-{
-
-}
-
-DWORD GetCurrentProcessId()
-{
-    return -1;
-}
-#endif // WIN32
