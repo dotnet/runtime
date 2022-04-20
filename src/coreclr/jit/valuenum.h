@@ -645,20 +645,6 @@ public:
 // This controls extra tracing of the "evaluation" of "VNF_MapSelect" functions.
 #define FEATURE_VN_TRACE_APPLY_SELECTORS 1
 
-    ValueNum VNApplySelectors(ValueNumKind  vnk,
-                              ValueNum      map,
-                              FieldSeqNode* fieldSeq,
-                              size_t*       wbFinalStructSize = nullptr);
-
-    ValueNum VNApplySelectorsTypeCheck(ValueNum value, var_types indType, size_t valueStructSize);
-
-    ValueNum VNApplySelectorsAssign(
-        ValueNumKind vnk, ValueNum map, FieldSeqNode* fieldSeq, ValueNum value, var_types dstIndType);
-
-    ValueNum VNApplySelectorsAssignTypeCoerce(ValueNum value, var_types dstIndType);
-
-    ValueNumPair VNPairApplySelectors(ValueNumPair map, FieldSeqNode* fieldSeq, var_types indType);
-
     ValueNum VNForLoad(ValueNumKind vnk,
                        ValueNum     locationValue,
                        unsigned     locationSize,
@@ -696,17 +682,6 @@ public:
     ValueNum VNForEmptyMap(var_types type);
 
     ValueNumPair VNPairForEmptyMap(var_types type);
-
-    ValueNumPair VNPairApplySelectorsAssign(ValueNumPair  map,
-                                            FieldSeqNode* fieldSeq,
-                                            ValueNumPair  value,
-                                            var_types     dstIndType)
-    {
-        return ValueNumPair(VNApplySelectorsAssign(VNK_Liberal, map.GetLiberal(), fieldSeq, value.GetLiberal(),
-                                                   dstIndType),
-                            VNApplySelectorsAssign(VNK_Conservative, map.GetConservative(), fieldSeq,
-                                                   value.GetConservative(), dstIndType));
-    }
 
     // Compute the ValueNumber for a cast
     ValueNum VNForCast(ValueNum  srcVN,

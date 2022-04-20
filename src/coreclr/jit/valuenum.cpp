@@ -4103,232 +4103,6 @@ ValueNum ValueNumStore::VNForExpr(BasicBlock* block, var_types typ)
     return resultVN;
 }
 
-//------------------------------------------------------------------------
-// VNApplySelectors: Find the value number corresponding to map[fieldSeq...].
-//
-// Will construct the value number which is the result of selecting from "map"
-// with all the fields (VNs of their handles): map[f0][f1]...[fN], indexing
-// from outer to inner. The type of the returned number will be that of "f0",
-// and all the "inner" maps in the indexing (map[f0][f1], ...) will also have
-// the types of their selector fields.
-//
-// Essentially, this is a helper method that calls VNForMapSelect for the fields
-// and provides some logging.
-//
-// Arguments:
-//    vnk               - the value number kind to use when recursing through phis
-//    map               - the map to select from
-//    fieldSeq          - the fields to use as selectors
-//    wbFinalStructSize - optional [out] parameter for the size of the last struct
-//                        field in the sequence
-//
-// Return Value:
-//    Value number corresponding to indexing "map" with all the fields.
-//    If the field sequence is empty ("nullptr"), will simply return "map".
-//
-ValueNum ValueNumStore::VNApplySelectors(ValueNumKind  vnk,
-                                         ValueNum      map,
-                                         FieldSeqNode* fieldSeq,
-                                         size_t*       wbFinalStructSize)
-{
-    for (FieldSeqNode* field = fieldSeq; field != nullptr; field = field->GetNext())
-    {
-        assert(field != FieldSeqStore::NotAField());
-
-        JITDUMP("  VNApplySelectors:\n");
-        var_types fieldType;
-        unsigned  fieldSize;
-        ValueNum  fldHndVN = VNForFieldSelector(field->GetFieldHandle(), &fieldType, &fieldSize);
-
-        if (wbFinalStructSize != nullptr)
-        {
-            *wbFinalStructSize = fieldSize;
-        }
-
-        map = VNForMapSelect(vnk, fieldType, map, fldHndVN);
-    }
-
-    return map;
-}
-
-//------------------------------------------------------------------------
-// VNApplySelectorsTypeCheck: Constructs VN for an indirect read.
-//
-// Returns VN corresponding to the value of "IND(indType (ADDR(value))".
-// May return a "new, unique" VN for un-analyzable reads (those of structs
-// or out-of-bounds ones), or "value" cast to "indType", or "value" itself
-// if there was no type mismatch. This function is intended to be used after
-// VNApplySelectors has determined the value a particular location has, that
-// is "value", and it is being read through an indirection of "indType".
-//
-// Arguments:
-//    value           - (VN of) value the location has
-//    indType         - the type through which the location is being read
-//    valueStructSize - size of "value" if is of a struct type
-//
-// Return Value:
-//    The constructed value number (see description).
-//
-// Notes:
-//    TODO-Bug: it is known that this function does not currently handle
-//    all cases correctly. E. g. it incorrectly returns CAST(float <- int)
-//    for cases like IND(float ADDR(int)). It is also too conservative for
-//    reads of SIMD types (treats them as un-analyzable).
-//
-ValueNum ValueNumStore::VNApplySelectorsTypeCheck(ValueNum value, var_types indType, size_t valueStructSize)
-{
-    var_types typeOfValue = TypeOfVN(value);
-
-    // Check if the typeOfValue is matching/compatible
-
-    if (indType != typeOfValue)
-    {
-        // We are trying to read from an 'elem' of type 'elemType' using 'indType' read
-
-        size_t elemTypSize = (typeOfValue == TYP_STRUCT) ? valueStructSize : genTypeSize(typeOfValue);
-        size_t indTypeSize = genTypeSize(indType);
-
-        if (indTypeSize > elemTypSize)
-        {
-            // Reading beyong the end of "value", return a new unique value number.
-            value = VNMakeNormalUnique(value);
-
-            JITDUMP("    *** Mismatched types in VNApplySelectorsTypeCheck (reading beyond the end)\n");
-        }
-        else if (varTypeIsStruct(indType))
-        {
-            // We do not know how wide this indirection is - return a new unique value number.
-            value = VNMakeNormalUnique(value);
-
-            JITDUMP("    *** Mismatched types in VNApplySelectorsTypeCheck (indType is TYP_STRUCT)\n");
-        }
-        else
-        {
-            // We are trying to read "value" of type "typeOfValue" using "indType" read.
-            // Insert a cast - this handles small types, i. e. "IND(byte ADDR(int))".
-            value = VNForCast(value, indType, typeOfValue);
-        }
-    }
-
-    return value;
-}
-
-//------------------------------------------------------------------------
-// VNApplySelectorsAssignTypeCoerce: Compute the value number corresponding to `value`
-//    being written using an indirection of 'dstIndType'.
-//
-// Arguments:
-//    value      - value number for the value being stored;
-//    dstIndType - type of the indirection storing the value to the memory;
-//
-// Return Value:
-//    The value number corresponding to memory after the assignment.
-//
-// Notes: It may insert a cast to dstIndType or return a unique value number for an incompatible indType.
-//
-ValueNum ValueNumStore::VNApplySelectorsAssignTypeCoerce(ValueNum value, var_types dstIndType)
-{
-    var_types srcType = TypeOfVN(value);
-
-    // Check if the srcType is matching/compatible.
-    if (dstIndType != srcType)
-    {
-        bool isConstant = IsVNConstant(value);
-        if (isConstant && (srcType == genActualType(dstIndType)))
-        {
-            // (i.e. We recorded a constant of TYP_INT for a TYP_BYTE field)
-        }
-        else
-        {
-            // We are trying to write an 'elem' of type 'elemType' using 'indType' store
-
-            if (varTypeIsStruct(dstIndType))
-            {
-                // return a new unique value number
-                value = VNMakeNormalUnique(value);
-
-                JITDUMP("    *** Mismatched types in VNApplySelectorsAssignTypeCoerce (indType is TYP_STRUCT)\n");
-            }
-            else
-            {
-                // We are trying to write an 'elem' of type 'elemType' using 'indType' store
-
-                // insert a cast of elem to 'indType'
-                value = VNForCast(value, dstIndType, srcType);
-
-                JITDUMP("    Cast to %s inserted in VNApplySelectorsAssignTypeCoerce (elemTyp is %s)\n",
-                        varTypeName(dstIndType), varTypeName(srcType));
-            }
-        }
-    }
-
-    return value;
-}
-
-//------------------------------------------------------------------------
-// VNApplySelectorsAssign: Compute the value number corresponding to "map" but with
-//    the element at "fieldSeq" updated to be equal to "'value' written as 'indType'";
-//    this is the new memory value for an assignment of "value" into the memory at
-//    location "fieldSeq" that occurs in the current block (so long as the selectors
-//    into that memory occupy disjoint locations, which is true for GcHeap).
-//
-// Arguments:
-//    vnk        - identifies whether to recurse to Conservative or Liberal value numbers
-//                 when recursing through phis
-//    map        - value number for the field map before the assignment
-//    value      - value number for the value being stored (to the given field)
-//    dstIndType - type of the indirection storing the value
-//
-// Return Value:
-//    The value number corresponding to memory ("map") after the assignment.
-//
-ValueNum ValueNumStore::VNApplySelectorsAssign(
-    ValueNumKind vnk, ValueNum map, FieldSeqNode* fieldSeq, ValueNum value, var_types dstIndType)
-{
-    if (fieldSeq == nullptr)
-    {
-        return VNApplySelectorsAssignTypeCoerce(value, dstIndType);
-    }
-    else
-    {
-        assert(fieldSeq != FieldSeqStore::NotAField());
-
-        if (fieldSeq->GetNext() == nullptr)
-        {
-            JITDUMP("  VNApplySelectorsAssign:\n");
-        }
-
-        var_types fieldType;
-        ValueNum  fldHndVN = VNForFieldSelector(fieldSeq->GetFieldHandle(), &fieldType);
-
-        ValueNum valueAfter;
-        if (fieldSeq->GetNext() != nullptr)
-        {
-            ValueNum fseqMap = VNForMapSelect(vnk, fieldType, map, fldHndVN);
-            valueAfter       = VNApplySelectorsAssign(vnk, fseqMap, fieldSeq->GetNext(), value, dstIndType);
-        }
-        else
-        {
-            valueAfter = VNApplySelectorsAssignTypeCoerce(value, dstIndType);
-        }
-
-        return VNForMapStore(map, fldHndVN, valueAfter);
-    }
-}
-
-ValueNumPair ValueNumStore::VNPairApplySelectors(ValueNumPair map, FieldSeqNode* fieldSeq, var_types indType)
-{
-    size_t   structSize = 0;
-    ValueNum liberalVN  = VNApplySelectors(VNK_Liberal, map.GetLiberal(), fieldSeq, &structSize);
-    liberalVN           = VNApplySelectorsTypeCheck(liberalVN, indType, structSize);
-
-    structSize         = 0;
-    ValueNum conservVN = VNApplySelectors(VNK_Conservative, map.GetConservative(), fieldSeq, &structSize);
-    conservVN          = VNApplySelectorsTypeCheck(conservVN, indType, structSize);
-
-    return ValueNumPair(liberalVN, conservVN);
-}
-
 ValueNum ValueNumStore::VNForLoad(ValueNumKind vnk,
                                   ValueNum     locationValue,
                                   unsigned     locationSize,
@@ -4437,7 +4211,20 @@ ValueNum ValueNumStore::VNForLoadStoreBitcast(ValueNum value, var_types indType,
         else
         {
             assert(genTypeSize(indType) == indSize);
-            value = VNApplySelectorsTypeCheck(value, indType, indSize);
+
+            // TODO-PhysicalVN: remove this pessimization.
+            if (varTypeIsSIMD(indType))
+            {
+                JITDUMP("    *** Mismatched types in VNForLoadStoreBitcast (indType is SIMD)\n");
+                value = VNForExpr(m_pComp->compCurBB, indType);
+            }
+            else
+            {
+                // We are trying to read "value" of type "typeOfValue" using "indType" read.
+                // Insert a cast - this handles small types, i. e. "IND(byte ADDR(int))".
+                // TODO-Bug: this does not not handle "IND(float ADDR(int))" correctly.
+                value = VNForCast(value, indType, typeOfValue);
+            }
         }
     }
 
@@ -4464,7 +4251,7 @@ ValueNumPair ValueNumStore::VNPairForLoadStoreBitcast(ValueNumPair value, var_ty
 
 ValueNum ValueNumStore::VNForEmptyMap(var_types type)
 {
-    // TODO-PhysicalVN: use one single VN here instead of allocation new ones.
+    // TODO-PhysicalVN: use one single VN here instead of allocating new ones.
     return VNForExpr(nullptr, type);
 }
 
@@ -9727,7 +9514,7 @@ ValueNumPair ValueNumStore::VNPairForCast(ValueNumPair srcVNPair,
     return {castLibVN, castConVN};
 }
 
-ValueNum ValueNumStore::VNForBitCast(ValueNum srcVN, var_types type)
+ValueNum ValueNumStore::VNForBitCast(ValueNum srcVN, var_types castToType)
 {
     // BitCast<type one>(BitCast<type two>(x)) => BitCast<type one>(x).
     VNFuncApp srcVNFunc;
@@ -9736,7 +9523,7 @@ ValueNum ValueNumStore::VNForBitCast(ValueNum srcVN, var_types type)
         srcVN = srcVNFunc.m_args[0];
     }
 
-    if (TypeOfVN(srcVN) == type)
+    if (TypeOfVN(srcVN) == castToType)
     {
         return srcVN;
     }
@@ -9744,9 +9531,9 @@ ValueNum ValueNumStore::VNForBitCast(ValueNum srcVN, var_types type)
     // TODO-PhysicalVN: document the intended semantics for small types...
     // Also document the overall strategy w.r.t bitcasts and how they were
     // chosen over identity stores/selections.
-    assert((type != TYP_STRUCT) || (TypeOfVN(srcVN) != TYP_STRUCT));
+    assert((castToType != TYP_STRUCT) || (TypeOfVN(srcVN) != TYP_STRUCT));
 
-    return VNForFunc(type, VNF_BitCast, srcVN, VNForIntCon(type));
+    return VNForFunc(castToType, VNF_BitCast, srcVN, VNForIntCon(castToType));
 }
 
 void Compiler::fgValueNumberHelperCallFunc(GenTreeCall* call, VNFunc vnf, ValueNumPair vnpExc)
