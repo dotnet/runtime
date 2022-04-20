@@ -879,7 +879,8 @@ namespace DebuggerTests
                         text = TGetter("text", TString("text")),
                         nullNone = TGetter("nullNone", TObject("bool[]", is_null: true)),
                         valueTypeEnum = TGetter("valueTypeEnum", TEnum("DebuggerTests.SampleEnum", "yes")),
-                        sampleStruct = TGetter("sampleStruct", TObject("DebuggerTests.SampleStructure", description: "DebuggerTests.SampleStructure"))
+                        sampleStruct = TGetter("sampleStruct", TObject("DebuggerTests.SampleStructure", description: "DebuggerTests.SampleStructure")),
+                        sampleClass = TGetter("sampleClass", TObject("DebuggerTests.SampleClass", description: "DebuggerTests.SampleClass"))
                     }, "testNoneProps#1");
                 else
                     await CheckProps(testNoneProps, new
@@ -889,7 +890,8 @@ namespace DebuggerTests
                         text = TString("text"),
                         nullNone = TObject("bool[]", is_null: true),
                         valueTypeEnum = TEnum("DebuggerTests.SampleEnum", "yes"),
-                        sampleStruct = TObject("DebuggerTests.SampleStructure", description: "DebuggerTests.SampleStructure")
+                        sampleStruct = TObject("DebuggerTests.SampleStructure", description: "DebuggerTests.SampleStructure"),
+                        sampleClass = TObject("DebuggerTests.SampleClass", description: "DebuggerTests.SampleClass")
                     }, "testNoneProps#1");
            });
 
@@ -938,7 +940,8 @@ namespace DebuggerTests
                         textCollapsed = TGetter("textCollapsed", TString("textCollapsed")),
                         nullCollapsed = TGetter("nullCollapsed", TObject("bool[]", is_null: true)),
                         valueTypeEnumCollapsed = TGetter("valueTypeEnumCollapsed", TEnum("DebuggerTests.SampleEnum", "yes")),
-                        sampleStructCollapsed = TGetter("sampleStructCollapsed", TObject("DebuggerTests.SampleStructure", description: "DebuggerTests.SampleStructure"))
+                        sampleStructCollapsed = TGetter("sampleStructCollapsed", TObject("DebuggerTests.SampleStructure", description: "DebuggerTests.SampleStructure")),
+                        sampleClassCollapsed = TGetter("sampleClassCollapsed", TObject("DebuggerTests.SampleClass", description: "DebuggerTests.SampleClass"))
                     }, "testCollapsedProps#1");
                 else
                     await CheckProps(testCollapsedProps, new
@@ -948,7 +951,8 @@ namespace DebuggerTests
                         textCollapsed = TString("textCollapsed"),
                         nullCollapsed = TObject("bool[]", is_null: true),
                         valueTypeEnumCollapsed = TEnum("DebuggerTests.SampleEnum", "yes"),
-                        sampleStructCollapsed = TObject("DebuggerTests.SampleStructure", description: "DebuggerTests.SampleStructure")
+                        sampleStructCollapsed = TObject("DebuggerTests.SampleStructure", description: "DebuggerTests.SampleStructure"),
+                        sampleClassCollapsed = TObject("DebuggerTests.SampleClass", description: "DebuggerTests.SampleClass")
                     }, "testCollapsedProps#1");
            });
 
@@ -976,25 +980,38 @@ namespace DebuggerTests
                 var (refArray, _) = await EvaluateOnCallFrame(id, "testPropertiesNone.array");
                 var refArrayProp = await GetProperties(refArray["objectId"]?.Value<string>());
 
-                var (refStructCollection, _) = await EvaluateOnCallFrame(id, "testPropertiesNone.sampleStruct");
-                var refStructCollectionProp = await GetProperties(refStructCollection["objectId"]?.Value<string>());
+                var (refStruct, _) = await EvaluateOnCallFrame(id, "testPropertiesNone.sampleStruct");
+                var refStructProp = await GetProperties(refStruct["objectId"]?.Value<string>());
+
+                var (refClass, _) = await EvaluateOnCallFrame(id, "testPropertiesNone.sampleClass");
+                var refClassProp = await GetProperties(refClass["objectId"]?.Value<string>());
+
+                JArray mergedRefItems = new();
 
                 //in Console App names are in []
                 //adding variable name to make elements unique
                 foreach (var item in refArrayProp)
                 {
                     item["name"] = string.Concat("arrayRootHidden[", item["name"], "]");
+                    mergedRefItems.Add(item);
                 }
                 foreach (var item in refListElementsProp)
                 {
                     item["name"] = string.Concat("listRootHidden[", item["name"], "]");
+                    mergedRefItems.Add(item);
                 }
-                // indexing valuetype does not make sense so dot is used for creating unique names
-                foreach (var item in refStructCollectionProp)
+
+                // valuetype/class members unique names are created by concatenation with a dot
+                foreach (var item in refStructProp)
                 {
                     item["name"] = string.Concat("sampleStructRootHidden.", item["name"]);
+                    mergedRefItems.Add(item);
                 }
-                var mergedRefItems = new JArray(refListElementsProp.Union(refArrayProp).Union(refStructCollectionProp));
+                foreach (var item in refClassProp)
+                {
+                    item["name"] = string.Concat("sampleClassRootHidden.", item["name"]);
+                    mergedRefItems.Add(item);
+                }
                 Assert.Equal(mergedRefItems, testRootHiddenProps);
            });
 

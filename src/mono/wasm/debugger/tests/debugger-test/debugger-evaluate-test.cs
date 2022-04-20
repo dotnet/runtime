@@ -524,6 +524,12 @@ namespace DebuggerTests
         no = 1
     }
 
+    public class SampleClass
+    {
+        public int ClassId = 200;
+        public List<string> Items = new List<string> { "should not be expanded" };
+    }
+
     public static class EvaluateBrowsableProperties
     {
         public class TestEvaluateFieldsNone
@@ -534,7 +540,7 @@ namespace DebuggerTests
             public bool[] nullNone = null;
             public SampleEnum valueTypeEnum = new();
             public SampleStructure sampleStruct = new();
-
+            public SampleClass sampleClass = new();
         }
 
         public class TestEvaluatePropertiesNone
@@ -545,6 +551,7 @@ namespace DebuggerTests
             public bool[] nullNone { get; set; }
             public SampleEnum valueTypeEnum { get; set; }
             public SampleStructure sampleStruct { get; set; }
+            public SampleClass sampleClass { get; set; }
 
             public TestEvaluatePropertiesNone()
             {
@@ -554,6 +561,7 @@ namespace DebuggerTests
                 nullNone = null;
                 valueTypeEnum = new();
                 sampleStruct = new();
+                sampleClass = new();
             }
         }
 
@@ -576,6 +584,9 @@ namespace DebuggerTests
 
             [System.Diagnostics.DebuggerBrowsable(System.Diagnostics.DebuggerBrowsableState.Never)]
             public SampleStructure sampleStructNever = new();
+            
+            [System.Diagnostics.DebuggerBrowsable(System.Diagnostics.DebuggerBrowsableState.Never)]
+            public SampleClass sampleClassNever = new();
         }
 
         public class TestEvaluatePropertiesNever
@@ -598,6 +609,9 @@ namespace DebuggerTests
             [System.Diagnostics.DebuggerBrowsable(System.Diagnostics.DebuggerBrowsableState.Never)]
             public SampleStructure sampleStructNever { get; set; }
 
+            [System.Diagnostics.DebuggerBrowsable(System.Diagnostics.DebuggerBrowsableState.Never)]
+            public SampleClass sampleClassNever { get; set; }
+
             public TestEvaluatePropertiesNever()
             {
                 listNever = new List<int>() { 1, 2 };
@@ -606,6 +620,7 @@ namespace DebuggerTests
                 nullNever = null;
                 valueTypeEnumNever = new();
                 sampleStructNever = new();
+                sampleClassNever = new();
             }
         }
 
@@ -628,6 +643,9 @@ namespace DebuggerTests
 
             [System.Diagnostics.DebuggerBrowsable(System.Diagnostics.DebuggerBrowsableState.Collapsed)]
             public SampleStructure sampleStructCollapsed = new();
+            
+            [System.Diagnostics.DebuggerBrowsable(System.Diagnostics.DebuggerBrowsableState.Collapsed)]
+            public SampleClass sampleClassCollapsed = new();
         }
 
         public class TestEvaluatePropertiesCollapsed
@@ -649,6 +667,9 @@ namespace DebuggerTests
 
             [System.Diagnostics.DebuggerBrowsable(System.Diagnostics.DebuggerBrowsableState.Collapsed)]
             public SampleStructure sampleStructCollapsed { get; set; }
+            
+            [System.Diagnostics.DebuggerBrowsable(System.Diagnostics.DebuggerBrowsableState.Collapsed)]
+            public SampleClass sampleClassCollapsed { get; set; }
 
             public TestEvaluatePropertiesCollapsed()
             {
@@ -658,6 +679,7 @@ namespace DebuggerTests
                 nullCollapsed = null;
                 valueTypeEnumCollapsed = new();
                 sampleStructCollapsed = new();
+                sampleClassCollapsed = new();
             }
         }
 
@@ -680,6 +702,9 @@ namespace DebuggerTests
 
             [System.Diagnostics.DebuggerBrowsable(System.Diagnostics.DebuggerBrowsableState.RootHidden)]
             public SampleStructure sampleStructRootHidden = new();
+            
+            [System.Diagnostics.DebuggerBrowsable(System.Diagnostics.DebuggerBrowsableState.RootHidden)]
+            public SampleClass sampleClassRootHidden = new();
         }
 
         public class TestEvaluatePropertiesRootHidden
@@ -701,6 +726,9 @@ namespace DebuggerTests
 
             [System.Diagnostics.DebuggerBrowsable(System.Diagnostics.DebuggerBrowsableState.RootHidden)]
             public SampleStructure sampleStructRootHidden { get; set; }
+            
+            [System.Diagnostics.DebuggerBrowsable(System.Diagnostics.DebuggerBrowsableState.RootHidden)]
+            public SampleClass sampleClassRootHidden { get; set; }
 
             public TestEvaluatePropertiesRootHidden()
             {
@@ -710,6 +738,7 @@ namespace DebuggerTests
                 nullRootHidden = null;
                 valueTypeEnumRootHidden = new();
                 sampleStructRootHidden = new();
+                sampleClassRootHidden = new();
             }
         }
 
@@ -737,7 +766,8 @@ namespace DebuggerTests
 
             public static bool[] nullNone = null;
             public static SampleEnum valueTypeEnum = new();
-            public SampleStructure sampleStruct = new();
+            public static SampleStructure sampleStruct = new();
+            public static SampleClass sampleClass = new();
         }
 
         public class TestEvaluatePropertiesNone
@@ -747,7 +777,8 @@ namespace DebuggerTests
             public static string text { get; set; }
             public static bool[] nullNone { get; set; }
             public static SampleEnum valueTypeEnum { get; set; }
-            public SampleStructure sampleStruct { get; set; }
+            public static SampleStructure sampleStruct { get; set; }
+            public static SampleClass sampleClass { get; set; }
 
             public TestEvaluatePropertiesNone()
             {
@@ -757,6 +788,7 @@ namespace DebuggerTests
                 nullNone = null;
                 valueTypeEnum = new();
                 sampleStruct = new();
+                sampleClass = new();
             }
         }
 
@@ -778,7 +810,10 @@ namespace DebuggerTests
             public static SampleEnum valueTypeEnumNever = new();
 
             [System.Diagnostics.DebuggerBrowsable(System.Diagnostics.DebuggerBrowsableState.Never)]
-            public SampleStructure sampleStructNever = new();
+            public static SampleStructure sampleStructNever = new();
+            
+            [System.Diagnostics.DebuggerBrowsable(System.Diagnostics.DebuggerBrowsableState.Never)]
+            public static SampleClass sampleClassNever = new();
         }
 
         public class TestEvaluatePropertiesNever
@@ -799,7 +834,10 @@ namespace DebuggerTests
             public static SampleEnum valueTypeEnumNever { get; set; }
 
             [System.Diagnostics.DebuggerBrowsable(System.Diagnostics.DebuggerBrowsableState.Never)]
-            public SampleStructure sampleStructNever { get; set; }
+            public static SampleStructure sampleStructNever { get; set; }
+            
+            [System.Diagnostics.DebuggerBrowsable(System.Diagnostics.DebuggerBrowsableState.Never)]
+            public static SampleClass sampleClassNever { get; set; }
 
             public TestEvaluatePropertiesNever()
             {
@@ -809,6 +847,7 @@ namespace DebuggerTests
                 nullNever = null;
                 valueTypeEnumNever = new();
                 sampleStructNever = new();
+                sampleClassNever = new();
             }
         }
 
@@ -830,7 +869,10 @@ namespace DebuggerTests
             public static SampleEnum valueTypeEnumCollapsed = new();
 
             [System.Diagnostics.DebuggerBrowsable(System.Diagnostics.DebuggerBrowsableState.Collapsed)]
-            public SampleStructure sampleStructCollapsed = new();
+            public static SampleStructure sampleStructCollapsed = new();
+            
+            [System.Diagnostics.DebuggerBrowsable(System.Diagnostics.DebuggerBrowsableState.Collapsed)]
+            public static SampleClass sampleClassCollapsed = new();
         }
 
         public class TestEvaluatePropertiesCollapsed
@@ -851,7 +893,10 @@ namespace DebuggerTests
             public static SampleEnum valueTypeEnumCollapsed { get; set; }
 
             [System.Diagnostics.DebuggerBrowsable(System.Diagnostics.DebuggerBrowsableState.Collapsed)]
-            public SampleStructure sampleStructCollapsed { get; set; }
+            public static SampleStructure sampleStructCollapsed { get; set; }
+            
+            [System.Diagnostics.DebuggerBrowsable(System.Diagnostics.DebuggerBrowsableState.Collapsed)]
+            public static SampleClass sampleClassCollapsed { get; set; }
 
             public TestEvaluatePropertiesCollapsed()
             {
@@ -861,6 +906,7 @@ namespace DebuggerTests
                 nullCollapsed = null;
                 valueTypeEnumCollapsed = new();
                 sampleStructCollapsed = new();
+                sampleClassCollapsed = new();
             }
         }
 
@@ -882,7 +928,10 @@ namespace DebuggerTests
             public static SampleEnum valueTypeEnumRootHidden = new();
 
             [System.Diagnostics.DebuggerBrowsable(System.Diagnostics.DebuggerBrowsableState.RootHidden)]
-            public SampleStructure sampleStructRootHidden = new();
+            public static SampleStructure sampleStructRootHidden = new();
+            
+            [System.Diagnostics.DebuggerBrowsable(System.Diagnostics.DebuggerBrowsableState.RootHidden)]
+            public static SampleClass sampleClassRootHidden = new();
         }
 
         public class TestEvaluatePropertiesRootHidden
@@ -903,7 +952,10 @@ namespace DebuggerTests
             public static SampleEnum valueTypeEnumRootHidden { get; set; }
 
             [System.Diagnostics.DebuggerBrowsable(System.Diagnostics.DebuggerBrowsableState.RootHidden)]
-            public SampleStructure sampleStructRootHidden { get; set; }
+            public static SampleStructure sampleStructRootHidden { get; set; }
+            
+            [System.Diagnostics.DebuggerBrowsable(System.Diagnostics.DebuggerBrowsableState.RootHidden)]
+            public static SampleClass sampleClassRootHidden { get; set; }
 
             public TestEvaluatePropertiesRootHidden()
             {
@@ -913,6 +965,7 @@ namespace DebuggerTests
                 nullRootHidden = null;
                 valueTypeEnumRootHidden = new();
                 sampleStructRootHidden = new();
+                sampleClassRootHidden = new();
             }
         }
 
@@ -940,6 +993,7 @@ namespace DebuggerTests
             public bool[] nullNone { get { return null; } }
             public SampleEnum valueTypeEnum { get { return new(); } }
             public SampleStructure sampleStruct { get { return new(); } }
+            public SampleClass sampleClass { get { return new(); } }
         }
 
         public class TestEvaluatePropertiesNever
@@ -961,6 +1015,9 @@ namespace DebuggerTests
 
             [System.Diagnostics.DebuggerBrowsable(System.Diagnostics.DebuggerBrowsableState.Never)]
             public SampleStructure sampleStructNever { get { return new(); } }
+            
+            [System.Diagnostics.DebuggerBrowsable(System.Diagnostics.DebuggerBrowsableState.Never)]
+            public SampleClass sampleClassNever { get { return new(); } }
         }
 
         public class TestEvaluatePropertiesCollapsed
@@ -982,6 +1039,9 @@ namespace DebuggerTests
 
             [System.Diagnostics.DebuggerBrowsable(System.Diagnostics.DebuggerBrowsableState.Collapsed)]
             public SampleStructure sampleStructCollapsed { get { return new(); } }
+            
+            [System.Diagnostics.DebuggerBrowsable(System.Diagnostics.DebuggerBrowsableState.Collapsed)]
+            public SampleClass sampleClassCollapsed { get { return new(); } }
         }
 
         public class TestEvaluatePropertiesRootHidden
@@ -1003,6 +1063,9 @@ namespace DebuggerTests
 
             [System.Diagnostics.DebuggerBrowsable(System.Diagnostics.DebuggerBrowsableState.RootHidden)]
             public SampleStructure sampleStructRootHidden { get { return new(); } }
+            
+            [System.Diagnostics.DebuggerBrowsable(System.Diagnostics.DebuggerBrowsableState.RootHidden)]
+            public SampleClass sampleClassRootHidden { get { return new(); } }
         }
 
         public static void Evaluate()

@@ -88,7 +88,13 @@ namespace BrowserDebugProxy
             return fieldValue;
         }
 
-        private static async Task<JArray> GetRootHiddenChildren(MonoSDBHelper sdbHelper, JObject root, string rootNamePrefix, GetObjectCommandOptions getCommandOptions, CancellationToken token)
+        private static async Task<JArray> GetRootHiddenChildren(
+            MonoSDBHelper sdbHelper,
+            JObject root,
+            string rootNamePrefix,
+            string rootTypeName,
+            GetObjectCommandOptions getCommandOptions,
+            CancellationToken token)
         {
             var rootValue = root?["value"] ?? root["get"];
 
@@ -104,7 +110,7 @@ namespace BrowserDebugProxy
 
             // if it's an accessor
             if (root["get"] != null)
-                return await GetRootHiddenChildrenForFunction();
+                return await GetRootHiddenChildrenForProperty();
 
             if (rootValue?["type"]?.Value<string>() != "object")
                 return new JArray();
@@ -123,17 +129,26 @@ namespace BrowserDebugProxy
                 return resultValue;
             }
 
-            // unpack object collection to be of array scheme
+            // unpack object
             if (rootObjectId.Scheme is "object")
             {
                 GetMembersResult members = await GetObjectMemberValues(sdbHelper, rootObjectId.Value, getCommandOptions, token);
-                var memberNamedItems = members.Where(m => m["name"]?.Value<string>() == "Items").FirstOrDefault();
-                if (memberNamedItems is not null &&
-                    (DotnetObjectId.TryParse(memberNamedItems["value"]?["objectId"]?.Value<string>(), out DotnetObjectId itemsObjectId) ||
-                    DotnetObjectId.TryParse(memberNamedItems["get"]?["objectId"]?.Value<string>(), out itemsObjectId)) &&
-                    itemsObjectId.Scheme == "array")
+
+                if (!IsACollectionType(rootTypeName))
                 {
-                    rootObjectId = itemsObjectId;
+                    // is a class with members
+                    return members.Flatten();
+                }
+                else
+                {
+                    // a collection - expose elements to be of array scheme
+                    var memberNamedItems = members.Where(m => m["name"]?.Value<string>() == "Items").FirstOrDefault();
+                    if (memberNamedItems is not null &&
+                        (DotnetObjectId.TryParse(memberNamedItems["value"]?["objectId"]?.Value<string>(), out DotnetObjectId itemsObjectId)) &&
+                        itemsObjectId.Scheme == "array")
+                    {
+                        rootObjectId = itemsObjectId;
+                    }
                 }
             }
 
@@ -152,10 +167,10 @@ namespace BrowserDebugProxy
                 return new JArray();
             }
 
-            async Task<JArray> GetRootHiddenChildrenForFunction()
+            async Task<JArray> GetRootHiddenChildrenForProperty()
             {
                 var resMethod = await sdbHelper.InvokeMethod(rootObjectId, token);
-                return await GetRootHiddenChildren(sdbHelper, resMethod, rootNamePrefix, getCommandOptions, token);
+                return await GetRootHiddenChildren(sdbHelper, resMethod, rootNamePrefix, rootTypeName, getCommandOptions, token);
             }
         }
 
@@ -212,8 +227,9 @@ namespace BrowserDebugProxy
                 string namePrefix = field.Name;
                 string containerTypeName = await sdbHelper.GetTypeName(containerTypeId, token);
                 namePrefix = GetNamePrefixForValues(field.Name, containerTypeName, isOwn, fieldState);
+                string typeName = await sdbHelper.GetTypeName(field.TypeId, token);
 
-                var enumeratedValues = await GetRootHiddenChildren(sdbHelper, fieldValue, namePrefix, getCommandOptions, token);
+                var enumeratedValues = await GetRootHiddenChildren(sdbHelper, fieldValue, namePrefix, typeName, getCommandOptions, token);
                 if (enumeratedValues != null)
                     fieldValues.AddRange(enumeratedValues);
             }
@@ -239,7 +255,7 @@ namespace BrowserDebugProxy
                 if (MonoSDBHelper.IsPrimitiveType(typeName))
                     return GetHiddenElement();
 
-                return await GetRootHiddenChildren(sdbHelper, value, namePrefix, GetObjectCommandOptions.None, token);
+                return await GetRootHiddenChildren(sdbHelper, value, namePrefix, typeName, GetObjectCommandOptions.None, token);
 
             }
             else if (state is DebuggerBrowsableState.Never)
