@@ -8,7 +8,7 @@ namespace System.Text.RegularExpressions
     {
         /// <summary>The runner need only determine whether the input has a match; no additional information is required.</summary>
         /// <remarks>This mode is used by Regex.IsMatch.</remarks>
-        Existence,
+        ExistenceRequired,
 
         /// <summary>The runner needs to determine the next location and length of a match in the input; no additional information is required.</summary>
         /// <remarks>This mode is used by Regex.Count, Regex.EnumerateMatches, and Regex.Replace (when the replacement doesn't involve backreferences).</remarks>

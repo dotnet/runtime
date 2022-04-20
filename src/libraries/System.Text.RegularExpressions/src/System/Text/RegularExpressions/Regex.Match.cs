@@ -77,7 +77,7 @@ namespace System.Text.RegularExpressions
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.input);
             }
 
-            return RunSingleMatch(RegexRunnerMode.Existence, -1, input, 0, input.Length, RightToLeft ? input.Length : 0) is null;
+            return RunSingleMatch(RegexRunnerMode.ExistenceRequired, -1, input, 0, input.Length, RightToLeft ? input.Length : 0) is null;
         }
 
         /// <summary>
@@ -87,7 +87,7 @@ namespace System.Text.RegularExpressions
         /// <returns><see langword="true"/> if the regular expression finds a match; otherwise, <see langword="false"/>.</returns>
         /// <exception cref="RegexMatchTimeoutException">A time-out ocurred.</exception>
         public bool IsMatch(ReadOnlySpan<char> input) =>
-            RunSingleMatch(RegexRunnerMode.Existence, -1, input, RightToLeft ? input.Length : 0).Success;
+            RunSingleMatch(RegexRunnerMode.ExistenceRequired, -1, input, RightToLeft ? input.Length : 0).Success;
 
         /// <summary>
         /// Searches the input string for one or more matches using the previous pattern and options,
@@ -100,7 +100,7 @@ namespace System.Text.RegularExpressions
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.input);
             }
 
-            return RunSingleMatch(RegexRunnerMode.Existence, -1, input, 0, input.Length, startat) is null;
+            return RunSingleMatch(RegexRunnerMode.ExistenceRequired, -1, input, 0, input.Length, startat) is null;
         }
 
         /// <summary>

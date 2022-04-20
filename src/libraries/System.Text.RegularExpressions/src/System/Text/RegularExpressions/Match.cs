@@ -274,7 +274,7 @@ namespace System.Text.RegularExpressions
         /// <summary>Tidy the match so that it can be used as an immutable result</summary>
         internal void Tidy(int textpos, int beginningOfSpanSlice, RegexRunnerMode mode)
         {
-            Debug.Assert(mode != RegexRunnerMode.Existence);
+            Debug.Assert(mode != RegexRunnerMode.ExistenceRequired);
 
             int[] matchcount = _matchcount;
             _capcount = matchcount[0]; // used to indicate Success

@@ -349,11 +349,11 @@ namespace System.Text.RegularExpressions.Symbolic
                 return SymbolicMatch.NoMatch;
             }
 
-            // A match exists. If we don't need further details, because IsMatch was used (and thus we don't
+            // A match exists. If we don't need further details, e.g. because IsMatch was used (and thus we don't
             // need the exact bounds of the match, captures, etc.), we're done.
-            if (mode == RegexRunnerMode.Existence)
+            if (mode == RegexRunnerMode.ExistenceRequired)
             {
-                return SymbolicMatch.QuickMatch;
+                return SymbolicMatch.MatchExists;
             }
 
             // Phase 2:
@@ -538,7 +538,7 @@ namespace System.Text.RegularExpressions.Symbolic
                         endPos = pos;
 
                         // A match is known to exist.  If that's all we need to know, we're done.
-                        if (mode == RegexRunnerMode.Existence)
+                        if (mode == RegexRunnerMode.ExistenceRequired)
                         {
                             return 1;
                         }

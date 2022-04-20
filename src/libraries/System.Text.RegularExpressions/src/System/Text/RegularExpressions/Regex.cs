@@ -401,7 +401,7 @@ namespace System.Text.RegularExpressions
                     runner.runtextpos += bump;
                 }
 
-                return ScanInternal(mode, reuseMatchObject: mode == RegexRunnerMode.Existence, input, beginning, runner, span, returnNullIfReuseMatchObject: true);
+                return ScanInternal(mode, reuseMatchObject: mode == RegexRunnerMode.ExistenceRequired, input, beginning, runner, span, returnNullIfReuseMatchObject: true);
             }
             finally
             {
@@ -453,7 +453,7 @@ namespace System.Text.RegularExpressions
                 Match match = runner.runmatch!;
                 if (match.FoundMatch)
                 {
-                    if (mode == RegexRunnerMode.Existence)
+                    if (mode == RegexRunnerMode.ExistenceRequired)
                     {
                         return (true, 0, 0, 0);
                     }
@@ -494,7 +494,7 @@ namespace System.Text.RegularExpressions
                     runner.InitializeForScan(this, inputSpan, startat, mode);
                     runner.runtextpos = runtextpos;
 
-                    // We get the Match by calling Scan. 'input' parameter is used to set the Match text which is only relevante if we are using the Run<TState> string
+                    // We get the Match by calling Scan. 'input' parameter is used to set the Match text which is only relevant if we are using the Run<TState> string
                     // overload, as APIs that call the span overload (like Count) don't require match.Text to be set, so we pass null in that case.
                     Match? match = ScanInternal(mode, reuseMatchObject, inputString, 0, runner, inputSpan, returnNullIfReuseMatchObject: false);
                     Debug.Assert(match is not null);
@@ -564,7 +564,7 @@ namespace System.Text.RegularExpressions
             Match? match = runner.runmatch;
             Debug.Assert(match is not null);
 
-            // If we got a match, do some cleanup and return it, or return null if quick is true;
+            // If we got a match, do some cleanup and return it, or return null if reuseMatchObject and returnNullIfReuseMatchObject are true.
             if (match.FoundMatch)
             {
                 if (!reuseMatchObject)

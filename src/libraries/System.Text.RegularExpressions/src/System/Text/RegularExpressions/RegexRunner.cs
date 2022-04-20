@@ -70,21 +70,6 @@ namespace System.Text.RegularExpressions
 
         protected RegexRunner() { }
 
-        /// <summary>
-        /// Scans the string to find the first match. Uses the Match object
-        /// both to feed text in and as a place to store matches that come out.
-        ///
-        /// All the action is in the abstract Go() method defined by subclasses. Our
-        /// responsibility is to load up the class members (as done here) before
-        /// calling Go.
-        ///
-        /// The optimizer can compute a set of candidate starting characters,
-        /// and we could use a separate method Skip() that will quickly scan past
-        /// any characters that we know can't match.
-        /// </summary>
-        protected Match? Scan(Regex regex, string text, int textbeg, int textend, int textstart, int prevlen, bool quick) =>
-            Scan(regex, text, textbeg, textend, textstart, prevlen, quick, regex.MatchTimeout);
-
         protected internal virtual void Scan(ReadOnlySpan<char> text)
         {
             // This base implementation is overridden by all of the built-in engines and by all source-generated
@@ -126,6 +111,11 @@ namespace System.Text.RegularExpressions
             InternalScan(runregex!, beginning, beginning + text.Length);
         }
 
+        // TODO https://github.com/dotnet/runtime/issues/62573: Obsolete this.
+        protected Match? Scan(Regex regex, string text, int textbeg, int textend, int textstart, int prevlen, bool quick) =>
+            Scan(regex, text, textbeg, textend, textstart, prevlen, quick, regex.MatchTimeout);
+
+        // TODO https://github.com/dotnet/runtime/issues/62573: Obsolete this.
         /// <summary>
         /// This method's body is only kept since it is a protected member that could be called by someone outside
         /// the assembly.
@@ -134,7 +124,7 @@ namespace System.Text.RegularExpressions
         {
             InitializeTimeout(timeout);
 
-            RegexRunnerMode mode = quick ? RegexRunnerMode.Existence : RegexRunnerMode.CapturesRequired;
+            RegexRunnerMode mode = quick ? RegexRunnerMode.ExistenceRequired : RegexRunnerMode.CapturesRequired;
 
             // We set runtext before calling InitializeForScan so that runmatch object is initialized with the text
             runtext = text;
