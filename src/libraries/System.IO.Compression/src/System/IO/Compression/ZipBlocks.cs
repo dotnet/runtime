@@ -196,28 +196,28 @@ namespace System.IO.Compression
                 // is to respect the size, but only actually use the values if their 32 bit
                 // values were all 0xFF.
 
-                if (ms.Position > extraField.Size - 8)
+                if (extraField.Size < sizeof(long))
                     return true;
 
                 long value64 = reader.ReadInt64();
                 if (readUncompressedSize)
                     zip64Block._uncompressedSize = value64;
 
-                if (ms.Position > extraField.Size - 8)
+                if (ms.Position > extraField.Size - sizeof(long))
                     return true;
 
                 value64 = reader.ReadInt64();
                 if (readCompressedSize)
                     zip64Block._compressedSize = value64;
 
-                if (ms.Position > extraField.Size - 8)
+                if (ms.Position > extraField.Size - sizeof(long))
                     return true;
 
                 value64 = reader.ReadInt64();
                 if (readLocalHeaderOffset)
                     zip64Block._localHeaderOffset = value64;
 
-                if (ms.Position > extraField.Size - 4)
+                if (ms.Position > extraField.Size - sizeof(int))
                     return true;
 
                 int value32 = reader.ReadInt32();

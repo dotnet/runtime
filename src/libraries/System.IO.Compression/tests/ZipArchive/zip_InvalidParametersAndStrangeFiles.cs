@@ -818,12 +818,13 @@ namespace System.IO.Compression.Tests
         [Fact]
         public void ReadArchive_WithUnexpectedZip64ExtraFieldSize()
         {
-            using var archive = new ZipArchive(new MemoryStream(s_tinyZip64));
+            using ZipArchive archive = new (new MemoryStream(s_slightlyIncorrectZip64));
             ZipArchiveEntry entry = archive.GetEntry("file.txt");
             Assert.Equal(4, entry.Length);
             Assert.Equal(6, entry.CompressedLength);
             using var stream = entry.Open();
-            string text = new StreamReader(stream).ReadToEnd();
+            using StreamReader reader = new (stream);
+            string text = reader.ReadToEnd();
             Assert.Equal("test", text);
         }
 
@@ -834,7 +835,7 @@ namespace System.IO.Compression.Tests
         [Fact]
         public void ReadArchive_WithUnexpectedZip64ExtraFieldSizeCompressedSizeIn32Bit()
         {
-            byte[] input = (byte[])s_tinyZip64.Clone();
+            byte[] input = (byte[])s_slightlyIncorrectZip64.Clone();
             BinaryPrimitives.WriteInt32LittleEndian(input.AsSpan(120), 9); // change 32-bit compressed size from -1
 
             using var archive = new ZipArchive(new MemoryStream(input));
@@ -850,7 +851,7 @@ namespace System.IO.Compression.Tests
         [Fact]
         public void ReadArchive_WithUnexpectedZip64ExtraFieldSizeUncompressedSizeIn32Bit()
         {
-            byte[] input = (byte[])s_tinyZip64.Clone();
+            byte[] input = (byte[])s_slightlyIncorrectZip64.Clone();
             BinaryPrimitives.WriteInt32LittleEndian(input.AsSpan(124), 9); // change 32-bit uncompressed size from -1
 
             using var archive = new ZipArchive(new MemoryStream(input));
@@ -859,7 +860,7 @@ namespace System.IO.Compression.Tests
             Assert.Equal(6, entry.CompressedLength); // it should have used 32-bit size
         }
 
-        private static readonly byte[] s_tinyZip64 =
+        private static readonly byte[] s_slightlyIncorrectZip64 =
         {
             // ===== Local file header signature 0x04034b50
             0x50, 0x4b, 0x03, 0x04,
