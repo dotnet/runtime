@@ -539,6 +539,15 @@ int __cdecl main(int argc, char* argv[])
 
                     totalBaseMetrics.NumDiffedCodeBytes += baseMetrics.NumCodeBytes;
                     totalDiffMetrics.NumDiffedCodeBytes += diffMetrics.NumCodeBytes;
+
+                    totalBaseMetrics.NumDiffExecutedInstructions += baseMetrics.NumExecutedInstructions;
+                    totalDiffMetrics.NumDiffExecutedInstructions += diffMetrics.NumExecutedInstructions;
+
+                    //printf("JIT1: %lld instructions, JIT 2: %lld instructions (%s%.2f%%)\n",
+                    //    baseMetrics.NumExecutedInstructions,
+                    //    diffMetrics.NumExecutedInstructions,
+                    //    diffMetrics.NumExecutedInstructions >= baseMetrics.NumExecutedInstructions ? "+" : "-",
+                    //    fabs((diffMetrics.NumExecutedInstructions - baseMetrics.NumExecutedInstructions) / (double)baseMetrics.NumExecutedInstructions));
                 }
             }
         }

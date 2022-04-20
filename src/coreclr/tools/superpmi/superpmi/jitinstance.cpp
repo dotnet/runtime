@@ -277,6 +277,27 @@ bool JitInstance::reLoad(MethodContext* firstContext)
     return true;
 }
 
+#undef DLLEXPORT
+#ifdef _MSC_VER
+#define DLLEXPORT __declspec(dllexport)
+#else
+#define DLLEXPORT __attribute__((visibility("default")))
+#endif
+
+DLLEXPORT volatile UINT64 s_globalZero;
+// A dynamic instrumentor can rewrite this function to provide precise
+// instruction counts that SPMI will report in metrics. We need the volatile
+// read here to model to the compiler that something might actually happen in
+// this function.
+extern "C" DLLEXPORT NOINLINE void Instrumentor_GetInsCount(UINT64* result)
+{
+    // Instrumentor may have written the value already.
+    if (*result == 0)
+    {
+        *result = s_globalZero;
+    }
+}
+
 JitInstance::Result JitInstance::CompileMethod(MethodContext* MethodToCompile, int mcIndex, bool collectThroughput, MetricsSummary* metrics)
 {
     struct Param : FilterSuperPMIExceptionsParam_CaptureException
@@ -303,6 +324,9 @@ JitInstance::Result JitInstance::CompileMethod(MethodContext* MethodToCompile, i
     times[1] = 0;
 
     stj.Start();
+
+    UINT64 insCountBefore = 0;
+    Instrumentor_GetInsCount(&insCountBefore);
 
     PAL_TRY(Param*, pParam, &param)
     {
@@ -405,9 +429,14 @@ JitInstance::Result JitInstance::CompileMethod(MethodContext* MethodToCompile, i
 
     mc->cr->secondsToCompile = stj.GetSeconds();
 
+    UINT64 insCountAfter = 0;
+    Instrumentor_GetInsCount(&insCountAfter);
+
     if (param.result == RESULT_SUCCESS)
     {
         metrics->SuccessfulCompiles++;
+        metrics->NumExecutedInstructions += static_cast<long long>(insCountAfter - insCountBefore);
+
     }
     else
     {

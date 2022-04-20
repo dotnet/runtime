@@ -73,10 +73,10 @@ jobs:
         mkdir $(SpmiAsmdiffsLocation)
       displayName: Create directories
 
-    - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi_asmdiffs_setup.py -source_directory $(Build.SourcesDirectory) -product_directory $(buildProductRootFolderPath) -arch $(archType)
-      displayName: ${{ format('SuperPMI asmdiffs setup ({0})', parameters.archType) }}
+    - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi_asmdiffs_setup.py -source_directory $(Build.SourcesDirectory) -checked_directory $(buildProductRootFolderPath) -release_directory $(releaseProductRootFolderPath) -arch $(archType)
+      displayName: ${{ format('SuperPMI diffs setup ({0})', parameters.archType) }}
 
-      # Run superpmi asmdiffs in helix
+      # Run superpmi diffs in helix
     - template: /eng/pipelines/common/templates/runtimes/send-to-helix-step.yml
       parameters:
         displayName: 'Send job to Helix'
