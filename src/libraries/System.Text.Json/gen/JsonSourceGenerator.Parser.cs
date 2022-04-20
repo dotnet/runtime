@@ -34,6 +34,7 @@ namespace System.Text.Json.SourceGeneration
             private const string JsonNodeFullName = "System.Text.Json.Nodes.JsonNode";
             private const string JsonObjectFullName = "System.Text.Json.Nodes.JsonObject";
             private const string JsonValueFullName = "System.Text.Json.Nodes.JsonValue";
+            private const string JsonDocumentFullName = "System.Text.Json.JsonDocument";
             private const string JsonIgnoreAttributeFullName = "System.Text.Json.Serialization.JsonIgnoreAttribute";
             private const string JsonIgnoreConditionFullName = "System.Text.Json.Serialization.JsonIgnoreCondition";
             private const string JsonIncludeAttributeFullName = "System.Text.Json.Serialization.JsonIncludeAttribute";
@@ -92,6 +93,7 @@ namespace System.Text.Json.SourceGeneration
             private readonly Type? _jsonNodeType;
             private readonly Type? _jsonObjectType;
             private readonly Type? _jsonValueType;
+            private readonly Type? _jsonDocumentType;
 
             // Unsupported types
             private readonly Type _delegateType;
@@ -229,6 +231,7 @@ namespace System.Text.Json.SourceGeneration
                 _jsonNodeType = _metadataLoadContext.Resolve(JsonNodeFullName);
                 _jsonObjectType = _metadataLoadContext.Resolve(JsonObjectFullName);
                 _jsonValueType = _metadataLoadContext.Resolve(JsonValueFullName);
+                _jsonDocumentType = _metadataLoadContext.Resolve(JsonDocumentFullName);
 
                 // Unsupported types.
                 _delegateType = _metadataLoadContext.Resolve(SpecialType.System_Delegate);
@@ -1556,6 +1559,7 @@ namespace System.Text.Json.SourceGeneration
                 AddTypeIfNotNull(_knownTypes, _jsonNodeType);
                 AddTypeIfNotNull(_knownTypes, _jsonObjectType);
                 AddTypeIfNotNull(_knownTypes, _jsonValueType);
+                AddTypeIfNotNull(_knownTypes, _jsonDocumentType);
 
                 _knownUnsupportedTypes.Add(_typeType);
                 _knownUnsupportedTypes.Add(_serializationInfoType);

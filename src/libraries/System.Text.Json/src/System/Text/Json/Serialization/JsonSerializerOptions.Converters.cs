@@ -111,8 +111,8 @@ namespace System.Text.Json
             Add(JsonMetadataServices.Int16Converter);
             Add(JsonMetadataServices.Int32Converter);
             Add(JsonMetadataServices.Int64Converter);
-            Add(new JsonElementConverter());
-            Add(new JsonDocumentConverter());
+            Add(JsonMetadataServices.JsonElementConverter);
+            Add(JsonMetadataServices.JsonDocumentConverter);
             Add(JsonMetadataServices.ObjectConverter);
             Add(JsonMetadataServices.SByteConverter);
             Add(JsonMetadataServices.SingleConverter);

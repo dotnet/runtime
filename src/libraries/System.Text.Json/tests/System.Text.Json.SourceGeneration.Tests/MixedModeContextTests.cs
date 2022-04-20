@@ -30,6 +30,8 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(byte[]), GenerationMode = JsonSourceGenerationMode.Metadata)]
     [JsonSerializable(typeof(string), GenerationMode = JsonSourceGenerationMode.Metadata | JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof((string Label1, int Label2, bool)), GenerationMode = JsonSourceGenerationMode.Metadata | JsonSourceGenerationMode.Serialization)]
+    [JsonSerializable(typeof(JsonDocument), GenerationMode = JsonSourceGenerationMode.Metadata | JsonSourceGenerationMode.Serialization)]
+    [JsonSerializable(typeof(JsonElement), GenerationMode = JsonSourceGenerationMode.Metadata | JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(RealWorldContextTests.ClassWithEnumAndNullable), GenerationMode = JsonSourceGenerationMode.Metadata | JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(RealWorldContextTests.ClassWithNullableProperties), GenerationMode = JsonSourceGenerationMode.Metadata | JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(ClassWithCustomConverter), GenerationMode = JsonSourceGenerationMode.Metadata | JsonSourceGenerationMode.Serialization)]
@@ -81,6 +83,8 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.Null(MixedModeContext.Default.SampleEnum.SerializeHandler);
             Assert.Null(MixedModeContext.Default.String.SerializeHandler);
             Assert.NotNull(MixedModeContext.Default.ValueTupleStringInt32Boolean.SerializeHandler);
+            Assert.Null(MixedModeContext.Default.JsonDocument.SerializeHandler);
+            Assert.Null(MixedModeContext.Default.JsonElement.SerializeHandler);
             Assert.NotNull(MixedModeContext.Default.ClassWithEnumAndNullable.SerializeHandler);
             Assert.NotNull(MixedModeContext.Default.ClassWithNullableProperties.SerializeHandler);
             Assert.Null(MixedModeContext.Default.ClassWithCustomConverter.SerializeHandler);
@@ -97,6 +101,7 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.NotNull(MixedModeContext.Default.PersonStruct.SerializeHandler);
             Assert.NotNull(MixedModeContext.Default.TypeWithValidationAttributes.SerializeHandler);
             Assert.NotNull(MixedModeContext.Default.TypeWithDerivedAttribute.SerializeHandler);
+            Assert.Null(MixedModeContext.Default.PolymorphicClass.SerializeHandler);
         }
 
         [Fact]
