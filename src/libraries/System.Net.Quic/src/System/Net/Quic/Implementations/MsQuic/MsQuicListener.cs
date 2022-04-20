@@ -14,8 +14,8 @@ using System.Threading.Channels;
 using System.Threading.Tasks;
 using System.Net.Sockets;
 using Microsoft.Quic;
-using static Microsoft.Quic.MsQuic;
 using System.Runtime.CompilerServices;
+using static Microsoft.Quic.MsQuic;
 
 namespace System.Net.Quic.Implementations.MsQuic
 {
