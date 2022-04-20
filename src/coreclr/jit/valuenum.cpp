@@ -6531,9 +6531,8 @@ static const char* s_reservedNameArr[] = {
     "$VN.Recursive",    // -2  RecursiveVN
     "$VN.No",           // -1  NoVN
     "$VN.Null",         //  0  VNForNull()
-    "$VN.ReadOnlyHeap", //  1  VNForROH()
-    "$VN.Void",         //  2  VNForVoid()
-    "$VN.EmptyExcSet"   //  3  VNForEmptyExcSet()
+    "$VN.Void",         //  1  VNForVoid()
+    "$VN.EmptyExcSet"   //  2  VNForEmptyExcSet()
 };
 
 // Returns the string name of "vn" when it is a reserved value number, nullptr otherwise
@@ -8597,7 +8596,6 @@ void Compiler::fgValueNumberTree(GenTree* tree)
             vnStore->VNPUnpackExc(addr->gtVNPair, &addrNvnp, &addrXvnp);
 
             // Is the dereference immutable?  If so, model it as referencing the read-only heap.
-            // TODO-VNTypes: this code needs to encode the types of the indirections.
             if (tree->gtFlags & GTF_IND_INVARIANT)
             {
                 assert(!isVolatile); // We don't expect both volatile and invariant
@@ -8633,21 +8631,13 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                             vnStore->VNForFunc(tree->TypeGet(), VNF_PtrToStatic, boxAddrVN, fieldSeqVN);
                         tree->gtVNPair = ValueNumPair(staticAddrVN, staticAddrVN);
                     }
-                    // Is this invariant indirect expected to always return a non-null value?
-                    // TODO-VNTypes: non-null indirects should only be used for TYP_REFs.
-                    else if ((tree->gtFlags & GTF_IND_NONNULL) != 0)
+                    else // TODO-VNTypes: this code needs to encode the types of the indirections.
                     {
-                        assert(tree->gtFlags & GTF_IND_NONFAULTING);
-                        tree->gtVNPair = vnStore->VNPairForFunc(tree->TypeGet(), VNF_NonNullIndirect, addrNvnp);
-                        tree->gtVNPair = vnStore->VNPWithExc(tree->gtVNPair, addrXvnp);
-                    }
-                    else
-                    {
-                        tree->gtVNPair =
-                            ValueNumPair(vnStore->VNForMapSelect(VNK_Liberal, TYP_REF, ValueNumStore::VNForROH(),
-                                                                 addrNvnp.GetLiberal()),
-                                         vnStore->VNForMapSelect(VNK_Conservative, TYP_REF, ValueNumStore::VNForROH(),
-                                                                 addrNvnp.GetConservative()));
+                        // Is this invariant indirect expected to always return a non-null value?
+                        VNFunc loadFunc =
+                            ((tree->gtFlags & GTF_IND_NONNULL) != 0) ? VNF_InvariantNonNullLoad : VNF_InvariantLoad;
+
+                        tree->gtVNPair = vnStore->VNPairForFunc(tree->TypeGet(), loadFunc, addrNvnp);
                         tree->gtVNPair = vnStore->VNPWithExc(tree->gtVNPair, addrXvnp);
                     }
                 }

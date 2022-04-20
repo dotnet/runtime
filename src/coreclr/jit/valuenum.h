@@ -421,25 +421,16 @@ public:
     // And the single constant for an object reference type.
     static ValueNum VNForNull()
     {
-        // We reserve Chunk 0 for "special" VNs.  SRC_Null (== 0) is the VN of "null".
         return ValueNum(SRC_Null);
-    }
-
-    // The ROH map is the map for the "read-only heap".  We assume that this is never mutated, and always
-    // has the same value number.
-    static ValueNum VNForROH()
-    {
-        // We reserve Chunk 0 for "special" VNs.  Let SRC_ReadOnlyHeap (== 3) be the read-only heap.
-        return ValueNum(SRC_ReadOnlyHeap);
     }
 
     // A special value number for "void" -- sometimes a type-void thing is an argument,
     // and we want the args to be non-NoVN.
     static ValueNum VNForVoid()
     {
-        // We reserve Chunk 0 for "special" VNs.  Let SRC_Void (== 4) be the value for "void".
         return ValueNum(SRC_Void);
     }
+
     static ValueNumPair VNPForVoid()
     {
         return ValueNumPair(VNForVoid(), VNForVoid());
@@ -448,10 +439,9 @@ public:
     // A special value number for the empty set of exceptions.
     static ValueNum VNForEmptyExcSet()
     {
-        // We reserve Chunk 0 for "special" VNs.  Let SRC_EmptyExcSet (== 5) be the value for the empty set of
-        // exceptions.
         return ValueNum(SRC_EmptyExcSet);
     }
+
     static ValueNumPair VNPForEmptyExcSet()
     {
         return ValueNumPair(VNForEmptyExcSet(), VNForEmptyExcSet());
@@ -1405,10 +1395,10 @@ private:
         return m_VNFunc4Map;
     }
 
+    // We reserve Chunk 0 for "special" VNs.
     enum SpecialRefConsts
     {
         SRC_Null,
-        SRC_ReadOnlyHeap,
         SRC_Void,
         SRC_EmptyExcSet,
 
