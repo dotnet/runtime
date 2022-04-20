@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-
 using Xunit;
 using Microsoft.XmlSerializer.Generator;
 using System.IO;
@@ -41,7 +40,7 @@ namespace Microsoft.XmlSerializer.Generator.Tests
             Assert.True(File.Exists(CodeFile), string.Format("Fail to generate {0}.", CodeFile));
             // Compare the generated CodeFiles from the LKG with the live built shared framework one.
             // Not comparing byte per byte as the generated output isn't deterministic.
-            Assert.Equal(LineEndingsHelper.Normalize(File.ReadAllText(LKGCodeFile)).Length, LineEndingsHelper.Normalize(File.ReadAllText(CodeFile)).Length);
+            Assert.Equal(LineEndingsHelper.Normalize(File.ReadAllText(LKGCodeFile)).Length, File.ReadAllText(CodeFile).Length);
         }
     }
 }
