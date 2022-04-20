@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -57,7 +58,7 @@ namespace System.Threading.RateLimiting.Test
         public override async Task CanAcquireResourceAsync_QueuesAndGrabsOldest()
         {
             var limiter = new SlidingWindowRateLimiter(new SlidingWindowRateLimiterOptions(1, QueueProcessingOrder.OldestFirst, 2,
-                TimeSpan.Zero, 1, autoReplenishment: false));
+                TimeSpan.FromMinutes(0), 1, autoReplenishment: false));
             var lease = await limiter.WaitAsync();
 
             Assert.True(lease.IsAcquired);
@@ -412,7 +413,7 @@ namespace System.Threading.RateLimiting.Test
         public override void NoMetadataOnAcquiredLease()
         {
             var limiter = new SlidingWindowRateLimiter(new SlidingWindowRateLimiterOptions(1, QueueProcessingOrder.OldestFirst, 1,
-                TimeSpan.Zero, 0, autoReplenishment: false));
+                TimeSpan.Zero, 1, autoReplenishment: false));
             using var lease = limiter.Acquire(1);
             Assert.False(lease.TryGetMetadata(MetadataName.RetryAfter, out _));
         }
@@ -483,7 +484,7 @@ namespace System.Threading.RateLimiting.Test
         [Fact]
         public async Task RetryMetadataOnFailedWaitAsync()
         {
-            var options = new SlidingWindowRateLimiterOptions(2, QueueProcessingOrder.OldestFirst, 1,
+            var options = new SlidingWindowRateLimiterOptions(3, QueueProcessingOrder.OldestFirst, 1,
                 TimeSpan.FromSeconds(20), 1, autoReplenishment: false);
             var limiter = new SlidingWindowRateLimiter(options);
 
@@ -493,11 +494,7 @@ namespace System.Threading.RateLimiting.Test
             Assert.False(failedLease.IsAcquired);
             Assert.True(failedLease.TryGetMetadata(MetadataName.RetryAfter.Name, out var metadata));
             var metaDataTime = Assert.IsType<TimeSpan>(metadata);
-            Assert.Equal(options.Window.Ticks * 2, metaDataTime.Ticks);
-
-            Assert.True(failedLease.TryGetMetadata(MetadataName.RetryAfter, out var typedMetadata));
-            Assert.Equal(options.Window.Ticks * 2, typedMetadata.Ticks);
-            Assert.Collection(failedLease.MetadataNames, item => item.Equals(MetadataName.RetryAfter.Name));
+            Assert.Equal(options.Window.Ticks, metaDataTime.Ticks);
         }
 
         [Fact]

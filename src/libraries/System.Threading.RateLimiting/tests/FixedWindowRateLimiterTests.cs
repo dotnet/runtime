@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -102,7 +103,7 @@ namespace System.Threading.RateLimiting.Test
             Assert.False(wait1.IsCompleted);
 
             lease.Dispose();
-            Assert.Equal(0, limiter.GetAvailablePermits());
+            Assert.Equal(1, limiter.GetAvailablePermits());
             Assert.True(limiter.TryReplenish());
             Assert.True(limiter.TryReplenish());
 
@@ -491,10 +492,10 @@ namespace System.Threading.RateLimiting.Test
             Assert.False(failedLease.IsAcquired);
             Assert.True(failedLease.TryGetMetadata(MetadataName.RetryAfter.Name, out var metadata));
             var metaDataTime = Assert.IsType<TimeSpan>(metadata);
-            Assert.Equal(options.Window.Ticks * 2, metaDataTime.Ticks);
+            Assert.Equal(options.Window.Ticks, metaDataTime.Ticks);
 
             Assert.True(failedLease.TryGetMetadata(MetadataName.RetryAfter, out var typedMetadata));
-            Assert.Equal(options.Window.Ticks * 2, typedMetadata.Ticks);
+            Assert.Equal(options.Window.Ticks, typedMetadata.Ticks);
             Assert.Collection(failedLease.MetadataNames, item => item.Equals(MetadataName.RetryAfter.Name));
         }
 
@@ -513,7 +514,7 @@ namespace System.Threading.RateLimiting.Test
             var failedLease = await limiter.WaitAsync(2);
             Assert.False(failedLease.IsAcquired);
             Assert.True(failedLease.TryGetMetadata(MetadataName.RetryAfter, out var typedMetadata));
-            Assert.Equal(options.Window.Ticks * 3, typedMetadata.Ticks);
+            Assert.Equal(options.Window.Ticks, typedMetadata.Ticks);
         }
 
 
@@ -529,7 +530,7 @@ namespace System.Threading.RateLimiting.Test
             var failedLease = await limiter.WaitAsync(3);
             Assert.False(failedLease.IsAcquired);
             Assert.True(failedLease.TryGetMetadata(MetadataName.RetryAfter, out var typedMetadata));
-            Assert.Equal(options.Window.Ticks * 2, typedMetadata.Ticks);
+            Assert.Equal(options.Window.Ticks, typedMetadata.Ticks);
         }
 
         [Fact]
