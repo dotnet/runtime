@@ -20,6 +20,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			TestArrayWithInitializerMultipleElementsMix<TestType> (typeof (TestType));
 
 			TestArraySetElementOneElementStaticType ();
+			TestArraySetElementOneElementMix ();
+			TestArraySetElementOneElementMerged ();
 			TestArraySetElementOneElementParameter (typeof (TestType));
 			TestArraySetElementMultipleElementsStaticType ();
 			TestMergedArrayElement (1);
@@ -39,6 +41,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			TestArrayResetAfterCall ();
 			TestArrayResetAfterAssignment ();
 			TestMultiDimensionalArray.Test ();
+
+			WriteCapturedArrayElement.Test ();
 		}
 
 		[ExpectedWarning ("IL2062", nameof (DataFlowTypeExtensions.RequiresPublicMethods))]
@@ -87,6 +91,37 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			arr[0] = typeof (TestType);
 			arr[0].RequiresAll ();
 			arr[1].RequiresPublicMethods (); // Should warn - unknown value at this index
+		}
+
+		[ExpectedWarning ("IL2072", nameof (GetUnknownType), nameof (DataFlowTypeExtensions.RequiresAll),
+			ProducedBy = ProducedBy.Trimmer)]
+		[ExpectedWarning ("IL2072", nameof (GetTypeWithPublicConstructors), nameof (DataFlowTypeExtensions.RequiresAll),
+			ProducedBy = ProducedBy.Trimmer)]
+		// https://github.com/dotnet/linker/issues/2736
+		[ExpectedWarning ("IL2062", nameof (DataFlowTypeExtensions.RequiresAll),
+			ProducedBy = ProducedBy.Analyzer)]
+		static void TestArraySetElementOneElementMix ()
+		{
+			Type[] arr = new Type[1];
+			if (string.Empty.Length == 0)
+				arr[0] = GetUnknownType ();
+			else
+				arr[0] = GetTypeWithPublicConstructors ();
+			arr[0].RequiresAll ();
+		}
+
+		[ExpectedWarning ("IL2072", nameof (GetUnknownType), nameof (DataFlowTypeExtensions.RequiresAll),
+			ProducedBy = ProducedBy.Analyzer)]
+		[ExpectedWarning ("IL2072", nameof (GetTypeWithPublicConstructors), nameof (DataFlowTypeExtensions.RequiresAll),
+			ProducedBy = ProducedBy.Analyzer)]
+		// https://github.com/dotnet/linker/issues/2737
+		[ExpectedWarning ("IL2062", nameof (DataFlowTypeExtensions.RequiresAll),
+			ProducedBy = ProducedBy.Trimmer)]
+		static void TestArraySetElementOneElementMerged ()
+		{
+			Type[] arr = new Type[1];
+			arr[0] = string.Empty.Length == 0 ? GetUnknownType () : GetTypeWithPublicConstructors ();
+			arr[0].RequiresAll ();
 		}
 
 		[ExpectedWarning ("IL2062", nameof (DataFlowTypeExtensions.RequiresPublicMethods))]
@@ -481,6 +516,64 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			static Type[,] _externalArray;
+		}
+
+		class WriteCapturedArrayElement
+		{
+			[ExpectedWarning ("IL2072", nameof (GetUnknownType), nameof (DataFlowTypeExtensions.RequiresAll),
+				ProducedBy = ProducedBy.Analyzer)]
+			[ExpectedWarning ("IL2072", nameof (GetTypeWithPublicConstructors), nameof (DataFlowTypeExtensions.RequiresAll),
+				ProducedBy = ProducedBy.Analyzer)]
+			// https://github.com/dotnet/linker/issues/2737
+			[ExpectedWarning ("IL2062", nameof (DataFlowTypeExtensions.RequiresAll),
+				ProducedBy = ProducedBy.Trimmer)]
+			static void TestNullCoalesce ()
+			{
+				Type[] arr = new Type[1];
+				arr[0] = GetUnknownType () ?? GetTypeWithPublicConstructors ();
+				arr[0].RequiresAll ();
+			}
+
+			[ExpectedWarning ("IL2072", nameof (GetUnknownType), nameof (DataFlowTypeExtensions.RequiresAll),
+				ProducedBy = ProducedBy.Trimmer)]
+			// https://github.com/dotnet/linker/issues/2736
+			[ExpectedWarning ("IL2062", nameof (DataFlowTypeExtensions.RequiresAll),
+				ProducedBy = ProducedBy.Analyzer)]
+			static void TestNullCoalescingAssignment ()
+			{
+				Type[] arr = new Type[1];
+				arr[0] ??= GetUnknownType ();
+				arr[0].RequiresAll ();
+			}
+
+			// Both linker and analyzer get this wrong. They should produce IL2072 instead.
+			// https://github.com/dotnet/linker/issues/2736
+			// https://github.com/dotnet/linker/issues/2737
+			[ExpectedWarning ("IL2062", nameof (DataFlowTypeExtensions.RequiresAll))]
+			static void TestNullCoalescingAssignmentComplex ()
+			{
+				Type[] arr = new Type[1];
+				arr[0] ??= (GetUnknownType () ?? GetTypeWithPublicConstructors ());
+				arr[0].RequiresAll ();
+			}
+
+			public static void Test ()
+			{
+				TestNullCoalesce ();
+				TestNullCoalescingAssignment ();
+				TestNullCoalescingAssignmentComplex ();
+			}
+		}
+
+		[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicConstructors)]
+		private static Type GetTypeWithPublicConstructors ()
+		{
+			return null;
+		}
+
+		private static Type GetUnknownType ()
+		{
+			return null;
 		}
 
 		public class TestType { }

@@ -39,7 +39,8 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 
 		public TrimAnalysisPatternStore ComputeTrimAnalysisPatterns ()
 		{
-			var visitor = new TrimAnalysisVisitor (Lattice, Context);
+			var lValueFlowCaptures = LValueFlowCapturesProvider.CreateLValueFlowCaptures (ControlFlowGraph.ControlFlowGraph);
+			var visitor = new TrimAnalysisVisitor (Lattice, Context, lValueFlowCaptures);
 			Fixpoint (ControlFlowGraph, Lattice, visitor);
 			return visitor.TrimAnalysisPatterns;
 		}

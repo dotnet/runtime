@@ -42,6 +42,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			ParametersPassedToInstanceCtor (typeof (TestType), typeof (TestType));
 
 			TestParameterOverwrite (typeof (TestType));
+
+			WriteCapturedParameter.Test ();
 		}
 
 		// Validate the error message when annotated parameter is passed to another annotated parameter
@@ -235,11 +237,52 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			type.GetFields ();
 		}
 
+		class WriteCapturedParameter
+		{
+			[ExpectedWarning ("IL2072", nameof (GetUnknownType), "parameter")]
+			[ExpectedWarning ("IL2072", nameof (GetTypeWithPublicConstructors), "parameter")]
+			static void TestNullCoalesce ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.All)] Type parameter = null)
+			{
+				parameter = GetUnknownType () ?? GetTypeWithPublicConstructors ();
+			}
+
+			[ExpectedWarning ("IL2072", nameof (GetUnknownType), "parameter")]
+			static void TestNullCoalescingAssignment ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.All)] Type parameter = null)
+			{
+				parameter ??= GetUnknownType ();
+			}
+
+			[ExpectedWarning ("IL2072", nameof (GetUnknownType), "parameter")]
+			[ExpectedWarning ("IL2072", nameof (GetTypeWithPublicConstructors), "parameter")]
+			static void TestNullCoalescingAssignmentComplex ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.All)] Type parameter = null)
+			{
+				parameter ??= (GetUnknownType () ?? GetTypeWithPublicConstructors ());
+			}
+
+			public static void Test ()
+			{
+				TestNullCoalesce ();
+				TestNullCoalescingAssignment ();
+				TestNullCoalescingAssignmentComplex ();
+			}
+		}
+
 		class TestType
 		{
 			public TestType () { }
 			public TestType (int arg) { }
 			private TestType (int arg1, int arg2) { }
+		}
+
+		[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicConstructors)]
+		private static Type GetTypeWithPublicConstructors ()
+		{
+			return null;
+		}
+
+		private static Type GetUnknownType ()
+		{
+			return null;
 		}
 	}
 }

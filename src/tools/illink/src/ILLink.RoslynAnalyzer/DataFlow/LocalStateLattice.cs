@@ -29,13 +29,26 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 		}
 	}
 
-	// Wrapper struct exists purely to substitute a concrete LocalKey for TKey of DefaultValueDictionary
 	public struct LocalState<TValue> : IEquatable<LocalState<TValue>>
 		where TValue : IEquatable<TValue>
 	{
 		public DefaultValueDictionary<LocalKey, TValue> Dictionary;
 
-		public LocalState (DefaultValueDictionary<LocalKey, TValue> dictionary) => Dictionary = dictionary;
+		// Stores any operations which are captured by reference in a FlowCaptureOperation.
+		// Only stores captures which are assigned through. Captures of the values of operations
+		// are tracked as part of the dictionary of values, keyed by LocalKey.
+		public DefaultValueDictionary<CaptureId, CapturedReferenceValue> CapturedReferences;
+
+		public LocalState (DefaultValueDictionary<LocalKey, TValue> dictionary, DefaultValueDictionary<CaptureId, CapturedReferenceValue> capturedReferences)
+		{
+			Dictionary = dictionary;
+			CapturedReferences = capturedReferences;
+		}
+
+		public LocalState (DefaultValueDictionary<LocalKey, TValue> dictionary)
+			: this (dictionary, new DefaultValueDictionary<CaptureId, CapturedReferenceValue> (new CapturedReferenceValue ()))
+		{
+		}
 
 		public bool Equals (LocalState<TValue> other) => Dictionary.Equals (other.Dictionary);
 
@@ -52,15 +65,22 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 		where TValueLattice : ILattice<TValue>
 	{
 		public readonly DictionaryLattice<LocalKey, TValue, TValueLattice> Lattice;
+		public readonly DictionaryLattice<CaptureId, CapturedReferenceValue, CapturedReferenceLattice> CapturedReferenceLattice;
 
 		public LocalStateLattice (TValueLattice valueLattice)
 		{
 			Lattice = new DictionaryLattice<LocalKey, TValue, TValueLattice> (valueLattice);
+			CapturedReferenceLattice = new DictionaryLattice<CaptureId, CapturedReferenceValue, CapturedReferenceLattice> (new CapturedReferenceLattice ());
 			Top = new (Lattice.Top);
 		}
 
 		public LocalState<TValue> Top { get; }
 
-		public LocalState<TValue> Meet (LocalState<TValue> left, LocalState<TValue> right) => new (Lattice.Meet (left.Dictionary, right.Dictionary));
+		public LocalState<TValue> Meet (LocalState<TValue> left, LocalState<TValue> right)
+		{
+			var dictionary = Lattice.Meet (left.Dictionary, right.Dictionary);
+			var capturedProperties = CapturedReferenceLattice.Meet (left.CapturedReferences, right.CapturedReferences);
+			return new LocalState<TValue> (dictionary, capturedProperties);
+		}
 	}
 }

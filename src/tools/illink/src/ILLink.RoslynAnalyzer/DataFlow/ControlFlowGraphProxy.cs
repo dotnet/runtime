@@ -49,7 +49,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 			}
 		}
 
-		public BlockProxy Entry => new BlockProxy (ControlFlowGraph.Blocks[0]);
+		public BlockProxy Entry => new BlockProxy (ControlFlowGraph.EntryBlock ());
 
 		// This is implemented by getting predecessors of the underlying Roslyn BasicBlock.
 		// This is fine as long as the blocks come from the correct control-flow graph.
