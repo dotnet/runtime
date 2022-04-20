@@ -43,7 +43,7 @@
     </HelixWorkItem>
     <HelixWorkItem Include="SOD - Maui Blazor Android APK Size"> 
         <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
-        <PreCommands>cd $(ScenarioDirectory)mauiandroid;copy %HELIX_CORRELATION_PAYLOAD%\MauiBlazorAndroidDefault.apk .; $(Python) pre.py --apk-name MauiBlazorAndroidDefault.apk</PreCommands>
+        <PreCommands>cd $(ScenarioDirectory)mauiblazorandroid;copy %HELIX_CORRELATION_PAYLOAD%\MauiBlazorAndroidDefault.apk .; $(Python) pre.py --apk-name MauiBlazorAndroidDefault.apk</PreCommands>
         <Command>$(Python) test.py sod --scenario-name &quot;%(Identity)&quot;</Command>
         <PostCommands>$(Python) post.py</PostCommands>
     </HelixWorkItem>
@@ -61,7 +61,7 @@
     </HelixWorkItem>
     <HelixWorkItem Include="SOD - Maui Blazor Android Extracted Size"> 
         <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
-        <PreCommands>cd $(ScenarioDirectory)mauiandroid;copy %HELIX_CORRELATION_PAYLOAD%\MauiBlazorAndroidDefault.apk .; $(Python) pre.py --unzip --apk-name MauiBlazorAndroidDefault.apk</PreCommands>
+        <PreCommands>cd $(ScenarioDirectory)mauiblazorandroid;copy %HELIX_CORRELATION_PAYLOAD%\MauiBlazorAndroidDefault.apk .; $(Python) pre.py --unzip --apk-name MauiBlazorAndroidDefault.apk</PreCommands>
         <Command>$(Python) test.py sod --scenario-name &quot;%(Identity)&quot;</Command>
         <PostCommands>$(Python) post.py</PostCommands>
     </HelixWorkItem>
@@ -91,7 +91,7 @@
     </HelixWorkItem>
     <HelixWorkItem Include="Device Startup - Android Maui Blazor DefaultTesting">
       <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
-      <PreCommands>echo on;set XHARNESSPATH=$(XharnessPath);cd $(ScenarioDirectory)mauiandroid;copy %HELIX_CORRELATION_PAYLOAD%\MauiBlazorAndroidDefault.apk .;$(Python) pre.py --apk-name MauiBlazorAndroidDefault.apk</PreCommands>
+      <PreCommands>echo on;set XHARNESSPATH=$(XharnessPath);cd $(ScenarioDirectory)mauiblazorandroid;copy %HELIX_CORRELATION_PAYLOAD%\MauiBlazorAndroidDefault.apk .;$(Python) pre.py --apk-name MauiBlazorAndroidDefault.apk</PreCommands>
       <Command>$(Python) test.py devicestartup --device-type android --package-path pub\MauiBlazorAndroidDefault.apk --package-name com.companyname.mauiblazortesting --scenario-name &quot;%(Identity)&quot;</Command>
       <PostCommands>$(Python) post.py</PostCommands>
     </HelixWorkItem>
@@ -109,7 +109,7 @@
     </HelixWorkItem>
     <HelixWorkItem Include="Device Startup - Android Maui Blazor DefaultTesting NoAnimation">
       <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
-      <PreCommands>echo on;set XHARNESSPATH=$(XharnessPath);cd $(ScenarioDirectory)mauiandroid;copy %HELIX_CORRELATION_PAYLOAD%\MauiBlazorAndroidDefault.apk .;$(Python) pre.py --apk-name MauiBlazorAndroidDefault.apk</PreCommands>
+      <PreCommands>echo on;set XHARNESSPATH=$(XharnessPath);cd $(ScenarioDirectory)mauiblazorandroid;copy %HELIX_CORRELATION_PAYLOAD%\MauiBlazorAndroidDefault.apk .;$(Python) pre.py --apk-name MauiBlazorAndroidDefault.apk</PreCommands>
       <Command>$(Python) test.py devicestartup --device-type android --package-path pub\MauiBlazorAndroidDefault.apk --package-name com.companyname.mauiblazortesting --scenario-name &quot;%(Identity)&quot; --disable-animations</Command>
       <PostCommands>$(Python) post.py</PostCommands>
     </HelixWorkItem>
