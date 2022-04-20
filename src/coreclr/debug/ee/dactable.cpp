@@ -128,13 +128,10 @@ void DacGlobals::InitializeEntries()
 #define DEFINE_DACVAR(size, id, var)                   id = PTR_TO_TADDR(&var);
 #define DEFINE_DACVAR_VOLATILE(size, id, var)          id = PTR_TO_TADDR(&var.m_val);
 #define DEFINE_DACVAR_NO_DUMP(size, id, var)           id = PTR_TO_TADDR(&var);
-#undef DEFINE_DACVAR_VOLATILE
-#undef DEFINE_DACVAR_NODUMP
-#undef DEFINE_DACVAR
 #include "dacvars.h"
-#undef DEFINE_DACVAR
+#undef DEFINE_DACVAR_NODUMP
 #undef DEFINE_DACVAR_VOLATILE
-#undef DEFINE_DACVAR_NO_DUMP
+#undef DEFINE_DACVAR
 #define DEFINE_DACGFN(func) fn__##func = PTR_TO_TADDR(&func);
 #define DEFINE_DACGFN_STATIC(class, func) fn__##class##__##func = PTR_TO_TADDR(&class::func);
 #include "gfunc_list.h"
