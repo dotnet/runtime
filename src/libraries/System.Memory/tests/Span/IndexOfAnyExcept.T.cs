@@ -97,6 +97,19 @@ namespace System.SpanTests
             Assert.Equal(matchPositions[^1], LastIndexOfAnyExcept(Set(CreateArray(length, _a, _b, _c, _d), _e, matchPositions), _a, _b, _c, _d));
         }
 
+        [Fact]
+        public void EmptyValues_ReturnsFirstValueFromSpan()
+        {
+            Assert.Equal(-1, IndexOfAnyExcept(Span<T>.Empty, Array.Empty<T>()));
+            Assert.Equal(-1, LastIndexOfAnyExcept(Span<T>.Empty, Array.Empty<T>()));
+
+            for (int i = 1; i <= 3; i++)
+            {
+                Assert.Equal(0, IndexOfAnyExcept(new T[i], Array.Empty<T>()));
+                Assert.Equal(i - 1, LastIndexOfAnyExcept(new T[i], Array.Empty<T>()));
+            }
+        }
+
         protected abstract T Create(int value);
 
         private T[] CreateArray(int length, params T[] values)

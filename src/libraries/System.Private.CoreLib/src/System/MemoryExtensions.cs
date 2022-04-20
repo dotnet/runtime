@@ -572,7 +572,10 @@ namespace System
             switch (values.Length)
             {
                 case 0:
-                    return -1;
+                    // If the span is empty, we want to return -1.
+                    // If the span is non-empty, we want to return the index of the first char that's not in the empty set,
+                    // which is every character, and so the first char in the span.
+                    return span.IsEmpty ? -1 : 0;
 
                 case 1:
                     return IndexOfAnyExcept(span, values[0]);
@@ -725,7 +728,11 @@ namespace System
             switch (values.Length)
             {
                 case 0:
-                    return -1;
+                    // If the span is empty, we want to return -1.
+                    // If the span is non-empty, we want to return the index of the last char that's not in the empty set,
+                    // which is every character, and so the last char in the span.
+                    // Either way, we want to return span.Length - 1.
+                    return span.Length - 1;
 
                 case 1:
                     return LastIndexOfAnyExcept(span, values[0]);
