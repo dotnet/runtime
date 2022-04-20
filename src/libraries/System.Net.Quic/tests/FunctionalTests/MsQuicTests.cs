@@ -146,7 +146,6 @@ namespace System.Net.Quic.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/67301", TestPlatforms.Linux)]
         public async Task CertificateCallbackThrowPropagates()
         {
             using CancellationTokenSource cts = new CancellationTokenSource(PassingTestTimeout);
@@ -188,7 +187,6 @@ namespace System.Net.Quic.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/67301", TestPlatforms.Linux)]
         public async Task ConnectWithCertificateCallback()
         {
             X509Certificate2 c1 = System.Net.Test.Common.Configuration.Certificates.GetServerCertificate();
@@ -239,7 +237,7 @@ namespace System.Net.Quic.Tests
             clientConnection = new QuicConnection(QuicImplementationProviders.MsQuic, clientOptions);
             Task clientTask = clientConnection.ConnectAsync(cts.Token).AsTask();
 
-            await Assert.ThrowsAsync<QuicException>(() => clientTask);
+            await Assert.ThrowsAnyAsync<QuicException>(() => clientTask);
             Assert.Equal(clientOptions.ClientAuthenticationOptions.TargetHost, receivedHostName);
             clientConnection.Dispose();
 
@@ -319,12 +317,6 @@ namespace System.Net.Quic.Tests
         {
             var ipAddress = IPAddress.Parse(ipString);
 
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) && ipAddress.AddressFamily == AddressFamily.InterNetworkV6)
-            {
-                // [ActiveIssue("https://github.com/dotnet/runtime/issues/67301")]
-                throw new SkipTestException("IPv6 on Linux is temporarily broken");
-            }
-
             (X509Certificate2 certificate, _) = System.Net.Security.Tests.TestHelper.GenerateCertificates(expectsError ? "badhost" : "localhost");
 
             var listenerOptions = new QuicListenerOptions();
@@ -403,7 +395,7 @@ namespace System.Net.Quic.Tests
             QuicStream stream = clientConnection.OpenUnidirectionalStream();
             ValueTask waitTask = clientConnection.WaitForAvailableUnidirectionalStreamsAsync();
             Assert.False(waitTask.IsCompleted);
-            Assert.Throws<QuicException>(() => clientConnection.OpenUnidirectionalStream());
+            Assert.ThrowsAny<QuicException>(() => clientConnection.OpenUnidirectionalStream());
             // Close the streams, the waitTask should finish as a result.
             stream.Dispose();
             QuicStream newStream = await serverConnection.AcceptStreamAsync();
@@ -429,7 +421,7 @@ namespace System.Net.Quic.Tests
             QuicStream stream = clientConnection.OpenBidirectionalStream();
             ValueTask waitTask = clientConnection.WaitForAvailableBidirectionalStreamsAsync();
             Assert.False(waitTask.IsCompleted);
-            Assert.Throws<QuicException>(() => clientConnection.OpenBidirectionalStream());
+            Assert.ThrowsAny<QuicException>(() => clientConnection.OpenBidirectionalStream());
 
             // Close the streams, the waitTask should finish as a result.
             stream.Dispose();
