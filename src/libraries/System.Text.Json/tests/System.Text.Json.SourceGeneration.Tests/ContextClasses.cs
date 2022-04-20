@@ -34,6 +34,8 @@ namespace System.Text.Json.SourceGeneration.Tests
         public JsonTypeInfo<byte[]> ByteArray { get; }
         public JsonTypeInfo<string> String { get; }
         public JsonTypeInfo<(string Label1, int Label2, bool)> ValueTupleStringInt32Boolean { get; }
+        public JsonTypeInfo<JsonDocument> JsonDocument { get; }
+        public JsonTypeInfo<JsonElement> JsonElement { get; }
         public JsonTypeInfo<RealWorldContextTests.ClassWithEnumAndNullable> ClassWithEnumAndNullable { get; }
         public JsonTypeInfo<RealWorldContextTests.ClassWithNullableProperties> ClassWithNullableProperties { get; }
         public JsonTypeInfo<ClassWithCustomConverter> ClassWithCustomConverter { get; }
