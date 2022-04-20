@@ -4,7 +4,7 @@ parameters:
   osGroup: ''                     # required -- operating system for the job
   osSubgroup: ''                  # optional -- operating system subgroup
   pool: ''
-  timeoutInMinutes: 120           # build timeout
+  timeoutInMinutes: 240           # build timeout
   variables: {}
   helixQueues: ''
   dependOnEvaluatePaths: false

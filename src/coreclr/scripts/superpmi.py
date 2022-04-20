@@ -1875,7 +1875,7 @@ class SuperPMIReplayThroughputDiff:
 
                 pin_options = [
                     "-follow_execv", # attach to child processes
-                    "-t", self.inscount_pintool_path,
+                    "-t", self.inscount_pintool_path, "-quiet",
                 ]
                 flags = [
                     "-applyDiff",
