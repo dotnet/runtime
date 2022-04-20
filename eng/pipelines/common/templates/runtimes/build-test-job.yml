@@ -102,7 +102,7 @@ jobs:
       - ${{ if eq(parameters.testGroup, 'gc-simulator') }}:
         - ${{ if eq(parameters.osGroup, 'windows') }}:
           - name: testTreeFilterArg
-            value: '-tree GC/Scenarios/GCSimulator'
+            value: 'tree GC/Scenarios/GCSimulator'
         - ${{ if ne(parameters.osGroup, 'windows') }}:
           - name: testTreeFilterArg
             value: '-tree:GC/Scenarios/GCSimulator'
