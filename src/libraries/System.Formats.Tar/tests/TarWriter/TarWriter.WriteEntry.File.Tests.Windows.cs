@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Globalization;
 using System.IO;
 using Xunit;
 
@@ -44,15 +45,15 @@ namespace System.Formats.Tar.Tests
                     Assert.Contains("atime", pax.ExtendedAttributes);
                     Assert.Contains("ctime", pax.ExtendedAttributes);
 
-                    Assert.True(double.TryParse(pax.ExtendedAttributes["mtime"], out double doubleMTime));
+                    Assert.True(double.TryParse(pax.ExtendedAttributes["mtime"], NumberStyles.Any, CultureInfo.InvariantCulture, out double doubleMTime));
                     DateTimeOffset actualMTime = ConvertDoubleToDateTimeOffset(doubleMTime);
                     VerifyTimestamp(info.LastAccessTimeUtc, actualMTime);
 
-                    Assert.True(double.TryParse(pax.ExtendedAttributes["atime"], out double doubleATime));
+                    Assert.True(double.TryParse(pax.ExtendedAttributes["atime"], NumberStyles.Any, CultureInfo.InvariantCulture, out double doubleATime));
                     DateTimeOffset actualATime = ConvertDoubleToDateTimeOffset(doubleATime);
                     VerifyTimestamp(info.LastAccessTimeUtc, actualATime);
 
-                    Assert.True(double.TryParse(pax.ExtendedAttributes["ctime"], out double doubleCTime));
+                    Assert.True(double.TryParse(pax.ExtendedAttributes["ctime"], NumberStyles.Any, CultureInfo.InvariantCulture, out double doubleCTime));
                     DateTimeOffset actualCTime = ConvertDoubleToDateTimeOffset(doubleCTime);
                     VerifyTimestamp(info.LastAccessTimeUtc, actualCTime);
                 }

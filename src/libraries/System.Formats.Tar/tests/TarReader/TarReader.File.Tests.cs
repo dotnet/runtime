@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using Xunit;
@@ -615,13 +616,13 @@ namespace System.Formats.Tar.Tests
             Assert.Contains("atime", pax.ExtendedAttributes);
             Assert.Contains("ctime", pax.ExtendedAttributes);
 
-            Assert.True(double.TryParse(pax.ExtendedAttributes["mtime"], out double mtimeSecondsSinceEpoch));
+            Assert.True(double.TryParse(pax.ExtendedAttributes["mtime"], NumberStyles.Any, CultureInfo.InvariantCulture, out double mtimeSecondsSinceEpoch));
             Assert.True(mtimeSecondsSinceEpoch > 0);
 
-            Assert.True(double.TryParse(pax.ExtendedAttributes["atime"], out double atimeSecondsSinceEpoch));
+            Assert.True(double.TryParse(pax.ExtendedAttributes["atime"], NumberStyles.Any, CultureInfo.InvariantCulture, out double atimeSecondsSinceEpoch));
             Assert.True(atimeSecondsSinceEpoch > 0);
 
-            Assert.True(double.TryParse(pax.ExtendedAttributes["ctime"], out double ctimeSecondsSinceEpoch));
+            Assert.True(double.TryParse(pax.ExtendedAttributes["ctime"], NumberStyles.Any, CultureInfo.InvariantCulture, out double ctimeSecondsSinceEpoch));
             Assert.True(ctimeSecondsSinceEpoch > 0);
         }
 
