@@ -239,8 +239,7 @@ def main(main_args):
         "-spmi_location", spmi_location,
         "-error_limit", "100",
         "-log_level", "debug",
-        "-log_file", log_file,
-        "-retainOnlyTopFiles"])
+        "-log_file", log_file])
 
     # If there are asm diffs, and jit-analyze ran, we'll get a diff_summary.md file in the spmi_location directory.
     # We make sure the file doesn't exist before we run diffs, so we don't need to worry about superpmi.py creating
