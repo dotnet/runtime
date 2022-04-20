@@ -20,6 +20,10 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 			case OperationKind.ParameterReference:
 			case OperationKind.ArrayElementReference:
 				break;
+			case OperationKind.None:
+				// NoneOperation is an unimplemented operation. If captured, we
+				// just ignore it when it is referenced later.
+				break;
 			default:
 				throw new NotImplementedException (operation.Kind.ToString ());
 			}
