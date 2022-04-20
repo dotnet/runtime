@@ -9,6 +9,7 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Tracing.Tests.Common;
+using System.Collections.Generic;
 
 namespace Tracing.Tests
 {
@@ -27,7 +28,7 @@ namespace Tracing.Tests
                     Task.Run(new Action(Allocator));
 
                     // If on Windows, attempt some Overlapped IO (triggers ThreadPool events)
-                    if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                    if (OperatingSystem.IsWindows())
                         DoOverlappedIO();
 
                     // Wait for events.
@@ -40,7 +41,11 @@ namespace Tracing.Tests
                     Thread.Sleep(1000);
 
                     // Ensure that we've seen some events.
+                    foreach (string s in listener.SeenProvidersAndEvents)
+                        Console.WriteLine(s);
                     Assert.True("listener.EventCount > 0", listener.EventCount > 0);
+                    if (OperatingSystem.IsWindows())
+                        Assert.True("Saw the ThreadPoolIOPack event", listener.SeenProvidersAndEvents.Contains("Microsoft-Windows-DotNETRuntime/EVENTID(65)"));
                 }
 
                 // Generate some more GC events.
@@ -75,6 +80,7 @@ namespace Tracing.Tests
 
     internal sealed class SimpleEventListener : EventListener
     {
+        public HashSet<string> SeenProvidersAndEvents { get; private set; } = new();
         private string m_name;
 
         // Keep track of the set of keywords to be enabled.
@@ -121,6 +127,9 @@ namespace Tracing.Tests
                 Console.WriteLine($"\tName = \"{eventData.PayloadNames[i]}\" Value = \"{payloadString}\"");
             }
             Console.WriteLine("\n");
+
+            SeenProvidersAndEvents.Add($"{eventData.EventSource.Name}");
+            SeenProvidersAndEvents.Add($"{eventData.EventSource.Name}/EVENTID({eventData.EventId})");
 
             EventCount++;
         }

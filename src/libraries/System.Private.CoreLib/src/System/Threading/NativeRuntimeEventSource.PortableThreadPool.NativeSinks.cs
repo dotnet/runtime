@@ -227,26 +227,25 @@ namespace System.Diagnostics.Tracing
             LogThreadPoolWorkingThreadCount(Count, ClrInstanceID);
         }
 
+        [NonEvent]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public unsafe void ThreadPoolIOPack(NativeOverlapped *nativeOverlapped)
+        {
+            if (IsEnabled(EventLevel.Verbose, Keywords.ThreadingKeyword))
+            {
+                ThreadPoolIOPack(
+                    (IntPtr)nativeOverlapped,
+                    (IntPtr)OverlappedData.GetOverlappedFromNative(nativeOverlapped).GetHashCode());
+            }
+        }
+
         [Event(65, Level = EventLevel.Verbose, Message = Messages.IO, Task = Tasks.ThreadPool, Opcode = Opcodes.IOPack, Version = 0, Keywords = Keywords.ThreadingKeyword)]
         private unsafe void ThreadPoolIOPack(
             IntPtr NativeOverlapped,
             IntPtr Overlapped,
             ushort ClrInstanceID = DefaultClrInstanceId)
         {
-            if (!IsEnabled(EventLevel.Verbose, Keywords.ThreadingKeyword))
-                return;
-
-            EventData* data = stackalloc EventData[3]
-            data[0].DataPointer = (IntPtr)(&NativeOverlapped);
-            data[0].Size        = sizeof(IntPtr);
-            data[0].Reserved    = 0;
-            data[1].DataPointer = (IntPtr)(&Overlapped);
-            data[1].Size        = sizeof(IntPtr);
-            data[1].Reserved    = 0;
-            data[2].DataPointer = (IntPtr)(&ClrInstanceId);
-            data[2].Size        = sizeof(ushort);
-            data[2].Reserved    = 0;
-            WriteEventCore(65, 3, data);
+            LogThreadPoolIOPack(NativeOverlapped, Overlapped, ClrInstanceID);
         }
     }
 }

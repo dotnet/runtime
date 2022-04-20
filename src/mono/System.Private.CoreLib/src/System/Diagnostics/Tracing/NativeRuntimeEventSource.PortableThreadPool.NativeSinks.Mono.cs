@@ -68,5 +68,24 @@ namespace System.Diagnostics.Tracing
             uint Count,
             ushort ClrInstanceID
         );
+
+        [NonEvent]
+        internal void LogThreadPoolIOPack(
+            IntPtr NativeOverlapped,
+            IntPtr Overlapped,
+            ushort ClrInstanceID)
+        {
+            EventData* data = stackalloc EventData[3];
+            data[0].DataPointer = NativeOverlapped;
+            data[0].Size        = sizeof(IntPtr);
+            data[0].Reserved    = 0;
+            data[1].DataPointer = Overlapped;
+            data[1].Size        = sizeof(IntPtr);
+            data[1].Reserved    = 0;
+            data[2].DataPointer = (IntPtr)(&ClrInstanceID);
+            data[2].Size        = sizeof(ushort);
+            data[2].Reserved    = 0;
+            WriteEventCore(65, 3, data);
+        }
     }
 }

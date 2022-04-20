@@ -99,7 +99,7 @@ namespace System.Threading
 
                 success = true;
                 if (NativeRuntimeEventSource.Log.IsEnabled())
-                    NativeRuntimeEventSource.Log.ThreadPoolIOPack((IntPtr)(&pNativeOverlapped), (IntPtr)(&pNativeOverlapped));
+                    NativeRuntimeEventSource.Log.ThreadPoolIOPack(pNativeOverlapped);
                 return _pNativeOverlapped;
             }
             finally
