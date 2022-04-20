@@ -4843,7 +4843,7 @@ void Lowering::ContainCheckDivOrMod(GenTreeOp* node)
 void Lowering::ContainCheckShiftRotate(GenTreeOp* node)
 {
     assert(node->OperIsShiftOrRotate());
-#if defined(TARGET_X86)
+#ifdef TARGET_X86
     GenTree* source = node->gtOp1;
     if (node->OperIsShiftLong())
     {

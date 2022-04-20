@@ -4384,7 +4384,6 @@ void CodeGen::genCodeForShift(GenTree* tree)
             int shiftByValue = (int)shiftBy->AsIntConCommon()->IconValue();
 
 #if defined(TARGET_64BIT)
-
             // Try to emit rorx if BMI2 is available instead of mov+rol
             // it makes sense only for 64bit integers
             if ((genActualType(targetType) == TYP_LONG) && (tree->GetRegNum() != operandReg) &&
@@ -4426,12 +4425,11 @@ void CodeGen::genCodeForShift(GenTree* tree)
                 unreached();
         }
 
+        // It handles all register forms, but it does not handle contained form for memory operand.
         regNumber shiftByReg = shiftBy->GetRegNum();
         emitAttr  size       = emitTypeSize(tree);
+        // The order of operandReg and shiftByReg are swapped to follow shlx, sarx and shrx encoding spec.
         GetEmitter()->emitIns_R_R_R(ins, size, tree->GetRegNum(), shiftByReg, operandReg);
-        genProduceReg(tree);
-
-        return;
     }
 #endif
     else

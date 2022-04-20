@@ -990,25 +990,32 @@ unsigned emitter::emitOutputRexOrVexPrefixIfNeeded(instruction ins, BYTE* dst, c
                                 case INS_rorx:
                                 case INS_pdep:
                                 case INS_mulx:
+// TODO: Unblock when enabled for x86
+#ifdef TARGET_AMD64
                                 case INS_shrx:
+#endif
                                 {
                                     vexPrefix |= 0x03;
                                     break;
                                 }
 
                                 case INS_pext:
+// TODO: Unblock when enabled for x86
+#ifdef TARGET_AMD64
                                 case INS_sarx:
+#endif
                                 {
                                     vexPrefix |= 0x02;
                                     break;
                                 }
-
+// TODO: Unblock when enabled for x86
+#ifdef TARGET_AMD64
                                 case INS_shlx:
                                 {
                                     vexPrefix |= 0x01;
                                     break;
                                 }
-
+#endif
                                 default:
                                 {
                                     vexPrefix |= 0x00;
@@ -9537,6 +9544,7 @@ void emitter::emitDispIns(
             {
                 // BMI bextr,bzhi, shrx, shlx and sarx encode the reg2 in VEX.vvvv and reg3 in modRM,
                 // which is different from most of other instructions
+                // The order of operandReg and shiftByReg are swapped to follow shlx, sarx and shrx encoding spec.
                 regNumber tmp = reg2;
                 reg2          = reg3;
                 reg3          = tmp;
@@ -10328,7 +10336,6 @@ BYTE* emitter::emitOutputAM(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
     // For this format, moves do not support a third operand, so we only need to handle the binary ops.
     if (TakesVexPrefix(ins))
     {
-
         if (IsDstDstSrcAVXInstruction(ins))
         {
             regNumber src1 = REG_NA;
@@ -16338,15 +16345,16 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             break;
         }
 
+#ifdef TARGET_AMD64
         case INS_shlx:
         case INS_sarx:
         case INS_shrx:
         {
-            result.insLatency    = PERFSCORE_LATENCY_2C;
+            result.insLatency    += PERFSCORE_LATENCY_1C;
             result.insThroughput = PERFSCORE_THROUGHPUT_2X;
             break;
         }
-
+#endif
         default:
             // unhandled instruction insFmt combination
             perfScoreUnhandledInstruction(id, &result);
