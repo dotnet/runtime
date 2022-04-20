@@ -209,8 +209,6 @@ steps:
   - script: |
       ./dotnet new maui-blazor -n MauiBlazorTesting
       cd MauiBlazorTesting
-      # cp $(Build.SourcesDirectory)/src/tests/Common/maui/MauiScenario.props ./Directory.Build.props
-      # cp $(Build.SourcesDirectory)/src/tests/Common/maui/MauiScenario.targets ./Directory.Build.targets
       cp $(Build.SourcesDirectory)/NuGet.config ./NuGet.config
       
       echo -e "using Microsoft.AspNetCore.Components;
@@ -250,18 +248,31 @@ steps:
     displayName: Build MAUI Blazor Android
     workingDirectory: $(Build.SourcesDirectory)/MauiBlazorTesting
 
+  - script: |
+      chmod -R a+r .
+      # remove net6.0-maccatalyst to work around https://github.com/dotnet/sdk/issues/21877
+      cp MauiBlazorTesting.csproj MauiBlazorTesting.csproj.bak
+      sed -i'' -e 's/net6.0-ios;net6.0-maccatalyst/net6.0-ios/g' MauiBlazorTesting.csproj
+
+      ../dotnet publish -bl:MauiBlazoriOS.binlog -f net6.0-ios --self-contained -r ios-arm64 -c Release /p:_RequireCodeSigning=false
+      mv ./bin/Release/net6.0-ios/ios-arm64/publish/MauiBlazorTesting.ipa ./MauiBlazoriOSDefault.ipa
+
+      cp MauiBlazorTesting.csproj.bak MauiBlazorTesting.csproj
+    displayName: Build MAUI Blazor iOS
+    workingDirectory: $(Build.SourcesDirectory)/MauiBlazorTesting
+
+  - script: |
+      chmod -R a+r .
+      ../dotnet publish -bl:MauiBlazorMacCatalyst.binlog -f net6.0-maccatalyst -c Release
+      mv ./bin/Release/net6.0-maccatalyst/maccatalyst-x64/MauiBlazorTesting.app ./MauiBlazorMacCatalystDefault.app
+    displayName: Build MAUI Blazor MacCatalyst
+    workingDirectory: $(Build.SourcesDirectory)/MauiBlazorTesting
+
   - task: PublishBuildArtifacts@1
     displayName: 'Publish MauiAndroid binlog'
     condition: always()
     inputs:
       pathtoPublish: $(Build.SourcesDirectory)/MauiTesting/MauiAndroid.binlog
-      artifactName:  ${{ parameters.artifactName }}
-
-  - task: PublishBuildArtifacts@1
-    displayName: 'Publish MauiBlazorAndroid binlog'
-    condition: always()
-    inputs:
-      pathtoPublish: $(Build.SourcesDirectory)/MauiBlazorTesting/MauiBlazorAndroid.binlog
       artifactName:  ${{ parameters.artifactName }}
 
   - task: PublishBuildArtifacts@1
@@ -276,6 +287,27 @@ steps:
     condition: always()
     inputs:
       pathtoPublish: $(Build.SourcesDirectory)/MauiTesting/MauiMacCatalyst.binlog
+      artifactName:  ${{ parameters.artifactName }}
+
+  - task: PublishBuildArtifacts@1
+    displayName: 'Publish MauiBlazorAndroid binlog'
+    condition: always()
+    inputs:
+      pathtoPublish: $(Build.SourcesDirectory)/MauiBlazorTesting/MauiBlazorAndroid.binlog
+      artifactName:  ${{ parameters.artifactName }}
+
+  - task: PublishBuildArtifacts@1
+    displayName: 'Publish MauiBlazoriOS binlog'
+    condition: always()
+    inputs:
+      pathtoPublish: $(Build.SourcesDirectory)/MauiBlazorTesting/MauiBlazoriOS.binlog
+      artifactName:  ${{ parameters.artifactName }}
+
+  - task: PublishBuildArtifacts@1
+    displayName: 'Publish MauiBlazorMacCatalyst binlog'
+    condition: always()
+    inputs:
+      pathtoPublish: $(Build.SourcesDirectory)/MauiBlazorTesting/MauiBlazorMacCatalyst.binlog
       artifactName:  ${{ parameters.artifactName }}
 
   - task: PublishBuildArtifacts@1
@@ -327,6 +359,16 @@ steps:
 
   - template: /eng/pipelines/common/upload-artifact-step.yml
     parameters:
+        rootFolder: $(Build.SourcesDirectory)/MauiBlazorpTesting/MauiBlazoriOSDefault.ipa
+        includeRootFolder: true
+        displayName: Maui Blazor iOS IPA
+        artifactName: MauiBlazoriOSDefaultIPA
+        archiveExtension: '.tar.gz'
+        archiveType: tar
+        tarCompression: gz
+
+  - template: /eng/pipelines/common/upload-artifact-step.yml
+    parameters:
         rootFolder: $(Build.SourcesDirectory)/dotnet-podcasts/src/Mobile/MauiiOSPodcast.ipa
         includeRootFolder: true
         displayName: Maui iOS Podcast IPA
@@ -341,6 +383,16 @@ steps:
         includeRootFolder: true
         displayName: Maui MacCatalyst App
         artifactName: MauiMacCatalystDefault
+        archiveExtension: '.tar.gz'
+        archiveType: tar
+        tarCompression: gz
+
+  - template: /eng/pipelines/common/upload-artifact-step.yml
+    parameters:
+        rootFolder: $(Build.SourcesDirectory)/MauiBlazorTesting/MauiBlazorMacCatalystDefault.app
+        includeRootFolder: true
+        displayName: Maui Blazor MacCatalyst App
+        artifactName: MauiBlazorMacCatalystDefault
         archiveExtension: '.tar.gz'
         archiveType: tar
         tarCompression: gz
