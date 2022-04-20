@@ -295,6 +295,7 @@ partial class Test
         }
 
         [Fact]
+        [OuterLoop("Uses the network for downlevel ref packs")]
         public async Task StringMarshallingForwardingNotSupported_ReportsDiagnostic()
         {
             string source = @"

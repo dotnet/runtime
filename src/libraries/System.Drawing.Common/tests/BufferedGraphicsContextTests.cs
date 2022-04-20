@@ -17,7 +17,6 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Allocate_ValidTargetGraphics_Success()
         {
@@ -60,7 +59,6 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Allocate_ValidTargetHdc_Success()
         {
@@ -133,7 +131,6 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [Fact]
         public void Allocate_InvalidHdc_ThrowsArgumentException()
         {
@@ -143,7 +140,6 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Allocate_NullGraphicsZeroSize_Success()
         {
@@ -154,7 +150,6 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Allocate_NullGraphicsNonZeroSize_ThrowsArgumentNullException()
         {
@@ -165,7 +160,6 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Allocate_DisposedGraphics_ThrowsArgumentException()
         {
@@ -181,7 +175,6 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Allocate_BusyGraphics_ThrowsInvalidOperationException()
         {
@@ -263,7 +256,6 @@ namespace System.Drawing.Tests
             GC.WaitForPendingFinalizers();
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Dispose_BusyAndValidated_ThrowsInvalidOperationException()
         {
@@ -278,7 +270,6 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Dispose_BusyAndInvalidated_ThrowsInvalidOperationException()
         {

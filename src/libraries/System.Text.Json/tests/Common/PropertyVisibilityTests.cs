@@ -1227,6 +1227,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/63802", TargetFrameworkMonikers.NetFramework)]
         public async Task JsonIgnoreAttribute_UnsupportedBigInteger()
         {
             string json = @"{""MyBigInteger"":1}";

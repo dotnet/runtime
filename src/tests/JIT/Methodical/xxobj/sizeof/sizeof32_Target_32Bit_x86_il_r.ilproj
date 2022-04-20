@@ -1,6 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk.IL">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
     <RestorePackages>true</RestorePackages>
     <CLRTestPriority>1</CLRTestPriority>
     <!-- There are arch-specific versions of this test to allow it to be compiled for all targets -->

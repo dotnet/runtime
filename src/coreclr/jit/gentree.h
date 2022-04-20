@@ -2705,13 +2705,12 @@ class GenTreeUseEdgeIterator final
 
     enum
     {
-        CALL_INSTANCE     = 0,
-        CALL_ARGS         = 1,
-        CALL_LATE_ARGS    = 2,
-        CALL_CONTROL_EXPR = 3,
-        CALL_COOKIE       = 4,
-        CALL_ADDRESS      = 5,
-        CALL_TERMINAL     = 6,
+        CALL_ARGS         = 0,
+        CALL_LATE_ARGS    = 1,
+        CALL_CONTROL_EXPR = 2,
+        CALL_COOKIE       = 3,
+        CALL_ADDRESS      = 4,
+        CALL_TERMINAL     = 5,
     };
 
     typedef void (GenTreeUseEdgeIterator::*AdvanceFn)();
@@ -2719,7 +2718,7 @@ class GenTreeUseEdgeIterator final
     AdvanceFn m_advance;
     GenTree*  m_node;
     GenTree** m_edge;
-    // Pointer sized state storage, GenTreePhi::Use* or GenTreeCall::Use*
+    // Pointer sized state storage, GenTreePhi::Use* or CallArg*
     // or the exclusive end/beginning of GenTreeMultiOp's operand array.
     void* m_statePtr;
     // Integer sized state storage, usually the operand index for non-list based nodes.
@@ -3697,8 +3696,8 @@ enum GenTreeCallFlags : unsigned int
 
     GTF_CALL_M_EXPLICIT_TAILCALL       = 0x00000001, // the call is "tail" prefixed and importer has performed tail call checks
     GTF_CALL_M_TAILCALL                = 0x00000002, // the call is a tailcall
-    GTF_CALL_M_VARARGS                 = 0x00000004, // the call uses varargs ABI
-    GTF_CALL_M_RETBUFFARG              = 0x00000008, // call has a return buffer argument
+    GTF_CALL_M_RETBUFFARG              = 0x00000004, // the ABI dictates that this call needs a ret buffer
+    GTF_CALL_M_RETBUFFARG_LCLOPT       = 0x00000008, // Does this call have a local ret buffer that we are optimizing?
     GTF_CALL_M_DELEGATE_INV            = 0x00000010, // call to Delegate.Invoke
     GTF_CALL_M_NOGCCHECK               = 0x00000020, // not a call for computing full interruptability and therefore no GC check is required.
     GTF_CALL_M_SPECIAL_INTRINSIC       = 0x00000040, // function that could be optimized as an intrinsic
@@ -3983,158 +3982,504 @@ public:
     }
 };
 
-class fgArgInfo;
-
-enum class NonStandardArgKind : unsigned
-{
-    None,
-    PInvokeFrame,
-    PInvokeTarget,
-    PInvokeCookie,
-    WrapperDelegateCell,
-    ShiftLow,
-    ShiftHigh,
-    FixedRetBuffer,
-    VirtualStubCell,
-    R2RIndirectionCell,
-    ValidateIndirectCallTarget,
-
-    // If changing this enum also change getNonStandardArgKindName and isNonStandardArgAddedLate in fgArgInfo
-};
-
-#ifdef DEBUG
-const char* getNonStandardArgKindName(NonStandardArgKind kind);
-#endif
-
 enum class CFGCallKind
 {
     ValidateAndCall,
     Dispatch,
 };
 
-struct GenTreeCall final : public GenTree
+class CallArgs;
+
+enum class WellKnownArg
 {
-    class Use
+    None,
+    ThisPointer,
+    VarArgsCookie,
+    InstParam,
+    RetBuffer,
+    PInvokeFrame,
+    SecretStubParam,
+    WrapperDelegateCell,
+    ShiftLow,
+    ShiftHigh,
+    VirtualStubCell,
+    PInvokeCookie,
+    PInvokeTarget,
+    R2RIndirectionCell,
+    ValidateIndirectCallTarget,
+    DispatchIndirectCallTarget,
+};
+
+#ifdef DEBUG
+const char* getWellKnownArgName(WellKnownArg arg);
+#endif
+
+struct CallArgABIInformation
+{
+    CallArgABIInformation()
+        : ArgNum((unsigned)-1)
+        , NumRegs(0)
+        , ByteOffset(0)
+        , ByteSize(0)
+        , ByteAlignment(0)
+#ifdef UNIX_AMD64_ABI
+        , StructIntRegs(0)
+        , StructFloatRegs(0)
+#endif
+#ifdef TARGET_LOONGARCH64
+        , StructFloatFieldType()
+#endif
+#ifdef DEBUG_ARG_SLOTS
+        , SlotNum(0)
+        , NumSlots(0)
+#endif
+        , ArgType(TYP_UNDEF)
+        , IsBackFilled(false)
+        , IsStruct(false)
+        , PassedByRef(false)
+#ifdef FEATURE_ARG_SPLIT
+        , m_isSplit(false)
+#endif
+#ifdef FEATURE_HFA_FIELDS_PRESENT
+        , m_hfaElemKind(CORINFO_HFA_ELEM_NONE)
+#endif
     {
-        GenTree* m_node;
-        Use*     m_next;
+        for (size_t i = 0; i < MAX_ARG_REG_COUNT; i++)
+        {
+            RegNums[i] = REG_NA;
+        }
+    }
+
+    // The original argument number, also specifies the required argument
+    // evaluation order from the IL
+    unsigned ArgNum;
+
+private:
+    // The registers to use when passing this argument, set to REG_STK for
+    // arguments passed on the stack
+    regNumberSmall RegNums[MAX_ARG_REG_COUNT];
+
+public:
+    // Count of number of registers that this argument uses. Note that on ARM,
+    // if we have a double hfa, this reflects the number of DOUBLE registers.
+    unsigned NumRegs;
+    unsigned ByteOffset;
+    unsigned ByteSize;
+    unsigned ByteAlignment;
+#if defined(UNIX_AMD64_ABI)
+    // Unix amd64 will split floating point types and integer types in structs
+    // between floating point and general purpose registers. Keep track of that
+    // information so we do not need to recompute it later.
+    unsigned                                            StructIntRegs;
+    unsigned                                            StructFloatRegs;
+    SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR StructDesc;
+#endif // UNIX_AMD64_ABI
+#ifdef TARGET_LOONGARCH64
+    // For LoongArch64's ABI, the struct which has float field(s) and no more than two fields
+    // may be passed by float register(s).
+    // e.g  `struct {int a; float b;}` passed by an integer register and a float register.
+    var_types StructFloatFieldType[2];
+#endif
+#if defined(DEBUG_ARG_SLOTS)
+    // These fields were used to calculate stack size in stack slots for arguments
+    // but now they are replaced by precise `m_byteOffset/m_byteSize` because of
+    // arm64 apple abi requirements.
+
+    // A slot is a pointer sized region in the OutArg area.
+    unsigned SlotNum;  // When an argument is passed in the OutArg area this is the slot number in the OutArg area
+    unsigned NumSlots; // Count of number of slots that this argument uses
+#endif                 // DEBUG_ARG_SLOTS
+    // The type used to pass this argument. This is generally the original
+    // argument type, but when a struct is passed as a scalar type, this is
+    // that type. Note that if a struct is passed by reference, this will still
+    // be the struct type.
+    var_types ArgType : 5;
+    // True when the argument fills a register slot skipped due to alignment
+    // requirements of previous arguments.
+    bool IsBackFilled : 1;
+    // True if this is a struct arg
+    bool IsStruct : 1;
+    // True iff the argument is passed by reference.
+    bool PassedByRef : 1;
+
+private:
+#ifdef FEATURE_ARG_SPLIT
+    // True when this argument is split between the registers and OutArg area
+    bool m_isSplit : 1;
+#endif
+
+#ifdef FEATURE_HFA_FIELDS_PRESENT
+    // What kind of an HFA this is (CORINFO_HFA_ELEM_NONE if it is not an HFA).
+    CorInfoHFAElemType m_hfaElemKind : 3;
+#endif
+
+public:
+    CorInfoHFAElemType GetHfaElemKind() const
+    {
+#ifdef FEATURE_HFA_FIELDS_PRESENT
+        return m_hfaElemKind;
+#else
+        NOWAY_MSG("GetHfaElemKind");
+        return CORINFO_HFA_ELEM_NONE;
+#endif
+    }
+
+    void SetHfaElemKind(CorInfoHFAElemType elemKind)
+    {
+#ifdef FEATURE_HFA_FIELDS_PRESENT
+        m_hfaElemKind = elemKind;
+#else
+        NOWAY_MSG("SetHfaElemKind");
+#endif
+    }
+
+    bool      IsHfaArg() const;
+    bool      IsHfaRegArg() const;
+    var_types GetHfaType() const;
+    void SetHfaType(var_types type, unsigned hfaSlots);
+
+    regNumber GetRegNum() const
+    {
+        return (regNumber)RegNums[0];
+    }
+
+    regNumber GetOtherRegNum() const
+    {
+        return (regNumber)RegNums[1];
+    }
+    regNumber GetRegNum(unsigned int i)
+    {
+        assert(i < MAX_ARG_REG_COUNT);
+        return (regNumber)RegNums[i];
+    }
+    void SetRegNum(unsigned int i, regNumber regNum)
+    {
+        assert(i < MAX_ARG_REG_COUNT);
+        RegNums[i] = (regNumberSmall)regNum;
+    }
+
+    bool IsSplit() const
+    {
+#if FEATURE_ARG_SPLIT
+        return compFeatureArgSplit() && m_isSplit;
+#else // FEATURE_ARG_SPLIT
+        return false;
+#endif
+    }
+    void SetSplit(bool value)
+    {
+#if FEATURE_ARG_SPLIT
+        m_isSplit = value;
+#endif
+    }
+
+    bool IsPassedInRegisters() const
+    {
+        return !IsSplit() && (NumRegs != 0);
+    }
+
+    bool IsPassedInFloatRegisters() const
+    {
+#ifdef TARGET_X86
+        return false;
+#else
+        return isValidFloatArgReg(GetRegNum());
+#endif
+    }
+
+    void SetByteSize(unsigned byteSize, unsigned byteAlignment, bool isStruct, bool isFloatHfa);
+
+#if defined(DEBUG_ARG_SLOTS)
+    // Returns the number of "slots" used, where for this purpose a
+    // register counts as a slot.
+    unsigned GetSlotCount() const;
+    unsigned GetSize() const;
+#endif
+
+    // Get the number of bytes that this argument is occupying on the stack,
+    // including padding up to the target pointer size for platforms
+    // where a stack argument can't take less.
+    unsigned GetStackByteSize() const;
+
+    // Set the register numbers for a multireg argument.
+    // There's nothing to do on x64/Ux because the structDesc has already been used to set the
+    // register numbers.
+    void SetMultiRegNums();
+
+    // Return number of stack slots that this argument is taking.
+    // TODO-Cleanup: this function does not align with arm64 apple model,
+    // delete it. In most cases we just want to know if we it is using stack or not
+    // but in some cases we are checking if it is a multireg arg, like:
+    // `numRegs + GetStackSlotsNumber() > 1` that is harder to replace.
+    //
+    unsigned GetStackSlotsNumber() const
+    {
+        return roundUp(GetStackByteSize(), TARGET_POINTER_SIZE) / TARGET_POINTER_SIZE;
+    }
+
+    // Can we replace the struct type of this node with a primitive type for argument passing?
+    bool TryPassAsPrimitive() const
+    {
+        return !IsSplit() && ((NumRegs == 1) || (ByteSize <= TARGET_POINTER_SIZE));
+    }
+};
+
+class CallArg
+{
+    friend class CallArgs;
+
+    GenTree*     m_earlyNode;
+    GenTree*     m_lateNode;
+    CallArg*     m_next;
+    CallArg*     m_lateNext;
+    WellKnownArg m_wellKnownArg : 5;
+
+    // True when we force this argument's evaluation into a temp LclVar.
+    bool m_needTmp : 1;
+    // True when we must replace this argument with a placeholder node.
+    bool m_needPlace : 1;
+    // True when we setup a temp LclVar for this argument due to size issues
+    // with the struct.
+    bool m_isTmp : 1;
+    // True when we have decided the evaluation order for this argument in LateArgs
+    bool m_processed : 1;
+    // The LclVar number if we had to force evaluation of this arg
+    unsigned m_tmpNum;
+
+public:
+    CallArgABIInformation AbiInfo;
+
+    CallArg(WellKnownArg specialArgKind)
+        : m_earlyNode(nullptr)
+        , m_lateNode(nullptr)
+        , m_next(nullptr)
+        , m_lateNext(nullptr)
+        , m_wellKnownArg(specialArgKind)
+        , m_needTmp(false)
+        , m_needPlace(false)
+        , m_isTmp(false)
+        , m_processed(false)
+        , m_tmpNum(BAD_VAR_NUM)
+    {
+    }
+
+    CallArg(const CallArg&) = delete;
+    CallArg& operator=(CallArg&) = delete;
+
+    // clang-format off
+    GenTree*& EarlyNodeRef() { return m_earlyNode; }
+    GenTree* GetEarlyNode() { return m_earlyNode; }
+    void SetEarlyNode(GenTree* node) { m_earlyNode = node; }
+    GenTree*& LateNodeRef() { return m_lateNode; }
+    GenTree* GetLateNode() { return m_lateNode; }
+    void SetLateNode(GenTree* lateNode) { m_lateNode = lateNode; }
+    CallArg*& NextRef() { return m_next; }
+    CallArg* GetNext() { return m_next; }
+    void SetNext(CallArg* next) { m_next = next; }
+    CallArg*& LateNextRef() { return m_lateNext; }
+    CallArg* GetLateNext() { return m_lateNext; }
+    void SetLateNext(CallArg* lateNext) { m_lateNext = lateNext; }
+    WellKnownArg GetWellKnownArg() { return m_wellKnownArg; }
+    bool IsTemp() { return m_isTmp; }
+    // clang-format on
+
+    // Get the real argument node, i.e. not a setup or placeholder node.
+    // This is the same as GetEarlyNode() until morph.
+    // After lowering, this is a PUTARG_* node.
+    GenTree* GetNode()
+    {
+        return m_lateNode == nullptr ? m_earlyNode : m_lateNode;
+    }
+
+    bool IsArgAddedLate() const;
+
+#ifdef DEBUG
+    void Dump(Compiler* comp);
+    // Check that the value of 'AbiInfo.IsStruct' is consistent.
+    // A struct arg must be one of the following:
+    // - A node of struct type,
+    // - A GT_FIELD_LIST, or
+    // - A node of a scalar type, passed in a single register or slot
+    //   (or two slots in the case of a struct pass on the stack as TYP_DOUBLE).
+    //
+    void CheckIsStruct();
+#endif
+};
+
+class CallArgs
+{
+    CallArg* m_head;
+    CallArg* m_lateHead;
+
+    unsigned m_nextStackByteOffset;
+#ifdef UNIX_X86_ABI
+    // Number of stack bytes pushed before we start pushing these arguments.
+    unsigned m_stkSizeBytes;
+    // Stack alignment in bytes required before arguments are pushed for this
+    // call. Computed dynamically during codegen, based on m_stkSizeBytes and the
+    // current stack level (genStackLevel) when the first stack adjustment is
+    // made for this call.
+    unsigned m_padStkAlign;
+#endif
+    bool m_hasThisPointer : 1;
+    bool m_hasRetBuffer : 1;
+    bool m_isVarArgs : 1;
+    bool m_abiInformationDetermined : 1;
+    // True if we have one or more register arguments.
+    bool m_hasRegArgs : 1;
+    // True if we have one or more stack arguments.
+    bool m_hasStackArgs : 1;
+    bool m_argsComplete : 1;
+    // One or more arguments must be copied to a temp by EvalArgsToTemps.
+    bool m_needsTemps : 1;
+#ifdef UNIX_X86_ABI
+    // Updateable flag, set to 'true' after we've done any required alignment.
+    bool m_alignmentDone : 1;
+#endif
+
+    void AddedWellKnownArg(WellKnownArg arg);
+    void RemovedWellKnownArg(WellKnownArg arg);
+    regNumber GetCustomRegister(Compiler* comp, CorInfoCallConvExtension cc, WellKnownArg arg);
+    void SplitArg(CallArg* arg, unsigned numRegs, unsigned numSlots, unsigned* nextSlotNum);
+
+public:
+    CallArgs();
+    CallArgs(const CallArgs&) = delete;
+    CallArgs& operator=(CallArgs&) = delete;
+
+    CallArg* FindByNode(GenTree* node);
+    CallArg* FindWellKnownArg(WellKnownArg arg);
+    CallArg* GetThisArg();
+    CallArg* GetRetBufferArg();
+    CallArg* GetArgByIndex(unsigned index);
+    unsigned GetIndex(CallArg* arg);
+
+    bool IsEmpty() const
+    {
+        return m_head == nullptr;
+    }
+
+    // Reverse the args from [index..index + count) in place.
+    void Reverse(unsigned index, unsigned count);
+
+    CallArg* PushFront(Compiler* comp, GenTree* node, WellKnownArg wellKnownArg = WellKnownArg::None);
+    CallArg* PushBack(Compiler* comp, GenTree* node, WellKnownArg wellKnownArg = WellKnownArg::None);
+    CallArg* InsertAfter(Compiler* comp, CallArg* after, GenTree* node, WellKnownArg wellKnownArg = WellKnownArg::None);
+    CallArg* InsertInstParam(Compiler* comp, GenTree* node);
+    CallArg* InsertAfterThisOrFirst(Compiler* comp, GenTree* node, WellKnownArg wellKnownArg = WellKnownArg::None);
+    void PushLateBack(CallArg* arg);
+    void Remove(CallArg* arg);
+
+    template <typename CopyNodeFunc>
+    void InternalCopyFrom(Compiler* comp, CallArgs* other, CopyNodeFunc copyFunc);
+
+    template <typename... T>
+    void PushFront(Compiler* comp, GenTree* node, T... rest)
+    {
+        PushFront(comp, rest...);
+        PushFront(comp, node);
+    }
+
+    void ResetFinalArgsAndABIInfo();
+    void AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call);
+
+    void ArgsComplete(Compiler* comp, GenTreeCall* call);
+    void SortArgs(Compiler* comp, GenTreeCall* call, CallArg** sortedArgs);
+    void EvalArgsToTemps(Compiler* comp, GenTreeCall* call);
+    void SetNeedsTemp(CallArg* arg);
+    bool IsNonStandard(Compiler* comp, GenTreeCall* call, CallArg* arg);
+
+    GenTree* MakeTmpArgNode(Compiler* comp, CallArg* arg);
+    void SetTemp(CallArg* arg, unsigned tmpNum);
+
+    // clang-format off
+    bool HasThisPointer() const { return m_hasThisPointer; }
+    bool HasRetBuffer() const { return m_hasRetBuffer; }
+    bool IsVarArgs() const { return m_isVarArgs; }
+    void SetIsVarArgs() { m_isVarArgs = true; }
+    void ClearIsVarArgs() { m_isVarArgs = false; }
+    bool IsAbiInformationDetermined() const { return m_abiInformationDetermined; }
+    bool AreArgsComplete() const { return m_argsComplete; }
+    bool HasRegArgs() const { return m_hasRegArgs; }
+    bool HasStackArgs() const { return m_hasStackArgs; }
+    bool NeedsTemps() const { return m_needsTemps; }
+
+#ifdef UNIX_X86_ABI
+    void ComputeStackAlignment(unsigned curStackLevelInBytes)
+    {
+        m_padStkAlign = AlignmentPad(curStackLevelInBytes, STACK_ALIGN);
+    }
+    unsigned GetStkAlign() const { return m_padStkAlign; }
+    unsigned GetStkSizeBytes() { return m_stkSizeBytes; }
+    void SetStkSizeBytes(unsigned bytes) { m_stkSizeBytes = bytes; }
+    bool IsStkAlignmentDone() const { return m_alignmentDone; }
+    void SetStkAlignmentDone() { m_alignmentDone = true; }
+#endif
+    // clang-format on
+
+    unsigned OutgoingArgsStackSize() const;
+
+    unsigned CountArgs();
+
+    template <CallArg* (CallArg::*Next)()>
+    class CallArgIterator
+    {
+        CallArg* m_arg;
 
     public:
-        Use(GenTree* node, Use* next = nullptr) : m_node(node), m_next(next)
-        {
-            assert(node != nullptr);
-        }
-
-        GenTree*& NodeRef()
-        {
-            return m_node;
-        }
-
-        GenTree* GetNode() const
-        {
-            assert(m_node != nullptr);
-            return m_node;
-        }
-
-        void SetNode(GenTree* node)
-        {
-            assert(node != nullptr);
-            m_node = node;
-        }
-
-        Use*& NextRef()
-        {
-            return m_next;
-        }
-
-        Use* GetNext() const
-        {
-            return m_next;
-        }
-
-        void SetNext(Use* next)
-        {
-            m_next = next;
-        }
-    };
-
-    class UseIterator
-    {
-        Use* m_use;
-
-    public:
-        UseIterator(Use* use) : m_use(use)
+        explicit CallArgIterator(CallArg* arg) : m_arg(arg)
         {
         }
 
-        Use& operator*() const
+        CallArg& operator*() const
         {
-            return *m_use;
+            return *m_arg;
         }
 
-        Use* operator->() const
+        CallArg* operator->() const
         {
-            return m_use;
+            return m_arg;
         }
 
-        Use* GetUse() const
+        CallArg* GetArg() const
         {
-            return m_use;
+            return m_arg;
         }
 
-        UseIterator& operator++()
+        CallArgIterator& operator++()
         {
-            m_use = m_use->GetNext();
+            m_arg = (m_arg->*Next)();
             return *this;
         }
 
-        bool operator==(const UseIterator& i) const
+        bool operator==(const CallArgIterator& i) const
         {
-            return m_use == i.m_use;
+            return m_arg == i.m_arg;
         }
 
-        bool operator!=(const UseIterator& i) const
+        bool operator!=(const CallArgIterator& i) const
         {
-            return m_use != i.m_use;
-        }
-    };
-
-    class UseList
-    {
-        Use* m_uses;
-
-    public:
-        UseList(Use* uses) : m_uses(uses)
-        {
-        }
-
-        UseIterator begin() const
-        {
-            return UseIterator(m_uses);
-        }
-
-        UseIterator end() const
-        {
-            return UseIterator(nullptr);
+            return m_arg != i.m_arg;
         }
     };
 
-    Use* gtCallThisArg;  // The instance argument ('this' pointer)
-    Use* gtCallArgs;     // The list of arguments in original evaluation order
-    Use* gtCallLateArgs; // On x86:     The register arguments in an optimal order
-                         // On ARM/x64: - also includes any outgoing arg space arguments
-                         //             - that were evaluated into a temp LclVar
-    fgArgInfo* fgArgInfo;
+    using ArgIterator     = CallArgIterator<&CallArg::GetNext>;
+    using LateArgIterator = CallArgIterator<&CallArg::GetLateNext>;
 
-    UseList Args()
+    IteratorPair<ArgIterator> Args()
     {
-        return UseList(gtCallArgs);
+        return IteratorPair<ArgIterator>(ArgIterator(m_head), ArgIterator(nullptr));
     }
 
-    UseList LateArgs()
+    IteratorPair<LateArgIterator> LateArgs()
     {
-        return UseList(gtCallLateArgs);
+        return IteratorPair<LateArgIterator>(LateArgIterator(m_lateHead), LateArgIterator(nullptr));
     }
+};
+
+struct GenTreeCall final : public GenTree
+{
+    CallArgs gtArgs;
 
 #ifdef DEBUG
     // Used to register callsites with the EE
@@ -4391,14 +4736,16 @@ struct GenTreeCall final : public GenTree
     bool HasNonStandardAddedArgs(Compiler* compiler) const;
     int GetNonStandardAddedArgCount(Compiler* compiler) const;
 
-    // Returns true if this call uses a retBuf argument and its calling convention
-    bool HasRetBufArg() const
+    // Returns true if the ABI dictates that this call should get a ret buf
+    // arg. This may be out of sync with gtArgs.HasRetBuffer during import
+    // until we actually create the ret buffer.
+    bool ShouldHaveRetBufArg() const
     {
         return (gtCallMoreFlags & GTF_CALL_M_RETBUFFARG) != 0;
     }
 
     //-------------------------------------------------------------------------
-    // TreatAsHasRetBufArg:
+    // TreatAsShouldHaveRetBufArg:
     //
     // Arguments:
     //     compiler, the compiler instance so that we can call eeGetHelperNum
@@ -4411,23 +4758,10 @@ struct GenTreeCall final : public GenTree
     //
     // Notes:
     //     On ARM64 marking the method with the GTF_CALL_M_RETBUFFARG flag
-    //     will make HasRetBufArg() return true, but will also force the
+    //     will make ShouldHaveRetBufArg() return true, but will also force the
     //     use of register x8 to pass the RetBuf argument.
     //
-    bool TreatAsHasRetBufArg(Compiler* compiler) const;
-
-    bool HasFixedRetBufArg() const
-    {
-        if (!(hasFixedRetBuffReg() && HasRetBufArg()))
-        {
-            return false;
-        }
-#if !defined(TARGET_ARM)
-        return !TargetOS::IsWindows || !callConvIsInstanceMethodCallConv(GetUnmanagedCallConv());
-#else
-        return true;
-#endif
-    }
+    bool TreatAsShouldHaveRetBufArg(Compiler* compiler) const;
 
     //-----------------------------------------------------------------------------------------
     // HasMultiRegRetVal: whether the call node returns its value in multiple return registers.
@@ -4452,7 +4786,7 @@ struct GenTreeCall final : public GenTree
         }
 #endif
 
-        if (!varTypeIsStruct(gtType) || HasRetBufArg())
+        if (!varTypeIsStruct(gtType) || ShouldHaveRetBufArg())
         {
             return false;
         }
@@ -4589,7 +4923,7 @@ struct GenTreeCall final : public GenTree
 
     bool IsVarargs() const
     {
-        return (gtCallMoreFlags & GTF_CALL_M_VARARGS) != 0;
+        return gtArgs.IsVarArgs();
     }
 
     bool IsNoReturn() const
@@ -4694,30 +5028,30 @@ struct GenTreeCall final : public GenTree
     //
     // Return Value:
     //     The kind (either R2RIndirectionCell or VirtualStubCell),
-    //     or NonStandardArgKind::None if this call does not have an indirection cell.
+    //     or WellKnownArg::None if this call does not have an indirection cell.
     //
-    NonStandardArgKind GetIndirectionCellArgKind() const
+    WellKnownArg GetIndirectionCellArgKind() const
     {
         if (IsVirtualStub())
         {
-            return NonStandardArgKind::VirtualStubCell;
+            return WellKnownArg::VirtualStubCell;
         }
 
 #if defined(TARGET_ARMARCH)
         // For ARM architectures, we always use an indirection cell for R2R calls.
         if (IsR2RRelativeIndir())
         {
-            return NonStandardArgKind::R2RIndirectionCell;
+            return WellKnownArg::R2RIndirectionCell;
         }
 #elif defined(TARGET_XARCH)
         // On XARCH we disassemble it from callsite except for tailcalls that need indirection cell.
         if (IsR2RRelativeIndir() && IsFastTailCall())
         {
-            return NonStandardArgKind::R2RIndirectionCell;
+            return WellKnownArg::R2RIndirectionCell;
         }
 #endif
 
-        return NonStandardArgKind::None;
+        return WellKnownArg::None;
     }
 
     CFGCallKind GetCFGCallKind()
@@ -4726,7 +5060,7 @@ struct GenTreeCall final : public GenTree
         // On x64 the dispatcher is more performant, but we cannot use it when
         // we need to pass indirection cells as those go into registers that
         // are clobbered by the dispatch helper.
-        bool mayUseDispatcher    = GetIndirectionCellArgKind() == NonStandardArgKind::None;
+        bool mayUseDispatcher    = GetIndirectionCellArgKind() == WellKnownArg::None;
         bool shouldUseDispatcher = true;
 #elif defined(TARGET_ARM64)
         bool mayUseDispatcher = true;
@@ -4755,8 +5089,6 @@ struct GenTreeCall final : public GenTree
 
         return mayUseDispatcher && shouldUseDispatcher ? CFGCallKind::Dispatch : CFGCallKind::ValidateAndCall;
     }
-
-    void ResetArgInfo();
 
     GenTreeCallFlags     gtCallMoreFlags;    // in addition to gtFlags
     gtCallTypes          gtCallType : 3;     // value from the gtCallTypes enumeration
@@ -4828,8 +5160,6 @@ struct GenTreeCall final : public GenTree
 
     GenTreeCall(var_types type) : GenTree(GT_CALL, type)
     {
-        fgArgInfo   = nullptr;
-        gtRetBufArg = nullptr;
     }
 #if DEBUGGABLE_GENTREE
     GenTreeCall() : GenTree()
@@ -4837,15 +5167,19 @@ struct GenTreeCall final : public GenTree
     }
 #endif
 
-    GenTree* GetLclRetBufArgNode() const
+    GenTree* GetLclRetBufArgNode()
     {
-        if (gtRetBufArg == nullptr)
+        if (!gtArgs.HasRetBuffer() || ((gtCallMoreFlags & GTF_CALL_M_RETBUFFARG_LCLOPT) == 0))
         {
             return nullptr;
         }
 
-        assert(HasRetBufArg());
-        GenTree* lclRetBufArgNode = gtRetBufArg->GetNode();
+        CallArg* retBufArg        = gtArgs.GetRetBufferArg();
+        GenTree* lclRetBufArgNode = retBufArg->GetEarlyNode();
+        if (lclRetBufArgNode->IsArgPlaceHolderNode())
+        {
+            lclRetBufArgNode = retBufArg->GetLateNode();
+        }
 
         switch (lclRetBufArgNode->OperGet())
         {
@@ -4865,10 +5199,6 @@ struct GenTreeCall final : public GenTree
                 return lclRetBufArgNode;
         }
     }
-
-    void SetLclRetBufArg(Use* retBufArg);
-
-    Use* gtRetBufArg; // The argument that holds return buffer argument
 };
 
 struct GenTreeCmpXchg : public GenTree

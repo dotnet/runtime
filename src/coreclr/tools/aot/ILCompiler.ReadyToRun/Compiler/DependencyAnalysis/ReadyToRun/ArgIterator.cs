@@ -730,37 +730,18 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 int numRegistersUsed = 0;
 
-#if PROJECTN || FEATURE_INTERPRETER
-                int initialArgOffset = 0;
-#endif
                 if (HasThis)
                     numRegistersUsed++;
 
                 if (HasRetBuffArg() && _transitionBlock.IsRetBuffPassedAsFirstArg)
                 {
-#if PROJECTN
-                    if (!_transitionBlock.IsX86)
-#endif
-                    {
-                        numRegistersUsed++;
-                    }
-#if PROJECTN
-                    else
-                    {
-                        // DESKTOP BEHAVIOR is to do nothing here, as ret buf is never reached by the scan algorithm that walks backwards
-                        // but in .NET Native, the x86 argument scan is a forward scan, so we need to skip the ret buf arg (which is always
-                        // on the stack)
-                        initialArgOffset = _transitionBlock.PointerSize;
-                    }
-#endif
+                    numRegistersUsed++;
                 }
 
                 Debug.Assert(!IsVarArg || !HasParamType);
 
-#if !PROJECTN
                 // DESKTOP BEHAVIOR - This block is disabled for x86 as the param arg is the last argument on .NET Framework x86.
                 if (!_transitionBlock.IsX86)
-#endif
                 {
                     if (HasParamType)
                     {
@@ -802,11 +783,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         }
 #endif
                         _x86NumRegistersUsed = numRegistersUsed;
-#if PROJECTN
-                        _x86OfsStack = (int)(_transitionBlock.OffsetOfArgs + initialArgOffset);
-#else
                         _x86OfsStack = (int)(_transitionBlock.OffsetOfArgs + SizeOfArgStack());
-#endif
                         break;
 
                     case TargetArchitecture.X64:
@@ -880,13 +857,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         return _transitionBlock.OffsetOfArgumentRegisters + (_transitionBlock.NumArgumentRegisters - _x86NumRegistersUsed) * _transitionBlock.PointerSize;
                     }
 
-#if PROJECTN
-                    argOfs = _x86OfsStack;
-                    _x86OfsStack += _transitionBlock.StackElemSize(argSize);
-#else
                     _x86OfsStack -= _transitionBlock.StackElemSize(argSize);
                     argOfs = _x86OfsStack;
-#endif
+
                     Debug.Assert(argOfs >= _transitionBlock.OffsetOfArgs);
                     return argOfs;
 
@@ -1384,24 +1357,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
                 if (HasRetBuffArg() && _transitionBlock.IsRetBuffPassedAsFirstArg)
                 {
-#if PROJECTN
-                    // On ProjectN ret buff arg is passed on the call stack as the top stack arg
-                    nSizeOfArgStack += _transitionBlock.PointerSize;
-#else
                     numRegistersUsed++;
-#endif
                 }
-
-#if PROJECTN
-                // DESKTOP BEHAVIOR - This block is disabled for x86 as the param arg is the last argument on .NET Framework x86.
-                if (HasParamType)
-                {
-                    numRegistersUsed++;
-                    _paramTypeLoc = (numRegistersUsed == 1) ?
-                        ParamTypeLocation.Ecx : ParamTypeLocation.Edx;
-                    Debug.Assert(numRegistersUsed <= 2);
-                }
-#endif
 
                 if (IsVarArg)
                 {
@@ -1448,7 +1405,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     }
                 }
 
-#if !PROJECTN
                 if (HasParamType)
                 {
                     if (numRegistersUsed < _transitionBlock.NumArgumentRegisters)
@@ -1463,7 +1419,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         _paramTypeLoc = ParamTypeLocation.Stack;
                     }
                 }
-#endif
             }
             else
             {

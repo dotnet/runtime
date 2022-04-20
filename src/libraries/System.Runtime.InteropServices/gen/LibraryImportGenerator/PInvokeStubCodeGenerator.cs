@@ -83,8 +83,9 @@ namespace Microsoft.Interop
 
             foreach (BoundGenerator generator in _marshallers.AllMarshallers)
             {
-                // Check each marshaler if the current target framework is supported or not.
-                SupportsTargetFramework &= generator.Generator.IsSupported(environment.TargetFramework, environment.TargetFrameworkVersion);
+                // Check if marshalling info and generator support the current target framework.
+                SupportsTargetFramework &= generator.TypeInfo.MarshallingAttributeInfo is not MissingSupportMarshallingInfo
+                    && generator.Generator.IsSupported(environment.TargetFramework, environment.TargetFrameworkVersion);
 
                 // Check if generator is either blittable or just a forwarder.
                 noMarshallingNeeded &= generator is { Generator: BlittableMarshaller, TypeInfo.IsByRef: false }
@@ -99,15 +100,6 @@ namespace Microsoft.Interop
             {
                 try
                 {
-                    // TODO: Remove once helper types (like ArrayMarshaller) are part of the runtime
-                    // This check is to help with enabling the source generator for runtime libraries without making each
-                    // library directly reference System.Memory and System.Runtime.CompilerServices.Unsafe unless it needs to
-                    if (p.MarshallingAttributeInfo is MissingSupportMarshallingInfo
-                        && (environment.TargetFramework == TargetFramework.Net && environment.TargetFrameworkVersion.Major >= 7))
-                    {
-                        throw new MarshallingNotSupportedException(p, _context);
-                    }
-
                     return generatorFactory.Create(p, _context);
                 }
                 catch (MarshallingNotSupportedException e)

@@ -815,5 +815,97 @@ namespace System.Tests
             string s = string.Format(ci, "{0}", 158.68);
             Assert.Equal(-158.68, double.Parse("-" + s, NumberStyles.Number, ci));
         }
+
+        [Theory]
+        [InlineData(double.NegativeInfinity, double.PositiveInfinity, double.PositiveInfinity)]
+        [InlineData(double.PositiveInfinity, double.NegativeInfinity, double.PositiveInfinity)]
+        [InlineData(double.MinValue, double.MaxValue, double.MaxValue)]
+        [InlineData(double.MaxValue, double.MinValue, double.MaxValue)]
+        [InlineData(double.NaN, double.NaN, double.NaN)]
+        [InlineData(double.NaN, 1.0, 1.0)]
+        [InlineData(1.0, double.NaN, 1.0)]
+        [InlineData(double.PositiveInfinity, double.NaN, double.PositiveInfinity)]
+        [InlineData(double.NegativeInfinity, double.NaN, double.NegativeInfinity)]
+        [InlineData(double.NaN, double.PositiveInfinity, double.PositiveInfinity)]
+        [InlineData(double.NaN, double.NegativeInfinity, double.NegativeInfinity)]
+        [InlineData(-0.0, 0.0, 0.0)]
+        [InlineData(0.0, -0.0, 0.0)]
+        [InlineData(2.0, -3.0, -3.0)]
+        [InlineData(-3.0, 2.0, -3.0)]
+        [InlineData(3.0, -2.0, 3.0)]
+        [InlineData(-2.0, 3.0, 3.0)]
+        public static void MaxMagnitudeNumberTest(double x, double y, double expectedResult)
+        {
+            AssertExtensions.Equal(expectedResult, double.MaxMagnitudeNumber(x, y), 0.0);
+        }
+
+        [Theory]
+        [InlineData(double.NegativeInfinity, double.PositiveInfinity, double.PositiveInfinity)]
+        [InlineData(double.PositiveInfinity, double.NegativeInfinity, double.PositiveInfinity)]
+        [InlineData(double.MinValue, double.MaxValue, double.MaxValue)]
+        [InlineData(double.MaxValue, double.MinValue, double.MaxValue)]
+        [InlineData(double.NaN, double.NaN, double.NaN)]
+        [InlineData(double.NaN, 1.0, 1.0)]
+        [InlineData(1.0, double.NaN, 1.0)]
+        [InlineData(double.PositiveInfinity, double.NaN, double.PositiveInfinity)]
+        [InlineData(double.NegativeInfinity, double.NaN, double.NegativeInfinity)]
+        [InlineData(double.NaN, double.PositiveInfinity, double.PositiveInfinity)]
+        [InlineData(double.NaN, double.NegativeInfinity, double.NegativeInfinity)]
+        [InlineData(-0.0, 0.0, 0.0)]
+        [InlineData(0.0, -0.0, 0.0)]
+        [InlineData(2.0, -3.0, 2.0)]
+        [InlineData(-3.0, 2.0, 2.0)]
+        [InlineData(3.0, -2.0, 3.0)]
+        [InlineData(-2.0, 3.0, 3.0)]
+        public static void MaxNumberTest(double x, double y, double expectedResult)
+        {
+            AssertExtensions.Equal(expectedResult, double.MaxNumber(x, y), 0.0);
+        }
+
+        [Theory]
+        [InlineData(double.NegativeInfinity, double.PositiveInfinity, double.NegativeInfinity)]
+        [InlineData(double.PositiveInfinity, double.NegativeInfinity, double.NegativeInfinity)]
+        [InlineData(double.MinValue, double.MaxValue, double.MinValue)]
+        [InlineData(double.MaxValue, double.MinValue, double.MinValue)]
+        [InlineData(double.NaN, double.NaN, double.NaN)]
+        [InlineData(double.NaN, 1.0, 1.0)]
+        [InlineData(1.0, double.NaN, 1.0)]
+        [InlineData(double.PositiveInfinity, double.NaN, double.PositiveInfinity)]
+        [InlineData(double.NegativeInfinity, double.NaN, double.NegativeInfinity)]
+        [InlineData(double.NaN, double.PositiveInfinity, double.PositiveInfinity)]
+        [InlineData(double.NaN, double.NegativeInfinity, double.NegativeInfinity)]
+        [InlineData(-0.0, 0.0, -0.0)]
+        [InlineData(0.0, -0.0, -0.0)]
+        [InlineData(2.0, -3.0, 2.0)]
+        [InlineData(-3.0, 2.0, 2.0)]
+        [InlineData(3.0, -2.0, -2.0)]
+        [InlineData(-2.0, 3.0, -2.0)]
+        public static void MinMagnitudeNumberTest(double x, double y, double expectedResult)
+        {
+            AssertExtensions.Equal(expectedResult, double.MinMagnitudeNumber(x, y), 0.0);
+        }
+
+        [Theory]
+        [InlineData(double.NegativeInfinity, double.PositiveInfinity, double.NegativeInfinity)]
+        [InlineData(double.PositiveInfinity, double.NegativeInfinity, double.NegativeInfinity)]
+        [InlineData(double.MinValue, double.MaxValue, double.MinValue)]
+        [InlineData(double.MaxValue, double.MinValue, double.MinValue)]
+        [InlineData(double.NaN, double.NaN, double.NaN)]
+        [InlineData(double.NaN, 1.0, 1.0)]
+        [InlineData(1.0, double.NaN, 1.0)]
+        [InlineData(double.PositiveInfinity, double.NaN, double.PositiveInfinity)]
+        [InlineData(double.NegativeInfinity, double.NaN, double.NegativeInfinity)]
+        [InlineData(double.NaN, double.PositiveInfinity, double.PositiveInfinity)]
+        [InlineData(double.NaN, double.NegativeInfinity, double.NegativeInfinity)]
+        [InlineData(-0.0, 0.0, -0.0)]
+        [InlineData(0.0, -0.0, -0.0)]
+        [InlineData(2.0, -3.0, -3.0)]
+        [InlineData(-3.0, 2.0, -3.0)]
+        [InlineData(3.0, -2.0, -2.0)]
+        [InlineData(-2.0, 3.0, -2.0)]
+        public static void MinNumberTest(double x, double y, double expectedResult)
+        {
+            AssertExtensions.Equal(expectedResult, double.MinNumber(x, y), 0.0);
+        }
     }
 }

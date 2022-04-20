@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Text.Json.Serialization;
+using System.Reflection;
 using Xunit;
 
 namespace System.Text.Json.SourceGeneration.Tests
@@ -22,6 +23,7 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(MyTypeWithPropertyOrdering))]
     [JsonSerializable(typeof(MyIntermediateType))]
     [JsonSerializable(typeof(HighLowTempsImmutable))]
+    [JsonSerializable(typeof(HighLowTempsRecord))]
     [JsonSerializable(typeof(RealWorldContextTests.MyNestedClass))]
     [JsonSerializable(typeof(RealWorldContextTests.MyNestedClass.MyNestedNestedClass))]
     [JsonSerializable(typeof(object[]))]
@@ -43,9 +45,11 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(PersonStruct?))]
     [JsonSerializable(typeof(TypeWithValidationAttributes))]
     [JsonSerializable(typeof(TypeWithDerivedAttribute))]
+    [JsonSerializable(typeof(PolymorphicClass))]
     internal partial class SerializationContext : JsonSerializerContext, ITestContext
     {
         public JsonSourceGenerationMode JsonSourceGenerationMode => JsonSourceGenerationMode.Serialization;
+        public bool IsIncludeFieldsEnabled => GetType().GetCustomAttribute<JsonSourceGenerationOptionsAttribute>()?.IncludeFields ?? false;
     }
 
     [JsonSerializable(typeof(Location), GenerationMode = JsonSourceGenerationMode.Serialization)]
@@ -63,6 +67,7 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(MyTypeWithPropertyOrdering), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(MyIntermediateType), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(HighLowTempsImmutable), GenerationMode = JsonSourceGenerationMode.Serialization)]
+    [JsonSerializable(typeof(HighLowTempsRecord), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(RealWorldContextTests.MyNestedClass), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(RealWorldContextTests.MyNestedClass.MyNestedNestedClass), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(object[]), GenerationMode = JsonSourceGenerationMode.Serialization)]
@@ -84,9 +89,11 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(PersonStruct?), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(TypeWithValidationAttributes), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(TypeWithDerivedAttribute), GenerationMode = JsonSourceGenerationMode.Serialization)]
+    [JsonSerializable(typeof(PolymorphicClass), GenerationMode = JsonSourceGenerationMode.Serialization)]
     internal partial class SerializationWithPerTypeAttributeContext : JsonSerializerContext, ITestContext
     {
         public JsonSourceGenerationMode JsonSourceGenerationMode => JsonSourceGenerationMode.Serialization;
+        public bool IsIncludeFieldsEnabled => GetType().GetCustomAttribute<JsonSourceGenerationOptionsAttribute>()?.IncludeFields ?? false;
     }
 
     [JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase, IncludeFields = true)]
@@ -105,6 +112,7 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(MyTypeWithPropertyOrdering), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(MyIntermediateType), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(HighLowTempsImmutable), GenerationMode = JsonSourceGenerationMode.Serialization)]
+    [JsonSerializable(typeof(HighLowTempsRecord), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(RealWorldContextTests.MyNestedClass), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(RealWorldContextTests.MyNestedClass.MyNestedNestedClass), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(object[]), GenerationMode = JsonSourceGenerationMode.Serialization)]
@@ -126,9 +134,11 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(PersonStruct?), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(TypeWithValidationAttributes), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(TypeWithDerivedAttribute), GenerationMode = JsonSourceGenerationMode.Serialization)]
+    [JsonSerializable(typeof(PolymorphicClass), GenerationMode = JsonSourceGenerationMode.Serialization)]
     internal partial class SerializationContextWithCamelCase : JsonSerializerContext, ITestContext
     {
         public JsonSourceGenerationMode JsonSourceGenerationMode => JsonSourceGenerationMode.Serialization;
+        public bool IsIncludeFieldsEnabled => GetType().GetCustomAttribute<JsonSourceGenerationOptionsAttribute>()?.IncludeFields ?? false;
     }
 
     public class SerializationContextTests : RealWorldContextTests
@@ -158,6 +168,7 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.NotNull(SerializationContext.Default.MyTypeWithPropertyOrdering.SerializeHandler);
             Assert.NotNull(SerializationContext.Default.MyIntermediateType.SerializeHandler);
             Assert.NotNull(SerializationContext.Default.HighLowTempsImmutable.SerializeHandler);
+            Assert.NotNull(SerializationContext.Default.HighLowTempsRecord.SerializeHandler);
             Assert.NotNull(SerializationContext.Default.MyNestedClass.SerializeHandler);
             Assert.NotNull(SerializationContext.Default.MyNestedNestedClass.SerializeHandler);
             Assert.Null(SerializationContext.Default.ObjectArray.SerializeHandler);
@@ -437,6 +448,16 @@ namespace System.Text.Json.SourceGeneration.Tests
         }
 
         [Fact]
+        public override void PositionalRecord()
+        {
+            string json = JsonSerializer.Serialize(new HighLowTempsRecord(1, 2), DefaultContext.HighLowTempsRecord);
+            Assert.Contains(@"""High"":1", json);
+            Assert.Contains(@"""Low"":2", json);
+
+            JsonTestHelper.AssertThrows_PropMetadataInit(() => JsonSerializer.Deserialize(json, DefaultContext.HighLowTempsRecord), typeof(HighLowTempsRecord));
+        }
+
+        [Fact]
         public void OnSerializeCallbacks()
         {
             MyTypeWithCallbacks obj = new();
@@ -482,6 +503,7 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.NotNull(SerializationWithPerTypeAttributeContext.Default.MyType2.SerializeHandler);
             Assert.NotNull(SerializationWithPerTypeAttributeContext.Default.MyIntermediateType.SerializeHandler);
             Assert.NotNull(SerializationWithPerTypeAttributeContext.Default.HighLowTempsImmutable.SerializeHandler);
+            Assert.NotNull(SerializationWithPerTypeAttributeContext.Default.HighLowTempsRecord.SerializeHandler);
             Assert.NotNull(SerializationWithPerTypeAttributeContext.Default.MyNestedClass.SerializeHandler);
             Assert.NotNull(SerializationWithPerTypeAttributeContext.Default.MyNestedNestedClass.SerializeHandler);
             Assert.Null(SerializationWithPerTypeAttributeContext.Default.ObjectArray.SerializeHandler);

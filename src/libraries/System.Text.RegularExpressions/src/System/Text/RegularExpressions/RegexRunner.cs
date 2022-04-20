@@ -15,6 +15,7 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 
 namespace System.Text.RegularExpressions
 {
@@ -64,16 +65,9 @@ namespace System.Text.RegularExpressions
         // TODO: Expose something as protected internal: https://github.com/dotnet/runtime/issues/59629
         private protected bool quick;              // false if match details matter, true if only the fact that match occurred matters
 
-        private int _timeout;              // timeout in milliseconds (needed for actual)
-        private bool _ignoreTimeout;
-        private int _timeoutOccursAt;
-
-        // We have determined this value in a series of experiments where x86 retail
-        // builds (ono-lab-optimized) were run on different pattern/input pairs. Larger values
-        // of TimeoutCheckFrequency did not tend to increase performance; smaller values
-        // of TimeoutCheckFrequency tended to slow down the execution.
-        private const int TimeoutCheckFrequency = 1000;
-        private int _timeoutChecksToSkip;
+        private int _timeout;                      // timeout in milliseconds
+        private bool _checkTimeout;
+        private long _timeoutOccursAt;
 
         protected RegexRunner() { }
 
@@ -311,54 +305,29 @@ namespace System.Text.RegularExpressions
         internal void InitializeTimeout(TimeSpan timeout)
         {
             // Handle timeout argument
-            _ignoreTimeout = true;
+            _checkTimeout = false;
             if (Regex.InfiniteMatchTimeout != timeout)
             {
                 ConfigureTimeout(timeout);
 
                 void ConfigureTimeout(TimeSpan timeout)
                 {
-                    // We are using Environment.TickCount and not Stopwatch for performance reasons.
-                    // Environment.TickCount is an int that cycles. We intentionally let timeoutOccursAt
-                    // overflow it will still stay ahead of Environment.TickCount for comparisons made
-                    // in DoCheckTimeout().
-                    _ignoreTimeout = false;
+                    _checkTimeout = true;
                     _timeout = (int)(timeout.TotalMilliseconds + 0.5); // Round;
-                    _timeoutOccursAt = Environment.TickCount + _timeout;
-                    _timeoutChecksToSkip = TimeoutCheckFrequency;
+                    _timeoutOccursAt = Environment.TickCount64 + _timeout;
                 }
             }
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected internal void CheckTimeout()
         {
-            if (_ignoreTimeout)
-                return;
+            if (_checkTimeout && Environment.TickCount64 >= _timeoutOccursAt)
+            {
+                ThrowRegexTimeout();
+            }
 
-            DoCheckTimeout();
-        }
-
-        private void DoCheckTimeout()
-        {
-            if (--_timeoutChecksToSkip != 0)
-                return;
-
-            _timeoutChecksToSkip = TimeoutCheckFrequency;
-
-            // Note that both, Environment.TickCount and timeoutOccursAt are ints and can overflow and become negative.
-            // See the comment in StartTimeoutWatch().
-
-            int currentMillis = Environment.TickCount;
-
-            if (currentMillis < _timeoutOccursAt)
-                return;
-
-            if (0 > _timeoutOccursAt && 0 < currentMillis)
-                return;
-
-            string input = runtext ?? string.Empty;
-
-            throw new RegexMatchTimeoutException(input, runregex!.pattern!, TimeSpan.FromMilliseconds(_timeout));
+            void ThrowRegexTimeout() => throw new RegexMatchTimeoutException(runtext ?? string.Empty, runregex!.pattern!, TimeSpan.FromMilliseconds(_timeout));
         }
 
         /// <summary>

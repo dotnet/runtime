@@ -192,9 +192,7 @@ namespace System.Reflection.Emit
             }
         }
 
-        [ComVisible(true)]
-        public sealed
-        override Delegate CreateDelegate(Type delegateType)
+        public sealed override Delegate CreateDelegate(Type delegateType)
         {
             if (delegateType == null)
                 throw new ArgumentNullException(nameof(delegateType));
@@ -207,9 +205,7 @@ namespace System.Reflection.Emit
             return deleg;
         }
 
-        [ComVisible(true)]
-        public sealed
-        override Delegate CreateDelegate(Type delegateType, object? target)
+        public sealed override Delegate CreateDelegate(Type delegateType, object? target)
         {
             if (delegateType == null)
                 throw new ArgumentNullException(nameof(delegateType));

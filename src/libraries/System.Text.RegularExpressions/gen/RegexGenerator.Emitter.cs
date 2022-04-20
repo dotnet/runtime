@@ -13,6 +13,7 @@ using System.Linq;
 using System.Net.Cache;
 using System.Runtime.InteropServices;
 using System.Threading;
+using System.Web;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 
@@ -51,6 +52,12 @@ namespace System.Text.RegularExpressions.Generator
             }
 
             // Emit the partial method definition.
+            writer.WriteLine("/// <remarks>");
+            writer.WriteLine("/// Pattern explanation:<br/>");
+            writer.WriteLine("/// <code>");
+            DescribeExpressionAsXmlComment(writer, regexMethod.Tree.Root.Child(0), regexMethod); // skip implicit root capture
+            writer.WriteLine("/// </code>");
+            writer.WriteLine("/// </remarks>");
             writer.WriteLine($"[global::System.CodeDom.Compiler.{s_generatedCodeAttribute}]");
             writer.WriteLine($"{regexMethod.Modifiers} global::System.Text.RegularExpressions.Regex {regexMethod.MethodName}() => global::{GeneratedNamespace}.{generatedClassName}.{regexMethod.GeneratedName}.Instance;");
 
@@ -165,8 +172,6 @@ namespace System.Text.RegularExpressions.Generator
         /// <summary>Emits the code for the RunnerFactory.  This is the actual logic for the regular expression.</summary>
         private static void EmitRegexDerivedTypeRunnerFactory(IndentedTextWriter writer, RegexMethod rm, Dictionary<string, string[]> requiredHelpers)
         {
-            AnalysisResults analysis = RegexTreeAnalyzer.Analyze(rm.Tree);
-
             writer.WriteLine($"/// <summary>Provides a factory for creating <see cref=\"RegexRunner\"/> instances to be used by methods on <see cref=\"Regex\"/>.</summary>");
             writer.WriteLine($"private sealed class RunnerFactory : RegexRunnerFactory");
             writer.WriteLine($"{{");
@@ -176,9 +181,6 @@ namespace System.Text.RegularExpressions.Generator
             writer.WriteLine($"    /// <summary>Provides the runner that contains the custom logic implementing the specified regular expression.</summary>");
             writer.WriteLine($"    private sealed class Runner : RegexRunner");
             writer.WriteLine($"    {{");
-            writer.WriteLine($"        // Description:");
-            DescribeExpression(writer, rm.Tree.Root.Child(0), "        // ", analysis); // skip implicit root capture
-            writer.WriteLine();
             if (rm.Tree.Culture != null)
             {
                 // If the RegexTree has Culture set, then we need to emit the _textInfo field that should be used at match time for casing operations.
@@ -250,7 +252,7 @@ namespace System.Text.RegularExpressions.Generator
                 writer.WriteLine($"        private bool TryMatchAtCurrentPosition(ReadOnlySpan<char> inputSpan)");
                 writer.WriteLine($"        {{");
                 writer.Indent += 3;
-                EmitTryMatchAtCurrentPosition(writer, rm, analysis, requiredHelpers);
+                EmitTryMatchAtCurrentPosition(writer, rm, requiredHelpers);
                 writer.Indent -= 3;
                 writer.WriteLine($"        }}");
             }
@@ -426,11 +428,9 @@ namespace System.Text.RegularExpressions.Generator
                 writer.WriteLine("// Search until we can't find a valid starting position, we find a match, or we reach the end of the input.");
                 using (EmitBlock(writer, "while (TryFindNextPossibleStartingPosition(inputSpan))"))
                 {
-                    using (rm.MatchTimeout is null ? EmitBlock(writer, $"if ({HelpersTypeName}.{HasDefaultTimeoutFieldName})") : default)
-                    {
-                        writer.WriteLine("base.CheckTimeout();");
-                    }
-                    writer.WriteLine();
+                    // Check the timeout every time we run the whole match logic at a new starting location, as each such
+                    // operation could do work at least linear in the length of the input.
+                    EmitTimeoutCheckIfNeeded(writer, rm);
 
                     using (EmitBlock(writer, $"if (TryMatchAtCurrentPosition(inputSpan) || base.runtextpos == {(!rtl ? "inputSpan.Length" : "0")})"))
                     {
@@ -1017,7 +1017,7 @@ namespace System.Text.RegularExpressions.Generator
         }
 
         /// <summary>Emits the body of the TryMatchAtCurrentPosition.</summary>
-        private static void EmitTryMatchAtCurrentPosition(IndentedTextWriter writer, RegexMethod rm, AnalysisResults analysis, Dictionary<string, string[]> requiredHelpers)
+        private static void EmitTryMatchAtCurrentPosition(IndentedTextWriter writer, RegexMethod rm, Dictionary<string, string[]> requiredHelpers)
         {
             // In .NET Framework and up through .NET Core 3.1, the code generated for RegexOptions.Compiled was effectively an unrolled
             // version of what RegexInterpreter would process.  The RegexNode tree would be turned into a series of opcodes via
@@ -1067,12 +1067,6 @@ namespace System.Text.RegularExpressions.Generator
             string sliceSpan = "slice";
             writer.WriteLine("int pos = base.runtextpos;");
             writer.WriteLine($"int matchStart = pos;");
-            if (rm.MatchTimeout != Timeout.Infinite)
-            {
-                // Either an explicit timeout was set, or the timeout was left null and the default process-wide
-                // timeout value needs to be consulted at run-time.  Either way, the code for timeouts needs to be emitted.
-                writer.WriteLine("int loopTimeoutCounter = 0;");
-            }
             writer.Flush();
             int additionalDeclarationsPosition = ((StringWriter)writer.InnerWriter).GetStringBuilder().Length;
             int additionalDeclarationsIndent = writer.Indent;
@@ -1098,7 +1092,7 @@ namespace System.Text.RegularExpressions.Generator
 
             // Check whether there are captures anywhere in the expression. If there isn't, we can skip all
             // the boilerplate logic around uncapturing, as there won't be anything to uncapture.
-            bool expressionHasCaptures = analysis.MayContainCapture(node);
+            bool expressionHasCaptures = rm.Analysis.MayContainCapture(node);
 
             // Emit the code for all nodes in the tree.
             EmitNode(node);
@@ -1240,7 +1234,7 @@ namespace System.Text.RegularExpressions.Generator
                 // successfully prevent backtracking into this child node, we can emit better / cheaper code
                 // for an Alternate when it is atomic, so we still take it into account here.
                 Debug.Assert(node.Parent is not null);
-                bool isAtomic = analysis.IsAtomicByAncestor(node);
+                bool isAtomic = rm.Analysis.IsAtomicByAncestor(node);
 
                 // If no child branch overlaps with another child branch, we can emit more streamlined code
                 // that avoids checking unnecessary branches, e.g. with abc|def|ghi if the next character in
@@ -1258,7 +1252,7 @@ namespace System.Text.RegularExpressions.Generator
                         useSwitchedBranches = true;
                         for (int i = 0; i < childCount; i++)
                         {
-                            if (analysis.MayBacktrack(node.Child(i)))
+                            if (rm.Analysis.MayBacktrack(node.Child(i)))
                             {
                                 useSwitchedBranches = false;
                                 break;
@@ -1355,7 +1349,7 @@ namespace System.Text.RegularExpressions.Generator
                             sliceStaticPos = startingSliceStaticPos;
 
                             RegexNode child = node.Child(i);
-                            Debug.Assert(child.Kind is RegexNodeKind.One or RegexNodeKind.Multi or RegexNodeKind.Set or RegexNodeKind.Concatenate, DescribeNode(child, analysis));
+                            Debug.Assert(child.Kind is RegexNodeKind.One or RegexNodeKind.Multi or RegexNodeKind.Set or RegexNodeKind.Concatenate, DescribeNode(child, rm));
                             Debug.Assert(child.Kind is not RegexNodeKind.Concatenate || (child.ChildCount() >= 2 && child.Child(0).Kind is RegexNodeKind.One or RegexNodeKind.Multi or RegexNodeKind.Set));
 
                             RegexNode? childStart = child.FindBranchOneMultiOrSetStart();
@@ -1458,7 +1452,7 @@ namespace System.Text.RegularExpressions.Generator
                     // what they were at the start of the alternation.  Of course, if there are no captures
                     // anywhere in the regex, we don't have to do any of that.
                     string? startingCapturePos = null;
-                    if (expressionHasCaptures && (analysis.MayContainCapture(node) || !isAtomic))
+                    if (expressionHasCaptures && (rm.Analysis.MayContainCapture(node) || !isAtomic))
                     {
                         startingCapturePos = ReserveName("alternation_starting_capturepos");
                         writer.WriteLine($"int {startingCapturePos} = base.Crawlpos();");
@@ -1568,6 +1562,9 @@ namespace System.Text.RegularExpressions.Generator
                         doneLabel = backtrackLabel;
                         MarkLabel(backtrackLabel, emitSemicolon: false);
 
+                        // We're backtracking.  Check the timeout.
+                        EmitTimeoutCheckIfNeeded(writer, rm);
+
                         EmitStackPop(startingCapturePos is not null ?
                             new[] { startingCapturePos, startingPos } :
                             new[] { startingPos});
@@ -1604,7 +1601,7 @@ namespace System.Text.RegularExpressions.Generator
                 // in which case per ECMA 262 section 21.2.2.9 the backreference should succeed.
                 if ((node.Options & RegexOptions.ECMAScript) != 0)
                 {
-                    writer.WriteLine($"// If the {DescribeCapture(node.M, analysis)} hasn't matched, the backreference matches with RegexOptions.ECMAScript rules.");
+                    writer.WriteLine($"// If the {DescribeCapture(node.M, rm)} hasn't matched, the backreference matches with RegexOptions.ECMAScript rules.");
                     using (EmitBlock(writer, $"if (base.IsMatched({capnum}))"))
                     {
                         EmitWhenHasCapture();
@@ -1612,7 +1609,7 @@ namespace System.Text.RegularExpressions.Generator
                 }
                 else
                 {
-                    writer.WriteLine($"// If the {DescribeCapture(node.M, analysis)} hasn't matched, the backreference doesn't match.");
+                    writer.WriteLine($"// If the {DescribeCapture(node.M, rm)} hasn't matched, the backreference doesn't match.");
                     using (EmitBlock(writer, $"if (!base.IsMatched({capnum}))"))
                     {
                         Goto(doneLabel);
@@ -1713,11 +1710,11 @@ namespace System.Text.RegularExpressions.Generator
                 // If the child branches might backtrack, we can't emit the branches inside constructs that
                 // require braces, e.g. if/else, even though that would yield more idiomatic output.
                 // But if we know for certain they won't backtrack, we can output the nicer code.
-                if (analysis.IsAtomicByAncestor(node) || (!analysis.MayBacktrack(yesBranch) && (noBranch is null || !analysis.MayBacktrack(noBranch))))
+                if (rm.Analysis.IsAtomicByAncestor(node) || (!rm.Analysis.MayBacktrack(yesBranch) && (noBranch is null || !rm.Analysis.MayBacktrack(noBranch))))
                 {
                     using (EmitBlock(writer, $"if (base.IsMatched({capnum}))"))
                     {
-                        writer.WriteLine($"// The {DescribeCapture(node.M, analysis)} captured a value.  Match the first branch.");
+                        writer.WriteLine($"// The {DescribeCapture(node.M, rm)} captured a value.  Match the first branch.");
                         EmitNode(yesBranch);
                         writer.WriteLine();
                         TransferSliceStaticPosToPos(); // make sure sliceStaticPos is 0 after each branch
@@ -1855,7 +1852,7 @@ namespace System.Text.RegularExpressions.Generator
                 Debug.Assert(node.Kind is RegexNodeKind.ExpressionConditional, $"Unexpected type: {node.Kind}");
                 Debug.Assert(node.ChildCount() == 3, $"Expected 3 children, found {node.ChildCount()}");
 
-                bool isAtomic = analysis.IsAtomicByAncestor(node);
+                bool isAtomic = rm.Analysis.IsAtomicByAncestor(node);
 
                 // We're branching in a complicated fashion.  Make sure sliceStaticPos is 0.
                 TransferSliceStaticPosToPos();
@@ -1886,7 +1883,7 @@ namespace System.Text.RegularExpressions.Generator
 
                 // If the condition expression has captures, we'll need to uncapture them in the case of no match.
                 string? startingCapturePos = null;
-                if (analysis.MayContainCapture(condition))
+                if (rm.Analysis.MayContainCapture(condition))
                 {
                     startingCapturePos = ReserveName("conditionalexpression_starting_capturepos");
                     writer.WriteLine($"int {startingCapturePos} = base.Crawlpos();");
@@ -2015,7 +2012,7 @@ namespace System.Text.RegularExpressions.Generator
 
                 int capnum = RegexParser.MapCaptureNumber(node.M, rm.Tree.CaptureNumberSparseMapping);
                 int uncapnum = RegexParser.MapCaptureNumber(node.N, rm.Tree.CaptureNumberSparseMapping);
-                bool isAtomic = analysis.IsAtomicByAncestor(node);
+                bool isAtomic = rm.Analysis.IsAtomicByAncestor(node);
 
                 TransferSliceStaticPosToPos();
                 string startingPos = ReserveName("capture_starting_pos");
@@ -2091,7 +2088,7 @@ namespace System.Text.RegularExpressions.Generator
                 Debug.Assert(node.Kind is RegexNodeKind.PositiveLookaround, $"Unexpected type: {node.Kind}");
                 Debug.Assert(node.ChildCount() == 1, $"Expected 1 child, found {node.ChildCount()}");
 
-                if (analysis.HasRightToLeft)
+                if (rm.Analysis.HasRightToLeft)
                 {
                     // Lookarounds are the only places in the node tree where we might change direction,
                     // i.e. where we might go from RegexOptions.None to RegexOptions.RightToLeft, or vice
@@ -2108,9 +2105,13 @@ namespace System.Text.RegularExpressions.Generator
                 writer.WriteLine();
                 int startingSliceStaticPos = sliceStaticPos;
 
+                // Check for timeout. Lookarounds result in re-processing the same input, so while not
+                // technically backtracking, it's appropriate to have a timeout check.
+                EmitTimeoutCheckIfNeeded(writer, rm);
+
                 // Emit the child.
                 RegexNode child = node.Child(0);
-                if (analysis.MayBacktrack(child))
+                if (rm.Analysis.MayBacktrack(child))
                 {
                     // Lookarounds are implicitly atomic, so we need to emit the node as atomic if it might backtrack.
                     EmitAtomic(node, null);
@@ -2135,7 +2136,7 @@ namespace System.Text.RegularExpressions.Generator
                 Debug.Assert(node.Kind is RegexNodeKind.NegativeLookaround, $"Unexpected type: {node.Kind}");
                 Debug.Assert(node.ChildCount() == 1, $"Expected 1 child, found {node.ChildCount()}");
 
-                if (analysis.HasRightToLeft)
+                if (rm.Analysis.HasRightToLeft)
                 {
                     // Lookarounds are the only places in the node tree where we might change direction,
                     // i.e. where we might go from RegexOptions.None to RegexOptions.RightToLeft, or vice
@@ -2156,9 +2157,13 @@ namespace System.Text.RegularExpressions.Generator
                 string negativeLookaroundDoneLabel = ReserveName("NegativeLookaroundMatch");
                 doneLabel = negativeLookaroundDoneLabel;
 
+                // Check for timeout. Lookarounds result in re-processing the same input, so while not
+                // technically backtracking, it's appropriate to have a timeout check.
+                EmitTimeoutCheckIfNeeded(writer, rm);
+
                 // Emit the child.
                 RegexNode child = node.Child(0);
-                if (analysis.MayBacktrack(child))
+                if (rm.Analysis.MayBacktrack(child))
                 {
                     // Lookarounds are implicitly atomic, so we need to emit the node as atomic if it might backtrack.
                     EmitAtomic(node, null);
@@ -2230,7 +2235,7 @@ namespace System.Text.RegularExpressions.Generator
                         return;
 
                     // Skip atomic nodes that wrap non-backtracking children; in such a case there's nothing to be made atomic.
-                    case RegexNodeKind.Atomic when !analysis.MayBacktrack(node.Child(0)):
+                    case RegexNodeKind.Atomic when !rm.Analysis.MayBacktrack(node.Child(0)):
                         EmitNode(node.Child(0));
                         return;
 
@@ -2242,7 +2247,7 @@ namespace System.Text.RegularExpressions.Generator
                 }
 
                 // For everything else, output a comment about what the node is.
-                writer.WriteLine($"// {DescribeNode(node, analysis)}");
+                writer.WriteLine($"// {DescribeNode(node, rm)}");
 
                 // Separate out several node types that, for conciseness, don't need a scope written into the source as they're
                 // always a single statement / block.
@@ -2281,7 +2286,7 @@ namespace System.Text.RegularExpressions.Generator
 
                 // For everything else, put the node's code into its own scope, purely for readability. If the node contains labels
                 // that may need to be visible outside of its scope, the scope is still emitted for clarity but is commented out.
-                using (EmitBlock(writer, null, faux: analysis.MayBacktrack(node)))
+                using (EmitBlock(writer, null, faux: rm.Analysis.MayBacktrack(node)))
                 {
                     switch (node.Kind)
                     {
@@ -2332,7 +2337,7 @@ namespace System.Text.RegularExpressions.Generator
                             return;
 
                         case RegexNodeKind.Atomic:
-                            Debug.Assert(analysis.MayBacktrack(node.Child(0)));
+                            Debug.Assert(rm.Analysis.MayBacktrack(node.Child(0)));
                             EmitAtomic(node, subsequent);
                             return;
 
@@ -2359,7 +2364,7 @@ namespace System.Text.RegularExpressions.Generator
             {
                 Debug.Assert(node.Kind is RegexNodeKind.Atomic or RegexNodeKind.PositiveLookaround or RegexNodeKind.NegativeLookaround, $"Unexpected type: {node.Kind}");
                 Debug.Assert(node.ChildCount() == 1, $"Expected 1 child, found {node.ChildCount()}");
-                Debug.Assert(analysis.MayBacktrack(node.Child(0)), "Expected child to potentially backtrack");
+                Debug.Assert(rm.Analysis.MayBacktrack(node.Child(0)), "Expected child to potentially backtrack");
 
                 // Grab the current done label and the current backtracking position.  The purpose of the atomic node
                 // is to ensure that nodes after it that might backtrack skip over the atomic, which means after
@@ -2450,7 +2455,7 @@ namespace System.Text.RegularExpressions.Generator
                                 {
                                     WritePrefix();
                                     EmitMultiCharString(child.Str!, emitLengthCheck: false, clauseOnly: true, rightToLeft: false);
-                                    prevDescription = DescribeNode(child, analysis);
+                                    prevDescription = DescribeNode(child, rm);
                                     wroteClauses = true;
                                 }
                                 else if ((child.IsOneFamily || child.IsNotoneFamily || child.IsSetFamily) &&
@@ -2462,7 +2467,7 @@ namespace System.Text.RegularExpressions.Generator
                                     {
                                         WritePrefix();
                                         EmitSingleChar(child, emitLengthCheck: false, clauseOnly: true);
-                                        prevDescription = c == 0 ? DescribeNode(child, analysis) : null;
+                                        prevDescription = c == 0 ? DescribeNode(child, rm) : null;
                                         wroteClauses = true;
                                     }
                                 }
@@ -2722,7 +2727,7 @@ namespace System.Text.RegularExpressions.Generator
                 Debug.Assert(node.Kind is RegexNodeKind.Oneloop or RegexNodeKind.Notoneloop or RegexNodeKind.Setloop, $"Unexpected type: {node.Kind}");
 
                 // If this is actually atomic based on its parent, emit it as atomic instead; no backtracking necessary.
-                if (analysis.IsAtomicByAncestor(node))
+                if (rm.Analysis.IsAtomicByAncestor(node))
                 {
                     EmitSingleCharAtomicLoop(node);
                     return;
@@ -2777,6 +2782,9 @@ namespace System.Text.RegularExpressions.Generator
                 }
                 EmitStackPop(endingPos, startingPos);
                 writer.WriteLine();
+
+                // We're backtracking.  Check the timeout.
+                EmitTimeoutCheckIfNeeded(writer, rm);
 
                 if (!rtl && subsequent?.FindStartingLiteral() is ValueTuple<char, string?, string?> literal)
                 {
@@ -2833,7 +2841,7 @@ namespace System.Text.RegularExpressions.Generator
 
                 // If the whole thing was actually that repeater, we're done. Similarly, if this is actually an atomic
                 // lazy loop, nothing will ever backtrack into this node, so we never need to iterate more than the minimum.
-                if (node.M == node.N || analysis.IsAtomicByAncestor(node))
+                if (node.M == node.N || rm.Analysis.IsAtomicByAncestor(node))
                 {
                     return;
                 }
@@ -2904,6 +2912,9 @@ namespace System.Text.RegularExpressions.Generator
                     }
                     writer.WriteLine($"{iterationCount}++;");
                 }
+
+                // We're backtracking.  Check the timeout.
+                EmitTimeoutCheckIfNeeded(writer, rm);
 
                 // Now match the next item in the lazy loop.  We need to reset the pos to the position
                 // just after the last character in this loop was matched, and we need to store the resulting position
@@ -3029,7 +3040,7 @@ namespace System.Text.RegularExpressions.Generator
                 int minIterations = node.M;
                 int maxIterations = node.N;
                 string originalDoneLabel = doneLabel;
-                bool isAtomic = analysis.IsAtomicByAncestor(node);
+                bool isAtomic = rm.Analysis.IsAtomicByAncestor(node);
 
                 // If this is actually an atomic lazy loop, we need to output just the minimum number of iterations,
                 // as nothing will backtrack into the lazy loop to get it progress further.
@@ -3052,7 +3063,7 @@ namespace System.Text.RegularExpressions.Generator
 
                 // If this is actually a repeater and the child doesn't have any backtracking in it that might
                 // cause us to need to unwind already taken iterations, just output it as a repeater loop.
-                if (minIterations == maxIterations && !analysis.MayBacktrack(node.Child(0)))
+                if (minIterations == maxIterations && !rm.Analysis.MayBacktrack(node.Child(0)))
                 {
                     EmitNonBacktrackingRepeater(node);
                     return;
@@ -3081,7 +3092,6 @@ namespace System.Text.RegularExpressions.Generator
 
                 // Iteration body
                 MarkLabel(body, emitSemicolon: false);
-                EmitTimeoutCheckIfNeeded();
 
                 // We need to store the starting pos and crawl position so that it may
                 // be backtracked through later.  This needs to be the starting position from
@@ -3142,8 +3152,10 @@ namespace System.Text.RegularExpressions.Generator
                 Goto(endLoop);
                 writer.WriteLine();
 
-                // Now handle what happens when an iteration fails.  We need to reset state to what it was before just that iteration
-                // started.  That includes resetting pos and clearing out any captures from that iteration.
+                // Now handle what happens when an iteration fails (and since a lazy loop only executes an iteration
+                // when it's required to satisfy the loop (by definition of being lazy), the loop is failing).  We need
+                // to reset state to what it was before just that iteration started.  That includes resetting pos and
+                // clearing out any captures from that iteration.  
                 MarkLabel(iterationFailedLabel, emitSemicolon: false);
                 writer.WriteLine($"{iterationCount}--;");
                 using (EmitBlock(writer, $"if ({iterationCount} < 0)"))
@@ -3158,10 +3170,18 @@ namespace System.Text.RegularExpressions.Generator
                 SliceInputSpan();
                 if (doneLabel == originalDoneLabel)
                 {
+                    // Since the only reason we'd end up revisiting previous iterations of the lazy loop is if the child had backtracking constructs
+                    // we'd backtrack into, and the child doesn't, the whole loop is failed and done. If we successfully processed any iterations,
+                    // we thus need to pop all of the state we pushed onto the stack for those iterations, as we're exiting out to the parent who
+                    // will expect the stack to be cleared of any child state.
+                    int entriesPerIteration = 3 + (expressionHasCaptures ? 1 : 0);
+                    writer.WriteLine($"stackpos -= {entriesPerIteration} * {iterationCount};");
                     Goto(originalDoneLabel);
                 }
                 else
                 {
+                    // The child has backtracking constructs.  If we have no successful iterations previously processed, just bail.
+                    // If we do have successful iterations previously processed, however, we need to backtrack back into the last one.
                     using (EmitBlock(writer, $"if ({iterationCount} == 0)"))
                     {
                         Goto(originalDoneLabel);
@@ -3184,6 +3204,9 @@ namespace System.Text.RegularExpressions.Generator
                     // Emit a backtracking section that restores the capture's state and then jumps to the previous done label
                     string backtrack = ReserveName($"LazyLoopBacktrack");
                     MarkLabel(backtrack, emitSemicolon: false);
+
+                    // We're backtracking.  Check the timeout.
+                    EmitTimeoutCheckIfNeeded(writer, rm);
 
                     EmitStackPop(sawEmpty, iterationCount, startingPos);
 
@@ -3243,7 +3266,6 @@ namespace System.Text.RegularExpressions.Generator
                     TransferSliceStaticPosToPos(); // we don't use static position with rtl
                     using (EmitBlock(writer, $"for (int i = 0; i < {iterations}; i++)"))
                     {
-                        EmitTimeoutCheckIfNeeded();
                         EmitSingleChar(node);
                     }
                 }
@@ -3287,8 +3309,6 @@ namespace System.Text.RegularExpressions.Generator
                     writer.WriteLine($"ReadOnlySpan<char> {repeaterSpan} = {sliceSpan}.Slice({sliceStaticPos}, {iterations});");
                     using (EmitBlock(writer, $"for (int i = 0; i < {repeaterSpan}.Length; i++)"))
                     {
-                        EmitTimeoutCheckIfNeeded();
-
                         string tmpTextSpanLocal = sliceSpan; // we want EmitSingleChar to refer to this temporary
                         int tmpSliceStaticPos = sliceStaticPos;
                         sliceSpan = repeaterSpan;
@@ -3348,7 +3368,6 @@ namespace System.Text.RegularExpressions.Generator
                     string maxClause = maxIterations != int.MaxValue ? $"{CountIsLessThan(iterationLocal, maxIterations)} && " : "";
                     using (EmitBlock(writer, $"while ({maxClause}pos > {iterationLocal} && {expr})"))
                     {
-                        EmitTimeoutCheckIfNeeded();
                         writer.WriteLine($"{iterationLocal}++;");
                     }
                     writer.WriteLine();
@@ -3441,7 +3460,6 @@ namespace System.Text.RegularExpressions.Generator
                     string maxClause = maxIterations != int.MaxValue ? $"{CountIsLessThan(iterationLocal, maxIterations)} && " : "";
                     using (EmitBlock(writer, $"while ({maxClause}(uint){iterationLocal} < (uint){sliceSpan}.Length && {expr})"))
                     {
-                        EmitTimeoutCheckIfNeeded();
                         writer.WriteLine($"{iterationLocal}++;");
                     }
                     writer.WriteLine();
@@ -3521,7 +3539,7 @@ namespace System.Text.RegularExpressions.Generator
                 Debug.Assert(node.M < int.MaxValue, $"Unexpected M={node.M}");
                 Debug.Assert(node.M == node.N, $"Unexpected M={node.M} == N={node.N}");
                 Debug.Assert(node.ChildCount() == 1, $"Expected 1 child, found {node.ChildCount()}");
-                Debug.Assert(!analysis.MayBacktrack(node.Child(0)), $"Expected non-backtracking node {node.Kind}");
+                Debug.Assert(!rm.Analysis.MayBacktrack(node.Child(0)), $"Expected non-backtracking node {node.Kind}");
 
                 // Ensure every iteration of the loop sees a consistent value.
                 TransferSliceStaticPosToPos();
@@ -3544,11 +3562,11 @@ namespace System.Text.RegularExpressions.Generator
 
                 int minIterations = node.M;
                 int maxIterations = node.N;
-                bool isAtomic = analysis.IsAtomicByAncestor(node);
+                bool isAtomic = rm.Analysis.IsAtomicByAncestor(node);
 
                 // If this is actually a repeater and the child doesn't have any backtracking in it that might
                 // cause us to need to unwind already taken iterations, just output it as a repeater loop.
-                if (minIterations == maxIterations && !analysis.MayBacktrack(node.Child(0)))
+                if (minIterations == maxIterations && !rm.Analysis.MayBacktrack(node.Child(0)))
                 {
                     EmitNonBacktrackingRepeater(node);
                     return;
@@ -3573,7 +3591,6 @@ namespace System.Text.RegularExpressions.Generator
 
                 // Iteration body
                 MarkLabel(body, emitSemicolon: false);
-                EmitTimeoutCheckIfNeeded();
 
                 // We need to store the starting pos and crawl position so that it may
                 // be backtracked through later.  This needs to be the starting position from
@@ -3670,6 +3687,10 @@ namespace System.Text.RegularExpressions.Generator
 
                         string backtrack = ReserveName("LoopBacktrack");
                         MarkLabel(backtrack, emitSemicolon: false);
+
+                        // We're backtracking.  Check the timeout.
+                        EmitTimeoutCheckIfNeeded(writer, rm);
+
                         using (EmitBlock(writer, $"if ({iterationCount} == 0)"))
                         {
                             Goto(originalDoneLabel);
@@ -3696,6 +3717,9 @@ namespace System.Text.RegularExpressions.Generator
                         string backtrack = ReserveName("LoopBacktrack");
                         MarkLabel(backtrack, emitSemicolon: false);
                         EmitStackPop(iterationCount, startingPos);
+
+                        // We're backtracking.  Check the timeout.
+                        EmitTimeoutCheckIfNeeded(writer, rm);
 
                         Goto(doneLabel);
                         writer.WriteLine();
@@ -3738,16 +3762,18 @@ namespace System.Text.RegularExpressions.Generator
             void EmitStackPush(params string[] args)
             {
                 Debug.Assert(args.Length is >= 1);
-                string methodName = $"StackPush{args.Length}";
+
+                const string MethodName = "StackPush";
+                string key = $"{MethodName}{args.Length}";
 
                 additionalDeclarations.Add("int stackpos = 0;");
 
-                if (!requiredHelpers.ContainsKey(methodName))
+                if (!requiredHelpers.ContainsKey(key))
                 {
                     var lines = new string[24 + args.Length];
-                    lines[0] = $"// <summary>Pushes {args.Length} value{(args.Length == 1 ? "" : "s")} onto the backtracking stack.</summary>";
+                    lines[0] = $"/// <summary>Pushes {args.Length} value{(args.Length == 1 ? "" : "s")} onto the backtracking stack.</summary>";
                     lines[1] = $"[MethodImpl(MethodImplOptions.AggressiveInlining)]";
-                    lines[2] = $"internal static void {methodName}(ref int[] stack, ref int pos{FormatN(", int arg{0}", args.Length)})";
+                    lines[2] = $"internal static void {MethodName}(ref int[] stack, ref int pos{FormatN(", int arg{0}", args.Length)})";
                     lines[3] = $"{{";
                     lines[4] = $"    // If there's space available for {(args.Length > 1 ? $"all {args.Length} values, store them" : "the value, store it")}.";
                     lines[5] = $"    int[] s = stack;";
@@ -3770,14 +3796,14 @@ namespace System.Text.RegularExpressions.Generator
                     lines[18 + args.Length] = $"    static void WithResize(ref int[] stack, ref int pos{FormatN(", int arg{0}", args.Length)})";
                     lines[19 + args.Length] = $"    {{";
                     lines[20 + args.Length] = $"        Array.Resize(ref stack, (pos + {args.Length - 1}) * 2);";
-                    lines[21 + args.Length] = $"        {methodName}(ref stack, ref pos{FormatN(", arg{0}", args.Length)});";
+                    lines[21 + args.Length] = $"        {MethodName}(ref stack, ref pos{FormatN(", arg{0}", args.Length)});";
                     lines[22 + args.Length] = $"    }}";
                     lines[23 + args.Length] = $"}}";
 
-                    requiredHelpers.Add(methodName, lines);
+                    requiredHelpers.Add(key, lines);
                 }
 
-                writer.WriteLine($"{HelpersTypeName}.{methodName}(ref base.runstack!, ref stackpos, {string.Join(", ", args)});");
+                writer.WriteLine($"{HelpersTypeName}.{MethodName}(ref base.runstack!, ref stackpos, {string.Join(", ", args)});");
             }
 
             /// <summary>Pops values from the backtracking stack into the specified locations.</summary>
@@ -3791,14 +3817,15 @@ namespace System.Text.RegularExpressions.Generator
                     return;
                 }
 
-                string methodName = $"StackPop{args.Length}";
+                const string MethodName = "StackPop";
+                string key = $"{MethodName}{args.Length}";
 
-                if (!requiredHelpers.ContainsKey(methodName))
+                if (!requiredHelpers.ContainsKey(key))
                 {
                     var lines = new string[5 + args.Length];
-                    lines[0] = $"// <summary>Pops {args.Length} value{(args.Length == 1 ? "" : "s")} from the backtracking stack.</summary>";
+                    lines[0] = $"/// <summary>Pops {args.Length} value{(args.Length == 1 ? "" : "s")} from the backtracking stack.</summary>";
                     lines[1] = $"[MethodImpl(MethodImplOptions.AggressiveInlining)]";
-                    lines[2] = $"internal static void {methodName}(int[] stack, ref int pos{FormatN(", out int arg{0}", args.Length)})";
+                    lines[2] = $"internal static void {MethodName}(int[] stack, ref int pos{FormatN(", out int arg{0}", args.Length)})";
                     lines[3] = $"{{";
                     for (int i = 0; i < args.Length; i++)
                     {
@@ -3806,10 +3833,10 @@ namespace System.Text.RegularExpressions.Generator
                     }
                     lines[4 + args.Length] = $"}}";
 
-                    requiredHelpers.Add(methodName, lines);
+                    requiredHelpers.Add(key, lines);
                 }
 
-                writer.WriteLine($"{HelpersTypeName}.{methodName}(base.runstack, ref stackpos, out {string.Join(", out ", args)});");
+                writer.WriteLine($"{HelpersTypeName}.{MethodName}(base.runstack, ref stackpos, out {string.Join(", out ", args)});");
             }
 
             /// <summary>Expression for popping the next item from the backtracking stack.</summary>
@@ -3819,38 +3846,39 @@ namespace System.Text.RegularExpressions.Generator
             static string FormatN(string format, int count) =>
                 string.Concat(from i in Enumerable.Range(0, count)
                               select string.Format(format, i));
+        }
 
-            /// <summary>Emits a timeout check.</summary>
-            void EmitTimeoutCheckIfNeeded()
+        /// <summary>Emits a timeout check if the regex timeout wasn't explicitly set to infinite.</summary>
+        /// <remarks>
+        /// Regex timeouts exist to avoid catastrophic backtracking.  The goal with timeouts isn't to be accurate to the timeout value,
+        /// but to ensure that significant backtracking can be stopped.  As such, we allow for up to O(n) work in the length of the input
+        /// between checks, which means we emit checks anywhere backtracking is introduced, such that every check can have O(n) work
+        /// associated with it.  This means checks:
+        /// - when restarting the whole match evaluation at a new index
+        /// - when backtracking backwards in a loop
+        /// - when backtracking forwards in a lazy loop
+        /// - when backtracking to the next branch of an alternation
+        /// - when processing a lookaround
+        /// Note that some other constructs have code that needs to deal with backtracking, e.g. conditionals needing to ensure
+        /// that if any of their children have backtracking that code which backtracks back into the conditional is appropriately
+        /// routed to the correct child, but such constructs aren't actually introducing backtracking and thus don't need to be
+        /// instrumented for timeouts.
+        /// </remarks>
+        private static void EmitTimeoutCheckIfNeeded(IndentedTextWriter writer, RegexMethod rm)
+        {
+            // If the match timeout was explicitly set to infinite, then no timeout code needs to be emitted.
+            if (rm.MatchTimeout != Timeout.Infinite)
             {
-                // If the match timeout was explicitly set to infinite, then no timeout code needs to be emitted.
-                if (rm.MatchTimeout != Timeout.Infinite)
+                // If the timeout was explicitly set to non-infinite, then we always want to do the timeout check count tracking
+                // and actual timeout checks now and then.  If, however, the timeout was left null, we only want to do the timeout
+                // checks if they've been enabled by an AppContext switch being set before any of the regex code was used.
+                // Whether these checks are needed are stored into a static readonly bool on the helpers class, such that
+                // tiered-up code can eliminate the whole block in the vast majority case where the AppContext switch isn't set.
+                using (rm.MatchTimeout is null ? EmitBlock(writer, $"if ({HelpersTypeName}.{HasDefaultTimeoutFieldName})") : default)
                 {
-                    // Increment counter for each loop iteration. Emit code to check the timeout every 2048th iteration.
-                    const int IterationsPerTimeoutCheck = 2048; // A conservative value to guarantee the correct timeout handling.
-                    if (!requiredHelpers.ContainsKey(nameof(IterationsPerTimeoutCheck)))
-                    {
-                        requiredHelpers.Add(nameof(IterationsPerTimeoutCheck), new string[]
-                        {
-                            $"/// <summary>Number of iterations through loops at which point a timeout check should be performed.</summary>",
-                            $"internal const int {nameof(IterationsPerTimeoutCheck)} = {IterationsPerTimeoutCheck};"
-                        });
-                    }
-
-                    // If the timeout was explicitly set to non-infinite, then we always want to do the timeout check count tracking
-                    // and actual timeout checks now and then.  If, however, the timeout was left null, we only want to do the timeout
-                    // checks if they've been enabled by an AppContext switch being set before any of the regex code was used.
-                    // Whether these checks are needed are stored into a static readonly bool on the helpers class, such that
-                    // tiered-up code can eliminate the whole block in the vast majority case where the AppContext switch isn't set.
-                    using (EmitBlock(writer, rm.MatchTimeout is null ?
-                        $"if ({HelpersTypeName}.{HasDefaultTimeoutFieldName} && ++loopTimeoutCounter == {HelpersTypeName}.{nameof(IterationsPerTimeoutCheck)})" :
-                        $"if (++loopTimeoutCounter == {HelpersTypeName}.{nameof(IterationsPerTimeoutCheck)})"))
-                    {
-                        writer.WriteLine("loopTimeoutCounter = 0;");
-                        writer.WriteLine("base.CheckTimeout();");
-                    }
-                    writer.WriteLine();
+                    writer.WriteLine("base.CheckTimeout();");
                 }
+                writer.WriteLine();
             }
         }
 
@@ -4015,7 +4043,7 @@ namespace System.Text.RegularExpressions.Generator
             {
                 // We determined that the character class contains only non-ASCII,
                 // for example if the class were [\u1000-\u2000\u3000-\u4000\u5000-\u6000].
-                // (In the future, we could possibly extend the analysis to produce a known
+                // (In the future, we could possibly extend the rm.Analysis to produce a known
                 // lower-bound and compare against that rather than always using 128 as the
                 // pivot point.)
                 return negate ?
@@ -4146,52 +4174,52 @@ namespace System.Text.RegularExpressions.Generator
         }
 
         /// <summary>Gets a textual description of the node fit for rendering in a comment in source.</summary>
-        private static string DescribeNode(RegexNode node, AnalysisResults analysis)
+        private static string DescribeNode(RegexNode node, RegexMethod rm)
         {
             bool rtl = (node.Options & RegexOptions.RightToLeft) != 0;
             return node.Kind switch
             {
-                RegexNodeKind.Alternate => $"Match with {node.ChildCount()} alternative expressions{(analysis.IsAtomicByAncestor(node) ? ", atomically" : "")}.",
+                RegexNodeKind.Alternate => $"Match with {node.ChildCount()} alternative expressions{(rm.Analysis.IsAtomicByAncestor(node) ? ", atomically" : "")}.",
                 RegexNodeKind.Atomic => $"Atomic group.",
                 RegexNodeKind.Beginning => "Match if at the beginning of the string.",
                 RegexNodeKind.Bol => "Match if at the beginning of a line.",
                 RegexNodeKind.Boundary => $"Match if at a word boundary.",
-                RegexNodeKind.Capture when node.M == -1 && node.N != -1 => $"Non-capturing balancing group. Uncaptures the {DescribeCapture(node.N, analysis)}.",
-                RegexNodeKind.Capture when node.N != -1 => $"Balancing group. Captures the {DescribeCapture(node.M, analysis)} and uncaptures the {DescribeCapture(node.N, analysis)}.",
-                RegexNodeKind.Capture when node.N == -1 => $"{DescribeCapture(node.M, analysis)}.",
+                RegexNodeKind.Capture when node.M == -1 && node.N != -1 => $"Non-capturing balancing group. Uncaptures the {DescribeCapture(node.N, rm)}.",
+                RegexNodeKind.Capture when node.N != -1 => $"Balancing group. Captures the {DescribeCapture(node.M, rm)} and uncaptures the {DescribeCapture(node.N, rm)}.",
+                RegexNodeKind.Capture when node.N == -1 => $"{DescribeCapture(node.M, rm)}.",
                 RegexNodeKind.Concatenate => "Match a sequence of expressions.",
                 RegexNodeKind.ECMABoundary => $"Match if at a word boundary (according to ECMAScript rules).",
                 RegexNodeKind.Empty => $"Match an empty string.",
                 RegexNodeKind.End => "Match if at the end of the string.",
                 RegexNodeKind.EndZ => "Match if at the end of the string or if before an ending newline.",
                 RegexNodeKind.Eol => "Match if at the end of a line.",
-                RegexNodeKind.Loop or RegexNodeKind.Lazyloop => node.M == 0 && node.N == 1 ? $"Optional ({(node.Kind is RegexNodeKind.Loop ? "greedy" : "lazy")})." : $"Loop {DescribeLoop(node, analysis)}.",
+                RegexNodeKind.Loop or RegexNodeKind.Lazyloop => node.M == 0 && node.N == 1 ? $"Optional ({(node.Kind is RegexNodeKind.Loop ? "greedy" : "lazy")})." : $"Loop {DescribeLoop(node, rm)}.",
                 RegexNodeKind.Multi => $"Match the string {Literal(node.Str!)}{(rtl ? " backwards" : "")}.",
                 RegexNodeKind.NonBoundary => $"Match if at anything other than a word boundary.",
                 RegexNodeKind.NonECMABoundary => $"Match if at anything other than a word boundary (according to ECMAScript rules).",
                 RegexNodeKind.Nothing => $"Fail to match.",
                 RegexNodeKind.Notone => $"Match any character other than {Literal(node.Ch)}{(rtl ? " backwards" : "")}.",
-                RegexNodeKind.Notoneloop or RegexNodeKind.Notoneloopatomic or RegexNodeKind.Notonelazy => $"Match a character other than {Literal(node.Ch)} {DescribeLoop(node, analysis)}.",
+                RegexNodeKind.Notoneloop or RegexNodeKind.Notoneloopatomic or RegexNodeKind.Notonelazy => $"Match a character other than {Literal(node.Ch)} {DescribeLoop(node, rm)}.",
                 RegexNodeKind.One => $"Match {Literal(node.Ch)}{(rtl ? " backwards" : "")}.",
-                RegexNodeKind.Oneloop or RegexNodeKind.Oneloopatomic or RegexNodeKind.Onelazy => $"Match {Literal(node.Ch)} {DescribeLoop(node, analysis)}.",
+                RegexNodeKind.Oneloop or RegexNodeKind.Oneloopatomic or RegexNodeKind.Onelazy => $"Match {Literal(node.Ch)} {DescribeLoop(node, rm)}.",
                 RegexNodeKind.NegativeLookaround => $"Zero-width negative {(rtl ? "lookbehind" : "lookahead")}.",
-                RegexNodeKind.Backreference => $"Match the same text as matched by the {DescribeCapture(node.M, analysis)}.",
+                RegexNodeKind.Backreference => $"Match the same text as matched by the {DescribeCapture(node.M, rm)}.",
                 RegexNodeKind.PositiveLookaround => $"Zero-width positive {(rtl ? "lookbehind" : "lookahead")}.",
                 RegexNodeKind.Set => $"Match {DescribeSet(node.Str!)}{(rtl ? " backwards" : "")}.",
-                RegexNodeKind.Setloop or RegexNodeKind.Setloopatomic or RegexNodeKind.Setlazy => $"Match {DescribeSet(node.Str!)} {DescribeLoop(node, analysis)}.",
+                RegexNodeKind.Setloop or RegexNodeKind.Setloopatomic or RegexNodeKind.Setlazy => $"Match {DescribeSet(node.Str!)} {DescribeLoop(node, rm)}.",
                 RegexNodeKind.Start => "Match if at the start position.",
                 RegexNodeKind.ExpressionConditional => $"Conditionally match one of two expressions depending on whether an initial expression matches.",
-                RegexNodeKind.BackreferenceConditional => $"Conditionally match one of two expressions depending on whether the {DescribeCapture(node.M, analysis)} matched.",
+                RegexNodeKind.BackreferenceConditional => $"Conditionally match one of two expressions depending on whether the {DescribeCapture(node.M, rm)} matched.",
                 RegexNodeKind.UpdateBumpalong => $"Advance the next matching position.",
                 _ => $"Unknown node type {node.Kind}",
             };
         }
 
         /// <summary>Gets an identifer to describe a capture group.</summary>
-        private static string DescribeCapture(int capNum, AnalysisResults analysis)
+        private static string DescribeCapture(int capNum, RegexMethod rm)
         {
             // If we can get a capture name from the captures collection and it's not just a numerical representation of the group, use it.
-            string name = RegexParser.GroupNameFromNumber(analysis.RegexTree.CaptureNumberSparseMapping, analysis.RegexTree.CaptureNames, analysis.RegexTree.CaptureCount, capNum);
+            string name = RegexParser.GroupNameFromNumber(rm.Analysis.RegexTree.CaptureNumberSparseMapping, rm.Analysis.RegexTree.CaptureNames, rm.Analysis.RegexTree.CaptureCount, capNum);
             if (!string.IsNullOrEmpty(name) &&
                 (!int.TryParse(name, out int id) || id != capNum))
             {
@@ -4240,54 +4268,75 @@ namespace System.Text.RegularExpressions.Generator
         /// <param name="prefix">The prefix to write at the beginning of every line, including a "//" for a comment.</param>
         /// <param name="analyses">Analysis of the tree</param>
         /// <param name="depth">The depth of the current node.</param>
-        private static void DescribeExpression(TextWriter writer, RegexNode node, string prefix, AnalysisResults analysis, int depth = 0)
+        private static void DescribeExpressionAsXmlComment(TextWriter writer, RegexNode node, RegexMethod rm, int depth = 0)
         {
-            bool skip = node.Kind switch
+            if (!StackHelper.TryEnsureSufficientExecutionStack())
             {
-                // For concatenations, flatten the contents into the parent, but only if the parent isn't a form of alternation,
-                // where each branch is considered to be independent rather than a concatenation.
-                RegexNodeKind.Concatenate when node.Parent is not { Kind: RegexNodeKind.Alternate or RegexNodeKind.BackreferenceConditional or RegexNodeKind.ExpressionConditional } => true,
+                writer.WriteLine("/// ...");
+                return;
+            }
 
-                // For atomic, skip the node if we'll instead render the atomic label as part of rendering the child.
-                RegexNodeKind.Atomic when node.Child(0).Kind is RegexNodeKind.Loop or RegexNodeKind.Lazyloop or RegexNodeKind.Alternate => true,
-
-                // Skip nodes that are implementation details with no visible behavioral impact.
-                RegexNodeKind.UpdateBumpalong => true,
-
-                // Don't skip anything else.
-                _ => false,
-            };
-
-            if (!skip)
+            do
             {
-                string tag = node.Parent?.Kind switch
+                bool skip = node.Kind switch
                 {
-                    RegexNodeKind.ExpressionConditional when node.Parent.Child(0) == node => "Condition: ",
-                    RegexNodeKind.ExpressionConditional when node.Parent.Child(1) == node => "Matched: ",
-                    RegexNodeKind.ExpressionConditional when node.Parent.Child(2) == node => "Not Matched: ",
+                    // For concatenations, flatten the contents into the parent, but only if the parent isn't a form of alternation,
+                    // where each branch is considered to be independent rather than a concatenation.
+                    RegexNodeKind.Concatenate when node.Parent is not { Kind: RegexNodeKind.Alternate or RegexNodeKind.BackreferenceConditional or RegexNodeKind.ExpressionConditional } => true,
 
-                    RegexNodeKind.BackreferenceConditional when node.Parent.Child(0) == node => "Matched: ",
-                    RegexNodeKind.BackreferenceConditional when node.Parent.Child(1) == node => "Not Matched: ",
+                    // For atomic, skip the node if we'll instead render the atomic label as part of rendering the child.
+                    RegexNodeKind.Atomic when node.Child(0).Kind is RegexNodeKind.Loop or RegexNodeKind.Lazyloop or RegexNodeKind.Alternate => true,
 
-                    _ => "",
+                    // Skip nodes that are implementation details with no visible behavioral impact.
+                    RegexNodeKind.UpdateBumpalong => true,
+
+                    // Don't skip anything else.
+                    _ => false,
                 };
 
-                // Write out the line for the node.
-                const char BulletPoint = '\u25CB';
-                writer.WriteLine($"{prefix}{new string(' ', depth * 4)}{BulletPoint} {tag}{DescribeNode(node, analysis)}");
-            }
+                if (!skip)
+                {
+                    string tag = node.Parent?.Kind switch
+                    {
+                        RegexNodeKind.ExpressionConditional when node.Parent.Child(0) == node => "Condition: ",
+                        RegexNodeKind.ExpressionConditional when node.Parent.Child(1) == node => "Matched: ",
+                        RegexNodeKind.ExpressionConditional when node.Parent.Child(2) == node => "Not Matched: ",
 
-            // Recur into each of its children.
-            int childCount = node.ChildCount();
-            for (int i = 0; i < childCount; i++)
-            {
-                int childDepth = skip ? depth : depth + 1;
-                DescribeExpression(writer, node.Child(i), prefix, analysis, childDepth);
+                        RegexNodeKind.BackreferenceConditional when node.Parent.Child(0) == node => "Matched: ",
+                        RegexNodeKind.BackreferenceConditional when node.Parent.Child(1) == node => "Not Matched: ",
+
+                        _ => "",
+                    };
+
+                    // Write out the line for the node.
+                    const char BulletPoint = '\u25CB';
+                    writer.WriteLine($"/// {new string(' ', depth * 4)}{BulletPoint} {tag}{HttpUtility.HtmlEncode(DescribeNode(node, rm))}<br/>");
+                }
+
+                // Process each child.
+                int childCount = node.ChildCount();
+                if (childCount == 0)
+                {
+                    break;
+                }
+
+                if (!skip)
+                {
+                    depth++;
+                }
+
+                // Process all but the last child recursively, then loop around to process the last.
+                for (int i = 0; i < childCount - 1; i++)
+                {
+                    DescribeExpressionAsXmlComment(writer, node.Child(i), rm, depth);
+                }
+                node = node.Child(childCount - 1);
             }
+            while (true);
         }
 
         /// <summary>Gets a textual description of a loop's style and bounds.</summary>
-        private static string DescribeLoop(RegexNode node, AnalysisResults analysis)
+        private static string DescribeLoop(RegexNode node, RegexMethod rm)
         {
             string style = node.Kind switch
             {
@@ -4295,8 +4344,8 @@ namespace System.Text.RegularExpressions.Generator
                 RegexNodeKind.Oneloopatomic or RegexNodeKind.Notoneloopatomic or RegexNodeKind.Setloopatomic => "atomically",
                 RegexNodeKind.Oneloop or RegexNodeKind.Notoneloop or RegexNodeKind.Setloop => "greedily",
                 RegexNodeKind.Onelazy or RegexNodeKind.Notonelazy or RegexNodeKind.Setlazy => "lazily",
-                RegexNodeKind.Loop => analysis.IsAtomicByAncestor(node) ? "greedily and atomically" : "greedily",
-                _ /* RegexNodeKind.Lazyloop */ => analysis.IsAtomicByAncestor(node) ? "lazily and atomically" : "lazily",
+                RegexNodeKind.Loop => rm.Analysis.IsAtomicByAncestor(node) ? "greedily and atomically" : "greedily",
+                _ /* RegexNodeKind.Lazyloop */ => rm.Analysis.IsAtomicByAncestor(node) ? "lazily and atomically" : "lazily",
             };
 
             string bounds =

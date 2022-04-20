@@ -12,9 +12,9 @@
 .typedef [System.Runtime]System.OverflowException as OverflowException
 .typedef [System.Runtime]System.IndexOutOfRangeException as IndexOutOfRangeException
 
-.class DynBlkOrder extends [System.Runtime]System.Object
+.class public DynBlkOrder extends [System.Runtime]System.Object
 {
-    .method static int32 Main()
+    .method public static int32 Main()
     {
         .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
             01 00 00 00
