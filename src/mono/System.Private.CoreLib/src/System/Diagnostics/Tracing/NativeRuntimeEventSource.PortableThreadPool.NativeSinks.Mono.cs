@@ -12,6 +12,10 @@ namespace System.Diagnostics.Tracing
     // It contains the runtime specific interop to native event sinks.
     internal sealed partial class NativeRuntimeEventSource : EventSource
     {
+#if !ES_BUILD_STANDALONE
+        private const string EventSourceSuppressMessage = "Parameters to this method are primitive and are trimmer safe";
+#endif
+
         [NonEvent]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern void LogThreadPoolWorkerThreadStart(uint ActiveWorkerThreadCount, uint RetiredWorkerThreadCount, ushort ClrInstanceID);
@@ -69,8 +73,12 @@ namespace System.Diagnostics.Tracing
             ushort ClrInstanceID
         );
 
+#if !ES_BUILD_STANDALONE
+        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+                   Justification = EventSourceSuppressMessage)]
+#endif
         [NonEvent]
-        internal void LogThreadPoolIOPack(
+        internal unsafe void LogThreadPoolIOPack(
             IntPtr NativeOverlapped,
             IntPtr Overlapped,
             ushort ClrInstanceID)

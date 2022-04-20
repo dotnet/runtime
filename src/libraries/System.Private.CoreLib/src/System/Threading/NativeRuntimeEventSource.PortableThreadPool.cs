@@ -386,9 +386,6 @@ namespace System.Diagnostics.Tracing
             IntPtr Overlapped,
             ushort ClrInstanceID = DefaultClrInstanceId)
         {
-            if (!IsEnabled(EventLevel.Verbose, Keywords.ThreadingKeyword))
-                return;
-
             EventData* data = stackalloc EventData[3];
             data[0].DataPointer = NativeOverlapped;
             data[0].Size        = sizeof(IntPtr);

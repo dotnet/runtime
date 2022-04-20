@@ -229,7 +229,7 @@ namespace System.Diagnostics.Tracing
 
         [NonEvent]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public unsafe void ThreadPoolIOPack(NativeOverlapped *nativeOverlapped)
+        public unsafe void ThreadPoolIOPack(NativeOverlapped* nativeOverlapped)
         {
             if (IsEnabled(EventLevel.Verbose, Keywords.ThreadingKeyword))
             {
