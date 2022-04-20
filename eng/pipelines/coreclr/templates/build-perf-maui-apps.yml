@@ -212,6 +212,26 @@ steps:
       # cp $(Build.SourcesDirectory)/src/tests/Common/maui/MauiScenario.props ./Directory.Build.props
       # cp $(Build.SourcesDirectory)/src/tests/Common/maui/MauiScenario.targets ./Directory.Build.targets
       cp $(Build.SourcesDirectory)/NuGet.config ./NuGet.config
+      
+      echo -e "using Microsoft.AspNetCore.Components;
+        using Android.App;
+
+        namespace mauiblazortesting.Pages
+        {
+            public partial class Index
+            {
+                protected override void OnAfterRender(bool firstRender)
+                {
+                    if (firstRender)
+                    {
+                        var activity = MainActivity.Context as Activity;
+                        activity.ReportFullyDrawn();
+                    }
+                }
+            }
+        }" > Pages/Index.razor.cs
+
+      sed -i'' -e "s/{/{\npublic static Context Context { get; private set; }\npublic MainActivity() { Context = this; }/g" Platforms/Android/MainActivity.cs
     displayName: Setup MAUI Blazor Hybrid Project
     workingDirectory: $(Build.SourcesDirectory)
 
