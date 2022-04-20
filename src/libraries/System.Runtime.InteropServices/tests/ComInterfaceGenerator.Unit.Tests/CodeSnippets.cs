@@ -25,7 +25,7 @@ partial interface INativeAPI
 // Try using the generated native interface
 sealed class NativeAPI : IUnmanagedVirtualMethodTableProvider<NoCasting>, INativeAPI.Native
 {
-    public VirtualMethodTableInfo GetFunctionPointerForIndex(NoCasting typeKey) => throw null;
+    public VirtualMethodTableInfo GetVirtualMethodTableInfoForKey(NoCasting typeKey) => throw null;
 }
 ";
 
@@ -43,7 +43,7 @@ partial interface INativeAPI
 // Try using the generated native interface
 sealed class NativeAPI : IUnmanagedVirtualMethodTableProvider<NoCasting>, INativeAPI.Native
 {
-    public VirtualMethodTableInfo GetFunctionPointerForIndex(NoCasting typeKey) => throw null;
+    public VirtualMethodTableInfo GetVirtualMethodTableInfoForKey(NoCasting typeKey) => throw null;
 }
 ";
 
@@ -81,7 +81,7 @@ partial interface INativeAPI
 // Try using the generated native interface
 sealed class NativeAPI : IUnmanagedVirtualMethodTableProvider<NoCasting>, INativeAPI.Native
 {
-    public VirtualMethodTableInfo GetFunctionPointerForIndex(NoCasting typeKey) => throw null;
+    public VirtualMethodTableInfo GetVirtualMethodTableInfoForKey(NoCasting typeKey) => throw null;
 }
 ";
 
@@ -102,7 +102,7 @@ partial interface INativeAPI
 // Try using the generated native interface
 sealed class NativeAPI : IUnmanagedVirtualMethodTableProvider<NoCasting>, INativeAPI.Native
 {{
-    public VirtualMethodTableInfo GetFunctionPointerForIndex(NoCasting typeKey) => throw null;
+    public VirtualMethodTableInfo GetVirtualMethodTableInfoForKey(NoCasting typeKey) => throw null;
 }}
 ";
 
