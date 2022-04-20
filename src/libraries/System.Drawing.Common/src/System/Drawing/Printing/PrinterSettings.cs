@@ -15,7 +15,7 @@ namespace System.Drawing.Printing
     /// <summary>
     /// Information about how a document should be printed, including which printer to print it on.
     /// </summary>
-    public partial class PrinterSettings : ICloneable
+    public class PrinterSettings : ICloneable
     {
         // All read/write data is stored in managed code, and whenever we need to call Win32,
         // we create new DEVMODE and DEVNAMES structures.  We don't store device capabilities,
