@@ -9,42 +9,50 @@ namespace System.Reflection
     internal sealed partial class MethodInvoker
     {
         internal InvocationFlags _invocationFlags;
-        private readonly RuntimeMethodInfo _methodInfo;
+        private readonly RuntimeMethodInfo _method;
         private bool _invoked;
         private bool _strategyDetermined;
         private InvokerEmitUtil.InvokeFunc<MethodInvoker>? _emitInvoke;
 
         public MethodInvoker(RuntimeMethodInfo methodInfo)
         {
-            _methodInfo = methodInfo;
+            _method = methodInfo;
         }
 
         [DebuggerStepThrough]
         [DebuggerHidden]
         public unsafe object? InvokeUnsafe(object? obj, IntPtr* args, Span<object?> argsForTemporaryMonoSupport, BindingFlags invokeAttr)
         {
-            if (!_invoked)
-            {
-                // Note: disabled for test reasons:
-                // The first time, ignoring race conditions, use the slow path.
-                // return _methodInfo.InvokeNonEmitUnsafe(obj, args, argsForTemporaryMonoSupport, invokeAttr);
-
-                _invoked = true;
-            }
-
             if (!_strategyDetermined)
             {
-                if (RuntimeFeature.IsDynamicCodeCompiled &&
-                    _methodInfo.DeclaringType != typeof(Type)) // Avoid stack crawl issue with GetType().
+                if (!_invoked)
                 {
-                    // For testing slow path, disable Emit for now
-                    // _emitInvoke = InvokerEmitUtil.CreateInvokeDelegate<MethodInvoker>(_methodInfo);
-                }
+                    // The first time, ignoring race conditions, use the slow path.
+                    _invoked = true;
 
-                _strategyDetermined = true;
+#if true
+                    // TEMP HACK FOR FORCING IL ON FIRST TIME:
+                    if (RuntimeFeature.IsDynamicCodeCompiled &&
+                        _method.DeclaringType != typeof(Type)) // Avoid stack crawl issue with Type.GetType().
+                    {
+                        _emitInvoke = InvokerEmitUtil.CreateInvokeDelegate<MethodInvoker>(_method);
+                    }
+                    _strategyDetermined = true;
+#endif
+                }
+                else
+                {
+                    if (RuntimeFeature.IsDynamicCodeCompiled &&
+                        _method.DeclaringType != typeof(Type)) // Avoid stack crawl issue with Type.GetType().
+                    {
+                        _emitInvoke = InvokerEmitUtil.CreateInvokeDelegate<MethodInvoker>(_method);
+                    }
+
+                    _strategyDetermined = true;
+                }
             }
 
-            if (_methodInfo.SupportsNewInvoke)
+            if (_method.SupportsNewInvoke)
             {
                 if ((invokeAttr & BindingFlags.DoNotWrapExceptions) == 0)
                 {
@@ -56,7 +64,7 @@ namespace System.Reflection
                         }
                         else
                         {
-                            return _methodInfo.InvokeNonEmitUnsafe(obj, args, argsForTemporaryMonoSupport, invokeAttr);
+                            return _method.InvokeNonEmitUnsafe(obj, args, argsForTemporaryMonoSupport, invokeAttr);
                         }
                     }
                     catch (Exception e)
@@ -72,14 +80,14 @@ namespace System.Reflection
                     }
                     else
                     {
-                        return _methodInfo.InvokeNonEmitUnsafe(obj, args, argsForTemporaryMonoSupport, invokeAttr);
+                        return _method.InvokeNonEmitUnsafe(obj, args, argsForTemporaryMonoSupport, invokeAttr);
                     }
                 }
             }
             else
             {
                 // Remove this branch once Mono has the same exception handling and managed conversion logic.
-                return _methodInfo.InvokeNonEmitUnsafe(obj, args, argsForTemporaryMonoSupport, invokeAttr);
+                return _method.InvokeNonEmitUnsafe(obj, args, argsForTemporaryMonoSupport, invokeAttr);
             }
         }
     }

@@ -624,14 +624,12 @@ FCIMPL4(Object*, RuntimeMethodHandle::InvokeMethod,
             else
                 pThisPtr = OBJECTREFToObject(gc.retVal);
         }
-        else
-        if (!pMeth->GetMethodTable()->IsValueType())
+        else if (!pMeth->GetMethodTable()->IsValueType())
             pThisPtr = OBJECTREFToObject(gc.target);
         else {
             if (pMeth->IsUnboxingStub())
                 pThisPtr = OBJECTREFToObject(gc.target);
             else {
-                //todo: add tests for this (calling a nullable)
                 // Create a true boxed Nullable<T> and use that as the 'this' pointer.
                 // since what is passed in is just a boxed T
                 MethodTable* pMT = pMeth->GetMethodTable();

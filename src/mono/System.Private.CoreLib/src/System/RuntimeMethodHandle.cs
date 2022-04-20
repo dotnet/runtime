@@ -86,7 +86,6 @@ namespace System
             return value == IntPtr.Zero;
         }
 
-
         // Temporary placeholder until Mono adds support for supporting boxing true Nullables.
         internal static object? ReboxFromNullable(object? src) => src;
     }

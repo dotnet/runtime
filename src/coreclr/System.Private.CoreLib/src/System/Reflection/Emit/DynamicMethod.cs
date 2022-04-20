@@ -579,23 +579,9 @@ namespace System.Reflection.Emit
 
         [DebuggerHidden]
         [DebuggerStepThrough]
-        internal unsafe object? InvokeNonEmitUnsafe(object? obj, IntPtr* arguments, BindingFlags invokeAttr)
+        internal unsafe object? InvokeNonEmitUnsafe(object? obj, IntPtr* arguments)
         {
-            if ((invokeAttr & BindingFlags.DoNotWrapExceptions) == 0)
-            {
-                try
-                {
-                    return RuntimeMethodHandle.InvokeMethod(obj, (void**)arguments, Signature, isConstructor: false);
-                }
-                catch (Exception e)
-                {
-                    throw new TargetInvocationException(e);
-                }
-            }
-            else
-            {
-                return RuntimeMethodHandle.InvokeMethod(obj, (void**)arguments, Signature, isConstructor: false);
-            }
+            return RuntimeMethodHandle.InvokeMethod(obj, (void**)arguments, Signature, isConstructor: false);
         }
 
         public override object[] GetCustomAttributes(Type attributeType, bool inherit)

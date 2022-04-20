@@ -1,9 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics;
-using System.Runtime.CompilerServices;
-
 namespace System.Reflection.Emit
 {
     internal sealed partial class DynamicMethodInvoker
@@ -17,8 +14,23 @@ namespace System.Reflection.Emit
 
         public unsafe object? InvokeUnsafe(object? obj, IntPtr* args, BindingFlags invokeAttr)
         {
-            // Todo: add strategy for calling IL Emit-based version
-            return _dynamicMethod.InvokeNonEmitUnsafe(obj, args, invokeAttr);
+            // Always use the slow path; the Emit-based fast path can be added but in general dynamic
+            // methods are invoked through a direct delegate, not through Invoke().
+            if ((invokeAttr & BindingFlags.DoNotWrapExceptions) == 0)
+            {
+                try
+                {
+                    return _dynamicMethod.InvokeNonEmitUnsafe(obj, args);
+                }
+                catch (Exception e)
+                {
+                    throw new TargetInvocationException(e);
+                }
+            }
+            else
+            {
+                return _dynamicMethod.InvokeNonEmitUnsafe(obj, args);
+            }
         }
     }
 }

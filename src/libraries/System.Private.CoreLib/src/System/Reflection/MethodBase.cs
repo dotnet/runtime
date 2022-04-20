@@ -163,42 +163,53 @@ namespace System.Reflection
 
                 if (arg is null)
                 {
-                    // A fast path that avoids calling CheckValue() for null reference types.
+                    // Fast path for null reference types.
                     isValueType = RuntimeTypeHandle.IsValueType(sigType);
                     if (isValueType || RuntimeTypeHandle.IsByRef(sigType))
                     {
                         isValueType = sigType.CheckValue(ref arg, ref copyBackArg, binder, culture, invokeAttr);
                     }
                 }
-                else if (ReferenceEquals(arg.GetType(), sigType))
-                {
-                    // Fast path that avoids calling CheckValue() when argument value matches the signature type.
-                    isValueType = RuntimeTypeHandle.IsValueType(sigType);
-                }
                 else
                 {
-                    paramInfos ??= GetParametersNoCopy();
-                    ParameterInfo paramInfo = paramInfos[i];
-                    if (!ReferenceEquals(arg, Type.Missing))
+                    RuntimeType argType = (RuntimeType)arg.GetType();
+
+                    if (ReferenceEquals(argType, sigType))
                     {
-                        isValueType = sigType.CheckValue(ref arg, ref copyBackArg, binder, culture, invokeAttr);
+                        // Fast path when the value type matches the signature type.
+                        isValueType = RuntimeTypeHandle.IsValueType(argType);
+                    }
+                    else if (RuntimeTypeHandle.IsByRef(sigType) && ReferenceEquals(argType, RuntimeTypeHandle.GetElementType(sigType)))
+                    {
+                        // Fast path when the value type matches the signature type.
+                        isValueType = RuntimeTypeHandle.IsValueType(argType);
+                        copyBackArg = true;
                     }
                     else
                     {
-                        // Convert Type.Missing to the default value.
-                        if (paramInfo.DefaultValue == DBNull.Value)
+                        paramInfos ??= GetParametersNoCopy();
+                        ParameterInfo paramInfo = paramInfos[i];
+                        if (!ReferenceEquals(arg, Type.Missing))
                         {
-                            throw new ArgumentException(SR.Arg_VarMissNull, nameof(parameters));
-                        }
-
-                        arg = paramInfo.DefaultValue;
-                        if (ReferenceEquals(arg?.GetType(), sigType))
-                        {
-                            isValueType = RuntimeTypeHandle.IsValueType(sigType);
+                            isValueType = sigType.CheckValue(ref arg, ref copyBackArg, binder, culture, invokeAttr);
                         }
                         else
                         {
-                            isValueType = sigType.CheckValue(ref arg, ref copyBackArg, binder, culture, invokeAttr);
+                            // Convert Type.Missing to the default value.
+                            if (paramInfo.DefaultValue == DBNull.Value)
+                            {
+                                throw new ArgumentException(SR.Arg_VarMissNull, nameof(parameters));
+                            }
+
+                            arg = paramInfo.DefaultValue;
+                            if (ReferenceEquals(arg?.GetType(), sigType))
+                            {
+                                isValueType = RuntimeTypeHandle.IsValueType(sigType);
+                            }
+                            else
+                            {
+                                isValueType = sigType.CheckValue(ref arg, ref copyBackArg, binder, culture, invokeAttr);
+                            }
                         }
                     }
                 }

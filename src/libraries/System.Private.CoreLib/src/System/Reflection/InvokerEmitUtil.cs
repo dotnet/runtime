@@ -17,11 +17,11 @@ namespace System.Reflection
         {
             Debug.Assert(!method.ContainsGenericParameters);
 
-            ParameterInfo[] parameters = method.GetParametersNoCopy();
+            bool emitNew = method is RuntimeConstructorInfo;
+            bool hasThis = !(emitNew || method.IsStatic);
 
             Type[] delegateParameters = new Type[3] { typeof(T), typeof(object), typeof(IntPtr*) };
 
-            // We could use the overload with 'owner' in order to associate to this module.
             var dm = new DynamicMethod(
                 "InvokeStub_" + method.DeclaringType!.Name + "." + method.Name,
                 returnType: typeof(object),
@@ -31,28 +31,7 @@ namespace System.Reflection
 
             ILGenerator il = dm.GetILGenerator();
 
-            if (parameters.Length == 0)
-            {
-                HandleThisPointer(il, method);
-                Invoke(il, method);
-            }
-            else
-            {
-                HandleThisPointer(il, method);
-                PushArguments(il, parameters);
-                Invoke(il, method);
-            }
-
-            HandleReturn(il, method);
-
-            return (InvokeFunc<T>)dm.CreateDelegate(typeof(InvokeFunc<T>));
-        }
-
-        private static void HandleThisPointer(ILGenerator il, MethodBase method)
-        {
-            bool emitNew = method is RuntimeConstructorInfo;
-            bool hasThis = !(emitNew || method.IsStatic);
-
+            // Handle instance methods.
             if (hasThis)
             {
                 il.Emit(OpCodes.Ldarg_1);
@@ -61,19 +40,19 @@ namespace System.Reflection
                     il.Emit(OpCodes.Unbox, method.DeclaringType);
                 }
             }
-        }
 
-        /// <summary>
-        /// Push each argument.
-        /// </summary>
-        private static void PushArguments(ILGenerator il, ParameterInfo[] parameters)
-        {
+            // Push the arguments.
+            ParameterInfo[] parameters = method.GetParametersNoCopy();
             for (int i = 0; i < parameters.Length; i++)
             {
                 RuntimeType parameterType = (RuntimeType)parameters[i].ParameterType;
                 if (parameterType.IsPointer)
                 {
                     parameterType = (RuntimeType)typeof(IntPtr);
+                }
+                else if (parameterType.IsByRef && RuntimeTypeHandle.GetElementType(parameterType).IsPointer)
+                {
+                    parameterType = (RuntimeType)typeof(IntPtr).MakeByRefType();
                 }
 
                 il.Emit(OpCodes.Ldarg_2);
@@ -89,87 +68,90 @@ namespace System.Reflection
                     il.Emit(OpCodes.Ldobj, parameterType);
                 }
             }
-        }
 
-        private static void Invoke(ILGenerator il, MethodBase method)
-        {
-            bool emitNew = method is RuntimeConstructorInfo;
+            // Invoke the method.
             if (emitNew)
             {
-                Debug.Assert(method!.IsStatic);
                 il.Emit(OpCodes.Newobj, (ConstructorInfo)method);
             }
             else if (method.IsStatic || method.DeclaringType!.IsValueType)
             {
-                il.Emit(OpCodes.Call, (RuntimeMethodInfo)method);
+                il.Emit(OpCodes.Call, (MethodInfo)method);
             }
             else
             {
-                il.Emit(OpCodes.Callvirt, (RuntimeMethodInfo)method);
-            }
-        }
-
-        private static void HandleReturn(ILGenerator il, MethodBase method)
-        {
-            bool emitNew = method is RuntimeConstructorInfo;
-            Type returnType = emitNew ? method.DeclaringType! : ((RuntimeMethodInfo)method).ReturnType;
-
-            if (returnType == typeof(void))
-            {
-                il.Emit(OpCodes.Ldnull);
-                il.Emit(OpCodes.Ret);
-                return;
+                il.Emit(OpCodes.Callvirt, (MethodInfo)method);
             }
 
-            if (returnType.IsByRef)
+            // Handle the return.
+            if (emitNew)
             {
-                // Check for null ref return.
-                Type elementType = returnType.GetElementType()!;
-                Label retValueOk = il.DefineLabel();
-
-                il.Emit(OpCodes.Dup);
-                il.Emit(OpCodes.Brtrue_S, retValueOk);
-                il.Emit(OpCodes.Call, Methods.ThrowHelper_Throw_NullReference_InvokeNullRefReturned());
-                il.MarkLabel(retValueOk);
-
-                if (elementType.IsValueType)
+                Type returnType = method.DeclaringType!;
+                if (returnType.IsValueType)
                 {
-                    LocalBuilder? local_return = il.DeclareLocal(typeof(object));
-                    il.Emit(OpCodes.Ldobj, elementType);
-                    il.Emit(OpCodes.Box, elementType);
-                    il.Emit(OpCodes.Stloc_S, local_return);
-                    il.Emit(OpCodes.Ldloc_S, local_return);
+                    il.Emit(OpCodes.Box, returnType);
                 }
-                else if (elementType.IsPointer)
+            }
+            else
+            {
+                Type returnType = ((RuntimeMethodInfo)method).ReturnType;
+                if (returnType == typeof(void))
                 {
-                    LocalBuilder? local_return = il.DeclareLocal(elementType);
-                    il.Emit(OpCodes.Ldind_Ref);
-                    il.Emit(OpCodes.Stloc_S, local_return);
-                    il.Emit(OpCodes.Ldloc_S, local_return);
-                    il.Emit(OpCodes.Ldtoken, elementType);
+                    il.Emit(OpCodes.Ldnull);
+                }
+                else if (returnType.IsValueType)
+                {
+                    il.Emit(OpCodes.Box, returnType);
+                }
+                else if (returnType.IsPointer)
+                {
+                    il.Emit(OpCodes.Ldtoken, returnType);
                     il.Emit(OpCodes.Call, Methods.Type_GetTypeFromHandle());
                     il.Emit(OpCodes.Call, Methods.Pointer_Box());
                 }
-                else
+                else if (returnType.IsByRef)
                 {
-                    LocalBuilder? local_return = il.DeclareLocal(elementType);
-                    il.Emit(OpCodes.Ldind_Ref);
-                    il.Emit(OpCodes.Stloc_S, local_return);
-                    il.Emit(OpCodes.Ldloc_S, local_return);
+                    // Check for null ref return.
+                    Type elementType = returnType.GetElementType()!;
+                    Label retValueOk = il.DefineLabel();
+                    il.Emit(OpCodes.Dup);
+                    il.Emit(OpCodes.Brtrue_S, retValueOk);
+                    il.Emit(OpCodes.Call, Methods.ThrowHelper_Throw_NullReference_InvokeNullRefReturned());
+                    il.MarkLabel(retValueOk);
+
+                    // Handle per-type differences.
+                    if (elementType.IsValueType)
+                    {
+                        LocalBuilder? local_return = il.DeclareLocal(typeof(object));
+                        il.Emit(OpCodes.Ldobj, elementType);
+                        il.Emit(OpCodes.Box, elementType);
+                        il.Emit(OpCodes.Stloc_S, local_return);
+                        il.Emit(OpCodes.Ldloc_S, local_return);
+                    }
+                    else if (elementType.IsPointer)
+                    {
+                        LocalBuilder? local_return = il.DeclareLocal(elementType);
+                        il.Emit(OpCodes.Ldind_Ref);
+                        il.Emit(OpCodes.Stloc_S, local_return);
+                        il.Emit(OpCodes.Ldloc_S, local_return);
+                        il.Emit(OpCodes.Ldtoken, elementType);
+                        il.Emit(OpCodes.Call, Methods.Type_GetTypeFromHandle());
+                        il.Emit(OpCodes.Call, Methods.Pointer_Box());
+                    }
+                    else
+                    {
+                        LocalBuilder? local_return = il.DeclareLocal(elementType);
+                        il.Emit(OpCodes.Ldind_Ref);
+                        il.Emit(OpCodes.Stloc_S, local_return);
+                        il.Emit(OpCodes.Ldloc_S, local_return);
+                    }
                 }
-            }
-            else if (returnType.IsPointer)
-            {
-                il.Emit(OpCodes.Ldtoken, returnType);
-                il.Emit(OpCodes.Call, Methods.Type_GetTypeFromHandle());
-                il.Emit(OpCodes.Call, Methods.Pointer_Box());
-            }
-            else if (returnType.IsValueType)
-            {
-                il.Emit(OpCodes.Box, returnType);
             }
 
             il.Emit(OpCodes.Ret);
+
+            // Create the delegate.
+            return (InvokeFunc<T>)dm.CreateDelegate(typeof(InvokeFunc<T>));
         }
 
         private static class ThrowHelper
@@ -178,12 +160,6 @@ namespace System.Reflection
             {
                 throw new NullReferenceException(SR.NullReference_InvokeNullRefReturned);
             }
-        }
-
-        private struct NullableRefInfo
-        {
-            public int ParameterIndex;
-            public int LocalIndex;
         }
 
         private static class Methods

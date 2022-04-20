@@ -736,6 +736,14 @@ namespace System.Reflection.Tests
                 Invoke(obj, null));
         }
 
+        [Fact]
+        public void NullableOfTMembers()
+        {
+            // Ensure calling a method on Nullable<T> works.
+            MethodInfo mi = GetMethod(typeof(int?), nameof(Nullable<int>.GetValueOrDefault));
+            Assert.Equal(42, mi.Invoke(42, null));
+        }
+
         //Methods for Reflection Metadata
         private void DummyMethod1(string str, int iValue, long lValue)
         {
