@@ -12,8 +12,6 @@ namespace System.Text.RegularExpressions
     /// <summary>Represents a regex subexpression.</summary>
     internal sealed class RegexNode
     {
-        /// <summary>empty bit from the node's options to store data on whether a node contains captures</summary>
-        internal const RegexOptions HasCapturesFlag = (RegexOptions)(1 << 31);
         /// <summary>Arbitrary number of repetitions of the same character when we'd prefer to represent that as a repeater of that character rather than a string.</summary>
         internal const int MultiVsRepeaterLimit = 64;
 
