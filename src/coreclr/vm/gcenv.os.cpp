@@ -737,17 +737,6 @@ const AffinitySet* GCToOSInterface::SetGCThreadsAffinitySet(uintptr_t configAffi
                 }
             }
         }
-        else if (!configAffinitySet->IsEmpty())
-        {
-            // Update the process affinity set using the configured set
-            for (size_t i = 0; i < MAX_SUPPORTED_CPUS; i++)
-            {
-                if (g_processAffinitySet.Contains(i) && !configAffinitySet->Contains(i))
-                {
-                    g_processAffinitySet.Remove(i);
-                }
-            }
-        }
     }
 #endif // !TARGET_UNIX
 
