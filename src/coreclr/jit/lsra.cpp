@@ -5207,7 +5207,6 @@ void LinearScan::allocateRegisters()
                 if (physRegRecord->assignedInterval == currentInterval)
                 {
                     unassignPhysRegNoSpill(physRegRecord);
-                    physRegRecord->assignedInterval = nullptr;
                     clearConstantReg(assignedRegister, currentInterval->registerType);
                 }
                 currentRefPosition->moveReg = true;
