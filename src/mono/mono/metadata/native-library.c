@@ -268,8 +268,7 @@ mono_global_dllmap_cleanup (void)
  * The above will remap \c DllImport statements for \c libdemo.dll and \c LIBDEMO.DLL to
  * the contents of \c relocated_demo_path for all assemblies in the Mono process.
  *
- * NOTE: This can be called before the runtime is initialized, for example from
- * \c mono_config_parse.
+ * NOTE: This can be called before the runtime is initialized.
  */
 void
 mono_dllmap_insert (MonoImage *assembly, const char *dll, const char *func, const char *tdll, const char *tfunc)

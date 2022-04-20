@@ -2,9 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
+namespace Test_throwinfinallyrecursive_20_cs
+{
 // levels of nesting = 20
-class Class1
+public class Class1
 {
     private static TestUtil.TestLog testLog;
 
@@ -1631,7 +1634,8 @@ class Class1
     }
 
 
-    static public int Main()
+    [Fact]
+    static public int TestEntryPoint()
     {
         //Start recording
         testLog.StartRecording();
@@ -1652,4 +1656,5 @@ class Class1
 
         return testLog.VerifyOutput();
     }
+}
 }

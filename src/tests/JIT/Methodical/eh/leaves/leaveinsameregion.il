@@ -31,9 +31,9 @@
 
 
 
-.namespace hello
+.namespace hello_leaveinsameregion_leaves_il
 {
-  .class private auto ansi beforefieldinit Class1
+  .class public auto ansi beforefieldinit Class1
          extends [mscorlib]System.Object
   {
     .method public hidebysig static void 
@@ -91,7 +91,7 @@
       
       .try
       {
-        IL_0000:  call       void hello.Class1::inTry()
+        IL_0000:  call       void hello_leaveinsameregion_leaves_il.Class1::inTry()
         IL_0005:  leave.s    IL_0015
 
       }  
@@ -102,7 +102,7 @@
                   leave.s IL_0009
                 
         IL_0009:  ldloc.0
-        IL_000e:  call       void hello.Class1::inCatch()
+        IL_000e:  call       void hello_leaveinsameregion_leaves_il.Class1::inCatch()
         IL_0013:  leave.s    IL_0015
 
       }  

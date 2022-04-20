@@ -4,11 +4,14 @@
 //"plain", volatile., unaligned. cpblk
 //transient, managed, unmanaged pointer
 .assembly extern legacy library mscorlib {}
+.assembly extern xunit.core {}
 .assembly extern System.Console
 {
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
+.namespace Test_cpblk3
+{
 .assembly 'cpblk3' {}
 .class public explicit ansi sealed $MultiByte$size$34
        extends [mscorlib]System.ValueType
@@ -16,7 +19,7 @@
   .pack 1
   .size 34
 //  .custom instance void .ctor() = ( 01 00 00 00 ) 
-} // end of class $MultiByte$size$34
+} // end of class Test_cpblk3.$MultiByte$size$34
 
 .class public explicit sealed $MultiByte$size$7
        extends [mscorlib]System.ValueType
@@ -24,20 +27,23 @@
   .pack 1
   .size 7
 //  .custom instance void .ctor() = ( 01 00 00 00 ) 
-} // end of class $MultiByte$size$7
+} // end of class Test_cpblk3.$MultiByte$size$7
 
 //Global fields
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-.field static privatescope valuetype $MultiByte$size$34 'unnamed-global-0$PST04000001' at D_00008030
-.field static privatescope valuetype $MultiByte$size$34 'unnamed-global-1$PST04000002' at D_00008054
+.field static privatescope valuetype Test_cpblk3.$MultiByte$size$34 'unnamed-global-0$PST04000001' at D_00008030
+.field static privatescope valuetype Test_cpblk3.$MultiByte$size$34 'unnamed-global-1$PST04000002' at D_00008054
 //Global methods
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.class private initblk2 extends [mscorlib]System.Object
+.class public initblk2 extends [mscorlib]System.Object
 {
 .method public static int32
         main()
 {
+  .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+      01 00 00 00
+  )
   .entrypoint
   // Code size       177 (0xb1)
   .maxstack  3
@@ -45,10 +51,10 @@
            string V_1,
            int8 * V_2,
            int8 & V_3,
-           valuetype $MultiByte$size$34 V_4,
-           valuetype $MultiByte$size$34 V_5,
-           valuetype $MultiByte$size$34 V_6,
-           valuetype $MultiByte$size$34 V_7)
+           valuetype Test_cpblk3.$MultiByte$size$34 V_4,
+           valuetype Test_cpblk3.$MultiByte$size$34 V_5,
+           valuetype Test_cpblk3.$MultiByte$size$34 V_6,
+           valuetype Test_cpblk3.$MultiByte$size$34 V_7)
   ldnull
   stloc.1
   ldc.i4.1
@@ -57,12 +63,12 @@
   //*** "plain" cpblk ***
   //test1: transient pointer
   ldloca.s   V_4
-  ldsflda    valuetype $MultiByte$size$34 'unnamed-global-0$PST04000001'
+  ldsflda    valuetype Test_cpblk3.$MultiByte$size$34 'unnamed-global-0$PST04000001'
   ldc.i4.s   34
   cpblk
   ldloc.s    V_4
   stloc.s    V_7
-  ldsflda    valuetype $MultiByte$size$34 'unnamed-global-1$PST04000002'
+  ldsflda    valuetype Test_cpblk3.$MultiByte$size$34 'unnamed-global-1$PST04000002'
   newobj     instance void string::.ctor(int8*)
   stloc.1
   ldloc.1
@@ -123,12 +129,12 @@
   //*** volatile. cpblk ***
   //test1: transient pointer
   ldloca.s   V_4
-  ldsflda    valuetype $MultiByte$size$34 'unnamed-global-0$PST04000001'
+  ldsflda    valuetype Test_cpblk3.$MultiByte$size$34 'unnamed-global-0$PST04000001'
   ldc.i4.s   34
   volatile. cpblk
   ldloc.s    V_4
   stloc.s    V_7
-  ldsflda    valuetype $MultiByte$size$34 'unnamed-global-1$PST04000002'
+  ldsflda    valuetype Test_cpblk3.$MultiByte$size$34 'unnamed-global-1$PST04000002'
   newobj     instance void string::.ctor(int8*)
   stloc.1
   ldloc.1
@@ -189,13 +195,13 @@
   //*** unaligned. 0x1 volatile. cpblk ***
   //test1: transient pointer
   ldloca.s   V_4
-  ldsflda    valuetype $MultiByte$size$34 'unnamed-global-0$PST04000001'
+  ldsflda    valuetype Test_cpblk3.$MultiByte$size$34 'unnamed-global-0$PST04000001'
   ldc.i4.s   34
   unaligned. 0x1
   volatile. cpblk
   ldloc.s    V_4
   stloc.s    V_7
-  ldsflda    valuetype $MultiByte$size$34 'unnamed-global-1$PST04000002'
+  ldsflda    valuetype Test_cpblk3.$MultiByte$size$34 'unnamed-global-1$PST04000002'
   newobj     instance void string::.ctor(int8*)
   stloc.1
   ldloc.1
@@ -258,13 +264,13 @@
   //*** unaligned. 0x2 volatile. cpblk ***
   //test1: transient pointer
   ldloca.s   V_4
-  ldsflda    valuetype $MultiByte$size$34 'unnamed-global-0$PST04000001'
+  ldsflda    valuetype Test_cpblk3.$MultiByte$size$34 'unnamed-global-0$PST04000001'
   ldc.i4.s   34
   unaligned. 0x2
   volatile. cpblk
   ldloc.s    V_4
   stloc.s    V_7
-  ldsflda    valuetype $MultiByte$size$34 'unnamed-global-1$PST04000002'
+  ldsflda    valuetype Test_cpblk3.$MultiByte$size$34 'unnamed-global-1$PST04000002'
   newobj     instance void string::.ctor(int8*)
   stloc.1
   ldloc.1
@@ -349,3 +355,4 @@
                  57 65 6C 63 6F 6D 65 20 74 6F 20 74 68 65 20 2E  // Welcome to the .
                  4E 45 54 20 4D 61 6E 61 67 65 64 20 57 6F 72 6C  // NET Managed Worl
                  64 00 00 00)                                     // d...
+}

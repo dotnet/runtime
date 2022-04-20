@@ -6,7 +6,6 @@
 #include <config.h>
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/gc-internals.h>
-#include <mono/metadata/mono-config-dirs.h>
 #include <mono/metadata/mono-debug.h>
 #include <mono/metadata/profiler-legacy.h>
 #include <mono/metadata/profiler-private.h>
@@ -178,9 +177,6 @@ mono_profiler_load (const char *desc)
 	libname = g_strdup_printf ("mono-profiler-%s", mname);
 
 	if (load_profiler_from_installation (libname, mname, desc))
-		goto done;
-
-	if (mono_config_get_assemblies_dir () && load_profiler_from_directory (mono_assembly_getrootdir (), libname, mname, desc))
 		goto done;
 
 	if (load_profiler_from_directory (NULL, libname, mname, desc))

@@ -25,8 +25,10 @@ namespace System.Text.Json
             bool createExtensionProperty = true)
         {
 #if DEBUG
-            Debug.Assert(state.Current.JsonTypeInfo.PropertyInfoForTypeInfo.ConverterStrategy == ConverterStrategy.Object,
-                GetLookupPropertyDebugInfo(obj, unescapedPropertyName, ref state));
+            if (state.Current.JsonTypeInfo.PropertyInfoForTypeInfo.ConverterStrategy != ConverterStrategy.Object)
+            {
+                Debug.Fail(GetLookupPropertyDebugInfo(obj, unescapedPropertyName, ref state));
+            }
 #endif
 
             useExtensionProperty = false;
@@ -96,9 +98,9 @@ namespace System.Text.Json
                 unescapedPropertyName = propertyName;
             }
 
-            if (state.CanContainMetadata)
+            if (state.Current.CanContainMetadata)
             {
-                if (propertyName.Length > 0 && propertyName[0] == '$')
+                if (IsMetadataPropertyName(propertyName, state.Current.BaseJsonTypeInfo.PolymorphicTypeResolver))
                 {
                     ThrowHelper.ThrowUnexpectedMetadataException(propertyName, ref reader, ref state);
                 }

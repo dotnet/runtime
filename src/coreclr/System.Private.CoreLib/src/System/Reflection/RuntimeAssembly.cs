@@ -123,10 +123,15 @@ namespace System.Reflection
                     null, // public key token
                     GetVersion(),
                     GetLocale(),
-                    GetHashAlgorithm(),
-                    AssemblyVersionCompatibility.SameMachine,
-                    codeBase,
                     GetFlags() | AssemblyNameFlags.PublicKey);
+
+#pragma warning disable IL3000 // System.Reflection.AssemblyName.CodeBase' always returns an empty string for assemblies embedded in a single-file app.
+            an.CodeBase = codeBase;
+#pragma warning restore IL3000
+
+#pragma warning disable SYSLIB0037 // AssemblyName.HashAlgorithm is obsolete
+            an.HashAlgorithm = GetHashAlgorithm();
+#pragma warning restore SYSLIB0037
 
             Module manifestModule = ManifestModule;
             if (manifestModule.MDStreamVersion > 0x10000)

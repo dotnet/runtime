@@ -104,7 +104,7 @@ GTNODE(RUNTIMELOOKUP    , GenTreeRuntimeLookup, 0,GTK_UNOP|GTK_EXOP|DBK_NOTLIR) 
 GTNODE(ARR_ADDR         , GenTreeArrAddr     ,0,GTK_UNOP|GTK_EXOP|DBK_NOTLIR)   // Wraps an array address expression
 
 GTNODE(BSWAP            , GenTreeOp          ,0,GTK_UNOP)               // Byte swap (32-bit or 64-bit)
-GTNODE(BSWAP16          , GenTreeOp          ,0,GTK_UNOP)               // Byte swap (16-bit)
+GTNODE(BSWAP16          , GenTreeOp          ,0,GTK_UNOP)               // Byte swap lower 16-bits and zero upper 16 bits
 
 //-----------------------------------------------------------------------------
 //  Binary operators (2 operands):
@@ -227,6 +227,7 @@ GTNODE(MSUB             , GenTreeOp          ,0,GTK_BINOP|DBK_NOTHIR) // Generat
                                                                       // enabling it for both armarch and xarch for floating-point MSUB "unsafe" math.
 GTNODE(ADDEX,             GenTreeOp          ,0,GTK_BINOP|DBK_NOTHIR) // Add with sign/zero extension.
 GTNODE(BFIZ             , GenTreeOp          ,0,GTK_BINOP|DBK_NOTHIR) // Bitfield Insert in Zero.
+GTNODE(CSNEG_MI         , GenTreeOp          ,0,GTK_BINOP|DBK_NOTHIR) // Conditional select, negate, minus result
 #endif
 
 //-----------------------------------------------------------------------------

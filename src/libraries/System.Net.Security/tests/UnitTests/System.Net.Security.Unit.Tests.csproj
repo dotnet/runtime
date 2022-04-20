@@ -19,7 +19,8 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'Android'">
     <Compile Include="MD4Tests.cs" />
-    <Compile Include="..\..\src\System\Net\Security\MD4.cs" />
+    <Compile Include="$(CommonPath)System\Net\Security\MD4.cs"
+             Link="ProductionCode\Common\System\Net\Security\MD4.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != 'Browser'">
     <Compile Include="SslApplicationProtocolTests.cs" />

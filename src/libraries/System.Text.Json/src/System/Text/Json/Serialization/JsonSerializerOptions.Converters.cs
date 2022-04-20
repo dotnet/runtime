@@ -111,8 +111,8 @@ namespace System.Text.Json
             Add(JsonMetadataServices.Int16Converter);
             Add(JsonMetadataServices.Int32Converter);
             Add(JsonMetadataServices.Int64Converter);
-            Add(new JsonElementConverter());
-            Add(new JsonDocumentConverter());
+            Add(JsonMetadataServices.JsonElementConverter);
+            Add(JsonMetadataServices.JsonDocumentConverter);
             Add(JsonMetadataServices.ObjectConverter);
             Add(JsonMetadataServices.SByteConverter);
             Add(JsonMetadataServices.SingleConverter);
@@ -139,6 +139,14 @@ namespace System.Text.Json
         /// Once serialization or deserialization occurs, the list cannot be modified.
         /// </remarks>
         public IList<JsonConverter> Converters => _converters;
+
+        /// <summary>
+        /// The list of custom polymorphic type configurations.
+        /// </summary>
+        /// <remarks>
+        /// Once serialization or deserialization occurs, the list cannot be modified.
+        /// </remarks>
+        public IList<JsonPolymorphicTypeConfiguration> PolymorphicTypeConfigurations => _polymorphicTypeConfigurations;
 
         internal JsonConverter GetConverterFromMember(Type? parentClassType, Type propertyType, MemberInfo? memberInfo)
         {

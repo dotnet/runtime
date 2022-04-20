@@ -496,7 +496,6 @@ namespace System.Reflection.Emit
             code[code_len++] = arg;
         }
 
-        [ComVisible(true)]
         public virtual void Emit(OpCode opcode, ConstructorInfo con)
         {
             int token = token_gen.GetToken(con, true);

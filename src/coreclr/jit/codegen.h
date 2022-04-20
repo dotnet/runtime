@@ -1265,6 +1265,7 @@ protected:
     void genCodeForIndir(GenTreeIndir* tree);
     void genCodeForNegNot(GenTree* tree);
     void genCodeForBswap(GenTree* tree);
+    bool genCanOmitNormalizationForBswap16(GenTree* tree);
     void genCodeForLclVar(GenTreeLclVar* tree);
     void genCodeForLclFld(GenTreeLclFld* tree);
     void genCodeForStoreLclFld(GenTreeLclFld* tree);
@@ -1365,7 +1366,7 @@ protected:
 #endif
     bool genEmitOptimizedGCWriteBarrier(GCInfo::WriteBarrierForm writeBarrierForm, GenTree* addr, GenTree* data);
     GenTree* getCallTarget(const GenTreeCall* call, CORINFO_METHOD_HANDLE* methHnd);
-    regNumber getCallIndirectionCellReg(const GenTreeCall* call);
+    regNumber getCallIndirectionCellReg(GenTreeCall* call);
     void genCall(GenTreeCall* call);
     void genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackArgBytes));
     void genJmpMethod(GenTree* jmp);
@@ -1381,6 +1382,7 @@ protected:
     void genCodeForMsub(GenTreeOp* tree);
     void genCodeForBfiz(GenTreeOp* tree);
     void genCodeForAddEx(GenTreeOp* tree);
+    void genCodeForCond(GenTreeOp* tree);
 #endif // TARGET_ARM64
 
 #if defined(FEATURE_EH_FUNCLETS)
