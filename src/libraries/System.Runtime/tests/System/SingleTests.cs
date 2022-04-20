@@ -3,8 +3,6 @@
 
 using System.Collections.Generic;
 using System.Globalization;
-using System.Runtime.CompilerServices;
-using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 #pragma warning disable xUnit1025 // reporting duplicate test cases due to not distinguishing 0.0 from -0.0, NaN from -NaN
@@ -747,6 +745,98 @@ namespace System.Tests
         {
             float result = float.Parse(value.ToString("R"));
             Assert.Equal(BitConverter.SingleToInt32Bits(value), BitConverter.SingleToInt32Bits(result));
+        }
+
+        [Theory]
+        [InlineData(float.NegativeInfinity, float.PositiveInfinity, float.PositiveInfinity)]
+        [InlineData(float.PositiveInfinity, float.NegativeInfinity, float.PositiveInfinity)]
+        [InlineData(float.MinValue, float.MaxValue, float.MaxValue)]
+        [InlineData(float.MaxValue, float.MinValue, float.MaxValue)]
+        [InlineData(float.NaN, float.NaN, float.NaN)]
+        [InlineData(float.NaN, 1.0f, 1.0f)]
+        [InlineData(1.0f, float.NaN, 1.0f)]
+        [InlineData(float.PositiveInfinity, float.NaN, float.PositiveInfinity)]
+        [InlineData(float.NegativeInfinity, float.NaN, float.NegativeInfinity)]
+        [InlineData(float.NaN, float.PositiveInfinity, float.PositiveInfinity)]
+        [InlineData(float.NaN, float.NegativeInfinity, float.NegativeInfinity)]
+        [InlineData(-0.0f, 0.0f, 0.0f)]
+        [InlineData(0.0f, -0.0f, 0.0f)]
+        [InlineData(2.0f, -3.0f, -3.0f)]
+        [InlineData(-3.0f, 2.0f, -3.0f)]
+        [InlineData(3.0f, -2.0f, 3.0f)]
+        [InlineData(-2.0f, 3.0f, 3.0f)]
+        public static void MaxMagnitudeNumberTest(float x, float y, float expectedResult)
+        {
+            AssertExtensions.Equal(expectedResult, float.MaxMagnitudeNumber(x, y), 0.0f);
+        }
+
+        [Theory]
+        [InlineData(float.NegativeInfinity, float.PositiveInfinity, float.PositiveInfinity)]
+        [InlineData(float.PositiveInfinity, float.NegativeInfinity, float.PositiveInfinity)]
+        [InlineData(float.MinValue, float.MaxValue, float.MaxValue)]
+        [InlineData(float.MaxValue, float.MinValue, float.MaxValue)]
+        [InlineData(float.NaN, float.NaN, float.NaN)]
+        [InlineData(float.NaN, 1.0f, 1.0f)]
+        [InlineData(1.0f, float.NaN, 1.0f)]
+        [InlineData(float.PositiveInfinity, float.NaN, float.PositiveInfinity)]
+        [InlineData(float.NegativeInfinity, float.NaN, float.NegativeInfinity)]
+        [InlineData(float.NaN, float.PositiveInfinity, float.PositiveInfinity)]
+        [InlineData(float.NaN, float.NegativeInfinity, float.NegativeInfinity)]
+        [InlineData(-0.0f, 0.0f, 0.0f)]
+        [InlineData(0.0f, -0.0f, 0.0f)]
+        [InlineData(2.0f, -3.0f, 2.0f)]
+        [InlineData(-3.0f, 2.0f, 2.0f)]
+        [InlineData(3.0f, -2.0f, 3.0f)]
+        [InlineData(-2.0f, 3.0f, 3.0f)]
+        public static void MaxNumberTest(float x, float y, float expectedResult)
+        {
+            AssertExtensions.Equal(expectedResult, float.MaxNumber(x, y), 0.0f);
+        }
+
+        [Theory]
+        [InlineData(float.NegativeInfinity, float.PositiveInfinity, float.NegativeInfinity)]
+        [InlineData(float.PositiveInfinity, float.NegativeInfinity, float.NegativeInfinity)]
+        [InlineData(float.MinValue, float.MaxValue, float.MinValue)]
+        [InlineData(float.MaxValue, float.MinValue, float.MinValue)]
+        [InlineData(float.NaN, float.NaN, float.NaN)]
+        [InlineData(float.NaN, 1.0f, 1.0f)]
+        [InlineData(1.0f, float.NaN, 1.0f)]
+        [InlineData(float.PositiveInfinity, float.NaN, float.PositiveInfinity)]
+        [InlineData(float.NegativeInfinity, float.NaN, float.NegativeInfinity)]
+        [InlineData(float.NaN, float.PositiveInfinity, float.PositiveInfinity)]
+        [InlineData(float.NaN, float.NegativeInfinity, float.NegativeInfinity)]
+        [InlineData(-0.0f, 0.0f, -0.0f)]
+        [InlineData(0.0f, -0.0f, -0.0f)]
+        [InlineData(2.0f, -3.0f, 2.0f)]
+        [InlineData(-3.0f, 2.0f, 2.0f)]
+        [InlineData(3.0f, -2.0f, -2.0f)]
+        [InlineData(-2.0f, 3.0f, -2.0f)]
+        public static void MinMagnitudeNumberTest(float x, float y, float expectedResult)
+        {
+            AssertExtensions.Equal(expectedResult, float.MinMagnitudeNumber(x, y), 0.0f);
+        }
+
+        [Theory]
+        [InlineData(float.NegativeInfinity, float.PositiveInfinity, float.NegativeInfinity)]
+        [InlineData(float.PositiveInfinity, float.NegativeInfinity, float.NegativeInfinity)]
+        [InlineData(float.MinValue, float.MaxValue, float.MinValue)]
+        [InlineData(float.MaxValue, float.MinValue, float.MinValue)]
+        [InlineData(float.NaN, float.NaN, float.NaN)]
+        [InlineData(float.NaN, 1.0f, 1.0f)]
+        [InlineData(1.0f, float.NaN, 1.0f)]
+        [InlineData(float.PositiveInfinity, float.NaN, float.PositiveInfinity)]
+        [InlineData(float.NegativeInfinity, float.NaN, float.NegativeInfinity)]
+        [InlineData(float.NaN, float.PositiveInfinity, float.PositiveInfinity)]
+        [InlineData(float.NaN, float.NegativeInfinity, float.NegativeInfinity)]
+        [InlineData(-0.0f, 0.0f, -0.0f)]
+        [InlineData(0.0f, -0.0f, -0.0f)]
+        [InlineData(2.0f, -3.0f, -3.0f)]
+        [InlineData(-3.0f, 2.0f, -3.0f)]
+        [InlineData(3.0f, -2.0f, -2.0f)]
+        [InlineData(-2.0f, 3.0f, -2.0f)]
+        public static void MinNumberTest(float x, float y, float expectedResult)
+        {
+            AssertExtensions.Equal(expectedResult, float.MinNumber(x, y), 0.0f);
         }
     }
 }
