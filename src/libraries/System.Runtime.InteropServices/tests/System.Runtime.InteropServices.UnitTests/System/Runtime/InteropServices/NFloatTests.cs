@@ -8,6 +8,8 @@ using System.Text;
 using System.Threading.Tasks;
 using Xunit;
 
+#pragma warning disable xUnit1025 // reporting duplicate test cases due to not distinguishing 0.0 from -0.0, NaN from -NaN
+
 namespace System.Runtime.InteropServices.Tests
 {
     public class NFloatTests
@@ -915,6 +917,190 @@ namespace System.Runtime.InteropServices.Tests
             NFloat nfloat = new NFloat(value);
 
             Assert.Equal(value.ToString(), nfloat.ToString());
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.Is32BitProcess))]
+        [InlineData(float.NegativeInfinity, float.PositiveInfinity, float.PositiveInfinity)]
+        [InlineData(float.PositiveInfinity, float.NegativeInfinity, float.PositiveInfinity)]
+        [InlineData(float.MinValue, float.MaxValue, float.MaxValue)]
+        [InlineData(float.MaxValue, float.MinValue, float.MaxValue)]
+        [InlineData(float.NaN, float.NaN, float.NaN)]
+        [InlineData(float.NaN, 1.0f, 1.0f)]
+        [InlineData(1.0f, float.NaN, 1.0f)]
+        [InlineData(float.PositiveInfinity, float.NaN, float.PositiveInfinity)]
+        [InlineData(float.NegativeInfinity, float.NaN, float.NegativeInfinity)]
+        [InlineData(float.NaN, float.PositiveInfinity, float.PositiveInfinity)]
+        [InlineData(float.NaN, float.NegativeInfinity, float.NegativeInfinity)]
+        [InlineData(-0.0f, 0.0f, 0.0f)]
+        [InlineData(0.0f, -0.0f, 0.0f)]
+        [InlineData(2.0f, -3.0f, -3.0f)]
+        [InlineData(-3.0f, 2.0f, -3.0f)]
+        [InlineData(3.0f, -2.0f, 3.0f)]
+        [InlineData(-2.0f, 3.0f, 3.0f)]
+        public static void MaxMagnitudeNumberTest32(float x, float y, float expectedResult)
+        {
+            AssertExtensions.Equal(expectedResult, (float)NFloat.MaxMagnitudeNumber(x, y), 0.0f);
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.Is32BitProcess))]
+        [InlineData(float.NegativeInfinity, float.PositiveInfinity, float.PositiveInfinity)]
+        [InlineData(float.PositiveInfinity, float.NegativeInfinity, float.PositiveInfinity)]
+        [InlineData(float.MinValue, float.MaxValue, float.MaxValue)]
+        [InlineData(float.MaxValue, float.MinValue, float.MaxValue)]
+        [InlineData(float.NaN, float.NaN, float.NaN)]
+        [InlineData(float.NaN, 1.0f, 1.0f)]
+        [InlineData(1.0f, float.NaN, 1.0f)]
+        [InlineData(float.PositiveInfinity, float.NaN, float.PositiveInfinity)]
+        [InlineData(float.NegativeInfinity, float.NaN, float.NegativeInfinity)]
+        [InlineData(float.NaN, float.PositiveInfinity, float.PositiveInfinity)]
+        [InlineData(float.NaN, float.NegativeInfinity, float.NegativeInfinity)]
+        [InlineData(-0.0f, 0.0f, 0.0f)]
+        [InlineData(0.0f, -0.0f, 0.0f)]
+        [InlineData(2.0f, -3.0f, 2.0f)]
+        [InlineData(-3.0f, 2.0f, 2.0f)]
+        [InlineData(3.0f, -2.0f, 3.0f)]
+        [InlineData(-2.0f, 3.0f, 3.0f)]
+        public static void MaxNumberTest32(float x, float y, float expectedResult)
+        {
+            AssertExtensions.Equal(expectedResult, (float)NFloat.MaxNumber(x, y), 0.0f);
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.Is32BitProcess))]
+        [InlineData(float.NegativeInfinity, float.PositiveInfinity, float.NegativeInfinity)]
+        [InlineData(float.PositiveInfinity, float.NegativeInfinity, float.NegativeInfinity)]
+        [InlineData(float.MinValue, float.MaxValue, float.MinValue)]
+        [InlineData(float.MaxValue, float.MinValue, float.MinValue)]
+        [InlineData(float.NaN, float.NaN, float.NaN)]
+        [InlineData(float.NaN, 1.0f, 1.0f)]
+        [InlineData(1.0f, float.NaN, 1.0f)]
+        [InlineData(float.PositiveInfinity, float.NaN, float.PositiveInfinity)]
+        [InlineData(float.NegativeInfinity, float.NaN, float.NegativeInfinity)]
+        [InlineData(float.NaN, float.PositiveInfinity, float.PositiveInfinity)]
+        [InlineData(float.NaN, float.NegativeInfinity, float.NegativeInfinity)]
+        [InlineData(-0.0f, 0.0f, -0.0f)]
+        [InlineData(0.0f, -0.0f, -0.0f)]
+        [InlineData(2.0f, -3.0f, 2.0f)]
+        [InlineData(-3.0f, 2.0f, 2.0f)]
+        [InlineData(3.0f, -2.0f, -2.0f)]
+        [InlineData(-2.0f, 3.0f, -2.0f)]
+        public static void MinMagnitudeNumberTest32(float x, float y, float expectedResult)
+        {
+            AssertExtensions.Equal(expectedResult, (float)NFloat.MinMagnitudeNumber(x, y), 0.0f);
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.Is32BitProcess))]
+        [InlineData(float.NegativeInfinity, float.PositiveInfinity, float.NegativeInfinity)]
+        [InlineData(float.PositiveInfinity, float.NegativeInfinity, float.NegativeInfinity)]
+        [InlineData(float.MinValue, float.MaxValue, float.MinValue)]
+        [InlineData(float.MaxValue, float.MinValue, float.MinValue)]
+        [InlineData(float.NaN, float.NaN, float.NaN)]
+        [InlineData(float.NaN, 1.0f, 1.0f)]
+        [InlineData(1.0f, float.NaN, 1.0f)]
+        [InlineData(float.PositiveInfinity, float.NaN, float.PositiveInfinity)]
+        [InlineData(float.NegativeInfinity, float.NaN, float.NegativeInfinity)]
+        [InlineData(float.NaN, float.PositiveInfinity, float.PositiveInfinity)]
+        [InlineData(float.NaN, float.NegativeInfinity, float.NegativeInfinity)]
+        [InlineData(-0.0f, 0.0f, -0.0f)]
+        [InlineData(0.0f, -0.0f, -0.0f)]
+        [InlineData(2.0f, -3.0f, -3.0f)]
+        [InlineData(-3.0f, 2.0f, -3.0f)]
+        [InlineData(3.0f, -2.0f, -2.0f)]
+        [InlineData(-2.0f, 3.0f, -2.0f)]
+        public static void MinNumberTest32(float x, float y, float expectedResult)
+        {
+            AssertExtensions.Equal(expectedResult, (float)NFloat.MinNumber(x, y), 0.0f);
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))]
+        [InlineData(double.NegativeInfinity, double.PositiveInfinity, double.PositiveInfinity)]
+        [InlineData(double.PositiveInfinity, double.NegativeInfinity, double.PositiveInfinity)]
+        [InlineData(double.MinValue, double.MaxValue, double.MaxValue)]
+        [InlineData(double.MaxValue, double.MinValue, double.MaxValue)]
+        [InlineData(double.NaN, double.NaN, double.NaN)]
+        [InlineData(double.NaN, 1.0, 1.0)]
+        [InlineData(1.0, double.NaN, 1.0)]
+        [InlineData(double.PositiveInfinity, double.NaN, double.PositiveInfinity)]
+        [InlineData(double.NegativeInfinity, double.NaN, double.NegativeInfinity)]
+        [InlineData(double.NaN, double.PositiveInfinity, double.PositiveInfinity)]
+        [InlineData(double.NaN, double.NegativeInfinity, double.NegativeInfinity)]
+        [InlineData(-0.0, 0.0, 0.0)]
+        [InlineData(0.0, -0.0, 0.0)]
+        [InlineData(2.0, -3.0, -3.0)]
+        [InlineData(-3.0, 2.0, -3.0)]
+        [InlineData(3.0, -2.0, 3.0)]
+        [InlineData(-2.0, 3.0, 3.0)]
+        public static void MaxMagnitudeNumberTest64(double x, double y, double expectedResult)
+        {
+            AssertExtensions.Equal(expectedResult, NFloat.MaxMagnitudeNumber((NFloat)x, (NFloat)y), 0.0);
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))]
+        [InlineData(double.NegativeInfinity, double.PositiveInfinity, double.PositiveInfinity)]
+        [InlineData(double.PositiveInfinity, double.NegativeInfinity, double.PositiveInfinity)]
+        [InlineData(double.MinValue, double.MaxValue, double.MaxValue)]
+        [InlineData(double.MaxValue, double.MinValue, double.MaxValue)]
+        [InlineData(double.NaN, double.NaN, double.NaN)]
+        [InlineData(double.NaN, 1.0, 1.0)]
+        [InlineData(1.0, double.NaN, 1.0)]
+        [InlineData(double.PositiveInfinity, double.NaN, double.PositiveInfinity)]
+        [InlineData(double.NegativeInfinity, double.NaN, double.NegativeInfinity)]
+        [InlineData(double.NaN, double.PositiveInfinity, double.PositiveInfinity)]
+        [InlineData(double.NaN, double.NegativeInfinity, double.NegativeInfinity)]
+        [InlineData(-0.0, 0.0, 0.0)]
+        [InlineData(0.0, -0.0, 0.0)]
+        [InlineData(2.0, -3.0, 2.0)]
+        [InlineData(-3.0, 2.0, 2.0)]
+        [InlineData(3.0, -2.0, 3.0)]
+        [InlineData(-2.0, 3.0, 3.0)]
+        public static void MaxNumberTest64(double x, double y, double expectedResult)
+        {
+            AssertExtensions.Equal(expectedResult, NFloat.MaxNumber((NFloat)x, (NFloat)y), 0.0);
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))]
+        [InlineData(double.NegativeInfinity, double.PositiveInfinity, double.NegativeInfinity)]
+        [InlineData(double.PositiveInfinity, double.NegativeInfinity, double.NegativeInfinity)]
+        [InlineData(double.MinValue, double.MaxValue, double.MinValue)]
+        [InlineData(double.MaxValue, double.MinValue, double.MinValue)]
+        [InlineData(double.NaN, double.NaN, double.NaN)]
+        [InlineData(double.NaN, 1.0, 1.0)]
+        [InlineData(1.0, double.NaN, 1.0)]
+        [InlineData(double.PositiveInfinity, double.NaN, double.PositiveInfinity)]
+        [InlineData(double.NegativeInfinity, double.NaN, double.NegativeInfinity)]
+        [InlineData(double.NaN, double.PositiveInfinity, double.PositiveInfinity)]
+        [InlineData(double.NaN, double.NegativeInfinity, double.NegativeInfinity)]
+        [InlineData(-0.0, 0.0, -0.0)]
+        [InlineData(0.0, -0.0, -0.0)]
+        [InlineData(2.0, -3.0, 2.0)]
+        [InlineData(-3.0, 2.0, 2.0)]
+        [InlineData(3.0, -2.0, -2.0)]
+        [InlineData(-2.0, 3.0, -2.0)]
+        public static void MinMagnitudeNumberTest64(double x, double y, double expectedResult)
+        {
+            AssertExtensions.Equal(expectedResult, NFloat.MinMagnitudeNumber((NFloat)x, (NFloat)y), 0.0);
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))]
+        [InlineData(double.NegativeInfinity, double.PositiveInfinity, double.NegativeInfinity)]
+        [InlineData(double.PositiveInfinity, double.NegativeInfinity, double.NegativeInfinity)]
+        [InlineData(double.MinValue, double.MaxValue, double.MinValue)]
+        [InlineData(double.MaxValue, double.MinValue, double.MinValue)]
+        [InlineData(double.NaN, double.NaN, double.NaN)]
+        [InlineData(double.NaN, 1.0, 1.0)]
+        [InlineData(1.0, double.NaN, 1.0)]
+        [InlineData(double.PositiveInfinity, double.NaN, double.PositiveInfinity)]
+        [InlineData(double.NegativeInfinity, double.NaN, double.NegativeInfinity)]
+        [InlineData(double.NaN, double.PositiveInfinity, double.PositiveInfinity)]
+        [InlineData(double.NaN, double.NegativeInfinity, double.NegativeInfinity)]
+        [InlineData(-0.0, 0.0, -0.0)]
+        [InlineData(0.0, -0.0, -0.0)]
+        [InlineData(2.0, -3.0, -3.0)]
+        [InlineData(-3.0, 2.0, -3.0)]
+        [InlineData(3.0, -2.0, -2.0)]
+        [InlineData(-2.0, 3.0, -2.0)]
+        public static void MinNumberTest64(double x, double y, double expectedResult)
+        {
+            AssertExtensions.Equal(expectedResult, NFloat.MinNumber((NFloat)x, (NFloat)y), 0.0);
         }
     }
 }
