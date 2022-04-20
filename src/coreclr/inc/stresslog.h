@@ -360,12 +360,6 @@ public:
     MapViewHolder hMapView;
     static void* AllocMemoryMapped(size_t n);
 
-#ifndef STRESS_LOG_ANALYZER
-    ~StressLog();
-    static Volatile<bool> disabled;
-    static Volatile<LONG> writerCount;
-#endif
-
     struct StressLogHeader
     {
         size_t        headerSize;               // size of this header including size field and moduleImage
