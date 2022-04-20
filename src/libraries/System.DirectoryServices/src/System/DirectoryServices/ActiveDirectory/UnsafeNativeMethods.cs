@@ -432,7 +432,6 @@ namespace System.DirectoryServices.ActiveDirectory
         }
     }
 
-    [StructLayout(LayoutKind.Sequential)]
     internal struct LSA_FOREST_TRUST_DOMAIN_INFO
     {
         public IntPtr sid;
@@ -444,7 +443,6 @@ namespace System.DirectoryServices.ActiveDirectory
         public IntPtr NetBIOSNameBuffer;
     }
 
-    [StructLayout(LayoutKind.Sequential)]
     internal struct LSA_FOREST_TRUST_BINARY_DATA
     {
         public int Length;
