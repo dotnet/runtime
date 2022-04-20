@@ -2279,11 +2279,10 @@ ValueNum ValueNumStore::VNForFunc(
 }
 
 //------------------------------------------------------------------------------
-// VNForMapStore : Evaluate VNF_MapStore with the given arguments.
-//
+// VNForMapStore: Create the VN for a precise store (to a precise map).
 //
 // Arguments:
-//    map   - Map value number
+//    map   - (VN of) the precise map
 //    index - Index value number
 //    value - New value for map[index]
 //
@@ -2292,6 +2291,8 @@ ValueNum ValueNumStore::VNForFunc(
 //
 ValueNum ValueNumStore::VNForMapStore(ValueNum map, ValueNum index, ValueNum value)
 {
+    assert(MapIsPrecise(map));
+
     BasicBlock* const            bb      = m_pComp->compCurBB;
     BasicBlock::loopNumber const loopNum = bb->bbNatLoopNum;
     ValueNum const               result  = VNForFunc(TypeOfVN(map), VNF_MapStore, map, index, value, loopNum);
@@ -2308,8 +2309,22 @@ ValueNum ValueNumStore::VNForMapStore(ValueNum map, ValueNum index, ValueNum val
     return result;
 }
 
+//------------------------------------------------------------------------------
+// VNForMapPhysicalStore: Create the VN for a physical store (to a physical map).
+//
+// Arguments:
+//    map    - (VN of) the physical map
+//    offset - The store offset
+//    size   - Size of "value" (in bytes)
+//    value  - The value being stored
+//
+// Return Value:
+//    Value number for "map" with "map[offset:offset + size - 1]" set to "value".
+//
 ValueNum ValueNumStore::VNForMapPhysicalStore(ValueNum map, unsigned offset, unsigned size, ValueNum value)
 {
+    assert(MapIsPhysical(map));
+
     ValueNum selector = EncodePhysicalSelector(offset, size);
     ValueNum result   = VNForFunc(TypeOfVN(map), VNF_MapPhysicalStore, map, selector, value);
 
@@ -2321,25 +2336,21 @@ ValueNum ValueNumStore::VNForMapPhysicalStore(ValueNum map, unsigned offset, uns
 }
 
 //------------------------------------------------------------------------------
-// VNForMapSelect : Evaluate VNF_MapSelect with the given arguments.
-//
+// VNForMapSelect: Select value from a precise map.
 //
 // Arguments:
-//    vnk   - Value number kind
-//    type  - Value type
+//    vnk   - Value number kind (see "VNForMapSelectWork" notes)
+//    type  - The type to select
 //    map   - Map value number
 //    index - Index value number
 //
 // Return Value:
-//    Value number for the result of the evaluation.
-//
-// Notes:
-//    This requires a "ValueNumKind" because it will attempt, given "select(phi(m1, ..., mk), ind)", to evaluate
-//    "select(m1, ind)", ..., "select(mk, ind)" to see if they agree.  It needs to know which kind of value number
-//    (liberal/conservative) to read from the SSA def referenced in the phi argument.
+//    Value number corresponding to "map[index]".
 //
 ValueNum ValueNumStore::VNForMapSelect(ValueNumKind vnk, var_types type, ValueNum map, ValueNum index)
 {
+    assert(MapIsPrecise(map));
+
     int      budget          = m_mapSelectBudget;
     bool     usedRecursiveVN = false;
     ValueNum result          = VNForMapSelectWork(vnk, type, map, index, &budget, &usedRecursiveVN);
@@ -2354,8 +2365,25 @@ ValueNum ValueNumStore::VNForMapSelect(ValueNumKind vnk, var_types type, ValueNu
     return result;
 }
 
+//------------------------------------------------------------------------------
+// VNForMapPhysicalSelect: Select value from a physical map.
+//
+// Arguments:
+//    vnk    - Value number kind (see the notes for "VNForMapSelect")
+//    type   - The type to select
+//    map    - (VN of) the physical map
+//    offset - Offset to select from
+//    size   - Size to select
+//
+// Return Value:
+//    Value number corresponding to "map[offset:offset + size - 1]". The value
+//    number returned can be of a type different from "type", as physical maps
+//    do not have canonical types, only sizes.
+//
 ValueNum ValueNumStore::VNForMapPhysicalSelect(ValueNumKind vnk, var_types type, ValueNum map, unsigned offset, unsigned size)
 {
+    assert(MapIsPhysical(map));
+
     ValueNum selector        = EncodePhysicalSelector(offset, size);
     int      budget          = m_mapSelectBudget;
     bool     usedRecursiveVN = false;
@@ -2375,7 +2403,6 @@ ValueNum ValueNumStore::VNForMapPhysicalSelect(ValueNumKind vnk, var_types type,
 
 //------------------------------------------------------------------------------
 // VNForMapSelectWork : A method that does the work for VNForMapSelect and may call itself recursively.
-//
 //
 // Arguments:
 //    vnk              - Value number kind
@@ -2400,15 +2427,9 @@ ValueNum ValueNumStore::VNForMapSelectWork(
 TailCall:
     // This label allows us to directly implement a tail call by setting up the arguments, and doing a goto to here.
 
-#ifdef DEBUG
     assert(map != NoVN && index != NoVN);
     assert(map   == VNNormalValue(map));   // Arguments carry no exceptions.
     assert(index == VNNormalValue(index)); // Arguments carry no exceptions.
-
-    // Currently, all precise maps represent memory, and all physical - typed values.
-    const bool mapIsPrecise  = (TypeOfVN(map) == TYP_HEAP) || (TypeOfVN(map) == TYP_MEM);
-    const bool mapIsPhysical = !mapIsPrecise;
-#endif // DEBUG
 
     *pUsedRecursiveVN = false;
 
@@ -2458,7 +2479,7 @@ TailCall:
         {
             if (funcApp.m_func == VNF_MapStore)
             {
-                assert(mapIsPrecise);
+                assert(MapIsPrecise(map));
 
                 // select(store(m, i, v), i) == v
                 if (funcApp.m_args[1] == index)
@@ -2492,7 +2513,7 @@ TailCall:
             }
             else if (funcApp.m_func == VNF_MapPhysicalStore)
             {
-                assert(mapIsPhysical);
+                assert(MapIsPhysical(map));
 
 #if FEATURE_VN_TRACE_APPLY_SELECTORS
                 JITDUMP("      select(");
@@ -2548,7 +2569,7 @@ TailCall:
             }
             else if (funcApp.m_func == VNF_BitCast)
             {
-                assert(mapIsPhysical);
+                assert(MapIsPhysical(map));
 #if FEATURE_VN_TRACE_APPLY_SELECTORS
                 JITDUMP("      select(bitcast<%s>(" FMT_VN ")) ==> select(" FMT_VN ")\n",
                         varTypeName(TypeOfVN(funcApp.m_args[0])), funcApp.m_args[0], funcApp.m_args[0]);
@@ -2559,7 +2580,7 @@ TailCall:
             }
             else if (funcApp.m_func == VNF_ZeroObj)
             {
-                assert(mapIsPhysical);
+                assert(MapIsPhysical(map));
 
                 // TODO-CQ: support selection of TYP_STRUCT here.
                 if (type != TYP_STRUCT)
@@ -2707,6 +2728,16 @@ TailCall:
     }
 }
 
+//------------------------------------------------------------------------
+// EncodePhysicalSelector: Get the VN representing a physical selector.
+//
+// Arguments:
+//    offset - The offset to encode
+//    size   - The size to encode
+//
+// Return Value:
+//    VN encoding the "{ offset, size }" tuple.
+//
 ValueNum ValueNumStore::EncodePhysicalSelector(unsigned offset, unsigned size)
 {
     assert(size != 0);
@@ -2714,6 +2745,17 @@ ValueNum ValueNumStore::EncodePhysicalSelector(unsigned offset, unsigned size)
     return VNForLongCon(static_cast<uint64_t>(offset) | (static_cast<uint64_t>(size) << 32));
 }
 
+//------------------------------------------------------------------------
+// DecodePhysicalSelector: Get the components of a physical selector from the
+//                         VN representing one.
+//
+// Arguments:
+//    selector - The VN of the selector obtained via "EncodePhysicalSelector"
+//    pSize    - [out] parameter for the size
+//
+// Return Value:
+//    The offset.
+//
 unsigned ValueNumStore::DecodePhysicalSelector(ValueNum selector, unsigned* pSize)
 {
     uint64_t value  = ConstantValue<uint64_t>(selector);
@@ -4103,6 +4145,22 @@ ValueNum ValueNumStore::VNForExpr(BasicBlock* block, var_types typ)
     return resultVN;
 }
 
+//------------------------------------------------------------------------
+// VNForLoad: Get the VN for a load from a location (physical map).
+//
+// Arguments:
+//    vnk           - The kind of VN to select (see "VNForMapSelectWork" notes)
+//    locationValue - (VN of) the value location has
+//    locationSize  - Size of the location
+//    loadType      - Type being loaded
+//    offset        - In-location offset being loaded from
+//    loadSize      - Number of bytes being loaded
+//
+// Return Value:
+//    Value number representing "locationValue[offset:offset + loadSize - 1]",
+//    normalized to the same actual type as "loadType". Handles out-of-bounds
+//    loads by returning a "new, unique" VN.
+//
 ValueNum ValueNumStore::VNForLoad(ValueNumKind vnk,
                                   ValueNum     locationValue,
                                   unsigned     locationSize,
@@ -4133,11 +4191,16 @@ ValueNum ValueNumStore::VNForLoad(ValueNumKind vnk,
 
     // Unlike with stores, loads we always normalize (to have the property that the tree's type
     // is the same as its VN's).
-    loadValue = VNForLoadStoreBitcast(loadValue, loadType, loadSize);
+    loadValue = VNForLoadStoreBitCast(loadValue, loadType, loadSize);
+
+    assert(genActualType(TypeOfVN(loadValue)) == genActualType(loadType));
 
     return loadValue;
 }
 
+//------------------------------------------------------------------------
+// VNPairForLoad: VNForLoad applied to a ValueNumPair.
+//
 ValueNumPair ValueNumStore::VNPairForLoad(
     ValueNumPair locationValue, unsigned locationSize, var_types loadType, ssize_t offset, unsigned loadSize)
 {
@@ -4148,6 +4211,24 @@ ValueNumPair ValueNumStore::VNPairForLoad(
     return ValueNumPair(liberalVN, conservVN);
 }
 
+//------------------------------------------------------------------------
+// VNForStore: Get the VN for a store to a location (physical map).
+//
+// Arguments:
+//    locationValue - (VN of) the value location had before the store
+//    locationSize  - Size of the location
+//    offset        - In-location offset being stored to
+//    storeSize     - Number of bytes being stored
+//    value         - (VN of) the value being stored
+//
+// Return Value:
+//    Value number for "locationValue" with "storeSize" bytes starting at
+//    "offset" set to "value". "NoVN" in case of an out-of-bounds store
+//    (the caller is expected to explicitly handle that).
+//
+// Notes:
+//    Does not handle "entire" (whole/identity) stores.
+//
 ValueNum ValueNumStore::VNForStore(ValueNum locationValue,
                                    unsigned locationSize,
                                    ssize_t  offset,
@@ -4174,6 +4255,9 @@ ValueNum ValueNumStore::VNForStore(ValueNum locationValue,
     return VNForMapPhysicalStore(locationValue, storeOffset, storeSize, value);
 }
 
+//------------------------------------------------------------------------
+// VNPairForStore: VNForStore applied to a ValueNumPair.
+//
 ValueNumPair ValueNumStore::VNPairForStore(ValueNumPair locationValue,
                                            unsigned     locationSize,
                                            ssize_t      offset,
@@ -4195,7 +4279,28 @@ ValueNumPair ValueNumStore::VNPairForStore(ValueNumPair locationValue,
     return ValueNumPair(liberalVN, conservVN);
 }
 
-ValueNum ValueNumStore::VNForLoadStoreBitcast(ValueNum value, var_types indType, unsigned indSize)
+//------------------------------------------------------------------------
+// VNForLoadStoreBitCast: Normalize a value number to the desired type.
+//
+// Arguments:
+//    value   - (VN of) the value needed normalization
+//    indType - The type to normalize to
+//    indSize - The size of "indType" and "value" (relevant for structs)
+//
+// Return Value:
+//    Value number the logical "BitCast<indType>(value)".
+//
+// Notes:
+//    As far as the physical maps are concerned, all values with the same
+//    size "are equal". However, both IR and the rest of VN do distinguish
+//    between "4 bytes of TYP_INT" and "4 bytes of TYP_FLOAT". This method
+//    is called in cases where that gap needs to be bridged and the value
+//    "normalized" to the appropriate type. Notably, this normalization is
+//    only performed for primitives -- TYP_STRUCTs of different handles but
+//    same size are treated as equal (intentionally so -- this is good from
+//    CQ, TP and simplicity standpoints).
+//
+ValueNum ValueNumStore::VNForLoadStoreBitCast(ValueNum value, var_types indType, unsigned indSize)
 {
     var_types typeOfValue = TypeOfVN(value);
 
@@ -4233,9 +4338,12 @@ ValueNum ValueNumStore::VNForLoadStoreBitcast(ValueNum value, var_types indType,
     return value;
 }
 
-ValueNumPair ValueNumStore::VNPairForLoadStoreBitcast(ValueNumPair value, var_types indType, unsigned indSize)
+//------------------------------------------------------------------------
+// VNPairForLoadStoreBitCast: VNForLoadStoreBitCast applied to a ValueNumPair.
+//
+ValueNumPair ValueNumStore::VNPairForLoadStoreBitCast(ValueNumPair value, var_types indType, unsigned indSize)
 {
-    ValueNum liberalVN = VNForLoadStoreBitcast(value.GetLiberal(), indType, indSize);
+    ValueNum liberalVN = VNForLoadStoreBitCast(value.GetLiberal(), indType, indSize);
     ValueNum conservVN;
     if (value.BothEqual())
     {
@@ -4243,7 +4351,7 @@ ValueNumPair ValueNumStore::VNPairForLoadStoreBitcast(ValueNumPair value, var_ty
     }
     else
     {
-        conservVN = VNForLoadStoreBitcast(value.GetConservative(), indType, indSize);
+        conservVN = VNForLoadStoreBitCast(value.GetConservative(), indType, indSize);
     }
 
     return ValueNumPair(liberalVN, conservVN);
@@ -4420,6 +4528,16 @@ ValueNum ValueNumStore::ExtendPtrVN(GenTree* opA, FieldSeqNode* fldSeq, ssize_t 
     return res;
 }
 
+//------------------------------------------------------------------------
+// fgValueNumberArrayElemLoad: Value number a load from an array element.
+//
+// Arguments:
+//    loadTree - The indirection tree performing the load
+//    addrFunc - The "VNF_PtrToArrElem" function representing the address
+//
+// Notes:
+//    Only assigns normal VNs to "loadTree".
+//
 void Compiler::fgValueNumberArrayElemLoad(GenTree* loadTree, VNFuncApp* addrFunc)
 {
     assert(loadTree->OperIsIndir() && (addrFunc->m_func == VNF_PtrToArrElem));
@@ -4467,6 +4585,16 @@ void Compiler::fgValueNumberArrayElemLoad(GenTree* loadTree, VNFuncApp* addrFunc
     loadTree->gtVNPair.SetConservative(vnStore->VNForExpr(compCurBB, loadType));
 }
 
+//------------------------------------------------------------------------
+// fgValueNumberArrayElemStore: Update the current heap state after a store
+//                              to an array element.
+//
+// Arguments:
+//    storeNode - The ASG node performing the store
+//    addrFunc  - The "VNF_PtrToArrElem" function representing the address
+//    storeSize - The number of bytes being stored
+//    value     - (VN of) the value being stored
+//
 void Compiler::fgValueNumberArrayElemStore(GenTree* storeNode, VNFuncApp* addrFunc, unsigned storeSize, ValueNum value)
 {
     assert(addrFunc->m_func == VNF_PtrToArrElem);
@@ -4554,6 +4682,22 @@ void Compiler::fgValueNumberArrayElemStore(GenTree* storeNode, VNFuncApp* addrFu
     recordGcHeapStore(storeNode, newHeapVN DEBUGARG("array element store"));
 }
 
+//------------------------------------------------------------------------
+// fgValueNumberLocalStore: Assign VNs to the SSA definition corresponding
+//                          to a local store.
+//
+// Or update the current heap state in case the local was address-exposed.
+//
+// Arguments:
+//    storeNode  - The node performing the store
+//    lclDefNode - The local node representating the SSA definition
+//    storeSize  - The number of bytes being stored
+//    offset     - The offset, relative to the local, of the target location
+//    value      - (VN of) the value being stored
+//    normalize  - Whether "value" should be normalized to the local's type
+//                 (in case the store overwrites the entire variable) before
+//                 being written to the SSA descriptor
+//
 void Compiler::fgValueNumberLocalStore(GenTree*             storeNode,
                                        GenTreeLclVarCommon* lclDefNode,
                                        unsigned             storeSize,
@@ -4574,7 +4718,7 @@ void Compiler::fgValueNumberLocalStore(GenTree*             storeNode,
         ValueNumPair newLclValue;
         if (vnStore->LoadStoreIsEntire(lclSize, offset, storeSize))
         {
-            newLclValue = normalize ? vnStore->VNPairForLoadStoreBitcast(value, varDsc->TypeGet(), lclSize) : value;
+            newLclValue = normalize ? vnStore->VNPairForLoadStoreBitCast(value, varDsc->TypeGet(), lclSize) : value;
         }
         else
         {
@@ -4610,6 +4754,18 @@ void Compiler::fgValueNumberLocalStore(GenTree*             storeNode,
     }
 }
 
+//------------------------------------------------------------------------
+// fgValueNumberFieldLoad: Value number a class/static field load.
+//
+// Arguments:
+//    loadTree - The indirection tree performing the load
+//    baseAddr - The "base address" of the field (see "GenTree::IsFieldAddr")
+//    fieldSeq - The field sequence representing the address
+//    offset   - The offset, relative to the field, being loaded from
+//
+// Notes:
+//    Only assigns normal VNs to "loadTree".
+//
 void Compiler::fgValueNumberFieldLoad(GenTree* loadTree, GenTree* baseAddr, FieldSeqNode* fieldSeq, ssize_t offset)
 {
     assert(fieldSeq != nullptr);
@@ -4656,6 +4812,18 @@ void Compiler::fgValueNumberFieldLoad(GenTree* loadTree, GenTree* baseAddr, Fiel
     loadTree->gtVNPair.SetConservative(vnStore->VNForExpr(compCurBB, loadType));
 }
 
+//------------------------------------------------------------------------
+// fgValueNumberFieldStore: Update the current heap state after a store to
+//                          a class/static field.
+//
+// Arguments:
+//    storeNode - The ASG node performing the store
+//    baseAddr  - The "base address" of the field (see "GenTree::IsFieldAddr")
+//    fieldSeq  - The field sequence representing the address
+//    offset    - The offset, relative to the field, of the target location
+//    storeSize - The number of bytes being stored
+//    value     - The value being stored
+//
 void Compiler::fgValueNumberFieldStore(GenTree*      storeNode,
                                        GenTree*      baseAddr,
                                        FieldSeqNode* fieldSeq,
@@ -4752,7 +4920,7 @@ ValueNum Compiler::fgValueNumberByrefExposedLoad(var_types type, ValueNum pointe
     }
 }
 
-var_types ValueNumStore::TypeOfVN(ValueNum vn)
+var_types ValueNumStore::TypeOfVN(ValueNum vn) const
 {
     if (vn == NoVN)
     {
@@ -8108,7 +8276,7 @@ void Compiler::fgValueNumberBlockAssignment(GenTree* tree)
 
                     if (isEntire)
                     {
-                        newLhsLclVNPair = vnStore->VNPairForLoadStoreBitcast(rhsVNPair, lhsVarDsc->TypeGet(),
+                        newLhsLclVNPair = vnStore->VNPairForLoadStoreBitCast(rhsVNPair, lhsVarDsc->TypeGet(),
                                                                              lhsLclSize);
                     }
                     else
@@ -9501,9 +9669,33 @@ ValueNumPair ValueNumStore::VNPairForCast(ValueNumPair srcVNPair,
     return {castLibVN, castConVN};
 }
 
+//------------------------------------------------------------------------
+// VNForBitCast: Get the VN representing bitwise reinterpretation of types.
+//
+// Arguments:
+//    srcVN      - (VN of) the value being cast from
+//    castToType - The type being cast to
+//
+// Return Value:
+//    The value number representing "IND<castToType>(ADDR(srcVN))". Notably,
+//    this includes the special sign/zero-extension semantic for small types.
+//
+// Notes:
+//    Bitcasts play a very significant role of representing identity (entire)
+//    selections and stores in the physical maps: when we have to "normalize"
+//    the types, we need something that represents a "nop" in the selection
+//    process, and "VNF_BitCast" is that function. See also the notes for
+//    "VNForLoadStoreBitCast".
+//
 ValueNum ValueNumStore::VNForBitCast(ValueNum srcVN, var_types castToType)
 {
     // BitCast<type one>(BitCast<type two>(x)) => BitCast<type one>(x).
+    // This ensures we do not end up with pathologically long chains of
+    // bitcasts in physical maps. We could do a similar optimization in
+    // "VNForMapPhysical[Store|Select]"; we presume that's not worth it,
+    // and it is better TP-wise to skip bitcasts "lazily" when doing the
+    // selection, as the scenario where they are expected to be common,
+    // single-field structs, implies short selection chains.
     VNFuncApp srcVNFunc;
     if (GetVNFunc(srcVN, &srcVNFunc) && (srcVNFunc.m_func == VNF_BitCast))
     {
@@ -9515,9 +9707,6 @@ ValueNum ValueNumStore::VNForBitCast(ValueNum srcVN, var_types castToType)
         return srcVN;
     }
 
-    // TODO-PhysicalVN: document the intended semantics for small types...
-    // Also document the overall strategy w.r.t bitcasts and how they were
-    // chosen over identity stores/selections.
     assert((castToType != TYP_STRUCT) || (TypeOfVN(srcVN) != TYP_STRUCT));
 
     return VNForFunc(castToType, VNF_BitCast, srcVN, VNForIntCon(castToType));

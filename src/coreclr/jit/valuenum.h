@@ -599,6 +599,16 @@ public:
 
     ValueNum VNForMapPhysicalStore(ValueNum map, unsigned offset, unsigned size, ValueNum value);
 
+    bool MapIsPrecise(ValueNum map) const
+    {
+        return (TypeOfVN(map) == TYP_HEAP) || (TypeOfVN(map) == TYP_MEM);
+    }
+
+    bool MapIsPhysical(ValueNum map) const
+    {
+        return !MapIsPrecise(map);
+    }
+
     ValueNum EncodePhysicalSelector(unsigned offset, unsigned size);
 
     unsigned DecodePhysicalSelector(ValueNum selector, unsigned* pSize);
@@ -675,9 +685,9 @@ public:
         return (offset == 0) && (locationSize == indSize);
     }
 
-    ValueNum VNForLoadStoreBitcast(ValueNum value, var_types indType, unsigned indSize);
+    ValueNum VNForLoadStoreBitCast(ValueNum value, var_types indType, unsigned indSize);
 
-    ValueNumPair VNPairForLoadStoreBitcast(ValueNumPair value, var_types indType, unsigned indSize);
+    ValueNumPair VNPairForLoadStoreBitCast(ValueNumPair value, var_types indType, unsigned indSize);
 
     // Compute the ValueNumber for a cast
     ValueNum VNForCast(ValueNum  srcVN,
@@ -716,7 +726,7 @@ public:
     // not true.
 
     // Returns TYP_UNKNOWN if the given value number has not been given a type.
-    var_types TypeOfVN(ValueNum vn);
+    var_types TypeOfVN(ValueNum vn) const;
 
     // Returns BasicBlock::MAX_LOOP_NUM if the given value number's loop nest is unknown or ill-defined.
     BasicBlock::loopNumber LoopOfVN(ValueNum vn);
