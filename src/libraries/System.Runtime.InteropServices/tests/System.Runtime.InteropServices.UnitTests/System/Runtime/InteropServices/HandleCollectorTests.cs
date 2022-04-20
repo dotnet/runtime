@@ -130,7 +130,7 @@ namespace System.Runtime.InteropServices
                 HandleLimitTester hlt = new HandleLimitTester(lowLimitCollector);
             }
 
-            // Since all the tester does the HandleCollector decrement during finalization, wait for pending finalizers.
+            // HandleLimitTester does the decrement on the HandleCollector during finalization, so we wait for pending finalizers.
             GC.WaitForPendingFinalizers();
 
             (int gen0, int gen1, int gen2) postLowLimitState = (GC.CollectionCount(0), GC.CollectionCount(1), GC.CollectionCount(2));
@@ -144,7 +144,7 @@ namespace System.Runtime.InteropServices
                 HandleLimitTester hlt = new HandleLimitTester(highLimitCollector);
             }
 
-            // Since all the tester does the HandleCollector decrement during finalization, wait for pending finalizers.
+            // HandleLimitTester does the decrement on the HandleCollector during finalization, so we wait for pending finalizers.
             GC.WaitForPendingFinalizers();
 
             (int gen0, int gen1, int gen2) postHighLimitState = (GC.CollectionCount(0), GC.CollectionCount(1), GC.CollectionCount(2));
