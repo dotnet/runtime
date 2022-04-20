@@ -635,8 +635,7 @@ const char* getWellKnownArgName(WellKnownArg arg)
 //
 void CallArg::Dump(Compiler* comp)
 {
-    printf("CallArg[arg %u", AbiInfo.ArgNum);
-    printf(" [%06u].%s", comp->dspTreeID(GetNode()), GenTree::OpName(GetEarlyNode()->OperGet()));
+    printf("CallArg[[%06u].%s", comp->dspTreeID(GetNode()), GenTree::OpName(GetEarlyNode()->OperGet()));
     printf(" %s", varTypeName(AbiInfo.ArgType));
     printf(" (%s)", AbiInfo.PassedByRef ? "By ref" : "By value");
     if (AbiInfo.GetRegNum() != REG_STK)
@@ -1909,6 +1908,10 @@ GenTree* Compiler::fgInsertCommaFormTemp(GenTree** ppTree, CORINFO_CLASS_HANDLE 
 // AddFinalArgsAndDetermineABIInfo:
 //   Add final arguments and determine the argument ABI information.
 //
+// Parameters:
+//   comp - The compiler object.
+//   call - The call to which the CallArgs belongs.
+//
 // Remarks:
 //   This adds the final "non-standard" arguments to the call and categorizes
 //   all the ABI information required for downstream JIT phases. This function
@@ -2808,7 +2811,6 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
 #endif // TARGET_ARM
 
         arg.AbiInfo          = {};
-        arg.AbiInfo.ArgNum   = argIndex;
         arg.AbiInfo.ArgType  = argx->TypeGet();
         arg.AbiInfo.IsStruct = isStructArg;
 
@@ -3111,7 +3113,7 @@ unsigned CallArgs::CountArgs()
 // fgMorphArgs: Walk and transform (morph) the arguments of a call
 //
 // Arguments:
-//    callNode - the call for which we are doing the argument morphing
+//    call - the call for which we are doing the argument morphing
 //
 // Return Value:
 //    Like most morph methods, this method returns the morphed node,
@@ -8266,7 +8268,7 @@ GenTree* Compiler::fgGetStubAddrArg(GenTreeCall* call)
 //
 unsigned Compiler::fgGetArgParameterLclNum(GenTreeCall* call, CallArg* arg)
 {
-    unsigned num = arg->AbiInfo.ArgNum;
+    unsigned num = 0;
 
     for (CallArg& otherArg : call->gtArgs.Args())
     {
@@ -8274,11 +8276,12 @@ unsigned Compiler::fgGetArgParameterLclNum(GenTreeCall* call, CallArg* arg)
         {
             break;
         }
+
         // Late added args add extra args that do not map to IL parameters and that we should not reassign.
         if (!otherArg.IsArgAddedLate())
-            continue;
-
-        num--;
+        {
+            num++;
+        }
     }
 
     return num;
