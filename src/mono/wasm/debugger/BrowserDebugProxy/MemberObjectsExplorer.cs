@@ -79,8 +79,9 @@ namespace BrowserDebugProxy
                     commandSet = CommandSet.ObjectRef,
                     command = CmdObject.RefSetValues,
                     buffer = data,
-                    fieldValueType,
-                    length = length
+                    valtype = fieldValueType,
+                    length = length,
+                    id = MonoSDBHelper.GetNewId()
                 }));
             }
 
