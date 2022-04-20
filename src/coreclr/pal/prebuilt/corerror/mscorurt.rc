@@ -11,7 +11,6 @@ BEGIN
 	MSG_FOR_URT_HR(COR_E_ASSEMBLYEXPECTED) "The module was expected to contain an assembly manifest."
 	MSG_FOR_URT_HR(COR_E_NEWER_RUNTIME) "This assembly is built by a runtime newer than the currently loaded runtime and cannot be loaded."
 	MSG_FOR_URT_HR(COR_E_MULTIMODULEASSEMBLIESDIALLOWED) "The module cannot be loaded because only single file assemblies are supported."
-	MSG_FOR_URT_HR(HOST_E_DEADLOCK) "Host detected a deadlock on a blocking operation."
 	MSG_FOR_URT_HR(HOST_E_INVALIDOPERATION) "Invalid operation."
 	MSG_FOR_URT_HR(HOST_E_CLRNOTAVAILABLE) "CLR has been disabled due to unrecoverable error."
 	MSG_FOR_URT_HR(FUSION_E_REF_DEF_MISMATCH) "The located assembly's manifest definition does not match the assembly reference."

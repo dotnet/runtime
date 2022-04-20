@@ -154,12 +154,6 @@
 	<Comment> The module cannot be loaded because only single file assemblies are supported. </Comment>
 </HRESULT>
 
-<HRESULT NumericValue="0x80131020">
-	<SymbolicName>HOST_E_DEADLOCK</SymbolicName>
-	<Message>"Host detected a deadlock on a blocking operation."</Message>
-	<Comment> Host detects deadlock on a blocking operation </Comment>
-</HRESULT>
-
 <HRESULT NumericValue="0x80131022">
 	<SymbolicName>HOST_E_INVALIDOPERATION</SymbolicName>
 	<Message>"Invalid operation."</Message>
