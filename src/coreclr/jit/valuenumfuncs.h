@@ -14,7 +14,8 @@ ValueNumFuncDef(ZeroObj, 1, false, false, false)            // Args: 0: VN of th
 ValueNumFuncDef(MapSelect, 2, false, false, false)          // Args: 0: map, 1: key.
 
 ValueNumFuncDef(PtrToLoc, 2, false, true, false)            // Pointer (byref) to a local variable.  Args: VN's of: 0: var num, 1: FieldSeq.
-ValueNumFuncDef(PtrToArrElem, 4, false, false, false)       // Pointer (byref) to an array element.  Args: 0: array elem type eq class var_types value, VN's of: 1: array, 2: index, 3: FieldSeq.
+ValueNumFuncDef(PtrToArrElem, 4, false, false, false)       // Pointer (byref) to an array element.  Args: 0: array elem type eq class var_types value, VN's of: 1: array, 2: index, 3: "ArrElemOffset" VN.
+ValueNumFuncDef(ArrElemOffset, 2, false, false, false)      // Args: 0: (VN of) the field sequence, 1: (VN of) the offset
 ValueNumFuncDef(PtrToStatic, 3, false, true, false)         // Pointer (byref) to a static variable (or possibly a field thereof, if the static variable is a struct).
                                                             // Args: 0: (VN of) the box's address if the static is "boxed",
                                                             //       1: (VN of) the field sequence, of which the first element is the static itself.
