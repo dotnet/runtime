@@ -30,6 +30,8 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(object[]))]
     [JsonSerializable(typeof(string))]
     [JsonSerializable(typeof((string Label1, int Label2, bool)))]
+    [JsonSerializable(typeof(JsonDocument))]
+    [JsonSerializable(typeof(JsonElement))]
     [JsonSerializable(typeof(RealWorldContextTests.ClassWithEnumAndNullable))]
     [JsonSerializable(typeof(RealWorldContextTests.ClassWithNullableProperties))]
     [JsonSerializable(typeof(ClassWithCustomConverter))]
@@ -81,6 +83,8 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.Null(MetadataAndSerializationContext.Default.SampleEnum.SerializeHandler);
             Assert.Null(MetadataAndSerializationContext.Default.String.SerializeHandler);
             Assert.NotNull(MetadataAndSerializationContext.Default.ValueTupleStringInt32Boolean.SerializeHandler);
+            Assert.Null(MetadataAndSerializationContext.Default.JsonDocument.SerializeHandler);
+            Assert.Null(MetadataAndSerializationContext.Default.JsonElement.SerializeHandler);
             Assert.NotNull(MetadataAndSerializationContext.Default.ClassWithEnumAndNullable.SerializeHandler);
             Assert.NotNull(MetadataAndSerializationContext.Default.ClassWithNullableProperties.SerializeHandler);
             Assert.NotNull(MetadataAndSerializationContext.Default.ClassWithCustomConverter);
@@ -97,6 +101,7 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.NotNull(MetadataAndSerializationContext.Default.PersonStruct.SerializeHandler);
             Assert.NotNull(MetadataAndSerializationContext.Default.TypeWithValidationAttributes.SerializeHandler);
             Assert.NotNull(MetadataAndSerializationContext.Default.TypeWithDerivedAttribute.SerializeHandler);
+            Assert.Null(MetadataAndSerializationContext.Default.PolymorphicClass.SerializeHandler);
         }
     }
 }
