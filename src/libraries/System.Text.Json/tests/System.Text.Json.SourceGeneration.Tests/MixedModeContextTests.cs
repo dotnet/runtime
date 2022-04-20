@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Text.Json.Serialization;
+using System.Reflection;
 using Xunit;
 
 namespace System.Text.Json.SourceGeneration.Tests
@@ -48,6 +49,7 @@ namespace System.Text.Json.SourceGeneration.Tests
     internal partial class MixedModeContext : JsonSerializerContext, ITestContext
     {
         public JsonSourceGenerationMode JsonSourceGenerationMode => JsonSourceGenerationMode.Metadata | JsonSourceGenerationMode.Serialization;
+        public bool IsIncludeFieldsEnabled => GetType().GetCustomAttribute<JsonSourceGenerationOptionsAttribute>()?.IncludeFields ?? false;
     }
 
     public sealed class MixedModeContextTests : RealWorldContextTests
