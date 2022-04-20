@@ -17,6 +17,7 @@ namespace System.Formats.Tar
         private TarEntry? _previouslyReadEntry;
         private List<Stream>? _dataStreamsToDispose;
         private bool _readFirstEntry;
+        private bool _reachedEndMarkers;
 
         internal Stream _archiveStream;
 
@@ -43,6 +44,7 @@ namespace System.Formats.Tar
             Format = TarFormat.Unknown;
             _isDisposed = false;
             _readFirstEntry = false;
+            _reachedEndMarkers = false;
         }
 
         /// <summary>
@@ -93,6 +95,12 @@ namespace System.Formats.Tar
         /// <exception cref="IOException">An I/O problem ocurred.</exception>
         public TarEntry? GetNextEntry(bool copyData = false)
         {
+            if (_reachedEndMarkers)
+            {
+                // Avoid advancing the stream if we already found the end of the archive.
+                return null;
+            }
+
             Debug.Assert(_archiveStream.CanRead);
 
             if (_archiveStream.CanSeek && _archiveStream.Length == 0)
@@ -129,6 +137,7 @@ namespace System.Formats.Tar
                 return entry;
             }
 
+            _reachedEndMarkers = true;
             return null;
         }
 
@@ -215,6 +224,8 @@ namespace System.Formats.Tar
         // Metadata typeflag entries get handled internally by this method until a valid header entry can be returned.
         private bool TryGetNextEntryHeader(out TarHeader header, bool copyData)
         {
+            Debug.Assert(!_reachedEndMarkers);
+
             header = default;
 
             // Set the initial format that is expected to be retrieved when calling TarHeader.TryReadAttributes.
