@@ -179,7 +179,7 @@ namespace System.Text.Json.Serialization.Metadata
             }
 #endif
 
-            if (PropertyCache.TryGetValue(JsonHelpers.Utf8GetString(propertyName), out JsonPropertyInfo? info))
+            if (PropertyCache!.TryGetValue(JsonHelpers.Utf8GetString(propertyName), out JsonPropertyInfo? info))
             {
                 Debug.Assert(info != null, "PropertyCache contains null JsonPropertyInfo");
 
