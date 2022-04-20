@@ -70,7 +70,7 @@ jobs:
       testGroup: innerloop
       nameSuffix: AllSubsets_Mono
       buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true # $(_runSmokeTestsOnlyArg)
-      timeoutInMinutes: 180
+      timeoutInMinutes: 1800
       condition: >-
         or(
           eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
