@@ -2519,6 +2519,7 @@ namespace System
         public static System.GCNotificationStatus WaitForFullGCComplete(int millisecondsTimeout) { throw null; }
         public static System.GCNotificationStatus WaitForFullGCComplete(System.TimeSpan timeout) { throw null; }
         public static void WaitForPendingFinalizers() { }
+        public static TimeSpan GetTotalPauseDuration() { return TimeSpan.Zero; }
     }
     public enum GCCollectionMode
     {

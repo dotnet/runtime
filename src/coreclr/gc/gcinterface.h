@@ -652,6 +652,10 @@ public:
     // Get the last memory load in percentage observed by the last GC.
     virtual uint32_t GetMemoryLoad() = 0;
 
+    // Get the total paused duration 
+    // AndrewTodo: Does the order of methods in this interface matters?
+    virtual uint64_t GetTotalPauseDuration() = 0;
+
     // Gets the current GC latency mode.
     virtual int GetGcLatencyMode() = 0;
 
