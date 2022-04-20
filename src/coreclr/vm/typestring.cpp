@@ -183,32 +183,8 @@ HRESULT TypeNameBuilder::OpenGenericArgument()
 
 HRESULT TypeNameBuilder::AddName(LPCWSTR szName)
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    if (!szName)
-        return Fail();
-
-    if (!CheckParseState(ParseStateSTART | ParseStateNAME))
-        return Fail();
-
-    HRESULT hr = S_OK;
-
-    m_parseState = ParseStateNAME;
-
-    if (m_bNestedName)
-        Append(W('+'));
-
-    m_bNestedName = TRUE;
-
-    EscapeName(szName);
-
-    return hr;
+    WRAPPER_NO_CONTRACT;
+    return AddName(szName, NULL);
 }
 
 HRESULT TypeNameBuilder::AddName(LPCWSTR szName, LPCWSTR szNamespace)
@@ -835,9 +811,10 @@ void TypeString::AppendType(TypeNameBuilder& tnb, TypeHandle ty, Instantiation t
 #ifdef _DEBUG
             if (format & FormatDebug)
             {
-                WCHAR wzAddress[128];
-                _snwprintf_s(wzAddress, 128, _TRUNCATE, W("(%p)"), (VOID *)dac_cast<TADDR>(ty.AsPtr()));
-                tnb.AddName(wzAddress);
+                UTF8 buffer[128];
+                _snprintf_s(buffer, ARRAY_SIZE(buffer), _TRUNCATE, "(%p)", (VOID *)dac_cast<TADDR>(ty.AsPtr()));
+                MAKE_WIDEPTR_FROMUTF8(pointerName, buffer);
+                tnb.AddName(pointerName);
             }
 #endif
             AppendNestedTypeDef(tnb, pImport, td, format);
