@@ -31,10 +31,12 @@ namespace System.Formats.Tar
         }
 
         // Windows specific implementation of the method that extracts the current entry as a hard link.
-        partial void ExtractAsHardLink(string destinationFileName)
+        partial void ExtractAsHardLink(string targetFilePath, string hardLinkFilePath)
         {
             Debug.Assert(EntryType is TarEntryType.HardLink);
-            Interop.Kernel32.CreateHardLink(hardLinkFilePath: destinationFileName, targetFilePath: LinkName);
+            Debug.Assert(!string.IsNullOrEmpty(targetFilePath));
+            Debug.Assert(!string.IsNullOrEmpty(hardLinkFilePath));
+            Interop.Kernel32.CreateHardLink(hardLinkFilePath, targetFilePath);
         }
 
         // Mode is not used on Windows.

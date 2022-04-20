@@ -26,7 +26,7 @@ namespace System.Formats.Tar
         /// Initializes a new <see cref="PaxTarEntry"/> instance with the specified entry type, entry name, and the default extended attributes.
         /// </summary>
         /// <param name="entryType">The type of the entry.</param>
-        /// <param name="entryName">A string with the relative path and file name of this entry.</param>
+        /// <param name="entryName">A string with the path and file name of this entry.</param>
         /// <exception cref="ArgumentException"><paramref name="entryName"/> is null or empty.</exception>
         /// <exception cref="InvalidOperationException">The entry type is not supported for creating an entry.</exception>
         /// <remarks><para>When creating an instance using the <see cref="PaxTarEntry(TarEntryType, string)"/> constructor, only the following entry types are supported:</para>
@@ -58,7 +58,7 @@ namespace System.Formats.Tar
         /// Initializes a new <see cref="PaxTarEntry"/> instance with the specified entry type, entry name and Extended Attributes enumeration.
         /// </summary>
         /// <param name="entryType">The type of the entry.</param>
-        /// <param name="entryName">A string with the relative path and file name of this entry.</param>
+        /// <param name="entryName">A string with the path and file name of this entry.</param>
         /// <param name="extendedAttributes">An enumeration of string key-value pairs that represents the metadata to include in the Extended Attributes entry that precedes the current entry.</param>
         /// <exception cref="ArgumentNullException"><paramref name="extendedAttributes"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentException"><paramref name="entryName"/> is null or empty.</exception>

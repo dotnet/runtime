@@ -201,17 +201,29 @@
   <data name="TarEntryHardLinkOrSymLinkExpected" xml:space="preserve">
     <value>Cannot set the LinkName field on an entry that does not represent a hard link or a symbolic link.</value>
   </data>
+  <data name="TarEntryHardLinkOrSymlinkLinkNameEmpty" xml:space="preserve">
+    <value>The entry is a symbolic link or a hard link but the LinkName field is null or empty.</value>
+  </data>
   <data name="TarEntryTypeNotSupported" xml:space="preserve">
     <value>Entry type '{0}' not supported in format '{1}'.</value>
   </data>
   <data name="TarEntryTypeNotSupportedForExtracting" xml:space="preserve">
     <value>Entry type '{0}' not supported for extraction.</value>
   </data>
-  <data name="TarExtractingResultsInOutside" xml:space="preserve">
+  <data name="TarExtractingResultsFileOutside" xml:space="preserve">
     <value>Extracting the Tar entry '{0}' would have resulted in a file outside the specified destination directory: '{1}'</value>
+  </data>
+  <data name="TarExtractingResultsLinkOutside" xml:space="preserve">
+    <value>Extracting the Tar entry '{0}' would have resulted in a link target outside the specified destination directory: '{1}'</value>
   </data>
   <data name="TarGnuFormatExpected" xml:space="preserve">
     <value>Entry '{0}' was expected to be in the GNU format, but did not have the expected version data.</value>
+  </data>
+  <data name="TarHardLinkTargetNotExists" xml:space="preserve">
+    <value>Cannot create a hard link '{0}' because the specified target file '{1}' does not exist.</value>
+  </data>
+  <data name="TarHardLinkToDirectoryNotAllowed" xml:space="preserve">
+    <value>Cannot create the hard link '{0}' targeting the directory '{1}'.</value>
   </data>
   <data name="TarInvalidFormat" xml:space="preserve">
     <value>The archive format is invalid: '{0}'</value>
@@ -224,6 +236,9 @@
   </data>
   <data name="TarSizeFieldTooLargeForExtendedAttribute" xml:space="preserve">
     <value>The value of the size field for the current entry of type '{0}' is beyond the expected length.</value>
+  </data>
+  <data name="TarSymbolicLinkTargetNotExists" xml:space="preserve">
+    <value>Cannot create the symbolic link '{0}' because the specified target '{1}' does not exist.</value>
   </data>
   <data name="TarTooManyGlobalExtendedAttributesEntries" xml:space="preserve">
     <value>The archive has more than one global extended attributes entry.</value>

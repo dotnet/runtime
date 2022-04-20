@@ -18,7 +18,7 @@ namespace System.Formats.Tar
         /// Initializes a new <see cref="UstarTarEntry"/> instance with the specified entry type and entry name.
         /// </summary>
         /// <param name="entryType">The type of the entry.</param>
-        /// <param name="entryName">A string with the relative path and file name of this entry.</param>
+        /// <param name="entryName">A string with the path and file name of this entry.</param>
         /// <exception cref="ArgumentException"><paramref name="entryName"/> is null or empty.</exception>
         /// <exception cref="InvalidOperationException">The entry type is not supported for creating an entry.</exception>
         /// <remarks>When creating an instance using the <see cref="UstarTarEntry(TarEntryType, string)"/> constructor, only the following entry types are supported:

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
+using System.Linq;
 using Xunit;
 
 namespace System.Formats.Tar.Tests
@@ -141,6 +142,25 @@ namespace System.Formats.Tar.Tests
             entry.ExtractToFile(fullPath, overwrite: false);
 
             Assert.True(File.Exists(fullPath));
+        }
+
+        [Theory]
+        [InlineData(TarEntryType.SymbolicLink)]
+        [InlineData(TarEntryType.HardLink)]
+        public void ExtractToFile_Link_Throws(TarEntryType entryType)
+        {
+            using TempDirectory root = new TempDirectory();
+            string fileName = "mylink";
+            string fullPath = Path.Join(root.Path, fileName);
+
+            string linkTarget = PlatformDetection.IsWindows ? @"C:\Windows\system32\notepad.exe" : "/usr/bin/nano";
+
+            UstarTarEntry entry = new UstarTarEntry(entryType, fileName);
+            entry.LinkName = linkTarget;
+
+            Assert.Throws<InvalidOperationException>(() => entry.ExtractToFile(fileName, overwrite: false));
+
+            Assert.Equal(0, Directory.GetFileSystemEntries(root.Path).Count());
         }
     }
 }

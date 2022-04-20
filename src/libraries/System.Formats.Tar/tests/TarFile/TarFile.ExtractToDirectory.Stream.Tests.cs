@@ -71,5 +71,55 @@ namespace System.Formats.Tar.Tests
             Assert.True(Directory.Exists(Path.Join(root.Path, secondSegment)));
             Assert.True(File.Exists(Path.Join(root.Path, fileWithTwoSegments)));
         }
+
+        [Theory]
+        [InlineData(TarEntryType.SymbolicLink)]
+        [InlineData(TarEntryType.HardLink)]
+        public void Extract_LinkEntry_TargetOutsideDirectory(TarEntryType entryType)
+        {
+            using MemoryStream archive = new MemoryStream();
+            using (TarWriter writer = new TarWriter(archive, TarFormat.Ustar, leaveOpen: true))
+            {
+                UstarTarEntry entry = new UstarTarEntry(entryType, "link");
+                entry.LinkName = PlatformDetection.IsWindows ? @"C:\Windows\System32\notepad.exe" : "/usr/bin/nano";
+                writer.WriteEntry(entry);
+            }
+
+            archive.Seek(0, SeekOrigin.Begin);
+
+            using TempDirectory root = new TempDirectory();
+
+            Assert.Throws<IOException>(() => TarFile.ExtractToDirectory(archive, root.Path, overwriteFiles: false));
+
+            Assert.Equal(0, Directory.GetFileSystemEntries(root.Path).Count());
+        }
+
+        [Theory]
+        [InlineData(TarEntryType.SymbolicLink)]
+        [InlineData(TarEntryType.HardLink)]
+        public void Extract_LinkEntry_TargetInsideDirectory(TarEntryType entryType)
+        {
+            using TempDirectory root = new TempDirectory();
+
+            string linkName = "link";
+            string targetName = "target";
+            string targetPath = Path.Join(root.Path, targetName);
+
+            File.Create(targetPath).Dispose();
+
+            using MemoryStream archive = new MemoryStream();
+            using (TarWriter writer = new TarWriter(archive, TarFormat.Ustar, leaveOpen: true))
+            {
+                UstarTarEntry entry = new UstarTarEntry(entryType, linkName);
+                entry.LinkName = targetPath;
+                writer.WriteEntry(entry);
+            }
+
+            archive.Seek(0, SeekOrigin.Begin);
+
+            TarFile.ExtractToDirectory(archive, root.Path, overwriteFiles: false);
+
+            Assert.Equal(2, Directory.GetFileSystemEntries(root.Path).Count());
+        }
     }
 }

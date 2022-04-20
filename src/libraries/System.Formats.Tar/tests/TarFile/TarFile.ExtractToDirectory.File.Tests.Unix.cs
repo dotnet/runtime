@@ -26,7 +26,7 @@ namespace System.Formats.Tar.Tests
 
             Assert.Throws<UnauthorizedAccessException>(() => TarFile.ExtractToDirectory(archive, destination, overwriteFiles: false));
 
-            Assert.Equal(0, Directory.GetFiles(destination).Count());
+            Assert.Equal(0, Directory.GetFileSystemEntries(destination).Count());
         }
     }
 }

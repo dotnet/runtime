@@ -154,12 +154,14 @@ namespace System.Formats.Tar
         }
 
         /// <summary>
-        /// Extracts the current entry to the filesystem.
+        /// Extracts the current file or directory to the filesystem. Symbolic links and hard links are not extracted.
         /// </summary>
         /// <param name="destinationFileName">The path to the destination file.</param>
         /// <param name="overwrite"><see langword="true"/> if this method should overwrite any existing filesystem object located in the <paramref name="destinationFileName"/> path; <see langword="false"/> to prevent overwriting.</param>
         /// <remarks><para>Files of type <see cref="TarEntryType.BlockDevice"/>, <see cref="TarEntryType.CharacterDevice"/> or <see cref="TarEntryType.Fifo"/> can only be extracted in Unix platforms.</para>
-        /// <para>Elevation is required to extract a <see cref="TarEntryType.BlockDevice"/> or <see cref="TarEntryType.CharacterDevice"/> to disk.</para></remarks>
+        /// <para>Elevation is required to extract a <see cref="TarEntryType.BlockDevice"/> or <see cref="TarEntryType.CharacterDevice"/> to disk.</para>
+        /// <para>Symbolic links can be recreated using <see cref="File.CreateSymbolicLink(string, string)"/>, <see cref="Directory.CreateSymbolicLink(string, string)"/> or <see cref="FileSystemInfo.CreateAsSymbolicLink(string)"/>.</para>
+        /// <para>Hard links can only be extracted when using <see cref="TarFile.ExtractToDirectory(Stream, string, bool)"/> or <see cref="TarFile.ExtractToDirectory(string, string, bool)"/>.</para></remarks>
         /// <exception cref="ArgumentException"><paramref name="destinationFileName"/> is <see langword="null"/> or empty.</exception>
         /// <exception cref="IOException"><para>The parent directory of <paramref name="destinationFileName"/> does not exist.</para>
         /// <para>-or-</para>
@@ -168,69 +170,15 @@ namespace System.Formats.Tar
         /// <para>A directory exists with the same name as <paramref name="destinationFileName"/>.</para>
         /// <para>-or-</para>
         /// <para>An I/O problem occurred.</para></exception>
-        /// <exception cref="InvalidOperationException">Attempted to extract an unsupported entry type.</exception>
+        /// <exception cref="InvalidOperationException">Attempted to extract a symbolic link, a hard link or an unsupported entry type.</exception>
         /// <exception cref="UnauthorizedAccessException">Operation not permitted due to insufficient permissions.</exception>
         public void ExtractToFile(string destinationFileName, bool overwrite)
         {
-            ArgumentException.ThrowIfNullOrEmpty(destinationFileName);
-
-            string? directoryPath = Path.GetDirectoryName(destinationFileName);
-            // If the destination contains a directory segment, need to check that it exists
-            if (!string.IsNullOrEmpty(directoryPath) && !Path.Exists(directoryPath))
+            if (EntryType is TarEntryType.SymbolicLink or TarEntryType.HardLink)
             {
-                throw new IOException(string.Format(SR.IO_PathNotFound_NoPathName, destinationFileName));
+                throw new InvalidOperationException(string.Format(SR.TarEntryTypeNotSupportedForExtracting, EntryType));
             }
-
-            VerifyOverwriteFileIsPossible(destinationFileName, overwrite);
-
-            switch (EntryType)
-            {
-                case TarEntryType.Directory:
-                case TarEntryType.DirectoryList:
-                    Directory.CreateDirectory(destinationFileName);
-                    break;
-
-                case TarEntryType.RegularFile:
-                case TarEntryType.V7RegularFile:
-                case TarEntryType.ContiguousFile:
-                    ExtractAsRegularFile(destinationFileName);
-                    break;
-
-                case TarEntryType.SymbolicLink:
-                    FileInfo link = new(destinationFileName);
-                    link.CreateAsSymbolicLink(LinkName);
-                    break;
-
-                case TarEntryType.HardLink:
-                    ExtractAsHardLink(destinationFileName);
-                    break;
-
-                case TarEntryType.BlockDevice:
-                    ExtractAsBlockDevice(destinationFileName);
-                    break;
-
-                case TarEntryType.CharacterDevice:
-                    ExtractAsCharacterDevice(destinationFileName);
-                    break;
-
-                case TarEntryType.Fifo:
-                    ExtractAsFifo(destinationFileName);
-                    break;
-
-                case TarEntryType.ExtendedAttributes:
-                case TarEntryType.GlobalExtendedAttributes:
-                case TarEntryType.LongPath:
-                case TarEntryType.LongLink:
-                    Debug.Assert(false, $"Metadata entry type should not be visible: '{EntryType}'");
-                    break;
-
-                case TarEntryType.MultiVolume:
-                case TarEntryType.RenamedOrSymlinked:
-                case TarEntryType.SparseFile:
-                case TarEntryType.TapeVolume:
-                default:
-                    throw new InvalidOperationException(string.Format(SR.TarEntryTypeNotSupportedForExtracting, EntryType));
-            }
+            ExtractToFileInternal(destinationFileName, linkTargetPath: null, overwrite);
         }
 
         // /// <summary>
@@ -307,30 +255,6 @@ namespace System.Formats.Tar
         // Abstract method that determines if setting the data stream for this entry is allowed.
         internal abstract bool IsDataStreamSetterSupported();
 
-        // Throws an exception if a file exists in the location of 'destinationFileName' and 'overwrite' is 'false',
-        // or if a directory exists in the location of 'destinationFileName'.
-        private static void VerifyOverwriteFileIsPossible(string destinationFileName, bool overwrite)
-        {
-            // In most cases, nothing exists in the destination, so we perform one initial check
-            if (!Path.Exists(destinationFileName))
-            {
-                return;
-            }
-
-            // We never want to overwrite a directory, so we always throw
-            if (Directory.Exists(destinationFileName))
-            {
-                throw new IOException(string.Format(SR.IO_AlreadyExists_Name, destinationFileName));
-            }
-
-            // A file exists at this point
-            if (!overwrite)
-            {
-                throw new IOException(string.Format(SR.IO_AlreadyExists_Name, destinationFileName));
-            }
-            File.Delete(destinationFileName);
-        }
-
         // Extracts the current entry to a location relative to the specified directory.
         internal void ExtractRelativeToDirectory(string destinationDirectoryPath, bool overwrite)
         {
@@ -339,19 +263,26 @@ namespace System.Formats.Tar
 
             string destinationDirectoryFullPath = destinationDirectoryPath.EndsWith(Path.DirectorySeparatorChar) ? destinationDirectoryPath : destinationDirectoryPath + Path.DirectorySeparatorChar;
 
-            string fileDestinationPath;
-            if (Path.IsPathFullyQualified(Name))
-            {
-                fileDestinationPath = ArchivingUtils.SanitizeEntryFilePath(Name);
-            }
-            else
-            {
-                fileDestinationPath = Path.GetFullPath(Path.Join(destinationDirectoryFullPath, ArchivingUtils.SanitizeEntryFilePath(Name)));
-            }
+            string fileDestinationPath = GetSanitizedPath(destinationDirectoryFullPath, Name);
 
             if (!fileDestinationPath.StartsWith(destinationDirectoryFullPath, PathInternal.StringComparison))
             {
-                throw new IOException(string.Format(SR.TarExtractingResultsInOutside, fileDestinationPath, destinationDirectoryFullPath));
+                throw new IOException(string.Format(SR.TarExtractingResultsFileOutside, fileDestinationPath, destinationDirectoryFullPath));
+            }
+
+            string? linkTargetPath = null;
+            if (EntryType is TarEntryType.SymbolicLink or TarEntryType.HardLink)
+            {
+                if (string.IsNullOrEmpty(LinkName))
+                {
+                    throw new FormatException(SR.TarEntryHardLinkOrSymlinkLinkNameEmpty);
+                }
+                linkTargetPath = GetSanitizedPath(destinationDirectoryFullPath, LinkName);
+
+                if (!linkTargetPath.StartsWith(destinationDirectoryFullPath, PathInternal.StringComparison))
+                {
+                    throw new IOException(string.Format(SR.TarExtractingResultsLinkOutside, fileDestinationPath, destinationDirectoryFullPath));
+                }
             }
 
             if (EntryType == TarEntryType.Directory)
@@ -362,7 +293,135 @@ namespace System.Formats.Tar
             {
                 // If it is a file, create containing directory.
                 Directory.CreateDirectory(Path.GetDirectoryName(fileDestinationPath)!);
-                ExtractToFile(fileDestinationPath, overwrite);
+                ExtractToFileInternal(fileDestinationPath, linkTargetPath, overwrite);
+            }
+
+            // Returns a full path with sanitized characters.
+            static string GetSanitizedPath(string directory, string path)
+            {
+                string sanitizedPath = ArchivingUtils.SanitizeEntryFilePath(path);
+                if (Path.IsPathFullyQualified(path))
+                {
+                    return sanitizedPath;
+                }
+                return Path.GetFullPath(Path.Join(directory, sanitizedPath));
+            }
+        }
+
+        // Extracts the current entry into the filesystem, regardless of the entry type.
+        private void ExtractToFileInternal(string filePath, string? linkTargetPath, bool overwrite)
+        {
+            ArgumentException.ThrowIfNullOrEmpty(filePath);
+
+            VerifyPathsForEntryType(filePath, linkTargetPath, overwrite);
+
+            switch (EntryType)
+            {
+                case TarEntryType.Directory:
+                case TarEntryType.DirectoryList:
+                    Directory.CreateDirectory(filePath);
+                    break;
+
+                case TarEntryType.RegularFile:
+                case TarEntryType.V7RegularFile:
+                case TarEntryType.ContiguousFile:
+                    ExtractAsRegularFile(filePath);
+                    break;
+
+                case TarEntryType.SymbolicLink:
+                    Debug.Assert(!string.IsNullOrEmpty(linkTargetPath));
+                    FileInfo link = new(filePath);
+                    link.CreateAsSymbolicLink(linkTargetPath);
+                    break;
+
+                case TarEntryType.HardLink:
+                    Debug.Assert(!string.IsNullOrEmpty(linkTargetPath));
+                    ExtractAsHardLink(linkTargetPath, filePath);
+                    break;
+
+                case TarEntryType.BlockDevice:
+                    ExtractAsBlockDevice(filePath);
+                    break;
+
+                case TarEntryType.CharacterDevice:
+                    ExtractAsCharacterDevice(filePath);
+                    break;
+
+                case TarEntryType.Fifo:
+                    ExtractAsFifo(filePath);
+                    break;
+
+                case TarEntryType.ExtendedAttributes:
+                case TarEntryType.GlobalExtendedAttributes:
+                case TarEntryType.LongPath:
+                case TarEntryType.LongLink:
+                    Debug.Assert(false, $"Metadata entry type should not be visible: '{EntryType}'");
+                    break;
+
+                case TarEntryType.MultiVolume:
+                case TarEntryType.RenamedOrSymlinked:
+                case TarEntryType.SparseFile:
+                case TarEntryType.TapeVolume:
+                default:
+                    throw new InvalidOperationException(string.Format(SR.TarEntryTypeNotSupportedForExtracting, EntryType));
+            }
+        }
+
+        // Verifies if the specified paths make sense for the current type of entry.
+        private void VerifyPathsForEntryType(string filePath, string? linkTargetPath, bool overwrite)
+        {
+            string? directoryPath = Path.GetDirectoryName(filePath);
+            // If the destination contains a directory segment, need to check that it exists
+            if (!string.IsNullOrEmpty(directoryPath) && !Path.Exists(directoryPath))
+            {
+                throw new IOException(string.Format(SR.IO_PathNotFound_NoPathName, filePath));
+            }
+
+            if (!Path.Exists(filePath))
+            {
+                return;
+            }
+
+            // We never want to overwrite a directory, so we always throw
+            if (Directory.Exists(filePath))
+            {
+                throw new IOException(string.Format(SR.IO_AlreadyExists_Name, filePath));
+            }
+
+            // A file exists at this point
+            if (!overwrite)
+            {
+                throw new IOException(string.Format(SR.IO_AlreadyExists_Name, filePath));
+            }
+            File.Delete(filePath);
+
+            if (EntryType is TarEntryType.SymbolicLink or TarEntryType.HardLink)
+            {
+                if (!string.IsNullOrEmpty(linkTargetPath))
+                {
+                    string? targetDirectoryPath = Path.GetDirectoryName(linkTargetPath);
+                    // If the destination target contains a directory segment, need to check that it exists
+                    if (!string.IsNullOrEmpty(targetDirectoryPath) && !Path.Exists(targetDirectoryPath))
+                    {
+                        throw new IOException(string.Format(SR.TarSymbolicLinkTargetNotExists, filePath, linkTargetPath));
+                    }
+
+                    if (EntryType is TarEntryType.HardLink)
+                    {
+                        if (!Path.Exists(linkTargetPath))
+                        {
+                            throw new IOException(string.Format(SR.TarHardLinkTargetNotExists, filePath, linkTargetPath));
+                        }
+                        else if (Directory.Exists(linkTargetPath))
+                        {
+                            throw new IOException(string.Format(SR.TarHardLinkToDirectoryNotAllowed, filePath, linkTargetPath));
+                        }
+                    }
+                }
+                else
+                {
+                    throw new FormatException(SR.TarEntryHardLinkOrSymlinkLinkNameEmpty);
+                }
             }
         }
 
@@ -403,7 +462,7 @@ namespace System.Formats.Tar
         partial void ExtractAsFifo(string destinationFileName);
 
         // Abstract method that extracts the current entry when it is a hard link.
-        partial void ExtractAsHardLink(string destinationFileName);
+        partial void ExtractAsHardLink(string targetFilePath, string hardLinkFilePath);
 
         // Abstract method that sets the file permissions of the file.
         partial void SetModeOnFile(SafeFileHandle handle, string destinationFileName);

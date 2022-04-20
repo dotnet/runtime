@@ -31,10 +31,12 @@ namespace System.Formats.Tar
         }
 
         // Unix specific implementation of the method that extracts the current entry as a hard link.
-        partial void ExtractAsHardLink(string destinationFileName)
+        partial void ExtractAsHardLink(string targetFilePath, string hardLinkFilePath)
         {
             Debug.Assert(EntryType is TarEntryType.HardLink);
-            Interop.CheckIo(Interop.Sys.Link(source: LinkName, link: destinationFileName), destinationFileName);
+            Debug.Assert(!string.IsNullOrEmpty(targetFilePath));
+            Debug.Assert(!string.IsNullOrEmpty(hardLinkFilePath));
+            Interop.CheckIo(Interop.Sys.Link(targetFilePath, hardLinkFilePath), hardLinkFilePath);
         }
 
         // Unix specific implementation of the method that specifies the file permissions of the extracted file.
