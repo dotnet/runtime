@@ -93,7 +93,7 @@ namespace System.Text
         public override bool Fallback(byte[] bytesUnknown, int index)
         {
             // We expect no previous fallback in our buffer
-            // We can't call recursively but others might (note, we don't test on last char!!!)
+            // We can't call recursively but others might (note, we don't test on last char!)
             if (_fallbackCount >= 1)
             {
                 ThrowLastBytesRecursive(bytesUnknown);
