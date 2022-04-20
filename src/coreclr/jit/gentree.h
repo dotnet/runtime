@@ -1927,6 +1927,9 @@ public:
     // where Y is an arbitrary tree, and X is a lclVar.
     unsigned IsLclVarUpdateTree(GenTree** otherTree, genTreeOps* updateOper);
 
+    // Determine whether this tree is a basic block profile count update.
+    bool IsBlockProfileUpdate();
+
     bool IsFieldAddr(Compiler* comp, GenTree** pBaseAddr, FieldSeqNode** pFldSeq);
 
     bool IsArrayAddr(GenTreeArrAddr** pArrAddr);
