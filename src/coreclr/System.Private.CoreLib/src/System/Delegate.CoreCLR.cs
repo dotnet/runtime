@@ -286,8 +286,6 @@ namespace System
         // V1 API.
         public static Delegate? CreateDelegate(Type type, MethodInfo method, bool throwOnBindFailure)
         {
-            // Validate the parameters.
-
             ArgumentNullException.ThrowIfNull(type);
             ArgumentNullException.ThrowIfNull(method);
 
@@ -323,7 +321,6 @@ namespace System
         // V2 API.
         public static Delegate? CreateDelegate(Type type, object? firstArgument, MethodInfo method, bool throwOnBindFailure)
         {
-            // Validate the parameters.
             ArgumentNullException.ThrowIfNull(type);
             ArgumentNullException.ThrowIfNull(method);
 
@@ -360,8 +357,6 @@ namespace System
         // V2 internal API.
         internal static Delegate CreateDelegateNoSecurityCheck(Type type, object? target, RuntimeMethodHandle method)
         {
-            // Validate the parameters.
-
             ArgumentNullException.ThrowIfNull(type);
 
             if (method.IsNullHandle())

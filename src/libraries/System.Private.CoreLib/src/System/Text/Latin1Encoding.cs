@@ -202,8 +202,6 @@ namespace System.Text
 
         public unsafe override int GetBytes(char[] chars, int charIndex, int charCount, byte[] bytes, int byteIndex)
         {
-            // Validate parameters
-
             if (chars is null || bytes is null)
             {
                 ThrowHelper.ThrowArgumentNullException(

@@ -107,7 +107,6 @@ namespace System
                 if (candidates[i] == null)
                     continue;
 
-                // Validate the parameters.
                 ParameterInfo[] par = candidates[i]!.GetParametersNoCopy();
 
 #region Match method by parameter count

@@ -121,7 +121,6 @@ namespace System.Text
         public override unsafe int GetBytes(char[] chars, int charIndex, int charCount,
                                             byte[] bytes, int byteIndex, bool flush)
         {
-            // Validate parameters
             if (chars is null)
                 throw new ArgumentNullException(nameof(chars));
 
@@ -153,7 +152,6 @@ namespace System.Text
 
         public override unsafe int GetBytes(char* chars, int charCount, byte* bytes, int byteCount, bool flush)
         {
-            // Validate parameters
             if (chars is null)
                 throw new ArgumentNullException(nameof(chars));
 
@@ -174,7 +172,6 @@ namespace System.Text
                                             byte[] bytes, int byteIndex, int byteCount, bool flush,
                                             out int charsUsed, out int bytesUsed, out bool completed)
         {
-            // Validate parameters
             if (chars is null)
                 throw new ArgumentNullException(nameof(chars));
 

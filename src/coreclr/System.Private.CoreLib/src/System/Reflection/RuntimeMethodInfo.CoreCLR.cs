@@ -464,7 +464,6 @@ namespace System.Reflection
         {
             ArgumentNullException.ThrowIfNull(delegateType);
 
-            // Validate the parameters.
             RuntimeType? rtType = delegateType as RuntimeType;
             if (rtType == null)
                 throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(delegateType));
