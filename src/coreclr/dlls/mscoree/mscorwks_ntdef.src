@@ -141,15 +141,10 @@ EXPORTS
         mono_gc_max_generation
         mono_gc_wbarrier_generic_store
         mono_gc_wbarrier_set_field
-        mono_gchandle_free
         mono_gchandle_free_v2
-        mono_gchandle_get_target
         mono_gchandle_get_target_v2
-        mono_gchandle_is_in_domain
         mono_gchandle_is_in_domain_v2
-        mono_gchandle_new
         mono_gchandle_new_v2
-        mono_gchandle_new_weakref
         mono_gchandle_new_weakref_v2
         mono_get_array_class
         mono_get_boolean_class

@@ -70,15 +70,14 @@ static UnityFindPluginCallback unity_find_plugin_callback = NULL;
 
 MonoObject* GetMonoDomainObject(MonoDomain *domain)
 {
-    return mono_gchandle_get_target((guint32)(intptr_t)domain);
+    return mono_gchandle_get_target_v2((intptr_t)domain);
 }
 
 MonoDomain* CreateMonoDomainFromObject(MonoObject *o)
 {
-    return (MonoDomain*)(intptr_t)mono_gchandle_new(o, false);
+    return (MonoDomain*)mono_gchandle_new_v2(o, false);
 }
 
-CrstStatic g_gc_handles_lock;
 CrstStatic g_add_internal_lock;
 
 static SString* s_AssemblyDir;
@@ -1838,83 +1837,6 @@ struct MonoHandleInfo
     HandleType Type;
 };
 
-// TODO: Remove once GCHandle changes land in Unity
-MapSHashWithRemove<guint32, MonoHandleInfo> g_gc_map_id_to_handle;
-
-
-extern "C" EXPORT_API void EXPORT_CC mono_gchandle_free(guint32 gchandle)
-{
-    CrstHolder lock(&g_gc_handles_lock);
-
-    MonoHandleInfo handle;
-    if (g_gc_map_id_to_handle.Lookup(gchandle, &handle))
-    {
-        mono_gchandle_free_v2(handle.Handle);
-        g_gc_map_id_to_handle.Remove(gchandle);
-    }
-}
-
-extern "C" EXPORT_API MonoObject* EXPORT_CC mono_gchandle_get_target(guint32 gchandle)
-{
-    CrstHolder lock(&g_gc_handles_lock);
-
-    MonoHandleInfo handle;
-    if (g_gc_map_id_to_handle.Lookup(gchandle, &handle))
-    {
-        return mono_gchandle_get_target_v2(handle.Handle);
-    }
-
-    // throw an error?
-    return NULL;
-}
-
-extern "C" EXPORT_API gboolean EXPORT_CC mono_gchandle_is_in_domain(guint32 gchandle, MonoDomain * domain)
-{
-    CrstHolder lock(&g_gc_handles_lock);
-
-    MonoHandleInfo handle;
-    if (g_gc_map_id_to_handle.Lookup(gchandle, &handle))
-    {
-        return mono_gchandle_is_in_domain_v2(handle.Handle, domain);
-    }
-
-    // throw an error?
-    return FALSE;
-}
-
-extern "C" EXPORT_API guint32 EXPORT_CC mono_gchandle_new(MonoObject * obj, gboolean pinned)
-{
-    // NOTE
-    // mono is using a guint32 to identify an GCHandle
-    // while coreclr is using a OBJECTHANDLE which is a pointer
-    // so we are maintaining a map here between an generated identifier
-    // and the OBJECTHANDLE
-    CrstHolder lock(&g_gc_handles_lock);
-
-    MonoHandleInfo objhandle;
-    objhandle.Handle = mono_gchandle_new_v2(obj, pinned);
-    objhandle.Type = pinned ? HNDTYPE_PINNED : HNDTYPE_DEFAULT;
-
-    auto id = ++handleId;
-    g_gc_map_id_to_handle.Add(id, objhandle);
-
-    return id;
-}
-
-extern "C" EXPORT_API guint32 EXPORT_CC mono_gchandle_new_weakref(MonoObject *obj, gboolean track_resurrection)
-{
-    CrstHolder lock(&g_gc_handles_lock);
-
-    MonoHandleInfo objhandle;
-    objhandle.Handle = mono_gchandle_new_weakref_v2(obj, track_resurrection);
-    objhandle.Type = track_resurrection ? HNDTYPE_WEAK_LONG : HNDTYPE_WEAK_SHORT;
-
-    auto id = ++handleId;
-    g_gc_map_id_to_handle.Add(id, objhandle);
-
-    return id;
-}
-
 extern "C" EXPORT_API MonoObject* EXPORT_CC mono_gchandle_get_target_v2(uintptr_t gchandle)
 {
     GCX_COOP();
@@ -2231,7 +2153,6 @@ extern "C" EXPORT_API MonoDomain* EXPORT_CC mono_jit_init_version(const char *fi
     GCHeapUtilities::SetGCName("unitygc.dll");
 #endif
 
-    g_gc_handles_lock.Init(CrstMonoHandles);
     g_add_internal_lock.Init(CrstMonoICalls);
 
     HRESULT hr;
