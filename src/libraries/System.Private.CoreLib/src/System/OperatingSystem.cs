@@ -9,10 +9,6 @@ namespace System
 {
     public sealed class OperatingSystem : ISerializable, ICloneable
     {
-#if TARGET_UNIX && !TARGET_OSX && !TARGET_MACCATALYST && !TARGET_IOS && !TARGET_TVOS && !TARGET_ANDROID
-        private static readonly string s_osPlatformName = Interop.Sys.GetUnixName();
-#endif
-
         private readonly Version _version;
         private readonly PlatformID _platform;
         private readonly string? _servicePack;
@@ -103,8 +99,16 @@ namespace System
             return platform.Equals("TVOS", StringComparison.OrdinalIgnoreCase);
 #elif TARGET_ANDROID
             return platform.Equals("ANDROID", StringComparison.OrdinalIgnoreCase);
-#elif TARGET_UNIX
-            return platform.Equals(s_osPlatformName, StringComparison.OrdinalIgnoreCase);
+#elif TARGET_LINUX
+            return platform.Equals("LINUX", StringComparison.OrdinalIgnoreCase);
+#elif TARGET_FREEBSD
+            return platform.Equals("FREEBSD", StringComparison.OrdinalIgnoreCase);
+#elif TARGET_NETBSD
+            return platform.Equals("NETBSD", StringComparison.OrdinalIgnoreCase);
+#elif TARGET_ILLUMOS
+            return platform.Equals("ILLUMOS", StringComparison.OrdinalIgnoreCase);
+#elif TARGET_SOLARIS
+            return platform.Equals("SOLARIS", StringComparison.OrdinalIgnoreCase);
 #else
 #error Unknown OS
 #endif

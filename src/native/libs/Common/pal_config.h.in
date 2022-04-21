@@ -1,6 +1,5 @@
 #pragma once
 
-#cmakedefine PAL_UNIX_NAME @PAL_UNIX_NAME@
 #cmakedefine01 HAVE_LSEEK64
 #cmakedefine01 HAVE_MMAP64
 #cmakedefine01 HAVE_FTRUNCATE64
