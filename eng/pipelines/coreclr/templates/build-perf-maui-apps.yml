@@ -30,7 +30,7 @@ steps:
   #      IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.Mono.ios-!(*.symbols).nupkg
   #      IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.Mono.iossimulator-!(*.symbols).nupkg
   #      IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.Mono.maccatalyst-!(*.symbols).nupkg
-        
+
   #    # Other artifacts to include once they are being built
   #    # EX. IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.Mono.maccatalyst-*.nupkg
 
@@ -42,15 +42,15 @@ steps:
   #    cleanTargetFolder: false
   #    targetFolder: $(Build.SourcesDirectory)/MauiTesting/ArtifactPacks
   #    flattenFolders: true
-  
+
   #- script: |
   #    for file in *.nupkg
-  #      do     
-  #        mv -v "$file" "${file%.nupkg}.zip" 
+  #      do
+  #        mv -v "$file" "${file%.nupkg}.zip"
   #      done
   #  displayName: Change nupkgs to zips
   #  workingDirectory: $(Build.SourcesDirectory)/MauiTesting/ArtifactPacks
-    
+
 
   ##Unzip the nuget packages to make the actual runtimes accessible
   #- task: ExtractFiles@1
@@ -209,10 +209,10 @@ steps:
   - script: |
       ./dotnet new maui-blazor -n MauiBlazorTesting
       cd MauiBlazorTesting
-      # cp $(Build.SourcesDirectory)/src/tests/Common/maui/MauiScenario.props ./Directory.Build.props
-      # cp $(Build.SourcesDirectory)/src/tests/Common/maui/MauiScenario.targets ./Directory.Build.targets
+      cp $(Build.SourcesDirectory)/src/tests/Common/maui/MauiScenario.props ./Directory.Build.props
+      cp $(Build.SourcesDirectory)/src/tests/Common/maui/MauiScenario.targets ./Directory.Build.targets
       cp $(Build.SourcesDirectory)/NuGet.config ./NuGet.config
-      
+
       echo -e "using Microsoft.AspNetCore.Components;
         #if ANDROID
           using Android.App;
