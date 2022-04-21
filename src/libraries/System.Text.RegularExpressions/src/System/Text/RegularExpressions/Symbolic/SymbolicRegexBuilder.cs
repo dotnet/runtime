@@ -293,6 +293,46 @@ namespace System.Text.RegularExpressions.Symbolic
             return sr;
         }
 
+        /// <summary>
+        /// Make a concatenation of given nodes, if any regex is nothing then return nothing, eliminate
+        /// intermediate epsilons, if tryCreateFixedLengthMarker and length is fixed, add a fixed length
+        /// marker at the end.
+        /// </summary>
+        internal SymbolicRegexNode<TSet> CreateConcat(DoublyLinkedList<SymbolicRegexNode<TSet>> nodes, bool tryCreateFixedLengthMarker)
+        {
+            SymbolicRegexNode<TSet> sr = Epsilon;
+
+            if (tryCreateFixedLengthMarker)
+            {
+                int length = CalculateFixedLength(nodes);
+                if (length >= 0)
+                {
+                    sr = CreateFixedLengthMarker(length);
+                }
+            }
+
+            // Iterate through all the nodes concatenating them together.  We iterate in reverse in order to
+            // avoid quadratic behavior in combination with the called CreateConcat method.
+            DoublyLinkedList<SymbolicRegexNode<TSet>>.Node? current = nodes._last;
+            while (current is not null)
+            {
+                SymbolicRegexNode<TSet> node = current._elem;
+                // If there's a nothing in the list, the whole concatenation can't match, so just return nothing.
+                if (node == _nothing)
+                {
+                    return _nothing;
+                }
+
+                // no node may itself be a concat node in the list
+                Debug.Assert(node._kind != SymbolicRegexNodeKind.Concat);
+
+                sr = SymbolicRegexNode<TSet>.CreateConcat(this, node, sr);
+                current = current._prev;
+            }
+
+            return sr;
+        }
+
         internal SymbolicRegexNode<TSet> CreateConcat(SymbolicRegexNode<TSet> left, SymbolicRegexNode<TSet> right) => SymbolicRegexNode<TSet>.CreateConcat(this, left, right);
 
         private static int CalculateFixedLength(SymbolicRegexNode<TSet>[] nodes)
@@ -307,6 +347,25 @@ namespace System.Text.RegularExpressions.Symbolic
                 }
 
                 length += k;
+            }
+
+            return length;
+        }
+
+        private static int CalculateFixedLength(DoublyLinkedList<SymbolicRegexNode<TSet>> nodes)
+        {
+            int length = 0;
+            DoublyLinkedList<SymbolicRegexNode<TSet>>.Node? current = nodes._first;
+            while (current is not null)
+            {
+                int k = current._elem.GetFixedLength();
+                if (k < 0)
+                {
+                    return -1;
+                }
+
+                length += k;
+                current = current._next;
             }
 
             return length;

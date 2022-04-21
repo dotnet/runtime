@@ -5,8 +5,10 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
+using ConversionResult = System.Text.RegularExpressions.Symbolic.DoublyLinkedList<System.Text.RegularExpressions.Symbolic.SymbolicRegexNode<System.Text.RegularExpressions.Symbolic.BDD>>;
 
 namespace System.Text.RegularExpressions.Symbolic
 {
@@ -32,190 +34,284 @@ namespace System.Text.RegularExpressions.Symbolic
             _captureSparseMapping = captureSparseMapping;
         }
 
-        /// <summary>Converts a <see cref="RegexNode"/> into its corresponding <see cref="SymbolicRegexNode{S}"/>.</summary>
-        /// <param name="node">The node to convert.</param>
-        /// <param name="tryCreateFixedLengthMarker">Whether we should attempt to create a fixed length marker after this node.</param>
-        /// <returns>The generated <see cref="SymbolicRegexNode{S}"/> that corresponds to the supplied <paramref name="node"/>.</returns>
-        public SymbolicRegexNode<BDD> ConvertToSymbolicRegexNode(RegexNode node, bool tryCreateFixedLengthMarker)
+        /// <summary>Converts the root <see cref="RegexNode"/> into its corresponding <see cref="SymbolicRegexNode{S}"/>.</summary>
+        /// <param name="root">The root node to convert.</param>
+        /// <returns>The generated <see cref="SymbolicRegexNode{S}"/> that corresponds to the supplied <paramref name="root"/>.</returns>
+        internal SymbolicRegexNode<BDD> ConvertToSymbolicRegexNode(RegexNode root)
         {
-            // We're processing the node tree recursively and need to avoid stack overflows for really deep trees.
-            // To achieve this, if we detect we're too deep on the stack, we fork off the handling of this node
-            // to another thread and block this thread until it completes.
-            if (!StackHelper.TryEnsureSufficientExecutionStack())
+            Debug.Assert(_builder is not null);
+
+            // cache stores the intermediate results to avoid use of recursion
+            // a singleton list in ConversionResult represents a non-concatenation
+            // any non-singleton list represents a concatenation of those nodes
+            // ConversionResult is a non-empty list
+            Dictionary<RegexNode, ConversionResult> cache = new();
+
+            //(node, mark, second) represents a work item such that if second=true then
+            //the node has children that have been processed and the results are stored in the cache
+            Stack<(RegexNode Node, bool TryToMarkFixedLength, bool IsSecondPush)> work = new();
+            // for the root node the length marker check is set to true
+            work.Push((root, true, false));
+
+            while (work.Count > 0)
             {
-                return StackHelper.CallOnEmptyStack(ConvertToSymbolicRegexNode, node, tryCreateFixedLengthMarker);
+                (RegexNode Node, bool TryToMarkFixedLength, bool IsSecondPush) top = work.Pop();
+                RegexNode node = top.Node;
+
+                // No pushed node may have been converted already
+                Debug.Assert(!cache.ContainsKey(node));
+
+                if (top.IsSecondPush)
+                {
+                    // only nodes with children are pushed two times
+                    // at this point all the child nodes must have been converted
+                    Debug.Assert(node.ChildCount() > 0);
+                    Debug.Assert(CheckThatAllChildrenHaveBeenCached(node));
+
+                    switch (node.Kind)
+                    {
+                        case RegexNodeKind.Concatenate:
+                            {
+                                ConversionResult nodes = cache[node.Child(0)];
+                                //flatten all the remaining converted child nodes into the single nodes list
+                                for (int i = 1; i < node.ChildCount(); ++i)
+                                {
+                                    nodes.Append(cache[node.Child(i)]);
+                                }
+                                //reuse the resulting list for the node itself
+                                cache[node] = nodes;
+                                break;
+                            }
+
+                        case RegexNodeKind.Alternate:
+                            {
+                                // Alternations are created by creating an Or of all of its children.
+                                // This Or needs to be "ordered" to achieve the same semantics as the backtracking engines.
+                                var branches = new SymbolicRegexNode<BDD>[node.ChildCount()];
+                                for (int i = 0; i < branches.Length; i++)
+                                {
+                                    ConversionResult res = cache[node.Child(i)];
+                                    //if the converted node of child i is a non-singleton list then convert it into
+                                    //a corresponding concatenation node, while propagating the length marker flag
+                                    branches[i] = res._size == 1 ? res._first._elem : _builder.CreateConcat(res, top.TryToMarkFixedLength);
+                                }
+                                cache[node] = new(_builder.OrderedOr(branches));
+                                break;
+                            }
+
+                        case RegexNodeKind.Loop:
+                        case RegexNodeKind.Lazyloop:
+                            {
+                                ConversionResult res = cache[node.Child(0)];
+                                //convert a list of nodes into a concatenation, do not propagate the length marker flag inside the loop body
+                                SymbolicRegexNode<BDD> body = res._size == 1 ? res._first._elem : _builder.CreateConcat(res, false);
+                                cache[node] = new(_builder.CreateLoop(body, node.Kind == RegexNodeKind.Lazyloop, node.M, node.N));
+                                break;
+                            }
+
+                        default:
+                            {
+                                //no other nodes besides captures can have been pushed twice at this point
+                                Debug.Assert(node.Kind == RegexNodeKind.Capture && node.N == -1);
+
+                                int captureNum = RegexParser.MapCaptureNumber(node.M, _captureSparseMapping);
+                                ConversionResult res = cache[node.Child(0)];
+                                // add capture start/end markers
+                                res.InsertAtStart(_builder.CreateCaptureStart(captureNum));
+                                res.InsertAtEnd(_builder.CreateCaptureEnd(captureNum));
+                                cache[node] = res;
+                                break;
+                            }
+                    }
+                }
+                else
+                {
+                    // at this point no child node may have been converted yet
+                    CheckThatNoChildHasBeenCached(node);
+
+                    // Handle each node kind as-is appropriate.
+                    switch (node.Kind)
+                    {
+                        // Singletons and multis
+
+                        case RegexNodeKind.One:
+                            cache[node] = new(_builder.CreateSingleton(_builder._solver.CreateFromChar(node.Ch)));
+                            break;
+
+                        case RegexNodeKind.Notone:
+                            cache[node] = new(_builder.CreateSingleton(_builder._solver.Not(_builder._solver.CreateFromChar(node.Ch))));
+                            break;
+
+                        case RegexNodeKind.Set:
+                            cache[node] = new(ConvertSet(node));
+                            break;
+
+                        case RegexNodeKind.Multi:
+                            {
+                                // Create a BDD for each character in the string and concatenate them.
+                                string? str = node.Str;
+                                Debug.Assert(str is not null);
+                                bool ignoreCase = (node.Options & RegexOptions.IgnoreCase) != 0;
+                                if (str.Length == 0)
+                                {
+                                    cache[node] = new(_builder.Epsilon);
+                                }
+                                else
+                                {
+                                    ConversionResult nodes = new(_builder.CreateSingleton(_builder._solver.CreateFromChar(str[0])));
+                                    for (int i = 1; i < str.Length; i++)
+                                    {
+                                        nodes.InsertAtEnd(_builder.CreateSingleton(_builder._solver.CreateFromChar(str[i])));
+                                    }
+                                    cache[node] = nodes;
+                                }
+                                break;
+                            }
+
+
+                        // The following five cases are the only node kinds that are pushed twice
+
+                        // Joins
+
+                        case RegexNodeKind.Concatenate:
+                        case RegexNodeKind.Alternate:
+                            {
+                                //push the node for the second time
+                                work.Push((node, top.TryToMarkFixedLength, true));
+                                //propagate the length mark check only in case of alternation
+                                bool mark = node.Kind == RegexNodeKind.Alternate && top.TryToMarkFixedLength;
+                                for (int i = 0; i < node.ChildCount(); ++i)
+                                {
+                                    //push all the children to be converted
+                                    work.Push((node.Child(i), mark, false));
+                                }
+                                break;
+                            }
+
+                        // General loops and supported captures
+
+                        case RegexNodeKind.Loop:
+                        case RegexNodeKind.Lazyloop:
+                        case RegexNodeKind.Capture when node.N == -1: // N == -1 because balancing groups aren't supported
+                            {
+                                //push the node for the second time
+                                work.Push((node, top.TryToMarkFixedLength, true));
+                                //push the child node, but omit the length mark check
+                                work.Push((node.Child(0), false, false));
+                                break;
+                            }
+
+                        // Specialized loops
+
+                        case RegexNodeKind.Oneloop:
+                        case RegexNodeKind.Onelazy:
+                        case RegexNodeKind.Notoneloop:
+                        case RegexNodeKind.Notonelazy:
+                            {
+                                // Create a BDD that represents the character, then create a loop around it.
+                                bool ignoreCase = (node.Options & RegexOptions.IgnoreCase) != 0;
+                                BDD bdd = _builder._solver.CreateFromChar(node.Ch);
+                                if (node.IsNotoneFamily)
+                                {
+                                    bdd = _builder._solver.Not(bdd);
+                                }
+                                cache[node] = new(_builder.CreateLoop(_builder.CreateSingleton(bdd), node.Kind is RegexNodeKind.Onelazy or RegexNodeKind.Notonelazy, node.M, node.N));
+                                break;
+                            }
+
+                        case RegexNodeKind.Setloop:
+                        case RegexNodeKind.Setlazy:
+                            {
+                                // Create a BDD that represents the set string, then create a loop around it.
+                                string? set = node.Str;
+                                Debug.Assert(set is not null);
+                                BDD setBdd = CreateBDDFromSetString((node.Options & RegexOptions.IgnoreCase) != 0, set);
+                                cache[node] = new(_builder.CreateLoop(_builder.CreateSingleton(setBdd), node.Kind == RegexNodeKind.Setlazy, node.M, node.N));
+                                break;
+                            }
+
+                        case RegexNodeKind.Empty:
+                        case RegexNodeKind.UpdateBumpalong: // UpdateBumpalong is a directive relevant only to backtracking and can be ignored just like Empty
+                            cache[node] = new(_builder.Epsilon);
+                            break;
+
+                        case RegexNodeKind.Nothing:
+                            cache[node] = new(_builder._nothing);
+                            break;
+
+                        // Anchors
+
+                        case RegexNodeKind.Beginning:
+                            cache[node] = new(_builder.BeginningAnchor);
+                            break;
+
+                        case RegexNodeKind.Bol:
+                            EnsureNewlinePredicateInitialized();
+                            cache[node] = new(_builder.BolAnchor);
+                            break;
+
+                        case RegexNodeKind.End:  // \z anchor
+                            cache[node] = new(_builder.EndAnchor);
+                            break;
+
+                        case RegexNodeKind.EndZ: // \Z anchor
+                            EnsureNewlinePredicateInitialized();
+                            cache[node] = new(_builder.EndAnchorZ);
+                            break;
+
+                        case RegexNodeKind.Eol:
+                            EnsureNewlinePredicateInitialized();
+                            cache[node] = new(_builder.EolAnchor);
+                            break;
+
+                        case RegexNodeKind.Boundary:
+                            EnsureWordLetterPredicateInitialized();
+                            cache[node] = new(_builder.BoundaryAnchor);
+                            break;
+
+                        case RegexNodeKind.NonBoundary:
+                            EnsureWordLetterPredicateInitialized();
+                            cache[node] = new(_builder.NonBoundaryAnchor);
+                            break;
+
+                        // unsupported
+
+                        default:
+                            throw new NotSupportedException(SR.Format(SR.NotSupported_NonBacktrackingConflictingExpression, node.Kind switch
+                            {
+                                RegexNodeKind.Atomic or RegexNodeKind.Setloopatomic or RegexNodeKind.Oneloopatomic or RegexNodeKind.Notoneloopatomic => SR.ExpressionDescription_AtomicSubexpressions,
+                                RegexNodeKind.Backreference => SR.ExpressionDescription_Backreference,
+                                RegexNodeKind.BackreferenceConditional => SR.ExpressionDescription_Conditional,
+                                RegexNodeKind.Capture => SR.ExpressionDescription_BalancingGroup,
+                                RegexNodeKind.ExpressionConditional => SR.ExpressionDescription_IfThenElse,
+                                RegexNodeKind.NegativeLookaround => SR.ExpressionDescription_NegativeLookaround,
+                                RegexNodeKind.PositiveLookaround => SR.ExpressionDescription_PositiveLookaround,
+                                RegexNodeKind.Start => SR.ExpressionDescription_ContiguousMatches,
+                                _ => UnexpectedNodeType(node)
+                            }));
+
+                            static string UnexpectedNodeType(RegexNode node)
+                            {
+                                // The default should never arise, since other node types are either supported
+                                // or have been removed (e.g. Group) from the final parse tree.
+                                string description = $"Unexpected ({nameof(RegexNodeKind)}: {node.Kind})";
+                                Debug.Fail(description);
+                                return description;
+                            }
+                    }
+                }
             }
 
-            // Handle each node kind as-is appropriate.
-            switch (node.Kind)
-            {
-                // Singletons and multis
+            Debug.Assert(cache.ContainsKey(root));
+            ConversionResult rootres = cache[root];
 
-                case RegexNodeKind.One:
-                    return _builder.CreateSingleton(_builder._solver.CreateFromChar(node.Ch));
+            // only a top-level concatenation or capture node can result in a non-singleton list
+            Debug.Assert(rootres._size == 1 || root.Kind == RegexNodeKind.Concatenate || root.Kind == RegexNodeKind.Capture);
 
-                case RegexNodeKind.Notone:
-                    return _builder.CreateSingleton(_builder._solver.Not(_builder._solver.CreateFromChar(node.Ch)));
+            // if the root node is a concatenation then the converted concatenation is built with length marker check being true
+            SymbolicRegexNode<BDD> result = rootres._size == 1 ? rootres._first._elem : _builder.CreateConcat(rootres, true);
+            return result;
 
-                case RegexNodeKind.Set:
-                    return ConvertSet(node);
-
-                case RegexNodeKind.Multi:
-                    {
-                        // Create a BDD for each character in the string and concatenate them.
-                        string? str = node.Str;
-                        Debug.Assert(str is not null);
-                        bool ignoreCase = (node.Options & RegexOptions.IgnoreCase) != 0;
-                        var nodes = new SymbolicRegexNode<BDD>[str.Length];
-                        for (int i = 0; i < nodes.Length; i++)
-                        {
-                            nodes[i] = _builder.CreateSingleton(_builder._solver.CreateFromChar(str[i]));
-                        }
-                        return _builder.CreateConcat(nodes, tryCreateFixedLengthMarker);
-                    }
-
-                // Joins
-
-                case RegexNodeKind.Concatenate:
-                    {
-                        var children = new SymbolicRegexNode<BDD>[node.ChildCount()];
-                        for (int i = 0; i < children.Length; ++i)
-                        {
-                            children[i] = ConvertToSymbolicRegexNode(node.Child(i), tryCreateFixedLengthMarker: false);
-                        }
-                        return _builder.CreateConcat(children, tryCreateFixedLengthMarker);
-                    }
-
-                case RegexNodeKind.Alternate:
-                    {
-                        // Alternations are created by creating an Or of all of its children.
-                        // This Or needs to be "ordered" to achieve the same semantics as the backtracking engines.
-                        var branches = new SymbolicRegexNode<BDD>[node.ChildCount()];
-                        for (int i = 0; i < branches.Length; i++)
-                        {
-                            branches[i] = ConvertToSymbolicRegexNode(node.Child(i), tryCreateFixedLengthMarker);
-                        }
-                        return _builder.OrderedOr(branches);
-                    }
-
-                // Loops
-
-                case RegexNodeKind.Oneloop:
-                case RegexNodeKind.Onelazy:
-                case RegexNodeKind.Notoneloop:
-                case RegexNodeKind.Notonelazy:
-                    {
-                        // Create a BDD that represents the character, then create a loop around it.
-                        bool ignoreCase = (node.Options & RegexOptions.IgnoreCase) != 0;
-                        BDD bdd = _builder._solver.CreateFromChar(node.Ch);
-                        if (node.IsNotoneFamily)
-                        {
-                            bdd = _builder._solver.Not(bdd);
-                        }
-                        return _builder.CreateLoop(_builder.CreateSingleton(bdd), node.Kind is RegexNodeKind.Onelazy or RegexNodeKind.Notonelazy, node.M, node.N);
-                    }
-
-                case RegexNodeKind.Setloop:
-                case RegexNodeKind.Setlazy:
-                    {
-                        // Create a BDD that represents the set string, then create a loop around it.
-                        string? set = node.Str;
-                        Debug.Assert(set is not null);
-                        BDD setBdd = CreateBDDFromSetString((node.Options & RegexOptions.IgnoreCase) != 0, set);
-                        return _builder.CreateLoop(_builder.CreateSingleton(setBdd), node.Kind == RegexNodeKind.Setlazy, node.M, node.N);
-                    }
-
-                case RegexNodeKind.Loop:
-                case RegexNodeKind.Lazyloop:
-                    return _builder.CreateLoop(ConvertToSymbolicRegexNode(node.Child(0), tryCreateFixedLengthMarker: false), node.Kind == RegexNodeKind.Lazyloop, node.M, node.N);
-
-                // Other constructs
-
-                case RegexNodeKind.Capture when node.N == -1: // N == -1 because balancing groups aren't supported
-                    int captureNum = RegexParser.MapCaptureNumber(node.M, _captureSparseMapping);
-                    return _builder.CreateCapture(ConvertToSymbolicRegexNode(node.Child(0), tryCreateFixedLengthMarker), captureNum);
-
-                case RegexNodeKind.Empty:
-                case RegexNodeKind.UpdateBumpalong: // UpdateBumpalong is a directive relevant only to backtracking and can be ignored just like Empty
-                    return _builder.Epsilon;
-
-                case RegexNodeKind.Nothing:
-                    return _builder._nothing;
-
-                // Anchors
-
-                case RegexNodeKind.Beginning:
-                    return _builder.BeginningAnchor;
-
-                case RegexNodeKind.Bol:
-                    EnsureNewlinePredicateInitialized();
-                    return _builder.BolAnchor;
-
-                case RegexNodeKind.End:  // \z anchor
-                    return _builder.EndAnchor;
-
-                case RegexNodeKind.EndZ: // \Z anchor
-                    EnsureNewlinePredicateInitialized();
-                    return _builder.EndAnchorZ;
-
-                case RegexNodeKind.Eol:
-                    EnsureNewlinePredicateInitialized();
-                    return _builder.EolAnchor;
-
-                case RegexNodeKind.Boundary:
-                    EnsureWordLetterPredicateInitialized();
-                    return _builder.BoundaryAnchor;
-
-                case RegexNodeKind.NonBoundary:
-                    EnsureWordLetterPredicateInitialized();
-                    return _builder.NonBoundaryAnchor;
-
-                // Experimental / unsupported
-
-#if DEBUG
-                case RegexNodeKind.ExpressionConditional:
-                    // Try to extract the special case representing complement or intersection
-                    if (IsComplementedNode(node))
-                    {
-                        return _builder.Not(ConvertToSymbolicRegexNode(node.Child(0), tryCreateFixedLengthMarker: false));
-                    }
-
-                    if (TryGetIntersection(node, out List<RegexNode>? conjuncts))
-                    {
-                        var nested = new SymbolicRegexNode<BDD>[conjuncts.Count];
-                        for (int i = 0; i < nested.Length; i++)
-                        {
-                            nested[i] = ConvertToSymbolicRegexNode(conjuncts[i], tryCreateFixedLengthMarker: false);
-                        }
-                        return _builder.And(nested);
-                    }
-
-                    goto default;
-#endif
-
-                default:
-                    throw new NotSupportedException(SR.Format(SR.NotSupported_NonBacktrackingConflictingExpression, node.Kind switch
-                    {
-                        RegexNodeKind.Atomic or RegexNodeKind.Setloopatomic or RegexNodeKind.Oneloopatomic or RegexNodeKind.Notoneloopatomic => SR.ExpressionDescription_AtomicSubexpressions,
-                        RegexNodeKind.Backreference => SR.ExpressionDescription_Backreference,
-                        RegexNodeKind.BackreferenceConditional => SR.ExpressionDescription_Conditional,
-                        RegexNodeKind.Capture => SR.ExpressionDescription_BalancingGroup,
-                        RegexNodeKind.ExpressionConditional => SR.ExpressionDescription_IfThenElse,
-                        RegexNodeKind.NegativeLookaround => SR.ExpressionDescription_NegativeLookaround,
-                        RegexNodeKind.PositiveLookaround => SR.ExpressionDescription_PositiveLookaround,
-                        RegexNodeKind.Start => SR.ExpressionDescription_ContiguousMatches,
-                        _ => UnexpectedNodeType(node)
-                    }));
-
-                    static string UnexpectedNodeType(RegexNode node)
-                    {
-                        // The default should never arise, since other node types are either supported
-                        // or have been removed (e.g. Group) from the final parse tree.
-                        string description = $"Unexpected ({nameof(RegexNodeKind)}: {node.Kind})";
-                        Debug.Fail(description);
-                        return description;
-                    }
-            }
 
             void EnsureNewlinePredicateInitialized()
             {
@@ -236,6 +332,26 @@ namespace System.Text.RegularExpressions.Symbolic
                 }
             }
 
+            bool CheckThatAllChildrenHaveBeenCached(RegexNode node)
+            {
+                for (int i=0; i < node.ChildCount(); ++i)
+                {
+                    if (!cache.ContainsKey(node.Child(i)))
+                        return false;
+                }
+                return true;
+            }
+
+            bool CheckThatNoChildHasBeenCached(RegexNode node)
+            {
+                for (int i = 0; i < node.ChildCount(); ++i)
+                {
+                    if (cache.ContainsKey(node.Child(i)))
+                        return false;
+                }
+                return true;
+            }
+
             SymbolicRegexNode<BDD> ConvertSet(RegexNode node)
             {
                 Debug.Assert(node.Kind == RegexNodeKind.Set);
@@ -246,37 +362,6 @@ namespace System.Text.RegularExpressions.Symbolic
                 return _builder.CreateSingleton(CreateBDDFromSetString((node.Options & RegexOptions.IgnoreCase) != 0, set));
             }
 
-#if DEBUG
-            // TODO-NONBACKTRACKING: recognizing strictly only [] (RegexNode.Nothing), for example [0-[0]] would not be recognized
-            bool IsNothing(RegexNode node) => node.Kind == RegexNodeKind.Nothing || (node.Kind == RegexNodeKind.Set && ConvertSet(node).IsNothing);
-
-            bool IsDotStar(RegexNode node) => node.Kind == RegexNodeKind.Setloop && ConvertToSymbolicRegexNode(node, tryCreateFixedLengthMarker: false).IsAnyStar;
-
-            bool IsIntersect(RegexNode node) => node.Kind == RegexNodeKind.ExpressionConditional && IsNothing(node.Child(2));
-
-            bool TryGetIntersection(RegexNode node, [Diagnostics.CodeAnalysis.NotNullWhen(true)] out List<RegexNode>? conjuncts)
-            {
-                if (!IsIntersect(node))
-                {
-                    conjuncts = null;
-                    return false;
-                }
-
-                conjuncts = new List<RegexNode>();
-                conjuncts.Add(node.Child(0));
-                node = node.Child(1);
-                while (IsIntersect(node))
-                {
-                    conjuncts.Add(node.Child(0));
-                    node = node.Child(1);
-                }
-
-                conjuncts.Add(node);
-                return true;
-            }
-
-            bool IsComplementedNode(RegexNode node) => IsNothing(node.Child(1)) && IsDotStar(node.Child(2));
-#endif
         }
 
         /// <summary>Creates a BDD from the <see cref="RegexCharClass"/> set string to determine whether a char is in the set.</summary>
