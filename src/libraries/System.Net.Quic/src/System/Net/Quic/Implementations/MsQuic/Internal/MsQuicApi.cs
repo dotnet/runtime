@@ -40,7 +40,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             {
                 var cfg = new QUIC_REGISTRATION_CONFIG {
                     AppName = (sbyte*)pAppName,
-                    ExecutionProfile = QUIC_EXECUTION_PROFILE.QUIC_EXECUTION_PROFILE_LOW_LATENCY
+                    ExecutionProfile = QUIC_EXECUTION_PROFILE.LOW_LATENCY
                 };
 
                 QUIC_HANDLE* handle;

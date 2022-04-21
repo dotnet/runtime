@@ -586,7 +586,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                 throw new InvalidOperationException(SR.net_quic_not_connected);
             }
 
-            return new MsQuicStream(_state, QUIC_STREAM_OPEN_FLAGS.QUIC_STREAM_OPEN_FLAG_UNIDIRECTIONAL);
+            return new MsQuicStream(_state, QUIC_STREAM_OPEN_FLAGS.UNIDIRECTIONAL);
         }
 
         internal override QuicStreamProvider OpenBidirectionalStream()
@@ -597,7 +597,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                 throw new InvalidOperationException(SR.net_quic_not_connected);
             }
 
-            return new MsQuicStream(_state, QUIC_STREAM_OPEN_FLAGS.QUIC_STREAM_OPEN_FLAG_NONE);
+            return new MsQuicStream(_state, QUIC_STREAM_OPEN_FLAGS.NONE);
         }
 
         internal override int GetRemoteAvailableUnidirectionalStreamCount()
@@ -753,19 +753,19 @@ namespace System.Net.Quic.Implementations.MsQuic
             {
                 switch (connectionEvent->Type)
                 {
-                    case QUIC_CONNECTION_EVENT_TYPE.QUIC_CONNECTION_EVENT_CONNECTED:
+                    case QUIC_CONNECTION_EVENT_TYPE.CONNECTED:
                         return HandleEventConnected(state, ref *connectionEvent);
-                    case QUIC_CONNECTION_EVENT_TYPE.QUIC_CONNECTION_EVENT_SHUTDOWN_INITIATED_BY_TRANSPORT:
+                    case QUIC_CONNECTION_EVENT_TYPE.SHUTDOWN_INITIATED_BY_TRANSPORT:
                         return HandleEventShutdownInitiatedByTransport(state, ref *connectionEvent);
-                    case QUIC_CONNECTION_EVENT_TYPE.QUIC_CONNECTION_EVENT_SHUTDOWN_INITIATED_BY_PEER:
+                    case QUIC_CONNECTION_EVENT_TYPE.SHUTDOWN_INITIATED_BY_PEER:
                         return HandleEventShutdownInitiatedByPeer(state, ref *connectionEvent);
-                    case QUIC_CONNECTION_EVENT_TYPE.QUIC_CONNECTION_EVENT_SHUTDOWN_COMPLETE:
+                    case QUIC_CONNECTION_EVENT_TYPE.SHUTDOWN_COMPLETE:
                         return HandleEventShutdownComplete(state, ref *connectionEvent);
-                    case QUIC_CONNECTION_EVENT_TYPE.QUIC_CONNECTION_EVENT_PEER_STREAM_STARTED:
+                    case QUIC_CONNECTION_EVENT_TYPE.PEER_STREAM_STARTED:
                         return HandleEventNewStream(state, ref *connectionEvent);
-                    case QUIC_CONNECTION_EVENT_TYPE.QUIC_CONNECTION_EVENT_STREAMS_AVAILABLE:
+                    case QUIC_CONNECTION_EVENT_TYPE.STREAMS_AVAILABLE:
                         return HandleEventStreamsAvailable(state, ref *connectionEvent);
-                    case QUIC_CONNECTION_EVENT_TYPE.QUIC_CONNECTION_EVENT_PEER_CERTIFICATE_RECEIVED:
+                    case QUIC_CONNECTION_EVENT_TYPE.PEER_CERTIFICATE_RECEIVED:
                         return HandleEventPeerCertificateReceived(state, ref *connectionEvent);
                     default:
                         return QUIC_STATUS_SUCCESS;
@@ -840,7 +840,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                 Debug.Assert(!Monitor.IsEntered(_state), "!Monitor.IsEntered(_state)");
                 MsQuicApi.Api.ApiTable->ConnectionShutdown(
                     _state.Handle.QuicHandle,
-                    QUIC_CONNECTION_SHUTDOWN_FLAGS.QUIC_CONNECTION_SHUTDOWN_FLAG_SILENT,
+                    QUIC_CONNECTION_SHUTDOWN_FLAGS.SILENT,
                     0);
             }
 
@@ -879,7 +879,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                 return default;
             }
 
-            return ShutdownAsync(QUIC_CONNECTION_SHUTDOWN_FLAGS.QUIC_CONNECTION_SHUTDOWN_FLAG_NONE, errorCode);
+            return ShutdownAsync(QUIC_CONNECTION_SHUTDOWN_FLAGS.NONE, errorCode);
         }
 
         private void ThrowIfDisposed()

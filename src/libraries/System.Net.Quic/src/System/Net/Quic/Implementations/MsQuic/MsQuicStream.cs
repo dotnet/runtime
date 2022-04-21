@@ -111,7 +111,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             _state.Handle = streamHandle;
             _canRead = true;
-            _canWrite = !flags.HasFlag(QUIC_STREAM_OPEN_FLAGS.QUIC_STREAM_OPEN_FLAG_UNIDIRECTIONAL);
+            _canWrite = !flags.HasFlag(QUIC_STREAM_OPEN_FLAGS.UNIDIRECTIONAL);
             if (!_canWrite)
             {
                 _state.SendState = SendState.Closed;
@@ -137,7 +137,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             {
                 NetEventSource.Info(
                     _state,
-                    $"{_state.Handle} Inbound {(flags.HasFlag(QUIC_STREAM_OPEN_FLAGS.QUIC_STREAM_OPEN_FLAG_UNIDIRECTIONAL) ? "uni" : "bi")}directional stream created " +
+                    $"{_state.Handle} Inbound {(flags.HasFlag(QUIC_STREAM_OPEN_FLAGS.UNIDIRECTIONAL) ? "uni" : "bi")}directional stream created " +
                         $"in connection {_state.ConnectionState.Handle}.");
             }
         }
@@ -155,7 +155,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             // but after TryAddStream to prevent unnecessary RemoveStream in finalizer
             _state.ConnectionState = connectionState;
 
-            _canRead = !flags.HasFlag(QUIC_STREAM_OPEN_FLAGS.QUIC_STREAM_OPEN_FLAG_UNIDIRECTIONAL);
+            _canRead = !flags.HasFlag(QUIC_STREAM_OPEN_FLAGS.UNIDIRECTIONAL);
             _canWrite = true;
 
             _state.StateGCHandle = GCHandle.Alloc(_state);
@@ -188,7 +188,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                 Debug.Assert(!Monitor.IsEntered(_state), "!Monitor.IsEntered(_state)");
                 ThrowIfFailure(MsQuicApi.Api.ApiTable->StreamStart(
                     _state.Handle.QuicHandle,
-                    QUIC_STREAM_START_FLAGS.QUIC_STREAM_START_FLAG_FAIL_BLOCKED | QUIC_STREAM_START_FLAGS.QUIC_STREAM_START_FLAG_SHUTDOWN_ON_FAIL), "Could not start stream");
+                    QUIC_STREAM_START_FLAGS.FAIL_BLOCKED | QUIC_STREAM_START_FLAGS.SHUTDOWN_ON_FAIL), "Could not start stream");
             }
             catch
             {
@@ -201,7 +201,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             {
                 NetEventSource.Info(
                     _state,
-                    $"{_state.Handle} Outbound {(flags.HasFlag(QUIC_STREAM_OPEN_FLAGS.QUIC_STREAM_OPEN_FLAG_UNIDIRECTIONAL) ? "uni" : "bi")}directional stream created " +
+                    $"{_state.Handle} Outbound {(flags.HasFlag(QUIC_STREAM_OPEN_FLAGS.UNIDIRECTIONAL) ? "uni" : "bi")}directional stream created " +
                         $"in connection {_state.ConnectionState.Handle}.");
             }
         }
@@ -284,7 +284,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             using CancellationTokenRegistration registration = SetupWriteStartState(buffers.IsEmpty, cancellationToken);
 
-            await SendReadOnlySequenceAsync(buffers, endStream ? QUIC_SEND_FLAGS.QUIC_SEND_FLAG_FIN : QUIC_SEND_FLAGS.QUIC_SEND_FLAG_NONE).ConfigureAwait(false);
+            await SendReadOnlySequenceAsync(buffers, endStream ? QUIC_SEND_FLAGS.FIN : QUIC_SEND_FLAGS.NONE).ConfigureAwait(false);
 
             CleanupWriteCompletedState();
         }
@@ -300,7 +300,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             using CancellationTokenRegistration registration = SetupWriteStartState(buffers.IsEmpty, cancellationToken);
 
-            await SendReadOnlyMemoryListAsync(buffers, endStream ? QUIC_SEND_FLAGS.QUIC_SEND_FLAG_FIN : QUIC_SEND_FLAGS.QUIC_SEND_FLAG_NONE).ConfigureAwait(false);
+            await SendReadOnlyMemoryListAsync(buffers, endStream ? QUIC_SEND_FLAGS.FIN : QUIC_SEND_FLAGS.NONE).ConfigureAwait(false);
 
             CleanupWriteCompletedState();
         }
@@ -311,7 +311,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             using CancellationTokenRegistration registration = SetupWriteStartState(buffer.IsEmpty, cancellationToken);
 
-            await SendReadOnlyMemoryAsync(buffer, endStream ? QUIC_SEND_FLAGS.QUIC_SEND_FLAG_FIN : QUIC_SEND_FLAGS.QUIC_SEND_FLAG_NONE).ConfigureAwait(false);
+            await SendReadOnlyMemoryAsync(buffer, endStream ? QUIC_SEND_FLAGS.FIN : QUIC_SEND_FLAGS.NONE).ConfigureAwait(false);
 
             CleanupWriteCompletedState();
         }
@@ -598,7 +598,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                     ExceptionDispatchInfo.SetCurrentStackTrace(new QuicOperationAbortedException("Read was aborted")));
             }
 
-            StartShutdown(QUIC_STREAM_SHUTDOWN_FLAGS.QUIC_STREAM_SHUTDOWN_FLAG_ABORT_RECEIVE, errorCode);
+            StartShutdown(QUIC_STREAM_SHUTDOWN_FLAGS.ABORT_RECEIVE, errorCode);
         }
 
         internal override void AbortWrite(long errorCode)
@@ -645,7 +645,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                     ExceptionDispatchInfo.SetCurrentStackTrace(new QuicOperationAbortedException("Write was aborted.")));
             }
 
-            StartShutdown(QUIC_STREAM_SHUTDOWN_FLAGS.QUIC_STREAM_SHUTDOWN_FLAG_ABORT_SEND, errorCode);
+            StartShutdown(QUIC_STREAM_SHUTDOWN_FLAGS.ABORT_SEND, errorCode);
         }
 
         private unsafe void StartShutdown(QUIC_STREAM_SHUTDOWN_FLAGS flags, long errorCode)
@@ -722,7 +722,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             }
 
             // it is ok to send shutdown several times, MsQuic will ignore it
-            StartShutdown(QUIC_STREAM_SHUTDOWN_FLAGS.QUIC_STREAM_SHUTDOWN_FLAG_GRACEFUL, errorCode: 0);
+            StartShutdown(QUIC_STREAM_SHUTDOWN_FLAGS.GRACEFUL, errorCode: 0);
         }
 
         // TODO consider removing sync-over-async with blocking calls.
@@ -863,7 +863,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                     try
                     {
                         // Handle race condition when stream can be closed handling SHUTDOWN_COMPLETE.
-                        StartShutdown(QUIC_STREAM_SHUTDOWN_FLAGS.QUIC_STREAM_SHUTDOWN_FLAG_GRACEFUL, errorCode: 0);
+                        StartShutdown(QUIC_STREAM_SHUTDOWN_FLAGS.GRACEFUL, errorCode: 0);
                     }
                     catch (ObjectDisposedException) { };
                 }
@@ -873,7 +873,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                     try
                     {
                     // TODO: error code used here MUST be specified by the application layer
-                        StartShutdown(QUIC_STREAM_SHUTDOWN_FLAGS.QUIC_STREAM_SHUTDOWN_FLAG_ABORT_RECEIVE, 0xffffffff);
+                        StartShutdown(QUIC_STREAM_SHUTDOWN_FLAGS.ABORT_RECEIVE, 0xffffffff);
                     }
                     catch (ObjectDisposedException) { };
                 }
@@ -924,31 +924,31 @@ namespace System.Net.Quic.Implementations.MsQuic
                 {
                     // Stream has started.
                     // Will only be done for outbound streams (inbound streams have already started)
-                    case QUIC_STREAM_EVENT_TYPE.QUIC_STREAM_EVENT_START_COMPLETE:
+                    case QUIC_STREAM_EVENT_TYPE.START_COMPLETE:
                         return HandleEventStartComplete(state, ref *streamEvent);
                     // Received data on the stream
-                    case QUIC_STREAM_EVENT_TYPE.QUIC_STREAM_EVENT_RECEIVE:
+                    case QUIC_STREAM_EVENT_TYPE.RECEIVE:
                         return HandleEventRecv(state, ref *streamEvent);
                     // Send has completed.
                     // Contains a canceled bool to indicate if the send was canceled.
-                    case QUIC_STREAM_EVENT_TYPE.QUIC_STREAM_EVENT_SEND_COMPLETE:
+                    case QUIC_STREAM_EVENT_TYPE.SEND_COMPLETE:
                         return HandleEventSendComplete(state, ref *streamEvent);
                     // Peer has told us to shutdown the reading side of the stream.
-                    case QUIC_STREAM_EVENT_TYPE.QUIC_STREAM_EVENT_PEER_SEND_SHUTDOWN:
+                    case QUIC_STREAM_EVENT_TYPE.PEER_SEND_SHUTDOWN:
                         return HandleEventPeerSendShutdown(state);
                     // Peer has told us to abort the reading side of the stream.
-                    case QUIC_STREAM_EVENT_TYPE.QUIC_STREAM_EVENT_PEER_SEND_ABORTED:
+                    case QUIC_STREAM_EVENT_TYPE.PEER_SEND_ABORTED:
                         return HandleEventPeerSendAborted(state, ref *streamEvent);
                     // Peer has stopped receiving data, don't send anymore.
-                    case QUIC_STREAM_EVENT_TYPE.QUIC_STREAM_EVENT_PEER_RECEIVE_ABORTED:
+                    case QUIC_STREAM_EVENT_TYPE.PEER_RECEIVE_ABORTED:
                         return HandleEventPeerRecvAborted(state, ref *streamEvent);
                     // Occurs when shutdown is completed for the send side.
                     // This only happens for shutdown on sending, not receiving
                     // Receive shutdown can only be abortive.
-                    case QUIC_STREAM_EVENT_TYPE.QUIC_STREAM_EVENT_SEND_SHUTDOWN_COMPLETE:
+                    case QUIC_STREAM_EVENT_TYPE.SEND_SHUTDOWN_COMPLETE:
                         return HandleEventSendShutdownComplete(state, ref *streamEvent);
                     // Shutdown for both sending and receiving is completed.
-                    case QUIC_STREAM_EVENT_TYPE.QUIC_STREAM_EVENT_SHUTDOWN_COMPLETE:
+                    case QUIC_STREAM_EVENT_TYPE.SHUTDOWN_COMPLETE:
                         return HandleEventShutdownComplete(state, ref *streamEvent);
                     default:
                         return QUIC_STATUS_SUCCESS;
@@ -973,7 +973,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             if (NetEventSource.Log.IsEnabled())
             {
-                NetEventSource.Info(state, $"{state.Handle} Stream received {receiveEvent.TotalBufferLength} bytes{(receiveEvent.Flags.HasFlag(QUIC_RECEIVE_FLAGS.QUIC_RECEIVE_FLAG_FIN) ? " with FIN flag" : "")}");
+                NetEventSource.Info(state, $"{state.Handle} Stream received {receiveEvent.TotalBufferLength} bytes{(receiveEvent.Flags.HasFlag(QUIC_RECEIVE_FLAGS.FIN) ? " with FIN flag" : "")}");
             }
 
             int readLength;
@@ -1010,7 +1010,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
                         state.ReceiveQuicBuffersCount = (int)receiveEvent.BufferCount;
                         state.ReceiveQuicBuffersTotalBytes = checked((int)receiveEvent.TotalBufferLength);
-                        state.ReceiveIsFinal = receiveEvent.Flags.HasFlag(QUIC_RECEIVE_FLAGS.QUIC_RECEIVE_FLAG_FIN);
+                        state.ReceiveIsFinal = receiveEvent.Flags.HasFlag(QUIC_RECEIVE_FLAGS.FIN);
 
                         // 0-length receive can happens once reads are finished (gracefully or otherwise).
                         if (state.ReceiveQuicBuffersTotalBytes == 0)
@@ -1042,7 +1042,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                         readLength = CopyMsQuicBuffersToUserBuffer(new ReadOnlySpan<QUIC_BUFFER>(receiveEvent.Buffers, (int)receiveEvent.BufferCount), state.ReceiveUserBuffer.Span);
 
                         // This was a final message and we've consumed everything. We can complete the state without waiting for PEER_SEND_SHUTDOWN
-                        if (receiveEvent.Flags.HasFlag(QUIC_RECEIVE_FLAGS.QUIC_RECEIVE_FLAG_FIN) && (uint)readLength == receiveEvent.TotalBufferLength)
+                        if (receiveEvent.Flags.HasFlag(QUIC_RECEIVE_FLAGS.FIN) && (uint)readLength == receiveEvent.TotalBufferLength)
                         {
                             state.ReadState = ReadState.ReadsCompleted;
                         }
@@ -1335,10 +1335,10 @@ namespace System.Net.Quic.Implementations.MsQuic
         {
             if (buffer.IsEmpty)
             {
-                if ((flags & QUIC_SEND_FLAGS.QUIC_SEND_FLAG_FIN) == QUIC_SEND_FLAGS.QUIC_SEND_FLAG_FIN)
+                if ((flags & QUIC_SEND_FLAGS.FIN) == QUIC_SEND_FLAGS.FIN)
                 {
                     // Start graceful shutdown sequence if passed in the fin flag and there is an empty buffer.
-                    StartShutdown(QUIC_STREAM_SHUTDOWN_FLAGS.QUIC_STREAM_SHUTDOWN_FLAG_GRACEFUL, errorCode: 0);
+                    StartShutdown(QUIC_STREAM_SHUTDOWN_FLAGS.GRACEFUL, errorCode: 0);
                 }
                 return default;
             }
@@ -1386,10 +1386,10 @@ namespace System.Net.Quic.Implementations.MsQuic
         {
             if (buffers.IsEmpty)
             {
-                if ((flags & QUIC_SEND_FLAGS.QUIC_SEND_FLAG_FIN) == QUIC_SEND_FLAGS.QUIC_SEND_FLAG_FIN)
+                if ((flags & QUIC_SEND_FLAGS.FIN) == QUIC_SEND_FLAGS.FIN)
                 {
                     // Start graceful shutdown sequence if passed in the fin flag and there is an empty buffer.
-                    StartShutdown(QUIC_STREAM_SHUTDOWN_FLAGS.QUIC_STREAM_SHUTDOWN_FLAG_GRACEFUL, errorCode: 0);
+                    StartShutdown(QUIC_STREAM_SHUTDOWN_FLAGS.GRACEFUL, errorCode: 0);
                 }
                 return default;
             }
@@ -1452,10 +1452,10 @@ namespace System.Net.Quic.Implementations.MsQuic
         {
             if (buffers.IsEmpty)
             {
-                if ((flags & QUIC_SEND_FLAGS.QUIC_SEND_FLAG_FIN) == QUIC_SEND_FLAGS.QUIC_SEND_FLAG_FIN)
+                if ((flags & QUIC_SEND_FLAGS.FIN) == QUIC_SEND_FLAGS.FIN)
                 {
                     // Start graceful shutdown sequence if passed in the fin flag and there is an empty buffer.
-                    StartShutdown(QUIC_STREAM_SHUTDOWN_FLAGS.QUIC_STREAM_SHUTDOWN_FLAG_GRACEFUL, errorCode: 0);
+                    StartShutdown(QUIC_STREAM_SHUTDOWN_FLAGS.GRACEFUL, errorCode: 0);
                 }
                 return default;
             }

@@ -246,13 +246,13 @@ namespace System.Net.Quic.Implementations.MsQuic
             var state = (State)gcHandle.Target;
 
 
-            if (listenerEvent->Type == QUIC_LISTENER_EVENT_TYPE.QUIC_LISTENER_EVENT_STOP_COMPLETE)
+            if (listenerEvent->Type == QUIC_LISTENER_EVENT_TYPE.STOP_COMPLETE)
             {
                 state.StopCompletion.TrySetResult();
                 return QUIC_STATUS_SUCCESS;
             }
 
-            if (listenerEvent->Type != QUIC_LISTENER_EVENT_TYPE.QUIC_LISTENER_EVENT_NEW_CONNECTION)
+            if (listenerEvent->Type != QUIC_LISTENER_EVENT_TYPE.NEW_CONNECTION)
             {
                 return QUIC_STATUS_INTERNAL_ERROR;
             }
