@@ -301,7 +301,9 @@ namespace Mono.Linker.Dataflow
 			case IntrinsicId.Expression_Property when calledMethod.HasParameterOfType (1, "System.Reflection.MethodInfo"):
 			case var fieldOrPropertyInstrinsic when fieldOrPropertyInstrinsic == IntrinsicId.Expression_Field || fieldOrPropertyInstrinsic == IntrinsicId.Expression_Property:
 			case IntrinsicId.Type_get_BaseType:
-			case IntrinsicId.Type_GetConstructor: {
+			case IntrinsicId.Type_GetConstructor:
+			case IntrinsicId.MethodBase_GetMethodFromHandle:
+			case IntrinsicId.MethodBase_get_MethodHandle: {
 					var instanceValue = MultiValueLattice.Top;
 					IReadOnlyList<MultiValue> parameterValues = methodParams;
 					if (calledMethodDefinition.HasImplicitThis ()) {
@@ -343,15 +345,6 @@ namespace Mono.Linker.Dataflow
 
 			case IntrinsicId.Array_Empty: {
 					AddReturnValue (ArrayValue.Create (0, ((GenericInstanceMethod) calledMethod).GenericArguments[0]));
-				}
-				break;
-
-			// System.Reflection.MethodBase.GetMethodFromHandle (RuntimeMethodHandle handle)
-			// System.Reflection.MethodBase.GetMethodFromHandle (RuntimeMethodHandle handle, RuntimeTypeHandle declaringType)
-			case IntrinsicId.MethodBase_GetMethodFromHandle: {
-					// Infrastructure piece to support "ldtoken method -> GetMethodFromHandle"
-					if (methodParams[0].AsSingleValue () is RuntimeMethodHandleValue methodHandle)
-						AddReturnValue (new SystemReflectionMethodBaseValue (methodHandle.MethodRepresented));
 				}
 				break;
 
@@ -764,7 +757,7 @@ namespace Mono.Linker.Dataflow
 
 					foreach (var methodValue in methodParams[0]) {
 						if (methodValue is SystemReflectionMethodBaseValue methodBaseValue) {
-							ValidateGenericMethodInstantiation (analysisContext, methodBaseValue.MethodRepresented.Method, methodParams[1], calledMethodDefinition);
+							ValidateGenericMethodInstantiation (analysisContext, methodBaseValue.RepresentedMethod.Method, methodParams[1], calledMethodDefinition);
 						} else if (methodValue == NullValue.Instance) {
 							// Nothing to do
 						} else {

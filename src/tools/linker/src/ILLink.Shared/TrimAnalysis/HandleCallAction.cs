@@ -110,6 +110,42 @@ namespace ILLink.Shared.TrimAnalysis
 				}
 				break;
 
+			// System.Reflection.MethodBase.GetMethodFromHandle (RuntimeMethodHandle handle)
+			// System.Reflection.MethodBase.GetMethodFromHandle (RuntimeMethodHandle handle, RuntimeTypeHandle declaringType)
+			case IntrinsicId.MethodBase_GetMethodFromHandle: {
+					if (argumentValues[0].IsEmpty ()) {
+						returnValue = MultiValueLattice.Top;
+						break;
+					}
+
+					// Infrastructure piece to support "ldtoken method -> GetMethodFromHandle"
+					foreach (var value in argumentValues[0]) {
+						if (value is RuntimeMethodHandleValue methodHandle)
+							AddReturnValue (new SystemReflectionMethodBaseValue (methodHandle.RepresentedMethod));
+						else
+							AddReturnValue (GetMethodReturnValue (calledMethod, returnValueDynamicallyAccessedMemberTypes));
+					}
+				}
+				break;
+
+			case IntrinsicId.MethodBase_get_MethodHandle: {
+					if (instanceValue.IsEmpty ()) {
+						returnValue = MultiValueLattice.Top;
+						break;
+					}
+
+					foreach (var value in instanceValue) {
+						if (value is SystemReflectionMethodBaseValue methodBaseValue)
+							AddReturnValue (new RuntimeMethodHandleValue (methodBaseValue.RepresentedMethod));
+						else
+							AddReturnValue (GetMethodReturnValue (calledMethod, returnValueDynamicallyAccessedMemberTypes));
+					}
+				}
+				break;
+
+			case IntrinsicId.TypeDelegator_Ctor:
+			// This needs additional validation that the .ctor is called from a "newobj" instruction/operation
+			// so it can't be done easily in shared code yet.
 			case IntrinsicId.Array_Empty:
 				// Array.Empty<T> must for now be handled by the specific implementation since it requires instantiated generic method handling
 				methodReturnValue = MultiValueLattice.Top;
@@ -564,7 +600,7 @@ namespace ILLink.Shared.TrimAnalysis
 							// We have one of the accessors for the property. The Expression.Property will in this case search
 							// for the matching PropertyInfo and store that. So to be perfectly correct we need to mark the
 							// respective PropertyInfo as "accessed via reflection".
-							if (MarkAssociatedProperty (methodBaseValue.MethodRepresented))
+							if (MarkAssociatedProperty (methodBaseValue.RepresentedMethod))
 								continue;
 						} else if (value == NullValue.Instance) {
 							continue;
@@ -844,7 +880,7 @@ namespace ILLink.Shared.TrimAnalysis
 		{
 			bool foundAny = false;
 			foreach (var method in GetMethodsOnTypeHierarchy (type, methodName, bindingFlags)) {
-				MarkMethod (method.MethodRepresented);
+				MarkMethod (method.RepresentedMethod);
 				yield return method;
 				foundAny = true;
 			}

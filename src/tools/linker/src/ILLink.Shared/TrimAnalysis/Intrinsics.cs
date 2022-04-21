@@ -19,7 +19,7 @@ namespace ILLink.Shared.TrimAnalysis
 				// System.Type.GetTypeInfo (Type type)
 				"GetTypeFromHandle" when calledMethod.IsDeclaredOnType ("System.Type") => IntrinsicId.Type_GetTypeFromHandle,
 
-				// System.Type.GetTypeHandle (Type type)
+				// System.Type.TypeHandle getter
 				"get_TypeHandle" when calledMethod.IsDeclaredOnType ("System.Type") => IntrinsicId.Type_get_TypeHandle,
 
 				// System.Reflection.MethodBase.GetMethodFromHandle (RuntimeMethodHandle handle)
@@ -28,6 +28,9 @@ namespace ILLink.Shared.TrimAnalysis
 					&& calledMethod.HasParameterOfType (0, "System.RuntimeMethodHandle")
 					&& (calledMethod.HasParametersCount (1) || calledMethod.HasParametersCount (2))
 					=> IntrinsicId.MethodBase_GetMethodFromHandle,
+
+				// System.Reflection.MethodBase.MethodHandle getter
+				"get_MethodHandle" when calledMethod.IsDeclaredOnType ("System.Reflection.MethodBase") => IntrinsicId.MethodBase_get_MethodHandle,
 
 				// static System.Type.MakeGenericType (Type [] typeArguments)
 				"MakeGenericType" when calledMethod.IsDeclaredOnType ("System.Type") => IntrinsicId.Type_MakeGenericType,
