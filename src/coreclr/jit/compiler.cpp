@@ -5298,14 +5298,10 @@ void Compiler::generatePatchpointInfo()
         assert(varDsc->lvFramePointerBased);
 
         // Record FramePtr relative offset (no localloc yet)
-        patchpointInfo->SetOffset(lclNum, varDsc->GetStackOffset() + offsetAdjust);
-
         // Note if IL stream contained an address-of that potentially leads to exposure.
-        // This bit of IL may be skipped by OSR partial importation.
-        if (varDsc->lvHasLdAddrOp)
-        {
-            patchpointInfo->SetIsExposed(lclNum);
-        }
+        // That bit of IL might be skipped by OSR partial importation.
+        const bool isExposed = varDsc->lvHasLdAddrOp;
+        patchpointInfo->SetOffsetAndExposure(lclNum, varDsc->GetStackOffset() + offsetAdjust, isExposed);
 
         JITDUMP("--OSR-- V%02u is at virtual offset %d%s%s\n", lclNum, patchpointInfo->Offset(lclNum),
                 patchpointInfo->IsExposed(lclNum) ? " (exposed)" : "", (varNum != lclNum) ? " (shadowed)" : "");

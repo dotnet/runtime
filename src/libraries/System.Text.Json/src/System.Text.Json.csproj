@@ -98,10 +98,12 @@ System.Text.Json.Nodes.JsonValue</PackageDescription>
     <Compile Include="System\Text\Json\Serialization\ArgumentState.cs" />
     <Compile Include="System\Text\Json\Serialization\Attributes\JsonConstructorAttribute.cs" />
     <Compile Include="System\Text\Json\Serialization\Attributes\JsonConverterAttribute.cs" />
+    <Compile Include="System\Text\Json\Serialization\Attributes\JsonDerivedTypeAttribute.cs" />
     <Compile Include="System\Text\Json\Serialization\Attributes\JsonExtensionDataAttribute.cs" />
     <Compile Include="System\Text\Json\Serialization\Attributes\JsonIgnoreAttribute.cs" />
     <Compile Include="System\Text\Json\Serialization\Attributes\JsonIncludeAttribute.cs" />
     <Compile Include="System\Text\Json\Serialization\Attributes\JsonNumberHandlingAttribute.cs" />
+    <Compile Include="System\Text\Json\Serialization\Attributes\JsonPolymorphicAttribute.cs" />
     <Compile Include="System\Text\Json\Serialization\Attributes\JsonPropertyNameAttribute.cs" />
     <Compile Include="System\Text\Json\Serialization\Attributes\JsonPropertyOrderAttribute.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Collection\ImmutableDictionaryOfTKeyTValueConverterWithReflection.cs" />
@@ -121,12 +123,12 @@ System.Text.Json.Nodes.JsonValue</PackageDescription>
     <Compile Include="System\Text\Json\Serialization\JsonSerializer.Write.Element.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonSerializer.Write.Node.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonSerializerContext.cs" />
-    <Compile Include="System\Text\Json\Serialization\JsonSerializerOptions.Caching.cs" />
-    <Compile Include="System\Text\Json\Serialization\Metadata\ReflectionJsonTypeInfoOfT.cs" />
+    <Compile Include="System\Text\Json\Serialization\JsonUnknownDerivedTypeHandling.cs" />
     <Compile Include="System\Text\Json\Serialization\PolymorphicSerializationState.cs" />
+    <Compile Include="System\Text\Json\Serialization\JsonPolymorphicTypeConfiguration.cs" />
     <Compile Include="System\Text\Json\Serialization\ReferenceEqualsWrapper.cs" />
     <Compile Include="System\Text\Json\Serialization\ConverterStrategy.cs" />
-    <Compile Include="System\Text\Json\Serialization\ConverterList.cs" />
+    <Compile Include="System\Text\Json\Serialization\ConfigurationList.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Collection\ArrayConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Collection\ConcurrentQueueOfTConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Collection\ConcurrentStackOfTConverter.cs" />
@@ -205,6 +207,7 @@ System.Text.Json.Nodes.JsonValue</PackageDescription>
     <Compile Include="System\Text\Json\Serialization\Converters\Value\VersionConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\IgnoreReferenceHandler.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonConverter.cs" />
+    <Compile Include="System\Text\Json\Serialization\JsonConverter.MetadataHandling.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonConverter.ReadAhead.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonConverterFactory.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonConverterOfT.ReadCore.cs" />
@@ -226,12 +229,15 @@ System.Text.Json.Nodes.JsonValue</PackageDescription>
     <Compile Include="System\Text\Json\Serialization\JsonSerializer.Write.String.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonSerializer.Write.Utf8JsonWriter.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonSerializerDefaults.cs" />
+    <Compile Include="System\Text\Json\Serialization\JsonSerializerOptions.Caching.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonSerializerOptions.Converters.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonSerializerOptions.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonStringEnumConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonUnknownTypeHandling.cs" />
+    <Compile Include="System\Text\Json\Serialization\Metadata\AttributePolymorphicTypeConfiguration.cs" />
     <Compile Include="System\Text\Json\Serialization\Metadata\FSharpCoreReflectionProxy.cs" />
     <Compile Include="System\Text\Json\Serialization\Metadata\DefaultValueHolder.cs" />
+    <Compile Include="System\Text\Json\Serialization\Metadata\IJsonPolymorphicTypeConfiguration.cs" />
     <Compile Include="System\Text\Json\Serialization\Metadata\JsonCollectionInfoValuesOfTCollection.cs" />
     <Compile Include="System\Text\Json\Serialization\Metadata\JsonMetadataServices.Collections.cs" />
     <Compile Include="System\Text\Json\Serialization\Metadata\JsonMetadataServices.Converters.cs" />
@@ -249,7 +255,9 @@ System.Text.Json.Nodes.JsonValue</PackageDescription>
     <Compile Include="System\Text\Json\Serialization\Metadata\JsonTypeInfo.cs" />
     <Compile Include="System\Text\Json\Serialization\Metadata\MemberAccessor.cs" />
     <Compile Include="System\Text\Json\Serialization\Metadata\ParameterRef.cs" />
+    <Compile Include="System\Text\Json\Serialization\Metadata\PolymorphicTypeResolver.cs" />
     <Compile Include="System\Text\Json\Serialization\Metadata\PropertyRef.cs" />
+    <Compile Include="System\Text\Json\Serialization\Metadata\ReflectionJsonTypeInfoOfT.cs" />
     <Compile Include="System\Text\Json\Serialization\Metadata\ReflectionEmitCachingMemberAccessor.Cache.cs" />
     <Compile Include="System\Text\Json\Serialization\Metadata\ReflectionEmitCachingMemberAccessor.cs" />
     <Compile Include="System\Text\Json\Serialization\Metadata\ReflectionEmitMemberAccessor.cs" />
@@ -312,6 +320,7 @@ System.Text.Json.Nodes.JsonValue</PackageDescription>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
     <Compile Include="$(CoreLibSharedDir)System\Collections\Generic\ReferenceEqualityComparer.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\IsExternalInit.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Runtime\Versioning\RequiresPreviewFeaturesAttribute.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\DynamicDependencyAttribute.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\DynamicallyAccessedMembersAttribute.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\DynamicallyAccessedMemberTypes.cs" />

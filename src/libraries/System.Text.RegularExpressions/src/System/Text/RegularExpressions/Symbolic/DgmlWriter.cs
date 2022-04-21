@@ -191,8 +191,8 @@ namespace System.Text.RegularExpressions.Symbolic
             {
                 _builder = srm._builder;
                 uint startId = reverse ?
-                    (srm._reversePattern._info.StartsWithLineAnchor ? CharKind.BeginningEnd : 0) :
-                    (srm._pattern._info.StartsWithLineAnchor ? CharKind.BeginningEnd : 0);
+                    (srm._reversePattern._info.StartsWithSomeAnchor ? CharKind.BeginningEnd : 0) :
+                    (srm._pattern._info.StartsWithSomeAnchor ? CharKind.BeginningEnd : 0);
 
                 // Create the initial state
                 _initialState = _builder.CreateState(

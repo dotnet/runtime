@@ -9,14 +9,11 @@ trigger:
     - '*'
     - src/libraries/System.Private.CoreLib/*
     exclude:
+    - /**/*.md
     - .github/*
     - docs/*
-    - CODE-OF-CONDUCT.md
-    - CONTRIBUTING.md
     - LICENSE.TXT
     - PATENTS.TXT
-    - README.md
-    - SECURITY.md
     - THIRD-PARTY-NOTICES.TXT
 
 variables:

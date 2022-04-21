@@ -1122,6 +1122,20 @@ check_c_source_compiles(
     "
     HAVE_BUILTIN_MUL_OVERFLOW)
 
+check_symbol_exists(
+    makedev
+    sys/file.h
+    HAVE_MAKEDEV_FILEH)
+
+check_symbol_exists(
+    makedev
+    sys/sysmacros.h
+    HAVE_MAKEDEV_SYSMACROSH)
+
+if (NOT HAVE_MAKEDEV_FILEH AND NOT HAVE_MAKEDEV_SYSMACROSH)
+  message(FATAL_ERROR "Cannot find the makedev function on this platform.")
+endif()
+
 configure_file(
     ${CMAKE_CURRENT_SOURCE_DIR}/Common/pal_config.h.in
     ${CMAKE_CURRENT_BINARY_DIR}/Common/pal_config.h)

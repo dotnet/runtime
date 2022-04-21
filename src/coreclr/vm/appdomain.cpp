@@ -2762,7 +2762,7 @@ DomainAssembly* AppDomain::LoadDomainAssembly(AssemblySpec* pSpec,
             if (!EEFileLoadException::CheckType(pEx))
             {
                 StackSString name;
-                pSpec->GetFileOrDisplayName(0, name);
+                pSpec->GetDisplayName(0, name);
                 pEx=new EEFileLoadException(name, pEx->GetHR(), pEx);
                 AddExceptionToCache(pSpec, pEx);
                 PAL_CPP_THROW(Exception *, pEx);
@@ -3773,7 +3773,7 @@ PEAssembly * AppDomain::BindAssemblySpec(
                                 StackSString exceptionDisplayName, failedSpecDisplayName;
 
                                 ((EEFileLoadException*)ex)->GetName(exceptionDisplayName);
-                                pFailedSpec->GetFileOrDisplayName(0, failedSpecDisplayName);
+                                pFailedSpec->GetDisplayName(0, failedSpecDisplayName);
 
                                 if (exceptionDisplayName.CompareCaseInsensitive(failedSpecDisplayName) == 0)
                                 {
@@ -4598,7 +4598,7 @@ AppDomain::RaiseAssemblyResolveEvent(
     CONTRACT_END;
 
     StackSString ssName;
-    pSpec->GetFileOrDisplayName(0, ssName);
+    pSpec->GetDisplayName(0, ssName);
 
     // Elevate threads allowed loading level.  This allows the host to load an assembly even in a restricted
     // condition.  Note, however, that this exposes us to possible recursion failures, if the host tries to

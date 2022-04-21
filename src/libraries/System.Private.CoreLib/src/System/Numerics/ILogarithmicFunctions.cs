@@ -8,30 +8,40 @@ namespace System.Numerics
     public interface ILogarithmicFunctions<TSelf>
         where TSelf : ILogarithmicFunctions<TSelf>
     {
-        /// <summary>Computes the natural (<c>base-E</c> logarithm of a value.</summary>
+        /// <summary>Computes the natural (<c>base-E</c>) logarithm of a value.</summary>
         /// <param name="x">The value whose natural logarithm is to be computed.</param>
-        /// <returns>The natural logarithm of <paramref name="x" />.</returns>
+        /// <returns><c>log<sub>e</sub>(<paramref name="x" />)</c></returns>
         static abstract TSelf Log(TSelf x);
 
         /// <summary>Computes the logarithm of a value in the specified base.</summary>
         /// <param name="x">The value whose logarithm is to be computed.</param>
         /// <param name="newBase">The base in which the logarithm is to be computed.</param>
-        /// <returns>The base-<paramref name="newBase" /> logarithm of <paramref name="x" />.</returns>
+        /// <returns><c>log<sub><paramref name="newBase" /></sub>(<paramref name="x" />)</c></returns>
         static abstract TSelf Log(TSelf x, TSelf newBase);
+
+        /// <summary>Computes the natural (<c>base-E</c>) logarithm of a value plus one.</summary>
+        /// <param name="x">The value to which one is added before computing the natural logarithm.</param>
+        /// <returns><c>log<sub>e</sub>(<paramref name="x" /> + 1)</c></returns>
+        static abstract TSelf LogP1(TSelf x);
 
         /// <summary>Computes the base-2 logarithm of a value.</summary>
         /// <param name="x">The value whose base-2 logarithm is to be computed.</param>
-        /// <returns>The base-2 logarithm of <paramref name="x" />.</returns>
+        /// <returns><c>log<sub>2</sub>(<paramref name="x" />)</c></returns>
         static abstract TSelf Log2(TSelf x);
+
+        /// <summary>Computes the base-2 logarithm of a value plus one.</summary>
+        /// <param name="x">The value to which one is added before computing the base-2 logarithm.</param>
+        /// <returns><c>log<sub>2</sub>(<paramref name="x" /> + 1)</c></returns>
+        static abstract TSelf Log2P1(TSelf x);
 
         /// <summary>Computes the base-10 logarithm of a value.</summary>
         /// <param name="x">The value whose base-10 logarithm is to be computed.</param>
-        /// <returns>The base-10 logarithm of <paramref name="x" />.</returns>
+        /// <returns><c>log<sub>10</sub>(<paramref name="x" />)</c></returns>
         static abstract TSelf Log10(TSelf x);
 
-        // The following methods are approved but not yet implemented in the libraries
-        // * static abstract TSelf LogP1(TSelf x);
-        // * static abstract TSelf Log2P1(TSelf x);
-        // * static abstract TSelf Log10P1(TSelf x);
+        /// <summary>Computes the base-10 logarithm of a value plus one.</summary>
+        /// <param name="x">The value to which one is added before computing the base-10 logarithm.</param>
+        /// <returns><c>log<sub>10</sub>(<paramref name="x" /> + 1)</c></returns>
+        static abstract TSelf Log10P1(TSelf x);
     }
 }

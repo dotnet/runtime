@@ -20,7 +20,7 @@
     <ItemGroup>
       <File Include="$(CoreCLRBuildIntegrationDir)*" TargetPath="build" />
       <File Include="$(CoreCLRILCompilerDir)netstandard\*" TargetPath="tools/netstandard" />
-      <File Include="sdk\Sdk.targets" TargetPath="sdk" />
+      <File Include="sdk\Sdk.targets" TargetPath="Sdk" />
     </ItemGroup>
   </Target>
 

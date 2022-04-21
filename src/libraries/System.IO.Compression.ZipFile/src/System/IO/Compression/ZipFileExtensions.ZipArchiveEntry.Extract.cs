@@ -73,14 +73,7 @@ namespace System.IO.Compression
                 ExtractExternalAttributes(fs, source);
             }
 
-            try
-            {
-                File.SetLastWriteTime(destinationFileName, source.LastWriteTime.DateTime);
-            }
-            catch
-            {
-                // some OSes like Android (#35374) might not support setting the last write time, the extraction should not fail because of that
-            }
+            ArchivingUtils.AttemptSetLastWriteTime(destinationFileName, source.LastWriteTime);
         }
 
         static partial void ExtractExternalAttributes(FileStream fs, ZipArchiveEntry entry);
@@ -96,7 +89,7 @@ namespace System.IO.Compression
             if (!destinationDirectoryFullPath.EndsWith(Path.DirectorySeparatorChar))
                 destinationDirectoryFullPath += Path.DirectorySeparatorChar;
 
-            string fileDestinationPath = Path.GetFullPath(Path.Combine(destinationDirectoryFullPath, SanitizeZipFilePath(source.FullName)));
+            string fileDestinationPath = Path.GetFullPath(Path.Combine(destinationDirectoryFullPath, ArchivingUtils.SanitizeEntryFilePath(source.FullName)));
 
             if (!fileDestinationPath.StartsWith(destinationDirectoryFullPath, PathInternal.StringComparison))
                 throw new IOException(SR.IO_ExtractingResultsInOutside);

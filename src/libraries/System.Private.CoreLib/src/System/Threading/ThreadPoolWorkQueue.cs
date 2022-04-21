@@ -476,7 +476,6 @@ namespace System.Threading
             if (!forceGlobal && (tl = ThreadPoolWorkQueueThreadLocals.threadLocals) != null)
             {
                 tl.workStealingQueue.LocalPush(callback);
-                tl.workState |= ThreadPoolWorkQueueThreadLocals.WorkState.MayHaveLocalWorkItems;
             }
             else
             {
@@ -510,30 +509,21 @@ namespace System.Threading
         public object? Dequeue(ThreadPoolWorkQueueThreadLocals tl, ref bool missedSteal)
         {
             // Check for local work items
-            object? workItem;
-            ThreadPoolWorkQueueThreadLocals.WorkState tlWorkState = tl.workState;
-            if ((tlWorkState & ThreadPoolWorkQueueThreadLocals.WorkState.MayHaveLocalWorkItems) != 0)
+            object? workItem = tl.workStealingQueue.LocalPop();
+            if (workItem != null)
             {
-                workItem = tl.workStealingQueue.LocalPop();
-                if (workItem != null)
-                {
-                    return workItem;
-                }
-
-                Debug.Assert(tlWorkState == tl.workState);
-                tl.workState = tlWorkState &= ~ThreadPoolWorkQueueThreadLocals.WorkState.MayHaveLocalWorkItems;
+                return workItem;
             }
 
             // Check for high-priority work items
-            if ((tlWorkState & ThreadPoolWorkQueueThreadLocals.WorkState.IsProcessingHighPriorityWorkItems) != 0)
+            if (tl.isProcessingHighPriorityWorkItems)
             {
                 if (highPriorityWorkItems.TryDequeue(out workItem))
                 {
                     return workItem;
                 }
 
-                Debug.Assert(tlWorkState == tl.workState);
-                tl.workState = tlWorkState &= ~ThreadPoolWorkQueueThreadLocals.WorkState.IsProcessingHighPriorityWorkItems;
+                tl.isProcessingHighPriorityWorkItems = false;
             }
             else if (
                 _mayHaveHighPriorityWorkItems != 0 &&
@@ -579,14 +569,14 @@ namespace System.Threading
             ThreadPoolWorkQueueThreadLocals tl,
             [MaybeNullWhen(false)] out object workItem)
         {
-            Debug.Assert((tl.workState & ThreadPoolWorkQueueThreadLocals.WorkState.IsProcessingHighPriorityWorkItems) == 0);
+            Debug.Assert(!tl.isProcessingHighPriorityWorkItems);
 
             if (!highPriorityWorkItems.TryDequeue(out workItem))
             {
                 return false;
             }
 
-            tl.workState |= ThreadPoolWorkQueueThreadLocals.WorkState.IsProcessingHighPriorityWorkItems;
+            tl.isProcessingHighPriorityWorkItems = true;
             _mayHaveHighPriorityWorkItems = 1;
             return true;
         }
@@ -632,8 +622,7 @@ namespace System.Threading
                 // take over the thread, sustaining starvation. For example, when worker threads are continually starved,
                 // high-priority work items may always be queued and normal-priority work items may not get a chance to run.
                 bool dispatchNormalPriorityWorkFirst = workQueue._dispatchNormalPriorityWorkFirst;
-                if (dispatchNormalPriorityWorkFirst &&
-                    (tl.workState & ThreadPoolWorkQueueThreadLocals.WorkState.MayHaveLocalWorkItems) == 0)
+                if (dispatchNormalPriorityWorkFirst && !tl.workStealingQueue.CanSteal)
                 {
                     workQueue._dispatchNormalPriorityWorkFirst = !dispatchNormalPriorityWorkFirst;
                     workQueue.workItems.TryDequeue(out workItem);
@@ -670,7 +659,7 @@ namespace System.Threading
                 // reason that may have a dependency on other queued work items.
                 workQueue.EnsureThreadRequested();
 
-                // After this point, this method is no longer responsible for ensuring thread requests
+                // After this point, this method is no longer responsible for ensuring thread requests except for missed steals
             }
 
             // Has the desire for logging changed since the last time we entered?
@@ -700,8 +689,18 @@ namespace System.Threading
 
                     if (workItem == null)
                     {
-                        // May have missed a steal, but this method is not responsible for ensuring thread requests anymore. See
-                        // the dequeue before the loop.
+                        //
+                        // No work.
+                        // If we missed a steal, though, there may be more work in the queue.
+                        // Instead of looping around and trying again, we'll just request another thread.  Hopefully the thread
+                        // that owns the contended work-stealing queue will pick up its own workitems in the meantime,
+                        // which will be more efficient than this thread doing it anyway.
+                        //
+                        if (missedSteal)
+                        {
+                            workQueue.EnsureThreadRequested();
+                        }
+
                         return true;
                     }
                 }
@@ -753,7 +752,7 @@ namespace System.Threading
                     // to ensure that they would not be heavily delayed. Tell the caller that this thread was requested to stop
                     // processing work items.
                     tl.TransferLocalWork();
-                    tl.ResetWorkItemProcessingState();
+                    tl.isProcessingHighPriorityWorkItems = false;
                     return false;
                 }
 
@@ -769,7 +768,7 @@ namespace System.Threading
                 {
                     // The runtime-specific thread pool implementation requires the Dispatch loop to return to the VM
                     // periodically to let it perform its own work
-                    tl.ResetWorkItemProcessingState();
+                    tl.isProcessingHighPriorityWorkItems = false;
                     return true;
                 }
 
@@ -823,7 +822,7 @@ namespace System.Threading
         [ThreadStatic]
         public static ThreadPoolWorkQueueThreadLocals? threadLocals;
 
-        public WorkState workState;
+        public bool isProcessingHighPriorityWorkItems;
         public readonly ThreadPoolWorkQueue workQueue;
         public readonly ThreadPoolWorkQueue.WorkStealingQueue workStealingQueue;
         public readonly Thread currentThread;
@@ -839,16 +838,12 @@ namespace System.Threading
             threadLocalCompletionCountObject = ThreadPool.GetOrCreateThreadLocalCompletionCountObject();
         }
 
-        public void ResetWorkItemProcessingState() => workState &= ~WorkState.IsProcessingHighPriorityWorkItems;
-
         public void TransferLocalWork()
         {
             while (workStealingQueue.LocalPop() is object cb)
             {
                 workQueue.Enqueue(cb, forceGlobal: true);
             }
-
-            workState &= ~WorkState.MayHaveLocalWorkItems;
         }
 
         ~ThreadPoolWorkQueueThreadLocals()
@@ -859,13 +854,6 @@ namespace System.Threading
                 TransferLocalWork();
                 ThreadPoolWorkQueue.WorkStealingQueueList.Remove(workStealingQueue);
             }
-        }
-
-        [Flags]
-        public enum WorkState
-        {
-            MayHaveLocalWorkItems = 1 << 0,
-            IsProcessingHighPriorityWorkItems = 1 << 1
         }
     }
 
@@ -948,7 +936,7 @@ namespace System.Threading
                 //   yield to the thread pool after some time. The threshold used is half of the thread pool's dispatch quantum,
                 //   which the thread pool uses for doing periodic work.
                 if (++completedCount == uint.MaxValue ||
-                    (tl.workState & ThreadPoolWorkQueueThreadLocals.WorkState.MayHaveLocalWorkItems) != 0 ||
+                    tl.workStealingQueue.CanSteal ||
                     (uint)(Environment.TickCount - startTimeMs) >= ThreadPoolWorkQueue.DispatchQuantumMs / 2 ||
                     !_workItems.TryDequeue(out workItem))
                 {
