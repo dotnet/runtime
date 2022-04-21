@@ -434,9 +434,7 @@ namespace System.Security.AccessControl
 
         public virtual void PurgeAuditRules(IdentityReference identity)
         {
-
-ArgumentNullException.ThrowIfNull(identity);
-
+            ArgumentNullException.ThrowIfNull(identity);
 
             WriteLock();
 

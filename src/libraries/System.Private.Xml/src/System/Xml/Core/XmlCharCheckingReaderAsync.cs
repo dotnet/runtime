@@ -32,6 +32,7 @@ namespace System.Xml
                     return false;
 
                 case State.InReadBinary:
+                    _state = State.Interactive;
                     if (_readBinaryHelper != null)
                     {
                         await _readBinaryHelper.FinishAsync().ConfigureAwait(false);

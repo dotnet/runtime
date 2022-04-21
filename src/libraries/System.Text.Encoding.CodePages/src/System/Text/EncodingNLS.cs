@@ -50,7 +50,6 @@ namespace System.Text
             if (chars is null)
                 throw new ArgumentNullException(nameof(chars));
 
-            // Validate input parameters
             if (index < 0 || count < 0)
                 throw new ArgumentOutOfRangeException((index < 0 ? nameof(index) : nameof(count)), SR.ArgumentOutOfRange_NeedNonNegNum);
 
@@ -85,7 +84,6 @@ namespace System.Text
             if (chars is null)
                 throw new ArgumentNullException(nameof(chars));
 
-            // Validate Parameters
             if (count < 0)
                 throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
 
@@ -185,7 +183,6 @@ namespace System.Text
             if (bytes is null)
                 throw new ArgumentNullException(nameof(bytes));
 
-            // Validate Parameters
             if (charCount < 0 || byteCount < 0)
                 throw new ArgumentOutOfRangeException((charCount < 0 ? nameof(charCount) : nameof(byteCount)), SR.ArgumentOutOfRange_NeedNonNegNum);
 
@@ -203,7 +200,6 @@ namespace System.Text
             if (bytes is null)
                 throw new ArgumentNullException(nameof(bytes));
 
-            // Validate Parameters
             if (index < 0 || count < 0)
                 throw new ArgumentOutOfRangeException((index < 0 ? nameof(index) : nameof(count)), SR.ArgumentOutOfRange_NeedNonNegNum);
 
@@ -226,7 +222,6 @@ namespace System.Text
             if (bytes is null)
                 throw new ArgumentNullException(nameof(bytes));
 
-            // Validate Parameters
             if (count < 0)
                 throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
 
@@ -245,7 +240,6 @@ namespace System.Text
             if (chars is null)
                 throw new ArgumentNullException(nameof(chars));
 
-            // Validate Parameters
             if (byteIndex < 0 || byteCount < 0)
                 throw new ArgumentOutOfRangeException((byteIndex < 0 ? nameof(byteIndex) : nameof(byteCount)), SR.ArgumentOutOfRange_NeedNonNegNum);
 
@@ -283,7 +277,6 @@ namespace System.Text
             if (chars is null)
                 throw new ArgumentNullException(nameof(chars));
 
-            // Validate Parameters
             if (charCount < 0 || byteCount < 0)
                 throw new ArgumentOutOfRangeException((charCount < 0 ? nameof(charCount) : nameof(byteCount)), SR.ArgumentOutOfRange_NeedNonNegNum);
 
@@ -301,7 +294,6 @@ namespace System.Text
             if (bytes is null)
                 throw new ArgumentNullException(nameof(bytes));
 
-            // Validate Parameters
             if (index < 0 || count < 0)
                 throw new ArgumentOutOfRangeException((index < 0 ? nameof(index) : nameof(count)), SR.ArgumentOutOfRange_NeedNonNegNum);
 
@@ -327,9 +319,9 @@ namespace System.Text
 
         internal void ThrowBytesOverflow(EncoderNLS? encoder, bool nothingEncoded)
         {
-            if (encoder == null || encoder.m_throwOnOverflow || nothingEncoded)
+            if (encoder is null || encoder.m_throwOnOverflow || nothingEncoded)
             {
-                if (encoder != null && encoder.InternalHasFallbackBuffer)
+                if (encoder is not null && encoder.InternalHasFallbackBuffer)
                     encoder.FallbackBuffer.Reset();
                 // Special message to include fallback type in case fallback's GetMaxCharCount is broken
                 // This happens if user has implemented an encoder fallback with a broken GetMaxCharCount
@@ -342,9 +334,9 @@ namespace System.Text
 
         internal void ThrowCharsOverflow(DecoderNLS? decoder, bool nothingDecoded)
         {
-            if (decoder == null || decoder.m_throwOnOverflow || nothingDecoded)
+            if (decoder is null || decoder.m_throwOnOverflow || nothingDecoded)
             {
-                if (decoder != null && decoder.InternalHasFallbackBuffer)
+                if (decoder is not null && decoder.InternalHasFallbackBuffer)
                     decoder.FallbackBuffer.Reset();
 
                 // Special message to include fallback type in case fallback's GetMaxCharCount is broken
@@ -376,10 +368,10 @@ namespace System.Text
         {
             get
             {
-                if (_encodingName == null)
+                if (_encodingName is null)
                 {
                     _encodingName = GetLocalizedEncodingNameResource(CodePage);
-                    if (_encodingName == null)
+                    if (_encodingName is null)
                     {
                         throw new NotSupportedException(
                             SR.Format(SR.MissingEncodingNameResource, WebName, CodePage));
@@ -392,7 +384,7 @@ namespace System.Text
                         // we specifically need to do something reasonable in this case. This currently
                         // returns the English name of the encoding from a static data table.
                         _encodingName = EncodingTable.GetEnglishNameFromCodePage(CodePage);
-                        if (_encodingName == null)
+                        if (_encodingName is null)
                         {
                             throw new NotSupportedException(
                                 SR.Format(SR.MissingEncodingNameResource, WebName, CodePage));
@@ -555,10 +547,10 @@ namespace System.Text
         {
             get
             {
-                if (_webName == null)
+                if (_webName is null)
                 {
                     _webName = EncodingTable.GetWebNameFromCodePage(CodePage);
-                    if (_webName == null)
+                    if (_webName is null)
                     {
                         throw new NotSupportedException(SR.Format(SR.NotSupported_NoCodepageData, CodePage));
                     }

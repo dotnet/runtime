@@ -38,15 +38,13 @@ namespace System.Text
         public override void Reset()
         {
             _charLeftOver = (char)0;
-            if (_fallbackBuffer != null)
-                _fallbackBuffer.Reset();
+            _fallbackBuffer?.Reset();
         }
 
         public override unsafe int GetByteCount(char[] chars, int index, int count, bool flush)
         {
             ArgumentNullException.ThrowIfNull(chars);
 
-            // Validate input parameters
             if (index < 0 || count < 0)
                 throw new ArgumentOutOfRangeException(index < 0 ? nameof(index) : nameof(count),
                       SR.ArgumentOutOfRange_NeedNonNegNum);
@@ -68,14 +66,13 @@ namespace System.Text
         {
             ArgumentNullException.ThrowIfNull(chars);
 
-            // Validate input parameters
             if (count < 0)
                 throw new ArgumentOutOfRangeException(nameof(count),
                       SR.ArgumentOutOfRange_NeedNonNegNum);
 
             _mustFlush = flush;
             _throwOnOverflow = true;
-            Debug.Assert(_encoding != null);
+            Debug.Assert(_encoding is not null);
             return _encoding.GetByteCount(chars, count, this);
         }
 
@@ -119,7 +116,7 @@ namespace System.Text
 
             _mustFlush = flush;
             _throwOnOverflow = true;
-            Debug.Assert(_encoding != null);
+            Debug.Assert(_encoding is not null);
             return _encoding.GetBytes(chars, charCount, bytes, byteCount, this);
         }
 
@@ -168,7 +165,6 @@ namespace System.Text
             ArgumentNullException.ThrowIfNull(chars);
             ArgumentNullException.ThrowIfNull(bytes);
 
-            // Validate input parameters
             if (charCount < 0 || byteCount < 0)
                 throw new ArgumentOutOfRangeException(charCount < 0 ? nameof(charCount) : nameof(byteCount),
                     SR.ArgumentOutOfRange_NeedNonNegNum);
@@ -179,7 +175,7 @@ namespace System.Text
             _charsUsed = 0;
 
             // Do conversion
-            Debug.Assert(_encoding != null);
+            Debug.Assert(_encoding is not null);
             bytesUsed = _encoding.GetBytes(chars, charCount, bytes, byteCount, this);
             charsUsed = _charsUsed;
 
@@ -223,7 +219,7 @@ namespace System.Text
         {
             get
             {
-                Debug.Assert(_encoding != null);
+                Debug.Assert(_encoding is not null);
                 return _encoding;
             }
         }
@@ -233,7 +229,7 @@ namespace System.Text
         /// <summary>
         /// States whether a call to <see cref="Encoding.GetBytes(char*, int, byte*, int, EncoderNLS)"/> must first drain data on this <see cref="EncoderNLS"/> instance.
         /// </summary>
-        internal bool HasLeftoverData => _charLeftOver != default || (_fallbackBuffer != null && _fallbackBuffer.Remaining > 0);
+        internal bool HasLeftoverData => _charLeftOver != default || (_fallbackBuffer is not null && _fallbackBuffer.Remaining > 0);
 
         // Anything left in our encoder?
         internal virtual bool HasState => _charLeftOver != (char)0;
@@ -250,7 +246,7 @@ namespace System.Text
             // as we'd end up consuming any such data and would corrupt whatever Convert call happens
             // to be in progress.
 
-            if (_fallbackBuffer != null && _fallbackBuffer.Remaining > 0)
+            if (_fallbackBuffer is not null && _fallbackBuffer.Remaining > 0)
             {
                 throw new ArgumentException(SR.Format(SR.Argument_EncoderFallbackNotEmpty, Encoding.EncodingName, _fallbackBuffer.GetType()));
             }
@@ -294,7 +290,7 @@ namespace System.Text
                 {
                     charsConsumed = 1; // consumed the leftover high surrogate + the first char in the input buffer
 
-                    Debug.Assert(_encoding != null);
+                    Debug.Assert(_encoding is not null);
                     if (_encoding.TryGetByteCount(rune, out int byteCount))
                     {
                         Debug.Assert(byteCount >= 0, "Encoding shouldn't have returned a negative byte count.");
@@ -317,7 +313,7 @@ namespace System.Text
                 }
 
                 // Now tally the number of bytes that would've been emitted as part of fallback.
-                Debug.Assert(_fallbackBuffer != null);
+                Debug.Assert(_fallbackBuffer is not null);
                 return _fallbackBuffer.DrainRemainingDataForGetByteCount();
             }
         }
@@ -368,7 +364,7 @@ namespace System.Text
                 if (Rune.TryCreate(charLeftOver, secondChar, out Rune rune))
                 {
                     charsConsumed = 1; // at the very least, we consumed 1 char from the input
-                    Debug.Assert(_encoding != null);
+                    Debug.Assert(_encoding is not null);
                     switch (_encoding.EncodeRune(rune, bytes, out bytesWritten))
                     {
                         case OperationStatus.Done:
@@ -395,7 +391,7 @@ namespace System.Text
 
             // Now check the fallback buffer for any remaining data.
 
-            if (_fallbackBuffer != null && _fallbackBuffer.Remaining > 0)
+            if (_fallbackBuffer is not null && _fallbackBuffer.Remaining > 0)
             {
                 return _fallbackBuffer.TryDrainRemainingDataForGetBytes(bytes, out bytesWritten);
             }

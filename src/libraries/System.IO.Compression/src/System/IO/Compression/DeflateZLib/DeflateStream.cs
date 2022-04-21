@@ -935,7 +935,6 @@ namespace System.IO.Compression
 
             public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
             {
-                // Validate inputs
                 Debug.Assert(buffer != _arrayPoolBuffer);
                 _deflateStream.EnsureNotDisposed();
                 if (count <= 0)
@@ -984,7 +983,6 @@ namespace System.IO.Compression
 
             public override void Write(byte[] buffer, int offset, int count)
             {
-                // Validate inputs
                 Debug.Assert(buffer != _arrayPoolBuffer);
                 _deflateStream.EnsureNotDisposed();
 

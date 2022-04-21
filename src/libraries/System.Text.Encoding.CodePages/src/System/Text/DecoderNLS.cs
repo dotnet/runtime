@@ -50,7 +50,7 @@ namespace System.Text
         {
             get
             {
-                return m_fallbackBuffer != null;
+                return m_fallbackBuffer is not null;
             }
         }
 
@@ -58,13 +58,9 @@ namespace System.Text
         {
             get
             {
-                if (m_fallbackBuffer == null)
-                {
-                    if (m_fallback != null)
-                        m_fallbackBuffer = m_fallback.CreateFallbackBuffer();
-                    else
-                        m_fallbackBuffer = DecoderFallback.ReplacementFallback.CreateFallbackBuffer();
-                }
+                m_fallbackBuffer ??= m_fallback is not null ?
+                    m_fallback.CreateFallbackBuffer() :
+                    DecoderFallback.ReplacementFallback.CreateFallbackBuffer();
 
                 return m_fallbackBuffer;
             }
@@ -72,8 +68,7 @@ namespace System.Text
 
         public override void Reset()
         {
-            if (m_fallbackBuffer != null)
-                m_fallbackBuffer.Reset();
+            m_fallbackBuffer?.Reset();
         }
 
         public override unsafe int GetCharCount(byte[] bytes, int index, int count)
@@ -83,7 +78,6 @@ namespace System.Text
 
         public override unsafe int GetCharCount(byte[] bytes, int index, int count, bool flush)
         {
-            // Validate Parameters
             if (bytes is null)
                 throw new ArgumentNullException(nameof(bytes));
 
@@ -127,7 +121,6 @@ namespace System.Text
         public override unsafe int GetChars(byte[] bytes, int byteIndex, int byteCount,
                                             char[] chars, int charIndex, bool flush)
         {
-            // Validate Parameters
             if (bytes is null)
                 throw new ArgumentNullException(nameof(bytes));
 
@@ -225,7 +218,6 @@ namespace System.Text
                                             char* chars, int charCount, bool flush,
                                             out int bytesUsed, out int charsUsed, out bool completed)
         {
-            // Validate input parameters
             if (bytes is null)
                 throw new ArgumentNullException(nameof(bytes));
 
@@ -246,7 +238,7 @@ namespace System.Text
 
             // It's completed if they've used what they wanted AND if they didn't want flush or if we are flushed
             completed = (bytesUsed == byteCount) && (!flush || !HasState) &&
-                               (m_fallbackBuffer == null || m_fallbackBuffer.Remaining == 0);
+                               (m_fallbackBuffer is null || m_fallbackBuffer.Remaining == 0);
             // Our data thingies are now full, we can return
         }
 

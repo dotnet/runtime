@@ -997,8 +997,6 @@ namespace System.Net.Sockets
         // Creates a new Sockets.Socket instance to handle an incoming connection.
         public Socket Accept()
         {
-            // Validate input parameters.
-
             ThrowIfDisposed();
 
             if (_rightEndPoint == null)
@@ -2152,7 +2150,6 @@ namespace System.Net.Sockets
         // Determines the status of a socket.
         public static void Select(IList? checkRead, IList? checkWrite, IList? checkError, int microSeconds)
         {
-            // Validate input parameters.
             if ((checkRead == null || checkRead.Count == 0) &&
                 (checkWrite == null || checkWrite.Count == 0) &&
                 (checkError == null || checkError.Count == 0))
@@ -2510,7 +2507,6 @@ namespace System.Net.Sockets
         // There's no direct equivalent of this in the Task APIs, so we mimic it here.
         private async Task<(Socket s, byte[] buffer, int bytesReceived)> AcceptAndReceiveHelperAsync(Socket? acceptSocket, int receiveSize)
         {
-            // Validate input parameters.
             if (receiveSize < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(receiveSize));

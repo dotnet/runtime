@@ -36,7 +36,7 @@ namespace System.Text
                 ArgumentNullException.ThrowIfNull(value);
 
                 // Can't change fallback if buffer is wrong
-                if (_fallbackBuffer != null && _fallbackBuffer.Remaining > 0)
+                if (_fallbackBuffer is not null && _fallbackBuffer.Remaining > 0)
                     throw new ArgumentException(
                       SR.Argument_FallbackBufferNotEmpty, nameof(value));
 
@@ -51,19 +51,15 @@ namespace System.Text
         {
             get
             {
-                if (_fallbackBuffer == null)
-                {
-                    if (_fallback != null)
-                        _fallbackBuffer = _fallback.CreateFallbackBuffer();
-                    else
-                        _fallbackBuffer = EncoderFallback.ReplacementFallback.CreateFallbackBuffer();
-                }
+                _fallbackBuffer ??= _fallback is not null ?
+                    _fallback.CreateFallbackBuffer() :
+                    EncoderFallback.ReplacementFallback.CreateFallbackBuffer();
 
                 return _fallbackBuffer;
             }
         }
 
-        internal bool InternalHasFallbackBuffer => _fallbackBuffer != null;
+        internal bool InternalHasFallbackBuffer => _fallbackBuffer is not null;
 
         // Reset the Encoder
         //
@@ -79,8 +75,7 @@ namespace System.Text
             char[] charTemp = Array.Empty<char>();
             byte[] byteTemp = new byte[GetByteCount(charTemp, 0, 0, true)];
             GetBytes(charTemp, 0, 0, byteTemp, 0, true);
-            if (_fallbackBuffer != null)
-                _fallbackBuffer.Reset();
+            _fallbackBuffer?.Reset();
         }
 
         // Returns the number of bytes the next call to GetBytes will
@@ -100,15 +95,12 @@ namespace System.Text
         {
             ArgumentNullException.ThrowIfNull(chars);
 
-            // Validate input parameters
             if (count < 0)
-                throw new ArgumentOutOfRangeException(nameof(count),
-                      SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
 
             char[] arrChar = new char[count];
-            int index;
 
-            for (index = 0; index < count; index++)
+            for (int index = 0; index < count; index++)
                 arrChar[index] = chars[index];
 
             return GetByteCount(arrChar, 0, count, flush);
@@ -167,7 +159,6 @@ namespace System.Text
             ArgumentNullException.ThrowIfNull(chars);
             ArgumentNullException.ThrowIfNull(bytes);
 
-            // Validate input parameters
             if (charCount < 0 || byteCount < 0)
                 throw new ArgumentOutOfRangeException(charCount < 0 ? nameof(charCount) : nameof(byteCount),
                     SR.ArgumentOutOfRange_NeedNonNegNum);
@@ -175,8 +166,7 @@ namespace System.Text
             // Get the char array to convert
             char[] arrChar = new char[charCount];
 
-            int index;
-            for (index = 0; index < charCount; index++)
+            for (int index = 0; index < charCount; index++)
                 arrChar[index] = chars[index];
 
             // Get the byte array to fill
@@ -196,7 +186,7 @@ namespace System.Text
                 byteCount = result;
 
             // Don't copy too many bytes!
-            for (index = 0; index < byteCount; index++)
+            for (int index = 0; index < byteCount; index++)
                 bytes[index] = arrByte[index];
 
             return byteCount;
@@ -286,10 +276,8 @@ namespace System.Text
             ArgumentNullException.ThrowIfNull(chars);
             ArgumentNullException.ThrowIfNull(bytes);
 
-            // Validate input parameters
             if (charCount < 0 || byteCount < 0)
-                throw new ArgumentOutOfRangeException(charCount < 0 ? nameof(charCount) : nameof(byteCount),
-                    SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException(charCount < 0 ? nameof(charCount) : nameof(byteCount), SR.ArgumentOutOfRange_NeedNonNegNum);
 
             // Get ready to do it
             charsUsed = charCount;

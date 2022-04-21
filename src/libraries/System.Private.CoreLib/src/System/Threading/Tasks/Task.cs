@@ -5444,7 +5444,6 @@ namespace System.Threading.Tasks
         /// </exception>
         public static Task Run(Func<Task?> function, CancellationToken cancellationToken)
         {
-            // Check arguments
             if (function == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.function);
 
             // Short-circuit if we are given a pre-canceled token
@@ -5489,7 +5488,6 @@ namespace System.Threading.Tasks
         /// </exception>
         public static Task<TResult> Run<TResult>(Func<Task<TResult>?> function, CancellationToken cancellationToken)
         {
-            // Check arguments
             if (function == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.function);
 
             // Short-circuit if we are given a pre-canceled token

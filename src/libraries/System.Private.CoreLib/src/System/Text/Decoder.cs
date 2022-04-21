@@ -36,7 +36,7 @@ namespace System.Text
                 ArgumentNullException.ThrowIfNull(value);
 
                 // Can't change fallback if buffer is wrong
-                if (_fallbackBuffer != null && _fallbackBuffer.Remaining > 0)
+                if (_fallbackBuffer is not null && _fallbackBuffer.Remaining > 0)
                     throw new ArgumentException(
                       SR.Argument_FallbackBufferNotEmpty, nameof(value));
 
@@ -51,19 +51,15 @@ namespace System.Text
         {
             get
             {
-                if (_fallbackBuffer == null)
-                {
-                    if (_fallback != null)
-                        _fallbackBuffer = _fallback.CreateFallbackBuffer();
-                    else
-                        _fallbackBuffer = DecoderFallback.ReplacementFallback.CreateFallbackBuffer();
-                }
+                _fallbackBuffer ??= _fallback is not null ?
+                    _fallback.CreateFallbackBuffer() :
+                    DecoderFallback.ReplacementFallback.CreateFallbackBuffer();
 
                 return _fallbackBuffer;
             }
         }
 
-        internal bool InternalHasFallbackBuffer => _fallbackBuffer != null;
+        internal bool InternalHasFallbackBuffer => _fallbackBuffer is not null;
 
         // Reset the Decoder
         //
@@ -101,16 +97,12 @@ namespace System.Text
         public virtual unsafe int GetCharCount(byte* bytes, int count, bool flush)
         {
             ArgumentNullException.ThrowIfNull(bytes);
-
-            // Validate input parameters
             if (count < 0)
-                throw new ArgumentOutOfRangeException(nameof(count),
-                      SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
 
             byte[] arrbyte = new byte[count];
-            int index;
 
-            for (index = 0; index < count; index++)
+            for (int index = 0; index < count; index++)
                 arrbyte[index] = bytes[index];
 
             return GetCharCount(arrbyte, 0, count);
@@ -152,8 +144,6 @@ namespace System.Text
         // We expect this to be the workhorse for NLS Encodings, but for existing
         // ones we need a working (if slow) default implementation)
         //
-        // WARNING WARNING WARNING
-        //
         // WARNING: If this breaks it could be a security threat.  Obviously we
         // call this internally, so you need to make sure that your pointers, counts
         // and indexes are correct when you call this method.
@@ -171,8 +161,6 @@ namespace System.Text
         {
             ArgumentNullException.ThrowIfNull(bytes);
             ArgumentNullException.ThrowIfNull(chars);
-
-            // Validate input parameters
             if (byteCount < 0 || charCount < 0)
                 throw new ArgumentOutOfRangeException(byteCount < 0 ? nameof(byteCount) : nameof(charCount),
                     SR.ArgumentOutOfRange_NeedNonNegNum);
@@ -180,8 +168,7 @@ namespace System.Text
             // Get the byte array to convert
             byte[] arrByte = new byte[byteCount];
 
-            int index;
-            for (index = 0; index < byteCount; index++)
+            for (int index = 0; index < byteCount; index++)
                 arrByte[index] = bytes[index];
 
             // Get the char array to fill
@@ -202,7 +189,7 @@ namespace System.Text
 
             // We check both result and charCount so that we don't accidentally overrun
             // our pointer buffer just because of an issue in GetChars
-            for (index = 0; index < charCount; index++)
+            for (int index = 0; index < charCount; index++)
                 chars[index] = arrChar[index];
 
             return charCount;
@@ -262,7 +249,7 @@ namespace System.Text
                 {
                     charsUsed = GetChars(bytes, byteIndex, bytesUsed, chars, charIndex, flush);
                     completed = (bytesUsed == byteCount &&
-                        (_fallbackBuffer == null || _fallbackBuffer.Remaining == 0));
+                        (_fallbackBuffer is null || _fallbackBuffer.Remaining == 0));
                     return;
                 }
 
@@ -291,7 +278,6 @@ namespace System.Text
             ArgumentNullException.ThrowIfNull(bytes);
             ArgumentNullException.ThrowIfNull(chars);
 
-            // Validate input parameters
             if (byteCount < 0 || charCount < 0)
                 throw new ArgumentOutOfRangeException(byteCount < 0 ? nameof(byteCount) : nameof(charCount),
                     SR.ArgumentOutOfRange_NeedNonNegNum);
@@ -306,7 +292,7 @@ namespace System.Text
                 {
                     charsUsed = GetChars(bytes, bytesUsed, chars, charCount, flush);
                     completed = (bytesUsed == byteCount &&
-                        (_fallbackBuffer == null || _fallbackBuffer.Remaining == 0));
+                        (_fallbackBuffer is null || _fallbackBuffer.Remaining == 0));
                     return;
                 }
 

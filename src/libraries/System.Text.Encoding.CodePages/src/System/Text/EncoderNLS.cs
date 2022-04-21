@@ -52,7 +52,7 @@ namespace System.Text
         {
             get
             {
-                return m_fallbackBuffer != null;
+                return m_fallbackBuffer is not null;
             }
         }
 
@@ -60,13 +60,9 @@ namespace System.Text
         {
             get
             {
-                if (m_fallbackBuffer == null)
-                {
-                    if (m_fallback != null)
-                        m_fallbackBuffer = m_fallback.CreateFallbackBuffer();
-                    else
-                        m_fallbackBuffer = EncoderFallback.ReplacementFallback.CreateFallbackBuffer();
-                }
+                m_fallbackBuffer ??= m_fallback is not null ?
+                    m_fallback.CreateFallbackBuffer() :
+                    EncoderFallback.ReplacementFallback.CreateFallbackBuffer();
 
                 return m_fallbackBuffer;
             }
@@ -75,13 +71,11 @@ namespace System.Text
         public override void Reset()
         {
             charLeftOver = (char)0;
-            if (m_fallbackBuffer != null)
-                m_fallbackBuffer.Reset();
+            m_fallbackBuffer?.Reset();
         }
 
         public override unsafe int GetByteCount(char[] chars, int index, int count, bool flush)
         {
-            // Validate input parameters
             if (chars is null)
                 throw new ArgumentNullException(nameof(chars));
 
@@ -106,7 +100,6 @@ namespace System.Text
 
         public override unsafe int GetByteCount(char* chars, int count, bool flush)
         {
-            // Validate input parameters
             if (chars is null)
                 throw new ArgumentNullException(nameof(chars));
 
@@ -213,7 +206,6 @@ namespace System.Text
                                             byte* bytes, int byteCount, bool flush,
                                             out int charsUsed, out int bytesUsed, out bool completed)
         {
-            // Validate input parameters
             if (chars is null)
                 throw new ArgumentNullException(nameof(chars));
 
@@ -234,7 +226,7 @@ namespace System.Text
 
             // Its completed if they've used what they wanted AND if they didn't want flush or if we are flushed
             completed = (charsUsed == charCount) && (!flush || !HasState) &&
-                (m_fallbackBuffer == null || m_fallbackBuffer.Remaining == 0);
+                (m_fallbackBuffer is null || m_fallbackBuffer.Remaining == 0);
             // Our data thingies are now full, we can return
         }
 

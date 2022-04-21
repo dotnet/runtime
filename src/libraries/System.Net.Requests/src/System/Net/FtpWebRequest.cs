@@ -689,7 +689,6 @@ namespace System.Net
 
             try
             {
-                // parameter validation
                 LazyAsyncResult? castedAsyncResult = asyncResult as LazyAsyncResult;
                 if (castedAsyncResult == null)
                 {

@@ -32,10 +32,7 @@ namespace System.Net.Sockets
         {
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, family);
 
-            // Validate parameter
-            if (family != AddressFamily.InterNetwork &&
-                family != AddressFamily.InterNetworkV6 &&
-                family != AddressFamily.Unknown)
+            if (family is not (AddressFamily.InterNetwork or AddressFamily.InterNetworkV6 or AddressFamily.Unknown))
             {
                 throw new ArgumentException(SR.Format(SR.net_protocol_invalid_family, "TCP"), nameof(family));
             }
