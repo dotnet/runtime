@@ -66,6 +66,17 @@ namespace Mono.Linker
 			ILOffset = other.ILOffset;
 		}
 
+		public MessageOrigin (MessageOrigin other, int ilOffset)
+		{
+			FileName = other.FileName;
+			Provider = other.Provider;
+			SourceLine = other.SourceLine;
+			SourceColumn = other.SourceColumn;
+			ILOffset = ilOffset;
+		}
+
+		public MessageOrigin WithInstructionOffset (int ilOffset) => new MessageOrigin (this, ilOffset);
+
 		public override string? ToString ()
 		{
 			int sourceLine = SourceLine, sourceColumn = SourceColumn;
