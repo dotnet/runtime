@@ -635,8 +635,7 @@ const char* getWellKnownArgName(WellKnownArg arg)
 //
 void CallArg::Dump(Compiler* comp)
 {
-    printf("CallArg[arg %u", AbiInfo.ArgNum);
-    printf(" [%06u].%s", comp->dspTreeID(GetNode()), GenTree::OpName(GetEarlyNode()->OperGet()));
+    printf("CallArg[[%06u].%s", comp->dspTreeID(GetNode()), GenTree::OpName(GetEarlyNode()->OperGet()));
     printf(" %s", varTypeName(AbiInfo.ArgType));
     printf(" (%s)", AbiInfo.PassedByRef ? "By ref" : "By value");
     if (AbiInfo.GetRegNum() != REG_STK)
@@ -1909,6 +1908,10 @@ GenTree* Compiler::fgInsertCommaFormTemp(GenTree** ppTree, CORINFO_CLASS_HANDLE 
 // AddFinalArgsAndDetermineABIInfo:
 //   Add final arguments and determine the argument ABI information.
 //
+// Parameters:
+//   comp - The compiler object.
+//   call - The call to which the CallArgs belongs.
+//
 // Remarks:
 //   This adds the final "non-standard" arguments to the call and categorizes
 //   all the ABI information required for downstream JIT phases. This function
@@ -2239,9 +2242,7 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
         // Change the node to TYP_I_IMPL so we don't report GC info
         // NOTE: We deferred this from the importer because of the inliner.
 
-        // TODO-ARGS: Quirk this to match previous behavior. This optimization
-        // is not being done for 'this' pointer. It should be.
-        if ((arg.GetWellKnownArg() != WellKnownArg::ThisPointer) && argx->IsLocalAddrExpr() != nullptr)
+        if (argx->IsLocalAddrExpr() != nullptr)
         {
             argx->gtType = TYP_I_IMPL;
         }
@@ -2810,7 +2811,6 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
 #endif // TARGET_ARM
 
         arg.AbiInfo          = {};
-        arg.AbiInfo.ArgNum   = argIndex;
         arg.AbiInfo.ArgType  = argx->TypeGet();
         arg.AbiInfo.IsStruct = isStructArg;
 
@@ -3113,7 +3113,7 @@ unsigned CallArgs::CountArgs()
 // fgMorphArgs: Walk and transform (morph) the arguments of a call
 //
 // Arguments:
-//    callNode - the call for which we are doing the argument morphing
+//    call - the call for which we are doing the argument morphing
 //
 // Return Value:
 //    Like most morph methods, this method returns the morphed node,
@@ -3224,9 +3224,9 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
         DEBUG_ARG_SLOTS_ASSERT(size != 0);
         DEBUG_ARG_SLOTS_ONLY(argSlots += arg.AbiInfo.GetSlotCount();)
 
-        // TODO-ARGS: Quirk this to match previous behavior where it was
-        // skipped for 'this' pointer. We should turn it off.
-        if ((arg.GetWellKnownArg() != WellKnownArg::ThisPointer) && (argx->IsLocalAddrExpr() != nullptr))
+        // For pointers to locals we can skip reporting GC info and also skip
+        // zero initialization.
+        if (argx->IsLocalAddrExpr() != nullptr)
         {
             argx->gtType = TYP_I_IMPL;
         }
@@ -8268,7 +8268,7 @@ GenTree* Compiler::fgGetStubAddrArg(GenTreeCall* call)
 //
 unsigned Compiler::fgGetArgParameterLclNum(GenTreeCall* call, CallArg* arg)
 {
-    unsigned num = arg->AbiInfo.ArgNum;
+    unsigned num = 0;
 
     for (CallArg& otherArg : call->gtArgs.Args())
     {
@@ -8276,11 +8276,12 @@ unsigned Compiler::fgGetArgParameterLclNum(GenTreeCall* call, CallArg* arg)
         {
             break;
         }
+
         // Late added args add extra args that do not map to IL parameters and that we should not reassign.
         if (!otherArg.IsArgAddedLate())
-            continue;
-
-        num--;
+        {
+            num++;
+        }
     }
 
     return num;

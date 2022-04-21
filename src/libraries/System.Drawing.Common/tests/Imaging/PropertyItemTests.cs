@@ -10,7 +10,6 @@ namespace System.Drawing.Imaging.Tests
     {
         private const int PropertyTagLuminanceTable = 0x5090;
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [InlineData(1)]
         [InlineData(0)]
@@ -23,7 +22,6 @@ namespace System.Drawing.Imaging.Tests
             Assert.Equal(value, item.Id);
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [InlineData(1)]
         [InlineData(0)]
@@ -36,7 +34,6 @@ namespace System.Drawing.Imaging.Tests
             Assert.Equal(value, item.Len);
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [InlineData(1)]
         [InlineData(0)]
@@ -56,7 +53,6 @@ namespace System.Drawing.Imaging.Tests
             yield return new object[] { new byte[] { 1, 2, 3 } };
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(Value_Set_TestData))]
         public void Value_Set_GetReturnsExpected(byte[] value)
@@ -74,14 +70,13 @@ namespace System.Drawing.Imaging.Tests
             yield return new object[] { 0, 0, 0, new byte[0] };
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(Properties_TestData))]
         public void Properties_SetValues_ReturnsExpected(int id, int len, short type, byte[] value)
         {
             using var image = new Bitmap(Helpers.GetTestBitmapPath("16x16_nonindexed_24bit.png"));
             using Image clone = (Image)image.Clone();
-            
+
             PropertyItem[] propItems = clone.PropertyItems;
             PropertyItem propItem = propItems[0];
             Assert.Equal(771, propItem.Id);

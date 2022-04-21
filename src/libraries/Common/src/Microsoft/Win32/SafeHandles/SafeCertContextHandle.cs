@@ -17,8 +17,10 @@ namespace Microsoft.Win32.SafeHandles
 
         public SafeCertContextHandle() { }
 
-        public SafeCertContextHandle(SafeCertContextHandle parent!!)
+        public SafeCertContextHandle(SafeCertContextHandle parent)
         {
+            ArgumentNullException.ThrowIfNull(parent);
+
             Debug.Assert(!parent.IsInvalid);
             Debug.Assert(!parent.IsClosed);
 

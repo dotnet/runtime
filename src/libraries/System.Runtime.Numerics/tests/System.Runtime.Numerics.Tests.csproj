@@ -54,4 +54,8 @@
     <Compile Include="BigInteger\TryWriteBytes.cs" />
     <Compile Include="ComplexTests.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <!-- Some internal types are needed, so we reference the implementation assembly, rather than the reference assembly. -->
+    <ProjectReference Include="..\src\System.Runtime.Numerics.csproj" SkipUseReferenceAssembly="true" />
+  </ItemGroup>
 </Project>

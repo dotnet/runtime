@@ -1557,9 +1557,6 @@ dotnet_diagnostic.IDE0160.severity = silent
 # IDE0161: Convert to file-scoped namespace
 dotnet_diagnostic.IDE0161.severity = silent
 
-# IDE0190: Null check can be simplified
-dotnet_diagnostic.IDE0190.severity = suggestion
-
 # IDE1005: Delegate invocation can be simplified.
 dotnet_diagnostic.IDE1005.severity = suggestion
 

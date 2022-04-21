@@ -1139,6 +1139,16 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void op_UnsignedRightShiftTest()
+        {
+            Assert.Equal((sbyte)0x00, ShiftOperatorsHelper<sbyte, sbyte>.op_UnsignedRightShift((sbyte)0x00, 1));
+            Assert.Equal((sbyte)0x00, ShiftOperatorsHelper<sbyte, sbyte>.op_UnsignedRightShift((sbyte)0x01, 1));
+            Assert.Equal((sbyte)0x3F, ShiftOperatorsHelper<sbyte, sbyte>.op_UnsignedRightShift((sbyte)0x7F, 1));
+            Assert.Equal((sbyte)0x40, ShiftOperatorsHelper<sbyte, sbyte>.op_UnsignedRightShift(unchecked((sbyte)0x80), 1));
+            Assert.Equal((sbyte)0x7F, ShiftOperatorsHelper<sbyte, sbyte>.op_UnsignedRightShift(unchecked((sbyte)0xFF), 1));
+        }
+
+        [Fact]
         public static void op_SubtractionTest()
         {
             Assert.Equal(unchecked((sbyte)0xFF), SubtractionOperatorsHelper<sbyte, sbyte, sbyte>.op_Subtraction((sbyte)0x00, (sbyte)1));

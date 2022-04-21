@@ -62,8 +62,10 @@ namespace System.Xml
             }
         }
 
-        public void CopyTo(XmlDictionaryReaderQuotas quotas!!)
+        public void CopyTo(XmlDictionaryReaderQuotas quotas)
         {
+            ArgumentNullException.ThrowIfNull(quotas);
+
             if (quotas._readOnly)
                 throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidOperationException(SR.QuotaCopyReadOnly));
 

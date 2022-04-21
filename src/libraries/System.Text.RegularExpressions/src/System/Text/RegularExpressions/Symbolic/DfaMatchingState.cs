@@ -51,7 +51,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <summary>If true then the state is a dead-end, rejects all inputs.</summary>
         internal bool IsNothing => Node.IsNothing;
 
-        /// <summary>If true then state starts with a ^ or $ or \A or \z or \Z</summary>
+        /// <summary>If true then state starts with a ^ or $ or \Z</summary>
         internal bool StartsWithLineAnchor => Node._info.StartsWithLineAnchor;
 
         /// <summary>
@@ -134,7 +134,9 @@ namespace System.Text.RegularExpressions.Symbolic
                 // nextCharKind will be the PrevCharKind of the target state
                 // use an existing state instead if one exists already
                 // otherwise create a new new id for it
-                list.Add((Node._builder.CreateState(node, nextCharKind, capturing: true), effects));
+                DfaMatchingState<TSet> state = Node._builder.CreateState(node, nextCharKind, capturing: true);
+                if (!state.IsDeadend)
+                    list.Add((state, effects));
             }
             return list;
         }

@@ -53,8 +53,10 @@ namespace System.Drawing
         /// Initializes a new instance of the <see cref='StringFormat'/> class from the specified
         /// existing <see cref='System.Drawing.StringFormat'/>.
         /// </summary>
-        public StringFormat(StringFormat format!!)
+        public StringFormat(StringFormat format)
         {
+            ArgumentNullException.ThrowIfNull(format);
+
             int status = Gdip.GdipCloneStringFormat(new HandleRef(format, format.nativeFormat), out nativeFormat);
 
             if (status != Gdip.Ok)

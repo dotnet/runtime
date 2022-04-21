@@ -8,15 +8,12 @@ trigger:
     include:
     - '*'
     exclude:
+    - /**/*.md
     - eng/Version.Details.xml
     - .github/*
     - docs/*
-    - CODE-OF-CONDUCT.md
-    - CONTRIBUTING.md
     - LICENSE.TXT
     - PATENTS.TXT
-    - README.md
-    - SECURITY.md
     - THIRD-PARTY-NOTICES.TXT
 
 pr: none
