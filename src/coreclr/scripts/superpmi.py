@@ -1867,20 +1867,12 @@ class SuperPMIReplayThroughputDiff:
             logging.warning("  Base JIT's compiler: {}".format(base_jit_compiler_version))
             logging.warning("  Diff JIT's compiler: {}".format(diff_jit_compiler_version))
 
-        # List of all Markdown summary files
         tp_diffs = []
 
         with TempDir(None, self.coreclr_args.skip_cleanup) as temp_location:
             logging.debug("")
             logging.debug("Temp Location: %s", temp_location)
             logging.debug("")
-
-            # For each MCH file that we are going to replay, do the replay and replay post-processing.
-            #
-            # Consider: currently, we loop over all the steps for each MCH file, including (1) invoke
-            # SuperPMI, (2) process results. It might be better to do (1) for each MCH file, then
-            # process all the results at once. Currently, the results for some processing can be
-            # obscured by the normal run output for subsequent MCH files.
 
             for mch_file in self.mch_files:
 
