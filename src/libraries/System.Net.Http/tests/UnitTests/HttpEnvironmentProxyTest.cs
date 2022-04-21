@@ -222,6 +222,11 @@ namespace System.Net.Http.Tests
                 Assert.NotNull(p);
                 Assert.Equal(CredentialCache.DefaultCredentials, p.Credentials.GetCredential(p.GetProxy(fooHttp), ""));
                 Assert.Equal(CredentialCache.DefaultCredentials, p.Credentials.GetCredential(p.GetProxy(fooHttps), ""));
+
+                Environment.SetEnvironmentVariable("http_proxy", "http://:@[::1]:80");
+                Assert.True(HttpEnvironmentProxy.TryCreate(out p));
+                Assert.NotNull(p);
+                Assert.Equal(CredentialCache.DefaultCredentials, p.Credentials.GetCredential(p.GetProxy(fooHttp), ""));
             }).Dispose();
         }
 

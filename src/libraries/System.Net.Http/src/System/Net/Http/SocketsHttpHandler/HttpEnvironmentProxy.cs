@@ -15,7 +15,6 @@ namespace System.Net.Http
         private readonly NetworkCredential? _httpsCred;
         private readonly Uri? _httpProxy;
         private readonly Uri? _httpsProxy;
-        internal static readonly string s_defaultCredentialsPlaceholder = "$";
 
         public HttpEnvironmentProxyCredentials(Uri? httpProxy, NetworkCredential? httpCred,
                                                 Uri? httpsProxy, NetworkCredential? httpsCred)
@@ -66,7 +65,7 @@ namespace System.Net.Http
                 return null;
             }
 
-            if (value == s_defaultCredentialsPlaceholder)
+            if (value == ":")
             {
                 return CredentialCache.DefaultNetworkCredentials ;
             }
@@ -197,10 +196,7 @@ namespace System.Net.Http
                 UriBuilder ub = new UriBuilder("http", host, port);
                 if (user != null)
                 {
-                    // if both user and password exist and empty we should use default credentials
-                    ub.UserName = (user == "" && password == "") ?
-                                    HttpEnvironmentProxyCredentials.s_defaultCredentialsPlaceholder :
-                                    Uri.EscapeDataString(user);
+                    ub.UserName = Uri.EscapeDataString(user);
                 }
 
                 if (password != null)
@@ -208,7 +204,20 @@ namespace System.Net.Http
                     ub.Password = Uri.EscapeDataString(password);
                 }
 
-                return ub.Uri;
+                Uri uri = ub.Uri;
+
+                // if both user and password exist and empty we should preserve that and use default credentials.
+                // UriBuilder does not handle that now e.g. does not distinguish between empty and missing.
+                if (user == "" && password == "")
+                {
+                    string[] tokens = uri.ToString().Split('/', 3);
+                    if (tokens.Length == 3)
+                    {
+                        uri = new Uri($"{tokens[0]}//:@{tokens[2]}");
+                    }
+                }
+
+                return uri;
             }
             catch { };
             return null;
