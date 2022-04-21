@@ -49,7 +49,6 @@ namespace System.Net.Http
             {
                 httpsCred = GetCredentialsFromString(httpsProxy.UserInfo);
             }
-
             if (httpCred == null && httpsCred == null)
             {
                 return null;

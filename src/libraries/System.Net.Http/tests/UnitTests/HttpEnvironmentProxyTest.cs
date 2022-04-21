@@ -218,7 +218,6 @@ namespace System.Net.Http.Tests
                 IWebProxy p;
 
                 Environment.SetEnvironmentVariable("all_proxy", "http://:@1.1.1.1:3000");
-                //Environment.SetEnvironmentVariable("all_proxy", "http://1.1.1.1:3000");
                 Assert.True(HttpEnvironmentProxy.TryCreate(out p));
                 Assert.NotNull(p);
                 Assert.Equal(CredentialCache.DefaultCredentials, p.Credentials.GetCredential(p.GetProxy(fooHttp), ""));
