@@ -1124,9 +1124,17 @@ namespace System.Net.Quic.Implementations.MsQuic
                 //   - StreamLimitReached - only if QUIC_STREAM_START_FLAG_FAIL_BLOCKED was specified (not in our case).
                 //
                 // We disregard duplicate StreamStart calls
+                if (status == MsQuicStatusCodes.Aborted)
+                {
+                    state.StartCompletionSource.SetException(
+                        ExceptionDispatchInfo.SetCurrentStackTrace(GetConnectionAbortedException(state)));
+                }
+                else
+                {
+                    state.StartCompletionSource.SetException(
+                        ExceptionDispatchInfo.SetCurrentStackTrace(new QuicException($"StreamStart finished with status{MsQuicStatusCodes.GetError(status)}")));
+                }
                 Debug.Assert(status == MsQuicStatusCodes.Aborted || status == MsQuicStatusCodes.InvalidState);
-                state.StartCompletionSource.SetException(
-                    ExceptionDispatchInfo.SetCurrentStackTrace(GetConnectionAbortedException(state)));
             }
             else if ((evt.Data.StartComplete.PeerAccepted & 1) != 0)
             {
