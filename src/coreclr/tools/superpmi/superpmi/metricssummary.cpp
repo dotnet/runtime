@@ -75,14 +75,15 @@ bool MetricsSummary::LoadFromFile(const char* path, MetricsSummary* metrics)
         return false;
     }
 
-    std::vector<char> content(static_cast<size_t>(len.QuadPart) + 1);
+    DWORD stringLen = static_cast<DWORD>(len.QuadPart);
+    std::vector<char> content(stringLen + 1);
     DWORD numRead;
-    if (!ReadFile(file.get(), content.data(), static_cast<DWORD>(content.size()), &numRead, nullptr) || numRead != content.size() - 1)
+    if (!ReadFile(file.get(), content.data(), stringLen, &numRead, nullptr) || numRead != stringLen)
     {
         return false;
     }
 
-    content[numRead] = '\0';
+    content[stringLen] = '\0';
  
     int scanResult =
         sscanf_s(

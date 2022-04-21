@@ -73,8 +73,6 @@ def append_diff_file(f, arch, file_name, full_file_path, asmdiffs):
     diff_arch = "unknown"
     match_obj = re.search(r'^superpmi_(tpdiff|diff)_summary_(.*)_(.*).md', file_name)
     if match_obj is not None:
-        spmi_command = match_obj.group(1)
-
         diff_os = match_obj.group(2)
         diff_arch = match_obj.group(3)
 
@@ -109,7 +107,7 @@ To reproduce these diffs on Windows {3}:
 superpmi.py asmdiffs -target_os {0} -target_arch {1} -arch {3}
 ```
 
-""".format(diff_os, diff_arch, file_name, arch, spmi_command))
+""".format(diff_os, diff_arch, file_name, arch))
 
                 # Now write the contents
                 f.write(contents)
