@@ -1229,8 +1229,6 @@ class SuperPMIReplay:
         self.superpmi_path = determine_superpmi_tool_path(coreclr_args)
         self.coreclr_args = coreclr_args
 
-        print("{} {}".format(self.superpmi_path, coreclr_args.arch))
-
     ############################################################################
     # Instance Methods
     ############################################################################
@@ -1952,8 +1950,7 @@ class SuperPMIReplayThroughputDiff:
                 os.remove(overall_md_summary_file)
 
             with open(overall_md_summary_file, "w") as write_fh:
-                write_fh.write("# Throughput diffs\n")
-                write_fh.write("|Collection|Num instructions, base|Num instructions, diff|PDIFF|\n")
+                write_fh.write("|Collection|Base # instructions|Diff # instructions|PDIFF|\n")
                 write_fh.write("|---|---|---|---|\n")
                 for mch_file, base_instructions, diff_instructions in tp_diffs:
                     write_fh.write("|{}|{:,d}|{:,d}|{}{:.2f}%|\n".format(

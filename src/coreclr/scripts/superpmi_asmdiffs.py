@@ -245,20 +245,29 @@ def main(main_args):
     # We make sure the file doesn't exist before we run diffs, so we don't need to worry about superpmi.py creating
     # a unique, numbered file. If there are no diffs, we still want to create this file and indicate there were no diffs.
 
-    overall_md_summary_file_target = os.path.join(log_directory, "superpmi_diff_summary_{}_{}.md".format(platform_name, arch_name))
+    md_files = []
 
-    with open(overall_md_summary_file_target, "w") as write_fh:
-        if os.path.isfile(overall_md_asmdiffs_summary_file):
-            with open(overall_md_asmdiffs_summary_file, "r") as read_fh:
-                shutil.copyfileobj(read_fh, write_fh)
-                write_fh.write("\n")
+    overall_md_asmdiff_summary_file_target = os.path.join(log_directory, "superpmi_diff_summary_{}_{}.md".format(platform_name, arch_name))
+    md_files.append((overall_md_asmdiffs_summary_file, overall_md_asmdiff_summary_file_target))
+
+    overall_md_tpdiff_summary_file_target = os.path.join(log_directory, "superpmi_tpdiff_summary_{}_{}.md".format(platform_name, arch_name))
+    md_files.append((overall_md_tpdiff_summary_file, overall_md_tpdiff_summary_file_target))
+
+    for source, target in md_files:
+        if os.path.isfile(source):
+            try:
+                print("Copying summary file {} -> {}".format(source, target))
+                shutil.copy2(source, target)
+            except PermissionError as pe_error:
+                print('Ignoring PermissionError: {0}'.format(pe_error))
         else:
-            write_fh.write("No asmdiffs found\n\n")
-
-        if os.path.isfile(overall_md_tpdiff_summary_file):
-            with open(overall_md_tpdiff_summary_file, "r") as read_fh:
-                shutil.copyfileobj(read_fh, write_fh)
-                write_fh.write("\n")
+            # Write a basic summary file. Ideally, we should not generate a summary.md file. However, currently I'm seeing
+            # errors where the Helix work item fails to upload this specified file if it doesn't exist. We should change the
+            # upload to be conditional, or otherwise not error.
+            with open(target, "a") as f:
+                f.write("""\
+    <empty>
+    """)
 
     # Finally prepare files to upload from helix.
     copy_dasm_files(spmi_location, log_directory, "{}_{}".format(platform_name, arch_name))
