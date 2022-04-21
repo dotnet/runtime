@@ -15,8 +15,10 @@ namespace System.Runtime.Serialization
         protected XmlDictionaryReader? dictionaryReader;
         protected bool isEndOfEmptyElement;
 
-        public XmlReaderDelegator(XmlReader reader!!)
+        public XmlReaderDelegator(XmlReader reader)
         {
+            ArgumentNullException.ThrowIfNull(reader);
+
             this.reader = reader;
             this.dictionaryReader = reader as XmlDictionaryReader;
         }

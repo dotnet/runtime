@@ -443,7 +443,7 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
 
                 if (block != callFinally)
                 {
-                    JITDUMP("EH#%u found unexpected callfinally " FMT_BB "; skipping.\n");
+                    JITDUMP("EH#%u found unexpected callfinally " FMT_BB "; skipping.\n", XTnum, block->bbNum);
                     verifiedSingleCallfinally = false;
                     break;
                 }
@@ -454,7 +454,7 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
 
         if (!verifiedSingleCallfinally)
         {
-            JITDUMP("EH#%u -- unexpectedly -- has multiple callfinallys; skipping.\n");
+            JITDUMP("EH#%u -- unexpectedly -- has multiple callfinallys; skipping.\n", XTnum);
             XTnum++;
             assert(verifiedSingleCallfinally);
             continue;

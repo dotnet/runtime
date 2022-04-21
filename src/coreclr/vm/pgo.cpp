@@ -121,6 +121,8 @@ public:
 
         auto lambda = [&](int64_t thWritten)
         {
+            if (ICorJitInfo::IsUnknownTypeHandle(thWritten)) return;
+
             if (thWritten != 0)
             {
                 TypeHandle th = *(TypeHandle*)&thWritten;
@@ -129,6 +131,7 @@ public:
                     typeHandlesEncountered.Append(th);
                 }
             }
+            return;
         };
 
         if (!writer.AppendDataFromLastSchema(lambda))
@@ -140,6 +143,7 @@ public:
     }
 };
 
+#ifndef DACCESS_COMPILE
 void PgoManager::WritePgoData()
 {
     if (ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context, JitInstrumentationDataVerbose))
@@ -233,10 +237,15 @@ void PgoManager::WritePgoData()
                         break;
                     case ICorJitInfo::PgoInstrumentationKind::TypeHandle:
                         {
-                            TypeHandle th = *(TypeHandle*)(data + entryOffset);
+                            intptr_t typehandleData = *(intptr_t*)(data + entryOffset);
+                            TypeHandle th = TypeHandle::FromPtr((void*)typehandleData);
                             if (th.IsNull())
                             {
                                 fprintf(pgoDataFile, s_TypeHandle, "NULL");
+                            }
+                            else if (ICorJitInfo::IsUnknownTypeHandle(typehandleData))
+                            {
+                                fprintf(pgoDataFile, s_TypeHandle, "UNKNOWN");
                             }
                             else
                             {
@@ -272,6 +281,7 @@ void PgoManager::WritePgoData()
     fprintf(pgoDataFile, s_FileTrailerString);
     fclose(pgoDataFile);
 }
+#endif // DACCESS_COMPILE
 
 void ReadLineAndDiscard(FILE* file)
 {
@@ -459,7 +469,7 @@ void PgoManager::ReadPgoData()
 
                             TypeHandle th;
                             INT_PTR ptrVal = 0;
-                            if (strcmp(typeString, "NULL") != 0)
+                            if ((strcmp(typeString, "NULL") != 0) || (strcmp(typeString, "UNKNOWN") != 0))
                             {
                                 // As early type loading is likely problematic, simply drop the string into the data, and fix it up later
                                 void* tempString = malloc(endOfString);

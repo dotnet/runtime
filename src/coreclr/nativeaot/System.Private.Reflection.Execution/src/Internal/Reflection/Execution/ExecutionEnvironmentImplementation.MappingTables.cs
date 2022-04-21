@@ -197,7 +197,7 @@ namespace Internal.Reflection.Execution
         ///    metadataReader + typeRefHandle  - a valid metadata reader + typeReferenceHandle where "metadataReader" is one
         ///                                      of the metadata readers returned by ExecutionEnvironment.MetadataReaders.
         ///
-        /// Note: Although this method has a "bool" return value like the other mapping table accessors, the Project N pay-for-play design
+        /// Note: Although this method has a "bool" return value like the other mapping table accessors, the pay-for-play design
         /// guarantees that any type that has a metadata TypeReference to it also has a RuntimeTypeHandle underneath.
         /// </summary>
         /// <param name="metadataReader">Metadata reader for module containing the type reference</param>

@@ -93,11 +93,20 @@ namespace System.IO.Packaging
         /// <exception cref="ArgumentNullException">If parameter "partUri" is null</exception>
         /// <exception cref="ArgumentOutOfRangeException">If CompressionOption enumeration [compressionOption] does not have one of the valid values</exception>
         /// <exception cref="ArgumentException">If parameter "partUri" does not conform to the valid partUri syntax</exception>
-        protected PackagePart(Package package!!,
-                                Uri partUri!!,
+        protected PackagePart(Package package,
+                                Uri partUri,
                                 string? contentType,
                                 CompressionOption compressionOption)
         {
+            if (package is null)
+            {
+                throw new ArgumentNullException(nameof(package));
+            }
+            if (partUri is null)
+            {
+                throw new ArgumentNullException(nameof(partUri));
+            }
+
             Package.ThrowIfCompressionOptionInvalid(compressionOption);
 
             _uri = PackUriHelper.ValidatePartUri(partUri);

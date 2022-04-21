@@ -89,8 +89,13 @@ namespace System.Security.Cryptography.Xml
             _nsm.AddNamespace("dsig", SignedXml.XmlDsigNamespaceUrl);
         }
 
-        private void LoadXmlNodeListInput(XmlNodeList nodeList!!)
+        private void LoadXmlNodeListInput(XmlNodeList nodeList)
         {
+            if (nodeList is null)
+            {
+                throw new ArgumentNullException(nameof(nodeList));
+            }
+
             _containingDocument = Utils.GetOwnerDocument(nodeList);
             if (_containingDocument == null)
                 throw new CryptographicException(SR.Cryptography_Xml_EnvelopedSignatureRequiresContext);
@@ -100,8 +105,13 @@ namespace System.Security.Cryptography.Xml
             _inputNodeList = nodeList;
         }
 
-        private void LoadXmlDocumentInput(XmlDocument doc!!)
+        private void LoadXmlDocumentInput(XmlDocument doc)
         {
+            if (doc is null)
+            {
+                throw new ArgumentNullException(nameof(doc));
+            }
+
             _containingDocument = doc;
             _nsm = new XmlNamespaceManager(_containingDocument.NameTable);
             _nsm.AddNamespace("dsig", SignedXml.XmlDsigNamespaceUrl);

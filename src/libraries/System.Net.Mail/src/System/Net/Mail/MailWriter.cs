@@ -22,8 +22,10 @@ namespace System.Net.Mail
         {
         }
 
-        internal override void WriteHeaders(NameValueCollection headers!!, bool allowUnicode)
+        internal override void WriteHeaders(NameValueCollection headers, bool allowUnicode)
         {
+            ArgumentNullException.ThrowIfNull(headers);
+
             foreach (string key in headers)
             {
                 string[] values = headers!.GetValues(key)!;

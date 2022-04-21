@@ -47,19 +47,19 @@ namespace System
         public const float NaN = (float)0.0 / (float)0.0;
 
         /// <summary>Represents the additive identity (0).</summary>
-        private const float AdditiveIdentity = 0.0f;
+        internal const float AdditiveIdentity = 0.0f;
 
         /// <summary>Represents the multiplicative identity (1).</summary>
-        private const float MultiplicativeIdentity = 1.0f;
+        internal const float MultiplicativeIdentity = 1.0f;
 
         /// <summary>Represents the number one (1).</summary>
-        private const float One = 1.0f;
+        internal const float One = 1.0f;
 
         /// <summary>Represents the number zero (0).</summary>
-        private const float Zero = 0.0f;
+        internal const float Zero = 0.0f;
 
         /// <summary>Represents the number negative one (-1).</summary>
-        private const float NegativeOne = -1.0f;
+        internal const float NegativeOne = -1.0f;
 
         /// <summary>Represents the number negative zero (-0).</summary>
         public const float NegativeZero = -0.0f;
@@ -82,21 +82,71 @@ namespace System
 
         internal const uint SignMask = 0x8000_0000;
         internal const int SignShift = 31;
+        internal const byte ShiftedSignMask = (byte)(SignMask >> SignShift);
 
-        internal const uint ExponentMask = 0x7F80_0000;
-        internal const int ExponentShift = 23;
-        internal const uint ShiftedExponentMask = ExponentMask >> ExponentShift;
+        internal const uint BiasedExponentMask = 0x7F80_0000;
+        internal const int BiasedExponentShift = 23;
+        internal const byte ShiftedBiasedExponentMask = (byte)(BiasedExponentMask >> BiasedExponentShift);
 
-        internal const uint SignificandMask = 0x007F_FFFF;
+        internal const uint TrailingSignificandMask = 0x007F_FFFF;
 
         internal const byte MinSign = 0;
         internal const byte MaxSign = 1;
 
-        internal const byte MinExponent = 0x00;
-        internal const byte MaxExponent = 0xFF;
+        internal const byte MinBiasedExponent = 0x00;
+        internal const byte MaxBiasedExponent = 0xFF;
 
-        internal const uint MinSignificand = 0x0000_0000;
-        internal const uint MaxSignificand = 0x007F_FFFF;
+        internal const byte ExponentBias = 127;
+
+        internal const sbyte MinExponent = -126;
+        internal const sbyte MaxExponent = +127;
+
+        internal const uint MinTrailingSignificand = 0x0000_0000;
+        internal const uint MaxTrailingSignificand = 0x007F_FFFF;
+
+        internal byte BiasedExponent
+        {
+            get
+            {
+                uint bits = BitConverter.SingleToUInt32Bits(m_value);
+                return ExtractBiasedExponentFromBits(bits);
+            }
+        }
+
+        internal sbyte Exponent
+        {
+            get
+            {
+                return (sbyte)(BiasedExponent - ExponentBias);
+            }
+        }
+
+        internal uint Significand
+        {
+            get
+            {
+                return TrailingSignificand | ((BiasedExponent != 0) ? (1U << BiasedExponentShift) : 0U);
+            }
+        }
+
+        internal uint TrailingSignificand
+        {
+            get
+            {
+                uint bits = BitConverter.SingleToUInt32Bits(m_value);
+                return ExtractTrailingSignificandFromBits(bits);
+            }
+        }
+
+        internal static byte ExtractBiasedExponentFromBits(uint bits)
+        {
+            return (byte)((bits >> BiasedExponentShift) & ShiftedBiasedExponentMask);
+        }
+
+        internal static uint ExtractTrailingSignificandFromBits(uint bits)
+        {
+            return bits & TrailingSignificandMask;
+        }
 
         /// <summary>Determines whether the specified value is finite (zero, subnormal, or normal).</summary>
         [NonVersionable]
@@ -171,16 +221,6 @@ namespace System
             int bits = BitConverter.SingleToInt32Bits(f);
             bits &= 0x7FFFFFFF;
             return (bits < 0x7F800000) && (bits != 0) && ((bits & 0x7F800000) == 0);
-        }
-
-        internal static int ExtractExponentFromBits(uint bits)
-        {
-            return (int)(bits >> ExponentShift) & (int)ShiftedExponentMask;
-        }
-
-        internal static uint ExtractSignificandFromBits(uint bits)
-        {
-            return bits & SignificandMask;
         }
 
         // Compares this object to another object, returning an integer that
@@ -505,12 +545,12 @@ namespace System
         {
             uint bits = BitConverter.SingleToUInt32Bits(value);
 
-            uint exponent = (bits >> ExponentShift) & ShiftedExponentMask;
-            uint significand = bits & SignificandMask;
+            byte biasedExponent = ExtractBiasedExponentFromBits(bits);
+            uint trailingSignificand = ExtractTrailingSignificandFromBits(bits);
 
             return (value > 0)
-                && (exponent != MinExponent) && (exponent != MaxExponent)
-                && (significand == MinSignificand);
+                && (biasedExponent != MinBiasedExponent) && (biasedExponent != MaxBiasedExponent)
+                && (trailingSignificand == MinTrailingSignificand);
         }
 
         /// <inheritdoc cref="IBinaryNumber{TSelf}.Log2(TSelf)" />
@@ -575,20 +615,20 @@ namespace System
         /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp" />
         public static float Exp(float x) => MathF.Exp(x);
 
-        // /// <inheritdoc cref="IExponentialFunctions{TSelf}.ExpM1(TSelf)" />
-        // public static float ExpM1(float x) => MathF.ExpM1(x);
+        /// <inheritdoc cref="IExponentialFunctions{TSelf}.ExpM1(TSelf)" />
+        public static float ExpM1(float x) => MathF.Exp(x) - 1;
 
-        // /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp2(TSelf)" />
-        // public static float Exp2(float x) => MathF.Exp2(x);
+        /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp2(TSelf)" />
+        public static float Exp2(float x) => MathF.Pow(2, x);
 
-        // /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp2M1(TSelf)" />
-        // public static float Exp2M1(float x) => MathF.Exp2M1(x);
+        /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp2M1(TSelf)" />
+        public static float Exp2M1(float x) => MathF.Pow(2, x) - 1;
 
-        // /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp10(TSelf)" />
-        // public static float Exp10(float x) => MathF.Exp10(x);
+        /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp10(TSelf)" />
+        public static float Exp10(float x) => MathF.Pow(10, x);
 
-        // /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp10M1(TSelf)" />
-        // public static float Exp10M1(float x) => MathF.Exp10M1(x);
+        /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp10M1(TSelf)" />
+        public static float Exp10M1(float x) => MathF.Pow(10, x) - 1;
 
         //
         // IFloatingPoint
@@ -614,6 +654,66 @@ namespace System
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.Truncate(TSelf)" />
         public static float Truncate(float x) => MathF.Truncate(x);
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.GetExponentShortestBitLength()" />
+        long IFloatingPoint<float>.GetExponentShortestBitLength()
+        {
+            sbyte exponent = Exponent;
+
+            if (exponent >= 0)
+            {
+                return (sizeof(sbyte) * 8) - sbyte.LeadingZeroCount(exponent);
+            }
+            else
+            {
+                return (sizeof(sbyte) * 8) + 1 - sbyte.LeadingZeroCount((sbyte)(~exponent));
+            }
+        }
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.GetExponentByteCount()" />
+        int IFloatingPoint<float>.GetExponentByteCount() => sizeof(sbyte);
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.TryWriteExponentLittleEndian(Span{byte}, out int)" />
+        bool IFloatingPoint<float>.TryWriteExponentLittleEndian(Span<byte> destination, out int bytesWritten)
+        {
+            if (destination.Length >= sizeof(sbyte))
+            {
+                sbyte exponent = Exponent;
+                Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), exponent);
+
+                bytesWritten = sizeof(sbyte);
+                return true;
+            }
+            else
+            {
+                bytesWritten = 0;
+                return false;
+            }
+        }
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.GetSignificandBitLength()" />
+        long IFloatingPoint<float>.GetSignificandBitLength() => 24;
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.GetSignificandByteCount()" />
+        int IFloatingPoint<float>.GetSignificandByteCount() => sizeof(uint);
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.TryWriteSignificandLittleEndian(Span{byte}, out int)" />
+        bool IFloatingPoint<float>.TryWriteSignificandLittleEndian(Span<byte> destination, out int bytesWritten)
+        {
+            if (destination.Length >= sizeof(uint))
+            {
+                uint significand = Significand;
+                Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), significand);
+
+                bytesWritten = sizeof(uint);
+                return true;
+            }
+            else
+            {
+                bytesWritten = 0;
+                return false;
+            }
+        }
 
         //
         // IFloatingPointIeee754
@@ -658,6 +758,100 @@ namespace System
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ILogB(TSelf)" />
         public static int ILogB(float x) => MathF.ILogB(x);
 
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.MaxMagnitudeNumber(TSelf, TSelf)" />
+        public static float MaxMagnitudeNumber(float x, float y)
+        {
+            // This matches the IEEE 754:2019 `maximumMagnitudeNumber` function
+            //
+            // It does not propagate NaN inputs back to the caller and
+            // otherwise returns the input with a larger magnitude.
+            // It treats +0 as larger than -0 as per the specification.
+
+            float ax = Abs(x);
+            float ay = Abs(y);
+
+            if ((ax > ay) || IsNaN(ay))
+            {
+                return x;
+            }
+
+            if (ax == ay)
+            {
+                return IsNegative(x) ? y : x;
+            }
+
+            return y;
+        }
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.MaxNumber(TSelf, TSelf)" />
+        public static float MaxNumber(float x, float y)
+        {
+            // This matches the IEEE 754:2019 `maximumNumber` function
+            //
+            // It does not propagate NaN inputs back to the caller and
+            // otherwise returns the larger of the inputs. It
+            // treats +0 as larger than -0 as per the specification.
+
+            if (x != y)
+            {
+                if (!IsNaN(y))
+                {
+                    return y < x ? x : y;
+                }
+
+                return x;
+            }
+
+            return IsNegative(y) ? x : y;
+        }
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.MinMagnitudeNumber(TSelf, TSelf)" />
+        public static float MinMagnitudeNumber(float x, float y)
+        {
+            // This matches the IEEE 754:2019 `minimumMagnitudeNumber` function
+            //
+            // It does not propagate NaN inputs back to the caller and
+            // otherwise returns the input with a larger magnitude.
+            // It treats +0 as larger than -0 as per the specification.
+
+            float ax = Abs(x);
+            float ay = Abs(y);
+
+            if ((ax < ay) || IsNaN(ay))
+            {
+                return x;
+            }
+
+            if (ax == ay)
+            {
+                return IsNegative(x) ? x : y;
+            }
+
+            return y;
+        }
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.MinNumber(TSelf, TSelf)" />
+        public static float MinNumber(float x, float y)
+        {
+            // This matches the IEEE 754:2019 `minimumNumber` function
+            //
+            // It does not propagate NaN inputs back to the caller and
+            // otherwise returns the larger of the inputs. It
+            // treats +0 as larger than -0 as per the specification.
+
+            if (x != y)
+            {
+                if (!IsNaN(y))
+                {
+                    return x < y ? x : y;
+                }
+
+                return x;
+            }
+
+            return IsNegative(x) ? x : y;
+        }
+
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ReciprocalEstimate(TSelf)" />
         public static float ReciprocalEstimate(float x) => MathF.ReciprocalEstimate(x);
 
@@ -669,18 +863,6 @@ namespace System
 
         // /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Compound(TSelf, TSelf)" />
         // public static float Compound(float x, float n) => MathF.Compound(x, n);
-
-        // /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.MaxMagnitudeNumber(TSelf, TSelf)" />
-        // public static float MaxMagnitudeNumber(float x, float y) => MathF.MaxMagnitudeNumber(x, y);
-
-        // /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.MaxNumber(TSelf, TSelf)" />
-        // public static float MaxNumber(float x, float y) => MathF.MaxNumber(x, y);
-
-        // /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.MinMagnitudeNumber(TSelf, TSelf)" />
-        // public static float MinMagnitudeNumber(float x, float y) => MathF.MinMagnitudeNumber(x, y);
-
-        // /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.MinNumber(TSelf, TSelf)" />
-        // public static float MinNumber(float x, float y) => MathF.MinNumber(x, y);
 
         //
         // IHyperbolicFunctions
@@ -724,17 +906,17 @@ namespace System
         /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log(TSelf, TSelf)" />
         public static float Log(float x, float newBase) => MathF.Log(x, newBase);
 
+        /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.LogP1(TSelf)" />
+        public static float LogP1(float x) => MathF.Log(x + 1);
+
         /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log10(TSelf)" />
         public static float Log10(float x) => MathF.Log10(x);
 
-        // /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.LogP1(TSelf)" />
-        // public static float LogP1(float x) => MathF.LogP1(x);
+        /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log2P1(TSelf)" />
+        public static float Log2P1(float x) => MathF.Log2(x + 1);
 
-        // /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log2P1(TSelf)" />
-        // public static float Log2P1(float x) => MathF.Log2P1(x);
-
-        // /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log10P1(TSelf)" />
-        // public static float Log10P1(float x) => MathF.Log10P1(x);
+        /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log10P1(TSelf)" />
+        public static float Log10P1(float x) => MathF.Log10(x + 1);
 
         //
         // IMinMaxValue
@@ -752,8 +934,6 @@ namespace System
 
         /// <inheritdoc cref="IModulusOperators{TSelf, TOther, TResult}.op_Modulus(TSelf, TOther)" />
         static float IModulusOperators<float, float, float>.operator %(float left, float right) => left % right;
-
-        // static checked float IModulusOperators<float, float, float>.operator %(float left, float right) => checked(left % right);
 
         //
         // IMultiplicativeIdentity

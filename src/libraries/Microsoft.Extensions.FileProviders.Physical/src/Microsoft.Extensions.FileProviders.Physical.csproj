@@ -15,6 +15,8 @@
              Link="Common\src\Extensions\EmptyDisposable.cs" />
     <Compile Include="$(CommonPath)Extensions\NonCapturingTimer\NonCapturingTimer.cs"
              Link="Common\src\Extensions\NonCapturingTimer\NonCapturingTimer.cs" />
+    <Compile Include="$(CommonPath)System\ThrowHelper.cs"
+             Link="Common\System\ThrowHelper.cs" />
   </ItemGroup>
 
   <ItemGroup>

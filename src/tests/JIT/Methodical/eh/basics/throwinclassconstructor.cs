@@ -5,6 +5,7 @@
 // NDPWhidbey 10958
 
 using System;
+using Xunit;
 
 public class Foo
 {
@@ -36,7 +37,8 @@ public class Test_throwinclassconstructor
         testLog = new TestUtil.TestLog(expectedOut);
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         //Start recording
         testLog.StartRecording();

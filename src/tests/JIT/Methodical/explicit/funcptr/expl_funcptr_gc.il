@@ -32,7 +32,9 @@
 //   note that class flags, 'extends' and 'implements' clauses
 //          are provided here for information only
 
-.class private explicit ansi sealed beforefieldinit AA
+.namespace Test_expl_funcptr_gc
+{
+.class public explicit ansi sealed beforefieldinit AA
        extends [mscorlib]System.Object
 {
   .field [0] public unsigned int8 tmp1
@@ -47,7 +49,7 @@
     .maxstack  1
     ldc.i4.s   100
     ret
-  } // end of method AA::ret_code
+  } // end of method Test_expl_funcptr_gc.AA::ret_code
 
   .method public hidebysig specialname rtspecialname 
           instance void  .ctor() cil managed
@@ -59,7 +61,7 @@
     IL_0006:  ret
   } // end of method TestApp::.ctor
   
-  .method private hidebysig static int32 
+  .method public hidebysig static int32 
           Main() cil managed
   {
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
@@ -68,22 +70,23 @@
     .entrypoint
     // Code size       31 (0x1f)
     .maxstack  3
-    .locals init (class AA V_0, int32 V_1)
-    newobj    instance void AA::.ctor()
+    .locals init (class Test_expl_funcptr_gc.AA V_0, int32 V_1)
+    newobj    instance void Test_expl_funcptr_gc.AA::.ctor()
     stloc.0
     ldloc.0
-    ldftn      int32 AA::ret_code()
-    stfld      native int AA::func_ptr
+    ldftn      int32 Test_expl_funcptr_gc.AA::ret_code()
+    stfld      native int Test_expl_funcptr_gc.AA::func_ptr
     ldloc.0
-    ldfld      native int AA::func_ptr
+    ldfld      native int Test_expl_funcptr_gc.AA::func_ptr
     calli       int32 *()
     ret
-  } // end of method AA::Main
+  } // end of method Test_expl_funcptr_gc.AA::Main
 
-} // end of class AA
+} // end of class Test_expl_funcptr_gc.AA
 
 
 // =============================================================
 
 //*********** DISASSEMBLY COMPLETE ***********************
 // WARNING: Created Win32 resource file funcptr_val.res
+}

@@ -59,12 +59,18 @@ namespace Microsoft.Extensions.Http
         private readonly TimerCallback _expiryCallback;
 
         public DefaultHttpClientFactory(
-            IServiceProvider services!!,
-            IServiceScopeFactory scopeFactory!!,
-            ILoggerFactory loggerFactory!!,
-            IOptionsMonitor<HttpClientFactoryOptions> optionsMonitor!!,
-            IEnumerable<IHttpMessageHandlerBuilderFilter> filters!!)
+            IServiceProvider services,
+            IServiceScopeFactory scopeFactory,
+            ILoggerFactory loggerFactory,
+            IOptionsMonitor<HttpClientFactoryOptions> optionsMonitor,
+            IEnumerable<IHttpMessageHandlerBuilderFilter> filters)
         {
+            ThrowHelper.ThrowIfNull(services);
+            ThrowHelper.ThrowIfNull(scopeFactory);
+            ThrowHelper.ThrowIfNull(loggerFactory);
+            ThrowHelper.ThrowIfNull(optionsMonitor);
+            ThrowHelper.ThrowIfNull(filters);
+
             _services = services;
             _scopeFactory = scopeFactory;
             _optionsMonitor = optionsMonitor;
@@ -89,8 +95,10 @@ namespace Microsoft.Extensions.Http
             _cleanupActiveLock = new object();
         }
 
-        public HttpClient CreateClient(string name!!)
+        public HttpClient CreateClient(string name)
         {
+            ThrowHelper.ThrowIfNull(name);
+
             HttpMessageHandler handler = CreateHandler(name);
             var client = new HttpClient(handler, disposeHandler: false);
 
@@ -103,8 +111,10 @@ namespace Microsoft.Extensions.Http
             return client;
         }
 
-        public HttpMessageHandler CreateHandler(string name!!)
+        public HttpMessageHandler CreateHandler(string name)
         {
+            ThrowHelper.ThrowIfNull(name);
+
             ActiveHandlerTrackingEntry entry = _activeHandlers.GetOrAdd(name, _entryFactory).Value;
 
             StartHandlerEntryTimer(entry);

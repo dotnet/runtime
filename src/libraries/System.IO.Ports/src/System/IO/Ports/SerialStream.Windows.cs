@@ -555,9 +555,11 @@ namespace System.IO.Ports
         // -----------SECTION: constructor --------------------------*
 
         // this method is used by SerialPort upon SerialStream's creation
-        internal SerialStream(string portName!!, int baudRate, Parity parity, int dataBits, StopBits stopBits, int readTimeout, int writeTimeout, Handshake handshake,
+        internal SerialStream(string portName, int baudRate, Parity parity, int dataBits, StopBits stopBits, int readTimeout, int writeTimeout, Handshake handshake,
             bool dtrEnable, bool rtsEnable, bool discardNull, byte parityReplace)
         {
+            ArgumentNullException.ThrowIfNull(portName);
+
             if (!portName.StartsWith("COM", StringComparison.OrdinalIgnoreCase) ||
                 !uint.TryParse(
 #if NETCOREAPP

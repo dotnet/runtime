@@ -24,7 +24,7 @@ namespace System.Text.RegularExpressions
             {
                 count++;
                 return true;
-            }, reuseMatchObject: true);
+            }, RegexRunnerMode.BoundsRequired, reuseMatchObject: true);
 
             return count;
         }
@@ -42,7 +42,7 @@ namespace System.Text.RegularExpressions
             {
                 count++;
                 return true;
-            }, reuseMatchObject: true);
+            }, RegexRunnerMode.BoundsRequired, reuseMatchObject: true);
 
             return count;
         }

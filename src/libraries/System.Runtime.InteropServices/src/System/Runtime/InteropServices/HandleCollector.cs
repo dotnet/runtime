@@ -40,6 +40,7 @@ namespace System.Runtime.InteropServices
             MaximumThreshold = maximumThreshold;
             _threshold = initialThreshold;
             _handleCount = 0;
+            _gcGeneration = 0;
         }
 
         public int Count => _handleCount;

@@ -1325,8 +1325,11 @@ namespace System.Diagnostics
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
         [SupportedOSPlatform("maccatalyst")]
-        public static Process Start(string fileName!!, IEnumerable<string> arguments!!)
+        public static Process Start(string fileName, IEnumerable<string> arguments)
         {
+            ArgumentNullException.ThrowIfNull(fileName);
+            ArgumentNullException.ThrowIfNull(arguments);
+
             var startInfo = new ProcessStartInfo(fileName);
             foreach (string argument in arguments)
             {
@@ -1347,8 +1350,10 @@ namespace System.Diagnostics
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
         [SupportedOSPlatform("maccatalyst")]
-        public static Process? Start(ProcessStartInfo startInfo!!)
+        public static Process? Start(ProcessStartInfo startInfo)
         {
+            ArgumentNullException.ThrowIfNull(startInfo);
+
             Process process = new Process();
             process.StartInfo = startInfo;
             return process.Start() ?

@@ -25,16 +25,20 @@ namespace System.ComponentModel.Composition.Hosting
                 _parentEngineContext = parentEngineContext;
             }
 
-            public void AddPartManager(PartManager part!!)
+            public void AddPartManager(PartManager part)
             {
+                ArgumentNullException.ThrowIfNull(part);
+
                 if (!_removedPartManagers.Remove(part))
                 {
                     _addedPartManagers.Add(part);
                 }
             }
 
-            public void RemovePartManager(PartManager part!!)
+            public void RemovePartManager(PartManager part)
             {
+                ArgumentNullException.ThrowIfNull(part);
+
                 if (!_addedPartManagers.Remove(part))
                 {
                     _removedPartManagers.Add(part);

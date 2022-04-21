@@ -447,6 +447,12 @@ mono_class_set_is_com_object (MonoClass *klass)
 #endif
 }
 
+void
+mono_class_set_is_simd_type (MonoClass *klass, gboolean is_simd)
+{
+	klass->simd_type = is_simd;
+}
+
 MonoType*
 mono_class_gtd_get_canonical_inst (MonoClass *klass)
 {

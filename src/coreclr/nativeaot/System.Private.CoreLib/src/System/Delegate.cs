@@ -60,20 +60,8 @@ namespace System
         // If the thunk does not exist, the function will return IntPtr.Zero.
         private protected virtual IntPtr GetThunk(int whichThunk)
         {
-#if PROJECTN
-            // The GetThunk function should be overriden on all delegate types, except for universal
-            // canonical delegates which use calling convention converter thunks to marshal arguments
-            // for the delegate call. If we execute this version of GetThunk, we can at least assert
-            // that the current delegate type is a generic type.
-            Debug.Assert(this.EETypePtr.IsGeneric);
-            return TypeLoaderExports.GetDelegateThunk(this, whichThunk);
-#else
-            // CoreRT doesn't support Universal Shared Code right now, so let's make this method return null for now.
-            // When CoreRT adds USG support we'll probably want to do some level of IL switching here so that
-            // we don't have this static call into type loader when USG is not enabled at compile time.
-            // The static call hurts size in our minimal targets.
+            // NativeAOT doesn't support Universal Shared Code, so let's make this method return null.
             return IntPtr.Zero;
-#endif
         }
 
         /// <summary>
