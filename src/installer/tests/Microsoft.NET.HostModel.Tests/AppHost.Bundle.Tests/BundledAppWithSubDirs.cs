@@ -57,7 +57,7 @@ namespace AppHost.Bundle.Tests
         }
 
         [Fact]
-        public void Bundle_Framework_dependent_Old_Hostfxr()
+        public void Bundle_Framework_dependent_NoBundleEntryPoint()
         {
             var fixture = sharedTestState.TestFrameworkDependentFixture.Copy();
             UseFrameworkDependentHost(fixture);
@@ -76,8 +76,9 @@ namespace AppHost.Bundle.Tests
                 RunTheApp(singleFile, dotnet)
                     .Should()
                     .Fail()
-                    .And
-                    .HaveStdErrContaining("To run this application, you need to install a newer version of .NET.");
+                    .And.HaveStdErrContaining("You must install or update .NET to run this application.")
+                    .And.HaveStdErrContaining("App host version:")
+                    .And.HaveStdErrContaining("apphost_version=");
             }
         }
 
