@@ -2,12 +2,10 @@
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <PackageDescription>Exposes Threading APIs for WebAssembly projects</PackageDescription>
-    <PackageId>$(MSBuildProjectName)</PackageId>
     <IncludeBuildOutput>true</IncludeBuildOutput>
     <DebugSymbols>false</DebugSymbols>
     <DebugType>none</DebugType>
     <NoTargetsDoNotReferenceOutputAssemblies>false</NoTargetsDoNotReferenceOutputAssemblies>
-    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <DisablePackageBaselineValidation>true</DisablePackageBaselineValidation>
     <IsPackable>true</IsPackable>
     <!-- XXX FIXME: NU5128 suppresses a really scary message about missing net7.0 dependencies -->
@@ -16,8 +14,6 @@
     <BuildOutputTargetFolder>ref</BuildOutputTargetFolder>
     <!-- XXX FIXME: the rest of these props affect the NoTargets SDK in some way.  I want to be able to reference this project from another .csproj -->
     <NoTargetsDoNotReferenceOutputAssemblies>false</NoTargetsDoNotReferenceOutputAssemblies>
-    <DisableImplicitFrameworkReferences>false</DisableImplicitFrameworkReferences>
-    <GenerateDependencyFile>true</GenerateDependencyFile>
   </PropertyGroup>
 
   <ItemGroup>
