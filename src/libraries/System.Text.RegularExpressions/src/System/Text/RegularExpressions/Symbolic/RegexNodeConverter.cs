@@ -46,7 +46,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
             while (work.Count > 0)
             {
-                (RegexNode Node, bool TryToMarkFixedLength, ConversionResult Result, ConversionResult[]? ChildResults) top = work.Pop();
+                (RegexNode Node, bool TryToMarkFixedLength, ConversionResult Result, ConversionResult[]? ChildResults) top = work.Peek();
                 RegexNode node = top.Node;
                 ConversionResult result = top.Result;
                 ConversionResult[]? childResults = top.ChildResults;
@@ -60,19 +60,23 @@ namespace System.Text.RegularExpressions.Symbolic
                         // Singletons and multis
 
                         case RegexNodeKind.One:
+                            _ = work.Pop();
                             result.InsertAtEnd(_builder.CreateSingleton(_builder._solver.CreateFromChar(node.Ch)));
                             break;
 
                         case RegexNodeKind.Notone:
+                            _ = work.Pop();
                             result.InsertAtEnd(_builder.CreateSingleton(_builder._solver.Not(_builder._solver.CreateFromChar(node.Ch))));
                             break;
 
                         case RegexNodeKind.Set:
+                            _ = work.Pop();
                             result.InsertAtEnd(ConvertSet(node));
                             break;
 
                         case RegexNodeKind.Multi:
                             {
+                                _ = work.Pop();
                                 // Create a BDD for each character in the string and concatenate them.
                                 string? str = node.Str;
                                 Debug.Assert(str is not null);
@@ -102,8 +106,8 @@ namespace System.Text.RegularExpressions.Symbolic
                         case RegexNodeKind.Capture when node.N == -1: // N == -1 because balancing groups aren't supported
                             {
                                 Debug.Assert(childResults is not null && childResults.Length == node.ChildCount());
-                                //next time this work item is popped its ChildResults list will be ready
-                                work.Push(top);
+                                //do not pop this item
+                                //next time this work item is seen its ChildResults list will be ready
                                 //propagate the length mark check only in case of alternation
                                 bool mark = node.Kind == RegexNodeKind.Alternate && top.TryToMarkFixedLength;
                                 //push all the children to be converted
@@ -122,6 +126,7 @@ namespace System.Text.RegularExpressions.Symbolic
                         case RegexNodeKind.Notoneloop:
                         case RegexNodeKind.Notonelazy:
                             {
+                                _ = work.Pop();
                                 // Create a BDD that represents the character, then create a loop around it.
                                 bool ignoreCase = (node.Options & RegexOptions.IgnoreCase) != 0;
                                 BDD bdd = _builder._solver.CreateFromChar(node.Ch);
@@ -136,6 +141,7 @@ namespace System.Text.RegularExpressions.Symbolic
                         case RegexNodeKind.Setloop:
                         case RegexNodeKind.Setlazy:
                             {
+                                _ = work.Pop();
                                 // Create a BDD that represents the set string, then create a loop around it.
                                 string? set = node.Str;
                                 Debug.Assert(set is not null);
@@ -146,44 +152,53 @@ namespace System.Text.RegularExpressions.Symbolic
 
                         case RegexNodeKind.Empty:
                         case RegexNodeKind.UpdateBumpalong: // UpdateBumpalong is a directive relevant only to backtracking and can be ignored just like Empty
+                            _ = work.Pop();
                             result.InsertAtEnd(_builder.Epsilon);
                             break;
 
                         case RegexNodeKind.Nothing:
+                            _ = work.Pop();
                             result.InsertAtEnd(_builder._nothing);
                             break;
 
                         // Anchors
 
                         case RegexNodeKind.Beginning:
+                            _ = work.Pop();
                             result.InsertAtEnd(_builder.BeginningAnchor);
                             break;
 
                         case RegexNodeKind.Bol:
+                            _ = work.Pop();
                             EnsureNewlinePredicateInitialized();
                             result.InsertAtEnd(_builder.BolAnchor);
                             break;
 
                         case RegexNodeKind.End:  // \z anchor
+                            _ = work.Pop();
                             result.InsertAtEnd(_builder.EndAnchor);
                             break;
 
                         case RegexNodeKind.EndZ: // \Z anchor
+                            _ = work.Pop();
                             EnsureNewlinePredicateInitialized();
                             result.InsertAtEnd(_builder.EndAnchorZ);
                             break;
 
                         case RegexNodeKind.Eol:
+                            _ = work.Pop();
                             EnsureNewlinePredicateInitialized();
                             result.InsertAtEnd(_builder.EolAnchor);
                             break;
 
                         case RegexNodeKind.Boundary:
+                            _ = work.Pop();
                             EnsureWordLetterPredicateInitialized();
                             result.InsertAtEnd(_builder.BoundaryAnchor);
                             break;
 
                         case RegexNodeKind.NonBoundary:
+                            _ = work.Pop();
                             EnsureWordLetterPredicateInitialized();
                             result.InsertAtEnd(_builder.NonBoundaryAnchor);
                             break;
@@ -221,6 +236,8 @@ namespace System.Text.RegularExpressions.Symbolic
                     Debug.Assert(childResults is not null);
                     Debug.Assert(childResults.Length == node.ChildCount());
                     Debug.Assert(result._size == 0);
+
+                    _ = work.Pop();
 
                     switch (node.Kind)
                     {
