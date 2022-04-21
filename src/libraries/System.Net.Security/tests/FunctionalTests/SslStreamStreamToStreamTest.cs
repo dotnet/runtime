@@ -103,10 +103,10 @@ namespace System.Net.Security.Tests
                 Task t1 = client.AuthenticateAsClientAsync("incorrectServer");
                 Task t2 = server.AuthenticateAsServerAsync(certificate);
 
-                await Assert.ThrowsAsync<AuthenticationException>(() => t1);
+                await Assert.ThrowsAsync<AuthenticationException>(() => t1.WaitAsync(TestConfiguration.PassingTestTimeout));
                 try
                 {
-                    await t2;
+                    await t2.WaitAsync(TestConfiguration.PassingTestTimeout);
                 }
                 catch
                 {

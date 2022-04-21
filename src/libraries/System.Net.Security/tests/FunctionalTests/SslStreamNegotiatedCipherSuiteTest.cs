@@ -712,7 +712,7 @@ namespace System.Net.Security.Tests
                 clientOptions.TargetHost = "test";
                 clientOptions.RemoteCertificateValidationCallback = delegate { return true; };
 
-                Exception failure = WaitForSecureConnection(client, clientOptions, server, serverOptions).GetAwaiter().GetResult();
+                Exception failure = WaitForSecureConnection(client, clientOptions, server, serverOptions).WaitAsync(TestConfiguration.PassingTestTimeoutMilliseconds).GetAwaiter().GetResult();
 
                 if (failure == null)
                 {
