@@ -204,12 +204,13 @@ namespace System
         /// <seealso cref="ToObjectFromJson{String}" />
         public override unsafe string ToString()
         {
-            if (_bytes.Length == 0)
+            ReadOnlySpan<byte> span = _bytes.Span;
+
+            if (span.IsEmpty)
             {
                 return string.Empty;
             }
 
-            ReadOnlySpan<byte> span = _bytes.Span;
             fixed (byte* ptr = span)
             {
                 return Encoding.UTF8.GetString(ptr, span.Length);
