@@ -476,8 +476,10 @@ namespace System.Globalization
         /// <summary>
         /// Get the era value by parsing the name of the era.
         /// </summary>
-        public int GetEra(string eraName!!)
+        public int GetEra(string eraName)
         {
+            ArgumentNullException.ThrowIfNull(eraName);
+
             // The Era Name and Abbreviated Era Name
             // for Taiwan Calendar on non-Taiwan SKU returns empty string (which
             // would be matched below) but we don't want the empty string to give
@@ -1583,8 +1585,10 @@ namespace System.Globalization
             }
         }
 
-        public static DateTimeFormatInfo ReadOnly(DateTimeFormatInfo dtfi!!)
+        public static DateTimeFormatInfo ReadOnly(DateTimeFormatInfo dtfi)
         {
+            ArgumentNullException.ThrowIfNull(dtfi);
+
             if (dtfi.IsReadOnly)
             {
                 return dtfi;

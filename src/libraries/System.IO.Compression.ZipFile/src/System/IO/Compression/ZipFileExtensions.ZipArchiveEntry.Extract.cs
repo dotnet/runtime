@@ -60,8 +60,11 @@ namespace System.IO.Compression
         /// The path is permitted to specify relative or absolute path information.
         /// Relative path information is interpreted as relative to the current working directory.</param>
         /// <param name="overwrite">True to indicate overwrite.</param>
-        public static void ExtractToFile(this ZipArchiveEntry source!!, string destinationFileName!!, bool overwrite)
+        public static void ExtractToFile(this ZipArchiveEntry source, string destinationFileName, bool overwrite)
         {
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(destinationFileName);
+
             // Rely on FileStream's ctor for further checking destinationFileName parameter
             FileMode fMode = overwrite ? FileMode.Create : FileMode.CreateNew;
 
@@ -81,8 +84,11 @@ namespace System.IO.Compression
         internal static void ExtractRelativeToDirectory(this ZipArchiveEntry source, string destinationDirectoryName) =>
             ExtractRelativeToDirectory(source, destinationDirectoryName, overwrite: false);
 
-        internal static void ExtractRelativeToDirectory(this ZipArchiveEntry source!!, string destinationDirectoryName!!, bool overwrite)
+        internal static void ExtractRelativeToDirectory(this ZipArchiveEntry source, string destinationDirectoryName, bool overwrite)
         {
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(destinationDirectoryName);
+
             // Note that this will give us a good DirectoryInfo even if destinationDirectoryName exists:
             DirectoryInfo di = Directory.CreateDirectory(destinationDirectoryName);
             string destinationDirectoryFullPath = di.FullName;

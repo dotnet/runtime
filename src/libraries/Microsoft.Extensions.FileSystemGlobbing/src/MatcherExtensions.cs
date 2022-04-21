@@ -98,8 +98,10 @@ namespace Microsoft.Extensions.FileSystemGlobbing
         /// <param name="rootDir">The root directory for the matcher to match the files from.</param>
         /// <param name="files">The files to run the matcher against.</param>
         /// <returns>The match results.</returns>
-        public static PatternMatchingResult Match(this Matcher matcher!!, string rootDir, IEnumerable<string>? files)
+        public static PatternMatchingResult Match(this Matcher matcher, string rootDir, IEnumerable<string>? files)
         {
+            ThrowHelper.ThrowIfNull(matcher);
+
             return matcher.Execute(new InMemoryDirectoryInfo(rootDir, files));
         }
     }

@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
@@ -7,8 +7,11 @@ namespace Microsoft.Extensions.Configuration.Xml
 {
     internal sealed class XmlConfigurationElementAttributeValue
     {
-        public XmlConfigurationElementAttributeValue(string attribute!!, string value!!, int? lineNumber, int? linePosition)
+        public XmlConfigurationElementAttributeValue(string attribute, string value, int? lineNumber, int? linePosition)
         {
+            ThrowHelper.ThrowIfNull(attribute);
+            ThrowHelper.ThrowIfNull(value);
+
             Attribute = attribute;
             Value = value;
             LineNumber = lineNumber;

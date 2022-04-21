@@ -35,8 +35,10 @@ namespace System.DirectoryServices.Interop
             private object _currentValue = s_noMoreValues;
             private readonly IEnumVariant _enumerator;
 
-            public EnumVariant(IEnumVariant en!!)
+            public EnumVariant(IEnumVariant en)
             {
+                ArgumentNullException.ThrowIfNull(en);
+
                 _enumerator = en;
             }
 

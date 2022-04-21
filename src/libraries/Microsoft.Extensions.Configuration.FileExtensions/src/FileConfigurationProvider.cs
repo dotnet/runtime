@@ -23,8 +23,10 @@ namespace Microsoft.Extensions.Configuration
         /// Initializes a new instance with the specified source.
         /// </summary>
         /// <param name="source">The source settings.</param>
-        public FileConfigurationProvider(FileConfigurationSource source!!)
+        public FileConfigurationProvider(FileConfigurationSource source)
         {
+            ThrowHelper.ThrowIfNull(source);
+
             Source = source;
 
             if (Source.ReloadOnChange && Source.FileProvider != null)

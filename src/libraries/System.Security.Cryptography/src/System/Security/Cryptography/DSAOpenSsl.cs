@@ -36,8 +36,10 @@ namespace System.Security.Cryptography
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
         [UnsupportedOSPlatform("windows")]
-        public DSAOpenSsl(SafeEvpPKeyHandle pkeyHandle!!)
+        public DSAOpenSsl(SafeEvpPKeyHandle pkeyHandle)
         {
+            ArgumentNullException.ThrowIfNull(pkeyHandle);
+
             if (pkeyHandle.IsInvalid)
                 throw new ArgumentException(SR.Cryptography_OpenInvalidHandle, nameof(pkeyHandle));
 

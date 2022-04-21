@@ -19,8 +19,8 @@ namespace System.Security.Cryptography.X509Certificates
         {
         }
 
-        public X509SubjectKeyIdentifierExtension(byte[] subjectKeyIdentifier!!, bool critical)
-            : this((ReadOnlySpan<byte>)subjectKeyIdentifier, critical)
+        public X509SubjectKeyIdentifierExtension(byte[] subjectKeyIdentifier, bool critical)
+            : this((ReadOnlySpan<byte>)(subjectKeyIdentifier ?? throw new ArgumentNullException(nameof(subjectKeyIdentifier))), critical)
         {
         }
 
@@ -73,14 +73,18 @@ namespace System.Security.Cryptography.X509Certificates
             return X509Pal.Instance.EncodeX509SubjectKeyIdentifierExtension(subjectKeyIdentifier);
         }
 
-        private static byte[] EncodeExtension(string subjectKeyIdentifier!!)
+        private static byte[] EncodeExtension(string subjectKeyIdentifier)
         {
+            ArgumentNullException.ThrowIfNull(subjectKeyIdentifier);
+
             byte[] subjectKeyIdentifiedBytes = subjectKeyIdentifier.LaxDecodeHexString();
             return EncodeExtension(subjectKeyIdentifiedBytes);
         }
 
-        private static byte[] EncodeExtension(PublicKey key!!, X509SubjectKeyIdentifierHashAlgorithm algorithm)
+        private static byte[] EncodeExtension(PublicKey key, X509SubjectKeyIdentifierHashAlgorithm algorithm)
         {
+            ArgumentNullException.ThrowIfNull(key);
+
             byte[] subjectKeyIdentifier = GenerateSubjectKeyIdentifierFromPublicKey(key, algorithm);
             return EncodeExtension(subjectKeyIdentifier);
         }

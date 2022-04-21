@@ -257,8 +257,10 @@ namespace System.Security.AccessControl
         // Converts the security descriptor to its binary form
         //
 
-        public void GetBinaryForm(byte[] binaryForm!!, int offset)
+        public void GetBinaryForm(byte[] binaryForm, int offset)
         {
+            ArgumentNullException.ThrowIfNull(binaryForm);
+
             if (offset < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(offset),
@@ -461,9 +463,11 @@ namespace System.Security.AccessControl
         // Important: the representation must be in self-relative format
         //
 
-        public RawSecurityDescriptor(byte[] binaryForm!!, int offset)
+        public RawSecurityDescriptor(byte[] binaryForm, int offset)
             : base()
         {
+            ArgumentNullException.ThrowIfNull(binaryForm);
+
             //
             // The array passed in must be valid
             //
@@ -611,8 +615,10 @@ namespace System.Security.AccessControl
 
         #region Static Methods
 
-        private static byte[] BinaryFormFromSddlForm(string sddlForm!!)
+        private static byte[] BinaryFormFromSddlForm(string sddlForm)
         {
+            ArgumentNullException.ThrowIfNull(sddlForm);
+
             int error;
             IntPtr byteArray = IntPtr.Zero;
             uint byteArraySize = 0;
@@ -924,8 +930,10 @@ namespace System.Security.AccessControl
         {
         }
 
-        internal CommonSecurityDescriptor(bool isContainer, bool isDS, RawSecurityDescriptor rawSecurityDescriptor!!, bool trusted)
+        internal CommonSecurityDescriptor(bool isContainer, bool isDS, RawSecurityDescriptor rawSecurityDescriptor, bool trusted)
         {
+            ArgumentNullException.ThrowIfNull(rawSecurityDescriptor);
+
             CreateFromParts(
                 isContainer,
                 isDS,
@@ -1179,16 +1187,20 @@ namespace System.Security.AccessControl
             }
         }
 
-        public void PurgeAccessControl(SecurityIdentifier sid!!)
+        public void PurgeAccessControl(SecurityIdentifier sid)
         {
+            ArgumentNullException.ThrowIfNull(sid);
+
             if (DiscretionaryAcl != null)
             {
                 DiscretionaryAcl.Purge(sid);
             }
         }
 
-        public void PurgeAudit(SecurityIdentifier sid!!)
+        public void PurgeAudit(SecurityIdentifier sid)
         {
+            ArgumentNullException.ThrowIfNull(sid);
+
             if (SystemAcl != null)
             {
                 SystemAcl.Purge(sid);
