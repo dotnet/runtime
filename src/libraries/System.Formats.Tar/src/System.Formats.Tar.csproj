@@ -1,0 +1,78 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix</TargetFrameworks>
+    <Nullable>enable</Nullable>
+    <PackageDescription>
+      Provides classes that can read and write the Tar archive format.
+
+      Commonly Used Types:
+      System.Formats.Tar.TarFile
+      System.Formats.Tar.TarEntry
+      System.Formats.Tar.TarReader
+      System.Formats.Tar.TarWriter
+    </PackageDescription>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="System\Formats\Tar\FieldLengths.cs" />
+    <Compile Include="System\Formats\Tar\FieldLocations.cs" />
+    <Compile Include="System\Formats\Tar\PosixTarEntry.cs" />
+    <Compile Include="System\Formats\Tar\TarFileMode.cs" />
+    <Compile Include="System\Formats\Tar\V7TarEntry.cs" />
+    <Compile Include="System\Formats\Tar\TarHeader.cs" />
+    <Compile Include="System\Formats\Tar\TarHeader.Read.cs" />
+    <Compile Include="System\Formats\Tar\TarHeader.Write.cs" />
+    <Compile Include="System\Formats\Tar\TarHelpers.cs" />
+    <Compile Include="System\Formats\Tar\TarEntry.cs" />
+    <Compile Include="System\Formats\Tar\UstarTarEntry.cs" />
+    <Compile Include="System\Formats\Tar\GnuTarEntry.cs" />
+    <Compile Include="System\Formats\Tar\PaxTarEntry.cs" />
+    <Compile Include="System\Formats\Tar\TarEntryType.cs" />
+    <Compile Include="System\Formats\Tar\TarFile.cs" />
+    <Compile Include="System\Formats\Tar\TarFormat.cs" />
+    <Compile Include="System\Formats\Tar\TarReader.cs" />
+    <Compile Include="System\Formats\Tar\TarWriter.cs" />
+    <Compile Include="System\Formats\Tar\SubReadStream.cs" />
+    <Compile Include="System\Formats\Tar\SeekableSubReadStream.cs" />
+    <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs" Link="Common\DisableRuntimeMarshalling.cs" />
+    <Compile Include="$(CommonPath)System\IO\Archiving.Utils.cs" Link="Common\System\IO\Archiving.Utils.cs" />
+    <Compile Include="$(CommonPath)System\IO\PathInternal.CaseSensitivity.cs" Link="Common\System\IO\PathInternal.CaseSensitivity.cs" />
+  </ItemGroup>
+  <!-- Windows specific files -->
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
+    <Compile Include="System\Formats\Tar\TarEntry.Windows.cs" />
+    <Compile Include="System\Formats\Tar\TarWriter.Windows.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.Errors.cs" Link="Common\Interop\Windows\Interop.Errors.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs" Link="Common\Interop\Windows\Interop.Libraries.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CreateHardLink.cs" Link="Common\Interop\Windows\Kernel32\Interop.CreateHardLink.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FormatMessage.cs" Link="Common\Interop\Windows\Kernel32\Interop.FormatMessage.cs" />
+    <Compile Include="$(CommonPath)System\IO\Archiving.Utils.Windows.cs" Link="Common\System\IO\Archiving.Utils.Windows.cs" />
+    <Compile Include="$(CommonPath)System\IO\PathInternal.Windows.cs" Link="Common\System\IO\PathInternal.Windows.cs" />
+    <Compile Include="$(CommonPath)System\IO\Win32Marshal.cs" Link="Common\System\IO\Win32Marshal.cs" />
+    <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs" Link="Common\System\Text\ValueStringBuilder.cs" />
+  </ItemGroup>
+  <!-- Unix specific files -->
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != 'windows'">
+    <Compile Include="System\Formats\Tar\TarEntry.Unix.cs" />
+    <Compile Include="System\Formats\Tar\TarWriter.Unix.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.IOErrors.cs" Link="Common\Interop\Unix\Interop.IOErrors.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs" Link="Common\Interop\Unix\Interop.Libraries.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.Errors.cs" Link="Common\Interop\Unix\System.Native\Interop.Errors.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.DeviceFiles.cs" Link="Common\Interop\Unix\System.Native\Interop.DeviceFiles.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.FChMod.cs" Link="Common\Interop\Unix\System.Native\Interop.FChMod.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Link.cs" Link="Common\Interop\Unix\System.Native\Interop.Link.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.MkFifo.cs" Link="Common\Interop\Unix\System.Native\Interop.MkFifo.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Permissions.cs" Link="Common\Interop\Unix\Interop.Permissions.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Stat.cs" Link="Common\Interop\Unix\Interop.Stat.cs" />
+    <Compile Include="$(CommonPath)System\IO\Archiving.Utils.Unix.cs" Link="Common\System\IO\Archiving.Utils.Unix.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="System.Collections" />
+    <Reference Include="System.Memory" />
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime.CompilerServices.Unsafe" />
+    <Reference Include="System.Runtime.Extensions" />
+    <Reference Include="System.Runtime.InteropServices" />
+    <Reference Include="System.Threading" />
+  </ItemGroup>
+</Project>

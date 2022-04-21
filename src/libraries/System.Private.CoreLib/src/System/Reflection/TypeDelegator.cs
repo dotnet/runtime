@@ -27,8 +27,10 @@ namespace System.Reflection
         // NOTE: delegatingType is marked as DynamicallyAccessedMemberTypes.All, but analysis tools special case
         // calls to this constructor and propagate the existing dataflow metadata from delegatingType to this
         // TypeDelegator. The only purpose of the annotation here is to avoid dataflow warnings _within_ this type.
-        public TypeDelegator([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type delegatingType!!)
+        public TypeDelegator([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type delegatingType)
         {
+            ArgumentNullException.ThrowIfNull(delegatingType);
+
             typeImpl = delegatingType;
         }
 

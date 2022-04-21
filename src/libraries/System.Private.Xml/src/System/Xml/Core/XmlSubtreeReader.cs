@@ -1580,8 +1580,10 @@ namespace System.Xml
             }
         }
 
-        private static void CheckBuffer(Array buffer!!, int index, int count)
+        private static void CheckBuffer(Array buffer, int index, int count)
         {
+            ArgumentNullException.ThrowIfNull(buffer);
+
             if (count < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(count));

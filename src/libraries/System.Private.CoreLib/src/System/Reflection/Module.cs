@@ -35,16 +35,21 @@ namespace System.Reflection
         public virtual object[] GetCustomAttributes(Type attributeType, bool inherit) { throw NotImplemented.ByDesign; }
 
         [RequiresUnreferencedCode("Methods might be removed")]
-        public MethodInfo? GetMethod(string name!!)
+        public MethodInfo? GetMethod(string name)
         {
+            ArgumentNullException.ThrowIfNull(name);
+
             return GetMethodImpl(name, Module.DefaultLookup, null, CallingConventions.Any, null, null);
         }
 
         [RequiresUnreferencedCode("Methods might be removed")]
         public MethodInfo? GetMethod(string name, Type[] types) => GetMethod(name, Module.DefaultLookup, null, CallingConventions.Any, types, null);
         [RequiresUnreferencedCode("Methods might be removed")]
-        public MethodInfo? GetMethod(string name!!, BindingFlags bindingAttr, Binder? binder, CallingConventions callConvention, Type[] types!!, ParameterModifier[]? modifiers)
+        public MethodInfo? GetMethod(string name, BindingFlags bindingAttr, Binder? binder, CallingConventions callConvention, Type[] types, ParameterModifier[]? modifiers)
         {
+            ArgumentNullException.ThrowIfNull(name);
+            ArgumentNullException.ThrowIfNull(types);
+
             for (int i = 0; i < types.Length; i++)
             {
                 ArgumentNullException.ThrowIfNull(types[i], nameof(types));

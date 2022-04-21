@@ -44,8 +44,10 @@ namespace Microsoft.Extensions.Configuration
         /// <param name="configureOptions">Configures the binder options.</param>
         /// <returns>The new instance of T if successful, default(T) otherwise.</returns>
         [RequiresUnreferencedCode(TrimmingWarningMessage)]
-        public static T? Get<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(this IConfiguration configuration!!, Action<BinderOptions>? configureOptions)
+        public static T? Get<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(this IConfiguration configuration, Action<BinderOptions>? configureOptions)
         {
+            ThrowHelper.ThrowIfNull(configuration);
+
             object? result = configuration.Get(typeof(T), configureOptions);
             if (result == null)
             {
@@ -77,11 +79,13 @@ namespace Microsoft.Extensions.Configuration
         /// <returns>The new instance if successful, null otherwise.</returns>
         [RequiresUnreferencedCode(TrimmingWarningMessage)]
         public static object? Get(
-            this IConfiguration configuration!!,
+            this IConfiguration configuration,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
             Type type,
             Action<BinderOptions>? configureOptions)
         {
+            ThrowHelper.ThrowIfNull(configuration);
+
             var options = new BinderOptions();
             configureOptions?.Invoke(options);
             var bindingPoint = new BindingPoint();
@@ -115,8 +119,10 @@ namespace Microsoft.Extensions.Configuration
         /// <param name="instance">The object to bind.</param>
         /// <param name="configureOptions">Configures the binder options.</param>
         [RequiresUnreferencedCode(InstanceGetTypeTrimmingWarningMessage)]
-        public static void Bind(this IConfiguration configuration!!, object? instance, Action<BinderOptions>? configureOptions)
+        public static void Bind(this IConfiguration configuration, object? instance, Action<BinderOptions>? configureOptions)
         {
+            ThrowHelper.ThrowIfNull(configuration);
+
             if (instance != null)
             {
                 var options = new BinderOptions();
@@ -681,8 +687,10 @@ namespace Microsoft.Extensions.Configuration
             return allProperties;
         }
 
-        private static string GetPropertyName(MemberInfo property!!)
+        private static string GetPropertyName(MemberInfo property)
         {
+            ThrowHelper.ThrowIfNull(property);
+
             // Check for a custom property name used for configuration key binding
             foreach (var attributeData in property.GetCustomAttributesData())
             {

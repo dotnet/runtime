@@ -11,7 +11,7 @@ namespace System.Net.Quic
         public static Implementations.QuicImplementationProvider MsQuic => Default;
         public static Implementations.QuicImplementationProvider Default { get; } = new UnsupportedQuicImplementationProvider();
 
-        private class UnsupportedQuicImplementationProvider : QuicImplementationProvider
+        private sealed class UnsupportedQuicImplementationProvider : QuicImplementationProvider
         {
             internal UnsupportedQuicImplementationProvider() : base(false) { }
             public override bool IsSupported => false;

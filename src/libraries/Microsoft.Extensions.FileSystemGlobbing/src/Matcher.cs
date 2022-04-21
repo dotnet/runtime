@@ -160,8 +160,10 @@ namespace Microsoft.Extensions.FileSystemGlobbing
         /// </summary>
         /// <param name="directoryInfo">The root directory for the search</param>
         /// <returns>Always returns instance of <see cref="PatternMatchingResult" />, even if no files were matched</returns>
-        public virtual PatternMatchingResult Execute(DirectoryInfoBase directoryInfo!!)
+        public virtual PatternMatchingResult Execute(DirectoryInfoBase directoryInfo)
         {
+            ThrowHelper.ThrowIfNull(directoryInfo);
+
             var context = new MatcherContext(_includePatterns, _excludePatterns, directoryInfo, _comparison);
             return context.Execute();
         }
