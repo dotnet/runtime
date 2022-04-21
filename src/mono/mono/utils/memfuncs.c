@@ -53,7 +53,7 @@
 #define unaligned_bytes(ptr) (_toi(ptr) & ptr_mask)
 #define align_down(ptr) ((void*)(_toi(ptr) & ~ptr_mask))
 #define align_up(ptr) ((void*) ((_toi(ptr) + ptr_mask) & ~ptr_mask))
-#if SIZEOF_VOID_P == 4 || SIZEOF_VOID_P == 7
+#if SIZEOF_VOID_P == 4
 #define bytes_to_words(n)	((size_t)(n) >> 2)
 #elif SIZEOF_VOID_P == 8
 #define bytes_to_words(n)	((size_t)(n) >> 3)
