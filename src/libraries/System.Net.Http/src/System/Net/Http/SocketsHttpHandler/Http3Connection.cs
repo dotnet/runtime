@@ -179,23 +179,21 @@ namespace System.Net.Http
             {
                 try
                 {
-                    if (_connection != null)
+                    QuicConnection? conn = _connection;
+                    if (conn != null)
                     {
-                        if (HttpTelemetry.Log.IsEnabled() && queueStartingTimestamp == 0 && _connection.GetRemoteAvailableBidirectionalStreamCount() == 0)
+                        if (HttpTelemetry.Log.IsEnabled() && queueStartingTimestamp == 0 && conn.GetRemoteAvailableBidirectionalStreamCount() == 0)
                         {
                             // the call below will almost certainly block, measure waiting time for telemetry purposes
                             queueStartingTimestamp = Stopwatch.GetTimestamp();
                         }
 
-                        quicStream = await _connection?.OpenBidirectionalStreamAsync(cancellationToken).ConfigureAwait(false);
-                        if (quicStream != null)
-                        {
-                            requestStream = new Http3RequestStream(request, this, quicStream);
+                        quicStream = await conn.OpenBidirectionalStreamAsync(cancellationToken).ConfigureAwait(false);
 
-                            lock (SyncObj)
-                            {
-                                _activeRequests.Add(quicStream, requestStream);
-                            }
+                        requestStream = new Http3RequestStream(request, this, quicStream);
+                        lock (SyncObj)
+                        {
+                            _activeRequests.Add(quicStream, requestStream);
                         }
                     }
                 }
