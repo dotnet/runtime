@@ -762,8 +762,9 @@ handle_branch (TransformData *td, int long_op, int offset)
 		target_bb->eh_block = TRUE;
 
 	fixup_newbb_stack_locals (td, target_bb);
-	if (offset > 0)
-		init_bb_stack_state (td, target_bb);
+	// Stack state needs to be initialized for back edges as well,
+	// so their code can be generated in the following pass.
+	init_bb_stack_state (td, target_bb);
 
 	interp_link_bblocks (td, td->cbb, target_bb);
 
@@ -2723,6 +2724,12 @@ interp_inline_method (TransformData *td, MonoMethod *target_method, MonoMethodHe
 			tmp_bb->il_offset = prev_ip - prev_il_code;
 			tmp_bb = tmp_bb->next_bb;
 		}
+		// After inlining, new blocks have been added as continuation to the original 'prev' block.
+		// Once the inlining is complete, we need to mark the original block as emitted as well.
+		// NOTE: There is also a potential problem with:
+		// td->offset_to_bb[td->cdd->il_offset] which will not point to the newly added block (containing inlined call),
+		// but to the original 'prev' block.
+		prev_cbb->already_emitted = TRUE; // FIX ME: this is fishy
 	}
 
 	td->ip = prev_ip;
@@ -4215,6 +4222,9 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 	gboolean link_bblocks = TRUE;
 	gboolean inlining = td->method != method;
 	InterpBasicBlock *exit_bb = NULL;
+	gboolean skipped_bbs_present = FALSE;
+	gboolean emitting = TRUE;
+	gboolean blocks_skipped = FALSE;
 
 	original_bb = bb = mono_basic_block_split (method, error, header);
 	goto_if_nok (error, exit);
@@ -4382,14 +4392,52 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 	}
 
 	td->dont_inline = g_list_prepend (td->dont_inline, method);
+
+	// In order to properly determine stack sizes for back edges
+	// we need to go through the basic blocks more than once.
+	// First pass will generate code for those blocks which have their stacks initialized
+	// and skips those which don't.
+	// Next pass(es) will handle the skipped blocks and ignore the already generated ones.
+	// Naturally, if there are no back edges there will be a single pass.
+retry_code_gen:
+
 	while (td->ip < end) {
+
+		// Logic for skipping already emitted blocks
+		if (td->cbb->already_emitted) {
+			if (td->cbb->next_bb != NULL) {
+				td->ip = header->code + td->cbb->next_bb->il_offset;
+				td->cbb = td->cbb->next_bb;
+				if (td->cbb->il_offset == bb->end)
+					bb = bb->next;
+				blocks_skipped = TRUE;
+			} else {
+				// nothing to be done
+				td->ip = end;
+			}
+			continue;
+		} else if (blocks_skipped) {
+			if (td->cbb->stack_height >= 0) {
+				if (td->cbb->stack_height > 0)
+					memcpy (td->stack, td->cbb->stack_state, td->cbb->stack_height * sizeof(td->stack [0]));
+				td->sp = td->stack + td->cbb->stack_height;
+			}
+			link_bblocks = TRUE;
+			emitting = TRUE;
+		}
+		blocks_skipped = FALSE;
+
 		g_assert (td->sp >= td->stack);
 		in_offset = td->ip - header->code;
+		if (in_offset == bb->end)
+			bb = bb->next;
 		if (!inlining)
 			td->current_il_offset = in_offset;
 
 		InterpBasicBlock *new_bb = td->offset_to_bb [in_offset];
 		if (new_bb != NULL && td->cbb != new_bb) {
+			// Mark the current block with emitting information
+			td->cbb->already_emitted = emitting;
 			/* We are starting a new basic block. Change cbb and link them together */
 			if (link_bblocks) {
 				/*
@@ -4402,6 +4450,12 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			td->cbb->next_bb = new_bb;
 			td->cbb = new_bb;
 
+			// The previous block of code is needed when a skipped block needs to be
+			// linked to the new one. 
+			// If the new one is already emitted, there is nothing to be done.
+			if (new_bb->already_emitted)
+				continue;
+
 			if (new_bb->stack_height >= 0) {
 				if (new_bb->stack_height > 0)
 					memcpy (td->stack, new_bb->stack_state, new_bb->stack_height * sizeof(td->stack [0]));
@@ -4411,12 +4465,10 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				init_bb_stack_state (td, new_bb);
 			}
 			link_bblocks = TRUE;
+			emitting = TRUE;
 		}
 		td->offset_to_bb [in_offset] = td->cbb;
 		td->in_start = td->ip;
-
-		if (in_offset == bb->end)
-			bb = bb->next;
 
 		if (bb->dead || td->cbb->dead) {
 			int op_size = mono_opcode_size (td->ip, end);
@@ -4426,6 +4478,18 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				g_print ("SKIPPING DEAD OP at %x\n", in_offset);
 			link_bblocks = FALSE;
 			td->ip += op_size;
+			continue;
+		}
+
+		// Skip blocks with uninitialized stack
+		if (td->cbb->stack_height == -1) {
+			int bb_size = bb->end-bb->start;
+			g_assert (bb_size > 0);
+			td->ip += bb_size;
+
+			skipped_bbs_present = TRUE;
+			link_bblocks = FALSE;
+			emitting = FALSE;
 			continue;
 		}
 
@@ -5623,7 +5687,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 					td->last_ins->flags |= INTERP_INST_FLAG_PROTECTED_NEWOBJ;
 				// Parameters and this pointer are popped of the stack. The return value remains
 				td->sp -= csignature->param_count + 1;
-				 // Save the arguments for the call
+				// Save the arguments for the call
 				int *call_args = (int*) mono_mempool_alloc (td->mempool, (csignature->param_count + 2) * sizeof (int));
 				for (int i = 0; i < csignature->param_count + 1; i++)
 					call_args [i] = td->sp [i].local;
@@ -6733,7 +6797,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 		}
 		case MONO_CUSTOM_PREFIX:
 			++td->ip;
-		        switch (*td->ip) {
+				switch (*td->ip) {
 				case CEE_MONO_RETHROW:
 					CHECK_STACK (td, 1);
 					interp_add_ins (td, MINT_MONO_RETHROW);
@@ -7097,11 +7161,11 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 					 *    newobj Delegate::.ctor
 					 */
 					if (next_ip < end &&
-					    *next_ip == CEE_NEWOBJ &&
-					    ((ctor_method = interp_get_method (method, read32 (next_ip + 1), image, generic_context, error))) &&
-					    is_ok (error) &&
-					    m_class_get_parent (ctor_method->klass) == mono_defaults.multicastdelegate_class &&
-					    !strcmp (ctor_method->name, ".ctor")) {
+						*next_ip == CEE_NEWOBJ &&
+						((ctor_method = interp_get_method (method, read32 (next_ip + 1), image, generic_context, error))) &&
+						is_ok (error) &&
+						m_class_get_parent (ctor_method->klass) == mono_defaults.multicastdelegate_class &&
+						!strcmp (ctor_method->name, ".ctor")) {
 						mono_error_set_not_supported (error, "Cannot create delegate from method with UnmanagedCallersOnlyAttribute");
 						goto exit;
 					}
@@ -7372,6 +7436,23 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 		// any complications associated with il_offset tracking.
 		if (!td->cbb->last_ins)
 			interp_add_ins (td, MINT_NOP);
+	}
+
+	// Mark the last block with emitting information
+	// and retry code generation if there was any skipped block.
+	td->cbb->already_emitted = emitting;
+	if (skipped_bbs_present) {
+		// Reset the instruction, stack pointer, bbs and flags for the next pass
+		td->ip = header->code;
+		td->cbb = td->entry_bb;
+		bb = original_bb;
+		td->sp = td->stack;
+
+		link_bblocks = FALSE;
+		emitting = TRUE;
+		skipped_bbs_present = FALSE;
+		blocks_skipped = FALSE;
+		goto retry_code_gen;
 	}
 
 	g_assert (td->ip == end);
