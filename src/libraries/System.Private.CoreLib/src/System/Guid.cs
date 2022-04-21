@@ -40,8 +40,8 @@ namespace System
         private readonly byte _k;  // Do not rename (binary serialization)
 
         // Creates a new guid from an array of bytes.
-        public Guid(byte[] b!!) :
-            this(new ReadOnlySpan<byte>(b))
+        public Guid(byte[] b) :
+            this(new ReadOnlySpan<byte>(b ?? throw new ArgumentNullException(nameof(b))))
         {
         }
 
@@ -90,8 +90,10 @@ namespace System
         }
 
         // Creates a new GUID initialized to the value represented by the arguments.
-        public Guid(int a, short b, short c, byte[] d!!)
+        public Guid(int a, short b, short c, byte[] d)
         {
+            ArgumentNullException.ThrowIfNull(d);
+
             if (d.Length != 8)
             {
                 throw new ArgumentException(SR.Format(SR.Arg_GuidArrayCtor, "8"), nameof(d));
@@ -208,8 +210,10 @@ namespace System
         // The string must be of the form dddddddd-dddd-dddd-dddd-dddddddddddd. where
         // d is a hex digit. (That is 8 hex digits, followed by 4, then 4, then 4,
         // then 12) such as: "CA761232-ED42-11CE-BACD-00AA0057B223"
-        public Guid(string g!!)
+        public Guid(string g)
         {
+            ArgumentNullException.ThrowIfNull(g);
+
             var result = new GuidResult(GuidParseThrowStyle.All);
             bool success = TryParseGuid(g, ref result);
             Debug.Assert(success, "GuidParseThrowStyle.All means throw on all failures");
@@ -217,8 +221,11 @@ namespace System
             this = result.ToGuid();
         }
 
-        public static Guid Parse(string input!!) =>
-            Parse((ReadOnlySpan<char>)input);
+        public static Guid Parse(string input)
+        {
+            ArgumentNullException.ThrowIfNull(input);
+            return Parse((ReadOnlySpan<char>)input);
+        }
 
         public static Guid Parse(ReadOnlySpan<char> input)
         {
@@ -255,8 +262,13 @@ namespace System
             }
         }
 
-        public static Guid ParseExact(string input!!, [StringSyntax(StringSyntaxAttribute.GuidFormat)] string format!!) =>
-            ParseExact((ReadOnlySpan<char>)input, (ReadOnlySpan<char>)format);
+        public static Guid ParseExact(string input, [StringSyntax(StringSyntaxAttribute.GuidFormat)] string format)
+        {
+            ArgumentNullException.ThrowIfNull(input);
+            ArgumentNullException.ThrowIfNull(format);
+
+            return ParseExact((ReadOnlySpan<char>)input, (ReadOnlySpan<char>)format);
+        }
 
         public static Guid ParseExact(ReadOnlySpan<char> input, [StringSyntax(StringSyntaxAttribute.GuidFormat)] ReadOnlySpan<char> format)
         {

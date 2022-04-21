@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
@@ -69,8 +69,13 @@ namespace System.Text.Json
         /// <exception cref="ArgumentNullException">
         /// <paramref name="jsonTypeInfo"/> is <see langword="null"/>.
         /// </exception>
-        public static JsonNode? SerializeToNode<TValue>(TValue value, JsonTypeInfo<TValue> jsonTypeInfo!!)
+        public static JsonNode? SerializeToNode<TValue>(TValue value, JsonTypeInfo<TValue> jsonTypeInfo)
         {
+            if (jsonTypeInfo is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(jsonTypeInfo));
+            }
+
             return WriteNodeUsingGeneratedSerializer(value, jsonTypeInfo);
         }
 
@@ -92,8 +97,13 @@ namespace System.Text.Json
         /// <exception cref="ArgumentNullException">
         /// <paramref name="inputType"/> or <paramref name="context"/> is <see langword="null"/>.
         /// </exception>
-        public static JsonNode? SerializeToNode(object? value, Type inputType, JsonSerializerContext context!!)
+        public static JsonNode? SerializeToNode(object? value, Type inputType, JsonSerializerContext context)
         {
+            if (context is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(context));
+            }
+
             Type runtimeType = GetRuntimeTypeAndValidateInputType(value, inputType);
             JsonTypeInfo jsonTypeInfo = GetTypeInfo(context, runtimeType);
             return WriteNodeUsingGeneratedSerializer(value, jsonTypeInfo);

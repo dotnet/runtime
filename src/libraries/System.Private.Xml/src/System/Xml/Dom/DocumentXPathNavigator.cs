@@ -38,8 +38,10 @@ namespace System.Xml
             return new DocumentXPathNavigator(this);
         }
 
-        public override void SetValue(string value!!)
+        public override void SetValue(string value)
         {
+            ArgumentNullException.ThrowIfNull(value);
+
             XmlNode node = _source;
             XmlNode end;
 

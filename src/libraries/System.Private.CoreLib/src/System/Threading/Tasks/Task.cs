@@ -5444,7 +5444,6 @@ namespace System.Threading.Tasks
         /// </exception>
         public static Task Run(Func<Task?> function, CancellationToken cancellationToken)
         {
-            // Check arguments
             if (function == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.function);
 
             // Short-circuit if we are given a pre-canceled token
@@ -5489,7 +5488,6 @@ namespace System.Threading.Tasks
         /// </exception>
         public static Task<TResult> Run<TResult>(Func<Task<TResult>?> function, CancellationToken cancellationToken)
         {
-            // Check arguments
             if (function == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.function);
 
             // Short-circuit if we are given a pre-canceled token
@@ -6238,10 +6236,16 @@ namespace System.Threading.Tasks
         /// <exception cref="System.ArgumentNullException">
         /// The <paramref name="task1"/> or <paramref name="task2"/> argument was null.
         /// </exception>
-        public static Task<Task> WhenAny(Task task1!!, Task task2!!) =>
-            task1.IsCompleted ? FromResult(task1) :
-            task2.IsCompleted ? FromResult(task2) :
-            new TwoTaskWhenAnyPromise<Task>(task1, task2);
+        public static Task<Task> WhenAny(Task task1, Task task2)
+        {
+            ArgumentNullException.ThrowIfNull(task1);
+            ArgumentNullException.ThrowIfNull(task2);
+
+            return
+                task1.IsCompleted ? FromResult(task1) :
+                task2.IsCompleted ? FromResult(task2) :
+                new TwoTaskWhenAnyPromise<Task>(task1, task2);
+        }
 
         /// <summary>A promise type used by WhenAny to wait on exactly two tasks.</summary>
         /// <typeparam name="TTask">Specifies the type of the task.</typeparam>
@@ -6430,10 +6434,16 @@ namespace System.Threading.Tasks
         /// <exception cref="System.ArgumentNullException">
         /// The <paramref name="task1"/> or <paramref name="task2"/> argument was null.
         /// </exception>
-        public static Task<Task<TResult>> WhenAny<TResult>(Task<TResult> task1!!, Task<TResult> task2!!) =>
-            task1.IsCompleted ? FromResult(task1) :
-            task2.IsCompleted ? FromResult(task2) :
-            new TwoTaskWhenAnyPromise<Task<TResult>>(task1, task2);
+        public static Task<Task<TResult>> WhenAny<TResult>(Task<TResult> task1, Task<TResult> task2)
+        {
+            ArgumentNullException.ThrowIfNull(task1);
+            ArgumentNullException.ThrowIfNull(task2);
+
+            return
+                task1.IsCompleted ? FromResult(task1) :
+                task2.IsCompleted ? FromResult(task2) :
+                new TwoTaskWhenAnyPromise<Task<TResult>>(task1, task2);
+        }
 
         /// <summary>
         /// Creates a task that will complete when any of the supplied tasks have completed.

@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections;
@@ -31,16 +31,20 @@ namespace System.Security
 
         //-------------------------- Constructors ---------------------------
 
-        public SecurityElement(string tag!!)
+        public SecurityElement(string tag)
         {
+            ArgumentNullException.ThrowIfNull(tag);
+
             if (!IsValidTag(tag))
                 throw new ArgumentException(SR.Format(SR.Argument_InvalidElementTag, tag));
 
             _tag = tag;
         }
 
-        public SecurityElement(string tag!!, string? text)
+        public SecurityElement(string tag, string? text)
         {
+            ArgumentNullException.ThrowIfNull(tag);
+
             if (!IsValidTag(tag))
                 throw new ArgumentException(SR.Format(SR.Argument_InvalidElementTag, tag));
 
@@ -184,8 +188,11 @@ namespace System.Security
             _attributes.Add(value);
         }
 
-        public void AddAttribute(string name!!, string value!!)
+        public void AddAttribute(string name, string value)
         {
+            ArgumentNullException.ThrowIfNull(name);
+            ArgumentNullException.ThrowIfNull(value);
+
             if (!IsValidAttributeName(name))
                 throw new ArgumentException(SR.Format(SR.Argument_InvalidElementName, name));
 
@@ -195,8 +202,10 @@ namespace System.Security
             AddAttributeSafe(name, value);
         }
 
-        public void AddChild(SecurityElement child!!)
+        public void AddChild(SecurityElement child)
         {
+            ArgumentNullException.ThrowIfNull(child);
+
             _children ??= new ArrayList(ChildrenTypical);
 
             _children.Add(child);
@@ -481,8 +490,10 @@ namespace System.Security
             }
         }
 
-        public string? Attribute(string name!!)
+        public string? Attribute(string name)
         {
+            ArgumentNullException.ThrowIfNull(name);
+
             // Note: we don't check for validity here because an
             // if an invalid name is passed we simply won't find it.
             if (_attributes == null)
@@ -510,8 +521,10 @@ namespace System.Security
             return null;
         }
 
-        public SecurityElement? SearchForChildByTag(string tag!!)
+        public SecurityElement? SearchForChildByTag(string tag)
         {
+            ArgumentNullException.ThrowIfNull(tag);
+
             // Go through all the children and see if we can
             // find the ones that are asked for (matching tags)
 
@@ -527,8 +540,10 @@ namespace System.Security
             return null;
         }
 
-        public string? SearchForTextOfTag(string tag!!)
+        public string? SearchForTextOfTag(string tag)
         {
+            ArgumentNullException.ThrowIfNull(tag);
+
             // Search on each child in order and each
             // child's child, depth-first
 
@@ -548,6 +563,10 @@ namespace System.Security
             return null;
         }
 
-        public static SecurityElement? FromString(string xml!!) => default;
+        public static SecurityElement? FromString(string xml)
+        {
+            ArgumentNullException.ThrowIfNull(xml);
+            return null;
+        }
     }
 }

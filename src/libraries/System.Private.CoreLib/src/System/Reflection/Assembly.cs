@@ -203,7 +203,15 @@ namespace System.Reflection
 
         public static string CreateQualifiedName(string? assemblyName, string? typeName) => typeName + ", " + assemblyName;
 
-        public static Assembly? GetAssembly(Type type!!) => type.Module?.Assembly;
+        public static Assembly? GetAssembly(Type type)
+        {
+            if (type is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.type);
+            }
+
+            return type.Module?.Assembly;
+        }
 
         // internal test hook
         private static bool s_forceNullEntryPoint;
@@ -223,8 +231,10 @@ namespace System.Reflection
         // an emitted assembly. The assembly is loaded into a fully isolated ALC with resolution fully deferred to the AssemblyLoadContext.Default.
         // The second parameter is the raw bytes representing the symbol store that matches the assembly.
         [RequiresUnreferencedCode("Types and members the loaded assembly depends on might be removed")]
-        public static Assembly Load(byte[] rawAssembly!!, byte[]? rawSymbolStore)
+        public static Assembly Load(byte[] rawAssembly, byte[]? rawSymbolStore)
         {
+            ArgumentNullException.ThrowIfNull(rawAssembly);
+
             if (rawAssembly.Length == 0)
                 throw new BadImageFormatException(SR.BadImageFormat_BadILFormat);
 
@@ -236,8 +246,10 @@ namespace System.Reflection
         }
 
         [RequiresUnreferencedCode("Types and members the loaded assembly depends on might be removed")]
-        public static Assembly LoadFile(string path!!)
+        public static Assembly LoadFile(string path)
         {
+            ArgumentNullException.ThrowIfNull(path);
+
             if (PathInternal.IsPartiallyQualified(path))
             {
                 throw new ArgumentException(SR.Format(SR.Argument_AbsolutePathRequired, path), nameof(path));
@@ -321,8 +333,10 @@ namespace System.Reflection
         }
 
         [RequiresUnreferencedCode("Types and members the loaded assembly depends on might be removed")]
-        public static Assembly LoadFrom(string assemblyFile!!)
+        public static Assembly LoadFrom(string assemblyFile)
         {
+            ArgumentNullException.ThrowIfNull(assemblyFile);
+
             string fullPath = Path.GetFullPath(assemblyFile);
 
             if (!s_loadFromHandlerSet)

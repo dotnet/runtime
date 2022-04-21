@@ -76,8 +76,10 @@ namespace System
             _value = (void*)l;
         }
 
-        unsafe void ISerializable.GetObjectData(SerializationInfo info!!, StreamingContext context)
+        unsafe void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
         {
+            ArgumentNullException.ThrowIfNull(info);
+
             info.AddValue("value", ToInt64());
         }
 
