@@ -300,9 +300,15 @@ namespace System.Tests
         public static void GetCustomAttributesOnOpenGenericTypeRetrievesDerivedAttributes()
         {
             Attribute[] attributes = Attribute.GetCustomAttributes(typeof(HasGenericAttribute), typeof(GenericAttribute<>));
+            Assert.Equal(3, attributes.Length);
+            Assert.Equal(1, attributes.Count(a => a.GetType() == typeof(DerivesFromGenericAttribute)));
+            Assert.Equal(1, attributes.Count(a => a.GetType() == typeof(GenericAttribute<bool>)));
+            Assert.Equal(1, attributes.Count(a => a.GetType() == typeof(GenericAttribute<string>)));
+
+            attributes = Attribute.GetCustomAttributes(typeof(HasGenericAttribute), typeof(GenericAttribute<bool>));
             Assert.Equal(2, attributes.Length);
-            Assert.Equal(1, attributes.OfType<DerivesFromGenericAttribute>().Count());
-            Assert.Equal(1, attributes.OfType<GenericAttribute<string>>().Count());
+            Assert.Equal(1, attributes.Count(a => a.GetType() == typeof(DerivesFromGenericAttribute)));
+            Assert.Equal(1, attributes.Count(a => a.GetType() == typeof(GenericAttribute<bool>)));
         }
 
         private static void GenericAttributesTestHelper<TGenericParameter>(Func<Type, Attribute[]> getCustomAttributes)
@@ -922,6 +928,7 @@ namespace System.Tests
     [Nameable]
     public class ExampleWithAttribute { }
 
+    [AttributeUsage(AttributeTargets.All, AllowMultiple = true)]
     public class GenericAttribute<T> : Attribute
     {
     }
@@ -932,6 +939,7 @@ namespace System.Tests
 
     [DerivesFromGeneric]
     [GenericAttribute<string>]
+    [GenericAttribute<bool>]
     public class HasGenericAttribute
     {
         [GenericAttribute<TimeSpan>]
