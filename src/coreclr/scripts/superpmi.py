@@ -498,6 +498,16 @@ def read_csv_metrics(path):
 
     return None
 
+def determine_clrjit_compiler_version(clrjit_path):
+    with open(clrjit_path, "rb") as fh:
+        contents = fh.read()
+
+    match = re.search(b'RyuJIT built by ([^\0]*)? targeting ([^\0]*)-([^\0]*)\0', contents)
+    if match is None:
+        return "unknown"
+
+    return match.group(1).decode("ascii")
+
 ################################################################################
 # Helper classes
 ################################################################################
@@ -1849,6 +1859,14 @@ class SuperPMIReplayThroughputDiff:
             for o in self.coreclr_args.diff_jit_option:
                 diff_option_flags += "-jit2option", o
 
+        base_jit_compiler_version = determine_clrjit_compiler_version(self.base_jit_path)
+        diff_jit_compiler_version = determine_clrjit_compiler_version(self.diff_jit_path)
+
+        if base_jit_compiler_version != diff_jit_compiler_version:
+            logging.warning("Warning: Compilers used for base and diff JIT are different. Results may be misleading.")
+            logging.warning("Base JIT's compiler: {}".format(base_jit_compiler_version))
+            logging.warning("Diff JIT's compiler: {}".format(diff_jit_compiler_version))
+
         # List of all Markdown summary files
         tp_diffs = []
 
@@ -2265,7 +2283,6 @@ def determine_jit_ee_version(coreclr_args):
     default_jit_ee_version = "unknown-jit-ee-version"
     logging.info("Using default JIT/EE Version: %s", default_jit_ee_version)
     return default_jit_ee_version
-
 
 def print_platform_specific_environment_vars(loglevel, coreclr_args, var, value):
     """ Print environment variables as set {}={} or export {}={}

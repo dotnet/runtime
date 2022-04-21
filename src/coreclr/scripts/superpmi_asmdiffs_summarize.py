@@ -148,7 +148,7 @@ def main(main_args):
     # We should create a job that depends on all the diff jobs, downloads all the .md file artifacts,
     # and consolidates everything together in one file.
 
-    any_diffs_found = False
+    any_asmdiffs_found = False
 
     final_md_path = os.path.join(diff_summary_dir, "overall_diff_summary_windows_{}.md".format(arch))
     print("Consolidating final {}".format(final_md_path))
@@ -163,19 +163,12 @@ def main(main_args):
                 if file_name.startswith("superpmi_diff") and file_name.endswith(".md"):
                     full_file_path = os.path.join(dirpath, file_name)
                     if append_diff_file(f, arch, file_name, full_file_path, True):
-                        any_diffs_found = True
+                        any_asmdiffs_found = True
 
-        if not any_diffs_found:
-            f.write("""\
+        if not any_asmdiffs_found:
+            f.write("No diffs found\n")
 
-No diffs found
-""")
-
-        f.write("""\
-
-
-# Throughput impact on Windows {}
-""".format(arch))
+        f.write("\n\n#Throughput impact on Windows {}".format(arch))
 
         for dirpath, _, files in os.walk(diff_summary_dir):
             for file_name in files:

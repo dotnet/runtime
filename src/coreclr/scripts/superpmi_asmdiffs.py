@@ -265,9 +265,7 @@ def main(main_args):
             # errors where the Helix work item fails to upload this specified file if it doesn't exist. We should change the
             # upload to be conditional, or otherwise not error.
             with open(target, "a") as f:
-                f.write("""\
-    <empty>
-    """)
+                f.write("<empty>")
 
     # Finally prepare files to upload from helix.
     copy_dasm_files(spmi_location, log_directory, "{}_{}".format(platform_name, arch_name))
