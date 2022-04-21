@@ -39,5 +39,7 @@
 #define DLLEXPORT
 #endif
 
+// This string is used by SuperPMI when measuring throughput impact of changes
+// to validate that the baseline and release JITs are comparable.
 extern "C" DLLEXPORT const char jitBuildString[] =
     "RyuJIT built by " BUILD_COMPILER " targeting " TARGET_OS_STRING "-" TARGET_ARCH_STRING;
