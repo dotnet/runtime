@@ -908,6 +908,12 @@ mono_marshal_shared_emit_ptr_to_object_conv (MonoMethodBuilder *mb, MonoType *ty
 		src_var = mono_mb_add_local (mb, int_type);
 		dst_var = mono_mb_add_local (mb, int_type);
 
+		/* *dst = new object */
+		mono_mb_emit_ldloc (mb, 1);
+		mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+		mono_mb_emit_op (mb, CEE_MONO_NEWOBJ, klass);
+		mono_mb_emit_byte (mb, CEE_STIND_REF);
+
 		mono_mb_emit_ldloc (mb, 0);
 		mono_mb_emit_byte (mb, CEE_LDIND_I);
 		pos = mono_mb_emit_branch (mb, CEE_BRFALSE);
@@ -926,7 +932,7 @@ mono_marshal_shared_emit_ptr_to_object_conv (MonoMethodBuilder *mb, MonoType *ty
 		mono_mb_emit_byte (mb, CEE_ADD);
 		mono_mb_emit_stloc (mb, 0);
 
-		mono_marshal_shared_emit_struct_conv (mb, mono_class_from_mono_type_internal (type), FALSE);
+		mono_marshal_shared_emit_struct_conv (mb, klass, FALSE);
 
 		/* restore the old src pointer */
 		mono_mb_emit_ldloc (mb, src_var);
