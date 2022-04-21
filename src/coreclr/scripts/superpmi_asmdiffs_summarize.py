@@ -169,6 +169,9 @@ def main(main_args):
             f.write("No diffs found\n")
 
         f.write("\n\n#Throughput impact on Windows {}".format(arch))
+        f.write("The following tables contain the impact on throughput " +
+                "in terms of number of instructions executed inside the JIT. " +
+                "Negative percentages/lower numbers are better.")
 
         for dirpath, _, files in os.walk(diff_summary_dir):
             for file_name in files:

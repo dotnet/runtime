@@ -1863,9 +1863,9 @@ class SuperPMIReplayThroughputDiff:
         diff_jit_compiler_version = determine_clrjit_compiler_version(self.diff_jit_path)
 
         if base_jit_compiler_version != diff_jit_compiler_version:
-            logging.warning("Warning: Compilers used for base and diff JIT are different. Results may be misleading.")
-            logging.warning("Base JIT's compiler: {}".format(base_jit_compiler_version))
-            logging.warning("Diff JIT's compiler: {}".format(diff_jit_compiler_version))
+            logging.warning("Warning: Different compilers used for base and diff JITs. Results may be misleading.")
+            logging.warning("  Base JIT's compiler: {}".format(base_jit_compiler_version))
+            logging.warning("  Diff JIT's compiler: {}".format(diff_jit_compiler_version))
 
         # List of all Markdown summary files
         tp_diffs = []
@@ -1968,6 +1968,23 @@ class SuperPMIReplayThroughputDiff:
                 os.remove(overall_md_summary_file)
 
             with open(overall_md_summary_file, "w") as write_fh:
+                if base_jit_compiler_version != diff_jit_compiler_version:
+                    write_fh.write("Warning: Different compilers used for base and diff JITs. Results may be misleading.\n")
+                    write_fh.write("Base JIT's compiler: {}\n".format(base_jit_compiler_version))
+                    write_fh.write("Diff JIT's compiler: {}\n".format(diff_jit_compiler_version))
+
+                # We write two tables, an overview one with just percentages and
+                # a detailed one that includes raw instruction counts
+                write_fh.write("|Collection|PDIFF|\n")
+                write_fh.write("|---|---|\n")
+                for mch_file, base_instructions, diff_instructions in tp_diffs:
+                    write_fh.write("|{}|{}{:.2f}%|\n".format(
+                        mch_file,
+                        "+" if diff_instructions > base_instructions else "",
+                        (diff_instructions - base_instructions) / base_instructions * 100))
+
+                write_fh.write("<details>\n")
+                write_fh.write("<summary>Detailed</summary>\n\n")
                 write_fh.write("|Collection|Base # instructions|Diff # instructions|PDIFF|\n")
                 write_fh.write("|---|---|---|---|\n")
                 for mch_file, base_instructions, diff_instructions in tp_diffs:
@@ -1975,6 +1992,7 @@ class SuperPMIReplayThroughputDiff:
                         mch_file, base_instructions, diff_instructions,
                         "+" if diff_instructions > base_instructions else "",
                         (diff_instructions - base_instructions) / base_instructions * 100))
+                write_fh.write("</details>\n")
 
             logging.info("  Summary Markdown file: %s", overall_md_summary_file)
 
