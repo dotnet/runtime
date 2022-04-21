@@ -7,6 +7,8 @@ using System.Diagnostics.CodeAnalysis;
 using System.Runtime.Versioning;
 using System.Threading;
 
+#pragma warning disable CA1852 // TODO InternalsVisibleTo: https://github.com/dotnet/roslyn-analyzers/pull/5972
+
 namespace Microsoft.Extensions.Logging.Console
 {
     [UnsupportedOSPlatform("browser")]
@@ -54,7 +56,7 @@ namespace Microsoft.Extensions.Logging.Console
         }
 
         // for testing
-        internal virtual void WriteMessage(LogMessageEntry entry)
+        internal void WriteMessage(LogMessageEntry entry)
         {
             IConsole console = entry.LogAsError ? ErrorConsole : Console;
             console.Write(entry.Message);

@@ -35,7 +35,7 @@ namespace System.Net.Security
     // References:
     // a. Usenet 1994 - RC4 Algorithm revealed
     // http://www.qrst.de/html/dsds/rc4.htm
-    internal class RC4 : IDisposable
+    internal sealed class RC4 : IDisposable
     {
         private byte[]? state;
         private byte x;

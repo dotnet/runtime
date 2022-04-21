@@ -9,7 +9,7 @@ namespace System.Text.Json.Serialization.Metadata
     /// <summary>
     /// Maps attribute-based polymorphism configuration to IJsonPolymorphicTypeConfiguration
     /// </summary>
-    internal class AttributePolymorphicTypeConfiguration : IJsonPolymorphicTypeConfiguration
+    internal sealed class AttributePolymorphicTypeConfiguration : IJsonPolymorphicTypeConfiguration
     {
 #pragma warning disable CA2252 // This API requires opting into preview features
         private readonly JsonPolymorphicAttribute? _polymorphicTypeAttribute;

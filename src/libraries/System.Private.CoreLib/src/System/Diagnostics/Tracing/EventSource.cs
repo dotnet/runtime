@@ -5026,7 +5026,7 @@ namespace System.Diagnostics.Tracing
 #if FEATURE_ADVANCED_MANAGED_ETW_CHANNELS
     public
 #else
-    internal
+    internal sealed
 #endif
     class EventChannelAttribute : Attribute
     {
