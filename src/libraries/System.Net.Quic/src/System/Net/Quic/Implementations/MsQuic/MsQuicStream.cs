@@ -1132,9 +1132,8 @@ namespace System.Net.Quic.Implementations.MsQuic
                 else
                 {
                     state.StartCompletionSource.SetException(
-                        ExceptionDispatchInfo.SetCurrentStackTrace(new QuicException($"StreamStart finished with status{MsQuicStatusCodes.GetError(status)}")));
+                        ExceptionDispatchInfo.SetCurrentStackTrace(new QuicException($"StreamStart finished with status {MsQuicStatusCodes.GetError(status)}")));
                 }
-                Debug.Assert(status == MsQuicStatusCodes.Aborted || status == MsQuicStatusCodes.InvalidState);
             }
             else if ((evt.Data.StartComplete.PeerAccepted & 1) != 0)
             {
@@ -1665,21 +1664,14 @@ namespace System.Net.Quic.Implementations.MsQuic
             return shouldComplete;
         }
 
-        internal async Task StartAsync(CancellationToken cancellationToken)
+        internal ValueTask StartAsync(CancellationToken cancellationToken)
         {
             Debug.Assert(!Monitor.IsEntered(_state));
 
-            using CancellationTokenRegistration registration = cancellationToken.UnsafeRegister(static (s, token) =>
-            {
-                ((State)s!).StartCompletionSource.TrySetException(new OperationCanceledException(token));
-            }, _state);
-
-            // Fire of start of the stream
             uint status = MsQuicApi.Api.StreamStartDelegate(_state.Handle, QUIC_STREAM_START_FLAGS.SHUTDOWN_ON_FAIL | QUIC_STREAM_START_FLAGS.INDICATE_PEER_ACCEPT);
             QuicExceptionHelpers.ThrowIfFailed(status, "Could not start stream.");
 
-            // wait unit start completes.
-            await _state.StartCompletionSource.Task.ConfigureAwait(false);
+            return new ValueTask(_state.StartCompletionSource.Task.WaitAsync(cancellationToken));
         }
 
         // Read state transitions:

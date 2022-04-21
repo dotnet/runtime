@@ -187,12 +187,15 @@ namespace System.Net.Http
                             queueStartingTimestamp = Stopwatch.GetTimestamp();
                         }
 
-                        quicStream = await _connection.OpenBidirectionalStreamAsync(cancellationToken).ConfigureAwait(false);
-                        requestStream = new Http3RequestStream(request, this, quicStream);
-
-                        lock (SyncObj)
+                        quicStream = await _connection?.OpenBidirectionalStreamAsync(cancellationToken).ConfigureAwait(false);
+                        if (quicStream != null)
                         {
-                            _activeRequests.Add(quicStream, requestStream);
+                            requestStream = new Http3RequestStream(request, this, quicStream);
+
+                            lock (SyncObj)
+                            {
+                                _activeRequests.Add(quicStream, requestStream);
+                            }
                         }
                     }
                 }

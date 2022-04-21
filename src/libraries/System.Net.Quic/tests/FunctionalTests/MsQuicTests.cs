@@ -443,7 +443,7 @@ namespace System.Net.Quic.Tests
             cts.Cancel();
 
             // awaiting the task should throw
-            var ex = await Assert.ThrowsAsync<OperationCanceledException>(() => waitTask.AsTask().WaitAsync(TimeSpan.FromSeconds(3)));
+            var ex = await Assert.ThrowsAnyAsync<OperationCanceledException>(() => waitTask.AsTask().WaitAsync(TimeSpan.FromSeconds(3)));
             Assert.Equal(cts.Token, ex.CancellationToken);
 
             // Close the streams, the waitTask should finish as a result.
@@ -473,7 +473,7 @@ namespace System.Net.Quic.Tests
             CancellationTokenSource cts = new CancellationTokenSource();
             cts.Cancel();
 
-            var ex = await Assert.ThrowsAsync<OperationCanceledException>(() => OpenStreamAsync(clientConnection, cts.Token).AsTask().WaitAsync(TimeSpan.FromSeconds(3)));
+            var ex = await Assert.ThrowsAnyAsync<OperationCanceledException>(() => OpenStreamAsync(clientConnection, cts.Token).AsTask().WaitAsync(TimeSpan.FromSeconds(3)));
             Assert.Equal(cts.Token, ex.CancellationToken);
 
             clientConnection.Dispose();
@@ -482,7 +482,7 @@ namespace System.Net.Quic.Tests
 
         [Theory]
         [InlineData(false, false)]
-        [InlineData(true, true)]
+        [InlineData(true, true)] // the code path for uni/bidirectional streams differs only in a flag passed to MsQuic, so there is no need to test all possible combinations.
         public async Task OpenStreamAsync_ConnectionAbort_Throws(bool unidirectional, bool localAbort)
         {
             ValueTask<QuicStream> OpenStreamAsync(QuicConnection connection, CancellationToken token = default) => unidirectional
