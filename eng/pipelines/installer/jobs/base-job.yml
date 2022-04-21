@@ -26,7 +26,7 @@ parameters:
   - image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-debpkg-20220408155542-cfdd435
     packageType: deb
     packagingArgs: /p:BuildDebPackage=true
-  - image: mcr.microsoft.com/dotnet-buildtools/prereqs:centos-7-rpmpkg-20220405201321-9b5bbc2
+  - image: mcr.microsoft.com/dotnet-buildtools/prereqs:centos-8-rpmpkg-20210714125410-daa5116
     packageType: rpm
     packagingArgs: /p:BuildRpmPackage=true
 
