@@ -94,10 +94,13 @@ namespace System.Formats.Tar.Tests
             Assert.Equal(0, Directory.GetFileSystemEntries(root.Path).Count());
         }
 
-        [Theory]
-        [InlineData(TarEntryType.SymbolicLink)]
-        [InlineData(TarEntryType.HardLink)]
-        public void Extract_LinkEntry_TargetInsideDirectory(TarEntryType entryType)
+        [ConditionalFact(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
+        public void Extract_SymbolicLinkEntry_TargetInsideDirectory() => Extract_LinkEntry_TargetInsideDirectory_Internal(TarEntryType.SymbolicLink);
+
+        [Fact]
+        public void Extract_HardLinkEntry_TargetInsideDirectory() => Extract_LinkEntry_TargetInsideDirectory_Internal(TarEntryType.HardLink);
+
+        private void Extract_LinkEntry_TargetInsideDirectory_Internal(TarEntryType entryType)
         {
             using TempDirectory root = new TempDirectory();
 

@@ -33,6 +33,7 @@
     <Compile Include="TarWriter\TarWriter.WriteEntry.Entry.V7.Tests.cs" />
     <Compile Include="WrappedStream.cs" Link="WrappedStream.cs" />
     <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs" Link="Common\DisableRuntimeMarshalling.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\ReparsePointUtilities.cs" Link="Common\System\IO\ReparsePointUtilities.cs" />
   </ItemGroup>
   <!-- Windows specific files -->
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
