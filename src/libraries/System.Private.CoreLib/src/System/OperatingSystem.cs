@@ -9,6 +9,36 @@ namespace System
 {
     public sealed class OperatingSystem : ISerializable, ICloneable
     {
+        private const string OSPlatformName =
+#if TARGET_BROWSER
+        "BROWSER"
+#elif TARGET_WINDOWS
+        "WINDOWS"
+#elif TARGET_OSX
+        "OSX"
+#elif TARGET_MACCATALYST
+        "MACCATALYST"
+#elif TARGET_IOS
+        "IOS"
+#elif TARGET_TVOS
+        "TVOS"
+#elif TARGET_ANDROID
+        "ANDROID"
+#elif TARGET_LINUX
+        "LINUX"
+#elif TARGET_FREEBSD
+        "FREEBSD"
+#elif TARGET_NETBSD
+        "NETBSD"
+#elif TARGET_ILLUMOS
+        "ILLUMOS"
+#elif TARGET_SOLARIS
+        "SOLARIS"
+#else
+#error Unknown OS, add a corresponding TARGET_* constant to System.Private.CoreLib.Shared.projitems
+#endif
+        ;
+
         private readonly Version _version;
         private readonly PlatformID _platform;
         private readonly string? _servicePack;
@@ -85,33 +115,13 @@ namespace System
         /// <param name="platform">Case-insensitive platform name. Examples: Browser, Linux, FreeBSD, Android, iOS, macOS, tvOS, watchOS, Windows.</param>
         public static bool IsOSPlatform(string platform!!)
         {
-#if TARGET_BROWSER
-            return platform.Equals("BROWSER", StringComparison.OrdinalIgnoreCase);
-#elif TARGET_WINDOWS
-            return platform.Equals("WINDOWS", StringComparison.OrdinalIgnoreCase);
-#elif TARGET_OSX
-            return platform.Equals("OSX", StringComparison.OrdinalIgnoreCase) || platform.Equals("MACOS", StringComparison.OrdinalIgnoreCase);
+            return platform.Equals(OSPlatformName, StringComparison.OrdinalIgnoreCase)
+#if TARGET_OSX
+            || platform.Equals("MACOS", StringComparison.OrdinalIgnoreCase)
 #elif TARGET_MACCATALYST
-            return platform.Equals("MACCATALYST", StringComparison.OrdinalIgnoreCase) || platform.Equals("IOS", StringComparison.OrdinalIgnoreCase);
-#elif TARGET_IOS
-            return platform.Equals("IOS", StringComparison.OrdinalIgnoreCase);
-#elif TARGET_TVOS
-            return platform.Equals("TVOS", StringComparison.OrdinalIgnoreCase);
-#elif TARGET_ANDROID
-            return platform.Equals("ANDROID", StringComparison.OrdinalIgnoreCase);
-#elif TARGET_LINUX
-            return platform.Equals("LINUX", StringComparison.OrdinalIgnoreCase);
-#elif TARGET_FREEBSD
-            return platform.Equals("FREEBSD", StringComparison.OrdinalIgnoreCase);
-#elif TARGET_NETBSD
-            return platform.Equals("NETBSD", StringComparison.OrdinalIgnoreCase);
-#elif TARGET_ILLUMOS
-            return platform.Equals("ILLUMOS", StringComparison.OrdinalIgnoreCase);
-#elif TARGET_SOLARIS
-            return platform.Equals("SOLARIS", StringComparison.OrdinalIgnoreCase);
-#else
-#error Unknown OS
+            || platform.Equals("IOS", StringComparison.OrdinalIgnoreCase)
 #endif
+            ;
         }
 
         /// <summary>
