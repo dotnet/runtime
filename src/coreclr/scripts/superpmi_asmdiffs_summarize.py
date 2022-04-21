@@ -49,7 +49,7 @@ def setup_args(args):
     return coreclr_args
 
 
-def append_diff_file(f, arch, file_name, full_file_path):
+def append_diff_file(f, arch, file_name, full_file_path, asmdiffs):
     """ Append a single summary file to the consolidated diff file.
 
     Args:
@@ -57,6 +57,7 @@ def append_diff_file(f, arch, file_name, full_file_path):
         arch (string): architecture we ran on
         file_name (string): base file name of file to append (not including path components)
         full_file_path (string): full path to file to append
+        asmdiffs (bool): whether this is asm diffs
 
     Returns:
         True if diffs were found in the file, False otherwise
@@ -71,11 +72,8 @@ def append_diff_file(f, arch, file_name, full_file_path):
     diff_os = "unknown"
     diff_arch = "unknown"
     match_obj = re.search(r'^superpmi_(tpdiff|diff)_summary_(.*)_(.*).md', file_name)
-    spmi_command = "asmdiffs"
     if match_obj is not None:
         spmi_command = match_obj.group(1)
-        if spmi_command == "diff":
-            spmi_command = "asmdiffs"
 
         diff_os = match_obj.group(2)
         diff_arch = match_obj.group(3)
@@ -92,11 +90,13 @@ def append_diff_file(f, arch, file_name, full_file_path):
             pass
         else:
             diffs_found = True
-            # Write a header for this summary, and create a <summary><details> ... </details> disclosure
-            # section around the file.
-            f.write("""\
+            f.write("## {} {}\n".format(diff_os, diff_arch))
 
-## {0} {1}
+            if asmdiffs:
+                # Contents of asmdiffs are large so create a
+                # <summary><details> ... </details> disclosure section around
+                # the file and additionally provide some instructions.
+                f.write("""\
 
 <details>
 
@@ -106,20 +106,23 @@ Summary file: `{2}`
 
 To reproduce on Windows {3}:
 ```
-superpmi.py {4} -target_os {0} -target_arch {1} -arch {3}
+superpmi.py asmdiffs -target_os {0} -target_arch {1} -arch {3}
 ```
 
 """.format(diff_os, diff_arch, file_name, arch, spmi_command))
 
-            # Now write the contents
-            f.write(contents)
+                # Now write the contents
+                f.write(contents)
 
-            # Write the footer (close the <details> section)
-            f.write("""\
+                # Write the footer (close the <details> section)
+                f.write("""\
 
 </details>
 
 """)
+
+            else:
+                f.write(contents)
 
     return diffs_found
 
@@ -159,7 +162,7 @@ def main(main_args):
             for file_name in files:
                 if file_name.startswith("superpmi_diff") and file_name.endswith(".md"):
                     full_file_path = os.path.join(dirpath, file_name)
-                    if append_diff_file(f, arch, file_name, full_file_path):
+                    if append_diff_file(f, arch, file_name, full_file_path, True):
                         any_diffs_found = True
 
         if not any_diffs_found:
@@ -168,15 +171,17 @@ def main(main_args):
 No diffs found
 """)
 
-        f.write("""
-# Throughput diffs generated on Windows {}
+        f.write("""\
+
+
+# Throughput impact on Windows {}
 """.format(arch))
 
         for dirpath, _, files in os.walk(diff_summary_dir):
             for file_name in files:
                 if file_name.startswith("superpmi_tpdiff") and file_name.endswith(".md"):
                     full_file_path = os.path.join(dirpath, file_name)
-                    append_diff_file(f, arch, file_name, full_file_path)
+                    append_diff_file(f, arch, file_name, full_file_path, False)
 
     print("##vso[task.uploadsummary]{}".format(final_md_path))
 
