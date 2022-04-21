@@ -26,6 +26,7 @@ namespace System.Security.Cryptography.Tests
         [Fact]
         public void InvalidHashCoreArgumentsFromStream()
         {
+            //Diagnostics.Debugger.Launch();
             using (SHA1 sha1 = SHA1.Create())
             {
                 AssertExtensions.Throws<ArgumentException>(null, () => sha1.ComputeHash(new BadReadStream(BadReadStream.ErrorCondition.TooLargeValueFromRead)));
