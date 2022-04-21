@@ -269,4 +269,20 @@
     <Error Condition="'$(ServicingVersion)' == '0'" Text="ServicingVersion is set to 0 and it should be an increment of the patch version from the last released package." />
   </Target>
 
+
+  <!-- For experimental ref assemblies (which typically have the same name as a regular ref
+       assembly), bump their minor file version by 100 to make it distinguishable from the regular
+       ref assembly.
+  -->
+  <Target Name="_ExperimentalRefAssemblyUpdateFileVersion"
+          AfterTargets="_InitializeAssemblyVersion"
+	  Condition="'$(IsExperimentalRefAssembly)' == 'true'">
+    <PropertyGroup>
+      <_FileVersionMaj>$(FileVersion.Split('.')[0])</_FileVersionMaj>
+      <_FileVersionMin>$(FileVersion.Split('.')[1])</_FileVersionMin>
+      <_FileVersionBld>$(FileVersion.Split('.')[2])</_FileVersionBld>
+      <_FileVersionRev>$(FileVersion.Split('.')[3])</_FileVersionRev>
+      <FileVersion>$(_FileVersionMaj).$([MSBuild]::Add($(_FileVersionMin), 100)).$(_FileVersionBld).$(_FileVersionRev)</FileVersion>
+    </PropertyGroup>
+  </Target>
 </Project>

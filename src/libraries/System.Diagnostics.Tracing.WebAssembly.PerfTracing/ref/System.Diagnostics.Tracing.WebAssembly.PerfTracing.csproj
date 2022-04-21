@@ -5,6 +5,12 @@
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <Nullable>enable</Nullable>
     <FeatureWasmPerfTracing>true</FeatureWasmPerfTracing>
+    <!-- tell packaging.targets to bump the assembly version -->
+    <IsExperimentalRefAssembly>true</IsExperimentalRefAssembly>
+    <!-- Disable all binplacing since this assembly will clash with the real ref assembly -->
+    <EnableBinPlacing>false</EnableBinPlacing>
+    <StrongNameKeyId>Microsoft</StrongNameKeyId>
+    <IncludePlatformAttributes>true</IncludePlatformAttributes>
   </PropertyGroup>
   <PropertyGroup Condition="'$(FeatureWasmPerfTracing)' == 'true'">
     <!-- Place this assembly in the nuget ref folder -->
@@ -19,14 +25,4 @@
   <ItemGroup>
     <ProjectReference Include="..\..\System.Runtime\ref\System.Runtime.csproj" PrivateAssets="all" />
   </ItemGroup>
-  <Target Name="_ExperimentalUpdateFileVersion"
-          AfterTargets="_InitializeAssemblyVersion">
-    <PropertyGroup>
-      <_FileVersionMaj>$(FileVersion.Split('.')[0])</_FileVersionMaj>
-      <_FileVersionMin>$(FileVersion.Split('.')[1])</_FileVersionMin>
-      <_FileVersionBld>$(FileVersion.Split('.')[2])</_FileVersionBld>
-      <_FileVersionRev>$(FileVersion.Split('.')[3])</_FileVersionRev>
-      <FileVersion>$(_FileVersionMaj).$([MSBuild]::Add($(_FileVersionMin), 100)).$(_FileVersionBld).$(_FileVersionRev)</FileVersion>
-    </PropertyGroup>
-  </Target>
 </Project>

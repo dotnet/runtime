@@ -9,6 +9,12 @@
     <NoWarn>$(NoWarn);0809;0618;CS8614;CS3015;NU5131</NoWarn>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <Nullable>enable</Nullable>
+    <!-- tell packaging.targets to bump the assembly version -->
+    <IsExperimentalRefAssembly>true</IsExperimentalRefAssembly>
+    <!-- Disable all binplacing since this assembly will clash with the real ref assembly -->
+    <EnableBinPlacing>false</EnableBinPlacing>
+    <StrongNameKeyId>Microsoft</StrongNameKeyId>
+    <IncludePlatformAttributes>true</IncludePlatformAttributes>
   </PropertyGroup>
   <PropertyGroup Condition="'$(FeatureWasmThreads)' == 'true'">
     <!-- Place this assembly in the nuget ref folder -->
@@ -23,14 +29,4 @@
     <ProjectReference Include="..\..\System.Runtime\ref\System.Runtime.csproj" />
     <ProjectReference Include="..\..\System.Threading.Overlapped\ref\System.Threading.Overlapped.csproj" />
   </ItemGroup>
-  <Target Name="_ExperimentalUpdateFileVersion"
-          AfterTargets="_InitializeAssemblyVersion">
-    <PropertyGroup>
-      <_FileVersionMaj>$(FileVersion.Split('.')[0])</_FileVersionMaj>
-      <_FileVersionMin>$(FileVersion.Split('.')[1])</_FileVersionMin>
-      <_FileVersionBld>$(FileVersion.Split('.')[2])</_FileVersionBld>
-      <_FileVersionRev>$(FileVersion.Split('.')[3])</_FileVersionRev>
-      <FileVersion>$(_FileVersionMaj).$([MSBuild]::Add($(_FileVersionMin), 100)).$(_FileVersionBld).$(_FileVersionRev)</FileVersion>
-    </PropertyGroup>
-  </Target>
 </Project>
