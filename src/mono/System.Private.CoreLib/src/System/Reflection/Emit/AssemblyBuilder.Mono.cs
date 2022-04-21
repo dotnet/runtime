@@ -305,7 +305,6 @@ namespace System.Reflection.Emit
             UpdateNativeCustomAttributes(this);
         }
 
-        [ComVisible(true)]
         public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
         {
             if (con == null)

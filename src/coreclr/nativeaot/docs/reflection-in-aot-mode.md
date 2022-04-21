@@ -96,4 +96,4 @@ To enable simulated `Assembly.GetCallingAssembly`, you will need:
 
 ## Experimental Reflection Free Mode
 
-Reflection-free mode is a an experimental mode of the NativeAOT compiler and runtime that greatly reduces the functionality of the reflection APIs and demonstrates how far can reflection trimming can get. See [Reflection Free Mode](reflection-free-mode.md) for mode details.
+Reflection-free mode is a an experimental mode of the NativeAOT compiler and runtime that greatly reduces the functionality of the reflection APIs and demonstrates how far reflection trimming can get. See [Reflection Free Mode](reflection-free-mode.md) for mode details.

@@ -74,6 +74,9 @@
     <TargetFrameworkForNETFrameworkTasks Condition="'$(DotNetBuildFromSource)' == 'true'" />
 
     <TargetFrameworkForNETCoreTasks>$(NetCoreAppToolCurrent)</TargetFrameworkForNETCoreTasks>
+
+    <!-- TODO (#68024): remove this once we're using a 7.0 SDK -->
+    <XHarnessTargetFramework>net6.0</XHarnessTargetFramework>
   </PropertyGroup>
 
   <PropertyGroup>

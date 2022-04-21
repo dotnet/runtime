@@ -2,6 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
+namespace Test_25param2a_cs
+{
 internal struct VT
 {
     public int m;
@@ -14,7 +17,7 @@ public class CL
         n = a;
     }
 }
-internal class test
+public class test
 {
     private static int f1(short a1, ushort a2, int a3, uint a4, long a5,
             ulong a6, byte a7, sbyte a8, Decimal a9, int[] a10,
@@ -65,7 +68,8 @@ internal class test
         return sum;
     }
 
-    private static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         Console.WriteLine("Testing method of 25 parameters, mixed data type");
         VT vt = new VT();
@@ -77,3 +81,4 @@ internal class test
     }
 }
 
+}

@@ -32,7 +32,7 @@ VOID BaseAssemblySpec::CloneFieldsToStackingAllocator( StackingAllocator* alloc)
     DWORD hash = Hash();
 #endif
 
-    if ((~m_ownedFlags & NAME_OWNED)  &&
+    if ((~m_ownedFlags & NAME_OWNED) &&
         m_pAssemblyName) {
         S_UINT32 len = S_UINT32((DWORD) strlen(m_pAssemblyName)) + S_UINT32(1);
         if(len.IsOverflow()) COMPlusThrowHR(COR_E_OVERFLOW);
@@ -48,22 +48,13 @@ VOID BaseAssemblySpec::CloneFieldsToStackingAllocator( StackingAllocator* alloc)
         m_pbPublicKeyOrToken = temp;
     }
 
-    if ((~m_ownedFlags & LOCALE_OWNED)  &&
+    if ((~m_ownedFlags & LOCALE_OWNED) &&
         m_context.szLocale) {
         S_UINT32 len = S_UINT32((DWORD) strlen(m_context.szLocale)) + S_UINT32(1);
         if(len.IsOverflow()) COMPlusThrowHR(COR_E_OVERFLOW);
         LPSTR temp = (char *)alloc->Alloc(len) ;
         strcpy_s(temp, len.Value(), m_context.szLocale);
         m_context.szLocale = temp;
-    }
-
-    if ((~m_ownedFlags & CODEBASE_OWNED)  &&
-        m_wszCodeBase) {
-        S_UINT32 len = S_UINT32((DWORD) wcslen(m_wszCodeBase)) + S_UINT32(1);
-        if(len.IsOverflow()) COMPlusThrowHR(COR_E_OVERFLOW);
-        LPWSTR temp = (LPWSTR)alloc->Alloc(len*S_UINT32(sizeof(WCHAR)));
-        wcscpy_s(temp, len.Value(), m_wszCodeBase);
-        m_wszCodeBase = temp;
     }
 
     _ASSERTE(hash == Hash());
@@ -83,13 +74,6 @@ BOOL BaseAssemblySpec::IsCoreLib()
     CONTRACTL_END;
     if (m_pAssemblyName == NULL)
     {
-        LPCWSTR file = GetCodeBase();
-        if (file)
-        {
-            StackSString path(file);
-            PEAssembly::UrlToPath(path);
-            return SystemDomain::System()->IsBaseLibrary(path);
-        }
         return FALSE;
     }
 
@@ -124,13 +108,6 @@ BOOL BaseAssemblySpec::IsCoreLibSatellite() const
 
     if (m_pAssemblyName == NULL)
     {
-        LPCWSTR file = GetCodeBase();
-        if (file)
-        {
-            StackSString path(file);
-            PEAssembly::UrlToPath(path);
-            return SystemDomain::System()->IsBaseLibrarySatellite(path);
-        }
         return FALSE;
     }
 
@@ -189,14 +166,6 @@ VOID BaseAssemblySpec::ConvertPublicKeyToToken()
 BOOL BaseAssemblySpec::CompareRefToDef(const BaseAssemblySpec *pRef, const BaseAssemblySpec *pDef)
 {
     WRAPPER_NO_CONTRACT;
-
-    if(pRef->m_wszCodeBase || pDef->m_wszCodeBase)
-    {
-        if(!pRef->m_wszCodeBase || !pDef->m_wszCodeBase)
-            return FALSE;
-
-        return wcscmp(pRef->m_wszCodeBase,(pDef->m_wszCodeBase)) == 0;
-    }
 
     // Compare fields
 

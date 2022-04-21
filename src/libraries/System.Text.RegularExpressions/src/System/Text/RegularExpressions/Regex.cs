@@ -154,7 +154,6 @@ namespace System.Text.RegularExpressions
         /// <exception cref="ArgumentOutOfRangeException">If the specified timeout is not within a valid range.</exception>
         protected internal static void ValidateMatchTimeout(TimeSpan matchTimeout)
         {
-            // make sure timeout is positive but not longer then Environment.Ticks cycle length
             long matchTimeoutTicks = matchTimeout.Ticks;
             if (matchTimeoutTicks != InfiniteMatchTimeoutTicks && ((ulong)(matchTimeoutTicks - 1) >= MaximumMatchTimeoutTicks))
             {

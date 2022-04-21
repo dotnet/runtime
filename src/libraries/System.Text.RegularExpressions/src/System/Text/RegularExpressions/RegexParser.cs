@@ -29,6 +29,7 @@ namespace System.Text.RegularExpressions
         private readonly string _pattern;
         private int _currentPos;
         private readonly CultureInfo _culture;
+        private RegexCaseBehavior _caseBehavior;
         private bool _hasIgnoreCaseBackreferenceNodes;
 
         private int _autocap;
@@ -58,6 +59,7 @@ namespace System.Text.RegularExpressions
             _pattern = pattern;
             _options = options;
             _culture = culture;
+            _caseBehavior = default;
             _hasIgnoreCaseBackreferenceNodes = false;
             _caps = caps;
             _capsize = capsize;
@@ -1358,7 +1360,7 @@ namespace System.Text.RegularExpressions
             ch = ScanCharEscape();
 
             return !scanOnly ?
-                RegexNode.CreateOneWithCaseConversion(ch, _options, _culture) :
+                RegexNode.CreateOneWithCaseConversion(ch, _options, _culture, ref _caseBehavior) :
                 null;
         }
 
@@ -1369,7 +1371,7 @@ namespace System.Text.RegularExpressions
         {
             if (CharsRight() == 0)
             {
-                return RegexNode.CreateOneWithCaseConversion('$', _options, _culture);
+                return RegexNode.CreateOneWithCaseConversion('$', _options, _culture, ref _caseBehavior);
             }
 
             char ch = RightChar();
@@ -1459,7 +1461,7 @@ namespace System.Text.RegularExpressions
                 {
                     case '$':
                         MoveRight();
-                        return RegexNode.CreateOneWithCaseConversion('$', _options, _culture);
+                        return RegexNode.CreateOneWithCaseConversion('$', _options, _culture, ref _caseBehavior);
 
                     case '&':
                         capnum = 0;
@@ -1492,7 +1494,7 @@ namespace System.Text.RegularExpressions
             // unrecognized $: literalize
 
             Textto(backpos);
-            return RegexNode.CreateOneWithCaseConversion('$', _options, _culture);
+            return RegexNode.CreateOneWithCaseConversion('$', _options, _culture, ref _caseBehavior);
         }
 
         /*
@@ -2135,7 +2137,7 @@ namespace System.Text.RegularExpressions
                     return;
 
                 case 1:
-                    _concatenation!.AddChild(RegexNode.CreateOneWithCaseConversion(_pattern[pos], isReplacement ? _options & ~RegexOptions.IgnoreCase : _options, _culture));
+                    _concatenation!.AddChild(RegexNode.CreateOneWithCaseConversion(_pattern[pos], isReplacement ? _options & ~RegexOptions.IgnoreCase : _options, _culture, ref _caseBehavior));
                     break;
 
                 case > 1 when !UseOptionI() || isReplacement || !RegexCharClass.ParticipatesInCaseConversion(_pattern.AsSpan(pos, cch)):
@@ -2145,7 +2147,7 @@ namespace System.Text.RegularExpressions
                 default:
                     foreach (char c in _pattern.AsSpan(pos, cch))
                     {
-                        _concatenation!.AddChild(RegexNode.CreateOneWithCaseConversion(c, _options, _culture));
+                        _concatenation!.AddChild(RegexNode.CreateOneWithCaseConversion(c, _options, _culture, ref _caseBehavior));
                     }
                     break;
             }
@@ -2229,7 +2231,7 @@ namespace System.Text.RegularExpressions
         private RegexNode? Unit() => _unit;
 
         /// <summary>Sets the current unit to a single char node</summary>
-        private void AddUnitOne(char ch) => _unit = RegexNode.CreateOneWithCaseConversion(ch, _options, _culture);
+        private void AddUnitOne(char ch) => _unit = RegexNode.CreateOneWithCaseConversion(ch, _options, _culture, ref _caseBehavior);
 
         /// <summary>Sets the current unit to a subtree</summary>
         private void AddUnitNode(RegexNode node) => _unit = node;

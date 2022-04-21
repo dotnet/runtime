@@ -120,6 +120,7 @@ namespace System
         /// <summary>
         /// Indicates whether the current application is running as WASM in a Browser.
         /// </summary>
+        [NonVersionable]
         public static bool IsBrowser() =>
 #if TARGET_BROWSER
             true;
@@ -130,6 +131,7 @@ namespace System
         /// <summary>
         /// Indicates whether the current application is running on Linux.
         /// </summary>
+        [NonVersionable]
         public static bool IsLinux() =>
 #if TARGET_LINUX && !TARGET_ANDROID
             true;
@@ -140,6 +142,7 @@ namespace System
         /// <summary>
         /// Indicates whether the current application is running on FreeBSD.
         /// </summary>
+        [NonVersionable]
         public static bool IsFreeBSD() =>
 #if TARGET_FREEBSD
             true;
@@ -156,6 +159,7 @@ namespace System
         /// <summary>
         /// Indicates whether the current application is running on Android.
         /// </summary>
+        [NonVersionable]
         public static bool IsAndroid() =>
 #if TARGET_ANDROID
             true;
@@ -173,6 +177,7 @@ namespace System
         /// Indicates whether the current application is running on iOS or MacCatalyst.
         /// </summary>
         [SupportedOSPlatformGuard("maccatalyst")]
+        [NonVersionable]
         public static bool IsIOS() =>
 #if TARGET_IOS || TARGET_MACCATALYST
             true;
@@ -184,12 +189,14 @@ namespace System
         /// Check for the iOS/MacCatalyst version (returned by 'libobjc.get_operatingSystemVersion') with a >= version comparison. Used to guard APIs that were added in the given iOS release.
         /// </summary>
         [SupportedOSPlatformGuard("maccatalyst")]
+        [NonVersionable]
         public static bool IsIOSVersionAtLeast(int major, int minor = 0, int build = 0)
             => IsIOS() && IsOSVersionAtLeast(major, minor, build, 0);
 
         /// <summary>
         /// Indicates whether the current application is running on macOS.
         /// </summary>
+        [NonVersionable]
         public static bool IsMacOS() =>
 #if TARGET_OSX
             true;
@@ -213,6 +220,7 @@ namespace System
         /// <summary>
         /// Indicates whether the current application is running on Mac Catalyst.
         /// </summary>
+        [NonVersionable]
         public static bool IsMacCatalyst() =>
 #if TARGET_MACCATALYST
             true;
@@ -229,6 +237,7 @@ namespace System
         /// <summary>
         /// Indicates whether the current application is running on tvOS.
         /// </summary>
+        [NonVersionable]
         public static bool IsTvOS() =>
 #if TARGET_TVOS
             true;
@@ -245,6 +254,7 @@ namespace System
         /// <summary>
         /// Indicates whether the current application is running on watchOS.
         /// </summary>
+        [NonVersionable]
         public static bool IsWatchOS() =>
 #if TARGET_WATCHOS
             true;
@@ -261,6 +271,7 @@ namespace System
         /// <summary>
         /// Indicates whether the current application is running on Windows.
         /// </summary>
+        [NonVersionable]
         public static bool IsWindows() =>
 #if TARGET_WINDOWS
             true;

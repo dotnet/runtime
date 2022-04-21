@@ -612,15 +612,11 @@ namespace System.Reflection.Emit
 
         public void SetParameters(params Type[] parameterTypes)
         {
-            AssemblyBuilder.CheckContext(parameterTypes);
-
             SetSignature(null, null, null, parameterTypes, null, null);
         }
 
         public void SetReturnType(Type? returnType)
         {
-            AssemblyBuilder.CheckContext(returnType);
-
             SetSignature(returnType, null, null, null, null, null);
         }
 
@@ -632,11 +628,6 @@ namespace System.Reflection.Emit
             // But we cannot because that would be a breaking change from V2.
             if (m_token != 0)
                 return;
-
-            AssemblyBuilder.CheckContext(returnType);
-            AssemblyBuilder.CheckContext(returnTypeRequiredCustomModifiers, returnTypeOptionalCustomModifiers, parameterTypes);
-            AssemblyBuilder.CheckContext(parameterTypeRequiredCustomModifiers);
-            AssemblyBuilder.CheckContext(parameterTypeOptionalCustomModifiers);
 
             ThrowIfGeneric();
 
