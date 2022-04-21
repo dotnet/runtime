@@ -12,8 +12,6 @@
     <NoWarn>$(NoWarn);NU5128;NU5131</NoWarn>
     <!-- Place assemblies in the nuget ref folder -->
     <BuildOutputTargetFolder>ref</BuildOutputTargetFolder>
-    <!-- XXX FIXME: the rest of these props affect the NoTargets SDK in some way.  I want to be able to reference this project from another .csproj -->
-    <NoTargetsDoNotReferenceOutputAssemblies>false</NoTargetsDoNotReferenceOutputAssemblies>
   </PropertyGroup>
 
   <ItemGroup>
