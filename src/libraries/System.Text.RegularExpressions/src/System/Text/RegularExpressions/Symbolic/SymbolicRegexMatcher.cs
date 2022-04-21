@@ -317,11 +317,11 @@ namespace System.Text.RegularExpressions.Symbolic
         }
 
         /// <summary>Find a match.</summary>
-        /// <param name="isMatch">Whether to return once we know there's a match without determining where exactly it matched.</param>
+        /// <param name="mode">The mode of execution based on the regex operation being performed.</param>
         /// <param name="input">The input span</param>
         /// <param name="startat">The position to start search in the input span.</param>
         /// <param name="perThreadData">Per thread data reused between calls.</param>
-        public SymbolicMatch FindMatch(bool isMatch, ReadOnlySpan<char> input, int startat, PerThreadData perThreadData)
+        public SymbolicMatch FindMatch(RegexRunnerMode mode, ReadOnlySpan<char> input, int startat, PerThreadData perThreadData)
         {
             Debug.Assert(startat >= 0 && startat <= input.Length, $"{nameof(startat)} == {startat}, {nameof(input.Length)} == {input.Length}");
             Debug.Assert(perThreadData is not null);
@@ -341,7 +341,7 @@ namespace System.Text.RegularExpressions.Symbolic
             // As an example, consider the pattern a{1,3}(b*) run against an input of aacaaaabbbc: phase 1 will find
             // the position of the last b: aacaaaabbbc.  It additionally records the position of the first a after
             // the c as the low boundary for the starting position.
-            int matchEnd = FindEndPosition(input, startat, timeoutOccursAt, isMatch, out int matchStartLowBoundary, out int matchStartLengthMarker, perThreadData);
+            int matchEnd = FindEndPosition(input, startat, timeoutOccursAt, mode, out int matchStartLowBoundary, out int matchStartLengthMarker, perThreadData);
 
             // If there wasn't a match, we're done.
             if (matchEnd == NoMatchExists)
@@ -349,11 +349,11 @@ namespace System.Text.RegularExpressions.Symbolic
                 return SymbolicMatch.NoMatch;
             }
 
-            // A match exists. If we don't need further details, because IsMatch was used (and thus we don't
+            // A match exists. If we don't need further details, e.g. because IsMatch was used (and thus we don't
             // need the exact bounds of the match, captures, etc.), we're done.
-            if (isMatch)
+            if (mode == RegexRunnerMode.ExistenceRequired)
             {
-                return SymbolicMatch.QuickMatch;
+                return SymbolicMatch.MatchExists;
             }
 
             // Phase 2:
@@ -380,11 +380,11 @@ namespace System.Text.RegularExpressions.Symbolic
             }
 
             // Phase 3:
-            // If there are no subcaptures, the matching process is done.  For patterns with subcaptures (captures other
-            // than the top-level capture for the whole match), we need to do an additional pass to find their bounds.
+            // If there are no subcaptures (or if they're not needed), the matching process is done.  For patterns with subcaptures
+            // (captures other than the top-level capture for the whole match), we need to do an additional pass to find their bounds.
             // Continuing for the previous example, phase 3 will be executed for the characters inside the match, aaabbbc,
             // and will find associate the one capture (b*) with it's match: bbb.
-            if (!HasSubcaptures)
+            if (!HasSubcaptures || mode < RegexRunnerMode.FullMatchRequired)
             {
                 return new SymbolicMatch(matchStart, matchEnd - matchStart);
             }
@@ -399,14 +399,14 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <param name="input">The input text.</param>
         /// <param name="i">The starting position in <paramref name="input"/>.</param>
         /// <param name="timeoutOccursAt">The time at which timeout occurs, if timeouts are being checked.</param>
-        /// <param name="isMatch">Whether this is an isMatch call.</param>
+        /// <param name="mode">The mode of execution based on the regex operation being performed.</param>
         /// <param name="initialStateIndex">The last position the initial state of <see cref="_dotStarredPattern"/> was visited before the end position was found.</param>
         /// <param name="matchLength">Length of the match if there's a match; otherwise, -1.</param>
         /// <param name="perThreadData">Per thread data reused between calls.</param>
         /// <returns>
         /// A one-past-the-end index into input for the preferred match, or first final state position if isMatch is true, or NoMatchExists if no match exists.
         /// </returns>
-        private int FindEndPosition(ReadOnlySpan<char> input, int i, long timeoutOccursAt, bool isMatch, out int initialStateIndex, out int matchLength, PerThreadData perThreadData)
+        private int FindEndPosition(ReadOnlySpan<char> input, int i, long timeoutOccursAt, RegexRunnerMode mode, out int initialStateIndex, out int matchLength, PerThreadData perThreadData)
         {
             int endPosition = NoMatchExists;
 
@@ -451,8 +451,8 @@ namespace System.Text.RegularExpressions.Symbolic
 
                 int newEndPosition;
                 int findResult = currentState.NfaState is not null ?
-                    FindEndPositionDeltas<NfaStateHandler>(builder, inputForInnerLoop, isMatch, ref i, ref currentState, ref matchLength, out newEndPosition) :
-                    FindEndPositionDeltas<DfaStateHandler>(builder, inputForInnerLoop, isMatch, ref i, ref currentState, ref matchLength, out newEndPosition);
+                    FindEndPositionDeltas<NfaStateHandler>(builder, inputForInnerLoop, mode, ref i, ref currentState, ref matchLength, out newEndPosition) :
+                    FindEndPositionDeltas<DfaStateHandler>(builder, inputForInnerLoop, mode, ref i, ref currentState, ref matchLength, out newEndPosition);
 
                 // If a new end position was found, commit to the matching initial state index
                 if (newEndPosition != -1)
@@ -516,7 +516,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// 0 if iteration completed because we reached an initial state.
         /// A negative value if iteration completed because we ran out of input or we failed to transition.
         /// </returns>
-        private int FindEndPositionDeltas<TStateHandler>(SymbolicRegexBuilder<TSet> builder, ReadOnlySpan<char> input, bool isMatch, ref int i, ref CurrentState currentState, ref int matchLength, out int endPosition)
+        private int FindEndPositionDeltas<TStateHandler>(SymbolicRegexBuilder<TSet> builder, ReadOnlySpan<char> input, RegexRunnerMode mode, ref int i, ref CurrentState currentState, ref int matchLength, out int endPosition)
             where TStateHandler : struct, IStateHandler
         {
             // To avoid frequent reads/writes to ref and out values, make and operate on local copies, which we then copy back once before returning.
@@ -536,18 +536,25 @@ namespace System.Text.RegularExpressions.Symbolic
                         // use that length to optimize subsequent matching phases.
                         matchLength = TStateHandler.FixedLength(ref state);
                         endPos = pos;
-                        // If this is an isMatch call we are done, since a match is now known to exist.
-                        if (isMatch)
+
+                        // A match is known to exist.  If that's all we need to know, we're done.
+                        if (mode == RegexRunnerMode.ExistenceRequired)
+                        {
                             return 1;
+                        }
                     }
 
                     // If the state is a dead end, such that we can't transition anywhere else, end the search.
                     if (TStateHandler.IsDeadend(ref state))
+                    {
                         return 1;
+                    }
 
                     // If there is more input available try to transition with the next character.
                     if ((uint)pos >= (uint)input.Length || !TryTakeTransition<TStateHandler>(builder, input, pos, ref state))
+                    {
                         return -1;
+                    }
 
                     // We successfully transitioned, so update our current input index to match.
                     pos++;
@@ -556,7 +563,9 @@ namespace System.Text.RegularExpressions.Symbolic
                     // If it does, we exit out in order to allow our find optimizations to kick in to hopefully more quickly
                     // find the next possible starting location.
                     if (TStateHandler.IsInitialState(ref state))
+                    {
                         return 0;
+                    }
                 }
             }
             finally
