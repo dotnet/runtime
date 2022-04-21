@@ -577,9 +577,15 @@
       <XUnitWrapperDlls>$([System.String]::Join(' ', $([System.IO.Directory]::GetFiles(%(FullPath), '*.XUnitWrapper.dll', SearchOption.AllDirectories))).Replace($([MSBuild]::EnsureTrailingSlash(%(FullPath))),''))</XUnitWrapperDlls>
     </LegacyPayloads>
     <LegacyPayloads Update="@(LegacyPayloads)">
+      <!-- Specify the test group from the payload name. For explicitly named groups, PayloadGroup specifies the subset of tests we want to run in this Helix Work Item -->
       <TestGroup>%(PayloadGroup)</TestGroup>
-      <!-- When Payload contains more than one *.XUnitWrapper.dll TestGroup should not be specified. -->
+      <!-- When Payload contains more than one *.XUnitWrapper.dll TestGroup should not be specified. When we specify multiple assemblies, we aren't trying to run only a subset of tests within one assembly. -->
       <TestGroup Condition=" $([MSBuild]::ValueOrDefault(%(XUnitWrapperDlls), '').IndexOf('.XUnitWrapper.dll')) != $([MSBuild]::ValueOrDefault(%(XUnitWrapperDlls), '').LastIndexOf('.XUnitWrapper.dll')) "></TestGroup>
+      <!--
+        PayloadGroup0 is just a synthesized name for a bundle of multiple test assemblies that we send as one payload.
+        Normally the condition above catches this case; however, when we're only sending one assembly, passing PayloadGroup0 to Helix means that no tests will be run.
+      -->
+      <TestGroup Condition="'%(PayloadGroup)' == 'PayloadGroup0'"></TestGroup>
       <PayloadZipFile>$(LegacyPayloadsRootDirectory)\%(PayloadGroup).zip</PayloadZipFile>
     </LegacyPayloads>
   </ItemGroup>
