@@ -2901,7 +2901,7 @@ def process_base_jit_path_arg(coreclr_args):
              git rev-parse HEAD
            or use the `-git_hash` argument (call the result `git_hash`).
         2. Determine the baseline: where does this hash meet the newest `main` branch of any remote using:
-             git branch -r --sort=-committerdate -v --list "*/main"
+             git branch -r --sort=-committerdate -v --list "*/main" followed by git merge-base
            or use the `-base_git_hash` argument (call the result `base_git_hash`).
         3. If the `-base_git_hash` argument is used, use that directly as the exact git
            hash of the baseline JIT to use.
@@ -2957,16 +2957,28 @@ def process_base_jit_path_arg(coreclr_args):
 
         if coreclr_args.base_git_hash is None:
             # We've got the current hash; figure out the baseline hash.
+            # First find the newest hash for any branch matching */main.
             command = [ "git", "branch", "-r", "--sort=-committerdate", "-v", "--list", "*/main" ]
+            logging.debug("Invoking: %s", " ".join(command))
+            proc = subprocess.Popen(command, stdout=subprocess.PIPE)
+            stdout_git_main_branch, _ = proc.communicate()
+            return_code = proc.returncode
+            if return_code != 0:
+                raise RuntimeError("Couldn't determine newest 'main' git hash")
+
+            main_hash = stdout_git_main_branch.decode('utf-8').strip().split()[1]
+
+            # Get the merge-base between the newest main and our current rev
+            command = [ "git", "merge-base", current_hash, main_hash ]
             logging.debug("Invoking: %s", " ".join(command))
             proc = subprocess.Popen(command, stdout=subprocess.PIPE)
             stdout_git_merge_base, _ = proc.communicate()
             return_code = proc.returncode
-            if return_code == 0:
-                baseline_hash = stdout_git_merge_base.decode('utf-8').strip().split()[1]
-                logging.info("Baseline hash: %s", current_hash)
-            else:
+            if return_code != 0:
                 raise RuntimeError("Couldn't determine baseline git hash")
+
+            baseline_hash = stdout_git_merge_base.decode('utf-8').strip()
+            logging.info("Baseline hash: %s", baseline_hash)
         else:
             baseline_hash = coreclr_args.base_git_hash
 
