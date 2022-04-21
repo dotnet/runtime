@@ -22,7 +22,7 @@ namespace Mono.Linker.Dataflow
 	class ReflectionMethodBodyScanner : MethodBodyScanner
 	{
 		readonly MarkStep _markStep;
-		readonly MarkScopeStack _scopeStack;
+		MessageOrigin _origin;
 
 		public static bool RequiresReflectionMethodBodyScannerForCallSite (LinkContext context, MethodReference calledMethod)
 		{
@@ -51,19 +51,19 @@ namespace Mono.Linker.Dataflow
 			return context.Annotations.FlowAnnotations.RequiresDataFlowAnalysis (fieldDefinition);
 		}
 
-		bool ShouldEnableReflectionPatternReporting ()
+		bool ShouldEnableReflectionPatternReporting (ICustomAttributeProvider? provider)
 		{
-			if (_markStep.ShouldSuppressAnalysisWarningsForRequiresUnreferencedCode ())
+			if (_markStep.ShouldSuppressAnalysisWarningsForRequiresUnreferencedCode (provider))
 				return false;
 
 			return true;
 		}
 
-		public ReflectionMethodBodyScanner (LinkContext context, MarkStep parent, MarkScopeStack scopeStack)
+		public ReflectionMethodBodyScanner (LinkContext context, MarkStep parent, MessageOrigin origin)
 			: base (context)
 		{
 			_markStep = parent;
-			_scopeStack = scopeStack;
+			_origin = origin;
 		}
 
 		public void ScanAndProcessReturnValue (MethodBody methodBody)
@@ -74,8 +74,7 @@ namespace Mono.Linker.Dataflow
 				var method = methodBody.Method;
 				var methodReturnValue = GetMethodReturnValue (method);
 				if (methodReturnValue.DynamicallyAccessedMemberTypes != 0) {
-					var analysisContext = new AnalysisContext (_scopeStack.CurrentScope.Origin, ShouldEnableReflectionPatternReporting (), _context);
-					RequireDynamicallyAccessedMembers (analysisContext, ReturnValue, methodReturnValue);
+					RequireDynamicallyAccessedMembers (_origin, ShouldEnableReflectionPatternReporting (_origin.Provider), ReturnValue, methodReturnValue);
 				}
 			}
 		}
@@ -88,8 +87,7 @@ namespace Mono.Linker.Dataflow
 				var parameterValue = GetMethodParameterValue (method, i + paramOffset);
 				if (parameterValue.DynamicallyAccessedMemberTypes != DynamicallyAccessedMemberTypes.None) {
 					MultiValue value = GetValueNodeForCustomAttributeArgument (arguments[i]);
-					var analysisContext = new AnalysisContext (_scopeStack.CurrentScope.Origin, diagnosticsEnabled: true, _context);
-					RequireDynamicallyAccessedMembers (analysisContext, value, parameterValue);
+					RequireDynamicallyAccessedMembers (_origin, diagnosticsEnabled: true, value, parameterValue);
 				}
 			}
 		}
@@ -101,8 +99,7 @@ namespace Mono.Linker.Dataflow
 				if (fieldValueCandidate is not ValueWithDynamicallyAccessedMembers fieldValue)
 					continue;
 
-				var analysisContext = new AnalysisContext (_scopeStack.CurrentScope.Origin, diagnosticsEnabled: true, _context);
-				RequireDynamicallyAccessedMembers (analysisContext, valueNode, fieldValue);
+				RequireDynamicallyAccessedMembers (_origin, diagnosticsEnabled: true, valueNode, fieldValue);
 			}
 		}
 
@@ -134,8 +131,7 @@ namespace Mono.Linker.Dataflow
 			var genericParameterValue = new GenericParameterValue (genericParameter, annotation);
 			MultiValue genericArgumentValue = GetTypeValueNodeFromGenericArgument (genericArgument);
 
-			var analysisContext = new AnalysisContext (_scopeStack.CurrentScope.Origin, ShouldEnableReflectionPatternReporting (), _context);
-			RequireDynamicallyAccessedMembers (analysisContext, genericArgumentValue, genericParameterValue);
+			RequireDynamicallyAccessedMembers (_origin, ShouldEnableReflectionPatternReporting (_origin.Provider), genericArgumentValue, genericParameterValue);
 		}
 
 		MultiValue GetTypeValueNodeFromGenericArgument (TypeReference genericArgument)
@@ -228,18 +224,16 @@ namespace Mono.Linker.Dataflow
 		protected override void HandleStoreField (MethodDefinition method, FieldValue field, Instruction operation, MultiValue valueToStore)
 		{
 			if (field.DynamicallyAccessedMemberTypes != 0) {
-				_scopeStack.UpdateCurrentScopeInstructionOffset (operation.Offset);
-				var analysisContext = new AnalysisContext (_scopeStack.CurrentScope.Origin, ShouldEnableReflectionPatternReporting (), _context);
-				RequireDynamicallyAccessedMembers (analysisContext, valueToStore, field);
+				_origin = _origin.WithInstructionOffset (operation.Offset);
+				RequireDynamicallyAccessedMembers (_origin, ShouldEnableReflectionPatternReporting (_origin.Provider), valueToStore, field);
 			}
 		}
 
 		protected override void HandleStoreParameter (MethodDefinition method, MethodParameterValue parameter, Instruction operation, MultiValue valueToStore)
 		{
 			if (parameter.DynamicallyAccessedMemberTypes != 0) {
-				_scopeStack.UpdateCurrentScopeInstructionOffset (operation.Offset);
-				var analysisContext = new AnalysisContext (_scopeStack.CurrentScope.Origin, ShouldEnableReflectionPatternReporting (), _context);
-				RequireDynamicallyAccessedMembers (analysisContext, valueToStore, parameter);
+				_origin = _origin.WithInstructionOffset (operation.Offset);
+				RequireDynamicallyAccessedMembers (_origin, ShouldEnableReflectionPatternReporting (_origin.Provider), valueToStore, parameter);
 			}
 		}
 
@@ -257,19 +251,15 @@ namespace Mono.Linker.Dataflow
 			if (calledMethodDefinition == null)
 				return false;
 
-			_scopeStack.UpdateCurrentScopeInstructionOffset (operation.Offset);
-			var analysisContext = new AnalysisContext (
-				_scopeStack.CurrentScope.Origin,
-				ShouldEnableReflectionPatternReporting (),
-				_context);
-
 			DynamicallyAccessedMemberTypes returnValueDynamicallyAccessedMemberTypes = 0;
 
 			bool requiresDataFlowAnalysis = _context.Annotations.FlowAnnotations.RequiresDataFlowAnalysis (calledMethodDefinition);
 			returnValueDynamicallyAccessedMemberTypes = requiresDataFlowAnalysis ?
 				_context.Annotations.FlowAnnotations.GetReturnParameterAnnotation (calledMethodDefinition) : 0;
 
-			var handleCallAction = new HandleCallAction (_context, this, analysisContext, callingMethodDefinition);
+			_origin = _origin.WithInstructionOffset (operation.Offset);
+			bool diagnosticsEnabled = ShouldEnableReflectionPatternReporting (_origin.Provider);
+			var handleCallAction = new HandleCallAction (_context, this, _origin, diagnosticsEnabled, callingMethodDefinition);
 			switch (Intrinsics.GetIntrinsicIdForMethod (calledMethodDefinition)) {
 			case IntrinsicId.IntrospectionExtensions_GetTypeInfo:
 			case IntrinsicId.TypeInfo_AsType:
@@ -320,10 +310,11 @@ namespace Mono.Linker.Dataflow
 						}
 
 						if (comDangerousMethod) {
-							analysisContext.ReportWarning (DiagnosticId.CorrectnessOfCOMCannotBeGuaranteed, calledMethodDefinition.GetDisplayName ());
+							if (diagnosticsEnabled)
+								_context.LogWarning (_origin, DiagnosticId.CorrectnessOfCOMCannotBeGuaranteed, calledMethodDefinition.GetDisplayName ());
 						}
 					}
-					_markStep.CheckAndReportRequiresUnreferencedCode (calledMethodDefinition);
+					_markStep.CheckAndReportRequiresUnreferencedCode (calledMethodDefinition, _origin);
 
 					var instanceValue = MultiValueLattice.Top;
 					IReadOnlyList<MultiValue> parameterValues = methodParams;
@@ -356,7 +347,7 @@ namespace Mono.Linker.Dataflow
 					// We don't yet handle the case where you can create a nullable type with typeof(Nullable<>).MakeGenericType(T)
 					foreach (var value in methodParams[0]) {
 						if (value is SystemTypeValue typeValue) {
-							if (!AnalyzeGenericInstantiationTypeArray (analysisContext, methodParams[1], calledMethodDefinition, typeValue.RepresentedType.Type.GenericParameters)) {
+							if (!AnalyzeGenericInstantiationTypeArray (_origin, diagnosticsEnabled, methodParams[1], calledMethodDefinition, typeValue.RepresentedType.Type.GenericParameters)) {
 								bool hasUncheckedAnnotation = false;
 								foreach (var genericParameter in typeValue.RepresentedType.Type.GenericParameters) {
 									if (_context.Annotations.FlowAnnotations.GetGenericParameterAnnotation (genericParameter) != DynamicallyAccessedMemberTypes.None ||
@@ -372,7 +363,8 @@ namespace Mono.Linker.Dataflow
 									}
 								}
 								if (hasUncheckedAnnotation) {
-									analysisContext.ReportWarning (DiagnosticId.MakeGenericType, calledMethodDefinition.GetDisplayName ());
+									if (diagnosticsEnabled)
+										_context.LogWarning (_origin, DiagnosticId.MakeGenericType, calledMethodDefinition.GetDisplayName ());
 								}
 							}
 
@@ -411,7 +403,8 @@ namespace Mono.Linker.Dataflow
 							// Do nothing - null value is valid and should not cause warnings nor marking
 						} else {
 							// We have no way to "include more" to fix this if we don't know, so we have to warn
-							analysisContext.ReportWarning (DiagnosticId.MakeGenericType, calledMethodDefinition.GetDisplayName ());
+							if (diagnosticsEnabled)
+								_context.LogWarning (_origin, DiagnosticId.MakeGenericType, calledMethodDefinition.GetDisplayName ());
 						}
 						// We don't want to lose track of the type
 						// in case this is e.g. Activator.CreateInstance(typeof(Foo<>).MakeGenericType(...));
@@ -439,18 +432,20 @@ namespace Mono.Linker.Dataflow
 							foreach (var stringParam in methodParams[1]) {
 								if (stringParam is KnownStringValue stringValue) {
 									foreach (var method in systemTypeValue.RepresentedType.Type.GetMethodsOnTypeHierarchy (_context, m => m.Name == stringValue.Contents, bindingFlags)) {
-										ValidateGenericMethodInstantiation (analysisContext, method, methodParams[2], calledMethodDefinition);
-										MarkMethod (analysisContext, method);
+										ValidateGenericMethodInstantiation (_origin, diagnosticsEnabled, method, methodParams[2], calledMethodDefinition);
+										MarkMethod (_origin, method);
 									}
 								} else {
 									if (hasTypeArguments) {
 										// We don't know what method the `MakeGenericMethod` was called on, so we have to assume
 										// that the method may have requirements which we can't fullfil -> warn.
-										analysisContext.ReportWarning (DiagnosticId.MakeGenericMethod, DiagnosticUtilities.GetMethodSignatureDisplayName (calledMethod));
+										if (diagnosticsEnabled)
+											_context.LogWarning (_origin, DiagnosticId.MakeGenericMethod, DiagnosticUtilities.GetMethodSignatureDisplayName (calledMethod));
 									}
 
 									RequireDynamicallyAccessedMembers (
-										analysisContext,
+										_origin,
+										diagnosticsEnabled,
 										value,
 										targetValue);
 								}
@@ -459,11 +454,13 @@ namespace Mono.Linker.Dataflow
 							if (hasTypeArguments) {
 								// We don't know what method the `MakeGenericMethod` was called on, so we have to assume
 								// that the method may have requirements which we can't fullfil -> warn.
-								analysisContext.ReportWarning (DiagnosticId.MakeGenericMethod, DiagnosticUtilities.GetMethodSignatureDisplayName (calledMethod));
+								if (diagnosticsEnabled)
+									_context.LogWarning (_origin, DiagnosticId.MakeGenericMethod, DiagnosticUtilities.GetMethodSignatureDisplayName (calledMethod));
 							}
 
 							RequireDynamicallyAccessedMembers (
-								analysisContext,
+								_origin,
+								diagnosticsEnabled,
 								value,
 								targetValue);
 						}
@@ -480,9 +477,9 @@ namespace Mono.Linker.Dataflow
 					var targetValue = GetMethodParameterValue (calledMethodDefinition, 0, DynamicallyAccessedMemberTypes.PublicParameterlessConstructor);
 					foreach (var value in methodParams[0]) {
 						if (value is SystemTypeValue systemTypeValue) {
-							MarkConstructorsOnType (analysisContext, systemTypeValue.RepresentedType.Type, null, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+							MarkConstructorsOnType (_origin, systemTypeValue.RepresentedType.Type, null, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
 						} else {
-							RequireDynamicallyAccessedMembers (analysisContext, value, targetValue);
+							RequireDynamicallyAccessedMembers (_origin, diagnosticsEnabled, value, targetValue);
 						}
 					}
 				}
@@ -532,7 +529,7 @@ namespace Mono.Linker.Dataflow
 						} else {
 							// Make sure the type is marked (this will mark it as used via reflection, which is sort of true)
 							// This should already be true for most cases (method params, fields, ...), but just in case
-							MarkType (analysisContext, staticType);
+							MarkType (_origin, staticType);
 
 							var annotation = _markStep.DynamicallyAccessedMembersTypeHierarchy
 								.ApplyDynamicallyAccessedMembersToTypeHierarchy (this, staticType);
@@ -560,7 +557,8 @@ namespace Mono.Linker.Dataflow
 					var parameters = calledMethod.Parameters;
 					if ((parameters.Count == 3 && parameters[2].ParameterType.MetadataType == MetadataType.Boolean && methodParams[2].AsConstInt () != 0) ||
 						(parameters.Count == 5 && methodParams[4].AsConstInt () != 0)) {
-						analysisContext.ReportWarning (DiagnosticId.CaseInsensitiveTypeGetTypeCallIsNotSupported, calledMethod.GetDisplayName ());
+						if (diagnosticsEnabled)
+							_context.LogWarning (_origin, DiagnosticId.CaseInsensitiveTypeGetTypeCallIsNotSupported, calledMethod.GetDisplayName ());
 						break;
 					}
 					foreach (var typeNameValue in methodParams[0]) {
@@ -569,9 +567,9 @@ namespace Mono.Linker.Dataflow
 								|| ResolveToTypeDefinition (foundTypeRef) is not TypeDefinition foundType) {
 								// Intentionally ignore - it's not wrong for code to call Type.GetType on non-existing name, the code might expect null/exception back.
 							} else {
-								_markStep.MarkTypeVisibleToReflection (foundTypeRef, foundType, new DependencyInfo (DependencyKind.AccessedViaReflection, callingMethodDefinition));
+								_markStep.MarkTypeVisibleToReflection (foundTypeRef, foundType, new DependencyInfo (DependencyKind.AccessedViaReflection, callingMethodDefinition), _origin);
 								AddReturnValue (new SystemTypeValue (foundType));
-								_context.MarkingHelpers.MarkMatchingExportedType (foundType, typeAssembly, new DependencyInfo (DependencyKind.AccessedViaReflection, foundType), analysisContext.Origin);
+								_context.MarkingHelpers.MarkMatchingExportedType (foundType, typeAssembly, new DependencyInfo (DependencyKind.AccessedViaReflection, foundType), _origin);
 							}
 						} else if (typeNameValue == NullValue.Instance) {
 							// Nothing to do
@@ -580,7 +578,8 @@ namespace Mono.Linker.Dataflow
 							// So while we don't know which type it is, we can guarantee that it will fulfill the annotation.
 							AddReturnValue (GetMethodReturnValue (calledMethodDefinition, valueWithDynamicallyAccessedMembers.DynamicallyAccessedMemberTypes));
 						} else {
-							analysisContext.ReportWarning (DiagnosticId.UnrecognizedTypeNameInTypeGetType, calledMethod.GetDisplayName ());
+							if (diagnosticsEnabled)
+								_context.LogWarning (_origin, DiagnosticId.UnrecognizedTypeNameInTypeGetType, calledMethod.GetDisplayName ());
 						}
 					}
 
@@ -643,7 +642,7 @@ namespace Mono.Linker.Dataflow
 					foreach (var value in methodParams[0]) {
 						if (value is SystemTypeValue systemTypeValue) {
 							// Special case known type values as we can do better by applying exact binding flags and parameter count.
-							MarkConstructorsOnType (analysisContext, systemTypeValue.RepresentedType.Type,
+							MarkConstructorsOnType (_origin, systemTypeValue.RepresentedType.Type,
 								ctorParameterCount == null ? null : m => m.Parameters.Count == ctorParameterCount, bindingFlags);
 						} else {
 							// Otherwise fall back to the bitfield requirements
@@ -657,7 +656,7 @@ namespace Mono.Linker.Dataflow
 
 							var targetValue = GetMethodParameterValue (calledMethodDefinition, 0, requiredMemberTypes);
 
-							RequireDynamicallyAccessedMembers (analysisContext, value, targetValue);
+							RequireDynamicallyAccessedMembers (_origin, diagnosticsEnabled, value, targetValue);
 						}
 					}
 				}
@@ -671,7 +670,7 @@ namespace Mono.Linker.Dataflow
 			// static CreateInstance (string assemblyName, string typeName, object?[]? activationAttributes)
 			//
 			case IntrinsicId.Activator_CreateInstance_AssemblyName_TypeName:
-				ProcessCreateInstanceByName (analysisContext, calledMethodDefinition, methodParams);
+				ProcessCreateInstanceByName (_origin, diagnosticsEnabled, calledMethodDefinition, methodParams);
 				break;
 
 			//
@@ -682,7 +681,7 @@ namespace Mono.Linker.Dataflow
 			// static CreateInstanceFrom (string assemblyFile, string typeName, object? []? activationAttributes)
 			//
 			case IntrinsicId.Activator_CreateInstanceFrom:
-				ProcessCreateInstanceByName (analysisContext, calledMethodDefinition, methodParams);
+				ProcessCreateInstanceByName (_origin, diagnosticsEnabled, calledMethodDefinition, methodParams);
 				break;
 
 			//
@@ -702,7 +701,8 @@ namespace Mono.Linker.Dataflow
 
 					var targetValue = new GenericParameterValue (calledMethodDefinition.GenericParameters[0], DynamicallyAccessedMemberTypes.PublicParameterlessConstructor);
 					RequireDynamicallyAccessedMembers (
-						analysisContext,
+						_origin,
+						diagnosticsEnabled,
 						GetTypeValueNodeFromGenericArgument (genericCalledMethod.GenericArguments[0]),
 						targetValue);
 				}
@@ -731,7 +731,7 @@ namespace Mono.Linker.Dataflow
 					|| appDomainCreateInstance == IntrinsicId.AppDomain_CreateInstanceAndUnwrap
 					|| appDomainCreateInstance == IntrinsicId.AppDomain_CreateInstanceFrom
 					|| appDomainCreateInstance == IntrinsicId.AppDomain_CreateInstanceFromAndUnwrap:
-				ProcessCreateInstanceByName (analysisContext, calledMethodDefinition, methodParams);
+				ProcessCreateInstanceByName (_origin, diagnosticsEnabled, calledMethodDefinition, methodParams);
 				break;
 
 			//
@@ -743,7 +743,8 @@ namespace Mono.Linker.Dataflow
 			//
 			case IntrinsicId.Assembly_CreateInstance:
 				// For now always fail since we don't track assemblies (dotnet/linker/issues/1947)
-				analysisContext.ReportWarning (DiagnosticId.ParametersOfAssemblyCreateInstanceCannotBeAnalyzed, calledMethodDefinition.GetDisplayName ());
+				if (diagnosticsEnabled)
+					_context.LogWarning (_origin, DiagnosticId.ParametersOfAssemblyCreateInstanceCannotBeAnalyzed, calledMethodDefinition.GetDisplayName ());
 				break;
 
 			//
@@ -755,13 +756,14 @@ namespace Mono.Linker.Dataflow
 
 					foreach (var methodValue in methodParams[0]) {
 						if (methodValue is SystemReflectionMethodBaseValue methodBaseValue) {
-							ValidateGenericMethodInstantiation (analysisContext, methodBaseValue.RepresentedMethod.Method, methodParams[1], calledMethodDefinition);
+							ValidateGenericMethodInstantiation (_origin, diagnosticsEnabled, methodBaseValue.RepresentedMethod.Method, methodParams[1], calledMethodDefinition);
 						} else if (methodValue == NullValue.Instance) {
 							// Nothing to do
 						} else {
 							// We don't know what method the `MakeGenericMethod` was called on, so we have to assume
 							// that the method may have requirements which we can't fullfil -> warn.
-							analysisContext.ReportWarning (DiagnosticId.MakeGenericMethod, DiagnosticUtilities.GetMethodSignatureDisplayName (calledMethodDefinition));
+							if (diagnosticsEnabled)
+								_context.LogWarning (_origin, DiagnosticId.MakeGenericMethod, DiagnosticUtilities.GetMethodSignatureDisplayName (calledMethodDefinition));
 						}
 					}
 
@@ -863,7 +865,7 @@ namespace Mono.Linker.Dataflow
 			return false;
 		}
 
-		bool AnalyzeGenericInstantiationTypeArray (in AnalysisContext analysisContext, in MultiValue arrayParam, MethodDefinition calledMethod, IList<GenericParameter> genericParameters)
+		bool AnalyzeGenericInstantiationTypeArray (in MessageOrigin origin, bool diagnosticsEnabled, in MultiValue arrayParam, MethodDefinition calledMethod, IList<GenericParameter> genericParameters)
 		{
 			bool hasRequirements = false;
 			foreach (var genericParameter in genericParameters) {
@@ -906,7 +908,8 @@ namespace Mono.Linker.Dataflow
 						// but with the annotation from the generic parameter.
 						var targetValue = GetMethodParameterValue (calledMethod, 0, _context.Annotations.FlowAnnotations.GetGenericParameterAnnotation (genericParameters[i]));
 						RequireDynamicallyAccessedMembers (
-							analysisContext,
+							origin,
+							diagnosticsEnabled,
 							value,
 							targetValue);
 					}
@@ -915,7 +918,7 @@ namespace Mono.Linker.Dataflow
 			return true;
 		}
 
-		void ProcessCreateInstanceByName (in AnalysisContext analysisContext, MethodDefinition calledMethod, ValueNodeList methodParams)
+		void ProcessCreateInstanceByName (in MessageOrigin origin, bool diagnosticsEnabled, MethodDefinition calledMethod, ValueNodeList methodParams)
 		{
 			BindingFlags bindingFlags = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
 			bool parameterlessConstructor = true;
@@ -944,9 +947,10 @@ namespace Mono.Linker.Dataflow
 						if (typeNameValue is KnownStringValue typeNameStringValue) {
 							var resolvedAssembly = _context.TryResolve (assemblyNameStringValue.Contents);
 							if (resolvedAssembly == null) {
-								analysisContext.ReportWarning (DiagnosticId.UnresolvedAssemblyInCreateInstance,
-									assemblyNameStringValue.Contents,
-									calledMethod.GetDisplayName ());
+								if (diagnosticsEnabled)
+									_context.LogWarning (origin, DiagnosticId.UnresolvedAssemblyInCreateInstance,
+										assemblyNameStringValue.Contents,
+										calledMethod.GetDisplayName ());
 								continue;
 							}
 
@@ -960,111 +964,114 @@ namespace Mono.Linker.Dataflow
 								continue;
 							}
 
-							MarkConstructorsOnType (analysisContext, resolvedType, parameterlessConstructor ? m => m.Parameters.Count == 0 : null, bindingFlags);
+							MarkConstructorsOnType (origin, resolvedType, parameterlessConstructor ? m => m.Parameters.Count == 0 : null, bindingFlags);
 						} else {
-							analysisContext.ReportWarning (DiagnosticId.UnrecognizedParameterInMethodCreateInstance, calledMethod.Parameters[1].Name, calledMethod.GetDisplayName ());
+							if (diagnosticsEnabled)
+								_context.LogWarning (origin, DiagnosticId.UnrecognizedParameterInMethodCreateInstance, calledMethod.Parameters[1].Name, calledMethod.GetDisplayName ());
 						}
 					}
 				} else {
-					analysisContext.ReportWarning (DiagnosticId.UnrecognizedParameterInMethodCreateInstance, calledMethod.Parameters[0].Name, calledMethod.GetDisplayName ());
+					if (diagnosticsEnabled)
+						_context.LogWarning (origin, DiagnosticId.UnrecognizedParameterInMethodCreateInstance, calledMethod.Parameters[0].Name, calledMethod.GetDisplayName ());
 				}
 			}
 		}
 
-		void RequireDynamicallyAccessedMembers (in AnalysisContext analysisContext, in MultiValue value, ValueWithDynamicallyAccessedMembers targetValue)
+		void RequireDynamicallyAccessedMembers (in MessageOrigin origin, bool diagnosticsEnabled, in MultiValue value, ValueWithDynamicallyAccessedMembers targetValue)
 		{
-			var requireDynamicallyAccessedMembersAction = new RequireDynamicallyAccessedMembersAction (_context, this, analysisContext);
+			var requireDynamicallyAccessedMembersAction = new RequireDynamicallyAccessedMembersAction (_context, this, origin, diagnosticsEnabled);
 			requireDynamicallyAccessedMembersAction.Invoke (value, targetValue);
 		}
 
-		internal void MarkTypeForDynamicallyAccessedMembers (in AnalysisContext analysisContext, TypeDefinition typeDefinition, DynamicallyAccessedMemberTypes requiredMemberTypes, DependencyKind dependencyKind, bool declaredOnly = false)
+		internal void MarkTypeForDynamicallyAccessedMembers (in MessageOrigin origin, TypeDefinition typeDefinition, DynamicallyAccessedMemberTypes requiredMemberTypes, DependencyKind dependencyKind, bool declaredOnly = false)
 		{
 			foreach (var member in typeDefinition.GetDynamicallyAccessedMembers (_context, requiredMemberTypes, declaredOnly)) {
 				switch (member) {
 				case MethodDefinition method:
-					MarkMethod (analysisContext, method, dependencyKind);
+					MarkMethod (origin, method, dependencyKind);
 					break;
 				case FieldDefinition field:
-					MarkField (analysisContext, field, dependencyKind);
+					MarkField (origin, field, dependencyKind);
 					break;
 				case TypeDefinition nestedType:
-					MarkType (analysisContext, nestedType, dependencyKind);
+					MarkType (origin, nestedType, dependencyKind);
 					break;
 				case PropertyDefinition property:
-					MarkProperty (analysisContext, property, dependencyKind);
+					MarkProperty (origin, property, dependencyKind);
 					break;
 				case EventDefinition @event:
-					MarkEvent (analysisContext, @event, dependencyKind);
+					MarkEvent (origin, @event, dependencyKind);
 					break;
 				case InterfaceImplementation interfaceImplementation:
-					MarkInterfaceImplementation (analysisContext, interfaceImplementation, dependencyKind);
+					MarkInterfaceImplementation (origin, interfaceImplementation, dependencyKind);
 					break;
 				}
 			}
 		}
 
-		internal void MarkType (in AnalysisContext analysisContext, TypeReference typeReference, DependencyKind dependencyKind = DependencyKind.AccessedViaReflection)
+		internal void MarkType (in MessageOrigin origin, TypeReference typeReference, DependencyKind dependencyKind = DependencyKind.AccessedViaReflection)
 		{
 			if (_context.TryResolve (typeReference) is TypeDefinition type)
-				_markStep.MarkTypeVisibleToReflection (typeReference, type, new DependencyInfo (dependencyKind, analysisContext.Origin.Provider));
+				_markStep.MarkTypeVisibleToReflection (typeReference, type, new DependencyInfo (dependencyKind, origin.Provider), origin);
 		}
 
-		internal void MarkMethod (in AnalysisContext analysisContext, MethodDefinition method, DependencyKind dependencyKind = DependencyKind.AccessedViaReflection)
+		internal void MarkMethod (in MessageOrigin origin, MethodDefinition method, DependencyKind dependencyKind = DependencyKind.AccessedViaReflection)
 		{
-			_markStep.MarkMethodVisibleToReflection (method, new DependencyInfo (dependencyKind, analysisContext.Origin.Provider));
+			_markStep.MarkMethodVisibleToReflection (method, new DependencyInfo (dependencyKind, origin.Provider), origin);
 		}
 
-		void MarkField (in AnalysisContext analysisContext, FieldDefinition field, DependencyKind dependencyKind = DependencyKind.AccessedViaReflection)
+		void MarkField (in MessageOrigin origin, FieldDefinition field, DependencyKind dependencyKind = DependencyKind.AccessedViaReflection)
 		{
-			_markStep.MarkFieldVisibleToReflection (field, new DependencyInfo (dependencyKind, analysisContext.Origin.Provider));
+			_markStep.MarkFieldVisibleToReflection (field, new DependencyInfo (dependencyKind, origin.Provider), origin);
 		}
 
-		internal void MarkProperty (in AnalysisContext analysisContext, PropertyDefinition property, DependencyKind dependencyKind = DependencyKind.AccessedViaReflection)
+		internal void MarkProperty (in MessageOrigin origin, PropertyDefinition property, DependencyKind dependencyKind = DependencyKind.AccessedViaReflection)
 		{
-			_markStep.MarkPropertyVisibleToReflection (property, new DependencyInfo (dependencyKind, analysisContext.Origin.Provider));
+			_markStep.MarkPropertyVisibleToReflection (property, new DependencyInfo (dependencyKind, origin.Provider), origin);
 		}
 
-		void MarkEvent (in AnalysisContext analysisContext, EventDefinition @event, DependencyKind dependencyKind = DependencyKind.AccessedViaReflection)
+		void MarkEvent (in MessageOrigin origin, EventDefinition @event, DependencyKind dependencyKind = DependencyKind.AccessedViaReflection)
 		{
-			_markStep.MarkEventVisibleToReflection (@event, new DependencyInfo (dependencyKind, analysisContext.Origin.Provider));
+			_markStep.MarkEventVisibleToReflection (@event, new DependencyInfo (dependencyKind, origin.Provider), origin);
 		}
 
-		void MarkInterfaceImplementation (in AnalysisContext analysisContext, InterfaceImplementation interfaceImplementation, DependencyKind dependencyKind = DependencyKind.AccessedViaReflection)
+		void MarkInterfaceImplementation (in MessageOrigin origin, InterfaceImplementation interfaceImplementation, DependencyKind dependencyKind = DependencyKind.AccessedViaReflection)
 		{
-			_markStep.MarkInterfaceImplementation (interfaceImplementation, null, new DependencyInfo (dependencyKind, analysisContext.Origin.Provider));
+			_markStep.MarkInterfaceImplementation (interfaceImplementation, null, new DependencyInfo (dependencyKind, origin.Provider));
 		}
 
-		internal void MarkConstructorsOnType (in AnalysisContext analysisContext, TypeDefinition type, Func<MethodDefinition, bool>? filter, BindingFlags? bindingFlags = null)
+		internal void MarkConstructorsOnType (in MessageOrigin origin, TypeDefinition type, Func<MethodDefinition, bool>? filter, BindingFlags? bindingFlags = null)
 		{
 			foreach (var ctor in type.GetConstructorsOnType (filter, bindingFlags))
-				MarkMethod (analysisContext, ctor);
+				MarkMethod (origin, ctor);
 		}
 
-		internal void MarkFieldsOnTypeHierarchy (in AnalysisContext analysisContext, TypeDefinition type, Func<FieldDefinition, bool> filter, BindingFlags? bindingFlags = BindingFlags.Default)
+		internal void MarkFieldsOnTypeHierarchy (in MessageOrigin origin, TypeDefinition type, Func<FieldDefinition, bool> filter, BindingFlags? bindingFlags = BindingFlags.Default)
 		{
 			foreach (var field in type.GetFieldsOnTypeHierarchy (_context, filter, bindingFlags))
-				MarkField (analysisContext, field);
+				MarkField (origin, field);
 		}
 
-		internal void MarkPropertiesOnTypeHierarchy (in AnalysisContext analysisContext, TypeDefinition type, Func<PropertyDefinition, bool> filter, BindingFlags? bindingFlags = BindingFlags.Default)
+		internal void MarkPropertiesOnTypeHierarchy (in MessageOrigin origin, TypeDefinition type, Func<PropertyDefinition, bool> filter, BindingFlags? bindingFlags = BindingFlags.Default)
 		{
 			foreach (var property in type.GetPropertiesOnTypeHierarchy (_context, filter, bindingFlags))
-				MarkProperty (analysisContext, property);
+				MarkProperty (origin, property);
 		}
 
-		internal void MarkEventsOnTypeHierarchy (in AnalysisContext analysisContext, TypeDefinition type, Func<EventDefinition, bool> filter, BindingFlags? bindingFlags = BindingFlags.Default)
+		internal void MarkEventsOnTypeHierarchy (in MessageOrigin origin, TypeDefinition type, Func<EventDefinition, bool> filter, BindingFlags? bindingFlags = BindingFlags.Default)
 		{
 			foreach (var @event in type.GetEventsOnTypeHierarchy (_context, filter, bindingFlags))
-				MarkEvent (analysisContext, @event);
+				MarkEvent (origin, @event);
 		}
 
-		internal void MarkStaticConstructor (in AnalysisContext analysisContext, TypeDefinition type)
+		internal void MarkStaticConstructor (in MessageOrigin origin, TypeDefinition type)
 		{
-			_markStep.MarkStaticConstructorVisibleToReflection (type, new DependencyInfo (DependencyKind.AccessedViaReflection, analysisContext.Origin.Provider));
+			_markStep.MarkStaticConstructorVisibleToReflection (type, new DependencyInfo (DependencyKind.AccessedViaReflection, origin.Provider), origin);
 		}
 
 		void ValidateGenericMethodInstantiation (
-			in AnalysisContext analysisContext,
+			in MessageOrigin origin,
+			bool diagnosticsEnabled,
 			MethodDefinition genericMethod,
 			in MultiValue genericParametersArray,
 			MethodDefinition reflectionMethod)
@@ -1073,8 +1080,9 @@ namespace Mono.Linker.Dataflow
 				return;
 			}
 
-			if (!AnalyzeGenericInstantiationTypeArray (analysisContext, genericParametersArray, reflectionMethod, genericMethod.GenericParameters)) {
-				analysisContext.ReportWarning (DiagnosticId.MakeGenericMethod, DiagnosticUtilities.GetMethodSignatureDisplayName (reflectionMethod));
+			if (!AnalyzeGenericInstantiationTypeArray (origin, diagnosticsEnabled, genericParametersArray, reflectionMethod, genericMethod.GenericParameters)) {
+				if (diagnosticsEnabled)
+					_context.LogWarning (origin, DiagnosticId.MakeGenericMethod, DiagnosticUtilities.GetMethodSignatureDisplayName (reflectionMethod));
 			}
 		}
 
@@ -1083,27 +1091,5 @@ namespace Mono.Linker.Dataflow
 
 		static DynamicallyAccessedMemberTypes GetDynamicallyAccessedMemberTypesFromBindingFlagsForMethods (BindingFlags? bindingFlags) =>
 			HandleCallAction.GetDynamicallyAccessedMemberTypesFromBindingFlagsForMethods (bindingFlags);
-
-		internal readonly struct AnalysisContext
-		{
-			public readonly MessageOrigin Origin;
-			public readonly bool DiagnosticsEnabled;
-			readonly LinkContext _context;
-
-			public AnalysisContext (in MessageOrigin origin, bool diagnosticsEnabled, LinkContext context)
-				=> (Origin, DiagnosticsEnabled, _context) = (origin, diagnosticsEnabled, context);
-
-			public void ReportWarning (string message, int messageCode)
-			{
-				if (DiagnosticsEnabled)
-					_context.LogWarning (message, messageCode, Origin, MessageSubCategory.TrimAnalysis);
-			}
-
-			public void ReportWarning (DiagnosticId id, params string[] args)
-			{
-				if (DiagnosticsEnabled)
-					_context.LogWarning (Origin, id, args);
-			}
-		}
 	}
 }

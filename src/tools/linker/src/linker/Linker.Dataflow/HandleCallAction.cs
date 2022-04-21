@@ -18,21 +18,22 @@ namespace ILLink.Shared.TrimAnalysis
 
 		readonly LinkContext _context;
 		readonly ReflectionMethodBodyScanner _reflectionMethodBodyScanner;
-		readonly ReflectionMethodBodyScanner.AnalysisContext _analysisContext;
+		readonly MessageOrigin _origin;
 		readonly MethodDefinition _callingMethodDefinition;
 
 		public HandleCallAction (
 			LinkContext context,
 			ReflectionMethodBodyScanner reflectionMethodBodyScanner,
-			in ReflectionMethodBodyScanner.AnalysisContext analysisContext,
+			in MessageOrigin origin,
+			bool diagnosticsEnabled,
 			MethodDefinition callingMethodDefinition)
 		{
 			_context = context;
 			_reflectionMethodBodyScanner = reflectionMethodBodyScanner;
-			_analysisContext = analysisContext;
+			_origin = origin;
 			_callingMethodDefinition = callingMethodDefinition;
-			_diagnosticContext = new DiagnosticContext (analysisContext.Origin, analysisContext.DiagnosticsEnabled, context);
-			_requireDynamicallyAccessedMembersAction = new (context, reflectionMethodBodyScanner, analysisContext);
+			_diagnosticContext = new DiagnosticContext (origin, diagnosticsEnabled, context);
+			_requireDynamicallyAccessedMembersAction = new (context, reflectionMethodBodyScanner, origin, diagnosticsEnabled);
 		}
 
 		private partial bool MethodRequiresDataFlowAnalysis (MethodProxy method)
@@ -103,33 +104,33 @@ namespace ILLink.Shared.TrimAnalysis
 		}
 
 		private partial void MarkStaticConstructor (TypeProxy type)
-			=> _reflectionMethodBodyScanner.MarkStaticConstructor (_analysisContext, type.Type);
+			=> _reflectionMethodBodyScanner.MarkStaticConstructor (_origin, type.Type);
 
 		private partial void MarkEventsOnTypeHierarchy (TypeProxy type, string name, BindingFlags? bindingFlags)
-			=> _reflectionMethodBodyScanner.MarkEventsOnTypeHierarchy (_analysisContext, type.Type, e => e.Name == name, bindingFlags);
+			=> _reflectionMethodBodyScanner.MarkEventsOnTypeHierarchy (_origin, type.Type, e => e.Name == name, bindingFlags);
 
 		private partial void MarkFieldsOnTypeHierarchy (TypeProxy type, string name, BindingFlags? bindingFlags)
-			=> _reflectionMethodBodyScanner.MarkFieldsOnTypeHierarchy (_analysisContext, type.Type, f => f.Name == name, bindingFlags);
+			=> _reflectionMethodBodyScanner.MarkFieldsOnTypeHierarchy (_origin, type.Type, f => f.Name == name, bindingFlags);
 
 		private partial void MarkPropertiesOnTypeHierarchy (TypeProxy type, string name, BindingFlags? bindingFlags)
-			=> _reflectionMethodBodyScanner.MarkPropertiesOnTypeHierarchy (_analysisContext, type.Type, p => p.Name == name, bindingFlags);
+			=> _reflectionMethodBodyScanner.MarkPropertiesOnTypeHierarchy (_origin, type.Type, p => p.Name == name, bindingFlags);
 
 		private partial void MarkPublicParameterlessConstructorOnType (TypeProxy type)
-			=> _reflectionMethodBodyScanner.MarkConstructorsOnType (_analysisContext, type.Type, m => m.IsPublic && m.Parameters.Count == 0);
+			=> _reflectionMethodBodyScanner.MarkConstructorsOnType (_origin, type.Type, m => m.IsPublic && m.Parameters.Count == 0);
 
 		private partial void MarkConstructorsOnType (TypeProxy type, BindingFlags? bindingFlags)
-			=> _reflectionMethodBodyScanner.MarkConstructorsOnType (_analysisContext, type.Type, null, bindingFlags);
+			=> _reflectionMethodBodyScanner.MarkConstructorsOnType (_origin, type.Type, null, bindingFlags);
 
 		private partial void MarkMethod (MethodProxy method)
-			=> _reflectionMethodBodyScanner.MarkMethod (_analysisContext, method.Method);
+			=> _reflectionMethodBodyScanner.MarkMethod (_origin, method.Method);
 
 		private partial void MarkType (TypeProxy type)
-			=> _reflectionMethodBodyScanner.MarkType (_analysisContext, type.Type);
+			=> _reflectionMethodBodyScanner.MarkType (_origin, type.Type);
 
 		private partial bool MarkAssociatedProperty (MethodProxy method)
 		{
 			if (method.Method.TryGetProperty (out PropertyDefinition? propertyDefinition)) {
-				_reflectionMethodBodyScanner.MarkProperty (_analysisContext, propertyDefinition);
+				_reflectionMethodBodyScanner.MarkProperty (_origin, propertyDefinition);
 				return true;
 			}
 
