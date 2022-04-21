@@ -85,6 +85,7 @@ namespace System.Net.Security.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/18837", TestPlatforms.AnyUnix)]
         public async Task SslStream_StreamToStream_ClientInitiatedCloseNotify_Ok(bool sendData)
         {
             (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
