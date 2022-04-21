@@ -17,7 +17,7 @@ using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
 namespace Microsoft.Interop
 {
-    public record StubEnvironment(
+    public sealed record StubEnvironment(
         Compilation Compilation,
         TargetFramework TargetFramework,
         Version TargetFrameworkVersion,

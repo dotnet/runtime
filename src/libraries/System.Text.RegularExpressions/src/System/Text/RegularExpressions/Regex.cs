@@ -363,7 +363,7 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>Internal worker which will scan the passed in string <paramref name="input"/> for a match. Used by public APIs.</summary>
-        internal Match? RunSingleMatch(bool quick, int prevlen, string input, int beginning, int length, int startat)
+        internal Match? RunSingleMatch(RegexRunnerMode mode, int prevlen, string input, int beginning, int length, int startat)
         {
             if ((uint)startat > (uint)input.Length)
             {
@@ -380,22 +380,28 @@ namespace System.Text.RegularExpressions
                 runner.InitializeTimeout(internalMatchTimeout);
                 runner.runtext = input;
                 ReadOnlySpan<char> span = input.AsSpan(beginning, length);
-                runner.InitializeForScan(this, span, startat - beginning, quick);
-
-                int stoppos = RightToLeft ? 0 : span.Length;
+                runner.InitializeForScan(this, span, startat - beginning, mode);
 
                 // If previous match was empty or failed, advance by one before matching.
                 if (prevlen == 0)
                 {
+                    int stoppos = span.Length;
+                    int bump = 1;
+                    if (RightToLeft)
+                    {
+                        stoppos = 0;
+                        bump = -1;
+                    }
+
                     if (runner.runtextstart == stoppos)
                     {
                         return RegularExpressions.Match.Empty;
                     }
 
-                    runner.runtextpos += RightToLeft ? -1 : 1;
+                    runner.runtextpos += bump;
                 }
 
-                return ScanInternal(quick, input, beginning, runner, span, returnNullIfQuick: true);
+                return ScanInternal(mode, reuseMatchObject: mode == RegexRunnerMode.ExistenceRequired, input, beginning, runner, span, returnNullIfReuseMatchObject: true);
             }
             finally
             {
@@ -405,8 +411,10 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>Internal worker which will scan the passed in span <paramref name="input"/> for a match. Used by public APIs.</summary>
-        internal Match? RunSingleMatch(bool quick, int prevlen, ReadOnlySpan<char> input, int startat)
+        internal (bool Success, int Index, int Length, int TextPosition) RunSingleMatch(RegexRunnerMode mode, int prevlen, ReadOnlySpan<char> input, int startat)
         {
+            Debug.Assert(mode <= RegexRunnerMode.BoundsRequired);
+
             // startat parameter is always either 0 or input.Length since public API for IsMatch doesn't have an overload
             // that takes in startat.
             Debug.Assert(startat <= input.Length);
@@ -415,7 +423,7 @@ namespace System.Text.RegularExpressions
             try
             {
                 runner.InitializeTimeout(internalMatchTimeout);
-                runner.InitializeForScan(this, input, startat, quick);
+                runner.InitializeForScan(this, input, startat, mode);
 
                 // If previous match was empty or failed, advance by one before matching.
                 if (prevlen == 0)
@@ -424,7 +432,7 @@ namespace System.Text.RegularExpressions
                     {
                         if (runner.runtextstart == 0)
                         {
-                            return RegularExpressions.Match.Empty;
+                            return (false, -1, -1, -1);
                         }
                         runner.runtextpos--;
                     }
@@ -432,7 +440,7 @@ namespace System.Text.RegularExpressions
                     {
                         if (runner.runtextstart == input.Length)
                         {
-                            return RegularExpressions.Match.Empty;
+                            return (false, -1, -1, -1);
                         }
                         runner.runtextpos++;
                     }
@@ -443,17 +451,18 @@ namespace System.Text.RegularExpressions
                 // If runmatch is null it means that an override of Scan didn't implement it correctly, so we will
                 // let this null ref since there are lots of ways where you can end up in a erroneous state.
                 Match match = runner.runmatch!;
-                if (match!.FoundMatch)
+                if (match.FoundMatch)
                 {
-                    if (quick)
+                    if (mode == RegexRunnerMode.ExistenceRequired)
                     {
-                        return null;
+                        return (true, -1, -1, -1);
                     }
-                    match.Tidy(runner.runtextpos, 0);
-                    return match;
+
+                    match.Tidy(runner.runtextpos, 0, mode);
+                    return (true, match.Index, match.Length, match._textpos);
                 }
 
-                return RegularExpressions.Match.Empty;
+                return (false, -1, -1, -1);
             }
             finally
             {
@@ -462,84 +471,53 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>Internal worker which will scan the passed in string <paramref name="input"/> for all matches, and will call <paramref name="callback"/> for each match found.</summary>
-        internal void RunAllMatchesWithCallback<TState>(string input, int startat, ref TState state, MatchCallback<TState> callback, bool reuseMatchObject)
+        internal void RunAllMatchesWithCallback<TState>(string? input, int startat, ref TState state, MatchCallback<TState> callback, RegexRunnerMode mode, bool reuseMatchObject) =>
+            RunAllMatchesWithCallback(input, (ReadOnlySpan<char>)input, startat, ref state, callback, mode, reuseMatchObject);
+
+        internal void RunAllMatchesWithCallback<TState>(ReadOnlySpan<char> input, int startat, ref TState state, MatchCallback<TState> callback, RegexRunnerMode mode, bool reuseMatchObject) =>
+            RunAllMatchesWithCallback(inputString: null, input, startat, ref state, callback, mode, reuseMatchObject);
+
+        private void RunAllMatchesWithCallback<TState>(string? inputString, ReadOnlySpan<char> inputSpan, int startat, ref TState state, MatchCallback<TState> callback, RegexRunnerMode mode, bool reuseMatchObject)
         {
-            Debug.Assert((uint)startat <= (uint)input.Length);
+            Debug.Assert(inputString is null || inputSpan.SequenceEqual(inputString));
+            Debug.Assert((uint)startat <= (uint)inputSpan.Length);
 
             RegexRunner runner = Interlocked.Exchange(ref _runner, null) ?? CreateRunner();
             try
             {
-                // For the string overload, we need to set runtext before starting the match attempts.
-                runner.runtext = input;
-                RunAllMatchesWithCallbackHelper(input, startat, ref state, callback, runner, usingStringOverload: true, reuseMatchObject);
-            }
-            finally
-            {
-                runner.runtext = null; // drop reference to text to avoid keeping it alive in a cache.
-                _runner = runner;
-            }
-        }
+                runner.runtext = inputString;
+                runner.InitializeTimeout(internalMatchTimeout);
+                int runtextpos = startat;
 
-        /// <summary>Internal worker which will scan the passed in string <paramref name="input"/> for all matches, and will call <paramref name="callback"/> for each match found.</summary>
-        internal void RunAllMatchesWithCallback<TState>(ReadOnlySpan<char> input, int startat, ref TState state, MatchCallback<TState> callback, bool reuseMatchObject)
-        {
-            Debug.Assert((uint)startat <= (uint)input.Length);
-
-            RegexRunner runner = Interlocked.Exchange(ref _runner, null) ?? CreateRunner();
-            try
-            {
-                RunAllMatchesWithCallbackHelper(input, startat, ref state, callback, runner, usingStringOverload: false, reuseMatchObject);
-            }
-            finally
-            {
-                _runner = runner;
-            }
-        }
-
-        /// <summary>
-        /// Helper method used by <see cref="RunAllMatchesWithCallback{TState}(string, int, ref TState, MatchCallback{TState}, bool)"/> and
-        /// <see cref="RunAllMatchesWithCallback{TState}(ReadOnlySpan{char}, int, ref TState, MatchCallback{TState}, bool)"/> which loops to find
-        /// all matches on the passed in <paramref name="input"/> and calls <paramref name="callback"/> for each match found.
-        /// </summary>
-        private void RunAllMatchesWithCallbackHelper<TState>(ReadOnlySpan<char> input, int startat, ref TState state, MatchCallback<TState> callback, RegexRunner runner, bool usingStringOverload, bool reuseMatchObject)
-        {
-            runner.InitializeTimeout(internalMatchTimeout);
-            int runtextpos = startat;
-            while (true)
-            {
-                runner.InitializeForScan(this, input, startat, false);
-                runner.runtextpos = runtextpos;
-
-                int stoppos = RightToLeft ? 0 : input.Length;
-
-                // We get the Match by calling Scan. 'input' parameter is used to set the Match text which is only relevante if we are using the Run<TState> string
-                // overload, as APIs that call the span overload (like Count) don't require match.Text to be set, so we pass null in that case.
-                Match? match = ScanInternal(reuseMatchObject, input: usingStringOverload ? runner.runtext : null, 0, runner, input, returnNullIfQuick: false);
-                Debug.Assert(match is not null);
-
-                // if we got a match, then call the callback function with the match and prepare for next iteration.
-                if (match.Success)
+                while (true)
                 {
+                    runner.InitializeForScan(this, inputSpan, startat, mode);
+                    runner.runtextpos = runtextpos;
+
+                    // We get the Match by calling Scan. 'input' parameter is used to set the Match text which is only relevant if we are using the Run<TState> string
+                    // overload, as APIs that call the span overload (like Count) don't require match.Text to be set, so we pass null in that case.
+                    Match? match = ScanInternal(mode, reuseMatchObject, inputString, 0, runner, inputSpan, returnNullIfReuseMatchObject: false);
+                    Debug.Assert(match is not null);
+
+                    // If we failed to match again, we're done.
+                    if (!match.Success)
+                    {
+                        break;
+                    }
+
+                    // We got a match.  Call the callback function with the match and prepare for next iteration.
+
                     if (!reuseMatchObject)
                     {
                         // We're not reusing match objects, so null out our field reference to the instance.
-                        // It'll be recreated the next time one is needed.
+                        // It'll be recreated the next time one is needed.  reuseMatchObject will be false
+                        // when the callback may expose the Match object to user code.
                         runner.runmatch = null;
                     }
 
                     if (!callback(ref state, match))
                     {
                         // If the callback returns false, we're done.
-
-                        if (usingStringOverload && reuseMatchObject)
-                        {
-                            // We're reusing the single match instance and we were called via the string overload
-                            // which would have set the match's text, so clear it out as well.
-                            // We don't do this if we're not reusing instances, as in that case we're
-                            // dropping the whole reference to the match, and we no longer own the instance
-                            // having handed it out to the callback.
-                            match.Text = null;
-                        }
                         return;
                     }
 
@@ -547,71 +525,73 @@ namespace System.Text.RegularExpressions
                     // the current position, just as Match.NextMatch() would pass in _textpos as textstart.
                     runtextpos = startat = runner.runtextpos;
 
+                    if (match.Length == 0)
+                    {
+                        int stoppos = inputSpan.Length;
+                        int bump = 1;
+                        if (RightToLeft)
+                        {
+                            stoppos = 0;
+                            bump = -1;
+                        }
+
+                        if (runtextpos == stoppos)
+                        {
+                            return;
+                        }
+
+                        runtextpos += bump;
+                    }
+
                     // Reset state for another iteration.
                     runner.runtrackpos = runner.runtrack!.Length;
                     runner.runstackpos = runner.runstack!.Length;
                     runner.runcrawlpos = runner.runcrawl!.Length;
-
-                    if (match.Length == 0)
-                    {
-                        if (runner.runtextpos == stoppos)
-                        {
-                            if (usingStringOverload && reuseMatchObject)
-                            {
-                                // See above comment.
-                                match.Text = null;
-                            }
-                            return;
-                        }
-
-                        runtextpos += RightToLeft ? -1 : 1;
-                    }
-
-                    // Loop around to perform next match from where we left off.
-                    continue;
                 }
-                else
-                {
-                    // We failed to match at this position.  If we're at the stopping point, we're done.
-                    if (runner.runtextpos == stoppos)
-                    {
-                        return;
-                    }
-                }
+            }
+            finally
+            {
+                runner.runtext = null; // drop reference to string to avoid keeping it alive in a cache.
+                _runner = runner;
             }
         }
 
         /// <summary>Helper method used by RunSingleMatch and RunAllMatchesWithCallback which calls runner.Scan to find a match on the passed in span.</summary>
-        private static Match? ScanInternal(bool quick, string? input, int beginning, RegexRunner runner, ReadOnlySpan<char> span, bool returnNullIfQuick)
+        private static Match? ScanInternal(RegexRunnerMode mode, bool reuseMatchObject, string? input, int beginning, RegexRunner runner, ReadOnlySpan<char> span, bool returnNullIfReuseMatchObject)
         {
             runner.Scan(span);
 
             Match? match = runner.runmatch;
             Debug.Assert(match is not null);
 
-            // If we got a match, do some cleanup and return it, or return null if quick is true;
+            // If we got a match, do some cleanup and return it, or return null if reuseMatchObject and returnNullIfReuseMatchObject are true.
             if (match.FoundMatch)
             {
-                if (!quick)
+                if (!reuseMatchObject)
                 {
-                    // We're about to return the Match object. Store the input into it and remove it from the runner.
+                    // The match object is only reusable in very specific circumstances where the internal caller
+                    // extracts only the matching information (e.g. bounds) it needs from the Match object, so
+                    // in such situations we don't need to fill in the input value, and because it's being reused,
+                    // we don't want to null it out in the runner.  If, however, the match object isn't going to
+                    // be reused, then we do need to finish populating it with the input text, and we do want to
+                    // remove it from the runner so that no one else touches the object once we give it back.
                     match.Text = input;
                     runner.runmatch = null;
                 }
-                else if (returnNullIfQuick)
+                else if (returnNullIfReuseMatchObject)
                 {
                     match.Text = null;
                     return null;
                 }
 
-                match.Tidy(runner.runtextpos, beginning);
+                match.Tidy(runner.runtextpos, beginning, mode);
 
                 return match;
             }
 
             // We failed to match, so we will return Match.Empty which means we can reuse runmatch object.
             // We do however need to clear its Text in case it was set, so as to not keep it alive in some cache.
-            runner.runmatch!.Text = null;
+            match.Text = null;
 
             return RegularExpressions.Match.Empty;
         }

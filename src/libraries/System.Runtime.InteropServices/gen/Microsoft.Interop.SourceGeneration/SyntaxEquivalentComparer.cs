@@ -8,7 +8,7 @@ using Microsoft.CodeAnalysis;
 
 namespace Microsoft.Interop
 {
-    public class SyntaxEquivalentComparer : IEqualityComparer<SyntaxNode>, IEqualityComparer<SyntaxToken>
+    public sealed class SyntaxEquivalentComparer : IEqualityComparer<SyntaxNode>, IEqualityComparer<SyntaxToken>
     {
         public static readonly SyntaxEquivalentComparer Instance = new();
 

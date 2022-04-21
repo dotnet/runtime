@@ -176,8 +176,13 @@ namespace System.Security.Cryptography.Xml
             return transformsElement;
         }
 
-        internal void LoadXml(XmlElement value!!)
+        internal void LoadXml(XmlElement value)
         {
+            if (value is null)
+            {
+                throw new ArgumentNullException(nameof(value));
+            }
+
             XmlNamespaceManager nsm = new XmlNamespaceManager(value.OwnerDocument.NameTable);
             nsm.AddNamespace("ds", SignedXml.XmlDsigNamespaceUrl);
 

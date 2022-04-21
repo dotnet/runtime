@@ -15,8 +15,10 @@ namespace System.Security.Cryptography
         /// <summary>
         ///     Get the value of an arbitrary property
         /// </summary>
-        public CngProperty GetProperty(string name!!, CngPropertyOptions options)
+        public CngProperty GetProperty(string name, CngPropertyOptions options)
         {
+            ArgumentNullException.ThrowIfNull(name);
+
             byte[]? value = _keyHandle.GetProperty(name, options);
             if (value == null)
                 throw ErrorCode.NTE_NOT_FOUND.ToCryptographicException();
@@ -30,8 +32,10 @@ namespace System.Security.Cryptography
         /// <summary>
         ///     Determine if a property exists on the key
         /// </summary>
-        public bool HasProperty(string name!!, CngPropertyOptions options)
+        public bool HasProperty(string name, CngPropertyOptions options)
         {
+            ArgumentNullException.ThrowIfNull(name);
+
             unsafe
             {
                 ErrorCode errorCode = Interop.NCrypt.NCryptGetProperty(_keyHandle, name, null, 0, out _, options);

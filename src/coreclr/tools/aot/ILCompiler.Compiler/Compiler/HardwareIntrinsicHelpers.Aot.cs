@@ -134,7 +134,7 @@ namespace ILCompiler
                     InstructionSet.X64_BMI2 => Bmi2,
                     InstructionSet.X64_BMI2_X64 => Bmi2,
                     InstructionSet.X64_LZCNT => Lzcnt,
-                    InstructionSet.X64_LZCNT_X64 => Popcnt,
+                    InstructionSet.X64_LZCNT_X64 => Lzcnt,
                     InstructionSet.X64_AVXVNNI => AvxVnni,
                     InstructionSet.X64_AVXVNNI_X64 => AvxVnni,
 

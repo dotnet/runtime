@@ -4820,7 +4820,7 @@ int MethodContext::repGetStringLiteral(CORINFO_MODULE_HANDLE module, unsigned me
         DD value = GetStringLiteral->Get(key);
         DEBUG_REP(dmpGetStringLiteral(key, value));
         int srcBufferLength = (int)value.A;
-        if (buffer != nullptr && srcBufferLength != -1)
+        if (buffer != nullptr && srcBufferLength > 0)
         {
             char16_t* srcBuffer = (char16_t*)GetStringLiteral->GetBuffer(value.B);
             Assert(srcBuffer != nullptr);

@@ -91,7 +91,6 @@ namespace System.Xml.Xsl.XsltOld
         private int _rtfCount;
 
         // Used to load Built In templates
-        public bool AllowBuiltInMode;
         public static XmlQualifiedName BuiltInMode = new XmlQualifiedName("*", string.Empty);
 
         internal KeywordsTable Atoms

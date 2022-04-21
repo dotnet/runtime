@@ -16,8 +16,10 @@ namespace System.Security.Cryptography
         }
 
         [Obsolete(Obsoletions.EcDhPublicKeyBlobMessage, DiagnosticId = Obsoletions.EcDhPublicKeyBlobDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
-        protected ECDiffieHellmanPublicKey(byte[] keyBlob!!)
+        protected ECDiffieHellmanPublicKey(byte[] keyBlob)
         {
+            ArgumentNullException.ThrowIfNull(keyBlob);
+
             _keyBlob = (byte[])keyBlob.Clone();
         }
 

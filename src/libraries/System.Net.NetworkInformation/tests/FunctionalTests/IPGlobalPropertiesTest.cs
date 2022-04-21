@@ -124,17 +124,22 @@ namespace System.Net.NetworkInformation.Tests
                 _log.WriteLine($"listening on {server.LocalEndPoint}");
 
                 IPEndPoint[] tcpListeners = IPGlobalProperties.GetIPGlobalProperties().GetActiveTcpListeners();
-                bool found = false;
-                foreach (IPEndPoint ep in tcpListeners)
-                {
-                    if (ep.Equals(server.LocalEndPoint))
-                    {
-                        found = true;
-                        break;
-                    }
-                }
+                Assert.Contains(server.LocalEndPoint, tcpListeners);
+            }
+        }
 
-                Assert.True(found);
+        [Theory]
+        [MemberData(nameof(Loopbacks))]
+        [SkipOnPlatform(TestPlatforms.Android, "Unsupported on Android")]
+        public void IPGlobalProperties_UdpListeners_Succeed(IPAddress address)
+        {
+            using (var server = new Socket(address.AddressFamily, SocketType.Dgram, ProtocolType.Udp))
+            {
+                server.Bind(new IPEndPoint(address, 0));
+                _log.WriteLine($"listening on {server.LocalEndPoint}");
+
+                IPEndPoint[] udpListeners = IPGlobalProperties.GetIPGlobalProperties().GetActiveUdpListeners();
+                Assert.Contains(server.LocalEndPoint, udpListeners);
             }
         }
 

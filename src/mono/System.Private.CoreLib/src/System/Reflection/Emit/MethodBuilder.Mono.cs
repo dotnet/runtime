@@ -386,8 +386,7 @@ namespace System.Reflection.Emit
 
         public void SetCustomAttribute(CustomAttributeBuilder customBuilder)
         {
-            if (customBuilder == null)
-                throw new ArgumentNullException(nameof(customBuilder));
+            ArgumentNullException.ThrowIfNull(customBuilder);
 
             switch (customBuilder.Ctor.ReflectedType!.FullName)
             {
@@ -475,10 +474,8 @@ namespace System.Reflection.Emit
 
         public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
         {
-            if (con == null)
-                throw new ArgumentNullException(nameof(con));
-            if (binaryAttribute == null)
-                throw new ArgumentNullException(nameof(binaryAttribute));
+            ArgumentNullException.ThrowIfNull(con);
+            ArgumentNullException.ThrowIfNull(binaryAttribute);
             SetCustomAttribute(new CustomAttributeBuilder(con, binaryAttribute));
         }
 
@@ -546,12 +543,10 @@ namespace System.Reflection.Emit
         {
             if (!IsGenericMethodDefinition)
                 throw new InvalidOperationException("Method is not a generic method definition");
-            if (typeArguments == null)
-                throw new ArgumentNullException(nameof(typeArguments));
+            ArgumentNullException.ThrowIfNull(typeArguments);
             foreach (Type type in typeArguments)
             {
-                if (type == null)
-                    throw new ArgumentNullException(nameof(typeArguments));
+                ArgumentNullException.ThrowIfNull(type, nameof(typeArguments));
             }
 
             return new MethodOnTypeBuilderInst(this, typeArguments);
@@ -595,8 +590,7 @@ namespace System.Reflection.Emit
 
         public GenericTypeParameterBuilder[] DefineGenericParameters(params string[] names)
         {
-            if (names == null)
-                throw new ArgumentNullException(nameof(names));
+            ArgumentNullException.ThrowIfNull(names);
             if (names.Length == 0)
                 throw new ArgumentException(SR.Arg_EmptyArray, nameof(names));
             type.check_not_created();
