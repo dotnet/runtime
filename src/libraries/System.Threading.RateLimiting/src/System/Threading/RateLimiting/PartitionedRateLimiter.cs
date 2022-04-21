@@ -38,6 +38,11 @@ namespace System.Threading.RateLimiting
         private Timer? _timer;
         private bool _disposed;
 
+        // Used by the Timer to call TryRelenish on ReplenishingRateLimiters
+        // We use a separate list to avoid running TryReplenish (which might be user code) inside our lock
+        // And we cache the list to amortize the allocation cost to as close to 0 as we can get
+        private Lazy<RateLimiter>[]? _cachedLimiters;
+
         // Use the Dictionary as the lock field so we don't need to allocate another object for a lock and have another field in the object
         private object Lock => _limiters;
 
@@ -79,6 +84,8 @@ namespace System.Threading.RateLimiting
                     // Using Lazy avoids calling user code (partition.Factory) inside the lock
                     limiter = new Lazy<RateLimiter>(() => partition.Factory(partition.PartitionKey));
                     _limiters.Add(partition.PartitionKey, limiter);
+                    // Cache is invalid now
+                    _cachedLimiters = null;
                 }
             }
             return limiter.Value;
@@ -98,6 +105,8 @@ namespace System.Threading.RateLimiting
                     return;
                 }
                 _disposed = true;
+
+                _cachedLimiters = null;
 
                 _timer?.Dispose();
 
@@ -149,6 +158,7 @@ namespace System.Threading.RateLimiting
             DefaultPartitionedRateLimiter<TResource, TKey> limiter = (state as DefaultPartitionedRateLimiter<TResource, TKey>)!;
             Debug.Assert(limiter is not null);
 
+            Lazy<RateLimiter>[] currentLimiters;
             lock (limiter.Lock)
             {
                 if (limiter._disposed)
@@ -156,15 +166,30 @@ namespace System.Threading.RateLimiting
                     return;
                 }
 
-                foreach (KeyValuePair<TKey, Lazy<RateLimiter>> kvp in limiter._limiters)
+                // If the cache has been invalidated we need to recreate it
+                if (limiter._cachedLimiters is null)
                 {
-                    // Check IsValueCreated to avoid potentially blocking inside the lock if the Lazy hasn't been initialized yet
-                    if (kvp.Value.IsValueCreated)
+                    limiter._cachedLimiters = new Lazy<RateLimiter>[limiter._limiters.Count];
+                    int index = 0;
+                    foreach (KeyValuePair<TKey, Lazy<RateLimiter>> kvp in limiter._limiters)
                     {
-                        if (kvp.Value.Value is ReplenishingRateLimiter replenishingLimiter)
-                        {
-                            replenishingLimiter.TryReplenish();
-                        }
+                        limiter._cachedLimiters[index] = kvp.Value;
+                        index++;
+                    }
+                }
+
+                currentLimiters = limiter._cachedLimiters;
+            }
+
+            foreach (Lazy<RateLimiter> rateLimiter in currentLimiters)
+            {
+                // Check IsValueCreated to avoid calling replenish if the Lazy hasn't been initialized yet
+                // Since the limiter doesn't need replenishing if it isn't in use yet
+                if (rateLimiter.IsValueCreated)
+                {
+                    if (rateLimiter.Value is ReplenishingRateLimiter replenishingLimiter)
+                    {
+                        replenishingLimiter.TryReplenish();
                     }
                 }
             }

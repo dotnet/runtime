@@ -337,6 +337,54 @@ namespace System.Threading.RateLimiting.Tests
         }
 
         [Fact]
+        public async Task Create_WithReplenishingLimiterReplenishesAutomatically()
+        {
+            using var limiter = PartitionedRateLimiter.Create<string, int>(resource =>
+            {
+                // Use the non-specific Create method to make sure ReplenishingRateLimiters are still handled properly
+                return RateLimitPartition.Create(1,
+                    _ => new TokenBucketRateLimiter(new TokenBucketRateLimiterOptions(1, QueueProcessingOrder.NewestFirst, 1, TimeSpan.FromMilliseconds(100), 1, false)));
+            });
+
+            var lease = limiter.Acquire("");
+            Assert.True(lease.IsAcquired);
+
+            lease = await limiter.WaitAsync("");
+            Assert.True(lease.IsAcquired);
+        }
+
+        [Fact]
+        public async Task Create_MultipleReplenishingLimitersReplenishAutomatically()
+        {
+            using var limiter = PartitionedRateLimiter.Create<string, int>(resource =>
+            {
+                if (resource == "1")
+                {
+                    return RateLimitPartition.CreateTokenBucketLimiter(1,
+                        _ => new TokenBucketRateLimiterOptions(1, QueueProcessingOrder.NewestFirst, 1, TimeSpan.FromMilliseconds(100), 1, false));
+                }
+                return RateLimitPartition.CreateTokenBucketLimiter(2,
+                    _ => new TokenBucketRateLimiterOptions(1, QueueProcessingOrder.NewestFirst, 1, TimeSpan.FromMilliseconds(100), 1, false));
+            });
+
+            var lease = limiter.Acquire("1");
+            Assert.True(lease.IsAcquired);
+
+            lease = await limiter.WaitAsync("1");
+            Assert.True(lease.IsAcquired);
+
+            // Creates the second Replenishing limiter
+            // Indirectly tests that the cached list of limiters used by the timer is probably updated by making sure a limiter already made use of it before we create a second replenishing one
+            lease = limiter.Acquire("2");
+            Assert.True(lease.IsAcquired);
+
+            lease = await limiter.WaitAsync("1");
+            Assert.True(lease.IsAcquired);
+            lease = await limiter.WaitAsync("2");
+            Assert.True(lease.IsAcquired);
+        }
+
+        [Fact]
         public async Task Create_CancellationTokenPassedToUnderlyingLimiter()
         {
             using var limiter = PartitionedRateLimiter.Create<string, int>(resource =>
