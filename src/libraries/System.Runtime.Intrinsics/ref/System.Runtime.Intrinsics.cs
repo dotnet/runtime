@@ -4764,7 +4764,7 @@ namespace System.Runtime.Intrinsics.Wasm
     {
         public bool IsSupported { get { throw null; } }
 
-        public static Vector128<byte> Constant(ulong p1, ulong p2) { throw null; }
+        public static Vector128<byte> Constant(Vector128<byte> v) { throw null; }
 
         public static Vector128<sbyte>  Splat(sbyte  x) { throw null; }
         public static Vector128<byte>   Splat(byte   x) { throw null; }

@@ -14,11 +14,8 @@ namespace System.Runtime.Intrinsics.Wasm
 
         // Constructing SIMD Values
 
-        //[Intrinsic]
-        //public static Vector128<byte> Constant(ImmByte16 imm);
-
         [Intrinsic]
-        public static Vector128<byte> Constant(ulong p1, ulong p2) => Constant(p1, p2);
+        public static Vector128<byte> Constant(Vector128<byte> v) => Constant(v);
 
         [Intrinsic]
         public static Vector128<sbyte>  Splat(sbyte  x) => Splat(x);

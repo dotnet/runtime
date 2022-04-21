@@ -11,7 +11,7 @@ namespace System.Runtime.Intrinsics.Wasm
     {
         public bool IsSupported { get; }
 
-        public static Vector128<byte> Constant(ulong p1, ulong p2) { throw new PlatformNotSupportedException(); }
+        public static Vector128<byte> Constant(Vector128 v) { throw new PlatformNotSupportedException(); }
 
         public static Vector128<sbyte>  Splat(sbyte  x) { throw new PlatformNotSupportedException(); }
         public static Vector128<byte>   Splat(byte   x) { throw new PlatformNotSupportedException(); }
