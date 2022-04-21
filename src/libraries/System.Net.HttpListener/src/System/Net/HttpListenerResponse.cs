@@ -205,8 +205,10 @@ namespace System.Net
             Headers.Add(name, value);
         }
 
-        public void AppendCookie(Cookie cookie!!)
+        public void AppendCookie(Cookie cookie)
         {
+            ArgumentNullException.ThrowIfNull(cookie);
+
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"cookie: {cookie}");
             Cookies.Add(cookie);
         }
@@ -268,8 +270,10 @@ namespace System.Net
             StatusDescription = HttpStatusDescription.Get(StatusCode)!;
         }
 
-        public void SetCookie(Cookie cookie!!)
+        public void SetCookie(Cookie cookie)
         {
+            ArgumentNullException.ThrowIfNull(cookie);
+
             Cookie newCookie = cookie.Clone();
             int added = Cookies.InternalAdd(newCookie, true);
 

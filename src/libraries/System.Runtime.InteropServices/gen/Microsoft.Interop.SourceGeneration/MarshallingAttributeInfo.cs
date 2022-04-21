@@ -798,11 +798,11 @@ namespace Microsoft.Interop
             INamedTypeSymbol? arrayMarshaller;
             if (elementType is IPointerTypeSymbol { PointedAtType: ITypeSymbol pointedAt })
             {
-                arrayMarshaller = _compilation.GetTypeByMetadataName(TypeNames.System_Runtime_InteropServices_GeneratedMarshalling_PtrArrayMarshaller_Metadata)?.Construct(pointedAt);
+                arrayMarshaller = _compilation.GetTypeByMetadataName(TypeNames.System_Runtime_InteropServices_PointerArrayMarshaller_Metadata)?.Construct(pointedAt);
             }
             else
             {
-                arrayMarshaller = _compilation.GetTypeByMetadataName(TypeNames.System_Runtime_InteropServices_GeneratedMarshalling_ArrayMarshaller_Metadata)?.Construct(elementType);
+                arrayMarshaller = _compilation.GetTypeByMetadataName(TypeNames.System_Runtime_InteropServices_ArrayMarshaller_Metadata)?.Construct(elementType);
             }
 
             if (arrayMarshaller is null)
@@ -815,6 +815,13 @@ namespace Microsoft.Interop
             Debug.Assert(customTypeMarshallerData is not null);
 
             ITypeSymbol? nativeValueType = ManualTypeMarshallingHelper.FindToNativeValueMethod(arrayMarshaller)?.ReturnType;
+
+            INamedTypeSymbol readOnlySpanOfT = _compilation.GetTypeByMetadataName(TypeNames.System_ReadOnlySpan_Metadata)!;
+            if (!ManualTypeMarshallingHelper.TryGetElementTypeFromLinearCollectionMarshaller(arrayMarshaller, readOnlySpanOfT, out elementType))
+            {
+                Debug.Fail("Runtime-provided array marshallers should have a valid shape");
+                return NoMarshallingInfo.Instance;
+            }
 
             return new NativeLinearCollectionMarshallingInfo(
                 NativeMarshallingType: ManagedTypeInfo.CreateTypeInfoForTypeSymbol(arrayMarshaller),

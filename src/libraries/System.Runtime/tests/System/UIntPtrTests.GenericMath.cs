@@ -1739,6 +1739,27 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void op_UnsignedRightShiftTest()
+        {
+            if (Environment.Is64BitProcess)
+            {
+                Assert.Equal(unchecked((nuint)0x0000000000000000), ShiftOperatorsHelper<nuint, nuint>.op_UnsignedRightShift(unchecked((nuint)0x0000000000000000), 1));
+                Assert.Equal(unchecked((nuint)0x0000000000000000), ShiftOperatorsHelper<nuint, nuint>.op_UnsignedRightShift(unchecked((nuint)0x0000000000000001), 1));
+                Assert.Equal(unchecked((nuint)0x3FFFFFFFFFFFFFFF), ShiftOperatorsHelper<nuint, nuint>.op_UnsignedRightShift(unchecked((nuint)0x7FFFFFFFFFFFFFFF), 1));
+                Assert.Equal(unchecked((nuint)0x4000000000000000), ShiftOperatorsHelper<nuint, nuint>.op_UnsignedRightShift(unchecked((nuint)0x8000000000000000), 1));
+                Assert.Equal(unchecked((nuint)0x7FFFFFFFFFFFFFFF), ShiftOperatorsHelper<nuint, nuint>.op_UnsignedRightShift(unchecked((nuint)0xFFFFFFFFFFFFFFFF), 1));
+            }
+            else
+            {
+                Assert.Equal((nuint)0x00000000, ShiftOperatorsHelper<nuint, nuint>.op_UnsignedRightShift((nuint)0x00000000, 1));
+                Assert.Equal((nuint)0x00000000, ShiftOperatorsHelper<nuint, nuint>.op_UnsignedRightShift((nuint)0x00000001, 1));
+                Assert.Equal((nuint)0x3FFFFFFF, ShiftOperatorsHelper<nuint, nuint>.op_UnsignedRightShift((nuint)0x7FFFFFFF, 1));
+                Assert.Equal((nuint)0x40000000, ShiftOperatorsHelper<nuint, nuint>.op_UnsignedRightShift((nuint)0x80000000, 1));
+                Assert.Equal((nuint)0x7FFFFFFF, ShiftOperatorsHelper<nuint, nuint>.op_UnsignedRightShift((nuint)0xFFFFFFFF, 1));
+            }
+        }
+
+        [Fact]
         public static void op_SubtractionTest()
         {
             if (Environment.Is64BitProcess)

@@ -3672,6 +3672,8 @@ Elf64_Ehdr::Elf64_Ehdr()
     e_machine = EM_X86_64;
 #elif defined(TARGET_ARM64)
     e_machine = EM_AARCH64;
+#elif defined(TARGET_LOONGARCH64)
+    e_machine = EM_LOONGARCH;
 #endif
     e_flags = 0;
     e_version = 1;

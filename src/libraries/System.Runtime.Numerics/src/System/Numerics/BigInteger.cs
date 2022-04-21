@@ -256,8 +256,8 @@ namespace System.Numerics
         /// </summary>
         /// <param name="value"></param>
         [CLSCompliant(false)]
-        public BigInteger(byte[] value!!) :
-            this(new ReadOnlySpan<byte>(value))
+        public BigInteger(byte[] value) :
+            this(new ReadOnlySpan<byte>(value ?? throw new ArgumentNullException(nameof(value))))
         {
         }
 
@@ -2211,7 +2211,7 @@ namespace System.Numerics
 
             if (negx)
             {
-                if (shift >= (kcbitUint * xd.Length))
+                if (shift >= ((long)kcbitUint * xd.Length))
                 {
                     result = MinusOne;
                     goto exit;

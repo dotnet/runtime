@@ -169,6 +169,11 @@ mono_config_cleanup (void)
 }
 
 void
+mono_config_parse_memory (const char *buffer)
+{
+}
+
+void
 mono_config_parse (const char *filename)
 {
 }

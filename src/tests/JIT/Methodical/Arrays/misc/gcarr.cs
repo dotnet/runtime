@@ -2,10 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
-namespace GCTest
+namespace GCTest_gcarr_cs
 {
-    internal class Test
+    public class Test
     {
         private int _magic = 0x12345678;
         public virtual void CheckValid()
@@ -14,7 +15,8 @@ namespace GCTest
                 throw new Exception();
         }
 
-        private static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             Test[] arr = new Test[97];
             for (int i = 0; i < 97; i++)

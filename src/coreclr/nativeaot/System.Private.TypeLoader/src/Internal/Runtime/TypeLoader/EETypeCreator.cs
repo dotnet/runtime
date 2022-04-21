@@ -453,9 +453,7 @@ namespace Internal.Runtime.TypeLoader
                     pEEType->OptionalFieldsPtr = (byte*)pEEType + cbEEType;
                     optionalFields.WriteToEEType(pEEType, cbOptionalFieldsSize);
 
-#if !PROJECTN
                     pEEType->PointerToTypeManager = PermanentAllocatedMemoryBlobs.GetPointerToIntPtr(moduleInfo.Handle.GetIntPtrUNSAFE());
-#endif
                     pEEType->DynamicModule = dynamicModulePtr;
 
                     // Copy VTable entries from template type

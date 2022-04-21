@@ -593,6 +593,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\EmptyCAHolder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\FlowControl.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\Label.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\ModuleBuilder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\Opcode.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\OpCodes.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\OpCodeType.cs" />
@@ -600,6 +601,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\PackingSize.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\PEFileKinds.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\StackBehaviour.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\TypeBuilder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\TypeNameBuilder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\EventAttributes.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\EventInfo.cs" />
@@ -783,12 +785,13 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\ConstrainedExecution\PrePrepareMethodAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\ConstrainedExecution\ReliabilityContractAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\ExceptionServices\ExceptionDispatchInfo.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\ExceptionServices\ExceptionNotification.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\ExceptionServices\FirstChanceExceptionEventArgs.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\ExceptionServices\HandleProcessCorruptedStateExceptionsAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\GCSettings.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\AllowReversePInvokeCallsAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\AnsiStringMarshaller.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\Architecture.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ArrayMarshaller.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ArrayWithOffset.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\BestFitMappingAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\BStrWrapper.cs" />
@@ -872,6 +875,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\OptionalAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\OSPlatform.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\OutAttribute.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\PointerArrayMarshaller.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\PosixSignal.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\PosixSignalContext.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\PosixSignalRegistration.cs" />

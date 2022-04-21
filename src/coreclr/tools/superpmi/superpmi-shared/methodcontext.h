@@ -600,9 +600,9 @@ public:
     void dmpIsValidStringRef(DLD key, DWORD value);
     bool repIsValidStringRef(CORINFO_MODULE_HANDLE module, unsigned metaTOK);
 
-    void recGetStringLiteral(CORINFO_MODULE_HANDLE module, unsigned metaTOK, int length, const char16_t* result);
-    void dmpGetStringLiteral(DLD key, DD value);
-    const char16_t* repGetStringLiteral(CORINFO_MODULE_HANDLE module, unsigned metaTOK, int* length);
+    void recGetStringLiteral(CORINFO_MODULE_HANDLE module, unsigned metaTOK, char16_t* buffer, int bufferSize, int length);
+    void dmpGetStringLiteral(DLDD key, DD value);
+    int repGetStringLiteral(CORINFO_MODULE_HANDLE module, unsigned metaTOK, char16_t* buffer, int bufferSize);
 
     void recGetHelperName(CorInfoHelpFunc funcNum, const char* result);
     void dmpGetHelperName(DWORD key, DWORD value);

@@ -7,7 +7,6 @@ using System.Globalization;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Runtime.Versioning;
 
 namespace System
 {
@@ -29,24 +28,29 @@ namespace System
 
         // Constants for manipulating the private bit-representation
 
-        private const ushort SignMask = 0x8000;
-        private const ushort SignShift = 15;
+        internal const ushort SignMask = 0x8000;
+        internal const int SignShift = 15;
+        internal const byte ShiftedSignMask = SignMask >> SignShift;
 
-        private const ushort ExponentMask = 0x7C00;
-        private const ushort ExponentShift = 10;
-        private const ushort ShiftedExponentMask = ExponentMask >> ExponentShift;
+        internal const ushort BiasedExponentMask = 0x7C00;
+        internal const int BiasedExponentShift = 10;
+        internal const byte ShiftedBiasedExponentMask = BiasedExponentMask >> BiasedExponentShift;
 
-        private const ushort SignificandMask = 0x03FF;
-        private const ushort SignificandShift = 0;
+        internal const ushort TrailingSignificandMask = 0x03FF;
 
-        private const ushort MinSign = 0;
-        private const ushort MaxSign = 1;
+        internal const byte MinSign = 0;
+        internal const byte MaxSign = 1;
 
-        private const ushort MinExponent = 0x00;
-        private const ushort MaxExponent = 0x1F;
+        internal const byte MinBiasedExponent = 0x00;
+        internal const byte MaxBiasedExponent = 0x1F;
 
-        private const ushort MinSignificand = 0x0000;
-        private const ushort MaxSignificand = 0x03FF;
+        internal const byte ExponentBias = 15;
+
+        internal const sbyte MinExponent = -14;
+        internal const sbyte MaxExponent = +15;
+
+        internal const ushort MinTrailingSignificand = 0x0000;
+        internal const ushort MaxTrailingSignificand = 0x03FF;
 
         // Constants representing the private bit-representation for various default values
 
@@ -94,22 +98,50 @@ namespace System
             _value = value;
         }
 
-        private Half(bool sign, ushort exp, ushort sig) => _value = (ushort)(((sign ? 1 : 0) << SignShift) + (exp << ExponentShift) + sig);
+        private Half(bool sign, ushort exp, ushort sig) => _value = (ushort)(((sign ? 1 : 0) << SignShift) + (exp << BiasedExponentShift) + sig);
 
-        private sbyte Exponent
+        internal byte BiasedExponent
         {
             get
             {
-                return (sbyte)((_value & ExponentMask) >> ExponentShift);
+                ushort bits = _value;
+                return ExtractBiasedExponentFromBits(bits);
             }
         }
 
-        private ushort Significand
+        internal sbyte Exponent
         {
             get
             {
-                return (ushort)((_value & SignificandMask) >> SignificandShift);
+                return (sbyte)(BiasedExponent - ExponentBias);
             }
+        }
+
+        internal ushort Significand
+        {
+            get
+            {
+                return (ushort)(TrailingSignificand | ((BiasedExponent != 0) ? (1U << BiasedExponentShift) : 0U));
+            }
+        }
+
+        internal ushort TrailingSignificand
+        {
+            get
+            {
+                ushort bits = _value;
+                return ExtractTrailingSignificandFromBits(bits);
+            }
+        }
+
+        internal static byte ExtractBiasedExponentFromBits(ushort bits)
+        {
+            return (byte)((bits >> BiasedExponentShift) & ShiftedBiasedExponentMask);
+        }
+
+        internal static ushort ExtractTrailingSignificandFromBits(ushort bits)
+        {
+            return (ushort)(bits & TrailingSignificandMask);
         }
 
         /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_LessThan(TSelf, TOther)" />
@@ -224,7 +256,7 @@ namespace System
             uint absValue = StripSign(value);
             return (absValue < PositiveInfinityBits)    // is finite
                 && (absValue != 0)                      // is not zero
-                && ((absValue & ExponentMask) != 0);    // is not subnormal (has a non-zero exponent)
+                && ((absValue & BiasedExponentMask) != 0);    // is not subnormal (has a non-zero exponent)
         }
 
         /// <summary>Determines whether the specified value is positive infinity.</summary>
@@ -240,7 +272,7 @@ namespace System
             uint absValue = StripSign(value);
             return (absValue < PositiveInfinityBits)    // is finite
                 && (absValue != 0)                      // is not zero
-                && ((absValue & ExponentMask) == 0);    // is subnormal (has a zero exponent)
+                && ((absValue & BiasedExponentMask) == 0);    // is subnormal (has a zero exponent)
         }
 
         /// <summary>
@@ -514,8 +546,8 @@ namespace System
 
             uint floatInt = BitConverter.SingleToUInt32Bits(value);
             bool sign = (floatInt & float.SignMask) >> float.SignShift != 0;
-            int exp = (int)(floatInt & float.ExponentMask) >> float.ExponentShift;
-            uint sig = floatInt & float.SignificandMask;
+            int exp = (int)(floatInt & float.BiasedExponentMask) >> float.BiasedExponentShift;
+            uint sig = floatInt & float.TrailingSignificandMask;
 
             if (exp == SingleMaxExponent)
             {
@@ -542,8 +574,8 @@ namespace System
 
             ulong doubleInt = BitConverter.DoubleToUInt64Bits(value);
             bool sign = (doubleInt & double.SignMask) >> double.SignShift != 0;
-            int exp = (int)((doubleInt & double.ExponentMask) >> double.ExponentShift);
-            ulong sig = doubleInt & double.SignificandMask;
+            int exp = (int)((doubleInt & double.BiasedExponentMask) >> double.BiasedExponentShift);
+            ulong sig = doubleInt & double.TrailingSignificandMask;
 
             if (exp == DoubleMaxExponent)
             {
@@ -566,10 +598,10 @@ namespace System
         public static explicit operator float(Half value)
         {
             bool sign = IsNegative(value);
-            int exp = value.Exponent;
-            uint sig = value.Significand;
+            int exp = value.BiasedExponent;
+            uint sig = value.TrailingSignificand;
 
-            if (exp == MaxExponent)
+            if (exp == MaxBiasedExponent)
             {
                 if (sig != 0)
                 {
@@ -594,10 +626,10 @@ namespace System
         public static explicit operator double(Half value)
         {
             bool sign = IsNegative(value);
-            int exp = value.Exponent;
-            uint sig = value.Significand;
+            int exp = value.BiasedExponent;
+            uint sig = value.TrailingSignificand;
 
-            if (exp == MaxExponent)
+            if (exp == MaxBiasedExponent)
             {
                 if (sig != 0)
                 {
@@ -637,7 +669,7 @@ namespace System
         // Creates Quiet NaN if significand == 0
         private static Half CreateHalfNaN(bool sign, ulong significand)
         {
-            const uint NaNBits = ExponentMask | 0x200; // Most significant significand bit
+            const uint NaNBits = BiasedExponentMask | 0x200; // Most significant significand bit
 
             uint signInt = (sign ? 1U : 0U) << SignShift;
             uint sigInt = (uint)(significand >> 54);
@@ -684,7 +716,7 @@ namespace System
 
         private static float CreateSingleNaN(bool sign, ulong significand)
         {
-            const uint NaNBits = float.ExponentMask | 0x400000; // Most significant significand bit
+            const uint NaNBits = float.BiasedExponentMask | 0x400000; // Most significant significand bit
 
             uint signInt = (sign ? 1U : 0U) << float.SignShift;
             uint sigInt = (uint)(significand >> 41);
@@ -694,7 +726,7 @@ namespace System
 
         private static double CreateDoubleNaN(bool sign, ulong significand)
         {
-            const ulong NaNBits = double.ExponentMask | 0x80000_00000000; // Most significant significand bit
+            const ulong NaNBits = double.BiasedExponentMask | 0x80000_00000000; // Most significant significand bit
 
             ulong signInt = (sign ? 1UL : 0UL) << double.SignShift;
             ulong sigInt = significand >> 12;
@@ -702,9 +734,9 @@ namespace System
             return BitConverter.UInt64BitsToDouble(signInt | NaNBits | sigInt);
         }
 
-        private static float CreateSingle(bool sign, byte exp, uint sig) => BitConverter.UInt32BitsToSingle(((sign ? 1U : 0U) << float.SignShift) + ((uint)exp << float.ExponentShift) + sig);
+        private static float CreateSingle(bool sign, byte exp, uint sig) => BitConverter.UInt32BitsToSingle(((sign ? 1U : 0U) << float.SignShift) + ((uint)exp << float.BiasedExponentShift) + sig);
 
-        private static double CreateDouble(bool sign, ushort exp, ulong sig) => BitConverter.UInt64BitsToDouble(((sign ? 1UL : 0UL) << double.SignShift) + ((ulong)exp << double.ExponentShift) + sig);
+        private static double CreateDouble(bool sign, ushort exp, ulong sig) => BitConverter.UInt64BitsToDouble(((sign ? 1UL : 0UL) << double.SignShift) + ((ulong)exp << double.BiasedExponentShift) + sig);
 
         #endregion
 
@@ -732,14 +764,14 @@ namespace System
         /// <inheritdoc cref="IBinaryNumber{TSelf}.IsPow2(TSelf)" />
         public static bool IsPow2(Half value)
         {
-            uint bits = BitConverter.HalfToUInt16Bits(value);
+            ushort bits = BitConverter.HalfToUInt16Bits(value);
 
-            uint exponent = (bits >> ExponentShift) & ShiftedExponentMask;
-            uint significand = bits & SignificandMask;
+            byte biasedExponent = ExtractBiasedExponentFromBits(bits);
+            ushort trailingSignificand = ExtractTrailingSignificandFromBits(bits);
 
             return (value > default(Half))
-                && (exponent != MinExponent) && (exponent != MaxExponent)
-                && (significand == MinSignificand);
+                && (biasedExponent != MinBiasedExponent) && (biasedExponent != MaxBiasedExponent)
+                && (trailingSignificand == MinTrailingSignificand);
         }
 
         /// <inheritdoc cref="IBinaryNumber{TSelf}.Log2(TSelf)" />
@@ -809,20 +841,20 @@ namespace System
         /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp" />
         public static Half Exp(Half x) => (Half)MathF.Exp((float)x);
 
-        // /// <inheritdoc cref="IExponentialFunctions{TSelf}.ExpM1(TSelf)" />
-        // public static Half ExpM1(Half x) => (Half)MathF.ExpM1((float)x);
+        /// <inheritdoc cref="IExponentialFunctions{TSelf}.ExpM1(TSelf)" />
+        public static Half ExpM1(Half x) => (Half)float.ExpM1((float)x);
 
-        // /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp2(TSelf)" />
-        // public static Half Exp2(Half x) => (Half)MathF.Exp2((float)x);
+        /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp2(TSelf)" />
+        public static Half Exp2(Half x) => (Half)float.Exp2((float)x);
 
-        // /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp2M1(TSelf)" />
-        // public static Half Exp2M1(Half x) => (Half)MathF.Exp2M1((float)x);
+        /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp2M1(TSelf)" />
+        public static Half Exp2M1(Half x) => (Half)float.Exp2M1((float)x);
 
-        // /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp10(TSelf)" />
-        // public static Half Exp10(Half x) => (Half)MathF.Exp10((float)x);
+        /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp10(TSelf)" />
+        public static Half Exp10(Half x) => (Half)float.Exp10((float)x);
 
-        // /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp10M1(TSelf)" />
-        // public static Half Exp10M1(Half x) => (Half)MathF.Exp10M1((float)x);
+        /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp10M1(TSelf)" />
+        public static Half Exp10M1(Half x) => (Half)float.Exp10M1((float)x);
 
         //
         // IFloatingPoint
@@ -848,6 +880,66 @@ namespace System
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.Truncate(TSelf)" />
         public static Half Truncate(Half x) => (Half)MathF.Truncate((float)x);
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.GetExponentShortestBitLength()" />
+        long IFloatingPoint<Half>.GetExponentShortestBitLength()
+        {
+            sbyte exponent = Exponent;
+
+            if (exponent >= 0)
+            {
+                return (sizeof(sbyte) * 8) - sbyte.LeadingZeroCount(exponent);
+            }
+            else
+            {
+                return (sizeof(sbyte) * 8) + 1 - sbyte.LeadingZeroCount((sbyte)(~exponent));
+            }
+        }
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.GetExponentByteCount()" />
+        int IFloatingPoint<Half>.GetExponentByteCount() => sizeof(sbyte);
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.TryWriteExponentLittleEndian(Span{byte}, out int)" />
+        bool IFloatingPoint<Half>.TryWriteExponentLittleEndian(Span<byte> destination, out int bytesWritten)
+        {
+            if (destination.Length >= sizeof(sbyte))
+            {
+                sbyte exponent = Exponent;
+                Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), exponent);
+
+                bytesWritten = sizeof(sbyte);
+                return true;
+            }
+            else
+            {
+                bytesWritten = 0;
+                return false;
+            }
+        }
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.GetSignificandBitLength()" />
+        long IFloatingPoint<Half>.GetSignificandBitLength() => 11;
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.GetSignificandByteCount()" />
+        int IFloatingPoint<Half>.GetSignificandByteCount() => sizeof(ushort);
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.TryWriteSignificandLittleEndian(Span{byte}, out int)" />
+        bool IFloatingPoint<Half>.TryWriteSignificandLittleEndian(Span<byte> destination, out int bytesWritten)
+        {
+            if (destination.Length >= sizeof(ushort))
+            {
+                ushort significand = Significand;
+                Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), significand);
+
+                bytesWritten = sizeof(ushort);
+                return true;
+            }
+            else
+            {
+                bytesWritten = 0;
+                return false;
+            }
+        }
 
         //
         // IFloatingPointIeee754
@@ -880,6 +972,100 @@ namespace System
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ILogB(TSelf)" />
         public static int ILogB(Half x) => MathF.ILogB((float)x);
 
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.MaxMagnitudeNumber(TSelf, TSelf)" />
+        public static Half MaxMagnitudeNumber(Half x, Half y)
+        {
+            // This matches the IEEE 754:2019 `maximumMagnitudeNumber` function
+            //
+            // It does not propagate NaN inputs back to the caller and
+            // otherwise returns the input with a larger magnitude.
+            // It treats +0 as larger than -0 as per the specification.
+
+            Half ax = Abs(x);
+            Half ay = Abs(y);
+
+            if ((ax > ay) || IsNaN(ay))
+            {
+                return x;
+            }
+
+            if (ax == ay)
+            {
+                return IsNegative(x) ? y : x;
+            }
+
+            return y;
+        }
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.MaxNumber(TSelf, TSelf)" />
+        public static Half MaxNumber(Half x, Half y)
+        {
+            // This matches the IEEE 754:2019 `maximumNumber` function
+            //
+            // It does not propagate NaN inputs back to the caller and
+            // otherwise returns the larger of the inputs. It
+            // treats +0 as larger than -0 as per the specification.
+
+            if (x != y)
+            {
+                if (!IsNaN(y))
+                {
+                    return y < x ? x : y;
+                }
+
+                return x;
+            }
+
+            return IsNegative(y) ? x : y;
+        }
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.MinMagnitudeNumber(TSelf, TSelf)" />
+        public static Half MinMagnitudeNumber(Half x, Half y)
+        {
+            // This matches the IEEE 754:2019 `minimumMagnitudeNumber` function
+            //
+            // It does not propagate NaN inputs back to the caller and
+            // otherwise returns the input with a larger magnitude.
+            // It treats +0 as larger than -0 as per the specification.
+
+            Half ax = Abs(x);
+            Half ay = Abs(y);
+
+            if ((ax < ay) || IsNaN(ay))
+            {
+                return x;
+            }
+
+            if (ax == ay)
+            {
+                return IsNegative(x) ? x : y;
+            }
+
+            return y;
+        }
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.MinNumber(TSelf, TSelf)" />
+        public static Half MinNumber(Half x, Half y)
+        {
+            // This matches the IEEE 754:2019 `minimumNumber` function
+            //
+            // It does not propagate NaN inputs back to the caller and
+            // otherwise returns the larger of the inputs. It
+            // treats +0 as larger than -0 as per the specification.
+
+            if (x != y)
+            {
+                if (!IsNaN(y))
+                {
+                    return x < y ? x : y;
+                }
+
+                return x;
+            }
+
+            return IsNegative(x) ? x : y;
+        }
+
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ReciprocalEstimate(TSelf)" />
         public static Half ReciprocalEstimate(Half x) => (Half)MathF.ReciprocalEstimate((float)x);
 
@@ -891,18 +1077,6 @@ namespace System
 
         // /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Compound(TSelf, TSelf)" />
         // public static Half Compound(Half x, Half n) => (Half)MathF.Compound((float)x, (float)n);
-
-        // /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.MaxMagnitudeNumber(TSelf, TSelf)" />
-        // public static Half MaxMagnitudeNumber(Half x, Half y) => (Half)MathF.MaxMagnitudeNumber((float)x, (float)y);
-
-        // /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.MaxNumber(TSelf, TSelf)" />
-        // public static Half MaxNumber(Half x, Half y) => (Half)MathF.MaxNumber((float)x, (float)y);
-
-        // /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.MinMagnitudeNumber(TSelf, TSelf)" />
-        // public static Half MinMagnitudeNumber(Half x, Half y) => (Half)MathF.MinMagnitudeNumber((float)x, (float)y);
-
-        // /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.MinNumber(TSelf, TSelf)" />
-        // public static Half MinNumber(Half x, Half y) => (Half)MathF.MinNumber((float)x, (float)y);
 
         //
         // IHyperbolicFunctions
@@ -954,14 +1128,14 @@ namespace System
         /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log10(TSelf)" />
         public static Half Log10(Half x) => (Half)MathF.Log10((float)x);
 
-        // /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.LogP1(TSelf)" />
-        // public static Half LogP1(Half x) => (Half)MathF.LogP1((float)x);
+        /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.LogP1(TSelf)" />
+        public static Half LogP1(Half x) => (Half)float.LogP1((float)x);
 
-        // /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log2P1(TSelf)" />
-        // public static Half Log2P1(Half x) => (Half)MathF.Log2P1((float)x);
+        /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log2P1(TSelf)" />
+        public static Half Log2P1(Half x) => (Half)float.Log2P1((float)x);
 
-        // /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log10P1(TSelf)" />
-        // public static Half Log10P1(Half x) => (Half)MathF.Log10P1((float)x);
+        /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log10P1(TSelf)" />
+        public static Half Log10P1(Half x) => (Half)float.Log10P1((float)x);
 
         //
         // IModulusOperators

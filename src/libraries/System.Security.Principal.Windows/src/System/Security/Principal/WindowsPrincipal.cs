@@ -29,9 +29,11 @@ namespace System.Security.Principal
         // Constructors.
         //
 
-        public WindowsPrincipal(WindowsIdentity ntIdentity!!)
+        public WindowsPrincipal(WindowsIdentity ntIdentity)
             : base(ntIdentity)
         {
+            ArgumentNullException.ThrowIfNull(ntIdentity);
+
             _identity = ntIdentity;
         }
 
@@ -132,8 +134,10 @@ namespace System.Security.Principal
         // The aforementioned overloads remain in this class since we do not want to introduce a
         // breaking change. However, this method should be used in all new applications.
 
-        public virtual bool IsInRole(SecurityIdentifier sid!!)
+        public virtual bool IsInRole(SecurityIdentifier sid)
         {
+            ArgumentNullException.ThrowIfNull(sid);
+
             // special case the anonymous identity.
             if (_identity.AccessToken.IsInvalid)
                 return false;

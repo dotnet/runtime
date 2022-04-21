@@ -113,8 +113,8 @@ namespace System.Reflection.Emit
         {
             if (codeSize < 0)
                 throw new ArgumentOutOfRangeException(nameof(codeSize), SR.ArgumentOutOfRange_GenericPositive);
-            if (codeSize > 0 && code == null)
-                throw new ArgumentNullException(nameof(code));
+            if (codeSize > 0)
+                ArgumentNullException.ThrowIfNull(code);
 
             method.GetILGenerator().SetCode(code, codeSize, maxStackSize);
         }

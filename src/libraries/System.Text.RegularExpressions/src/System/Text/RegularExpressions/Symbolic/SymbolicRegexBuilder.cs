@@ -24,6 +24,7 @@ namespace System.Text.RegularExpressions.Symbolic
         internal readonly SymbolicRegexNode<TSet> _nothing;
         internal readonly SymbolicRegexNode<TSet> _anyChar;
         internal readonly SymbolicRegexNode<TSet> _anyStar;
+        internal readonly SymbolicRegexNode<TSet> _anyStarLazy;
 
         private SymbolicRegexNode<TSet>? _epsilon;
         internal SymbolicRegexNode<TSet> Epsilon => _epsilon ??= SymbolicRegexNode<TSet>.CreateEpsilon(this);
@@ -173,6 +174,7 @@ namespace System.Text.RegularExpressions.Symbolic
             _nothing = SymbolicRegexNode<TSet>.CreateFalse(this);
             _anyChar = SymbolicRegexNode<TSet>.CreateTrue(this);
             _anyStar = SymbolicRegexNode<TSet>.CreateLoop(this, _anyChar, 0, int.MaxValue, isLazy: false);
+            _anyStarLazy = SymbolicRegexNode<TSet>.CreateLoop(this, _anyChar, 0, int.MaxValue, isLazy: true);
 
             // --- initialize singletonCache ---
             _singletonCache[_solver.Empty] = _nothing;

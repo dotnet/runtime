@@ -4017,8 +4017,7 @@ const char* getWellKnownArgName(WellKnownArg arg);
 struct CallArgABIInformation
 {
     CallArgABIInformation()
-        : ArgNum((unsigned)-1)
-        , NumRegs(0)
+        : NumRegs(0)
         , ByteOffset(0)
         , ByteSize(0)
         , ByteAlignment(0)
@@ -4049,10 +4048,6 @@ struct CallArgABIInformation
             RegNums[i] = REG_NA;
         }
     }
-
-    // The original argument number, also specifies the required argument
-    // evaluation order from the IL
-    unsigned ArgNum;
 
 private:
     // The registers to use when passing this argument, set to REG_STK for

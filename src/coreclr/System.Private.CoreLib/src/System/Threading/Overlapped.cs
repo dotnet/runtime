@@ -221,14 +221,18 @@ namespace System.Threading
         *  Unpins the native Overlapped struct
         ====================================================================*/
         [CLSCompliant(false)]
-        public static unsafe Overlapped Unpack(NativeOverlapped* nativeOverlappedPtr!!)
+        public static unsafe Overlapped Unpack(NativeOverlapped* nativeOverlappedPtr)
         {
+            ArgumentNullException.ThrowIfNull(nativeOverlappedPtr);
+
             return OverlappedData.GetOverlappedFromNative(nativeOverlappedPtr)._overlapped;
         }
 
         [CLSCompliant(false)]
-        public static unsafe void Free(NativeOverlapped* nativeOverlappedPtr!!)
+        public static unsafe void Free(NativeOverlapped* nativeOverlappedPtr)
         {
+            ArgumentNullException.ThrowIfNull(nativeOverlappedPtr);
+
             OverlappedData.GetOverlappedFromNative(nativeOverlappedPtr)._overlapped._overlappedData = null;
             OverlappedData.FreeNativeOverlapped(nativeOverlappedPtr);
         }
