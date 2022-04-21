@@ -106,7 +106,7 @@ namespace System.Text.RegularExpressions
             Regex? r = _regex;
             Debug.Assert(Text != null);
             return r != null ?
-                r.RunSingleMatch(RegexRunnerMode.CapturesRequired, Length, Text, _textbeg, _textend - _textbeg, _textpos)! :
+                r.RunSingleMatch(RegexRunnerMode.FullMatchRequired, Length, Text, _textbeg, _textend - _textbeg, _textpos)! :
                 this;
         }
 
@@ -290,7 +290,7 @@ namespace System.Text.RegularExpressions
             // In such a case, all offsets need to be shifted by beginning, e.g. if beginning is 5 and a capture occurred at
             // offset 17, that 17 offset needs to be increased to 22 to account for the fact that it was actually 17 from the
             // beginning, which the implementation saw as 0 but which from the caller's perspective was 5.
-            if (mode == RegexRunnerMode.CapturesRequired)
+            if (mode == RegexRunnerMode.FullMatchRequired)
             {
                 if (_balancing)
                 {

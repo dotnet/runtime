@@ -384,7 +384,7 @@ namespace System.Text.RegularExpressions.Symbolic
             // (captures other than the top-level capture for the whole match), we need to do an additional pass to find their bounds.
             // Continuing for the previous example, phase 3 will be executed for the characters inside the match, aaabbbc,
             // and will find associate the one capture (b*) with it's match: bbb.
-            if (!HasSubcaptures || mode < RegexRunnerMode.CapturesRequired)
+            if (!HasSubcaptures || mode < RegexRunnerMode.FullMatchRequired)
             {
                 return new SymbolicMatch(matchStart, matchEnd - matchStart);
             }

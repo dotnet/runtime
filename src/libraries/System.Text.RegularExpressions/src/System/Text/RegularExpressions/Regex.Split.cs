@@ -105,7 +105,7 @@ namespace System.Text.RegularExpressions
                     }
 
                     return --state.count != 0;
-                }, RegexRunnerMode.CapturesRequired, reuseMatchObject: true);
+                }, RegexRunnerMode.FullMatchRequired, reuseMatchObject: true);
 
                 if (state.results.Count == 0)
                 {
@@ -133,7 +133,7 @@ namespace System.Text.RegularExpressions
                     }
 
                     return --state.count != 0;
-                }, RegexRunnerMode.CapturesRequired, reuseMatchObject: true);
+                }, RegexRunnerMode.FullMatchRequired, reuseMatchObject: true);
 
                 if (state.results.Count == 0)
                 {

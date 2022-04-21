@@ -124,7 +124,7 @@ namespace System.Text.RegularExpressions
         {
             InitializeTimeout(timeout);
 
-            RegexRunnerMode mode = quick ? RegexRunnerMode.ExistenceRequired : RegexRunnerMode.CapturesRequired;
+            RegexRunnerMode mode = quick ? RegexRunnerMode.ExistenceRequired : RegexRunnerMode.FullMatchRequired;
 
             // We set runtext before calling InitializeForScan so that runmatch object is initialized with the text
             runtext = text;

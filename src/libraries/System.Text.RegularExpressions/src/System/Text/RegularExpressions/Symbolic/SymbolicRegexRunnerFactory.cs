@@ -66,7 +66,7 @@ namespace System.Text.RegularExpressions.Symbolic
                     // If we successfully matched, capture the match, and then jump the current position to the end of the match.
                     int start = pos.Index;
                     int end = start + pos.Length;
-                    if (_mode == RegexRunnerMode.CapturesRequired && pos.CaptureStarts != null)
+                    if (_mode == RegexRunnerMode.FullMatchRequired && pos.CaptureStarts != null)
                     {
                         Debug.Assert(pos.CaptureEnds != null);
                         Debug.Assert(pos.CaptureStarts.Length == pos.CaptureEnds.Length);

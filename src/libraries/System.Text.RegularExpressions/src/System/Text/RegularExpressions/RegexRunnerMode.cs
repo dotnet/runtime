@@ -16,6 +16,6 @@ namespace System.Text.RegularExpressions
 
         /// <summary>The runner needs to determine the next location and length of a match in the input, as well as the full details on all captures.</summary>
         /// <remarks>This mode is used by Regex.Match, Regex.Matches, Regex.Split, and Regex.Replace (when the replacement involves backreferences).</remarks>
-        CapturesRequired,
+        FullMatchRequired,
     }
 }

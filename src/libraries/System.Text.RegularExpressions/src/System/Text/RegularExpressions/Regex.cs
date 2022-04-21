@@ -432,7 +432,7 @@ namespace System.Text.RegularExpressions
                     {
                         if (runner.runtextstart == 0)
                         {
-                            return (false, 0, 0, 0);
+                            return (false, -1, -1, -1);
                         }
                         runner.runtextpos--;
                     }
@@ -440,7 +440,7 @@ namespace System.Text.RegularExpressions
                     {
                         if (runner.runtextstart == input.Length)
                         {
-                            return (false, 0, 0, 0);
+                            return (false, -1, -1, -1);
                         }
                         runner.runtextpos++;
                     }
@@ -455,14 +455,14 @@ namespace System.Text.RegularExpressions
                 {
                     if (mode == RegexRunnerMode.ExistenceRequired)
                     {
-                        return (true, 0, 0, 0);
+                        return (true, -1, -1, -1);
                     }
 
                     match.Tidy(runner.runtextpos, 0, mode);
                     return (true, match.Index, match.Length, match._textpos);
                 }
 
-                return (false, 0, 0, 0);
+                return (false, -1, -1, -1);
             }
             finally
             {

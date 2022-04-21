@@ -132,7 +132,7 @@ namespace System.Text.RegularExpressions
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.input);
             }
 
-            return RunSingleMatch(RegexRunnerMode.CapturesRequired, -1, input, 0, input.Length, RightToLeft ? input.Length : 0)!;
+            return RunSingleMatch(RegexRunnerMode.FullMatchRequired, -1, input, 0, input.Length, RightToLeft ? input.Length : 0)!;
         }
 
         /// <summary>
@@ -146,7 +146,7 @@ namespace System.Text.RegularExpressions
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.input);
             }
 
-            return RunSingleMatch(RegexRunnerMode.CapturesRequired, -1, input, 0, input.Length, startat)!;
+            return RunSingleMatch(RegexRunnerMode.FullMatchRequired, -1, input, 0, input.Length, startat)!;
         }
 
         /// <summary>
@@ -159,7 +159,7 @@ namespace System.Text.RegularExpressions
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.input);
             }
 
-            return RunSingleMatch(RegexRunnerMode.CapturesRequired, -1, input, beginning, length, RightToLeft ? beginning + length : beginning)!;
+            return RunSingleMatch(RegexRunnerMode.FullMatchRequired, -1, input, beginning, length, RightToLeft ? beginning + length : beginning)!;
         }
 
         /// <summary>
