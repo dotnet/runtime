@@ -25,5 +25,11 @@ namespace ILLink.RoslynAnalyzer.Tests
 			return RunTest (allowMissingWarnings: true);
 		}
 
+		[Fact]
+		public Task UnsafeDataFlow ()
+		{
+			return RunTest (allowMissingWarnings: true);
+		}
+
 	}
 }

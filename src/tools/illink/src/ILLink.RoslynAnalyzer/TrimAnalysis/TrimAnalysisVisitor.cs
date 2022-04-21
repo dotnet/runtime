@@ -250,6 +250,14 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 					methodReturnValue = ArrayValue.Create (0);
 					break;
 
+				case IntrinsicId.TypeDelegator_Ctor:
+					if (operation is IObjectCreationOperation)
+						methodReturnValue = arguments[0];
+					else
+						methodReturnValue = TopValue;
+
+					break;
+
 				default:
 					if (!calledMethod.ReturnsVoid && calledMethod.ReturnType.IsTypeInterestingForDataflow ())
 						methodReturnValue = new MethodReturnValue (calledMethod);

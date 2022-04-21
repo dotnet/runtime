@@ -264,6 +264,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				TestWithNewConstraint ();
 				TestWithStructConstraint ();
 				TestWithUnmanagedConstraint ();
+
+				TestGetMethodFromHandle ();
+				TestGetMethodFromHandleWithWarning ();
 			}
 
 			static void TestNullMethod ()
@@ -683,6 +686,19 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			static void GenericWithUnmanagedConstraint<T> () where T : unmanaged
 			{
 				var t = new T ();
+			}
+
+			static void TestGetMethodFromHandle (Type unknownType = null)
+			{
+				MethodInfo m = (MethodInfo) MethodInfo.GetMethodFromHandle (typeof (MakeGenericMethod).GetMethod (nameof (GenericWithNoRequirements)).MethodHandle);
+				m.MakeGenericMethod (unknownType);
+			}
+
+			[ExpectedWarning ("IL2070", nameof (MethodInfo.MakeGenericMethod))]
+			static void TestGetMethodFromHandleWithWarning ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] Type publicMethodsType = null)
+			{
+				MethodInfo m = (MethodInfo) MethodInfo.GetMethodFromHandle (typeof (MakeGenericMethod).GetMethod (nameof (GenericWithRequirements)).MethodHandle);
+				m.MakeGenericMethod (publicMethodsType);
 			}
 		}
 
