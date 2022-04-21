@@ -27,7 +27,8 @@ namespace System.Text.Json
 #if DEBUG
             if (state.Current.JsonTypeInfo.PropertyInfoForTypeInfo.ConverterStrategy != ConverterStrategy.Object)
             {
-                Debug.Fail(GetLookupPropertyDebugInfo(obj, unescapedPropertyName, ref state));
+                string objTypeName = obj?.GetType().FullName ?? "<null>";
+                Debug.Fail($"obj.GetType() => {objTypeName}; {state.Current.JsonTypeInfo.GetPropertyDebugInfo(unescapedPropertyName)}");
             }
 #endif
 
@@ -68,16 +69,6 @@ namespace System.Text.Json
             return jsonPropertyInfo;
         }
 
-#if DEBUG
-        private static string GetLookupPropertyDebugInfo(object? obj, ReadOnlySpan<byte> unescapedPropertyName, ref ReadStack state)
-        {
-            JsonTypeInfo jti = state.Current.JsonTypeInfo;
-            string objTypeName = obj?.GetType().FullName ?? "<null>";
-            string propertyName = JsonHelpers.Utf8GetString(unescapedPropertyName);
-            return $"ConverterStrategy is {jti.PropertyInfoForTypeInfo.ConverterStrategy}. propertyName = {propertyName}; obj.GetType() => {objTypeName}; DebugInfo={jti.GetDebugInfo()}";
-        }
-#endif
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static ReadOnlySpan<byte> GetPropertyName(
             ref ReadStack state,
@@ -98,9 +89,9 @@ namespace System.Text.Json
                 unescapedPropertyName = propertyName;
             }
 
-            if (state.CanContainMetadata)
+            if (state.Current.CanContainMetadata)
             {
-                if (propertyName.Length > 0 && propertyName[0] == '$')
+                if (IsMetadataPropertyName(propertyName, state.Current.BaseJsonTypeInfo.PolymorphicTypeResolver))
                 {
                     ThrowHelper.ThrowUnexpectedMetadataException(propertyName, ref reader, ref state);
                 }

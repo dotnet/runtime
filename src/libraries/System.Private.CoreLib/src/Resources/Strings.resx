@@ -1312,9 +1312,6 @@
   <data name="Argument_MustBeRuntimeMethodInfo" xml:space="preserve">
     <value>MethodInfo must be a runtime MethodInfo object.</value>
   </data>
-  <data name="Argument_MustBeRuntimeReflectionObject" xml:space="preserve">
-    <value>The object must be a runtime Reflection object.</value>
-  </data>
   <data name="Argument_MustBeRuntimeType" xml:space="preserve">
     <value>Type must be a runtime Type object.</value>
   </data>
@@ -1509,9 +1506,6 @@
   </data>
   <data name="Argument_TypeNotComObject" xml:space="preserve">
     <value>The type must be __ComObject or be derived from __ComObject.</value>
-  </data>
-  <data name="Argument_TypeNotValid" xml:space="preserve">
-    <value>The Type object is not valid.</value>
   </data>
   <data name="Argument_UnclosedExceptionBlock" xml:space="preserve">
     <value>The IL Generator cannot be used while there are unclosed exceptions.</value>

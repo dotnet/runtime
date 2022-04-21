@@ -615,20 +615,20 @@ namespace System
         /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp" />
         public static float Exp(float x) => MathF.Exp(x);
 
-        // /// <inheritdoc cref="IExponentialFunctions{TSelf}.ExpM1(TSelf)" />
-        // public static float ExpM1(float x) => MathF.ExpM1(x);
+        /// <inheritdoc cref="IExponentialFunctions{TSelf}.ExpM1(TSelf)" />
+        public static float ExpM1(float x) => MathF.Exp(x) - 1;
 
-        // /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp2(TSelf)" />
-        // public static float Exp2(float x) => MathF.Exp2(x);
+        /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp2(TSelf)" />
+        public static float Exp2(float x) => MathF.Pow(2, x);
 
-        // /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp2M1(TSelf)" />
-        // public static float Exp2M1(float x) => MathF.Exp2M1(x);
+        /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp2M1(TSelf)" />
+        public static float Exp2M1(float x) => MathF.Pow(2, x) - 1;
 
-        // /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp10(TSelf)" />
-        // public static float Exp10(float x) => MathF.Exp10(x);
+        /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp10(TSelf)" />
+        public static float Exp10(float x) => MathF.Pow(10, x);
 
-        // /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp10M1(TSelf)" />
-        // public static float Exp10M1(float x) => MathF.Exp10M1(x);
+        /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp10M1(TSelf)" />
+        public static float Exp10M1(float x) => MathF.Pow(10, x) - 1;
 
         //
         // IFloatingPoint
@@ -758,6 +758,100 @@ namespace System
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ILogB(TSelf)" />
         public static int ILogB(float x) => MathF.ILogB(x);
 
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.MaxMagnitudeNumber(TSelf, TSelf)" />
+        public static float MaxMagnitudeNumber(float x, float y)
+        {
+            // This matches the IEEE 754:2019 `maximumMagnitudeNumber` function
+            //
+            // It does not propagate NaN inputs back to the caller and
+            // otherwise returns the input with a larger magnitude.
+            // It treats +0 as larger than -0 as per the specification.
+
+            float ax = Abs(x);
+            float ay = Abs(y);
+
+            if ((ax > ay) || IsNaN(ay))
+            {
+                return x;
+            }
+
+            if (ax == ay)
+            {
+                return IsNegative(x) ? y : x;
+            }
+
+            return y;
+        }
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.MaxNumber(TSelf, TSelf)" />
+        public static float MaxNumber(float x, float y)
+        {
+            // This matches the IEEE 754:2019 `maximumNumber` function
+            //
+            // It does not propagate NaN inputs back to the caller and
+            // otherwise returns the larger of the inputs. It
+            // treats +0 as larger than -0 as per the specification.
+
+            if (x != y)
+            {
+                if (!IsNaN(y))
+                {
+                    return y < x ? x : y;
+                }
+
+                return x;
+            }
+
+            return IsNegative(y) ? x : y;
+        }
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.MinMagnitudeNumber(TSelf, TSelf)" />
+        public static float MinMagnitudeNumber(float x, float y)
+        {
+            // This matches the IEEE 754:2019 `minimumMagnitudeNumber` function
+            //
+            // It does not propagate NaN inputs back to the caller and
+            // otherwise returns the input with a larger magnitude.
+            // It treats +0 as larger than -0 as per the specification.
+
+            float ax = Abs(x);
+            float ay = Abs(y);
+
+            if ((ax < ay) || IsNaN(ay))
+            {
+                return x;
+            }
+
+            if (ax == ay)
+            {
+                return IsNegative(x) ? x : y;
+            }
+
+            return y;
+        }
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.MinNumber(TSelf, TSelf)" />
+        public static float MinNumber(float x, float y)
+        {
+            // This matches the IEEE 754:2019 `minimumNumber` function
+            //
+            // It does not propagate NaN inputs back to the caller and
+            // otherwise returns the larger of the inputs. It
+            // treats +0 as larger than -0 as per the specification.
+
+            if (x != y)
+            {
+                if (!IsNaN(y))
+                {
+                    return x < y ? x : y;
+                }
+
+                return x;
+            }
+
+            return IsNegative(x) ? x : y;
+        }
+
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ReciprocalEstimate(TSelf)" />
         public static float ReciprocalEstimate(float x) => MathF.ReciprocalEstimate(x);
 
@@ -769,18 +863,6 @@ namespace System
 
         // /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Compound(TSelf, TSelf)" />
         // public static float Compound(float x, float n) => MathF.Compound(x, n);
-
-        // /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.MaxMagnitudeNumber(TSelf, TSelf)" />
-        // public static float MaxMagnitudeNumber(float x, float y) => MathF.MaxMagnitudeNumber(x, y);
-
-        // /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.MaxNumber(TSelf, TSelf)" />
-        // public static float MaxNumber(float x, float y) => MathF.MaxNumber(x, y);
-
-        // /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.MinMagnitudeNumber(TSelf, TSelf)" />
-        // public static float MinMagnitudeNumber(float x, float y) => MathF.MinMagnitudeNumber(x, y);
-
-        // /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.MinNumber(TSelf, TSelf)" />
-        // public static float MinNumber(float x, float y) => MathF.MinNumber(x, y);
 
         //
         // IHyperbolicFunctions
@@ -824,17 +906,17 @@ namespace System
         /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log(TSelf, TSelf)" />
         public static float Log(float x, float newBase) => MathF.Log(x, newBase);
 
+        /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.LogP1(TSelf)" />
+        public static float LogP1(float x) => MathF.Log(x + 1);
+
         /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log10(TSelf)" />
         public static float Log10(float x) => MathF.Log10(x);
 
-        // /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.LogP1(TSelf)" />
-        // public static float LogP1(float x) => MathF.LogP1(x);
+        /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log2P1(TSelf)" />
+        public static float Log2P1(float x) => MathF.Log2(x + 1);
 
-        // /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log2P1(TSelf)" />
-        // public static float Log2P1(float x) => MathF.Log2P1(x);
-
-        // /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log10P1(TSelf)" />
-        // public static float Log10P1(float x) => MathF.Log10P1(x);
+        /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log10P1(TSelf)" />
+        public static float Log10P1(float x) => MathF.Log10(x + 1);
 
         //
         // IMinMaxValue
@@ -852,8 +934,6 @@ namespace System
 
         /// <inheritdoc cref="IModulusOperators{TSelf, TOther, TResult}.op_Modulus(TSelf, TOther)" />
         static float IModulusOperators<float, float, float>.operator %(float left, float right) => left % right;
-
-        // static checked float IModulusOperators<float, float, float>.operator %(float left, float right) => checked(left % right);
 
         //
         // IMultiplicativeIdentity

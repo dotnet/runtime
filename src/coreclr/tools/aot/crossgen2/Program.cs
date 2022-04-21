@@ -229,13 +229,11 @@ namespace ILCompiler
             // Ready to run images are built with certain instruction set baselines
             if ((_targetArchitecture == TargetArchitecture.X86) || (_targetArchitecture == TargetArchitecture.X64))
             {
-                instructionSetSupportBuilder.AddSupportedInstructionSet("sse");
-                instructionSetSupportBuilder.AddSupportedInstructionSet("sse2");
+                instructionSetSupportBuilder.AddSupportedInstructionSet("sse2"); // Lower baselines included by implication
             }
             else if (_targetArchitecture == TargetArchitecture.ARM64)
             {
-                instructionSetSupportBuilder.AddSupportedInstructionSet("base");
-                instructionSetSupportBuilder.AddSupportedInstructionSet("neon");
+                instructionSetSupportBuilder.AddSupportedInstructionSet("neon"); // Lower baselines included by implication
             }
 
 
@@ -296,10 +294,7 @@ namespace ILCompiler
                 // notifyInstructionSetUsage, which will result in generation of a fixup to verify the behavior of
                 // code.
                 //
-                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("sse");
-                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("sse2");
-                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("sse4.1");
-                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("sse4.2");
+                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("sse4.2"); // Lower SSE versions included by implication
                 optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("aes");
                 optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("pclmul");
                 optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("popcnt");

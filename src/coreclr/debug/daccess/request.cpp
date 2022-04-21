@@ -2380,22 +2380,11 @@ ClrDataAccess::GetFailedAssemblyLocation(CLRDATA_ADDRESS assembly, unsigned int 
     SOSDacEnter();
     FailedAssembly* pAssembly = PTR_FailedAssembly(TO_TADDR(assembly));
 
-    // Turn from bytes to wide characters
-    if (!pAssembly->location.IsEmpty())
-    {
-        if (!pAssembly->location.DacGetUnicode(count, location, pNeeded))
-        {
-            hr = E_FAIL;
-        }
-    }
-    else
-    {
-        if (pNeeded)
-            *pNeeded = 1;
+    if (pNeeded)
+        *pNeeded = 1;
 
-        if (location)
-            location[0] = 0;
-    }
+    if (location)
+        location[0] = 0;
 
     SOSDacLeave();
     return hr;

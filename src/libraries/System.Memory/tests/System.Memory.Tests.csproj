@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TestRuntime>true</TestRuntime>
@@ -81,6 +81,7 @@
     <Compile Include="Span\IndexOfAny.byte.cs" />
     <Compile Include="Span\IndexOfAny.char.cs" />
     <Compile Include="Span\IndexOfAny.T.cs" />
+    <Compile Include="Span\IndexOfAnyExcept.T.cs" />
     <Compile Include="Span\IndexOfSequence.byte.cs" />
     <Compile Include="Span\IndexOfSequence.char.cs" />
     <Compile Include="Span\IndexOfSequence.T.cs" />

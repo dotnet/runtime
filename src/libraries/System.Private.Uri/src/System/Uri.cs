@@ -1900,7 +1900,7 @@ namespace System
                 }
 
                 // Unix Path
-                if (!IsWindowsSystem && InFact(Flags.UnixPath))
+                if (!OperatingSystem.IsWindows() && InFact(Flags.UnixPath))
                 {
                     _flags |= Flags.BasicHostType;
                     _flags |= (Flags)idx;
@@ -1974,7 +1974,7 @@ namespace System
                             _flags |= Flags.UncPath;
                             idx = i;
                         }
-                        else if (!IsWindowsSystem && _syntax.InFact(UriSyntaxFlags.FileLikeUri) && pUriString[i - 1] == '/' && i - idx == 3)
+                        else if (!OperatingSystem.IsWindows() && _syntax.InFact(UriSyntaxFlags.FileLikeUri) && pUriString[i - 1] == '/' && i - idx == 3)
                         {
                             _syntax = UriParser.UnixFileUri;
                             _flags |= Flags.UnixPath | Flags.AuthorityFound;
@@ -2077,7 +2077,7 @@ namespace System
                             return ParsingError.BadAuthorityTerminator;
                         }
                         // When the hostTerminator is '/' on Unix, use the UnixFile syntax (preserve backslashes)
-                        else if (!IsWindowsSystem && hostTerminator == '/' && NotAny(Flags.ImplicitFile) && InFact(Flags.UncPath) && _syntax == UriParser.FileUri)
+                        else if (!OperatingSystem.IsWindows() && hostTerminator == '/' && NotAny(Flags.ImplicitFile) && InFact(Flags.UncPath) && _syntax == UriParser.FileUri)
                         {
                             _syntax = UriParser.UnixFileUri;
                         }
@@ -3510,7 +3510,7 @@ namespace System
 
             // Unix: Unix path?
             // A path starting with 2 / or \ (including mixed) is treated as UNC and will be matched below
-            if (!IsWindowsSystem && idx < length && uriString[idx] == '/' &&
+            if (!OperatingSystem.IsWindows() && idx < length && uriString[idx] == '/' &&
                 (idx + 1 == length || (uriString[idx + 1] != '/' && uriString[idx + 1] != '\\')))
             {
                 flags |= (Flags.UnixPath | Flags.ImplicitFile | Flags.AuthorityFound);
@@ -4481,7 +4481,7 @@ namespace System
                 }
 
                 // On Unix, escape '\\' in path of file uris to '%5C' canonical form.
-                if (!IsWindowsSystem && InFact(Flags.BackslashInPath) && _syntax.NotAny(UriSyntaxFlags.ConvertPathSlashes) && _syntax.InFact(UriSyntaxFlags.FileLikeUri) && !IsImplicitFile)
+                if (!OperatingSystem.IsWindows() && InFact(Flags.BackslashInPath) && _syntax.NotAny(UriSyntaxFlags.ConvertPathSlashes) && _syntax.InFact(UriSyntaxFlags.FileLikeUri) && !IsImplicitFile)
                 {
                     // We can't do an in-place escape, create a copy
                     var copy = new ValueStringBuilder(stackalloc char[StackallocThreshold]);
@@ -5001,7 +5001,7 @@ namespace System
                         Compress(path, 3, ref length, basePart.Syntax);
                         return string.Concat(path.AsSpan(1, length - 1), extra);
                     }
-                    else if (!IsWindowsSystem && basePart.IsUnixPath)
+                    else if (!OperatingSystem.IsWindows() && basePart.IsUnixPath)
                     {
                         left = basePart.GetParts(UriComponents.Host, UriFormat.Unescaped);
                     }

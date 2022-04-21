@@ -704,7 +704,6 @@ namespace System
             return GetMethodCandidates(null, bindingAttr, CallingConventions.Any, null, -1, false).ToArray();
         }
 
-        [ComVisible(true)]
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
         public override ConstructorInfo[] GetConstructors(BindingFlags bindingAttr)
         {

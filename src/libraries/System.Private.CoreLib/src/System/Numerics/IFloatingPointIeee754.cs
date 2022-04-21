@@ -102,6 +102,34 @@ namespace System.Numerics
         /// <returns><c>true</c> if <paramref name="value" /> is subnormal; otherwise, <c>false</c>.</returns>
         static abstract bool IsSubnormal(TSelf value);
 
+        /// <summary>Compares two values to compute which has the greater magnitude and returning the other value if an input is <c>NaN</c>.</summary>
+        /// <param name="x">The value to compare with <paramref name="y" />.</param>
+        /// <param name="y">The value to compare with <paramref name="x" />.</param>
+        /// <returns><paramref name="x" /> if it is greater than <paramref name="y" />; otherwise, <paramref name="y" />.</returns>
+        /// <remarks>For <see cref="IFloatingPointIeee754{TSelf}" /> this method matches the IEEE 754:2019 <c>maximumMagnitudeNumber</c> function. This requires NaN inputs to not be propagated back to the caller and for <c>-0.0</c> to be treated as less than <c>+0.0</c>.</remarks>
+        static abstract TSelf MaxMagnitudeNumber(TSelf x, TSelf y);
+
+        /// <summary>Compares two values to compute which is greater and returning the other value if an input is <c>NaN</c>.</summary>
+        /// <param name="x">The value to compare with <paramref name="y" />.</param>
+        /// <param name="y">The value to compare with <paramref name="x" />.</param>
+        /// <returns><paramref name="x" /> if it is greater than <paramref name="y" />; otherwise, <paramref name="y" />.</returns>
+        /// <remarks>For <see cref="IFloatingPoint{TSelf}" /> this method matches the IEEE 754:2019 <c>maximumNumber</c> function. This requires NaN inputs to not be propagated back to the caller and for <c>-0.0</c> to be treated as less than <c>+0.0</c>.</remarks>
+        static abstract TSelf MaxNumber(TSelf x, TSelf y);
+
+        /// <summary>Compares two values to compute which has the lesser magnitude and returning the other value if an input is <c>NaN</c>.</summary>
+        /// <param name="x">The value to compare with <paramref name="y" />.</param>
+        /// <param name="y">The value to compare with <paramref name="x" />.</param>
+        /// <returns><paramref name="x" /> if it is less than <paramref name="y" />; otherwise, <paramref name="y" />.</returns>
+        /// <remarks>For <see cref="IFloatingPointIeee754{TSelf}" /> this method matches the IEEE 754:2019 <c>minimumMagnitudeNumber</c> function. This requires NaN inputs to not be propagated back to the caller and for <c>-0.0</c> to be treated as less than <c>+0.0</c>.</remarks>
+        static abstract TSelf MinMagnitudeNumber(TSelf x, TSelf y);
+
+        /// <summary>Compares two values to compute which is lesser and returning the other value if an input is <c>NaN</c>.</summary>
+        /// <param name="x">The value to compare with <paramref name="y" />.</param>
+        /// <param name="y">The value to compare with <paramref name="x" />.</param>
+        /// <returns><paramref name="x" /> if it is less than <paramref name="y" />; otherwise, <paramref name="y" />.</returns>
+        /// <remarks>For <see cref="IFloatingPoint{TSelf}" /> this method matches the IEEE 754:2019 <c>minimumNumber</c> function. This requires NaN inputs to not be propagated back to the caller and for <c>-0.0</c> to be treated as less than <c>+0.0</c>.</remarks>
+        static abstract TSelf MinNumber(TSelf x, TSelf y);
+
         /// <summary>Computes an estimate of the reciprocal of a value.</summary>
         /// <param name="x">The value whose estimate of the reciprocal is to be computed.</param>
         /// <returns>An estimate of the reciprocal of <paramref name="x" />.</returns>
@@ -120,9 +148,5 @@ namespace System.Numerics
 
         // The following methods are approved but not yet implemented in the libraries
         // * static abstract TSelf Compound(TSelf x, TSelf n);
-        // * static abstract TSelf MaxMagnitudeNumber(TSelf x, TSelf y);
-        // * static abstract TSelf MaxNumber(TSelf x, TSelf y);
-        // * static abstract TSelf MinMagnitudeNumber(TSelf x, TSelf y);
-        // * static abstract TSelf MinNumber(TSelf x, TSelf y);
     }
 }
