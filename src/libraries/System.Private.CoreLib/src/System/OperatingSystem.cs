@@ -9,7 +9,7 @@ namespace System
 {
     public sealed class OperatingSystem : ISerializable, ICloneable
     {
-#if TARGET_UNIX && !TARGET_OSX && !TARGET_MACCATALYST && !TARGET_IOS
+#if TARGET_UNIX && !TARGET_OSX && !TARGET_MACCATALYST && !TARGET_IOS && !TARGET_TVOS && !TARGET_ANDROID
         private static readonly string s_osPlatformName = Interop.Sys.GetUnixName();
 #endif
 
@@ -87,8 +87,10 @@ namespace System
         /// Indicates whether the current application is running on the specified platform.
         /// </summary>
         /// <param name="platform">Case-insensitive platform name. Examples: Browser, Linux, FreeBSD, Android, iOS, macOS, tvOS, watchOS, Windows.</param>
-        public static bool IsOSPlatform(string platform!!)
+        public static bool IsOSPlatform(string platform)
         {
+            ArgumentNullException.ThrowIfNull(platform);
+
 #if TARGET_BROWSER
             return platform.Equals("BROWSER", StringComparison.OrdinalIgnoreCase);
 #elif TARGET_WINDOWS
@@ -99,6 +101,10 @@ namespace System
             return platform.Equals("MACCATALYST", StringComparison.OrdinalIgnoreCase) || platform.Equals("IOS", StringComparison.OrdinalIgnoreCase);
 #elif TARGET_IOS
             return platform.Equals("IOS", StringComparison.OrdinalIgnoreCase);
+#elif TARGET_TVOS
+            return platform.Equals("TVOS", StringComparison.OrdinalIgnoreCase);
+#elif TARGET_ANDROID
+            return platform.Equals("ANDROID", StringComparison.OrdinalIgnoreCase);
 #elif TARGET_UNIX
             return platform.Equals(s_osPlatformName, StringComparison.OrdinalIgnoreCase);
 #else

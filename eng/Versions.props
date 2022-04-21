@@ -130,6 +130,7 @@
     <SystemRuntimeNumericsTestDataVersion>7.0.0-beta.22214.1</SystemRuntimeNumericsTestDataVersion>
     <SystemComponentModelTypeConverterTestDataVersion>7.0.0-beta.22214.1</SystemComponentModelTypeConverterTestDataVersion>
     <SystemDrawingCommonTestDataVersion>7.0.0-beta.22214.1</SystemDrawingCommonTestDataVersion>
+    <SystemFormatsTarTestDataVersion>7.0.0-beta.22214.1</SystemFormatsTarTestDataVersion>
     <SystemIOCompressionTestDataVersion>7.0.0-beta.22214.1</SystemIOCompressionTestDataVersion>
     <SystemIOPackagingTestDataVersion>7.0.0-beta.22214.1</SystemIOPackagingTestDataVersion>
     <SystemNetTestDataVersion>7.0.0-beta.22214.1</SystemNetTestDataVersion>

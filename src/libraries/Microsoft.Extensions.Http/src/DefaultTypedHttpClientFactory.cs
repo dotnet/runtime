@@ -15,14 +15,18 @@ namespace Microsoft.Extensions.Http
         private readonly Cache _cache;
         private readonly IServiceProvider _services;
 
-        public DefaultTypedHttpClientFactory(Cache cache!!, IServiceProvider services)
+        public DefaultTypedHttpClientFactory(Cache cache, IServiceProvider services)
         {
+            ThrowHelper.ThrowIfNull(cache);
+
             _cache = cache;
             _services = services;
         }
 
-        public TClient CreateClient(HttpClient httpClient!!)
+        public TClient CreateClient(HttpClient httpClient)
         {
+            ThrowHelper.ThrowIfNull(httpClient);
+
             return (TClient)_cache.Activator(_services, new object[] { httpClient });
         }
 

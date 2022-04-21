@@ -159,8 +159,12 @@ namespace System.Xml.Schema
 
         private static readonly string[] s_methodNames = new string[12] { "None", "Initialize", "top-level ValidateAttribute", "top-level ValidateText or ValidateWhitespace", "ValidateElement", "ValidateAttribute", "ValidateEndOfAttributes", "ValidateText", "ValidateWhitespace", "ValidateEndElement", "SkipToEndElement", "EndValidation" };
 
-        public XmlSchemaValidator(XmlNameTable nameTable!!, XmlSchemaSet schemas!!, IXmlNamespaceResolver namespaceResolver!!, XmlSchemaValidationFlags validationFlags)
+        public XmlSchemaValidator(XmlNameTable nameTable, XmlSchemaSet schemas, IXmlNamespaceResolver namespaceResolver, XmlSchemaValidationFlags validationFlags)
         {
+            ArgumentNullException.ThrowIfNull(nameTable);
+            ArgumentNullException.ThrowIfNull(schemas);
+            ArgumentNullException.ThrowIfNull(namespaceResolver);
+
             _nameTable = nameTable;
             _nsResolver = namespaceResolver;
             _validationFlags = validationFlags;
@@ -315,8 +319,10 @@ namespace System.Xml.Schema
         }
 
         //Methods
-        public void AddSchema(XmlSchema schema!!)
+        public void AddSchema(XmlSchema schema)
         {
+            ArgumentNullException.ThrowIfNull(schema);
+
             if ((_validationFlags & XmlSchemaValidationFlags.ProcessInlineSchema) == 0)
             { //Do not process schema if processInlineSchema is not set
                 return;
@@ -398,8 +404,11 @@ namespace System.Xml.Schema
             ValidateElement(localName, namespaceUri, schemaInfo, null, null, null, null);
         }
 
-        public void ValidateElement(string localName!!, string namespaceUri!!, XmlSchemaInfo? schemaInfo, string? xsiType, string? xsiNil, string? xsiSchemaLocation, string? xsiNoNamespaceSchemaLocation)
+        public void ValidateElement(string localName, string namespaceUri, XmlSchemaInfo? schemaInfo, string? xsiType, string? xsiNil, string? xsiSchemaLocation, string? xsiNoNamespaceSchemaLocation)
         {
+            ArgumentNullException.ThrowIfNull(localName);
+            ArgumentNullException.ThrowIfNull(namespaceUri);
+
             CheckStateTransition(ValidatorState.Element, s_methodNames[(int)ValidatorState.Element]);
 
             ClearPSVI();
@@ -478,18 +487,25 @@ namespace System.Xml.Schema
             }
         }
 
-        public object? ValidateAttribute(string localName, string namespaceUri, string attributeValue!!, XmlSchemaInfo? schemaInfo)
+        public object? ValidateAttribute(string localName, string namespaceUri, string attributeValue, XmlSchemaInfo? schemaInfo)
         {
+            ArgumentNullException.ThrowIfNull(attributeValue);
+
             return ValidateAttribute(localName, namespaceUri, null, attributeValue, schemaInfo);
         }
 
-        public object? ValidateAttribute(string localName, string namespaceUri, XmlValueGetter attributeValue!!, XmlSchemaInfo? schemaInfo)
+        public object? ValidateAttribute(string localName, string namespaceUri, XmlValueGetter attributeValue, XmlSchemaInfo? schemaInfo)
         {
+            ArgumentNullException.ThrowIfNull(attributeValue);
+
             return ValidateAttribute(localName, namespaceUri, attributeValue, null, schemaInfo);
         }
 
-        private object? ValidateAttribute(string localName!!, string namespaceUri!!, XmlValueGetter? attributeValueGetter, string? attributeStringValue, XmlSchemaInfo? schemaInfo)
+        private object? ValidateAttribute(string localName, string namespaceUri, XmlValueGetter? attributeValueGetter, string? attributeStringValue, XmlSchemaInfo? schemaInfo)
         {
+            ArgumentNullException.ThrowIfNull(localName);
+            ArgumentNullException.ThrowIfNull(namespaceUri);
+
             ValidatorState toState = _validationStack.Length > 1 ? ValidatorState.Attribute : ValidatorState.TopLevelAttribute;
             CheckStateTransition(toState, s_methodNames[(int)toState]);
 
@@ -696,8 +712,10 @@ namespace System.Xml.Schema
             return typedVal;
         }
 
-        public void GetUnspecifiedDefaultAttributes(ArrayList defaultAttributes!!)
+        public void GetUnspecifiedDefaultAttributes(ArrayList defaultAttributes)
         {
+            ArgumentNullException.ThrowIfNull(defaultAttributes);
+
             CheckStateTransition(ValidatorState.Attribute, "GetUnspecifiedDefaultAttributes");
             GetUnspecifiedDefaultAttributes(defaultAttributes, false);
         }
@@ -718,13 +736,17 @@ namespace System.Xml.Schema
             }
         }
 
-        public void ValidateText(string elementValue!!)
+        public void ValidateText(string elementValue)
         {
+            ArgumentNullException.ThrowIfNull(elementValue);
+
             ValidateText(elementValue, null);
         }
 
-        public void ValidateText(XmlValueGetter elementValue!!)
+        public void ValidateText(XmlValueGetter elementValue)
         {
+            ArgumentNullException.ThrowIfNull(elementValue);
+
             ValidateText(null, elementValue);
         }
 
@@ -793,13 +815,17 @@ namespace System.Xml.Schema
             }
         }
 
-        public void ValidateWhitespace(string elementValue!!)
+        public void ValidateWhitespace(string elementValue)
         {
+            ArgumentNullException.ThrowIfNull(elementValue);
+
             ValidateWhitespace(elementValue, null);
         }
 
-        public void ValidateWhitespace(XmlValueGetter elementValue!!)
+        public void ValidateWhitespace(XmlValueGetter elementValue)
         {
+            ArgumentNullException.ThrowIfNull(elementValue);
+
             ValidateWhitespace(null, elementValue);
         }
 
@@ -858,8 +884,10 @@ namespace System.Xml.Schema
             return InternalValidateEndElement(schemaInfo, null);
         }
 
-        public object? ValidateEndElement(XmlSchemaInfo? schemaInfo, object typedValue!!)
+        public object? ValidateEndElement(XmlSchemaInfo? schemaInfo, object typedValue)
         {
+            ArgumentNullException.ThrowIfNull(typedValue);
+
             if (_textValue.Length > 0)
             {
                 throw new InvalidOperationException(SR.Sch_InvalidEndElementCall);

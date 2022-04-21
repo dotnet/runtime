@@ -16,10 +16,12 @@ namespace System.ComponentModel.Composition.ReflectionModel
         public PartCreatorParameterImportDefinition(
             Lazy<ParameterInfo> importingLazyParameter,
             ICompositionElement? origin,
-            ContractBasedImportDefinition productImportDefinition!!)
+            ContractBasedImportDefinition productImportDefinition)
             : base(importingLazyParameter, CompositionConstants.PartCreatorContractName, CompositionConstants.PartCreatorTypeIdentity,
                 productImportDefinition.RequiredMetadata, productImportDefinition.Cardinality, CreationPolicy.Any, MetadataServices.EmptyMetadata, origin)
         {
+            ArgumentNullException.ThrowIfNull(productImportDefinition);
+
             _productImportDefinition = productImportDefinition;
         }
 

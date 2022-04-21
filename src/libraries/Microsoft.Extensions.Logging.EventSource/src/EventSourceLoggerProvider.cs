@@ -20,8 +20,10 @@ namespace Microsoft.Extensions.Logging.EventSource
         private EventSourceLogger? _loggers; // Linked list of loggers that I have created
         private readonly LoggingEventSource _eventSource;
 
-        public EventSourceLoggerProvider(LoggingEventSource eventSource!!)
+        public EventSourceLoggerProvider(LoggingEventSource eventSource)
         {
+            ThrowHelper.ThrowIfNull(eventSource);
+
             _eventSource = eventSource;
             _factoryID = Interlocked.Increment(ref _globalFactoryID);
         }

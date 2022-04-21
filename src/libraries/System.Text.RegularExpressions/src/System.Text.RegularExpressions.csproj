@@ -47,6 +47,7 @@
     <Compile Include="System\Text\RegularExpressions\RegexReplacement.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexRunner.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexRunnerFactory.cs" />
+    <Compile Include="System\Text\RegularExpressions\RegexRunnerMode.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexTree.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexTreeAnalyzer.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexWriter.cs" />

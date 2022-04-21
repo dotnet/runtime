@@ -235,8 +235,10 @@ namespace System.Net.Sockets
         /// <param name="port">The port on the remote host to connect to.</param>
         /// <param name="cancellationToken">A cancellation token that can be used to cancel the asynchronous operation.</param>
         /// <returns>An asynchronous task that completes when the connection is established.</returns>
-        public ValueTask ConnectAsync(string host!!, int port, CancellationToken cancellationToken)
+        public ValueTask ConnectAsync(string host, int port, CancellationToken cancellationToken)
         {
+            ArgumentNullException.ThrowIfNull(host);
+
             EndPoint ep = IPAddress.TryParse(host, out IPAddress? parsedAddress) ? (EndPoint)
                 new IPEndPoint(parsedAddress, port) :
                 new DnsEndPoint(host, port);
@@ -618,8 +620,10 @@ namespace System.Net.Sockets
         /// <param name="remoteEP">The remote host to which to send the data.</param>
         /// <param name="cancellationToken">A cancellation token that can be used to cancel the asynchronous operation.</param>
         /// <returns>An asynchronous task that completes with the number of bytes sent.</returns>
-        public ValueTask<int> SendToAsync(ReadOnlyMemory<byte> buffer, SocketFlags socketFlags, EndPoint remoteEP!!, CancellationToken cancellationToken = default)
+        public ValueTask<int> SendToAsync(ReadOnlyMemory<byte> buffer, SocketFlags socketFlags, EndPoint remoteEP, CancellationToken cancellationToken = default)
         {
+            ArgumentNullException.ThrowIfNull(remoteEP);
+
             if (cancellationToken.IsCancellationRequested)
             {
                 return ValueTask.FromCanceled<int>(cancellationToken);
@@ -726,8 +730,10 @@ namespace System.Net.Sockets
             return saea.SendPacketsAsync(this, cancellationToken);
         }
 
-        private static void ValidateBufferArguments(byte[] buffer!!, int offset, int size)
+        private static void ValidateBufferArguments(byte[] buffer, int offset, int size)
         {
+            ArgumentNullException.ThrowIfNull(buffer);
+
             if ((uint)offset > (uint)buffer.Length)
             {
                 throw new ArgumentOutOfRangeException(nameof(offset));
@@ -753,8 +759,10 @@ namespace System.Net.Sockets
         }
 
         /// <summary>Validates the supplied buffer list, throwing if it's null or empty.</summary>
-        private static void ValidateBuffersList(IList<ArraySegment<byte>> buffers!!)
+        private static void ValidateBuffersList(IList<ArraySegment<byte>> buffers)
         {
+            ArgumentNullException.ThrowIfNull(buffers);
+
             if (buffers.Count == 0)
             {
                 throw new ArgumentException(SR.Format(SR.net_sockets_zerolist, nameof(buffers)), nameof(buffers));

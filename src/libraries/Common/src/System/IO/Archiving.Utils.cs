@@ -5,11 +5,13 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 
-namespace System.IO.Compression
+namespace System.IO
 {
-    internal static partial class ZipFileUtils
+    internal static partial class ArchivingUtils
     {
-        // Per the .ZIP File Format Specification 4.4.17.1 all slashes should be forward slashes
+        // To ensure tar files remain compatible with Unix,
+        // and per the ZIP File Format Specification 4.4.17.1,
+        // all slashes should be forward slashes.
         private const char PathSeparatorChar = '/';
         private const string PathSeparatorString = "/";
 
@@ -73,6 +75,18 @@ namespace System.IO.Compression
         {
             using (IEnumerator<string> enumerator = Directory.EnumerateFileSystemEntries(possiblyEmptyDir.FullName).GetEnumerator())
                 return !enumerator.MoveNext();
+        }
+
+        public static void AttemptSetLastWriteTime(string destinationFileName, DateTimeOffset lastWriteTime)
+        {
+            try
+            {
+                File.SetLastWriteTime(destinationFileName, lastWriteTime.DateTime);
+            }
+            catch (UnauthorizedAccessException)
+            {
+                // Some OSes like Android (#35374) might not support setting the last write time, the extraction should not fail because of that
+            }
         }
     }
 }
