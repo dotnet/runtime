@@ -2115,6 +2115,8 @@ namespace System
         {
             nuint i;
 
+            // It is ordered this way to match the default branch predictor rules, to don't have too much
+            // overhead for short input-lengths.
             if (!Vector128.IsHardwareAccelerated || length < (nuint)Vector128<byte>.Count)
             {
                 // To have kind of fast path for small inputs, we handle as much elements needed
