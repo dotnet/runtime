@@ -12,8 +12,8 @@ namespace System.IO.Compression.Tests
     public partial class ZipFile_Unix : ZipFileTestBase
     {
         [Fact]
-        // Disabled on Mac for https://github.com/dotnet/runtime/issues/68293
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60581", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.OSX)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/68293", TestPlatforms.OSX)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60581", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public void UnixCreateSetsPermissionsInExternalAttributes()
         {
             // '7600' tests that S_ISUID, S_ISGID, and S_ISVTX bits get preserved in ExternalAttributes
