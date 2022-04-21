@@ -4,7 +4,6 @@
 
   <PropertyGroup>
     <OutputPath>$(RuntimeBinDir)crossgen2</OutputPath>
-    <DisablePackageAssetsCache Condition="'$(DotnetBuildFromSource)' == 'true'">true</DisablePackageAssetsCache>
     <!-- Can't use NativeAOT in source build yet https://github.com/dotnet/runtime/issues/66859 and we
          don't want to ship using NativeAOT on MacOS -->
     <NativeAotSupported Condition="'$(DotNetBuildFromSource)' == 'true' or '$(TargetOS)' == 'osx'">false</NativeAotSupported>
