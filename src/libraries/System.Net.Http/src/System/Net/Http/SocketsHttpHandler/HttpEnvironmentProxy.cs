@@ -67,7 +67,7 @@ namespace System.Net.Http
 
             if (value == ":")
             {
-                return CredentialCache.DefaultNetworkCredentials ;
+                return CredentialCache.DefaultNetworkCredentials;
             }
 
             value = Uri.UnescapeDataString(value);
