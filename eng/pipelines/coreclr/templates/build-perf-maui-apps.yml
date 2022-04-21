@@ -218,7 +218,7 @@ steps:
           using Android.App;
         #endif
 
-        namespace mauiblazortesting.Pages
+        namespace MauiBlazorTesting.Pages
         {
             public partial class Index
             {
@@ -237,7 +237,7 @@ steps:
             }
         }" > Pages/Index.razor.cs
 
-      sed -i'' -e "s/{/{\npublic static Context Context { get; private set; }\npublic MainActivity() { Context = this; }/g" Platforms/Android/MainActivity.cs
+      sed -i'' -e "s/{/{\npublic static Android.Content.Context Context { get; private set; }\npublic MainActivity() { Context = this; }/g" Platforms/Android/MainActivity.cs
     displayName: Setup MAUI Blazor Hybrid Project
     workingDirectory: $(Build.SourcesDirectory)
 
