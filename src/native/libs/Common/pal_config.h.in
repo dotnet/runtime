@@ -135,6 +135,8 @@
 #cmakedefine01 HAVE_MALLOC_USABLE_SIZE
 #cmakedefine01 HAVE_MALLOC_USABLE_SIZE_NP
 #cmakedefine01 HAVE_POSIX_MEMALIGN
+#cmakedefine01 HAVE_MAKEDEV_FILEH
+#cmakedefine01 HAVE_MAKEDEV_SYSMACROSH
 
 // Mac OS X has stat64, but it is deprecated since plain stat now
 // provides the same 64-bit aware struct when targeting OS X > 10.5
