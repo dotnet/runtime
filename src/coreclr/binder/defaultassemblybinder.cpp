@@ -200,9 +200,9 @@ HRESULT DefaultAssemblyBinder::BindToSystem(BINDER_SPACE::Assembly** ppSystemAss
         {
             _ASSERTE(pAsm != NULL);
             *ppSystemAssembly = pAsm.Extract();
+            (*ppSystemAssembly)->SetBinder(this);
         }
 
-        (*ppSystemAssembly)->SetBinder(this);
     }
     EX_CATCH_HRESULT(hr);
 

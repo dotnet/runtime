@@ -615,20 +615,20 @@ namespace System
         /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp" />
         public static float Exp(float x) => MathF.Exp(x);
 
-        // /// <inheritdoc cref="IExponentialFunctions{TSelf}.ExpM1(TSelf)" />
-        // public static float ExpM1(float x) => MathF.ExpM1(x);
+        /// <inheritdoc cref="IExponentialFunctions{TSelf}.ExpM1(TSelf)" />
+        public static float ExpM1(float x) => MathF.Exp(x) - 1;
 
-        // /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp2(TSelf)" />
-        // public static float Exp2(float x) => MathF.Exp2(x);
+        /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp2(TSelf)" />
+        public static float Exp2(float x) => MathF.Pow(2, x);
 
-        // /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp2M1(TSelf)" />
-        // public static float Exp2M1(float x) => MathF.Exp2M1(x);
+        /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp2M1(TSelf)" />
+        public static float Exp2M1(float x) => MathF.Pow(2, x) - 1;
 
-        // /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp10(TSelf)" />
-        // public static float Exp10(float x) => MathF.Exp10(x);
+        /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp10(TSelf)" />
+        public static float Exp10(float x) => MathF.Pow(10, x);
 
-        // /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp10M1(TSelf)" />
-        // public static float Exp10M1(float x) => MathF.Exp10M1(x);
+        /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp10M1(TSelf)" />
+        public static float Exp10M1(float x) => MathF.Pow(10, x) - 1;
 
         //
         // IFloatingPoint
@@ -906,17 +906,17 @@ namespace System
         /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log(TSelf, TSelf)" />
         public static float Log(float x, float newBase) => MathF.Log(x, newBase);
 
+        /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.LogP1(TSelf)" />
+        public static float LogP1(float x) => MathF.Log(x + 1);
+
         /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log10(TSelf)" />
         public static float Log10(float x) => MathF.Log10(x);
 
-        // /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.LogP1(TSelf)" />
-        // public static float LogP1(float x) => MathF.LogP1(x);
+        /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log2P1(TSelf)" />
+        public static float Log2P1(float x) => MathF.Log2(x + 1);
 
-        // /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log2P1(TSelf)" />
-        // public static float Log2P1(float x) => MathF.Log2P1(x);
-
-        // /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log10P1(TSelf)" />
-        // public static float Log10P1(float x) => MathF.Log10P1(x);
+        /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log10P1(TSelf)" />
+        public static float Log10P1(float x) => MathF.Log10(x + 1);
 
         //
         // IMinMaxValue
@@ -934,8 +934,6 @@ namespace System
 
         /// <inheritdoc cref="IModulusOperators{TSelf, TOther, TResult}.op_Modulus(TSelf, TOther)" />
         static float IModulusOperators<float, float, float>.operator %(float left, float right) => left % right;
-
-        // static checked float IModulusOperators<float, float, float>.operator %(float left, float right) => checked(left % right);
 
         //
         // IMultiplicativeIdentity

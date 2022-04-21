@@ -97,15 +97,19 @@
     <When Condition="'$(NeedsEMSDK)' == 'true'">
       <PropertyGroup>
         <NeedsDotNetSdk>true</NeedsDotNetSdk>
-        <!--<UseDotNetCliVersionFromGlobalJson>true</UseDotNetCliVersionFromGlobalJson>-->
+        <!-- TODO (#68024): remove this once we're using a 7.0 SDK -->
+        <UseDotNetCliVersionFromGlobalJson>true</UseDotNetCliVersionFromGlobalJson>
         <IncludeXHarnessCli>true</IncludeXHarnessCli>
         <EnableXHarnessTelemetry>false</EnableXHarnessTelemetry>
+        <!-- TODO (#68024): remove this once we're using a 7.0 SDK -->
+        <XHarnessTargetFramework>net6.0</XHarnessTargetFramework>
       </PropertyGroup>
     </When>
     <When Condition="'$(NeedsEMSDKNode)' == 'true'">
       <PropertyGroup>
         <IncludeXHarnessCli>true</IncludeXHarnessCli>
         <EnableXHarnessTelemetry>false</EnableXHarnessTelemetry>
+        <XHarnessTargetFramework>net6.0</XHarnessTargetFramework>
       </PropertyGroup>
     </When>
   </Choose>
