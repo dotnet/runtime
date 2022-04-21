@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using ILLink.Shared.TypeSystemProxy;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
 using Mono.Collections.Generic;
@@ -1318,7 +1319,7 @@ namespace Mono.Linker.Steps
 					if (index == body_variables.Count - 1) {
 						body_variables.RemoveAt (index);
 					} else {
-						var objectType = BCL.FindPredefinedType ("System", "Object", context);
+						var objectType = BCL.FindPredefinedType (WellKnownType.System_Object, context);
 						body_variables[index].VariableType = objectType ?? throw new NotSupportedException ("Missing predefined 'System.Object' type");
 					}
 				}

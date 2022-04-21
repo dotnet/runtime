@@ -9,6 +9,7 @@ using System.Linq;
 using System.Text;
 using System.Xml.XPath;
 using ILLink.Shared;
+using ILLink.Shared.TypeSystemProxy;
 using Mono.Cecil;
 
 namespace Mono.Linker.Steps
@@ -103,15 +104,15 @@ namespace Mono.Linker.Steps
 				return knownTypeDef;
 			}
 
-			var voidType = BCL.FindPredefinedType ("System", "Void", _context);
+			var voidType = BCL.FindPredefinedType (WellKnownType.System_Void, _context);
 			if (voidType == null)
 				return null;
 
-			var attributeType = BCL.FindPredefinedType ("System", "Attribute", _context);
+			var attributeType = BCL.FindPredefinedType (WellKnownType.System_Attribute, _context);
 			if (attributeType == null)
 				return null;
 
-			var objectType = BCL.FindPredefinedType ("System", "Object", _context);
+			var objectType = BCL.FindPredefinedType (WellKnownType.System_Object, _context);
 			if (objectType == null)
 				return null;
 			var objectArrayType = new ArrayType (objectType);
@@ -287,7 +288,7 @@ namespace Mono.Linker.Steps
 				return new CustomAttributeArgument (enumType, ConvertStringValue (evalue, typeref));
 
 			case MetadataType.Class:
-				if (!typeref.IsTypeOf ("System", "Type"))
+				if (!typeref.IsTypeOf (WellKnownType.System_Type))
 					goto default;
 
 				if (!_context.TypeNameResolver.TryResolveTypeName (svalue, memberWithAttribute, out TypeReference? type, out _)) {

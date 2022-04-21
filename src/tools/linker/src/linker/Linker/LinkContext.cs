@@ -35,6 +35,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using ILLink.Shared;
+using ILLink.Shared.TypeSystemProxy;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
 using Mono.Linker.Steps;
@@ -739,7 +740,7 @@ namespace Mono.Linker
 			if (_targetRuntime != null)
 				return _targetRuntime.Value;
 
-			TypeDefinition? objectType = BCL.FindPredefinedType ("System", "Object", this);
+			TypeDefinition? objectType = BCL.FindPredefinedType (WellKnownType.System_Object, this);
 			_targetRuntime = objectType?.Module.Assembly.Name.Version.Major ?? -1;
 
 			return _targetRuntime.Value;
