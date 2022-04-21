@@ -3,15 +3,6 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix</TargetFrameworks>
     <Nullable>enable</Nullable>
-    <PackageDescription>
-      Provides classes that can read and write the Tar archive format.
-
-      Commonly Used Types:
-      System.Formats.Tar.TarFile
-      System.Formats.Tar.TarEntry
-      System.Formats.Tar.TarReader
-      System.Formats.Tar.TarWriter
-    </PackageDescription>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Formats\Tar\FieldLengths.cs" />
