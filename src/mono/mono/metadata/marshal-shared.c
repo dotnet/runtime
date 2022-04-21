@@ -418,6 +418,7 @@ mono_marshal_shared_emit_object_to_ptr_conv (MonoMethodBuilder *mb, MonoType *ty
 #endif /* DISABLE_COM */
 
 	case MONO_MARSHAL_CONV_SAFEHANDLE: {
+		
 		mono_mb_emit_ldloc (mb, 0);
 		mono_mb_emit_byte (mb, CEE_LDIND_I);
 		pos = mono_mb_emit_branch (mb, CEE_BRTRUE);
@@ -900,6 +901,7 @@ mono_marshal_shared_emit_ptr_to_object_conv (MonoMethodBuilder *mb, MonoType *ty
 		break;
 	}
 	case MONO_MARSHAL_CONV_OBJECT_STRUCT: {
+		MonoClass* klass = mono_class_from_mono_type_internal (type);
 		int src_var, dst_var;
 
 		MonoType *int_type = mono_get_int_type ();
