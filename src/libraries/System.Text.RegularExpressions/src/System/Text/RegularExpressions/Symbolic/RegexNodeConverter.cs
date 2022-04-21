@@ -5,7 +5,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 using ConversionResult = System.Text.RegularExpressions.Symbolic.DoublyLinkedList<System.Text.RegularExpressions.Symbolic.SymbolicRegexNode<System.Text.RegularExpressions.Symbolic.BDD>>;
@@ -169,13 +168,17 @@ namespace System.Text.RegularExpressions.Symbolic
                             }
 
 
-                        // The following five cases are the only node kinds that are pushed twice
-
-                        // Joins
+                        // The following five cases are the only node kinds that are pushed twice:
+                        // Joins, general loops, and supported captures
 
                         case RegexNodeKind.Concatenate:
                         case RegexNodeKind.Alternate:
+                        case RegexNodeKind.Loop:
+                        case RegexNodeKind.Lazyloop:
+                        case RegexNodeKind.Capture when node.N == -1: // N == -1 because balancing groups aren't supported
                             {
+                                //loops and captures have one child
+                                Debug.Assert((node.Kind != RegexNodeKind.Loop && node.Kind != RegexNodeKind.Lazyloop && node.Kind != RegexNodeKind.Capture) || node.ChildCount() == 1);
                                 //push the node for the second time
                                 work.Push((node, top.TryToMarkFixedLength, true));
                                 //propagate the length mark check only in case of alternation
@@ -185,19 +188,6 @@ namespace System.Text.RegularExpressions.Symbolic
                                     //push all the children to be converted
                                     work.Push((node.Child(i), mark, false));
                                 }
-                                break;
-                            }
-
-                        // General loops and supported captures
-
-                        case RegexNodeKind.Loop:
-                        case RegexNodeKind.Lazyloop:
-                        case RegexNodeKind.Capture when node.N == -1: // N == -1 because balancing groups aren't supported
-                            {
-                                //push the node for the second time
-                                work.Push((node, top.TryToMarkFixedLength, true));
-                                //push the child node, but omit the length mark check
-                                work.Push((node.Child(0), false, false));
                                 break;
                             }
 
@@ -334,7 +324,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
             bool CheckThatAllChildrenHaveBeenCached(RegexNode node)
             {
-                for (int i=0; i < node.ChildCount(); ++i)
+                for (int i = 0; i < node.ChildCount(); ++i)
                 {
                     if (!cache.ContainsKey(node.Child(i)))
                         return false;
