@@ -434,40 +434,29 @@ namespace Microsoft.Extensions.Configuration
                 throw new InvalidOperationException(SR.Format(SR.Error_MissingParameterlessConstructor, type));
             }
 
-            if (constructors.Length > 0 && !hasParameterlessPublicConstructor)
+            if (constructors.Length > 1 && !hasParameterlessPublicConstructor)
             {
-                // find the biggest constructor so that we can bind to the most parameters
-                ParameterInfo[]? chosenParameters = null;
-                ConstructorInfo? chosenConstructor = null;
+                throw new InvalidOperationException(SR.Format(SR.Error_MultipleParameterisedConstructors, type));
+            }
 
-                for (int index = 0; index < constructors.Length; index++)
+            if (constructors.Length == 1 && !hasParameterlessPublicConstructor)
+            {
+                ConstructorInfo constructor = constructors[0];
+                ParameterInfo[] parameters = constructor.GetParameters();
+
+                if (!CanBindToTheseConstructorParameters(parameters, out string invalidPropertyName))
                 {
-                    ConstructorInfo constructor = constructors[index];
-                    ParameterInfo[] constructorParameters = constructor.GetParameters();
-
-                    if (!CanBindToTheseConstructorParameters(constructorParameters))
-                    {
-                        continue;
-                    }
-
-                    if (chosenParameters is null || constructorParameters.Length > chosenParameters.Length)
-                    {
-                        chosenParameters = constructorParameters;
-                        chosenConstructor = constructor;
-                    }
+                    throw new InvalidOperationException(SR.Format(SR.Error_CannotBindToConstructorParameter, type, invalidPropertyName));
                 }
 
-                if (chosenParameters != null && chosenConstructor != null)
+                object?[] parameterValues = new object?[parameters.Length];
+
+                for (int index = 0; index < parameters.Length; index++)
                 {
-                    object?[] parameterValues = new object?[chosenParameters.Length];
-
-                    for (int index = 0; index < chosenParameters.Length; index++)
-                    {
-                        parameterValues[index] = BindParameter(chosenParameters[index], config, options);
-                    }
-
-                    return chosenConstructor.Invoke(parameterValues);
+                    parameterValues[index] = BindParameter(parameters[index], config, options);
                 }
+
+                return constructor.Invoke(parameterValues);
             }
 
             object? instance;
@@ -483,14 +472,16 @@ namespace Microsoft.Extensions.Configuration
             return instance ?? throw new InvalidOperationException(SR.Format(SR.Error_FailedToActivate, type));
         }
 
-        private static bool CanBindToTheseConstructorParameters(ParameterInfo[] constructorParameters)
+        private static bool CanBindToTheseConstructorParameters(ParameterInfo[] constructorParameters, out string reason)
         {
+            reason = string.Empty;
             foreach (ParameterInfo p in constructorParameters)
             {
-                if (p.IsOut) return false;
-
-                // `in` is OK, but filter out `ref`
-                if (!p.IsIn && p.ParameterType.IsByRef) return false;
+                if (p.IsOut || p.IsIn || p.ParameterType.IsByRef)
+                {
+                    reason = p.ParameterType.ToString();
+                    return false;
+                }
             }
 
             return true;

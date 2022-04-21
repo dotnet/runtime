@@ -112,43 +112,6 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             public IConfigurationSection DerivedSection { get; set; }
         }
 
-        public class ClassWithInAndOutAndRefParameters
-        {
-            // will not choose because ref parameters are not considered
-            public ClassWithInAndOutAndRefParameters(in string color, ref int length)
-            {
-                Color = color;
-                Length = length;
-            }
-
-            // will not choose this one because out parameters are not considered
-            public ClassWithInAndOutAndRefParameters(in string color, int length, out string colorUpperCase)
-            {
-                Color = color;
-                Length = length;
-                colorUpperCase = color.ToUpper();
-            }
-
-            // WILL choose this one; in parameters are considered
-            public ClassWithInAndOutAndRefParameters(in string color, int length)
-            {
-                Color = color;
-                Length = length;
-            }
-
-            // will not choose this one as it contains ref and out parameters
-            public ClassWithInAndOutAndRefParameters(in string color, int length, out string colorUpperCase, ref int alternativeLength)
-            {
-                Color = color;
-                Length = length < 100 ? length : alternativeLength;
-                colorUpperCase = color.ToUpper();
-            }
-
-
-            public string Color { get; }
-            public int Length { get; }
-        }
-
         public record RecordTypeOptions(string Color, int Length);
 
         public record struct RecordStructTypeOptions(string Color, int Length);
@@ -196,32 +159,14 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             public int Length { get; }
         }
 
-        public class ImmutableClassWithConstructorOverloads
+        public class ImmutableClassWithOneParameterisedConstructor
         {
-            public ImmutableClassWithConstructorOverloads(string string1, int int1)
-            {
-                String1 = string1;
-                Int1 = int1;
-            }
-
-            public ImmutableClassWithConstructorOverloads(string string1, int int1, string string2)
-            {
-                String1 = string1;
-                Int1 = int1;
-                String2 = string2;
-            }
-
-            public ImmutableClassWithConstructorOverloads(string string1, int int1, string string2, int int2)
+            public ImmutableClassWithOneParameterisedConstructor(string string1, int int1, string string2, int int2)
             {
                 String1 = string1;
                 Int1 = int1;
                 String2 = string2;
                 Int2 = int2;
-            }
-
-            public ImmutableClassWithConstructorOverloads(string string1)
-            {
-                String1 = string1;
             }
 
             public string String1 { get; }
@@ -230,22 +175,14 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             public int Int2 { get; }
         }
 
-        public class ImmutableClassWAmbiguousConstructorOverloads
+        public class ImmutableClassWithOneParameterisedConstructorButWithInParameter
         {
-            public ImmutableClassWAmbiguousConstructorOverloads(string string1, int int1, string string2, int int2)
+            public ImmutableClassWithOneParameterisedConstructorButWithInParameter(in string string1, int int1, string string2, int int2)
             {
-                String1 = "created by 1st constructor";
+                String1 = string1;
                 Int1 = int1;
                 String2 = string2;
                 Int2 = int2;
-            }
-
-            public ImmutableClassWAmbiguousConstructorOverloads(int int1, string string1, int int2, string string2)
-            {
-                Int1 = int1;
-                String1 = "created by 2st constructor";
-                Int2 = int2;
-                String2 = string2;
             }
 
             public string String1 { get; }
@@ -254,9 +191,9 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             public int Int2 { get; }
         }
 
-        public class ImmutableClassWMoreConstructorParamsThatProperties
+        public class ImmutableClassWithOneParameterisedConstructorButWithRefParameter
         {
-            public ImmutableClassWMoreConstructorParamsThatProperties(string string1, int int1, string string2, int int2)
+            public ImmutableClassWithOneParameterisedConstructorButWithRefParameter(string string1, ref int int1, string string2, int int2)
             {
                 String1 = string1;
                 Int1 = int1;
@@ -264,14 +201,55 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
                 Int2 = int2;
             }
 
-            public ImmutableClassWMoreConstructorParamsThatProperties(int int1, string string1, int int2, string string2, int int3, string string3)
-            {
-                Int1 = int1;
-                String1 = string1;
-                Int2 = int2;
-                String2 = string2;
+            public string String1 { get; }
+            public string String2 { get; }
+            public int Int1 { get; }
+            public int Int2 { get; }
+        }
 
-                String1 = "set from the largest constructor";
+        public class ImmutableClassWithOneParameterisedConstructorButWithOutParameter
+        {
+            public ImmutableClassWithOneParameterisedConstructorButWithOutParameter(string string1, int int1,
+                string string2, out decimal int2)
+            {
+                String1 = string1;
+                Int1 = int1;
+                String2 = string2;
+                int2 = 0;
+            }
+
+            public string String1 { get; }
+            public string String2 { get; }
+            public int Int1 { get; }
+            public int Int2 { get; }
+        }
+
+        public class ImmutableClassWithMultipleParameterisedConstructors
+        {
+            public ImmutableClassWithMultipleParameterisedConstructors(string string1, int int1)
+            {
+                String1 = string1;
+                Int1 = int1;
+            }
+
+            public ImmutableClassWithMultipleParameterisedConstructors(string string1, int int1, string string2)
+            {
+                String1 = string1;
+                Int1 = int1;
+                String2 = string2;
+            }
+
+            public ImmutableClassWithMultipleParameterisedConstructors(string string1, int int1, string string2, int int2)
+            {
+                String1 = string1;
+                Int1 = int1;
+                String2 = string2;
+                Int2 = int2;
+            }
+
+            public ImmutableClassWithMultipleParameterisedConstructors(string string1)
+            {
+                String1 = string1;
             }
 
             public string String1 { get; }
@@ -1206,23 +1184,6 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
         }
 
         [Fact]
-        public void CanBindImmutableClassAndSkipsConstructorsWithOutAndRefParameters()
-        {
-            var dic = new Dictionary<string, string>
-            {
-                {"Length", "42"},
-                {"Color", "Green"},
-            };
-            var configurationBuilder = new ConfigurationBuilder();
-            configurationBuilder.AddInMemoryCollection(dic);
-            var config = configurationBuilder.Build();
-
-            var options = config.Get<ClassWithInAndOutAndRefParameters>();
-            Assert.Equal(42, options.Length);
-            Assert.Equal("Green", options.Color);
-        }
-
-        [Fact]
         public void CanBindMutableClassWitNestedImmutableObject()
         {
             var dic = new Dictionary<string, string>
@@ -1241,14 +1202,10 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             Assert.Equal("Green", options.LengthAndColor.Color);
         }
 
-        // If the immutable type has multiple constructors,
-        // then pick the one with the most parameters
-        // and try to bind as many as possible.
-        // The type used in the example below has multiple constructors in
-        // an arbitrary order, but/ with the biggest (chosen) one
-        // deliberately not first or last.
+        // If the immutable type has multiple public parameterised constructors, then throw
+        // an exception.
         [Fact]
-        public void CanBindImmutableClass_PicksBiggestNonParameterlessConstructor()
+        public void CanBindImmutableClass_ThrowsOnMultipleParameterisedConstructors()
         {
             var dic = new Dictionary<string, string>
             {
@@ -1261,52 +1218,100 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             configurationBuilder.AddInMemoryCollection(dic);
             var config = configurationBuilder.Build();
 
-            var options = config.Get<ImmutableClassWithConstructorOverloads>();
+            string expectedMessage = SR.Format(SR.Error_MultipleParameterisedConstructors, "Microsoft.Extensions.Configuration.Binder.Test.ConfigurationBinderTests+ImmutableClassWithMultipleParameterisedConstructors");
+
+            var ex = Assert.Throws<InvalidOperationException>(() => config.Get<ImmutableClassWithMultipleParameterisedConstructors>());
+
+            Assert.Equal(expectedMessage, ex.Message);
+        }
+
+        // If the immutable type has a parameterised constructor, then throw
+        // that constructor has an 'in' parameter
+        [Fact]
+        public void CanBindImmutableClass_ThrowsOnParameterisedConstructorWithAnInParameter()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"String1", "s1"},
+                {"Int1", "1"},
+                {"String2", "s2"},
+                {"Int2", "2"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+            var config = configurationBuilder.Build();
+
+            string expectedMessage = SR.Format(SR.Error_CannotBindToConstructorParameter, "Microsoft.Extensions.Configuration.Binder.Test.ConfigurationBinderTests+ImmutableClassWithOneParameterisedConstructorButWithInParameter", "System.String&");
+
+            var ex = Assert.Throws<InvalidOperationException>(() => config.Get<ImmutableClassWithOneParameterisedConstructorButWithInParameter>());
+
+            Assert.Equal(expectedMessage, ex.Message);
+        }
+
+        // If the immutable type has a parameterised constructors, then throw
+        // that constructor has a 'ref' parameter
+        [Fact]
+        public void CanBindImmutableClass_ThrowsOnParameterisedConstructorWithARefParameter()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"String1", "s1"},
+                {"Int1", "1"},
+                {"String2", "s2"},
+                {"Int2", "2"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+            var config = configurationBuilder.Build();
+
+            string expectedMessage = SR.Format(SR.Error_CannotBindToConstructorParameter, "Microsoft.Extensions.Configuration.Binder.Test.ConfigurationBinderTests+ImmutableClassWithOneParameterisedConstructorButWithRefParameter", "System.Int32&");
+
+            var ex = Assert.Throws<InvalidOperationException>(() => config.Get<ImmutableClassWithOneParameterisedConstructorButWithRefParameter>());
+
+            Assert.Equal(expectedMessage, ex.Message);
+        }
+
+        // If the immutable type has a parameterised constructors, then throw
+        // that constructor has a 'ref' parameter
+        [Fact]
+        public void CanBindImmutableClass_ThrowsOnParameterisedConstructorWithAnOutParameter()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"String1", "s1"},
+                {"Int1", "1"},
+                {"String2", "s2"},
+                {"Int2", "2"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+            var config = configurationBuilder.Build();
+
+            string expectedMessage = SR.Format(SR.Error_CannotBindToConstructorParameter, "Microsoft.Extensions.Configuration.Binder.Test.ConfigurationBinderTests+ImmutableClassWithOneParameterisedConstructorButWithOutParameter", "System.Decimal&");
+
+            var ex = Assert.Throws<InvalidOperationException>(() => config.Get<ImmutableClassWithOneParameterisedConstructorButWithOutParameter>());
+
+            Assert.Equal(expectedMessage, ex.Message);
+        }
+
+        // If the immutable type has a public parameterised constructor,
+        // then pick it.
+        [Fact]
+        public void CanBindImmutableClass_PicksParameterisedConstructorIfNoParameterlessConstructorExists()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"String1", "s1"},
+                {"Int1", "1"},
+                {"String2", "s2"},
+                {"Int2", "2"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<ImmutableClassWithOneParameterisedConstructor>();
             Assert.Equal("s1", options.String1);
-            Assert.Equal("s2", options.String2);
-            Assert.Equal(1, options.Int1);
-            Assert.Equal(2, options.Int2);
-        }
-
-        [Fact]
-        public void CanBindImmutableClass_PicksFirstOfAnyAmbiguousConstructors()
-        {
-            var dic = new Dictionary<string, string>
-            {
-                {"String1", "s1"},
-                {"Int1", "1"},
-                {"String2", "s2"},
-                {"Int2", "2"},
-            };
-            var configurationBuilder = new ConfigurationBuilder();
-            configurationBuilder.AddInMemoryCollection(dic);
-            var config = configurationBuilder.Build();
-
-            var options = config.Get<ImmutableClassWAmbiguousConstructorOverloads>();
-            Assert.Equal("created by 1st constructor", options.String1);
-            Assert.Equal("s2", options.String2);
-            Assert.Equal(1, options.Int1);
-            Assert.Equal(2, options.Int2);
-        }
-
-        [Fact]
-        public void CanBindImmutableClass_PicksLargestConstructorEvenIfItHasExtraneousParameters()
-        {
-            var dic = new Dictionary<string, string>
-            {
-                {"String1", "s1"},
-                {"Int1", "1"},
-                {"String2", "s2"},
-                {"Int2", "2"},
-            };
-            var configurationBuilder = new ConfigurationBuilder();
-            configurationBuilder.AddInMemoryCollection(dic);
-            var config = configurationBuilder.Build();
-
-            var options = config.Get<ImmutableClassWMoreConstructorParamsThatProperties>();
-
-            // the biggest constructor sets this field to something else
-            Assert.Equal("set from the largest constructor", options.String1);
             Assert.Equal("s2", options.String2);
             Assert.Equal(1, options.Int1);
             Assert.Equal(2, options.Int2);
@@ -1332,7 +1337,7 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
         }
 
         [Fact]
-        public void CanBindSemiImmutableClassWithInit()
+        public void CanBindSemiImmutableClass_WithInitProperties()
         {
             var dic = new Dictionary<string, string>
             {
