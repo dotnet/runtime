@@ -53,6 +53,7 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/18837", TestPlatforms.AnyUnix)]
         public async Task SslStream_StreamToStream_ServerInitiatedCloseNotify_Ok()
         {
             (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
@@ -123,6 +124,7 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/18837", TestPlatforms.AnyUnix)]
         public async Task SslStream_StreamToStream_DataAfterShutdown_Fail()
         {
             (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();

@@ -190,6 +190,7 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         public async Task Read_InvokedSynchronously()
         {
             (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
