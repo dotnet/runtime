@@ -113,7 +113,8 @@ static MonoComponentEventPipe fn_table = {
 	&ep_rt_write_event_threadpool_worker_thread_adjustment_stats,
 	&ep_rt_write_event_threadpool_io_enqueue,
 	&ep_rt_write_event_threadpool_io_dequeue,
-	&ep_rt_write_event_threadpool_working_thread_count
+	&ep_rt_write_event_threadpool_working_thread_count,
+	&ep_rt_write_event_threadpool_io_pack
 };
 
 static bool

@@ -179,6 +179,7 @@ NOHANDLES(ICALL(NATIVE_RUNTIME_EVENT_SOURCE_6, "LogThreadPoolWorkerThreadStart",
 NOHANDLES(ICALL(NATIVE_RUNTIME_EVENT_SOURCE_7, "LogThreadPoolWorkerThreadStop", ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogThreadPoolWorkerThreadStop))
 NOHANDLES(ICALL(NATIVE_RUNTIME_EVENT_SOURCE_8, "LogThreadPoolWorkerThreadWait", ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogThreadPoolWorkerThreadWait))
 NOHANDLES(ICALL(NATIVE_RUNTIME_EVENT_SOURCE_9, "LogThreadPoolWorkingThreadCount", ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogThreadPoolWorkingThreadCount))
+NOHANDLES(ICALL(NATIVE_RUNTIME_EVENT_SOURCE_10, "LogThreadPoolIOPack", ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogThreadPoolIOPack))
 
 ICALL_TYPE(ENUM, "System.Enum", ENUM_1)
 HANDLES(ENUM_1, "GetEnumValuesAndNames", ves_icall_System_Enum_GetEnumValuesAndNames, MonoBoolean, 3, (MonoQCallTypeHandle, MonoArrayOut, MonoArrayOut))

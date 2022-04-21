@@ -70,14 +70,10 @@ namespace System.Diagnostics.Tracing
         );
 
         [NonEvent]
-        internal void LogThreadPoolIOPack(
+        [LibraryImport(RuntimeHelpers.QCall)]
+        internal static partial void LogThreadPoolIOPack(
             IntPtr NativeOverlapped,
             IntPtr Overlapped,
-            ushort ClrInstanceID)
-        {
-            // This event is _only_ sent in a QCall in CoreCLR, so it shouldn't be called from managed code.
-            // This event is described in managed code so that EventListener is able to build metadata about the event.
-            throw new NotImplementedException();
-        }
+            ushort ClrInstanceID);
     }
 }
