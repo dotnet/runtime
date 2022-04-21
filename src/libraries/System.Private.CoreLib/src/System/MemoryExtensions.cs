@@ -2042,6 +2042,17 @@ namespace System
                     ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(other)),
                     length * size);
 
+                // A byte-wise comparison in CommonPrefixLength can be used for multi-byte types,
+                // that are bitwise-equatable, too. In order to get the correct index in terms of type T
+                // of the first mismatch, integer division by the size of T is used.
+                //
+                // Example for short:
+                // index (byte-based):   b-1,  b,    b+1,    b+2,  b+3
+                // index (short-based):  s-1,  s,            s+1
+                // byte sequence 1:    { ..., [0x42, 0x43], [0x37, 0x38], ... }
+                // byte sequence 2:    { ..., [0x42, 0x43], [0x37, 0xAB], ... }
+                // So the mismatch is a byte-index b+3, which gives integer divided by the size of short:
+                // 3 / 2 = 1, thus the expected index short-based.
                 return (int)(index / size);
             }
 

@@ -2155,39 +2155,34 @@ namespace System
 
             Debug.Assert(length >= (uint)Vector128<byte>.Count);
 
-            int mask;
+            uint mask;
             nuint lengthToExamine = length - (nuint)Vector128<byte>.Count;
 
-            Vector128<byte> firstVec;
-            Vector128<byte> secondVec;
             Vector128<byte> maskVec;
             i = 0;
 
-            if (lengthToExamine != 0)
+            while (i < lengthToExamine)
             {
-                do
+                maskVec = Vector128.Equals(
+                    Vector128.LoadUnsafe(ref first, i),
+                    Vector128.LoadUnsafe(ref second, i));
+
+                mask = maskVec.ExtractMostSignificantBits();
+                if (mask != 0xFFFF)
                 {
-                    firstVec = Vector128.LoadUnsafe(ref first, i);
-                    secondVec = Vector128.LoadUnsafe(ref second, i);
-                    maskVec = Vector128.Equals(firstVec, secondVec);
-                    mask = (int)maskVec.ExtractMostSignificantBits();
+                    goto Found;
+                }
 
-                    if (mask != 0xFFFF)
-                    {
-                        goto Found;
-                    }
-
-                    i += (nuint)Vector128<byte>.Count;
-                } while (i < lengthToExamine);
+                i += (nuint)Vector128<byte>.Count;
             }
 
             // Do final compare as Vector128<byte>.Count from end rather than start
             i = lengthToExamine;
-            firstVec = Vector128.LoadUnsafe(ref first, i);
-            secondVec = Vector128.LoadUnsafe(ref second, i);
-            maskVec = Vector128.Equals(firstVec, secondVec);
-            mask = (int)maskVec.ExtractMostSignificantBits();
+            maskVec = Vector128.Equals(
+                Vector128.LoadUnsafe(ref first, i),
+                Vector128.LoadUnsafe(ref second, i));
 
+            mask = maskVec.ExtractMostSignificantBits();
             if (mask != 0xFFFF)
             {
                 goto Found;
@@ -2197,7 +2192,7 @@ namespace System
 
         Found:
             mask = ~mask;
-            return i + (uint)BitOperations.TrailingZeroCount(mask);
+            return i + uint.TrailingZeroCount(mask);
         }
 
         // Vector sub-search adapted from https://github.com/aspnet/KestrelHttpServer/pull/1138
