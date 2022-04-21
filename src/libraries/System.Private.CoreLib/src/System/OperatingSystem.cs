@@ -9,7 +9,7 @@ namespace System
 {
     public sealed class OperatingSystem : ISerializable, ICloneable
     {
-#if TARGET_UNIX && !TARGET_OSX && !TARGET_MACCATALYST && !TARGET_IOS
+#if TARGET_UNIX && !TARGET_OSX && !TARGET_MACCATALYST && !TARGET_IOS && !TARGET_TVOS && !TARGET_ANDROID
         private static readonly string s_osPlatformName = Interop.Sys.GetUnixName();
 #endif
 
@@ -99,6 +99,10 @@ namespace System
             return platform.Equals("MACCATALYST", StringComparison.OrdinalIgnoreCase) || platform.Equals("IOS", StringComparison.OrdinalIgnoreCase);
 #elif TARGET_IOS
             return platform.Equals("IOS", StringComparison.OrdinalIgnoreCase);
+#elif TARGET_TVOS
+            return platform.Equals("TVOS", StringComparison.OrdinalIgnoreCase);
+#elif TARGET_ANDROID
+            return platform.Equals("ANDROID", StringComparison.OrdinalIgnoreCase);
 #elif TARGET_UNIX
             return platform.Equals(s_osPlatformName, StringComparison.OrdinalIgnoreCase);
 #else
