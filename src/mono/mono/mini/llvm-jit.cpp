@@ -16,7 +16,7 @@
 #include "mini-runtime.h"
 #include "llvm-jit.h"
 
-#if defined(MONO_ARCH_LLVM_JIT_SUPPORTED) && !defined(MONO_CROSS_COMPILE)
+#if defined(MONO_ARCH_LLVM_JIT_SUPPORTED) && !defined(MONO_CROSS_COMPILE) && LLVM_API_VERSION < 1300
 
 #include <llvm/ADT/SmallVector.h>
 #include <llvm/Support/raw_ostream.h>
@@ -34,7 +34,11 @@
 #include "llvm/ExecutionEngine/Orc/RTDyldObjectLinkingLayer.h"
 #include "llvm/ExecutionEngine/JITSymbol.h"
 #include "llvm/Transforms/Scalar.h"
+#if LLVM_API_VERSION >= 1300
+#include "llvm/IR/BuiltinGCs.h"
+#else
 #include "llvm/CodeGen/BuiltinGCs.h"
+#endif
 #include "llvm/InitializePasses.h"
 
 #include <cstdlib>
@@ -478,6 +482,12 @@ mono_llvm_compile_method (MonoEERef mono_ee, MonoCompile *cfg, LLVMValueRef meth
 {
 	g_assert_not_reached ();
 	return NULL;
+}
+
+void
+mono_llvm_optimize_method (LLVMValueRef method)
+{
+	g_assert_not_reached ();
 }
 
 void

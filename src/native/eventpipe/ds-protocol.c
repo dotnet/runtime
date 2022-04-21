@@ -239,7 +239,7 @@ ipc_message_try_parse (
 	uint16_t payload_len;
 	payload_len = message->header.size - sizeof (message->header);
 	if (payload_len != 0) {
-		uint8_t *buffer = ep_rt_byte_array_alloc (payload_len);
+		buffer = ep_rt_byte_array_alloc (payload_len);
 		ep_raise_error_if_nok (buffer != NULL);
 
 		result = ds_ipc_stream_read (stream, buffer, payload_len, &bytes_read, EP_INFINITE_WAIT);
@@ -671,7 +671,7 @@ ds_ipc_header_get_generic_error (void)
 #endif /* !defined(DS_INCLUDE_SOURCE_FILES) || defined(DS_FORCE_INCLUDE_SOURCE_FILES) */
 #endif /* ENABLE_PERFTRACING */
 
-#ifndef DS_INCLUDE_SOURCE_FILES
+#if !defined(ENABLE_PERFTRACING) || (defined(DS_INCLUDE_SOURCE_FILES) && !defined(DS_FORCE_INCLUDE_SOURCE_FILES))
 extern const char quiet_linker_empty_file_warning_diagnostics_protocol;
 const char quiet_linker_empty_file_warning_diagnostics_protocol = 0;
 #endif

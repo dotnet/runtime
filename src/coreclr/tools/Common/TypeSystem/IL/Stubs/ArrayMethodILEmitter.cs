@@ -115,9 +115,9 @@ namespace Internal.IL.Stubs
                     codeStream.EmitLdArg(1);
                     codeStream.Emit(ILOpcode.brfalse, typeCheckPassedLabel);
 
-                    // MethodTable* actualElementType = this.MethodTable.RelatedParameterType; // ArrayElementType
+                    // MethodTable* actualElementType = this.m_pEEType->RelatedParameterType; // ArrayElementType
                     codeStream.EmitLdArg(0);
-                    codeStream.Emit(ILOpcode.call, _emitter.NewToken(objectType.GetKnownMethod("get_MethodTable", null)));
+                    codeStream.Emit(ILOpcode.ldfld, _emitter.NewToken(objectType.GetKnownField("m_pEEType")));
                     codeStream.Emit(ILOpcode.call,
                         _emitter.NewToken(eetypeType.GetKnownMethod("get_RelatedParameterType", null)));
 
@@ -146,7 +146,7 @@ namespace Internal.IL.Stubs
                 TypeDesc eetypeType = context.SystemModule.GetKnownType("Internal.Runtime", "MethodTable");
 
                 codeStream.EmitLdArg(0);
-                codeStream.Emit(ILOpcode.call, _emitter.NewToken(objectType.GetKnownMethod("get_MethodTable", null)));
+                codeStream.Emit(ILOpcode.ldfld, _emitter.NewToken(objectType.GetKnownField("m_pEEType")));
                 codeStream.Emit(ILOpcode.call,
                     _emitter.NewToken(eetypeType.GetKnownMethod("get_IsSzArray", null)));
 

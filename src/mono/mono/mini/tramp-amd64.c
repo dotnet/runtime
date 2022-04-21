@@ -44,6 +44,8 @@ void mono_arch_patch_plt_entry_exec_only (gpointer amodule_info, guint8 *code, g
 
 #define IS_REX(inst) (((inst) >= 0x40) && ((inst) <= 0x4f))
 
+MONO_PRAGMA_WARNING_DISABLE(4127) /* conditional expression is constant */
+
 #ifndef DISABLE_JIT
 /*
  * mono_arch_get_unbox_trampoline:

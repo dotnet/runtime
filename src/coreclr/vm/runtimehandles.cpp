@@ -2664,28 +2664,7 @@ FCIMPL1(ReflectModuleBaseObject*, AssemblyHandle::GetManifestModule, AssemblyBas
     DomainAssembly *pAssembly = refAssembly->GetDomainAssembly();
     Assembly* currentAssembly = pAssembly->GetAssembly();
 
-    Module *pModule = currentAssembly->GetModule();
-    DomainAssembly * pDomainAssembly = pModule->GetDomainAssembly();
-
-#ifdef _DEBUG
-    OBJECTREF orModule;
-
-    HELPER_METHOD_FRAME_BEGIN_RET_1(refAssembly);
-    orModule = (pDomainAssembly != NULL) ? pDomainAssembly->GetExposedModuleObjectIfExists() : NULL;
-    if (orModule == NULL)
-        orModule = pModule->GetExposedObject();
-#else
-    OBJECTREF orModule = (pDomainAssembly != NULL) ? pDomainAssembly->GetExposedModuleObjectIfExists() : NULL;
-    if (orModule != NULL)
-        return (ReflectModuleBaseObject*)OBJECTREFToObject(orModule);
-
-    HELPER_METHOD_FRAME_BEGIN_RET_1(refAssembly);
-    orModule = pModule->GetExposedObject();
-#endif
-
-    HELPER_METHOD_FRAME_END();
-    return (ReflectModuleBaseObject*)OBJECTREFToObject(orModule);
-
+    FC_RETURN_MODULE_OBJECT(currentAssembly->GetModule(), refAssembly);
 }
 FCIMPLEND
 

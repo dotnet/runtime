@@ -151,7 +151,7 @@ mono_class_setup_interface_offsets_internal (MonoClass *klass, int cur_slot, gbo
 		interface_offsets_full = (int *)g_malloc (sizeof (int) * num_ifaces);
 
 		cur_slot = 0;
-		for (int i = 0; i < num_ifaces; ++i) {
+		for (i = 0; i < num_ifaces; ++i) {
 			MonoClass *gklass_ic = gklass->interfaces_packed [i];
 			MonoClass *inflated = mono_class_inflate_generic_class_checked (gklass_ic, mono_class_get_context(klass), error);
 			if (!is_ok (error)) {
@@ -1675,11 +1675,10 @@ mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int o
 	ERROR_DECL (error);
 	MonoClass *k, *ic;
 	MonoMethod **vtable = NULL;
-	int i, max_vtsize = 0, cur_slot = 0;
+	int max_vtsize = 0, cur_slot = 0;
 	GHashTable *override_map = NULL;
 	GHashTable *override_class_map = NULL;
 	GHashTable *conflict_map = NULL;
-	MonoMethod *cm;
 #if (DEBUG_INTERFACE_VTABLE_CODE|TRACE_INTERFACE_VTABLE_CODE)
 	int first_non_interface_slot;
 #endif
@@ -1755,7 +1754,7 @@ mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int o
 	}
 
 	/* override interface methods */
-	for (i = 0; i < onum; i++) {
+	for (int i = 0; i < onum; i++) {
 		MonoMethod *decl = overrides [i*2];
 		MonoMethod *override = overrides [i*2 + 1];
 		if (MONO_CLASS_IS_INTERFACE_INTERNAL (decl->klass)) {
@@ -1785,7 +1784,7 @@ mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int o
 	}
 
 	// Loop on all implemented interfaces...
-	for (i = 0; i < klass->interface_offsets_count; i++) {
+	for (int i = 0; i < klass->interface_offsets_count; i++) {
 		MonoClass *parent = klass->parent;
 		int ic_offset;
 		gboolean interface_is_explicitly_implemented_by_class;
@@ -1870,10 +1869,9 @@ mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int o
 
 				// If the slot is still empty, look in all the inherited virtual methods...
 				if ((vtable [im_slot] == NULL) && klass->parent != NULL) {
-					MonoClass *parent = klass->parent;
 					// Reverse order, so that last added methods are preferred
 					for (cm_index = parent->vtable_size - 1; cm_index >= 0; cm_index--) {
-						MonoMethod *cm = parent->vtable [cm_index];
+						cm = parent->vtable [cm_index];
 
 						TRACE_INTERFACE_VTABLE ((cm != NULL) && printf ("    For slot %d ('%s'.'%s':'%s'), trying (ancestor) method '%s'.'%s':'%s'... ", im_slot, ic->name_space, ic->name, im->name, cm->klass->name_space, cm->klass->name, cm->name));
 						if ((cm != NULL) && check_interface_method_override (klass, im, cm, MONO_ITF_OVERRIDE_SLOT_EMPTY)) {
@@ -1910,7 +1908,7 @@ mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int o
 	// will not always be the first pass the one that fills the slot.
 	// Now it is okay to implement a class that is not abstract and implements a interface that has an abstract method because it's reabstracted
 	if (!mono_class_is_abstract (klass)) {
-		for (i = 0; i < klass->interface_offsets_count; i++) {
+		for (int i = 0; i < klass->interface_offsets_count; i++) {
 			int ic_offset;
 			int im_index;
 
@@ -1939,7 +1937,7 @@ mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int o
 
 	TRACE_INTERFACE_VTABLE (print_vtable_full (klass, vtable, cur_slot, first_non_interface_slot, "AFTER SETTING UP INTERFACE METHODS", FALSE));
 	for (l = virt_methods; l; l = l->next) {
-		cm = (MonoMethod *)l->data;
+		MonoMethod *cm = (MonoMethod *)l->data;
 		/*
 		 * If the method is REUSE_SLOT, we must check in the
 		 * base class for a method to override.
@@ -2016,7 +2014,7 @@ mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int o
 	}
 
 	/* override non interface methods */
-	for (i = 0; i < onum; i++) {
+	for (int i = 0; i < onum; i++) {
 		MonoMethod *decl = overrides [i*2];
 		MonoMethod *impl = overrides [i*2 + 1];
 		if (!MONO_CLASS_IS_INTERFACE_INTERNAL (decl->klass)) {
@@ -2107,7 +2105,7 @@ mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int o
 	if (override_map) {
 		MonoMethod *cm;
 
-		for (i = 0; i < max_vtsize; ++i)
+		for (int i = 0; i < max_vtsize; ++i)
 			if (vtable [i]) {
 				TRACE_INTERFACE_VTABLE (printf ("checking slot %d method %s[%p] for overrides\n", i, mono_method_full_name (vtable [i], 1), vtable [i]));
 
@@ -2136,7 +2134,7 @@ mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int o
 	/* Ensure that all vtable slots are filled with concrete methods */
 	// Now it is okay to implement a class that is not abstract and implements a interface that has an abstract method because it's reabstracted
 	if (!mono_class_is_abstract (klass)) {
-		for (i = 0; i < cur_slot; ++i) {
+		for (int i = 0; i < cur_slot; ++i) {
 			if (vtable [i] == NULL || (vtable [i]->flags & METHOD_ATTRIBUTE_ABSTRACT)) {
 				if (vtable [i] != NULL && mono_method_get_is_reabstracted (vtable [i]))
 					continue;

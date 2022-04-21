@@ -5,11 +5,12 @@
 // we will need to use the il after the C# compiler is fixed
 
 using System;
+using Xunit;
 
-namespace strswitch
+namespace strswitch_catchrettoinnertry_cs
 {
 
-    class Class1
+    public class Class1
     {
         private static TestUtil.TestLog testLog;
 
@@ -28,7 +29,8 @@ namespace strswitch
             testLog = new TestUtil.TestLog(expectedOut);
         }
 
-        static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             //Start recording
             testLog.StartRecording();

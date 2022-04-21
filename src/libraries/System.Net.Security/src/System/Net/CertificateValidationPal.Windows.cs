@@ -28,17 +28,9 @@ namespace System.Net
         // Extracts a remote certificate upon request.
         //
 
-        internal static X509Certificate2? GetRemoteCertificate(SafeDeleteContext? securityContext) =>
-            GetRemoteCertificate(securityContext, retrieveCollection: false, out _);
-
-        internal static X509Certificate2? GetRemoteCertificate(SafeDeleteContext? securityContext, out X509Certificate2Collection? remoteCertificateCollection) =>
-            GetRemoteCertificate(securityContext, retrieveCollection: true, out remoteCertificateCollection);
-
         private static X509Certificate2? GetRemoteCertificate(
-            SafeDeleteContext? securityContext, bool retrieveCollection, out X509Certificate2Collection? remoteCertificateCollection)
+            SafeDeleteContext? securityContext, bool retrieveChainCertificates, ref X509Chain? chain)
         {
-            remoteCertificateCollection = null;
-
             if (securityContext == null)
             {
                 return null;
@@ -54,7 +46,7 @@ namespace System.Net
                 //
                 // We can use retrieveCollection to distinguish between in-handshake and after-handshake calls, because
                 // the collection is retrieved for cert validation purposes after the handshake completes.
-                if (retrieveCollection) // handshake completed
+                if (retrieveChainCertificates) // handshake completed
                 {
                     SSPIWrapper.QueryContextAttributes_SECPKG_ATTR_REMOTE_CERT_CONTEXT(GlobalSSPI.SSPISecureChannel, securityContext, out remoteContext);
                 }
@@ -72,9 +64,11 @@ namespace System.Net
             {
                 if (remoteContext != null && !remoteContext.IsInvalid)
                 {
-                    if (retrieveCollection)
+                    if (retrieveChainCertificates)
                     {
-                        remoteCertificateCollection = UnmanagedCertificateContext.GetRemoteCertificatesFromStoreContext(remoteContext);
+                        chain ??= new X509Chain();
+
+                        UnmanagedCertificateContext.GetRemoteCertificatesFromStoreContext(remoteContext, chain.ChainPolicy.ExtraStore);
                     }
 
                     remoteContext.Dispose();

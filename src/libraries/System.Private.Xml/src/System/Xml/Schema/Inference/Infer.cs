@@ -109,7 +109,6 @@ namespace System.Xml.Schema
         private readonly XmlNamespaceManager _namespaceManager;
         //private Hashtable schemas;    //contains collection of schemas before they get added to the XmlSchemaSet xsc
         //private bool bRefine = false; //indicates if we are going to infer or refine schema when InferSchema is called
-        private readonly ArrayList _schemaList;
         private InferenceOption _occurrence = InferenceOption.Restricted;
         private InferenceOption _typeInference = InferenceOption.Restricted;
 
@@ -160,7 +159,6 @@ namespace System.Xml.Schema
             _nametable = new NameTable();
             _namespaceManager = new XmlNamespaceManager(_nametable);
             _namespaceManager.AddNamespace("xs", XmlSchema.Namespace);
-            _schemaList = new ArrayList();
         }
 
         public XmlSchemaSet InferSchema(XmlReader instanceDocument)

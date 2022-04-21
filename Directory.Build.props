@@ -68,6 +68,15 @@
     <NetFrameworkToolCurrent>net472</NetFrameworkToolCurrent>
     <!-- Don't build for NETFramework during source-build. -->
     <NetFrameworkToolCurrent Condition="'$(DotNetBuildFromSource)' == 'true'" />
+
+    <TargetFrameworkForNETFrameworkTasks>$(NetFrameworkToolCurrent)</TargetFrameworkForNETFrameworkTasks>
+    <!-- Don't build for NETFramework during source-build. -->
+    <TargetFrameworkForNETFrameworkTasks Condition="'$(DotNetBuildFromSource)' == 'true'" />
+
+    <TargetFrameworkForNETCoreTasks>$(NetCoreAppToolCurrent)</TargetFrameworkForNETCoreTasks>
+
+    <!-- TODO (#68024): remove this once we're using a 7.0 SDK -->
+    <XHarnessTargetFramework>net6.0</XHarnessTargetFramework>
   </PropertyGroup>
 
   <PropertyGroup>

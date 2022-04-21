@@ -92,7 +92,6 @@ namespace System.Drawing.Printing.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)] // In Unix is a no-op
         public void OnStartPrint_InvokeNullDocument_ThrowsNullReferenceException()
         {
             var controller = new SubPrintController();

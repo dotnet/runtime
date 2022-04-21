@@ -201,6 +201,9 @@ namespace Internal.Runtime
             }
         }
 
+        [Intrinsic]
+        internal static extern MethodTable* Of<T>();
+
         private ushort _usComponentSize;
         private ushort _usFlags;
         private uint _uBaseSize;

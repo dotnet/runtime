@@ -15,13 +15,15 @@ namespace System.Text.RegularExpressions
     /// <summary>
     /// RegexCompiler translates a block of RegexCode to MSIL, and creates a subclass of the RegexRunner type.
     /// </summary>
+    [RequiresDynamicCode("Compiling a RegEx requires dynamic code.")]
     internal abstract class RegexCompiler
     {
         private static readonly FieldInfo s_runtextstartField = RegexRunnerField("runtextstart");
         private static readonly FieldInfo s_runtextposField = RegexRunnerField("runtextpos");
         private static readonly FieldInfo s_runtrackposField = RegexRunnerField("runtrackpos");
         private static readonly FieldInfo s_runstackField = RegexRunnerField("runstack");
-        private static readonly FieldInfo s_textInfo = typeof(CompiledRegexRunner).GetField("_textInfo", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        private static readonly FieldInfo s_cultureField = typeof(CompiledRegexRunner).GetField("_culture", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        private static readonly FieldInfo s_caseBehaviorField = typeof(CompiledRegexRunner).GetField("_caseBehavior", BindingFlags.Instance | BindingFlags.NonPublic)!;
 
         private static readonly MethodInfo s_captureMethod = RegexRunnerMethod("Capture");
         private static readonly MethodInfo s_transferCaptureMethod = RegexRunnerMethod("TransferCapture");
@@ -36,6 +38,7 @@ namespace System.Text.RegularExpressions
         private static readonly MethodInfo s_charInClassMethod = RegexRunnerMethod("CharInClass");
         private static readonly MethodInfo s_checkTimeoutMethod = RegexRunnerMethod("CheckTimeout");
 
+        private static readonly MethodInfo s_regexCaseEquivalencesTryFindCaseEquivalencesForCharWithIBehaviorMethod = typeof(RegexCaseEquivalences).GetMethod("TryFindCaseEquivalencesForCharWithIBehavior", BindingFlags.Static | BindingFlags.Public)!;
         private static readonly MethodInfo s_charIsDigitMethod = typeof(char).GetMethod("IsDigit", new Type[] { typeof(char) })!;
         private static readonly MethodInfo s_charIsWhiteSpaceMethod = typeof(char).GetMethod("IsWhiteSpace", new Type[] { typeof(char) })!;
         private static readonly MethodInfo s_charGetUnicodeInfo = typeof(char).GetMethod("GetUnicodeCategory", new Type[] { typeof(char) })!;
@@ -57,7 +60,6 @@ namespace System.Text.RegularExpressions
         private static readonly MethodInfo s_spanStartsWithSpanComparison = typeof(MemoryExtensions).GetMethod("StartsWith", new Type[] { typeof(ReadOnlySpan<char>), typeof(ReadOnlySpan<char>), typeof(StringComparison) })!;
         private static readonly MethodInfo s_stringAsSpanMethod = typeof(MemoryExtensions).GetMethod("AsSpan", new Type[] { typeof(string) })!;
         private static readonly MethodInfo s_stringGetCharsMethod = typeof(string).GetMethod("get_Chars", new Type[] { typeof(int) })!;
-        private static readonly MethodInfo s_textInfoToLowerMethod = typeof(TextInfo).GetMethod("ToLower", new Type[] { typeof(char) })!;
         private static readonly MethodInfo s_arrayResize = typeof(Array).GetMethod("Resize")!.MakeGenericMethod(typeof(int));
         private static readonly MethodInfo s_mathMinIntInt = typeof(Math).GetMethod("Min", new Type[] { typeof(int), typeof(int) })!;
 
@@ -74,11 +76,6 @@ namespace System.Text.RegularExpressions
         private Stack<LocalBuilder>? _int32LocalsPool;
         /// <summary>Pool of ReadOnlySpan of char locals.</summary>
         private Stack<LocalBuilder>? _readOnlySpanCharLocalsPool;
-
-        /// <summary>Local representing a timeout counter for loops (set loops and node loops).</summary>
-        private LocalBuilder? _loopTimeoutCounter;
-        /// <summary>A frequency with which the timeout should be validated.</summary>
-        private const int LoopTimeoutCheckCount = 2048;
 
         private static FieldInfo RegexRunnerField(string fieldname) => typeof(RegexRunner).GetField(fieldname, BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static)!;
 
@@ -183,6 +180,13 @@ namespace System.Text.RegularExpressions
         {
             Ldthis();
             _ilg!.Emit(OpCodes.Ldfld, ft);
+        }
+
+        /// <summary>A macro for Ldthis(); Ldflda();</summary>
+        protected void Ldthisflda(FieldInfo ft)
+        {
+            Ldthis();
+            _ilg!.Emit(OpCodes.Ldflda, ft);
         }
 
         /// <summary>Fetches the address of argument in passed in <paramref name="position"/></summary>
@@ -332,16 +336,6 @@ namespace System.Text.RegularExpressions
             }
         }
 
-        /// <summary>Invokes textInfo.ToLower(c).</summary>
-        private void CallToLower()
-        {
-            using RentedLocalBuilder currentCharLocal = RentInt32Local();
-            Stloc(currentCharLocal);
-            Ldthisfld(s_textInfo);
-            Ldloc(currentCharLocal);
-            Callvirt(s_textInfoToLowerMethod);
-        }
-
         /// <summary>Generates the implementation for TryFindNextPossibleStartingPosition.</summary>
         protected void EmitTryFindNextPossibleStartingPosition()
         {
@@ -416,29 +410,25 @@ namespace System.Text.RegularExpressions
             // Either anchors weren't specified, or they don't completely root all matches to a specific location.
             switch (_regexTree.FindOptimizations.FindMode)
             {
-                case FindNextStartingPositionMode.LeadingPrefix_LeftToRight:
-                    Debug.Assert(!string.IsNullOrEmpty(_regexTree.FindOptimizations.LeadingPrefix));
-                    EmitIndexOf_LeftToRight(_regexTree.FindOptimizations.LeadingPrefix);
+                case FindNextStartingPositionMode.LeadingString_LeftToRight:
+                case FindNextStartingPositionMode.FixedDistanceString_LeftToRight:
+                    EmitIndexOf_LeftToRight();
                     break;
 
-                case FindNextStartingPositionMode.LeadingPrefix_RightToLeft:
-                    Debug.Assert(!string.IsNullOrEmpty(_regexTree.FindOptimizations.LeadingPrefix));
-                    EmitIndexOf_RightToLeft(_regexTree.FindOptimizations.LeadingPrefix);
+                case FindNextStartingPositionMode.LeadingString_RightToLeft:
+                    EmitIndexOf_RightToLeft();
                     break;
 
                 case FindNextStartingPositionMode.LeadingSet_LeftToRight:
-                case FindNextStartingPositionMode.FixedSets_LeftToRight:
-                    Debug.Assert(_regexTree.FindOptimizations.FixedDistanceSets is { Count: > 0 });
+                case FindNextStartingPositionMode.FixedDistanceSets_LeftToRight:
                     EmitFixedSet_LeftToRight();
                     break;
 
                 case FindNextStartingPositionMode.LeadingSet_RightToLeft:
-                    Debug.Assert(_regexTree.FindOptimizations.FixedDistanceSets is { Count: > 0 });
                     EmitFixedSet_RightToLeft();
                     break;
 
                 case FindNextStartingPositionMode.LiteralAfterLoop_LeftToRight:
-                    Debug.Assert(_regexTree.FindOptimizations.LiteralAfterLoop is not null);
                     EmitLiteralAfterAtomicLoop();
                     break;
 
@@ -706,16 +696,27 @@ namespace System.Text.RegularExpressions
                 return false;
             }
 
-            // Emits a case-sensitive prefix search for a string at the beginning of the pattern.
-            void EmitIndexOf_LeftToRight(string prefix)
+            // Emits a case-sensitive left-to-right search for a substring.
+            void EmitIndexOf_LeftToRight()
             {
+                RegexFindOptimizations opts = _regexTree.FindOptimizations;
+                Debug.Assert(opts.FindMode is FindNextStartingPositionMode.LeadingString_LeftToRight or FindNextStartingPositionMode.FixedDistanceString_LeftToRight);
+
                 using RentedLocalBuilder i = RentInt32Local();
 
                 // int i = inputSpan.Slice(pos).IndexOf(prefix);
                 Ldloca(inputSpan);
                 Ldloc(pos);
+                if (opts.FindMode == FindNextStartingPositionMode.FixedDistanceString_LeftToRight &&
+                    opts.FixedDistanceLiteral is { Distance: > 0 } literal)
+                {
+                    Ldc(literal.Distance);
+                    Add();
+                }
                 Call(s_spanSliceIntMethod);
-                Ldstr(prefix);
+                Ldstr(opts.FindMode == FindNextStartingPositionMode.LeadingString_LeftToRight ?
+                    opts.LeadingPrefix :
+                    opts.FixedDistanceLiteral.String!);
                 Call(s_stringAsSpanMethod);
                 Call(s_spanIndexOfSpan);
                 Stloc(i);
@@ -736,9 +737,12 @@ namespace System.Text.RegularExpressions
                 Ret();
             }
 
-            // Emits a case-sensitive right-to-left prefix search for a string at the beginning of the pattern.
-            void EmitIndexOf_RightToLeft(string prefix)
+            // Emits a case-sensitive right-to-left search for a substring.
+            void EmitIndexOf_RightToLeft()
             {
+                string prefix = _regexTree.FindOptimizations.LeadingPrefix;
+                Debug.Assert(!string.IsNullOrEmpty(prefix));
+
                 // pos = inputSpan.Slice(0, pos).LastIndexOf(prefix);
                 Ldloca(inputSpan);
                 Ldc(0);
@@ -769,6 +773,8 @@ namespace System.Text.RegularExpressions
             // and potentially other sets at other fixed positions in the pattern.
             void EmitFixedSet_LeftToRight()
             {
+                Debug.Assert(_regexTree.FindOptimizations.FixedDistanceSets is { Count: > 0 });
+
                 List<(char[]? Chars, string Set, int Distance)>? sets = _regexTree.FindOptimizations.FixedDistanceSets;
                 (char[]? Chars, string Set, int Distance) primarySet = sets![0];
                 const int MaxSets = 4;
@@ -966,6 +972,8 @@ namespace System.Text.RegularExpressions
             // (Currently that position will always be a distance of 0, meaning the start of the pattern itself.)
             void EmitFixedSet_RightToLeft()
             {
+                Debug.Assert(_regexTree.FindOptimizations.FixedDistanceSets is { Count: > 0 });
+
                 (char[]? Chars, string Set, int Distance) set = _regexTree.FindOptimizations.FixedDistanceSets![0];
                 Debug.Assert(set.Distance == 0);
 
@@ -1260,10 +1268,6 @@ namespace System.Text.RegularExpressions
             LocalBuilder slice = DeclareReadOnlySpanChar();
             Label doneLabel = DefineLabel();
             Label originalDoneLabel = doneLabel;
-            if (_hasTimeout)
-            {
-                _loopTimeoutCounter = DeclareInt32();
-            }
 
             // ReadOnlySpan<char> inputSpan = input;
             Ldarg_1();
@@ -1585,6 +1589,9 @@ namespace System.Text.RegularExpressions
                     doneLabel = backtrackLabel;
                     MarkLabel(backtrackLabel);
 
+                    // We're backtracking.  Check the timeout.
+                    EmitTimeoutCheckIfNeeded();
+
                     // startingPos = base.runstack[--stackpos];
                     // startingCapturePos = base.runstack[--stackpos];
                     // switch (base.runstack[--stackpos]) { ... } // branch number
@@ -1654,6 +1661,9 @@ namespace System.Text.RegularExpressions
 
                 Label condition = DefineLabel();
                 Label body = DefineLabel();
+                Label charactersMatched = DefineLabel();
+                LocalBuilder backreferenceCharacter = _ilg!.DeclareLocal(typeof(char));
+                LocalBuilder currentCharacter = _ilg!.DeclareLocal(typeof(char));
 
                 // for (int i = 0; ...)
                 Ldc(0);
@@ -1662,24 +1672,23 @@ namespace System.Text.RegularExpressions
 
                 MarkLabel(body);
 
-                // if (inputSpan[matchIndex + i] != slice[i]) goto doneLabel; // for rtl, instead of slice[i] using inputSpan[pos - matchLength + i]
+                // char backreferenceChar = inputSpan[matchIndex + i];
                 Ldloca(inputSpan);
                 Ldloc(matchIndex);
                 Ldloc(i);
                 Add();
                 Call(s_spanGetItemMethod);
                 LdindU2();
-                if ((node.Options & RegexOptions.IgnoreCase) != 0)
-                {
-                    CallToLower();
-                }
+                Stloc(backreferenceCharacter);
                 if (!rtl)
                 {
+                    // char currentChar = slice[i];
                     Ldloca(slice);
                     Ldloc(i);
                 }
                 else
                 {
+                    // char currentChar = inputSpan[pos - matchLength + i];
                     Ldloca(inputSpan);
                     Ldloc(pos);
                     Ldloc(matchLength);
@@ -1689,11 +1698,61 @@ namespace System.Text.RegularExpressions
                 }
                 Call(s_spanGetItemMethod);
                 LdindU2();
+                Stloc(currentCharacter);
+
                 if ((node.Options & RegexOptions.IgnoreCase) != 0)
                 {
-                    CallToLower();
+                    LocalBuilder caseEquivalences = DeclareReadOnlySpanChar();
+
+                    // if (backreferenceChar != currentChar)
+                    Ldloc(backreferenceCharacter);
+                    Ldloc(currentCharacter);
+                    Ceq();
+                    BrtrueFar(charactersMatched);
+
+                    // if (RegexCaseEquivalences.TryFindCaseEquivalencesForCharWithIBehavior(backreferenceChar, _culture, ref _caseBehavior, out ReadOnlySpan<char> equivalences))
+                    Ldloc(backreferenceCharacter);
+                    Ldthisfld(s_cultureField);
+                    Ldthisflda(s_caseBehaviorField);
+                    Ldloca(caseEquivalences);
+                    Call(s_regexCaseEquivalencesTryFindCaseEquivalencesForCharWithIBehaviorMethod);
+                    BrfalseFar(doneLabel);
+
+                    // if (equivalences.IndexOf(slice[i]) == -1) // Or if (equivalences.IndexOf(inputSpan[pos - matchLength + i]) == -1) when rtl
+                    Ldloc(caseEquivalences);
+                    if (!rtl)
+                    {
+                        Ldloca(slice);
+                        Ldloc(i);
+                    }
+                    else
+                    {
+                        Ldloca(inputSpan);
+                        Ldloc(pos);
+                        Ldloc(matchLength);
+                        Sub();
+                        Ldloc(i);
+                        Add();
+                    }
+                    Call(s_spanGetItemMethod);
+                    LdindU2();
+                    Call(s_spanIndexOfChar);
+                    Ldc(-1);
+                    Ceq();
+                    // return false; // input didn't match.
+                    BrtrueFar(doneLabel);
                 }
-                BneFar(doneLabel);
+                else
+                {
+                    // if (backreferenceCharacter != currentCharacter)
+                    Ldloc(backreferenceCharacter);
+                    Ldloc(currentCharacter);
+                    Ceq();
+                    // return false; // input didn't match.
+                    BrfalseFar(doneLabel);
+                }
+
+                MarkLabel(charactersMatched);
 
                 // for (...; ...; i++)
                 Ldloc(i);
@@ -2198,6 +2257,10 @@ namespace System.Text.RegularExpressions
                 Stloc(startingPos);
                 int startingTextSpanPos = sliceStaticPos;
 
+                // Check for timeout. Lookarounds result in re-processing the same input, so while not
+                // technically backtracking, it's appropriate to have a timeout check.
+                EmitTimeoutCheckIfNeeded();
+
                 // Emit the child.
                 RegexNode child = node.Child(0);
                 if (analysis.MayBacktrack(child))
@@ -2249,6 +2312,10 @@ namespace System.Text.RegularExpressions
 
                 Label negativeLookaheadDoneLabel = DefineLabel();
                 doneLabel = negativeLookaheadDoneLabel;
+
+                // Check for timeout. Lookarounds result in re-processing the same input, so while not
+                // technically backtracking, it's appropriate to have a timeout check.
+                EmitTimeoutCheckIfNeeded();
 
                 // Emit the child.
                 RegexNode child = node.Child(0);
@@ -2958,6 +3025,9 @@ namespace System.Text.RegularExpressions
                 EmitStackPop();
                 Stloc(startingPos);
 
+                // We're backtracking.  Check the timeout.
+                EmitTimeoutCheckIfNeeded();
+
                 // if (startingPos >= endingPos) goto doneLabel; // or <= for rtl
                 Ldloc(startingPos);
                 Ldloc(endingPos);
@@ -3156,6 +3226,9 @@ namespace System.Text.RegularExpressions
                     Add();
                     Stloc(iterationCount!);
                 }
+
+                // We're backtracking.  Check the timeout.
+                EmitTimeoutCheckIfNeeded();
 
                 // Now match the next item in the lazy loop.  We need to reset the pos to the position
                 // just after the last character in this loop was matched, and we need to store the resulting position
@@ -3430,7 +3503,6 @@ namespace System.Text.RegularExpressions
 
                 // Iteration body
                 MarkLabel(body);
-                EmitTimeoutCheck();
 
                 // We need to store the starting pos and crawl position so that it may
                 // be backtracked through later.  This needs to be the starting position from
@@ -3439,7 +3511,7 @@ namespace System.Text.RegularExpressions
                 // base.runstack[stackpos++] = startingPos;
                 // base.runstack[stackpos++] = pos;
                 // base.runstack[stackpos++] = sawEmpty;
-                EmitStackResizeIfNeeded(3);
+                EmitStackResizeIfNeeded(4);
                 if (expressionHasCaptures)
                 {
                     EmitStackPush(() =>
@@ -3511,8 +3583,10 @@ namespace System.Text.RegularExpressions
                 // goto endLoop;
                 BrFar(endLoop);
 
-                // Now handle what happens when an iteration fails.  We need to reset state to what it was before just that iteration
-                // started.  That includes resetting pos and clearing out any captures from that iteration.
+                // Now handle what happens when an iteration fails (and since a lazy loop only executes an iteration
+                // when it's required to satisfy the loop (by definition of being lazy), the loop is failing).  We need
+                // to reset state to what it was before just that iteration started.  That includes resetting pos and
+                // clearing out any captures from that iteration.
                 MarkLabel(iterationFailedLabel);
 
                 // iterationCount--;
@@ -3548,11 +3622,27 @@ namespace System.Text.RegularExpressions
 
                 if (doneLabel == originalDoneLabel)
                 {
+                    // Since the only reason we'd end up revisiting previous iterations of the lazy loop is if the child had backtracking constructs
+                    // we'd backtrack into, and the child doesn't, the whole loop is failed and done. If we successfully processed any iterations,
+                    // we thus need to pop all of the state we pushed onto the stack for those iterations, as we're exiting out to the parent who
+                    // will expect the stack to be cleared of any child state.
+                    int entriesPerIteration = 3 + (expressionHasCaptures ? 1 : 0);
+
+                    // stackpos -= entriesPerIteration * iterationCount;
                     // goto originalDoneLabel;
+                    Ldloc(stackpos);
+                    Ldc(entriesPerIteration);
+                    Ldloc(iterationCount);
+                    Mul();
+                    Sub();
+                    Stloc(stackpos);
                     BrFar(originalDoneLabel);
                 }
                 else
                 {
+                    // The child has backtracking constructs.  If we have no successful iterations previously processed, just bail.
+                    // If we do have successful iterations previously processed, however, we need to backtrack back into the last one.
+
                     // if (iterationCount == 0) goto originalDoneLabel;
                     // goto doneLabel;
                     Ldloc(iterationCount);
@@ -3576,6 +3666,9 @@ namespace System.Text.RegularExpressions
                     // Emit a backtracking section that restores the capture's state and then jumps to the previous done label
                     Label backtrack = DefineLabel();
                     MarkLabel(backtrack);
+
+                    // We're backtracking.  Check the timeout.
+                    EmitTimeoutCheckIfNeeded();
 
                     // sawEmpty = base.runstack[--stackpos];
                     // iterationCount = base.runstack[--stackpos];
@@ -3656,7 +3749,6 @@ namespace System.Text.RegularExpressions
                     // TimeoutCheck();
                     // HandleSingleChar();
                     MarkLabel(bodyLabel);
-                    EmitTimeoutCheck();
                     EmitSingleChar(node);
 
                     // for (...; ...; i++)
@@ -3721,7 +3813,6 @@ namespace System.Text.RegularExpressions
                     BrFar(conditionLabel);
 
                     MarkLabel(bodyLabel);
-                    EmitTimeoutCheck();
 
                     LocalBuilder tmpTextSpanLocal = slice; // we want EmitSingleChar to refer to this temporary
                     int tmpTextSpanPos = sliceStaticPos;
@@ -3792,7 +3883,6 @@ namespace System.Text.RegularExpressions
                     // Body:
                     // TimeoutCheck();
                     MarkLabel(bodyLabel);
-                    EmitTimeoutCheck();
 
                     // if (pos <= iterationLocal) goto atomicLoopDoneLabel;
                     Ldloc(pos);
@@ -3974,7 +4064,6 @@ namespace System.Text.RegularExpressions
                     // Body:
                     // TimeoutCheck();
                     MarkLabel(bodyLabel);
-                    EmitTimeoutCheck();
 
                     // if ((uint)i >= (uint)slice.Length) goto atomicLoopDoneLabel;
                     Ldloc(iterationLocal);
@@ -4231,7 +4320,6 @@ namespace System.Text.RegularExpressions
 
                 // Iteration body
                 MarkLabel(body);
-                EmitTimeoutCheck();
 
                 // We need to store the starting pos and crawl position so that it may
                 // be backtracked through later.  This needs to be the starting position from
@@ -4392,6 +4480,9 @@ namespace System.Text.RegularExpressions
                         Label backtrack = DefineLabel();
                         MarkLabel(backtrack);
 
+                        // We're backtracking.  Check the timeout.
+                        EmitTimeoutCheckIfNeeded();
+
                         // if (iterationCount == 0) goto originalDoneLabel;
                         Ldloc(iterationCount);
                         Ldc(0);
@@ -4420,6 +4511,9 @@ namespace System.Text.RegularExpressions
                         // Emit a backtracking section that restores the loop's state and then jumps to the previous done label
                         Label backtrack = DefineLabel();
                         MarkLabel(backtrack);
+
+                        // We're backtracking.  Check the timeout.
+                        EmitTimeoutCheckIfNeeded();
 
                         // iterationCount = base.runstack[--runstack];
                         // startingPos = base.runstack[--runstack];
@@ -4584,12 +4678,9 @@ namespace System.Text.RegularExpressions
                 Call(tryFindNextStartingPositionMethod);
                 BrfalseFar(returnLabel);
 
-                if (_hasTimeout)
-                {
-                    // CheckTimeout();
-                    Ldthis();
-                    Call(s_checkTimeoutMethod);
-                }
+                // Check the timeout every time we run the whole match logic at a new starting location, as each such
+                // operation could do work at least linear in the length of the input.
+                EmitTimeoutCheckIfNeeded();
 
                 // if (TryMatchAtCurrentPosition(text) || runtextpos == text.length) // or == 0 for rtl
                 //   return;
@@ -5073,31 +5164,26 @@ namespace System.Text.RegularExpressions
             Ldloc(resultLocal);
         }
 
-        /// <summary>Emits a timeout check.</summary>
-        private void EmitTimeoutCheck()
+        /// <summary>Emits a timeout check if one has been set explicitly or implicitly via a default setting.</summary>
+        /// <remarks>
+        /// Regex timeouts exist to avoid catastrophic backtracking.  The goal with timeouts isn't to be accurate to the timeout value,
+        /// but to ensure that significant backtracking can be stopped.  As such, we allow for up to O(n) work in the length of the input
+        /// between checks, which means we emit checks anywhere backtracking is introduced, such that every check can have O(n) work
+        /// associated with it.  This means checks:
+        /// - when restarting the whole match evaluation at a new index
+        /// - when backtracking backwards in a loop
+        /// - when backtracking forwards in a lazy loop
+        /// - when backtracking to the next branch of an alternation
+        /// - when processing a lookaround
+        /// </remarks>
+        private void EmitTimeoutCheckIfNeeded()
         {
-            if (!_hasTimeout)
+            if (_hasTimeout)
             {
-                return;
+                // base.CheckTimeout();
+                Ldthis();
+                Call(s_checkTimeoutMethod);
             }
-
-            Debug.Assert(_loopTimeoutCounter != null);
-
-            // Increment counter for each loop iteration.
-            Ldloc(_loopTimeoutCounter);
-            Ldc(1);
-            Add();
-            Stloc(_loopTimeoutCounter);
-
-            // Emit code to check the timeout every 2048th iteration.
-            Label label = DefineLabel();
-            Ldloc(_loopTimeoutCounter);
-            Ldc(LoopTimeoutCheckCount);
-            RemUn();
-            Brtrue(label);
-            Ldthis();
-            Call(s_checkTimeoutMethod);
-            MarkLabel(label);
         }
     }
 }
