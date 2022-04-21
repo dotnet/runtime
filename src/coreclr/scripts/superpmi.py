@@ -1980,7 +1980,7 @@ class SuperPMIReplayThroughputDiff:
                         "+" if diff_instructions > base_instructions else "",
                         (diff_instructions - base_instructions) / base_instructions * 100))
 
-                write_fh.write("<details>\n")
+                write_fh.write("\n<details>\n")
                 write_fh.write("<summary>Detailed</summary>\n\n")
                 write_fh.write("|Collection|Base # instructions|Diff # instructions|PDIFF|\n")
                 write_fh.write("|---|---|---|---|\n")
@@ -1989,7 +1989,7 @@ class SuperPMIReplayThroughputDiff:
                         mch_file, base_instructions, diff_instructions,
                         "+" if diff_instructions > base_instructions else "",
                         (diff_instructions - base_instructions) / base_instructions * 100))
-                write_fh.write("</details>\n")
+                write_fh.write("\n</details>\n")
 
             logging.info("  Summary Markdown file: %s", overall_md_summary_file)
 
