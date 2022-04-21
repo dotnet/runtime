@@ -143,7 +143,7 @@ mch_arch_help = "Architecture of MCH files to download, used for cross-compilati
 
 build_type_help = "Build type (Debug, Checked, Release). Default: Checked."
 
-throughput_build_type_help = "Build type (Debug, Checked, Release). Default: Checked."
+throughput_build_type_help = "Build type (Debug, Checked, Release). Default: Release."
 
 core_root_help = "Core_Root location. Optional; it will be deduced if possible from runtime repo root."
 
@@ -1877,7 +1877,7 @@ class SuperPMIReplayThroughputDiff:
                 ]
                 flags = [
                     "-applyDiff",
-                    "-baseMetricsSummary", base_metrics_summary_file, # Create summary of metrics we can use to get total code size impact
+                    "-baseMetricsSummary", base_metrics_summary_file, # Instruction counts are stored in these
                     "-diffMetricsSummary", diff_metrics_summary_file,
                 ]
                 flags += target_flags
@@ -2868,8 +2868,8 @@ def process_base_jit_path_arg(coreclr_args):
         1. Determine the current git hash using:
              git rev-parse HEAD
            or use the `-git_hash` argument (call the result `git_hash`).
-        2. Determine the baseline: where does this hash meet the newest `main` branch using:
-             git branch -r --sort=-committerdate -v --list "*main"
+        2. Determine the baseline: where does this hash meet the newest `main` branch of any remote using:
+             git branch -r --sort=-committerdate -v --list "*/main"
            or use the `-base_git_hash` argument (call the result `base_git_hash`).
         3. If the `-base_git_hash` argument is used, use that directly as the exact git
            hash of the baseline JIT to use.
@@ -2925,7 +2925,7 @@ def process_base_jit_path_arg(coreclr_args):
 
         if coreclr_args.base_git_hash is None:
             # We've got the current hash; figure out the baseline hash.
-            command = [ "git", "branch", "-r", "--sort=-committerdate", "-v", "--list", "*main" ]
+            command = [ "git", "branch", "-r", "--sort=-committerdate", "-v", "--list", "*/main" ]
             logging.debug("Invoking: %s", " ".join(command))
             proc = subprocess.Popen(command, stdout=subprocess.PIPE)
             stdout_git_merge_base, _ = proc.communicate()
