@@ -384,6 +384,7 @@ LoaderAllocator * LoaderAllocator::GCLoaderAllocators_RemoveAssemblies(AppDomain
     AppDomain::AssemblyIterator i;
     // Iterate through every loader allocator, marking as we go
     {
+        CrstHolder chLoaderAllocatorReferencesLock(pAppDomain->GetLoaderAllocatorReferencesLock());
         CrstHolder chAssemblyListLock(pAppDomain->GetAssemblyListLock());
 
         i = pAppDomain->IterateAssembliesEx((AssemblyIterationFlags)(
