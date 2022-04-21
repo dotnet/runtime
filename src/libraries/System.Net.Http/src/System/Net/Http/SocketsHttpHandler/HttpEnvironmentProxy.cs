@@ -15,6 +15,7 @@ namespace System.Net.Http
         private readonly NetworkCredential? _httpsCred;
         private readonly Uri? _httpProxy;
         private readonly Uri? _httpsProxy;
+        internal static readonly string s_defaultCredentialsPlaceholder = "$";
 
         public HttpEnvironmentProxyCredentials(Uri? httpProxy, NetworkCredential? httpCred,
                                                 Uri? httpsProxy, NetworkCredential? httpsCred)
@@ -48,6 +49,7 @@ namespace System.Net.Http
             {
                 httpsCred = GetCredentialsFromString(httpsProxy.UserInfo);
             }
+
             if (httpCred == null && httpsCred == null)
             {
                 return null;
@@ -63,6 +65,11 @@ namespace System.Net.Http
             if (string.IsNullOrWhiteSpace(value))
             {
                 return null;
+            }
+
+            if (value == s_defaultCredentialsPlaceholder)
+            {
+                return CredentialCache.DefaultNetworkCredentials ;
             }
 
             value = Uri.UnescapeDataString(value);
@@ -191,7 +198,10 @@ namespace System.Net.Http
                 UriBuilder ub = new UriBuilder("http", host, port);
                 if (user != null)
                 {
-                    ub.UserName = Uri.EscapeDataString(user);
+                    // if both user and password exist and empty we should use default credentials
+                    ub.UserName = (user == "" && password == "") ?
+                                    HttpEnvironmentProxyCredentials.s_defaultCredentialsPlaceholder :
+                                    Uri.EscapeDataString(user);
                 }
 
                 if (password != null)
