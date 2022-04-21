@@ -22,13 +22,6 @@
 	Pack="true" PrivateAssets="all" Private="true" IncludeReferenceAssemblyInPackage="true" />
   </ItemGroup>
 
-  <!-- https://github.com/nuget/home/issues/3891 add the references .dlls to the package, and don't add the to the nuspec -->
-  <Target Name="CopyProjectReferencesToPackage" DependsOnTargets="BuildOnlySettings;ResolveReferences">
-    <ItemGroup>
-      <BuildOutputInPackage Include="@(ReferenceCopyLocalPaths->WithMetadataValue('ReferenceSourceTarget', 'ProjectReference')->WithMetadataValue('PrivateAssets', 'All'))" />
-    </ItemGroup>
-  </Target>
-
   <Target Name="_ExperimentalUpdateFileVersion"
           AfterTargets="_InitializeAssemblyVersion">
     <PropertyGroup>
