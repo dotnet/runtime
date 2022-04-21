@@ -3737,7 +3737,10 @@ emit_amd64_intrinsics (const char *class_ns, const char *class_name, MonoCompile
 static SimdIntrinsic wasmbase_methods [] = {
 	{SN_Constant},
 	{SN_ExtractLane},
+	{SN_ReplaceLane},
+	{SN_Shuffle},
 	{SN_Splat},
+	{SN_Swizzle},
 };
 
 static const IntrinGroup supported_wasm_intrinsics [] = {
@@ -3754,15 +3757,24 @@ emit_wasmbase_intrinsics (
 	switch (id) {
 		case SN_Constant:
 			return emit_simd_ins_for_sig (cfg, klass, OP_WASM_SIMD_V128_CONST, 0, arg0_type, fsig, args);
+		case SN_ExtractLane: {
+			int extract_op = type_to_xextract_op (arg0_type);
+			return emit_simd_ins_for_sig (cfg, klass, extract_op, -1, arg0_type, fsig, args);
+		}
+		case SN_ReplaceLane: {
+			int insert_op = type_to_xinsert_op (arg0_type);
+			MonoInst *ins = emit_simd_ins (cfg, klass, insert_op, args [0]->dreg, args [2]->dreg);
+			ins->sreg3 = args [1]->dreg;
+			ins->inst_c1 = arg0_type;
+			return ins;
+		}
 		case SN_Splat: {
 			MonoType *etype = get_vector_t_elem_type (fsig->ret);
 			g_assert (fsig->param_count == 1 && mono_metadata_type_equal (fsig->params [0], etype));
 			return emit_simd_ins (cfg, klass, type_to_expand_op (etype), args [0]->dreg, -1);
 		}
-		case SN_ExtractLane: {
-			int extract_op = type_to_xextract_op (arg0_type);
-			return emit_simd_ins_for_sig (cfg, klass, extract_op, -1, arg0_type, fsig, args);
-		}
+		case SN_Swizzle:
+			return emit_simd_ins_for_sig (cfg, klass, OP_WASM_SIMD_SWIZZLE, -1, -1, fsig, args);
 	}
 	g_assert_not_reached ();
 

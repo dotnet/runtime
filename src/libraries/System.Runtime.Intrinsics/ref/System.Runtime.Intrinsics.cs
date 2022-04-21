@@ -4763,7 +4763,9 @@ namespace System.Runtime.Intrinsics.Wasm
     public abstract partial class WasmBase
     {
         public bool IsSupported { get { throw null; } }
+
         public static Vector128<byte> Constant(ulong p1, ulong p2) { throw null; }
+
         public static Vector128<sbyte>  Splat(sbyte  x) { throw null; }
         public static Vector128<byte>   Splat(byte   x) { throw null; }
         public static Vector128<short>  Splat(short  x) { throw null; }
@@ -4789,5 +4791,24 @@ namespace System.Runtime.Intrinsics.Wasm
         public static double ExtractLane(Vector128<double> a, byte imm) { throw null; }
         public static nint   ExtractLane(Vector128<nint>   a, byte imm) { throw null; }
         public static nuint  ExtractLane(Vector128<nuint>  a, byte imm) { throw null; }
+
+        public static Vector128<sbyte>  ReplaceLane(Vector128<sbyte>  a, byte imm, int    x) { throw null; }
+        public static Vector128<byte>   ReplaceLane(Vector128<byte>   a, byte imm, uint   x) { throw null; }
+        public static Vector128<short>  ReplaceLane(Vector128<short>  a, byte imm, int    x) { throw null; }
+        public static Vector128<ushort> ReplaceLane(Vector128<ushort> a, byte imm, uint   x) { throw null; }
+        public static Vector128<int>    ReplaceLane(Vector128<int>    a, byte imm, int    x) { throw null; }
+        public static Vector128<int>    ReplaceLane(Vector128<uint>   a, byte imm, uint   x) { throw null; }
+        public static Vector128<long>   ReplaceLane(Vector128<long>   a, byte imm, long   x) { throw null; }
+        public static Vector128<ulong>  ReplaceLane(Vector128<ulong>  a, byte imm, ulong  x) { throw null; }
+        public static Vector128<float>  ReplaceLane(Vector128<float>  a, byte imm, float  x) { throw null; }
+        public static Vector128<double> ReplaceLane(Vector128<double> a, byte imm, double x) { throw null; }
+        public static Vector128<nint>   ReplaceLane(Vector128<nint>   a, byte imm, nint   x) { throw null; }
+        public static Vector128<nuint>  ReplaceLane(Vector128<nuint>  a, byte imm, nuint  x) { throw null; }
+
+        public static Vector128<sbyte> Shuffle(Vector128<sbyte> a, Vector128<sbyte> b, ulong p1, ulong p2) { throw null; }
+        public static Vector128<byte>  Shuffle(Vector128<byte>  a, Vector128<byte>  b, ulong p1, ulong p2) { throw null; }
+
+        public static Vector128<sbyte> Swizzle(Vector128<sbyte> a, Vector128<sbyte> s) { throw null; }
+        public static Vector128<byte>  Swizzle(Vector128<byte>  a, Vector128<byte>  s) { throw null; }
     }
 }

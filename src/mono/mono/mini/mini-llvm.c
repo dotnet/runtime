@@ -9481,6 +9481,11 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 
 			break;
 		}
+		case OP_WASM_SIMD_SWIZZLE: {
+			LLVMValueRef args [] = { lhs, rhs };
+			values [ins->dreg] = call_intrins (ctx, INTRINS_WASM_SWIZZLE, args, "");
+			break;
+		}
 #endif
 #if defined(TARGET_ARM64) || defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_WASM)
 		case OP_XEQUAL: {

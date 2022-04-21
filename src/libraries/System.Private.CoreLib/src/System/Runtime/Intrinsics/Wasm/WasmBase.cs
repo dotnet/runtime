@@ -69,11 +69,40 @@ namespace System.Runtime.Intrinsics.Wasm
         public static nint   ExtractLane(Vector128<nint>   a, byte imm) => ExtractLane(a, imm);
         [Intrinsic]
         public static nuint  ExtractLane(Vector128<nuint>  a, byte imm) => ExtractLane(a, imm);
-    }
 
-    [CLSCompliant(false)]
-    public unsafe struct ImmByte16
-    {
-        public fixed byte bytes[16];
+        [Intrinsic]
+        public static Vector128<sbyte>  ReplaceLane(Vector128<sbyte>  a, byte imm, int    x) => ReplaceLane(a, imm, x);   // takes ImmLaneIdx16
+        [Intrinsic]
+        public static Vector128<byte>   ReplaceLane(Vector128<byte>   a, byte imm, uint   x) => ReplaceLane(a, imm, x);   // takes ImmLaneIdx16
+        [Intrinsic]
+        public static Vector128<short>  ReplaceLane(Vector128<short>  a, byte imm, int    x) => ReplaceLane(a, imm, x);   // takes ImmLaneIdx8
+        [Intrinsic]
+        public static Vector128<ushort> ReplaceLane(Vector128<ushort> a, byte imm, uint   x) => ReplaceLane(a, imm, x);   // takes ImmLaneIdx8
+        [Intrinsic]
+        public static Vector128<int>    ReplaceLane(Vector128<int>    a, byte imm, int    x) => ReplaceLane(a, imm, x);   // takes ImmLaneIdx4
+        [Intrinsic]
+        public static Vector128<int>    ReplaceLane(Vector128<uint>   a, byte imm, uint   x) => ReplaceLane(a, imm, x);   // takes ImmLaneIdx4
+        [Intrinsic]
+        public static Vector128<long>   ReplaceLane(Vector128<long>   a, byte imm, long   x) => ReplaceLane(a, imm, x);   // takes ImmLaneIdx2
+        [Intrinsic]
+        public static Vector128<ulong>  ReplaceLane(Vector128<ulong>  a, byte imm, ulong  x) => ReplaceLane(a, imm, x);   // takes ImmLaneIdx2
+        [Intrinsic]
+        public static Vector128<float>  ReplaceLane(Vector128<float>  a, byte imm, float  x) => ReplaceLane(a, imm, x);   // takes ImmLaneIdx4
+        [Intrinsic]
+        public static Vector128<double> ReplaceLane(Vector128<double> a, byte imm, double x) => ReplaceLane(a, imm, x);   // takes ImmLaneIdx2
+        [Intrinsic]
+        public static Vector128<nint>   ReplaceLane(Vector128<nint>   a, byte imm, nint   x) => ReplaceLane(a, imm, x);
+        [Intrinsic]
+        public static Vector128<nuint>  ReplaceLane(Vector128<nuint>  a, byte imm, nuint  x) => ReplaceLane(a, imm, x);
+
+        [Intrinsic]
+        public static Vector128<sbyte> Shuffle(Vector128<sbyte> a, Vector128<sbyte> b, ulong p1, ulong p2) => Shuffle(a, b, p1, p2);
+        [Intrinsic]
+        public static Vector128<byte>  Shuffle(Vector128<byte>  a, Vector128<byte>  b, ulong p1, ulong p2) => Shuffle(a, b, p1, p2);
+
+        [Intrinsic]
+        public static Vector128<sbyte> Swizzle(Vector128<sbyte> a, Vector128<sbyte> s) => Swizzle(a, s);
+        [Intrinsic]
+        public static Vector128<byte>  Swizzle(Vector128<byte>  a, Vector128<byte>  s) => Swizzle(a, s);
     }
 }
