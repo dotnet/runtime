@@ -2052,26 +2052,6 @@ void CodeGen::genEmitMachineCode()
     }
 #endif
 
-#if EMIT_TRACK_STACK_DEPTH && defined(DEBUG_ARG_SLOTS)
-    // Check our max stack level. Needed for fgAddCodeRef().
-    // We need to relax the assert as our estimation won't include code-gen
-    // stack changes (which we know don't affect fgAddCodeRef()).
-    // NOTE: after emitEndCodeGen (including here), emitMaxStackDepth is a
-    // count of DWORD-sized arguments, NOT argument size in bytes.
-    {
-        unsigned maxAllowedStackDepth = compiler->fgGetPtrArgCntMax() + // Max number of pointer-sized stack arguments.
-                                        compiler->compHndBBtabCount +   // Return address for locally-called finallys
-                                        genTypeStSz(TYP_LONG) + // longs/doubles may be transferred via stack, etc
-                                        (compiler->compTailCallUsed ? 4 : 0); // CORINFO_HELP_TAILCALL args
-#if defined(UNIX_X86_ABI)
-        // Convert maxNestedAlignment to DWORD count before adding to maxAllowedStackDepth.
-        assert(maxNestedAlignment % sizeof(int) == 0);
-        maxAllowedStackDepth += maxNestedAlignment / sizeof(int);
-#endif
-        assert(GetEmitter()->emitMaxStackDepth <= maxAllowedStackDepth);
-    }
-#endif // EMIT_TRACK_STACK_DEPTH && DEBUG
-
     *nativeSizeOfCode                 = codeSize;
     compiler->info.compNativeCodeSize = (UNATIVE_OFFSET)codeSize;
 

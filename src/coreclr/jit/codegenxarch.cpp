@@ -3507,7 +3507,6 @@ void CodeGen::genStructPutArgPush(GenTreePutArgStk* putArgNode)
     const unsigned byteSize = putArgNode->GetStackByteSize();
     assert((byteSize % TARGET_POINTER_SIZE == 0) && ((byteSize < XMM_REGSIZE_BYTES) || layout->HasGCPtr()));
     const unsigned numSlots = byteSize / TARGET_POINTER_SIZE;
-    assert(putArgNode->gtNumSlots == numSlots);
 
     for (int i = numSlots - 1; i >= 0; --i)
     {
@@ -3557,7 +3556,6 @@ void CodeGen::genStructPutArgPartialRepMovs(GenTreePutArgStk* putArgNode)
     const unsigned byteSize = putArgNode->GetStackByteSize();
     assert(byteSize % TARGET_POINTER_SIZE == 0);
     const unsigned numSlots = byteSize / TARGET_POINTER_SIZE;
-    assert(putArgNode->gtNumSlots == numSlots);
 
     // No need to disable GC the way COPYOBJ does. Here the refs are copied in atomic operations always.
     for (unsigned i = 0; i < numSlots;)
@@ -5390,7 +5388,7 @@ void CodeGen::genCall(GenTreeCall* call)
             unsigned size   = argNode->AsPutArgStk()->GetStackByteSize();
             stackArgBytes += size;
 #ifdef DEBUG
-            assert(size == (arg.AbiInfo.NumSlots * TARGET_POINTER_SIZE));
+            assert(size == arg.AbiInfo.ByteSize);
 #ifdef FEATURE_PUT_STRUCT_ARG_STK
             if (!source->OperIs(GT_FIELD_LIST) && (source->TypeGet() == TYP_STRUCT))
             {
@@ -5402,7 +5400,7 @@ void CodeGen::genCall(GenTreeCall* call)
                 // Note that on x64/ux this will be handled by unrolling in genStructPutArgUnroll.
                 assert((argBytes == obj->GetLayout()->GetSize()) || obj->Addr()->IsLocalAddrExpr());
 #endif // TARGET_X86
-                assert((arg.AbiInfo.NumSlots * TARGET_POINTER_SIZE) == argBytes);
+                assert(arg.AbiInfo.ByteSize == argBytes);
             }
 #endif // FEATURE_PUT_STRUCT_ARG_STK
 #endif // DEBUG
@@ -7971,7 +7969,7 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* putArgStk)
 #ifdef DEBUG
         CallArg* callArg   = putArgStk->gtCall->gtArgs.FindByNode(putArgStk);
         assert(callArg != nullptr);
-        assert(argOffset == callArg->AbiInfo.SlotNum * TARGET_POINTER_SIZE);
+        assert(argOffset == callArg->AbiInfo.ByteOffset);
 #endif
 
         if (data->isContainedIntOrIImmed())

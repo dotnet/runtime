@@ -1111,92 +1111,9 @@ void CallArgABIInformation::SetByteSize(unsigned byteSize, unsigned byteAlignmen
     assert(roundedByteSize % byteAlignment == 0);
 #endif // TARGET_ARM
 
-#if defined(DEBUG_ARG_SLOTS)
-    if (!compMacOsArm64Abi() && !isStruct)
-    {
-        assert(roundedByteSize == GetSlotCount() * TARGET_POINTER_SIZE);
-    }
-#endif
     ByteSize      = roundedByteSize;
     ByteAlignment = byteAlignment;
 }
-
-#ifdef DEBUG_ARG_SLOTS
-//---------------------------------------------------------------
-// GetSlotCount: Get the number of slots used by this argument.
-//
-// Returns:
-//   The number of slots, in terms of registers and whole stack slots.
-//
-// Remarks:
-//   Note that a slot may not necessarily be TARGET_POINTER_SIZE in size.
-//   For example, a SIMD16 may be passed in a single register where this
-//   function will return 1.
-unsigned CallArgABIInformation::GetSlotCount() const
-{
-    if (IsBackFilled)
-    {
-        assert(IsPassedInRegisters());
-        assert(NumRegs == 1);
-    }
-    else if (GetRegNum() == REG_STK)
-    {
-        assert(!IsPassedInRegisters());
-        assert(NumRegs == 0);
-    }
-    else
-    {
-        assert(NumRegs > 0);
-    }
-    return NumSlots + NumRegs;
-}
-
-//---------------------------------------------------------------
-// GetSize: Get the size of the argument normalized to TARGET_POINTER_SIZE
-// stack slots.
-//
-// Returns:
-//   The size of the argument, normalized to TARGET_POINTER_SIZE stack slots.
-//
-// Remarks:
-//   Unlike GetSlotCount() this function applies normalization and returns the
-//   answer in terms of TARGET_POINTER_SIZE slots.
-//   For example, a SIMD16 argument passed in a single register will return 2
-//   on ARM64.
-unsigned CallArgABIInformation::GetSize() const
-{
-    unsigned size = GetSlotCount();
-    if (GlobalJitOptions::compFeatureHfa)
-    {
-        if (IsHfaRegArg())
-        {
-#ifdef TARGET_ARM
-            // We counted the number of regs, but if they are DOUBLE hfa regs we have to double the size.
-            if (GetHfaType() == TYP_DOUBLE)
-            {
-                assert(!IsSplit());
-                size <<= 1;
-            }
-#elif defined(TARGET_ARM64)
-            // We counted the number of regs, but if they are FLOAT hfa regs we have to halve the size,
-            // or if they are SIMD16 vector hfa regs we have to double the size.
-            if (GetHfaType() == TYP_FLOAT)
-            {
-                // Round up in case of odd HFA count.
-                size = (size + 1) >> 1;
-            }
-#ifdef FEATURE_SIMD
-            else if (GetHfaType() == TYP_SIMD16)
-            {
-                size <<= 1;
-            }
-#endif // FEATURE_SIMD
-#endif // TARGET_ARM64
-        }
-    }
-    return size;
-}
-#endif
 
 //---------------------------------------------------------------
 // SetMultiRegsNumw: Set the registers for a multi-reg arg using 'sequential' registers.
@@ -1302,7 +1219,7 @@ void CallArg::CheckIsStruct()
 #ifdef TARGET_ARM
             if (!isPassedAsPrimitiveType)
             {
-                if (node->TypeGet() == TYP_DOUBLE && AbiInfo.NumRegs == 0 && (AbiInfo.NumSlots == 2))
+                if (node->TypeGet() == TYP_DOUBLE && AbiInfo.NumRegs == 0 && (AbiInfo.GetStackSlotsNumber() == 2))
                 {
                     isPassedAsPrimitiveType = true;
                 }
@@ -11662,19 +11579,7 @@ void Compiler::gtDispTree(GenTree*     tree,
         else if (tree->OperGet() == GT_PUTARG_STK)
         {
             const GenTreePutArgStk* putArg = tree->AsPutArgStk();
-#if !defined(DEBUG_ARG_SLOTS)
             printf(" (%d stackByteSize), (%d byteOffset)", putArg->GetStackByteSize(), putArg->getArgOffset());
-#else
-            if (compMacOsArm64Abi())
-            {
-                printf(" (%d stackByteSize), (%d byteOffset)", putArg->GetStackByteSize(), putArg->getArgOffset());
-            }
-            else
-            {
-                printf(" (%d slots), (%d stackByteSize), (%d slot), (%d byteOffset)", putArg->gtNumSlots,
-                       putArg->GetStackByteSize(), putArg->gtSlotNum, putArg->getArgOffset());
-            }
-#endif
             if (putArg->gtPutArgStkKind != GenTreePutArgStk::Kind::Invalid)
             {
                 switch (putArg->gtPutArgStkKind)
@@ -11700,19 +11605,7 @@ void Compiler::gtDispTree(GenTree*     tree,
         else if (tree->OperGet() == GT_PUTARG_SPLIT)
         {
             const GenTreePutArgSplit* putArg = tree->AsPutArgSplit();
-#if !defined(DEBUG_ARG_SLOTS)
             printf(" (%d stackByteSize), (%d numRegs)", putArg->GetStackByteSize(), putArg->gtNumRegs);
-#else
-            if (compMacOsArm64Abi())
-            {
-                printf(" (%d stackByteSize), (%d numRegs)", putArg->GetStackByteSize(), putArg->gtNumRegs);
-            }
-            else
-            {
-                printf(" (%d slots), (%d stackByteSize), (%d numRegs)", putArg->gtNumSlots, putArg->GetStackByteSize(),
-                       putArg->gtNumRegs);
-            }
-#endif
         }
 #endif // FEATURE_ARG_SPLIT
 #endif // FEATURE_PUT_STRUCT_ARG_STK
@@ -12173,8 +12066,7 @@ void Compiler::gtGetArgMsg(GenTreeCall* call, CallArg* arg, char* bufp, unsigned
             regNumber firstReg = arg->AbiInfo.GetRegNum();
             if (arg->AbiInfo.NumRegs == 1)
             {
-                sprintf_s(bufp, bufLength, " %s out+%02x", compRegVarName(firstReg),
-                          arg->AbiInfo.SlotNum * TARGET_POINTER_SIZE);
+                sprintf_s(bufp, bufLength, " %s out+%02x", compRegVarName(firstReg), arg->AbiInfo.ByteOffset);
             }
             else
             {
@@ -12191,7 +12083,7 @@ void Compiler::gtGetArgMsg(GenTreeCall* call, CallArg* arg, char* bufp, unsigned
                     lastReg             = genMapIntRegArgNumToRegNum(lastRegNum);
                 }
                 sprintf_s(bufp, bufLength, " %s%c%s out+%02x", compRegVarName(firstReg), separator,
-                          compRegVarName(lastReg), arg->AbiInfo.SlotNum * TARGET_POINTER_SIZE);
+                          compRegVarName(lastReg), arg->AbiInfo.ByteOffset);
             }
 
             return;
@@ -12238,8 +12130,7 @@ void Compiler::gtGetLateArgMsg(GenTreeCall* call, CallArg* arg, char* bufp, unsi
             regNumber firstReg = arg->AbiInfo.GetRegNum();
             if (arg->AbiInfo.NumRegs == 1)
             {
-                sprintf_s(bufp, bufLength, " %s out+%02x", compRegVarName(firstReg),
-                          arg->AbiInfo.SlotNum * TARGET_POINTER_SIZE);
+                sprintf_s(bufp, bufLength, " %s out+%02x", compRegVarName(firstReg), arg->AbiInfo.ByteOffset);
             }
             else
             {
@@ -12256,7 +12147,7 @@ void Compiler::gtGetLateArgMsg(GenTreeCall* call, CallArg* arg, char* bufp, unsi
                     lastReg             = genMapIntRegArgNumToRegNum(lastRegNum);
                 }
                 sprintf_s(bufp, bufLength, " %s%c%s out+%02x", compRegVarName(firstReg), separator,
-                          compRegVarName(lastReg), arg->AbiInfo.SlotNum * TARGET_POINTER_SIZE);
+                          compRegVarName(lastReg), arg->AbiInfo.ByteOffset);
             }
 
             return;
