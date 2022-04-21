@@ -91,6 +91,13 @@ bool ParseGCHeapAffinitizeRanges(const char* cpu_index_ranges, AffinitySet* conf
     // Case 2: config_affinity_mask is not null but config_affinity_set is null. Affinitization is based on config_affinity_mask.
     if (cpu_index_ranges == nullptr)
     {
+        // Case 2.5: If CPU Groups are enabled, however, if the user passes in the config_affinity_mask, it can't apply. 
+        // Therefore, we return a CLR_E_GC_BAD_AFFINITY_CONFIG_FORMAT error.
+        if (config_affinity_mask != 0 && GCToOSInterface::CanEnableGCCPUGroups())
+        {
+            success = false;
+        }
+
         return success;
     }
 
