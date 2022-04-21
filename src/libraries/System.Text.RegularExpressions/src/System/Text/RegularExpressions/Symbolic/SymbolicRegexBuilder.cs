@@ -429,9 +429,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
         internal SymbolicRegexNode<TSet> CreateDisableBacktrackingSimulation(SymbolicRegexNode<TSet> child)
         {
-            if (child == _nothing)
-                return _nothing;
-            return SymbolicRegexNode<TSet>.CreateDisableBacktrackingSimulation(this, child);
+            return child == _nothing ? _nothing : SymbolicRegexNode<TSet>.CreateDisableBacktrackingSimulation(this, child);
         }
 
         internal SymbolicRegexNode<TNewSet> Transform<TNewSet>(SymbolicRegexNode<TSet> sr, SymbolicRegexBuilder<TNewSet> builder, Func<SymbolicRegexBuilder<TNewSet>, TSet, TNewSet> setTransformer)
