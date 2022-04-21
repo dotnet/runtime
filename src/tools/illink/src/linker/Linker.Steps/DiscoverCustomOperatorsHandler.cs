@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using ILLink.Shared.TypeSystemProxy;
 using Mono.Cecil;
 
 namespace Mono.Linker.Steps
@@ -119,7 +120,7 @@ namespace Mono.Linker.Steps
 		TypeDefinition? NullableOfT {
 			get {
 				if (_nullableOfT == null)
-					_nullableOfT = BCL.FindPredefinedType ("System", "Nullable`1", Context);
+					_nullableOfT = BCL.FindPredefinedType (WellKnownType.System_Nullable_T, Context);
 				return _nullableOfT;
 			}
 		}

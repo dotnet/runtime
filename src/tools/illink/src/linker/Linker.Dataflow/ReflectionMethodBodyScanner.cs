@@ -145,7 +145,7 @@ namespace Mono.Linker.Dataflow
 				// That said we only use it to perform the dynamically accessed members checks and for that purpose treating it as System.Type is perfectly valid.
 				return new GenericParameterValue (inputGenericParameter, _context.Annotations.FlowAnnotations.GetGenericParameterAnnotation (inputGenericParameter));
 			} else if (ResolveToTypeDefinition (genericArgument) is TypeDefinition genericArgumentType) {
-				if (genericArgumentType.IsTypeOf ("System", "Nullable`1")) {
+				if (genericArgumentType.IsTypeOf (WellKnownType.System_Nullable_T)) {
 					var innerGenericArgument = (genericArgument as IGenericInstance)?.GenericArguments.FirstOrDefault ();
 					switch (innerGenericArgument) {
 					case GenericParameter gp:
@@ -211,10 +211,10 @@ namespace Mono.Linker.Dataflow
 		protected override MultiValue GetFieldValue (FieldDefinition field)
 		{
 			switch (field.Name) {
-			case "EmptyTypes" when field.DeclaringType.IsTypeOf ("System", "Type"): {
+			case "EmptyTypes" when field.DeclaringType.IsTypeOf (WellKnownType.System_Type): {
 					return ArrayValue.Create (0, field.DeclaringType);
 				}
-			case "Empty" when field.DeclaringType.IsTypeOf ("System", "String"): {
+			case "Empty" when field.DeclaringType.IsTypeOf (WellKnownType.System_String): {
 					return new KnownStringValue (string.Empty);
 				}
 
@@ -281,14 +281,12 @@ namespace Mono.Linker.Dataflow
 			case IntrinsicId.RuntimeHelpers_RunClassConstructor:
 			case var callType when (callType == IntrinsicId.Type_GetConstructors || callType == IntrinsicId.Type_GetMethods || callType == IntrinsicId.Type_GetFields ||
 				callType == IntrinsicId.Type_GetProperties || callType == IntrinsicId.Type_GetEvents || callType == IntrinsicId.Type_GetNestedTypes || callType == IntrinsicId.Type_GetMembers)
-				&& calledMethod.DeclaringType.Namespace == "System"
-				&& calledMethod.DeclaringType.Name == "Type"
+				&& calledMethod.DeclaringType.IsTypeOf (WellKnownType.System_Type)
 				&& calledMethod.Parameters[0].ParameterType.FullName == "System.Reflection.BindingFlags"
 				&& calledMethod.HasThis:
 			case var fieldPropertyOrEvent when (fieldPropertyOrEvent == IntrinsicId.Type_GetField || fieldPropertyOrEvent == IntrinsicId.Type_GetProperty || fieldPropertyOrEvent == IntrinsicId.Type_GetEvent)
-				&& calledMethod.DeclaringType.Namespace == "System"
-				&& calledMethod.DeclaringType.Name == "Type"
-				&& calledMethod.Parameters[0].ParameterType.FullName == "System.String"
+				&& calledMethod.DeclaringType.IsTypeOf (WellKnownType.System_Type)
+				&& calledMethod.Parameters[0].ParameterType.IsTypeOf (WellKnownType.System_String)
 				&& calledMethod.HasThis:
 			case var getRuntimeMember when getRuntimeMember == IntrinsicId.RuntimeReflectionExtensions_GetRuntimeEvent
 				|| getRuntimeMember == IntrinsicId.RuntimeReflectionExtensions_GetRuntimeField
@@ -362,7 +360,7 @@ namespace Mono.Linker.Dataflow
 								bool hasUncheckedAnnotation = false;
 								foreach (var genericParameter in typeValue.RepresentedType.Type.GenericParameters) {
 									if (_context.Annotations.FlowAnnotations.GetGenericParameterAnnotation (genericParameter) != DynamicallyAccessedMemberTypes.None ||
-										(genericParameter.HasDefaultConstructorConstraint && !typeValue.RepresentedType.Type.IsTypeOf ("System", "Nullable`1"))) {
+										(genericParameter.HasDefaultConstructorConstraint && !typeValue.RepresentedType.Type.IsTypeOf (WellKnownType.System_Nullable_T))) {
 										// If we failed to analyze the array, we go through the analyses again
 										// and intentionally ignore one particular annotation:
 										// Special case: Nullable<T> where T : struct
@@ -379,7 +377,7 @@ namespace Mono.Linker.Dataflow
 							}
 
 							// Nullables without a type argument are considered SystemTypeValues
-							if (typeValue.RepresentedType.IsTypeOf ("System", "Nullable`1")) {
+							if (typeValue.RepresentedType.IsTypeOf (WellKnownType.System_Nullable_T)) {
 								foreach (var argumentValue in methodParams[1]) {
 									if ((argumentValue as ArrayValue)?.TryGetValueByIndex (0, out var underlyingMultiValue) == true) {
 										foreach (var underlyingValue in underlyingMultiValue) {
@@ -387,7 +385,7 @@ namespace Mono.Linker.Dataflow
 											// Don't warn on these types - it will throw instead
 											case NullableValueWithDynamicallyAccessedMembers:
 											case NullableSystemTypeValue:
-											case SystemTypeValue maybeArrayValue when maybeArrayValue.RepresentedType.IsTypeOf ("System", "Array"):
+											case SystemTypeValue maybeArrayValue when maybeArrayValue.RepresentedType.IsTypeOf (WellKnownType.System_Array):
 												AddReturnValue (MultiValueLattice.Top);
 												break;
 											case SystemTypeValue systemTypeValue:

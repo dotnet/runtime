@@ -17,7 +17,7 @@ namespace ILLink.Shared.TrimAnalysis
 	{
 		public NullableValueWithDynamicallyAccessedMembers (in TypeProxy nullableType, in ValueWithDynamicallyAccessedMembers underlyingTypeValue)
 		{
-			Debug.Assert (nullableType.IsTypeOf ("System", "Nullable`1"));
+			Debug.Assert (nullableType.IsTypeOf (WellKnownType.System_Nullable_T));
 			NullableType = nullableType;
 			UnderlyingTypeValue = underlyingTypeValue;
 		}

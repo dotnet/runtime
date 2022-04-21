@@ -681,7 +681,7 @@ namespace ILLink.Shared.TrimAnalysis
 				// instanceValue here is like argumentValues[0] in linker
 				foreach (var value in instanceValue) {
 					// Nullables without a type argument are considered SystemTypeValues
-					if (!(value is SystemTypeValue typeValue && typeValue.RepresentedType.IsTypeOf ("System", "Nullable`1"))) {
+					if (!(value is SystemTypeValue typeValue && typeValue.RepresentedType.IsTypeOf (WellKnownType.System_Nullable_T))) {
 						// We still don't want to lose track of the type if it is not Nullable<T>
 						AddReturnValue (value);
 						continue;
@@ -696,7 +696,7 @@ namespace ILLink.Shared.TrimAnalysis
 							// Don't warn on these types - it will throw instead
 							case NullableValueWithDynamicallyAccessedMembers:
 							case NullableSystemTypeValue:
-							case SystemTypeValue maybeArrayValue when maybeArrayValue.RepresentedType.IsTypeOf ("System", "Array"):
+							case SystemTypeValue maybeArrayValue when maybeArrayValue.RepresentedType.IsTypeOf (WellKnownType.System_Array):
 								AddReturnValue (MultiValueLattice.Top);
 								break;
 							case SystemTypeValue systemTypeValue:

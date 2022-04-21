@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using ILLink.Shared.TypeSystemProxy;
 using Mono.Cecil;
 
 namespace Mono.Linker
@@ -36,7 +37,7 @@ namespace Mono.Linker
 
 			TypeDefinition? baseType = resolvedType;
 			while (baseType != null) {
-				if (baseType.Name == "Type" && baseType.Namespace == "System") {
+				if (baseType.IsTypeOf (WellKnownType.System_Type)) {
 					flags |= HierarchyFlags.IsSystemType;
 				}
 
