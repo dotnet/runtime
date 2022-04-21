@@ -37,7 +37,9 @@ public:
     explicit sdk_resolver(bool allow_prerelease = true);
     sdk_resolver(fx_ver_t version, sdk_roll_forward_policy roll_forward, bool allow_prerelease);
 
-    pal::string_t const& global_file_path() const;
+    const pal::string_t& global_file_path() const;
+
+    const fx_ver_t& requested_version() const;
 
     pal::string_t resolve(const pal::string_t& dotnet_root, bool print_errors = true) const;
 

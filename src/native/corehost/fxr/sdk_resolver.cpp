@@ -40,9 +40,14 @@ sdk_resolver::sdk_resolver(fx_ver_t version, sdk_roll_forward_policy roll_forwar
 {
 }
 
-pal::string_t const& sdk_resolver::global_file_path() const
+const pal::string_t& sdk_resolver::global_file_path() const
 {
     return global_file;
+}
+
+const fx_ver_t& sdk_resolver::requested_version() const
+{
+    return version;
 }
 
 pal::string_t sdk_resolver::resolve(const pal::string_t& dotnet_root, bool print_errors) const
