@@ -172,7 +172,7 @@ jobs:
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
     jobTemplate: /eng/pipelines/common/global-build-job.yml
-    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+    helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
     buildConfig: Release
     runtimeFlavor: mono
     platforms:
