@@ -499,6 +499,13 @@ def read_csv_metrics(path):
     return None
 
 def determine_clrjit_compiler_version(clrjit_path):
+    """ Obtain the version of the compiler that was used to compile the clrjit at the specified path.
+
+    Returns:
+        A string extract from the binary or "unknown" if the string could not be found.
+        See 'jitBuildString' in buildstring.cpp in the JIT to see where this is defined.
+    """
+
     with open(clrjit_path, "rb") as fh:
         contents = fh.read()
 
@@ -1835,13 +1842,11 @@ class SuperPMIReplayThroughputDiff:
     ############################################################################
 
     def replay_with_throughput_diff(self):
-        """ Replay the given SuperPMI collection, generating asm diffs
+        """ Replay SuperPMI collections measuring throughput differences.
 
         Returns:
             (bool) True on success; False otherwise
         """
-
-        result = True  # Assume success
 
         # Set up some settings we'll use below.
 
@@ -1988,8 +1993,8 @@ class SuperPMIReplayThroughputDiff:
 
             logging.info("  Summary Markdown file: %s", overall_md_summary_file)
 
-        return result
-        ################################################################################################ end of replay_with_asm_diffs()
+        return True
+        ################################################################################################ end of replay_with_throughput_diff()
 
 ################################################################################
 # Argument handling helpers
@@ -3026,14 +3031,29 @@ def process_base_jit_path_arg(coreclr_args):
     raise RuntimeError("No baseline JIT found")
 
 def get_pintools_path(coreclr_args):
+    """ Get the local path where we expect pintools for this OS to be located
+    
+    Returns:
+        A path to the folder.
+    """
     return os.path.join(coreclr_args.spmi_location, "pintools", pintools_current_version, coreclr_args.host_os.lower())
 
 def get_pin_exe_path(coreclr_args):
+    """ Get the local path where we expect the pin executable to be located
+    
+    Returns:
+        A path to the executable.
+    """
     root = get_pintools_path(coreclr_args)
     exe = "pin.exe" if coreclr_args.host_os.lower() == "windows" else "pin"
     return os.path.join(root, exe)
 
 def get_inscount_pintool_path(coreclr_args):
+    """ Get the local path where we expect the clrjit inscount pintool to be located
+    
+    Returns:
+        A path to the pintool library.
+    """
     if coreclr_args.host_os.lower() == "osx":
         pintool_filename = "libclrjit_inscount.dylib"
     elif coreclr_args.host_os.lower() == "windows":
@@ -3044,7 +3064,9 @@ def get_inscount_pintool_path(coreclr_args):
     return os.path.join(get_pintools_path(coreclr_args), "clrjit_inscount_" + coreclr_args.arch, pintool_filename)
 
 def download_clrjit_pintool(coreclr_args):
-    """ Download the pintool for throughput measurements of clrjit"""
+    """ Download the pintool package for doing measurements of the JIT from Azure Storage.
+    """
+
     if os.path.isfile(get_pin_exe_path(coreclr_args)):
         return
 

@@ -104,7 +104,7 @@ def append_diff_file(f, arch, file_name, full_file_path, asmdiffs):
 
 Summary file: `{2}`
 
-To reproduce on Windows {3}:
+To reproduce these diffs on Windows {3}:
 ```
 superpmi.py asmdiffs -target_os {0} -target_arch {1} -arch {3}
 ```
@@ -123,6 +123,7 @@ superpmi.py asmdiffs -target_os {0} -target_arch {1} -arch {3}
 
             else:
                 f.write(contents)
+                f.write("\n")
 
     return diffs_found
 
