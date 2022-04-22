@@ -197,6 +197,10 @@ namespace System.Net.Http
                         }
                     }
                 }
+                // Swallow any exceptions caused by the connection being closed locally or even disposed due to a race.
+                // Since quicStream will stay `null`, the code below will throw appropriate exception to retry the request.
+                catch (ObjectDisposedException) { }
+                catch (QuicException e) when (!(e is QuicConnectionAbortedException)) { }
                 finally
                 {
                     if (HttpTelemetry.Log.IsEnabled() && queueStartingTimestamp != 0)
