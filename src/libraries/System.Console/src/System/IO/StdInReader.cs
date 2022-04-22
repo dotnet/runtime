@@ -46,11 +46,18 @@ namespace System.IO
 
         internal void AppendExtraBuffer(ReadOnlySpan<byte> buffer)
         {
-            // Ensure a reasonable upper bound applies to the stackalloc
             Debug.Assert(buffer.Length <= 1024);
 
-            // Then convert the bytes to chars
-            Span<char> chars = stackalloc char[_encoding.GetMaxCharCount(buffer.Length)];
+            // The maximum buffer size that can be passed is 1024 in length.
+            // For UTF-8, GetMaxCharCount(1024) is 1025, so that much is expected
+            // on the stack since we want to avoid allocating the array.
+            // For custom encodings where the behavior of GetMaxCharCount is
+            // not known beforehand, this may fall back to an array.
+            const int MaxStackAllocation = 1025;
+            int maxCharsCount = _encoding.GetMaxCharCount(buffer.Length);
+            Span<char> chars = (uint)maxCharsCount < MaxStackAllocation ?
+                stackalloc char[maxCharsCount] :
+                new char[maxCharsCount];
             int charLen = _encoding.GetChars(buffer, chars);
             chars = chars.Slice(0, charLen);
 
