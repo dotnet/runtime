@@ -44,7 +44,7 @@ local inline long compare258(z_const unsigned char *z_const src0,
         "cmp        $256 + 16, %[ax]\n\t"
         "jb         1b\n\t"
 
-#ifdef TARGET_X86
+#ifdef X86
         "movzwl     -16(%[src0], %[ax]), %[dx]\n\t"
 #else
         "movzwq     -16(%[src0], %[ax]), %[dx]\n\t"
