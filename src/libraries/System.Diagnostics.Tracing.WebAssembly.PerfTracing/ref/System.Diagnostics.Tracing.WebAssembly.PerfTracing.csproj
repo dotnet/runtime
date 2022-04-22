@@ -1,22 +1,19 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <AssemblyName>System.Diagnostics.Tracing</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <Nullable>enable</Nullable>
     <FeatureWasmPerfTracing>true</FeatureWasmPerfTracing>
-    <!-- tell packaging.targets to bump the assembly version -->
+    <AssemblyName>System.Diagnostics.Tracing</AssemblyName>
+    <!-- tell references.targets to bump the assembly version -->
     <IsExperimentalRefAssembly>true</IsExperimentalRefAssembly>
     <!-- Disable all binplacing since this assembly will clash with the real ref assembly -->
     <EnableBinPlacing>false</EnableBinPlacing>
     <StrongNameKeyId>Microsoft</StrongNameKeyId>
     <IncludePlatformAttributes>true</IncludePlatformAttributes>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(FeatureWasmPerfTracing)' == 'true'">
-    <!-- Place this assembly in the nuget ref folder -->
-    <BuildOutputTargetFolder>ref</BuildOutputTargetFolder>
-    <DefineConstants>$(DefineConstants);FEATURE_WASM_PERFTRACING</DefineConstants>
-    <DisablePackageBaselineValidation>true</DisablePackageBaselineValidation>
+  <PropertyGroup>
+    <DefineConstants Condition="'$(FeatureWasmPerfTracing)' == 'true'">$(DefineConstants);FEATURE_WASM_PERFTRACING</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="..\..\System.Diagnostics.Tracing\ref\System.Diagnostics.Tracing.cs" />

@@ -1,26 +1,19 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <AssemblyName>System.Threading.Thread</AssemblyName>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <FeatureWasmThreads>true</FeatureWasmThreads>
-    <!-- disable warnings about obsolete APIs,
-        Remove warning disable when nullable attributes are respected,
-        Type has no accessible constructors which use only CLS-compliant types -->
-    <NoWarn>$(NoWarn);0809;0618;CS8614;CS3015;NU5131</NoWarn>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <Nullable>enable</Nullable>
-    <!-- tell packaging.targets to bump the assembly version -->
+    <FeatureWasmThreads>true</FeatureWasmThreads>
+    <AssemblyName>System.Threading.Thread</AssemblyName>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- tell references.targets to bump the assembly version -->
     <IsExperimentalRefAssembly>true</IsExperimentalRefAssembly>
     <!-- Disable all binplacing since this assembly will clash with the real ref assembly -->
     <EnableBinPlacing>false</EnableBinPlacing>
     <StrongNameKeyId>Microsoft</StrongNameKeyId>
     <IncludePlatformAttributes>true</IncludePlatformAttributes>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(FeatureWasmThreads)' == 'true'">
-    <!-- Place this assembly in the nuget ref folder -->
-    <BuildOutputTargetFolder>ref</BuildOutputTargetFolder>
-    <DefineConstants>$(DefineConstants);FEATURE_WASM_THREADS</DefineConstants>
-    <DisablePackageBaselineValidation>true</DisablePackageBaselineValidation>
+  <PropertyGroup>
+    <DefineConstants Condition="'$(FeatureWasmThreads)' == 'true'">$(DefineConstants);FEATURE_WASM_THREADS</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(LibrariesProjectRoot)System.Threading.Thread\ref\System.Threading.Thread.cs" />
