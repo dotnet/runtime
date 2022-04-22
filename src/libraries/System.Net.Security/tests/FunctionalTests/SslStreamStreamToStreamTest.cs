@@ -87,6 +87,7 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         public async Task SslStream_StreamToStream_Authentication_IncorrectServerName_Fail()
         {
             (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();

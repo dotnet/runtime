@@ -45,6 +45,7 @@ namespace System.Net.Security.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         [MemberData(nameof(ProtocolMismatchData))]
         public async Task ServerAsyncAuthenticate_MismatchProtocols_Fails(
             SslProtocols clientProtocol,
