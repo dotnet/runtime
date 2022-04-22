@@ -191,6 +191,7 @@ jobs:
         value: 180
     jobParameters:
       testGroup: innerloop
+      targetRid: Linux-bionic-x64
       nameSuffix: AllSubsets_Mono
       buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true
       timeoutInMinutes: 240
