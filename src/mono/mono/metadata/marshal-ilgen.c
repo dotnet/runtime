@@ -3053,31 +3053,6 @@ emit_thunk_invoke_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *method, Mono
 	mono_mb_emit_byte (mb, CEE_RET);
 }
 
-static int
-emit_marshal_custom_ilgen_throw_exception (MonoMethodBuilder *mb, const char *exc_nspace, const char *exc_name, const char *msg, MarshalAction action)
-{
-	/* Throw exception and emit compensation code, if neccesary */
-	switch (action) {
-	case MARSHAL_ACTION_CONV_IN:
-	case MARSHAL_ACTION_MANAGED_CONV_IN:
-	case MARSHAL_ACTION_CONV_RESULT:
-	case MARSHAL_ACTION_MANAGED_CONV_RESULT:
-		if ((action == MARSHAL_ACTION_CONV_RESULT) || (action == MARSHAL_ACTION_MANAGED_CONV_RESULT))
-			mono_mb_emit_byte (mb, CEE_POP);
-
-		mono_mb_emit_exception_full (mb, exc_nspace, exc_name, msg);
-
-		break;
-	case MARSHAL_ACTION_PUSH:
-		mono_mb_emit_byte (mb, CEE_LDNULL);
-		break;
-	default:
-		break;
-	}
-
-	return 0;
-}
-
 static gboolean
 emit_managed_wrapper_validate_signature (MonoMethodSignature* sig, MonoMarshalSpec** mspecs, MonoError* error)
 {
