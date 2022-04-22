@@ -39,7 +39,7 @@ public:
 
     const pal::string_t& global_file_path() const;
 
-    const fx_ver_t& requested_version() const;
+    const fx_ver_t& get_requested_version() const;
 
     pal::string_t resolve(const pal::string_t& dotnet_root, bool print_errors = true) const;
 
@@ -64,7 +64,7 @@ private:
     bool resolve_sdk_path_and_version(const pal::string_t& dir, pal::string_t& sdk_path, fx_ver_t& resolved_version) const;
 
     pal::string_t global_file;
-    fx_ver_t version;
+    fx_ver_t requested_version;
     sdk_roll_forward_policy roll_forward;
     bool allow_prerelease;
 };

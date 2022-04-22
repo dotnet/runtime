@@ -218,11 +218,13 @@ typedef void (HOSTFXR_CALLTYPE *hostfxr_resolve_sdk2_result_fn)(
 //      to global.json. If there was no global.json found,
 //      or the contents of global.json did not impact resolution
 //      (e.g. no version specified), then result will not be
-//      invoked with global_json_path key.
+//      invoked with global_json_path key. This will occur for
+//      both resolution success and failure.
 //
 //      If a specific version is requested (via global.json), then
 //      result will be invoked with requested_version key and the
-//      value will hold the requested version.
+//      value will hold the requested version. This will occur for
+//      both resolution success and failure.
 //
 // Return value:
 //   0 on success, otherwise failure
@@ -269,11 +271,11 @@ SHARED_API int32_t HOSTFXR_CALLTYPE hostfxr_resolve_sdk2(
             resolver.global_file_path().c_str());
     }
 
-    if (!resolver.requested_version().is_empty())
+    if (!resolver.get_requested_version().is_empty())
     {
         result(
             hostfxr_resolve_sdk2_result_key_t::requested_version,
-            resolver.requested_version().as_str().c_str());
+            resolver.get_requested_version().as_str().c_str());
     }
 
     return !resolved_sdk_dir.empty()
