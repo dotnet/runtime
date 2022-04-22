@@ -738,6 +738,7 @@ jobs:
     - OSX_x64
     - windows_x64
     - FreeBSD_x64
+    - windows_arm64
     - ${{ if eq(variables['isRollingBuild'], false) }}:
       # we need to build windows_x86 for debug on PRs in order to test
       # against a checked runtime when the PR contains coreclr changes
@@ -785,6 +786,7 @@ jobs:
     jobTemplate: /eng/pipelines/libraries/build-job.yml
     buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
     platforms:
+    - windows_arm64
     - windows_x64
     jobParameters:
       framework: allConfigurations
