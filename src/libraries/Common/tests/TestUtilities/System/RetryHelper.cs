@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
@@ -54,9 +55,16 @@ namespace System
                     }
                 }
 
+                string diagnostic = $"RetryHelper: retrying {testName} {i}th time of {maxAttempts}: got {lastException.Message}";
+                if (PlatformDetection.IsInHelix && testName.Contains("FileSystemWatcher_"))
+                {
+                    // Dump into the console output so we can mine it
+                    Console.WriteLine(diagnostic);
+                }
+
                 if (s_debug)
                 {
-                    Debug.WriteLine($"RetryHelper: retrying {testName} {i}th time of {maxAttempts}: got {lastException.Message}");
+                    Debug.WriteLine(diagnostic);
                 }
 
                 Thread.Sleep((backoffFunc ?? s_defaultBackoffFunc)(i));

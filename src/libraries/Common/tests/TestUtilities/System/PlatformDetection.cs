@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Linq.Expressions;
 using System.Security;
 using System.Security.Authentication;
@@ -21,6 +22,8 @@ namespace System
         // means that one exception anywhere means all tests using PlatformDetection fail. If you feel a value is worth latching,
         // do it in a way that failures don't cascade.
         //
+
+        public static readonly bool IsInHelix = Environment.GetEnvironmentVariables().Keys.Cast<string>().Where(key => key.StartsWith("HELIX")).Any();
 
         public static bool IsNetCore => Environment.Version.Major >= 5 || RuntimeInformation.FrameworkDescription.StartsWith(".NET Core", StringComparison.OrdinalIgnoreCase);
         public static bool IsMonoRuntime => Type.GetType("Mono.RuntimeStructs") != null;
