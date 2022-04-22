@@ -2631,18 +2631,16 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
         srcReg = REG_ZR;
     }
 
-    regNumber dstReg                     = dstAddrBaseReg;
-    int       dstRegAddrAlignment        = 0;
-    bool      isDstRegAddrAlignmentKnown = false;
+    regNumber dstReg              = dstAddrBaseReg;
+    int       dstRegAddrAlignment = 0;
 
     if (dstLclNum != BAD_VAR_NUM)
     {
         bool      fpBased;
         const int baseAddr = compiler->lvaFrameAddress(dstLclNum, &fpBased);
 
-        dstReg                     = fpBased ? REG_FPBASE : REG_SPBASE;
-        dstRegAddrAlignment        = fpBased ? (genSPtoFPdelta() % 16) : 0;
-        isDstRegAddrAlignmentKnown = true;
+        dstReg              = fpBased ? REG_FPBASE : REG_SPBASE;
+        dstRegAddrAlignment = fpBased ? (genSPtoFPdelta() % 16) : 0;
 
         helper.SetDstOffset(baseAddr + dstOffset);
     }
@@ -2664,11 +2662,7 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
 
     bool shouldUse16ByteWideInstrs = false;
 
-    // Store operations that cross a 16-byte boundary reduce bandwidth or incur additional latency.
-    // The following condition prevents using 16-byte stores when dstRegAddrAlignment is:
-    //   1) unknown (i.e. dstReg is neither FP nor SP) or
-    //   2) non-zero (i.e. dstRegAddr is not 16-byte aligned).
-    const bool hasAvailableSimdReg = isDstRegAddrAlignmentKnown && (size > FP_REGSIZE_BYTES);
+    const bool hasAvailableSimdReg = (size > FP_REGSIZE_BYTES);
     const bool canUse16ByteWideInstrs =
         hasAvailableSimdReg && (dstRegAddrAlignment == 0) && helper.CanEncodeAllOffsets(FP_REGSIZE_BYTES);
 
@@ -2819,35 +2813,26 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
 
 #ifdef TARGET_ARM64
     CopyBlockUnrollHelper helper(srcOffset, dstOffset, size);
-
-    regNumber srcReg                     = srcAddrBaseReg;
-    int       srcRegAddrAlignment        = 0;
-    bool      isSrcRegAddrAlignmentKnown = false;
+    regNumber             srcReg = srcAddrBaseReg;
 
     if (srcLclNum != BAD_VAR_NUM)
     {
         bool      fpBased;
         const int baseAddr = compiler->lvaFrameAddress(srcLclNum, &fpBased);
 
-        srcReg                     = fpBased ? REG_FPBASE : REG_SPBASE;
-        srcRegAddrAlignment        = fpBased ? (genSPtoFPdelta() % 16) : 0;
-        isSrcRegAddrAlignmentKnown = true;
+        srcReg = fpBased ? REG_FPBASE : REG_SPBASE;
 
         helper.SetSrcOffset(baseAddr + srcOffset);
     }
 
-    regNumber dstReg                     = dstAddrBaseReg;
-    int       dstRegAddrAlignment        = 0;
-    bool      isDstRegAddrAlignmentKnown = false;
+    regNumber dstReg = dstAddrBaseReg;
 
     if (dstLclNum != BAD_VAR_NUM)
     {
         bool      fpBased;
         const int baseAddr = compiler->lvaFrameAddress(dstLclNum, &fpBased);
 
-        dstReg                     = fpBased ? REG_FPBASE : REG_SPBASE;
-        dstRegAddrAlignment        = fpBased ? (genSPtoFPdelta() % 16) : 0;
-        isDstRegAddrAlignmentKnown = true;
+        dstReg = fpBased ? REG_FPBASE : REG_SPBASE;
 
         helper.SetDstOffset(baseAddr + dstOffset);
     }
@@ -2908,8 +2893,7 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
     // known and the block size is larger than a single SIMD register size (i.e. when using SIMD instructions can
     // be profitable).
 
-    const bool canUse16ByteWideInstrs = isSrcRegAddrAlignmentKnown && isDstRegAddrAlignmentKnown &&
-                                        (size >= 2 * FP_REGSIZE_BYTES) && (srcRegAddrAlignment == dstRegAddrAlignment);
+    const bool canUse16ByteWideInstrs = (size >= 2 * FP_REGSIZE_BYTES);
 
     bool shouldUse16ByteWideInstrs = false;
 
