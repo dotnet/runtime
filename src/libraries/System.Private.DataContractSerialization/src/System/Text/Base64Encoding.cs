@@ -53,8 +53,10 @@ namespace System.Text
             return !(v3 == 64 && v4 != 64);
         }
 
-        public unsafe override int GetByteCount(char[] chars!!, int index, int count)
+        public unsafe override int GetByteCount(char[] chars, int index, int count)
         {
+            ArgumentNullException.ThrowIfNull(chars);
+
             if (index < 0)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException(nameof(index), SR.ValueMustBeNonNegative));
             if (index > chars.Length)

@@ -96,7 +96,7 @@ class My {
   .field public static literal valuetype Color Blue = int32(0x00000002)
 } // end of class Color
 
-.class private auto ansi beforefieldinit My
+.class public auto ansi beforefieldinit My
        extends [mscorlib]System.Object
 {
   .method private hidebysig static valuetype Color[] 
@@ -127,7 +127,7 @@ class My {
     IL_0011:  ret
   } // end of method My::WithMinOpts
 
-  .method private hidebysig static int32 
+  .method public hidebysig static int32 
           Main() cil managed
   {
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (

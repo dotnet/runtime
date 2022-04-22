@@ -1133,6 +1133,16 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void op_UnsignedRightShiftTest()
+        {
+            Assert.Equal((ulong)0x0000000000000000, ShiftOperatorsHelper<ulong, ulong>.op_UnsignedRightShift((ulong)0x0000000000000000, 1));
+            Assert.Equal((ulong)0x0000000000000000, ShiftOperatorsHelper<ulong, ulong>.op_UnsignedRightShift((ulong)0x0000000000000001, 1));
+            Assert.Equal((ulong)0x3FFFFFFFFFFFFFFF, ShiftOperatorsHelper<ulong, ulong>.op_UnsignedRightShift((ulong)0x7FFFFFFFFFFFFFFF, 1));
+            Assert.Equal((ulong)0x4000000000000000, ShiftOperatorsHelper<ulong, ulong>.op_UnsignedRightShift((ulong)0x8000000000000000, 1));
+            Assert.Equal((ulong)0x7FFFFFFFFFFFFFFF, ShiftOperatorsHelper<ulong, ulong>.op_UnsignedRightShift((ulong)0xFFFFFFFFFFFFFFFF, 1));
+        }
+
+        [Fact]
         public static void op_SubtractionTest()
         {
             Assert.Equal((ulong)0xFFFFFFFFFFFFFFFF, SubtractionOperatorsHelper<ulong, ulong, ulong>.op_Subtraction((ulong)0x0000000000000000, 1));

@@ -207,9 +207,14 @@ int LinearScan::BuildCall(GenTreeCall* call)
 
     if (call->NeedsNullCheck())
     {
-        buildInternalIntRegisterDefForNode(call);
+        // For fast tailcalls we are very constrained here as the only two
+        // volatile registers left are lr and r12 and r12 might be needed for
+        // the target. We do not handle these constraints on the same
+        // refposition too well so we help ourselves a bit here by forcing the
+        // null check with LR.
+        regMaskTP candidates = call->IsFastTailCall() ? RBM_LR : 0;
+        buildInternalIntRegisterDefForNode(call, candidates);
     }
-
 #endif // TARGET_ARM
 
     RegisterType registerType = call->TypeGet();

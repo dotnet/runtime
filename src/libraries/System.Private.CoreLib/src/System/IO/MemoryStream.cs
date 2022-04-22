@@ -59,8 +59,10 @@ namespace System.IO
         {
         }
 
-        public MemoryStream(byte[] buffer!!, bool writable)
+        public MemoryStream(byte[] buffer, bool writable)
         {
+            ArgumentNullException.ThrowIfNull(buffer);
+
             _buffer = buffer;
             _length = _capacity = buffer.Length;
             _writable = writable;
@@ -77,8 +79,10 @@ namespace System.IO
         {
         }
 
-        public MemoryStream(byte[] buffer!!, int index, int count, bool writable, bool publiclyVisible)
+        public MemoryStream(byte[] buffer, int index, int count, bool writable, bool publiclyVisible)
         {
+            ArgumentNullException.ThrowIfNull(buffer);
+
             if (index < 0)
                 throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (count < 0)
@@ -756,8 +760,10 @@ namespace System.IO
         }
 
         // Writes this MemoryStream to another stream.
-        public virtual void WriteTo(Stream stream!!)
+        public virtual void WriteTo(Stream stream)
         {
+            ArgumentNullException.ThrowIfNull(stream);
+
             EnsureNotClosed();
 
             stream.Write(_buffer, _origin, _length - _origin);

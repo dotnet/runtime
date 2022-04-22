@@ -585,7 +585,7 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
     LIR::Use use;
     if (parentStack.Height() < 2)
     {
-        use = LIR::Use::GetDummyUse(BlockRange(), *useEdge);
+        LIR::Use::MakeDummyUse(BlockRange(), *useEdge, &use);
     }
     else
     {

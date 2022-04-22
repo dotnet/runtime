@@ -35,7 +35,7 @@ namespace Microsoft.NETCore.Platforms.BuildTasks
         public abstract bool Execute();
     }
 
-    internal class Log : ILog
+    internal sealed class Log : ILog
     {
         private readonly TaskLoggingHelper _logger;
         public Log(TaskLoggingHelper logger)

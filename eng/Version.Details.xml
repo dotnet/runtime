@@ -58,9 +58,9 @@
       <Uri>https://github.com/dotnet/arcade</Uri>
       <Sha>1527dc867ccb652def4c0f57fbd2ebbed3a94019</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.Helix.Sdk" Version="7.0.0-beta.22179.1">
+    <Dependency Name="Microsoft.DotNet.Helix.Sdk" Version="7.0.0-beta.22220.1">
       <Uri>https://github.com/dotnet/arcade</Uri>
-      <Sha>1527dc867ccb652def4c0f57fbd2ebbed3a94019</Sha>
+      <Sha>a43c2434dc53af51e756e46553963adf2b72619a</Sha>
     </Dependency>
     <Dependency Name="Microsoft.DotNet.ApiCompat" Version="7.0.0-beta.22179.1">
       <Uri>https://github.com/dotnet/arcade</Uri>
@@ -135,6 +135,10 @@
       <Sha>78cb33dbb0fb5156f049b9e1778f47b508f1be9f</Sha>
     </Dependency>
     <Dependency Name="System.Drawing.Common.TestData" Version="7.0.0-beta.22214.1">
+      <Uri>https://github.com/dotnet/runtime-assets</Uri>
+      <Sha>78cb33dbb0fb5156f049b9e1778f47b508f1be9f</Sha>
+    </Dependency>
+    <Dependency Name="System.Formats.Tar.TestData" Version="7.0.0-beta.22214.1">
       <Uri>https://github.com/dotnet/runtime-assets</Uri>
       <Sha>78cb33dbb0fb5156f049b9e1778f47b508f1be9f</Sha>
     </Dependency>
@@ -234,9 +238,9 @@
       <Uri>https://github.com/dotnet/runtime</Uri>
       <Sha>b8dc04b445fc98d24fd92262364a9e5b5e23a5b9</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NET.ILLink.Tasks" Version="7.0.100-1.22205.1">
+    <Dependency Name="Microsoft.NET.ILLink.Tasks" Version="7.0.100-1.22220.4">
       <Uri>https://github.com/dotnet/linker</Uri>
-      <Sha>c6434f6e8a0a1bfbb77261ac9f85c98b781613e5</Sha>
+      <Sha>6374217e191b8cef0c5a3d862f4291583eb959f4</Sha>
     </Dependency>
     <Dependency Name="Microsoft.DotNet.XHarness.TestRunners.Common" Version="1.0.0-prerelease.22214.2">
       <Uri>https://github.com/dotnet/xharness</Uri>
@@ -254,21 +258,21 @@
       <Uri>https://github.com/dotnet/arcade</Uri>
       <Sha>1527dc867ccb652def4c0f57fbd2ebbed3a94019</Sha>
     </Dependency>
-    <Dependency Name="optimization.windows_nt-x64.MIBC.Runtime" Version="1.0.0-prerelease.22121.2">
+    <Dependency Name="optimization.windows_nt-x64.MIBC.Runtime" Version="1.0.0-prerelease.22215.3">
       <Uri>https://dev.azure.com/dnceng/internal/_git/dotnet-optimization</Uri>
-      <Sha>a44e13253c25ec42c4700d4d7ba6f84d9751a387</Sha>
+      <Sha>75d314fa7aa6bdce4d84473269fb6f22fb93b62d</Sha>
     </Dependency>
-    <Dependency Name="optimization.windows_nt-x86.MIBC.Runtime" Version="1.0.0-prerelease.22121.2">
+    <Dependency Name="optimization.windows_nt-x86.MIBC.Runtime" Version="1.0.0-prerelease.22215.3">
       <Uri>https://dev.azure.com/dnceng/internal/_git/dotnet-optimization</Uri>
-      <Sha>a44e13253c25ec42c4700d4d7ba6f84d9751a387</Sha>
+      <Sha>75d314fa7aa6bdce4d84473269fb6f22fb93b62d</Sha>
     </Dependency>
-    <Dependency Name="optimization.linux-x64.MIBC.Runtime" Version="1.0.0-prerelease.22121.2">
+    <Dependency Name="optimization.linux-x64.MIBC.Runtime" Version="1.0.0-prerelease.22215.3">
       <Uri>https://dev.azure.com/dnceng/internal/_git/dotnet-optimization</Uri>
-      <Sha>a44e13253c25ec42c4700d4d7ba6f84d9751a387</Sha>
+      <Sha>75d314fa7aa6bdce4d84473269fb6f22fb93b62d</Sha>
     </Dependency>
-    <Dependency Name="optimization.PGO.CoreCLR" Version="1.0.0-prerelease.22121.2">
+    <Dependency Name="optimization.PGO.CoreCLR" Version="1.0.0-prerelease.22215.3">
       <Uri>https://dev.azure.com/dnceng/internal/_git/dotnet-optimization</Uri>
-      <Sha>a44e13253c25ec42c4700d4d7ba6f84d9751a387</Sha>
+      <Sha>75d314fa7aa6bdce4d84473269fb6f22fb93b62d</Sha>
     </Dependency>
     <Dependency Name="Microsoft.DotNet.HotReload.Utils.Generator.BuildTool" Version="1.0.2-alpha.0.22178.2">
       <Uri>https://github.com/dotnet/hotreload-utils</Uri>

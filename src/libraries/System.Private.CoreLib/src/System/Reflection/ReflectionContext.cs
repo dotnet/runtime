@@ -11,8 +11,10 @@ namespace System.Reflection
 
         public abstract TypeInfo MapType(TypeInfo type);
 
-        public virtual TypeInfo GetTypeForObject(object value!!)
+        public virtual TypeInfo GetTypeForObject(object value)
         {
+            ArgumentNullException.ThrowIfNull(value);
+
             return MapType(value.GetType().GetTypeInfo());
         }
     }

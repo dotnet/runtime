@@ -86,12 +86,12 @@ namespace System.Diagnostics.Tracing
         /// </param>
         /// <param name="traits">A collection of key-value strings (must be an even number).</param>
         public EventSource(
-            string eventSourceName!!,
+            string eventSourceName,
             EventSourceSettings config,
             params string[]? traits)
             : this(
-                GenerateGuidFromName(eventSourceName.ToUpperInvariant()),
-                eventSourceName!,
+                GenerateGuidFromName((eventSourceName ?? throw new ArgumentNullException(nameof(eventSourceName))).ToUpperInvariant()),
+                eventSourceName,
                 config, traits)
         {
         }

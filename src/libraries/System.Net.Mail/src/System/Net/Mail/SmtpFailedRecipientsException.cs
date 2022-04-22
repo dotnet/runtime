@@ -34,17 +34,21 @@ namespace System.Net.Mail
             _innerExceptions = (SmtpFailedRecipientException[])info.GetValue("innerExceptions", typeof(SmtpFailedRecipientException[]))!;
         }
 
-        public SmtpFailedRecipientsException(string? message, SmtpFailedRecipientException[] innerExceptions!!) :
+        public SmtpFailedRecipientsException(string? message, SmtpFailedRecipientException[] innerExceptions) :
             base(message, innerExceptions.Length > 0 ? innerExceptions[0].FailedRecipient : null, innerExceptions.Length > 0 ? innerExceptions[0] : null)
         {
+            ArgumentNullException.ThrowIfNull(innerExceptions);
+
             _innerExceptions = innerExceptions == null ? Array.Empty<SmtpFailedRecipientException>() : innerExceptions;
         }
 
-        internal SmtpFailedRecipientsException(List<SmtpFailedRecipientException> innerExceptions!!, bool allFailed) :
+        internal SmtpFailedRecipientsException(List<SmtpFailedRecipientException> innerExceptions, bool allFailed) :
             base(allFailed ? SR.SmtpAllRecipientsFailed : SR.SmtpRecipientFailed,
             innerExceptions.Count > 0 ? innerExceptions[0].FailedRecipient : null,
             innerExceptions.Count > 0 ? innerExceptions[0] : null)
         {
+            ArgumentNullException.ThrowIfNull(innerExceptions);
+
             _innerExceptions = innerExceptions.ToArray();
         }
 

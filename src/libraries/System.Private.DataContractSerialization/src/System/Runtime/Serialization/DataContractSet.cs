@@ -32,8 +32,10 @@ namespace System.Runtime.Serialization
 #endif
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        internal DataContractSet(DataContractSet dataContractSet!!)
+        internal DataContractSet(DataContractSet dataContractSet)
         {
+            ArgumentNullException.ThrowIfNull(dataContractSet);
+
             //this.dataContractSurrogate = dataContractSet.dataContractSurrogate;
             _referencedTypes = dataContractSet._referencedTypes;
             _referencedCollectionTypes = dataContractSet._referencedCollectionTypes;

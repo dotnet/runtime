@@ -52,7 +52,7 @@ LIR::Use& LIR::Use::operator=(Use&& other)
 }
 
 //------------------------------------------------------------------------
-// LIR::Use::GetDummyUse: Returns a dummy use for a node.
+// LIR::Use::MakeDummyUse: Make a use into a dummy use.
 //
 // This method is provided as a convenience to allow transforms to work
 // uniformly over Use values. It allows the creation of a Use given a node
@@ -61,20 +61,17 @@ LIR::Use& LIR::Use::operator=(Use&& other)
 // Arguments:
 //    range - The range that contains the node.
 //    node - The node for which to create a dummy use.
+//    dummyUse - [out] the resulting dummy use
 //
-// Return Value:
-//
-LIR::Use LIR::Use::GetDummyUse(Range& range, GenTree* node)
+void LIR::Use::MakeDummyUse(Range& range, GenTree* node, LIR::Use* dummyUse)
 {
     assert(node != nullptr);
 
-    Use dummyUse;
-    dummyUse.m_range = &range;
-    dummyUse.m_user  = node;
-    dummyUse.m_edge  = &dummyUse.m_user;
+    dummyUse->m_range = &range;
+    dummyUse->m_user  = node;
+    dummyUse->m_edge  = &dummyUse->m_user;
 
-    assert(dummyUse.IsInitialized());
-    return dummyUse;
+    assert(dummyUse->IsInitialized());
 }
 
 //------------------------------------------------------------------------

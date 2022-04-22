@@ -12,24 +12,39 @@ namespace System.Security.Cryptography.Xml
         private readonly CanonicalXmlDocument _c14nDoc;
         private readonly ExcAncestralNamespaceContextManager _ancMgr;
 
-        internal ExcCanonicalXml(Stream inputStream!!, bool includeComments, string inclusiveNamespacesPrefixList, XmlResolver resolver, string strBaseUri)
+        internal ExcCanonicalXml(Stream inputStream, bool includeComments, string inclusiveNamespacesPrefixList, XmlResolver resolver, string strBaseUri)
         {
+            if (inputStream is null)
+            {
+                throw new ArgumentNullException(nameof(inputStream));
+            }
+
             _c14nDoc = new CanonicalXmlDocument(true, includeComments);
             _c14nDoc.XmlResolver = resolver;
             _c14nDoc.Load(Utils.PreProcessStreamInput(inputStream, resolver, strBaseUri));
             _ancMgr = new ExcAncestralNamespaceContextManager(inclusiveNamespacesPrefixList);
         }
 
-        internal ExcCanonicalXml(XmlDocument document!!, bool includeComments, string inclusiveNamespacesPrefixList, XmlResolver resolver)
+        internal ExcCanonicalXml(XmlDocument document, bool includeComments, string inclusiveNamespacesPrefixList, XmlResolver resolver)
         {
+            if (document is null)
+            {
+                throw new ArgumentNullException(nameof(document));
+            }
+
             _c14nDoc = new CanonicalXmlDocument(true, includeComments);
             _c14nDoc.XmlResolver = resolver;
             _c14nDoc.Load(new XmlNodeReader(document));
             _ancMgr = new ExcAncestralNamespaceContextManager(inclusiveNamespacesPrefixList);
         }
 
-        internal ExcCanonicalXml(XmlNodeList nodeList!!, bool includeComments, string inclusiveNamespacesPrefixList, XmlResolver resolver)
+        internal ExcCanonicalXml(XmlNodeList nodeList, bool includeComments, string inclusiveNamespacesPrefixList, XmlResolver resolver)
         {
+            if (nodeList is null)
+            {
+                throw new ArgumentNullException(nameof(nodeList));
+            }
+
             XmlDocument doc = Utils.GetOwnerDocument(nodeList);
             if (doc == null)
                 throw new ArgumentException(nameof(nodeList));

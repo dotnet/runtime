@@ -52,31 +52,7 @@ namespace System.Reflection.Runtime.MethodInfos
 
         public sealed override object Invoke(BindingFlags invokeAttr, Binder binder, object[] parameters, CultureInfo culture)
         {
-#if PROJECTN
-            if (parameters != null && parameters.Length != 0)
-                throw new TargetParameterCountException();
-
-            Guid clsid = _declaringType.GUID;
-            string server = _declaringType.Server;
-            IntPtr pItf = IntPtr.Zero;
-            try
-            {
-                pItf = McgMarshal.CoCreateInstanceEx(clsid, server);
-
-                // CoCreateInstanceEx will throw exception if it fails to
-                // create an instance.
-                Debug.Assert(pItf != IntPtr.Zero);
-
-                return Marshal.GetObjectForIUnknown(pItf);
-            }
-            finally
-            {
-                if (pItf != IntPtr.Zero)
-                    Marshal.Release(pItf);
-            }
-#else
             throw new PlatformNotSupportedException();
-#endif
         }
 
         public sealed override MethodBase MetadataDefinitionMethod { get { throw new NotSupportedException(); } }

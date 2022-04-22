@@ -13,7 +13,7 @@ using System.Threading.Tasks;
 
 namespace Microsoft.WebAssembly.Diagnostics
 {
-    internal class DevToolsQueue
+    internal sealed class DevToolsQueue
     {
         private Task? current_send;
         private ConcurrentQueue<byte[]> pending;

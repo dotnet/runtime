@@ -22,16 +22,22 @@ namespace System.Resources
         // Adds a resource of type Stream to the list of resources to be
         // written to a file.  They aren't written until Generate() is called.
         // Doesn't close the Stream when done.
-        public void AddResource(string name!!, Stream? value)
+        public void AddResource(string name, Stream? value)
         {
+            ArgumentNullException.ThrowIfNull(name);
+
             if (_resourceList == null)
                 throw new InvalidOperationException(SR.InvalidOperation_ResourceWriterSaved);
 
             AddResourceInternal(name, value, false);
         }
 
-        public void AddResourceData(string name!!, string typeName!!, byte[] serializedData!!)
+        public void AddResourceData(string name, string typeName, byte[] serializedData)
         {
+            ArgumentNullException.ThrowIfNull(name);
+            ArgumentNullException.ThrowIfNull(typeName);
+            ArgumentNullException.ThrowIfNull(serializedData);
+
             AddResourceData(name, typeName, (object)serializedData);
         }
 

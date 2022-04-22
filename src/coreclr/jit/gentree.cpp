@@ -1342,6 +1342,12 @@ CallArgs::CallArgs()
 //---------------------------------------------------------------
 // FindByNode: Find the argument containing the specified early or late node.
 //
+// Parameters:
+//   node - The node to find.
+//
+// Returns:
+//   A pointer to the found CallArg, or otherwise nullptr.
+//
 CallArg* CallArgs::FindByNode(GenTree* node)
 {
     assert(node != nullptr);
@@ -1358,6 +1364,12 @@ CallArg* CallArgs::FindByNode(GenTree* node)
 
 //---------------------------------------------------------------
 // FindWellKnownArg: Find a specific well-known argument.
+//
+// Parameters:
+//   arg - The type of well-known argument.
+//
+// Returns:
+//   A pointer to the found CallArg, or null if it was not found.
 //
 // Remarks:
 //   For the 'this' arg or the return buffer arg there are more efficient
@@ -1380,6 +1392,9 @@ CallArg* CallArgs::FindWellKnownArg(WellKnownArg arg)
 //---------------------------------------------------------------
 // GetThisArg: Get the this-pointer argument.
 //
+// Returns:
+//   A pointer to the 'this' arg, or nullptr if there is no such arg.
+//
 // Remarks:
 //   This is only the managed 'this' arg. We consider the 'this' pointer for
 //   unmanaged instance calling conventions as normal (non-this) arguments.
@@ -1400,6 +1415,9 @@ CallArg* CallArgs::GetThisArg()
 
 //---------------------------------------------------------------
 // GetRetBufferArg: Get the return buffer arg.
+//
+// Returns:
+//   A pointer to the ret-buffer arg, or nullptr if there is no such arg.
 //
 // Remarks:
 //   This is the actual (per-ABI) return buffer argument. On some ABIs this
@@ -1427,12 +1445,21 @@ CallArg* CallArgs::GetRetBufferArg()
 //---------------------------------------------------------------
 // GetArgByIndex: Get an argument with the specified index.
 //
+// Parameters:
+//   index - The index of the argument to find.
+//
+// Returns:
+//   A pointer to the argument.
+//
+// Remarks:
+//   This function assumes enough arguments exist.
+//
 CallArg* CallArgs::GetArgByIndex(unsigned index)
 {
     CallArg* cur = m_head;
     for (unsigned i = 0; i < index; i++)
     {
-        assert(cur != nullptr);
+        assert((cur != nullptr) && "Not enough arguments in GetArgByIndex");
         cur = cur->GetNext();
     }
 
@@ -1441,6 +1468,12 @@ CallArg* CallArgs::GetArgByIndex(unsigned index)
 
 //---------------------------------------------------------------
 // GetIndex: Get the index for the specified argument.
+//
+// Parameters:
+//   arg - The argument to obtain the index of.
+//
+// Returns:
+//   The index.
 //
 unsigned CallArgs::GetIndex(CallArg* arg)
 {
@@ -1498,6 +1531,9 @@ void CallArgs::Reverse(unsigned index, unsigned count)
 //---------------------------------------------------------------
 // AddedWellKnownArg: Record details when a well known arg was added.
 //
+// Parameters:
+//   arg - The type of well-known arg that was just added.
+//
 // Remarks:
 //   This is used to improve performance of some common argument lookups.
 //
@@ -1518,6 +1554,9 @@ void CallArgs::AddedWellKnownArg(WellKnownArg arg)
 
 //---------------------------------------------------------------
 // RemovedWellKnownArg: Record details when a well known arg was removed.
+//
+// Parameters:
+//   arg - The type of well-known arg that was just removed.
 //
 void CallArgs::RemovedWellKnownArg(WellKnownArg arg)
 {
@@ -1631,6 +1670,14 @@ regNumber CallArgs::GetCustomRegister(Compiler* comp, CorInfoCallConvExtension c
 //---------------------------------------------------------------
 // IsNonStandard: Check if an argument is passed with a non-standard calling
 // convention.
+//
+// Parameters:
+//   comp - The compiler object.
+//   call - The call node containing these args.
+//   arg  - The specific arg to check whether is non-standard.
+//
+// Returns:
+//   True if the argument is non-standard.
 //
 bool CallArgs::IsNonStandard(Compiler* comp, GenTreeCall* call, CallArg* arg)
 {
@@ -1783,6 +1830,9 @@ CallArg* CallArgs::InsertAfterThisOrFirst(Compiler* comp, GenTree* node, WellKno
 //---------------------------------------------------------------
 // PushLateBack: Insert an argument at the end of the 'late' argument list.
 //
+// Parameters:
+//   arg - The arg to add to the late argument list.
+//
 // Remarks:
 //   This function should only be used if adding arguments after the call has
 //   already been morphed.
@@ -1800,6 +1850,9 @@ void CallArgs::PushLateBack(CallArg* arg)
 
 //---------------------------------------------------------------
 // Remove: Remove an argument from the argument list.
+//
+// Parameters:
+//   arg - The arg to remove.
 //
 // Remarks:
 //   This function cannot be used after morph. It will also invalidate ABI
@@ -1868,7 +1921,7 @@ regMaskTP GenTreeCall::GetOtherRegMask() const
 //    performed.
 //
 // Arguments:
-//    Copiler - the compiler context.
+//    compiler - the compiler context.
 //
 // Returns:
 //    True if the call is pure; false otherwise.
@@ -6942,21 +6995,11 @@ GenTreeIntCon* Compiler::gtNewStringLiteralLength(GenTreeStrCon* node)
         return gtNewIconNode(0);
     }
 
-    int             length = -1;
-    const char16_t* str    = info.compCompHnd->getStringLiteral(node->gtScpHnd, node->gtSconCPX, &length);
+    int length = info.compCompHnd->getStringLiteral(node->gtScpHnd, node->gtSconCPX, nullptr, 0);
     if (length >= 0)
     {
         GenTreeIntCon* iconNode = gtNewIconNode(length);
-
-        // str can be NULL for dynamic context
-        if (str != nullptr)
-        {
-            JITDUMP("Folded '\"%ws\".Length' to '%d'\n", str, length)
-        }
-        else
-        {
-            JITDUMP("Folded 'CNS_STR.Length' to '%d'\n", length)
-        }
+        JITDUMP("Folded 'CNS_STR.Length' to '%d'\n", length)
         return iconNode;
     }
     return nullptr;
@@ -12226,8 +12269,6 @@ void Compiler::gtGetLateArgMsg(GenTreeCall* call, CallArg* arg, char* bufp, unsi
 //
 void Compiler::gtDispArgList(GenTreeCall* call, GenTree* lastCallOperand, IndentStack* indentStack)
 {
-    unsigned argNum = 0;
-
     for (CallArg& arg : call->gtArgs.EarlyArgs())
     {
         char buf[256];

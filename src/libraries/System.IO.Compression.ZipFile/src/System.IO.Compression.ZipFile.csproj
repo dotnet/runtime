@@ -7,18 +7,20 @@
   <ItemGroup>
     <Compile Include="System\IO\Compression\ZipFile.Create.cs" />
     <Compile Include="System\IO\Compression\ZipFile.Extract.cs" />
-    <Compile Include="System\IO\Compression\ZipFile.Utils.cs" />
     <Compile Include="System\IO\Compression\ZipFileExtensions.ZipArchive.Create.cs" />
     <Compile Include="System\IO\Compression\ZipFileExtensions.ZipArchive.Extract.cs" />
     <Compile Include="System\IO\Compression\ZipFileExtensions.ZipArchiveEntry.Extract.cs" />
     <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs"
              Link="Common\DisableRuntimeMarshalling.cs" />
+    <Compile Include="$(CommonPath)System\IO\Archiving.Utils.cs"
+             Link="Common\System\IO\Archiving.Utils.cs" />
     <Compile Include="$(CommonPath)System\IO\PathInternal.CaseSensitivity.cs"
              Link="Common\System\IO\PathInternal.CaseSensitivity.cs" />
   </ItemGroup>
   <!-- Windows specific files -->
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
-    <Compile Include="System\IO\Compression\ZipFileValidName_Windows.cs" />
+    <Compile Include="$(CommonPath)System\IO\Archiving.Utils.Windows.cs"
+             Link="Common\System\IO\Archiving.Utils.Windows.cs" />
   </ItemGroup>
   <!-- Unix specific files -->
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == ''">
@@ -34,7 +36,8 @@
              Link="Common\Interop\Unix\System.Native\Interop.FChMod.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Stat.cs"
              Link="Common\Interop\Unix\System.Native\Interop.Stat.cs" />
-    <Compile Include="System\IO\Compression\ZipFileValidFullName_Unix.cs" />
+    <Compile Include="$(CommonPath)System\IO\Archiving.Utils.Unix.cs"
+             Link="Common\System\IO\Archiving.Utils.Unix.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.IO.Compression" />

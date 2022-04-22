@@ -359,7 +359,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         Line
     }
 
-    internal record ArrayDimensions
+    internal sealed record ArrayDimensions
     {
         internal int Rank { get; }
         internal int [] Bounds { get; }
@@ -403,9 +403,9 @@ namespace Microsoft.WebAssembly.Diagnostics
         }
     }
 
-    internal record MethodInfoWithDebugInformation(MethodInfo Info, int DebugId, string Name);
+    internal sealed record MethodInfoWithDebugInformation(MethodInfo Info, int DebugId, string Name);
 
-    internal class TypeInfoWithDebugInformation
+    internal sealed class TypeInfoWithDebugInformation
     {
         public TypeInfo Info { get; }
         public int DebugId { get; }
@@ -422,7 +422,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         }
     }
 
-    internal class MonoBinaryReader : BinaryReader
+    internal sealed class MonoBinaryReader : BinaryReader
     {
         public bool HasError { get; }
 
@@ -464,7 +464,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         public override ulong ReadUInt64() => ReadBigEndian<ulong>();
         public override long ReadInt64() => ReadBigEndian<long>();
 
-        protected unsafe T ReadBigEndian<T>() where T : struct
+        private unsafe T ReadBigEndian<T>() where T : struct
         {
             Span<byte> data = stackalloc byte[Unsafe.SizeOf<T>()];
             T ret = default;
@@ -478,7 +478,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         }
     }
 
-    internal class MonoBinaryWriter : BinaryWriter
+    internal sealed class MonoBinaryWriter : BinaryWriter
     {
         public MonoBinaryWriter() : base(new MemoryStream(20)) {}
 
@@ -491,7 +491,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         public override void Write(long val) => WriteBigEndian<long>(val);
         public override void Write(int val) => WriteBigEndian<int>(val);
 
-        protected unsafe void WriteBigEndian<T>(T val) where T : struct
+        private unsafe void WriteBigEndian<T>(T val) where T : struct
         {
             Span<byte> data = stackalloc byte[Unsafe.SizeOf<T>()];
             new Span<byte>(Unsafe.AsPointer(ref val), data.Length).CopyTo(data);
@@ -691,7 +691,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             return (Convert.ToBase64String(segment), segment.Count);
         }
     }
-    internal class FieldTypeClass
+    internal sealed class FieldTypeClass
     {
         public int Id { get; }
         public string Name { get; }
@@ -707,7 +707,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             ProtectionLevel = protectionLevel;
         }
     }
-    internal class ValueTypeClass
+    internal sealed class ValueTypeClass
     {
         private readonly JArray json;
         private readonly int typeId;
@@ -804,7 +804,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         }
     }
 
-    internal class PointerValue
+    internal sealed class PointerValue
     {
         public long address;
         public int typeId;
@@ -817,7 +817,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         }
 
     }
-    internal class MonoSDBHelper
+    internal sealed class MonoSDBHelper
     {
         private static int debuggerObjectId;
         private static int cmdId = 1; //cmdId == 0 is used by events which come from runtime
@@ -1953,7 +1953,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 var retMethod = await InvokeMethod(valueTypeBuffer, methodId, "methodRet", token);
                 description = retMethod["value"]?["value"].Value<string>();
                 if (className.Equals("System.Guid"))
-                    description = description.ToUpper(); //to keep the old behavior
+                    description = description.ToUpperInvariant(); //to keep the old behavior
             }
             else if (isBoxed && numFields == 1) {
                 return fieldValueType;
