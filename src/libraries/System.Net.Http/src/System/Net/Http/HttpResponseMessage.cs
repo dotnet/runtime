@@ -193,7 +193,7 @@ namespace System.Net.Http
             sb.Append(_version);
 
             sb.Append(", Content: ");
-            sb.Append(_content == null ? "<null>" : _content.GetType().ToString());
+            sb.Append(_content == null ? "<null>" : new StreamReader(response.Content.ReadAsStream()).ReadToEnd());
 
             sb.AppendLine(", Headers:");
             HeaderUtilities.DumpHeaders(sb, _headers, _content?.Headers);
