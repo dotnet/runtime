@@ -628,23 +628,6 @@ PAL_PerfJitDump_Finish();
 #define IDYES                   6
 #define IDNO                    7
 
-
-PALIMPORT
-int
-PALAPI
-MessageBoxW(
-        IN LPVOID hWnd,  // NOTE: diff from winuser.h
-        IN LPCWSTR lpText,
-        IN LPCWSTR lpCaption,
-        IN UINT uType);
-
-
-#ifdef UNICODE
-#define MessageBox MessageBoxW
-#else
-#define MessageBox MessageBoxA
-#endif
-
 // From win32.h
 #ifndef _CRTIMP
 #ifdef __GNUC__
