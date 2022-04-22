@@ -776,55 +776,6 @@ private:
 
 HRESULT UtilLoadResourceString(CCompRC::ResourceCategory eCategory, UINT iResouceID, _Out_writes_ (iMax) LPWSTR szBuffer, int iMax);
 
-int UtilMessageBoxVA(
-                  HWND hWnd,        // Handle to Owner Window
-                  UINT uText,       // Resource Identifier for Text message
-                  UINT uCaption,    // Resource Identifier for Caption
-                  UINT uType,       // Style of MessageBox
-                  BOOL displayForNonInteractive,    // Display even if the process is running non interactive
-                  BOOL ShowFileNameInTitle, // Flag to show FileName in Caption
-                  va_list args);    // Additional Arguments
-
-int UtilMessageBoxNonLocalizedVA(
-                  HWND hWnd,        // Handle to Owner Window
-                  LPCWSTR lpText,    // Text message
-                  LPCWSTR lpCaption, // Caption
-                  UINT uType,       // Style of MessageBox
-                  BOOL displayForNonInteractive,    // Display even if the process is running non interactive
-                  BOOL ShowFileNameInTitle, // Flag to show FileName in Caption
-                  BOOL * pInputFromUser,            // To distinguish between user pressing abort vs. assuming abort.
-                  va_list args);    // Additional Arguments
-
-int UtilMessageBoxNonLocalizedVA(
-                  HWND hWnd,        // Handle to Owner Window
-                  LPCWSTR lpText,    // Text message
-                  LPCWSTR lpCaption, // Caption
-                  LPCWSTR lpDetails, // Details that may be shown in a collapsed extended area of the dialog (Vista or higher).
-                  UINT uType,       // Style of MessageBox
-                  BOOL displayForNonInteractive,    // Display even if the process is running non interactive
-                  BOOL ShowFileNameInTitle, // Flag to show FileName in Caption
-                  BOOL * pInputFromUser,            // To distinguish between user pressing abort vs. assuming abort.
-                  va_list args);    // Additional Arguments
-
-int UtilMessageBoxCatastrophicNonLocalized(
-                  LPCWSTR lpText,    // Text for MessageBox
-                  LPCWSTR lpTitle,   // Title for MessageBox
-                  UINT uType,       // Style of MessageBox
-                  BOOL ShowFileNameInTitle, // Flag to show FileName in Caption
-                  ...);
-
-int UtilMessageBoxCatastrophicVA(
-                  UINT uText,       // Text for MessageBox
-                  UINT uTitle,      // Title for MessageBox
-                  UINT uType,       // Style of MessageBox
-                  BOOL ShowFileNameInTitle, // Flag to show FileName in Caption
-                  va_list args);    // Additional Arguments
-
-int UtilMessageBoxMessageBoxLowResource(
-                  LPCSTR szText,    // Text message
-                  LPCSTR szTitle,   // Title
-                  UINT uType);      // Style of MessageBox
-
 // The HRESULT_FROM_WIN32 macro evaluates its arguments three times.
 // <TODO>TODO: All HRESULT_FROM_WIN32(GetLastError()) should be replaced by calls to
 //  this helper function avoid code bloat</TODO>
@@ -4435,12 +4386,6 @@ template<class T> void DeleteExecutable(T *p)
 #endif // HOST_WINDOWS
 
 INDEBUG(BOOL DbgIsExecutable(LPVOID lpMem, SIZE_T length);)
-
-BOOL NoGuiOnAssert();
-#ifdef _DEBUG
-VOID TerminateOnAssert();
-#endif // _DEBUG
-
 
 BOOL ThreadWillCreateGuardPage(SIZE_T sizeReservedStack, SIZE_T sizeCommitedStack);
 

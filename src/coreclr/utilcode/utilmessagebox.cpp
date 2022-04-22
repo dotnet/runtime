@@ -132,67 +132,7 @@ int MessageBoxImpl(
     return LateboundMessageBoxW(hWnd, message, title, uType);
 }
 
-int UtilMessageBoxVA(
-                  HWND hWnd,        // Handle to Owner Window
-                  UINT uText,       // Resource Identifier for Text message
-                  UINT uTitle,      // Resource Identifier for Title
-                  UINT uType,       // Style of MessageBox
-                  BOOL displayForNonInteractive,    // Display even if the process is running non interactive
-                  BOOL showFileNameInTitle,         // Flag to show FileName in Caption
-                  va_list args)     // Additional Arguments
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        INJECT_FAULT(return IDCANCEL;);
-    }
-    CONTRACTL_END;
-
-    SString text;
-    SString title;
-    int result = IDCANCEL;
-
-    EX_TRY
-    {
-        text.LoadResource(CCompRC::Error, uText);
-        title.LoadResource(CCompRC::Error, uTitle);
-
-        result = UtilMessageBoxNonLocalizedVA(hWnd, (LPWSTR)text.GetUnicode(),
-            (LPWSTR)title.GetUnicode(), uType, displayForNonInteractive, showFileNameInTitle, NULL, args);
-    }
-    EX_CATCH
-    {
-        result = IDCANCEL;
-    }
-    EX_END_CATCH(SwallowAllExceptions);
-
-    return result;
-}
-
-int UtilMessageBoxNonLocalizedVA(
-                  HWND hWnd,        // Handle to Owner Window
-                  LPCWSTR lpText,   // Text message
-                  LPCWSTR lpTitle,  // Title
-                  UINT uType,       // Style of MessageBox
-                  BOOL displayForNonInteractive,    // Display even if the process is running non interactive
-                  BOOL showFileNameInTitle,         // Flag to show FileName in Caption
-                  BOOL * pInputFromUser,            // To distinguish between user pressing abort vs. assuming abort.
-                  va_list args)     // Additional Arguments
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        INJECT_FAULT(return IDCANCEL;);
-
-        // Assert if none of MB_ICON is set
-        PRECONDITION((uType & MB_ICONMASK) != 0);
-    }
-    CONTRACTL_END;
-
-    return UtilMessageBoxNonLocalizedVA(hWnd, lpText, lpTitle, NULL, uType, displayForNonInteractive, showFileNameInTitle, pInputFromUser, args);
-}
-
-int UtilMessageBoxNonLocalizedVA(
+static int UtilMessageBoxNonLocalizedVA(
                   HWND hWnd,        // Handle to Owner Window
                   LPCWSTR lpText,   // Text message
                   LPCWSTR lpTitle,  // Title
@@ -313,52 +253,39 @@ int UtilMessageBoxNonLocalizedVA(
     return result;
 }
 
-static int UtilMessageBoxCatastrophicNonLocalizedVA(
-                  LPCWSTR lpText,   // Text for MessageBox
-                  LPCWSTR lpTitle,  // Title for MessageBox
+int UtilMessageBoxVA(
+                  HWND hWnd,        // Handle to Owner Window
+                  UINT uText,       // Resource Identifier for Text message
+                  UINT uTitle,      // Resource Identifier for Title
                   UINT uType,       // Style of MessageBox
-                  BOOL showFileNameInTitle, // Flag to show FileName in Caption
+                  BOOL displayForNonInteractive,    // Display even if the process is running non interactive
+                  BOOL showFileNameInTitle,         // Flag to show FileName in Caption
                   va_list args)     // Additional Arguments
 {
     CONTRACTL
     {
         NOTHROW;
+        INJECT_FAULT(return IDCANCEL;);
     }
     CONTRACTL_END;
 
-    HWND hwnd = NULL;
+    SString text;
+    SString title;
+    int result = IDCANCEL;
 
-    // We are already in a catastrophic situation so we can tolerate faults as well as GC mode violations to keep going.
-    CONTRACT_VIOLATION(FaultNotFatal | GCViolation | ModeViolation);
-
-    if (!ShouldDisplayMsgBoxOnCriticalFailure())
-        return IDABORT;
-
-    // Add the MB_TASKMODAL style to indicate that the dialog should be displayed on top of the windows
-    // owned by the current thread and should prevent interaction with them until dismissed.
-    uType |= MB_TASKMODAL;
-
-    return UtilMessageBoxNonLocalizedVA(hwnd, lpText, lpTitle, uType, TRUE, showFileNameInTitle, NULL, args);
-}
-
-int UtilMessageBoxCatastrophicNonLocalized(
-                  LPCWSTR lpText,    // Text for MessageBox
-                  LPCWSTR lpTitle,   // Title for MessageBox
-                  UINT uType,        // Style of MessageBox
-                  BOOL showFileNameInTitle,         // Flag to show FileName in Caption
-                  ...)
-{
-    CONTRACTL
+    EX_TRY
     {
-        NOTHROW;
+        text.LoadResource(CCompRC::Error, uText);
+        title.LoadResource(CCompRC::Error, uTitle);
+
+        result = UtilMessageBoxNonLocalizedVA(hWnd, (LPWSTR)text.GetUnicode(),
+            (LPWSTR)title.GetUnicode(), NULL, uType, displayForNonInteractive, showFileNameInTitle, NULL, args);
     }
-    CONTRACTL_END;
-
-    va_list marker;
-    va_start(marker, showFileNameInTitle);
-
-    int result = UtilMessageBoxCatastrophicNonLocalizedVA(lpText, lpTitle, uType, showFileNameInTitle, marker);
-    va_end( marker );
+    EX_CATCH
+    {
+        result = IDCANCEL;
+    }
+    EX_END_CATCH(SwallowAllExceptions);
 
     return result;
 }
@@ -389,32 +316,4 @@ int UtilMessageBoxCatastrophicVA(
     uType |= MB_TASKMODAL;
 
     return UtilMessageBoxVA(hwnd, uText, uTitle, uType, TRUE, showFileNameInTitle, args);
-}
-
-int UtilMessageBoxMessageBoxLowResource(
-                  LPCSTR szText,    // Text message
-                  LPCSTR szTitle,   // Title
-                  UINT uType)       // Style of MessageBox
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        INJECT_FAULT(return IDCANCEL;);
-    }
-    CONTRACTL_END;
-
-    if (szText == NULL)
-        szText = "<null>";
-    if (szTitle == NULL)
-        szTitle = "<null>";
-
-    SIZE_T cchText = strlen(szText) + 1;
-    LPWSTR wszText = (LPWSTR)_alloca(cchText * sizeof(WCHAR));
-    swprintf_s(wszText, cchText, W("%S"), szText);
-
-    SIZE_T cchTitle = strlen(szTitle) + 1;
-    LPWSTR wszTitle = (LPWSTR)_alloca(cchTitle * sizeof(WCHAR));
-    swprintf_s(wszTitle, cchTitle, W("%S"), szTitle);
-
-    return LateboundMessageBoxW(NULL, wszText, wszTitle, uType);
 }

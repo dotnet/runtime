@@ -16553,10 +16553,15 @@ void DebuggerHeap::Free(void *pMem)
 }
 
 #ifndef DACCESS_COMPILE
-
-
-// Undef this so we can call them from the EE versions.
-#undef UtilMessageBoxVA
+// forward declare for specific type needed.
+int UtilMessageBoxVA(
+        HWND hWnd,        // Handle to Owner Window
+        UINT uText,       // Resource Identifier for Text message
+        UINT uCaption,    // Resource Identifier for Caption
+        UINT uType,       // Style of MessageBox
+        BOOL displayForNonInteractive,    // Display even if the process is running non interactive
+        BOOL ShowFileNameInTitle, // Flag to show FileName in Caption
+        va_list args);    // Additional Arguments
 
 // Message box API for the left side of the debugger. This API handles calls from the
 // debugger helper thread as well as from normal EE threads. It is the only one that
@@ -16591,9 +16596,6 @@ int Debugger::MessageBox(
 
     return result;
 }
-
-// Redefine this to an error just in case code is added after this point in the file.
-#define UtilMessageBoxVA __error("Use g_pDebugger->MessageBox from inside the left side of the debugger")
 
 #else // DACCESS_COMPILE
 void

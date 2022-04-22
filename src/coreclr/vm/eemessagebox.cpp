@@ -14,9 +14,13 @@
 #include "common.h"
 #include "eemessagebox.h"
 
-// Undef these so we can call them from the EE versions.
-#undef UtilMessageBoxCatastrophicVA
-#undef UtilMessageBoxNonLocalizedVA
+// Forward declare the needed MessageBox API.
+int UtilMessageBoxCatastrophicVA(
+                  UINT uText,       // Text for MessageBox
+                  UINT uTitle,      // Title for MessageBox
+                  UINT uType,       // Style of MessageBox
+                  BOOL ShowFileNameInTitle, // Flag to show FileName in Caption
+                  va_list args);    // Additional Arguments
 
 int EEMessageBoxCatastrophicWithCustomizedStyle(
                   UINT uText,               // Text for MessageBox
@@ -42,38 +46,3 @@ int EEMessageBoxCatastrophicWithCustomizedStyle(
 
     return result;
 }
-
-// If we didn't display a dialog to the user, this method returns IDIGNORE, unlike the others that return IDABORT.
-int EEMessageBoxNonLocalizedNonFatal(
-                  LPCWSTR lpText,   // Text message
-                  LPCWSTR lpTitle,  // Caption
-                  UINT uType,       // Style of MessageBox
-                  ... )             // Additional Arguments
-{
-    CONTRACTL
-    {
-        MODE_ANY;
-        GC_TRIGGERS;
-        NOTHROW;
-    }
-    CONTRACTL_END;
-
-    GCX_PREEMP();
-
-    va_list marker;
-    va_start(marker, uType);
-    BOOL inputFromUser = FALSE;
-
-    int result = UtilMessageBoxNonLocalizedVA(NULL, lpText, lpTitle, NULL, uType, FALSE, TRUE, &inputFromUser, marker);
-    va_end( marker );
-
-	if (inputFromUser == FALSE && result == IDABORT)
-		result = IDIGNORE;
-
-    return result;
-}
-
-// Redefine these to errors just in case code is added after this point in the file.
-#define UtilMessageBoxCatastrophicVA __error("Use one of the EEMessageBox APIs (defined in eemessagebox.h) from inside the EE")
-#define UtilMessageBoxNonLocalizedVA __error("Use one of the EEMessageBox APIs (defined in eemessagebox.h) from inside the EE")
-

@@ -812,8 +812,6 @@ CONFIG_DWORD_INFO(INTERNAL_MaxStubUnwindInfoSegmentSize, W("MaxStubUnwindInfoSeg
 CONFIG_DWORD_INFO(INTERNAL_MessageDebugOut, W("MessageDebugOut"), 0, "")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_NativeImageRequire, W("NativeImageRequire"), 0, "")
 CONFIG_DWORD_INFO(INTERNAL_NestedEhOom, W("NestedEhOom"), 0, "")
-#define INTERNAL_NoGuiOnAssert_Default 1
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_NoGuiOnAssert, W("NoGuiOnAssert"), INTERNAL_NoGuiOnAssert_Default, "")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_NoProcedureSplitting, W("NoProcedureSplitting"), 0, "")
 CONFIG_DWORD_INFO(INTERNAL_PauseOnLoad, W("PauseOnLoad"), 0, "Stops in SystemDomain::init. I think it can be removed.")
 CONFIG_DWORD_INFO(INTERNAL_PerfAllocsSizeThreshold, W("PerfAllocsSizeThreshold"), 0x3FFFFFFF, "Log facility LF_GCALLOC logs object allocations. This flag controls which ones also log stacktraces. Predates ClrProfiler.")

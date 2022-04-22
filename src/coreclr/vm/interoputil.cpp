@@ -135,15 +135,6 @@ HRESULT SetupErrorInfo(OBJECTREF pThrownObject)
                         else
                             PrintToStdOutW(W("No exception info available"));
                     }
-
-                    if (g_pConfig->ShouldExposeExceptionsInCOMToMsgBox())
-                    {
-                        GCX_PREEMP();
-                        if (!message.IsEmpty())
-                            EEMessageBoxNonLocalizedNonFatal((LPWSTR)message.GetUnicode(), W(".NET exception in COM"), MB_ICONSTOP | MB_OK);
-                        else
-                            EEMessageBoxNonLocalizedNonFatal(W("No exception information available"), W(".NET exception in COM"),MB_ICONSTOP | MB_OK);
-                    }
                 }
                 EX_CATCH
                 {

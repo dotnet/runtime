@@ -437,17 +437,6 @@ CONTEXT * GetManagedStoppedCtx(Thread * pThread);
 // Never NULL.
 CONTEXT * GetManagedLiveCtx(Thread * pThread);
 
-
-#undef UtilMessageBoxCatastrophicNonLocalized
-#undef UtilMessageBoxCatastrophicVA
-#undef UtilMessageBoxVA
-#undef UtilMessageBoxNonLocalizedVA
-#define UtilMessageBoxCatastrophicNonLocalized __error("Use g_pDebugger->MessageBox from inside the left side of the debugger")
-#define UtilMessageBoxCatastrophicVA __error("Use g_pDebugger->MessageBox from inside the left side of the debugger")
-#define UtilMessageBoxVA __error("Use g_pDebugger->MessageBox from inside the left side of the debugger")
-#define UtilMessageBoxNonLocalizedVA __error("Use g_pDebugger->MessageBox from inside the left side of the debugger")
-
-
 /* ------------------------------------------------------------------------ *
  * Module classes
  * ------------------------------------------------------------------------ */

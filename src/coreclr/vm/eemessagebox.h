@@ -28,12 +28,5 @@ int EEMessageBoxCatastrophicWithCustomizedStyle(
                   BOOL showFileNameInTitle, // Flag to show FileName in Caption
                   ...);                     // Additional Arguments
 
-// If we didn't display a dialog to the user, this method returns IDIGNORE, unlike the others that return IDABORT.
-int EEMessageBoxNonLocalizedNonFatal(
-                  LPCWSTR lpText,   // Text message
-                  LPCWSTR lpTitle,  // Caption
-                  UINT uType,       // Style of MessageBox
-                  ... );            // Additional Arguments
-
 #endif /* _H_EEMESSAGEBOX */
 

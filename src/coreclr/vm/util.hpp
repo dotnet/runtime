@@ -19,14 +19,6 @@
 #include "posterror.h"
 #include "clr_std/type_traits"
 
-#undef UtilMessageBoxCatastrophicNonLocalized
-#undef UtilMessageBoxVA
-#undef UtilMessageBoxNonLocalizedVA
-#define UtilMessageBoxCatastrophicNonLocalized __error("Use one of the EEMessageBox APIs (defined in eemessagebox.h) from inside the EE")
-#define UtilMessageBoxCatastrophicVA __error("Use one of the EEMessageBox APIs (defined in eemessagebox.h) from inside the EE")
-#define UtilMessageBoxVA __error("Use one of the EEMessageBox APIs (defined in eemessagebox.h) from inside the EE")
-#define UtilMessageBoxNonLocalizedVA __error("Use one of the EEMessageBox APIs (defined in eemessagebox.h) from inside the EE")
-
 // Hot cache lines need to be aligned to cache line size to improve performance
 #if defined(TARGET_ARM64)
 #define MAX_CACHE_LINE_SIZE 128
