@@ -123,10 +123,10 @@ namespace DebuggerTests
 
                     string message_prefix = $"[testId: {test_id}]";
                     Logger.LogInformation($"{message_prefix} New test request for test id {test_id}");
+                    CancellationTokenSource cts = new();
                     try
                     {
                         int browserPort;
-                        CancellationToken token = new();
                         if (host == WasmHost.Chrome)
                         {
                             using var provider = new ChromeProvider(test_id, Logger);
@@ -136,7 +136,7 @@ namespace DebuggerTests
                                                 browserPort,
                                                 message_prefix,
                                                 _loggerFactory,
-                                                token).ConfigureAwait(false);
+                                                cts).ConfigureAwait(false);
                         }
                         else if (host == WasmHost.Firefox)
                         {
@@ -148,7 +148,7 @@ namespace DebuggerTests
                                                 firefox_proxy_port,
                                                 message_prefix,
                                                 _loggerFactory,
-                                                token).ConfigureAwait(false);
+                                                cts).ConfigureAwait(false);
                         }
                         Logger.LogDebug($"{message_prefix} TestHarnessStartup done");
                     }
@@ -160,6 +160,7 @@ namespace DebuggerTests
                     finally
                     {
                         Logger.LogDebug($"TestHarnessStartup: closing for {test_id}");
+                        cts.Cancel();
                     }
                 });
             });

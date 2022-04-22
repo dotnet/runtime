@@ -35,7 +35,7 @@ internal class ChromeProvider : WasmHostProvider
                                                 int remoteDebuggingPort,
                                                 string messagePrefix,
                                                 ILoggerFactory loggerFactory,
-                                                CancellationToken token,
+                                                CancellationTokenSource cts,
                                                 int browserReadyTimeoutMs = 20000)
     {
         string? line;
@@ -57,7 +57,7 @@ internal class ChromeProvider : WasmHostProvider
                                     },
                                     messagePrefix,
                                     browserReadyTimeoutMs,
-                                    token).ConfigureAwait(false);
+                                    cts.Token).ConfigureAwait(false);
 
             if (_process is null || line is null)
                 throw new Exception($"Failed to launch chrome");
@@ -76,7 +76,7 @@ internal class ChromeProvider : WasmHostProvider
         TestHarnessProxy.RegisterNewProxy(Id, _debuggerProxy);
         var browserUri = new Uri(con_str);
         WebSocket? ideSocket = await context.WebSockets.AcceptWebSocketAsync().ConfigureAwait(false);
-        await _debuggerProxy.Run(browserUri, ideSocket).ConfigureAwait(false);
+        await _debuggerProxy.Run(browserUri, ideSocket, cts).ConfigureAwait(false);
     }
 
     public override void Dispose()

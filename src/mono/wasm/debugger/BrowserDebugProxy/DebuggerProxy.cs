@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Net.WebSockets;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 
@@ -22,9 +23,9 @@ namespace Microsoft.WebAssembly.Diagnostics
             MonoProxy = new MonoProxy(loggerFactory, urlSymbolServerList, runtimeId, loggerId);
         }
 
-        public Task Run(Uri browserUri, WebSocket ideSocket)
+        public Task Run(Uri browserUri, WebSocket ideSocket, CancellationTokenSource cts)
         {
-            return MonoProxy.RunForDevTools(browserUri, ideSocket);
+            return MonoProxy.RunForDevTools(browserUri, ideSocket, cts);
         }
 
         public override void Shutdown() => MonoProxy.Shutdown();

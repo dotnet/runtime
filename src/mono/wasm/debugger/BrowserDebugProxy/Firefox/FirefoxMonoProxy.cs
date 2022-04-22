@@ -27,7 +27,7 @@ internal sealed class FirefoxMonoProxy : MonoProxy
         throw new ArgumentException($"Invalid Session: \"{sessionId}\"", nameof(sessionId));
     }
 
-    public async Task RunForFirefox(TcpClient ideClient, int portBrowser)
+    public async Task RunForFirefox(TcpClient ideClient, int portBrowser, CancellationTokenSource cts)
     {
         TcpClient browserClient = null;
         try
@@ -40,7 +40,7 @@ internal sealed class FirefoxMonoProxy : MonoProxy
             await browserClient.ConnectAsync("127.0.0.1", portBrowser);
             logger.LogTrace($".. connected to the browser!");
 
-            await StartRunLoop(ideConn, browserConn);
+            await StartRunLoop(ideConn, browserConn, cts);
             if (Stopped?.reason == RunLoopStopReason.Exception)
                 throw Stopped.exception;
         }

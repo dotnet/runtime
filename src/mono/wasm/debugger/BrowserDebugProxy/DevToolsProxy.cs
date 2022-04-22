@@ -248,7 +248,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             return Send(this.browser, msg, token);
         }
 
-        public async Task RunForDevTools(Uri browserUri, WebSocket ideSocket)
+        public async Task RunForDevTools(Uri browserUri, WebSocket ideSocket, CancellationTokenSource cts)
         {
             try
             {
@@ -257,12 +257,12 @@ namespace Microsoft.WebAssembly.Diagnostics
 
                 ClientWebSocket browserSocket = new();
                 browserSocket.Options.KeepAliveInterval = Timeout.InfiniteTimeSpan;
-                await browserSocket.ConnectAsync(browserUri, CancellationToken.None);
+                await browserSocket.ConnectAsync(browserUri, cts.Token);
 
                 using var ideConn = new DevToolsDebuggerConnection(ideSocket, "ide", logger);
                 using var browserConn = new DevToolsDebuggerConnection(browserSocket, "browser", logger);
 
-                await StartRunLoop(ideConn: ideConn, browserConn: browserConn);
+                await StartRunLoop(ideConn: ideConn, browserConn: browserConn, cts);
             }
             catch (Exception ex)
             {
@@ -271,7 +271,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
         }
 
-        protected Task StartRunLoop(WasmDebuggerConnection ideConn, WasmDebuggerConnection browserConn)
+        protected Task StartRunLoop(WasmDebuggerConnection ideConn, WasmDebuggerConnection browserConn, CancellationTokenSource cts)
             => Task.Run(async () =>
             {
                 try
@@ -280,7 +280,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
                     try
                     {
-                        Stopped = await RunLoopActual(ideConn, browserConn);
+                        Stopped = await RunLoopActual(ideConn, browserConn, cts);
                         exitState = Stopped;
                     }
                     catch (Exception ex)
@@ -310,7 +310,8 @@ namespace Microsoft.WebAssembly.Diagnostics
 
 
         private async Task<RunLoopExitState> RunLoopActual(WasmDebuggerConnection ideConn,
-                                                                     WasmDebuggerConnection browserConn)
+                                                           WasmDebuggerConnection browserConn,
+                                                           CancellationTokenSource cts)
         {
             using (ide = ideConn)
             {
@@ -318,7 +319,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 using (browser = browserConn)
                 {
                     queues.Add(new DevToolsQueue(browser));
-                    var x = new CancellationTokenSource();
+                    var x = cts;
 
                     List<Task> pending_ops = new();
 

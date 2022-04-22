@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Net.Http;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -160,6 +161,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                     {
                         runtimeId = parsedId;
                     }
+
+                    CancellationTokenSource cts = new();
                     try
                     {
                         using ILoggerFactory loggerFactory = LoggerFactory.Create(builder =>
@@ -176,11 +179,12 @@ namespace Microsoft.WebAssembly.Diagnostics
 
                         System.Net.WebSockets.WebSocket ideSocket = await context.WebSockets.AcceptWebSocketAsync();
 
-                        await proxy.Run(endpoint, ideSocket);
+                        await proxy.Run(endpoint, ideSocket, cts);
                     }
                     catch (Exception e)
                     {
                         Console.WriteLine("got exception {0}", e);
+                        cts.Cancel();
                     }
                 }
             });

@@ -32,7 +32,7 @@ internal class FirefoxProvider : WasmHostProvider
                                                 int proxyPort,
                                                 string messagePrefix,
                                                 ILoggerFactory loggerFactory,
-                                                CancellationToken token,
+                                                CancellationTokenSource cts,
                                                 int browserReadyTimeoutMs = 20000)
     {
         if (_isDisposed)
@@ -56,7 +56,7 @@ internal class FirefoxProvider : WasmHostProvider
                                     },
                                     messagePrefix,
                                     browserReadyTimeoutMs,
-                                    token).ConfigureAwait(false);
+                                    cts.Token).ConfigureAwait(false);
 
             if (_process is null || line is null)
                 throw new Exception($"Failed to launch firefox");
@@ -80,7 +80,7 @@ internal class FirefoxProvider : WasmHostProvider
         _ideWebSocket = await context.WebSockets.AcceptWebSocketAsync();
 
         ArraySegment<byte> buff = new(new byte[10]);
-        _ = _ideWebSocket.ReceiveAsync(buff, token)
+        _ = _ideWebSocket.ReceiveAsync(buff, cts.Token)
                     .ContinueWith(t =>
                     {
                         // client has closed the webserver connection, Or
@@ -93,7 +93,7 @@ internal class FirefoxProvider : WasmHostProvider
         _firefoxDebuggerProxy = new FirefoxDebuggerProxy();
         TestHarnessProxy.RegisterNewProxy(Id, _firefoxDebuggerProxy);
         await _firefoxDebuggerProxy
-                .RunForTests(remoteDebuggingPort, proxyPort, Id, loggerFactory, _logger)
+                .RunForTests(remoteDebuggingPort, proxyPort, Id, loggerFactory, _logger, cts)
                 .ConfigureAwait(false);
     }
 
