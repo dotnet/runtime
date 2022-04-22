@@ -9,7 +9,7 @@ using System.Diagnostics;
 namespace System.Text.RegularExpressions.Symbolic
 {
     /// <summary>Represents the exploration of a symbolic regex as a symbolic NFA</summary>
-    internal sealed class SymbolicNFA<TSet> where TSet : IComparable<TSet>
+    internal sealed class SymbolicNFA<TSet> where TSet : IComparable<TSet>, IEquatable<TSet>
     {
         private readonly ISolver<TSet> _solver;
         private readonly Transition[] _transitionFunction;

@@ -3083,13 +3083,18 @@ void CodeGen::genCodeForBswap(GenTree* tree)
     assert(operand->isUsedFromReg());
     regNumber operandReg = genConsumeReg(operand);
 
-    if (tree->OperIs(GT_BSWAP16))
+    if (tree->OperIs(GT_BSWAP))
     {
-        inst_RV_RV(INS_rev16, targetReg, operandReg, targetType);
+        inst_RV_RV(INS_rev, targetReg, operandReg, targetType);
     }
     else
     {
-        inst_RV_RV(INS_rev, targetReg, operandReg, targetType);
+        inst_RV_RV(INS_rev16, targetReg, operandReg, targetType);
+
+        if (!genCanOmitNormalizationForBswap16(tree))
+        {
+            GetEmitter()->emitIns_Mov(INS_uxth, EA_4BYTE, targetReg, targetReg, /* canSkip */ false);
+        }
     }
 
     genProduceReg(tree);

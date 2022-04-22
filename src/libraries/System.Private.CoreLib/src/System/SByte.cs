@@ -1047,8 +1047,8 @@ namespace System
         /// <inheritdoc cref="IShiftOperators{TSelf, TResult}.op_RightShift(TSelf, int)" />
         static sbyte IShiftOperators<sbyte, sbyte>.operator >>(sbyte value, int shiftAmount) => (sbyte)(value >> shiftAmount);
 
-        // /// <inheritdoc cref="IShiftOperators{TSelf, TResult}.op_UnsignedRightShift(TSelf, int)" />
-        // static sbyte IShiftOperators<sbyte, sbyte>.operator >>>(sbyte value, int shiftAmount) => (sbyte)((byte)value >> shiftAmount);
+        /// <inheritdoc cref="IShiftOperators{TSelf, TResult}.op_UnsignedRightShift(TSelf, int)" />
+        static sbyte IShiftOperators<sbyte, sbyte>.operator >>>(sbyte value, int shiftAmount) => (sbyte)((byte)value >>> shiftAmount);
 
         //
         // ISignedNumber

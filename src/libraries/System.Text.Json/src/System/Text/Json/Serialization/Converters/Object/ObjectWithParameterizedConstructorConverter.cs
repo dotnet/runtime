@@ -26,7 +26,7 @@ namespace System.Text.Json.Serialization.Converters
             object obj;
             ArgumentState argumentState = state.Current.CtorArgumentState!;
 
-            if (state.UseFastPath)
+            if (!state.SupportContinuation && !state.Current.CanContainMetadata)
             {
                 // Fast path that avoids maintaining state variables.
 
@@ -91,6 +91,7 @@ namespace System.Text.Json.Serialization.Converters
             else
             {
                 // Slower path that supports continuation and metadata reads.
+                JsonTypeInfo jsonTypeInfo = state.Current.JsonTypeInfo;
 
                 if (state.Current.ObjectState == StackFrameObjectState.None)
                 {
@@ -103,20 +104,39 @@ namespace System.Text.Json.Serialization.Converters
                 }
 
                 // Read any metadata properties.
-                if (state.CanContainMetadata && state.Current.ObjectState < StackFrameObjectState.ReadMetadata)
+                if (state.Current.CanContainMetadata && state.Current.ObjectState < StackFrameObjectState.ReadMetadata)
                 {
-                    if (!JsonSerializer.TryReadMetadata(this, ref reader, ref state))
+                    if (!JsonSerializer.TryReadMetadata(this, jsonTypeInfo, ref reader, ref state))
                     {
                         value = default;
                         return false;
                     }
 
+                    if (state.Current.MetadataPropertyNames == MetadataPropertyName.Ref)
+                    {
+                        value = JsonSerializer.ResolveReferenceId<T>(ref state);
+                        return true;
+                    }
+
                     state.Current.ObjectState = StackFrameObjectState.ReadMetadata;
                 }
 
+                // Dispatch to any polymorphic converters: should always be entered regardless of ObjectState progress
+                if (state.Current.MetadataPropertyNames.HasFlag(MetadataPropertyName.Type) &&
+                    state.Current.PolymorphicSerializationState != PolymorphicSerializationState.PolymorphicReEntryStarted &&
+                    ResolvePolymorphicConverter(jsonTypeInfo, options, ref state) is JsonConverter polymorphicConverter)
+                {
+                    Debug.Assert(!IsValueType);
+                    bool success = polymorphicConverter.OnTryReadAsObject(ref reader, options, ref state, out object? objectResult);
+                    value = (T)objectResult!;
+                    state.ExitPolymorphicConverter(success);
+                    return success;
+                }
+
+                // Handle metadata post polymorphic dispatch
                 if (state.Current.ObjectState < StackFrameObjectState.ConstructorArguments)
                 {
-                    if (state.CanContainMetadata)
+                    if (state.Current.CanContainMetadata)
                     {
                         JsonSerializer.ValidateMetadataForObjectConverter(this, ref reader, ref state);
                     }

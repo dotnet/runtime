@@ -68,7 +68,6 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void DrawLine_Busy_ThrowsInvalidOperationException()
         {
@@ -158,7 +157,6 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void DrawLines_Busy_ThrowsInvalidOperationException()
         {

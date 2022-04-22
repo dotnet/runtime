@@ -30,8 +30,13 @@ namespace System.ServiceModel.Syndication
         {
         }
 
-        public Rss20FeedFormatter(Type feedTypeToCreate!!) : base()
+        public Rss20FeedFormatter(Type feedTypeToCreate) : base()
         {
+            if (feedTypeToCreate is null)
+            {
+                throw new ArgumentNullException(nameof(feedTypeToCreate));
+            }
+
             if (!typeof(SyndicationFeed).IsAssignableFrom(feedTypeToCreate))
             {
                 throw new ArgumentException(SR.Format(SR.InvalidObjectTypePassed, nameof(feedTypeToCreate), nameof(SyndicationFeed)), nameof(feedTypeToCreate));
@@ -68,20 +73,35 @@ namespace System.ServiceModel.Syndication
 
         protected Type FeedType { get; }
 
-        public override bool CanRead(XmlReader reader!!)
+        public override bool CanRead(XmlReader reader)
         {
+            if (reader is null)
+            {
+                throw new ArgumentNullException(nameof(reader));
+            }
+
             return reader.IsStartElement(Rss20Constants.RssTag, Rss20Constants.Rss20Namespace);
         }
 
         XmlSchema IXmlSerializable.GetSchema() => null;
 
-        void IXmlSerializable.ReadXml(XmlReader reader!!)
+        void IXmlSerializable.ReadXml(XmlReader reader)
         {
+            if (reader is null)
+            {
+                throw new ArgumentNullException(nameof(reader));
+            }
+
             ReadFeed(reader);
         }
 
-        void IXmlSerializable.WriteXml(XmlWriter writer!!)
+        void IXmlSerializable.WriteXml(XmlWriter writer)
         {
+            if (writer is null)
+            {
+                throw new ArgumentNullException(nameof(writer));
+            }
+
             WriteFeed(writer);
         }
 
@@ -95,8 +115,13 @@ namespace System.ServiceModel.Syndication
             ReadFeed(reader);
         }
 
-        public override void WriteTo(XmlWriter writer!!)
+        public override void WriteTo(XmlWriter writer)
         {
+            if (writer is null)
+            {
+                throw new ArgumentNullException(nameof(writer));
+            }
+
             writer.WriteStartElement(Rss20Constants.RssTag, Rss20Constants.Rss20Namespace);
             WriteFeed(writer);
             writer.WriteEndElement();
@@ -120,15 +145,33 @@ namespace System.ServiceModel.Syndication
 
         protected override SyndicationFeed CreateFeedInstance() => CreateFeedInstance(FeedType);
 
-        protected virtual SyndicationItem ReadItem(XmlReader reader!!, SyndicationFeed feed!!)
+        protected virtual SyndicationItem ReadItem(XmlReader reader, SyndicationFeed feed)
         {
+            if (reader is null)
+            {
+                throw new ArgumentNullException(nameof(reader));
+            }
+            if (feed is null)
+            {
+                throw new ArgumentNullException(nameof(feed));
+            }
+
             SyndicationItem item = CreateItem(feed);
             ReadItemFrom(reader, item, feed.BaseUri);
             return item;
         }
 
-        protected virtual IEnumerable<SyndicationItem> ReadItems(XmlReader reader!!, SyndicationFeed feed!!, out bool areAllItemsRead)
+        protected virtual IEnumerable<SyndicationItem> ReadItems(XmlReader reader, SyndicationFeed feed, out bool areAllItemsRead)
         {
+            if (reader is null)
+            {
+                throw new ArgumentNullException(nameof(reader));
+            }
+            if (feed is null)
+            {
+                throw new ArgumentNullException(nameof(feed));
+            }
+
             NullNotAllowedCollection<SyndicationItem> items = new NullNotAllowedCollection<SyndicationItem>();
             while (reader.IsStartElement(Rss20Constants.ItemTag, Rss20Constants.Rss20Namespace))
             {

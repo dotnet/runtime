@@ -691,6 +691,7 @@ typedef struct {
 	gpointer (*get_ftnptr)(MonoMethod *method, MonoError *error);
 	void (*interp_jit_info_foreach)(InterpJitInfoFunc func, gpointer user_data);
 	gboolean (*interp_sufficient_stack)(gsize size);
+	void (*init_class) (MonoClass *klass);
 } MonoRuntimeCallbacks;
 
 typedef gboolean (*MonoInternalStackWalk) (MonoStackFrameInfo *frame, MonoContext *ctx, gpointer data);

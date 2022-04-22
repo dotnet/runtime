@@ -1732,7 +1732,6 @@
     <Compile Include="System\Security\Cryptography\DSACng.Key.cs" />
     <Compile Include="System\Security\Cryptography\DSACryptoServiceProvider.Windows.cs" />
     <Compile Include="System\Security\Cryptography\DSAWrapper.cs" />
-    <Compile Include="System\Security\Cryptography\ECCngKey.cs" />
     <Compile Include="System\Security\Cryptography\ECCng.ImportExport.cs" />
     <Compile Include="System\Security\Cryptography\ECDsa.Create.Windows.cs" />
     <Compile Include="System\Security\Cryptography\ECDsaCng.cs" />

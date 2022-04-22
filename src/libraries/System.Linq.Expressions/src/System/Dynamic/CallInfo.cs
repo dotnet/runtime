@@ -48,7 +48,7 @@ namespace System.Dynamic
         /// <returns>The new <see cref="CallInfo"/> instance.</returns>
         public CallInfo(int argCount, IEnumerable<string> argNames)
         {
-            ContractUtils.RequiresNotNull(argNames, nameof(argNames));
+            ArgumentNullException.ThrowIfNull(argNames);
 
             var argNameCol = argNames.ToReadOnly();
 

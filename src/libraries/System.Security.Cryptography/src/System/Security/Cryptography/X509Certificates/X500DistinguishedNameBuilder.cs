@@ -59,8 +59,9 @@ namespace System.Security.Cryptography.X509Certificates
         ///   <paramref name="value" /> is not encodable as defined by <paramref name="stringEncodingType" />.
         /// </para>
         /// </exception>
-        public void Add(string oidValue, string value!!, UniversalTagNumber? stringEncodingType = null)
+        public void Add(string oidValue, string value, UniversalTagNumber? stringEncodingType = null)
         {
+            ArgumentNullException.ThrowIfNull(value);
             ArgumentException.ThrowIfNullOrEmpty(oidValue);
 
             UniversalTagNumber tag = GetAndValidateTagNumber(stringEncodingType);
@@ -92,8 +93,11 @@ namespace System.Security.Cryptography.X509Certificates
         ///   <paramref name="value" /> is not encodable as defined by <paramref name="stringEncodingType" />.
         /// </para>
         /// </exception>
-        public void Add(Oid oid!!, string value!!, UniversalTagNumber? stringEncodingType = null)
+        public void Add(Oid oid, string value, UniversalTagNumber? stringEncodingType = null)
         {
+            ArgumentNullException.ThrowIfNull(oid);
+            ArgumentNullException.ThrowIfNull(value);
+
             if (string.IsNullOrEmpty(oid.Value))
                 throw new ArgumentException(SR.Format(SR.Arg_EmptyOrNullString_Named, "oid.Value"), nameof(oid));
 

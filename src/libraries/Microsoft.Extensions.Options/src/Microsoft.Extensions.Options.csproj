@@ -20,6 +20,8 @@
   <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.DependencyInjection.Abstractions\src\Microsoft.Extensions.DependencyInjection.Abstractions.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Primitives\src\Microsoft.Extensions.Primitives.csproj" />
+    <Compile Include="$(CommonPath)System\ThrowHelper.cs"
+             Link="Common\System\ThrowHelper.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">

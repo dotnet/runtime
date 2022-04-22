@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Reflection;
 using System.Text.Json.Serialization.Converters;
 
@@ -13,8 +14,13 @@ namespace System.Text.Json.Serialization
     /// </summary>
     internal sealed class IAsyncEnumerableConverterFactory : JsonConverterFactory
     {
+        [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
+        public IAsyncEnumerableConverterFactory() { }
+
         public override bool CanConvert(Type typeToConvert) => GetAsyncEnumerableInterface(typeToConvert) is not null;
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "The ctor is marked RequiresUnreferencedCode.")]
         public override JsonConverter CreateConverter(Type typeToConvert, JsonSerializerOptions options)
         {
             Type? asyncEnumerableInterface = GetAsyncEnumerableInterface(typeToConvert);

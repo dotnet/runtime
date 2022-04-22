@@ -24,7 +24,7 @@ namespace Microsoft.Interop.Analyzers
         private const string AddMissingCustomTypeMarshallerMembersKey = nameof(AddMissingCustomTypeMarshallerMembersKey);
         private const string AddMissingCustomTypeMarshallerFeaturesKey = nameof(AddMissingCustomTypeMarshallerFeaturesKey);
 
-        private class CustomFixAllProvider : DocumentBasedFixAllProvider
+        private sealed class CustomFixAllProvider : DocumentBasedFixAllProvider
         {
             protected override async Task<Document> FixAllAsync(FixAllContext fixAllContext, Document document, ImmutableArray<Diagnostic> diagnostics)
             {

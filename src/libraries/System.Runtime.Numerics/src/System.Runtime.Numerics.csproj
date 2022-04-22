@@ -25,6 +25,7 @@
              Link="CoreLib\System\Text\ValueStringBuilder.cs" />
     <Compile Include="$(CommonPath)System\HexConverter.cs"
              Link="Common\System\HexConverter.cs" />
+    <Compile Include="Properties\InternalsVisibleTo.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Memory" />

@@ -13,8 +13,11 @@ namespace System
     public ref partial struct TypedReference
     {
 
-        public static TypedReference MakeTypedReference(object target!!, FieldInfo[] flds!!)
+        public static TypedReference MakeTypedReference(object target, FieldInfo[] flds)
         {
+            ArgumentNullException.ThrowIfNull(target);
+            ArgumentNullException.ThrowIfNull(flds);
+
             if (flds.Length == 0)
                 throw new ArgumentException(SR.Arg_ArrayZeroError, nameof(flds));
 

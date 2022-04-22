@@ -307,21 +307,21 @@
         Condition="'@(_MergedWrapperOutOfProcessTestMarkers)' != ''" />
     </ItemGroup>
 
-    <ItemGroup>
+    <ItemGroup Condition="'@(_MergedWrapperMarker)' != ''" >
       <_MergedPayloadGroups Include="$(_MergedWrapperName)" />
       <_MergedPayloadFiles Include="$(_MergedWrapperDirectory)/**" />
       <_MergedPayloadFiles Include="@(_MergedWrapperOutOfProcessTestFiles)" />
-      <_MergedPayloadFiles Update="@(_MergedPayloadFiles)">
+      <_MergedPayloadFiles Update="@(_MergedPayloadFiles)" Condition="'@(_MergedPayloadFiles)' != ''" >
         <!-- Never use [MSBuild]::MakeRelative here! We have some files containing Unicode characters in their %(FullPath) and
              MakeRelative function calls Escape function internally that replaces all the Unicode characters with %<xx>. -->
         <FileRelativeToPayloadsRootDirectory>$([System.IO.Path]::GetRelativePath($(TestBinDir), %(FullPath)))</FileRelativeToPayloadsRootDirectory>
       </_MergedPayloadFiles>
     </ItemGroup>
 
-    <ItemGroup>
+    <ItemGroup Condition="'@(_MergedPayloadFiles)' != ''" >
       <!-- Remove the managed pdbs from our payloads.
            This is for performance reasons to reduce our helix payload size  -->
-      <ReducedMergedPayloadFilesFinal Include="@(_MergedPayloadFiles)" Condition=" '%(Extension)' != '.pdb' and '%(Extension)' != '.OutOfProcessTest' " />
+      <ReducedMergedPayloadFilesFinal Include="@(_MergedPayloadFiles)" Condition=" '%(Extension)' != '.pdb' and '%(Extension)' != '.OutOfProcessTest'" />
     </ItemGroup>
 
     <ItemGroup>
@@ -332,7 +332,7 @@
       <HelixCommandLines Condition="'$(RuntimeVariant)' != 'llvmfullaot'" Include="$(_MergedWrapperRunScriptRelative)" />
     </ItemGroup>
 
-    <Copy SourceFiles="@(ReducedMergedPayloadFilesFinal)" DestinationFiles="@(ReducedMergedPayloadFilesFinal->'$(MergedPayloadsRootDirectory)\$(_MergedWrapperName)\%(FileRelativeToPayloadsRootDirectory)')" />
+    <Copy SourceFiles="@(ReducedMergedPayloadFilesFinal)" DestinationFiles="@(ReducedMergedPayloadFilesFinal->'$(MergedPayloadsRootDirectory)\$(_MergedWrapperName)\%(FileRelativeToPayloadsRootDirectory)')" Condition="'@(ReducedMergedPayloadFilesFinal)' != ''" />
     <WriteLinesToFile File="$(MergedPayloadsRootDirectory)\$(_MergedWrapperName)\HelixCommand.txt" Lines="@(HelixCommandLines)" />
   </Target>
 
@@ -577,9 +577,15 @@
       <XUnitWrapperDlls>$([System.String]::Join(' ', $([System.IO.Directory]::GetFiles(%(FullPath), '*.XUnitWrapper.dll', SearchOption.AllDirectories))).Replace($([MSBuild]::EnsureTrailingSlash(%(FullPath))),''))</XUnitWrapperDlls>
     </LegacyPayloads>
     <LegacyPayloads Update="@(LegacyPayloads)">
+      <!-- Specify the test group from the payload name. For explicitly named groups, PayloadGroup specifies the subset of tests we want to run in this Helix Work Item -->
       <TestGroup>%(PayloadGroup)</TestGroup>
-      <!-- When Payload contains more than one *.XUnitWrapper.dll TestGroup should not be specified. -->
+      <!-- When Payload contains more than one *.XUnitWrapper.dll TestGroup should not be specified. When we specify multiple assemblies, we aren't trying to run only a subset of tests within one assembly. -->
       <TestGroup Condition=" $([MSBuild]::ValueOrDefault(%(XUnitWrapperDlls), '').IndexOf('.XUnitWrapper.dll')) != $([MSBuild]::ValueOrDefault(%(XUnitWrapperDlls), '').LastIndexOf('.XUnitWrapper.dll')) "></TestGroup>
+      <!--
+        PayloadGroup0 is just a synthesized name for a bundle of multiple test assemblies that we send as one payload.
+        Normally the condition above catches this case; however, when we're only sending one assembly, passing PayloadGroup0 to Helix means that no tests will be run.
+      -->
+      <TestGroup Condition="'%(PayloadGroup)' == 'PayloadGroup0'"></TestGroup>
       <PayloadZipFile>$(LegacyPayloadsRootDirectory)\%(PayloadGroup).zip</PayloadZipFile>
     </LegacyPayloads>
   </ItemGroup>

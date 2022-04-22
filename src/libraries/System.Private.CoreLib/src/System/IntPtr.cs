@@ -76,8 +76,10 @@ namespace System
             _value = (void*)l;
         }
 
-        unsafe void ISerializable.GetObjectData(SerializationInfo info!!, StreamingContext context)
+        unsafe void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
         {
+            ArgumentNullException.ThrowIfNull(info);
+
             info.AddValue("value", ToInt64());
         }
 
@@ -980,13 +982,13 @@ namespace System
         //
 
         /// <inheritdoc cref="IShiftOperators{TSelf, TResult}.op_LeftShift(TSelf, int)" />
-        static nint IShiftOperators<nint, nint>.operator <<(nint value, int shiftAmount) => value << (int)shiftAmount;
+        static nint IShiftOperators<nint, nint>.operator <<(nint value, int shiftAmount) => value << shiftAmount;
 
         /// <inheritdoc cref="IShiftOperators{TSelf, TResult}.op_RightShift(TSelf, int)" />
-        static nint IShiftOperators<nint, nint>.operator >>(nint value, int shiftAmount) => value >> (int)shiftAmount;
+        static nint IShiftOperators<nint, nint>.operator >>(nint value, int shiftAmount) => value >> shiftAmount;
 
-        // /// <inheritdoc cref="IShiftOperators{TSelf, TResult}.op_UnsignedRightShift(TSelf, int)" />
-        // static nint IShiftOperators<nint, nint>.operator >>>(nint value, int shiftAmount) => (nint)((nuint)value >> (int)shiftAmount);
+        /// <inheritdoc cref="IShiftOperators{TSelf, TResult}.op_UnsignedRightShift(TSelf, int)" />
+        static nint IShiftOperators<nint, nint>.operator >>>(nint value, int shiftAmount) => value >>> shiftAmount;
 
         //
         // ISignedNumber

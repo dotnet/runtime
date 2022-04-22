@@ -10,8 +10,10 @@ namespace System.ComponentModel.Composition.ReflectionModel
     {
         private readonly MethodInfo _method;
 
-        public ReflectionMethod(MethodInfo method!!)
+        public ReflectionMethod(MethodInfo method)
         {
+            ArgumentNullException.ThrowIfNull(method);
+
             _method = method;
         }
 
