@@ -4561,6 +4561,11 @@ void LinearScan::allocateRegisters()
         }
     }
 
+    //if (compiler->info.compMethodHashPrivate == 0x0e2a3254)
+    //{
+    //    compiler->verbose = true;
+    //}
+
 #ifdef DEBUG
     if (VERBOSE)
     {

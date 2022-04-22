@@ -6448,13 +6448,15 @@ ArrayStack<BasicBlock*> Compiler::optHoistThisLoop(unsigned                lnum,
 
     while (!existingPreHeaders.Empty())
     {
-        defExec.Push(existingPreHeaders.Pop());
+        BasicBlock* preHeaderBlock = existingPreHeaders.Pop();
+        JITDUMP("  Considering hoisting in preheader block " FMT_BB " added for the nested loop \n", preHeaderBlock->bbNum);
+        defExec.Push(preHeaderBlock);
     }
 
     if (pLoopDsc->lpExitCnt == 1)
     {
         assert(pLoopDsc->lpExit != nullptr);
-        JITDUMP("  Only considering hoisting in blocks that dominate exit block " FMT_BB "\n", pLoopDsc->lpExit->bbNum);
+        JITDUMP("  Considering hoisting in blocks that dominate exit block " FMT_BB "\n", pLoopDsc->lpExit->bbNum);
         BasicBlock* cur = pLoopDsc->lpExit;
         // Push dominators, until we reach "entry" or exit the loop.
         while (cur != nullptr && pLoopDsc->lpContains(cur) && cur != pLoopDsc->lpEntry)
@@ -6474,7 +6476,8 @@ ArrayStack<BasicBlock*> Compiler::optHoistThisLoop(unsigned                lnum,
     }
     else // More than one exit
     {
-        JITDUMP("  only considering hoisting in entry block " FMT_BB "\n", pLoopDsc->lpEntry->bbNum);
+        JITDUMP("  Considering hoisting in entry block " FMT_BB " because " FMT_LP " has more than one exit\n",
+                pLoopDsc->lpEntry->bbNum, lnum);
         // We'll assume that only the entry block is definitely executed.
         // We could in the future do better.
         defExec.Push(pLoopDsc->lpEntry);
