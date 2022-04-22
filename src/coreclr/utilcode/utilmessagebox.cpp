@@ -69,7 +69,7 @@ typedef int (*MessageBoxWFnPtr)(HWND hWnd,
                                 LPCWSTR lpCaption,
                                 UINT uType);
 
-int LateboundMessageBoxW(HWND hWnd,
+static int LateboundMessageBoxW(HWND hWnd,
                             LPCWSTR lpText,
                             LPCWSTR lpCaption,
                             UINT uType)
@@ -389,4 +389,32 @@ int UtilMessageBoxCatastrophicVA(
     uType |= MB_TASKMODAL;
 
     return UtilMessageBoxVA(hwnd, uText, uTitle, uType, TRUE, showFileNameInTitle, args);
+}
+
+int UtilMessageBoxMessageBoxLowResource(
+                  LPCSTR szText,    // Text message
+                  LPCSTR szTitle,   // Title
+                  UINT uType)       // Style of MessageBox
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        INJECT_FAULT(return IDCANCEL;);
+    }
+    CONTRACTL_END;
+
+    if (szText == NULL)
+        szText = "<null>";
+    if (szTitle == NULL)
+        szTitle = "<null>";
+
+    SIZE_T cchText = strlen(szText) + 1;
+    LPWSTR wszText = (LPWSTR)_alloca(cchText * sizeof(WCHAR));
+    swprintf_s(wszText, cchText, W("%S"), szText);
+
+    SIZE_T cchTitle = strlen(szTitle) + 1;
+    LPWSTR wszTitle = (LPWSTR)_alloca(cchTitle * sizeof(WCHAR));
+    swprintf_s(wszTitle, cchTitle, W("%S"), szTitle);
+
+    return LateboundMessageBoxW(NULL, wszText, wszTitle, uType);
 }

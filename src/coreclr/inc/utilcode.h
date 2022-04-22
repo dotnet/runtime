@@ -820,6 +820,11 @@ int UtilMessageBoxCatastrophicVA(
                   BOOL ShowFileNameInTitle, // Flag to show FileName in Caption
                   va_list args);    // Additional Arguments
 
+int UtilMessageBoxMessageBoxLowResource(
+                  LPCSTR szText,    // Text message
+                  LPCSTR szTitle,   // Title
+                  UINT uType);      // Style of MessageBox
+
 // The HRESULT_FROM_WIN32 macro evaluates its arguments three times.
 // <TODO>TODO: All HRESULT_FROM_WIN32(GetLastError()) should be replaced by calls to
 //  this helper function avoid code bloat</TODO>

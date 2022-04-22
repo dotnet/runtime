@@ -385,33 +385,4 @@ __forceinline LONGLONG __InterlockedExchangeAdd64(LONGLONG volatile * Addend, LO
 
 #endif // HOST_X86
 
-// Forward declaration
-int LateboundMessageBoxW(HWND hWnd,
-                        LPCWSTR lpText,
-                        LPCWSTR lpCaption,
-                        UINT uType);
-
-inline int LateboundMessageBoxA(HWND hWnd,
-                                LPCSTR lpText,
-                                LPCSTR lpCaption,
-                                UINT uType)
-{
-    if (lpText == NULL)
-        lpText = "<null>";
-    if (lpCaption == NULL)
-        lpCaption = "<null>";
-
-    SIZE_T cchText = strlen(lpText) + 1;
-    LPWSTR wszText = (LPWSTR)_alloca(cchText * sizeof(WCHAR));
-    swprintf_s(wszText, cchText, W("%S"), lpText);
-
-    SIZE_T cchCaption = strlen(lpCaption) + 1;
-    LPWSTR wszCaption = (LPWSTR)_alloca(cchCaption * sizeof(WCHAR));
-    swprintf_s(wszCaption, cchCaption, W("%S"), lpCaption);
-
-    return LateboundMessageBoxW(hWnd, wszText, wszCaption, uType);
-}
-
-#define MessageBoxA LateboundMessageBoxA
-
 #endif  // __WIN_WRAP_H__

@@ -32,10 +32,6 @@ Volatile<LONG> g_DbgSuppressAllocationAsserts = 0;
 
 #ifdef _DEBUG
 
-int LowResourceMessageBoxHelperAnsi(
-                  LPCSTR szText,    // Text message
-                  LPCSTR szTitle,   // Title
-                  UINT uType);      // Style of MessageBox
 
 //*****************************************************************************
 // This struct tracks the asserts we want to ignore in the rest of this
@@ -446,7 +442,7 @@ bool _DbgBreakCheck(
     }
     else
     {
-        ret = LowResourceMessageBoxHelperAnsi(
+        ret = UtilMessageBoxMessageBoxLowResource(
             szExpr, szLowMemoryAssertMessage, MB_ABORTRETRYIGNORE | MB_ICONEXCLAMATION);
     }
     --_DbgBreakCount;
@@ -495,7 +491,7 @@ bool _DbgBreakCheck(
         }
         else
         {
-            if (LowResourceMessageBoxHelperAnsi(
+            if (UtilMessageBoxMessageBoxLowResource(
                                    "Ignore the assert for the rest of this run?\nYes - Assert will never fire again.\nNo - Assert will continue to fire.\n",
                                    "Ignore Assert Forever?",
                                    MB_ICONQUESTION | MB_YESNO) != IDYES)
@@ -753,27 +749,6 @@ BOOL NoGuiOnAssert()
     static ConfigDWORD fNoGui;
     return fNoGui.val(CLRConfig::INTERNAL_NoGuiOnAssert);
 }
-
-// This helper will throw up a message box without allocating or using stack if possible, and is
-// appropriate for either low memory or low stack situations.
-int LowResourceMessageBoxHelperAnsi(
-                  LPCSTR szText,    // Text message
-                  LPCSTR szTitle,   // Title
-                  UINT uType)       // Style of MessageBox
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        INJECT_FAULT(return IDCANCEL;);
-    }
-    CONTRACTL_END;
-
-    // In low memory or stack constrained code we cannot format or convert strings, so use the
-    // ANSI version.
-    int result = MessageBoxA(NULL, szText, szTitle, uType);
-    return result;
-}
-
 
 /****************************************************************************
    The following two functions are defined to allow Free builds to call
