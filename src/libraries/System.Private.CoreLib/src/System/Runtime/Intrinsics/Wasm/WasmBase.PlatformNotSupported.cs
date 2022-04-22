@@ -11,7 +11,7 @@ namespace System.Runtime.Intrinsics.Wasm
     {
         public bool IsSupported { get; }
 
-        public static Vector128<byte> Constant(Vector128 v) { throw new PlatformNotSupportedException(); }
+        public static Vector128<byte> Constant(Vector128<byte> v) { throw new PlatformNotSupportedException(); }
 
         public static Vector128<sbyte>  Splat(sbyte  x) { throw new PlatformNotSupportedException(); }
         public static Vector128<byte>   Splat(byte   x) { throw new PlatformNotSupportedException(); }
@@ -38,5 +38,12 @@ namespace System.Runtime.Intrinsics.Wasm
         public static double ExtractLane(Vector128<double> a, byte imm) { throw new PlatformNotSupportedException(); }
         public static nint   ExtractLane(Vector128<nint>   a, byte imm) { throw new PlatformNotSupportedException(); }
         public static nuint  ExtractLane(Vector128<nuint>  a, byte imm) { throw new PlatformNotSupportedException(); }
+
+        public static Vector128<sbyte> Shuffle(Vector128<sbyte> a, Vector128<sbyte> b, Vector128<sbyte> imm) { throw new PlatformNotSupportedException(); }
+        public static Vector128<byte>  Shuffle(Vector128<byte>  a, Vector128<byte>  b, Vector128<byte> imm) { throw new PlatformNotSupportedException(); }
+
+        public static Vector128<sbyte> Swizzle(Vector128<sbyte> a, Vector128<sbyte> s) { throw new PlatformNotSupportedException(); }
+        public static Vector128<byte>  Swizzle(Vector128<byte>  a, Vector128<byte>  s) { throw new PlatformNotSupportedException(); }
+
     }
 }

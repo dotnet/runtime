@@ -4764,7 +4764,7 @@ namespace System.Runtime.Intrinsics.Wasm
     {
         public bool IsSupported { get { throw null; } }
 
-        public static Vector128<byte> Constant(Vector128<byte> v) { throw null; }
+        public static Vector128<byte> Constant(Vector128<byte> imm) { throw null; }
 
         public static Vector128<sbyte>  Splat(sbyte  x) { throw null; }
         public static Vector128<byte>   Splat(byte   x) { throw null; }
@@ -4805,8 +4805,8 @@ namespace System.Runtime.Intrinsics.Wasm
         public static Vector128<nint>   ReplaceLane(Vector128<nint>   a, byte imm, nint   x) { throw null; }
         public static Vector128<nuint>  ReplaceLane(Vector128<nuint>  a, byte imm, nuint  x) { throw null; }
 
-        public static Vector128<sbyte> Shuffle(Vector128<sbyte> a, Vector128<sbyte> b, ulong p1, ulong p2) { throw null; }
-        public static Vector128<byte>  Shuffle(Vector128<byte>  a, Vector128<byte>  b, ulong p1, ulong p2) { throw null; }
+        public static Vector128<sbyte> Shuffle(Vector128<sbyte> a, Vector128<sbyte> b, Vector128<sbyte> imm) { throw null; }
+        public static Vector128<byte>  Shuffle(Vector128<byte>  a, Vector128<byte>  b, Vector128<byte> imm) { throw null; }
 
         public static Vector128<sbyte> Swizzle(Vector128<sbyte> a, Vector128<sbyte> s) { throw null; }
         public static Vector128<byte>  Swizzle(Vector128<byte>  a, Vector128<byte>  s) { throw null; }

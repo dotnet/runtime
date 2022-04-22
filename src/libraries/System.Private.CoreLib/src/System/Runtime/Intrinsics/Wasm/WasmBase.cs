@@ -15,7 +15,7 @@ namespace System.Runtime.Intrinsics.Wasm
         // Constructing SIMD Values
 
         [Intrinsic]
-        public static Vector128<byte> Constant(Vector128<byte> v) => Constant(v);
+        public static Vector128<byte> Constant(Vector128<byte> imm) => Constant(imm);
 
         [Intrinsic]
         public static Vector128<sbyte>  Splat(sbyte  x) => Splat(x);
@@ -93,9 +93,9 @@ namespace System.Runtime.Intrinsics.Wasm
         public static Vector128<nuint>  ReplaceLane(Vector128<nuint>  a, byte imm, nuint  x) => ReplaceLane(a, imm, x);
 
         [Intrinsic]
-        public static Vector128<sbyte> Shuffle(Vector128<sbyte> a, Vector128<sbyte> b, ulong p1, ulong p2) => Shuffle(a, b, p1, p2);
+        public static Vector128<sbyte> Shuffle(Vector128<sbyte> a, Vector128<sbyte> b, Vector128<sbyte> imm) => Shuffle(a, b, imm);
         [Intrinsic]
-        public static Vector128<byte>  Shuffle(Vector128<byte>  a, Vector128<byte>  b, ulong p1, ulong p2) => Shuffle(a, b, p1, p2);
+        public static Vector128<byte>  Shuffle(Vector128<byte>  a, Vector128<byte>  b, Vector128<byte> imm) => Shuffle(a, b, imm);
 
         [Intrinsic]
         public static Vector128<sbyte> Swizzle(Vector128<sbyte> a, Vector128<sbyte> s) => Swizzle(a, s);
