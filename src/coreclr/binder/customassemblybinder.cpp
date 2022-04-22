@@ -72,9 +72,8 @@ HRESULT CustomAssemblyBinder::BindUsingAssemblyName(BINDER_SPACE::AssemblyName* 
             // of what to do next. The host-overridden binder can either fail the bind or return reference to an existing assembly
             // that has been loaded.
             //
-            LoaderAllocator* pParentLoaderAllocator = GetLoaderAllocator();
             hr = AssemblyBinderCommon::BindUsingHostAssemblyResolver(GetManagedAssemblyLoadContext(), pAssemblyName,
-                                                                     m_pDefaultBinder, pParentLoaderAllocator, &pCoreCLRFoundAssembly);
+                                                                     m_pDefaultBinder, this, &pCoreCLRFoundAssembly);
             if (SUCCEEDED(hr))
             {
                 // We maybe returned an assembly that was bound to a different AssemblyBinder instance.
