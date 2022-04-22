@@ -181,6 +181,37 @@ namespace BinaryPrimitivesReverseEndianness
                 return Fail;
             }
 
+            /*
+             * WRITE TESTS CAST
+             */
+
+            byte writeCastUInt16Input = (byte)DateTime.UtcNow.Ticks;
+            ushort writeCastUInt16Output = ByteSwapUInt16_WriteCast(ref writeCastUInt16Input);
+            ushort writeCastUInt16Expected = ByteSwapUInt16_Control(writeCastUInt16Input);
+            if (writeCastUInt16Output != writeCastUInt16Expected)
+            {
+                ReportError("write cast UInt16", writeCastUInt16Input, writeCastUInt16Output, writeCastUInt16Expected);
+                return Fail;
+            }
+
+            ushort writeCastUInt32Input = (ushort)DateTime.UtcNow.Ticks;
+            uint writeCastUInt32Output = ByteSwapUInt32_WriteCast(ref writeCastUInt32Input);
+            uint writeCastUInt32Expected = ByteSwapUInt32_Control(writeCastUInt32Input);
+            if (writeCastUInt32Output != writeCastUInt32Expected)
+            {
+                ReportError("write cast UInt32", writeCastUInt32Input, writeCastUInt32Output, writeCastUInt32Expected);
+                return Fail;
+            }
+
+            uint writeCastUInt64Input = (uint)DateTime.UtcNow.Ticks;
+            ulong writeCastUInt64Output = ByteSwapUInt64_WriteCast(ref writeCastUInt64Input);
+            ulong writeCastUInt64Expected = ByteSwapUInt64_Control(writeCastUInt64Input);
+            if (writeCastUInt64Output != writeCastUInt64Expected)
+            {
+                ReportError("write cast UInt64", writeCastUInt64Input, writeCastUInt64Output, writeCastUInt64Expected);
+                return Fail;
+            }
+
             return Pass;
         }
 
@@ -250,7 +281,6 @@ namespace BinaryPrimitivesReverseEndianness
             return input;
         }
 
-
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static ushort ByteSwapUInt16_WriteLea(ref ushort output, int offset)
         {
@@ -279,6 +309,24 @@ namespace BinaryPrimitivesReverseEndianness
             Unsafe.Add(ref output, offset) = BinaryPrimitives.ReverseEndianness(input);
 
             return input;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static ushort ByteSwapUInt16_WriteCast(ref byte input)
+        {
+            return BinaryPrimitives.ReverseEndianness((ushort)input);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static uint ByteSwapUInt32_WriteCast(ref ushort input)
+        {
+            return BinaryPrimitives.ReverseEndianness((uint)input);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static ulong ByteSwapUInt64_WriteCast(ref uint input)
+        {
+            return BinaryPrimitives.ReverseEndianness((ulong)input);
         }
 
         private static string GetHexString<T>(T value)

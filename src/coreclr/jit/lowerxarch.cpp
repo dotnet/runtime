@@ -3965,27 +3965,9 @@ void Lowering::LowerBswapOp(GenTreeOp* node)
     }
 
     GenTree* operand = node->gtGetOp1();
-    if (IsContainableMemoryOp(operand) && IsSafeToContainMem(node, operand))
+    if (node->TypeGet() == operand->TypeGet() && IsContainableMemoryOp(operand) && IsSafeToContainMem(node, operand))
     {
         MakeSrcContained(node, operand);
-
-        // Return early so we don't do double-containing
-        return;
-    }
-
-    // Due to this instruction being rare we can perform TryGetUse here
-    // to simplify the pattern recognition required for GT_STOREIND
-    // In cases where TP matters, it should be performed inside the user
-    LIR::Use use;
-    if (!BlockRange().TryGetUse(node, &use))
-    {
-        return;
-    }
-
-    GenTree* user = use.User();
-    if (user->OperIs(GT_STOREIND))
-    {
-        MakeSrcContained(user, node);
     }
 }
 
@@ -4615,6 +4597,12 @@ void Lowering::ContainCheckStoreIndir(GenTreeStoreInd* node)
     // by zeroing a register and then storing it.
     GenTree* src = node->Data();
     if (IsContainableImmed(node, src) && (!src->IsIntegralConst(0) || varTypeIsSmall(node)))
+    {
+        MakeSrcContained(node, src);
+    }
+
+    if (comp->opts.OptimizationEnabled() && src->OperIs(GT_BSWAP, GT_BSWAP16) &&
+        comp->compOpportunisticallyDependsOn(InstructionSet_MOVBE) && IsSafeToContainMem(node, src))
     {
         MakeSrcContained(node, src);
     }
