@@ -150,7 +150,6 @@
     <SubsetName Include="Libs.Ref" OnDemand="true" Description="The managed reference libraries." />
     <SubsetName Include="Libs.Src" OnDemand="true" Description="The managed implementation libraries." />
     <SubsetName Include="Libs.PreTest" Description="Test assets which are necessary to run tests." />
-    <SubsetName Include="Libs.Packages" Description="The projects that produce NuGet packages from libraries." />
     <SubsetName Include="Libs.Tests" OnDemand="true" Description="The test projects. Note that building this doesn't execute tests: you must also pass the '-test' argument." />
 
     <!-- Packs -->
