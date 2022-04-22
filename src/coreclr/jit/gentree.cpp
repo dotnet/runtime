@@ -6464,6 +6464,7 @@ bool GenTree::OperMayThrow(Compiler* comp)
         case GT_ARR_OFFSET:
         case GT_LCLHEAP:
         case GT_CKFINITE:
+        case GT_INDEX:
         case GT_INDEX_ADDR:
             return true;
 
