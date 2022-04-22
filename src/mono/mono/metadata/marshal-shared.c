@@ -1037,10 +1037,10 @@ mono_marshal_shared_emit_struct_conv_full (MonoMethodBuilder *mb, MonoClass *kla
 		ntype = (MonoMarshalNative)mono_type_to_unmanaged (ftype, info->fields [i].mspec, TRUE, m_class_is_unicode (klass), &conv);
 
 		if (last_field) {
-			msize = m_class_get_instance_size (klass) - info->fields [i].field->offset;
+			msize = m_class_get_instance_size (klass) - m_field_get_offset (info->fields [i].field);
 			usize = info->native_size - info->fields [i].offset;
 		} else {
-			msize = info->fields [i + 1].field->offset - info->fields [i].field->offset;
+			msize = m_field_get_offset (info->fields [i + 1].field) - m_field_get_offset (info->fields [i].field);
 			usize = info->fields [i + 1].offset - info->fields [i].offset;
 		}
 
