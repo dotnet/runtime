@@ -46,14 +46,11 @@ namespace System.IO
 
         internal void AppendExtraBuffer(ReadOnlySpan<byte> buffer)
         {
-            Debug.Assert(buffer.Length <= 1024);
-
-            // The maximum buffer size that can be passed is 1024 in length.
-            // For UTF-8, GetMaxCharCount(1024) is 1025, so that much is expected
-            // on the stack since we want to avoid allocating the array.
-            // For custom encodings where the behavior of GetMaxCharCount is
-            // not known beforehand, this may fall back to an array.
-            const int MaxStackAllocation = 1025;
+            // Most inputs to this will have a buffer length of one.
+            // The cases where it is larger than one only occur in ReadKey
+            // when the input is not redirected, so those cases should be
+            // rare, so just allocate.
+            const int MaxStackAllocation = 256;
             int maxCharsCount = _encoding.GetMaxCharCount(buffer.Length);
             Span<char> chars = (uint)maxCharsCount < MaxStackAllocation ?
                 stackalloc char[maxCharsCount] :
