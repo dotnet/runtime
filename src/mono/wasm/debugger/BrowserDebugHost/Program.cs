@@ -26,10 +26,9 @@ namespace Microsoft.WebAssembly.Diagnostics
             using ILoggerFactory loggerFactory = LoggerFactory.Create(builder =>
                 builder.AddSimpleConsole(options =>
                         {
-                            options.SingleLine = true;
                             options.TimestampFormat = "[HH:mm:ss] ";
                         })
-                       .AddFilter(null, LogLevel.Information)
+                       .AddFilter(null, LogLevel.Debug)
             );
 
             IConfigurationRoot config = new ConfigurationBuilder().AddCommandLine(args).Build();

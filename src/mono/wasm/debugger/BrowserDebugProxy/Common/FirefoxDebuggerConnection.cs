@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.IO;
 using System.Linq;
 using System.Net.Sockets;
 using System.Text;
@@ -40,6 +41,10 @@ internal sealed class FirefoxDebuggerConnection : WasmDebuggerConnection
         {
             if (CheckFail())
                 return null;
+
+            if (bytesRead + 1 > _lengthBuffer.Length)
+                throw new IOException($"Protocol error: did not get the expected length preceding a message, " +
+                                      $"after reading {bytesRead} bytes. Instead got: {Encoding.UTF8.GetString(_lengthBuffer)}");
 
             int readLen = await stream.ReadAsync(_lengthBuffer, bytesRead, 1, token);
             bytesRead += readLen;

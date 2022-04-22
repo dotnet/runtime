@@ -45,7 +45,8 @@ public class FirefoxDebuggerProxy : DebuggerProxyBase
                         })
                         .ContinueWith(t =>
                         {
-                            logger.LogError($"{nameof(FirefoxMonoProxy)} crashed with {t.Exception}");
+                            if (t.IsFaulted)
+                                logger.LogError($"{nameof(FirefoxMonoProxy)} crashed with {t.Exception}");
                         }, TaskScheduler.Default)
                         .ConfigureAwait(false);
         }

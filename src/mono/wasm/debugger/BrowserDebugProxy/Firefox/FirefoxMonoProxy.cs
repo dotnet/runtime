@@ -41,6 +41,8 @@ internal sealed class FirefoxMonoProxy : MonoProxy
             logger.LogTrace($".. connected to the browser!");
 
             await StartRunLoop(ideConn, browserConn);
+            if (Stopped?.reason == RunLoopStopReason.Exception)
+                throw Stopped.exception;
         }
         finally
         {
