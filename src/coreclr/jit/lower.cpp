@@ -5418,6 +5418,8 @@ bool Lowering::TryCreateAddrMode(GenTree* addr, bool isContainable, GenTree* par
 //
 GenTree* Lowering::LowerAdd(GenTreeOp* node)
 {
+    assert(node->OperIs(GT_ADD));
+
     if (varTypeIsIntegralOrI(node->TypeGet()))
     {
         GenTree* op1 = node->gtGetOp1();
@@ -5447,6 +5449,60 @@ GenTree* Lowering::LowerAdd(GenTreeOp* node)
             JITDUMP("Remove [%06u], [%06u]\n", op2->gtTreeID, node->gtTreeID);
             return next;
         }
+#ifdef TARGET_ARM64
+        if (BlockRange().TryGetUse(node, &use))
+        {
+            if (comp->opts.OptimizationEnabled() && varTypeIsIntegral(node) && !node->gtOverflow() &&
+                !node->isContained())
+            {
+                GenTree* mul;
+                GenTree* c;
+                if (op1->OperIs(GT_MUL))
+                {
+                    mul = op1;
+                    c   = op2;
+                }
+                else
+                {
+                    mul = op2;
+                    c   = op1;
+                }
+
+                if (mul->OperIs(GT_MUL) && varTypeIsIntegral(mul) && !mul->gtOverflow() && !mul->isContained() &&
+                    !c->isContained())
+                {
+                    GenTree* a = mul->gtGetOp1();
+                    GenTree* b = mul->gtGetOp2();
+
+                    // Transform "-a * b + c" to "c - a * b"
+                    if (a->OperIs(GT_NEG) && !b->OperIs(GT_NEG) && !a->isContained() && !a->gtGetOp1()->isContained())
+                    {
+                        mul->AsOp()->gtOp1 = a->gtGetOp1();
+                        BlockRange().Remove(a);
+                        node->gtOp1 = c;
+                        node->gtOp2 = mul;
+                        node->ChangeOper(GT_SUB);
+                    }
+                    // Transform "a * -b + c" to "c - a * b"
+                    else if (b->OperIs(GT_NEG) && !a->OperIs(GT_NEG) && !b->isContained() &&
+                             !b->gtGetOp1()->isContained())
+                    {
+                        mul->AsOp()->gtOp2 = b->gtGetOp1();
+                        BlockRange().Remove(b);
+                        node->gtOp1 = c;
+                        node->gtOp2 = mul;
+                        node->ChangeOper(GT_SUB);
+                    }
+                    // Transform "a * b + c" to "c + a * b"
+                    else if (op1->OperIs(GT_MUL))
+                    {
+                        node->gtOp1 = c;
+                        node->gtOp2 = mul;
+                    }
+                }
+            }
+        }
+#endif // TARGET_ARM64
 
 #ifdef TARGET_XARCH
         if (BlockRange().TryGetUse(node, &use))
@@ -5462,10 +5518,8 @@ GenTree* Lowering::LowerAdd(GenTreeOp* node)
 #endif // TARGET_XARCH
     }
 
-    if (node->OperIs(GT_ADD))
-    {
-        ContainCheckBinary(node);
-    }
+    ContainCheckBinary(node);
+
     return nullptr;
 }
 

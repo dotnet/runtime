@@ -10105,44 +10105,21 @@ void CodeGen::instGen_MemoryBarrier(BarrierKind barrierKind)
 // genCodeForMadd: Emit a madd (Multiply-Add) instruction
 //
 // Arguments:
-//     tree - GT_MADD tree where op1 or op2 is GT_ADD
+//     tree - GT_MADD tree where op2 is GT_MUL
 //
 void CodeGen::genCodeForMadd(GenTreeOp* tree)
 {
     assert(tree->OperIs(GT_MADD) && varTypeIsIntegral(tree) && !(tree->gtFlags & GTF_SET_FLAGS));
     genConsumeOperands(tree);
 
-    GenTree* a;
-    GenTree* b;
-    GenTree* c;
-    if (tree->gtGetOp1()->OperIs(GT_MUL) && tree->gtGetOp1()->isContained())
-    {
-        a = tree->gtGetOp1()->gtGetOp1();
-        b = tree->gtGetOp1()->gtGetOp2();
-        c = tree->gtGetOp2();
-    }
-    else
-    {
-        assert(tree->gtGetOp2()->OperIs(GT_MUL) && tree->gtGetOp2()->isContained());
-        a = tree->gtGetOp2()->gtGetOp1();
-        b = tree->gtGetOp2()->gtGetOp2();
-        c = tree->gtGetOp1();
-    }
+    GenTree* a = tree->gtGetOp1();
+    GenTree* b = tree->gtGetOp2()->gtGetOp1();
+    GenTree* c = tree->gtGetOp2()->gtGetOp2();
 
-    bool useMsub = false;
-    if (a->OperIs(GT_NEG) && a->isContained())
-    {
-        a       = a->gtGetOp1();
-        useMsub = true;
-    }
-    if (b->OperIs(GT_NEG) && b->isContained())
-    {
-        b       = b->gtGetOp1();
-        useMsub = !useMsub; // it's either "a * -b" or "-a * -b" which is the same as "a * b"
-    }
-
-    GetEmitter()->emitIns_R_R_R_R(useMsub ? INS_msub : INS_madd, emitActualTypeSize(tree), tree->GetRegNum(),
-                                  a->GetRegNum(), b->GetRegNum(), c->GetRegNum());
+    // d = a + b * c
+    // MADD d, b, c, a
+    GetEmitter()->emitIns_R_R_R_R(INS_madd, emitActualTypeSize(tree), tree->GetRegNum(), b->GetRegNum(), c->GetRegNum(),
+                                  a->GetRegNum());
     genProduceReg(tree);
 }
 
