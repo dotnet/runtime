@@ -144,7 +144,7 @@ export class LibraryChannel {
         return String.fromCharCode.apply(null, slicedMessage);
     }
 
-    static create(msg_char_len: number) {
+    static create(msg_char_len: number): LibraryChannel {
         if (msg_char_len === undefined) {
             msg_char_len = 1024; // Default size is arbitrary but is in 'char' units (i.e. UTF-16 code points).
         }

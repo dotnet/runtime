@@ -183,8 +183,6 @@ export type DotnetModuleConfig = {
     config?: MonoConfig | MonoConfigError,
     configSrc?: string,
 
-    channel: LibraryChannel,
-
     onConfigLoaded?: (config: MonoConfig) => Promise<void>;
     onDotnetReady?: () => void;
 
