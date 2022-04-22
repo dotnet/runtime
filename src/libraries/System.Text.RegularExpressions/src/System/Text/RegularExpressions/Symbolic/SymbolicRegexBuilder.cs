@@ -16,7 +16,7 @@ namespace System.Text.RegularExpressions.Symbolic
     /// TSet is the type of the set of elements.
     /// Used to convert .NET regexes to symbolic regexes.
     /// </summary>
-    internal sealed class SymbolicRegexBuilder<TSet> where TSet : IComparable<TSet>
+    internal sealed class SymbolicRegexBuilder<TSet> where TSet : IComparable<TSet>, IEquatable<TSet>
     {
         internal readonly CharSetSolver _charSetSolver;
         internal readonly ISolver<TSet> _solver;
@@ -376,7 +376,7 @@ namespace System.Text.RegularExpressions.Symbolic
         }
 
         internal SymbolicRegexNode<TNewSet> Transform<TNewSet>(SymbolicRegexNode<TSet> sr, SymbolicRegexBuilder<TNewSet> builder, Func<SymbolicRegexBuilder<TNewSet>, TSet, TNewSet> setTransformer)
-            where TNewSet : IComparable<TNewSet>
+            where TNewSet : IComparable<TNewSet>, IEquatable<TNewSet>
         {
             if (!StackHelper.TryEnsureSufficientExecutionStack())
             {
