@@ -84,10 +84,8 @@ bool is_exe_enabled_for_execution(pal::string_t* app_dll)
 #define CURHOST_EXE
 #endif
 
-void need_newer_framework_error(const pal::string_t& dotnet_root)
+void need_newer_framework_error(const pal::string_t& dotnet_root, const pal::string_t& host_path)
 {
-    pal::string_t host_path;
-    pal::get_own_executable_path(&host_path);
     trace::error(
         INSTALL_OR_UPDATE_NET_ERROR_MESSAGE
         _X("\n\n")
@@ -228,7 +226,7 @@ int exe_start(const int argc, const pal::char_t* argv[])
         {
             // An outdated hostfxr can only be found for framework-related apps.
             trace::error(_X("The required library %s does not support single-file apps."), fxr.fxr_path().c_str());			
-            need_newer_framework_error(fxr.dotnet_root());
+            need_newer_framework_error(fxr.dotnet_root(), host_path);
             rc = StatusCode::FrameworkMissingFailure;
         }
     }
@@ -252,10 +250,12 @@ int exe_start(const int argc, const pal::char_t* argv[])
 
             rc = hostfxr_main_startupinfo(argc, argv, host_path_cstr, dotnet_root_cstr, app_path_cstr);
 
-            // This check exists to provide an error message for UI apps when running 3.0 apps on 2.0 only hostfxr, which doesn't support error writer redirection. 
+            // This check exists to provide an error message for apps when running 3.0 apps on 2.0 only hostfxr, which doesn't support error writer redirection.
+            // Note that this is not only for UI apps - on Windows we always write errors to event log as well (regardless of UI) and it uses
+            // the same mechanism of redirecting error writers.
             if (trace::get_error_writer() != nullptr && rc == static_cast<int>(StatusCode::FrameworkMissingFailure) && set_error_writer == nullptr)
             {
-                need_newer_framework_error(fxr.dotnet_root());
+                need_newer_framework_error(fxr.dotnet_root(), host_path);
             }
         }
 #if !defined(FEATURE_STATIC_HOST)
