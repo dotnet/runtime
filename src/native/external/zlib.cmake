@@ -25,7 +25,9 @@ set(ZLIB_SOURCES_BASE
 
 addprefix(ZLIB_SOURCES "${CMAKE_CURRENT_LIST_DIR}/zlib"  "${ZLIB_SOURCES_BASE}")
 
+function(set_zlib_source_files_properties)
 if (CMAKE_C_COMPILER_ID MATCHES "Clang")
   # Turn off warn-as-error for strict prototype checking until https://github.com/madler/zlib/issues/633 is fixed upstream
-  set_source_files_properties(${ZLIB_SOURCES} PROPERTIES COMPILE_OPTIONS "-Wno-error=strict-prototypes")
+  set_source_files_properties(${ZLIB_SOURCES} PROPERTIES COMPILE_OPTIONS "-Wno-error=strict-prototypes;-Wno-error=missing-prototypes")
 endif()
+endfunction()

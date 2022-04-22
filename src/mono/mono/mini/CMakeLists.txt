@@ -308,6 +308,9 @@ endif()
 if(HOST_WIN32)
 set_source_files_properties(${ZLIB_SOURCES} PROPERTIES COMPILE_OPTIONS "/wd4005;/wd4127;/wd4131;/wd4244")
 endif()
+if (ZLIB_SOURCES)
+  set_zlib_source_files_properties()
+endif()
 
 set(monosgen-sources "${metadata_sources};${utils_sources};${sgen_sources};${icu_shim_sources};${mini_sources};${ZLIB_SOURCES}")
 
