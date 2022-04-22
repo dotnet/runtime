@@ -1106,6 +1106,7 @@ jobs:
     - OSX_x64
     - Linux_x64
     - Linux_musl_x64
+    - windows_arm64
     helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
     jobParameters:
       isOfficialBuild: false
@@ -1130,6 +1131,7 @@ jobs:
     - Linux_musl_arm
     - Linux_musl_arm64
     - windows_x86
+    - windows_arm64
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
     helixQueueGroup: libraries
     jobParameters:
