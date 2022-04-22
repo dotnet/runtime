@@ -1604,24 +1604,6 @@ namespace System
             return att.Length != 0 ? ((DefaultMemberAttribute)att[0]).MemberName : null;
         }
 
-        private RuntimeConstructorInfo? m_serializationCtor;
-        internal RuntimeConstructorInfo? GetSerializationCtor()
-        {
-            if (m_serializationCtor == null)
-            {
-                var s_SICtorParamTypes = new Type[] { typeof(SerializationInfo), typeof(StreamingContext) };
-
-                m_serializationCtor = GetConstructor(
-                    BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic,
-                    null,
-                    CallingConventions.Any,
-                    s_SICtorParamTypes,
-                    null) as RuntimeConstructorInfo;
-            }
-
-            return m_serializationCtor;
-        }
-
         private object? CreateInstanceMono(bool nonPublic, bool wrapExceptions)
         {
             RuntimeConstructorInfo? ctor = GetDefaultConstructor();

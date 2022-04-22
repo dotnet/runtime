@@ -702,7 +702,6 @@
     <Compile Include="System\Xml\Xsl\XsltOld\CopyNamespacesAction.cs" />
     <Compile Include="System\Xml\Xsl\XsltOld\CopyNodeSetAction.cs" />
     <Compile Include="System\Xml\Xsl\XsltOld\CopyOfAction.cs" />
-    <Compile Include="System\Xml\Xsl\XsltOld\DbgCompiler.cs" />
     <Compile Include="System\Xml\Xsl\XsltOld\DocumentScope.cs" />
     <Compile Include="System\Xml\Xsl\XsltOld\ElementAction.cs" />
     <Compile Include="System\Xml\Xsl\XsltOld\EndEvent.cs" />

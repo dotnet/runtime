@@ -884,21 +884,6 @@ namespace System.Net.Sockets
             Interlocked.Exchange(ref _singleBufferSendEventArgs, null)?.Dispose();
         }
 
-        /// <summary>A TaskCompletionSource that carries an extra field of strongly-typed state.</summary>
-        private sealed class StateTaskCompletionSource<TField1, TResult> : TaskCompletionSource<TResult>
-        {
-            internal TField1 _field1 = default!; // always set on construction
-            public StateTaskCompletionSource(object baseState) : base(baseState) { }
-        }
-
-        /// <summary>A TaskCompletionSource that carries several extra fields of strongly-typed state.</summary>
-        private sealed class StateTaskCompletionSource<TField1, TField2, TResult> : TaskCompletionSource<TResult>
-        {
-            internal TField1 _field1 = default!; // always set on construction
-            internal TField2 _field2 = default!; // always set on construction
-            public StateTaskCompletionSource(object baseState) : base(baseState) { }
-        }
-
         /// <summary>A SocketAsyncEventArgs with an associated async method builder.</summary>
         private sealed class TaskSocketAsyncEventArgs<TResult> : SocketAsyncEventArgs
         {

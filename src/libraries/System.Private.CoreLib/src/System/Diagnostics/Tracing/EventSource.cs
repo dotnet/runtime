@@ -1841,7 +1841,7 @@ namespace System.Diagnostics.Tracing
                         }
                         else if (typeCode == TypeCode.DateTime)
                         {
-                            decoded = *(DateTime*)dataPointer;
+                            decoded = DateTime.FromFileTimeUtc(*(long*)dataPointer);
                         }
                         else if (IntPtr.Size == 8 && dataType == typeof(IntPtr))
                         {

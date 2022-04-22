@@ -43876,12 +43876,12 @@ HRESULT GCHeap::Initialize()
     AffinitySet config_affinity_set;
     GCConfigStringHolder cpu_index_ranges_holder(GCConfig::GetGCHeapAffinitizeRanges());
 
-    if (!ParseGCHeapAffinitizeRanges(cpu_index_ranges_holder.Get(), &config_affinity_set))
+    uintptr_t config_affinity_mask = static_cast<uintptr_t>(GCConfig::GetGCHeapAffinitizeMask());
+    if (!ParseGCHeapAffinitizeRanges(cpu_index_ranges_holder.Get(), &config_affinity_set, config_affinity_mask))
     {
         return CLR_E_GC_BAD_AFFINITY_CONFIG_FORMAT;
     }
 
-    uintptr_t config_affinity_mask = static_cast<uintptr_t>(GCConfig::GetGCHeapAffinitizeMask());
     const AffinitySet* process_affinity_set = GCToOSInterface::SetGCThreadsAffinitySet(config_affinity_mask, &config_affinity_set);
 
     if (process_affinity_set->IsEmpty())

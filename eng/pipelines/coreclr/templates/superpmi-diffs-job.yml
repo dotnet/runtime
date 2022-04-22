@@ -8,7 +8,7 @@ parameters:
   variables: {}
   helixQueues: ''
   dependOnEvaluatePaths: false
-  runJobTemplate: '/eng/pipelines/coreclr/templates/run-superpmi-asmdiffs-job.yml'
+  runJobTemplate: '/eng/pipelines/coreclr/templates/run-superpmi-diffs-job.yml'
 
 jobs:
 - template: ${{ parameters.runJobTemplate }}

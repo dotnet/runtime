@@ -4,7 +4,7 @@
 ## The .NET Foundation licenses this file to you under the MIT license.
 #
 ##
-# Title: superpmi_asmdiffs_summarize.py
+# Title: superpmi_diffs_summarize.py
 #
 # Notes:
 #
@@ -79,8 +79,8 @@ def append_diff_file(f, arch, file_name, full_file_path, asmdiffs):
     with open(full_file_path, "r") as current_superpmi_md:
         contents = current_superpmi_md.read()
 
-        # Were there actually any diffs? We currently look to see if the file contains the text "No diffs found",
-        # inserted by `superpmi_asmdiffs.py`, instead of just not having a diff summary .md file.
+        # Were there actually any asm diffs? We currently look to see if the file contains the text "No diffs found",
+        # inserted by `superpmi_diffs.py`, instead of just not having a diff summary .md file.
         # (A missing file has the same effect.)
         match_obj = re.search(r'^<empty>', contents)
         if match_obj is not None:
