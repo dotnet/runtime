@@ -16,7 +16,7 @@ namespace System.Text.RegularExpressions.Symbolic
     ///  the overall number of AST nodes in a given <see cref="RegexNode"/> input.
     /// </summary>
     /// <typeparam name="T">Element type of the list that must be not null</typeparam>
-    internal class DoublyLinkedList<T> where T : notnull
+    internal sealed class DoublyLinkedList<T> where T : notnull
     {
         /// <summary>First node of the list</summary>
         private Node? _first;
@@ -148,7 +148,7 @@ namespace System.Text.RegularExpressions.Symbolic
             }
         }
 
-        private class Node
+        private sealed class Node
         {
             public Node? _next;
             public Node? _prev;

@@ -2080,7 +2080,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// Keeps the list of transitions unique, expects higher priority transitions
         /// to be added first and ignores equivalent lower priority transitions.
         /// </summary>
-        private class TransitionList
+        private sealed class TransitionList
         {
             private SymbolicRegexBuilder<TSet> _builder;
             internal List<(SymbolicRegexNode<TSet> Node, DerivativeEffect[] Effects)> _transitions = new();
