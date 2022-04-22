@@ -3340,55 +3340,126 @@ namespace System.Text.RegularExpressions
                 if (!rtl &&
                     iterationCount is null &&
                     node.Kind is RegexNodeKind.Notonelazy &&
-                    subsequent?.FindStartingLiteral(4) is ValueTuple<char, string?, string?> literal && // 5 == max optimized by IndexOfAny, and we need to reserve 1 for node.Ch
-                    (literal.Item3 is not null ? !literal.Item3.Contains(node.Ch) : (literal.Item2?[0] ?? literal.Item1) != node.Ch)) // no overlap between node.Ch and the start of the literal
+                    subsequent?.FindStartingLiteral(4) is ValueTuple<char, string?, string?> literal) // 5 == max optimized by IndexOfAny, and we need to reserve 1 for node.Ch
                 {
                     // e.g. "<[^>]*?>"
+
+                    // Whether the not'd character matches the subsequent literal. This impacts whether we need to search
+                    // for both or just the literal, as well as what assumptions we can make once a match is found.
+                    bool overlap;
+
                     // This lazy loop will consume all characters other than node.Ch until the subsequent literal.
                     // We can implement it to search for either that char or the literal, whichever comes first.
-                    // If it ends up being that node.Ch, the loop fails (we're only here if we're backtracking).
-
-                    // startingPos = slice.IndexOfAny(node.Ch, literal);
                     Ldloc(slice);
-                    if (literal.Item3 is not null)
+                    if (literal.Item2 is not null) // string literal
                     {
-                        switch (literal.Item3.Length)
+                        overlap = literal.Item2[0] == node.Ch;
+                        if (overlap)
                         {
-                            case 2:
+                            // startingPos = slice.IndexOf(node.Ch);
+                            Ldc(node.Ch);
+                            Call(s_spanIndexOfChar);
+                        }
+                        else
+                        {
+                            // startingPos = slice.IndexOfAny(node.Ch, literal.Item2[0]);
+                            Ldc(node.Ch);
+                            Ldc(literal.Item2[0]);
+                            Call(s_spanIndexOfAnyCharChar);
+                        }
+                    }
+                    else if (literal.Item3 is null) // char literal
+                    {
+                        overlap = literal.Item1 == node.Ch;
+                        if (overlap)
+                        {
+                            // startingPos = slice.IndexOf(node.Ch);
+                            Ldc(node.Ch);
+                            Call(s_spanIndexOfChar);
+                        }
+                        else
+                        {
+                            // startingPos = slice.IndexOfAny(node.Ch, literal.Item1);
+                            Ldc(node.Ch);
+                            Ldc(literal.Item1);
+                            Call(s_spanIndexOfAnyCharChar);
+                        }
+                    }
+                    else // set literal
+                    {
+                        overlap = literal.Item3.Contains(node.Ch);
+                        switch ((overlap, literal.Item3.Length))
+                        {
+                            case (true, 2):
+                                // startingPos = slice.IndexOfAny(literal.Item3[0], literal.Item3[1]);
+                                Ldc(literal.Item3[0]);
+                                Ldc(literal.Item3[1]);
+                                Call(s_spanIndexOfAnyCharChar);
+                                break;
+
+                            case (true, 3):
+                                // startingPos = slice.IndexOfAny(literal.Item3[0], literal.Item3[1], literal.Item3[2]);
+                                Ldc(literal.Item3[0]);
+                                Ldc(literal.Item3[1]);
+                                Ldc(literal.Item3[2]);
+                                Call(s_spanIndexOfAnyCharCharChar);
+                                break;
+
+                            case (true, _):
+                                // startingPos = slice.IndexOfAny(literal.Item3);
+                                Ldstr(literal.Item3);
+                                Call(s_stringAsSpanMethod);
+                                Call(s_spanIndexOfAnySpan);
+                                break;
+
+                            case (false, 2):
+                                // startingPos = slice.IndexOfAny(node.Ch, literal.Item3[0], literal.Item3[1]);
                                 Ldc(node.Ch);
                                 Ldc(literal.Item3[0]);
                                 Ldc(literal.Item3[1]);
                                 Call(s_spanIndexOfAnyCharCharChar);
                                 break;
 
-                            default:
-                                Ldstr(node.Ch + literal.Item3);
+                            case (false, _):
+                                // startingPos = slice.IndexOfAny($"{node.Ch}{literal.Item3}");
+                                Ldstr($"{node.Ch}{literal.Item3}");
                                 Call(s_stringAsSpanMethod);
                                 Call(s_spanIndexOfAnySpan);
                                 break;
                         }
                     }
-                    else
-                    {
-                        Ldc(node.Ch);
-                        Ldc(literal.Item2?[0] ?? literal.Item1);
-                        Call(s_spanIndexOfAnyCharChar);
-                    }
                     Stloc(startingPos);
 
-                    // if ((uint)startingPos >= (uint)slice.Length) goto doneLabel;
-                    Ldloc(startingPos);
-                    Ldloca(slice);
-                    Call(s_spanGetLengthMethod);
-                    BgeUnFar(doneLabel);
+                    // If the search didn't find anything, fail the match.  If it did find something, then we need to consider whether
+                    // that something is the loop character.  If it's not, we've successfully backtracked to the next lazy location
+                    // where we should evaluate the rest of the pattern.  If it does match, then we need to consider whether there's
+                    // overlap between the loop character and the literal.  If there is overlap, this is also a place to check.  But
+                    // if there's not overlap, and if the found character is the loop character, we also want to fail the match here
+                    // and now, as this means the loop ends before it gets to what needs to come after the loop, and thus the pattern
+                    // can't possibly match here.
+                    if (overlap)
+                    {
+                        // if (startingPos < 0) goto doneLabel;
+                        Ldloc(startingPos);
+                        Ldc(0);
+                        BltFar(doneLabel);
+                    }
+                    else
+                    {
+                        // if ((uint)startingPos >= (uint)slice.Length) goto doneLabel;
+                        Ldloc(startingPos);
+                        Ldloca(slice);
+                        Call(s_spanGetLengthMethod);
+                        BgeUnFar(doneLabel);
 
-                    // if (slice[startingPos] == node.Ch) goto doneLabel;
-                    Ldloca(slice);
-                    Ldloc(startingPos);
-                    Call(s_spanGetItemMethod);
-                    LdindU2();
-                    Ldc(node.Ch);
-                    BeqFar(doneLabel);
+                        // if (slice[startingPos] == node.Ch) goto doneLabel;
+                        Ldloca(slice);
+                        Ldloc(startingPos);
+                        Call(s_spanGetItemMethod);
+                        LdindU2();
+                        Ldc(node.Ch);
+                        BeqFar(doneLabel);
+                    }
 
                     // pos += startingPos;
                     // slice = inputSpace.Slice(pos);
