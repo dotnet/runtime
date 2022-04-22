@@ -2388,6 +2388,71 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
 
     GenTree*    op1 = treeNode->gtGetOp1();
     GenTree*    op2 = treeNode->gtGetOp2();
+
+    if (op2->OperIs(GT_MUL) && op2->isContained())
+    {
+        assert(varTypeIsIntegral(treeNode) && !(treeNode->gtFlags & GTF_SET_FLAGS));
+        genConsumeOperands(treeNode);
+
+        GenTree* a = op1;
+        GenTree* b = op2->gtGetOp1();
+        GenTree* c = op2->gtGetOp2();
+
+        instruction ins;
+        switch (oper)
+        {
+            case GT_ADD:
+            {
+                // d = a - b * c
+                // MADD d, b, c, a
+                ins = INS_madd;
+                break;
+            }
+
+            case GT_SUB:
+            {
+                // d = a - b * c
+                // MSUB d, b, c, a
+                ins = INS_msub;
+                break;
+            }
+
+            default:
+                unreached();
+        }
+
+        GetEmitter()->emitIns_R_R_R_R(ins, emitActualTypeSize(treeNode), targetReg, b->GetRegNum(),
+                                      c->GetRegNum(), a->GetRegNum());
+        genProduceReg(treeNode);
+        return;
+    }
+
+    switch (oper)
+    {
+        case GT_SUB:
+        {
+            if (op2->OperIs(GT_MUL) && op2->isContained())
+            {
+                assert(varTypeIsIntegral(treeNode) && !(treeNode->gtFlags & GTF_SET_FLAGS));
+                genConsumeOperands(treeNode);
+
+                GenTree* a = op1;
+                GenTree* b = op2->gtGetOp1();
+                GenTree* c = op2->gtGetOp2();
+
+                // d = a - b * c
+                // MSUB d, b, c, a
+                GetEmitter()->emitIns_R_R_R_R(INS_msub, emitActualTypeSize(treeNode), targetReg, b->GetRegNum(),
+                                                c->GetRegNum(), a->GetRegNum());
+                genProduceReg(treeNode);
+                return;
+            }
+        }
+
+        default:
+            unreached();
+    }
+
     instruction ins = genGetInsForOper(treeNode->OperGet(), targetType);
 
     if ((treeNode->gtFlags & GTF_SET_FLAGS) != 0)
@@ -10104,31 +10169,6 @@ void CodeGen::genCodeForMadd(GenTreeOp* tree)
 
     GetEmitter()->emitIns_R_R_R_R(useMsub ? INS_msub : INS_madd, emitActualTypeSize(tree), tree->GetRegNum(),
                                   a->GetRegNum(), b->GetRegNum(), c->GetRegNum());
-    genProduceReg(tree);
-}
-
-//-----------------------------------------------------------------------------------
-// genCodeForMsub: Emit a msub (Multiply-Subtract) instruction
-//
-// Arguments:
-//     tree - GT_MSUB tree where op2 is GT_MUL
-//
-void CodeGen::genCodeForMsub(GenTreeOp* tree)
-{
-    assert(tree->OperIs(GT_MSUB) && varTypeIsIntegral(tree) && !(tree->gtFlags & GTF_SET_FLAGS));
-    genConsumeOperands(tree);
-
-    assert(tree->gtGetOp2()->OperIs(GT_MUL));
-    assert(tree->gtGetOp2()->isContained());
-
-    GenTree* a = tree->gtGetOp1();
-    GenTree* b = tree->gtGetOp2()->gtGetOp1();
-    GenTree* c = tree->gtGetOp2()->gtGetOp2();
-
-    // d = a - b * c
-    // MSUB d, b, c, a
-    GetEmitter()->emitIns_R_R_R_R(INS_msub, emitActualTypeSize(tree), tree->GetRegNum(), b->GetRegNum(), c->GetRegNum(),
-                                  a->GetRegNum());
     genProduceReg(tree);
 }
 

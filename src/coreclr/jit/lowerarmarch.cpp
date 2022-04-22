@@ -1748,7 +1748,6 @@ void Lowering::ContainCheckBinary(GenTreeOp* node)
 
             if (!a->isContained() && !b->isContained() && !c->isContained())
             {
-                node->ChangeOper(GT_MSUB);
                 MakeSrcContained(node, op2);
             }
         }
