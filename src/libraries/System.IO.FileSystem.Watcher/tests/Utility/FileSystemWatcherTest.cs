@@ -201,25 +201,6 @@ namespace System.IO.Tests
             }
         }
 
-        /// <summary>Invokes the specified test action with retry on failure (other than assertion failure).</summary>
-        /// <param name="action">The test action.</param>
-        /// <param name="maxAttempts">The maximum number of times to attempt to run the test.</param>
-        public static void ExecuteWithRetry(Action action, int maxAttempts = DefaultAttemptsForExpectedEvent)
-        {
-            for (int retry = 0; retry < maxAttempts; retry++)
-            {
-                try
-                {
-                    action();
-                    return;
-                }
-                catch (Exception e) when (!(e is XunitException) && retry < maxAttempts - 1)
-                {
-                    Thread.Sleep(RetryDelayMilliseconds);
-                }
-            }
-        }
-
         /// <summary>
         /// Does verification that the given watcher will not throw exactly/only the events in "expectedEvents" when
         /// "action" is executed.

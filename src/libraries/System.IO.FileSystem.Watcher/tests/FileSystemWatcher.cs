@@ -5,6 +5,7 @@ using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using Xunit;
+using Xunit.Sdk;
 
 namespace System.IO.Tests
 {
@@ -180,17 +181,20 @@ namespace System.IO.Tests
         [InlineData(false)]
         public void EndInit_ResumesPausedEnableRaisingEvents(bool setBeforeBeginInit)
         {
-            using (var testDirectory = new TempDirectory(GetTestFilePath()))
-            using (var watcher = new TestFileSystemWatcher(testDirectory.Path, "*"))
+            RetryHelper.Execute(() =>
             {
-                if (setBeforeBeginInit)
-                    watcher.EnableRaisingEvents = true;
-                watcher.BeginInit();
-                if (!setBeforeBeginInit)
-                    watcher.EnableRaisingEvents = true;
-                watcher.EndInit();
-                ExpectEvent(watcher, WatcherChangeTypes.Created | WatcherChangeTypes.Deleted, () => new TempFile(Path.Combine(testDirectory.Path, GetTestFileName())).Dispose(), null);
-            }
+                using (var testDirectory = new TempDirectory(GetTestFilePath()))
+                using (var watcher = new TestFileSystemWatcher(testDirectory.Path, "*"))
+                {
+                    if (setBeforeBeginInit)
+                        watcher.EnableRaisingEvents = true;
+                    watcher.BeginInit();
+                    if (!setBeforeBeginInit)
+                        watcher.EnableRaisingEvents = true;
+                    watcher.EndInit();
+                    ExpectEvent(watcher, WatcherChangeTypes.Created | WatcherChangeTypes.Deleted, () => new TempFile(Path.Combine(testDirectory.Path, GetTestFileName())).Dispose(), null);
+                }
+            }, maxAttempts: DefaultAttemptsForExpectedEvent, backoffFunc: (iteration) => RetryDelayMilliseconds, retryWhen: e => e is XunitException);
         }
 
         /// <summary>
