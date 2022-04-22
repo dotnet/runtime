@@ -793,7 +793,7 @@ internal sealed class FirefoxMonoProxy : MonoProxy
             dotNetUrl = source.DotNetUrl
         });
         JObject sourcesJObj;
-        if (ctx.GlobalName != "")
+        if (!string.IsNullOrEmpty(ctx.GlobalName))
         {
             sourcesJObj = JObject.FromObject(new
             {
