@@ -3597,10 +3597,10 @@ namespace System
             out bool copyBack,
             out bool isValueType)
         {
-            if (IsByRef)
+            RuntimeType? sigElementType;
+            if (RuntimeTypeHandle.TryGetByRefElementType(this, out sigElementType))
             {
                 copyBack = true;
-                RuntimeType sigElementType = RuntimeTypeHandle.GetElementType(this);
                 Debug.Assert(!sigElementType.IsGenericParameter);
 
                 if (sigElementType.IsInstanceOfType(value))
@@ -3616,8 +3616,8 @@ namespace System
                         }
                         else
                         {
-                            // Need to create an instance of the ByRef if null was provided, but only for value types.
-                            value = AllocateValueType(sigElementType, value: value);
+                            // Make a copy to prevent the boxed instance from being directly modified by the method.
+                            value = AllocateValueType(sigElementType, value);
                         }
                     }
 
@@ -3704,6 +3704,24 @@ namespace System
 
             copyBack = isValueType = default;
             return CheckValueStatus.ArgumentException;
+        }
+
+        internal bool TryByRefFastPath(ref object arg, ref bool isValueType)
+        {
+            if (RuntimeTypeHandle.TryGetByRefElementType(this, out RuntimeType? sigElementType) &&
+                ReferenceEquals(sigElementType, arg.GetType()))
+            {
+                isValueType = sigElementType.IsValueType;
+                if (isValueType)
+                {
+                    // Make a copy to prevent the boxed instance from being directly modified by the method.
+                    arg = AllocateValueType(sigElementType, arg);
+                }
+
+                return true;
+            }
+
+            return false;
         }
 
         private static CorElementType GetUnderlyingType(RuntimeType type)

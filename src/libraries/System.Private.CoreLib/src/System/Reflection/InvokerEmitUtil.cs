@@ -4,7 +4,6 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection.Emit;
-using System.Runtime.CompilerServices;
 
 namespace System.Reflection
 {
@@ -45,15 +44,7 @@ namespace System.Reflection
             ParameterInfo[] parameters = method.GetParametersNoCopy();
             for (int i = 0; i < parameters.Length; i++)
             {
-                RuntimeType parameterType = (RuntimeType)parameters[i].ParameterType;
-                if (parameterType.IsPointer)
-                {
-                    parameterType = (RuntimeType)typeof(IntPtr);
-                }
-                else if (parameterType.IsByRef && RuntimeTypeHandle.GetElementType(parameterType).IsPointer)
-                {
-                    parameterType = (RuntimeType)typeof(IntPtr).MakeByRefType();
-                }
+                RuntimeType parameterType = NormalizePointerType((RuntimeType)parameters[i].ParameterType);
 
                 il.Emit(OpCodes.Ldarg_2);
                 if (i != 0)
@@ -94,7 +85,7 @@ namespace System.Reflection
             }
             else
             {
-                Type returnType = ((RuntimeMethodInfo)method).ReturnType;
+                RuntimeType returnType = (RuntimeType)((RuntimeMethodInfo)method).ReturnType;
                 if (returnType == typeof(void))
                 {
                     il.Emit(OpCodes.Ldnull);
@@ -130,7 +121,7 @@ namespace System.Reflection
                     }
                     else if (elementType.IsPointer)
                     {
-                        LocalBuilder? local_return = il.DeclareLocal(elementType);
+                        LocalBuilder? local_return = il.DeclareLocal(NormalizePointerType(returnType)); // IntPtr.MakeByRefType()
                         il.Emit(OpCodes.Ldind_Ref);
                         il.Emit(OpCodes.Stloc_S, local_return);
                         il.Emit(OpCodes.Ldloc_S, local_return);
@@ -152,6 +143,20 @@ namespace System.Reflection
 
             // Create the delegate.
             return (InvokeFunc<T>)dm.CreateDelegate(typeof(InvokeFunc<T>));
+        }
+
+        private static RuntimeType NormalizePointerType(RuntimeType type)
+        {
+            if (type.IsPointer)
+            {
+                type = (RuntimeType)typeof(IntPtr);
+            }
+            else if (type.IsByRef && RuntimeTypeHandle.GetElementType(type).IsPointer)
+            {
+                type = (RuntimeType)typeof(IntPtr).MakeByRefType();
+            }
+
+            return type;
         }
 
         private static class ThrowHelper

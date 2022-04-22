@@ -1787,6 +1787,11 @@ namespace System
             return CheckValueStatus.ArgumentException;
         }
 
+        // Stub method to allow for shared code with CoreClr.
+#pragma warning disable CA1822
+        internal bool TryByRefFastPath(ref object arg, ref bool isValueType) => false;
+#pragma warning restore CA1822
+
         // Binder uses some incompatible conversion rules. For example
         // int value cannot be used with decimal parameter but in other
         // ways it's more flexible than normal convertor, for example

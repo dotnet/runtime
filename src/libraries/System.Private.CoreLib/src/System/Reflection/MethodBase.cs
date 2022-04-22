@@ -157,7 +157,7 @@ namespace System.Reflection
             for (int i = 0; i < parameters.Length; i++)
             {
                 bool copyBackArg = false;
-                bool isValueType;
+                bool isValueType = false;
                 object? arg = parameters[i];
                 RuntimeType sigType = sigTypes[i];
 
@@ -176,40 +176,39 @@ namespace System.Reflection
 
                     if (ReferenceEquals(argType, sigType))
                     {
-                        // Fast path when the value type matches the signature type.
+                        // Fast path when the value's type matches the signature type.
                         isValueType = RuntimeTypeHandle.IsValueType(argType);
                     }
-                    else if (RuntimeTypeHandle.IsByRef(sigType) && ReferenceEquals(argType, RuntimeTypeHandle.GetElementType(sigType)))
+                    else if (sigType.TryByRefFastPath(ref arg, ref isValueType))
                     {
-                        // Fast path when the value type matches the signature type.
-                        isValueType = RuntimeTypeHandle.IsValueType(argType);
+                        // Fast path when the value's type matches the signature type of a byref parameter.
                         copyBackArg = true;
+                    }
+                    else if (!ReferenceEquals(arg, Type.Missing))
+                    {
+                        // Slow path that supports type conversions.
+                        isValueType = sigType.CheckValue(ref arg, ref copyBackArg, binder, culture, invokeAttr);
                     }
                     else
                     {
+                        // Convert Type.Missing to the default value.
                         paramInfos ??= GetParametersNoCopy();
                         ParameterInfo paramInfo = paramInfos[i];
-                        if (!ReferenceEquals(arg, Type.Missing))
+
+                        if (paramInfo.DefaultValue == DBNull.Value)
                         {
-                            isValueType = sigType.CheckValue(ref arg, ref copyBackArg, binder, culture, invokeAttr);
+                            throw new ArgumentException(SR.Arg_VarMissNull, nameof(parameters));
+                        }
+
+                        arg = paramInfo.DefaultValue;
+                        if (ReferenceEquals(arg?.GetType(), sigType))
+                        {
+                            // Fast path when the default value's type matches the signature type.
+                            isValueType = RuntimeTypeHandle.IsValueType(sigType);
                         }
                         else
                         {
-                            // Convert Type.Missing to the default value.
-                            if (paramInfo.DefaultValue == DBNull.Value)
-                            {
-                                throw new ArgumentException(SR.Arg_VarMissNull, nameof(parameters));
-                            }
-
-                            arg = paramInfo.DefaultValue;
-                            if (ReferenceEquals(arg?.GetType(), sigType))
-                            {
-                                isValueType = RuntimeTypeHandle.IsValueType(sigType);
-                            }
-                            else
-                            {
-                                isValueType = sigType.CheckValue(ref arg, ref copyBackArg, binder, culture, invokeAttr);
-                            }
+                            isValueType = sigType.CheckValue(ref arg, ref copyBackArg, binder, culture, invokeAttr);
                         }
                     }
                 }
@@ -221,8 +220,8 @@ namespace System.Reflection
                 // as we validate them. n.b. This disallows use of ArrayPool, as ArrayPool-rented arrays are
                 // considered user-visible to threads which may still be holding on to returned instances.
                 // This separate array is also used to hold default values when 'null' is specified for value
-                // types, and also used to hold the results from conversions such as from Int16 to Int32; these
-                // default values and conversions should not be applied to the incoming arguments.
+                // types, and also used to hold the results from conversions such as from Int16 to Int32. For
+                // compat, these default values and conversions are not be applied to the incoming arguments.
                 shouldCopyBack[i] = copyBackArg;
                 copyOfParameters[i] = arg;
 

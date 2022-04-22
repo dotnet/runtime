@@ -744,6 +744,32 @@ namespace System.Reflection.Tests
             Assert.Equal(42, mi.Invoke(42, null));
         }
 
+        [Fact]
+        public void CopyBackWithByRefArgs()
+        {
+            object i = 42;
+            object[] args = new object[] { i };
+            GetMethod(typeof(CopyBackMethods), nameof(CopyBackMethods.IncrementByRef)).Invoke(null, args);
+            Assert.Equal(43, (int)args[0]);
+            Assert.NotSame(i, args[0]); // A copy should be made; a boxed instance should never be directly updated.
+
+            i = 42;
+            args = new object[] { i };
+            GetMethod(typeof(CopyBackMethods), nameof(CopyBackMethods.IncrementByNullableRef)).Invoke(null, args);
+            Assert.Equal(43, (int)args[0]);
+            Assert.NotSame(i, args[0]);
+
+            object o = null;
+            args = new object[] { o };
+            GetMethod(typeof(CopyBackMethods), nameof(CopyBackMethods.SetToNonNullByRef)).Invoke(null, args);
+            Assert.NotNull(args[0]);
+
+            o = new object();
+            args = new object[] { o };
+            GetMethod(typeof(CopyBackMethods), nameof(CopyBackMethods.SetToNullByRef)).Invoke(null, args);
+            Assert.Null(args[0]);
+        }
+
         //Methods for Reflection Metadata
         private void DummyMethod1(string str, int iValue, long lValue)
         {
@@ -1033,6 +1059,29 @@ namespace System.Reflection.Tests
             Assert.Equal(expected, i);
             i = null;
             return true;
+        }
+    }
+
+    public static class CopyBackMethods
+    {
+        public static void IncrementByRef(ref int i)
+        {
+            i++;
+        }
+
+        public static void IncrementByNullableRef(ref int? i)
+        {
+            i++;
+        }
+
+        public static void SetToNullByRef(ref object o)
+        {
+            o = null;
+        }
+
+        public static void SetToNonNullByRef(ref object o)
+        {
+            o = new object();
         }
     }
 
