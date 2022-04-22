@@ -1502,9 +1502,11 @@ bool emitter::emitInsCanOnlyWriteSSE2OrAVXReg(instrDesc* id)
         case INS_pextrw:
         case INS_pextrw_sse41:
         case INS_rorx:
+#ifdef TARGET_AMD64
         case INS_shlx:
         case INS_sarx:
         case INS_shrx:
+#endif
         {
             // These SSE instructions write to a general purpose integer register.
             return false;
@@ -9540,7 +9542,11 @@ void emitter::emitDispIns(
             assert(IsThreeOperandAVXInstruction(ins));
             regNumber reg2 = id->idReg2();
             regNumber reg3 = id->idReg3();
-            if (ins == INS_bextr || ins == INS_bzhi || ins == INS_shrx || ins == INS_shlx || ins == INS_sarx)
+            if (ins == INS_bextr || ins == INS_bzhi
+#ifdef TARGET_AMD64
+                || ins == INS_shrx || ins == INS_shlx || ins == INS_sarx
+#endif
+                )
             {
                 // BMI bextr,bzhi, shrx, shlx and sarx encode the reg2 in VEX.vvvv and reg3 in modRM,
                 // which is different from most of other instructions
