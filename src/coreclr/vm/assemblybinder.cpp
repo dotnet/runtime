@@ -9,6 +9,7 @@
 #ifndef DACCESS_COMPILE
 
 HRESULT AssemblyBinder::BindAssemblyByName(AssemblyNameData* pAssemblyNameData,
+    LoaderAllocator *pParentLoaderAllocator,
     BINDER_SPACE::Assembly** ppAssembly)
 {
     _ASSERTE(pAssemblyNameData != nullptr && ppAssembly != nullptr);
@@ -20,7 +21,7 @@ HRESULT AssemblyBinder::BindAssemblyByName(AssemblyNameData* pAssemblyNameData,
     SAFE_NEW(pAssemblyName, BINDER_SPACE::AssemblyName);
     IF_FAIL_GO(pAssemblyName->Init(*pAssemblyNameData));
 
-    hr = BindUsingAssemblyName(pAssemblyName, ppAssembly);
+    hr = BindUsingAssemblyName(pAssemblyName, pParentLoaderAllocator, ppAssembly);
 
 Exit:
     return hr;

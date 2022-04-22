@@ -22,6 +22,7 @@ class AssemblyBinder;
 class DefaultAssemblyBinder;
 class PEAssembly;
 class PEImage;
+class LoaderAllocator;
 
 namespace BINDER_SPACE
 {
@@ -52,6 +53,7 @@ namespace BINDER_SPACE
         static HRESULT BindUsingHostAssemblyResolver (/* in */ INT_PTR pManagedAssemblyLoadContextToBindWithin,
                                                       /* in */ AssemblyName       *pAssemblyName,
                                                       /* in */ DefaultAssemblyBinder *pDefaultBinder,
+                                                      /* in */ LoaderAllocator *pParentLoaderAllocator,
                                                       /* out */ Assembly           **ppAssembly);
 
         static HRESULT BindUsingPEImage(/* in */  AssemblyBinder     *pBinder,

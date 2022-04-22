@@ -87,7 +87,19 @@ HRESULT  AssemblySpec::Bind(AppDomain *pAppDomain, BINDER_SPACE::Assembly** ppAs
     {
         AssemblyNameData assemblyNameData = { 0 };
         PopulateAssemblyNameData(assemblyNameData);
-        hr = pBinder->BindAssemblyByName(&assemblyNameData, &pPrivAsm);
+
+        LoaderAllocator *pParentLoaderAllocator = NULL;
+        DomainAssembly *pParentAssembly = GetParentAssembly();
+        if (pParentAssembly != NULL)
+        {
+            pParentLoaderAllocator = pParentAssembly->GetLoaderAllocator();
+        }
+        else
+        {
+            pParentLoaderAllocator = pBinder->GetLoaderAllocator();
+        }
+
+        hr = pBinder->BindAssemblyByName(&assemblyNameData, pParentLoaderAllocator, &pPrivAsm);
     }
 
     if (SUCCEEDED(hr))

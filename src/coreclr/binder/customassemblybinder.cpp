@@ -39,6 +39,7 @@ HRESULT CustomAssemblyBinder::BindAssemblyByNameWorker(BINDER_SPACE::AssemblyNam
 }
 
 HRESULT CustomAssemblyBinder::BindUsingAssemblyName(BINDER_SPACE::AssemblyName* pAssemblyName,
+    LoaderAllocator *pParentLoaderAllocator,
     BINDER_SPACE::Assembly** ppAssembly)
 {
     // When LoadContext needs to resolve an assembly reference, it will go through the following lookup order:
@@ -72,7 +73,8 @@ HRESULT CustomAssemblyBinder::BindUsingAssemblyName(BINDER_SPACE::AssemblyName* 
             // of what to do next. The host-overridden binder can either fail the bind or return reference to an existing assembly
             // that has been loaded.
             //
-            hr = AssemblyBinderCommon::BindUsingHostAssemblyResolver(GetManagedAssemblyLoadContext(), pAssemblyName, m_pDefaultBinder, &pCoreCLRFoundAssembly);
+            hr = AssemblyBinderCommon::BindUsingHostAssemblyResolver(GetManagedAssemblyLoadContext(), pAssemblyName,
+                                                                     m_pDefaultBinder, pParentLoaderAllocator, &pCoreCLRFoundAssembly);
             if (SUCCEEDED(hr))
             {
                 // We maybe returned an assembly that was bound to a different AssemblyBinder instance.

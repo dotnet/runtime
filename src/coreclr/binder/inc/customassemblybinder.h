@@ -21,6 +21,7 @@ public:
         BINDER_SPACE::Assembly** ppAssembly) override;
 
     HRESULT BindUsingAssemblyName(BINDER_SPACE::AssemblyName* pAssemblyName,
+        LoaderAllocator *pParentLoaderAllocator,
         BINDER_SPACE::Assembly** ppAssembly) override;
 
     AssemblyLoaderAllocator* GetLoaderAllocator() override;
