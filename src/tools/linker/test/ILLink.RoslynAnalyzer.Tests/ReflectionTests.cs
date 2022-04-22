@@ -169,6 +169,12 @@ namespace ILLink.RoslynAnalyzer.Tests
 		}
 
 		[Fact]
+		public Task TypeDelegator ()
+		{
+			return RunTest ();
+		}
+
+		[Fact]
 		public Task TypeHierarchyReflectionWarnings ()
 		{
 			// https://github.com/dotnet/linker/issues/2578

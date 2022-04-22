@@ -1,6 +1,7 @@
 // Copyright (c) .NET Foundation and contributors. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System;
 using System.Collections.Immutable;
 using System.Linq;
 using ILLink.RoslynAnalyzer.DataFlow;
@@ -29,7 +30,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 		// Limit tracking array values to 32 values for performance reasons.
 		// There are many arrays much longer than 32 elements in .NET,
 		// but the interesting ones for the linker are nearly always less than 32 elements.
-		private const int MaxTrackedArrayValues = 32;
+		const int MaxTrackedArrayValues = 32;
 
 		public TrimAnalysisVisitor (
 			LocalStateLattice<MultiValue, ValueSetLattice<SingleValue>> lattice,
@@ -259,12 +260,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 					break;
 
 				default:
-					if (!calledMethod.ReturnsVoid && calledMethod.ReturnType.IsTypeInterestingForDataflow ())
-						methodReturnValue = new MethodReturnValue (calledMethod);
-					else
-						methodReturnValue = TopValue;
-
-					break;
+					throw new InvalidOperationException ($"Unexpected method {calledMethod.GetDisplayName ()} unhandled by HandleCallAction.");
 				}
 			}
 
