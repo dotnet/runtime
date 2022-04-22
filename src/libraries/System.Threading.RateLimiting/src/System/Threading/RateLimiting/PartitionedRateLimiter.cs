@@ -148,10 +148,6 @@ namespace System.Threading.RateLimiting
             }
             _disposed = true;
 
-            _cachedLimiters.Clear();
-
-            _timer?.Dispose();
-
             return false;
         }
 
@@ -182,6 +178,8 @@ namespace System.Threading.RateLimiting
             {
                 if (limiter._disposed)
                 {
+                    limiter._timer!.Dispose();
+                    limiter._cachedLimiters.Clear();
                     return;
                 }
 
