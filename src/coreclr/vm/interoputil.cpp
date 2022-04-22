@@ -140,9 +140,9 @@ HRESULT SetupErrorInfo(OBJECTREF pThrownObject)
                     {
                         GCX_PREEMP();
                         if (!message.IsEmpty())
-                            EEMessageBoxNonLocalizedDebugOnly((LPWSTR)message.GetUnicode(), W(".NET exception in COM"), MB_ICONSTOP | MB_OK);
+                            EEMessageBoxNonLocalizedNonFatal((LPWSTR)message.GetUnicode(), W(".NET exception in COM"), MB_ICONSTOP | MB_OK);
                         else
-                            EEMessageBoxNonLocalizedDebugOnly(W("No exception information available"), W(".NET exception in COM"),MB_ICONSTOP | MB_OK);
+                            EEMessageBoxNonLocalizedNonFatal(W("No exception information available"), W(".NET exception in COM"),MB_ICONSTOP | MB_OK);
                     }
                 }
                 EX_CATCH

@@ -776,25 +776,6 @@ private:
 
 HRESULT UtilLoadResourceString(CCompRC::ResourceCategory eCategory, UINT iResouceID, _Out_writes_ (iMax) LPWSTR szBuffer, int iMax);
 
-
-int UtilMessageBox(
-                  HWND hWnd,        // Handle to Owner Window
-                  UINT uText,       // Resource Identifier for Text message
-                  UINT uCaption,    // Resource Identifier for Caption
-                  UINT uType,       // Style of MessageBox
-                  BOOL displayForNonInteractive,    // Display even if the process is running non interactive
-                  BOOL ShowFileNameInTitle, // Flag to show FileName in Caption
-                  ...);             // Additional Arguments
-
-int UtilMessageBoxNonLocalized(
-                  HWND hWnd,        // Handle to Owner Window
-                  LPCWSTR lpText,    // Resource Identifier for Text message
-                  LPCWSTR lpTitle,   // Resource Identifier for Caption
-                  UINT uType,       // Style of MessageBox
-                  BOOL displayForNonInteractive,    // Display even if the process is running non interactive
-                  BOOL ShowFileNameInTitle, // Flag to show FileName in Caption
-                  ...);             // Additional Arguments
-
 int UtilMessageBoxVA(
                   HWND hWnd,        // Handle to Owner Window
                   UINT uText,       // Resource Identifier for Text message
@@ -825,13 +806,6 @@ int UtilMessageBoxNonLocalizedVA(
                   BOOL * pInputFromUser,            // To distinguish between user pressing abort vs. assuming abort.
                   va_list args);    // Additional Arguments
 
-int UtilMessageBoxCatastrophic(
-                  UINT uText,       // Text for MessageBox
-                  UINT uTitle,      // Title for MessageBox
-                  UINT uType,       // Style of MessageBox
-                  BOOL ShowFileNameInTitle, // Flag to show FileName in Caption
-                  ...);
-
 int UtilMessageBoxCatastrophicNonLocalized(
                   LPCWSTR lpText,    // Text for MessageBox
                   LPCWSTR lpTitle,   // Title for MessageBox
@@ -845,14 +819,6 @@ int UtilMessageBoxCatastrophicVA(
                   UINT uType,       // Style of MessageBox
                   BOOL ShowFileNameInTitle, // Flag to show FileName in Caption
                   va_list args);    // Additional Arguments
-
-int UtilMessageBoxCatastrophicNonLocalizedVA(
-                  LPCWSTR lpText,    // Text for MessageBox
-                  LPCWSTR lpTitle,   // Title for MessageBox
-                  UINT uType,       // Style of MessageBox
-                  BOOL ShowFileNameInTitle, // Flag to show FileName in Caption
-                  va_list args);    // Additional Arguments
-
 
 // The HRESULT_FROM_WIN32 macro evaluates its arguments three times.
 // <TODO>TODO: All HRESULT_FROM_WIN32(GetLastError()) should be replaced by calls to

@@ -67,8 +67,8 @@ void SafeExitProcess(UINT exitCode, ShutdownCompleteAction sca = SCA_ExitProcess
             {
                 _ASSERTE(!"Bad Exit value");
                 FAULT_NOT_FATAL();      // if we OOM we can simply give up
-                SetErrorMode(0);        // Insure that we actually cause the messsage box to pop.
-                EEMessageBoxCatastrophic(IDS_EE_ERRORMESSAGETEMPLATE, IDS_EE_ERRORTITLE, exitCode, W("BreakOnBadExit: returning bad exit code"));
+                fprintf(stderr, "Error 0x%08x.\n\nBreakOnBadExit: returning bad exit code.", exitCode);
+                FreeBuildDebugBreak();
             }
         }
     }

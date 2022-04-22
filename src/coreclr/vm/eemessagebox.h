@@ -21,18 +21,6 @@
 // out.
 //========================================================================
 
-int EEMessageBoxCatastrophicVA(
-                  UINT uText,               // Text for MessageBox
-                  UINT uTitle,              // Title for MessageBox
-                  UINT uType,               // Style of MessageBox
-                  BOOL showFileNameInTitle, // Flag to show FileName in Caption
-                  va_list insertionArgs);   // Additional Arguments
-
-int EEMessageBoxCatastrophic(
-                  UINT iText,       // Text for MessageBox
-                  UINT iTitle,      // Title for MessageBox
-                  ...);             // Additional Arguments
-
 int EEMessageBoxCatastrophicWithCustomizedStyle(
                   UINT iText,               // Text for MessageBox
                   UINT iTitle,              // Title for MessageBox
@@ -40,28 +28,10 @@ int EEMessageBoxCatastrophicWithCustomizedStyle(
                   BOOL showFileNameInTitle, // Flag to show FileName in Caption
                   ...);                     // Additional Arguments
 
-#ifdef _DEBUG
-
-int EEMessageBoxNonLocalizedDebugOnly(
-                  LPCWSTR lpText,    // Text message
-                  LPCWSTR lpCaption, // Caption
-                  UINT uType,       // Style of MessageBox
-                  ... );            // Additional Arguments
-
-#endif // _DEBUG
-
 // If we didn't display a dialog to the user, this method returns IDIGNORE, unlike the others that return IDABORT.
 int EEMessageBoxNonLocalizedNonFatal(
                   LPCWSTR lpText,   // Text message
                   LPCWSTR lpTitle,  // Caption
-                  UINT uType,       // Style of MessageBox
-                  ... );            // Additional Arguments
-
-// If we didn't display a dialog to the user, this method returns IDIGNORE, unlike the others that return IDABORT.
-int EEMessageBoxNonLocalizedNonFatal(
-                  LPCWSTR lpText,   // Text message
-                  LPCWSTR lpTitle,  // Caption
-                  LPCWSTR lpDetails,// Detailed message like a stack trace
                   UINT uType,       // Style of MessageBox
                   ... );            // Additional Arguments
 
