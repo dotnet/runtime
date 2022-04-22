@@ -78,7 +78,7 @@ namespace System.Xml.Xsl.XsltOld
         public Hashtable KeyTable { get { return _keyTable; } }
     }
 
-    internal class RootAction : TemplateBaseAction
+    internal sealed class RootAction : TemplateBaseAction
     {
         private const int QueryInitialized = 2;
         private const int RootProcessed = 3;

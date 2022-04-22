@@ -8,7 +8,7 @@ namespace System.Xml.Xsl.XsltOld
     using System.Xml;
     using System.Xml.XPath;
 
-    internal class ApplyImportsAction : CompiledAction
+    internal sealed class ApplyImportsAction : CompiledAction
     {
         private XmlQualifiedName? _mode;
         private Stylesheet? _stylesheet;

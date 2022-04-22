@@ -11,7 +11,7 @@ namespace System.Xml.Xsl.XsltOld
     using MS.Internal.Xml.XPath;
     using System.Globalization;
 
-    internal class TemplateAction : TemplateBaseAction
+    internal sealed class TemplateAction : TemplateBaseAction
     {
         private int _matchKey = Compiler.InvalidQueryKey;
         private XmlQualifiedName? _name;
@@ -78,7 +78,7 @@ namespace System.Xml.Xsl.XsltOld
             AnalyzePriority(compiler);
         }
 
-        internal virtual void CompileSingle(Compiler compiler)
+        internal void CompileSingle(Compiler compiler)
         {
             _matchKey = compiler.AddQuery("/", /*allowVars:*/false, /*allowKey:*/true, /*pattern*/true);
             _priority = Compiler.RootPriority;
@@ -159,7 +159,7 @@ namespace System.Xml.Xsl.XsltOld
             _priority = query.XsltDefaultPriority;
         }
 
-        protected void CompileParameters(Compiler compiler)
+        private void CompileParameters(Compiler compiler)
         {
             NavigatorInput input = compiler.Input;
             do
