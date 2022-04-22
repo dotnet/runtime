@@ -3185,7 +3185,7 @@ namespace System.Text.RegularExpressions.Generator
                 // Iteration body
                 MarkLabel(body, emitSemicolon: false);
 
-                // PERFORMANCE TODO:
+                // PERFORMANCE TODO https://github.com/dotnet/runtime/issues/68415:
                 // If we're inside of an outer loop, all of this state needs to be pushed on to the backtracking
                 // stack, since a subsequent iteration of that outer loop could overwrite it.  But if we're
                 // not inside of another loop, locals dedicated to this construct can store the data, as nothing
