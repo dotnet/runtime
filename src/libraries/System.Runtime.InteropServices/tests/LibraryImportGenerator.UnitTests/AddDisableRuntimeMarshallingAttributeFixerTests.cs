@@ -103,24 +103,21 @@ using System.Reflection;
         {
             var test = new Test();
 
-            string normalizedSource = LineEndingsHelper.Normalize(source);
             // We don't care about validating the settings for the MockAnalyzer and we're also hitting failures on Mono
             // with this check in this case, so skip the check for now.
             test.TestBehaviors = TestBehaviors.SkipGeneratedCodeCheck;
-            test.TestCode = normalizedSource;
-            test.FixedCode = normalizedSource;
-            test.BatchFixedCode = normalizedSource;
+            test.TestCode = source;
+            test.FixedCode = source;
+            test.BatchFixedCode = source;
             test.ExpectedDiagnostics.Add(diagnostic);
             if (propertiesFile is not null)
             {
-                test.TestState.Sources.Add(($"{Test.FilePathPrefix}Properties{Path.DirectorySeparatorChar}AssemblyInfo.cs", LineEndingsHelper.Normalize(propertiesFile)));
+                test.TestState.Sources.Add(($"{Test.FilePathPrefix}Properties{Path.DirectorySeparatorChar}AssemblyInfo.cs", propertiesFile));
             }
             if (expectedPropertiesFile is not null)
             {
-                string normalizedExpectedPropertiesFile = LineEndingsHelper.Normalize(expectedPropertiesFile);
-
-                test.FixedState.Sources.Add(($"{Test.FilePathPrefix}Properties{Path.DirectorySeparatorChar}AssemblyInfo.cs", normalizedExpectedPropertiesFile));
-                test.BatchFixedState.Sources.Add(($"{Test.FilePathPrefix}Properties{Path.DirectorySeparatorChar}AssemblyInfo.cs", normalizedExpectedPropertiesFile));
+                test.FixedState.Sources.Add(($"{Test.FilePathPrefix}Properties{Path.DirectorySeparatorChar}AssemblyInfo.cs", expectedPropertiesFile));
+                test.BatchFixedState.Sources.Add(($"{Test.FilePathPrefix}Properties{Path.DirectorySeparatorChar}AssemblyInfo.cs", expectedPropertiesFile));
             }
             await test.RunAsync();
         }
