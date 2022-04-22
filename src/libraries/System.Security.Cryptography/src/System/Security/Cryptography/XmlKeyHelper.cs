@@ -12,8 +12,10 @@ namespace System.Security.Cryptography
 {
     internal static class XmlKeyHelper
     {
-        internal static ParseState ParseDocument(string xmlString!!)
+        internal static ParseState ParseDocument(string xmlString)
         {
+            ArgumentNullException.ThrowIfNull(xmlString);
+
             try
             {
                 return ParseState.ParseDocument(xmlString);

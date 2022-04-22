@@ -658,8 +658,10 @@ namespace System.Runtime.Serialization
         }
 
         [RequiresUnreferencedCode(ObjectManagerUnreferencedCodeMessage)]
-        public void RegisterObject(object obj!!, long objectID, SerializationInfo? info, long idOfContainingObj, MemberInfo? member, int[]? arrayIndex)
+        public void RegisterObject(object obj, long objectID, SerializationInfo? info, long idOfContainingObj, MemberInfo? member, int[]? arrayIndex)
         {
+            ArgumentNullException.ThrowIfNull(obj);
+
             if (objectID <= 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(objectID), SR.ArgumentOutOfRange_ObjectID);
@@ -767,8 +769,10 @@ namespace System.Runtime.Serialization
         /// <param name="info">The SerializationInfo containing all info for obj.</param>
         /// <param name="context">The streaming context in which the serialization is taking place.</param>
         [RequiresUnreferencedCode(ObjectManagerUnreferencedCodeMessage)]
-        internal void CompleteISerializableObject(object obj!!, SerializationInfo? info, StreamingContext context)
+        internal void CompleteISerializableObject(object obj, SerializationInfo? info, StreamingContext context)
         {
+            ArgumentNullException.ThrowIfNull(obj);
+
             if (!(obj is ISerializable))
             {
                 throw new ArgumentException(SR.Serialization_NotISer);

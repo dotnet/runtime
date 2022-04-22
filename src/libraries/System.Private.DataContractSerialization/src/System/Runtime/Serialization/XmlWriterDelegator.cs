@@ -14,8 +14,10 @@ namespace System.Runtime.Serialization
         internal int depth;
         private int _prefixes;
 
-        public XmlWriterDelegator(XmlWriter writer!!)
+        public XmlWriterDelegator(XmlWriter writer)
         {
+            ArgumentNullException.ThrowIfNull(writer);
+
             this.writer = writer;
             this.dictionaryWriter = writer as XmlDictionaryWriter;
         }

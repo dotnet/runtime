@@ -63,8 +63,11 @@ namespace System.ComponentModel
         /// property the resource will be ignored.
         /// </summary>
         [RequiresUnreferencedCode("The Type of value cannot be statically discovered.")]
-        public virtual void ApplyResources(object value!!, string objectName!!, CultureInfo? culture)
+        public virtual void ApplyResources(object value, string objectName, CultureInfo? culture)
         {
+            ArgumentNullException.ThrowIfNull(value);
+            ArgumentNullException.ThrowIfNull(objectName);
+
             if (culture == null)
             {
                 culture = CultureInfo.CurrentUICulture;

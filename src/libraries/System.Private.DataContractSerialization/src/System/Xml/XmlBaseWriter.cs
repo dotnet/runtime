@@ -815,8 +815,10 @@ namespace System.Xml
             return _writer.WriteEndStartElementAsync(false);
         }
 
-        public override string? LookupPrefix(string ns!!)
+        public override string? LookupPrefix(string ns)
         {
+            ArgumentNullException.ThrowIfNull(ns);
+
             if (IsClosed)
                 ThrowClosed();
 

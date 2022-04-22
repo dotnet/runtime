@@ -24,14 +24,19 @@ namespace Microsoft.Extensions.Hosting.Internal
         private IEnumerable<IHostedService>? _hostedServices;
         private volatile bool _stopCalled;
 
-        public Host(IServiceProvider services!!,
+        public Host(IServiceProvider services,
                     IHostEnvironment hostEnvironment,
                     PhysicalFileProvider defaultProvider,
-                    IHostApplicationLifetime applicationLifetime!!,
-                    ILogger<Host> logger!!,
-                    IHostLifetime hostLifetime!!,
+                    IHostApplicationLifetime applicationLifetime,
+                    ILogger<Host> logger,
+                    IHostLifetime hostLifetime,
                     IOptions<HostOptions> options)
         {
+            ThrowHelper.ThrowIfNull(services);
+            ThrowHelper.ThrowIfNull(applicationLifetime);
+            ThrowHelper.ThrowIfNull(logger);
+            ThrowHelper.ThrowIfNull(hostLifetime);
+
             Services = services;
             _applicationLifetime = (applicationLifetime as ApplicationLifetime)!;
             _hostEnvironment = hostEnvironment;

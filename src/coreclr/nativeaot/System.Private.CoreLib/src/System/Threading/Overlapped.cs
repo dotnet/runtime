@@ -27,7 +27,7 @@ namespace System.Threading
 {
     #region class OverlappedData
 
-    internal unsafe sealed class OverlappedData
+    internal sealed unsafe class OverlappedData
     {
         internal IAsyncResult _asyncResult;
         internal object _callback; // IOCompletionCallback or _IOCompletionCallback

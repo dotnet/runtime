@@ -16,7 +16,7 @@ using System.Net.Http;
 
 namespace Microsoft.WebAssembly.Diagnostics
 {
-    internal class MonoProxy : DevToolsProxy
+    internal sealed class MonoProxy : DevToolsProxy
     {
         private IList<string> urlSymbolServerList;
         private static HttpClient client = new HttpClient();
@@ -1123,7 +1123,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
             foreach (string urlSymbolServer in urlSymbolServerList)
             {
-                string downloadURL = $"{urlSymbolServer}/{pdbName}/{asm.PdbGuid.ToString("N").ToUpper() + asm.PdbAge}/{pdbName}";
+                string downloadURL = $"{urlSymbolServer}/{pdbName}/{asm.PdbGuid.ToString("N").ToUpperInvariant() + asm.PdbAge}/{pdbName}";
 
                 try
                 {

@@ -62,29 +62,13 @@ namespace System.Text.RegularExpressions
         protected internal Match? runmatch;        // result object
         protected internal Regex? runregex;        // regex object
 
-        // TODO: Expose something as protected internal: https://github.com/dotnet/runtime/issues/59629
-        private protected bool quick;              // false if match details matter, true if only the fact that match occurred matters
+        private protected RegexRunnerMode _mode;   // the mode in which the runner is currently operating
 
         private int _timeout;                      // timeout in milliseconds
         private bool _checkTimeout;
         private long _timeoutOccursAt;
 
         protected RegexRunner() { }
-
-        /// <summary>
-        /// Scans the string to find the first match. Uses the Match object
-        /// both to feed text in and as a place to store matches that come out.
-        ///
-        /// All the action is in the abstract Go() method defined by subclasses. Our
-        /// responsibility is to load up the class members (as done here) before
-        /// calling Go.
-        ///
-        /// The optimizer can compute a set of candidate starting characters,
-        /// and we could use a separate method Skip() that will quickly scan past
-        /// any characters that we know can't match.
-        /// </summary>
-        protected Match? Scan(Regex regex, string text, int textbeg, int textend, int textstart, int prevlen, bool quick) =>
-            Scan(regex, text, textbeg, textend, textstart, prevlen, quick, regex.MatchTimeout);
 
         protected internal virtual void Scan(ReadOnlySpan<char> text)
         {
@@ -127,6 +111,11 @@ namespace System.Text.RegularExpressions
             InternalScan(runregex!, beginning, beginning + text.Length);
         }
 
+        // TODO https://github.com/dotnet/runtime/issues/62573: Obsolete this.
+        protected Match? Scan(Regex regex, string text, int textbeg, int textend, int textstart, int prevlen, bool quick) =>
+            Scan(regex, text, textbeg, textend, textstart, prevlen, quick, regex.MatchTimeout);
+
+        // TODO https://github.com/dotnet/runtime/issues/62573: Obsolete this.
         /// <summary>
         /// This method's body is only kept since it is a protected member that could be called by someone outside
         /// the assembly.
@@ -135,10 +124,12 @@ namespace System.Text.RegularExpressions
         {
             InitializeTimeout(timeout);
 
+            RegexRunnerMode mode = quick ? RegexRunnerMode.ExistenceRequired : RegexRunnerMode.FullMatchRequired;
+
             // We set runtext before calling InitializeForScan so that runmatch object is initialized with the text
             runtext = text;
 
-            InitializeForScan(regex, text, textstart, quick);
+            InitializeForScan(regex, text, textstart, mode);
 
             // InitializeForScan will default runtextstart and runtextend to 0 and length of string
             // since it is configured to work over a sliced portion of text so we adjust those values.
@@ -178,7 +169,7 @@ namespace System.Text.RegularExpressions
                 }
 
                 runmatch = null;
-                match.Tidy(runtextpos, 0);
+                match.Tidy(runtextpos, 0, mode);
             }
             else
             {
@@ -240,11 +231,11 @@ namespace System.Text.RegularExpressions
             }
         }
 
-        internal void InitializeForScan(Regex regex, ReadOnlySpan<char> text, int textstart, bool quick)
+        internal void InitializeForScan(Regex regex, ReadOnlySpan<char> text, int textstart, RegexRunnerMode mode)
         {
             // Store remaining arguments into fields now that we're going to start the scan.
             // These are referenced by the derived runner.
-            this.quick = quick;
+            _mode = mode;
             runregex = regex;
             runtextstart = textstart;
             runtextbeg = 0;

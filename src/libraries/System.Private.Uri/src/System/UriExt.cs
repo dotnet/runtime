@@ -554,8 +554,10 @@ namespace System
             return true;
         }
 
-        public static string UnescapeDataString(string stringToUnescape!!)
+        public static string UnescapeDataString(string stringToUnescape)
         {
+            ArgumentNullException.ThrowIfNull(stringToUnescape);
+
             if (stringToUnescape.Length == 0)
                 return string.Empty;
 
@@ -852,8 +854,10 @@ namespace System
             }
         }
 
-        public bool IsBaseOf(Uri uri!!)
+        public bool IsBaseOf(Uri uri)
         {
+            ArgumentNullException.ThrowIfNull(uri);
+
             if (!IsAbsoluteUri)
                 return false;
 

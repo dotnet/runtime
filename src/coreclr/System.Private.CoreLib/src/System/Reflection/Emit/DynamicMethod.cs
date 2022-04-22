@@ -89,8 +89,10 @@ namespace System.Reflection.Emit
         public DynamicMethod(string name,
                              Type? returnType,
                              Type[]? parameterTypes,
-                             Module m!!)
+                             Module m)
         {
+            ArgumentNullException.ThrowIfNull(m);
+
             Init(name,
                 MethodAttributes.Public | MethodAttributes.Static,
                 CallingConventions.Standard,
@@ -106,9 +108,11 @@ namespace System.Reflection.Emit
         public DynamicMethod(string name,
                              Type? returnType,
                              Type[]? parameterTypes,
-                             Module m!!,
+                             Module m,
                              bool skipVisibility)
         {
+            ArgumentNullException.ThrowIfNull(m);
+
             Init(name,
                 MethodAttributes.Public | MethodAttributes.Static,
                 CallingConventions.Standard,
@@ -126,9 +130,11 @@ namespace System.Reflection.Emit
                              CallingConventions callingConvention,
                              Type? returnType,
                              Type[]? parameterTypes,
-                             Module m!!,
+                             Module m,
                              bool skipVisibility)
         {
+            ArgumentNullException.ThrowIfNull(m);
+
             Init(name,
                 attributes,
                 callingConvention,
@@ -144,8 +150,10 @@ namespace System.Reflection.Emit
         public DynamicMethod(string name,
                              Type? returnType,
                              Type[]? parameterTypes,
-                             Type owner!!)
+                             Type owner)
         {
+            ArgumentNullException.ThrowIfNull(owner);
+
             Init(name,
                 MethodAttributes.Public | MethodAttributes.Static,
                 CallingConventions.Standard,
@@ -161,9 +169,11 @@ namespace System.Reflection.Emit
         public DynamicMethod(string name,
                              Type? returnType,
                              Type[]? parameterTypes,
-                             Type owner!!,
+                             Type owner,
                              bool skipVisibility)
         {
+            ArgumentNullException.ThrowIfNull(owner);
+
             Init(name,
                 MethodAttributes.Public | MethodAttributes.Static,
                 CallingConventions.Standard,
@@ -181,9 +191,11 @@ namespace System.Reflection.Emit
                              CallingConventions callingConvention,
                              Type? returnType,
                              Type[]? parameterTypes,
-                             Type owner!!,
+                             Type owner,
                              bool skipVisibility)
         {
+            ArgumentNullException.ThrowIfNull(owner);
+
             Init(name,
                 attributes,
                 callingConvention,
@@ -246,7 +258,7 @@ namespace System.Reflection.Emit
         [MemberNotNull(nameof(m_parameterTypes))]
         [MemberNotNull(nameof(m_returnType))]
         [MemberNotNull(nameof(m_dynMethod))]
-        private void Init(string name!!,
+        private void Init(string name,
                           MethodAttributes attributes,
                           CallingConventions callingConvention,
                           Type? returnType,
@@ -256,6 +268,8 @@ namespace System.Reflection.Emit
                           bool skipVisibility,
                           bool transparentMethod)
         {
+            ArgumentNullException.ThrowIfNull(name);
+
             CheckConsistency(attributes, callingConvention);
 
             // check and store the signature
@@ -759,8 +773,10 @@ namespace System.Reflection.Emit
                 throw new ArgumentException(SR.Argument_MustBeRuntimeMethodInfo, "this");
             }
 
-            public override object[] GetCustomAttributes(Type attributeType!!, bool inherit)
+            public override object[] GetCustomAttributes(Type attributeType, bool inherit)
             {
+                ArgumentNullException.ThrowIfNull(attributeType);
+
                 if (attributeType.UnderlyingSystemType is not RuntimeType attributeRuntimeType)
                     throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
 
@@ -779,12 +795,11 @@ namespace System.Reflection.Emit
                 return new object[] { new MethodImplAttribute((MethodImplOptions)GetMethodImplementationFlags()) };
             }
 
-            public override bool IsDefined(Type attributeType!!, bool inherit)
+            public override bool IsDefined(Type attributeType, bool inherit)
             {
-                if (attributeType.IsAssignableFrom(typeof(MethodImplAttribute)))
-                    return true;
-                else
-                    return false;
+                ArgumentNullException.ThrowIfNull(attributeType);
+
+                return attributeType.IsAssignableFrom(typeof(MethodImplAttribute));
             }
 
             public override bool IsSecurityCritical => m_owner.IsSecurityCritical;

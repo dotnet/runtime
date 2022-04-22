@@ -25,8 +25,11 @@ namespace Microsoft.Extensions.Caching.Memory
         private object? _value;
         private CacheEntryState _state;
 
-        internal CacheEntry(object key!!, MemoryCache memoryCache!!)
+        internal CacheEntry(object key, MemoryCache memoryCache)
         {
+            ThrowHelper.ThrowIfNull(key);
+            ThrowHelper.ThrowIfNull(memoryCache);
+
             Key = key;
             _cache = memoryCache;
             _previous = memoryCache.TrackLinkedCacheEntries ? CacheEntryHelper.EnterScope(this) : null;

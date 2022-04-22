@@ -35,8 +35,17 @@ namespace System.IO.Pipelines
         /// </summary>
         /// <param name="readingStream">The stream to read from.</param>
         /// <param name="options">The options to use.</param>
-        public StreamPipeReader(Stream readingStream!!, StreamPipeReaderOptions options!!)
+        public StreamPipeReader(Stream readingStream, StreamPipeReaderOptions options)
         {
+            if (readingStream is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.readingStream);
+            }
+            if (options is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.options);
+            }
+
             InnerStream = readingStream;
             _options = options;
             _bufferSegmentPool = new BufferSegmentStack(InitialSegmentPoolSize);
