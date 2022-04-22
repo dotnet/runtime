@@ -394,7 +394,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         All
     }
 
-    internal sealed class ExecutionContext
+    internal class ExecutionContext
     {
         public ExecutionContext(MonoSDBHelper sdbAgent, int id, object auxData)
         {

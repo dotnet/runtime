@@ -15,9 +15,9 @@ internal abstract class WasmDebuggerConnection : IDisposable
 
     protected WasmDebuggerConnection(string id) => Id = id;
 
-    public abstract Task<string?> ReadOne(TaskCompletionSource client_initiated_close,
-                                          TaskCompletionSource<Exception> side_exception,
-                                          CancellationToken token);
+    public abstract bool IsConnected { get; }
+
+    public abstract Task<string?> ReadOneAsync(CancellationToken token);
     public abstract Task SendAsync(byte[] bytes, CancellationToken token);
     public abstract Task ShutdownAsync(CancellationToken cancellationToken);
     public virtual void Dispose()

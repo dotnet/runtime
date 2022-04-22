@@ -3,6 +3,7 @@
 
 #nullable enable
 
+using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using System.Net.Sockets;
@@ -13,10 +14,10 @@ using Microsoft.Extensions.Logging;
 
 namespace Microsoft.WebAssembly.Diagnostics;
 
-public class FirefoxProxyServer
+public class FirefoxDebuggerProxy : DebuggerProxyBase
 {
     private static TcpListener? s_tcpListener;
-    private FirefoxMonoProxy? _firefoxMonoProxy;
+    internal FirefoxMonoProxy? FirefoxMonoProxy { get; private set; }
 
     [MemberNotNull(nameof(s_tcpListener))]
     public static void StartListener(int proxyPort, ILogger logger)
@@ -55,9 +56,11 @@ public class FirefoxProxyServer
         StartListener(proxyPort, logger);
 
         TcpClient ideClient = await s_tcpListener.AcceptTcpClientAsync();
-        _firefoxMonoProxy = new FirefoxMonoProxy(loggerFactory, testId);
-        await _firefoxMonoProxy.RunForFirefox(ideClient: ideClient, browserPort);
+        FirefoxMonoProxy = new FirefoxMonoProxy(loggerFactory, testId);
+        FirefoxMonoProxy.RunLoopStopped += (_, args) => ExitState = args;
+        await FirefoxMonoProxy.RunForFirefox(ideClient: ideClient, browserPort);
     }
 
-    public void Shutdown() => _firefoxMonoProxy?.Shutdown();
+    public override void Shutdown() => FirefoxMonoProxy?.Shutdown();
+    public override void Fail(Exception ex) => FirefoxMonoProxy?.Fail(ex);
 }

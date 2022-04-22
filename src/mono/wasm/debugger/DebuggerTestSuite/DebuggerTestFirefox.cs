@@ -16,42 +16,10 @@ public class DebuggerTestFirefox : DebuggerTestBase
     internal FirefoxInspectorClient _client;
     public DebuggerTestFirefox(string driver = "debugger-driver.html"):base(driver)
     {
-        _client = insp.Client as FirefoxInspectorClient;
-    }
+        if (insp.Client is not FirefoxInspectorClient)
+            throw new Exception($"Bug: client should be {nameof(FirefoxInspectorClient)} for use with {nameof(DebuggerTestFirefox)}");
 
-    protected override string BrowserName()
-    {
-        return "firefox";
-    }
-    protected override string BrowserPathLinux()
-    {
-        return "firefox";
-    }
-    protected override string BrowserExecutableLinux()
-    {
-        return "firefox";
-    }
-    protected override string BrowserPathWin()
-    {
-        return "firefox";
-    }
-    protected override string BrowserExecutableWin()
-    {
-        return "firefox.exe";
-    }
-
-    internal override string[] ProbeList()
-    {
-        string [] ret = {
-            //"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
-            //"/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge",
-            //"/Applications/Google Chrome Canary.app/Contents/MacOS/Google Chrome Canary",
-            //"/usr/bin/chromium",
-            "C:/Program Files/Mozilla Firefox/firefox.exe",
-            "/Applications/Firefox.app/Contents/MacOS/firefox"
-            //"/usr/bin/chromium-browser",
-        };
-        return ret;
+        _client = (FirefoxInspectorClient)insp.Client;
     }
 
     public override async Task InitializeAsync()
@@ -142,16 +110,8 @@ public class DebuggerTestFirefox : DebuggerTestBase
                                     string expression, string script_loc, int line, int column, string function_name,
                                     Func<JObject, Task> wait_for_event_fn = null, Func<JToken, Task> locals_fn = null)
     {
-        var o = JObject.FromObject(new
-            {
-                to = _client.ConsoleActorId,
-                type = "evaluateJSAsync",
-                text = expression,
-                options = new { eager = true, mapped = new { @await = true } }
-            });
-
         return await SendCommandAndCheck(
-                    o,
+                    CreateEvaluateArgs(expression),
                     "evaluateJSAsync", script_loc, line, column, function_name,
                     wait_for_event_fn: wait_for_event_fn,
                     locals_fn: locals_fn);
@@ -174,7 +134,7 @@ public class DebuggerTestFirefox : DebuggerTestBase
         Assert.Equal(expected_loc_str, loc_str);
     }
 
-    internal JObject ConvertFirefoxToDefaultFormat(JArray frames, JObject wait_res)
+    private JObject ConvertFirefoxToDefaultFormat(JArray frames, JObject wait_res)
     {
         var callFrames = new JArray();
         foreach (var frame in frames)
@@ -448,13 +408,7 @@ public class DebuggerTestFirefox : DebuggerTestBase
 
     internal override async Task<(JToken, Result)> EvaluateOnCallFrame(string id, string expression, bool expect_ok = true)
     {
-        var o = JObject.FromObject(new
-        {
-            to = _client.ConsoleActorId,
-            type = "evaluateJSAsync",
-            text = expression,
-            options = new { eager = true, mapped = new { @await = true } }
-        });
+        var o = CreateEvaluateArgs(expression);
         var res = await cli.SendCommand("evaluateJSAsync", o, token);
         if (res.IsOk)
         {
@@ -478,25 +432,16 @@ public class DebuggerTestFirefox : DebuggerTestBase
         return (null, res);
     }
 
-    internal override bool SkipProperty(string propertyName)
-    {
-        if (propertyName == "isEnum")
-            return true;
-        return false;
-    }
+    internal override bool SkipProperty(string propertyName) => propertyName == "isEnum";
 
-    internal override async Task CheckDateTimeGetter(JToken value, DateTime expected, string label = "")
-    {
-        await Task.CompletedTask;
-    }
+    internal override async Task CheckDateTimeGetter(JToken value, DateTime expected, string label = "") => await Task.CompletedTask;
 
-    internal override string EvaluateCommand()
-    {
-        return "evaluateJSAsync";
-    }
+    internal override string EvaluateCommand() => "evaluateJSAsync";
 
     internal override JObject CreateEvaluateArgs(string expression)
     {
+        if (string.IsNullOrEmpty(_client.ConsoleActorId))
+            throw new Exception($"Cannot create evaluate request because consoleActorId is '{_client.ConsoleActorId}");
         return JObject.FromObject(new
         {
             to = _client.ConsoleActorId,
@@ -517,11 +462,9 @@ public class DebuggerTestFirefox : DebuggerTestBase
             count =  1000
         }), token);
 
-        JToken top_frame = frames.Value["result"]?["value"]?["frames"]?[0];
+        if (frames.Value["result"]?["value"]?["frames"] is not JArray frames_arr)
+            throw new Exception($"Tried to get frames after waiting for '{what}', but got unexpected result: {frames}");
 
-        wait_res = ConvertFirefoxToDefaultFormat(frames.Value["result"]?["value"]?["frames"] as JArray, wait_res);
-
-        return wait_res;
+        return ConvertFirefoxToDefaultFormat(frames_arr, wait_res);
     }
-
 }

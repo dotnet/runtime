@@ -110,7 +110,7 @@ namespace DebuggerTests
                     WasmHost host = WasmHost.Chrome;
                     if (context.Request.Query.TryGetValue("host", out value) && value.Count == 1)
                     {
-                        if (!Enum.TryParse<WasmHost>(value[0], true, out host))
+                        if (!Enum.TryParse(value[0], true, out host))
                             throw new ArgumentException($"Unknown wasm host - {value[0]}");
                     }
 
@@ -125,51 +125,37 @@ namespace DebuggerTests
                     Logger.LogInformation($"{message_prefix} New test request for test id {test_id}");
                     try
                     {
-
                         int browserPort;
-                        string logFilePath = Path.Combine(DebuggerTestBase.TestLogPath, $"{test_id}-proxy.log");
-                        File.Delete(logFilePath);
-
-                        using var proxyLoggerFactory = LoggerFactory.Create(
-                            builder => builder
-                                     .AddSimpleConsole(options =>
-                                         {
-                                             options.SingleLine = true;
-                                             options.TimestampFormat = "[HH:mm:ss] ";
-                                         })
-                                    .AddFilter(null, LogLevel.Debug))
-                                    .AddFile(logFilePath, minimumLevel: LogLevel.Debug);
-
-                        ILogger proxyLogger = proxyLoggerFactory.CreateLogger($"WasmHostProvider-{test_id}");
-
+                        CancellationToken token = new();
                         if (host == WasmHost.Chrome)
                         {
-                            var provider = new ChromeProvider(test_id, proxyLogger);
+                            using var provider = new ChromeProvider(test_id, Logger);
                             browserPort = options.DevToolsUrl.Port;
-                            await provider.StartBrowserAndProxy(context,
-                                                options.BrowserPath,
+                            await provider.StartBrowserAndProxyAsync(context,
                                                 $"http://{TestHarnessProxy.Endpoint.Authority}/{options.PagePath}",
                                                 browserPort,
                                                 message_prefix,
-                                                proxyLoggerFactory).ConfigureAwait(false);
+                                                _loggerFactory,
+                                                token).ConfigureAwait(false);
                         }
                         else if (host == WasmHost.Firefox)
                         {
-                            var provider = new FirefoxProvider(test_id, proxyLogger);
+                            using var provider = new FirefoxProvider(test_id, Logger);
                             browserPort = 6500 + int.Parse(test_id);
-                            await provider.StartBrowserAndProxy(context,
-                                                options.BrowserPath,
+                            await provider.StartBrowserAndProxyAsync(context,
                                                 $"http://{TestHarnessProxy.Endpoint.Authority}/{options.PagePath}",
                                                 browserPort,
                                                 firefox_proxy_port,
                                                 message_prefix,
-                                                proxyLoggerFactory).ConfigureAwait(false);
+                                                _loggerFactory,
+                                                token).ConfigureAwait(false);
                         }
-                        proxyLogger.LogDebug($"TestHarnessStartup done");
+                        Logger.LogDebug($"{message_prefix} TestHarnessStartup done");
                     }
                     catch (Exception ex)
                     {
-                        Logger.LogError($"{message_prefix} launch-host-and-connect failed with {ex.ToString()}");
+                        Logger.LogError($"{message_prefix} launch-host-and-connect failed with {ex}");
+                        TestHarnessProxy.RegisterProxyExitState(test_id, new(RunLoopStopReason.Exception, ex));
                     }
                     finally
                     {

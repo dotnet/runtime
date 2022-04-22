@@ -62,7 +62,7 @@ namespace DebuggerTests
                 if (args.reason == RunLoopStopReason.Exception)
                 {
                     foreach (var cmd in pending_cmds.Values)
-                        cmd.SetException(args.ex);
+                        cmd.SetException(args.exception);
                 }
                 else
                 {

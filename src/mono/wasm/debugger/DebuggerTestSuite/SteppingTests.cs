@@ -26,7 +26,7 @@ namespace DebuggerTests
                     Assert.Equal(bp.Value["breakpointId"]?.ToString(), pause_location["hitBreakpoints"]?[0]?.Value<string>());
 
                     var top_frame = pause_location["callFrames"][0];
-                    CheckLocation("dotnet://debugger-test.dll/debugger-test.cs", 9, 4, scripts, top_frame["functionLocation"]);
+                    CheckLocation("dotnet://debugger-test.dll/debugger-test.cs", 8, 4, scripts, top_frame["functionLocation"]);
                     return Task.CompletedTask;
                 }
             );

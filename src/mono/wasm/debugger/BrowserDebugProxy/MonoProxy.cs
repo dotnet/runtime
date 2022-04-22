@@ -15,7 +15,7 @@ using System.Net.Http;
 
 namespace Microsoft.WebAssembly.Diagnostics
 {
-    internal sealed class MonoProxy : DevToolsProxy
+    internal class MonoProxy : DevToolsProxy
     {
         private IList<string> urlSymbolServerList;
         private static HttpClient client = new HttpClient();
@@ -250,7 +250,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                                     return true;
                                 }
                         }
-                        Log("verbose", $"proxying Debugger.scriptParsed ({sessionId.sessionId}) {url} {args}");
+                        logger.LogTrace($"proxying Debugger.scriptParsed ({sessionId.sessionId}) {url} {args}");
                         break;
                     }
 

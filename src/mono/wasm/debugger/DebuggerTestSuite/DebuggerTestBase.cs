@@ -50,27 +50,6 @@ namespace DebuggerTests
         static string s_debuggerTestAppPath;
         static int s_idCounter = -1;
 
-        protected virtual string BrowserName()
-        {
-            return "chrome";
-        }
-        protected virtual string BrowserPathLinux()
-        {
-            return "chrome-linux";
-        }
-        protected virtual string BrowserExecutableLinux()
-        {
-            return "chrome";
-        }
-        protected virtual string BrowserPathWin()
-        {
-            return "chrome-win";
-        }
-        protected virtual string BrowserExecutableWin()
-        {
-            return "chrome.exe";
-        }
-
         public int Id { get; init; }
 
         public static string DebuggerTestAppPath
@@ -112,61 +91,6 @@ namespace DebuggerTests
             throw new Exception($"Cannot find 'debugger-driver.html' in {test_app_path}");
         }
 
-        internal virtual string[] ProbeList()
-        {
-            string [] ret = {
-                "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
-                "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge",
-                "/Applications/Google Chrome Canary.app/Contents/MacOS/Google Chrome Canary",
-                "/usr/bin/chromium",
-                "C:/Program Files/Google/Chrome/Application/chrome.exe",
-                "/usr/bin/chromium-browser",
-            };
-            return ret;
-        }
-
-        string browser_path;
-
-        internal string GetBrowserPath()
-        {
-            if (string.IsNullOrEmpty(browser_path))
-            {
-                browser_path = FindBrowserPath();
-                if (!string.IsNullOrEmpty(browser_path))
-                {
-                    browser_path = Path.GetFullPath(browser_path);
-                    Console.WriteLine ($"** Using browser from {browser_path}");
-                }
-                else
-                    throw new Exception("Could not find an installed Browser to use");
-            }
-
-            return browser_path;
-
-            string FindBrowserPath()
-            {
-                string browser_path_env_var = Environment.GetEnvironmentVariable("BROWSER_PATH_FOR_DEBUGGER_TESTS");
-                if (!string.IsNullOrEmpty(browser_path_env_var))
-                {
-                    if (File.Exists(browser_path_env_var))
-                        return browser_path_env_var;
-
-                    Console.WriteLine ($"warning: Could not find BROWSER_PATH_FOR_DEBUGGER_TESTS={browser_path_env_var}");
-                }
-
-                // Look for a browser installed in artifacts, for local runs
-                string baseDir = Path.Combine(Path.GetDirectoryName(typeof(DebuggerTestBase).Assembly.Location), "..", "..");
-                string path = Path.Combine(baseDir, BrowserName(), BrowserPathLinux(), BrowserExecutableLinux());
-                if (File.Exists(path))
-                    return path;
-                path = Path.Combine(baseDir, BrowserName(), BrowserPathWin(), BrowserExecutableWin());
-                if (File.Exists(path))
-                    return path;
-
-                return ProbeList().FirstOrDefault(p => File.Exists(p));
-            }
-        }
-
         internal virtual string UrlToRemoteDebugging() => "http://localhost:0";
 
         static string s_testLogPath = null;
@@ -196,7 +120,7 @@ namespace DebuggerTests
             insp = new Inspector(Id);
             cli = insp.Client;
             scripts = SubscribeToScripts(insp);
-            startTask = TestHarnessProxy.Start(GetBrowserPath(), DebuggerTestAppPath, driver, UrlToRemoteDebugging());
+            startTask = TestHarnessProxy.Start(DebuggerTestAppPath, driver, UrlToRemoteDebugging());
         }
 
         public virtual async Task InitializeAsync()
@@ -291,9 +215,7 @@ namespace DebuggerTests
         }
 
         internal virtual JObject CreateEvaluateArgs(string expression)
-        {
-            return JObject.FromObject(new { expression });
-        }
+            => JObject.FromObject(new { expression });
 
         internal virtual async Task<JObject> WaitFor(string what)
         {
@@ -599,7 +521,7 @@ namespace DebuggerTests
                                         string expression, string script_loc, int line, int column, string function_name,
                                         Func<JObject, Task> wait_for_event_fn = null, Func<JToken, Task> locals_fn = null)
             => await SendCommandAndCheck(
-                        JObject.FromObject(new { expression = expression }),
+                        CreateEvaluateArgs(expression),
                         "Runtime.evaluate", script_loc, line, column, function_name,
                         wait_for_event_fn: wait_for_event_fn,
                         locals_fn: locals_fn);
@@ -1165,7 +1087,7 @@ namespace DebuggerTests
         {
             foreach (var arg in args)
             {
-                var (eval_val, _) = await EvaluateOnCallFrame(call_frame_id, arg.expression);
+                var (eval_val, _) = await EvaluateOnCallFrame(call_frame_id, arg.expression).ConfigureAwait(false);
                 try
                 {
                     await CheckValue(eval_val, arg.expected, arg.expression);
