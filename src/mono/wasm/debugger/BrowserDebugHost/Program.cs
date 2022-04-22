@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -23,14 +24,6 @@ namespace Microsoft.WebAssembly.Diagnostics
     {
         public static void Main(string[] args)
         {
-            using ILoggerFactory loggerFactory = LoggerFactory.Create(builder =>
-                builder.AddSimpleConsole(options =>
-                        {
-                            options.TimestampFormat = "[HH:mm:ss] ";
-                        })
-                       .AddFilter(null, LogLevel.Debug)
-            );
-
             IConfigurationRoot config = new ConfigurationBuilder().AddCommandLine(args).Build();
             int proxyPort = 0;
             if (config["proxy-port"] is not null && int.TryParse(config["proxy-port"], out int port))
@@ -38,6 +31,22 @@ namespace Microsoft.WebAssembly.Diagnostics
             int firefoxDebugPort = 6000;
             if (config["firefox-debug-port"] is not null && int.TryParse(config["firefox-debug-port"], out int ffport))
                 firefoxDebugPort = ffport;
+            string? logPath = config["log-path"];
+
+
+            using ILoggerFactory loggerFactory = LoggerFactory.Create(builder =>
+            {
+                builder.AddSimpleConsole(options =>
+                        {
+                            options.TimestampFormat = "[HH:mm:ss] ";
+                        })
+                       .AddFilter(null, LogLevel.Debug);
+
+                if (!string.IsNullOrEmpty(logPath))
+                    builder.AddFile(Path.Combine(logPath, "proxy.log"),
+                                minimumLevel: LogLevel.Trace,
+                                outputTemplate: "{Timestamp:o} [{Level:u3}] {SourceContext}: {Message}{NewLine}{Exception}");
+            });
 
             ILogger logger = loggerFactory.CreateLogger("FirefoxMonoProxy");
             _ = FirefoxDebuggerProxy.Run(browserPort: firefoxDebugPort, proxyPort: proxyPort, loggerFactory, logger);
