@@ -751,12 +751,6 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
     // we are storing arg slot number in GT_PUTARG_STK node in lowering phase.
     unsigned argOffsetOut = treeNode->getArgOffset();
 
-#ifdef DEBUG
-    CallArg* callArg = treeNode->gtCall->gtArgs.FindByNode(treeNode);
-    assert(callArg != nullptr);
-    DEBUG_ARG_SLOTS_ASSERT(argOffsetOut == (callArg->AbiInfo.SlotNum * TARGET_POINTER_SIZE));
-#endif // DEBUG
-
     // Whether to setup stk arg in incoming or out-going arg area?
     // Fast tail calls implemented as epilog+jmp = stk arg is setup in incoming arg area.
     // All other calls - stk arg is setup in out-going arg area.

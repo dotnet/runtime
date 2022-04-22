@@ -1106,20 +1106,14 @@ GenTree* Lowering::NewPutArg(GenTreeCall* call, GenTree* arg, CallArg* callArg, 
 #endif // TARGET_ARM
         }
 
-        const unsigned slotNumber = callArg->AbiInfo.ByteOffset / TARGET_POINTER_SIZE;
-        DEBUG_ARG_SLOTS_ASSERT(slotNumber == callArg->AbiInfo.SlotNum);
-        const bool putInIncomingArgArea = call->IsFastTailCall();
+        const unsigned slotNumber           = callArg->AbiInfo.ByteOffset / TARGET_POINTER_SIZE;
+        const bool     putInIncomingArgArea = call->IsFastTailCall();
 
-        putArg = new (comp, GT_PUTARG_SPLIT)
-            GenTreePutArgSplit(arg, callArg->AbiInfo.ByteOffset,
-#if defined(DEBUG_ARG_SLOTS) && defined(FEATURE_PUT_STRUCT_ARG_STK)
-                               callArg->AbiInfo.GetStackByteSize(), slotNumber, callArg->AbiInfo.GetStackSlotsNumber(),
-#elif defined(DEBUG_ARG_SLOTS) && !defined(FEATURE_PUT_STRUCT_ARG_STK)
-                               slotNumber,
-#elif !defined(DEBUG_ARG_SLOTS) && defined(FEATURE_PUT_STRUCT_ARG_STK)
-                               callArg->AbiInfo.GetStackByteSize(),
+        putArg = new (comp, GT_PUTARG_SPLIT) GenTreePutArgSplit(arg, callArg->AbiInfo.ByteOffset,
+#ifdef FEATURE_PUT_STRUCT_ARG_STK
+                                                                callArg->AbiInfo.GetStackByteSize(),
 #endif
-                               callArg->AbiInfo.NumRegs, call, putInIncomingArgArea);
+                                                                callArg->AbiInfo.NumRegs, call, putInIncomingArgArea);
         // If struct argument is morphed to GT_FIELD_LIST node(s),
         // we can know GC info by type of each GT_FIELD_LIST node.
         // So we skip setting GC Pointer info.
@@ -1240,12 +1234,7 @@ GenTree* Lowering::NewPutArg(GenTreeCall* call, GenTree* arg, CallArg* callArg, 
 
             putArg =
                 new (comp, GT_PUTARG_STK) GenTreePutArgStk(GT_PUTARG_STK, TYP_VOID, arg, callArg->AbiInfo.ByteOffset,
-#if defined(DEBUG_ARG_SLOTS) && defined(FEATURE_PUT_STRUCT_ARG_STK)
-                                                           callArg->AbiInfo.GetStackByteSize(), slotNumber,
-                                                           callArg->AbiInfo.GetStackSlotsNumber(),
-#elif defined(DEBUG_ARG_SLOTS) && !defined(FEATURE_PUT_STRUCT_ARG_STK)
-                                                           slotNumber,
-#elif !defined(DEBUG_ARG_SLOTS) && defined(FEATURE_PUT_STRUCT_ARG_STK)
+#ifdef FEATURE_PUT_STRUCT_ARG_STK
                                                            callArg->AbiInfo.GetStackByteSize(),
 #endif
                                                            call, putInIncomingArgArea);
@@ -1447,7 +1436,7 @@ void Lowering::LowerArg(GenTreeCall* call, CallArg* callArg, bool late)
             // For longs, we will replace the GT_LONG with a GT_FIELD_LIST, and put that under a PUTARG_STK.
             // Although the hi argument needs to be pushed first, that will be handled by the general case,
             // in which the fields will be reversed.
-            assert(callArg->AbiInfo.NumSlots == 2);
+            assert(callArg->AbiInfo.GetStackSlotsNumber() == 2);
             newArg->SetRegNum(REG_STK);
             BlockRange().InsertBefore(arg, fieldList, newArg);
         }

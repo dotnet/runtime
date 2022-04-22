@@ -4028,10 +4028,6 @@ struct CallArgABIInformation
 #ifdef TARGET_LOONGARCH64
         , StructFloatFieldType()
 #endif
-#ifdef DEBUG_ARG_SLOTS
-        , SlotNum(0)
-        , NumSlots(0)
-#endif
         , ArgType(TYP_UNDEF)
         , IsBackFilled(false)
         , IsStruct(false)
@@ -4075,15 +4071,6 @@ public:
     // e.g  `struct {int a; float b;}` passed by an integer register and a float register.
     var_types StructFloatFieldType[2];
 #endif
-#if defined(DEBUG_ARG_SLOTS)
-    // These fields were used to calculate stack size in stack slots for arguments
-    // but now they are replaced by precise `m_byteOffset/m_byteSize` because of
-    // arm64 apple abi requirements.
-
-    // A slot is a pointer sized region in the OutArg area.
-    unsigned SlotNum;  // When an argument is passed in the OutArg area this is the slot number in the OutArg area
-    unsigned NumSlots; // Count of number of slots that this argument uses
-#endif                 // DEBUG_ARG_SLOTS
     // The type used to pass this argument. This is generally the original
     // argument type, but when a struct is passed as a scalar type, this is
     // that type. Note that if a struct is passed by reference, this will still
@@ -4184,13 +4171,6 @@ public:
 
     void SetByteSize(unsigned byteSize, unsigned byteAlignment, bool isStruct, bool isFloatHfa);
 
-#if defined(DEBUG_ARG_SLOTS)
-    // Returns the number of "slots" used, where for this purpose a
-    // register counts as a slot.
-    unsigned GetSlotCount() const;
-    unsigned GetSize() const;
-#endif
-
     // Get the number of bytes that this argument is occupying on the stack,
     // including padding up to the target pointer size for platforms
     // where a stack argument can't take less.
@@ -4202,11 +4182,8 @@ public:
     void SetMultiRegNums();
 
     // Return number of stack slots that this argument is taking.
-    // TODO-Cleanup: this function does not align with arm64 apple model,
-    // delete it. In most cases we just want to know if we it is using stack or not
-    // but in some cases we are checking if it is a multireg arg, like:
-    // `numRegs + GetStackSlotsNumber() > 1` that is harder to replace.
-    //
+    // This value is not meaningful on macOS arm64 where multiple arguments can
+    // be passed in the same stack slot.
     unsigned GetStackSlotsNumber() const
     {
         return roundUp(GetStackByteSize(), TARGET_POINTER_SIZE) / TARGET_POINTER_SIZE;
@@ -4335,7 +4312,7 @@ class CallArgs
     void AddedWellKnownArg(WellKnownArg arg);
     void RemovedWellKnownArg(WellKnownArg arg);
     regNumber GetCustomRegister(Compiler* comp, CorInfoCallConvExtension cc, WellKnownArg arg);
-    void SplitArg(CallArg* arg, unsigned numRegs, unsigned numSlots, unsigned* nextSlotNum);
+    void SplitArg(CallArg* arg, unsigned numRegs, unsigned numSlots);
 
 public:
     CallArgs();
@@ -7216,13 +7193,6 @@ private:
 #endif
 
 public:
-#if defined(DEBUG_ARG_SLOTS)
-    unsigned gtSlotNum; // Slot number of the argument to be passed on stack
-#if defined(FEATURE_PUT_STRUCT_ARG_STK)
-    unsigned gtNumSlots; // Number of slots for the argument to be passed on stack
-#endif
-#endif
-
 #if defined(UNIX_X86_ABI)
     unsigned gtPadAlign; // Number of padding slots for stack alignment
 #endif
@@ -7257,24 +7227,12 @@ public:
 #if defined(FEATURE_PUT_STRUCT_ARG_STK)
                      unsigned stackByteSize,
 #endif
-#if defined(DEBUG_ARG_SLOTS)
-                     unsigned slotNum,
-#if defined(FEATURE_PUT_STRUCT_ARG_STK)
-                     unsigned numSlots,
-#endif
-#endif
                      GenTreeCall* callNode,
                      bool         putInIncomingArgArea)
         : GenTreeUnOp(oper, type, op1 DEBUGARG(/*largeNode*/ false))
         , m_byteOffset(stackByteOffset)
 #if defined(FEATURE_PUT_STRUCT_ARG_STK)
         , m_byteSize(stackByteSize)
-#endif
-#if defined(DEBUG_ARG_SLOTS)
-        , gtSlotNum(slotNum)
-#if defined(FEATURE_PUT_STRUCT_ARG_STK)
-        , gtNumSlots(numSlots)
-#endif
 #endif
 #if defined(UNIX_X86_ABI)
         , gtPadAlign(0)
@@ -7289,10 +7247,6 @@ public:
         , gtPutArgStkKind(Kind::Invalid)
 #endif
     {
-        DEBUG_ARG_SLOTS_ASSERT(m_byteOffset == slotNum * TARGET_POINTER_SIZE);
-#if defined(FEATURE_PUT_STRUCT_ARG_STK)
-        DEBUG_ARG_SLOTS_ASSERT(m_byteSize == gtNumSlots * TARGET_POINTER_SIZE);
-#endif
     }
 
     GenTree*& Data()
@@ -7317,8 +7271,6 @@ public:
 
     unsigned getArgOffset() const
     {
-        DEBUG_ARG_SLOTS_ASSERT(m_byteOffset / TARGET_POINTER_SIZE == gtSlotNum);
-        DEBUG_ARG_SLOTS_ASSERT(m_byteOffset % TARGET_POINTER_SIZE == 0);
         return m_byteOffset;
     }
 
@@ -7373,12 +7325,6 @@ struct GenTreePutArgSplit : public GenTreePutArgStk
 #if defined(FEATURE_PUT_STRUCT_ARG_STK)
                        unsigned stackByteSize,
 #endif
-#if defined(DEBUG_ARG_SLOTS)
-                       unsigned slotNum,
-#if defined(FEATURE_PUT_STRUCT_ARG_STK)
-                       unsigned numSlots,
-#endif
-#endif
                        unsigned     numRegs,
                        GenTreeCall* callNode,
                        bool         putIncomingArgArea)
@@ -7388,12 +7334,6 @@ struct GenTreePutArgSplit : public GenTreePutArgStk
                            stackByteOffset,
 #if defined(FEATURE_PUT_STRUCT_ARG_STK)
                            stackByteSize,
-#endif
-#if defined(DEBUG_ARG_SLOTS)
-                           slotNum,
-#if defined(FEATURE_PUT_STRUCT_ARG_STK)
-                           numSlots,
-#endif
 #endif
                            callNode,
                            putIncomingArgArea)
