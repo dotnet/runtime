@@ -108,8 +108,8 @@ static HRESULT appendStrNumW(CQuickBytes *out, int num)
     }
     CONTRACTL_END
 
-    WCHAR buff[32];
-    swprintf_s(buff, 32, W("%d"), num);
+    WCHAR buff[ARRAY_SIZE("-2147483648")];
+    FormatInteger(buff, ARRAY_SIZE(buff), "%d", num);
     return appendStrW(out, buff);
 } // static HRESULT appendStrNumW()
 
@@ -136,8 +136,8 @@ static HRESULT appendStrHexW(CQuickBytes *out, int num)
     }
     CONTRACTL_END
 
-    WCHAR buff[32];
-    swprintf_s(buff, 32, W("%08X"), num);
+    WCHAR buff[ARRAY_SIZE("ffffffff")];
+    FormatInteger(buff, ARRAY_SIZE(buff), "%08X", num);
     return appendStrW(out, buff);
 } // static HRESULT appendStrHexW()
 

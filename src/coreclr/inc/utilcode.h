@@ -384,6 +384,21 @@ typedef LPSTR   LPUTF8;
 #define MAKE_ANSIPTR_FROMWIDEN(ptrname, widestr, _nCharacters, _pCnt)        \
        MAKE_MULTIBYTE_FROMWIDEN(ptrname, widestr, _nCharacters, _pCnt, CP_ACP)
 
+template <typename I>
+inline WCHAR* FormatInteger(WCHAR* str, size_t strCount, const char* fmt, I v)
+{
+    static_assert(std::is_integral<I>::value, "Integral type required.");
+
+    // Represents the most amount of space needed to format
+    // an integral type (i.e., %d or %x).
+    char tmp[ARRAY_SIZE("-9223372036854775808")];
+    int cnt = sprintf_s(tmp, ARRAY_SIZE(tmp), fmt, v);
+    WCHAR* end = str + strCount;
+    for (int i = 0; i < cnt && str < end; ++i, ++str)
+        *str = (WCHAR)tmp[i];
+    *str = W('\0');
+    return str;
+}
 
 inline
 LPWSTR DuplicateString(
