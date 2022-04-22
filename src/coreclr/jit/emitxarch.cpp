@@ -16356,7 +16356,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_sarx:
         case INS_shrx:
         {
-            result.insLatency    += PERFSCORE_LATENCY_1C;
+            result.insLatency += PERFSCORE_LATENCY_1C;
             result.insThroughput = PERFSCORE_THROUGHPUT_2X;
             break;
         }
