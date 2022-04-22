@@ -129,8 +129,7 @@ namespace System.Reflection.Emit
 
         public FieldBuilder DefineInitializedData(string name, byte[] data, FieldAttributes attributes)
         {
-            if (data == null)
-                throw new ArgumentNullException(nameof(data));
+            ArgumentNullException.ThrowIfNull(data);
 
             FieldAttributes maskedAttributes = attributes & ~FieldAttributes.ReservedMask;
             FieldBuilder fb = DefineDataImpl(name, data.Length, maskedAttributes | FieldAttributes.HasFieldRVA);
@@ -199,8 +198,7 @@ namespace System.Reflection.Emit
 
         public MethodBuilder DefineGlobalMethod(string name, MethodAttributes attributes, CallingConventions callingConvention, Type? returnType, Type[]? requiredReturnTypeCustomModifiers, Type[]? optionalReturnTypeCustomModifiers, Type[]? parameterTypes, Type[][]? requiredParameterTypeCustomModifiers, Type[][]? optionalParameterTypeCustomModifiers)
         {
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
+            ArgumentNullException.ThrowIfNull(name);
             if ((attributes & MethodAttributes.Static) == 0)
                 throw new ArgumentException("global methods must be static");
             if (global_type_created != null)
@@ -215,8 +213,7 @@ namespace System.Reflection.Emit
         [RequiresUnreferencedCode("P/Invoke marshalling may dynamically access members that could be trimmed.")]
         public MethodBuilder DefinePInvokeMethod(string name, string dllName, string entryName, MethodAttributes attributes, CallingConventions callingConvention, Type? returnType, Type[]? parameterTypes, CallingConvention nativeCallConv, CharSet nativeCharSet)
         {
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
+            ArgumentNullException.ThrowIfNull(name);
             if ((attributes & MethodAttributes.Static) == 0)
                 throw new ArgumentException("global methods must be static");
             if (global_type_created != null)
@@ -251,8 +248,7 @@ namespace System.Reflection.Emit
             Justification = "Reflection.Emit is not subject to trimming")]
         private TypeBuilder DefineType(string name, TypeAttributes attr, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, Type[]? interfaces, PackingSize packingSize, int typesize)
         {
-            if (name == null)
-                throw new ArgumentNullException("fullname");
+            ArgumentNullException.ThrowIfNull(name, "fullname");
             ITypeIdentifier ident = TypeIdentifiers.FromInternal(name);
             if (name_cache.ContainsKey(ident))
                 throw new ArgumentException("Duplicate type name within an assembly.");
@@ -437,8 +433,7 @@ namespace System.Reflection.Emit
 
         public void SetCustomAttribute(CustomAttributeBuilder customBuilder)
         {
-            if (customBuilder == null)
-                throw new ArgumentNullException(nameof(customBuilder));
+            ArgumentNullException.ThrowIfNull(customBuilder);
             if (cattrs != null)
             {
                 CustomAttributeBuilder[] new_array = new CustomAttributeBuilder[cattrs.Length + 1];
@@ -486,8 +481,7 @@ namespace System.Reflection.Emit
 
         internal static int GetMethodToken(MethodInfo method)
         {
-            if (method == null)
-                throw new ArgumentNullException(nameof(method));
+            ArgumentNullException.ThrowIfNull(method);
 
             return method.MetadataToken;
         }
@@ -499,16 +493,14 @@ namespace System.Reflection.Emit
 
         internal static int GetConstructorToken(ConstructorInfo con)
         {
-            if (con == null)
-                throw new ArgumentNullException(nameof(con));
+            ArgumentNullException.ThrowIfNull(con);
 
             return con.MetadataToken;
         }
 
         internal static int GetFieldToken(FieldInfo field)
         {
-            if (field == null)
-                throw new ArgumentNullException(nameof(field));
+            ArgumentNullException.ThrowIfNull(field);
 
             return field.MetadataToken;
         }
@@ -521,22 +513,19 @@ namespace System.Reflection.Emit
 
         internal int GetSignatureToken(SignatureHelper sigHelper)
         {
-            if (sigHelper == null)
-                throw new ArgumentNullException(nameof(sigHelper));
+            ArgumentNullException.ThrowIfNull(sigHelper);
             return GetToken(sigHelper);
         }
 
         internal int GetStringConstant(string str)
         {
-            if (str == null)
-                throw new ArgumentNullException(nameof(str));
+            ArgumentNullException.ThrowIfNull(str);
             return GetToken(str);
         }
 
         internal static int GetTypeToken(Type type)
         {
-            if (type == null)
-                throw new ArgumentNullException(nameof(type));
+            ArgumentNullException.ThrowIfNull(type);
             if (type.IsByRef)
                 throw new ArgumentException("type can't be a byref type", nameof(type));
             return type.MetadataToken;

@@ -1762,19 +1762,19 @@ namespace System.Xml
     }
 
     // Same as base text writer class except that elements, attributes, comments, and pi's are indented.
-    internal partial class XmlUtf8RawTextWriterIndent : XmlUtf8RawTextWriter
+    internal sealed partial class XmlUtf8RawTextWriterIndent : XmlUtf8RawTextWriter
     {
         //
         // Fields
         //
-        protected int _indentLevel;
-        protected bool _newLineOnAttributes;
-        protected string _indentChars;
+        private int _indentLevel;
+        private bool _newLineOnAttributes;
+        private string _indentChars;
 
-        protected bool _mixedContent;
+        private bool _mixedContent;
         private BitStack _mixedContentStack;
 
-        protected ConformanceLevel _conformanceLevel = ConformanceLevel.Auto;
+        private ConformanceLevel _conformanceLevel = ConformanceLevel.Auto;
 
         //
         // Constructors

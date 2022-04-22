@@ -8,7 +8,7 @@ namespace System.Xml.Xsl.XsltOld
     using System.Xml;
     using System.Xml.XPath;
 
-    internal class IfAction : ContainerAction
+    internal sealed class IfAction : ContainerAction
     {
         internal enum ConditionType
         {

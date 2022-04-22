@@ -242,8 +242,7 @@ namespace System.Threading
         [CLSCompliant(false)]
         public static unsafe Overlapped Unpack(NativeOverlapped* nativeOverlappedPtr)
         {
-            if (nativeOverlappedPtr == null)
-                throw new ArgumentNullException(nameof(nativeOverlappedPtr));
+            ArgumentNullException.ThrowIfNull(nativeOverlappedPtr);
 
             return OverlappedData.GetOverlappedFromNative(nativeOverlappedPtr)._overlapped!;
         }
@@ -251,8 +250,7 @@ namespace System.Threading
         [CLSCompliant(false)]
         public static unsafe void Free(NativeOverlapped* nativeOverlappedPtr)
         {
-            if (nativeOverlappedPtr == null)
-                throw new ArgumentNullException(nameof(nativeOverlappedPtr));
+            ArgumentNullException.ThrowIfNull(nativeOverlappedPtr);
 
             OverlappedData.GetOverlappedFromNative(nativeOverlappedPtr)._overlapped!._overlappedData = null!;
             OverlappedData.FreeNativeOverlapped(nativeOverlappedPtr);

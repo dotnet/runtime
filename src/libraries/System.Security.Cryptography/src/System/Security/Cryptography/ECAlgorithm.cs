@@ -121,10 +121,12 @@ namespace System.Security.Cryptography
         /// </remarks>
         public override unsafe bool TryExportEncryptedPkcs8PrivateKey(
             ReadOnlySpan<byte> passwordBytes,
-            PbeParameters pbeParameters!!,
+            PbeParameters pbeParameters,
             Span<byte> destination,
             out int bytesWritten)
         {
+            ArgumentNullException.ThrowIfNull(pbeParameters);
+
             PasswordBasedEncryption.ValidatePbeParameters(
                 pbeParameters,
                 ReadOnlySpan<char>.Empty,
@@ -191,10 +193,12 @@ namespace System.Security.Cryptography
         /// </remarks>
         public override unsafe bool TryExportEncryptedPkcs8PrivateKey(
             ReadOnlySpan<char> password,
-            PbeParameters pbeParameters!!,
+            PbeParameters pbeParameters,
             Span<byte> destination,
             out int bytesWritten)
         {
+            ArgumentNullException.ThrowIfNull(pbeParameters);
+
             PasswordBasedEncryption.ValidatePbeParameters(
                 pbeParameters,
                 password,

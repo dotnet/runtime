@@ -76,8 +76,10 @@ namespace System.Collections.Concurrent
         /// cref="ConcurrentStack{T}"/>.</param>
         /// <exception cref="System.ArgumentNullException">The <paramref name="collection"/> argument is
         /// null.</exception>
-        public ConcurrentStack(IEnumerable<T> collection!!)
+        public ConcurrentStack(IEnumerable<T> collection)
         {
+            ArgumentNullException.ThrowIfNull(collection);
+
             InitializeFromCollection(collection);
         }
 
@@ -220,8 +222,10 @@ namespace System.Collections.Concurrent
         /// cref="System.Collections.ICollection"/> cannot be cast automatically to the type of the
         /// destination <paramref name="array"/>.
         /// </exception>
-        void ICollection.CopyTo(Array array!!, int index)
+        void ICollection.CopyTo(Array array, int index)
         {
+            ArgumentNullException.ThrowIfNull(array);
+
             // We must be careful not to corrupt the array, so we will first accumulate an
             // internal list of elements that we will then copy to the array. This requires
             // some extra allocation, but is necessary since we don't know up front whether
@@ -249,8 +253,10 @@ namespace System.Collections.Concurrent
         /// available space from <paramref name="index"/> to the end of the destination <paramref
         /// name="array"/>.
         /// </exception>
-        public void CopyTo(T[] array!!, int index)
+        public void CopyTo(T[] array, int index)
         {
+            ArgumentNullException.ThrowIfNull(array);
+
             // We must be careful not to corrupt the array, so we will first accumulate an
             // internal list of elements that we will then copy to the array. This requires
             // some extra allocation, but is necessary since we don't know up front whether
@@ -295,8 +301,10 @@ namespace System.Collections.Concurrent
         /// be able to inject elements between the elements being pushed.  Items at lower indices in
         /// the <paramref name="items"/> array will be pushed before items at higher indices.
         /// </remarks>
-        public void PushRange(T[] items!!)
+        public void PushRange(T[] items)
         {
+            ArgumentNullException.ThrowIfNull(items);
+
             PushRange(items, 0, items.Length);
         }
 
@@ -379,8 +387,10 @@ namespace System.Collections.Concurrent
         /// <summary>
         /// Local helper function to validate the Pop Push range methods input
         /// </summary>
-        private static void ValidatePushPopRangeInput(T[] items!!, int startIndex, int count)
+        private static void ValidatePushPopRangeInput(T[] items, int startIndex, int count)
         {
+            ArgumentNullException.ThrowIfNull(items);
+
             if (count < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(count), SR.ConcurrentStack_PushPopRange_CountOutOfRange);
@@ -488,8 +498,10 @@ namespace System.Collections.Concurrent
         /// with the first node to be popped at the startIndex, the second node to be popped
         /// at startIndex + 1, and so on.
         /// </remarks>
-        public int TryPopRange(T[] items!!)
+        public int TryPopRange(T[] items)
         {
+            ArgumentNullException.ThrowIfNull(items);
+
             return TryPopRange(items, 0, items.Length);
         }
 

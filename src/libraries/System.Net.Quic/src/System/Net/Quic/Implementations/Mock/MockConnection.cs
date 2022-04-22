@@ -48,8 +48,10 @@ namespace System.Net.Quic.Implementations.Mock
         internal override X509Certificate? RemoteCertificate => null;
 
         // Constructor for outbound connections
-        internal MockConnection(EndPoint remoteEndPoint!!, SslClientAuthenticationOptions? sslClientAuthenticationOptions, IPEndPoint? localEndPoint = null, int maxUnidirectionalStreams = 100, int maxBidirectionalStreams = 100)
+        internal MockConnection(EndPoint remoteEndPoint, SslClientAuthenticationOptions? sslClientAuthenticationOptions, IPEndPoint? localEndPoint = null, int maxUnidirectionalStreams = 100, int maxBidirectionalStreams = 100)
         {
+            ArgumentNullException.ThrowIfNull(remoteEndPoint);
+
             IPEndPoint ipEndPoint = GetIPEndPoint(remoteEndPoint);
             if (ipEndPoint.Address != IPAddress.Loopback)
             {

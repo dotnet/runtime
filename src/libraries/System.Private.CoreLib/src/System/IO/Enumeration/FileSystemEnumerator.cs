@@ -28,8 +28,10 @@ namespace System.IO.Enumeration
         /// <param name="directory">The directory to search in.</param>
         /// <param name="isNormalized">Whether the directory path is already normalized or not.</param>
         /// <param name="options">Enumeration options to use.</param>
-        internal FileSystemEnumerator(string directory!!, bool isNormalized, EnumerationOptions? options = null)
+        internal FileSystemEnumerator(string directory, bool isNormalized, EnumerationOptions? options = null)
         {
+            ArgumentNullException.ThrowIfNull(directory);
+
             _originalRootDirectory = directory;
 
             string path = isNormalized ? directory : Path.GetFullPath(directory);

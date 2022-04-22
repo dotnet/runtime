@@ -23,8 +23,13 @@ namespace Microsoft.Extensions.Hosting.WindowsServices
         {
         }
 
-        public WindowsServiceLifetime(IHostEnvironment environment!!, IHostApplicationLifetime applicationLifetime!!, ILoggerFactory loggerFactory, IOptions<HostOptions> optionsAccessor!!, IOptions<WindowsServiceLifetimeOptions> windowsServiceOptionsAccessor!!)
+        public WindowsServiceLifetime(IHostEnvironment environment, IHostApplicationLifetime applicationLifetime, ILoggerFactory loggerFactory, IOptions<HostOptions> optionsAccessor, IOptions<WindowsServiceLifetimeOptions> windowsServiceOptionsAccessor)
         {
+            ThrowHelper.ThrowIfNull(environment);
+            ThrowHelper.ThrowIfNull(applicationLifetime);
+            ThrowHelper.ThrowIfNull(optionsAccessor);
+            ThrowHelper.ThrowIfNull(windowsServiceOptionsAccessor);
+
             Environment = environment;
             ApplicationLifetime = applicationLifetime;
             Logger = loggerFactory.CreateLogger("Microsoft.Hosting.Lifetime");

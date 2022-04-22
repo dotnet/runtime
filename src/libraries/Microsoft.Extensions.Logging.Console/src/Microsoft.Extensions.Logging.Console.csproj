@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
@@ -21,6 +21,8 @@
              Link="Common\src\Extensions\Logging\NullScope.cs" />
     <Compile Include="$(CommonPath)System\Text\Json\PooledByteBufferWriter.cs"
              Link="Common\System\Text\Json\PooledByteBufferWriter.cs" />
+    <Compile Include="$(CommonPath)System\ThrowHelper.cs"
+             Link="Common\System\ThrowHelper.cs" />
   </ItemGroup>
 
   <ItemGroup>

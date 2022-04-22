@@ -239,8 +239,7 @@ namespace System.Reflection.Emit
         [RequiresDynamicCode("Defining a dynamic assembly requires dynamic code.")]
         public static AssemblyBuilder DefineDynamicAssembly(AssemblyName name, AssemblyBuilderAccess access)
         {
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
+            ArgumentNullException.ThrowIfNull(name);
 
             return new AssemblyBuilder(name, access);
         }
@@ -286,8 +285,7 @@ namespace System.Reflection.Emit
 
         public void SetCustomAttribute(CustomAttributeBuilder customBuilder)
         {
-            if (customBuilder == null)
-                throw new ArgumentNullException(nameof(customBuilder));
+            ArgumentNullException.ThrowIfNull(customBuilder);
 
             if (cattrs != null)
             {
@@ -307,10 +305,8 @@ namespace System.Reflection.Emit
 
         public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
         {
-            if (con == null)
-                throw new ArgumentNullException(nameof(con));
-            if (binaryAttribute == null)
-                throw new ArgumentNullException(nameof(binaryAttribute));
+            ArgumentNullException.ThrowIfNull(con);
+            ArgumentNullException.ThrowIfNull(binaryAttribute);
 
             SetCustomAttribute(new CustomAttributeBuilder(con, binaryAttribute));
         }

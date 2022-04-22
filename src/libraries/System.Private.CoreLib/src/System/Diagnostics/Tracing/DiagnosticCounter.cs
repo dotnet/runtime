@@ -31,10 +31,10 @@ namespace System.Diagnostics.Tracing
         /// </summary>
         /// <param name="Name">The name.</param>
         /// <param name="EventSource">The event source.</param>
-        internal DiagnosticCounter(string Name!!, EventSource EventSource!!)
+        internal DiagnosticCounter(string Name, EventSource EventSource)
         {
-            this.Name = Name;
-            this.EventSource = EventSource;
+            this.Name = Name ?? throw new ArgumentNullException(nameof(Name));
+            this.EventSource = EventSource ?? throw new ArgumentNullException(nameof(EventSource));
         }
 
         /// <summary>Adds the counter to the set that the EventSource will report on.</summary>

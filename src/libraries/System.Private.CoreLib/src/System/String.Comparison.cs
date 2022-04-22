@@ -539,8 +539,10 @@ namespace System
             return EndsWith(value, StringComparison.CurrentCulture);
         }
 
-        public bool EndsWith(string value!!, StringComparison comparisonType)
+        public bool EndsWith(string value, StringComparison comparisonType)
         {
+            ArgumentNullException.ThrowIfNull(value);
+
             if ((object)this == (object)value)
             {
                 CheckStringComparison(comparisonType);
@@ -577,8 +579,10 @@ namespace System
             }
         }
 
-        public bool EndsWith(string value!!, bool ignoreCase, CultureInfo? culture)
+        public bool EndsWith(string value, bool ignoreCase, CultureInfo? culture)
         {
+            ArgumentNullException.ThrowIfNull(value);
+
             if ((object)this == (object)value)
             {
                 return true;
@@ -927,14 +931,18 @@ namespace System
 
         // Determines whether a specified string is a prefix of the current instance
         //
-        public bool StartsWith(string value!!)
+        public bool StartsWith(string value)
         {
+            ArgumentNullException.ThrowIfNull(value);
+
             return StartsWith(value, StringComparison.CurrentCulture);
         }
 
         [Intrinsic] // Unrolled and vectorized for half-constant input (Ordinal)
-        public bool StartsWith(string value!!, StringComparison comparisonType)
+        public bool StartsWith(string value, StringComparison comparisonType)
         {
+            ArgumentNullException.ThrowIfNull(value);
+
             if ((object)this == (object)value)
             {
                 CheckStringComparison(comparisonType);
@@ -981,8 +989,10 @@ namespace System
             }
         }
 
-        public bool StartsWith(string value!!, bool ignoreCase, CultureInfo? culture)
+        public bool StartsWith(string value, bool ignoreCase, CultureInfo? culture)
         {
+            ArgumentNullException.ThrowIfNull(value);
+
             if ((object)this == (object)value)
             {
                 return true;

@@ -20,7 +20,7 @@ namespace System.Diagnostics.Eventing.Reader
     /// </summary>
     internal static class NativeWrapper
     {
-        public class SystemProperties
+        public sealed class SystemProperties
         {
             // Indicates if the SystemProperties values were already computed (for this event Instance, surely).
             public bool filled;

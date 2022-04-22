@@ -9,6 +9,7 @@
     <DisableImplicitAssemblyReferences>false</DisableImplicitAssemblyReferences>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPackable>true</IsPackable>
+    <Nullable>annotations</Nullable>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
@@ -22,6 +23,7 @@
   <ItemGroup>
     <Compile Include="$(CommonPath)Interop\Unix\libc\Interop.GetParentPid.cs" Link="Common\Interop\Unix\libc\Interop.GetParentPid.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs" Link="Common\Interop\Unix\Interop.Libraries.cs" />
+    <Compile Include="$(CommonPath)System\ThrowHelper.cs" Link="Common\System\ThrowHelper.cs" />
   </ItemGroup>
 
   <ItemGroup>

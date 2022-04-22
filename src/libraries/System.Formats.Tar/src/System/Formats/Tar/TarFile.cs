@@ -175,7 +175,7 @@ namespace System.Formats.Tar
                 Access = FileAccess.Read,
                 BufferSize = 0x1000,
                 Mode = FileMode.Open,
-                Share = FileShare.None
+                Share = FileShare.Read
             };
 
             using FileStream archive = File.Open(sourceFileName, fileStreamOptions);

@@ -313,7 +313,7 @@ namespace System.Text.RegularExpressions.Symbolic
             public List<Transition> GetTransitions() => _transitions;
         }
 
-        private record Transition(int SourceState, int TargetState, (SymbolicRegexNode<TSet>?, TSet) Label)
+        private sealed record Transition(int SourceState, int TargetState, (SymbolicRegexNode<TSet>?, TSet) Label)
         {
             public bool IsEpsilon => Label.Equals(default);
         }

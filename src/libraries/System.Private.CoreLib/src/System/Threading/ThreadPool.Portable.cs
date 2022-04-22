@@ -97,13 +97,16 @@ namespace System.Threading
             PortableThreadPool.ThreadPoolInstance.GetOrCreateThreadLocalCompletionCountObject();
 
         private static RegisteredWaitHandle RegisterWaitForSingleObject(
-             WaitHandle waitObject!!,
-             WaitOrTimerCallback callBack!!,
+             WaitHandle waitObject,
+             WaitOrTimerCallback callBack,
              object? state,
              uint millisecondsTimeOutInterval,
              bool executeOnlyOnce,
              bool flowExecutionContext)
         {
+            ArgumentNullException.ThrowIfNull(waitObject);
+            ArgumentNullException.ThrowIfNull(callBack);
+
             RegisteredWaitHandle registeredHandle = new RegisteredWaitHandle(
                 waitObject,
                 new _ThreadPoolWaitOrTimerCallback(callBack, state, flowExecutionContext),

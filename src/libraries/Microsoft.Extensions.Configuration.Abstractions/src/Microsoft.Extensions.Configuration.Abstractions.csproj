@@ -19,6 +19,8 @@ Microsoft.Extensions.Configuration.IConfigurationSection</PackageDescription>
 
   <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Primitives\src\Microsoft.Extensions.Primitives.csproj" />
+    <Compile Include="$(CommonPath)System\ThrowHelper.cs"
+             Link="Common\System\ThrowHelper.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">

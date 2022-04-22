@@ -217,7 +217,7 @@ internal static partial class Interop
         }
 
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
-        public class DEVMODE
+        public sealed class DEVMODE
         {
             [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 32)]
             public string? dmDeviceName;

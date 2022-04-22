@@ -92,7 +92,7 @@ namespace System.Linq.Expressions
         /// <returns>The created <see cref="CatchBlock"/>.</returns>
         public static CatchBlock Catch(ParameterExpression variable, Expression body)
         {
-            ContractUtils.RequiresNotNull(variable, nameof(variable));
+            ArgumentNullException.ThrowIfNull(variable);
             return MakeCatchBlock(variable.Type, variable, body, filter: null);
         }
 
@@ -119,7 +119,7 @@ namespace System.Linq.Expressions
         /// <returns>The created <see cref="CatchBlock"/>.</returns>
         public static CatchBlock Catch(ParameterExpression variable, Expression body, Expression? filter)
         {
-            ContractUtils.RequiresNotNull(variable, nameof(variable));
+            ArgumentNullException.ThrowIfNull(variable);
             return MakeCatchBlock(variable.Type, variable, body, filter);
         }
 
@@ -134,7 +134,7 @@ namespace System.Linq.Expressions
         /// <remarks><paramref name="type"/> must be non-null and match the type of <paramref name="variable"/> (if it is supplied).</remarks>
         public static CatchBlock MakeCatchBlock(Type type, ParameterExpression? variable, Expression body, Expression? filter)
         {
-            ContractUtils.RequiresNotNull(type, nameof(type));
+            ArgumentNullException.ThrowIfNull(type);
             ContractUtils.Requires(variable == null || TypeUtils.AreEquivalent(variable.Type, type), nameof(variable));
             if (variable == null)
             {

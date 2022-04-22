@@ -15,6 +15,7 @@
     <DisablePackageBaselineValidation>true</DisablePackageBaselineValidation>
     <!-- this assembly doesn't need to be binplaced -->
     <EnableBinPlacing>false</EnableBinPlacing>
+    <IsTrimmable>false</IsTrimmable>
   </PropertyGroup>
 
   <ItemGroup>
