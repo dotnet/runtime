@@ -1407,7 +1407,21 @@ namespace System.Text.RegularExpressions.Generator
 
                     // Save off pos.  We'll need to reset this each time a branch fails.
                     string startingPos = ReserveName("alternation_starting_pos");
-                    writer.WriteLine($"int {startingPos} = pos;");
+                    bool canUseLocalsForAllState = !isAtomic && !rm.Analysis.IsInLoop(node);
+                    if (canUseLocalsForAllState)
+                    {
+                        // Because of how control flow and definite assignment works in the C# compiler, we can end
+                        // up in situations where backtracking by hopping between labels leads the compiler to see
+                        // things as not definitely assigned even if in practice they will be.  To avoid compilation
+                        // errors with such complicated patterns we need to ensure the locals are declared and
+                        // initialized at the beginning of the method.
+                        additionalDeclarations.Add($"int {startingPos} = 0;");
+                        writer.WriteLine($"{startingPos} = pos;");
+                    }
+                    else
+                    {
+                        writer.WriteLine($"int {startingPos} = pos;");
+                    }
                     int startingSliceStaticPos = sliceStaticPos;
 
                     // We need to be able to undo captures in two situations:
@@ -1434,7 +1448,15 @@ namespace System.Text.RegularExpressions.Generator
                     if (expressionHasCaptures && (rm.Analysis.MayContainCapture(node) || !isAtomic))
                     {
                         startingCapturePos = ReserveName("alternation_starting_capturepos");
-                        writer.WriteLine($"int {startingCapturePos} = base.Crawlpos();");
+                        if (canUseLocalsForAllState)
+                        {
+                            additionalDeclarations.Add($"int {startingCapturePos} = base.Crawlpos();");
+                            writer.WriteLine($"{startingCapturePos} = base.Crawlpos();");
+                        }
+                        else
+                        {
+                            writer.WriteLine($"int {startingCapturePos} = base.Crawlpos();");
+                        }
                     }
                     writer.WriteLine();
 
@@ -1447,6 +1469,16 @@ namespace System.Text.RegularExpressions.Generator
                     // or the label for the next branch.
                     var labelMap = new string[childCount];
                     string backtrackLabel = ReserveName("AlternationBacktrack");
+                    string? currentBranch = null;
+                    if (canUseLocalsForAllState)
+                    {
+                        // We're not atomic, so we'll have to handle backtracking, but we're not inside of a loop,
+                        // so we can store the current branch in a local rather than pushing it on to the backtracking
+                        // stack (if we were in a loop, such a local couldn't be used as it could be overwritten by
+                        // a subsequent iteration of that outer loop).
+                        currentBranch = ReserveName("alternation_branch");
+                        additionalDeclarations.Add($"int {currentBranch} = 0;");
+                    }
 
                     for (int i = 0; i < childCount; i++)
                     {
@@ -1482,9 +1514,19 @@ namespace System.Text.RegularExpressions.Generator
                             // still points to the nextBranch, which similarly is where we'll want to jump to.
                             if (!isAtomic)
                             {
-                                EmitStackPush(startingCapturePos is not null ?
-                                    new[] { i.ToString(), startingPos, startingCapturePos } :
-                                    new[] { i.ToString(), startingPos });
+                                // If we're inside of a loop, push the state we need to preserve on to the
+                                // the backtracking stack.  If we're not inside of a loop, simply ensure all
+                                // the relevant state is stored in our locals.
+                                if (currentBranch is null)
+                                {
+                                    EmitStackPush(startingCapturePos is not null ?
+                                        new[] { i.ToString(), startingPos, startingCapturePos } :
+                                        new[] { i.ToString(), startingPos });
+                                }
+                                else
+                                {
+                                    writer.WriteLine($"{currentBranch} = {i};");
+                                }
                             }
                             labelMap[i] = doneLabel;
 
@@ -1544,10 +1586,21 @@ namespace System.Text.RegularExpressions.Generator
                         // We're backtracking.  Check the timeout.
                         EmitTimeoutCheckIfNeeded(writer, rm);
 
-                        EmitStackPop(startingCapturePos is not null ?
-                            new[] { startingCapturePos, startingPos } :
-                            new[] { startingPos});
-                        using (EmitBlock(writer, $"switch ({StackPop()})"))
+                        string switchClause;
+                        if (currentBranch is null)
+                        {
+                            // We're in a loop, so we use the backtracking stack to persist our state. Pop it off.
+                            EmitStackPop(startingCapturePos is not null ?
+                                new[] { startingCapturePos, startingPos } :
+                                new[] { startingPos });
+                            switchClause = StackPop();
+                        }
+                        else
+                        {
+                            // We're not in a loop, so our locals already store the state we need.
+                            switchClause = currentBranch;
+                        }
+                        using (EmitBlock(writer, $"switch ({switchClause})"))
                         {
                             for (int i = 0; i < labelMap.Length; i++)
                             {
@@ -1696,7 +1749,15 @@ namespace System.Text.RegularExpressions.Generator
                 // to backtrack to.  So, we expose a single Backtrack label and track which branch was
                 // followed in this resumeAt local.
                 string resumeAt = ReserveName("conditionalbackreference_branch");
-                writer.WriteLine($"int {resumeAt} = 0;");
+                bool isInLoop = rm.Analysis.IsInLoop(node);
+                if (isInLoop)
+                {
+                    writer.WriteLine($"int {resumeAt};");
+                }
+                else
+                {
+                    additionalDeclarations.Add($"int {resumeAt} = 0;");
+                }
 
                 // While it would be nicely readable to use an if/else block, if the branches contain
                 // anything that triggers backtracking, labels will end up being defined, and if they're
@@ -1768,7 +1829,13 @@ namespace System.Text.RegularExpressions.Generator
                     MarkLabel(backtrack);
 
                     // Pop from the stack the branch that was used and jump back to its backtracking location.
-                    EmitStackPop(resumeAt);
+                    // If we're not in a loop, though, we won't have pushed it on to the stack as nothing will
+                    // have been able to overwrite it in the interim, so we can just trust the value already in
+                    // the local.
+                    if (isInLoop)
+                    {
+                        EmitStackPop(resumeAt);
+                    }
                     using (EmitBlock(writer, $"switch ({resumeAt})"))
                     {
                         if (postYesDoneLabel != originalDoneLabel)
@@ -1790,11 +1857,12 @@ namespace System.Text.RegularExpressions.Generator
                     MarkLabel(endConditional);
                 }
 
-                if (hasBacktracking)
+                if (hasBacktracking && isInLoop)
                 {
                     // We're not atomic and at least one of the yes or no branches contained backtracking constructs,
                     // so finish outputting our backtracking logic, which involves pushing onto the stack which
-                    // branch to backtrack into.
+                    // branch to backtrack into.  If we're not in a loop, though, nothing else can overwrite this local
+                    // in the interim, so we can avoid pushing it.
                     EmitStackPush(resumeAt);
                 }
             }
@@ -1828,10 +1896,19 @@ namespace System.Text.RegularExpressions.Generator
                 // backtracking constructs, but the expression after the condition needs a single target
                 // to backtrack to.  So, we expose a single Backtrack label and track which branch was
                 // followed in this resumeAt local.
+                bool isInLoop = false;
                 string resumeAt = ReserveName("conditionalexpression_branch");
                 if (!isAtomic)
                 {
-                    writer.WriteLine($"int {resumeAt} = 0;");
+                    isInLoop = rm.Analysis.IsInLoop(node);
+                    if (isInLoop)
+                    {
+                        writer.WriteLine($"int {resumeAt} = 0;");
+                    }
+                    else
+                    {
+                        additionalDeclarations.Add($"int {resumeAt} = 0;");
+                    }
                 }
 
                 // If the condition expression has captures, we'll need to uncapture them in the case of no match.
@@ -1936,7 +2013,13 @@ namespace System.Text.RegularExpressions.Generator
                     doneLabel = backtrack;
                     MarkLabel(backtrack, emitSemicolon: false);
 
-                    EmitStackPop(resumeAt);
+                    if (isInLoop)
+                    {
+                        // If we're not in a loop, the local will maintain its value until backtracking occurs.
+                        // If we are in a loop, multiple iterations need their own value, so we need to use the stack.
+                        EmitStackPop(resumeAt);
+                    }
+
                     using (EmitBlock(writer, $"switch ({resumeAt})"))
                     {
                         if (postYesDoneLabel != originalDoneLabel)
@@ -1952,8 +2035,11 @@ namespace System.Text.RegularExpressions.Generator
                         CaseGoto("default:", originalDoneLabel);
                     }
 
-                    MarkLabel(endConditional, emitSemicolon: false);
-                    EmitStackPush(resumeAt);
+                    MarkLabel(endConditional, emitSemicolon: !isInLoop);
+                    if (isInLoop)
+                    {
+                        EmitStackPush(resumeAt);
+                    }
                 }
             }
 
@@ -1966,10 +2052,19 @@ namespace System.Text.RegularExpressions.Generator
                 int capnum = RegexParser.MapCaptureNumber(node.M, rm.Tree.CaptureNumberSparseMapping);
                 int uncapnum = RegexParser.MapCaptureNumber(node.N, rm.Tree.CaptureNumberSparseMapping);
                 bool isAtomic = rm.Analysis.IsAtomicByAncestor(node);
+                bool isInLoop = rm.Analysis.IsInLoop(node);
 
                 TransferSliceStaticPosToPos();
                 string startingPos = ReserveName("capture_starting_pos");
-                writer.WriteLine($"int {startingPos} = pos;");
+                if (isInLoop)
+                {
+                    writer.WriteLine($"int {startingPos} = pos;");
+                }
+                else
+                {
+                    additionalDeclarations.Add($"int {startingPos} = 0;");
+                    writer.WriteLine($"{startingPos} = pos;");
+                }
                 writer.WriteLine();
 
                 RegexNode child = node.Child(0);
@@ -2015,7 +2110,13 @@ namespace System.Text.RegularExpressions.Generator
                     // pushes/pops the starting position before falling through.
                     writer.WriteLine();
 
-                    EmitStackPush(startingPos);
+                    if (isInLoop)
+                    {
+                        // If we're in a loop, different iterations of the loop need their own
+                        // starting position, so push it on to the stack.  If we're not in a loop,
+                        // the local will maintain its value and will suffice.
+                        EmitStackPush(startingPos);
+                    }
 
                     // Skip past the backtracking section
                     string end = ReserveName("SkipBacktrack");
@@ -2025,7 +2126,10 @@ namespace System.Text.RegularExpressions.Generator
                     // Emit a backtracking section that restores the capture's state and then jumps to the previous done label
                     string backtrack = ReserveName($"CaptureBacktrack");
                     MarkLabel(backtrack, emitSemicolon: false);
-                    EmitStackPop(startingPos);
+                    if (isInLoop)
+                    {
+                        EmitStackPop(startingPos);
+                    }
                     Goto(doneLabel);
                     writer.WriteLine();
 
@@ -2704,6 +2808,7 @@ namespace System.Text.RegularExpressions.Generator
                 string endingPos = ReserveName("charloop_ending_pos");
                 additionalDeclarations.Add($"int {startingPos} = 0, {endingPos} = 0;");
                 bool rtl = (node.Options & RegexOptions.RightToLeft) != 0;
+                bool isInLoop = rm.Analysis.IsInLoop(node);
 
                 // We're about to enter a loop, so ensure our text position is 0.
                 TransferSliceStaticPosToPos();
@@ -2729,11 +2834,28 @@ namespace System.Text.RegularExpressions.Generator
                 // point we decrement the matched count as long as it's above the minimum
                 // required, and try again by flowing to everything that comes after this.
                 MarkLabel(backtrackingLabel, emitSemicolon: false);
-                if (expressionHasCaptures)
+                string? capturePos = null;
+                if (isInLoop)
                 {
-                    EmitUncaptureUntil(StackPop());
+                    // This loop is inside of another loop, which means we persist state
+                    // on the backtracking stack rather than relying on locals to always
+                    // hold the right state (if we didn't do that, another iteration of the
+                    // outer loop could have resulted in the locals being overwritten).
+                    // Pop the relevant state from the stack.
+                    if (expressionHasCaptures)
+                    {
+                        EmitUncaptureUntil(StackPop());
+                    }
+                    EmitStackPop(endingPos, startingPos);
                 }
-                EmitStackPop(endingPos, startingPos);
+                else if (expressionHasCaptures)
+                {
+                    // Since we're not in a loop, we're using a local to track the crawl position.
+                    // Unwind back to the position we were at prior to running the code after this loop.
+                    capturePos = ReserveName("charloop_capture_pos");
+                    additionalDeclarations.Add($"int {capturePos} = 0;");
+                    EmitUncaptureUntil(capturePos);
+                }
                 writer.WriteLine();
 
                 // We're backtracking.  Check the timeout.
@@ -2773,9 +2895,22 @@ namespace System.Text.RegularExpressions.Generator
                 writer.WriteLine();
 
                 MarkLabel(endLoop, emitSemicolon: false);
-                EmitStackPush(expressionHasCaptures ?
-                    new[] { startingPos, endingPos, "base.Crawlpos()" } :
-                    new[] { startingPos, endingPos });
+                if (isInLoop)
+                {
+                    // We're in a loop and thus can't rely on locals correctly holding the state we
+                    // need (the locals could be overwritten by a subsequent iteration).  Push the state
+                    // on to the backtracking stack.
+                    EmitStackPush(expressionHasCaptures ?
+                        new[] { startingPos, endingPos, "base.Crawlpos()" } :
+                        new[] { startingPos, endingPos });
+                }
+                else if (capturePos is not null)
+                {
+                    // We're not in a loop and so can trust our locals.  Store the current capture position
+                    // into the capture position local; we'll uncapture back to this when backtracking to
+                    // remove any captures from after this loop that we need to throw away.
+                    writer.WriteLine($"{capturePos} = base.Crawlpos();");
+                }
 
                 doneLabel = backtrackingLabel; // leave set to the backtracking label for all subsequent nodes
             }
@@ -2946,34 +3081,38 @@ namespace System.Text.RegularExpressions.Generator
                     writer.WriteLine($"{capturePos} = base.Crawlpos();");
                 }
 
-                if (node.IsInLoop())
+                // If this loop is itself not in another loop, nothing more needs to be done:
+                // upon backtracking, locals being used by this loop will have retained their
+                // values and be up-to-date.  But if this loop is inside another loop, multiple
+                // iterations of this loop each need their own state, so we need to use the stack
+                // to hold it, and we need a dedicated backtracking section to handle restoring
+                // that state before jumping back into the loop itself.
+                if (rm.Analysis.IsInLoop(node))
                 {
                     writer.WriteLine();
 
-                    // Store the loop's state
-                    var toPushPop = new List<string>(3) { startingPos };
-                    if (capturePos is not null)
-                    {
-                        toPushPop.Add(capturePos);
-                    }
-                    if (iterationCount is not null)
-                    {
-                        toPushPop.Add(iterationCount);
-                    }
-                    string[] toPushPopArray = toPushPop.ToArray();
-                    EmitStackPush(toPushPopArray);
+                    // Store the loop's state.
+                    EmitStackPush(
+                        capturePos is not null && iterationCount is not null ? new[] { startingPos, capturePos, iterationCount } :
+                        capturePos is not null ? new[] { startingPos, capturePos } :
+                        iterationCount is not null ? new[] { startingPos, iterationCount } :
+                        new[] { startingPos });
 
-                    // Skip past the backtracking section
+                    // Skip past the backtracking section.
                     string end = ReserveName("SkipBacktrack");
                     Goto(end);
                     writer.WriteLine();
 
-                    // Emit a backtracking section that restores the loop's state and then jumps to the previous done label
+                    // Emit a backtracking section that restores the loop's state and then jumps to the previous done label.
                     string backtrack = ReserveName("CharLazyBacktrack");
                     MarkLabel(backtrack, emitSemicolon: false);
 
-                    Array.Reverse(toPushPopArray);
-                    EmitStackPop(toPushPopArray);
+                    // Restore the loop's state.
+                    EmitStackPop(
+                        capturePos is not null && iterationCount is not null ? new[] { iterationCount, capturePos, startingPos } :
+                        capturePos is not null ? new[] { capturePos, startingPos } :
+                        iterationCount is not null ? new[] { iterationCount, startingPos } :
+                        new[] { startingPos });
 
                     Goto(doneLabel);
                     writer.WriteLine();
@@ -3029,7 +3168,7 @@ namespace System.Text.RegularExpressions.Generator
 
                 string startingPos = ReserveName("lazyloop_starting_pos");
                 string iterationCount = ReserveName("lazyloop_iteration");
-                string sawEmpty = ReserveName("lazyLoopEmptySeen");
+                string sawEmpty = ReserveName("lazyloop_empty_seen");
                 string body = ReserveName("LazyLoopBody");
                 string endLoop = ReserveName("LazyLoopEnd");
 
@@ -3045,6 +3184,17 @@ namespace System.Text.RegularExpressions.Generator
 
                 // Iteration body
                 MarkLabel(body, emitSemicolon: false);
+
+                // PERFORMANCE TODO:
+                // If we're inside of an outer loop, all of this state needs to be pushed on to the backtracking
+                // stack, since a subsequent iteration of that outer loop could overwrite it.  But if we're
+                // not inside of another loop, locals dedicated to this construct can store the data, as nothing
+                // else will overwrite them before we need them again.  There are lots of combinations to think
+                // through in this case, however, so it's something to follow-up on.
+                // Additionally, we only need sawEmpty if it's even possible for the child to match empty,
+                // which we can compute using node.Child(0).ComputeMinLength() == 0.  We should be able to
+                // avoid all of the checks related to sawEmpty if ComputeMinLength() > 0, and potentially
+                // storing startingPos either.
 
                 // We need to store the starting pos and crawl position so that it may
                 // be backtracked through later.  This needs to be the starting position from
@@ -3512,6 +3662,7 @@ namespace System.Text.RegularExpressions.Generator
                 Debug.Assert(node.M < int.MaxValue, $"Unexpected M={node.M}");
                 Debug.Assert(node.N >= node.M, $"Unexpected M={node.M}, N={node.N}");
                 Debug.Assert(node.ChildCount() == 1, $"Expected 1 child, found {node.ChildCount()}");
+                RegexNode child = node.Child(0);
 
                 int minIterations = node.M;
                 int maxIterations = node.N;
@@ -3519,7 +3670,7 @@ namespace System.Text.RegularExpressions.Generator
 
                 // If this is actually a repeater and the child doesn't have any backtracking in it that might
                 // cause us to need to unwind already taken iterations, just output it as a repeater loop.
-                if (minIterations == maxIterations && !rm.Analysis.MayBacktrack(node.Child(0)))
+                if (minIterations == maxIterations && !rm.Analysis.MayBacktrack(child))
                 {
                     EmitNonBacktrackingRepeater(node);
                     return;
@@ -3532,32 +3683,53 @@ namespace System.Text.RegularExpressions.Generator
 
                 string originalDoneLabel = doneLabel;
 
-                string startingPos = ReserveName("loop_starting_pos");
                 string iterationCount = ReserveName("loop_iteration");
                 string body = ReserveName("LoopBody");
                 string endLoop = ReserveName("LoopEnd");
 
-                additionalDeclarations.Add($"int {iterationCount} = 0, {startingPos} = 0;");
+                // Loops that match empty iterations need additional checks in place to prevent infinitely matching (since
+                // you could end up looping an infinite number of times at the same location).  We can avoid those
+                // additional checks if we can prove that the loop can never match empty, which we can do by computing
+                // the minimum length of the child; only if it's 0 might iterations be empty.
+                bool iterationMayBeEmpty = child.ComputeMinLength() == 0;
+                string? startingPos = iterationMayBeEmpty ? ReserveName("loop_starting_pos") : null;
+
+                if (iterationMayBeEmpty)
+                {
+                    additionalDeclarations.Add($"int {iterationCount} = 0, {startingPos} = 0;");
+                    writer.WriteLine($"{startingPos} = pos;");
+                }
+                else
+                {
+                    additionalDeclarations.Add($"int {iterationCount} = 0;");
+                }
                 writer.WriteLine($"{iterationCount} = 0;");
-                writer.WriteLine($"{startingPos} = pos;");
                 writer.WriteLine();
 
                 // Iteration body
                 MarkLabel(body, emitSemicolon: false);
 
-                // We need to store the starting pos and crawl position so that it may
-                // be backtracked through later.  This needs to be the starting position from
-                // the iteration we're leaving, so it's pushed before updating it to pos.
-                EmitStackPush(expressionHasCaptures ?
-                    new[] { "base.Crawlpos()", startingPos, "pos" } :
-                    new[] { startingPos, "pos" });
+                // We need to store the starting pos and crawl position so that it may be backtracked through later.
+                // This needs to be the starting position from the iteration we're leaving, so it's pushed before updating
+                // it to pos. Note that unlike some other constructs that only need to push state on to the stack if
+                // they're inside of a loop (because if they're not inside of a loop, nothing would overwrite the locals),
+                // here we still need the stack, because each iteration of _this_ loop may have its own state, e.g. we
+                // need to know where each iteration began so when backtracking we can jump back to that location.
+                EmitStackPush(
+                    expressionHasCaptures && iterationMayBeEmpty ? new[] { "base.Crawlpos()", startingPos, "pos" } :
+                    expressionHasCaptures ? new[] { "base.Crawlpos()", "pos" } :
+                    iterationMayBeEmpty ? new[] { startingPos, "pos" } :
+                    new[] { "pos" });
                 writer.WriteLine();
 
                 // Save off some state.  We need to store the current pos so we can compare it against
                 // pos after the iteration, in order to determine whether the iteration was empty. Empty
                 // iterations are allowed as part of min matches, but once we've met the min quote, empty matches
                 // are considered match failures.
-                writer.WriteLine($"{startingPos} = pos;");
+                if (iterationMayBeEmpty)
+                {
+                    writer.WriteLine($"{startingPos} = pos;");
+                }
 
                 // Proactively increase the number of iterations.  We do this prior to the match rather than once
                 // we know it's successful, because we need to decrement it as part of a failed match when
@@ -3575,20 +3747,28 @@ namespace System.Text.RegularExpressions.Generator
 
                 // Finally, emit the child.
                 Debug.Assert(sliceStaticPos == 0);
-                EmitNode(node.Child(0));
+                EmitNode(child);
                 writer.WriteLine();
                 TransferSliceStaticPosToPos(); // ensure sliceStaticPos remains 0
                 bool childBacktracks = doneLabel != iterationFailedLabel;
 
                 // Loop condition.  Continue iterating greedily if we've not yet reached the maximum.  We also need to stop
                 // iterating if the iteration matched empty and we already hit the minimum number of iterations.
-                using (EmitBlock(writer, (minIterations > 0, maxIterations == int.MaxValue) switch
+                using ((minIterations > 0, maxIterations == int.MaxValue, iterationMayBeEmpty) switch
                 {
-                    (true, true) => $"if (pos != {startingPos} || {CountIsLessThan(iterationCount, minIterations)})",
-                    (true, false) => $"if ((pos != {startingPos} || {CountIsLessThan(iterationCount, minIterations)}) && {CountIsLessThan(iterationCount, maxIterations)})",
-                    (false, true) => $"if (pos != {startingPos})",
-                    (false, false) => $"if (pos != {startingPos} && {CountIsLessThan(iterationCount, maxIterations)})",
-                }))
+                    (true, true, true) => EmitBlock(writer, $"if (pos != {startingPos} || {CountIsLessThan(iterationCount, minIterations)})"),
+                    (true, false, true) => EmitBlock(writer, $"if ((pos != {startingPos} || {CountIsLessThan(iterationCount, minIterations)}) && {CountIsLessThan(iterationCount, maxIterations)})"),
+                    (false, true, true) => EmitBlock(writer, $"if (pos != {startingPos})"),
+                    (false, false, true) => EmitBlock(writer, $"if (pos != {startingPos} && {CountIsLessThan(iterationCount, maxIterations)})"),
+
+                    // Iterations won't be empty, but there is an upper bound. Whether or not there's a min iterations required, we need to keep
+                    // iterating until we're at the maximum, and since the min is never more than the max, we don't need to check the min.
+                    (_, false, false) => EmitBlock(writer, $"if ({CountIsLessThan(iterationCount, maxIterations)})"),
+
+                    // The loop has no upper bound and iterations can't be empty; regardless of whether there's a min iterations required,
+                    // we need to loop again.
+                    _ => default,
+                })
                 {
                     Goto(body);
                 }
@@ -3606,7 +3786,9 @@ namespace System.Text.RegularExpressions.Generator
                 {
                     Goto(originalDoneLabel);
                 }
-                EmitStackPop("pos", startingPos);
+                EmitStackPop(iterationMayBeEmpty ?
+                    new[] { "pos", startingPos } :
+                    new[] { "pos" });
                 if (expressionHasCaptures)
                 {
                     EmitUncaptureUntil(StackPop());
@@ -3654,12 +3836,20 @@ namespace System.Text.RegularExpressions.Generator
 
                     MarkLabel(endLoop);
 
-                    if (node.IsInLoop())
+                    // If this loop is itself not in another loop, nothing more needs to be done:
+                    // upon backtracking, locals being used by this loop will have retained their
+                    // values and be up-to-date.  But if this loop is inside another loop, multiple
+                    // iterations of this loop each need their own state, so we need to use the stack
+                    // to hold it, and we need a dedicated backtracking section to handle restoring
+                    // that state before jumping back into the loop itself.
+                    if (rm.Analysis.IsInLoop(node))
                     {
                         writer.WriteLine();
 
                         // Store the loop's state
-                        EmitStackPush(startingPos, iterationCount);
+                        EmitStackPush(iterationMayBeEmpty ?
+                            new[] { startingPos, iterationCount } :
+                            new[] { iterationCount });
 
                         // Skip past the backtracking section
                         string end = ReserveName("SkipBacktrack");
@@ -3669,7 +3859,9 @@ namespace System.Text.RegularExpressions.Generator
                         // Emit a backtracking section that restores the loop's state and then jumps to the previous done label
                         string backtrack = ReserveName("LoopBacktrack");
                         MarkLabel(backtrack, emitSemicolon: false);
-                        EmitStackPop(iterationCount, startingPos);
+                        EmitStackPop(iterationMayBeEmpty ?
+                            new[] { iterationCount, startingPos } :
+                            new[] { iterationCount });
 
                         // We're backtracking.  Check the timeout.
                         EmitTimeoutCheckIfNeeded(writer, rm);
@@ -3789,7 +3981,7 @@ namespace System.Text.RegularExpressions.Generator
                     requiredHelpers.Add(key, lines);
                 }
 
-                writer.WriteLine($"{HelpersTypeName}.{MethodName}(base.runstack, ref stackpos, out {string.Join(", out ", args)});");
+                writer.WriteLine($"{HelpersTypeName}.{MethodName}(base.runstack!, ref stackpos, out {string.Join(", out ", args)});");
             }
 
             /// <summary>Expression for popping the next item from the backtracking stack.</summary>
