@@ -76,18 +76,6 @@ static GENERATE_GET_CLASS_WITH_CACHE (date_time, "System", "DateTime");
 static GENERATE_TRY_GET_CLASS_WITH_CACHE (icustom_marshaler, "System.Runtime.InteropServices", "ICustomMarshaler");
 static GENERATE_TRY_GET_CLASS_WITH_CACHE (marshal, "System.Runtime.InteropServices", "Marshal");
 
-// FIXME Consolidate the multiple functions named get_method_nofail.
-static MonoMethod*
-get_method_nofail (MonoClass *klass, const char *method_name, int num_params, int flags)
-{
-	MonoMethod *method;
-	ERROR_DECL (error);
-	method = mono_class_get_method_from_name_checked (klass, method_name, num_params, flags, error);
-	mono_error_assert_ok (error);
-	g_assertf (method, "Could not lookup method %s in %s", method_name, m_class_get_name (klass));
-	return method;
-}
-
 static MonoImage*
 get_method_image (MonoMethod *method)
 {
@@ -765,7 +753,7 @@ static MonoMethod*
 mono_get_Variant_Clear (void)
 {
 	MONO_STATIC_POINTER_INIT (MonoMethod, variant_clear)
-		variant_clear = get_method_nofail (mono_class_get_variant_class (), "Clear", 0, 0);
+		variant_clear = mono_marshal_shared_get_method_nofail (mono_class_get_variant_class (), "Clear", 0, 0);
 	MONO_STATIC_POINTER_INIT_END (MonoMethod, variant_clear)
 
 	g_assert (variant_clear);
@@ -780,7 +768,7 @@ static MonoMethod*
 mono_get_Marshal_GetObjectForNativeVariant (void)
 {
 	MONO_STATIC_POINTER_INIT (MonoMethod, get_object_for_native_variant)
-		get_object_for_native_variant = get_method_nofail (mono_defaults.marshal_class, "GetObjectForNativeVariant", 1, 0);
+		get_object_for_native_variant = mono_marshal_shared_get_method_nofail (mono_defaults.marshal_class, "GetObjectForNativeVariant", 1, 0);
 	MONO_STATIC_POINTER_INIT_END (MonoMethod, get_object_for_native_variant)
 
 	g_assert (get_object_for_native_variant);
@@ -793,7 +781,7 @@ static MonoMethod*
 mono_get_Marshal_GetNativeVariantForObject (void)
 {
 	MONO_STATIC_POINTER_INIT (MonoMethod, get_native_variant_for_object)
-		get_native_variant_for_object = get_method_nofail (mono_defaults.marshal_class, "GetNativeVariantForObject", 2, 0);
+		get_native_variant_for_object = mono_marshal_shared_get_method_nofail (mono_defaults.marshal_class, "GetNativeVariantForObject", 2, 0);
 	MONO_STATIC_POINTER_INIT_END (MonoMethod, get_native_variant_for_object)
 
 	g_assert (get_native_variant_for_object);
