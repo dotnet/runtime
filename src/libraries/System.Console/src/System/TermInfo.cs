@@ -559,8 +559,11 @@ namespace System
             /// <param name="format">The format string.</param>
             /// <param name="args">The arguments to the format string.</param>
             /// <returns>The formatted string.</returns>
-            public static string Evaluate(string format!!, params FormatParam[] args!!)
+            public static string Evaluate(string format, params FormatParam[] args)
             {
+                ArgumentNullException.ThrowIfNull(format);
+                ArgumentNullException.ThrowIfNull(args);
+
                 // Initialize the stack to use for processing.
                 Stack<FormatParam>? stack = t_cachedStack;
                 if (stack == null)

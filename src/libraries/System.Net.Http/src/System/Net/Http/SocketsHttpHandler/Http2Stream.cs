@@ -27,7 +27,7 @@ namespace System.Net.Http
                 1024;
 #endif
 
-            private static ReadOnlySpan<byte> StatusHeaderName => new byte[] { (byte)':', (byte)'s', (byte)'t', (byte)'a', (byte)'t', (byte)'u', (byte)'s' };
+            private static ReadOnlySpan<byte> StatusHeaderName => ":status"u8;
 
             private readonly Http2Connection _connection;
             private readonly HttpRequestMessage _request;

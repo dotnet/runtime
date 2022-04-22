@@ -26,13 +26,21 @@ namespace System.Reflection
         public virtual object? RawDefaultValue => throw NotImplemented.ByDesign;
         public virtual bool HasDefaultValue => throw NotImplemented.ByDesign;
 
-        public virtual bool IsDefined(Type attributeType!!, bool inherit) => false;
+        public virtual bool IsDefined(Type attributeType, bool inherit)
+        {
+            ArgumentNullException.ThrowIfNull(attributeType);
+            return false;
+        }
 
         public virtual IEnumerable<CustomAttributeData> CustomAttributes => GetCustomAttributesData();
         public virtual IList<CustomAttributeData> GetCustomAttributesData() { throw NotImplemented.ByDesign; }
 
         public virtual object[] GetCustomAttributes(bool inherit) => Array.Empty<object>();
-        public virtual object[] GetCustomAttributes(Type attributeType!!, bool inherit) => Array.Empty<object>();
+        public virtual object[] GetCustomAttributes(Type attributeType, bool inherit)
+        {
+            ArgumentNullException.ThrowIfNull(attributeType);
+            return Array.Empty<object>();
+        }
 
         public virtual Type[] GetOptionalCustomModifiers() => Type.EmptyTypes;
         public virtual Type[] GetRequiredCustomModifiers() => Type.EmptyTypes;

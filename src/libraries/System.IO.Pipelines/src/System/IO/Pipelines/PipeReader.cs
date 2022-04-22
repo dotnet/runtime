@@ -163,8 +163,13 @@ namespace System.IO.Pipelines
         /// <param name="destination">The pipe writer to which the contents of the current stream will be copied.</param>
         /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see cref="System.Threading.CancellationToken.None" />.</param>
         /// <returns>A task that represents the asynchronous copy operation.</returns>
-        public virtual Task CopyToAsync(PipeWriter destination!!, CancellationToken cancellationToken = default)
+        public virtual Task CopyToAsync(PipeWriter destination, CancellationToken cancellationToken = default)
         {
+            if (destination is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.destination);
+            }
+
             if (cancellationToken.IsCancellationRequested)
             {
                 return Task.FromCanceled(cancellationToken);
@@ -180,8 +185,13 @@ namespace System.IO.Pipelines
         /// <param name="destination">The stream to which the contents of the current stream will be copied.</param>
         /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see cref="System.Threading.CancellationToken.None" />.</param>
         /// <returns>A task that represents the asynchronous copy operation.</returns>
-        public virtual Task CopyToAsync(Stream destination!!, CancellationToken cancellationToken = default)
+        public virtual Task CopyToAsync(Stream destination, CancellationToken cancellationToken = default)
         {
+            if (destination is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.destination);
+            }
+
             if (cancellationToken.IsCancellationRequested)
             {
                 return Task.FromCanceled(cancellationToken);

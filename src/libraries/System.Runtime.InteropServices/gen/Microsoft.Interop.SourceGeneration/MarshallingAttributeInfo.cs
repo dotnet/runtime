@@ -926,7 +926,7 @@ namespace Microsoft.Interop
             return true;
         }
 
-        private class CyclicalCountElementInfoException : Exception
+        private sealed class CyclicalCountElementInfoException : Exception
         {
             public CyclicalCountElementInfoException(ImmutableHashSet<string> elementsInCycle, string startOfCycle)
             {

@@ -249,7 +249,7 @@ namespace Microsoft.NET.HostModel.ComHost
             Unknown
         }
 
-        private class TypeResolver : ICustomAttributeTypeProvider<KnownType>
+        private sealed class TypeResolver : ICustomAttributeTypeProvider<KnownType>
         {
             public KnownType GetPrimitiveType(PrimitiveTypeCode typeCode)
             {

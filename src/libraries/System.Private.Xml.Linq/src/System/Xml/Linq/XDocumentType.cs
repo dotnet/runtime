@@ -33,8 +33,10 @@ namespace System.Xml.Linq
         /// from another XDocumentType object.
         /// </summary>
         /// <param name="other"><see cref="XDocumentType"/> object to copy from.</param>
-        public XDocumentType(XDocumentType other!!)
+        public XDocumentType(XDocumentType other)
         {
+            ArgumentNullException.ThrowIfNull(other);
+
             _name = other._name;
             _publicId = other._publicId;
             _systemId = other._systemId;
@@ -139,8 +141,10 @@ namespace System.Xml.Linq
         /// <param name="writer">
         /// The <see cref="XmlWriter"/> to write this <see cref="XDocumentType"/> to.
         /// </param>
-        public override void WriteTo(XmlWriter writer!!)
+        public override void WriteTo(XmlWriter writer)
         {
+            ArgumentNullException.ThrowIfNull(writer);
+
             writer.WriteDocType(_name, _publicId, _systemId, _internalSubset);
         }
 
@@ -153,8 +157,10 @@ namespace System.Xml.Linq
         /// <param name="cancellationToken">
         /// A cancellation token.
         /// </param>
-        public override Task WriteToAsync(XmlWriter writer!!, CancellationToken cancellationToken)
+        public override Task WriteToAsync(XmlWriter writer, CancellationToken cancellationToken)
         {
+            ArgumentNullException.ThrowIfNull(writer);
+
             if (cancellationToken.IsCancellationRequested)
                 return Task.FromCanceled(cancellationToken);
             return writer.WriteDocTypeAsync(_name, _publicId, _systemId, _internalSubset);

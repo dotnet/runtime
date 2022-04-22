@@ -52,8 +52,13 @@ namespace System.Text.Json.Serialization
 
         public bool IsReadOnly => false;
 
-        public void Add(TItem item!!)
+        public void Add(TItem item)
         {
+            if (item is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(item));
+            }
+
             _options.VerifyMutable();
             _list.Add(item);
             OnElementAdded?.Invoke(item);
@@ -85,8 +90,13 @@ namespace System.Text.Json.Serialization
             return _list.IndexOf(item);
         }
 
-        public void Insert(int index, TItem item!!)
+        public void Insert(int index, TItem item)
         {
+            if (item is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(item));
+            }
+
             _options.VerifyMutable();
             _list.Insert(index, item);
             OnElementAdded?.Invoke(item);

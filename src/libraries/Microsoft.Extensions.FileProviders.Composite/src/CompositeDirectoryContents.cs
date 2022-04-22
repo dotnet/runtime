@@ -26,8 +26,10 @@ namespace Microsoft.Extensions.FileProviders.Composite
         /// </summary>
         /// <param name="fileProviders">The list of <see cref="IFileProvider"/> for which the results have to be composed.</param>
         /// <param name="subpath">The path.</param>
-        public CompositeDirectoryContents(IList<IFileProvider> fileProviders!!, string subpath)
+        public CompositeDirectoryContents(IList<IFileProvider> fileProviders, string subpath)
         {
+            ThrowHelper.ThrowIfNull(fileProviders);
+
             _fileProviders = fileProviders;
             _subPath = subpath;
         }

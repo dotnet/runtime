@@ -27,8 +27,11 @@ namespace System.Security.Cryptography.X509Certificates
             return certificate.GetPrivateKey<ECDsa>(cert => HasECDsaKeyUsage(cert));
         }
 
-        public static X509Certificate2 CopyWithPrivateKey(this X509Certificate2 certificate!!, ECDsa privateKey!!)
+        public static X509Certificate2 CopyWithPrivateKey(this X509Certificate2 certificate, ECDsa privateKey)
         {
+            ArgumentNullException.ThrowIfNull(certificate);
+            ArgumentNullException.ThrowIfNull(privateKey);
+
             if (certificate.HasPrivateKey)
                 throw new InvalidOperationException(SR.Cryptography_Cert_AlreadyHasPrivateKey);
 

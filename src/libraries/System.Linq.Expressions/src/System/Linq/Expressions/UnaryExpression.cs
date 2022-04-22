@@ -690,7 +690,7 @@ namespace System.Linq.Expressions
         public static UnaryExpression TypeAs(Expression expression, Type type)
         {
             ExpressionUtils.RequiresCanRead(expression, nameof(expression));
-            ContractUtils.RequiresNotNull(type, nameof(type));
+            ArgumentNullException.ThrowIfNull(type);
             TypeUtils.ValidateType(type, nameof(type));
             if (type.IsValueType && !type.IsNullableType())
             {
@@ -709,7 +709,7 @@ namespace System.Linq.Expressions
         public static UnaryExpression Unbox(Expression expression, Type type)
         {
             ExpressionUtils.RequiresCanRead(expression, nameof(expression));
-            ContractUtils.RequiresNotNull(type, nameof(type));
+            ArgumentNullException.ThrowIfNull(type);
             if (!expression.Type.IsInterface && expression.Type != typeof(object))
             {
                 throw Error.InvalidUnboxType(nameof(expression));
@@ -745,7 +745,7 @@ namespace System.Linq.Expressions
         public static UnaryExpression Convert(Expression expression, Type type, MethodInfo? method)
         {
             ExpressionUtils.RequiresCanRead(expression, nameof(expression));
-            ContractUtils.RequiresNotNull(type, nameof(type));
+            ArgumentNullException.ThrowIfNull(type);
             TypeUtils.ValidateType(type, nameof(type));
             if (method == null)
             {
@@ -785,7 +785,7 @@ namespace System.Linq.Expressions
         public static UnaryExpression ConvertChecked(Expression expression, Type type, MethodInfo? method)
         {
             ExpressionUtils.RequiresCanRead(expression, nameof(expression));
-            ContractUtils.RequiresNotNull(type, nameof(type));
+            ArgumentNullException.ThrowIfNull(type);
             TypeUtils.ValidateType(type, nameof(type));
             if (method == null)
             {
@@ -879,7 +879,7 @@ namespace System.Linq.Expressions
         /// <returns>A <see cref="UnaryExpression"/> that represents the exception.</returns>
         public static UnaryExpression Throw(Expression? value, Type type)
         {
-            ContractUtils.RequiresNotNull(type, nameof(type));
+            ArgumentNullException.ThrowIfNull(type);
             TypeUtils.ValidateType(type, nameof(type));
             if (value != null)
             {

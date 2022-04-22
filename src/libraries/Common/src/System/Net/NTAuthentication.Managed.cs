@@ -436,7 +436,7 @@ namespace System.Net
                 using (var hmac = IncrementalHash.CreateHMAC(HashAlgorithmName.MD5, pwHash))
                 {
                     // strangely, user is upper case, domain is not.
-                    byte[] blob = Encoding.Unicode.GetBytes(string.Concat(userName.ToUpper(), domain));
+                    byte[] blob = Encoding.Unicode.GetBytes(string.Concat(userName.ToUpperInvariant(), domain));
                     hmac.AppendData(blob);
                     hmac.GetHashAndReset(hash);
                 }

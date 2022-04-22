@@ -21,16 +21,20 @@ namespace System.ComponentModel.Design
 
         public int Add(DesignerVerb? value) => List.Add(value);
 
-        public void AddRange(DesignerVerb?[] value!!)
+        public void AddRange(DesignerVerb?[] value)
         {
+            ArgumentNullException.ThrowIfNull(value);
+
             for (int i = 0; i < value.Length; i++)
             {
                 Add(value[i]);
             }
         }
 
-        public void AddRange(DesignerVerbCollection value!!)
+        public void AddRange(DesignerVerbCollection value)
         {
+            ArgumentNullException.ThrowIfNull(value);
+
             int currentCount = value.Count;
             for (int i = 0; i < currentCount; i++)
             {

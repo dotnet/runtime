@@ -9,7 +9,7 @@ namespace System.Xml.Xsl.XsltOld
     using System.Xml.XPath;
     using MS.Internal.Xml.XPath;
 
-    internal class CopyAction : ContainerAction
+    internal sealed class CopyAction : ContainerAction
     {
         // Local execution states
         private const int NamespaceCopy = 5;

@@ -57,7 +57,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         public static readonly Guid SHA256 = new Guid("8829d00f-11b8-4213-878b-770e8597ac16");
     }
 
-    internal class BreakpointRequest
+    internal sealed class BreakpointRequest
     {
         public string Id { get; private set; }
         public string Assembly { get; private set; }
@@ -154,7 +154,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
     }
 
-    internal class VarInfo
+    internal sealed class VarInfo
     {
         public VarInfo(LocalVariable v, MetadataReader pdbReader)
         {
@@ -174,7 +174,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         public override string ToString() => $"(var-info [{Index}] '{Name}')";
     }
 
-    internal class IlLocation
+    internal sealed class IlLocation
     {
         public IlLocation(MethodInfo method, int offset)
         {
@@ -186,7 +186,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         public int Offset { get; }
     }
 
-    internal class SourceLocation
+    internal sealed class SourceLocation
     {
         private SourceId id;
         private int line;
@@ -231,7 +231,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             return new SourceLocation(id, line.Value, column.Value);
         }
 
-        internal class LocationComparer : EqualityComparer<SourceLocation>
+        internal sealed class LocationComparer : EqualityComparer<SourceLocation>
         {
             public override bool Equals(SourceLocation l1, SourceLocation l2)
             {
@@ -260,7 +260,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         };
     }
 
-    internal class SourceId
+    internal sealed class SourceId
     {
         private const string Scheme = "dotnet://";
 
@@ -327,7 +327,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         public static bool operator !=(SourceId a, SourceId b) => !a.Equals(b);
     }
 
-    internal class MethodInfo
+    internal sealed class MethodInfo
     {
         private MethodDefinition methodDef;
         private SourceFile source;
@@ -542,7 +542,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         public override string ToString() => "MethodInfo(" + Name + ")";
 
-        public class DebuggerAttributesInfo
+        public sealed class DebuggerAttributesInfo
         {
             internal bool HasDebuggerHidden { get; set; }
             internal bool HasStepThrough { get; set; }
@@ -581,7 +581,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     (EndLocation.Line == containerMethod.EndLocation.Line && EndLocation.Column < containerMethod.EndLocation.Column));
     }
 
-    internal class ParameterInfo
+    internal sealed class ParameterInfo
     {
         public string Name { get; init; }
 
@@ -656,7 +656,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         }
     }
 
-    internal class TypeInfo
+    internal sealed class TypeInfo
     {
         private readonly ILogger logger;
         internal AssemblyInfo assembly;
@@ -760,7 +760,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         public override string ToString() => "TypeInfo('" + FullName + "')";
     }
 
-    internal class AssemblyInfo
+    internal sealed class AssemblyInfo
     {
         private static int next_id;
         private readonly int id;
@@ -1008,7 +1008,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             pdbMetadataReader = MetadataReaderProvider.FromPortablePdbStream(pdbStream).GetMetadataReader();
         }
     }
-    internal class SourceFile
+    internal sealed class SourceFile
     {
         private Dictionary<int, MethodInfo> methods;
         private AssemblyInfo assembly;
@@ -1207,7 +1207,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         }
     }
 
-    internal class DebugStore
+    internal sealed class DebugStore
     {
         internal List<AssemblyInfo> assemblies = new List<AssemblyInfo>();
         private readonly HttpClient client;
@@ -1224,7 +1224,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         public DebugStore(MonoProxy monoProxy, ILogger logger) : this(monoProxy, logger, new HttpClient())
         { }
 
-        private class DebugItem
+        private sealed class DebugItem
         {
             public string Url { get; set; }
             public Task<byte[][]> Data { get; set; }
