@@ -77,17 +77,20 @@ public:
     bool          JitFramed(void)                           const {LIMITED_METHOD_CONTRACT;  return fJitFramed; }
     bool          JitMinOpts(void)                          const {LIMITED_METHOD_CONTRACT;  return fJitMinOpts; }
 
+    void          DisableDefaultCodeVersioning()            { fDisableDefaultCodeVersioning = TRUE; }
+    bool          DefaultCodeVersioningDisabled()           const {LIMITED_METHOD_CONTRACT;  return fDisableDefaultCodeVersioning; }
+
     // Tiered Compilation config
 #if defined(FEATURE_TIERED_COMPILATION)
-    bool          TieredCompilation(void)           const { LIMITED_METHOD_CONTRACT;  return fTieredCompilation; }
-    bool          TieredCompilation_QuickJit() const { LIMITED_METHOD_CONTRACT; return fTieredCompilation_QuickJit; }
-    bool          TieredCompilation_QuickJitForLoops() const { LIMITED_METHOD_CONTRACT; return fTieredCompilation_QuickJitForLoops; }
-    DWORD         TieredCompilation_BackgroundWorkerTimeoutMs() const { LIMITED_METHOD_CONTRACT; return tieredCompilation_BackgroundWorkerTimeoutMs; }
-    bool          TieredCompilation_CallCounting()  const { LIMITED_METHOD_CONTRACT; return fTieredCompilation_CallCounting; }
-    UINT16        TieredCompilation_CallCountThreshold() const { LIMITED_METHOD_CONTRACT; return tieredCompilation_CallCountThreshold; }
-    DWORD         TieredCompilation_CallCountingDelayMs() const { LIMITED_METHOD_CONTRACT; return tieredCompilation_CallCountingDelayMs; }
-    bool          TieredCompilation_UseCallCountingStubs() const { LIMITED_METHOD_CONTRACT; return fTieredCompilation_UseCallCountingStubs; }
-    DWORD         TieredCompilation_DeleteCallCountingStubsAfter() const { LIMITED_METHOD_CONTRACT; return tieredCompilation_DeleteCallCountingStubsAfter; }
+    bool          TieredCompilation(void)           const { LIMITED_METHOD_CONTRACT;  return fTieredCompilation && !fDisableDefaultCodeVersioning; }
+    bool          TieredCompilation_QuickJit() const { LIMITED_METHOD_CONTRACT; return fTieredCompilation_QuickJit && !fDisableDefaultCodeVersioning; }
+    bool          TieredCompilation_QuickJitForLoops() const { LIMITED_METHOD_CONTRACT; return fTieredCompilation_QuickJitForLoops && !fDisableDefaultCodeVersioning; }
+    DWORD         TieredCompilation_BackgroundWorkerTimeoutMs() const { LIMITED_METHOD_CONTRACT; return fDisableDefaultCodeVersioning ? 0 : tieredCompilation_BackgroundWorkerTimeoutMs; }
+    bool          TieredCompilation_CallCounting()  const { LIMITED_METHOD_CONTRACT; return fTieredCompilation_CallCounting && !fDisableDefaultCodeVersioning; }
+    UINT16        TieredCompilation_CallCountThreshold() const { LIMITED_METHOD_CONTRACT; return fDisableDefaultCodeVersioning ? 1 : tieredCompilation_CallCountThreshold; }
+    DWORD         TieredCompilation_CallCountingDelayMs() const { LIMITED_METHOD_CONTRACT; return fDisableDefaultCodeVersioning ? 0 : tieredCompilation_CallCountingDelayMs; }
+    bool          TieredCompilation_UseCallCountingStubs() const { LIMITED_METHOD_CONTRACT; return fTieredCompilation_UseCallCountingStubs && !fDisableDefaultCodeVersioning; }
+    DWORD         TieredCompilation_DeleteCallCountingStubsAfter() const { LIMITED_METHOD_CONTRACT; return fDisableDefaultCodeVersioning ? 0 : tieredCompilation_DeleteCallCountingStubsAfter; }
 #endif
 
 #if defined(FEATURE_ON_STACK_REPLACEMENT)
@@ -676,6 +679,8 @@ private: //----------------------------------------------------------------
     DWORD fShouldInjectFault;
     DWORD testThreadAbort;
 #endif
+
+    bool fDisableDefaultCodeVersioning;
 
 #if defined(FEATURE_TIERED_COMPILATION)
     bool fTieredCompilation;

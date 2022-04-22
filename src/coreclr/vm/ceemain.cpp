@@ -2001,6 +2001,11 @@ static void InitializeDebugger(void)
         }
     }
 
+    static ConfigDWORD debuggerDisablesCodeVersioning;
+    if( (debuggerDisablesCodeVersioning.val(CLRConfig::EXTERNAL_DebuggerLaunchDisablesCodeVersioning) != 0) && CORDebuggerAttached())
+    {
+        g_pConfig->DisableDefaultCodeVersioning();
+    }
 
     LOG((LF_CORDB, LL_INFO10, "Left-side debugging services setup.\n"));
 
