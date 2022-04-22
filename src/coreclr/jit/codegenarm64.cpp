@@ -2403,7 +2403,7 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
         {
             case GT_ADD:
             {
-                // d = a - b * c
+                // d = a + b * c
                 // MADD d, b, c, a
                 ins = INS_madd;
                 break;
