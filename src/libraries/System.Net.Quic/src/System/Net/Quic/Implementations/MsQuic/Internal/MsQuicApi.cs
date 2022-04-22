@@ -20,6 +20,8 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
 
         private static readonly Version MinWindowsVersion = new Version(10, 0, 20145, 1000);
 
+        private static readonly Version MsQuicVersion = new Version(2, 0);
+
         public SafeMsQuicRegistrationHandle Registration { get; }
 
         public QUIC_API_TABLE* ApiTable { get; }
@@ -54,8 +56,6 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
 
         internal static bool IsQuicSupported { get; }
 
-        private const int MsQuicVersion = 2;
-
         internal static bool Tls13MayBeDisabled { get; }
 
         static MsQuicApi()
@@ -76,7 +76,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             }
 
             IntPtr msQuicHandle;
-            if (NativeLibrary.TryLoad($"{Interop.Libraries.MsQuic}.{MsQuicVersion}", typeof(MsQuicApi).Assembly, DllImportSearchPath.AssemblyDirectory, out msQuicHandle) ||
+            if (NativeLibrary.TryLoad($"{Interop.Libraries.MsQuic}.{MsQuicVersion.Major}", typeof(MsQuicApi).Assembly, DllImportSearchPath.AssemblyDirectory, out msQuicHandle) ||
                 NativeLibrary.TryLoad(Interop.Libraries.MsQuic, typeof(MsQuicApi).Assembly, DllImportSearchPath.AssemblyDirectory, out msQuicHandle))
             {
                 try
@@ -85,11 +85,24 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                     {
                         QUIC_API_TABLE* apiTable;
                         delegate* unmanaged[Cdecl]<uint, QUIC_API_TABLE**, int> msQuicOpenVersion = (delegate* unmanaged[Cdecl]<uint, QUIC_API_TABLE**, int>)msQuicOpenVersionAddress;
-                        int status = msQuicOpenVersion(MsQuicVersion, &apiTable);
-                        if (StatusSucceeded(status))
+                        if (StatusSucceeded(msQuicOpenVersion((uint)MsQuicVersion.Major, &apiTable)))
                         {
-                            IsQuicSupported = true;
-                            Api = new MsQuicApi(apiTable);
+                            int arraySize = 4;
+                            uint* libVersion = stackalloc uint[arraySize];
+                            uint size = (uint)arraySize * sizeof(uint);
+                            if (StatusSucceeded(apiTable->GetParam(null, QUIC_PARAM_GLOBAL_LIBRARY_VERSION, &size, libVersion)))
+                            {
+                                var version = new Version((int)libVersion[0], (int)libVersion[1], (int)libVersion[2], (int)libVersion[3]);
+                                if (version >= MsQuicVersion)
+                                {
+                                    Api = new MsQuicApi(apiTable);
+                                    IsQuicSupported = true;
+                                }
+                                else
+                                {
+                                    NetEventSource.Info(null, $"Incompatible MsQuic library version '{version}', expecting '{MsQuicVersion}'");
+                                }
+                            }
                         }
                     }
                 }

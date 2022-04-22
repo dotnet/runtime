@@ -872,7 +872,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                 {
                     try
                     {
-                    // TODO: error code used here MUST be specified by the application layer
+                        // TODO: error code used here MUST be specified by the application layer
                         StartShutdown(QUIC_STREAM_SHUTDOWN_FLAGS.ABORT_RECEIVE, 0xffffffff);
                     }
                     catch (ObjectDisposedException) { };
