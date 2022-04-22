@@ -2421,8 +2421,8 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
                 unreached();
         }
 
-        GetEmitter()->emitIns_R_R_R_R(ins, emitActualTypeSize(treeNode), targetReg, b->GetRegNum(), c->GetRegNum(),
-                                      a->GetRegNum());
+        emit->emitIns_R_R_R_R(ins, emitActualTypeSize(treeNode), targetReg, b->GetRegNum(), c->GetRegNum(),
+                              a->GetRegNum());
         genProduceReg(treeNode);
         return;
     }
