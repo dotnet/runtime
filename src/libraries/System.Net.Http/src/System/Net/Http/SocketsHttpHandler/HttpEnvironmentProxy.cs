@@ -206,7 +206,7 @@ namespace System.Net.Http
 
                 Uri uri = ub.Uri;
 
-                // if both user and password exist and empty we should preserve that and use default credentials.
+                // if both user and password exist and are empty we should preserve that and use default credentials.
                 // UriBuilder does not handle that now e.g. does not distinguish between empty and missing.
                 if (user == "" && password == "")
                 {
