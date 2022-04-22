@@ -32,7 +32,7 @@ namespace System.IO.Tests
         [OuterLoop]
         public void FileSystemWatcher_File_Create_EnablingDisablingNotAffectRaisingEvent()
         {
-            RetryHelper.Execute(() =>
+            FileSystemWatcherTest.Execute(() =>
             {
                 using (var testDirectory = new TempDirectory(GetTestFilePath()))
                 using (var watcher = new FileSystemWatcher(testDirectory.Path))
@@ -146,7 +146,7 @@ namespace System.IO.Tests
         [Fact]
         public void FileSystemWatcher_File_Create_SynchronizingObject()
         {
-            RetryHelper.Execute(() =>
+            FileSystemWatcherTest.Execute(() =>
             {
                 using (var testDirectory = new TempDirectory(GetTestFilePath()))
                 using (var watcher = new FileSystemWatcher(testDirectory.Path))

@@ -92,7 +92,7 @@ namespace System.IO.Tests
         [ConditionalFact(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
         public void FileSystemWatcher_File_Delete_SymLink()
         {
-            RetryHelper.Execute(() =>
+            FileSystemWatcherTest.Execute(() =>
             {
                 using (var testDirectory = new TempDirectory(GetTestFilePath()))
                 using (var dir = new TempDirectory(Path.Combine(testDirectory.Path, "dir")))

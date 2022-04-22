@@ -53,7 +53,7 @@ namespace System.IO.Tests
         [MemberData(nameof(FilterTypes))]
         public void FileSystemWatcher_File_NotifyFilter_CreationTime(NotifyFilters filter)
         {
-            RetryHelper.Execute(() =>
+            FileSystemWatcherTest.Execute(() =>
             {
                 using (var testDirectory = new TempDirectory(GetTestFilePath()))
                 using (var file = new TempFile(Path.Combine(testDirectory.Path, "file")))

@@ -23,7 +23,7 @@ namespace System.IO.Tests
         [MemberData(nameof(FilterTypes))]
         public void FileSystemWatcher_Directory_NotifyFilter_Attributes(NotifyFilters filter)
         {
-            RetryHelper.Execute(() =>
+            FileSystemWatcherTest.Execute(() =>
             {
                 using (var testDirectory = new TempDirectory(GetTestFilePath()))
                 using (var dir = new TempDirectory(Path.Combine(testDirectory.Path, "dir")))

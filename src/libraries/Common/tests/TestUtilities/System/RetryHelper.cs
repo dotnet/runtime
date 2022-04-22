@@ -55,16 +55,15 @@ namespace System
                     }
                 }
 
-                string diagnostic = $"RetryHelper: retrying {testName} {i}th time of {maxAttempts}: got {lastException.Message}";
-                if (PlatformDetection.IsInHelix && testName.Contains("FileSystemWatcher_"))
+                if (PlatformDetection.IsInHelix)
                 {
                     // Dump into the console output so we can mine it
-                    Console.WriteLine(diagnostic);
+                    Console.WriteLine($"RetryHelper: retrying {testName} {i}th time of {maxAttempts}: got {lastException.Message}");
                 }
 
                 if (s_debug)
                 {
-                    Debug.WriteLine(diagnostic);
+                    Debug.WriteLine($"RetryHelper: retrying {testName} {i}th time of {maxAttempts}: got {lastException.Message}");
                 }
 
                 Thread.Sleep((backoffFunc ?? s_defaultBackoffFunc)(i));

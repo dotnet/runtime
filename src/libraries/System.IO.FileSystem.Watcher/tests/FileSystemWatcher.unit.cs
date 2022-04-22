@@ -954,7 +954,7 @@ namespace System.IO.Tests
         [Fact]
         public void FileSystemWatcher_File_Delete_MultipleFilters()
         {
-            RetryHelper.Execute(() =>
+            FileSystemWatcherTest.Execute(() =>
             {
                 // Check delete events against multiple filters
 
@@ -981,7 +981,7 @@ namespace System.IO.Tests
         [Fact]
         public void FileSystemWatcher_Directory_Create_MultipleFilters()
         {
-            RetryHelper.Execute(() =>
+            FileSystemWatcherTest.Execute(() =>
             {
                 // Check create events against multiple filters
 
@@ -1005,7 +1005,7 @@ namespace System.IO.Tests
         [Fact]
         public void FileSystemWatcher_Directory_Create_Filter_Ctor()
         {
-            RetryHelper.Execute(() =>
+            FileSystemWatcherTest.Execute(() =>
             {
                 // Check create events against multiple filters
 
@@ -1047,7 +1047,7 @@ namespace System.IO.Tests
         [Fact]
         public void FileSystemWatcher_File_Create_MultipleFilters()
         {
-            RetryHelper.Execute(() =>
+            FileSystemWatcherTest.Execute(() =>
             {
                 DirectoryInfo directory = Directory.CreateDirectory(GetTestFilePath());
                 FileInfo fileOne = new FileInfo(Path.Combine(directory.FullName, GetTestFileName()));
@@ -1069,7 +1069,7 @@ namespace System.IO.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void FileSystemWatcher_ModifyFiltersConcurrentWithEvents()
         {
-            RetryHelper.Execute(() =>
+            FileSystemWatcherTest.Execute(() =>
             {
                 DirectoryInfo directory = Directory.CreateDirectory(GetTestFilePath());
                 FileInfo fileOne = new FileInfo(Path.Combine(directory.FullName, GetTestFileName()));

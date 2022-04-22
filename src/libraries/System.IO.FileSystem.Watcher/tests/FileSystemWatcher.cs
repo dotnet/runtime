@@ -180,7 +180,7 @@ namespace System.IO.Tests
         [InlineData(false)]
         public void EndInit_ResumesPausedEnableRaisingEvents(bool setBeforeBeginInit)
         {
-            RetryHelper.Execute(() =>
+            FileSystemWatcherTest.Execute(() =>
             {
                 using (var testDirectory = new TempDirectory(GetTestFilePath()))
                 using (var watcher = new TestFileSystemWatcher(testDirectory.Path, "*"))

@@ -80,7 +80,7 @@ namespace System.IO.Tests
         [Fact]
         public void FileSystemWatcher_SymbolicLink_TargetsDirectory_Create_IncludeSubdirectories()
         {
-            RetryHelper.Execute(() =>
+            FileSystemWatcherTest.Execute(() =>
             {
                 // Arrange
                 const string subDir = "subDir";

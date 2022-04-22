@@ -12,7 +12,7 @@ namespace System.IO.Tests
         [Fact]
         public void FileSystemWatcher_Directory_Changed_LastWrite()
         {
-            RetryHelper.Execute(() =>
+            FileSystemWatcherTest.Execute(() =>
             {
                 using (var testDirectory = new TempDirectory(GetTestFilePath()))
                 using (var dir = new TempDirectory(Path.Combine(testDirectory.Path, "dir")))
