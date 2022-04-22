@@ -320,18 +320,19 @@ replay_parser = subparsers.add_parser("replay", description=replay_description, 
 replay_parser.add_argument("-jit_path", help="Path to clrjit. Defaults to Core_Root JIT.")
 replay_parser.add_argument("-jitoption", action="append", help="Pass option through to the jit. Format is key=value, where key is the option name without leading COMPlus_")
 
-# subparser for asmdiffs
-asm_diff_parser = subparsers.add_parser("asmdiffs", description=asm_diff_description, parents=[core_root_parser, target_parser, superpmi_common_parser, replay_common_parser])
+base_diff_parser = argparse.ArgumentParser(add_help=False)
+base_diff_parser.add_argument("-base_jit_path", help="Path to baseline clrjit. Defaults to baseline JIT from rolling build, by computing baseline git hash.")
+base_diff_parser.add_argument("-diff_jit_path", help="Path to diff clrjit. Defaults to Core_Root JIT.")
+base_diff_parser.add_argument("-git_hash", help="Use this git hash as the current hash for use to find a baseline JIT. Defaults to current git hash of source tree.")
+base_diff_parser.add_argument("-base_git_hash", help="Use this git hash as the baseline JIT hash. Default: search for the baseline hash.")
+base_diff_parser.add_argument("-base_jit_option", action="append", help="Option to pass to the baseline JIT. Format is key=value, where key is the option name without leading COMPlus_...")
+base_diff_parser.add_argument("-diff_jit_option", action="append", help="Option to pass to the diff JIT. Format is key=value, where key is the option name without leading COMPlus_...")
 
-asm_diff_parser.add_argument("-base_jit_path", help="Path to baseline clrjit. Defaults to baseline JIT from rolling build, by computing baseline git hash.")
-asm_diff_parser.add_argument("-diff_jit_path", help="Path to diff clrjit. Defaults to Core_Root JIT.")
-asm_diff_parser.add_argument("-git_hash", help="Use this git hash as the current hash for use to find a baseline JIT. Defaults to current git hash of source tree.")
-asm_diff_parser.add_argument("-base_git_hash", help="Use this git hash as the baseline JIT hash. Default: search for the baseline hash.")
+# subparser for asmdiffs
+asm_diff_parser = subparsers.add_parser("asmdiffs", description=asm_diff_description, parents=[core_root_parser, target_parser, superpmi_common_parser, replay_common_parser, base_diff_parser])
 asm_diff_parser.add_argument("--diff_jit_dump", action="store_true", help="Generate JitDump output for diffs. Default: only generate asm, not JitDump.")
 asm_diff_parser.add_argument("--gcinfo", action="store_true", help="Include GC info in disassembly (sets COMPlus_JitGCDump/COMPlus_NgenGCDump; requires instructions to be prefixed by offsets).")
 asm_diff_parser.add_argument("--debuginfo", action="store_true", help="Include debug info after disassembly (sets COMPlus_JitDebugDump/COMPlus_NgenDebugDump).")
-asm_diff_parser.add_argument("-base_jit_option", action="append", help="Option to pass to the baseline JIT. Format is key=value, where key is the option name without leading COMPlus_...")
-asm_diff_parser.add_argument("-diff_jit_option", action="append", help="Option to pass to the diff JIT. Format is key=value, where key is the option name without leading COMPlus_...")
 asm_diff_parser.add_argument("-tag", help="Specify a word to add to the directory name where the asm diffs will be placed")
 asm_diff_parser.add_argument("-metrics", action="append", help="Metrics option to pass to jit-analyze. Can be specified multiple times, or pass comma-separated values.")
 asm_diff_parser.add_argument("-retainOnlyTopFiles", action="store_true", help="Retain only top .dasm files with largest improvements or regressions and delete remaining files.")
@@ -339,18 +340,12 @@ asm_diff_parser.add_argument("--diff_with_release", action="store_true", help="S
 
 # subparser for throughput
 throughput_parser = subparsers.add_parser("tpdiff",
-                                          description=throughput_description, parents=[core_root_parser, target_parser, superpmi_common_parser, replay_common_parser],
+                                          description=throughput_description, parents=[core_root_parser, target_parser, superpmi_common_parser, replay_common_parser, base_diff_parser],
                                           # Allow overriding build_type with new default
                                           conflict_handler='resolve')
 
 # Override build type
 throughput_parser.add_argument("-build_type", default="Release", help=throughput_build_type_help)
-throughput_parser.add_argument("-base_jit_path", help="Path to baseline clrjit. Defaults to release baseline JIT from rolling build, by computing baseline git hash.")
-throughput_parser.add_argument("-diff_jit_path", help="Path to diff clrjit. Defaults to release Core_Root JIT.")
-throughput_parser.add_argument("-git_hash", help="Use this git hash as the current hash for use to find a baseline JIT. Defaults to current git hash of source tree.")
-throughput_parser.add_argument("-base_git_hash", help="Use this git hash as the baseline JIT hash. Default: search for the baseline hash.")
-throughput_parser.add_argument("-base_jit_option", action="append", help="Option to pass to the baseline JIT. Format is key=value, where key is the option name without leading COMPlus_...")
-throughput_parser.add_argument("-diff_jit_option", action="append", help="Option to pass to the diff JIT. Format is key=value, where key is the option name without leading COMPlus_...")
 
 # subparser for upload
 upload_parser = subparsers.add_parser("upload", description=upload_description, parents=[core_root_parser, target_parser])
@@ -1970,18 +1965,26 @@ class SuperPMIReplayThroughputDiff:
                     write_fh.write("Base JIT's compiler: {}\n".format(base_jit_compiler_version))
                     write_fh.write("Diff JIT's compiler: {}\n".format(diff_jit_compiler_version))
 
-                # We write two tables, an overview one with just percentages and
-                # a detailed one that includes raw instruction counts
-                write_fh.write("|Collection|PDIFF|\n")
-                write_fh.write("|---|---|\n")
-                for mch_file, base_instructions, diff_instructions in tp_diffs:
-                    write_fh.write("|{}|{}{:.2f}%|\n".format(
-                        mch_file,
-                        "+" if diff_instructions > base_instructions else "",
-                        (diff_instructions - base_instructions) / base_instructions * 100))
+                # We write two tables, an overview one with just significantly
+                # impacted collections and a detailed one that includes raw
+                # instruction count and all collections.
+                def is_significant(base, diff):
+                    return round((diff - base) / base, 2) != 0
+
+                if any(is_significant(base, diff) for (_, base, diff) in tp_diffs):
+                    write_fh.write("|Collection|PDIFF|\n")
+                    write_fh.write("|---|---|\n")
+                    for mch_file, base_instructions, diff_instructions in tp_diffs:
+                        if is_significant(base_instructions, diff_instructions):
+                            write_fh.write("|{}|{}{:.2f}%|\n".format(
+                                mch_file,
+                                "+" if diff_instructions > base_instructions else "",
+                                (diff_instructions - base_instructions) / base_instructions * 100))
+                else:
+                    write_fh.write("No significant throughput differences found\n")
 
                 write_fh.write("\n<details>\n")
-                write_fh.write("<summary>Detailed</summary>\n\n")
+                write_fh.write("<summary>Details</summary>\n\n")
                 write_fh.write("|Collection|Base # instructions|Diff # instructions|PDIFF|\n")
                 write_fh.write("|---|---|---|---|\n")
                 for mch_file, base_instructions, diff_instructions in tp_diffs:
@@ -3312,6 +3315,40 @@ def setup_args(args):
                             "Specify private_store or set environment variable SUPERPMI_PRIVATE_STORE to use a private store.",
                             modify_arg=lambda arg: os.environ["SUPERPMI_PRIVATE_STORE"].split(";") if arg is None and "SUPERPMI_PRIVATE_STORE" in os.environ else arg)
 
+    def verify_base_diff_args():
+
+        coreclr_args.verify(args,
+                            "base_jit_path",
+                            lambda unused: True,
+                            "Unable to set base_jit_path")
+
+        coreclr_args.verify(args,
+                            "diff_jit_path",
+                            os.path.isfile,
+                            "Error: JIT not found at diff_jit_path {}".format,
+                            modify_arg=setup_jit_path_arg)
+
+        coreclr_args.verify(args,
+                            "git_hash",
+                            lambda unused: True,
+                            "Unable to set git_hash")
+
+        coreclr_args.verify(args,
+                            "base_git_hash",
+                            lambda unused: True,
+                            "Unable to set base_git_hash")
+
+        coreclr_args.verify(args,
+                            "base_jit_option",
+                            lambda unused: True,
+                            "Unable to set base_jit_option.")
+
+        coreclr_args.verify(args,
+                            "diff_jit_option",
+                            lambda unused: True,
+                            "Unable to set diff_jit_option.")
+
+
     if coreclr_args.mode == "collect":
 
         verify_target_args()
@@ -3559,27 +3596,7 @@ def setup_args(args):
         verify_target_args()
         verify_superpmi_common_args()
         verify_replay_common_args()
-
-        coreclr_args.verify(args,
-                            "base_jit_path",
-                            lambda unused: True,
-                            "Unable to set base_jit_path")
-
-        coreclr_args.verify(args,
-                            "diff_jit_path",
-                            os.path.isfile,
-                            "Error: JIT not found at diff_jit_path {}".format,
-                            modify_arg=setup_jit_path_arg)
-
-        coreclr_args.verify(args,
-                            "git_hash",
-                            lambda unused: True,
-                            "Unable to set git_hash")
-
-        coreclr_args.verify(args,
-                            "base_git_hash",
-                            lambda unused: True,
-                            "Unable to set base_git_hash")
+        verify_base_diff_args()
 
         coreclr_args.verify(args,
                             "gcinfo",
@@ -3595,16 +3612,6 @@ def setup_args(args):
                             "diff_jit_dump",
                             lambda unused: True,
                             "Unable to set diff_jit_dump.")
-
-        coreclr_args.verify(args,
-                            "base_jit_option",
-                            lambda unused: True,
-                            "Unable to set base_jit_option.")
-
-        coreclr_args.verify(args,
-                            "diff_jit_option",
-                            lambda unused: True,
-                            "Unable to set diff_jit_option.")
 
         coreclr_args.verify(args,
                             "tag",
@@ -3679,42 +3686,12 @@ def setup_args(args):
         verify_target_args()
         verify_superpmi_common_args()
         verify_replay_common_args()
+        verify_base_diff_args()
 
         coreclr_args.verify(coreclr_args.arch,
                             "arch",
                             lambda arch: arch == "x86" or arch == "x64",
                             "Throughput measurements not supported on platform {}".format(coreclr_args.arch))
-
-        coreclr_args.verify(args,
-                            "base_jit_path",
-                            lambda unused: True,
-                            "Unable to set base_jit_path")
-
-        coreclr_args.verify(args,
-                            "diff_jit_path",
-                            os.path.isfile,
-                            "Error: JIT not found at diff_jit_path {}".format,
-                            modify_arg=setup_jit_path_arg)
-
-        coreclr_args.verify(args,
-                            "git_hash",
-                            lambda unused: True,
-                            "Unable to set git_hash")
-
-        coreclr_args.verify(args,
-                            "base_git_hash",
-                            lambda unused: True,
-                            "Unable to set base_git_hash")
-
-        coreclr_args.verify(args,
-                            "base_jit_option",
-                            lambda unused: True,
-                            "Unable to set base_jit_option.")
-
-        coreclr_args.verify(args,
-                            "diff_jit_option",
-                            lambda unused: True,
-                            "Unable to set diff_jit_option.")
 
         process_base_jit_path_arg(coreclr_args)
         download_clrjit_pintool(coreclr_args)
