@@ -40,7 +40,7 @@ namespace System.Threading
         {
         }
 
-        [Obsolete("WaitHandleHandle has been deprecated. Use the SafeWaitHandle property instead.")]
+        [Obsolete("WaitHandle.Handle has been deprecated. Use the SafeWaitHandle property instead.")]
         public virtual IntPtr Handle
         {
             get => _waitHandle == null ? InvalidHandle : _waitHandle.DangerousGetHandle();

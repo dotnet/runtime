@@ -84,6 +84,7 @@ namespace System.Reflection
             return null;
         }
 
+        [Obsolete("Assembly.CodeBase and Assembly.EscapedCodeBase are only included for .NET Framework compatibility. Use Assembly.Location.", DiagnosticId = "SYSLIB0012", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         [RequiresAssemblyFiles(ThrowingMessageInRAF)]
         public override string? CodeBase
         {
@@ -103,7 +104,9 @@ namespace System.Reflection
                 if (codeBase.Length == 0)
                 {
                     // For backward compatibility, return CoreLib codebase for assemblies loaded from memory.
+#pragma warning disable SYSLIB0012
                     codeBase = typeof(object).Assembly.CodeBase;
+#pragma warning restore SYSLIB0012
                 }
                 return codeBase;
             }
