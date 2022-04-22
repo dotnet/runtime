@@ -32,10 +32,9 @@ class FirefoxInspectorClient : InspectorClient
     {
         _clientSocket = await ConnectToWebServer(webserverUri, token);
 
-        //FIXME: Close client socket!
         ArraySegment<byte> buff = new(new byte[10]);
         _ = _clientSocket.ReceiveAsync(buff, token)
-                        .ContinueWith(t =>
+                        .ContinueWith(async t =>
                         {
                             if (token.IsCancellationRequested)
                                 return;
@@ -43,7 +42,8 @@ class FirefoxInspectorClient : InspectorClient
                             logger.LogTrace($"** client socket closed, so stopping the client loop too");
                             // Webserver connection is closed
                             // So, stop the loop here too
-                            _clientInitiatedClose.TrySetResult();
+                            // _clientInitiatedClose.TrySetResult();
+                            await Shutdown(token);
                         }, TaskContinuationOptions.NotOnRanToCompletion | TaskContinuationOptions.RunContinuationsAsynchronously)
                         .ConfigureAwait(false);
 
@@ -81,8 +81,7 @@ class FirefoxInspectorClient : InspectorClient
             var watcherId = res.Value?["result"]?["value"]?["actor"]?.Value<string>();
             res = await SendCommand("watchResources", JObject.FromObject(new { type = "watchResources", resourceTypes = new JArray("console-message"), to = watcherId}), token);
             res = await SendCommand("watchTargets", JObject.FromObject(new { type = "watchTargets", targetType = "frame", to = watcherId}), token);
-            ThreadActorId = res.Value?["result"]?["value"]?["target"]?["threadActor"]?.Value<string>();
-            ConsoleActorId = res.Value?["result"]?["value"]?["target"]?["consoleActor"]?.Value<string>();
+            UpdateTarget(res.Value?["result"]?["value"]?["target"] as JObject);
             await SendCommand("attach", JObject.FromObject(new
                 {
                     type = "attach",
@@ -114,6 +113,12 @@ class FirefoxInspectorClient : InspectorClient
             var method = res["type"]?.Value<string>();
             return onEvent(method, res, token);
         }
+
+        if (res["type"]?.Value<string>() == "target-available-form" && res["target"] is JObject target)
+        {
+            UpdateTarget(target);
+            return Task.CompletedTask;
+        }
         if (res["applicationType"] != null)
             return null;
         if (res["resultID"] != null)
@@ -126,6 +131,8 @@ class FirefoxInspectorClient : InspectorClient
                 var messageId = new FirefoxMessageId("", 0, from_str);
                 if (pending_cmds.Remove(messageId, out var item))
                     item.SetResult(Result.FromJsonFirefox(res));
+                else
+                    logger.LogDebug($"HandleMessage: Could not find any pending cmd for {messageId}. msg: {msg}");
             }
             return null;
         }
@@ -184,15 +191,40 @@ class FirefoxInspectorClient : InspectorClient
         var tcs = new TaskCompletionSource<Result>();
         MessageId msgId;
         if (args["to"]?.Value<string>() is not string to_str)
-            throw new System.Exception($"No 'to' field found in '{args}'");
+            throw new Exception($"No 'to' field found in '{args}'");
 
         msgId = new FirefoxMessageId("", 0, to_str);
         pending_cmds[msgId] = tcs;
+        logger.LogTrace($"SendCommand: to: {args}");
 
         var msg = args.ToString(Formatting.None);
         var bytes = Encoding.UTF8.GetBytes(msg);
         Send(bytes, token);
 
         return tcs.Task;
+    }
+
+    private void UpdateTarget(JObject? target)
+    {
+        if (target?["threadActor"]?.Value<string>() is string threadActorId)
+        {
+            ThreadActorId = threadActorId;
+            logger.LogTrace($"Updated threadActorId to {threadActorId}");
+        }
+        if (target?["consoleActor"]?.Value<string>() is string consoleActorId)
+        {
+            ConsoleActorId = consoleActorId;
+            logger.LogTrace($"Updated consoleActorId to {consoleActorId}");
+        }
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        base.Dispose(disposing);
+        if (disposing && _clientSocket?.State == WebSocketState.Open)
+        {
+            _clientSocket?.Abort();
+            _clientSocket?.Dispose();
+        }
     }
 }

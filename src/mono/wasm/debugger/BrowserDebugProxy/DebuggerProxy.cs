@@ -13,18 +13,20 @@ namespace Microsoft.WebAssembly.Diagnostics
     // This type is the public entrypoint that allows external code to attach the debugger proxy
     // to a given websocket listener. Everything else in this package can be internal.
 
-    public class DebuggerProxy
+    public class DebuggerProxy : DebuggerProxyBase
     {
-        private readonly MonoProxy proxy;
+        internal MonoProxy MonoProxy { get; }
 
         public DebuggerProxy(ILoggerFactory loggerFactory, IList<string> urlSymbolServerList, int runtimeId = 0, string loggerId = "")
         {
-            proxy = new MonoProxy(loggerFactory, urlSymbolServerList, runtimeId, loggerId);
+            MonoProxy = new MonoProxy(loggerFactory, urlSymbolServerList, runtimeId, loggerId);
         }
 
         public Task Run(Uri browserUri, WebSocket ideSocket)
         {
-            return proxy.RunForDevTools(browserUri, ideSocket);
+            return MonoProxy.RunForDevTools(browserUri, ideSocket);
         }
+
+        public override void Shutdown() => MonoProxy.Shutdown();
     }
 }

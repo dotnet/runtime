@@ -2,6 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
+using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore;
@@ -9,6 +14,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.WebAssembly.Diagnostics;
 
 namespace DebuggerTests
 {
@@ -21,7 +27,11 @@ namespace DebuggerTests
 
         public static readonly Uri Endpoint = new Uri("http://localhost:9400");
 
-        public static Task Start(string browserPath, string appPath, string pagePath, string url)
+        private static readonly ConcurrentBag<(string id, DebuggerProxyBase proxy)> s_proxyTable = new();
+        private static readonly ConcurrentBag<(string, Action<(RunLoopStopReason, Exception)>)> s_exitHandlers = new();
+        private static readonly ConcurrentBag<(string, RunLoopStopReason, Exception)> s_statusTable = new();
+
+        public static Task Start(string appPath, string pagePath, string url)
         {
             lock (proxyLock)
             {
@@ -41,14 +51,17 @@ namespace DebuggerTests
                                     options.SingleLine = true;
                                     options.TimestampFormat = "[HH:mm:ss] ";
                                 })
-                               .AddFilter(null, LogLevel.Trace);
+                                .AddFilter("DevToolsProxy", LogLevel.Debug)
+                                .AddFile(Path.Combine(DebuggerTestBase.TestLogPath, "proxy.log"),
+                                            minimumLevel: LogLevel.Trace,
+                                            outputTemplate: "{Timestamp:o} [{Level:u3}] {SourceContext}: {Message}{NewLine}{Exception}")
+                                .AddFilter(null, LogLevel.Information);
                     })
-                    .ConfigureServices((ctx, services) =>
+                .ConfigureServices((ctx, services) =>
                     {
                         services.Configure<TestHarnessOptions>(ctx.Configuration);
                         services.Configure<TestHarnessOptions>(options =>
                         {
-                            options.BrowserPath = options.BrowserPath ?? browserPath;
                             options.AppPath = appPath;
                             options.PagePath = pagePath;
                             options.DevToolsUrl = new Uri(url);
@@ -63,5 +76,94 @@ namespace DebuggerTests
             Console.WriteLine("WebServer Ready!");
             return hostTask;
         }
+
+        public static void RegisterNewProxy(string id, DebuggerProxyBase proxy)
+        {
+            if (s_proxyTable.Where(t => t.id == id).Any())
+                throw new ArgumentException($"Proxy with id {id} already exists");
+
+            s_proxyTable.Add((id, proxy));
+        }
+
+        private static bool TryGetProxyById(string id, [NotNullWhen(true)] out DebuggerProxyBase proxy)
+        {
+            proxy = null;
+            IEnumerable<(string id, DebuggerProxyBase proxy)> found = s_proxyTable.Where(t => t.id == id);
+            if (found.Any())
+                proxy = found.First().proxy;
+
+            return proxy != null;
+        }
+
+        public static void RegisterExitHandler(string id, Action<(RunLoopStopReason reason, Exception ex)> handler)
+        {
+            if (s_exitHandlers.Any(t => t.Item1 == id))
+                throw new Exception($"Cannot register a duplicate exit handler for {id}");
+
+            s_exitHandlers.Add((id, handler));
+        }
+
+        public static void RegisterProxyExitState(string id, (RunLoopStopReason reason, Exception ex) status)
+        {
+            Console.WriteLine ($"[{id}] RegisterProxyExitState: {status}");
+            // FIXME: check for existing
+            s_statusTable.Add((id, status.reason, status.ex));
+            Action<(RunLoopStopReason, Exception)> handler = s_exitHandlers.Where(t => t.Item1 == id)
+                .Select(t => t.Item2)
+                .FirstOrDefault();
+
+            if (handler is not null)
+                handler(status);
+        }
+
+        //FIXME: and remove
+        public static bool TryGetProxyExitState(string id, out (RunLoopStopReason reason, Exception ex) state)
+        {
+            state = (RunLoopStopReason.Cancelled, null);
+
+            if (!TryGetProxyById(id, out var proxy))
+            {
+                var found = s_statusTable.Where(t => t.Item1 == id);
+                if (!found.Any())
+                {
+                    Console.WriteLine($"[{id}] Cannot find exit proxy for {id}");
+                    return false;
+                }
+
+                // FIXME: improve this whole lookup stuff
+                state = (found.First().Item2, found.First().Item3);
+                return true;
+            }
+
+            if (proxy.ExitState is not null)
+            {
+                state = proxy.ExitState.Value;
+                return true;
+            }
+
+            return false;
+        }
+
+        // FIXME: remove entries
+        public static DebuggerProxyBase ShutdownProxy(string id)
+        {
+            // Console.WriteLine ($"[{id}] THP.ShutdownProxy");
+            if (!string.IsNullOrEmpty(id))
+            {
+                (_, var proxy) = s_proxyTable.FirstOrDefault(t => t.id == id);
+                if (proxy is not null)
+                {
+                    // Console.WriteLine ($"- Calling shutdown on proxy for '{id}'");
+                    proxy.Shutdown();
+                    return proxy;
+                }
+            }
+
+            // Console.WriteLine ($"- Could not find any proxy for '{id}'");
+            // foreach (var t in s_proxyTable)
+                // Console.WriteLine ($"\t[{t.id}]");
+            return null;
+        }
     }
+
 }

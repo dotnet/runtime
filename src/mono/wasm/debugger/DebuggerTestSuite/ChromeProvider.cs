@@ -12,6 +12,8 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 using Microsoft.WebAssembly.Diagnostics;
+using System.Threading;
+using System.Collections.Generic;
 
 #nullable enable
 
@@ -20,67 +22,71 @@ namespace DebuggerTests;
 internal class ChromeProvider : WasmHostProvider
 {
     static readonly Regex s_parseConnection = new (@"listening on (ws?s://[^\s]*)");
-    private Process? _process;
     private WebSocket? _ideWebSocket;
-    private bool _isDisposed;
+    private DebuggerProxy? _debuggerProxy;
+    private static readonly Lazy<string> s_browserPath = new(() => GetBrowserPath(GetPathsToProbe()));
 
     public ChromeProvider(string id, ILogger logger) : base(id, logger)
     {
     }
 
-    public async Task StartBrowserAndProxy(HttpContext context,
-                                      string browserPath,
-                                      string targetUrl,
-                                      int remoteDebuggingPort,
-                                      string messagePrefix,
-                                      ILoggerFactory loggerFactory,
-                                      int browserReadyTimeoutMs = 20000)
+    public async Task StartBrowserAndProxyAsync(HttpContext context,
+                                                string targetUrl,
+                                                int remoteDebuggingPort,
+                                                string messagePrefix,
+                                                ILoggerFactory loggerFactory,
+                                                CancellationToken token,
+                                                int browserReadyTimeoutMs = 20000)
     {
-        ProcessStartInfo psi = GetProcessStartInfo(browserPath, GetInitParms(remoteDebuggingPort), targetUrl);
-        (Process? proc, string? line) = await LaunchHost(
-                                psi,
-                                context,
-                                str =>
-                                {
-                                    if (string.IsNullOrEmpty(str))
-                                        return null;
+        string? line;
+        try
+        {
+            ProcessStartInfo psi = GetProcessStartInfo(s_browserPath.Value, GetInitParms(remoteDebuggingPort), targetUrl);
+            line = await LaunchHostAsync(
+                                    psi,
+                                    context,
+                                    str =>
+                                    {
+                                        if (string.IsNullOrEmpty(str))
+                                            return null;
 
-                                    Match match = s_parseConnection.Match(str);
-                                    return match.Success
-                                                ? match.Groups[1].Captures[0].Value
-                                                : null;
-                                },
-                                messagePrefix,
-                                browserReadyTimeoutMs);
+                                        Match match = s_parseConnection.Match(str);
+                                        return match.Success
+                                                    ? match.Groups[1].Captures[0].Value
+                                                    : null;
+                                    },
+                                    messagePrefix,
+                                    browserReadyTimeoutMs,
+                                    token).ConfigureAwait(false);
 
-        if (proc is null || line is null)
-            throw new Exception($"Failed to launch chrome");
+            if (_process is null || line is null)
+                throw new Exception($"Failed to launch chrome");
+        }
+        catch (Exception ex)
+        {
+            TestHarnessProxy.RegisterProxyExitState(Id, (RunLoopStopReason.Exception, ex));
+            throw;
+        }
 
         string con_str = await ExtractConnUrl(line, _logger);
 
         _logger.LogInformation($"{messagePrefix} launching proxy for {con_str}");
 
-        var proxy = new DebuggerProxy(loggerFactory, null, loggerId: Id);
+        _debuggerProxy = new DebuggerProxy(loggerFactory, null, loggerId: Id);
+        TestHarnessProxy.RegisterNewProxy(Id, _debuggerProxy);
         var browserUri = new Uri(con_str);
         WebSocket? ideSocket = await context.WebSockets.AcceptWebSocketAsync().ConfigureAwait(false);
-        await proxy.Run(browserUri, ideSocket).ConfigureAwait(false);
+        await _debuggerProxy.Run(browserUri, ideSocket).ConfigureAwait(false);
     }
 
     public override void Dispose()
     {
-        if (_isDisposed)
+        if (_isDisposed || _isDisposing)
             return;
 
-        if (_process is not null && _process.HasExited != true)
-        {
-            _process.CancelErrorRead();
-            _process.CancelOutputRead();
-            _process.Kill(entireProcessTree: true);
-            _process.WaitForExit();
-            _process.Close();
-
-            _process = null;
-        }
+        _isDisposing = true;
+        _debuggerProxy?.Shutdown();
+        base.Dispose();
 
         if (_ideWebSocket is not null)
         {
@@ -90,6 +96,7 @@ internal class ChromeProvider : WasmHostProvider
         }
 
         _isDisposed = true;
+        _isDisposing = false;
     }
 
     private async Task<string> ExtractConnUrl (string str, ILogger logger)
@@ -145,4 +152,29 @@ internal class ChromeProvider : WasmHostProvider
         }
         return str;
     }
+
+    private static IEnumerable<string> GetPathsToProbe()
+    {
+        List<string> paths = new();
+        string? asmLocation = Path.GetDirectoryName(typeof(ChromeProvider).Assembly.Location);
+        if (asmLocation is not null)
+        {
+            string baseDir = Path.Combine(asmLocation, "..", "..");
+            paths.Add(Path.Combine(baseDir, "chrome", "chrome-linux", "chrome"));
+            paths.Add(Path.Combine(baseDir, "chrome", "chrome-win", "chrome.exe"));
+        }
+
+        paths.AddRange(new[]
+        {
+            "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+            "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge",
+            "/Applications/Google Chrome Canary.app/Contents/MacOS/Google Chrome Canary",
+            "/usr/bin/chromium",
+            "C:/Program Files/Google/Chrome/Application/chrome.exe",
+            "/usr/bin/chromium-browser"
+        });
+
+        return paths;
+    }
+
 }

@@ -13,56 +13,42 @@ using Microsoft.Extensions.Logging;
 
 namespace Microsoft.WebAssembly.Diagnostics;
 
-internal class DevToolsDebuggerConnection : WasmDebuggerConnection
+internal sealed class DevToolsDebuggerConnection : WasmDebuggerConnection
 {
     public WebSocket WebSocket { get; init; }
     private readonly ILogger _logger;
 
-    public DevToolsDebuggerConnection(WebSocket webSocket!!, string id, ILogger logger!!)
+    public DevToolsDebuggerConnection(WebSocket webSocket, string id, ILogger logger)
             : base(id)
     {
+        ArgumentNullException.ThrowIfNull(webSocket);
+        ArgumentNullException.ThrowIfNull(logger);
         WebSocket = webSocket;
         _logger = logger;
     }
 
-    public override async Task<string?> ReadOne(TaskCompletionSource client_initiated_close, TaskCompletionSource<Exception> side_exception, CancellationToken token)
+    public override bool IsConnected => WebSocket.State == WebSocketState.Open;
+
+    public override async Task<string?> ReadOneAsync(CancellationToken token)
     {
         byte[] buff = new byte[4000];
         var mem = new MemoryStream();
-        try
+
+        while (true)
         {
-            while (true)
-            {
-                if (WebSocket.State != WebSocketState.Open)
-                {
-                    _logger.LogError($"DevToolsProxy: Socket is no longer open.");
-                    client_initiated_close.TrySetResult();
-                    return null;
-                }
+            if (WebSocket.State != WebSocketState.Open)
+                throw new Exception($"WebSocket is no longer open, state: {WebSocket.State}");
 
-                ArraySegment<byte> buffAsSeg = new(buff);
-                WebSocketReceiveResult result = await WebSocket.ReceiveAsync(buffAsSeg, token);
-                if (result.MessageType == WebSocketMessageType.Close)
-                {
-                    client_initiated_close.TrySetResult();
-                    return null;
-                }
+            ArraySegment<byte> buffAsSeg = new(buff);
+            WebSocketReceiveResult result = await WebSocket.ReceiveAsync(buffAsSeg, token);
+            if (result.MessageType == WebSocketMessageType.Close)
+                throw new Exception($"WebSocket close message received, state: {WebSocket.State}");
 
-                await mem.WriteAsync(new ReadOnlyMemory<byte>(buff, 0, result.Count), token);
+            await mem.WriteAsync(new ReadOnlyMemory<byte>(buff, 0, result.Count), token);
 
-                if (result.EndOfMessage)
-                    return Encoding.UTF8.GetString(mem.GetBuffer(), 0, (int)mem.Length);
-            }
+            if (result.EndOfMessage)
+                return Encoding.UTF8.GetString(mem.GetBuffer(), 0, (int)mem.Length);
         }
-        catch (WebSocketException e)
-        {
-            if (e.WebSocketErrorCode == WebSocketError.ConnectionClosedPrematurely)
-            {
-                client_initiated_close.TrySetResult();
-                return null;
-            }
-        }
-        return null;
     }
 
     public override Task SendAsync(byte[] bytes, CancellationToken token)

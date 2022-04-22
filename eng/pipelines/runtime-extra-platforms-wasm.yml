@@ -53,56 +53,56 @@ jobs:
 #
 - ${{ if ne(parameters.isRollingBuild, true) }}:
   # Library tests
-  - template: /eng/pipelines/common/templates/wasm-library-tests.yml
-    parameters:
-      platforms:
-        - Browser_wasm
-        - Browser_wasm_win
-      # Don't run for rolling builds, as this is covered
-      alwaysRun: ${{ parameters.isWasmOnlyBuild }}
-      scenarios:
-        - normal
-        - WasmTestOnBrowser
-        - WasmTestOnNodeJs
+  #- template: /eng/pipelines/common/templates/wasm-library-tests.yml
+    #parameters:
+      #platforms:
+        #- Browser_wasm
+        #- Browser_wasm_win
+      ## Don't run for rolling builds, as this is covered
+      #alwaysRun: ${{ parameters.isWasmOnlyBuild }}
+      #scenarios:
+        #- normal
+        #- WasmTestOnBrowser
+        #- WasmTestOnNodeJs
 
-  # EAT Library tests - only run on linux
-  - template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
-    parameters:
-      platforms:
-        - Browser_wasm
-      nameSuffix: _EAT
-      runAOT: false
-      alwaysRun: ${{ parameters.isWasmOnlyBuild }}
+  ## EAT Library tests - only run on linux
+  #- template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
+    #parameters:
+      #platforms:
+        #- Browser_wasm
+      #nameSuffix: _EAT
+      #runAOT: false
+      #alwaysRun: ${{ parameters.isWasmOnlyBuild }}
 
-  # AOT Library tests
-  - template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
-    parameters:
-      platforms:
-        - Browser_wasm
-        - Browser_wasm_win
-      nameSuffix: _AOT
-      runAOT: true
-      alwaysRun: ${{ parameters.isWasmOnlyBuild }}
+  ## AOT Library tests
+  #- template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
+    #parameters:
+      #platforms:
+        #- Browser_wasm
+        #- Browser_wasm_win
+      #nameSuffix: _AOT
+      #runAOT: true
+      #alwaysRun: ${{ parameters.isWasmOnlyBuild }}
 
-  # High resource AOT Library tests
-  - template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
-    parameters:
-      platforms:
-        - Browser_wasm
-        - Browser_wasm_win
-      nameSuffix: _HighResource_AOT
-      extraBuildArgs: /p:TestAssemblies=false /p:RunHighAOTResourceRequiringTestsOnly=true
-      buildAOTOnHelix: false
-      runAOT: true
-      alwaysRun: ${{ parameters.isWasmOnlyBuild }}
+  ## High resource AOT Library tests
+  #- template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
+    #parameters:
+      #platforms:
+        #- Browser_wasm
+        #- Browser_wasm_win
+      #nameSuffix: _HighResource_AOT
+      #extraBuildArgs: /p:TestAssemblies=false /p:RunHighAOTResourceRequiringTestsOnly=true
+      #buildAOTOnHelix: false
+      #runAOT: true
+      #alwaysRun: ${{ parameters.isWasmOnlyBuild }}
 
-  # Wasm.Build.Tests
-  - template: /eng/pipelines/common/templates/wasm-build-tests.yml
-    parameters:
-      platforms:
-        - Browser_wasm
-        - Browser_wasm_win
-      alwaysRun: ${{ parameters.isWasmOnlyBuild }}
+  ## Wasm.Build.Tests
+  #- template: /eng/pipelines/common/templates/wasm-build-tests.yml
+    #parameters:
+      #platforms:
+        #- Browser_wasm
+        #- Browser_wasm_win
+      #alwaysRun: ${{ parameters.isWasmOnlyBuild }}
 
   # Debugger tests
   - template: /eng/pipelines/common/templates/wasm-debugger-tests.yml

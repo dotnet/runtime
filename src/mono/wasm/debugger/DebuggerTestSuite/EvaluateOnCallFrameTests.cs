@@ -88,6 +88,7 @@ namespace DebuggerTests
            {
                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
                var DTProp = new DateTime(2010, 9, 8, 7, 6, 5).AddMinutes(10);
+               Console.WriteLine ($"------- test running the bits..");
                await EvaluateOnCallFrameAndCheck(id,
                    ("g", TNumber(400)),
                    ("h", TNumber(123)),
@@ -97,7 +98,10 @@ namespace DebuggerTests
                    // property on method arg
                    ("me.DTProp", TDateTime(DTProp)),
                    ("me.DTProp.TimeOfDay.Minutes", TNumber(DTProp.TimeOfDay.Minutes)),
-                   ("me.DTProp.Second + (me.IntProp - 5)", TNumber(DTProp.Second + 4)));
+                   ("me.DTProp.Second + (me.IntProp - 5)", TNumber(DTProp.Second + 4)))
+                    .ConfigureAwait(false);
+
+               Console.WriteLine ($"------- test done!");
            });
 
         [Theory]
@@ -855,7 +859,7 @@ namespace DebuggerTests
                    ("\"15\"\n//comment as vs does\n", TString("15")),
                    ("\"15\"", TString("15")));
            });
-        
+
         [ConditionalTheory(nameof(RunningOnChrome))]
         [InlineData("EvaluateBrowsableProperties", "TestEvaluateFieldsNone", "testFieldsNone", 10)]
         [InlineData("EvaluateBrowsableProperties", "TestEvaluatePropertiesNone", "testPropertiesNone", 10)]

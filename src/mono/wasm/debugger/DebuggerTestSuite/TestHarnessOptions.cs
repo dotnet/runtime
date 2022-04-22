@@ -10,7 +10,6 @@ namespace DebuggerTests
 {
     public class TestHarnessOptions : ProxyOptions
     {
-        public string BrowserPath { get; set; }
         public string AppPath { get; set; }
         public string PagePath { get; set; }
         public string NodeApp { get; set; }

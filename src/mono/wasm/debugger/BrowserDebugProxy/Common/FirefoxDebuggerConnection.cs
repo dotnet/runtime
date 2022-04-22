@@ -12,87 +12,66 @@ using Microsoft.Extensions.Logging;
 #nullable enable
 namespace Microsoft.WebAssembly.Diagnostics;
 
-internal class FirefoxDebuggerConnection : WasmDebuggerConnection
+internal sealed class FirefoxDebuggerConnection : WasmDebuggerConnection
 {
     public TcpClient TcpClient { get; init; }
     private readonly ILogger _logger;
     private bool _isDisposed;
     private readonly byte[] _lengthBuffer;
 
-    public FirefoxDebuggerConnection(TcpClient tcpClient!!, string id, ILogger logger!!)
+    public FirefoxDebuggerConnection(TcpClient tcpClient, string id, ILogger logger)
             : base(id)
     {
+        ArgumentNullException.ThrowIfNull(tcpClient);
+        ArgumentNullException.ThrowIfNull(logger);
         TcpClient = tcpClient;
         _logger = logger;
         _lengthBuffer = new byte[10];
     }
 
-    public override async Task<string?> ReadOne(TaskCompletionSource client_initiated_close,
-                                                TaskCompletionSource<Exception> side_exception,
-                                                CancellationToken token)
+    public override bool IsConnected => TcpClient.Connected;
+
+    public override async Task<string?> ReadOneAsync(CancellationToken token)
     {
 #pragma warning disable CA1835 // Prefer the 'Memory'-based overloads for 'ReadAsync' and 'WriteAsync'
-        try
+        NetworkStream? stream = TcpClient.GetStream();
+        int bytesRead = 0;
+        while (bytesRead == 0 || Convert.ToChar(_lengthBuffer[bytesRead - 1]) != ':')
         {
-            NetworkStream? stream = TcpClient.GetStream();
-            int bytesRead = 0;
-            while (bytesRead == 0 || Convert.ToChar(_lengthBuffer[bytesRead - 1]) != ':')
-            {
-                if (ShouldFail())
-                    return null;
-
-                int readLen = await stream.ReadAsync(_lengthBuffer, bytesRead, 1, token);
-                bytesRead += readLen;
-            }
-
-            string str = Encoding.UTF8.GetString(_lengthBuffer, 0, bytesRead - 1);
-            int offset = bytesRead;
-            if (!int.TryParse(str, out int messageLen))
-                throw new Exception($"Protocol error: Could not parse length prefix: '{str}'");
-
-            if (ShouldFail())
+            if (CheckFail())
                 return null;
 
-            byte[] buffer = new byte[messageLen];
-            bytesRead = await stream.ReadAsync(buffer, 0, messageLen, token);
-            while (bytesRead != messageLen)
-            {
-                if (ShouldFail())
-                    return null;
-                bytesRead += await stream.ReadAsync(buffer, bytesRead, messageLen - bytesRead, token);
-            }
-
-            return Encoding.UTF8.GetString(buffer, 0, messageLen);
-
-            bool ShouldFail()
-            {
-                if (token.IsCancellationRequested
-                    || side_exception.Task.IsCompleted
-                    || client_initiated_close.Task.IsCompleted)
-                {
-                    return true;
-                }
-
-                if (!TcpClient.Connected)
-                {
-                    client_initiated_close.TrySetResult();
-                    return true;
-                }
-
-                return false;
-            }
+            int readLen = await stream.ReadAsync(_lengthBuffer, bytesRead, 1, token);
+            bytesRead += readLen;
         }
-        catch (Exception ex)
-        {
-            _logger.LogTrace($"Ignored: {nameof(FirefoxDebuggerConnection)}.ReadOne: ({this}) {ex}, token: {token.IsCancellationRequested}");
-            if (!token.IsCancellationRequested
-                && !client_initiated_close.Task.IsCompleted
-                && !side_exception.Task.IsCompleted)
-            {
-                side_exception.TrySetResult(ex);
-                throw;
-            }
+
+        string str = Encoding.UTF8.GetString(_lengthBuffer, 0, bytesRead - 1);
+        if (!int.TryParse(str, out int messageLen))
+            throw new Exception($"Protocol error: Could not parse length prefix: '{str}'");
+
+        if (CheckFail())
             return null;
+
+        byte[] buffer = new byte[messageLen];
+        bytesRead = await stream.ReadAsync(buffer, 0, messageLen, token);
+        while (bytesRead != messageLen)
+        {
+            if (CheckFail())
+                return null;
+            bytesRead += await stream.ReadAsync(buffer, bytesRead, messageLen - bytesRead, token);
+        }
+
+        return Encoding.UTF8.GetString(buffer, 0, messageLen);
+
+        bool CheckFail()
+        {
+            if (token.IsCancellationRequested)
+                return true;
+
+            if (!TcpClient.Connected)
+                throw new Exception($"Connection closed");
+
+            return false;
         }
     }
 

@@ -41,7 +41,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 firefoxDebugPort = ffport;
 
             ILogger logger = loggerFactory.CreateLogger("FirefoxMonoProxy");
-            _ = FirefoxProxyServer.Run(browserPort: firefoxDebugPort, proxyPort: proxyPort, loggerFactory, logger);
+            _ = FirefoxDebuggerProxy.Run(browserPort: firefoxDebugPort, proxyPort: proxyPort, loggerFactory, logger);
 
             IWebHost host = new WebHostBuilder()
                 .UseSetting("UseIISIntegration", false.ToString())

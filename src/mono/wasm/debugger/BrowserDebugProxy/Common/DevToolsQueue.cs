@@ -13,8 +13,8 @@ namespace Microsoft.WebAssembly.Diagnostics
 {
     internal sealed class DevToolsQueue
     {
-        protected Task? current_send;
-        protected ConcurrentQueue<byte[]> pending;
+        private Task? current_send;
+        private ConcurrentQueue<byte[]> pending;
 
         public Task? CurrentSend { get { return current_send; } }
 

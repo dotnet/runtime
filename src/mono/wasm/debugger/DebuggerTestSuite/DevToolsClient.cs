@@ -3,8 +3,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Net;
-using System.Net.Sockets;
 using System.Net.WebSockets;
 using System.Threading;
 using System.Threading.Tasks;
@@ -17,12 +15,10 @@ namespace DebuggerTests
     {
         DevToolsQueue _queue;
         protected WasmDebuggerConnection _conn;
-        protected TaskCompletionSource _clientInitiatedClose = new TaskCompletionSource();
         TaskCompletionSource _shutdownRequested = new TaskCompletionSource();
         readonly TaskCompletionSource<Exception> _failRequested = new();
         TaskCompletionSource _newSendTaskAvailable = new ();
         protected readonly ILogger logger;
-        protected bool _useWebSockets = true;
 
         public event EventHandler<(RunLoopStopReason reason, Exception ex)> RunLoopStopped;
 
@@ -56,7 +52,7 @@ namespace DebuggerTests
             }
 
             await _conn.ShutdownAsync(cancellationToken);
-            _shutdownRequested.SetResult();
+            _shutdownRequested.TrySetResult();
        }
 
         public void Fail(Exception exception)
@@ -66,51 +62,6 @@ namespace DebuggerTests
             else
                 _failRequested.TrySetResult(exception);
         }
-
-        // FIXME: AJ: shutdownrequested - handle that in ReadOne also
-
-#if false
-        protected async Task<string> ReadOne(CancellationToken token)
-        {
-            byte[] buff = new byte[4000];
-            var mem = new MemoryStream();
-            while (true)
-            {
-                if (socket.State != WebSocketState.Open)
-                {
-                    logger.LogDebug($"Socket is no longer open");
-                    _clientInitiatedClose.TrySetResult();
-                    return null;
-                }
-
-                WebSocketReceiveResult result;
-                try
-                {
-                    result = await socket.ReceiveAsync(new ArraySegment<byte>(buff), token).ConfigureAwait(false);
-                }
-                catch (Exception ex)
-                {
-                    if (token.IsCancellationRequested || _shutdownRequested.Task.IsCompletedSuccessfully)
-                        return null;
-
-                    logger.LogDebug($"DevToolsClient.ReadOne threw {ex.Message}, token: {token.IsCancellationRequested}, _shutdown: {_shutdownRequested.Task.Status}, clientInitiated: {_clientInitiatedClose.Task.Status}");
-                    throw;
-                }
-
-                if (result.MessageType == WebSocketMessageType.Close)
-                {
-                    _clientInitiatedClose.TrySetResult();
-                    return null;
-                }
-
-                mem.Write(buff, 0, result.Count);
-                if (result.EndOfMessage)
-                {
-                    return Encoding.UTF8.GetString(mem.GetBuffer(), 0, (int)mem.Length);
-                }
-            }
-        }
-#endif
 
         protected void Send(byte[] bytes, CancellationToken token)
         {
@@ -187,9 +138,8 @@ namespace DebuggerTests
         {
             var pending_ops = new List<Task>
             {
-                _conn.ReadOne(_clientInitiatedClose, _failRequested, cts.Token),
+                _conn.ReadOneAsync(cts.Token),
                 _newSendTaskAvailable.Task,
-                _clientInitiatedClose.Task,
                 _shutdownRequested.Task,
                 _failRequested.Task
             };
@@ -202,15 +152,19 @@ namespace DebuggerTests
             {
                 var task = await Task.WhenAny(pending_ops).ConfigureAwait(false);
 
-                if (task.IsCanceled && cts.IsCancellationRequested)
-                    return (RunLoopStopReason.Cancelled, null);
-
                 if (_shutdownRequested.Task.IsCompleted)
                     return (RunLoopStopReason.Shutdown, null);
 
-                if (_clientInitiatedClose.Task.IsCompleted)
-                    return (RunLoopStopReason.ClientInitiatedClose, new TaskCanceledException("Proxy closed the connection"));
+                if (task.IsCanceled && cts.IsCancellationRequested)
+                    return (RunLoopStopReason.Cancelled, null);
 
+                if (task.IsFaulted)
+                {
+                    if (task == pending_ops[0] && !_conn.IsConnected)
+                        return (RunLoopStopReason.ProxyConnectionClosed, task.Exception);
+
+                    return (RunLoopStopReason.Exception, task.Exception);
+                }
                 if (_failRequested.Task.IsCompleted)
                     return (RunLoopStopReason.Exception, _failRequested.Task.Result);
 
@@ -229,7 +183,7 @@ namespace DebuggerTests
                 if (task == pending_ops[0])
                 {
                     var msg = await (Task<string>)pending_ops[0];
-                    pending_ops[0] = _conn.ReadOne(_clientInitiatedClose, _failRequested, cts.Token);
+                    pending_ops[0] = _conn.ReadOneAsync(cts.Token);
 
                     if (msg != null)
                     {
@@ -252,13 +206,5 @@ namespace DebuggerTests
 
             return (RunLoopStopReason.Exception, new InvalidOperationException($"This shouldn't ever get thrown. Unsure why the loop stopped"));
         }
-    }
-
-    internal enum RunLoopStopReason
-    {
-        Shutdown,
-        Cancelled,
-        Exception,
-        ClientInitiatedClose
     }
 }

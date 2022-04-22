@@ -17,7 +17,6 @@ using System.Reflection;
 using System.Text;
 using System.Runtime.CompilerServices;
 using System.Diagnostics;
-using System.Reflection.Metadata;
 
 namespace Microsoft.WebAssembly.Diagnostics
 {
