@@ -69,7 +69,7 @@ internal sealed class FirefoxDebuggerConnection : WasmDebuggerConnection
                 return true;
 
             if (!TcpClient.Connected)
-                throw new Exception($"Connection closed");
+                throw new Exception($"{this} Connection closed");
 
             return false;
         }

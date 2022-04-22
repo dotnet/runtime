@@ -358,6 +358,11 @@ namespace Microsoft.WebAssembly.Diagnostics
                             if (x.IsCancellationRequested)
                                 return (RunLoopStopReason.Cancelled, null);
 
+                            // FIXME: instead of this, iterate through pending_ops, and clear it
+                            // out every time we wake up
+                            if (pending_ops.Where(t => t.IsFaulted).FirstOrDefault() is Task faultedTask)
+                                return (RunLoopStopReason.Exception, faultedTask.Exception);
+
                             if (readerTask.IsCompleted)
                             {
                                 while (_channelReader.TryRead(out Task newTask))

@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net.WebSockets;
 using System.Threading;
 using System.Threading.Tasks;
@@ -167,6 +168,11 @@ namespace DebuggerTests
                 }
                 if (_failRequested.Task.IsCompleted)
                     return (RunLoopStopReason.Exception, _failRequested.Task.Result);
+
+                // FIXME: instead of this, iterate through pending_ops, and clear it
+                // out every time we wake up
+                if (pending_ops.Where(t => t.IsFaulted).FirstOrDefault() is Task faultedTask)
+                    return (RunLoopStopReason.Exception, faultedTask.Exception);
 
                 if (_newSendTaskAvailable.Task.IsCompleted)
                 {
