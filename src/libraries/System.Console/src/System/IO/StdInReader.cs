@@ -52,7 +52,7 @@ namespace System.IO
             // rare, so just allocate.
             const int MaxStackAllocation = 256;
             int maxCharsCount = _encoding.GetMaxCharCount(buffer.Length);
-            Span<char> chars = (uint)maxCharsCount < MaxStackAllocation ?
+            Span<char> chars = (uint)maxCharsCount <= MaxStackAllocation ?
                 stackalloc char[MaxStackAllocation] :
                 new char[maxCharsCount];
             int charLen = _encoding.GetChars(buffer, chars);
