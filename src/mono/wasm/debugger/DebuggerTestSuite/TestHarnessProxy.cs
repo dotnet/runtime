@@ -58,6 +58,10 @@ namespace DebuggerTests
                                 .AddFilter("DevToolsProxy", LogLevel.Debug)
                                 .AddFile(Path.Combine(DebuggerTestBase.TestLogPath, "proxy.log"),
                                             minimumLevel: LogLevel.Trace,
+                                            levelOverrides: new Dictionary<string, LogLevel>
+                                            {
+                                                ["Microsoft.AspNetCore"] = LogLevel.Warning
+                                            },
                                             outputTemplate: "{Timestamp:o} [{Level:u3}] {SourceContext}: {Message}{NewLine}{Exception}")
                                 .AddFilter(null, LogLevel.Information);
                     })
