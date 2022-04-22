@@ -948,18 +948,7 @@ namespace System.Text.RegularExpressions.Symbolic
             {
                 AddTransitions(elem, context, transitions, new List<SymbolicRegexNode<TSet>>(), null, simulateBacktracking: true);
             }
-            //SymbolicRegexNode<TSet> derivative = _builder._nothing;
-            //// Iterate backwards to avoid quadratic rebuilding of the Or nodes, which are always simplified to
-            //// right associative form. Concretely:
-            //// In (a|(b|c)) | d -> (a|(b|(c|d)) the first argument is not a subtree of the result.
-            //// In a | (b|(c|d)) -> (a|(b|(c|d)) the second argument is a subtree of the result.
-            //// The first case performs linear work for each element, leading to a quadratic blowup.
-            //for (int i = transitions.Count - 1; i >= 0; --i)
-            //{
-            //    SymbolicRegexNode<TSet> node = transitions[i].Node;
-            //    Debug.Assert(node._kind != SymbolicRegexNodeKind.DisableBacktrackingSimulation);
-            //    derivative = _builder.OrderedOr(node, derivative);
-            //}
+
             SymbolicRegexNode<TSet> derivative = transitions.Union;
             if (_kind == SymbolicRegexNodeKind.DisableBacktrackingSimulation)
             {
@@ -2086,7 +2075,11 @@ namespace System.Text.RegularExpressions.Symbolic
             }
         }
 
-        /// <summary>Represents a list of transitions without duplicate effect arrays</summary>
+        /// <summary>
+        /// Represents a list of transitions without duplicate effect arrays.
+        /// Keeps the list of transitions unique, expects higher priority transitions
+        /// to be added first and ignores equivalent lower priority transitions.
+        /// </summary>
         private class TransitionList
         {
             private SymbolicRegexBuilder<TSet> _builder;

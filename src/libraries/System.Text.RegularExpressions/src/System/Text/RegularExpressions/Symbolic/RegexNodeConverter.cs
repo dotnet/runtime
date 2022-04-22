@@ -258,7 +258,7 @@ namespace System.Text.RegularExpressions.Symbolic
                                 {
                                     ConversionResult res = childResults[i];
                                     // if res is a non-singleton list then it denotes a concatenation that must be constructed at this point
-                                    SymbolicRegexNode<BDD> elem = res._size == 1 ? res.FirstElement : _builder.CreateConcat(res, top.TryToMarkFixedLength);
+                                    SymbolicRegexNode<BDD> elem = res._size == 1 ? res.FirstElement : _builder.CreateConcatRev(res.Enumerate(true), top.TryToMarkFixedLength);
                                     if (elem.IsNothing)
                                     {
                                         continue;
@@ -279,7 +279,7 @@ namespace System.Text.RegularExpressions.Symbolic
                                 Debug.Assert(childResults.Length == 1);
                                 ConversionResult res = childResults[0];
                                 //convert a list of nodes into a concatenation, do not propagate the length marker flag inside the loop body
-                                SymbolicRegexNode<BDD> body = res._size == 1 ? res.FirstElement : _builder.CreateConcat(res, false);
+                                SymbolicRegexNode<BDD> body = res._size == 1 ? res.FirstElement : _builder.CreateConcatRev(res.Enumerate(true), false);
                                 result.InsertAtEnd(_builder.CreateLoop(body, node.Kind == RegexNodeKind.Lazyloop, node.M, node.N));
                                 break;
                             }
@@ -307,7 +307,7 @@ namespace System.Text.RegularExpressions.Symbolic
             Debug.Assert(rootres._size == 1 || root.Kind == RegexNodeKind.Concatenate || root.Kind == RegexNodeKind.Capture);
 
             // if the root node is a concatenation then the converted concatenation is built with length marker check being true
-            SymbolicRegexNode<BDD> rootresult = rootres._size == 1 ? rootres.FirstElement : _builder.CreateConcat(rootres, true);
+            SymbolicRegexNode<BDD> rootresult = rootres._size == 1 ? rootres.FirstElement : _builder.CreateConcatRev(rootres.Enumerate(true), true);
             return rootresult;
 
 
