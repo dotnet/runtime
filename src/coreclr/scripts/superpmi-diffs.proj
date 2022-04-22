@@ -6,7 +6,7 @@
     <Project DefaultTargets="printItems">
 
     Once you've done that you can run this to see the results:
-    dotnet msbuild .\superpmi-asmdiffs.proj /v:n
+    dotnet msbuild .\superpmi-diffs.proj /v:n
    -->
 
    <!-- <PropertyGroup>
@@ -30,7 +30,7 @@
     <SuperpmiLogsLocation>%HELIX_WORKITEM_UPLOAD_ROOT%</SuperpmiLogsLocation>
     <!-- Workaround until https://github.com/dotnet/arcade/pull/6179 is not available -->
     <HelixResultsDestinationDir>$(BUILD_SOURCESDIRECTORY)\artifacts\helixresults</HelixResultsDestinationDir>
-    <WorkItemCommand>$(Python) $(ProductDirectory)\superpmi_asmdiffs.py -base_jit_directory $(ProductDirectory)\base -diff_jit_directory $(ProductDirectory)\diff -log_directory $(SuperpmiLogsLocation)</WorkItemCommand>
+    <WorkItemCommand>$(Python) $(ProductDirectory)\superpmi_diffs.py -base_jit_directory $(ProductDirectory)\base -diff_jit_directory $(ProductDirectory)\diff -log_directory $(SuperpmiLogsLocation)</WorkItemCommand>
     <WorkItemTimeout>1:00</WorkItemTimeout>
   </PropertyGroup>
 

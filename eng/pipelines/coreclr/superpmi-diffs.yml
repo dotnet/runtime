@@ -30,7 +30,7 @@ jobs:
 
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
-    jobTemplate: /eng/pipelines/coreclr/templates/superpmi-asmdiffs-job.yml
+    jobTemplate: /eng/pipelines/coreclr/templates/superpmi-diffs-job.yml
     buildConfig: checked
     platforms:
     - windows_x64

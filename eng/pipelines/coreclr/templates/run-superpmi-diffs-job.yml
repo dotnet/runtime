@@ -73,10 +73,10 @@ jobs:
         mkdir $(SpmiAsmdiffsLocation)
       displayName: Create directories
 
-    - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi_asmdiffs_setup.py -source_directory $(Build.SourcesDirectory) -product_directory $(buildProductRootFolderPath) -arch $(archType)
-      displayName: ${{ format('SuperPMI asmdiffs setup ({0})', parameters.archType) }}
+    - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi_diffs_setup.py -source_directory $(Build.SourcesDirectory) -product_directory $(buildProductRootFolderPath) -arch $(archType)
+      displayName: ${{ format('SuperPMI diffs setup ({0})', parameters.archType) }}
 
-      # Run superpmi asmdiffs in helix
+      # Run superpmi-diffs.py script in helix
     - template: /eng/pipelines/common/templates/runtimes/send-to-helix-step.yml
       parameters:
         displayName: 'Send job to Helix'
@@ -88,7 +88,7 @@ jobs:
         WorkItemTimeout: 2:00 # 2 hours
         WorkItemDirectory: '$(WorkItemDirectory)'
         CorrelationPayloadDirectory: '$(CorrelationPayloadDirectory)'
-        helixProjectArguments: '$(Build.SourcesDirectory)/src/coreclr/scripts/superpmi-asmdiffs.proj'
+        helixProjectArguments: '$(Build.SourcesDirectory)/src/coreclr/scripts/superpmi-diffs.proj'
         BuildConfig: ${{ parameters.buildConfig }}
         osGroup: ${{ parameters.osGroup }}
         archType: ${{ parameters.archType }}
@@ -118,7 +118,7 @@ jobs:
         targetFolder: '$(SpmiAsmdiffsLocation)'
       condition: always()
 
-    - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi_asmdiffs_summarize.py -diff_summary_dir $(SpmiAsmdiffsLocation) -arch $(archType)
+    - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi_diffs_summarize.py -diff_summary_dir $(SpmiAsmdiffsLocation) -arch $(archType)
       displayName: ${{ format('Summarize ({0})', parameters.archType) }}
       condition: always()
 
