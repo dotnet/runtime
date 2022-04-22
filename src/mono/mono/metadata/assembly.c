@@ -35,7 +35,6 @@
 #include <mono/utils/mono-uri.h>
 #include <mono/metadata/mono-config.h>
 #include <mono/metadata/mono-config-internals.h>
-#include <mono/metadata/mono-config-dirs.h>
 #include <mono/utils/mono-digest.h>
 #include <mono/utils/mono-logger-internals.h>
 #include <mono/utils/mono-path.h>
@@ -46,7 +45,6 @@
 #include <mono/utils/atomic.h>
 #include <mono/utils/mono-os-mutex.h>
 #include <mono/metadata/mono-private-unstable.h>
-#include <minipal/getexepath.h>
 
 #ifndef HOST_WIN32
 #include <sys/types.h>
@@ -57,14 +55,6 @@
 #ifdef HOST_DARWIN
 #include <mach-o/dyld.h>
 #endif
-
-/* the default search path is empty, the first slot is replaced with the computed value */
-static char*
-default_path [] = {
-	NULL,
-	NULL,
-	NULL
-};
 
 /* Contains the list of directories to be searched for assemblies (MONO_PATH) */
 static char **assemblies_path = NULL;
@@ -140,14 +130,8 @@ mono_public_tokens_are_equal (const unsigned char *pubt1, const unsigned char *p
  * mono_set_assemblies_path:
  * \param path list of paths that contain directories where Mono will look for assemblies
  *
- * Use this method to override the standard assembly lookup system and
- * override any assemblies coming from the GAC.  This is the method
- * that supports the \c MONO_PATH variable.
- *
- * Notice that \c MONO_PATH and this method are really a very bad idea as
- * it prevents the GAC from working and it prevents the standard
- * resolution mechanisms from working.  Nonetheless, for some debugging
- * situations and bootstrapping setups, this is useful to have.
+ * Use this method to override the standard assembly lookup system.
+ * This is the method that supports the \c MONO_PATH variable.
  */
 void
 mono_set_assemblies_path (const char* path)
@@ -373,38 +357,35 @@ load_in_path (const char *basename, const char** search_path, const MonoAssembly
  * This routine sets the internal default root directory for looking up
  * assemblies.
  *
- * This is used by Windows installations to compute dynamically the
+ * This is used by custom mono builds to compute dynamically the
  * place where the Mono assemblies are located.
  *
+ * Calling this is the same as mono_set_assemblies_path with a single path.
  */
 void
 mono_assembly_setrootdir (const char *root_dir)
 {
-	/*
-	 * Override the MONO_ASSEMBLIES directory configured at compile time.
-	 */
-	if (default_path [0])
-		g_free (default_path [0]);
-	default_path [0] = g_strdup (root_dir);
+	mono_set_assemblies_path (root_dir);
 }
 
 /**
  * mono_assembly_getrootdir:
  *
- * Obtains the root directory used for looking up assemblies.
+ * Obtains the first directory used for looking up assemblies which was set by mono_set_assemblies_path.
  *
  * Returns: a string with the directory, this string should not be freed.
  */
 G_CONST_RETURN gchar *
 mono_assembly_getrootdir (void)
 {
-	return default_path [0];
+	// return the first directory in assemblies_path
+	return assemblies_path != NULL ? assemblies_path[0] : NULL;
 }
 
 /**
  * mono_native_getrootdir:
  *
- * Obtains the root directory used for looking up native libs (.so, .dylib).
+ * Deprecated, returns the same value as mono_assembly_getrootdir.
  *
  * Returns: a string with the directory, this string should be freed by
  * the caller.
@@ -412,155 +393,32 @@ mono_assembly_getrootdir (void)
 gchar *
 mono_native_getrootdir (void)
 {
-	gchar* fullpath = g_build_path (G_DIR_SEPARATOR_S, mono_assembly_getrootdir (), mono_config_get_reloc_lib_dir(), (const char*)NULL);
-	return fullpath;
+	// return the first directory in assemblies_path
+	return assemblies_path != NULL ? g_strdup (assemblies_path[0]) : NULL;
 }
 
 /**
  * mono_set_dirs:
  * \param assembly_dir the base directory for assemblies
- * \param config_dir the base directory for configuration files
+ * \param config_dir ignored
  *
  * This routine is used internally and by developers embedding
  * the runtime into their own applications.
- *
- * There are a number of cases to consider: Mono as a system-installed
- * package that is available on the location preconfigured or Mono in
- * a relocated location.
- *
- * If you are using a system-installed Mono, you can pass NULL
- * to both parameters.  If you are not, you should compute both
- * directory values and call this routine.
- *
- * The values for a given PREFIX are:
- *
- *    assembly_dir: PREFIX/lib
- *    config_dir:   PREFIX/etc
- *
- * Notice that embedders that use Mono in a relocated way must
- * compute the location at runtime, as they will be in control
- * of where Mono is installed.
  */
 void
 mono_set_dirs (const char *assembly_dir, const char *config_dir)
 {
-	if (assembly_dir == NULL)
-		assembly_dir = mono_config_get_assemblies_dir ();
-	if (config_dir == NULL)
-		config_dir = mono_config_get_cfg_dir ();
-	mono_assembly_setrootdir (assembly_dir);
-	mono_set_config_dir (config_dir);
+	mono_set_assemblies_path (assembly_dir);
 }
-
-#ifndef HOST_WIN32
-
-static char *
-compute_base (char *path)
-{
-	char *p = strrchr (path, '/');
-	if (p == NULL)
-		return NULL;
-
-	/* Not a well known Mono executable, we are embedded, cant guess the base  */
-	if (strcmp (p, "/mono") && strcmp (p, "/mono-boehm") && strcmp (p, "/mono-sgen") && strcmp (p, "/pedump") && strcmp (p, "/monodis"))
-		return NULL;
-
-	*p = 0;
-	p = strrchr (path, '/');
-	if (p == NULL)
-		return NULL;
-
-	if (strcmp (p, "/bin") != 0)
-		return NULL;
-	*p = 0;
-	return path;
-}
-
-static void
-fallback (void)
-{
-	mono_set_dirs (mono_config_get_assemblies_dir (), mono_config_get_cfg_dir ());
-}
-
-static G_GNUC_UNUSED void
-set_dirs (char *exe)
-{
-	char *base;
-	char *config, *lib, *mono;
-	struct stat buf;
-	const char *bindir;
-
-	/*
-	 * Only /usr prefix is treated specially
-	 */
-	bindir = mono_config_get_bin_dir ();
-	g_assert (bindir);
-	if (strncmp (exe, bindir, strlen (bindir)) == 0 || (base = compute_base (exe)) == NULL){
-		fallback ();
-		return;
-	}
-
-	config = g_build_filename (base, "etc", (const char*)NULL);
-	lib = g_build_filename (base, "lib", (const char*)NULL);
-	mono = g_build_filename (lib, "mono/4.5", (const char*)NULL);  // FIXME: stop hardcoding 4.5 here
-	if (stat (mono, &buf) == -1)
-		fallback ();
-	else {
-		mono_set_dirs (lib, config);
-	}
-
-	g_free (config);
-	g_free (lib);
-	g_free (mono);
-}
-
-#endif /* HOST_WIN32 */
 
 /**
  * mono_set_rootdir:
  *
- * Registers the root directory for the Mono runtime, for Linux and Solaris 10,
- * this auto-detects the prefix where Mono was installed.
+ * Deprecated, does nothing.
  */
 void
 mono_set_rootdir (void)
 {
-	char *path = minipal_getexepath();
-	if (path == NULL) {
-#ifndef HOST_WIN32
-		fallback ();
-#endif
-		return;
-	}
-
-#if defined(HOST_WIN32) || (defined(HOST_DARWIN) && !defined(TARGET_ARM))
-	gchar *bindir, *installdir, *root, *config;
-
-	bindir = g_path_get_dirname (path);
-	installdir = g_path_get_dirname (bindir);
-	root = g_build_path (G_DIR_SEPARATOR_S, installdir, "lib", (const char*)NULL);
-
-	config = g_build_filename (root, "..", "etc", (const char*)NULL);
-#ifdef HOST_WIN32
-	mono_set_dirs (root, config);
-#else
-	if (g_file_test (root, G_FILE_TEST_EXISTS) && g_file_test (config, G_FILE_TEST_EXISTS))
-		mono_set_dirs (root, config);
-	else
-		fallback ();
-#endif
-
-	g_free (config);
-	g_free (root);
-	g_free (installdir);
-	g_free (bindir);
-	g_free (path);
-#elif defined(DISABLE_MONO_AUTODETECTION)
-	fallback ();
-#else
-	set_dirs (path);
-	return;
-#endif
 }
 
 /**
@@ -571,13 +429,6 @@ mono_set_rootdir (void)
 void
 mono_assemblies_init (void)
 {
-	/*
-	 * Initialize our internal paths if we have not been initialized yet.
-	 * This happens when embedders use Mono.
-	 */
-	if (mono_assembly_getrootdir () == NULL)
-		mono_set_rootdir ();
-
 	check_path_env ();
 
 	mono_os_mutex_init_recursive (&assemblies_mutex);
@@ -787,41 +638,27 @@ mono_assembly_decref (MonoAssembly *assembly)
 static MonoAssemblyName *
 mono_assembly_remap_version (MonoAssemblyName *aname, MonoAssemblyName *dest_aname)
 {
-	const MonoRuntimeInfo *current_runtime;
+	if (aname->name == NULL || !(aname->flags & ASSEMBLYREF_RETARGETABLE_FLAG))
+		return aname;
 
-	if (aname->name == NULL) return aname;
+	// Retargeting was mainly done on .NET Framework or Portable Class Libraries, remap to version 4.0.0.0 
+	// so the .NET Framework compatibility facades like mscorlib.dll can kick in
+	memcpy (dest_aname, aname, sizeof(MonoAssemblyName));
+	dest_aname->major = 4;
+	dest_aname->minor = 0;
+	dest_aname->build = 0;
+	dest_aname->revision = 0;
+	dest_aname->flags &= ~ASSEMBLYREF_RETARGETABLE_FLAG;
 
-	current_runtime = mono_get_runtime_info ();
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY,
+				"The request to load the retargetable assembly %s v%d.%d.%d.%d was remapped to %s v%d.%d.%d.%d",
+				aname->name,
+				aname->major, aname->minor, aname->build, aname->revision,
+				dest_aname->name,
+ 				dest_aname->major, dest_aname->minor, dest_aname->build, dest_aname->revision
+				);
 
-	if (aname->flags & ASSEMBLYREF_RETARGETABLE_FLAG) {
-		const AssemblyVersionSet* vset;
-
-		/* Remap to current runtime */
-		vset = &current_runtime->version_sets [0];
-
-		memcpy (dest_aname, aname, sizeof(MonoAssemblyName));
-		dest_aname->major = vset->major;
-		dest_aname->minor = vset->minor;
-		dest_aname->build = vset->build;
-		dest_aname->revision = vset->revision;
-		dest_aname->flags &= ~ASSEMBLYREF_RETARGETABLE_FLAG;
-
-		/* Remap assembly name */
-		if (!strcmp (aname->name, "System.Net"))
-			dest_aname->name = g_strdup ("System");
-
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY,
-					"The request to load the retargetable assembly %s v%d.%d.%d.%d was remapped to %s v%d.%d.%d.%d",
-					aname->name,
-					aname->major, aname->minor, aname->build, aname->revision,
-					dest_aname->name,
-					vset->major, vset->minor, vset->build, vset->revision
-					);
-
-		return dest_aname;
-	}
-
-	return aname;
+	return dest_aname;
 }
 
 /**
@@ -1154,7 +991,7 @@ mono_assembly_load_reference (MonoImage *image, int index)
 		char *extra_msg;
 
 		if (status == MONO_IMAGE_ERROR_ERRNO && errno == ENOENT) {
-			extra_msg = g_strdup_printf ("The assembly was not found in the Global Assembly Cache, a path listed in the MONO_PATH environment variable, or in the location of the executing assembly (%s).\n", image->assembly != NULL ? image->assembly->basedir : "" );
+			extra_msg = g_strdup_printf ("The assembly was not found in a path listed in the MONO_PATH environment variable, or in the location of the executing assembly (%s).\n", image->assembly != NULL ? image->assembly->basedir : "" );
 		} else if (status == MONO_IMAGE_ERROR_ERRNO) {
 			extra_msg = g_strdup_printf ("System error: %s\n", strerror (errno));
 		} else if (status == MONO_IMAGE_MISSING_ASSEMBLYREF) {
@@ -2774,10 +2611,6 @@ mono_assembly_name_culture_is_neutral (const MonoAssemblyName *aname)
  * This will load the assembly from the file whose name is derived from the assembly name
  * by appending the \c .dll extension.
  *
- * The assembly is loaded from either one of the extra Global Assembly Caches specified
- * by the extra GAC paths (specified by the \c MONO_GAC_PREFIX environment variable) or
- * if that fails from the GAC.
- *
  * \returns NULL on failure, or a pointer to a \c MonoAssembly on success.
  */
 MonoAssembly*
@@ -2845,10 +2678,11 @@ mono_assembly_load_with_partial_name_internal (const char *name, MonoAssemblyLoa
 }
 
 MonoAssembly*
-mono_assembly_load_corlib (MonoImageOpenStatus *status)
+mono_assembly_load_corlib ()
 {
 	MonoAssemblyName *aname;
 	MonoAssemblyOpenRequest req;
+	MonoImageOpenStatus status = MONO_IMAGE_OK;
 	mono_assembly_request_prepare_open (&req, mono_alc_get_default ());
 
 	if (corlib) {
@@ -2863,15 +2697,38 @@ mono_assembly_load_corlib (MonoImageOpenStatus *status)
 	if (!corlib) {
 		if (assemblies_path) { // Custom assemblies path set via MONO_PATH or mono_set_assemblies_path
 			char *corlib_name = g_strdup_printf ("%s.dll", MONO_ASSEMBLY_CORLIB_NAME);
-			corlib = load_in_path (corlib_name, (const char**)assemblies_path, &req, status);
+			corlib = load_in_path (corlib_name, (const char**)assemblies_path, &req, &status);
+			g_free (corlib_name);
 		}
 	}
 	if (!corlib) {
 		/* Maybe its in a bundle */
 		char *corlib_name = g_strdup_printf ("%s.dll", MONO_ASSEMBLY_CORLIB_NAME);
-		corlib = mono_assembly_request_open (corlib_name, &req, status);
+		corlib = mono_assembly_request_open (corlib_name, &req, &status);
+		g_free (corlib_name);
 	}
 	g_assert (corlib);
+
+	// exit the process if we weren't able to load corlib
+	if (status != MONO_IMAGE_OK) {
+		switch (status) {
+		case MONO_IMAGE_ERROR_ERRNO: {
+			g_print ("The assembly " MONO_ASSEMBLY_CORLIB_NAME ".dll was not found or could not be loaded.\n");
+			break;
+		}
+		case MONO_IMAGE_IMAGE_INVALID:
+			g_print ("The file " MONO_ASSEMBLY_CORLIB_NAME ".dll is an invalid CIL image\n");
+			break;
+		case MONO_IMAGE_MISSING_ASSEMBLYREF:
+			g_print ("Missing assembly reference in " MONO_ASSEMBLY_CORLIB_NAME ".dll\n");
+			break;
+		default:
+			g_assertf(0, "Unexpected status %d while loading " MONO_ASSEMBLY_CORLIB_NAME ".dll", status);
+			break;
+		}
+
+		exit (1);
+	}
 
 	return corlib;
 }

@@ -27,7 +27,7 @@ namespace System.Threading
 {
     #region class OverlappedData
 
-    internal unsafe sealed class OverlappedData
+    internal sealed unsafe class OverlappedData
     {
         internal IAsyncResult _asyncResult;
         internal object _callback; // IOCompletionCallback or _IOCompletionCallback
@@ -158,7 +158,7 @@ namespace System.Threading
         internal static unsafe OverlappedData GetOverlappedFromNative(NativeOverlapped* pNativeOverlapped)
         {
             GCHandle handle = *(GCHandle*)(pNativeOverlapped + 1);
-            return (OverlappedData)handle.Target;
+            return (OverlappedData)handle.Target!;
         }
     }
 

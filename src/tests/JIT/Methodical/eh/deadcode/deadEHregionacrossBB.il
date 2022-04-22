@@ -23,7 +23,9 @@
 .subsystem 0x00000003
 .file alignment 512
 .corflags 0x00000001
-.class private auto ansi beforefieldinit test
+.namespace Test_deadEHregionacrossBB_il
+{
+.class public auto ansi beforefieldinit test
        extends [mscorlib]System.Object
 {
   .field private static class [eh_common]TestUtil.TestLog testLog
@@ -31,9 +33,9 @@
   {
     .maxstack  2
     newobj     instance void [eh_common]TestUtil.TestLog::.ctor()
-    stsfld     class [eh_common]TestUtil.TestLog test::testLog
+    stsfld     class [eh_common]TestUtil.TestLog Test_deadEHregionacrossBB_il.test::testLog
     ret
-  } // end of method test::.cctor
+  } // end of method Test_deadEHregionacrossBB_il.test::.cctor
 
   .method public hidebysig static int32  Main() cil managed
   {
@@ -43,7 +45,7 @@
     .entrypoint
     .maxstack  1
     .locals init (int32 V_0)
-    ldsfld     class [eh_common]TestUtil.TestLog test::testLog
+    ldsfld     class [eh_common]TestUtil.TestLog Test_deadEHregionacrossBB_il.test::testLog
     callvirt   instance void [eh_common]TestUtil.TestLog::StartRecording()
 
     L:
@@ -72,14 +74,14 @@
 
     }  // end handler
     IL_0019:
-        ldsfld     class [eh_common]TestUtil.TestLog test::testLog
+        ldsfld     class [eh_common]TestUtil.TestLog Test_deadEHregionacrossBB_il.test::testLog
         callvirt   instance void [eh_common]TestUtil.TestLog::StopRecording()
 
-        ldsfld     class [eh_common]TestUtil.TestLog test::testLog
+        ldsfld     class [eh_common]TestUtil.TestLog Test_deadEHregionacrossBB_il.test::testLog
         callvirt   instance int32 [eh_common]TestUtil.TestLog::VerifyOutput()
 
     IL_0022:  ret
-  } // end of method test::Main
+  } // end of method Test_deadEHregionacrossBB_il.test::Main
 
   .method public hidebysig specialname rtspecialname
           instance void  .ctor() cil managed
@@ -88,5 +90,6 @@
     IL_0000:  ldarg.0
     IL_0001:  call       instance void [mscorlib]System.Object::.ctor()
     IL_0006:  ret
-  } // end of method test::.ctor
-} // end of class test
+  } // end of method Test_deadEHregionacrossBB_il.test::.ctor
+} // end of class Test_deadEHregionacrossBB_il.test
+}

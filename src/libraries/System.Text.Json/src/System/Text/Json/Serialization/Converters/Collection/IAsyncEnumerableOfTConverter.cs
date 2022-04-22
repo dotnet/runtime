@@ -117,6 +117,7 @@ namespace System.Text.Json.Serialization.Converters
                     return false;
                 }
 
+                state.Current.EndCollectionElement();
                 moveNextTask = enumerator.MoveNextAsync();
             } while (moveNextTask.IsCompleted);
 

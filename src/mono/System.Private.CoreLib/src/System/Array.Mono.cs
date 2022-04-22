@@ -99,11 +99,8 @@ namespace System
 
         public static void Copy(Array sourceArray, Array destinationArray, int length)
         {
-            if (sourceArray == null)
-                throw new ArgumentNullException(nameof(sourceArray));
-
-            if (destinationArray == null)
-                throw new ArgumentNullException(nameof(destinationArray));
+            ArgumentNullException.ThrowIfNull(sourceArray);
+            ArgumentNullException.ThrowIfNull(destinationArray);
 
             Copy(sourceArray, sourceArray.GetLowerBound(0), destinationArray,
                 destinationArray.GetLowerBound(0), length);
@@ -116,11 +113,8 @@ namespace System
 
         private static void Copy(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length, bool reliable)
         {
-            if (sourceArray == null)
-                throw new ArgumentNullException(nameof(sourceArray));
-
-            if (destinationArray == null)
-                throw new ArgumentNullException(nameof(destinationArray));
+            ArgumentNullException.ThrowIfNull(sourceArray);
+            ArgumentNullException.ThrowIfNull(destinationArray);
 
             if (length < 0)
                 throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_NeedNonNegNum);
@@ -451,7 +445,7 @@ namespace System
         internal T InternalArray__IReadOnlyList_get_Item<T>(int index)
         {
             if ((uint)index >= (uint)Length)
-                ThrowHelper.ThrowArgumentOutOfRange_IndexException();
+                ThrowHelper.ThrowArgumentOutOfRange_IndexMustBeLessException();
 
             T value;
             // Do not change this to call GetGenericValue_icall directly, due to special casing in the runtime.
@@ -482,7 +476,7 @@ namespace System
         internal T InternalArray__get_Item<T>(int index)
         {
             if ((uint)index >= (uint)Length)
-                ThrowHelper.ThrowArgumentOutOfRange_IndexException();
+                ThrowHelper.ThrowArgumentOutOfRange_IndexMustBeLessException();
 
             T value;
             // Do not change this to call GetGenericValue_icall directly, due to special casing in the runtime.
@@ -493,7 +487,7 @@ namespace System
         internal void InternalArray__set_Item<T>(int index, T item)
         {
             if ((uint)index >= (uint)Length)
-                ThrowHelper.ThrowArgumentOutOfRange_IndexException();
+                ThrowHelper.ThrowArgumentOutOfRange_IndexMustBeLessException();
 
             if (this is object?[] oarray)
             {

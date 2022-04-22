@@ -16,7 +16,7 @@ test_setup (void)
 		mono_set_assemblies_path (".");
 	}
 
-	eventpipe_test_domain = mono_jit_init_version_for_test_only ("eventpipe-tests", "v4.0.30319");
+	eventpipe_test_domain = mono_jit_init_version_for_test_only ("eventpipe-tests", NULL);
 
 	return NULL;
 }

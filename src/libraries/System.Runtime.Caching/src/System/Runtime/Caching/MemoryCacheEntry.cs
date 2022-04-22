@@ -104,7 +104,7 @@ namespace System.Runtime.Caching
         }
 
         internal MemoryCacheEntry(string key,
-                                  object value!!,
+                                  object value,
                                   DateTimeOffset absExp,
                                   TimeSpan slidingExp,
                                   CacheItemPriority priority,
@@ -112,6 +112,11 @@ namespace System.Runtime.Caching
                                   CacheEntryRemovedCallback removedCallback,
                                   MemoryCache cache) : base(key)
         {
+            if (value is null)
+            {
+                throw new ArgumentNullException(nameof(value));
+            }
+
             _utcCreated = DateTime.UtcNow;
             _value = value;
 

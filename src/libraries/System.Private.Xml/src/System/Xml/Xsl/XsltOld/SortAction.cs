@@ -9,7 +9,7 @@ namespace System.Xml.Xsl.XsltOld
     using System.Xml;
     using System.Xml.XPath;
 
-    internal class SortAction : CompiledAction
+    internal sealed class SortAction : CompiledAction
     {
         private int _selectKey = Compiler.InvalidQueryKey;
         private Avt? _langAvt;

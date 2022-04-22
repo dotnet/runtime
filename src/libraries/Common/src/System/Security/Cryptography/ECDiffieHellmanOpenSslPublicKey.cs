@@ -9,8 +9,10 @@ namespace System.Security.Cryptography
     {
         private ECOpenSsl _key;
 
-        internal ECDiffieHellmanOpenSslPublicKey(SafeEvpPKeyHandle pkeyHandle!!)
+        internal ECDiffieHellmanOpenSslPublicKey(SafeEvpPKeyHandle pkeyHandle)
         {
+            ArgumentNullException.ThrowIfNull(pkeyHandle);
+
             if (pkeyHandle.IsInvalid)
                 throw new ArgumentException(SR.Cryptography_OpenInvalidHandle, nameof(pkeyHandle));
 

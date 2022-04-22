@@ -81,9 +81,15 @@ namespace System.Text.Json
 
         public bool IsPushedReferenceForCycleDetection;
 
-        public void EndDictionaryElement()
+        public void EndCollectionElement()
+        {
+            PolymorphicSerializationState = PolymorphicSerializationState.None;
+        }
+
+        public void EndDictionaryEntry()
         {
             PropertyState = StackFramePropertyState.None;
+            PolymorphicSerializationState = PolymorphicSerializationState.None;
         }
 
         public void EndProperty()
@@ -91,6 +97,7 @@ namespace System.Text.Json
             JsonPropertyInfo = null!;
             JsonPropertyNameAsString = null;
             PropertyState = StackFramePropertyState.None;
+            PolymorphicSerializationState = PolymorphicSerializationState.None;
         }
 
         /// <summary>
@@ -107,25 +114,11 @@ namespace System.Text.Json
         }
 
         /// <summary>
-        /// Initializes the state for polymorphic cases and returns the appropriate converter.
+        /// Configures the next stack frame for a polymorphic converter.
         /// </summary>
-        public JsonConverter? ResolvePolymorphicConverter(object value, Type typeToConvert, JsonSerializerOptions options)
+        public JsonConverter InitializePolymorphicReEntry(Type runtimeType, JsonSerializerOptions options)
         {
-            Debug.Assert(value != null);
-            Debug.Assert(PolymorphicSerializationState != PolymorphicSerializationState.PolymorphicReEntryStarted);
-
-            if (PolymorphicSerializationState == PolymorphicSerializationState.PolymorphicReEntrySuspended)
-            {
-                // Quickly retrieve the polymorphic converter in case of a re-entrant continuation
-                Debug.Assert(PolymorphicJsonTypeInfo != null && value.GetType() == PolymorphicJsonTypeInfo.PropertyType);
-                return PolymorphicJsonTypeInfo.ConverterBase;
-            }
-
-            Type runtimeType = value.GetType();
-            if (runtimeType == typeToConvert)
-            {
-                return null;
-            }
+            Debug.Assert(PolymorphicSerializationState == PolymorphicSerializationState.None);
 
             // For perf, avoid the dictionary lookup in GetOrAddJsonTypeInfo() for every element of a collection
             // if the current element is the same type as the previous element.
@@ -135,18 +128,38 @@ namespace System.Text.Json
                 PolymorphicJsonTypeInfo = typeInfo.PropertyInfoForTypeInfo;
             }
 
+            PolymorphicSerializationState = PolymorphicSerializationState.PolymorphicReEntryStarted;
             return PolymorphicJsonTypeInfo.ConverterBase;
         }
 
-        public void EnterPolymorphicConverter()
+        /// <summary>
+        /// Configures the next stack frame for a polymorphic converter.
+        /// </summary>
+        public JsonConverter InitializePolymorphicReEntry(JsonTypeInfo derivedJsonTypeInfo)
         {
-            Debug.Assert(PolymorphicSerializationState != PolymorphicSerializationState.PolymorphicReEntryStarted);
+            Debug.Assert(PolymorphicSerializationState == PolymorphicSerializationState.None);
+
+            PolymorphicJsonTypeInfo = derivedJsonTypeInfo.PropertyInfoForTypeInfo;
             PolymorphicSerializationState = PolymorphicSerializationState.PolymorphicReEntryStarted;
+            return PolymorphicJsonTypeInfo.ConverterBase;
         }
 
+        /// <summary>
+        /// Configures the next frame for a continuation of a polymorphic converter.
+        /// </summary>
+        public JsonConverter ResumePolymorphicReEntry()
+        {
+            Debug.Assert(PolymorphicSerializationState == PolymorphicSerializationState.PolymorphicReEntrySuspended);
+            Debug.Assert(PolymorphicJsonTypeInfo is not null);
+            PolymorphicSerializationState = PolymorphicSerializationState.PolymorphicReEntryStarted;
+            return PolymorphicJsonTypeInfo.ConverterBase;
+        }
+
+        /// <summary>
+        /// Updates frame state after a polymorphic converter has returned.
+        /// </summary>
         public void ExitPolymorphicConverter(bool success)
         {
-            Debug.Assert(PolymorphicSerializationState == PolymorphicSerializationState.PolymorphicReEntryStarted);
             PolymorphicSerializationState = success ? PolymorphicSerializationState.None : PolymorphicSerializationState.PolymorphicReEntrySuspended;
         }
 

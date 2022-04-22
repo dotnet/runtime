@@ -45,8 +45,11 @@ namespace System.IO
         {
         }
 
-        public BinaryReader(Stream input!!, Encoding encoding!!, bool leaveOpen)
+        public BinaryReader(Stream input, Encoding encoding, bool leaveOpen)
         {
+            ArgumentNullException.ThrowIfNull(input);
+            ArgumentNullException.ThrowIfNull(encoding);
+
             if (!input.CanRead)
             {
                 throw new ArgumentException(SR.Argument_StreamNotReadable);
@@ -309,8 +312,10 @@ namespace System.IO
             return StringBuilderCache.GetStringAndRelease(sb);
         }
 
-        public virtual int Read(char[] buffer!!, int index, int count)
+        public virtual int Read(char[] buffer, int index, int count)
         {
+            ArgumentNullException.ThrowIfNull(buffer);
+
             if (index < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_NeedNonNegNum);
@@ -437,8 +442,10 @@ namespace System.IO
             return chars;
         }
 
-        public virtual int Read(byte[] buffer!!, int index, int count)
+        public virtual int Read(byte[] buffer, int index, int count)
         {
+            ArgumentNullException.ThrowIfNull(buffer);
+
             if (index < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_NeedNonNegNum);

@@ -56,7 +56,7 @@ namespace System
                     if (NotAny(Flags.DosPath) &&
                         uriKind != UriKind.Absolute &&
                        ((uriKind == UriKind.Relative || (_string.Length >= 2 && (_string[0] != '\\' || _string[1] != '\\')))
-                    || (!IsWindowsSystem && InFact(Flags.UnixPath))))
+                    || (!OperatingSystem.IsWindows() && InFact(Flags.UnixPath))))
                     {
                         _syntax = null!; //make it be relative Uri
                         _flags &= Flags.UserEscaped; // the only flag that makes sense for a relative uri
@@ -554,8 +554,10 @@ namespace System
             return true;
         }
 
-        public static string UnescapeDataString(string stringToUnescape!!)
+        public static string UnescapeDataString(string stringToUnescape)
         {
+            ArgumentNullException.ThrowIfNull(stringToUnescape);
+
             if (stringToUnescape.Length == 0)
                 return string.Empty;
 
@@ -852,8 +854,10 @@ namespace System
             }
         }
 
-        public bool IsBaseOf(Uri uri!!)
+        public bool IsBaseOf(Uri uri)
         {
+            ArgumentNullException.ThrowIfNull(uri);
+
             if (!IsAbsoluteUri)
                 return false;
 

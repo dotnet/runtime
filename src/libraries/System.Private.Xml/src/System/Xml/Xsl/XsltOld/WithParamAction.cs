@@ -9,7 +9,7 @@ namespace System.Xml.Xsl.XsltOld
     using System.Xml;
     using System.Xml.XPath;
 
-    internal class WithParamAction : VariableAction
+    internal sealed class WithParamAction : VariableAction
     {
         internal WithParamAction() : base(VariableType.WithParameter) { }
 

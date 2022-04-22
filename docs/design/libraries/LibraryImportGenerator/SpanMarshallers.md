@@ -59,7 +59,7 @@ Introduce a marshaller kind named `LinearCollection`.
 
 ```diff
 namespace System.Runtime.InteropServices
-{ 
+{
   [AttributeUsage(AttributeTargets.Struct)]
   public sealed class CustomTypeMarshallerAttribute : Attribute
   {
@@ -154,16 +154,11 @@ public struct GenericContiguousCollectionMarshallerImpl<T, U, V,...>
     /// <summary>
     /// A span that points to the memory where the native values of the collection are stored after the native call.
     /// </summary>
-    public ReadOnlySpan<TCollectionElement> GetNativeValuesSource(int length);
+    public ReadOnlySpan<byte> GetNativeValuesSource(int length);
     /// <summary>
     /// A span that points to the memory where the native values of the collection should be stored.
     /// </summary>
-    public Span<TCollectionElement> GetNativeValuesDestination();
-
-    /// <summary>
-    /// A span that points to the memory where the native values of the collection should be stored.
-    /// </summary>
-    public unsafe Span<byte> NativeValueStorage { get; }
+    public Span<byte> GetNativeValuesDestination();
 
     // The requirements on the TNative type are the same as when used with `NativeTypeMarshallingAttribute`.
     // The property is required with the generic collection marshalling.
@@ -175,7 +170,7 @@ public struct GenericContiguousCollectionMarshallerImpl<T, U, V,...>
 
 The constructors now require an additional `int` parameter specifying the native size of a collection element. The collection element type is represented as `TCollectionElement` above, and can be any type the marshaller defines. As the elements may be marshalled to types with different native sizes than managed, this enables the author of the generic collection marshaller to not need to know how to marshal the elements of the collection, just the collection structure itself.
 
-When the elements of the collection are blittable, the marshaller will emit a block copy of the span `ManagedValues` to the destination `NativeValueStorage`. When the elements are not blittable, the marshaller will emit a loop that will marshal the elements of the managed span one at a time and store them in the `NativeValueStorage` span.
+When the elements of the collection are blittable, the marshaller will emit a block copy of the span `GetManagedValuesSource`/`GetNativeValuesSource` to `GetNativeValuesDestination`/`GetManagedValuesDestination`. When the elements are not blittable, the marshaller will emit a loop that will marshal the elements of the managed span one at a time and store them in the `NativeValueStorage` span.
 
 This would enable similar performance metrics as the current support for arrays as well as Design 1's support for the span types when the element type is blittable.
 
@@ -227,7 +222,7 @@ public ref struct SpanMarshaller<T>
     private Span<T> managedCollection;
 
     private int nativeElementSize;
-  
+
     private IntPtr Value { get; set; }
 
     public SpanMarshaller(Span<T> collection, int nativeSizeOfElement)
@@ -239,7 +234,7 @@ public ref struct SpanMarshaller<T>
     }
 
     public ReadOnlySpan<T> GetManagedValuesSource() => managedCollection;
-  
+
     public Span<T> GetManagedValuesDestination(int length) => managedCollection = new T[length];
 
     public unsafe Span<byte> GetNativeValuesDestination() => MemoryMarshal.CreateSpan(ref *(byte*)(Value), managedCollection.Length);
@@ -249,7 +244,7 @@ public ref struct SpanMarshaller<T>
     public Span<T> ToManaged() => managedCollection;
 
     public IntPtr ToNativeValue() => Value;
-    
+
     public void FromNativeValue(IntPtr value) => Value = value;
 
     public void FreeNative()
@@ -328,8 +323,8 @@ public struct GenericContiguousCollectionMarshallerImpl<T, U, V,...>
 
 -   public ReadOnlySpan<TCollectionElement> GetManagedValuesSource();
 -   public Span<TCollectionElement> GetManagedValuesDestination(int length);
--   public ReadOnlySpan<TCollectionElement> GetNativeValuesSource(int length);
--   public Span<TCollectionElement> GetNativeValuesDestination();
+-   public ReadOnlySpan<byte> GetNativeValuesSource(int length);
+-   public Span<byte> GetNativeValuesDestination();
 
 +    public ref byte GetOffsetForNativeValueAtIndex(int index);
 +    public TCollectionElement GetManagedValueAtIndex(int index);

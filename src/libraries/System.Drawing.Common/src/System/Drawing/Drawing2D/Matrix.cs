@@ -52,8 +52,10 @@ namespace System.Drawing.Drawing2D
             return nativeMatrix;
         }
 
-        public unsafe Matrix(RectangleF rect, PointF[] plgpts!!)
+        public unsafe Matrix(RectangleF rect, PointF[] plgpts)
         {
+            ArgumentNullException.ThrowIfNull(plgpts);
+
             if (plgpts.Length != 3)
                 throw Gdip.StatusException(Gdip.InvalidParameter);
 
@@ -64,8 +66,10 @@ namespace System.Drawing.Drawing2D
             }
         }
 
-        public unsafe Matrix(Rectangle rect, Point[] plgpts!!)
+        public unsafe Matrix(Rectangle rect, Point[] plgpts)
         {
+            ArgumentNullException.ThrowIfNull(plgpts);
+
             if (plgpts.Length != 3)
                 throw Gdip.StatusException(Gdip.InvalidParameter);
 
@@ -170,8 +174,10 @@ namespace System.Drawing.Drawing2D
 
         public void Multiply(Matrix matrix) => Multiply(matrix, MatrixOrder.Prepend);
 
-        public void Multiply(Matrix matrix!!, MatrixOrder order)
+        public void Multiply(Matrix matrix, MatrixOrder order)
         {
+            ArgumentNullException.ThrowIfNull(matrix);
+
             if (matrix.NativeMatrix == NativeMatrix)
                 throw new InvalidOperationException(SR.GdiplusObjectBusy);
 
@@ -240,8 +246,10 @@ namespace System.Drawing.Drawing2D
             Gdip.CheckStatus(Gdip.GdipInvertMatrix(new HandleRef(this, NativeMatrix)));
         }
 
-        public unsafe void TransformPoints(PointF[] pts!!)
+        public unsafe void TransformPoints(PointF[] pts)
         {
+            ArgumentNullException.ThrowIfNull(pts);
+
             fixed (PointF* p = pts)
             {
                 Gdip.CheckStatus(Gdip.GdipTransformMatrixPoints(
@@ -251,8 +259,10 @@ namespace System.Drawing.Drawing2D
             }
         }
 
-        public unsafe void TransformPoints(Point[] pts!!)
+        public unsafe void TransformPoints(Point[] pts)
         {
+            ArgumentNullException.ThrowIfNull(pts);
+
             fixed (Point* p = pts)
             {
                 Gdip.CheckStatus(Gdip.GdipTransformMatrixPointsI(
@@ -262,8 +272,10 @@ namespace System.Drawing.Drawing2D
             }
         }
 
-        public unsafe void TransformVectors(PointF[] pts!!)
+        public unsafe void TransformVectors(PointF[] pts)
         {
+            ArgumentNullException.ThrowIfNull(pts);
+
             fixed (PointF* p = pts)
             {
                 Gdip.CheckStatus(Gdip.GdipVectorTransformMatrixPoints(
@@ -275,8 +287,10 @@ namespace System.Drawing.Drawing2D
 
         public void VectorTransformPoints(Point[] pts) => TransformVectors(pts);
 
-        public unsafe void TransformVectors(Point[] pts!!)
+        public unsafe void TransformVectors(Point[] pts)
         {
+            ArgumentNullException.ThrowIfNull(pts);
+
             fixed (Point* p = pts)
             {
                 Gdip.CheckStatus(Gdip.GdipVectorTransformMatrixPointsI(

@@ -2,10 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
-namespace JitTest
+namespace JitTest_ldfld_mul_unsigned_cs
 {
-    internal class Test
+    public class Test
     {
         private ulong _op1,_op2;
 
@@ -26,7 +27,8 @@ namespace JitTest
             }
         }
 
-        private static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             Test app = new Test();
             app._op1 = 0x00000000ffffffff;

@@ -1047,7 +1047,8 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
             {
                 if (makeInlineObservations)
                 {
-                    int toSkip = impBoxPatternMatch(nullptr, codeAddr + sz, codeEndp, true);
+                    int toSkip =
+                        impBoxPatternMatch(nullptr, codeAddr + sz, codeEndp, BoxPatterns::MakeInlineObservation);
                     if (toSkip > 0)
                     {
                         // toSkip > 0 means we most likely will hit a pattern (e.g. box+isinst+brtrue) that
@@ -3589,7 +3590,8 @@ void Compiler::fgCheckForLoopsInHandlers()
         {
             if (blk->bbFlags & BBF_BACKWARD_JUMP_TARGET)
             {
-                JITDUMP("\nHander block " FMT_BB "is backward jump target; can't have patchpoints in this method\n");
+                JITDUMP("\nHander block " FMT_BB "is backward jump target; can't have patchpoints in this method\n",
+                        blk->bbNum);
                 compHasBackwardJumpInHandler = true;
                 break;
             }

@@ -11,11 +11,6 @@
 #include <sys/system_properties.h>
 #endif
 
-const char* SystemNative_GetUnixName()
-{
-    return PAL_UNIX_NAME;
-}
-
 char* SystemNative_GetUnixRelease()
 {
 #if defined(TARGET_ANDROID)

@@ -193,8 +193,10 @@ namespace System.Security.Cryptography
             return key;
         }
 
-        public override byte[] CreateSignature(byte[] rgbHash!!)
+        public override byte[] CreateSignature(byte[] rgbHash)
         {
+            ArgumentNullException.ThrowIfNull(rgbHash);
+
             SafeDsaHandle key = GetKey();
             int signatureSize = Interop.Crypto.DsaEncodedSignatureSize(key);
             int signatureFieldSize = Interop.Crypto.DsaSignatureFieldSize(key) * BitsPerByte;
@@ -303,8 +305,11 @@ namespace System.Security.Cryptography
             return destination.Slice(0, actualLength);
         }
 
-        public override bool VerifySignature(byte[] rgbHash!!, byte[] rgbSignature!!)
+        public override bool VerifySignature(byte[] rgbHash, byte[] rgbSignature)
         {
+            ArgumentNullException.ThrowIfNull(rgbHash);
+            ArgumentNullException.ThrowIfNull(rgbSignature);
+
             return VerifySignature((ReadOnlySpan<byte>)rgbHash, (ReadOnlySpan<byte>)rgbSignature);
         }
 

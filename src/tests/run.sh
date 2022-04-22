@@ -15,7 +15,7 @@ function print_usage {
     echo '  Android                          : Set build OS to Android.'
     echo '  --test-env=<path>                : Script to set environment variables for tests'
     echo '  --testRootDir=<path>             : Root directory of the test build (e.g. runtime/artifacts/tests/windows.x64.Debug).'
-    echo '  --disableEventLogging            : Disable the events logged by both VM and Managed Code'
+    echo '  --enableEventLogging             : Enable event logging through LTTNG.'
     echo '  --sequential                     : Run tests sequentially (default is to run in parallel).'
     echo '  --runcrossgen2tests              : Runs the ReadyToRun tests compiled with Crossgen2'
     echo '  --jitstress=<n>                  : Runs the tests with COMPlus_JitStress=n'
@@ -163,8 +163,8 @@ do
         --testRootDir=*)
             testRootDir=${i#*=}
             ;;
-        --disableEventLogging)
-            ((disableEventLogging = 1))
+        --enableEventLogging)
+            ((eventLogging = 1))
             ;;
         --runcrossgen2tests)
             export RunCrossGen2=1
@@ -215,7 +215,7 @@ done
 # (These should be run.py arguments.)
 ################################################################################
 
-if ((disableEventLogging == 0)); then
+if ((eventLogging == 1)); then
     export COMPlus_EnableEventLog=1
 fi
 

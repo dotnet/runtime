@@ -36,18 +36,30 @@
     <ImportRuntimeIlcPackageTargetDependsOn>RunResolvePackageDependencies</ImportRuntimeIlcPackageTargetDependsOn>
     <IlcSetupPropertiesDependsOn>ImportRuntimeIlcPackageTarget</IlcSetupPropertiesDependsOn>
     <IlcDynamicBuildPropertyDependencies>SetupProperties</IlcDynamicBuildPropertyDependencies>
-
+        
   </PropertyGroup>
 
   <!-- Locate the runtime package according to the current target runtime -->
   <Target Name="ImportRuntimeIlcPackageTarget" Condition="'$(BuildingFrameworkLibrary)' != 'true' AND $(IlcCalledViaPackage) == 'true'" DependsOnTargets="$(ImportRuntimeIlcPackageTargetDependsOn)" BeforeTargets="Publish">
+    <!-- This targets file is imported by the SDK when the PublishAot property is set. SDK resolves runtime package paths differently-->
+    <Error Condition="'@(ResolvedILCompilerPack)' == '' AND '$(PublishAot)' == 'true'" Text="The PackageDefinitions ItemGroup is required for target ImportRuntimeIlcPackageTarget" />
     <!-- CoreRT SDK and Framework Assemblies need to be defined to avoid CoreCLR implementations being set as compiler inputs -->
-    <Error Condition="'@(PackageDefinitions)' == ''" Text="The PackageDefinitions ItemGroup is required for target ImportRuntimeIlcPackageTarget" />
+    <Error Condition="'@(PackageDefinitions)' == '' AND '$(PublishAot)' != 'true'" Text="The PackageDefinitions ItemGroup is required for target ImportRuntimeIlcPackageTarget" />
 
-    <PropertyGroup>
+
+    <!-- This targets file is imported by the SDK when the PublishAot property is set. Use the SDK runtime package resolve property to set  down stream properties -->
+    <PropertyGroup Condition="'$(PublishAot)' == 'true'">
+      <RuntimePackagePath>@(ResolvedILCompilerPack->'%(PackageDirectory)')</RuntimePackagePath>
+      <IlcHostPackagePath>@(ResolvedILCompilerPack->'%(PackageDirectory)')</IlcHostPackagePath>
+      <IlcPath>>@(ResolvedILCompilerPack->'%(PackageDirectory)')</IlcPath>
+    </PropertyGroup>
+
+    <!-- Use the non-SDK runtime package resolve property to set down stream properties if SDK is not involved -->
+    <PropertyGroup Condition="'$(PublishAot)' != 'true'">
       <RuntimePackagePath Condition="'%(PackageDefinitions.Name)' == '$(RuntimeIlcPackageName)'">%(PackageDefinitions.ResolvedPath)</RuntimePackagePath>
       <IlcHostPackagePath Condition="'%(PackageDefinitions.Name)' == '$(IlcHostPackageName)'">%(PackageDefinitions.ResolvedPath)</IlcHostPackagePath>
     </PropertyGroup>
+
   </Target>
 
   <Import Project="$(MSBuildThisFileDirectory)\Microsoft.NETCore.Native.targets" />

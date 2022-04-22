@@ -191,8 +191,8 @@ namespace System.Text.RegularExpressions.Symbolic
             {
                 _builder = srm._builder;
                 uint startId = reverse ?
-                    (srm._reversePattern._info.StartsWithLineAnchor ? CharKind.BeginningEnd : 0) :
-                    (srm._pattern._info.StartsWithLineAnchor ? CharKind.BeginningEnd : 0);
+                    (srm._reversePattern._info.StartsWithSomeAnchor ? CharKind.BeginningEnd : 0) :
+                    (srm._pattern._info.StartsWithSomeAnchor ? CharKind.BeginningEnd : 0);
 
                 // Create the initial state
                 _initialState = _builder.CreateState(
@@ -313,7 +313,7 @@ namespace System.Text.RegularExpressions.Symbolic
             public List<Transition> GetTransitions() => _transitions;
         }
 
-        private record Transition(int SourceState, int TargetState, (SymbolicRegexNode<TSet>?, TSet) Label)
+        private sealed record Transition(int SourceState, int TargetState, (SymbolicRegexNode<TSet>?, TSet) Label)
         {
             public bool IsEpsilon => Label.Equals(default);
         }

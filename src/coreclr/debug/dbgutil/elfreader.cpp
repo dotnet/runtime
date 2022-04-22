@@ -387,10 +387,9 @@ ElfReader::EnumerateLinkMapEntries(Elf_Dyn* dynamicAddr)
         }
         // Read the module's name and make sure the memory is added to the core dump
         std::string moduleName;
-        int i = 0;
-        if (map.l_name != nullptr)
+        if (map.l_name != 0)
         {
-            for (; i < PATH_MAX; i++)
+            for (int i = 0; i < PATH_MAX; i++)
             {
                 char ch;
                 if (!ReadMemory(map.l_name + i, &ch, sizeof(ch))) {
@@ -403,7 +402,7 @@ ElfReader::EnumerateLinkMapEntries(Elf_Dyn* dynamicAddr)
                 moduleName.append(1, ch);
             }
         }
-        Trace("\nDSO: link_map entry %p l_ld %p l_addr (Ehdr) %" PRIx " %s\n", linkMapAddr, map.l_ld, map.l_addr, moduleName.c_str());
+        Trace("\nDSO: link_map entry %p l_ld %p l_addr (Ehdr) %p l_name %p %s\n", linkMapAddr, map.l_ld, map.l_addr, map.l_name, moduleName.c_str());
 
         // Call the derived class for each module
         VisitModule(map.l_addr, moduleName);

@@ -293,8 +293,10 @@ namespace System.Runtime.Loader
         }
 
         // Helper to return AssemblyName corresponding to the path of an IL assembly
-        public static AssemblyName GetAssemblyName(string assemblyPath!!)
+        public static AssemblyName GetAssemblyName(string assemblyPath)
         {
+            ArgumentNullException.ThrowIfNull(assemblyPath);
+
             return AssemblyName.GetAssemblyName(assemblyPath);
         }
 
@@ -308,8 +310,10 @@ namespace System.Runtime.Loader
 
 #if !CORERT
         [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
-        public Assembly LoadFromAssemblyName(AssemblyName assemblyName!!)
+        public Assembly LoadFromAssemblyName(AssemblyName assemblyName)
         {
+            ArgumentNullException.ThrowIfNull(assemblyName);
+
             // Attempt to load the assembly, using the same ordering as static load, in the current load context.
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
             return RuntimeAssembly.InternalLoad(assemblyName, ref stackMark, this);
@@ -319,8 +323,10 @@ namespace System.Runtime.Loader
         // These methods load assemblies into the current AssemblyLoadContext
         // They may be used in the implementation of an AssemblyLoadContext derivation
         [RequiresUnreferencedCode("Types and members the loaded assembly depends on might be removed")]
-        public Assembly LoadFromAssemblyPath(string assemblyPath!!)
+        public Assembly LoadFromAssemblyPath(string assemblyPath)
         {
+            ArgumentNullException.ThrowIfNull(assemblyPath);
+
             if (PathInternal.IsPartiallyQualified(assemblyPath))
             {
                 throw new ArgumentException(SR.Format(SR.Argument_AbsolutePathRequired, assemblyPath), nameof(assemblyPath));
@@ -335,8 +341,10 @@ namespace System.Runtime.Loader
         }
 
         [RequiresUnreferencedCode("Types and members the loaded assembly depends on might be removed")]
-        public Assembly LoadFromNativeImagePath(string nativeImagePath!!, string? assemblyPath)
+        public Assembly LoadFromNativeImagePath(string nativeImagePath, string? assemblyPath)
         {
+            ArgumentNullException.ThrowIfNull(nativeImagePath);
+
             if (PathInternal.IsPartiallyQualified(nativeImagePath))
             {
                 throw new ArgumentException(SR.Format(SR.Argument_AbsolutePathRequired, nativeImagePath), nameof(nativeImagePath));
@@ -362,8 +370,10 @@ namespace System.Runtime.Loader
         }
 
         [RequiresUnreferencedCode("Types and members the loaded assembly depends on might be removed")]
-        public Assembly LoadFromStream(Stream assembly!!, Stream? assemblySymbols)
+        public Assembly LoadFromStream(Stream assembly, Stream? assemblySymbols)
         {
+            ArgumentNullException.ThrowIfNull(assembly);
+
             int iAssemblyStreamLength = (int)assembly.Length;
 
             if (iAssemblyStreamLength <= 0)

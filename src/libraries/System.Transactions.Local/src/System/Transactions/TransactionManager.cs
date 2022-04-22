@@ -135,15 +135,9 @@ namespace System.Transactions
                 throw new ArgumentException(SR.BadResourceManagerId, nameof(resourceManagerIdentifier));
             }
 
-            if (null == recoveryInformation)
-            {
-                throw new ArgumentNullException(nameof(recoveryInformation));
-            }
+            ArgumentNullException.ThrowIfNull(recoveryInformation);
 
-            if (null == enlistmentNotification)
-            {
-                throw new ArgumentNullException(nameof(enlistmentNotification));
-            }
+            ArgumentNullException.ThrowIfNull(enlistmentNotification);
 
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
