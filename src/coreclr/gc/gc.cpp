@@ -43845,7 +43845,7 @@ HRESULT GCHeap::Initialize()
     AffinitySet config_affinity_set;
     GCConfigStringHolder cpu_index_ranges_holder(GCConfig::GetGCHeapAffinitizeRanges());
 
-    uintptr_t config_affinity_mask = 0; 
+    uintptr_t config_affinity_mask = static_cast<uintptr_t>(GCConfig::GetGCHeapAffinitizeMask());
     if (!ParseGCHeapAffinitizeRanges(cpu_index_ranges_holder.Get(), &config_affinity_set, config_affinity_mask))
     {
         return CLR_E_GC_BAD_AFFINITY_CONFIG_FORMAT;

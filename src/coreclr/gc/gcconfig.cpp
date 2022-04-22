@@ -85,8 +85,6 @@ bool ParseGCHeapAffinitizeRanges(const char* cpu_index_ranges, AffinitySet* conf
 {
     bool success = true;
 
-    config_affinity_mask = static_cast<uintptr_t>(GCConfig::GetGCHeapAffinitizeMask());
-
     // Case 1: config_affinity_mask and config_affinity_set are both null. No affinitization. 
     // Case 2: config_affinity_mask is not null but config_affinity_set is null. Affinitization is based on config_affinity_mask.
     if (cpu_index_ranges == nullptr)
