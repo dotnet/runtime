@@ -2427,32 +2427,6 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
         return;
     }
 
-    switch (oper)
-    {
-        case GT_SUB:
-        {
-            if (op2->OperIs(GT_MUL) && op2->isContained())
-            {
-                assert(varTypeIsIntegral(treeNode) && !(treeNode->gtFlags & GTF_SET_FLAGS));
-                genConsumeOperands(treeNode);
-
-                GenTree* a = op1;
-                GenTree* b = op2->gtGetOp1();
-                GenTree* c = op2->gtGetOp2();
-
-                // d = a - b * c
-                // MSUB d, b, c, a
-                GetEmitter()->emitIns_R_R_R_R(INS_msub, emitActualTypeSize(treeNode), targetReg, b->GetRegNum(),
-                                                c->GetRegNum(), a->GetRegNum());
-                genProduceReg(treeNode);
-                return;
-            }
-        }
-
-        default:
-            unreached();
-    }
-
     instruction ins = genGetInsForOper(treeNode->OperGet(), targetType);
 
     if ((treeNode->gtFlags & GTF_SET_FLAGS) != 0)
