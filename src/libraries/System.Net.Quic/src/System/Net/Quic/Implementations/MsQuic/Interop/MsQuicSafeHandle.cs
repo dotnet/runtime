@@ -8,6 +8,17 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
 {
     internal abstract class MsQuicSafeHandle : SafeHandle
     {
+        // The index must corespond to SafeHandleType enum value and the value must correspond to MsQuic logging abbreviation string.
+        // This is used for our logging that uses the same format of object identification as MsQuic to easily correlate log events.
+        private static readonly string[] TypeName = new string[]
+        {
+            " reg",
+            "cnfg",
+            "list",
+            "conn",
+            "strm"
+        };
+
         private readonly Action<IntPtr> _releaseAction;
         private readonly string _traceId;
 
@@ -15,11 +26,11 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
 
         public unsafe QUIC_HANDLE* QuicHandle => (QUIC_HANDLE*)DangerousGetHandle();
 
-        protected unsafe MsQuicSafeHandle(QUIC_HANDLE* handle, Action<IntPtr> releaseAction, string prefix)
+        protected unsafe MsQuicSafeHandle(QUIC_HANDLE* handle, Action<IntPtr> releaseAction, SafeHandleType safeHandleType)
             : base((IntPtr)handle, ownsHandle: true)
         {
             _releaseAction = releaseAction;
-            _traceId = $"[{prefix}][0x{DangerousGetHandle():X11}]";
+            _traceId = $"[{TypeName[(int)safeHandleType]}][0x{DangerousGetHandle():X11}]";
 
             if (NetEventSource.Log.IsEnabled())
             {
@@ -41,5 +52,14 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         }
 
         public override string ToString() => _traceId;
+    }
+
+    internal enum SafeHandleType
+    {
+        Registration,
+        Configuration,
+        Listener,
+        Connection,
+        Stream
     }
 }

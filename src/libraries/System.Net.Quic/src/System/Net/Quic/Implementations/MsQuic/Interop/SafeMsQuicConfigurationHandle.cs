@@ -20,7 +20,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         private static readonly FieldInfo _contextChain = typeof(SslStreamCertificateContext).GetField("IntermediateCertificates", BindingFlags.NonPublic | BindingFlags.Instance)!;
 
         public unsafe SafeMsQuicConfigurationHandle(QUIC_HANDLE* handle)
-            : base(handle, ptr => MsQuicApi.Api.ApiTable->ConfigurationClose((QUIC_HANDLE*)ptr), "cnfg")
+            : base(handle, ptr => MsQuicApi.Api.ApiTable->ConfigurationClose((QUIC_HANDLE*)ptr), SafeHandleType.Configuration)
         { }
 
         // TODO: consider moving the static code from here to keep all the handle classes small and simple.

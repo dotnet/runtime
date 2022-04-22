@@ -8,7 +8,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
     internal sealed class SafeMsQuicRegistrationHandle : MsQuicSafeHandle
     {
         public unsafe SafeMsQuicRegistrationHandle(QUIC_HANDLE* handle)
-            : base(handle, ptr => MsQuicApi.Api.ApiTable->RegistrationClose((QUIC_HANDLE*)ptr), " reg")
+            : base(handle, ptr => MsQuicApi.Api.ApiTable->RegistrationClose((QUIC_HANDLE*)ptr), SafeHandleType.Registration)
         { }
     }
 }
