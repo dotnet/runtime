@@ -41,7 +41,7 @@
 #include "threadsuspend.h"
 
 
-//#ifdef DEBUGGING_SUPPORTED
+#ifdef DEBUGGING_SUPPORTED
 
 #ifdef _DEBUG
 // Reg key. We can set this and then any debugger-lazy-init code will assert.
