@@ -12,17 +12,14 @@ class NativeImage;
 class Assembly;
 class Module;
 class AssemblyLoaderAllocator;
-class LoaderAllocator;
 
 class AssemblyBinder
 {
 public:
 
-    HRESULT BindAssemblyByName(AssemblyNameData* pAssemblyNameData, LoaderAllocator *pParentLoaderAllocator, BINDER_SPACE::Assembly** ppAssembly);
+    HRESULT BindAssemblyByName(AssemblyNameData* pAssemblyNameData, BINDER_SPACE::Assembly** ppAssembly);
     virtual HRESULT BindUsingPEImage(PEImage* pPEImage, BINDER_SPACE::Assembly** ppAssembly) = 0;
-    virtual HRESULT BindUsingAssemblyName(BINDER_SPACE::AssemblyName* pAssemblyName,
-                                          LoaderAllocator *pParentLoaderAllocator,
-                                          BINDER_SPACE::Assembly** ppAssembly) = 0;
+    virtual HRESULT BindUsingAssemblyName(BINDER_SPACE::AssemblyName* pAssemblyName, BINDER_SPACE::Assembly** ppAssembly) = 0;
 
     /// <summary>
     /// Get LoaderAllocator for binders that contain it. For other binders, return NULL.

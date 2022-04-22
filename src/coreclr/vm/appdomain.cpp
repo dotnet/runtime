@@ -4984,7 +4984,7 @@ HRESULT RuntimeInvokeHostAssemblyResolver(INT_PTR pManagedAssemblyLoadContextToB
                 // Switch to pre-emp mode before calling into the binder
                 GCX_PREEMP();
                 BINDER_SPACE::Assembly *pCoreCLRFoundAssembly = NULL;
-                hr = pDefaultBinder->BindUsingAssemblyName(pAssemblyName, pParentLoaderAllocator, &pCoreCLRFoundAssembly);
+                hr = pDefaultBinder->BindUsingAssemblyName(pAssemblyName, &pCoreCLRFoundAssembly);
                 if (SUCCEEDED(hr))
                 {
                     _ASSERTE(pCoreCLRFoundAssembly != NULL);

@@ -39,7 +39,6 @@ HRESULT DefaultAssemblyBinder::BindAssemblyByNameWorker(BINDER_SPACE::AssemblyNa
 // DefaultAssemblyBinder implementation
 // ============================================================================
 HRESULT DefaultAssemblyBinder::BindUsingAssemblyName(BINDER_SPACE::AssemblyName *pAssemblyName,
-                                                     LoaderAllocator *pParentLoaderAllocator,
                                                      BINDER_SPACE::Assembly **ppAssembly)
 {
     HRESULT hr = S_OK;
@@ -85,6 +84,7 @@ HRESULT DefaultAssemblyBinder::BindUsingAssemblyName(BINDER_SPACE::AssemblyName 
 
         if (pManagedAssemblyLoadContext != NULL)
         {
+            LoaderAllocator* pParentLoaderAllocator = GetLoaderAllocator();
             hr = AssemblyBinderCommon::BindUsingHostAssemblyResolver(pManagedAssemblyLoadContext, pAssemblyName,
                                                                      NULL, pParentLoaderAllocator, &pCoreCLRFoundAssembly);
             if (SUCCEEDED(hr))
