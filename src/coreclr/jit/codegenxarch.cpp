@@ -5016,7 +5016,7 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
 
     assert(!varTypeIsFloating(targetType) || (genTypeSize(targetType) == genTypeSize(data->TypeGet())));
 
-    GCInfo::WriteBarrierForm writeBarrierForm = gcInfo.gcIsWriteBarrierCandidate(tree, data);
+    GCInfo::WriteBarrierForm writeBarrierForm = gcInfo.gcIsWriteBarrierCandidate(tree);
     if (writeBarrierForm != GCInfo::WBF_NoBarrier)
     {
         // data and addr must be in registers.
@@ -5284,10 +5284,8 @@ bool CodeGen::genEmitOptimizedGCWriteBarrier(GCInfo::WriteBarrierForm writeBarri
         tgtAnywhere = 1;
     }
 
-    // We might want to call a modified version of genGCWriteBarrier() to get the benefit of
-    // the FEATURE_COUNT_GC_WRITE_BARRIERS code there, but that code doesn't look like it works
-    // with rationalized RyuJIT IR. So, for now, just emit the helper call directly here.
-
+    // Here we might want to call a modified version of genGCWriteBarrier() to get the benefit
+    // of the FEATURE_COUNT_GC_WRITE_BARRIERS code. For now, just emit the helper call directly.
     genEmitHelperCall(regToHelper[tgtAnywhere][reg],
                       0,           // argSize
                       EA_PTRSIZE); // retSize

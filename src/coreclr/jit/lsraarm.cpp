@@ -675,7 +675,7 @@ int LinearScan::BuildNode(GenTree* tree)
             assert(dstCount == 0);
             GenTree* src = tree->gtGetOp2();
 
-            if (compiler->codeGen->gcInfo.gcIsWriteBarrierStoreIndNode(tree))
+            if (compiler->codeGen->gcInfo.gcIsWriteBarrierStoreIndNode(tree->AsStoreInd()))
             {
                 srcCount = BuildGCWriteBarrier(tree);
                 break;

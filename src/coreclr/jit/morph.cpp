@@ -5174,7 +5174,6 @@ GenTree* Compiler::fgMorphStackArgForVarArgs(unsigned lclNum, var_types varType,
         {
             tree = gtNewOperNode(GT_IND, varType, ptrArg);
         }
-        tree->gtFlags |= GTF_IND_TGTANYWHERE;
 
         if (varDsc->IsAddressExposed())
         {
@@ -5818,10 +5817,11 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
             }
             else
             {
-                // Only volatile or classinit could be set, and they map over
-                noway_assert((tree->gtFlags & ~(GTF_FLD_VOLATILE | GTF_FLD_INITCLASS | GTF_COMMON_MASK)) == 0);
+                assert((tree->gtFlags & ~(GTF_FLD_VOLATILE | GTF_FLD_INITCLASS | GTF_FLD_TGT_HEAP | GTF_COMMON_MASK)) ==
+                       0);
                 static_assert_no_msg(GTF_FLD_VOLATILE == GTF_CLS_VAR_VOLATILE);
                 static_assert_no_msg(GTF_FLD_INITCLASS == GTF_CLS_VAR_INITCLASS);
+                static_assert_no_msg(GTF_FLD_TGT_HEAP == GTF_CLS_VAR_TGT_HEAP);
                 tree->SetOper(GT_CLS_VAR);
                 tree->AsClsVar()->gtClsVarHnd = symHnd;
                 tree->AsClsVar()->gtFieldSeq  = fieldSeq;
@@ -9453,7 +9453,7 @@ GenTree* Compiler::fgMorphOneAsgBlockOp(GenTree* tree)
 
             if (!fgIsIndirOfAddrOfLocal(dest))
             {
-                dest->gtFlags |= (GTF_GLOB_REF | GTF_IND_TGTANYWHERE);
+                dest->gtFlags |= GTF_GLOB_REF;
                 tree->gtFlags |= GTF_GLOB_REF;
             }
 
@@ -9496,11 +9496,8 @@ GenTree* Compiler::fgMorphOneAsgBlockOp(GenTree* tree)
             {
                 if (!fgIsIndirOfAddrOfLocal(src))
                 {
-                    // If we have no information about the src, we have to assume it could
-                    // live anywhere (not just in the GC heap).
-                    // Mark the GT_IND node so that we use the correct write barrier helper in case
-                    // the field is a GC ref.
-                    src->gtFlags |= (GTF_GLOB_REF | GTF_IND_TGTANYWHERE);
+                    // TODO-Bug: the GLOB_REF also needs to be set in case "src" is address-exposed.
+                    src->gtFlags |= GTF_GLOB_REF;
                 }
 
                 src->SetIndirExceptionFlags(this);
@@ -17494,8 +17491,8 @@ GenTree* Compiler::fgMorphImplicitByRefArgs(GenTree* tree, bool isAddr)
         }
 
         // TODO-CQ: If the VM ever stops violating the ABI and passing heap references
-        // we could remove TGTANYWHERE
-        tree->gtFlags = ((tree->gtFlags & GTF_COMMON_MASK) | GTF_IND_TGTANYWHERE);
+        // we could apply TGT_NOT_HEAP here.
+        tree->gtFlags = (tree->gtFlags & GTF_COMMON_MASK);
 
 #ifdef DEBUG
         if (verbose)

@@ -10156,15 +10156,15 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, _In_ _In_opt_
                 // We prefer printing V or U
                 if ((tree->gtFlags & (GTF_IND_VOLATILE | GTF_IND_UNALIGNED)) == 0)
                 {
-                    if (tree->gtFlags & GTF_IND_TGTANYWHERE)
-                    {
-                        printf("*");
-                        --msgLength;
-                        break;
-                    }
                     if (tree->gtFlags & GTF_IND_TGT_NOT_HEAP)
                     {
                         printf("s");
+                        --msgLength;
+                        break;
+                    }
+                    if (tree->gtFlags & GTF_IND_TGT_HEAP)
+                    {
+                        printf("h");
                         --msgLength;
                         break;
                     }
@@ -15408,7 +15408,7 @@ GenTree* Compiler::gtNewRefCOMfield(GenTree*                objPtr,
             else
             {
                 result = gtNewOperNode(GT_IND, lclTyp, result);
-                result->gtFlags |= (GTF_EXCEPT | GTF_GLOB_REF | GTF_IND_TGTANYWHERE);
+                result->gtFlags |= (GTF_EXCEPT | GTF_GLOB_REF);
                 result = gtNewAssignNode(result, assg);
             }
         }
