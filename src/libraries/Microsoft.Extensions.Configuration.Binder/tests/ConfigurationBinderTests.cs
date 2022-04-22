@@ -102,6 +102,15 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             }
         }
 
+        public interface ICustomCollection<out T> : IEnumerable<T>
+        {
+        }
+        public class MyClassWithCustomCollection
+        {
+            public ICustomCollection<string> CustomCollection { get; set; }
+        }
+        
+
         public class NullableOptions
         {
             public bool? MyNullableBool { get; set; }
@@ -689,6 +698,19 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             Assert.Equal("foo-2", options.InstantiatedDictionaryWithHashSetWithSomeValues["foo"].ElementAt(1));
             Assert.Equal("bar-1", options.InstantiatedDictionaryWithHashSetWithSomeValues["bar"].ElementAt(0));
             Assert.Equal("bar-2", options.InstantiatedDictionaryWithHashSetWithSomeValues["bar"].ElementAt(1));
+        }
+
+        [Fact]
+        public void SkipsCustomCollection()
+        {
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection( new Dictionary<string, string>
+            {
+                ["CustomCollection:0"] = "Yo!",
+            });
+            var config = configurationBuilder.Build();
+            var instance = config.Get<MyClassWithCustomCollection>()!;
+            Assert.Null(instance.CustomCollection);
         }
 
         [Fact]

@@ -406,6 +406,7 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             Assert.Equal("valx", list[3]);
         }
 
+
         [Fact]
         public void ObjectListBinding()
         {

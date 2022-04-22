@@ -276,74 +276,96 @@ namespace Microsoft.Extensions.Configuration
             return instance;
         }
 
+        // Called when the binding point doesn't have a value. We need to determine the best type
+        // to use given just an interface.
+        // If there is no best type to create, for instance, the user provided a customer interface that is `IEnumerable<>`,
+        // then we return null.
         // Try to create an array/dictionary instance to back various collection interfaces
         [RequiresUnreferencedCode("In case type is a Dictionary, cannot statically analyze what the element type is of the value objects in the dictionary so its members may be trimmed.")]
-        private static object? AttemptBindToCollectionInterfaces(
+        private static (bool WasCollection, object? NewInstance) AttemptBindToCollectionInterfaces(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
             Type type,
             IConfiguration config, BinderOptions options)
         {
             if (!type.IsInterface)
             {
-                return null;
+                return (false, null);
             }
 
-            Type? collectionInterface = FindOpenGenericInterface(typeof(IReadOnlyList<>), type);
+            Type? collectionInterface = FindOpenGenericInterface(type, typeof(IReadOnlyList<>));
             if (collectionInterface != null)
             {
                 // IEnumerable<T> is guaranteed to have exactly one parameter
-                return BindToCollection(type, config, options);
+                return (true, BindToCollection(type, config, options));
             }
 
-            collectionInterface = FindOpenGenericInterface(typeof(IReadOnlyDictionary<,>), type);
+            collectionInterface = FindOpenGenericInterface(type, typeof(IReadOnlyDictionary<,>));
             if (collectionInterface != null)
             {
                 Type dictionaryType = typeof(Dictionary<,>).MakeGenericType(type.GenericTypeArguments[0], type.GenericTypeArguments[1]);
                 object instance = Activator.CreateInstance(dictionaryType)!;
                 BindDictionary(instance, dictionaryType, config, options);
-                return instance;
+                return (true, instance);
             }
 
-            collectionInterface = FindOpenGenericInterface(typeof(IDictionary<,>), type);
+            collectionInterface = FindOpenGenericInterface(type, typeof(IDictionary<,>));
             if (collectionInterface != null)
             {
                 object instance = Activator.CreateInstance(typeof(Dictionary<,>).MakeGenericType(type.GenericTypeArguments[0], type.GenericTypeArguments[1]))!;
                 BindDictionary(instance, collectionInterface, config, options);
-                return instance;
+                return (true, instance);
             }
 
-            collectionInterface = FindOpenGenericInterface(typeof(ISet<>), type);
+            collectionInterface = FindOpenGenericInterface(type, typeof(ISet<>));
 #if NET5_0_OR_GREATER
-            collectionInterface ??= FindOpenGenericInterface(typeof(IReadOnlySet<>), type);
+            collectionInterface ??= FindOpenGenericInterface(type, typeof(IReadOnlySet<>));
 #endif
             if (collectionInterface != null)
             {
                 // ISet<T> is guaranteed to have exactly one parameter
-                return BindToSet(type, config, options);
+                return (true, BindToSet(type, config, options));
             }
 
-            collectionInterface = FindOpenGenericInterface(typeof(IReadOnlyCollection<>), type);
+            collectionInterface = FindOpenGenericInterface(type, typeof(IReadOnlyCollection<>));
             if (collectionInterface != null)
             {
                 // IReadOnlyCollection<T> is guaranteed to have exactly one parameter
-                return BindToCollection(type, config, options);
+                return (true, BindToCollection(type, config, options));
             }
 
-            collectionInterface = FindOpenGenericInterface(typeof(ICollection<>), type);
+            collectionInterface = FindOpenGenericInterface(type, typeof(ICollection<>));
             if (collectionInterface != null)
             {
                 // ICollection<T> is guaranteed to have exactly one parameter
-                return BindToCollection(type, config, options);
+                return (true, BindToCollection(type, config, options));
             }
 
-            collectionInterface = FindOpenGenericInterface(typeof(IEnumerable<>), type);
+            // We have an interface, and it's null, so we only treat IEnumerable<> as the special case for a list.
+            // If we have a custom interface that derives from IEnumerable<>, we have no way of knowing what implementation
+            // to use, so return null.
+            collectionInterface = FindOpenGenericInterface(type, typeof(IEnumerable<>));
             if (collectionInterface != null)
             {
-                // IEnumerable<T> is guaranteed to have exactly one parameter
-                return BindToCollection(type, config, options);
+                // if it's *exactly* an IEnumerable<>, then treat it as a list
+                if (type == typeof(IEnumerable<>))
+                {
+                    return (true, BindToCollection(type, config, options));
+                }
+
+                // otherwise, we say it was a collection, but nothing we could instantiate.
+                return (true, null);
             }
 
-            return null;
+            // if we get to hear, we don't regard the interface as a collection
+            return (false, null);
+            // collectionInterface = type == typeof(IEnumerable<>) ? FindOpenGenericInterface(type, typeof(IEnumerable<>));
+            // if (collectionInterface != null)
+            // {
+            //     // IEnumerable<T> is guaranteed to have exactly one parameter
+            //     return BindToCollection(type, config, options);
+            // }
+            //
+            // return null;
         }
 
         [RequiresUnreferencedCode(TrimmingWarningMessage)]
@@ -405,10 +427,13 @@ namespace Microsoft.Extensions.Configuration
                         return;
                     }
 
-                    object? boundFromInterface = AttemptBindToCollectionInterfaces(type, config, options);
-                    if (boundFromInterface != null)
+                    (bool wasInterface, object? instance) = AttemptBindToCollectionInterfaces(type, config, options);
+                    if (wasInterface)
                     {
-                        bindingPoint.SetValue(boundFromInterface);
+                        if (instance!= null)
+                        {
+                            bindingPoint.SetValue(instance);
+                        }
                         return; // We are already done if binding to a new collection instance worked
                     }
 
@@ -416,7 +441,7 @@ namespace Microsoft.Extensions.Configuration
                 }
 
                 // See if it's a Dictionary
-                Type? collectionInterface = FindOpenGenericInterface(typeof(IDictionary<,>), type);
+                Type? collectionInterface = FindOpenGenericInterface(type, typeof(IDictionary<,>));
                 if (collectionInterface != null)
                 {
                     BindDictionary(bindingPoint.Value!, collectionInterface, config, options);
@@ -424,10 +449,11 @@ namespace Microsoft.Extensions.Configuration
                 else
                 {
                     // See if it's an ICollection
-                    collectionInterface = FindOpenGenericInterface(typeof(ICollection<>), type);
+                    collectionInterface = FindOpenGenericInterface(type, typeof(ICollection<>));
                     if (collectionInterface != null)
                     {
-                        BindCollection(bindingPoint.Value!, collectionInterface, config, options);
+                        BindCollection(bindingPoint.Value!, bindingPoint.Value!.GetType(), config, options);
+                        //BindCollection(bindingPoint.Value!, collectionInterface, config, options);
                     }
                     // Something else
                     else
@@ -605,8 +631,10 @@ namespace Microsoft.Extensions.Configuration
             IConfiguration config, BinderOptions options)
         {
             // ICollection<T> is guaranteed to have exactly one parameter
-            Type itemType = collectionType.GenericTypeArguments[0];
-            MethodInfo? addMethod = collectionType.GetMethod("Add", DeclaredOnlyLookup);
+            Type itemType = collectionType.GenericTypeArguments.Length == 0 ? typeof(object) : collectionType.GenericTypeArguments[0];
+
+            MethodInfo? addMethod = collectionType
+                .GetMethods(BindingFlags.Instance | BindingFlags.Public).Single(m => m.Name == "Add" && m.GetParameters().Length == 1);
 
             var arguments = new object?[1];
 
@@ -628,6 +656,7 @@ namespace Microsoft.Extensions.Configuration
                 }
                 catch
                 {
+                   // Debug.Assert(false, "!! I added this - remove it!");
                 }
             }
         }
@@ -820,9 +849,29 @@ namespace Microsoft.Extensions.Configuration
         }
 
         private static Type? FindOpenGenericInterface(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)] Type givenType,
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)] Type genericType)
+        {
+            var interfaceTypes = givenType.GetInterfaces();
+
+            foreach (var it in interfaceTypes)
+            {
+                if (it.IsGenericType && it.GetGenericTypeDefinition() == genericType)
+                    return givenType;
+            }
+
+            if (givenType.IsGenericType && givenType.GetGenericTypeDefinition() == genericType)
+                return givenType;
+
+            Type? baseType = givenType.BaseType;
+            if (baseType == null) return null;
+
+            return FindOpenGenericInterface(baseType, genericType);
+        }
+
+        private static Type? FindOpenGenericInterface2(
             Type expected,
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
-            Type actual)
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)] Type actual)
         {
             if (actual.IsGenericType &&
                 actual.GetGenericTypeDefinition() == expected)
