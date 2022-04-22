@@ -248,7 +248,7 @@ namespace System.IO.Tests
                     }
                 }
 
-                if (PlatformDetection.IsInHelix)
+                if (PlatformDetection.IsInHelix || s_debug)
                 {
                     // Dump into the console output so we can mine it
                     Console.WriteLine($"RetryHelper: retrying {testName} {i}th time of {maxAttempts}: got {lastException.Message}");

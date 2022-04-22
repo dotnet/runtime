@@ -55,15 +55,11 @@ namespace System
                     }
                 }
 
-                if (PlatformDetection.IsInHelix)
-                {
-                    // Dump into the console output so we can mine it
-                    Console.WriteLine($"RetryHelper: retrying {testName} {i}th time of {maxAttempts}: got {lastException.Message}");
-                }
-
                 if (s_debug)
                 {
-                    Debug.WriteLine($"RetryHelper: retrying {testName} {i}th time of {maxAttempts}: got {lastException.Message}");
+                    string diagnostic = $"RetryHelper: retrying {testName} {i}th time of {maxAttempts}: got {lastException.Message}";
+                    Console.WriteLine(diagnostic);
+                    Debug.WriteLine(diagnostic);
                 }
 
                 Thread.Sleep((backoffFunc ?? s_defaultBackoffFunc)(i));
