@@ -10,7 +10,7 @@ using System.Threading;
 namespace System.Text.RegularExpressions.Symbolic
 {
     /// <summary>Represents an abstract syntax tree node of a symbolic regex.</summary>
-    internal sealed class SymbolicRegexNode<TSet> where TSet : IComparable<TSet>
+    internal sealed class SymbolicRegexNode<TSet> where TSet : IComparable<TSet>, IEquatable<TSet>
     {
         internal const string EmptyCharClass = "[]";
         /// <summary>Some byte other than 0 to represent true</summary>

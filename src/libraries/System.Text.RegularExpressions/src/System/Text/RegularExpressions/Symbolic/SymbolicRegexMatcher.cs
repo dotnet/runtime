@@ -37,7 +37,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
     /// <summary>Represents a regex matching engine that performs regex matching using symbolic derivatives.</summary>
     /// <typeparam name="TSet">Character set type.</typeparam>
-    internal sealed class SymbolicRegexMatcher<TSet> : SymbolicRegexMatcher where TSet : IComparable<TSet>
+    internal sealed class SymbolicRegexMatcher<TSet> : SymbolicRegexMatcher where TSet : IComparable<TSet>, IEquatable<TSet>
     {
         /// <summary>Maximum number of built states before switching over to NFA mode.</summary>
         /// <remarks>
