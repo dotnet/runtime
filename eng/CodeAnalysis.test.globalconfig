@@ -189,6 +189,9 @@ dotnet_diagnostic.CA1309.severity = none
 # CA1310: Specify StringComparison for correctness
 dotnet_diagnostic.CA1310.severity = none
 
+# CA1311: Specify a culture or use an invariant version
+dotnet_diagnostic.CA1311.severity = none
+
 # CA1401: P/Invokes should not be visible
 dotnet_diagnostic.CA1401.severity = none
 
@@ -398,6 +401,9 @@ dotnet_diagnostic.CA1850.severity = none
 
 # CA1851: Possible multiple enumerations of 'IEnumerable' collection
 dotnet_diagnostic.CA1851.severity = none
+
+# CA1852: Seal internal types
+dotnet_diagnostic.CA1852.severity = none
 
 # CA2000: Dispose objects before losing scope
 dotnet_diagnostic.CA2000.severity = none

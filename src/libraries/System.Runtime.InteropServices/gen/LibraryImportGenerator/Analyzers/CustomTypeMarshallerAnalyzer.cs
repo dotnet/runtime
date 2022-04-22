@@ -413,7 +413,7 @@ namespace Microsoft.Interop.Analyzers
             }
         }
 
-        private class PerCompilationAnalyzer
+        private sealed class PerCompilationAnalyzer
         {
             private readonly INamedTypeSymbol _spanOfT;
             private readonly INamedTypeSymbol _readOnlySpanOfT;
