@@ -1035,7 +1035,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                         state.ReceiveCancellationRegistration.Unregister();
                         shouldComplete = true;
                         state.Stream = null;
-                        state.ReadState = ReadState.None;
+                        // state.ReadState will be set to None later once the ReceiveResettableCompletionSource is completed to avoid data race on parallel reads.
 
                         readLength = CopyMsQuicBuffersToUserBuffer(new ReadOnlySpan<QuicBuffer>(receiveEvent.Buffers, (int)receiveEvent.BufferCount), state.ReceiveUserBuffer.Span);
 
@@ -1057,11 +1057,15 @@ namespace System.Net.Quic.Implementations.MsQuic
                         return MsQuicStatusCodes.Success;
                 }
 
-                // We're completing a pending read. This statement must be still inside a lock, otherwise another thread
-                // could see ReadState.None and access the still incomplete completion source
-                if (shouldComplete)
+            }
+
+            if (shouldComplete)
+            {
+                state.ReceiveResettableCompletionSource.Complete(readLength);
+
+                lock (state)
                 {
-                    state.ReceiveResettableCompletionSource.Complete(readLength);
+                    state.ReadState = ReadState.None;
                 }
             }
 
