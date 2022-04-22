@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Net.WebSockets;
 using System.Threading.Tasks;
 using Microsoft.WebAssembly.Diagnostics;
 using Newtonsoft.Json.Linq;
@@ -32,8 +31,24 @@ namespace DebuggerTests
         }
 
         [ConditionalFact(nameof(RunningOnChrome))]
-        public async Task BrowserCrash() => await Assert.ThrowsAsync<WebSocketException>(async () =>
-            await SendCommandAndCheck(null, "Browser.crash", null, -1, -1, null));
+        public async Task BrowserCrash()
+        {
+            TaskCompletionSource<RunLoopExitState> clientRunLoopStopped = new();
+            insp.Client.RunLoopStopped += (_, args) => clientRunLoopStopped.TrySetResult(args);
+            try
+            {
+                await SendCommandAndCheck(null, "Browser.crash", null, -1, -1, null);
+            }
+            catch (Exception ex)
+            {
+                Task t = await Task.WhenAny(clientRunLoopStopped.Task, Task.Delay(10000));
+                if (t != clientRunLoopStopped.Task)
+                    Assert.Fail($"Proxy did not stop, as expected");
+                RunLoopExitState? state = await clientRunLoopStopped.Task;
+                if (state.reason != RunLoopStopReason.ProxyConnectionClosed)
+                    Assert.Fail($"Client runloop did not stop with ProxyConnectionClosed. state: {state}.{Environment.NewLine}SendCommand had failed with {ex}");
+            }
+        }
 
         [ConditionalFact(nameof(RunningOnChrome))]
         public async Task InspectorWaitForAfterMessageAlreadyReceived()
