@@ -5,3 +5,7 @@ https://github.com/jtkukunas/zlib/commit/33f8f35b83b05539ea65489b5977683bcacbeb9
 
 Note: This library sometimes does not use a proper release lifecycle.
       Therefore, we may point to a random commit rather than a version tag.
+
+
+Cherrypick vanilla zlib commit https://github.com/madler/zlib/commit/ec3df00224d4b396e2ac6586ab5d25f673caa4c2 onto zlib-intel
+(https://github.com/jtkukunas/zlib/issues/37)
