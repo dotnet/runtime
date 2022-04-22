@@ -43,6 +43,8 @@ namespace System.Net.Security
         private const int FrameOverhead = 64;
         private const int ReadBufferSize = 4096 * 4 + FrameOverhead;         // We read in 16K chunks + headers.
         private const int InitialHandshakeBufferSize = 4096 + FrameOverhead; // try to fit at least 4K ServerCertificate
+        private const int HandshakeTypeOffsetSsl2 = 2;                       // Offset of HelloType in Sslv2 and Unified frames
+        private const int HandshakeTypeOffsetTls = 5;                        // Offset of HelloType in Sslv3 and TLS frames
         private ArrayBuffer _handshakeBuffer;
         private bool _receivedEOF;
 
@@ -475,7 +477,9 @@ namespace System.Net.Security
 #pragma warning disable 0618
                 _lastFrame.Header.Version = SslProtocols.Ssl2;
 #pragma warning restore 0618
+                _lastFrame.Header.Type = TlsContentType.Handshake;  // Assume. Needed for check bellow.
                 _lastFrame.Header.Length = GetFrameSize(_handshakeBuffer.ActiveReadOnlySpan) - TlsFrameHelper.HeaderSize;
+
             }
             else
             {
@@ -506,9 +510,12 @@ namespace System.Net.Security
                     }
                     break;
                 case TlsContentType.Handshake:
-                    if (!_isRenego && _handshakeBuffer.ActiveReadOnlySpan[TlsFrameHelper.HeaderSize] == (byte)TlsHandshakeType.ClientHello &&
-                        (_sslAuthenticationOptions!.ServerCertSelectionDelegate != null ||
-                        _sslAuthenticationOptions!.ServerOptionDelegate != null))
+                    byte handshakeType = _framing == Framing.SinceSSL3 ?
+                                            _handshakeBuffer.ActiveReadOnlySpan[HandshakeTypeOffsetTls] :
+                                            _handshakeBuffer.ActiveReadOnlySpan[HandshakeTypeOffsetSsl2];
+                    if (!_isRenego &&
+                        (_sslAuthenticationOptions!.ServerCertSelectionDelegate != null || _sslAuthenticationOptions!.ServerOptionDelegate != null) &&
+                        (handshakeType == (byte)TlsHandshakeType.ClientHello))
                     {
                         TlsFrameHelper.ProcessingOptions options = NetEventSource.Log.IsEnabled() ?
                                                                     TlsFrameHelper.ProcessingOptions.All :
