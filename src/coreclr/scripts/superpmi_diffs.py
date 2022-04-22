@@ -3,11 +3,11 @@
 # Licensed to the .NET Foundation under one or more agreements.
 # The .NET Foundation licenses this file to you under the MIT license.
 #
-# Title               : superpmi_asmdiffs.py
+# Title               : superpmi_diffs.py
 #
 # Notes:
 #
-# Script to run "superpmi asmdiffs" for various collections on the Helix machines.
+# Script to do base-diff jit measurements for various collections on the Helix machines.
 #
 ################################################################################
 ################################################################################
@@ -126,9 +126,9 @@ def copy_dasm_files(spmi_location, upload_directory, tag_name):
 
 
 def main(main_args):
-    """ Run superpmi asmdiffs process on the Helix machines.
+    """ Run base-diff JIT measurements on the Helix machines.
 
-    See superpmi_asmdiffs_setup.py for how the directory structure is set up in the
+    See superpmi_diffs_setup.py for how the directory structure is set up in the
     correlation payload. This script lives in the root of that directory tree.
 
     Args:

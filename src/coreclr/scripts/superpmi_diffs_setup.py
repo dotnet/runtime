@@ -3,16 +3,17 @@
 # Licensed to the .NET Foundation under one or more agreements.
 # The .NET Foundation licenses this file to you under the MIT license.
 #
-# Title               : superpmi_asmdiffs_setup.py
+# Title               : superpmi_diffs_setup.py
 #
 # Notes:
 #
-# Script to setup the directory structure required to perform SuperPMI asmdiffs in CI.
-# It creates `correlation_payload_directory` with `base` and `diff` directories
-# that contain clrjit*.dll. It figures out the baseline commit hash to use for
-# a particular GitHub pull request, and downloads the JIT rolling build for that
-# commit hash. It downloads the jitutils repo and builds the jit-analyze tool. It
-# downloads a version of `git` to be used by jit-analyze.
+# Script to setup the directory structure required to perform base-diff JIT
+# measurements in CI. It creates `correlation_payload_directory` with `base`
+# and `diff` directories # that contain clrjit*.dll. It figures out the baseline
+# commit hash to use for a particular GitHub pull request, and downloads the
+# JIT rolling build for that commit hash. It downloads the jitutils repo and
+# builds the jit-analyze tool. It downloads a version of `git` to be used by
+# jit-analyze.
 #
 ################################################################################
 ################################################################################
@@ -91,7 +92,7 @@ def match_superpmi_tool_files(full_path):
 
 
 def main(main_args):
-    """ Prepare the Helix data for SuperPMI asmdiffs Azure DevOps pipeline.
+    """ Prepare the Helix data for SuperPMI diffs Azure DevOps pipeline.
 
     The Helix correlation payload directory is created and populated as follows:
 
