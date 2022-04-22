@@ -2386,8 +2386,8 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
 
     assert(treeNode->OperIs(GT_ADD, GT_SUB, GT_MUL, GT_DIV, GT_UDIV, GT_AND, GT_AND_NOT, GT_OR, GT_XOR));
 
-    GenTree*    op1 = treeNode->gtGetOp1();
-    GenTree*    op2 = treeNode->gtGetOp2();
+    GenTree* op1 = treeNode->gtGetOp1();
+    GenTree* op2 = treeNode->gtGetOp2();
 
     if (op2->OperIs(GT_MUL) && op2->isContained())
     {
@@ -2421,8 +2421,8 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
                 unreached();
         }
 
-        GetEmitter()->emitIns_R_R_R_R(ins, emitActualTypeSize(treeNode), targetReg, b->GetRegNum(),
-                                      c->GetRegNum(), a->GetRegNum());
+        GetEmitter()->emitIns_R_R_R_R(ins, emitActualTypeSize(treeNode), targetReg, b->GetRegNum(), c->GetRegNum(),
+                                      a->GetRegNum());
         genProduceReg(treeNode);
         return;
     }
