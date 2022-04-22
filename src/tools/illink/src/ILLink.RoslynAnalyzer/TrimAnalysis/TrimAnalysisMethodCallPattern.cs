@@ -44,20 +44,11 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 			DiagnosticContext diagnosticContext = new (Operation.Syntax.GetLocation ());
 			HandleCallAction handleCallAction = new (diagnosticContext, OwningSymbol, Operation);
 			if (!handleCallAction.Invoke (new MethodProxy (CalledMethod), Instance, Arguments, out _, out _)) {
-				// If the intrinsic handling didn't work we have to:
-				//   Handle the instance value
-				//   Handle argument passing
-				//   Construct the return value
-				// Note: this is temporary as eventually the handling of all method calls should be done in the shared code (not just intrinsics)
-				if (!CalledMethod.IsStatic) {
-					var requireDynamicallyAccessedMembersAction = new RequireDynamicallyAccessedMembersAction (diagnosticContext, new ReflectionAccessAnalyzer ());
-					requireDynamicallyAccessedMembersAction.Invoke (Instance, new MethodThisParameterValue (CalledMethod));
-				}
-
-				for (int argumentIndex = 0; argumentIndex < Arguments.Length; argumentIndex++) {
-					var requireDynamicallyAccessedMembersAction = new RequireDynamicallyAccessedMembersAction (diagnosticContext, new ReflectionAccessAnalyzer ());
-					requireDynamicallyAccessedMembersAction.Invoke (Arguments[argumentIndex], new MethodParameterValue (CalledMethod.Parameters[argumentIndex]));
-				}
+				// If this returns false it means the intrinsic needs special handling:
+				// case IntrinsicId.TypeDelegator_Ctor:
+				//    No diagnostics to report - this is an "identity" operation for data flow, can't produce diagnostics on its own
+				// case IntrinsicId.Array_Empty:
+				//    No diagnostics to report - constant value
 			}
 
 			return diagnosticContext.Diagnostics;
