@@ -1017,6 +1017,23 @@ namespace System.Net.Security.Tests
 
         }
 
+        [Fact]
+        public async Task SslStream_UnifiedHello_Ok()
+        {
+            (Stream client, Stream server) = TestHelper.GetConnectedTcpStreams();
+            SslStream ssl = new SslStream(server);
+
+            var cts = new CancellationTokenSource();
+            cts.CancelAfter(TestConfiguration.PassingTestTimeout);
+
+            var options = new SslServerAuthenticationOptions() { ServerCertificate = Configuration.Certificates.GetServerCertificate() };
+            Task t = ssl.AuthenticateAsServerAsync(options, cts.Token);
+
+            await client.WriteAsync(TlsFrameHelperTests.s_UnifiedHello);
+
+            await t;
+        }
+
         private static bool ValidateServerCertificate(
             object sender,
             X509Certificate retrievedServerPublicCertificate,

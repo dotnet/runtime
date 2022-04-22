@@ -24,6 +24,9 @@ namespace System.Net.Security
         private object _handshakeLock => _sslAuthenticationOptions;
         private volatile TaskCompletionSource<bool>? _handshakeWaiter;
 
+        //private const int HandshakeTypeOffsetSsl2 = 2;                       // Offset of HelloType in Sslv2 and Unified frames
+        //private const int HandshakeTypeOffsetTls = 5;                        // Offset of HelloType in Sslv3 and TLS frames
+
         private bool _receivedEOF;
 
         // Used by Telemetry to ensure we log connection close exactly once
@@ -973,6 +976,8 @@ namespace System.Net.Security
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, "invalid TLS frame size");
                 throw new AuthenticationException(SR.net_frame_read_size);
             }
+
+            Console.WriteLine("GetFrameSize = {0} on {1}", _lastFrame.Header.Length + TlsFrameHelper.HeaderSize, this.GetHashCode());
 
             return _lastFrame.Header.Length + TlsFrameHelper.HeaderSize;
         }
