@@ -205,7 +205,7 @@ namespace System.IO.Tests
         [Fact]
         public void FileSystemWatcher_Directory_NotifyFilter_LastWriteAndFileName()
         {
-            string file = CreateTestDirectory(TestDirectory, "file");
+            string file = CreateTestFile(TestDirectory, "file");
             using (var watcher = new FileSystemWatcher(TestDirectory, Path.GetFileName(file)))
             {
                 NotifyFilters filter = NotifyFilters.LastWrite | NotifyFilters.DirectoryName;

@@ -67,7 +67,7 @@ namespace System.IO.Tests
             using var watcher = new FileSystemWatcher(linkPath);
             watcher.NotifyFilter = NotifyFilters.DirectoryName;
 
-            string subDirName = CreateTestDirectory();
+            string subDirName = CreateTestDirectory(GetTestFileName());
             string subDirPath = CreateTestDirectory(tempDir, subDirName);
 
             // Act - Assert

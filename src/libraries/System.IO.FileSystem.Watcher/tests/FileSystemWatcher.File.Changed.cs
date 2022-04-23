@@ -46,7 +46,7 @@ namespace System.IO.Tests
         [Fact]
         public void FileSystemWatcher_File_Changed_DataModification()
         {
-            string dir = Path.Combine(TestDirectory, "dir");
+            string dir = CreateTestDirectory(TestDirectory, "dir");
             using (var watcher = new FileSystemWatcher(Path.GetFullPath(dir), "*"))
             {
                 string fileName = Path.Combine(dir, "testFile.txt");
