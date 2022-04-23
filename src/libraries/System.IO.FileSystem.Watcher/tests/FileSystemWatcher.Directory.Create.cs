@@ -85,7 +85,7 @@ namespace System.IO.Tests
         public void FileSystemWatcher_Directory_Create_SymLink()
         {
             string dir = CreateTestDirectory(TestDirectory, "dir");
-            string temp = CreateTestDirectory(GetTestFilePath());
+            string temp = CreateTestDirectory();
             using (var watcher = new FileSystemWatcher(Path.GetFullPath(dir), "*"))
             {
                 // Make the symlink in our path (to the temp folder) and make sure an event is raised

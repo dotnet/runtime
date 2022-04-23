@@ -68,7 +68,7 @@ namespace System.IO.Tests
         public void FileSystemWatcher_Directory_Delete_SymLink()
         {
             string dir = CreateTestDirectory(TestDirectory, "dir");
-            string tempDir = CreateTestFile(GetTestFilePath());
+            string tempDir = CreateTestFile();
             using (var watcher = new FileSystemWatcher(Path.GetFullPath(dir), "*"))
             {
                 // Make the symlink in our path (to the temp folder) and make sure an event is raised
