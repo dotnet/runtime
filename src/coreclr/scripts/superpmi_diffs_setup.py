@@ -29,7 +29,8 @@ parser = argparse.ArgumentParser(description="description")
 
 parser.add_argument("-arch", help="Architecture")
 parser.add_argument("-source_directory", help="Path to the root directory of the dotnet/runtime source tree")
-parser.add_argument("-product_directory", help="Path to the directory containing built binaries (e.g., <source_directory>/artifacts/bin/coreclr/windows.x64.Checked)")
+parser.add_argument("-checked_directory", help="Path to the directory containing built checked binaries (e.g., <source_directory>/artifacts/bin/coreclr/windows.x64.Checked)")
+parser.add_argument("-release_directory", help="Path to the directory containing built release binaries (e.g., <source_directory>/artifacts/bin/coreclr/windows.x64.Release)")
 
 is_windows = platform.system() == "Windows"
 
@@ -54,13 +55,18 @@ def setup_args(args):
 
     coreclr_args.verify(args,
                         "source_directory",
-                        lambda source_directory: os.path.isdir(source_directory),
+                        os.path.isdir,
                         "source_directory doesn't exist")
 
     coreclr_args.verify(args,
-                        "product_directory",
-                        lambda product_directory: os.path.isdir(product_directory),
-                        "product_directory doesn't exist")
+                        "checked_directory",
+                        os.path.isdir,
+                        "checked_directory doesn't exist")
+
+    coreclr_args.verify(args,
+                        "release_directory",
+                        os.path.isdir,
+                        "release_directory doesn't exist")
 
     return coreclr_args
 
@@ -100,9 +106,9 @@ def main(main_args):
         -- contains the *.py scripts from <source_directory>\src\coreclr\scripts
         -- contains superpmi.exe, mcs.exe from the target-specific build
     <source_directory>\payload\base
-        -- contains the baseline JITs
+        -- contains the baseline JITs (under checked and release folders)
     <source_directory>\payload\diff
-        -- contains the diff JITs
+        -- contains the diff JITs (under checked and release folders)
     <source_directory>\payload\jit-analyze
         -- contains the self-contained jit-analyze build (from dotnet/jitutils)
     <source_directory>\payload\git
@@ -132,7 +138,8 @@ def main(main_args):
 
     arch = coreclr_args.arch
     source_directory = coreclr_args.source_directory
-    product_directory = coreclr_args.product_directory
+    checked_directory = coreclr_args.checked_directory
+    release_directory = coreclr_args.release_directory
 
     python_path = sys.executable
 
@@ -140,7 +147,11 @@ def main(main_args):
     correlation_payload_directory = os.path.join(source_directory, "payload")
     superpmi_scripts_directory = os.path.join(source_directory, 'src', 'coreclr', 'scripts')
     base_jit_directory = os.path.join(correlation_payload_directory, "base")
+    base_jit_checked_directory = os.path.join(base_jit_directory, "checked")
+    base_jit_release_directory = os.path.join(base_jit_directory, "release")
     diff_jit_directory = os.path.join(correlation_payload_directory, "diff")
+    diff_jit_checked_directory = os.path.join(diff_jit_directory, "checked")
+    diff_jit_release_directory = os.path.join(diff_jit_directory, "release")
     jit_analyze_build_directory = os.path.join(correlation_payload_directory, "jit-analyze")
     git_directory = os.path.join(correlation_payload_directory, "git")
 
@@ -165,40 +176,62 @@ def main(main_args):
     copy_directory(superpmi_scripts_directory, correlation_payload_directory, verbose_copy=True,
                    match_func=lambda path: any(path.endswith(extension) for extension in [".py"]))
 
-    ######## Get baseline JIT
+    ######## Get baseline JITs
 
-    # Figure out which baseline JIT to use, and download it.
-    if not os.path.exists(base_jit_directory):
-        os.makedirs(base_jit_directory)
+    # Figure out which baseline checked JIT to use, and download it.
+    if not os.path.exists(base_jit_checked_directory):
+        os.makedirs(base_jit_checked_directory)
 
     print("Fetching history of `main` branch so we can find the baseline JIT")
     run_command(["git", "fetch", "--depth=500", "origin", "main"], source_directory, _exit_on_fail=True)
 
     # Note: we only support downloading Windows versions of the JIT currently. To support downloading
     # non-Windows JITs on a Windows machine, pass `-host_os <os>` to jitrollingbuild.py.
-    print("Running jitrollingbuild.py download to get baseline JIT")
+    print("Running jitrollingbuild.py download to get baseline checked JIT")
     jit_rolling_build_script = os.path.join(superpmi_scripts_directory, "jitrollingbuild.py")
     _, _, return_code = run_command([
         python_path,
         jit_rolling_build_script,
         "download",
         "-arch", arch,
-        "-target_dir", base_jit_directory],
+        "-build_type", "checked",
+        "-target_dir", base_jit_checked_directory],
         source_directory)
     if return_code != 0:
         print('{} failed with {}'.format(jit_rolling_build_script, return_code))
         return return_code
 
-    ######## Get diff JIT
+    # Figure out which baseline release JIT to use, and download it.
+    if not os.path.exists(base_jit_release_directory):
+        os.makedirs(base_jit_release_directory)
 
-    print('Copying diff binaries {} -> {}'.format(product_directory, diff_jit_directory))
-    copy_directory(product_directory, diff_jit_directory, verbose_copy=True, match_func=match_jit_files)
+    print("Running jitrollingbuild.py download to get baseline release JIT")
+    jit_rolling_build_script = os.path.join(superpmi_scripts_directory, "jitrollingbuild.py")
+    _, _, return_code = run_command([
+        python_path,
+        jit_rolling_build_script,
+        "download",
+        "-arch", arch,
+        "-build_type", "release",
+        "-target_dir", base_jit_release_directory],
+        source_directory)
+    if return_code != 0:
+        print('{} failed with {}'.format(jit_rolling_build_script, return_code))
+        return return_code
+
+    ######## Get diff JITs
+
+    print('Copying checked diff binaries {} -> {}'.format(checked_directory, diff_jit_checked_directory))
+    copy_directory(checked_directory, diff_jit_checked_directory, verbose_copy=True, match_func=match_jit_files)
+
+    print('Copying release diff binaries {} -> {}'.format(release_directory, diff_jit_release_directory))
+    copy_directory(release_directory, diff_jit_release_directory, verbose_copy=True, match_func=match_jit_files)
 
     ######## Get SuperPMI tools
 
     # Put the SuperPMI tools directly in the root of the correlation payload directory.
-    print('Copying SuperPMI tools {} -> {}'.format(product_directory, correlation_payload_directory))
-    copy_directory(product_directory, correlation_payload_directory, verbose_copy=True, match_func=match_superpmi_tool_files)
+    print('Copying SuperPMI tools {} -> {}'.format(checked_directory, correlation_payload_directory))
+    copy_directory(checked_directory, correlation_payload_directory, verbose_copy=True, match_func=match_superpmi_tool_files)
 
     ######## Clone and build jitutils: we only need jit-analyze
 

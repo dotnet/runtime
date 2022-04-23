@@ -170,8 +170,10 @@ def main(main_args):
     arch_name = coreclr_args.arch
     host_arch_name = "x64" if arch_name.endswith("64") else "x86"
     os_name = "universal" if arch_name.startswith("arm") else os_name
-    base_jit_path = os.path.join(coreclr_args.base_jit_directory, 'clrjit_{}_{}_{}.dll'.format(os_name, arch_name, host_arch_name))
-    diff_jit_path = os.path.join(coreclr_args.diff_jit_directory, 'clrjit_{}_{}_{}.dll'.format(os_name, arch_name, host_arch_name))
+    base_checked_jit_path = os.path.join(coreclr_args.base_jit_directory, "checked", 'clrjit_{}_{}_{}.dll'.format(os_name, arch_name, host_arch_name))
+    diff_checked_jit_path = os.path.join(coreclr_args.diff_jit_directory, "checked", 'clrjit_{}_{}_{}.dll'.format(os_name, arch_name, host_arch_name))
+    base_release_jit_path = os.path.join(coreclr_args.base_jit_directory, "release", 'clrjit_{}_{}_{}.dll'.format(os_name, arch_name, host_arch_name))
+    diff_release_jit_path = os.path.join(coreclr_args.diff_jit_directory, "release", 'clrjit_{}_{}_{}.dll'.format(os_name, arch_name, host_arch_name))
 
     # Core_Root is where the superpmi tools (superpmi.exe, mcs.exe) are expected to be found.
     # We pass the full path of the JITs to use as arguments.
@@ -196,9 +198,9 @@ def main(main_args):
     print("Running superpmi.py asmdiffs")
     log_file = os.path.join(log_directory, "superpmi_{}_{}.log".format(platform_name, arch_name))
 
-    overall_md_summary_file = os.path.join(spmi_location, "diff_summary.md")
-    if os.path.isfile(overall_md_summary_file):
-        os.remove(overall_md_summary_file)
+    overall_md_asmdiffs_summary_file = os.path.join(spmi_location, "diff_summary.md")
+    if os.path.isfile(overall_md_asmdiffs_summary_file):
+        os.remove(overall_md_asmdiffs_summary_file)
 
     _, _, return_code = run_command([
         python_path,
@@ -209,33 +211,61 @@ def main(main_args):
         "-target_os", platform_name,
         "-target_arch", arch_name,
         "-arch", host_arch_name,
-        "-base_jit_path", base_jit_path,
-        "-diff_jit_path", diff_jit_path,
+        "-base_jit_path", base_checked_jit_path,
+        "-diff_jit_path", diff_checked_jit_path,
         "-spmi_location", spmi_location,
         "-error_limit", "100",
         "-log_level", "debug",
         "-log_file", log_file,
         "-retainOnlyTopFiles"])
 
+    print("Running superpmi.py tpdiff")
+
+    overall_md_tpdiff_summary_file = os.path.join(spmi_location, "tpdiff_summary.md")
+    if os.path.isfile(overall_md_tpdiff_summary_file):
+        os.remove(overall_md_tpdiff_summary_file)
+
+    _, _, return_code = run_command([
+        python_path,
+        os.path.join(script_dir, "superpmi.py"),
+        "tpdiff",
+        "--no_progress",
+        "-core_root", core_root_dir,
+        "-target_os", platform_name,
+        "-target_arch", arch_name,
+        "-arch", host_arch_name,
+        "-base_jit_path", base_release_jit_path,
+        "-diff_jit_path", diff_release_jit_path,
+        "-spmi_location", spmi_location,
+        "-error_limit", "100",
+        "-log_level", "debug",
+        "-log_file", log_file])
+
     # If there are asm diffs, and jit-analyze ran, we'll get a diff_summary.md file in the spmi_location directory.
     # We make sure the file doesn't exist before we run diffs, so we don't need to worry about superpmi.py creating
     # a unique, numbered file. If there are no diffs, we still want to create this file and indicate there were no diffs.
 
-    overall_md_summary_file_target = os.path.join(log_directory, "superpmi_diff_summary_{}_{}.md".format(platform_name, arch_name))
-    if os.path.isfile(overall_md_summary_file):
-        try:
-            print("Copying summary file {} -> {}".format(overall_md_summary_file, overall_md_summary_file_target))
-            shutil.copy2(overall_md_summary_file, overall_md_summary_file_target)
-        except PermissionError as pe_error:
-            print('Ignoring PermissionError: {0}'.format(pe_error))
-    else:
-        # Write a basic summary file. Ideally, we should not generate a summary.md file. However, currently I'm seeing
-        # errors where the Helix work item fails to upload this specified file if it doesn't exist. We should change the
-        # upload to be conditional, or otherwise not error.
-        with open(overall_md_summary_file_target, "a") as f:
-            f.write("""\
-No diffs found
-""")
+    md_files = []
+
+    overall_md_asmdiff_summary_file_target = os.path.join(log_directory, "superpmi_diff_summary_{}_{}.md".format(platform_name, arch_name))
+    md_files.append((overall_md_asmdiffs_summary_file, overall_md_asmdiff_summary_file_target))
+
+    overall_md_tpdiff_summary_file_target = os.path.join(log_directory, "superpmi_tpdiff_summary_{}_{}.md".format(platform_name, arch_name))
+    md_files.append((overall_md_tpdiff_summary_file, overall_md_tpdiff_summary_file_target))
+
+    for source, target in md_files:
+        if os.path.isfile(source):
+            try:
+                print("Copying summary file {} -> {}".format(source, target))
+                shutil.copy2(source, target)
+            except PermissionError as pe_error:
+                print('Ignoring PermissionError: {0}'.format(pe_error))
+        else:
+            # Write a basic summary file. Ideally, we should not generate a summary.md file. However, currently I'm seeing
+            # errors where the Helix work item fails to upload this specified file if it doesn't exist. We should change the
+            # upload to be conditional, or otherwise not error.
+            with open(target, "a") as f:
+                f.write("<empty>")
 
     # Finally prepare files to upload from helix.
     copy_dasm_files(spmi_location, log_directory, "{}_{}".format(platform_name, arch_name))

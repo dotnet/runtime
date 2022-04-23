@@ -73,7 +73,7 @@ jobs:
         mkdir $(SpmiAsmdiffsLocation)
       displayName: Create directories
 
-    - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi_diffs_setup.py -source_directory $(Build.SourcesDirectory) -product_directory $(buildProductRootFolderPath) -arch $(archType)
+    - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi_diffs_setup.py -source_directory $(Build.SourcesDirectory) -checked_directory $(buildProductRootFolderPath) -release_directory $(releaseProductRootFolderPath) -arch $(archType)
       displayName: ${{ format('SuperPMI diffs setup ({0})', parameters.archType) }}
 
       # Run superpmi-diffs.py script in helix

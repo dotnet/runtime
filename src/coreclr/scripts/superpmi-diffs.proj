@@ -31,7 +31,7 @@
     <!-- Workaround until https://github.com/dotnet/arcade/pull/6179 is not available -->
     <HelixResultsDestinationDir>$(BUILD_SOURCESDIRECTORY)\artifacts\helixresults</HelixResultsDestinationDir>
     <WorkItemCommand>$(Python) $(ProductDirectory)\superpmi_diffs.py -base_jit_directory $(ProductDirectory)\base -diff_jit_directory $(ProductDirectory)\diff -log_directory $(SuperpmiLogsLocation)</WorkItemCommand>
-    <WorkItemTimeout>1:00</WorkItemTimeout>
+    <WorkItemTimeout>2:00</WorkItemTimeout>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -68,7 +68,7 @@
     <HelixWorkItem Include="@(SPMI_Partition)">
       <Command>$(WorkItemCommand) -arch %(HelixWorkItem.Architecture) -platform %(HelixWorkItem.Platform)</Command>
       <Timeout>$(WorkItemTimeout)</Timeout>
-      <DownloadFilesFromResults>superpmi_%(HelixWorkItem.Platform)_%(HelixWorkItem.Architecture).log;superpmi_download_%(HelixWorkItem.Platform)_%(HelixWorkItem.Architecture).log;superpmi_diff_summary_%(HelixWorkItem.Platform)_%(HelixWorkItem.Architecture).md;Asmdiffs_%(HelixWorkItem.Platform)_%(HelixWorkItem.Architecture).zip</DownloadFilesFromResults>
+      <DownloadFilesFromResults>superpmi_%(HelixWorkItem.Platform)_%(HelixWorkItem.Architecture).log;superpmi_download_%(HelixWorkItem.Platform)_%(HelixWorkItem.Architecture).log;superpmi_diff_summary_%(HelixWorkItem.Platform)_%(HelixWorkItem.Architecture).md;superpmi_tpdiff_summary_%(HelixWorkItem.Platform)_%(HelixWorkItem.Architecture).md;Asmdiffs_%(HelixWorkItem.Platform)_%(HelixWorkItem.Architecture).zip</DownloadFilesFromResults>
     </HelixWorkItem>
   </ItemGroup>
   </Project>
