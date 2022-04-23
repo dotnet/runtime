@@ -137,9 +137,8 @@ namespace System.IO.Tests
         [Fact]
         public void FileSystemWatcher_File_Create_WatchOwnPath()
         {
-            string dir = TestDirectory;
-            string dir1 = Path.Combine(dir, "dir1");
-            string dir2 = Path.Combine(dir, "dir2");
+            string dir1 = Path.Combine(TestDirectory, "dir1");
+            string dir2 = Path.Combine(TestDirectory, "dir2");
             Directory.CreateDirectory(dir1);
             Directory.CreateDirectory(dir2);
             using (var watcher1 = new FileSystemWatcher(dir1, "*"))
@@ -242,18 +241,17 @@ namespace System.IO.Tests
         [Fact]
         public void  FileSystemWatcher_File_Changed_NotAffectEachOther()
         {
-            string testDirectory = TestDirectory;
-            string file = Path.Combine(testDirectory, "file");
-            string otherFile = Path.Combine(testDirectory, "otherFile");
+            string file = Path.Combine(TestDirectory, "file");
+            string otherFile = Path.Combine(TestDirectory, "otherFile");
             File.Create(file).Dispose();
             File.Create(otherFile).Dispose();
-            using (var watcher1 = new FileSystemWatcher(testDirectory, Path.GetFileName(file)))
-            using (var watcher2 = new FileSystemWatcher(testDirectory, Path.GetFileName(file)))
-            using (var watcher3 = new FileSystemWatcher(testDirectory, Path.GetFileName(otherFile)))
+            using (var watcher1 = new FileSystemWatcher(TestDirectory, Path.GetFileName(file)))
+            using (var watcher2 = new FileSystemWatcher(TestDirectory, Path.GetFileName(file)))
+            using (var watcher3 = new FileSystemWatcher(TestDirectory, Path.GetFileName(otherFile)))
             {
-                AutoResetEvent autoResetEvent1 = WatchChanged(watcher1, new[] { Path.Combine(testDirectory, "file") }).EventOccured;
-                AutoResetEvent autoResetEvent2 = WatchChanged(watcher2, new[] { Path.Combine(testDirectory, "file") }).EventOccured;
-                AutoResetEvent autoResetEvent3 = WatchChanged(watcher3, new[] { Path.Combine(testDirectory, "otherfile") }).EventOccured;
+                AutoResetEvent autoResetEvent1 = WatchChanged(watcher1, new[] { Path.Combine(TestDirectory, "file") }).EventOccured;
+                AutoResetEvent autoResetEvent2 = WatchChanged(watcher2, new[] { Path.Combine(TestDirectory, "file") }).EventOccured;
+                AutoResetEvent autoResetEvent3 = WatchChanged(watcher3, new[] { Path.Combine(TestDirectory, "otherfile") }).EventOccured;
 
                 watcher1.Error += OnError;
                 watcher2.Error += OnError;
@@ -327,11 +325,10 @@ namespace System.IO.Tests
         [PlatformSpecific(TestPlatforms.OSX)]
         public void FileSystemWatcher_File_Rename_NotAffectEachOther()
         {
-            string testDirectory = TestDirectory;
-            string file = Path.Combine(testDirectory, "file");
+            string file = Path.Combine(TestDirectory, "file");
             File.Create(file).Dispose();
-            using (var watcher1 = new FileSystemWatcher(testDirectory, Path.GetFileName(file)))
-            using (var watcher2 = new FileSystemWatcher(testDirectory, Path.GetFileName(file)))
+            using (var watcher1 = new FileSystemWatcher(TestDirectory, Path.GetFileName(file)))
+            using (var watcher2 = new FileSystemWatcher(TestDirectory, Path.GetFileName(file)))
             {
                 string filePath = file;
                 string filePathRenamed = file + "_renamed";

@@ -95,16 +95,15 @@ namespace System.IO.Tests
         [Fact]
         public void Directory_Move_SynchronizingObject()
         {
-            string testDirectory = TestDirectory;
-            string dir = Path.Combine(testDirectory, "dir");
+            string dir = Path.Combine(TestDirectory, "dir");
             Directory.CreateDirectory(dir);
-            using (var watcher = new FileSystemWatcher(testDirectory))
+            using (var watcher = new FileSystemWatcher(TestDirectory))
             {
                 TestISynchronizeInvoke invoker = new TestISynchronizeInvoke();
                 watcher.SynchronizingObject = invoker;
 
                 string sourcePath = dir;
-                string targetPath = Path.Combine(testDirectory, "target");
+                string targetPath = Path.Combine(TestDirectory, "target");
 
                 Action action = () => Directory.Move(sourcePath, targetPath);
                 Action cleanup = () => Directory.Move(targetPath, sourcePath);
@@ -118,13 +117,12 @@ namespace System.IO.Tests
 
         private void DirectoryMove_SameDirectory(WatcherChangeTypes eventType)
         {
-            string testDirectory = TestDirectory;
-            string dir = Path.Combine(testDirectory, "dir");
+            string dir = Path.Combine(TestDirectory, "dir");
             Directory.CreateDirectory(dir);
-            using (var watcher = new FileSystemWatcher(testDirectory, "*"))
+            using (var watcher = new FileSystemWatcher(TestDirectory, "*"))
             {
                 string sourcePath = dir;
-                string targetPath = Path.Combine(testDirectory, "target");
+                string targetPath = Path.Combine(TestDirectory, "target");
 
                 Action action = () => Directory.Move(sourcePath, targetPath);
                 Action cleanup = () => Directory.Move(targetPath, sourcePath);
@@ -135,14 +133,12 @@ namespace System.IO.Tests
 
         private void DirectoryMove_DifferentWatchedDirectory(WatcherChangeTypes eventType)
         {
-            string testDirectory = TestDirectory;
-            string sourceDir = Path.Combine(testDirectory, "source");
-            string adjacentDir = Path.Combine(testDirectory, "adj");
+            string sourceDir = Path.Combine(TestDirectory, "source");
+            string adjacentDir = Path.Combine(TestDirectory, "adj");
             string dir = Path.Combine(sourceDir, "dir");
-            Directory.CreateDirectory(sourceDir);
             Directory.CreateDirectory(adjacentDir);
             Directory.CreateDirectory(dir);
-            using (var watcher = new FileSystemWatcher(testDirectory, "*"))
+            using (var watcher = new FileSystemWatcher(TestDirectory, "*"))
             {
                 string sourcePath = dir;
                 string targetPath = Path.Combine(adjacentDir, "target");
@@ -228,7 +224,6 @@ namespace System.IO.Tests
             string watchedTestDirectory = GetTestFilePath();
             string unwatchedTestDirectory = GetTestFilePath();
             string dir = Path.Combine(watchedTestDirectory, "dir");
-            Directory.CreateDirectory(watchedTestDirectory);
             Directory.CreateDirectory(unwatchedTestDirectory);
             Directory.CreateDirectory(dir);
             using (var watcher = new FileSystemWatcher(watchedTestDirectory, "*"))
@@ -249,7 +244,6 @@ namespace System.IO.Tests
             string unwatchedTestDirectory = GetTestFilePath();
             string dir = Path.Combine(unwatchedTestDirectory, "dir");
             Directory.CreateDirectory(watchedTestDirectory);
-            Directory.CreateDirectory(unwatchedTestDirectory);
             Directory.CreateDirectory(dir);
             using (var watcher = new FileSystemWatcher(watchedTestDirectory, "*"))
             {
@@ -265,15 +259,11 @@ namespace System.IO.Tests
 
         private void DirectoryMove_NestedDirectory(WatcherChangeTypes eventType, bool includeSubdirectories)
         {
-            string dir = TestDirectory;
-            string firstDir = Path.Combine(dir, "first");
+            string firstDir = Path.Combine(TestDirectory, "first");
             string secondDir = Path.Combine(firstDir, "second");
             string nestedDir = Path.Combine(secondDir, "nested");
-            Directory.CreateDirectory(dir);
-            Directory.CreateDirectory(firstDir);
-            Directory.CreateDirectory(secondDir);
             Directory.CreateDirectory(nestedDir);
-            using (var watcher = new FileSystemWatcher(dir, "*"))
+            using (var watcher = new FileSystemWatcher(TestDirectory, "*"))
             {
                 watcher.IncludeSubdirectories = includeSubdirectories;
                 watcher.NotifyFilter = NotifyFilters.DirectoryName;
@@ -291,10 +281,9 @@ namespace System.IO.Tests
 
         private void DirectoryMove_WithNotifyFilter(WatcherChangeTypes eventType)
         {
-            string testDirectory = TestDirectory;
-            string dir = Path.Combine(testDirectory, "dir");
+            string dir = Path.Combine(TestDirectory, "dir");
             Directory.CreateDirectory(dir);
-            using (var watcher = new FileSystemWatcher(testDirectory, "*"))
+            using (var watcher = new FileSystemWatcher(TestDirectory, "*"))
             {
                 watcher.NotifyFilter = NotifyFilters.DirectoryName;
 

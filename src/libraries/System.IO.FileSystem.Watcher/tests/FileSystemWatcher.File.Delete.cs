@@ -13,10 +13,9 @@ namespace System.IO.Tests
         [Fact]
         public void FileSystemWatcher_File_Delete()
         {
-            string testDirectory = TestDirectory;
-            using (var watcher = new FileSystemWatcher(testDirectory))
+            using (var watcher = new FileSystemWatcher(TestDirectory))
             {
-                string fileName = Path.Combine(testDirectory, "file");
+                string fileName = Path.Combine(TestDirectory, "file");
                 watcher.Filter = Path.GetFileName(fileName);
 
                 Action action = () => File.Delete(fileName);
@@ -30,10 +29,9 @@ namespace System.IO.Tests
         [Fact]
         public void FileSystemWatcher_File_Delete_ForcedRestart()
         {
-            string testDirectory = TestDirectory;
-            using (var watcher = new FileSystemWatcher(testDirectory))
+            using (var watcher = new FileSystemWatcher(TestDirectory))
             {
-                string fileName = Path.Combine(testDirectory, "file");
+                string fileName = Path.Combine(TestDirectory, "file");
                 watcher.Filter = Path.GetFileName(fileName);
 
                 Action action = () =>
@@ -51,12 +49,10 @@ namespace System.IO.Tests
         [Fact]
         public void FileSystemWatcher_File_Delete_InNestedDirectory()
         {
-            string dir = TestDirectory;
-            string firstDir = Path.Combine(dir, "dir1");
+            string firstDir = Path.Combine(TestDirectory, "dir1");
             string nestedDir = Path.Combine(firstDir, "nested");
-            Directory.CreateDirectory(firstDir);
             Directory.CreateDirectory(nestedDir);
-            using (var watcher = new FileSystemWatcher(dir, "*"))
+            using (var watcher = new FileSystemWatcher(TestDirectory, "*"))
             {
                 watcher.IncludeSubdirectories = true;
                 watcher.NotifyFilter = NotifyFilters.FileName;
@@ -74,10 +70,9 @@ namespace System.IO.Tests
         [OuterLoop("This test has a longer than average timeout and may fail intermittently")]
         public void FileSystemWatcher_File_Delete_DeepDirectoryStructure()
         {
-            string dir = TestDirectory;
-            string deepDir = Path.Combine(dir, "dir", "dir", "dir", "dir", "dir", "dir", "dir");
+            string deepDir = Path.Combine(TestDirectory, "dir", "dir", "dir", "dir", "dir", "dir", "dir");
             Directory.CreateDirectory(deepDir);
-            using (var watcher = new FileSystemWatcher(dir, "*"))
+            using (var watcher = new FileSystemWatcher(TestDirectory, "*"))
             {
                 watcher.IncludeSubdirectories = true;
                 watcher.NotifyFilter = NotifyFilters.FileName;
@@ -97,8 +92,7 @@ namespace System.IO.Tests
         {
             FileSystemWatcherTest.Execute(() =>
             {
-                string testDirectory = TestDirectory;
-                string dir = Path.Combine(testDirectory, "dir");
+                string dir = Path.Combine(TestDirectory, "dir");
                 string temp = GetTestFilePath();
                 Directory.CreateDirectory(dir);
                 File.Create(temp).Dispose();
@@ -118,13 +112,12 @@ namespace System.IO.Tests
         [Fact]
         public void FileSystemWatcher_File_Delete_SynchronizingObject()
         {
-            string testDirectory = TestDirectory;
-            using (var watcher = new FileSystemWatcher(testDirectory))
+            using (var watcher = new FileSystemWatcher(TestDirectory))
             {
                 TestISynchronizeInvoke invoker = new TestISynchronizeInvoke();
                 watcher.SynchronizingObject = invoker;
 
-                string fileName = Path.Combine(testDirectory, "file");
+                string fileName = Path.Combine(TestDirectory, "file");
                 watcher.Filter = Path.GetFileName(fileName);
 
                 Action action = () => File.Delete(fileName);

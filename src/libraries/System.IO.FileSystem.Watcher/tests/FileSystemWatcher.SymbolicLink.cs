@@ -91,7 +91,6 @@ namespace System.IO.Tests
                 const string subDirLv2 = "subDirLv2";
                 string tempDir = GetTestFilePath();
                 string tempSubDir = Path.Combine(tempDir, subDir);
-                Directory.CreateDirectory(tempDir);
                 Directory.CreateDirectory(tempSubDir);
 
                 string linkPath = CreateSymbolicLinkToTarget(tempDir, isDirectory: true);

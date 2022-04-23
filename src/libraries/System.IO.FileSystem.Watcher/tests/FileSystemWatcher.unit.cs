@@ -31,10 +31,9 @@ namespace System.IO.Tests
         [Fact]
         public void FileSystemWatcher_NewFileInfoAction_TriggersNothing()
         {
-            string testDirectory = TestDirectory;
-            string file = Path.Combine(testDirectory, "file");
+            string file = Path.Combine(TestDirectory, "file");
             File.Create(file).Dispose();
-            using (var watcher = new FileSystemWatcher(testDirectory, Path.GetFileName(file)))
+            using (var watcher = new FileSystemWatcher(TestDirectory, Path.GetFileName(file)))
             {
                 Action action = () => new FileInfo(file);
 
@@ -45,10 +44,9 @@ namespace System.IO.Tests
         [Fact]
         public void FileSystemWatcher_FileInfoGetter_TriggersNothing()
         {
-            string testDirectory = TestDirectory;
-            string file = Path.Combine(testDirectory, "file");
+            string file = Path.Combine(TestDirectory, "file");
             File.Create(file).Dispose();
-            using (var watcher = new FileSystemWatcher(testDirectory, Path.GetFileName(file)))
+            using (var watcher = new FileSystemWatcher(TestDirectory, Path.GetFileName(file)))
             {
                 FileAttributes res;
                 Action action = () => res = new FileInfo(file).Attributes;
@@ -60,10 +58,9 @@ namespace System.IO.Tests
         [Fact]
         public void FileSystemWatcher_EmptyAction_TriggersNothing()
         {
-            string testDirectory = TestDirectory;
-            string file = Path.Combine(testDirectory, "file");
+            string file = Path.Combine(TestDirectory, "file");
             File.Create(file).Dispose();
-            using (var watcher = new FileSystemWatcher(testDirectory, Path.GetFileName(file)))
+            using (var watcher = new FileSystemWatcher(TestDirectory, Path.GetFileName(file)))
             {
                 Action action = () => { };
 
@@ -101,9 +98,8 @@ namespace System.IO.Tests
         [Fact]
         public void FileSystemWatcher_ctor_NullStrings()
         {
-            string testDirectory = TestDirectory;
             // Null filter
-            Assert.Throws<ArgumentNullException>("filter", () => new FileSystemWatcher(testDirectory, null));
+            Assert.Throws<ArgumentNullException>("filter", () => new FileSystemWatcher(TestDirectory, null));
 
             // Null path
             Assert.Throws<ArgumentNullException>("path", () => new FileSystemWatcher(null, null));
@@ -185,9 +181,8 @@ namespace System.IO.Tests
         [Fact]
         public void FileSystemWatcher_EnableRaisingEvents()
         {
-            string testDirectory = TestDirectory;
 
-            FileSystemWatcher watcher = new FileSystemWatcher(testDirectory);
+            FileSystemWatcher watcher = new FileSystemWatcher(TestDirectory);
             Assert.False(watcher.EnableRaisingEvents);
 
             watcher.EnableRaisingEvents = true;
@@ -372,11 +367,10 @@ namespace System.IO.Tests
         [PlatformSpecific(TestPlatforms.OSX | TestPlatforms.Windows)]  // Casing matters on Linux
         public void FileSystemWatcher_OnCreatedWithMismatchedCasingGivesExpectedFullPath()
         {
-            string dir = TestDirectory;
-            using (var fsw = new FileSystemWatcher(dir))
+            using (var fsw = new FileSystemWatcher(TestDirectory))
             {
                 AutoResetEvent are = new AutoResetEvent(false);
-                string fullPath = Path.Combine(dir.ToUpper(), "Foo.txt");
+                string fullPath = Path.Combine(TestDirectory.ToUpper(), "Foo.txt");
 
                 fsw.Created += (o, e) =>
                 {
@@ -465,14 +459,13 @@ namespace System.IO.Tests
         [PlatformSpecific(TestPlatforms.Windows)] // Unix FSW don't trigger on a file rename.
         public void FileSystemWatcher_Windows_OnRenameGivesExpectedFullPath()
         {
-            string dir = TestDirectory;
-            string file = Path.Combine(dir, "file");
+            string file = Path.Combine(TestDirectory, "file");
             File.Create(file).Dispose();
-            using (var fsw = new FileSystemWatcher(dir))
+            using (var fsw = new FileSystemWatcher(TestDirectory))
             {
                 AutoResetEvent eventOccurred = WatchRenamed(fsw).EventOccured;
 
-                string newPath = Path.Combine(dir, "newPath");
+                string newPath = Path.Combine(TestDirectory, "newPath");
 
                 fsw.Renamed += (o, e) =>
                 {
@@ -559,12 +552,11 @@ namespace System.IO.Tests
         {
             // Check the case where Stop or Dispose (they do the same thing) is called from
             // a FSW event callback and make sure we don't Thread.Join to deadlock
-            string dir = TestDirectory;
 
-            string filePath = Path.Combine(dir, "testfile.txt");
+            string filePath = Path.Combine(TestDirectory, "testfile.txt");
             File.Create(filePath).Dispose();
             AutoResetEvent are = new AutoResetEvent(false);
-            FileSystemWatcher watcher = new FileSystemWatcher(Path.GetFullPath(dir), "*");
+            FileSystemWatcher watcher = new FileSystemWatcher(Path.GetFullPath(TestDirectory), "*");
             FileSystemEventHandler callback = (sender, arg) =>
             {
                 watcher.Dispose();
@@ -582,8 +574,7 @@ namespace System.IO.Tests
         [Fact]
         public void FileSystemWatcher_WatchingAliasedFolderResolvesToRealPathWhenWatching()
         {
-            string testDirectory = TestDirectory;
-            string dir = Path.Combine(testDirectory, "dir");
+            string dir = Path.Combine(TestDirectory, "dir");
             Directory.CreateDirectory(dir);
             using (var fsw = new FileSystemWatcher(dir))
             {
@@ -879,8 +870,7 @@ namespace System.IO.Tests
         [Fact]
         public void GetFilterAfterFiltersClear()
         {
-            string testDirectory = TestDirectory;
-            var watcher = new FileSystemWatcher(testDirectory);
+            var watcher = new FileSystemWatcher(TestDirectory);
             watcher.Filters.Add("*.pdb");
             watcher.Filters.Add("*.dll");
 
@@ -893,8 +883,7 @@ namespace System.IO.Tests
         [Fact]
         public void GetFiltersAfterFiltersClear()
         {
-            string testDirectory = TestDirectory;
-            var watcher = new FileSystemWatcher(testDirectory);
+            var watcher = new FileSystemWatcher(TestDirectory);
             watcher.Filters.Add("*.pdb");
             watcher.Filters.Add("*.dll");
 
@@ -921,9 +910,7 @@ namespace System.IO.Tests
         [Fact]
         public void SetAndGetFilterProperty()
         {
-            string testDirectory = TestDirectory;
-
-            var watcher = new FileSystemWatcher(testDirectory, "*.pdb");
+            var watcher = new FileSystemWatcher(TestDirectory, "*.pdb");
             watcher.Filters.Add("foo");
             Assert.Equal(2, watcher.Filters.Count);
             Assert.Equal(new string[] { "*.pdb", "foo" }, watcher.Filters);
@@ -942,8 +929,7 @@ namespace System.IO.Tests
         [Fact]
         public void SetAndGetFiltersProperty()
         {
-            string testDirectory = TestDirectory;
-            var watcher = new FileSystemWatcher(testDirectory, "*.pdb");
+            var watcher = new FileSystemWatcher(TestDirectory, "*.pdb");
             watcher.Filters.Add("foo");
             Assert.Equal(new string[] { "*.pdb", "foo" }, watcher.Filters);
             
@@ -1120,30 +1106,29 @@ namespace System.IO.Tests
         {
             int maxUserWatches = int.Parse(File.ReadAllText("/proc/sys/fs/inotify/max_user_watches"));
 
-            string dir = TestDirectory;
-            using (var watcher = new FileSystemWatcher(dir) { IncludeSubdirectories = true, NotifyFilter = NotifyFilters.FileName })
+            using (var watcher = new FileSystemWatcher(TestDirectory) { IncludeSubdirectories = true, NotifyFilter = NotifyFilters.FileName })
             {
                 Action action = () =>
                 {
                     // Create enough directories to exceed the number of allowed watches
                     for (int i = 0; i <= maxUserWatches; i++)
                     {
-                        Directory.CreateDirectory(Path.Combine(dir, i.ToString()));
+                        Directory.CreateDirectory(Path.Combine(TestDirectory, i.ToString()));
                     }
                 };
                 Action cleanup = () =>
                 {
                     for (int i = 0; i <= maxUserWatches; i++)
                     {
-                        Directory.Delete(Path.Combine(dir, i.ToString()));
+                        Directory.Delete(Path.Combine(TestDirectory, i.ToString()));
                     }
                 };
 
                 ExpectError(watcher, action, cleanup);
 
                 // Make sure existing watches still work even after we've had one or more failures
-                Action createAction = () => File.WriteAllText(Path.Combine(dir, Path.GetRandomFileName()), "text");
-                Action createCleanup = () => File.Delete(Path.Combine(dir, Path.GetRandomFileName()));
+                Action createAction = () => File.WriteAllText(Path.Combine(TestDirectory, Path.GetRandomFileName()), "text");
+                Action createCleanup = () => File.Delete(Path.Combine(TestDirectory, Path.GetRandomFileName()));
                 ExpectEvent(watcher, WatcherChangeTypes.Created, createAction, createCleanup);
             }
         }

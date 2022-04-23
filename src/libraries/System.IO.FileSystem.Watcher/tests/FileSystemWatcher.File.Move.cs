@@ -168,14 +168,13 @@ namespace System.IO.Tests
 
         private void FileMove_DifferentWatchedDirectory(WatcherChangeTypes eventType)
         {
-            string testDirectory = TestDirectory;
-            string dir = Path.Combine(testDirectory, "dir");
-            string dir_adjacent = Path.Combine(testDirectory, "dir_adj");
+            string dir = Path.Combine(TestDirectory, "dir");
+            string dir_adjacent = Path.Combine(TestDirectory, "dir_adj");
             string testFile = Path.Combine(dir, "file");
             Directory.CreateDirectory(dir);
             Directory.CreateDirectory(dir_adjacent);
             File.Create(testFile).Dispose();
-            using (var watcher = new FileSystemWatcher(testDirectory, "*"))
+            using (var watcher = new FileSystemWatcher(TestDirectory, "*"))
             {
                 string sourcePath = testFile;
                 string targetPath = Path.Combine(dir_adjacent, Path.GetFileName(testFile) + "_" + eventType.ToString());
@@ -190,9 +189,8 @@ namespace System.IO.Tests
 
         private void FileMove_FromWatchedToUnwatched(WatcherChangeTypes eventType)
         {
-            string testDirectory = TestDirectory;
-            string dir_watched = Path.Combine(testDirectory, "dir_watched");
-            string dir_unwatched = Path.Combine(testDirectory, "dir_unwatched");
+            string dir_watched = Path.Combine(TestDirectory, "dir_watched");
+            string dir_unwatched = Path.Combine(TestDirectory, "dir_unwatched");
             string testFile = Path.Combine(dir_watched, "file");
             Directory.CreateDirectory(dir_watched);
             Directory.CreateDirectory(dir_unwatched);
@@ -213,9 +211,8 @@ namespace System.IO.Tests
         {
             Assert.InRange(filesCount, 0, int.MaxValue);
 
-            string testDirectory = TestDirectory;
-            string watchedTestDirectory = Path.Combine(testDirectory, "dir_watched");
-            string unwatchedTestDirectory = Path.Combine(testDirectory, "dir_unwatched");
+            string watchedTestDirectory = Path.Combine(TestDirectory, "dir_watched");
+            string unwatchedTestDirectory = Path.Combine(TestDirectory, "dir_unwatched");
             Directory.CreateDirectory(watchedTestDirectory);
             Directory.CreateDirectory(unwatchedTestDirectory);
 
@@ -256,9 +253,8 @@ namespace System.IO.Tests
         {
             Assert.InRange(filesCount, 0, int.MaxValue);
 
-            string testDirectory = TestDirectory;
-            string watchedTestDirectory = Path.Combine(testDirectory, "dir_watched");
-            string unwatchedTestDirectory = Path.Combine(testDirectory, "dir_unwatched");
+            string watchedTestDirectory = Path.Combine(TestDirectory, "dir_watched");
+            string unwatchedTestDirectory = Path.Combine(TestDirectory, "dir_unwatched");
             Directory.CreateDirectory(watchedTestDirectory);
             Directory.CreateDirectory(unwatchedTestDirectory);
 
@@ -283,9 +279,8 @@ namespace System.IO.Tests
 
         private void FileMove_FromUnwatchedToWatched(WatcherChangeTypes eventType)
         {
-            string testDirectory = TestDirectory;
-            string dir_watched = Path.Combine(testDirectory, "dir_watched");
-            string dir_unwatched = Path.Combine(testDirectory, "dir_unwatched");
+            string dir_watched = Path.Combine(TestDirectory, "dir_watched");
+            string dir_unwatched = Path.Combine(TestDirectory, "dir_unwatched");
             string testFile = Path.Combine(dir_unwatched, "file");
             Directory.CreateDirectory(dir_watched);
             Directory.CreateDirectory(dir_unwatched);
@@ -304,14 +299,12 @@ namespace System.IO.Tests
 
         private void FileMove_NestedDirectory(WatcherChangeTypes eventType, bool includeSubdirectories)
         {
-            string dir = TestDirectory;
-            string firstDir = Path.Combine(dir, "dir1");
+            string firstDir = Path.Combine(TestDirectory, "dir1");
             string nestedDir = Path.Combine(firstDir, "nested");
             string nestedFile = Path.Combine(nestedDir, "nestedFile" + eventType.ToString());
-            Directory.CreateDirectory(firstDir);
             Directory.CreateDirectory(nestedDir);
             File.Create(nestedFile).Dispose();
-            using (var watcher = new FileSystemWatcher(dir, "*"))
+            using (var watcher = new FileSystemWatcher(TestDirectory, "*"))
             {
                 watcher.NotifyFilter = NotifyFilters.FileName;
                 watcher.IncludeSubdirectories = includeSubdirectories;
@@ -332,14 +325,13 @@ namespace System.IO.Tests
 
         private void FileMove_WithNotifyFilter(WatcherChangeTypes eventType)
         {
-            string testDirectory = TestDirectory;
-            string file = Path.Combine(testDirectory, "file");
+            string file = Path.Combine(TestDirectory, "file");
             File.Create(file).Dispose();
-            using (var watcher = new FileSystemWatcher(testDirectory, Path.GetFileName(file)))
+            using (var watcher = new FileSystemWatcher(TestDirectory, Path.GetFileName(file)))
             {
                 watcher.NotifyFilter = NotifyFilters.FileName;
                 string sourcePath = file;
-                string targetPath = Path.Combine(testDirectory, "target");
+                string targetPath = Path.Combine(TestDirectory, "target");
 
                 // Move the testFile to a different name under the same directory with active notifyfilters
                 Action action = () => File.Move(sourcePath, targetPath);

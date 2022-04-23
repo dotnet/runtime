@@ -25,10 +25,9 @@ namespace System.IO.Tests
         [MemberData(nameof(FilterTypes))]
         public void FileSystemWatcher_File_NotifyFilter_Attributes(NotifyFilters filter)
         {
-            string testDirectory = TestDirectory;
-            string file = Path.Combine(testDirectory, "file");
+            string file = Path.Combine(TestDirectory, "file");
             File.Create(file).Dispose();
-            using (var watcher = new FileSystemWatcher(testDirectory, Path.GetFileName(file)))
+            using (var watcher = new FileSystemWatcher(TestDirectory, Path.GetFileName(file)))
             {
                 watcher.NotifyFilter = filter;
                 var attributes = File.GetAttributes(file);
@@ -56,10 +55,9 @@ namespace System.IO.Tests
         {
             FileSystemWatcherTest.Execute(() =>
             {
-                string testDirectory = TestDirectory;
-                string file = Path.Combine(testDirectory, "file");
+                string file = Path.Combine(TestDirectory, "file");
                 File.Create(file).Dispose();
-                using (var watcher = new FileSystemWatcher(testDirectory, Path.GetFileName(file)))
+                using (var watcher = new FileSystemWatcher(TestDirectory, Path.GetFileName(file)))
                 {
                     watcher.NotifyFilter = filter;
                     Action action = () => File.SetCreationTime(file, DateTime.Now + TimeSpan.FromSeconds(10));
@@ -81,13 +79,12 @@ namespace System.IO.Tests
         [MemberData(nameof(FilterTypes))]
         public void FileSystemWatcher_File_NotifyFilter_DirectoryName(NotifyFilters filter)
         {
-            string testDirectory = TestDirectory;
-            string dir = Path.Combine(testDirectory, "dir");
+            string dir = Path.Combine(TestDirectory, "dir");
             Directory.CreateDirectory(dir);
-            using (var watcher = new FileSystemWatcher(testDirectory, Path.GetFileName(dir)))
+            using (var watcher = new FileSystemWatcher(TestDirectory, Path.GetFileName(dir)))
             {
                 string sourcePath = dir;
-                string targetPath = Path.Combine(testDirectory, "targetDir");
+                string targetPath = Path.Combine(TestDirectory, "targetDir");
                 watcher.NotifyFilter = filter;
 
                 Action action = () => Directory.Move(sourcePath, targetPath);
@@ -105,10 +102,9 @@ namespace System.IO.Tests
         [MemberData(nameof(FilterTypes))]
         public void FileSystemWatcher_File_NotifyFilter_LastAccessTime(NotifyFilters filter)
         {
-            string testDirectory = TestDirectory;
-            string file = Path.Combine(testDirectory, "file");
+            string file = Path.Combine(TestDirectory, "file");
             File.Create(file).Dispose();
-            using (var watcher = new FileSystemWatcher(testDirectory, Path.GetFileName(file)))
+            using (var watcher = new FileSystemWatcher(TestDirectory, Path.GetFileName(file)))
             {
                 watcher.NotifyFilter = filter;
                 Action action = () => File.SetLastAccessTime(file, DateTime.Now + TimeSpan.FromSeconds(10));
@@ -128,10 +124,9 @@ namespace System.IO.Tests
         [MemberData(nameof(FilterTypes))]
         public void FileSystemWatcher_File_NotifyFilter_LastWriteTime(NotifyFilters filter)
         {
-            string testDirectory = TestDirectory;
-            string file = Path.Combine(testDirectory, "file");
+            string file = Path.Combine(TestDirectory, "file");
             File.Create(file).Dispose();
-            using (var watcher = new FileSystemWatcher(testDirectory, Path.GetFileName(file)))
+            using (var watcher = new FileSystemWatcher(TestDirectory, Path.GetFileName(file)))
             {
                 watcher.NotifyFilter = filter;
                 Action action = () => File.SetLastWriteTime(file, DateTime.Now + TimeSpan.FromSeconds(10));
@@ -151,10 +146,9 @@ namespace System.IO.Tests
         [MemberData(nameof(FilterTypes))]
         public void FileSystemWatcher_File_NotifyFilter_Size(NotifyFilters filter)
         {
-            string testDirectory = TestDirectory;
-            string file = Path.Combine(testDirectory, "file");
+            string file = Path.Combine(TestDirectory, "file");
             File.Create(file).Dispose();
-            using (var watcher = new FileSystemWatcher(testDirectory, Path.GetFileName(file)))
+            using (var watcher = new FileSystemWatcher(TestDirectory, Path.GetFileName(file)))
             {
                 watcher.NotifyFilter = filter;
                 Action action = () => File.AppendAllText(file, "longText!");
@@ -180,10 +174,9 @@ namespace System.IO.Tests
         {
             Assert.All(FilterTypes(), (filter2Arr =>
             {
-                string testDirectory = TestDirectory;
-                string file = Path.Combine(testDirectory, "file");
+                string file = Path.Combine(TestDirectory, "file");
                 File.Create(file).Dispose();
-                using (var watcher = new FileSystemWatcher(testDirectory, Path.GetFileName(file)))
+                using (var watcher = new FileSystemWatcher(TestDirectory, Path.GetFileName(file)))
                 {
                     filter |= (NotifyFilters)filter2Arr[0];
                     watcher.NotifyFilter = filter;
@@ -209,10 +202,9 @@ namespace System.IO.Tests
         [PlatformSpecific(TestPlatforms.Windows)]  // Uses P/Invokes to set security info
         public void FileSystemWatcher_File_NotifyFilter_Security(NotifyFilters filter)
         {
-            string testDirectory = TestDirectory;
-            string file = Path.Combine(testDirectory, "file");
+            string file = Path.Combine(TestDirectory, "file");
             File.Create(file).Dispose();
-            using (var watcher = new FileSystemWatcher(testDirectory, Path.GetFileName(file)))
+            using (var watcher = new FileSystemWatcher(TestDirectory, Path.GetFileName(file)))
             {
                 watcher.NotifyFilter = filter;
                 Action action = () =>
@@ -249,10 +241,9 @@ namespace System.IO.Tests
         [Fact]
         public void FileSystemWatcher_File_NotifyFilter_LastWriteAndFileName()
         {
-            string testDirectory = TestDirectory;
-            string dir = Path.Combine(testDirectory, "dir");
+            string dir = Path.Combine(TestDirectory, "dir");
             Directory.CreateDirectory(dir);
-            using (var watcher = new FileSystemWatcher(testDirectory, Path.GetFileName(dir)))
+            using (var watcher = new FileSystemWatcher(TestDirectory, Path.GetFileName(dir)))
             {
                 NotifyFilters filter = NotifyFilters.LastWrite | NotifyFilters.FileName;
                 watcher.NotifyFilter = filter;
@@ -270,13 +261,12 @@ namespace System.IO.Tests
         [Fact]
         public void FileSystemWatcher_File_NotifyFilter_ModifyAndCreate()
         {
-            string testDirectory = TestDirectory;
-            string file = Path.Combine(testDirectory, "file");
+            string file = Path.Combine(TestDirectory, "file");
             File.Create(file).Dispose();
-            using (var watcher = new FileSystemWatcher(testDirectory, "*"))
+            using (var watcher = new FileSystemWatcher(TestDirectory, "*"))
             {
                 watcher.NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.FileName;
-                string otherFile = Path.Combine(testDirectory, "file2");
+                string otherFile = Path.Combine(TestDirectory, "file2");
 
                 Action action = () =>
                 {
@@ -298,13 +288,12 @@ namespace System.IO.Tests
         [Fact]
         public void FileSystemWatcher_File_NotifyFilter_ModifyAndDelete()
         {
-            string testDirectory = TestDirectory;
-            string file = Path.Combine(testDirectory, "file");
+            string file = Path.Combine(TestDirectory, "file");
             File.Create(file).Dispose();
-            using (var watcher = new FileSystemWatcher(testDirectory, "*"))
+            using (var watcher = new FileSystemWatcher(TestDirectory, "*"))
             {
                 watcher.NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.FileName;
-                string otherFile = Path.Combine(testDirectory, "file2");
+                string otherFile = Path.Combine(TestDirectory, "file2");
 
                 Action action = () =>
                 {
@@ -326,16 +315,15 @@ namespace System.IO.Tests
         [Fact]
         public void FileSystemWatcher_File_NotifyFilter_FileNameDoesntTriggerOnDirectoryEvent()
         {
-            string testDirectory = TestDirectory;
-            string file = Path.Combine(testDirectory, "file");
-            string sourcePath = Path.Combine(testDirectory, "sourceFile");
+            string file = Path.Combine(TestDirectory, "file");
+            string sourcePath = Path.Combine(TestDirectory, "sourceFile");
             File.Create(file).Dispose();
             File.Create(sourcePath).Dispose();
-            using (var watcher = new FileSystemWatcher(testDirectory, "*"))
+            using (var watcher = new FileSystemWatcher(TestDirectory, "*"))
             {
                 watcher.NotifyFilter = NotifyFilters.DirectoryName;
-                string otherFile = Path.Combine(testDirectory, "file2");
-                string destPath = Path.Combine(testDirectory, "destFile");
+                string otherFile = Path.Combine(TestDirectory, "file2");
+                string destPath = Path.Combine(TestDirectory, "destFile");
 
                 Action action = () =>
                 {

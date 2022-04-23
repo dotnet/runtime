@@ -44,10 +44,9 @@ namespace System.IO.Tests
         public void FileSystemWatcher_InternalBufferSize(bool setToHigherCapacity)
         {
             ManualResetEvent unblockHandler = new ManualResetEvent(false);
-            string testDirectory = TestDirectory;
-            string file = Path.Combine(testDirectory, "file");
+            string file = Path.Combine(TestDirectory, "file");
             File.Create(file).Dispose();
-            using (FileSystemWatcher watcher = CreateWatcher(testDirectory, file, unblockHandler))
+            using (FileSystemWatcher watcher = CreateWatcher(TestDirectory, file, unblockHandler))
             {
                 int internalBufferOperationCapacity = CalculateInternalBufferOperationCapacity(watcher.InternalBufferSize, file);
 
@@ -70,10 +69,9 @@ namespace System.IO.Tests
         public void FileSystemWatcher_InternalBufferSize_SynchronizingObject()
         {
             ManualResetEvent unblockHandler = new ManualResetEvent(false);
-            string testDirectory = TestDirectory;
-            string file = Path.Combine(testDirectory, "file");
+            string file = Path.Combine(TestDirectory, "file");
             File.Create(file).Dispose();
-            using (FileSystemWatcher watcher = CreateWatcher(testDirectory, file, unblockHandler))
+            using (FileSystemWatcher watcher = CreateWatcher(TestDirectory, file, unblockHandler))
             {
                 TestISynchronizeInvoke invoker = new TestISynchronizeInvoke();
                 watcher.SynchronizingObject = invoker;
