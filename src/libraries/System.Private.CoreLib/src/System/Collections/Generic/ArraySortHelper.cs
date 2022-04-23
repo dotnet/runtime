@@ -351,7 +351,9 @@ namespace System.Collections.Generic
         private static void PdqSort(Span<T> keys, int begin, int end, Comparison<T> comparer, int badAllowed, bool leftmost = true)
         {
             Debug.Assert(!keys.IsEmpty);
-            Debug.Assert(end >= begin);
+            Debug.Assert(begin >= 0);
+            Debug.Assert(begin <= end);
+            Debug.Assert(end <= keys.Length);
             Debug.Assert(comparer != null);
             Debug.Assert(badAllowed > 0);
 
@@ -860,7 +862,9 @@ namespace System.Collections.Generic
         private static void PdqSort(Span<T> keys, int begin, int end, int badAllowed, bool leftmost = true)
         {
             Debug.Assert(!keys.IsEmpty);
-            Debug.Assert(end >= begin);
+            Debug.Assert(begin >= 0);
+            Debug.Assert(begin <= end);
+            Debug.Assert(end <= keys.Length);
             Debug.Assert(badAllowed > 0);
 
             while (true)
@@ -1286,7 +1290,7 @@ namespace System.Collections.Generic
             Debug.Assert(!values.IsEmpty);
             Debug.Assert(keys.Length == values.Length);
             Debug.Assert(begin >= 0);
-            Debug.Assert(begin < end);
+            Debug.Assert(begin <= end);
             Debug.Assert(end <= keys.Length);
             Debug.Assert(comparer != null);
             Debug.Assert(badAllowed > 0);
@@ -1767,7 +1771,7 @@ namespace System.Collections.Generic
             Debug.Assert(!values.IsEmpty);
             Debug.Assert(keys.Length == values.Length);
             Debug.Assert(begin >= 0);
-            Debug.Assert(begin < end);
+            Debug.Assert(begin <= end);
             Debug.Assert(end <= keys.Length);
             Debug.Assert(badAllowed > 0);
 
