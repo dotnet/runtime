@@ -3887,12 +3887,6 @@ GenTree* Compiler::fgSetTreeSeq(GenTree* tree, bool isLIR)
             if (m_isLIR)
             {
                 node->ClearReverseOp();
-
-                // ARGPLACE nodes are not threaded into the LIR sequence.
-                if (node->OperIs(GT_ARGPLACE))
-                {
-                    return fgWalkResult::WALK_CONTINUE;
-                }
             }
 
             node->gtPrev       = m_prevNode;
