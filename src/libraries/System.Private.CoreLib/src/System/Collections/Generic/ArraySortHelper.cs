@@ -1911,7 +1911,9 @@ namespace System.Collections.Generic
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static ref T UnguardedAccess<T>(Span<T> span, int index)
         {
-            return ref Unsafe.Add(ref MemoryMarshal.GetReference(span), index);
+            // return ref Unsafe.Add(ref MemoryMarshal.GetReference(span), index);
+            // TODO: investigate where can we use the above line with confidence instead of this.
+            return ref span[index];
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
