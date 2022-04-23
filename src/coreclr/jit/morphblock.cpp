@@ -1269,10 +1269,6 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
                     // TODO-1stClassStructs: remove this and implement storing to a field in a struct in a reg.
                     m_comp->lvaSetVarDoNotEnregister(m_dstLclNum DEBUGARG(DoNotEnregisterReason::LocalField));
                 }
-
-                // !!! The destination could be on stack. !!!
-                // This flag will let us choose the correct write barrier.
-                dstFld->gtFlags |= GTF_IND_TGTANYWHERE;
             }
         }
 

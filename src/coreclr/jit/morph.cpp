@@ -648,13 +648,7 @@ void CallArg::Dump(Compiler* comp)
     }
     if (AbiInfo.GetStackByteSize() > 0)
     {
-#if defined(DEBUG_ARG_SLOTS)
-        printf(", numSlots=%u, slotNum=%u, byteSize=%u, byteOffset=%u", AbiInfo.NumSlots, AbiInfo.SlotNum,
-               AbiInfo.ByteSize, AbiInfo.ByteOffset);
-#else
         printf(", byteSize=%u, byteOffset=%u", AbiInfo.ByteSize, AbiInfo.ByteOffset);
-
-#endif
     }
     printf(", byteAlignment=%u", AbiInfo.ByteAlignment);
     if (GetLateNode() != nullptr)
@@ -710,9 +704,8 @@ void CallArg::Dump(Compiler* comp)
 //   arg         - The argument.
 //   numRegs     - The number of registers that will be used.
 //   numSlots    - The number of stack slots that will be used.
-//   nextSlotNum - Pointer to current stack slot, used for debugging purposes.
 //
-void CallArgs::SplitArg(CallArg* arg, unsigned numRegs, unsigned numSlots, unsigned* nextSlotNum)
+void CallArgs::SplitArg(CallArg* arg, unsigned numRegs, unsigned numSlots)
 {
     assert(numRegs > 0);
     assert(numSlots > 0);
@@ -721,19 +714,15 @@ void CallArgs::SplitArg(CallArg* arg, unsigned numRegs, unsigned numSlots, unsig
     {
         assert(arg->AbiInfo.IsSplit() == true);
         assert(arg->AbiInfo.NumRegs == numRegs);
-        DEBUG_ARG_SLOTS_ONLY(assert(arg->AbiInfo.NumSlots == numSlots);)
         assert(m_hasStackArgs);
     }
     else
     {
         arg->AbiInfo.SetSplit(true);
-        arg->AbiInfo.NumRegs = numRegs;
-        DEBUG_ARG_SLOTS_ONLY(arg->AbiInfo.NumSlots = numSlots;)
+        arg->AbiInfo.NumRegs    = numRegs;
         arg->AbiInfo.ByteOffset = 0;
         m_hasStackArgs          = true;
     }
-    // TODO-Cleanup: structs are aligned to 8 bytes on arm64 apple, so it would work, but pass the precise size.
-    *nextSlotNum += numSlots;
     m_nextStackByteOffset += numSlots * TARGET_POINTER_SIZE;
 }
 
@@ -1916,7 +1905,6 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
     unsigned argIndex     = 0;
     unsigned intArgRegNum = 0;
     unsigned fltArgRegNum = 0;
-    unsigned nextSlotNum  = INIT_ARG_STACK_SLOT;
 
     bool callHasRetBuffArg = HasRetBuffer();
     bool callIsVararg      = IsVarArgs();
@@ -2958,7 +2946,7 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
                                    (argx->gtOper == GT_COMMA && (argx->gtFlags & GTF_ASG)));
                             unsigned numRegsPartial = MAX_REG_ARG - intArgRegNum;
                             assert((unsigned char)numRegsPartial == numRegsPartial);
-                            SplitArg(&arg, numRegsPartial, size - numRegsPartial, &nextSlotNum);
+                            SplitArg(&arg, numRegsPartial, size - numRegsPartial);
                         }
 #endif // FEATURE_ARG_SPLIT
 
@@ -2993,20 +2981,7 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
             // This is a stack argument
             m_hasStackArgs = true;
             arg.AbiInfo.SetRegNum(0, REG_STK);
-            m_nextStackByteOffset = roundUp(m_nextStackByteOffset, argAlignBytes);
-
-#ifdef DEBUG_ARG_SLOTS
-            arg.AbiInfo.NumSlots = size;
-
-            if (!compMacOsArm64Abi())
-            {
-                nextSlotNum = roundUp(nextSlotNum, argAlignBytes / TARGET_POINTER_SIZE);
-            }
-            DEBUG_ARG_SLOTS_ASSERT(m_nextStackByteOffset / TARGET_POINTER_SIZE == nextSlotNum);
-
-            arg.AbiInfo.SlotNum = nextSlotNum;
-            nextSlotNum += size;
-#endif
+            m_nextStackByteOffset  = roundUp(m_nextStackByteOffset, argAlignBytes);
             arg.AbiInfo.ByteOffset = m_nextStackByteOffset;
             arg.AbiInfo.SetByteSize(byteSize, argAlignBytes, isStructArg, isFloatHfa);
 
@@ -3042,17 +3017,6 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
 
         argIndex++;
     } // end foreach argument loop
-
-#ifdef DEBUG
-
-#if defined(DEBUG_ARG_SLOTS)
-    if (!compMacOsArm64Abi())
-    {
-        assert(AlignUp(m_nextStackByteOffset, TARGET_POINTER_SIZE) == nextSlotNum * REGSIZE_BYTES);
-    }
-#endif
-
-#endif
 
 #ifdef DEBUG
     if (VERBOSE)
@@ -3144,8 +3108,6 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
 {
     GenTreeFlags flagsSummary = GTF_EMPTY;
 
-    DEBUG_ARG_SLOTS_ONLY(unsigned argSlots = 0;)
-
     bool reMorphing = call->gtArgs.AreArgsComplete();
 
     call->gtArgs.AddFinalArgsAndDetermineABIInfo(this, call);
@@ -3196,29 +3158,15 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
             }
         }
 
-        DEBUG_ARG_SLOTS_ONLY(unsigned size = arg.AbiInfo.GetSize();)
         CORINFO_CLASS_HANDLE copyBlkClass = NO_CLASS_HANDLE;
 
-#if defined(DEBUG_ARG_SLOTS)
-        if (!compMacOsArm64Abi())
-        {
-            if (arg.AbiInfo.ByteAlignment == 2 * TARGET_POINTER_SIZE)
-            {
-                if (argSlots % 2 == 1)
-                {
-                    argSlots++;
-                }
-            }
-        }
-#endif // DEBUG
         // TODO-ARGS: Review this, is it really necessary to treat them specially here?
         if (call->gtArgs.IsNonStandard(this, call, &arg) && arg.AbiInfo.IsPassedInRegisters())
         {
             flagsSummary |= argx->gtFlags;
             continue;
         }
-        DEBUG_ARG_SLOTS_ASSERT(size != 0);
-        DEBUG_ARG_SLOTS_ONLY(argSlots += arg.AbiInfo.GetSlotCount();)
+        assert(arg.AbiInfo.ByteSize > 0);
 
         // For pointers to locals we can skip reporting GC info and also skip
         // zero initialization.
@@ -3269,7 +3217,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
             // First, handle the case where the argument is passed by reference.
             if (arg.AbiInfo.PassedByRef)
             {
-                DEBUG_ARG_SLOTS_ASSERT(size == 1);
+                assert(arg.AbiInfo.ByteSize == TARGET_POINTER_SIZE);
                 copyBlkClass = objClass;
 #ifdef UNIX_AMD64_ABI
                 assert(!"Structs are not passed by reference on x64/ux");
@@ -3277,17 +3225,6 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
             }
             else // This is passed by value.
             {
-#if defined(TARGET_LOONGARCH64)
-                // For LoongArch64 the struct {float a; float b;} can be passed by two float registers.
-                DEBUG_ARG_SLOTS_ASSERT((size == roundupSize / TARGET_POINTER_SIZE) ||
-                                       ((structBaseType == TYP_STRUCT) && (originalSize == TARGET_POINTER_SIZE) &&
-                                        (size == 2) && (size == arg.AbiInfo.NumRegs)));
-#else
-                // Check to see if we can transform this into load of a primitive type.
-                // 'size' must be the number of pointer sized items
-                DEBUG_ARG_SLOTS_ASSERT(size == roundupSize / TARGET_POINTER_SIZE);
-#endif
-
                 structSize           = originalSize;
                 unsigned passingSize = originalSize;
 
@@ -3327,7 +3264,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
 #ifndef UNIX_AMD64_ABI
                     // On Windows structs are always copied and passed by reference (handled above) unless they are
                     // passed by value in a single register.
-                    assert(size == 1);
+                    assert(arg.AbiInfo.GetStackSlotsNumber() == 1);
                     copyBlkClass = objClass;
 #else  // UNIX_AMD64_ABI
                     // On Unix, structs are always passed by value.
@@ -3383,14 +3320,6 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
                     // We have a struct argument that fits into a register, and it is either a power of 2,
                     // or a local.
                     // Change our argument, as needed, into a value of the appropriate type.
-                    CLANG_FORMAT_COMMENT_ANCHOR;
-#ifdef TARGET_ARM
-                    DEBUG_ARG_SLOTS_ASSERT((size == 1) || ((structBaseType == TYP_DOUBLE) && (size == 2)));
-#else
-                    DEBUG_ARG_SLOTS_ASSERT((size == 1) || (varTypeIsSIMD(structBaseType) &&
-                                                           size == (genTypeSize(structBaseType) / REGSIZE_BYTES)));
-#endif
-
                     assert((structBaseType != TYP_STRUCT) && (genTypeSize(structBaseType) >= originalSize));
 
                     if (argObj->OperIs(GT_OBJ))
@@ -3492,8 +3421,6 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
                     // If the valuetype size is not a multiple of TARGET_POINTER_SIZE,
                     // we must copyblk to a temp before doing the obj to avoid
                     // the obj reading memory past the end of the valuetype
-                    CLANG_FORMAT_COMMENT_ANCHOR;
-
                     if (roundupSize > originalSize)
                     {
                         copyBlkClass = objClass;
@@ -3569,7 +3496,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
 #ifdef TARGET_ARM
         else if ((arg.AbiInfo.ArgType == TYP_LONG) || (arg.AbiInfo.ArgType == TYP_DOUBLE))
         {
-            assert((arg.AbiInfo.NumRegs == 2) || (arg.AbiInfo.NumSlots == 2));
+            assert((arg.AbiInfo.NumRegs == 2) || (arg.AbiInfo.GetStackSlotsNumber() == 2));
         }
 #endif
         else
@@ -5243,7 +5170,6 @@ GenTree* Compiler::fgMorphStackArgForVarArgs(unsigned lclNum, var_types varType,
         {
             tree = gtNewOperNode(GT_IND, varType, ptrArg);
         }
-        tree->gtFlags |= GTF_IND_TGTANYWHERE;
 
         if (varDsc->IsAddressExposed())
         {
@@ -5887,10 +5813,11 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
             }
             else
             {
-                // Only volatile or classinit could be set, and they map over
-                noway_assert((tree->gtFlags & ~(GTF_FLD_VOLATILE | GTF_FLD_INITCLASS | GTF_COMMON_MASK)) == 0);
+                assert((tree->gtFlags & ~(GTF_FLD_VOLATILE | GTF_FLD_INITCLASS | GTF_FLD_TGT_HEAP | GTF_COMMON_MASK)) ==
+                       0);
                 static_assert_no_msg(GTF_FLD_VOLATILE == GTF_CLS_VAR_VOLATILE);
                 static_assert_no_msg(GTF_FLD_INITCLASS == GTF_CLS_VAR_INITCLASS);
+                static_assert_no_msg(GTF_FLD_TGT_HEAP == GTF_CLS_VAR_TGT_HEAP);
                 tree->SetOper(GT_CLS_VAR);
                 tree->AsClsVar()->gtClsVarHnd = symHnd;
                 tree->AsClsVar()->gtFieldSeq  = fieldSeq;
@@ -9517,7 +9444,7 @@ GenTree* Compiler::fgMorphOneAsgBlockOp(GenTree* tree)
 
             if (!fgIsIndirOfAddrOfLocal(dest))
             {
-                dest->gtFlags |= (GTF_GLOB_REF | GTF_IND_TGTANYWHERE);
+                dest->gtFlags |= GTF_GLOB_REF;
                 tree->gtFlags |= GTF_GLOB_REF;
             }
 
@@ -9560,11 +9487,8 @@ GenTree* Compiler::fgMorphOneAsgBlockOp(GenTree* tree)
             {
                 if (!fgIsIndirOfAddrOfLocal(src))
                 {
-                    // If we have no information about the src, we have to assume it could
-                    // live anywhere (not just in the GC heap).
-                    // Mark the GT_IND node so that we use the correct write barrier helper in case
-                    // the field is a GC ref.
-                    src->gtFlags |= (GTF_GLOB_REF | GTF_IND_TGTANYWHERE);
+                    // TODO-Bug: the GLOB_REF also needs to be set in case "src" is address-exposed.
+                    src->gtFlags |= GTF_GLOB_REF;
                 }
 
                 src->SetIndirExceptionFlags(this);
@@ -17558,8 +17482,8 @@ GenTree* Compiler::fgMorphImplicitByRefArgs(GenTree* tree, bool isAddr)
         }
 
         // TODO-CQ: If the VM ever stops violating the ABI and passing heap references
-        // we could remove TGTANYWHERE
-        tree->gtFlags = ((tree->gtFlags & GTF_COMMON_MASK) | GTF_IND_TGTANYWHERE);
+        // we could apply TGT_NOT_HEAP here.
+        tree->gtFlags = (tree->gtFlags & GTF_COMMON_MASK);
 
 #ifdef DEBUG
         if (verbose)
