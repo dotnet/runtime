@@ -350,7 +350,6 @@ namespace System.Collections.Generic
 
         private static void PdqSort(Span<T> keys, int begin, int end, Comparison<T> comparer, int badAllowed, bool leftmost = true)
         {
-            Debug.Assert(!keys.IsEmpty);
             Debug.Assert(begin >= 0);
             Debug.Assert(begin <= end);
             Debug.Assert(end <= keys.Length);
@@ -468,7 +467,6 @@ namespace System.Collections.Generic
 
         internal static void PatternDefeatingQuickSort(Span<T> keys, Comparison<T> comparer)
         {
-            Debug.Assert(!keys.IsEmpty);
             Debug.Assert(comparer != null);
 
             PdqSort(keys, 0, keys.Length, comparer, BitOperations.Log2((uint)keys.Length));
@@ -861,7 +859,6 @@ namespace System.Collections.Generic
 
         private static void PdqSort(Span<T> keys, int begin, int end, int badAllowed, bool leftmost = true)
         {
-            Debug.Assert(!keys.IsEmpty);
             Debug.Assert(begin >= 0);
             Debug.Assert(begin <= end);
             Debug.Assert(end <= keys.Length);
@@ -978,8 +975,6 @@ namespace System.Collections.Generic
 
         internal static void PatternDefeatingQuickSort(Span<T> keys)
         {
-            Debug.Assert(!keys.IsEmpty);
-
             PdqSort(keys, 0, keys.Length, BitOperations.Log2((uint)keys.Length));
         }
     }
@@ -1286,8 +1281,6 @@ namespace System.Collections.Generic
 
         private static void PdqSort(Span<TKey> keys, Span<TValue> values, int begin, int end, IComparer<TKey> comparer, int badAllowed, bool leftmost = true)
         {
-            Debug.Assert(!keys.IsEmpty);
-            Debug.Assert(!values.IsEmpty);
             Debug.Assert(keys.Length == values.Length);
             Debug.Assert(begin >= 0);
             Debug.Assert(begin <= end);
@@ -1411,8 +1404,6 @@ namespace System.Collections.Generic
 
         internal static void PatternDefeatingQuickSort(Span<TKey> keys, Span<TValue> values, IComparer<TKey> comparer)
         {
-            Debug.Assert(!keys.IsEmpty);
-            Debug.Assert(!values.IsEmpty);
             Debug.Assert(keys.Length == values.Length);
             Debug.Assert(comparer != null);
 
@@ -1767,8 +1758,6 @@ namespace System.Collections.Generic
 
         private static void PdqSort(Span<TKey> keys, Span<TValue> values, int begin, int end, int badAllowed, bool leftmost = true)
         {
-            Debug.Assert(!keys.IsEmpty);
-            Debug.Assert(!values.IsEmpty);
             Debug.Assert(keys.Length == values.Length);
             Debug.Assert(begin >= 0);
             Debug.Assert(begin <= end);
@@ -1891,8 +1880,6 @@ namespace System.Collections.Generic
 
         internal static void PatternDefeatingQuickSort(Span<TKey> keys, Span<TValue> values)
         {
-            Debug.Assert(!keys.IsEmpty);
-            Debug.Assert(!values.IsEmpty);
             Debug.Assert(keys.Length == values.Length);
 
             PdqSort(keys, values, 0, keys.Length, BitOperations.Log2((uint)keys.Length));
