@@ -113,9 +113,27 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
         public interface ICustomSet<T> : ISet<T>
         {
         }
+        public interface ICustomCollection2<T> : ICollection<T>
+        {
+        }
+
         public class MyClassWithCustomSet
         {
             public ICustomSet<string> CustomSet { get; set; }
+        }
+
+        public class MyClassWithCustomDictionary
+        {
+            public ICustomDictionary<string, int> CustomDictionary { get; set; }
+        }
+
+        public interface ICustomDictionary<T, T1> : IDictionary<T, T1>
+        {
+        }
+
+        public class MyClassWithCustomCollection2
+        {
+            public ICustomCollection2<string> CustomCollection { get; set; }
         }
         
 
@@ -718,6 +736,32 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             });
             var config = configurationBuilder.Build();
             var instance = config.Get<MyClassWithCustomCollection>()!;
+            Assert.Null(instance.CustomCollection);
+        }
+
+        [Fact]
+        public void SkipsCustomDictionary()
+        {
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection( new Dictionary<string, string>
+            {
+                ["CustomCollection:0"] = "Yo!",
+            });
+            var config = configurationBuilder.Build();
+            var instance = config.Get<MyClassWithCustomDictionary>()!;
+            Assert.Null(instance.CustomDictionary);
+        }
+
+        [Fact]
+        public void SkipsCustomCollection2()
+        {
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection( new Dictionary<string, string>
+            {
+                ["CustomCollection:0"] = "Yo!",
+            });
+            var config = configurationBuilder.Build();
+            var instance = config.Get<MyClassWithCustomCollection2>()!;
             Assert.Null(instance.CustomCollection);
         }
 

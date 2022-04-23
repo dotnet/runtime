@@ -291,55 +291,31 @@ namespace Microsoft.Extensions.Configuration
                 return (false, null);
             }
 
-            Type? collectionInterface = FindOpenGenericInterface(type, typeof(IReadOnlyDictionary<,>)) ??
-                                        FindOpenGenericInterface(type, typeof(IDictionary<,>));
-            if (collectionInterface != null)
+            if (TypeCanBeAssignedADictionary(type))
             {
-                object instance = Activator.CreateInstance(typeof(Dictionary<,>).MakeGenericType(type.GenericTypeArguments[0], type.GenericTypeArguments[1]))!;
-                BindDictionary(instance, typeof(Dictionary<,>).MakeGenericType(type.GenericTypeArguments[0], type.GenericTypeArguments[1]), config, options);
+                Type typeOfKey = type.GenericTypeArguments[0];
+                Type typeOfValue = type.GenericTypeArguments[1];
+                object instance = Activator.CreateInstance(typeof(Dictionary<,>).MakeGenericType(typeOfKey, typeOfValue))!;
+                BindDictionary(instance, typeof(Dictionary<,>).MakeGenericType(typeOfKey, typeOfValue), config, options);
                 return (true, instance);
             }
 
-            collectionInterface = FindOpenGenericInterface(type, typeof(ISet<>));
-#if NET5_0_OR_GREATER
-            collectionInterface ??= FindOpenGenericInterface(type, typeof(IReadOnlySet<>));
-#endif
-            if (collectionInterface != null)
+            if (TypeCanBeAssignedAHashSet(type))
             {
-                if (type == typeof(ISet<>))
-                {
-                    return (true, BindToSet(type, config, options));
-                }
-                // I[ReadOnly]Set<T> is guaranteed to have exactly one parameter
-                return (true, null);
+                return (true, BindToSet(type, config, options));
             }
 
-            collectionInterface = FindOpenGenericInterface(type, typeof(IReadOnlyCollection<>)) ??
-                                  FindOpenGenericInterface(type, typeof(ICollection<>));
-            if (collectionInterface != null)
+            if (TypeCanBeAssignedAList(type))
             {
-                // I[ReadOnly]Collection<T> is guaranteed to have exactly one parameter
                 return (true, BindToCollection(type, config, options));
             }
 
-            // We have an interface, and it's null, so we only treat IEnumerable<> as the special case for a List.
-            // If we have a custom interface that derives from IEnumerable<>, we have no way of knowing what implementation
-            // to use, so return null.
-            collectionInterface = FindOpenGenericInterface(type, typeof(IEnumerable<>));
-            if (collectionInterface != null)
-            {
-                // If it's *exactly* an IEnumerable<>, then treat it as a List
-                if (type == typeof(IEnumerable<>))
-                {
-                    return (true, BindToCollection(type, config, options));
-                }
+            // The interface that we've been given is not something that can be assigned a hashset, list, or dictionary.
+            // So all we need to return now is whether or not it was a IEnumerable. If it
+            // was a collection, the caller binds null to it, if it wasn't, the caller creates
+            // an instance of the type
 
-                // Otherwise, we say it was a collection, but nothing we could instantiate.
-                return (true, null);
-            }
-
-            // If we get to here, we don't regard the interface as a collection
-            return (false, null);
+            return (FindOpenGenericInterface(type, typeof(IEnumerable<>)) != null, null);
         }
 
         [RequiresUnreferencedCode(TrimmingWarningMessage)]
@@ -383,7 +359,7 @@ namespace Microsoft.Extensions.Configuration
                 }
 
                 // for sets and read-only set interfaces, we concatenate on to what is already there
-                if (IsSet(type))
+                if (TypeCanBeAssignedAHashSet(type))
                 {
                     if (!bindingPoint.IsReadOnly)
                     {
@@ -428,7 +404,6 @@ namespace Microsoft.Extensions.Configuration
                     if (collectionInterface != null)
                     {
                         BindCollection(bindingPoint.Value!, bindingPoint.Value!.GetType(), config, options);
-                        //BindCollection(bindingPoint.Value!, collectionInterface, config, options);
                     }
                     // Something else
                     else
@@ -805,6 +780,26 @@ namespace Microsoft.Extensions.Configuration
             return result;
         }
 
+        private static bool TypeCanBeAssignedAList(Type type)
+        {
+            if (!type.IsInterface || !type.IsConstructedGenericType) { return false; }
+
+            Type genericTypeDefinition = type.GetGenericTypeDefinition();
+            return genericTypeDefinition == typeof(IEnumerable<>)
+                || genericTypeDefinition == typeof(IReadOnlyCollection<>)
+                || genericTypeDefinition == typeof(ICollection<>)
+                || genericTypeDefinition == typeof(IList<>)
+                || genericTypeDefinition == typeof(IReadOnlyList<>);
+        }
+        private static bool TypeCanBeAssignedADictionary(Type type)
+        {
+            if (!type.IsInterface || !type.IsConstructedGenericType) { return false; }
+
+            Type genericTypeDefinition = type.GetGenericTypeDefinition();
+            return genericTypeDefinition == typeof(IDictionary<,>)
+                || genericTypeDefinition == typeof(IReadOnlyDictionary<,>);
+        }
+
         private static bool IsArrayCompatibleReadOnlyInterface(Type type)
         {
             if (!type.IsInterface || !type.IsConstructedGenericType) { return false; }
@@ -815,7 +810,7 @@ namespace Microsoft.Extensions.Configuration
                 || genericTypeDefinition == typeof(IReadOnlyList<>);
         }
 
-        private static bool IsSet(Type type)
+        private static bool TypeCanBeAssignedAHashSet(Type type)
         {
             if (!type.IsInterface || !type.IsConstructedGenericType) { return false; }
 
