@@ -281,10 +281,9 @@ namespace Microsoft.Extensions.Configuration
                 return (true, instance);
             }
 
-            // The interface that we've been given is not something that can be assigned a hashset, list, or dictionary.
-            // So all we need to return now is whether or not it was a IEnumerable. If it
-            // *was* derivable from IEnumerable (i.e. we can't create it), then the caller binds
-            // null to it, and if it wasn't, then the caller creates an instance of the type.
+            // The interface that we've been given is not something that can be bound to as a collection.
+            // We return whether or not it was an IEnumerable<>. If it *was* (i.e. we can't create it), then the caller binds
+            // null to it, and if it wasn't (i.e. *not* a collection), then the caller creates an instance of it.
             bool wasACollection = FindOpenGenericInterface(type, typeof(IEnumerable<>)) != null;
             return (wasACollection, null);
         }
