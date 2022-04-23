@@ -48,8 +48,7 @@ namespace System.IO.Tests
         [Fact]
         public void FileSystemWatcher_Directory_Create_InNestedDirectory()
         {
-            string firstDir = Path.Combine(TestDirectory, "dir1");
-            string nestedDir = Path.Combine(firstDir, "nested");
+            string nestedDir = Path.Combine(firstDir, "dir1", "nested");
             Directory.CreateDirectory(nestedDir);
             using (var watcher = new FileSystemWatcher(TestDirectory, "*"))
             {
