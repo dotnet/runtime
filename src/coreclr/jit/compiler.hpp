@@ -3522,7 +3522,7 @@ inline genTreeOps Compiler::LoopDsc::lpTestOper() const
 
 inline bool Compiler::LoopDsc::lpIsIncreasingLoop() const
 {
-    // Increasing loop is the one that has "+=" increament operation and "< or <=" limit check.
+    // Increasing loop is the one that has "+=" increment operation and "< or <=" limit check.
     bool isLessThanLimitCheck = GenTree::StaticOperIs(lpTestOper(), GT_LT, GT_LE);
     return (isLessThanLimitCheck &&
             (((lpIterOper() == GT_ADD) && (lpIterConst() > 0)) || ((lpIterOper() == GT_SUB) && (lpIterConst() < 0))));

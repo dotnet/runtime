@@ -1024,8 +1024,8 @@ bool Compiler::optDeriveLoopCloningConditions(unsigned loopNum, LoopCloneContext
 
     LoopDsc*                         loop             = &optLoopTable[loopNum];
     JitExpandArrayStack<LcOptInfo*>* optInfos         = context->GetLoopOptInfo(loopNum);
-    bool                             isIncreasingLoop = GenTree::StaticOperIs(loop->lpTestOper(), GT_LT, GT_LE);
-    assert(loop->lpIsIncreasingLoop() || loop->lpIsDecreasingLoop());
+    bool                             isIncreasingLoop = loop->lpIsIncreasingLoop();
+    assert(isIncreasingLoop || loop->lpIsDecreasingLoop());
 
     if (GenTree::StaticOperIs(loop->lpTestOper(), GT_LT, GT_LE, GT_GT, GT_GE))
     {
@@ -1034,13 +1034,13 @@ bool Compiler::optDeriveLoopCloningConditions(unsigned loopNum, LoopCloneContext
         // is beyond the limit.
         int stride = abs(loop->lpIterConst());
 
-        if (stride > 58)
+        if (stride >= 58)
         {
             // Array.MaxLength can have maximum of 0X7FFFFFC7 elements, so make sure
-            // the stride increament doesn't overflow or underflow the index. Hence,
+            // the stride increment doesn't overflow or underflow the index. Hence,
             // the maximum stride limit is set to
             // (int.MaxValue - (Array.MaxLength - 1) + 1), which is
-            // (0X7FFFFFC7 - 0x7fffffc7 + 2) = 0x3a or 58.
+            // (0X7fffffff - 0x7fffffc7 + 2) = 0x3a or 58.
             return false;
         }
 
@@ -1149,12 +1149,12 @@ bool Compiler::optDeriveLoopCloningConditions(unsigned loopNum, LoopCloneContext
         }
 
         // Increasing loops
-        // GT_LT loop test: (start < end) ==> (end <= start)
-        // GT_LE loop test: (start <= end) ==> (end < start)
+        // GT_LT loop test: (start < end) ==> (end <= arrLen)
+        // GT_LE loop test: (start <= end) ==> (end < arrLen)
         //
         // Decreasing loops
-        // GT_GT loop test: (end > start) ==> (end <= start)
-        // GT_GE loop test: (end >= start) ==> (end < start)
+        // GT_GT loop test: (end > start) ==> (end <= arrLen)
+        // GT_GE loop test: (end >= start) ==> (end < arrLen)
         genTreeOps opLimitCondition;
         switch (loop->lpTestOper())
         {
@@ -1664,7 +1664,6 @@ bool Compiler::optIsLoopClonable(unsigned loopInd)
     // - The incrementing operator is multiple and divide
     // - The ones that are inverted are not handled here for cases like "i *= 2" because
     //   they are converted to "i + i".
-    // bool isOtherLoop = (loop.lpIterOper() == GT_DIV) || (loop.lpIterOper() == GT_MUL);
     if (!(loop.lpIsIncreasingLoop() || loop.lpIsDecreasingLoop()))
     {
         JITDUMP("Loop cloning: rejecting loop " FMT_LP
