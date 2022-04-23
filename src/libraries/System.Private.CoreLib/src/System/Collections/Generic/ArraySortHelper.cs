@@ -468,6 +468,10 @@ namespace System.Collections.Generic
         internal static void PatternDefeatingQuickSort(Span<T> keys, Comparison<T> comparer)
         {
             Debug.Assert(comparer != null);
+            if (keys.Length <= 1)
+            {
+                return;
+            }
 
             PdqSort(keys, 0, keys.Length, comparer, BitOperations.Log2((uint)keys.Length));
         }
@@ -975,6 +979,11 @@ namespace System.Collections.Generic
 
         internal static void PatternDefeatingQuickSort(Span<T> keys)
         {
+            if (keys.Length <= 1)
+            {
+                return;
+            }
+
             PdqSort(keys, 0, keys.Length, BitOperations.Log2((uint)keys.Length));
         }
     }
@@ -1406,6 +1415,10 @@ namespace System.Collections.Generic
         {
             Debug.Assert(keys.Length == values.Length);
             Debug.Assert(comparer != null);
+            if (keys.Length <= 1)
+            {
+                return;
+            }
 
             PdqSort(keys, values, 0, keys.Length, comparer, BitOperations.Log2((uint)keys.Length));
         }
@@ -1881,6 +1894,10 @@ namespace System.Collections.Generic
         internal static void PatternDefeatingQuickSort(Span<TKey> keys, Span<TValue> values)
         {
             Debug.Assert(keys.Length == values.Length);
+            if (keys.Length <= 1)
+            {
+                return;
+            }
 
             PdqSort(keys, values, 0, keys.Length, BitOperations.Log2((uint)keys.Length));
         }
