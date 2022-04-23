@@ -256,16 +256,7 @@ GCInfo::WriteBarrierForm GCInfo::gcIsWriteBarrierCandidate(GenTreeStoreInd* stor
 
     if (wbf == WBF_BarrierUnknown)
     {
-        if (compiler->codeGen->genUseOptimizedWriteBarriers(wbf))
-        {
-            // TODO-CQ: remove this pessimization, it was added to avoid diffs.
-            wbf = WBF_BarrierChecked;
-        }
-        else
-        {
-            assert(store->Addr()->TypeIs(TYP_BYREF));
-            wbf = ((store->gtFlags & GTF_IND_TGT_HEAP) != 0) ? WBF_BarrierUnchecked : WBF_BarrierChecked;
-        }
+        wbf = ((store->gtFlags & GTF_IND_TGT_HEAP) != 0) ? WBF_BarrierUnchecked : WBF_BarrierChecked;
     }
 
     return wbf;
@@ -273,6 +264,10 @@ GCInfo::WriteBarrierForm GCInfo::gcIsWriteBarrierCandidate(GenTreeStoreInd* stor
 
 //------------------------------------------------------------------------
 // gcWriteBarrierFormFromTargetAddress: Get the write barrier form from address.
+//
+// This method deconstructs "tgtAddr" to find out if it is "based on" a TYP_REF
+// address, allowing an unchecked barrier to be used, or an address of a local,
+// in which case no barrier is needed.
 //
 // Arguments:
 //    tgtAddr - The target address of the store
@@ -282,12 +277,10 @@ GCInfo::WriteBarrierForm GCInfo::gcIsWriteBarrierCandidate(GenTreeStoreInd* stor
 //
 GCInfo::WriteBarrierForm GCInfo::gcWriteBarrierFormFromTargetAddress(GenTree* tgtAddr)
 {
-    // If we store through an int to a GC_REF field, we'll assume that needs to use a checked barriers.
+    // We will assume there is no point in trying to deconstruct a TYP_I_IMPL address.
     if (tgtAddr->TypeGet() == TYP_I_IMPL)
     {
-        // TODO-CQ: return "WBF_BarrierUnknown" here and let the caller check "GTF_IND_TGT_HEAP".
-        // This will result in using an unchecked barrier for "STOREIND(static-field-addr, ...)".
-        return GCInfo::WBF_BarrierChecked;
+        return GCInfo::WBF_BarrierUnknown;
     }
 
     // Otherwise...
