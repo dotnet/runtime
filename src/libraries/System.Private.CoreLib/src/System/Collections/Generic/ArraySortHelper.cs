@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using static System.Collections.Generic.SortUtils;
 
 #pragma warning disable CA1822
 
@@ -23,7 +24,7 @@ namespace System.Collections.Generic
             try
             {
                 comparer ??= Comparer<T>.Default;
-                IntrospectiveSort(keys, comparer.Compare);
+                PatternDefeatingQuickSort(keys, comparer.Compare);
             }
             catch (IndexOutOfRangeException)
             {
@@ -58,7 +59,7 @@ namespace System.Collections.Generic
             // Add a try block here to detect bogus comparisons
             try
             {
-                IntrospectiveSort(keys, comparer);
+                PatternDefeatingQuickSort(keys, comparer);
             }
             catch (IndexOutOfRangeException)
             {
@@ -96,125 +97,18 @@ namespace System.Collections.Generic
             return ~lo;
         }
 
-        private static void SwapIfGreater(Span<T> keys, Comparison<T> comparer, int i, int j)
-        {
-            Debug.Assert(i != j);
-
-            if (comparer(keys[i], keys[j]) > 0)
-            {
-                T key = keys[i];
-                keys[i] = keys[j];
-                keys[j] = key;
-            }
-        }
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static void Swap(Span<T> a, int i, int j)
+        private static bool Compare(T left, T right, Comparison<T> comparer)
         {
-            Debug.Assert(i != j);
-
-            T t = a[i];
-            a[i] = a[j];
-            a[j] = t;
-        }
-
-        internal static void IntrospectiveSort(Span<T> keys, Comparison<T> comparer)
-        {
-            Debug.Assert(comparer != null);
-
-            if (keys.Length > 1)
-            {
-                IntroSort(keys, 2 * (BitOperations.Log2((uint)keys.Length) + 1), comparer);
-            }
-        }
-
-        private static void IntroSort(Span<T> keys, int depthLimit, Comparison<T> comparer)
-        {
-            Debug.Assert(!keys.IsEmpty);
-            Debug.Assert(depthLimit >= 0);
-            Debug.Assert(comparer != null);
-
-            int partitionSize = keys.Length;
-            while (partitionSize > 1)
-            {
-                if (partitionSize <= Array.IntrosortSizeThreshold)
-                {
-
-                    if (partitionSize == 2)
-                    {
-                        SwapIfGreater(keys, comparer, 0, 1);
-                        return;
-                    }
-
-                    if (partitionSize == 3)
-                    {
-                        SwapIfGreater(keys, comparer, 0, 1);
-                        SwapIfGreater(keys, comparer, 0, 2);
-                        SwapIfGreater(keys, comparer, 1, 2);
-                        return;
-                    }
-
-                    InsertionSort(keys.Slice(0, partitionSize), comparer);
-                    return;
-                }
-
-                if (depthLimit == 0)
-                {
-                    HeapSort(keys.Slice(0, partitionSize), comparer);
-                    return;
-                }
-                depthLimit--;
-
-                int p = PickPivotAndPartition(keys.Slice(0, partitionSize), comparer);
-
-                // Note we've already partitioned around the pivot and do not have to move the pivot again.
-                IntroSort(keys[(p+1)..partitionSize], depthLimit, comparer);
-                partitionSize = p;
-            }
-        }
-
-        private static int PickPivotAndPartition(Span<T> keys, Comparison<T> comparer)
-        {
-            Debug.Assert(keys.Length >= Array.IntrosortSizeThreshold);
-            Debug.Assert(comparer != null);
-
-            int hi = keys.Length - 1;
-
-            // Compute median-of-three.  But also partition them, since we've done the comparison.
-            int middle = hi >> 1;
-
-            // Sort lo, mid and hi appropriately, then pick mid as the pivot.
-            SwapIfGreater(keys, comparer, 0, middle);  // swap the low with the mid point
-            SwapIfGreater(keys, comparer, 0, hi);   // swap the low with the high
-            SwapIfGreater(keys, comparer, middle, hi); // swap the middle with the high
-
-            T pivot = keys[middle];
-            Swap(keys, middle, hi - 1);
-            int left = 0, right = hi - 1;  // We already partitioned lo and hi and put the pivot in hi - 1.  And we pre-increment & decrement below.
-
-            while (left < right)
-            {
-                while (comparer(keys[++left], pivot) < 0) ;
-                while (comparer(pivot, keys[--right]) < 0) ;
-
-                if (left >= right)
-                    break;
-
-                Swap(keys, left, right);
-            }
-
-            // Put pivot in the right location.
-            if (left != hi - 1)
-            {
-                Swap(keys, left, hi - 1);
-            }
-            return left;
+            return comparer(left, right) < 0;
         }
 
         private static void HeapSort(Span<T> keys, Comparison<T> comparer)
         {
-            Debug.Assert(comparer != null);
-            Debug.Assert(!keys.IsEmpty);
+            if (keys.Length == 0)
+            {
+                return;
+            }
 
             int n = keys.Length;
             for (int i = n >> 1; i >= 1; i--)
@@ -224,49 +118,358 @@ namespace System.Collections.Generic
 
             for (int i = n; i > 1; i--)
             {
-                Swap(keys, 0, i - 1);
+                Swap(ref UnguardedAccess(keys, 0), ref UnguardedAccess(keys, i - 1));
                 DownHeap(keys, 1, i - 1, comparer);
             }
         }
 
         private static void DownHeap(Span<T> keys, int i, int n, Comparison<T> comparer)
         {
-            Debug.Assert(comparer != null);
-
-            T d = keys[i - 1];
+            T d = UnguardedAccess(keys, i - 1);
             while (i <= n >> 1)
             {
                 int child = 2 * i;
-                if (child < n && comparer(keys[child - 1], keys[child]) < 0)
+                if (child < n && Compare(UnguardedAccess(keys, child - 1), UnguardedAccess(keys, child), comparer))
                 {
                     child++;
                 }
 
-                if (!(comparer(d, keys[child - 1]) < 0))
+                if (!Compare(d, UnguardedAccess(keys, child - 1), comparer))
+                {
                     break;
+                }
 
-                keys[i - 1] = keys[child - 1];
+                UnguardedAccess(keys, i - 1) = UnguardedAccess(keys, child - 1);
                 i = child;
             }
 
-            keys[i - 1] = d;
+            UnguardedAccess(keys, i - 1) = d;
         }
 
-        private static void InsertionSort(Span<T> keys, Comparison<T> comparer)
+        // Sorts [begin, end) using insertion sort with the given comparison function.
+        private static void InsertionSort(Span<T> keys, int begin, int end, Comparison<T> comparer)
         {
-            for (int i = 0; i < keys.Length - 1; i++)
+            if (begin == end)
             {
-                T t = keys[i + 1];
+                return;
+            }
 
-                int j = i;
-                while (j >= 0 && comparer(t, keys[j]) < 0)
+            for (var i = begin + 1; i < end; i++)
+            {
+                var sift = i;
+                var sift1 = i - 1;
+
+                // Compare first so we can avoid 2 moves for an element already positioned correctly.
+                if (Compare(UnguardedAccess(keys, sift), UnguardedAccess(keys, sift1), comparer))
                 {
-                    keys[j + 1] = keys[j];
-                    j--;
+                    var tmp = UnguardedAccess(keys, sift);
+                    do
+                    {
+                        UnguardedAccess(keys, sift--) = UnguardedAccess(keys, sift1);
+                    }
+                    while (sift != begin && Compare(tmp, UnguardedAccess(keys, --sift1), comparer));
+
+                    UnguardedAccess(keys, sift) = tmp;
+                }
+            }
+        }
+
+        // Sorts [begin, end) using insertion sort with the given comparison function. Assumes
+        // keys[begin - 1] is an element smaller than or equal to any element in [begin, end).
+        private static void UnguardedInsertionSort(Span<T> keys, int begin, int end, Comparison<T> comparer)
+        {
+            if (begin == end)
+            {
+                return;
+            }
+
+            for (var i = begin + 1; i < end; i++)
+            {
+                var sift = i;
+                var sift1 = i - 1;
+
+                // Compare first so we can avoid 2 moves for an element already positioned correctly.
+                if (Compare(UnguardedAccess(keys, sift), UnguardedAccess(keys, sift1), comparer))
+                {
+                    var tmp = UnguardedAccess(keys, sift);
+                    do
+                    {
+                        UnguardedAccess(keys, sift--) = UnguardedAccess(keys, sift1);
+                    }
+                    while (Compare(tmp, UnguardedAccess(keys, --sift1), comparer));
+
+                    UnguardedAccess(keys, sift) = tmp;
+                }
+            }
+        }
+
+        // Attempts to use insertion sort on [begin, end). Will return false if more than
+        // partial_insertion_sort_limit elements were moved, and abort sorting. Otherwise it will
+        // successfully sort and return true.
+        private static bool PartialInsertionSort(Span<T> keys, int begin, int end, Comparison<T> comparer)
+        {
+            if (begin == end)
+            {
+                return true;
+            }
+
+            var limit = 0;
+            for (var i = begin + 1; i < end; i++)
+            {
+                var sift = i;
+                var sift1 = i - 1;
+
+                // Compare first so we can avoid 2 moves for an element already positioned correctly.
+                if (Compare(UnguardedAccess(keys, sift), UnguardedAccess(keys, sift1), comparer))
+                {
+                    var tmp = UnguardedAccess(keys, sift);
+                    do
+                    {
+                        UnguardedAccess(keys, sift--) = UnguardedAccess(keys, sift1);
+                    }
+                    while (sift != begin && Compare(tmp, UnguardedAccess(keys, --sift1), comparer));
+
+                    UnguardedAccess(keys, sift) = tmp;
+                    limit += i - sift;
                 }
 
-                keys[j + 1] = t;
+                if (limit > PartialInsertionSortLimit) return false;
             }
+
+            return true;
+        }
+
+        // Partitions [begin, end) around pivot keys[begin] using comparison function comp. Elements equal
+        // to the pivot are put in the right-hand partition. Returns the position of the pivot after
+        // partitioning and whether the passed sequence already was correctly partitioned. Assumes the
+        // pivot is a median of at least 3 elements and that [begin, end) is at least
+        // insertion_sort_threshold long.
+        private static (int Pivot, bool HasPartitioned) PartitionRight(Span<T> keys, int begin, int end, Comparison<T> comparer)
+        {
+            // Move pivot into local for speed.
+            var pivot = UnguardedAccess(keys, begin);
+            var first = begin;
+            var last = end;
+
+            // Find the first element greater than or equal than the pivot (the median of 3 guarantees
+            // this exists).
+            while (Compare(UnguardedAccess(keys, ++first), pivot, comparer)) { }
+
+            // Find the first element strictly smaller than the pivot. We have to guard this search if
+            // there was no element before *first.
+            if (first - 1 == 0)
+            {
+                while (first < last && !Compare(UnguardedAccess(keys, --last), pivot, comparer)) { }
+            }
+            else
+            {
+                while (!Compare(UnguardedAccess(keys, --last), pivot, comparer)) { }
+            }
+
+            // If the first pair of elements that should be swapped to partition are the same element,
+            // the passed in sequence already was correctly partitioned.
+            bool hasPartitioned = first >= last;
+
+            // Keep swapping pairs of elements that are on the wrong side of the pivot. Previously
+            // swapped pairs guard the searches, which is why the first iteration is special-cased
+            // above.
+            while (first < last)
+            {
+                Swap(ref UnguardedAccess(keys, first), ref UnguardedAccess(keys, last));
+                while (Compare(UnguardedAccess(keys, ++first), pivot, comparer)) { }
+                while (!Compare(UnguardedAccess(keys, --last), pivot, comparer)) { }
+            }
+
+            // Put the pivot in the right place.
+            var pivotPosition = first - 1;
+            UnguardedAccess(keys, begin) = UnguardedAccess(keys, pivotPosition);
+            UnguardedAccess(keys, pivotPosition) = pivot;
+
+            return (pivotPosition, hasPartitioned);
+        }
+
+        // Similar function to the one above, except elements equal to the pivot are put to the left of
+        // the pivot and it doesn't check or return if the passed sequence already was partitioned.
+        // Since this is rarely used (the many equal case), and in that case pdqsort already has O(n)
+        // performance, no block quicksort is applied here for simplicity.
+        private static int PartitionLeft(Span<T> keys, int begin, int end, Comparison<T> comparer)
+        {
+            var pivot = UnguardedAccess(keys, begin);
+            var first = begin;
+            var last = end;
+
+            while (Compare(pivot, UnguardedAccess(keys, --last), comparer)) { }
+            if (last + 1 == end)
+            {
+                while (first < last && !Compare(pivot, UnguardedAccess(keys, ++first), comparer)) { }
+            }
+            else
+            {
+                while (!Compare(pivot, UnguardedAccess(keys, ++first), comparer)) { }
+            }
+
+            while (first < last)
+            {
+                Swap(ref UnguardedAccess(keys, first), ref UnguardedAccess(keys, last));
+                while (Compare(pivot, UnguardedAccess(keys, --last), comparer)) { }
+                while (!Compare(pivot, UnguardedAccess(keys, ++first), comparer)) { }
+            }
+
+            var pivotPosition = last;
+            UnguardedAccess(keys, begin) = UnguardedAccess(keys, pivotPosition);
+            UnguardedAccess(keys, pivotPosition) = pivot;
+
+            return pivotPosition;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static void Swap(ref T a, ref T b)
+        {
+            var t = a;
+            a = b;
+            b = t;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static void Sort2(ref T a, ref T b, Comparison<T> comparer)
+        {
+            if (Compare(b, a, comparer))
+            {
+                Swap(ref a, ref b);
+            }
+        }
+
+        // Sorts the elements a, b and c using comparison function comparer.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static void Sort3(ref T a, ref T b, ref T c, Comparison<T> comparer)
+        {
+            Sort2(ref a, ref b, comparer);
+            Sort2(ref b, ref c, comparer);
+            Sort2(ref a, ref b, comparer);
+        }
+
+        private static void PdqSort(Span<T> keys, int begin, int end, Comparison<T> comparer, int badAllowed, bool leftmost = true)
+        {
+            Debug.Assert(!keys.IsEmpty);
+            Debug.Assert(end >= begin);
+            Debug.Assert(comparer != null);
+            Debug.Assert(badAllowed > 0);
+
+            while (true)
+            {
+                var size = end - begin;
+
+                // Insertion sort is faster for small arrays.
+                if (size < InsertionSortThreshold)
+                {
+                    if (leftmost)
+                    {
+                        InsertionSort(keys, begin, end, comparer);
+                    }
+                    else
+                    {
+                        UnguardedInsertionSort(keys, begin, end, comparer);
+                    }
+                    return;
+                }
+
+                // Choose pivot as median of 3 or pseudomedian of 9.
+                var mid = size / 2;
+                if (size > NintherThreshold)
+                {
+                    Sort3(ref UnguardedAccess(keys, begin), ref UnguardedAccess(keys, begin + mid), ref UnguardedAccess(keys, end - 1), comparer);
+                    Sort3(ref UnguardedAccess(keys, begin + 1), ref UnguardedAccess(keys, begin + mid - 1), ref UnguardedAccess(keys, end - 2), comparer);
+                    Sort3(ref UnguardedAccess(keys, begin + 2), ref UnguardedAccess(keys, begin + mid + 1), ref UnguardedAccess(keys, end - 3), comparer);
+                    Sort3(ref UnguardedAccess(keys, begin + mid - 1), ref UnguardedAccess(keys, begin + mid), ref UnguardedAccess(keys, begin + mid + 1), comparer);
+                    Swap(ref UnguardedAccess(keys, begin), ref UnguardedAccess(keys, begin + mid));
+                }
+                else
+                {
+                    Sort3(ref UnguardedAccess(keys, begin + mid), ref UnguardedAccess(keys, begin), ref UnguardedAccess(keys, end - 1), comparer);
+                }
+
+                // If keys[begin - 1] is the end of the right partition of a previous partition operation
+                // there is no element in [begin, end) that is smaller than keys[begin - 1]. Then if our
+                // pivot compares equal to keys[begin - 1] we change strategy, putting equal elements in
+                // the left partition, greater elements in the right partition. We do not have to
+                // recurse on the left partition, since it's sorted (all equal).
+                if (!leftmost && !Compare(UnguardedAccess(keys, begin - 1), UnguardedAccess(keys, begin), comparer))
+                {
+                    begin = PartitionLeft(keys, begin, end, comparer) + 1;
+                    continue;
+                }
+
+                var (pivot, hasPartitioned) = PartitionRight(keys, begin, end, comparer);
+
+                // Check for a highly unbalanced partition.
+                var leftSize = pivot - begin;
+                var rightSize = end - (pivot + 1);
+                var highlyUnbalanced = leftSize < size / 8 || rightSize < size / 8;
+
+                // If we got a highly unbalanced partition we shuffle elements to break many patterns.
+                if (highlyUnbalanced)
+                {
+                    // If we had too many bad partitions, switch to heapsort to guarantee O(n log n).
+                    if (--badAllowed == 0)
+                    {
+                        HeapSort(UnguardedSlice(keys, begin, end), comparer);
+                        return;
+                    }
+
+                    if (leftSize >= InsertionSortThreshold)
+                    {
+                        Swap(ref UnguardedAccess(keys, begin), ref UnguardedAccess(keys, begin + leftSize / 4));
+                        Swap(ref UnguardedAccess(keys, pivot - 1), ref UnguardedAccess(keys, pivot - leftSize / 4));
+
+                        if (leftSize > NintherThreshold)
+                        {
+                            Swap(ref UnguardedAccess(keys, begin + 1), ref UnguardedAccess(keys, begin + leftSize / 4 + 1));
+                            Swap(ref UnguardedAccess(keys, begin + 2), ref UnguardedAccess(keys, begin + leftSize / 4 + 2));
+                            Swap(ref UnguardedAccess(keys, pivot - 2), ref UnguardedAccess(keys, pivot - (leftSize / 4 + 1)));
+                            Swap(ref UnguardedAccess(keys, pivot - 3), ref UnguardedAccess(keys, pivot - (leftSize / 4 + 2)));
+                        }
+                    }
+
+                    if (rightSize >= InsertionSortThreshold)
+                    {
+                        Swap(ref UnguardedAccess(keys, pivot + 1), ref UnguardedAccess(keys, pivot + 1 + rightSize / 4));
+                        Swap(ref UnguardedAccess(keys, end - 1), ref UnguardedAccess(keys, end - rightSize / 4));
+
+                        if (rightSize > NintherThreshold)
+                        {
+                            Swap(ref UnguardedAccess(keys, pivot + 2), ref UnguardedAccess(keys, pivot + 2 + rightSize / 4));
+                            Swap(ref UnguardedAccess(keys, pivot + 3), ref UnguardedAccess(keys, pivot + 3 + rightSize / 4));
+                            Swap(ref UnguardedAccess(keys, end - 2), ref UnguardedAccess(keys, end - (1 + rightSize / 4)));
+                            Swap(ref UnguardedAccess(keys, end - 3), ref UnguardedAccess(keys, end - (2 + rightSize / 4)));
+                        }
+                    }
+                }
+                else
+                {
+                    // If we were decently balanced and we tried to sort an already partitioned
+                    // sequence try to use insertion sort.
+                    if (hasPartitioned &&
+                        PartialInsertionSort(keys, begin, pivot, comparer) &&
+                        PartialInsertionSort(keys, pivot + 1, end, comparer))
+                    {
+                        return;
+                    }
+                }
+
+                // Sort the left partition first using recursion and do tail recursion elimination for
+                // the right-hand partition.
+                PdqSort(keys, begin, pivot, comparer, badAllowed, leftmost);
+                begin = pivot + 1;
+                leftmost = false;
+            }
+        }
+
+        internal static void PatternDefeatingQuickSort(Span<T> keys, Comparison<T> comparer)
+        {
+            Debug.Assert(!keys.IsEmpty);
+            Debug.Assert(comparer != null);
+
+            PdqSort(keys, 0, keys.Length, comparer, BitOperations.Log2((uint)keys.Length));
         }
     }
 
@@ -292,7 +495,7 @@ namespace System.Collections.Generic
                             typeof(T) == typeof(float) ||
                             typeof(T) == typeof(Half))
                         {
-                            int nanLeft = SortUtils.MoveNansToFront(keys, default(Span<byte>));
+                            int nanLeft = MoveNansToFront(keys, default(Span<byte>));
                             if (nanLeft == keys.Length)
                             {
                                 return;
@@ -300,12 +503,12 @@ namespace System.Collections.Generic
                             keys = keys.Slice(nanLeft);
                         }
 
-                        IntroSort(keys, 2 * (BitOperations.Log2((uint)keys.Length) + 1));
+                        PatternDefeatingQuickSort(keys);
                     }
                 }
                 else
                 {
-                    ArraySortHelper<T>.IntrospectiveSort(keys, comparer.Compare);
+                    ArraySortHelper<T>.PatternDefeatingQuickSort(keys, comparer.Compare);
                 }
             }
             catch (IndexOutOfRangeException)
@@ -381,177 +584,6 @@ namespace System.Collections.Generic
             return ~lo;
         }
 
-        /// <summary>Swaps the values in the two references if the first is greater than the second.</summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static void SwapIfGreater(ref T i, ref T j)
-        {
-            if (i != null && GreaterThan(ref i, ref j))
-            {
-                Swap(ref i, ref j);
-            }
-        }
-
-        /// <summary>Swaps the values in the two references, regardless of whether the two references are the same.</summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static void Swap(ref T i, ref T j)
-        {
-            Debug.Assert(!Unsafe.AreSame(ref i, ref j));
-
-            T t = i;
-            i = j;
-            j = t;
-        }
-
-        private static void IntroSort(Span<T> keys, int depthLimit)
-        {
-            Debug.Assert(!keys.IsEmpty);
-            Debug.Assert(depthLimit >= 0);
-
-            int partitionSize = keys.Length;
-            while (partitionSize > 1)
-            {
-                if (partitionSize <= Array.IntrosortSizeThreshold)
-                {
-                    if (partitionSize == 2)
-                    {
-                        SwapIfGreater(ref keys[0], ref keys[1]);
-                        return;
-                    }
-
-                    if (partitionSize == 3)
-                    {
-                        ref T hiRef = ref keys[2];
-                        ref T him1Ref = ref keys[1];
-                        ref T loRef = ref keys[0];
-
-                        SwapIfGreater(ref loRef, ref him1Ref);
-                        SwapIfGreater(ref loRef, ref hiRef);
-                        SwapIfGreater(ref him1Ref, ref hiRef);
-                        return;
-                    }
-
-                    InsertionSort(keys.Slice(0, partitionSize));
-                    return;
-                }
-
-                if (depthLimit == 0)
-                {
-                    HeapSort(keys.Slice(0, partitionSize));
-                    return;
-                }
-                depthLimit--;
-
-                int p = PickPivotAndPartition(keys.Slice(0, partitionSize));
-
-                // Note we've already partitioned around the pivot and do not have to move the pivot again.
-                IntroSort(keys[(p+1)..partitionSize], depthLimit);
-                partitionSize = p;
-            }
-        }
-
-        private static int PickPivotAndPartition(Span<T> keys)
-        {
-            Debug.Assert(keys.Length >= Array.IntrosortSizeThreshold);
-
-            // Use median-of-three to select a pivot. Grab a reference to the 0th, Length-1th, and Length/2th elements, and sort them.
-            ref T zeroRef = ref MemoryMarshal.GetReference(keys);
-            ref T lastRef = ref Unsafe.Add(ref zeroRef, keys.Length - 1);
-            ref T middleRef = ref Unsafe.Add(ref zeroRef, (keys.Length - 1) >> 1);
-            SwapIfGreater(ref zeroRef, ref middleRef);
-            SwapIfGreater(ref zeroRef, ref lastRef);
-            SwapIfGreater(ref middleRef, ref lastRef);
-
-            // Select the middle value as the pivot, and move it to be just before the last element.
-            ref T nextToLastRef = ref Unsafe.Add(ref zeroRef, keys.Length - 2);
-            T pivot = middleRef;
-            Swap(ref middleRef, ref nextToLastRef);
-
-            // Walk the left and right pointers, swapping elements as necessary, until they cross.
-            ref T leftRef = ref zeroRef, rightRef = ref nextToLastRef;
-            while (Unsafe.IsAddressLessThan(ref leftRef, ref rightRef))
-            {
-                if (pivot == null)
-                {
-                    while (Unsafe.IsAddressLessThan(ref leftRef, ref nextToLastRef) && (leftRef = ref Unsafe.Add(ref leftRef, 1)) == null) ;
-                    while (Unsafe.IsAddressGreaterThan(ref rightRef, ref zeroRef) && (rightRef = ref Unsafe.Add(ref rightRef, -1)) != null) ;
-                }
-                else
-                {
-                    while (Unsafe.IsAddressLessThan(ref leftRef, ref nextToLastRef) && GreaterThan(ref pivot, ref leftRef = ref Unsafe.Add(ref leftRef, 1))) ;
-                    while (Unsafe.IsAddressGreaterThan(ref rightRef, ref zeroRef) && LessThan(ref pivot, ref rightRef = ref Unsafe.Add(ref rightRef, -1))) ;
-                }
-
-                if (!Unsafe.IsAddressLessThan(ref leftRef, ref rightRef))
-                {
-                    break;
-                }
-
-                Swap(ref leftRef, ref rightRef);
-            }
-
-            // Put the pivot in the correct location.
-            if (!Unsafe.AreSame(ref leftRef, ref nextToLastRef))
-            {
-                Swap(ref leftRef, ref nextToLastRef);
-            }
-            return (int)((nint)Unsafe.ByteOffset(ref zeroRef, ref leftRef) / Unsafe.SizeOf<T>());
-        }
-
-        private static void HeapSort(Span<T> keys)
-        {
-            Debug.Assert(!keys.IsEmpty);
-
-            int n = keys.Length;
-            for (int i = n >> 1; i >= 1; i--)
-            {
-                DownHeap(keys, i, n);
-            }
-
-            for (int i = n; i > 1; i--)
-            {
-                Swap(ref keys[0], ref keys[i - 1]);
-                DownHeap(keys, 1, i - 1);
-            }
-        }
-
-        private static void DownHeap(Span<T> keys, int i, int n)
-        {
-            T d = keys[i - 1];
-            while (i <= n >> 1)
-            {
-                int child = 2 * i;
-                if (child < n && (keys[child - 1] == null || LessThan(ref keys[child - 1], ref keys[child])))
-                {
-                    child++;
-                }
-
-                if (keys[child - 1] == null || !LessThan(ref d, ref keys[child - 1]))
-                    break;
-
-                keys[i - 1] = keys[child - 1];
-                i = child;
-            }
-
-            keys[i - 1] = d;
-        }
-
-        private static void InsertionSort(Span<T> keys)
-        {
-            for (int i = 0; i < keys.Length - 1; i++)
-            {
-                T t = Unsafe.Add(ref MemoryMarshal.GetReference(keys), i + 1);
-
-                int j = i;
-                while (j >= 0 && (t == null || LessThan(ref t, ref Unsafe.Add(ref MemoryMarshal.GetReference(keys), j))))
-                {
-                    Unsafe.Add(ref MemoryMarshal.GetReference(keys), j + 1) = Unsafe.Add(ref MemoryMarshal.GetReference(keys), j);
-                    j--;
-                }
-
-                Unsafe.Add(ref MemoryMarshal.GetReference(keys), j + 1) = t!;
-            }
-        }
-
         // - These methods exist for use in sorting, where the additional operations present in
         //   the CompareTo methods that would otherwise be used on these primitives add non-trivial overhead,
         //   in particular for floating point where the CompareTo methods need to factor in NaNs.
@@ -562,7 +594,7 @@ namespace System.Collections.Generic
         // - These are duplicated here rather than being on a helper type due to current limitations around generic inlining.
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)] // compiles to a single comparison or method call
-        private static bool LessThan(ref T left, ref T right)
+        private static bool LessThan(T left, T right)
         {
             if (typeof(T) == typeof(byte)) return (byte)(object)left < (byte)(object)right ? true : false;
             if (typeof(T) == typeof(sbyte)) return (sbyte)(object)left < (sbyte)(object)right ? true : false;
@@ -580,23 +612,371 @@ namespace System.Collections.Generic
             return left.CompareTo(right) < 0 ? true : false;
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)] // compiles to a single comparison or method call
-        private static bool GreaterThan(ref T left, ref T right)
+        private static void HeapSort(Span<T> keys)
         {
-            if (typeof(T) == typeof(byte)) return (byte)(object)left > (byte)(object)right ? true : false;
-            if (typeof(T) == typeof(sbyte)) return (sbyte)(object)left > (sbyte)(object)right ? true : false;
-            if (typeof(T) == typeof(ushort)) return (ushort)(object)left > (ushort)(object)right ? true : false;
-            if (typeof(T) == typeof(short)) return (short)(object)left > (short)(object)right ? true : false;
-            if (typeof(T) == typeof(uint)) return (uint)(object)left > (uint)(object)right ? true : false;
-            if (typeof(T) == typeof(int)) return (int)(object)left > (int)(object)right ? true : false;
-            if (typeof(T) == typeof(ulong)) return (ulong)(object)left > (ulong)(object)right ? true : false;
-            if (typeof(T) == typeof(long)) return (long)(object)left > (long)(object)right ? true : false;
-            if (typeof(T) == typeof(nuint)) return (nuint)(object)left > (nuint)(object)right ? true : false;
-            if (typeof(T) == typeof(nint)) return (nint)(object)left > (nint)(object)right ? true : false;
-            if (typeof(T) == typeof(float)) return (float)(object)left > (float)(object)right ? true : false;
-            if (typeof(T) == typeof(double)) return (double)(object)left > (double)(object)right ? true : false;
-            if (typeof(T) == typeof(Half)) return (Half)(object)left > (Half)(object)right ? true : false;
-            return left.CompareTo(right) > 0 ? true : false;
+            if (keys.Length == 0)
+            {
+                return;
+            }
+
+            int n = keys.Length;
+            for (int i = n >> 1; i >= 1; i--)
+            {
+                DownHeap(keys, i, n);
+            }
+
+            for (int i = n; i > 1; i--)
+            {
+                Swap(ref UnguardedAccess(keys, 0), ref UnguardedAccess(keys, i - 1));
+                DownHeap(keys, 1, i - 1);
+            }
+        }
+
+        private static void DownHeap(Span<T> keys, int i, int n)
+        {
+            T d = UnguardedAccess(keys, i - 1);
+            while (i <= n >> 1)
+            {
+                int child = 2 * i;
+                if (child < n && LessThan(UnguardedAccess(keys, child - 1), UnguardedAccess(keys, child)))
+                {
+                    child++;
+                }
+
+                if (!LessThan(d, UnguardedAccess(keys, child - 1)))
+                {
+                    break;
+                }
+
+                UnguardedAccess(keys, i - 1) = UnguardedAccess(keys, child - 1);
+                i = child;
+            }
+
+            UnguardedAccess(keys, i - 1) = d;
+        }
+
+        // Sorts [begin, end) using insertion sort with the given comparison function.
+        private static void InsertionSort(Span<T> keys, int begin, int end)
+        {
+            if (begin == end)
+            {
+                return;
+            }
+
+            for (var i = begin + 1; i < end; i++)
+            {
+                var sift = i;
+                var sift1 = i - 1;
+
+                // Compare first so we can avoid 2 moves for an element already positioned correctly.
+                if (LessThan(UnguardedAccess(keys, sift), UnguardedAccess(keys, sift1)))
+                {
+                    var tmp = UnguardedAccess(keys, sift);
+                    do
+                    {
+                        UnguardedAccess(keys, sift--) = UnguardedAccess(keys, sift1);
+                    }
+                    while (sift != begin && LessThan(tmp, UnguardedAccess(keys, --sift1)));
+
+                    UnguardedAccess(keys, sift) = tmp;
+                }
+            }
+        }
+
+        // Sorts [begin, end) using insertion sort with the given comparison function. Assumes
+        // keys[begin - 1] is an element smaller than or equal to any element in [begin, end).
+        private static void UnguardedInsertionSort(Span<T> keys, int begin, int end)
+        {
+            if (begin == end)
+            {
+                return;
+            }
+
+            for (var i = begin + 1; i < end; i++)
+            {
+                var sift = i;
+                var sift1 = i - 1;
+
+                // Compare first so we can avoid 2 moves for an element already positioned correctly.
+                if (LessThan(UnguardedAccess(keys, sift), UnguardedAccess(keys, sift1)))
+                {
+                    var tmp = UnguardedAccess(keys, sift);
+                    do
+                    {
+                        UnguardedAccess(keys, sift--) = UnguardedAccess(keys, sift1);
+                    }
+                    while (LessThan(tmp, UnguardedAccess(keys, --sift1)));
+
+                    UnguardedAccess(keys, sift) = tmp;
+                }
+            }
+        }
+
+        // Attempts to use insertion sort on [begin, end). Will return false if more than
+        // partial_insertion_sort_limit elements were moved, and abort sorting. Otherwise it will
+        // successfully sort and return true.
+        private static bool PartialInsertionSort(Span<T> keys, int begin, int end)
+        {
+            if (begin == end)
+            {
+                return true;
+            }
+
+            var limit = 0;
+            for (var i = begin + 1; i < end; i++)
+            {
+                var sift = i;
+                var sift1 = i - 1;
+
+                // Compare first so we can avoid 2 moves for an element already positioned correctly.
+                if (LessThan(UnguardedAccess(keys, sift), UnguardedAccess(keys, sift1)))
+                {
+                    var tmp = UnguardedAccess(keys, sift);
+                    do
+                    {
+                        UnguardedAccess(keys, sift--) = UnguardedAccess(keys, sift1);
+                    }
+                    while (sift != begin && LessThan(tmp, UnguardedAccess(keys, --sift1)));
+
+                    UnguardedAccess(keys, sift) = tmp;
+                    limit += i - sift;
+                }
+
+                if (limit > PartialInsertionSortLimit) return false;
+            }
+
+            return true;
+        }
+
+        // Partitions [begin, end) around pivot keys[begin] using comparison function comp. Elements equal
+        // to the pivot are put in the right-hand partition. Returns the position of the pivot after
+        // partitioning and whether the passed sequence already was correctly partitioned. Assumes the
+        // pivot is a median of at least 3 elements and that [begin, end) is at least
+        // insertion_sort_threshold long.
+        private static (int Pivot, bool HasPartitioned) PartitionRight(Span<T> keys, int begin, int end)
+        {
+            // Move pivot into local for speed.
+            var pivot = UnguardedAccess(keys, begin);
+            var first = begin;
+            var last = end;
+
+            // Find the first element greater than or equal than the pivot (the median of 3 guarantees
+            // this exists).
+            while (LessThan(UnguardedAccess(keys, ++first), pivot)) { }
+
+            // Find the first element strictly smaller than the pivot. We have to guard this search if
+            // there was no element before *first.
+            if (first - 1 == 0)
+            {
+                while (first < last && !LessThan(UnguardedAccess(keys, --last), pivot)) { }
+            }
+            else
+            {
+                while (!LessThan(UnguardedAccess(keys, --last), pivot)) { }
+            }
+
+            // If the first pair of elements that should be swapped to partition are the same element,
+            // the passed in sequence already was correctly partitioned.
+            bool hasPartitioned = first >= last;
+
+            // Keep swapping pairs of elements that are on the wrong side of the pivot. Previously
+            // swapped pairs guard the searches, which is why the first iteration is special-cased
+            // above.
+            while (first < last)
+            {
+                Swap(ref UnguardedAccess(keys, first), ref UnguardedAccess(keys, last));
+                while (LessThan(UnguardedAccess(keys, ++first), pivot)) { }
+                while (!LessThan(UnguardedAccess(keys, --last), pivot)) { }
+            }
+
+            // Put the pivot in the right place.
+            var pivotPosition = first - 1;
+            UnguardedAccess(keys, begin) = UnguardedAccess(keys, pivotPosition);
+            UnguardedAccess(keys, pivotPosition) = pivot;
+
+            return (pivotPosition, hasPartitioned);
+        }
+
+        // Similar function to the one above, except elements equal to the pivot are put to the left of
+        // the pivot and it doesn't check or return if the passed sequence already was partitioned.
+        // Since this is rarely used (the many equal case), and in that case pdqsort already has O(n)
+        // performance, no block quicksort is applied here for simplicity.
+        private static int PartitionLeft(Span<T> keys, int begin, int end)
+        {
+            var pivot = UnguardedAccess(keys, begin);
+            var first = begin;
+            var last = end;
+
+            while (LessThan(pivot, UnguardedAccess(keys, --last))) { }
+            if (last + 1 == end)
+            {
+                while (first < last && !LessThan(pivot, UnguardedAccess(keys, ++first))) { }
+            }
+            else
+            {
+                while (!LessThan(pivot, UnguardedAccess(keys, ++first))) { }
+            }
+
+            while (first < last)
+            {
+                Swap(ref UnguardedAccess(keys, first), ref UnguardedAccess(keys, last));
+                while (LessThan(pivot, UnguardedAccess(keys, --last))) { }
+                while (!LessThan(pivot, UnguardedAccess(keys, ++first))) { }
+            }
+
+            var pivotPosition = last;
+            UnguardedAccess(keys, begin) = UnguardedAccess(keys, pivotPosition);
+            UnguardedAccess(keys, pivotPosition) = pivot;
+
+            return pivotPosition;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static void Swap(ref T a, ref T b)
+        {
+            var t = a;
+            a = b;
+            b = t;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static void Sort2(ref T a, ref T b)
+        {
+            if (LessThan(b, a))
+            {
+                Swap(ref a, ref b);
+            }
+        }
+
+        // Sorts the elements a, b and c using comparison function comparer.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static void Sort3(ref T a, ref T b, ref T c)
+        {
+            Sort2(ref a, ref b);
+            Sort2(ref b, ref c);
+            Sort2(ref a, ref b);
+        }
+
+        private static void PdqSort(Span<T> keys, int begin, int end, int badAllowed, bool leftmost = true)
+        {
+            Debug.Assert(!keys.IsEmpty);
+            Debug.Assert(end >= begin);
+            Debug.Assert(badAllowed > 0);
+
+            while (true)
+            {
+                var size = end - begin;
+
+                // Insertion sort is faster for small arrays.
+                if (size < InsertionSortThreshold)
+                {
+                    if (leftmost)
+                    {
+                        InsertionSort(keys, begin, end);
+                    }
+                    else
+                    {
+                        UnguardedInsertionSort(keys, begin, end);
+                    }
+                    return;
+                }
+
+                // Choose pivot as median of 3 or pseudomedian of 9.
+                var mid = size / 2;
+                if (size > NintherThreshold)
+                {
+                    Sort3(ref UnguardedAccess(keys, begin), ref UnguardedAccess(keys, begin + mid), ref UnguardedAccess(keys, end - 1));
+                    Sort3(ref UnguardedAccess(keys, begin + 1), ref UnguardedAccess(keys, begin + mid - 1), ref UnguardedAccess(keys, end - 2));
+                    Sort3(ref UnguardedAccess(keys, begin + 2), ref UnguardedAccess(keys, begin + mid + 1), ref UnguardedAccess(keys, end - 3));
+                    Sort3(ref UnguardedAccess(keys, begin + mid - 1), ref UnguardedAccess(keys, begin + mid), ref UnguardedAccess(keys, begin + mid + 1));
+                    Swap(ref UnguardedAccess(keys, begin), ref UnguardedAccess(keys, begin + mid));
+                }
+                else
+                {
+                    Sort3(ref UnguardedAccess(keys, begin + mid), ref UnguardedAccess(keys, begin), ref UnguardedAccess(keys, end - 1));
+                }
+
+                // If keys[begin - 1] is the end of the right partition of a previous partition operation
+                // there is no element in [begin, end) that is smaller than keys[begin - 1]. Then if our
+                // pivot compares equal to keys[begin - 1] we change strategy, putting equal elements in
+                // the left partition, greater elements in the right partition. We do not have to
+                // recurse on the left partition, since it's sorted (all equal).
+                if (!leftmost && !LessThan(UnguardedAccess(keys, begin - 1), UnguardedAccess(keys, begin)))
+                {
+                    begin = PartitionLeft(keys, begin, end) + 1;
+                    continue;
+                }
+
+                var (pivot, hasPartitioned) = PartitionRight(keys, begin, end);
+
+                // Check for a highly unbalanced partition.
+                var leftSize = pivot - begin;
+                var rightSize = end - (pivot + 1);
+                var highlyUnbalanced = leftSize < size / 8 || rightSize < size / 8;
+
+                // If we got a highly unbalanced partition we shuffle elements to break many patterns.
+                if (highlyUnbalanced)
+                {
+                    // If we had too many bad partitions, switch to heapsort to guarantee O(n log n).
+                    if (--badAllowed == 0)
+                    {
+                        HeapSort(UnguardedSlice(keys, begin, end));
+                        return;
+                    }
+
+                    if (leftSize >= InsertionSortThreshold)
+                    {
+                        Swap(ref UnguardedAccess(keys, begin), ref UnguardedAccess(keys, begin + leftSize / 4));
+                        Swap(ref UnguardedAccess(keys, pivot - 1), ref UnguardedAccess(keys, pivot - leftSize / 4));
+
+                        if (leftSize > NintherThreshold)
+                        {
+                            Swap(ref UnguardedAccess(keys, begin + 1), ref UnguardedAccess(keys, begin + leftSize / 4 + 1));
+                            Swap(ref UnguardedAccess(keys, begin + 2), ref UnguardedAccess(keys, begin + leftSize / 4 + 2));
+                            Swap(ref UnguardedAccess(keys, pivot - 2), ref UnguardedAccess(keys, pivot - (leftSize / 4 + 1)));
+                            Swap(ref UnguardedAccess(keys, pivot - 3), ref UnguardedAccess(keys, pivot - (leftSize / 4 + 2)));
+                        }
+                    }
+
+                    if (rightSize >= InsertionSortThreshold)
+                    {
+                        Swap(ref UnguardedAccess(keys, pivot + 1), ref UnguardedAccess(keys, pivot + 1 + rightSize / 4));
+                        Swap(ref UnguardedAccess(keys, end - 1), ref UnguardedAccess(keys, end - rightSize / 4));
+
+                        if (rightSize > NintherThreshold)
+                        {
+                            Swap(ref UnguardedAccess(keys, pivot + 2), ref UnguardedAccess(keys, pivot + 2 + rightSize / 4));
+                            Swap(ref UnguardedAccess(keys, pivot + 3), ref UnguardedAccess(keys, pivot + 3 + rightSize / 4));
+                            Swap(ref UnguardedAccess(keys, end - 2), ref UnguardedAccess(keys, end - (1 + rightSize / 4)));
+                            Swap(ref UnguardedAccess(keys, end - 3), ref UnguardedAccess(keys, end - (2 + rightSize / 4)));
+                        }
+                    }
+                }
+                else
+                {
+                    // If we were decently balanced and we tried to sort an already partitioned
+                    // sequence try to use insertion sort.
+                    if (hasPartitioned &&
+                        PartialInsertionSort(keys, begin, pivot) &&
+                        PartialInsertionSort(keys, pivot + 1, end))
+                    {
+                        return;
+                    }
+                }
+
+                // Sort the left partition first using recursion and do tail recursion elimination for
+                // the right-hand partition.
+                PdqSort(keys, begin, pivot, badAllowed, leftmost);
+                begin = pivot + 1;
+                leftmost = false;
+            }
+        }
+
+        internal static void PatternDefeatingQuickSort(Span<T> keys)
+        {
+            Debug.Assert(!keys.IsEmpty);
+
+            PdqSort(keys, 0, keys.Length, BitOperations.Log2((uint)keys.Length));
         }
     }
 
@@ -612,7 +992,7 @@ namespace System.Collections.Generic
             // underlying IComparables, etc) that are bogus.
             try
             {
-                IntrospectiveSort(keys, values, comparer ?? Comparer<TKey>.Default);
+                PatternDefeatingQuickSort(keys, values, comparer ?? Comparer<TKey>.Default);
             }
             catch (IndexOutOfRangeException)
             {
@@ -624,138 +1004,18 @@ namespace System.Collections.Generic
             }
         }
 
-        private static void SwapIfGreaterWithValues(Span<TKey> keys, Span<TValue> values, IComparer<TKey> comparer, int i, int j)
-        {
-            Debug.Assert(comparer != null);
-            Debug.Assert(0 <= i && i < keys.Length && i < values.Length);
-            Debug.Assert(0 <= j && j < keys.Length && j < values.Length);
-            Debug.Assert(i != j);
-
-            if (comparer.Compare(keys[i], keys[j]) > 0)
-            {
-                TKey key = keys[i];
-                keys[i] = keys[j];
-                keys[j] = key;
-
-                TValue value = values[i];
-                values[i] = values[j];
-                values[j] = value;
-            }
-        }
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static void Swap(Span<TKey> keys, Span<TValue> values, int i, int j)
+        private static bool Compare(TKey left, TKey right, IComparer<TKey> comparer)
         {
-            Debug.Assert(i != j);
-
-            TKey k = keys[i];
-            keys[i] = keys[j];
-            keys[j] = k;
-
-            TValue v = values[i];
-            values[i] = values[j];
-            values[j] = v;
-        }
-
-        internal static void IntrospectiveSort(Span<TKey> keys, Span<TValue> values, IComparer<TKey> comparer)
-        {
-            Debug.Assert(comparer != null);
-            Debug.Assert(keys.Length == values.Length);
-
-            if (keys.Length > 1)
-            {
-                IntroSort(keys, values, 2 * (BitOperations.Log2((uint)keys.Length) + 1), comparer);
-            }
-        }
-
-        private static void IntroSort(Span<TKey> keys, Span<TValue> values, int depthLimit, IComparer<TKey> comparer)
-        {
-            Debug.Assert(!keys.IsEmpty);
-            Debug.Assert(values.Length == keys.Length);
-            Debug.Assert(depthLimit >= 0);
-            Debug.Assert(comparer != null);
-
-            int partitionSize = keys.Length;
-            while (partitionSize > 1)
-            {
-                if (partitionSize <= Array.IntrosortSizeThreshold)
-                {
-
-                    if (partitionSize == 2)
-                    {
-                        SwapIfGreaterWithValues(keys, values, comparer, 0, 1);
-                        return;
-                    }
-
-                    if (partitionSize == 3)
-                    {
-                        SwapIfGreaterWithValues(keys, values, comparer, 0, 1);
-                        SwapIfGreaterWithValues(keys, values, comparer, 0, 2);
-                        SwapIfGreaterWithValues(keys, values, comparer, 1, 2);
-                        return;
-                    }
-
-                    InsertionSort(keys.Slice(0, partitionSize), values.Slice(0, partitionSize), comparer);
-                    return;
-                }
-
-                if (depthLimit == 0)
-                {
-                    HeapSort(keys.Slice(0, partitionSize), values.Slice(0, partitionSize), comparer);
-                    return;
-                }
-                depthLimit--;
-
-                int p = PickPivotAndPartition(keys.Slice(0, partitionSize), values.Slice(0, partitionSize), comparer);
-
-                // Note we've already partitioned around the pivot and do not have to move the pivot again.
-                IntroSort(keys[(p+1)..partitionSize], values[(p+1)..partitionSize], depthLimit, comparer);
-                partitionSize = p;
-            }
-        }
-
-        private static int PickPivotAndPartition(Span<TKey> keys, Span<TValue> values, IComparer<TKey> comparer)
-        {
-            Debug.Assert(keys.Length >= Array.IntrosortSizeThreshold);
-            Debug.Assert(comparer != null);
-
-            int hi = keys.Length - 1;
-
-            // Compute median-of-three.  But also partition them, since we've done the comparison.
-            int middle = hi >> 1;
-
-            // Sort lo, mid and hi appropriately, then pick mid as the pivot.
-            SwapIfGreaterWithValues(keys, values, comparer, 0, middle);  // swap the low with the mid point
-            SwapIfGreaterWithValues(keys, values, comparer, 0, hi);   // swap the low with the high
-            SwapIfGreaterWithValues(keys, values, comparer, middle, hi); // swap the middle with the high
-
-            TKey pivot = keys[middle];
-            Swap(keys, values, middle, hi - 1);
-            int left = 0, right = hi - 1;  // We already partitioned lo and hi and put the pivot in hi - 1.  And we pre-increment & decrement below.
-
-            while (left < right)
-            {
-                while (comparer.Compare(keys[++left], pivot) < 0) ;
-                while (comparer.Compare(pivot, keys[--right]) < 0) ;
-
-                if (left >= right)
-                    break;
-
-                Swap(keys, values, left, right);
-            }
-
-            // Put pivot in the right location.
-            if (left != hi - 1)
-            {
-                Swap(keys, values, left, hi - 1);
-            }
-            return left;
+            return comparer.Compare(left, right) < 0;
         }
 
         private static void HeapSort(Span<TKey> keys, Span<TValue> values, IComparer<TKey> comparer)
         {
-            Debug.Assert(comparer != null);
-            Debug.Assert(!keys.IsEmpty);
+            if (keys.Length == 0)
+            {
+                return;
+            }
 
             int n = keys.Length;
             for (int i = n >> 1; i >= 1; i--)
@@ -765,58 +1025,394 @@ namespace System.Collections.Generic
 
             for (int i = n; i > 1; i--)
             {
-                Swap(keys, values, 0, i - 1);
+                Swap(ref UnguardedAccess(keys, 0), ref UnguardedAccess(keys, i - 1), ref UnguardedAccess(values, 0), ref UnguardedAccess(values, i - 1));
                 DownHeap(keys, values, 1, i - 1, comparer);
             }
         }
 
         private static void DownHeap(Span<TKey> keys, Span<TValue> values, int i, int n, IComparer<TKey> comparer)
         {
-            Debug.Assert(comparer != null);
-
-            TKey d = keys[i - 1];
-            TValue dValue = values[i - 1];
-
+            TKey d = UnguardedAccess(keys, i - 1);
+            TValue dValue = UnguardedAccess(values, i - 1);
             while (i <= n >> 1)
             {
                 int child = 2 * i;
-                if (child < n && comparer.Compare(keys[child - 1], keys[child]) < 0)
+                if (child < n && Compare(UnguardedAccess(keys, child - 1), UnguardedAccess(keys, child), comparer))
                 {
                     child++;
                 }
 
-                if (!(comparer.Compare(d, keys[child - 1]) < 0))
+                if (!Compare(d, UnguardedAccess(keys, child - 1), comparer))
+                {
                     break;
+                }
 
-                keys[i - 1] = keys[child - 1];
-                values[i - 1] = values[child - 1];
+                UnguardedAccess(keys, i - 1) = UnguardedAccess(keys, child - 1);
+                UnguardedAccess(values, i - 1) = UnguardedAccess(values, child - 1);
                 i = child;
             }
 
-            keys[i - 1] = d;
-            values[i - 1] = dValue;
+            UnguardedAccess(keys, i - 1) = d;
+            UnguardedAccess(values, i - 1) = dValue;
         }
 
-        private static void InsertionSort(Span<TKey> keys, Span<TValue> values, IComparer<TKey> comparer)
+        // Sorts [begin, end) using insertion sort with the given comparison function.
+        private static void InsertionSort(Span<TKey> keys, Span<TValue> values, int begin, int end, IComparer<TKey> comparer)
         {
-            Debug.Assert(comparer != null);
-
-            for (int i = 0; i < keys.Length - 1; i++)
+            if (begin == end)
             {
-                TKey t = keys[i + 1];
-                TValue tValue = values[i + 1];
+                return;
+            }
 
-                int j = i;
-                while (j >= 0 && comparer.Compare(t, keys[j]) < 0)
+            for (var i = begin + 1; i < end; i++)
+            {
+                var sift = i;
+                var sift1 = i - 1;
+
+                // Compare first so we can avoid 2 moves for an element already positioned correctly.
+                if (Compare(UnguardedAccess(keys, sift), UnguardedAccess(keys, sift1), comparer))
                 {
-                    keys[j + 1] = keys[j];
-                    values[j + 1] = values[j];
-                    j--;
+                    var tmp = UnguardedAccess(keys, sift);
+                    var tmpValue = UnguardedAccess(values, sift);
+                    do
+                    {
+                        UnguardedAccess(keys, sift) = UnguardedAccess(keys, sift1);
+                        UnguardedAccess(values, sift) = UnguardedAccess(values, sift1);
+                        sift--;
+                    }
+                    while (sift != begin && Compare(tmp, UnguardedAccess(keys, --sift1), comparer));
+
+                    UnguardedAccess(keys, sift) = tmp;
+                    UnguardedAccess(values, sift) = tmpValue;
+                }
+            }
+        }
+
+        // Sorts [begin, end) using insertion sort with the given comparison function. Assumes
+        // keys[begin - 1] is an element smaller than or equal to any element in [begin, end).
+        private static void UnguardedInsertionSort(Span<TKey> keys, Span<TValue> values, int begin, int end, IComparer<TKey> comparer)
+        {
+            if (begin == end)
+            {
+                return;
+            }
+
+            for (var i = begin + 1; i < end; i++)
+            {
+                var sift = i;
+                var sift1 = i - 1;
+
+                // Compare first so we can avoid 2 moves for an element already positioned correctly.
+                if (Compare(UnguardedAccess(keys, sift), UnguardedAccess(keys, sift1), comparer))
+                {
+                    var tmp = UnguardedAccess(keys, sift);
+                    var tmpValue = UnguardedAccess(values, sift);
+                    do
+                    {
+                        UnguardedAccess(keys, sift) = UnguardedAccess(keys, sift1);
+                        UnguardedAccess(values, sift) = UnguardedAccess(values, sift1);
+                        sift--;
+                    }
+                    while (Compare(tmp, UnguardedAccess(keys, --sift1), comparer));
+
+                    UnguardedAccess(keys, sift) = tmp;
+                    UnguardedAccess(values, sift) = tmpValue;
+                }
+            }
+        }
+
+        // Attempts to use insertion sort on [begin, end). Will return false if more than
+        // partial_insertion_sort_limit elements were moved, and abort sorting. Otherwise it will
+        // successfully sort and return true.
+        private static bool PartialInsertionSort(Span<TKey> keys, Span<TValue> values, int begin, int end, IComparer<TKey> comparer)
+        {
+            if (begin == end)
+            {
+                return true;
+            }
+
+            var limit = 0;
+            for (var i = begin + 1; i < end; i++)
+            {
+                var sift = i;
+                var sift1 = i - 1;
+
+                // Compare first so we can avoid 2 moves for an element already positioned correctly.
+                if (Compare(UnguardedAccess(keys, sift), UnguardedAccess(keys, sift1), comparer))
+                {
+                    var tmp = UnguardedAccess(keys, sift);
+                    var tmpValue = UnguardedAccess(values, sift);
+                    do
+                    {
+                        UnguardedAccess(keys, sift) = UnguardedAccess(keys, sift1);
+                        UnguardedAccess(values, sift) = UnguardedAccess(values, sift1);
+                        sift--;
+                    }
+                    while (sift != begin && Compare(tmp, UnguardedAccess(keys, --sift1), comparer));
+
+                    UnguardedAccess(keys, sift) = tmp;
+                    UnguardedAccess(values, sift) = tmpValue;
+                    limit += i - sift;
                 }
 
-                keys[j + 1] = t;
-                values[j + 1] = tValue;
+                if (limit > PartialInsertionSortLimit) return false;
             }
+
+            return true;
+        }
+
+        // Partitions [begin, end) around pivot keys[begin] using comparison function comp. Elements equal
+        // to the pivot are put in the right-hand partition. Returns the position of the pivot after
+        // partitioning and whether the passed sequence already was correctly partitioned. Assumes the
+        // pivot is a median of at least 3 elements and that [begin, end) is at least
+        // insertion_sort_threshold long.
+        private static (int Pivot, bool HasPartitioned) PartitionRight(Span<TKey> keys, Span<TValue> values, int begin, int end, IComparer<TKey> comparer)
+        {
+            // Move pivot into local for speed.
+            var pivot = UnguardedAccess(keys, begin);
+            var pivotValue = UnguardedAccess(values, begin);
+            var first = begin;
+            var last = end;
+
+            // Find the first element greater than or equal than the pivot (the median of 3 guarantees
+            // this exists).
+            while (Compare(UnguardedAccess(keys, ++first), pivot, comparer)) { }
+
+            // Find the first element strictly smaller than the pivot. We have to guard this search if
+            // there was no element before *first.
+            if (first - 1 == 0)
+            {
+                while (first < last && !Compare(UnguardedAccess(keys, --last), pivot, comparer)) { }
+            }
+            else
+            {
+                while (!Compare(UnguardedAccess(keys, --last), pivot, comparer)) { }
+            }
+
+            // If the first pair of elements that should be swapped to partition are the same element,
+            // the passed in sequence already was correctly partitioned.
+            bool hasPartitioned = first >= last;
+
+            // Keep swapping pairs of elements that are on the wrong side of the pivot. Previously
+            // swapped pairs guard the searches, which is why the first iteration is special-cased
+            // above.
+            while (first < last)
+            {
+                Swap(ref UnguardedAccess(keys, first), ref UnguardedAccess(keys, last), ref UnguardedAccess(values, first), ref UnguardedAccess(values, last));
+                while (Compare(UnguardedAccess(keys, ++first), pivot, comparer)) { }
+                while (!Compare(UnguardedAccess(keys, --last), pivot, comparer)) { }
+            }
+
+            // Put the pivot in the right place.
+            var pivotPosition = first - 1;
+            UnguardedAccess(keys, begin) = UnguardedAccess(keys, pivotPosition);
+            UnguardedAccess(values, begin) = UnguardedAccess(values, pivotPosition);
+            UnguardedAccess(keys, pivotPosition) = pivot;
+            UnguardedAccess(values, pivotPosition) = pivotValue;
+
+            return (pivotPosition, hasPartitioned);
+        }
+
+        // Similar function to the one above, except elements equal to the pivot are put to the left of
+        // the pivot and it doesn't check or return if the passed sequence already was partitioned.
+        // Since this is rarely used (the many equal case), and in that case pdqsort already has O(n)
+        // performance, no block quicksort is applied here for simplicity.
+        private static int PartitionLeft(Span<TKey> keys, Span<TValue> values, int begin, int end, IComparer<TKey> comparer)
+        {
+            var pivot = UnguardedAccess(keys, begin);
+            var pivotValue = UnguardedAccess(values, begin);
+            var first = begin;
+            var last = end;
+
+            while (Compare(pivot, UnguardedAccess(keys, --last), comparer)) { }
+            if (last + 1 == end)
+            {
+                while (first < last && !Compare(pivot, UnguardedAccess(keys, ++first), comparer)) { }
+            }
+            else
+            {
+                while (!Compare(pivot, UnguardedAccess(keys, ++first), comparer)) { }
+            }
+
+            while (first < last)
+            {
+                Swap(ref UnguardedAccess(keys, first), ref UnguardedAccess(keys, last), ref UnguardedAccess(values, first), ref UnguardedAccess(values, last));
+                while (Compare(pivot, UnguardedAccess(keys, --last), comparer)) { }
+                while (!Compare(pivot, UnguardedAccess(keys, ++first), comparer)) { }
+            }
+
+            var pivotPosition = last;
+            UnguardedAccess(keys, begin) = UnguardedAccess(keys, pivotPosition);
+            UnguardedAccess(values, begin) = UnguardedAccess(values, pivotPosition);
+            UnguardedAccess(keys, pivotPosition) = pivot;
+            UnguardedAccess(values, pivotPosition) = pivotValue;
+
+            return pivotPosition;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static void Swap(ref TKey a, ref TKey b, ref TValue x, ref TValue y)
+        {
+            var t1 = a;
+            a = b;
+            b = t1;
+
+            var t2 = x;
+            x = y;
+            y = t2;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static void Sort2(ref TKey a, ref TKey b, ref TValue x, ref TValue y, IComparer<TKey> comparer)
+        {
+            if (Compare(b, a, comparer))
+            {
+                Swap(ref a, ref b, ref x, ref y);
+            }
+        }
+
+        // Sorts the elements a, b and c using comparison function comparer.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static void Sort3(ref TKey a, ref TKey b, ref TKey c, ref TValue x, ref TValue y, ref TValue z, IComparer<TKey> comparer)
+        {
+            Sort2(ref a, ref b, ref x, ref y, comparer);
+            Sort2(ref b, ref c, ref y, ref z, comparer);
+            Sort2(ref a, ref b, ref x, ref y, comparer);
+        }
+
+        private static void PdqSort(Span<TKey> keys, Span<TValue> values, int begin, int end, IComparer<TKey> comparer, int badAllowed, bool leftmost = true)
+        {
+            Debug.Assert(!keys.IsEmpty);
+            Debug.Assert(!values.IsEmpty);
+            Debug.Assert(keys.Length == values.Length);
+            Debug.Assert(begin >= 0);
+            Debug.Assert(begin < end);
+            Debug.Assert(end <= keys.Length);
+            Debug.Assert(comparer != null);
+            Debug.Assert(badAllowed > 0);
+
+            while (true)
+            {
+                var size = end - begin;
+
+                // Insertion sort is faster for small arrays.
+                if (size < InsertionSortThreshold)
+                {
+                    if (leftmost)
+                    {
+                        InsertionSort(keys, values, begin, end, comparer);
+                    }
+                    else
+                    {
+                        UnguardedInsertionSort(keys, values, begin, end, comparer);
+                    }
+                    return;
+                }
+
+                // Choose pivot as median of 3 or pseudomedian of 9.
+                var mid = size / 2;
+                if (size > NintherThreshold)
+                {
+                    Sort3(ref UnguardedAccess(keys, begin), ref UnguardedAccess(keys, begin + mid), ref UnguardedAccess(keys, end - 1),
+                        ref UnguardedAccess(values, begin), ref UnguardedAccess(values, begin + mid), ref UnguardedAccess(values, end - 1), comparer);
+                    Sort3(ref UnguardedAccess(keys, begin + 1), ref UnguardedAccess(keys, begin + mid - 1), ref UnguardedAccess(keys, end - 2),
+                        ref UnguardedAccess(values, begin + 1), ref UnguardedAccess(values, begin + mid - 1), ref UnguardedAccess(values, end - 2), comparer);
+                    Sort3(ref UnguardedAccess(keys, begin + 2), ref UnguardedAccess(keys, begin + mid + 1), ref UnguardedAccess(keys, end - 3),
+                        ref UnguardedAccess(values, begin + 2), ref UnguardedAccess(values, begin + mid + 1), ref UnguardedAccess(values, end - 3), comparer);
+                    Sort3(ref UnguardedAccess(keys, begin + mid - 1), ref UnguardedAccess(keys, begin + mid), ref UnguardedAccess(keys, begin + mid + 1),
+                        ref UnguardedAccess(values, begin + mid - 1), ref UnguardedAccess(values, begin + mid), ref UnguardedAccess(values, begin + mid + 1), comparer);
+                    Swap(ref UnguardedAccess(keys, begin), ref UnguardedAccess(keys, begin + mid), ref UnguardedAccess(values, begin), ref UnguardedAccess(values, begin + mid));
+                }
+                else
+                {
+                    Sort3(ref UnguardedAccess(keys, begin + mid), ref UnguardedAccess(keys, begin), ref UnguardedAccess(keys, end - 1),
+                        ref UnguardedAccess(values, begin + mid), ref UnguardedAccess(values, begin), ref UnguardedAccess(values, end - 1), comparer);
+                }
+
+                // If keys[begin - 1] is the end of the right partition of a previous partition operation
+                // there is no element in [begin, end) that is smaller than keys[begin - 1]. Then if our
+                // pivot compares equal to keys[begin - 1] we change strategy, putting equal elements in
+                // the left partition, greater elements in the right partition. We do not have to
+                // recurse on the left partition, since it's sorted (all equal).
+                if (!leftmost && !Compare(UnguardedAccess(keys, begin - 1), UnguardedAccess(keys, begin), comparer))
+                {
+                    begin = PartitionLeft(keys, values, begin, end, comparer) + 1;
+                    continue;
+                }
+
+                var (pivot, hasPartitioned) = PartitionRight(keys, values, begin, end, comparer);
+
+                // Check for a highly unbalanced partition.
+                var leftSize = pivot - begin;
+                var rightSize = end - (pivot + 1);
+                var highlyUnbalanced = leftSize < size / 8 || rightSize < size / 8;
+
+                // If we got a highly unbalanced partition we shuffle elements to break many patterns.
+                if (highlyUnbalanced)
+                {
+                    // If we had too many bad partitions, switch to heapsort to guarantee O(n log n).
+                    if (--badAllowed == 0)
+                    {
+                        HeapSort(UnguardedSlice(keys, begin, end), UnguardedSlice(values, begin, end), comparer);
+                        return;
+                    }
+
+                    if (leftSize >= InsertionSortThreshold)
+                    {
+                        Swap(ref UnguardedAccess(keys, begin), ref UnguardedAccess(keys, begin + leftSize / 4), ref UnguardedAccess(values, begin), ref UnguardedAccess(values, begin + leftSize / 4));
+                        Swap(ref UnguardedAccess(keys, pivot - 1), ref UnguardedAccess(keys, pivot - leftSize / 4), ref UnguardedAccess(values, pivot - 1), ref UnguardedAccess(values, pivot - leftSize / 4));
+
+                        if (leftSize > NintherThreshold)
+                        {
+                            Swap(ref UnguardedAccess(keys, begin + 1), ref UnguardedAccess(keys, begin + leftSize / 4 + 1), ref UnguardedAccess(values, begin + 1), ref UnguardedAccess(values, begin + leftSize / 4 + 1));
+                            Swap(ref UnguardedAccess(keys, begin + 2), ref UnguardedAccess(keys, begin + leftSize / 4 + 2), ref UnguardedAccess(values, begin + 2), ref UnguardedAccess(values, begin + leftSize / 4 + 2));
+                            Swap(ref UnguardedAccess(keys, pivot - 2), ref UnguardedAccess(keys, pivot - (leftSize / 4 + 1)), ref UnguardedAccess(values, pivot - 2), ref UnguardedAccess(values, pivot - (leftSize / 4 + 1)));
+                            Swap(ref UnguardedAccess(keys, pivot - 3), ref UnguardedAccess(keys, pivot - (leftSize / 4 + 2)), ref UnguardedAccess(values, pivot - 3), ref UnguardedAccess(values, pivot - (leftSize / 4 + 2)));
+                        }
+                    }
+
+                    if (rightSize >= InsertionSortThreshold)
+                    {
+                        Swap(ref UnguardedAccess(keys, pivot + 1), ref UnguardedAccess(keys, pivot + 1 + rightSize / 4), ref UnguardedAccess(values, pivot + 1), ref UnguardedAccess(values, pivot + 1 + rightSize / 4));
+                        Swap(ref UnguardedAccess(keys, end - 1), ref UnguardedAccess(keys, end - rightSize / 4), ref UnguardedAccess(values, end - 1), ref UnguardedAccess(values, end - rightSize / 4));
+
+                        if (rightSize > NintherThreshold)
+                        {
+                            Swap(ref UnguardedAccess(keys, pivot + 2), ref UnguardedAccess(keys, pivot + 2 + rightSize / 4), ref UnguardedAccess(values, pivot + 2), ref UnguardedAccess(values, pivot + 2 + rightSize / 4));
+                            Swap(ref UnguardedAccess(keys, pivot + 3), ref UnguardedAccess(keys, pivot + 3 + rightSize / 4), ref UnguardedAccess(values, pivot + 3), ref UnguardedAccess(values, pivot + 3 + rightSize / 4));
+                            Swap(ref UnguardedAccess(keys, end - 2), ref UnguardedAccess(keys, end - (1 + rightSize / 4)), ref UnguardedAccess(values, end - 2), ref UnguardedAccess(values, end - (1 + rightSize / 4)));
+                            Swap(ref UnguardedAccess(keys, end - 3), ref UnguardedAccess(keys, end - (2 + rightSize / 4)), ref UnguardedAccess(values, end - 3), ref UnguardedAccess(values, end - (2 + rightSize / 4)));
+                        }
+                    }
+                }
+                else
+                {
+                    // If we were decently balanced and we tried to sort an already partitioned
+                    // sequence try to use insertion sort.
+                    if (hasPartitioned &&
+                        PartialInsertionSort(keys, values, begin, pivot, comparer) &&
+                        PartialInsertionSort(keys, values, pivot + 1, end, comparer))
+                    {
+                        return;
+                    }
+                }
+
+                // Sort the left partition first using recursion and do tail recursion elimination for
+                // the right-hand partition.
+                PdqSort(keys, values, begin, pivot, comparer, badAllowed, leftmost);
+                begin = pivot + 1;
+                leftmost = false;
+            }
+        }
+
+        internal static void PatternDefeatingQuickSort(Span<TKey> keys, Span<TValue> values, IComparer<TKey> comparer)
+        {
+            Debug.Assert(!keys.IsEmpty);
+            Debug.Assert(!values.IsEmpty);
+            Debug.Assert(keys.Length == values.Length);
+            Debug.Assert(comparer != null);
+
+            PdqSort(keys, values, 0, keys.Length, comparer, BitOperations.Log2((uint)keys.Length));
         }
     }
 
@@ -840,7 +1436,7 @@ namespace System.Collections.Generic
                             typeof(TKey) == typeof(float) ||
                             typeof(TKey) == typeof(Half))
                         {
-                            int nanLeft = SortUtils.MoveNansToFront(keys, values);
+                            int nanLeft = MoveNansToFront(keys, values);
                             if (nanLeft == keys.Length)
                             {
                                 return;
@@ -849,12 +1445,12 @@ namespace System.Collections.Generic
                             values = values.Slice(nanLeft);
                         }
 
-                        IntroSort(keys, values, 2 * (BitOperations.Log2((uint)keys.Length) + 1));
+                        PatternDefeatingQuickSort(keys, values);
                     }
                 }
                 else
                 {
-                    ArraySortHelper<TKey, TValue>.IntrospectiveSort(keys, values, comparer);
+                    ArraySortHelper<TKey, TValue>.PatternDefeatingQuickSort(keys, values, comparer);
                 }
             }
             catch (IndexOutOfRangeException)
@@ -864,189 +1460,6 @@ namespace System.Collections.Generic
             catch (Exception e)
             {
                 ThrowHelper.ThrowInvalidOperationException(ExceptionResource.InvalidOperation_IComparerFailed, e);
-            }
-        }
-
-        private static void SwapIfGreaterWithValues(Span<TKey> keys, Span<TValue> values, int i, int j)
-        {
-            Debug.Assert(i != j);
-
-            ref TKey keyRef = ref keys[i];
-            if (keyRef != null && GreaterThan(ref keyRef, ref keys[j]))
-            {
-                TKey key = keyRef;
-                keys[i] = keys[j];
-                keys[j] = key;
-
-                TValue value = values[i];
-                values[i] = values[j];
-                values[j] = value;
-            }
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static void Swap(Span<TKey> keys, Span<TValue> values, int i, int j)
-        {
-            Debug.Assert(i != j);
-
-            TKey k = keys[i];
-            keys[i] = keys[j];
-            keys[j] = k;
-
-            TValue v = values[i];
-            values[i] = values[j];
-            values[j] = v;
-        }
-
-        private static void IntroSort(Span<TKey> keys, Span<TValue> values, int depthLimit)
-        {
-            Debug.Assert(!keys.IsEmpty);
-            Debug.Assert(values.Length == keys.Length);
-            Debug.Assert(depthLimit >= 0);
-
-            int partitionSize = keys.Length;
-            while (partitionSize > 1)
-            {
-                if (partitionSize <= Array.IntrosortSizeThreshold)
-                {
-
-                    if (partitionSize == 2)
-                    {
-                        SwapIfGreaterWithValues(keys, values, 0, 1);
-                        return;
-                    }
-
-                    if (partitionSize == 3)
-                    {
-                        SwapIfGreaterWithValues(keys, values, 0, 1);
-                        SwapIfGreaterWithValues(keys, values, 0, 2);
-                        SwapIfGreaterWithValues(keys, values, 1, 2);
-                        return;
-                    }
-
-                    InsertionSort(keys.Slice(0, partitionSize), values.Slice(0, partitionSize));
-                    return;
-                }
-
-                if (depthLimit == 0)
-                {
-                    HeapSort(keys.Slice(0, partitionSize), values.Slice(0, partitionSize));
-                    return;
-                }
-                depthLimit--;
-
-                int p = PickPivotAndPartition(keys.Slice(0, partitionSize), values.Slice(0, partitionSize));
-
-                // Note we've already partitioned around the pivot and do not have to move the pivot again.
-                IntroSort(keys[(p+1)..partitionSize], values[(p+1)..partitionSize], depthLimit);
-                partitionSize = p;
-            }
-        }
-
-        private static int PickPivotAndPartition(Span<TKey> keys, Span<TValue> values)
-        {
-            Debug.Assert(keys.Length >= Array.IntrosortSizeThreshold);
-
-            int hi = keys.Length - 1;
-
-            // Compute median-of-three.  But also partition them, since we've done the comparison.
-            int middle = hi >> 1;
-
-            // Sort lo, mid and hi appropriately, then pick mid as the pivot.
-            SwapIfGreaterWithValues(keys, values, 0, middle);  // swap the low with the mid point
-            SwapIfGreaterWithValues(keys, values, 0, hi);   // swap the low with the high
-            SwapIfGreaterWithValues(keys, values, middle, hi); // swap the middle with the high
-
-            TKey pivot = keys[middle];
-            Swap(keys, values, middle, hi - 1);
-            int left = 0, right = hi - 1;  // We already partitioned lo and hi and put the pivot in hi - 1.  And we pre-increment & decrement below.
-
-            while (left < right)
-            {
-                if (pivot == null)
-                {
-                    while (left < (hi - 1) && keys[++left] == null) ;
-                    while (right > 0 && keys[--right] != null) ;
-                }
-                else
-                {
-                    while (GreaterThan(ref pivot, ref keys[++left])) ;
-                    while (LessThan(ref pivot, ref keys[--right])) ;
-                }
-
-                if (left >= right)
-                    break;
-
-                Swap(keys, values, left, right);
-            }
-
-            // Put pivot in the right location.
-            if (left != hi - 1)
-            {
-                Swap(keys, values, left, hi - 1);
-            }
-            return left;
-        }
-
-        private static void HeapSort(Span<TKey> keys, Span<TValue> values)
-        {
-            Debug.Assert(!keys.IsEmpty);
-
-            int n = keys.Length;
-            for (int i = n >> 1; i >= 1; i--)
-            {
-                DownHeap(keys, values, i, n);
-            }
-
-            for (int i = n; i > 1; i--)
-            {
-                Swap(keys, values, 0, i - 1);
-                DownHeap(keys, values, 1, i - 1);
-            }
-        }
-
-        private static void DownHeap(Span<TKey> keys, Span<TValue> values, int i, int n)
-        {
-            TKey d = keys[i - 1];
-            TValue dValue = values[i - 1];
-
-            while (i <= n >> 1)
-            {
-                int child = 2 * i;
-                if (child < n && (keys[child - 1] == null || LessThan(ref keys[child - 1], ref keys[child])))
-                {
-                    child++;
-                }
-
-                if (keys[child - 1] == null || !LessThan(ref d, ref keys[child - 1]))
-                    break;
-
-                keys[i - 1] = keys[child - 1];
-                values[i - 1] = values[child - 1];
-                i = child;
-            }
-
-            keys[i - 1] = d;
-            values[i - 1] = dValue;
-        }
-
-        private static void InsertionSort(Span<TKey> keys, Span<TValue> values)
-        {
-            for (int i = 0; i < keys.Length - 1; i++)
-            {
-                TKey t = keys[i + 1];
-                TValue tValue = values[i + 1];
-
-                int j = i;
-                while (j >= 0 && (t == null || LessThan(ref t, ref keys[j])))
-                {
-                    keys[j + 1] = keys[j];
-                    values[j + 1] = values[j];
-                    j--;
-                }
-
-                keys[j + 1] = t!;
-                values[j + 1] = tValue;
             }
         }
 
@@ -1060,7 +1473,7 @@ namespace System.Collections.Generic
         // - These are duplicated here rather than being on a helper type due to current limitations around generic inlining.
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)] // compiles to a single comparison or method call
-        private static bool LessThan(ref TKey left, ref TKey right)
+        private static bool LessThan(TKey left, TKey right)
         {
             if (typeof(TKey) == typeof(byte)) return (byte)(object)left < (byte)(object)right ? true : false;
             if (typeof(TKey) == typeof(sbyte)) return (sbyte)(object)left < (sbyte)(object)right ? true : false;
@@ -1078,23 +1491,407 @@ namespace System.Collections.Generic
             return left.CompareTo(right) < 0 ? true : false;
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)] // compiles to a single comparison or method call
-        private static bool GreaterThan(ref TKey left, ref TKey right)
+        private static void HeapSort(Span<TKey> keys, Span<TValue> values)
         {
-            if (typeof(TKey) == typeof(byte)) return (byte)(object)left > (byte)(object)right ? true : false;
-            if (typeof(TKey) == typeof(sbyte)) return (sbyte)(object)left > (sbyte)(object)right ? true : false;
-            if (typeof(TKey) == typeof(ushort)) return (ushort)(object)left > (ushort)(object)right ? true : false;
-            if (typeof(TKey) == typeof(short)) return (short)(object)left > (short)(object)right ? true : false;
-            if (typeof(TKey) == typeof(uint)) return (uint)(object)left > (uint)(object)right ? true : false;
-            if (typeof(TKey) == typeof(int)) return (int)(object)left > (int)(object)right ? true : false;
-            if (typeof(TKey) == typeof(ulong)) return (ulong)(object)left > (ulong)(object)right ? true : false;
-            if (typeof(TKey) == typeof(long)) return (long)(object)left > (long)(object)right ? true : false;
-            if (typeof(TKey) == typeof(nuint)) return (nuint)(object)left > (nuint)(object)right ? true : false;
-            if (typeof(TKey) == typeof(nint)) return (nint)(object)left > (nint)(object)right ? true : false;
-            if (typeof(TKey) == typeof(float)) return (float)(object)left > (float)(object)right ? true : false;
-            if (typeof(TKey) == typeof(double)) return (double)(object)left > (double)(object)right ? true : false;
-            if (typeof(TKey) == typeof(Half)) return (Half)(object)left > (Half)(object)right ? true : false;
-            return left.CompareTo(right) > 0 ? true : false;
+            if (keys.Length == 0)
+            {
+                return;
+            }
+
+            int n = keys.Length;
+            for (int i = n >> 1; i >= 1; i--)
+            {
+                DownHeap(keys, values, i, n);
+            }
+
+            for (int i = n; i > 1; i--)
+            {
+                Swap(ref UnguardedAccess(keys, 0), ref UnguardedAccess(keys, i - 1), ref UnguardedAccess(values, 0), ref UnguardedAccess(values, i - 1));
+                DownHeap(keys, values, 1, i - 1);
+            }
+        }
+
+        private static void DownHeap(Span<TKey> keys, Span<TValue> values, int i, int n)
+        {
+            TKey d = UnguardedAccess(keys, i - 1);
+            TValue dValue = UnguardedAccess(values, i - 1);
+            while (i <= n >> 1)
+            {
+                int child = 2 * i;
+                if (child < n && LessThan(UnguardedAccess(keys, child - 1), UnguardedAccess(keys, child)))
+                {
+                    child++;
+                }
+
+                if (!LessThan(d, UnguardedAccess(keys, child - 1)))
+                {
+                    break;
+                }
+
+                UnguardedAccess(keys, i - 1) = UnguardedAccess(keys, child - 1);
+                UnguardedAccess(values, i - 1) = UnguardedAccess(values, child - 1);
+                i = child;
+            }
+
+            UnguardedAccess(keys, i - 1) = d;
+            UnguardedAccess(values, i - 1) = dValue;
+        }
+
+        // Sorts [begin, end) using insertion sort with the given comparison function.
+        private static void InsertionSort(Span<TKey> keys, Span<TValue> values, int begin, int end)
+        {
+            if (begin == end)
+            {
+                return;
+            }
+
+            for (var i = begin + 1; i < end; i++)
+            {
+                var sift = i;
+                var sift1 = i - 1;
+
+                // Compare first so we can avoid 2 moves for an element already positioned correctly.
+                if (LessThan(UnguardedAccess(keys, sift), UnguardedAccess(keys, sift1)))
+                {
+                    var tmp = UnguardedAccess(keys, sift);
+                    var tmpValue = UnguardedAccess(values, sift);
+                    do
+                    {
+                        UnguardedAccess(keys, sift) = UnguardedAccess(keys, sift1);
+                        UnguardedAccess(values, sift) = UnguardedAccess(values, sift1);
+                        sift--;
+                    }
+                    while (sift != begin && LessThan(tmp, UnguardedAccess(keys, --sift1)));
+
+                    UnguardedAccess(keys, sift) = tmp;
+                    UnguardedAccess(values, sift) = tmpValue;
+                }
+            }
+        }
+
+        // Sorts [begin, end) using insertion sort with the given comparison function. Assumes
+        // keys[begin - 1] is an element smaller than or equal to any element in [begin, end).
+        private static void UnguardedInsertionSort(Span<TKey> keys, Span<TValue> values, int begin, int end)
+        {
+            if (begin == end)
+            {
+                return;
+            }
+
+            for (var i = begin + 1; i < end; i++)
+            {
+                var sift = i;
+                var sift1 = i - 1;
+
+                // Compare first so we can avoid 2 moves for an element already positioned correctly.
+                if (LessThan(UnguardedAccess(keys, sift), UnguardedAccess(keys, sift1)))
+                {
+                    var tmp = UnguardedAccess(keys, sift);
+                    var tmpValue = UnguardedAccess(values, sift);
+                    do
+                    {
+                        UnguardedAccess(keys, sift) = UnguardedAccess(keys, sift1);
+                        UnguardedAccess(values, sift) = UnguardedAccess(values, sift1);
+                        sift--;
+                    }
+                    while (LessThan(tmp, UnguardedAccess(keys, --sift1)));
+
+                    UnguardedAccess(keys, sift) = tmp;
+                    UnguardedAccess(values, sift) = tmpValue;
+                }
+            }
+        }
+
+        // Attempts to use insertion sort on [begin, end). Will return false if more than
+        // partial_insertion_sort_limit elements were moved, and abort sorting. Otherwise it will
+        // successfully sort and return true.
+        private static bool PartialInsertionSort(Span<TKey> keys, Span<TValue> values, int begin, int end)
+        {
+            if (begin == end)
+            {
+                return true;
+            }
+
+            var limit = 0;
+            for (var i = begin + 1; i < end; i++)
+            {
+                var sift = i;
+                var sift1 = i - 1;
+
+                // Compare first so we can avoid 2 moves for an element already positioned correctly.
+                if (LessThan(UnguardedAccess(keys, sift), UnguardedAccess(keys, sift1)))
+                {
+                    var tmp = UnguardedAccess(keys, sift);
+                    var tmpValue = UnguardedAccess(values, sift);
+                    do
+                    {
+                        UnguardedAccess(keys, sift) = UnguardedAccess(keys, sift1);
+                        UnguardedAccess(values, sift) = UnguardedAccess(values, sift1);
+                        sift--;
+                    }
+                    while (sift != begin && LessThan(tmp, UnguardedAccess(keys, --sift1)));
+
+                    UnguardedAccess(keys, sift) = tmp;
+                    UnguardedAccess(values, sift) = tmpValue;
+                    limit += i - sift;
+                }
+
+                if (limit > PartialInsertionSortLimit) return false;
+            }
+
+            return true;
+        }
+
+        // Partitions [begin, end) around pivot keys[begin] using comparison function comp. Elements equal
+        // to the pivot are put in the right-hand partition. Returns the position of the pivot after
+        // partitioning and whether the passed sequence already was correctly partitioned. Assumes the
+        // pivot is a median of at least 3 elements and that [begin, end) is at least
+        // insertion_sort_threshold long.
+        private static (int Pivot, bool HasPartitioned) PartitionRight(Span<TKey> keys, Span<TValue> values, int begin, int end)
+        {
+            // Move pivot into local for speed.
+            var pivot = UnguardedAccess(keys, begin);
+            var pivotValue = UnguardedAccess(values, begin);
+            var first = begin;
+            var last = end;
+
+            // Find the first element greater than or equal than the pivot (the median of 3 guarantees
+            // this exists).
+            while (LessThan(UnguardedAccess(keys, ++first), pivot)) { }
+
+            // Find the first element strictly smaller than the pivot. We have to guard this search if
+            // there was no element before *first.
+            if (first - 1 == 0)
+            {
+                while (first < last && !LessThan(UnguardedAccess(keys, --last), pivot)) { }
+            }
+            else
+            {
+                while (!LessThan(UnguardedAccess(keys, --last), pivot)) { }
+            }
+
+            // If the first pair of elements that should be swapped to partition are the same element,
+            // the passed in sequence already was correctly partitioned.
+            bool hasPartitioned = first >= last;
+
+            // Keep swapping pairs of elements that are on the wrong side of the pivot. Previously
+            // swapped pairs guard the searches, which is why the first iteration is special-cased
+            // above.
+            while (first < last)
+            {
+                Swap(ref UnguardedAccess(keys, first), ref UnguardedAccess(keys, last), ref UnguardedAccess(values, first), ref UnguardedAccess(values, last));
+                while (LessThan(UnguardedAccess(keys, ++first), pivot)) { }
+                while (!LessThan(UnguardedAccess(keys, --last), pivot)) { }
+            }
+
+            // Put the pivot in the right place.
+            var pivotPosition = first - 1;
+            UnguardedAccess(keys, begin) = UnguardedAccess(keys, pivotPosition);
+            UnguardedAccess(values, begin) = UnguardedAccess(values, pivotPosition);
+            UnguardedAccess(keys, pivotPosition) = pivot;
+            UnguardedAccess(values, pivotPosition) = pivotValue;
+
+            return (pivotPosition, hasPartitioned);
+        }
+
+        // Similar function to the one above, except elements equal to the pivot are put to the left of
+        // the pivot and it doesn't check or return if the passed sequence already was partitioned.
+        // Since this is rarely used (the many equal case), and in that case pdqsort already has O(n)
+        // performance, no block quicksort is applied here for simplicity.
+        private static int PartitionLeft(Span<TKey> keys, Span<TValue> values, int begin, int end)
+        {
+            var pivot = UnguardedAccess(keys, begin);
+            var pivotValue = UnguardedAccess(values, begin);
+            var first = begin;
+            var last = end;
+
+            while (LessThan(pivot, UnguardedAccess(keys, --last))) { }
+            if (last + 1 == end)
+            {
+                while (first < last && !LessThan(pivot, UnguardedAccess(keys, ++first))) { }
+            }
+            else
+            {
+                while (!LessThan(pivot, UnguardedAccess(keys, ++first))) { }
+            }
+
+            while (first < last)
+            {
+                Swap(ref UnguardedAccess(keys, first), ref UnguardedAccess(keys, last), ref UnguardedAccess(values, first), ref UnguardedAccess(values, last));
+                while (LessThan(pivot, UnguardedAccess(keys, --last))) { }
+                while (!LessThan(pivot, UnguardedAccess(keys, ++first))) { }
+            }
+
+            var pivotPosition = last;
+            UnguardedAccess(keys, begin) = UnguardedAccess(keys, pivotPosition);
+            UnguardedAccess(values, begin) = UnguardedAccess(values, pivotPosition);
+            UnguardedAccess(keys, pivotPosition) = pivot;
+            UnguardedAccess(values, pivotPosition) = pivotValue;
+
+            return pivotPosition;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static void Swap(ref TKey a, ref TKey b, ref TValue x, ref TValue y)
+        {
+            var t1 = a;
+            a = b;
+            b = t1;
+
+            var t2 = x;
+            x = y;
+            y = t2;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static void Sort2(ref TKey a, ref TKey b, ref TValue x, ref TValue y)
+        {
+            if (LessThan(b, a))
+            {
+                Swap(ref a, ref b, ref x, ref y);
+            }
+        }
+
+        // Sorts the elements a, b and c using comparison function comparer.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static void Sort3(ref TKey a, ref TKey b, ref TKey c, ref TValue x, ref TValue y, ref TValue z)
+        {
+            Sort2(ref a, ref b, ref x, ref y);
+            Sort2(ref b, ref c, ref y, ref z);
+            Sort2(ref a, ref b, ref x, ref y);
+        }
+
+        private static void PdqSort(Span<TKey> keys, Span<TValue> values, int begin, int end, int badAllowed, bool leftmost = true)
+        {
+            Debug.Assert(!keys.IsEmpty);
+            Debug.Assert(!values.IsEmpty);
+            Debug.Assert(keys.Length == values.Length);
+            Debug.Assert(begin >= 0);
+            Debug.Assert(begin < end);
+            Debug.Assert(end <= keys.Length);
+            Debug.Assert(badAllowed > 0);
+
+            while (true)
+            {
+                var size = end - begin;
+
+                // Insertion sort is faster for small arrays.
+                if (size < InsertionSortThreshold)
+                {
+                    if (leftmost)
+                    {
+                        InsertionSort(keys, values, begin, end);
+                    }
+                    else
+                    {
+                        UnguardedInsertionSort(keys, values, begin, end);
+                    }
+                    return;
+                }
+
+                // Choose pivot as median of 3 or pseudomedian of 9.
+                var mid = size / 2;
+                if (size > NintherThreshold)
+                {
+                    Sort3(ref UnguardedAccess(keys, begin), ref UnguardedAccess(keys, begin + mid), ref UnguardedAccess(keys, end - 1),
+                        ref UnguardedAccess(values, begin), ref UnguardedAccess(values, begin + mid), ref UnguardedAccess(values, end - 1));
+                    Sort3(ref UnguardedAccess(keys, begin + 1), ref UnguardedAccess(keys, begin + mid - 1), ref UnguardedAccess(keys, end - 2),
+                        ref UnguardedAccess(values, begin + 1), ref UnguardedAccess(values, begin + mid - 1), ref UnguardedAccess(values, end - 2));
+                    Sort3(ref UnguardedAccess(keys, begin + 2), ref UnguardedAccess(keys, begin + mid + 1), ref UnguardedAccess(keys, end - 3),
+                        ref UnguardedAccess(values, begin + 2), ref UnguardedAccess(values, begin + mid + 1), ref UnguardedAccess(values, end - 3));
+                    Sort3(ref UnguardedAccess(keys, begin + mid - 1), ref UnguardedAccess(keys, begin + mid), ref UnguardedAccess(keys, begin + mid + 1),
+                        ref UnguardedAccess(values, begin + mid - 1), ref UnguardedAccess(values, begin + mid), ref UnguardedAccess(values, begin + mid + 1));
+                    Swap(ref UnguardedAccess(keys, begin), ref UnguardedAccess(keys, begin + mid), ref UnguardedAccess(values, begin), ref UnguardedAccess(values, begin + mid));
+                }
+                else
+                {
+                    Sort3(ref UnguardedAccess(keys, begin + mid), ref UnguardedAccess(keys, begin), ref UnguardedAccess(keys, end - 1),
+                        ref UnguardedAccess(values, begin + mid), ref UnguardedAccess(values, begin), ref UnguardedAccess(values, end - 1));
+                }
+
+                // If keys[begin - 1] is the end of the right partition of a previous partition operation
+                // there is no element in [begin, end) that is smaller than keys[begin - 1]. Then if our
+                // pivot compares equal to keys[begin - 1] we change strategy, putting equal elements in
+                // the left partition, greater elements in the right partition. We do not have to
+                // recurse on the left partition, since it's sorted (all equal).
+                if (!leftmost && !LessThan(UnguardedAccess(keys, begin - 1), UnguardedAccess(keys, begin)))
+                {
+                    begin = PartitionLeft(keys, values, begin, end) + 1;
+                    continue;
+                }
+
+                var (pivot, hasPartitioned) = PartitionRight(keys, values, begin, end);
+
+                // Check for a highly unbalanced partition.
+                var leftSize = pivot - begin;
+                var rightSize = end - (pivot + 1);
+                var highlyUnbalanced = leftSize < size / 8 || rightSize < size / 8;
+
+                // If we got a highly unbalanced partition we shuffle elements to break many patterns.
+                if (highlyUnbalanced)
+                {
+                    // If we had too many bad partitions, switch to heapsort to guarantee O(n log n).
+                    if (--badAllowed == 0)
+                    {
+                        HeapSort(UnguardedSlice(keys, begin, end), UnguardedSlice(values, begin, end));
+                        return;
+                    }
+
+                    if (leftSize >= InsertionSortThreshold)
+                    {
+                        Swap(ref UnguardedAccess(keys, begin), ref UnguardedAccess(keys, begin + leftSize / 4), ref UnguardedAccess(values, begin), ref UnguardedAccess(values, begin + leftSize / 4));
+                        Swap(ref UnguardedAccess(keys, pivot - 1), ref UnguardedAccess(keys, pivot - leftSize / 4), ref UnguardedAccess(values, pivot - 1), ref UnguardedAccess(values, pivot - leftSize / 4));
+
+                        if (leftSize > NintherThreshold)
+                        {
+                            Swap(ref UnguardedAccess(keys, begin + 1), ref UnguardedAccess(keys, begin + leftSize / 4 + 1), ref UnguardedAccess(values, begin + 1), ref UnguardedAccess(values, begin + leftSize / 4 + 1));
+                            Swap(ref UnguardedAccess(keys, begin + 2), ref UnguardedAccess(keys, begin + leftSize / 4 + 2), ref UnguardedAccess(values, begin + 2), ref UnguardedAccess(values, begin + leftSize / 4 + 2));
+                            Swap(ref UnguardedAccess(keys, pivot - 2), ref UnguardedAccess(keys, pivot - (leftSize / 4 + 1)), ref UnguardedAccess(values, pivot - 2), ref UnguardedAccess(values, pivot - (leftSize / 4 + 1)));
+                            Swap(ref UnguardedAccess(keys, pivot - 3), ref UnguardedAccess(keys, pivot - (leftSize / 4 + 2)), ref UnguardedAccess(values, pivot - 3), ref UnguardedAccess(values, pivot - (leftSize / 4 + 2)));
+                        }
+                    }
+
+                    if (rightSize >= InsertionSortThreshold)
+                    {
+                        Swap(ref UnguardedAccess(keys, pivot + 1), ref UnguardedAccess(keys, pivot + 1 + rightSize / 4), ref UnguardedAccess(values, pivot + 1), ref UnguardedAccess(values, pivot + 1 + rightSize / 4));
+                        Swap(ref UnguardedAccess(keys, end - 1), ref UnguardedAccess(keys, end - rightSize / 4), ref UnguardedAccess(values, end - 1), ref UnguardedAccess(values, end - rightSize / 4));
+
+                        if (rightSize > NintherThreshold)
+                        {
+                            Swap(ref UnguardedAccess(keys, pivot + 2), ref UnguardedAccess(keys, pivot + 2 + rightSize / 4), ref UnguardedAccess(values, pivot + 2), ref UnguardedAccess(values, pivot + 2 + rightSize / 4));
+                            Swap(ref UnguardedAccess(keys, pivot + 3), ref UnguardedAccess(keys, pivot + 3 + rightSize / 4), ref UnguardedAccess(values, pivot + 3), ref UnguardedAccess(values, pivot + 3 + rightSize / 4));
+                            Swap(ref UnguardedAccess(keys, end - 2), ref UnguardedAccess(keys, end - (1 + rightSize / 4)), ref UnguardedAccess(values, end - 2), ref UnguardedAccess(values, end - (1 + rightSize / 4)));
+                            Swap(ref UnguardedAccess(keys, end - 3), ref UnguardedAccess(keys, end - (2 + rightSize / 4)), ref UnguardedAccess(values, end - 3), ref UnguardedAccess(values, end - (2 + rightSize / 4)));
+                        }
+                    }
+                }
+                else
+                {
+                    // If we were decently balanced and we tried to sort an already partitioned
+                    // sequence try to use insertion sort.
+                    if (hasPartitioned &&
+                        PartialInsertionSort(keys, values, begin, pivot) &&
+                        PartialInsertionSort(keys, values, pivot + 1, end))
+                    {
+                        return;
+                    }
+                }
+
+                // Sort the left partition first using recursion and do tail recursion elimination for
+                // the right-hand partition.
+                PdqSort(keys, values, begin, pivot, badAllowed, leftmost);
+                begin = pivot + 1;
+                leftmost = false;
+            }
+        }
+
+        internal static void PatternDefeatingQuickSort(Span<TKey> keys, Span<TValue> values)
+        {
+            Debug.Assert(!keys.IsEmpty);
+            Debug.Assert(!values.IsEmpty);
+            Debug.Assert(keys.Length == values.Length);
+
+            PdqSort(keys, values, 0, keys.Length, BitOperations.Log2((uint)keys.Length));
         }
     }
 
@@ -1103,6 +1900,26 @@ namespace System.Collections.Generic
     /// <summary>Helper methods for use in array/span sorting routines.</summary>
     internal static class SortUtils
     {
+        // Partitions below this size are sorted using insertion sort.
+        internal const int InsertionSortThreshold = 24;
+        // Partitions above this size use Tukey's ninther to select the pivot.
+        internal const int NintherThreshold = 128;
+        // When we detect an already sorted partition, attempt an insertion sort that allows this
+        // amount of element moves before giving up.
+        internal const int PartialInsertionSortLimit = 8;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static ref T UnguardedAccess<T>(Span<T> span, int index)
+        {
+            return ref Unsafe.Add(ref MemoryMarshal.GetReference(span), index);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static Span<T> UnguardedSlice<T>(Span<T> span, int begin, int end)
+        {
+            return MemoryMarshal.CreateSpan(ref UnguardedAccess(span, begin), end - begin);
+        }
+
         public static int MoveNansToFront<TKey, TValue>(Span<TKey> keys, Span<TValue> values) where TKey : notnull
         {
             Debug.Assert(typeof(TKey) == typeof(double) || typeof(TKey) == typeof(float));
