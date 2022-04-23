@@ -584,6 +584,7 @@ namespace System.IO.Tests
         {
             string testDirectory = TestDirectory;
             string dir = Path.Combine(testDirectory, "dir");
+            Directory.CreateDirectory(dir);
             using (var fsw = new FileSystemWatcher(dir))
             {
                 AutoResetEvent are = WatchCreated(fsw).EventOccured;
