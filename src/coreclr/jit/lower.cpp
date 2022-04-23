@@ -5455,7 +5455,8 @@ GenTree* Lowering::LowerAdd(GenTreeOp* node)
 #ifdef TARGET_ARM64
         if (BlockRange().TryGetUse(node, &use))
         {
-            if (comp->opts.OptimizationEnabled() && varTypeIsIntegral(node) && !node->gtOverflow() &&
+            if (comp->opts.OptimizationEnabled() && varTypeIsIntegral(node) &&
+                !(node->gtFlags & GTF_SET_FLAGS) && !node->gtOverflow() &&
                 !node->isContained())
             {
                 GenTree* mul       = nullptr;
@@ -5471,7 +5472,8 @@ GenTree* Lowering::LowerAdd(GenTreeOp* node)
                     c   = op1;
                 }
 
-                if (mul->OperIs(GT_MUL) && varTypeIsIntegral(mul) && !mul->gtOverflow() && !mul->isContained() &&
+                if (mul->OperIs(GT_MUL) && !(mul->gtFlags & GTF_SET_FLAGS) && varTypeIsIntegral(mul) &&
+                    !mul->gtOverflow() && !mul->isContained() &&
                     !c->isContained())
                 {
                     GenTree* a = mul->gtGetOp1();
