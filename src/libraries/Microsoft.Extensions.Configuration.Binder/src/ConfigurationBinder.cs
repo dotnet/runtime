@@ -258,32 +258,13 @@ namespace Microsoft.Extensions.Configuration
             }
         }
 
-        [RequiresUnreferencedCode("Cannot statically analyze what the element type is of the object collection in type so its members may be trimmed.")]
-        private static object BindToSet(Type type, IConfiguration config, BinderOptions options)
-        {
-            Type genericType = typeof(HashSet<>).MakeGenericType(type.GenericTypeArguments[0]);
-            object instance = Activator.CreateInstance(genericType)!;
-            BindCollection(instance, genericType, config, options);
-            return instance;
-        }
-
-        [RequiresUnreferencedCode("Cannot statically analyze what the element type is of the object collection in type so its members may be trimmed.")]
-        private static object BindToCollection(Type type, IConfiguration config, BinderOptions options)
-        {
-            Type genericType = typeof(List<>).MakeGenericType(type.GenericTypeArguments[0]);
-            object instance = Activator.CreateInstance(genericType)!;
-            BindCollection(instance, genericType, config, options);
-            return instance;
-        }
-
         // Called when the binding point doesn't have a value. We need to determine the best type
         // to use given just an interface.
-        // If there is no best type to create, for instance, the user provided a custom interface that is `IEnumerable<>`,
+        // If there is no best type to create, for instance, the user provided a custom interface derived from `IEnumerable<>`,
         // then we return null.
         [RequiresUnreferencedCode("In case type is a Dictionary, cannot statically analyze what the element type is of the value objects in the dictionary so its members may be trimmed.")]
         private static (bool WasCollection, object? NewInstance) AttemptBindToCollectionInterfaces(
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
-            Type type,
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type,
             IConfiguration config, BinderOptions options)
         {
             if (!type.IsInterface)
@@ -300,22 +281,12 @@ namespace Microsoft.Extensions.Configuration
                 return (true, instance);
             }
 
-            if (TypeCanBeAssignedAHashSet(type))
-            {
-                return (true, BindToSet(type, config, options));
-            }
-
-            if (TypeCanBeAssignedAList(type))
-            {
-                return (true, BindToCollection(type, config, options));
-            }
-
             // The interface that we've been given is not something that can be assigned a hashset, list, or dictionary.
             // So all we need to return now is whether or not it was a IEnumerable. If it
-            // was a collection, the caller binds null to it, if it wasn't, the caller creates
-            // an instance of the type
-
-            return (FindOpenGenericInterface(type, typeof(IEnumerable<>)) != null, null);
+            // *was* derivable from IEnumerable (i.e. we can't create it), then the caller binds
+            // null to it, and if it wasn't, then the caller creates an instance of the type.
+            bool wasACollection = FindOpenGenericInterface(type, typeof(IEnumerable<>)) != null;
+            return (wasACollection, null);
         }
 
         [RequiresUnreferencedCode(TrimmingWarningMessage)]
@@ -780,17 +751,6 @@ namespace Microsoft.Extensions.Configuration
             return result;
         }
 
-        private static bool TypeCanBeAssignedAList(Type type)
-        {
-            if (!type.IsInterface || !type.IsConstructedGenericType) { return false; }
-
-            Type genericTypeDefinition = type.GetGenericTypeDefinition();
-            return genericTypeDefinition == typeof(IEnumerable<>)
-                || genericTypeDefinition == typeof(IReadOnlyCollection<>)
-                || genericTypeDefinition == typeof(ICollection<>)
-                || genericTypeDefinition == typeof(IList<>)
-                || genericTypeDefinition == typeof(IReadOnlyList<>);
-        }
         private static bool TypeCanBeAssignedADictionary(Type type)
         {
             if (!type.IsInterface || !type.IsConstructedGenericType) { return false; }
@@ -806,6 +766,7 @@ namespace Microsoft.Extensions.Configuration
 
             Type genericTypeDefinition = type.GetGenericTypeDefinition();
             return genericTypeDefinition == typeof(IEnumerable<>)
+                || genericTypeDefinition == typeof(ICollection<>)
                 || genericTypeDefinition == typeof(IReadOnlyCollection<>)
                 || genericTypeDefinition == typeof(IReadOnlyList<>);
         }
