@@ -3047,7 +3047,11 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
             {
                 // TODO-Cleanup: this is a patch for a violation in our GT_ASG propagation.
                 // see https://github.com/dotnet/runtime/issues/13758
-                actualFlags |= arg.GetEarlyNode()->gtFlags & GTF_ASG;
+                if (arg.GetEarlyNode() != nullptr)
+                {
+                    actualFlags |= arg.GetEarlyNode()->gtFlags & GTF_ASG;
+                }
+
                 if (arg.GetLateNode() != nullptr)
                 {
                     actualFlags |= arg.GetLateNode()->gtFlags & GTF_ASG;

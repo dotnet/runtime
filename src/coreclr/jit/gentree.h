@@ -2125,10 +2125,6 @@ public:
         return t1->GetIconHandleFlag() == t2->GetIconHandleFlag();
     }
 
-    bool IsArgPlaceHolderNode() const
-    {
-        return OperGet() == GT_ARGPLACE;
-    }
     bool IsCall() const
     {
         return OperGet() == GT_CALL;
@@ -4405,20 +4401,11 @@ public:
         {
         }
 
-        CallArg& operator*() const
-        {
-            return *m_arg;
-        }
-
-        CallArg* operator->() const
-        {
-            return m_arg;
-        }
-
-        CallArg* GetArg() const
-        {
-            return m_arg;
-        }
+        // clang-format off
+        CallArg& operator*() const { return *m_arg; }
+        CallArg* operator->() const { return m_arg; }
+        CallArg* GetArg() const { return m_arg; }
+        // clang-format on
 
         CallArgIterator& operator++()
         {
@@ -4437,12 +4424,62 @@ public:
         }
     };
 
+    class EarlyArgIterator
+    {
+        friend class CallArgs;
+
+        CallArg* m_arg;
+
+        static CallArg* NextEarlyArg(CallArg* cur)
+        {
+            while ((cur != nullptr) && (cur->GetEarlyNode() == nullptr))
+            {
+                cur = cur->GetNext();
+            }
+
+            return cur;
+        }
+
+    public:
+        explicit EarlyArgIterator(CallArg* arg) : m_arg(arg)
+        {
+        }
+
+        // clang-format off
+        CallArg& operator*() const { return *m_arg; }
+        CallArg* operator->() const { return m_arg; }
+        CallArg* GetArg() const { return m_arg; }
+        // clang-format on
+
+        EarlyArgIterator& operator++()
+        {
+            m_arg = NextEarlyArg(m_arg->GetNext());
+            return *this;
+        }
+
+        bool operator==(const EarlyArgIterator& i) const
+        {
+            return m_arg == i.m_arg;
+        }
+
+        bool operator!=(const EarlyArgIterator& i) const
+        {
+            return m_arg != i.m_arg;
+        }
+    };
+
     using ArgIterator     = CallArgIterator<&CallArg::GetNext>;
     using LateArgIterator = CallArgIterator<&CallArg::GetLateNext>;
 
     IteratorPair<ArgIterator> Args()
     {
         return IteratorPair<ArgIterator>(ArgIterator(m_head), ArgIterator(nullptr));
+    }
+
+    IteratorPair<EarlyArgIterator> EarlyArgs()
+    {
+        CallArg* firstEarlyArg = EarlyArgIterator::NextEarlyArg(m_head);
+        return IteratorPair<EarlyArgIterator>(EarlyArgIterator(firstEarlyArg), EarlyArgIterator(nullptr));
     }
 
     IteratorPair<LateArgIterator> LateArgs()
@@ -5150,7 +5187,7 @@ struct GenTreeCall final : public GenTree
 
         CallArg* retBufArg        = gtArgs.GetRetBufferArg();
         GenTree* lclRetBufArgNode = retBufArg->GetEarlyNode();
-        if (lclRetBufArgNode->IsArgPlaceHolderNode())
+        if (lclRetBufArgNode == nullptr)
         {
             lclRetBufArgNode = retBufArg->GetLateNode();
         }
@@ -7145,22 +7182,6 @@ struct GenTreeClsVar : public GenTree
 
 #if DEBUGGABLE_GENTREE
     GenTreeClsVar() : GenTree()
-    {
-    }
-#endif
-};
-
-/* gtArgPlace -- 'register argument placeholder' (GT_ARGPLACE) */
-
-struct GenTreeArgPlace : public GenTree
-{
-    CORINFO_CLASS_HANDLE gtArgPlaceClsHnd; // Needed when we have a TYP_STRUCT argument
-
-    GenTreeArgPlace(var_types type, CORINFO_CLASS_HANDLE clsHnd) : GenTree(GT_ARGPLACE, type), gtArgPlaceClsHnd(clsHnd)
-    {
-    }
-#if DEBUGGABLE_GENTREE
-    GenTreeArgPlace() : GenTree()
     {
     }
 #endif

@@ -2605,8 +2605,6 @@ public:
 
     GenTree* gtNewNothingNode();
 
-    GenTree* gtNewArgPlaceHolderNode(var_types type, CORINFO_CLASS_HANDLE clsHnd);
-
     GenTree* gtUnusedValNode(GenTree* expr);
 
     GenTree* gtNewKeepAliveNode(GenTree* op);
@@ -10651,7 +10649,6 @@ public:
             case GT_JMPTABLE:
             case GT_CLS_VAR:
             case GT_CLS_VAR_ADDR:
-            case GT_ARGPLACE:
             case GT_PHYSREG:
             case GT_EMITNOP:
             case GT_PINVOKE_PROLOG:
@@ -10838,7 +10835,7 @@ public:
             {
                 GenTreeCall* const call = node->AsCall();
 
-                for (CallArg& arg : call->gtArgs.Args())
+                for (CallArg& arg : call->gtArgs.EarlyArgs())
                 {
                     result = WalkTree(&arg.EarlyNodeRef(), call);
                     if (result == fgWalkResult::WALK_ABORT)

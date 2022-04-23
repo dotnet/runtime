@@ -5478,13 +5478,6 @@ unsigned CodeGenInterface::InferStructOpSizeAlign(GenTree* op, unsigned* alignme
         opSize    = TARGET_POINTER_SIZE * 2;
         alignment = TARGET_POINTER_SIZE;
     }
-    else if (op->IsArgPlaceHolderNode())
-    {
-        CORINFO_CLASS_HANDLE clsHnd = op->AsArgPlace()->gtArgPlaceClsHnd;
-        assert(clsHnd != 0);
-        opSize    = roundUp(compiler->info.compCompHnd->getClassSize(clsHnd), TARGET_POINTER_SIZE);
-        alignment = roundUp(compiler->info.compCompHnd->getClassAlignmentRequirement(clsHnd), TARGET_POINTER_SIZE);
-    }
     else
     {
         assert(!"Unhandled gtOper");

@@ -1354,8 +1354,7 @@ void Lowering::LowerArg(GenTreeCall* call, CallArg* callArg, bool late)
     // Note that atomic ops may be stores and still produce a value.
     if (!arg->IsValue())
     {
-        assert((arg->OperIsStore() && !arg->IsValue()) || arg->IsArgPlaceHolderNode() || arg->IsNothingNode() ||
-               arg->OperIsCopyBlkOp());
+        assert((arg->OperIsStore() && !arg->IsValue()) || arg->IsNothingNode() || arg->OperIsCopyBlkOp());
         return;
     }
 
@@ -1577,7 +1576,7 @@ GenTree* Lowering::LowerFloatArgReg(GenTree* arg, regNumber regNum)
 void Lowering::LowerArgsForCall(GenTreeCall* call)
 {
     JITDUMP("args:\n======\n");
-    for (CallArg& arg : call->gtArgs.Args())
+    for (CallArg& arg : call->gtArgs.EarlyArgs())
     {
         LowerArg(call, &arg, false);
     }
@@ -1791,7 +1790,7 @@ void Lowering::InsertProfTailCallHook(GenTreeCall* call, GenTree* insertionPoint
 
     if (insertionPoint == nullptr)
     {
-        for (CallArg& arg : call->gtArgs.Args())
+        for (CallArg& arg : call->gtArgs.EarlyArgs())
         {
             assert(!arg.GetEarlyNode()->OperIs(GT_PUTARG_REG)); // We don't expect to see these in early args
 
@@ -1900,7 +1899,7 @@ void Lowering::LowerFastTailCall(GenTreeCall* call)
     // call could over-write the stack arg that is setup earlier.
     ArrayStack<GenTree*> putargs(comp->getAllocator(CMK_ArrayStack));
 
-    for (CallArg& arg : call->gtArgs.Args())
+    for (CallArg& arg : call->gtArgs.EarlyArgs())
     {
         if (arg.GetEarlyNode()->OperIs(GT_PUTARG_STK))
         {
@@ -2372,7 +2371,7 @@ void Lowering::LowerCFGCall(GenTreeCall* call)
             LowerNode(regNode);
 
             // Finally move all GT_PUTARG_* nodes
-            for (CallArg& arg : call->gtArgs.Args())
+            for (CallArg& arg : call->gtArgs.EarlyArgs())
             {
                 GenTree* node = arg.GetEarlyNode();
                 // Non-value nodes in early args are setup nodes for late args.
@@ -2396,9 +2395,7 @@ void Lowering::LowerCFGCall(GenTreeCall* call)
 #ifdef REG_DISPATCH_INDIRECT_CALL_ADDR
             // Now insert the call target as an extra argument.
             //
-            GenTree* placeHolder = comp->gtNewArgPlaceHolderNode(callTarget->TypeGet(), NO_CLASS_HANDLE);
-            CallArg* targetArg   = call->gtArgs.PushBack(comp, placeHolder, WellKnownArg::DispatchIndirectCallTarget);
-            placeHolder->gtFlags |= GTF_LATE_ARG;
+            CallArg* targetArg = call->gtArgs.PushBack(comp, nullptr, WellKnownArg::DispatchIndirectCallTarget);
             targetArg->SetLateNode(callTarget);
             call->gtArgs.PushLateBack(targetArg);
 
@@ -2409,7 +2406,6 @@ void Lowering::LowerCFGCall(GenTreeCall* call)
             targetArg->AbiInfo.SetByteSize(TARGET_POINTER_SIZE, TARGET_POINTER_SIZE, false, false);
 
             // Lower the newly added args now that call is updated
-            LowerArg(call, targetArg, false /* late */);
             LowerArg(call, targetArg, true /* late */);
 
             // Finally update the call to be a helper call
@@ -6429,8 +6425,7 @@ void Lowering::CheckCallArg(GenTree* arg)
 {
     if (!arg->IsValue() && !arg->OperIsPutArgStk())
     {
-        assert((arg->OperIsStore() && !arg->IsValue()) || arg->IsArgPlaceHolderNode() || arg->IsNothingNode() ||
-               arg->OperIsCopyBlkOp());
+        assert(arg->OperIsStore() || arg->OperIsCopyBlkOp());
         return;
     }
 
@@ -6465,7 +6460,7 @@ void Lowering::CheckCallArg(GenTree* arg)
 //
 void Lowering::CheckCall(GenTreeCall* call)
 {
-    for (CallArg& arg : call->gtArgs.Args())
+    for (CallArg& arg : call->gtArgs.EarlyArgs())
     {
         CheckCallArg(arg.GetEarlyNode());
     }

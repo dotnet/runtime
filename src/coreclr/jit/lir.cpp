@@ -1178,12 +1178,6 @@ LIR::ReadOnlyRange LIR::Range::GetMarkedRange(unsigned  markCount,
 
             // Mark the node's operands
             firstNode->VisitOperands([&markCount](GenTree* operand) -> GenTree::VisitResult {
-                // Do not mark nodes that do not appear in the execution order
-                if (operand->OperGet() == GT_ARGPLACE)
-                {
-                    return GenTree::VisitResult::Continue;
-                }
-
                 operand->gtLIRFlags |= LIR::Flags::Mark;
                 markCount++;
                 return GenTree::VisitResult::Continue;
@@ -1435,12 +1429,6 @@ private:
     {
         for (GenTree* operand : node->Operands())
         {
-            // ARGPLACE nodes are not represented in the LIR sequence. Ignore them.
-            if (operand->OperIs(GT_ARGPLACE))
-            {
-                continue;
-            }
-
             if (operand->isContained())
             {
                 UseNodeOperands(operand);
@@ -1571,10 +1559,8 @@ bool LIR::Range::CheckLIR(Compiler* compiler, bool checkUnusedValues) const
                 // other code that relies on being able to reach all the operands from a call node.
                 // The GT_NOP case is because sometimes we eliminate stack argument stores as dead, but
                 // instead of removing them we replace with a NOP.
-                // ARGPLACE nodes are not represented in the LIR sequence. Ignore them.
                 // The argument of a JTRUE doesn't produce a value (just sets a flag).
-                assert(((node->OperGet() == GT_CALL) &&
-                        (def->OperIsStore() || def->OperIs(GT_PUTARG_STK, GT_NOP, GT_ARGPLACE))) ||
+                assert(((node->OperGet() == GT_CALL) && (def->OperIsStore() || def->OperIs(GT_PUTARG_STK, GT_NOP))) ||
                        ((node->OperGet() == GT_JTRUE) && (def->TypeGet() == TYP_VOID) &&
                         ((def->gtFlags & GTF_SET_FLAGS) != 0)));
                 continue;

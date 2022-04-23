@@ -1727,10 +1727,6 @@ GenTree* Compiler::impNormStructVal(GenTree*             structVal,
             makeTemp                            = true;
             break;
 
-        case GT_ARGPLACE:
-            structVal->AsArgPlace()->gtArgPlaceClsHnd = structHnd;
-            break;
-
         case GT_INDEX:
             // This will be transformed to an OBJ later.
             alreadyNormalized                       = true;

@@ -1057,7 +1057,8 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
 
     assert(call->gtArgs.HasThisPointer());
     assert(call->gtArgs.CountArgs() == 3);
-    GenTree* targetMethod = call->gtArgs.GetArgByIndex(2)->GetEarlyNode();
+    assert(!call->gtArgs.AreArgsComplete());
+    GenTree* targetMethod = call->gtArgs.GetArgByIndex(2)->GetNode();
     noway_assert(targetMethod->TypeGet() == TYP_I_IMPL);
     genTreeOps            oper            = targetMethod->OperGet();
     CORINFO_METHOD_HANDLE targetMethodHnd = nullptr;
@@ -1071,7 +1072,7 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
     else if (oper == GT_CALL && targetMethod->AsCall()->gtCallMethHnd == eeFindHelper(CORINFO_HELP_VIRTUAL_FUNC_PTR))
     {
         assert(targetMethod->AsCall()->gtArgs.CountArgs() == 3);
-        GenTree* handleNode = targetMethod->AsCall()->gtArgs.GetArgByIndex(2)->GetEarlyNode();
+        GenTree* handleNode = targetMethod->AsCall()->gtArgs.GetArgByIndex(2)->GetNode();
 
         if (handleNode->OperGet() == GT_CNS_INT)
         {
@@ -1110,7 +1111,7 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
         GenTreeCall* runtimeLookupCall = qmarkNode->AsOp()->gtOp2->AsOp()->gtOp1->AsCall();
 
         // This could be any of CORINFO_HELP_RUNTIMEHANDLE_(METHOD|CLASS)(_LOG?)
-        GenTree* tokenNode = runtimeLookupCall->gtArgs.GetArgByIndex(1)->GetEarlyNode();
+        GenTree* tokenNode = runtimeLookupCall->gtArgs.GetArgByIndex(1)->GetNode();
         noway_assert(tokenNode->OperGet() == GT_CNS_INT);
         targetMethodHnd = CORINFO_METHOD_HANDLE(tokenNode->AsIntCon()->gtCompileTimeHandle);
     }
@@ -1142,8 +1143,8 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
             {
                 JITDUMP("optimized\n");
 
-                GenTree*       thisPointer       = call->gtArgs.GetThisArg()->GetEarlyNode();
-                GenTree*       targetObjPointers = call->gtArgs.GetArgByIndex(1)->GetEarlyNode();
+                GenTree*       thisPointer       = call->gtArgs.GetThisArg()->GetNode();
+                GenTree*       targetObjPointers = call->gtArgs.GetArgByIndex(1)->GetNode();
                 CORINFO_LOOKUP pLookup;
                 info.compCompHnd->getReadyToRunDelegateCtorHelper(&ldftnToken->m_token, ldftnToken->m_tokenConstraint,
                                                                   clsHnd, &pLookup);
@@ -1175,8 +1176,8 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
         {
             JITDUMP("optimized\n");
 
-            GenTree* thisPointer       = call->gtArgs.GetArgByIndex(0)->GetEarlyNode();
-            GenTree* targetObjPointers = call->gtArgs.GetArgByIndex(1)->GetEarlyNode();
+            GenTree* thisPointer       = call->gtArgs.GetArgByIndex(0)->GetNode();
+            GenTree* targetObjPointers = call->gtArgs.GetArgByIndex(1)->GetNode();
             call = gtNewHelperCallNode(CORINFO_HELP_READYTORUN_DELEGATE_CTOR, TYP_VOID, thisPointer, targetObjPointers);
 
             CORINFO_LOOKUP entryPoint;
@@ -3852,10 +3853,8 @@ BasicBlock* Compiler::fgRngChkTarget(BasicBlock* block, SpecialCodeKind kind)
 //
 // Arguments:
 //    tree  - the tree to sequence
-//    isLIR - whether the sequencing is being done for LIR. If so,
-//            ARGPLACE nodes will not be threaded into the linear
-//            order, and the GTF_REVERSE_OPS flag will be cleared
-//            on all the nodes.
+//    isLIR - whether the sequencing is being done for LIR. If so, the
+//            GTF_REVERSE_OPS flag will be cleared on all nodes.
 //
 // Return Value:
 //    The first node to execute in the sequenced tree.
@@ -3887,12 +3886,6 @@ GenTree* Compiler::fgSetTreeSeq(GenTree* tree, bool isLIR)
             if (m_isLIR)
             {
                 node->ClearReverseOp();
-
-                // ARGPLACE nodes are not threaded into the LIR sequence.
-                if (node->OperIs(GT_ARGPLACE))
-                {
-                    return fgWalkResult::WALK_CONTINUE;
-                }
             }
 
             node->gtPrev       = m_prevNode;
