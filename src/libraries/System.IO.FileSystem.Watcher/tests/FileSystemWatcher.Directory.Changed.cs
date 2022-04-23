@@ -65,9 +65,9 @@ namespace System.IO.Tests
         public void FileSystemWatcher_Directory_Changed_SymLink()
         {
             string dir = Path.Combine(TestDirectory, "dir");
-            string tempDir = Path.Combine(dir, "tempDir");
-            string file = Path.Combine(tempDir, "test");
-            Directory.CreateDirectory(tempDir);
+            Directory.CreateDirectory(Path.Combine(dir, "tempDir"));
+            string file = Path.Combine(dir, "tempDir", "test");
+            
             File.Create(file).Dispose();
             using (var watcher = new FileSystemWatcher(dir, "*"))
             {
