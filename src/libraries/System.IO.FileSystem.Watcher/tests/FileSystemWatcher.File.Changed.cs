@@ -26,9 +26,7 @@ namespace System.IO.Tests
         [InlineData(true)]
         public void FileSystemWatcher_File_Changed_Nested(bool includeSubdirectories)
         {
-            string firstDir = Path.Combine(TestDirectory, "dir1");
-            string nestedDir = CreateTestDirectory(firstDir, "nested");
-            string nestedFile = CreateTestFile(nestedDir, "nestedFile");
+            string nestedFile = CreateTestFile(TestDirectory, "dir1", "nested", "nestedFile");
             using (var watcher = new FileSystemWatcher(TestDirectory, "*"))
             {
                 watcher.IncludeSubdirectories = includeSubdirectories;
