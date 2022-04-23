@@ -49,9 +49,7 @@ namespace System.IO.Tests
         [Fact]
         public void FileSystemWatcher_File_Delete_InNestedDirectory()
         {
-            string firstDir = Path.Combine(TestDirectory, "dir1");
-            string nestedDir = Path.Combine(firstDir, "nested");
-            Directory.CreateDirectory(nestedDir);
+            string nestedDir = CreateTestDirectory(TestDirectory, "dir1", "nested");
             using (var watcher = new FileSystemWatcher(TestDirectory, "*"))
             {
                 watcher.IncludeSubdirectories = true;
@@ -70,8 +68,7 @@ namespace System.IO.Tests
         [OuterLoop("This test has a longer than average timeout and may fail intermittently")]
         public void FileSystemWatcher_File_Delete_DeepDirectoryStructure()
         {
-            string deepDir = Path.Combine(TestDirectory, "dir", "dir", "dir", "dir", "dir", "dir", "dir");
-            Directory.CreateDirectory(deepDir);
+            string deepDir = CreateTestDirectory(TestDirectory, "dir", "dir", "dir", "dir", "dir", "dir", "dir");
             using (var watcher = new FileSystemWatcher(TestDirectory, "*"))
             {
                 watcher.IncludeSubdirectories = true;
@@ -92,10 +89,8 @@ namespace System.IO.Tests
         {
             FileSystemWatcherTest.Execute(() =>
             {
-                string dir = Path.Combine(TestDirectory, "dir");
-                string temp = GetTestFilePath();
-                Directory.CreateDirectory(dir);
-                File.Create(temp).Dispose();
+                string dir = CreateTestDirectory(TestDirectory, "dir");
+                string temp = CreateTestFile();
                 using (var watcher = new FileSystemWatcher(dir, "*"))
                 {
                     // Make the symlink in our path (to the temp file) and make sure an event is raised

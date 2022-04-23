@@ -230,5 +230,25 @@ namespace System.IO
                 return Interop.Kernel32.GetFinalPathNameByHandle(handle, bufPtr, (uint)buffer.Length, Interop.Kernel32.FILE_NAME_NORMALIZED);
             }
         }
+
+        protected string CreateTestDirectory(params string[] paths)
+        {
+            string dir = Path.Combine(paths);
+            Directory.CreateDirectory(dir);
+            return dir;
+        }
+
+        protected string CreateTestDirectory()
+             => CreateTestDirectory(GetTestFilePath());
+
+        protected string CreateTestFile(params string[] paths)
+        {
+            string file = Path.Combine(paths);
+            File.Create(file).Dispose();
+            return file;
+        }
+        protected string CreateTestFile()
+            => CreateTestFile(GetTestFilePath());
+
     }
 }

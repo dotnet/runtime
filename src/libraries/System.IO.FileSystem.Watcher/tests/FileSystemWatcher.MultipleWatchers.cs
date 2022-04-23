@@ -137,10 +137,8 @@ namespace System.IO.Tests
         [Fact]
         public void FileSystemWatcher_File_Create_WatchOwnPath()
         {
-            string dir1 = Path.Combine(TestDirectory, "dir1");
-            string dir2 = Path.Combine(TestDirectory, "dir2");
-            Directory.CreateDirectory(dir1);
-            Directory.CreateDirectory(dir2);
+            string dir1 = CreateTestDirectory(TestDirectory, "dir1");
+            string dir2 = CreateTestDirectory(TestDirectory, "dir2");
             using (var watcher1 = new FileSystemWatcher(dir1, "*"))
             using (var watcher2 = new FileSystemWatcher(dir2, "*"))
             {
@@ -241,10 +239,8 @@ namespace System.IO.Tests
         [Fact]
         public void  FileSystemWatcher_File_Changed_NotAffectEachOther()
         {
-            string file = Path.Combine(TestDirectory, "file");
-            string otherFile = Path.Combine(TestDirectory, "otherFile");
-            File.Create(file).Dispose();
-            File.Create(otherFile).Dispose();
+            string file = CreateTestFile(TestDirectory, "file");
+            string otherFile = CreateTestFile(TestDirectory, "otherFile");
             using (var watcher1 = new FileSystemWatcher(TestDirectory, Path.GetFileName(file)))
             using (var watcher2 = new FileSystemWatcher(TestDirectory, Path.GetFileName(file)))
             using (var watcher3 = new FileSystemWatcher(TestDirectory, Path.GetFileName(otherFile)))
@@ -289,8 +285,7 @@ namespace System.IO.Tests
             using (var watcher2 = new FileSystemWatcher(TestDirectory))
             using (var watcher3 = new FileSystemWatcher(TestDirectory))
             {
-                string fileName = Path.Combine(TestDirectory, "file");
-                File.Create(fileName).Dispose();
+                string fileName = CreateTestFile(TestDirectory, "file");
 
                 watcher1.Filter = Path.GetFileName(fileName);
                 watcher2.Filter = Path.GetFileName(fileName);
@@ -325,8 +320,7 @@ namespace System.IO.Tests
         [PlatformSpecific(TestPlatforms.OSX)]
         public void FileSystemWatcher_File_Rename_NotAffectEachOther()
         {
-            string file = Path.Combine(TestDirectory, "file");
-            File.Create(file).Dispose();
+            string file = CreateTestFile(TestDirectory, "file");
             using (var watcher1 = new FileSystemWatcher(TestDirectory, Path.GetFileName(file)))
             using (var watcher2 = new FileSystemWatcher(TestDirectory, Path.GetFileName(file)))
             {

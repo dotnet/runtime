@@ -22,8 +22,7 @@ namespace System.IO.Tests
         public void FileSystemWatcher_FileSymbolicLink_TargetsFile_Fails()
         {
             // Arrange
-            string tempFile = GetTestFilePath();
-            File.Create(tempFile).Dispose();
+            string tempFile = CreateTestFile();
             string linkPath = CreateSymbolicLinkToTarget(tempFile, isDirectory: false);
 
             // Act - Assert
@@ -37,8 +36,7 @@ namespace System.IO.Tests
         public void FileSystemWatcher_DirectorySymbolicLink_TargetsFile_Fails()
         {
             // Arrange
-            string tempFile = GetTestFilePath();
-            File.Create(tempFile).Dispose();
+            string tempFile = CreateTestFile();
             string linkPath = CreateSymbolicLinkToTarget(tempFile, isDirectory: true);
             using var watcher = new FileSystemWatcher(linkPath);
 
@@ -69,10 +67,8 @@ namespace System.IO.Tests
             using var watcher = new FileSystemWatcher(linkPath);
             watcher.NotifyFilter = NotifyFilters.DirectoryName;
 
-            string subDirName = GetTestFileName();
-            string subDirPath = Path.Combine(tempDir, subDirName);
-            Directory.CreateDirectory(subDirName);
-            Directory.CreateDirectory(subDirPath);
+            string subDirName = CreateTestDirectory();
+            string subDirPath = CreateTestDirectory(tempDir, subDirName);
 
             // Act - Assert
             ExpectEvent(watcher, WatcherChangeTypes.Created,
@@ -90,8 +86,7 @@ namespace System.IO.Tests
                 const string subDir = "subDir";
                 const string subDirLv2 = "subDirLv2";
                 string tempDir = GetTestFilePath();
-                string tempSubDir = Path.Combine(tempDir, subDir);
-                Directory.CreateDirectory(tempSubDir);
+                string tempSubDir = CreateTestDirectory(tempDir, subDir);
 
                 string linkPath = CreateSymbolicLinkToTarget(tempDir, isDirectory: true);
                 using var watcher = new FileSystemWatcher(linkPath);
@@ -118,10 +113,8 @@ namespace System.IO.Tests
         public void FileSystemWatcher_SymbolicLink_IncludeSubdirectories_DoNotDereferenceChildLink()
         {
             // Arrange
-            string dirA = GetTestFilePath();
-            string dirB = GetTestFilePath();
-            Directory.CreateDirectory(dirA);
-            Directory.CreateDirectory(dirB);
+            string dirA = CreateTestDirectory();
+            string dirB = CreateTestDirectory();
 
             string linkPath = Path.Combine(dirA, GetRandomDirName() + ".link");
             CreateSymbolicLinkToTarget(dirB, isDirectory: true, linkPath);

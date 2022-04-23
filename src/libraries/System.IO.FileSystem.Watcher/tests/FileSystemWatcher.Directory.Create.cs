@@ -48,8 +48,7 @@ namespace System.IO.Tests
         [Fact]
         public void FileSystemWatcher_Directory_Create_InNestedDirectory()
         {
-            string nestedDir = Path.Combine(TestDirectory, "dir1", "nested");
-            Directory.CreateDirectory(nestedDir);
+            string nestedDir = CreateTestDirectory(TestDirectory, "dir1", "nested");
             using (var watcher = new FileSystemWatcher(TestDirectory, "*"))
             {
                 watcher.IncludeSubdirectories = true;
@@ -67,8 +66,7 @@ namespace System.IO.Tests
         [OuterLoop("This test has a longer than average timeout and may fail intermittently")]
         public void FileSystemWatcher_Directory_Create_DeepDirectoryStructure()
         {
-            string deepDir = Path.Combine(TestDirectory, "dir", "dir", "dir", "dir", "dir", "dir", "dir");
-            Directory.CreateDirectory(deepDir);
+            string deepDir = CreateTestDirectory(TestDirectory, "dir", "dir", "dir", "dir", "dir", "dir", "dir");
             using (var watcher = new FileSystemWatcher(TestDirectory, "*"))
             {
                 watcher.IncludeSubdirectories = true;
@@ -86,10 +84,8 @@ namespace System.IO.Tests
         [ConditionalFact(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
         public void FileSystemWatcher_Directory_Create_SymLink()
         {
-            string dir = Path.Combine(TestDirectory, "dir");
-            string temp = GetTestFilePath();
-            Directory.CreateDirectory(dir);
-            Directory.CreateDirectory(temp);
+            string dir = CreateTestDirectory(TestDirectory, "dir");
+            string temp = CreateTestDirectory(GetTestFilePath());
             using (var watcher = new FileSystemWatcher(Path.GetFullPath(dir), "*"))
             {
                 // Make the symlink in our path (to the temp folder) and make sure an event is raised

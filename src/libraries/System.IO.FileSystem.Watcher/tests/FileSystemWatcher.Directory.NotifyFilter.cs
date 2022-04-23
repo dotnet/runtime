@@ -25,8 +25,7 @@ namespace System.IO.Tests
         {
             FileSystemWatcherTest.Execute(() =>
             {
-                string dir = Path.Combine(TestDirectory, "dir");
-                Directory.CreateDirectory(dir);
+                string dir = CreateTestDirectory(TestDirectory, "dir");
                 using (var watcher = new FileSystemWatcher(TestDirectory, Path.GetFileName(dir)))
                 {
                     watcher.NotifyFilter = filter;
@@ -53,8 +52,7 @@ namespace System.IO.Tests
         [MemberData(nameof(FilterTypes))]
         public void FileSystemWatcher_Directory_NotifyFilter_CreationTime(NotifyFilters filter)
         {
-            string dir = Path.Combine(TestDirectory, "dir");
-            Directory.CreateDirectory(dir);
+            string dir = CreateTestDirectory(TestDirectory, "dir");
             using (var watcher = new FileSystemWatcher(TestDirectory, Path.GetFileName(dir)))
             {
                 watcher.NotifyFilter = filter;
@@ -76,8 +74,7 @@ namespace System.IO.Tests
         [MemberData(nameof(FilterTypes))]
         public void FileSystemWatcher_Directory_NotifyFilter_DirectoryName(NotifyFilters filter)
         {
-            string dir = Path.Combine(TestDirectory, "dir");
-            Directory.CreateDirectory(dir);
+            string dir = CreateTestDirectory(TestDirectory, "dir");
             using (var watcher = new FileSystemWatcher(TestDirectory, Path.GetFileName(dir)))
             {
                 string sourcePath = dir;
@@ -99,8 +96,7 @@ namespace System.IO.Tests
         [MemberData(nameof(FilterTypes))]
         public void FileSystemWatcher_Directory_NotifyFilter_LastAccessTime(NotifyFilters filter)
         {
-            string dir = Path.Combine(TestDirectory, "dir");
-            Directory.CreateDirectory(dir);
+            string dir = CreateTestDirectory(TestDirectory, "dir");
             using (var watcher = new FileSystemWatcher(TestDirectory, Path.GetFileName(dir)))
             {
                 watcher.NotifyFilter = filter;
@@ -122,8 +118,7 @@ namespace System.IO.Tests
         [MemberData(nameof(FilterTypes))]
         public void FileSystemWatcher_Directory_NotifyFilter_LastWriteTime(NotifyFilters filter)
         {
-            string dir = Path.Combine(TestDirectory, "dir");
-            Directory.CreateDirectory(dir);
+            string dir = CreateTestDirectory(TestDirectory, "dir");
             using (var watcher = new FileSystemWatcher(TestDirectory, Path.GetFileName(dir)))
             {
                 watcher.NotifyFilter = filter;
@@ -148,8 +143,7 @@ namespace System.IO.Tests
         {
             Assert.All(FilterTypes(), (filter2Arr =>
             {
-                string dir = Path.Combine(TestDirectory, "dir");
-                Directory.CreateDirectory(dir);
+                string dir = CreateTestDirectory(TestDirectory, "dir");
                 using (var watcher = new FileSystemWatcher(TestDirectory, Path.GetFileName(dir)))
                 {
                     filter |= (NotifyFilters)filter2Arr[0];
@@ -173,8 +167,7 @@ namespace System.IO.Tests
         [PlatformSpecific(TestPlatforms.Windows)]  // Uses P/Invokes to set security info
         public void FileSystemWatcher_Directory_NotifyFilter_Security(NotifyFilters filter)
         {
-            string dir = Path.Combine(TestDirectory, "dir");
-            Directory.CreateDirectory(dir);
+            string dir = CreateTestDirectory(TestDirectory, "dir");
             using (var watcher = new FileSystemWatcher(TestDirectory, Path.GetFileName(dir)))
             {
                 watcher.NotifyFilter = filter;
@@ -212,8 +205,7 @@ namespace System.IO.Tests
         [Fact]
         public void FileSystemWatcher_Directory_NotifyFilter_LastWriteAndFileName()
         {
-            string file = Path.Combine(TestDirectory, "file");
-            File.Create(file).Dispose();
+            string file = CreateTestDirectory(TestDirectory, "file");
             using (var watcher = new FileSystemWatcher(TestDirectory, Path.GetFileName(file)))
             {
                 NotifyFilters filter = NotifyFilters.LastWrite | NotifyFilters.DirectoryName;
@@ -232,8 +224,7 @@ namespace System.IO.Tests
         [Fact]
         public void FileSystemWatcher_Directory_NotifyFilter_ModifyAndCreate()
         {
-            string dir = Path.Combine(TestDirectory, "dir");
-            Directory.CreateDirectory(dir);
+            string dir = CreateTestDirectory(TestDirectory, "dir");
             using (var watcher = new FileSystemWatcher(TestDirectory, "*"))
             {
                 watcher.NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.DirectoryName;
@@ -259,8 +250,7 @@ namespace System.IO.Tests
         [Fact]
         public void FileSystemWatcher_Directory_NotifyFilter_ModifyAndDelete()
         {
-            string dir = Path.Combine(TestDirectory, "dir");
-            Directory.CreateDirectory(dir);
+            string dir = CreateTestDirectory(TestDirectory, "dir");
             using (var watcher = new FileSystemWatcher(TestDirectory, "*"))
             {
                 watcher.NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.DirectoryName;
@@ -286,8 +276,7 @@ namespace System.IO.Tests
         [Fact]
         public void FileSystemWatcher_Directory_NotifyFilter_DirectoryNameDoesntTriggerOnFileEvent()
         {
-            string dir = Path.Combine(TestDirectory, "dir");
-            Directory.CreateDirectory(dir);
+            string dir = CreateTestDirectory(TestDirectory, "dir");
             using (var watcher = new FileSystemWatcher(TestDirectory, "*"))
             {
                 watcher.NotifyFilter = NotifyFilters.FileName;

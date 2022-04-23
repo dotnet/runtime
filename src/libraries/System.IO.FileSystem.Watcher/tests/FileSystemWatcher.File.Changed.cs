@@ -11,8 +11,7 @@ namespace System.IO.Tests
         [Fact]
         public void FileSystemWatcher_File_Changed_LastWrite()
         {
-            string file = Path.Combine(TestDirectory, "file");
-            File.Create(file).Dispose();
+            string file = CreateTestFile(TestDirectory, "file");
             using (var watcher = new FileSystemWatcher(TestDirectory, Path.GetFileName(file)))
             {
                 Action action = () => Directory.SetLastWriteTime(file, DateTime.Now + TimeSpan.FromSeconds(10));
@@ -28,10 +27,8 @@ namespace System.IO.Tests
         public void FileSystemWatcher_File_Changed_Nested(bool includeSubdirectories)
         {
             string firstDir = Path.Combine(TestDirectory, "dir1");
-            string nestedDir = Path.Combine(firstDir, "nested");
-            string nestedFile = Path.Combine(nestedDir, "nestedFile");
-            Directory.CreateDirectory(nestedDir);
-            File.Create(nestedFile).Dispose();
+            string nestedDir = CreateTestDirectory(firstDir, "nested");
+            string nestedFile = CreateTestFile(nestedDir, "nestedFile");
             using (var watcher = new FileSystemWatcher(TestDirectory, "*"))
             {
                 watcher.IncludeSubdirectories = includeSubdirectories;
@@ -50,7 +47,6 @@ namespace System.IO.Tests
         public void FileSystemWatcher_File_Changed_DataModification()
         {
             string dir = Path.Combine(TestDirectory, "dir");
-            Directory.CreateDirectory(dir);
             using (var watcher = new FileSystemWatcher(Path.GetFullPath(dir), "*"))
             {
                 string fileName = Path.Combine(dir, "testFile.txt");
@@ -68,10 +64,8 @@ namespace System.IO.Tests
         [ConditionalFact(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
         public void FileSystemWatcher_File_Changed_SymLink()
         {
-            string dir = Path.Combine(TestDirectory, "dir");
-            string file = GetTestFilePath();
-            Directory.CreateDirectory(dir);
-            File.Create(file).Dispose();
+            string dir = CreateTestDirectory(TestDirectory, "dir");
+            string file = CreateTestFile();
             using (var watcher = new FileSystemWatcher(dir, "*"))
             {
                 watcher.NotifyFilter = NotifyFilters.FileName | NotifyFilters.Size;
@@ -87,7 +81,7 @@ namespace System.IO.Tests
         [Fact]
         public void FileSystemWatcher_File_Changed_SynchronizingObject()
         {
-            string file = Path.Combine(TestDirectory, "file");
+            string file = CreateTestFile(TestDirectory, "file");
             File.Create(file).Dispose();
             using (var watcher = new FileSystemWatcher(TestDirectory, Path.GetFileName(file)))
             {

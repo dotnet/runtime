@@ -31,8 +31,7 @@ namespace System.IO.Tests
         [Fact]
         public void FileSystemWatcher_NewFileInfoAction_TriggersNothing()
         {
-            string file = Path.Combine(TestDirectory, "file");
-            File.Create(file).Dispose();
+            string file = CreateTestFile(TestDirectory, "file");
             using (var watcher = new FileSystemWatcher(TestDirectory, Path.GetFileName(file)))
             {
                 Action action = () => new FileInfo(file);
@@ -44,8 +43,7 @@ namespace System.IO.Tests
         [Fact]
         public void FileSystemWatcher_FileInfoGetter_TriggersNothing()
         {
-            string file = Path.Combine(TestDirectory, "file");
-            File.Create(file).Dispose();
+            string file = CreateTestFile(TestDirectory, "file");
             using (var watcher = new FileSystemWatcher(TestDirectory, Path.GetFileName(file)))
             {
                 FileAttributes res;
@@ -58,8 +56,7 @@ namespace System.IO.Tests
         [Fact]
         public void FileSystemWatcher_EmptyAction_TriggersNothing()
         {
-            string file = Path.Combine(TestDirectory, "file");
-            File.Create(file).Dispose();
+            string file = CreateTestFile(TestDirectory, "file");
             using (var watcher = new FileSystemWatcher(TestDirectory, Path.GetFileName(file)))
             {
                 Action action = () => { };
@@ -459,8 +456,7 @@ namespace System.IO.Tests
         [PlatformSpecific(TestPlatforms.Windows)] // Unix FSW don't trigger on a file rename.
         public void FileSystemWatcher_Windows_OnRenameGivesExpectedFullPath()
         {
-            string file = Path.Combine(TestDirectory, "file");
-            File.Create(file).Dispose();
+            string file = CreateTestFile(TestDirectory, "file");
             using (var fsw = new FileSystemWatcher(TestDirectory))
             {
                 AutoResetEvent eventOccurred = WatchRenamed(fsw).EventOccured;
@@ -553,8 +549,7 @@ namespace System.IO.Tests
             // Check the case where Stop or Dispose (they do the same thing) is called from
             // a FSW event callback and make sure we don't Thread.Join to deadlock
 
-            string filePath = Path.Combine(TestDirectory, "testfile.txt");
-            File.Create(filePath).Dispose();
+            string filePath = CreateTestFile(TestDirectory, "testfile.txt");
             AutoResetEvent are = new AutoResetEvent(false);
             FileSystemWatcher watcher = new FileSystemWatcher(Path.GetFullPath(TestDirectory), "*");
             FileSystemEventHandler callback = (sender, arg) =>
@@ -574,8 +569,7 @@ namespace System.IO.Tests
         [Fact]
         public void FileSystemWatcher_WatchingAliasedFolderResolvesToRealPathWhenWatching()
         {
-            string dir = Path.Combine(TestDirectory, "dir");
-            Directory.CreateDirectory(dir);
+            string dir = CreateTestDirectory(TestDirectory, "dir");
             using (var fsw = new FileSystemWatcher(dir))
             {
                 AutoResetEvent are = WatchCreated(fsw).EventOccured;

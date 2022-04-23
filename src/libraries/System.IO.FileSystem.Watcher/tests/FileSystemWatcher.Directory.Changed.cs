@@ -14,8 +14,7 @@ namespace System.IO.Tests
         {
             FileSystemWatcherTest.Execute(() =>
             {
-                string dir = Path.Combine(TestDirectory, "dir");
-                Directory.CreateDirectory(dir);
+                string dir = CreateTestDirectory(TestDirectory, "dir");
                 using (var watcher = new FileSystemWatcher(TestDirectory, Path.GetFileName(dir)))
                 {
                     Action action = () => Directory.SetLastWriteTime(dir, DateTime.Now + TimeSpan.FromSeconds(10));
@@ -29,8 +28,7 @@ namespace System.IO.Tests
         [Fact]
         public void FileSystemWatcher_Directory_Changed_WatchedFolder()
         {
-            string dir = Path.Combine(TestDirectory, "dir");
-            Directory.CreateDirectory(dir);
+            string dir = CreateTestDirectory(TestDirectory, "dir");
             using (var watcher = new FileSystemWatcher(dir, "*"))
             {
                 Action action = () => Directory.SetLastWriteTime(dir, DateTime.Now + TimeSpan.FromSeconds(10));
@@ -44,8 +42,7 @@ namespace System.IO.Tests
         [InlineData(true)]
         public void FileSystemWatcher_Directory_Changed_Nested(bool includeSubdirectories)
         {
-            string nestedDir = Path.Combine(TestDirectory, "dir1", "nested");
-            Directory.CreateDirectory(nestedDir);
+            string nestedDir = CreateTestDirectory(TestDirectory, "dir1", "nested");
 
             using (var watcher = new FileSystemWatcher(TestDirectory, "*"))
             {
@@ -65,11 +62,8 @@ namespace System.IO.Tests
         public void FileSystemWatcher_Directory_Changed_SymLink()
         {
             string dir = Path.Combine(TestDirectory, "dir");
-            string tempDir = Path.Combine(dir, "tempDir");
-            string file = Path.Combine(tempDir, "test");
-            Directory.CreateDirectory(tempDir);
-            
-            File.Create(file).Dispose();
+            string tempDir = CreateTestDirectory(dir, "tempDir");
+            string file = CreateTestFile(tempDir, "test");
             using (var watcher = new FileSystemWatcher(dir, "*"))
             {
                 // Setup the watcher
@@ -87,8 +81,7 @@ namespace System.IO.Tests
         [Fact]
         public void FileSystemWatcher_Directory_Changed_SynchronizingObject()
         {
-            string dir = Path.Combine(TestDirectory, "dir");
-            Directory.CreateDirectory(dir);
+            string dir = CreateTestDirectory(TestDirectory, "dir");
             using (var watcher = new FileSystemWatcher(TestDirectory, Path.GetFileName(dir)))
             {
                 TestISynchronizeInvoke invoker = new TestISynchronizeInvoke();
