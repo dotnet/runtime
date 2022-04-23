@@ -96,7 +96,7 @@ namespace System.Security.Cryptography.Xml
             }
             else if (obj is XmlDocument)
             {
-                CanonicalXml xmlDoc = new CanonicalXml((XmlDocument)obj, null, _includeComments);
+                CanonicalXml xmlDoc = new CanonicalXml((XmlDocument)obj, null!, _includeComments);
                 byte[] buffer = xmlDoc.GetBytes();
                 if (buffer == null) return;
                 _inputStream.Write(buffer, 0, buffer.Length);
