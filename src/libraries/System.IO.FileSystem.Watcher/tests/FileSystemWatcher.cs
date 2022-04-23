@@ -24,8 +24,8 @@ namespace System.IO.Tests
         [Fact]
         public void Site_GetSetRoundtrips()
         {
-            using (var testDirectory = new TempDirectory(GetTestFilePath()))
-            using (var watcher = new TestFileSystemWatcher(testDirectory.Path, "*"))
+            string testDirectory = TestDirectory;
+            using (var watcher = new TestFileSystemWatcher(testDirectory, "*"))
             {
                 TestSite site = new TestSite();
                 Assert.Null(watcher.Site);
@@ -43,8 +43,8 @@ namespace System.IO.Tests
         [Fact]
         public void Site_NonNullSetEnablesRaisingEvents()
         {
-            using (var testDirectory = new TempDirectory(GetTestFilePath()))
-            using (var watcher = new TestFileSystemWatcher(testDirectory.Path, "*"))
+            string testDirectory = TestDirectory;
+            using (var watcher = new TestFileSystemWatcher(testDirectory, "*"))
             {
                 TestSite site = new TestSite() { designMode = true };
                 watcher.Site = site;
@@ -56,8 +56,8 @@ namespace System.IO.Tests
         public void SynchronizingObject_GetSetRoundtrips()
         {
             TestISynchronizeInvoke invoker = new TestISynchronizeInvoke() { };
-            using (var testDirectory = new TempDirectory(GetTestFilePath()))
-            using (var watcher = new TestFileSystemWatcher(testDirectory.Path, "*"))
+            string testDirectory = TestDirectory;
+            using (var watcher = new TestFileSystemWatcher(testDirectory, "*"))
             {
                 Assert.Null(watcher.SynchronizingObject);
                 watcher.SynchronizingObject = invoker;
@@ -78,8 +78,8 @@ namespace System.IO.Tests
         {
             FileSystemEventHandler dele = (sender, e) => { Assert.Equal(expectedChangeType, e.ChangeType); };
             TestISynchronizeInvoke invoker = new TestISynchronizeInvoke() { ExpectedDelegate = dele };
-            using (var testDirectory = new TempDirectory(GetTestFilePath()))
-            using (var watcher = new TestFileSystemWatcher(testDirectory.Path, "*"))
+            string testDirectory = TestDirectory;
+            using (var watcher = new TestFileSystemWatcher(testDirectory, "*"))
             {
                 watcher.SynchronizingObject = invoker;
                 if (expectedChangeType == WatcherChangeTypes.Created)
@@ -109,8 +109,8 @@ namespace System.IO.Tests
         {
             RenamedEventHandler dele = (sender, e) => { Assert.Equal(WatcherChangeTypes.Renamed, e.ChangeType); };
             TestISynchronizeInvoke invoker = new TestISynchronizeInvoke() { ExpectedDelegate = dele };
-            using (var testDirectory = new TempDirectory(GetTestFilePath()))
-            using (var watcher = new TestFileSystemWatcher(testDirectory.Path, "*"))
+            string testDirectory = TestDirectory;
+            using (var watcher = new TestFileSystemWatcher(testDirectory, "*"))
             {
                 watcher.SynchronizingObject = invoker;
                 watcher.Renamed += dele;
@@ -127,8 +127,8 @@ namespace System.IO.Tests
         {
             ErrorEventHandler dele = (sender, e) => { Assert.IsType<FileNotFoundException>(e.GetException()); };
             TestISynchronizeInvoke invoker = new TestISynchronizeInvoke() { ExpectedDelegate = dele };
-            using (var testDirectory = new TempDirectory(GetTestFilePath()))
-            using (var watcher = new TestFileSystemWatcher(testDirectory.Path, "*"))
+            string testDirectory = TestDirectory;
+            using (var watcher = new TestFileSystemWatcher(testDirectory, "*"))
             {
                 watcher.SynchronizingObject = invoker;
                 watcher.Error += dele;
@@ -143,8 +143,8 @@ namespace System.IO.Tests
         [Fact]
         public void BeginEndInit_Repeated()
         {
-            using (var testDirectory = new TempDirectory(GetTestFilePath()))
-            using (var watcher = new TestFileSystemWatcher(testDirectory.Path, "*"))
+            string testDirectory = TestDirectory;
+            using (var watcher = new TestFileSystemWatcher(testDirectory, "*"))
             {
                 watcher.BeginInit();
                 watcher.EndInit();
@@ -160,14 +160,14 @@ namespace System.IO.Tests
         [Fact]
         public void BeginInit_PausesEnableRaisingEvents()
         {
-            using (var testDirectory = new TempDirectory(GetTestFilePath()))
-            using (var watcher = new TestFileSystemWatcher(testDirectory.Path, "*"))
+            string testDirectory = TestDirectory;
+            using (var watcher = new TestFileSystemWatcher(testDirectory, "*"))
             {
                 watcher.Created += (obj, e) => { Assert.False(true, "Created event should not occur"); };
                 watcher.Deleted += (obj, e) => { Assert.False(true, "Deleted event should not occur"); };
                 watcher.BeginInit();
                 watcher.EnableRaisingEvents = true;
-                new TempFile(Path.Combine(testDirectory.Path, GetTestFileName())).Dispose();
+                new TempFile(Path.Combine(testDirectory, GetTestFileName())).Dispose();
                 Thread.Sleep(WaitForExpectedEventTimeout);
             }
         }
@@ -182,8 +182,8 @@ namespace System.IO.Tests
         {
             FileSystemWatcherTest.Execute(() =>
             {
-                using (var testDirectory = new TempDirectory(GetTestFilePath()))
-                using (var watcher = new TestFileSystemWatcher(testDirectory.Path, "*"))
+                string testDirectory = TestDirectory;
+                using (var watcher = new TestFileSystemWatcher(testDirectory, "*"))
                 {
                     if (setBeforeBeginInit)
                         watcher.EnableRaisingEvents = true;
@@ -191,7 +191,7 @@ namespace System.IO.Tests
                     if (!setBeforeBeginInit)
                         watcher.EnableRaisingEvents = true;
                     watcher.EndInit();
-                    ExpectEvent(watcher, WatcherChangeTypes.Created | WatcherChangeTypes.Deleted, () => new TempFile(Path.Combine(testDirectory.Path, GetTestFileName())).Dispose(), null);
+                    ExpectEvent(watcher, WatcherChangeTypes.Created | WatcherChangeTypes.Deleted, () => new TempFile(Path.Combine(testDirectory, GetTestFileName())).Dispose(), null);
                 }
             }, maxAttempts: DefaultAttemptsForExpectedEvent, backoffFunc: (iteration) => RetryDelayMilliseconds, retryWhen: e => e is XunitException);
         }
@@ -202,14 +202,14 @@ namespace System.IO.Tests
         [Fact]
         public void EndRaisingEventsDuringPause()
         {
-            using (var testDirectory = new TempDirectory(GetTestFilePath()))
-            using (var watcher = new TestFileSystemWatcher(testDirectory.Path, "*"))
+            string testDirectory = TestDirectory;
+            using (var watcher = new TestFileSystemWatcher(testDirectory, "*"))
             {
                 watcher.EnableRaisingEvents = true;
                 watcher.BeginInit();
                 watcher.EnableRaisingEvents = false;
                 watcher.EndInit();
-                new TempFile(Path.Combine(testDirectory.Path, GetTestFileName())).Dispose();
+                new TempFile(Path.Combine(testDirectory, GetTestFileName())).Dispose();
                 Thread.Sleep(WaitForExpectedEventTimeout);
             }
         }
@@ -220,14 +220,14 @@ namespace System.IO.Tests
         [Fact]
         public void EndInit_DoesNotEnableEventRaisedEvents()
         {
-            using (var testDirectory = new TempDirectory(GetTestFilePath()))
-            using (var watcher = new TestFileSystemWatcher(testDirectory.Path, "*"))
+            string testDirectory = TestDirectory;
+            using (var watcher = new TestFileSystemWatcher(testDirectory, "*"))
             {
                 watcher.Created += (obj, e) => { Assert.False(true, "Created event should not occur"); };
                 watcher.Deleted += (obj, e) => { Assert.False(true, "Deleted event should not occur"); };
                 watcher.BeginInit();
                 watcher.EndInit();
-                new TempFile(Path.Combine(testDirectory.Path, GetTestFileName())).Dispose();
+                new TempFile(Path.Combine(testDirectory, GetTestFileName())).Dispose();
                 Thread.Sleep(WaitForExpectedEventTimeout);
             }
         }

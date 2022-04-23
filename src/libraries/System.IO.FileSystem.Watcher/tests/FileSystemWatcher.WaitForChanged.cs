@@ -80,9 +80,9 @@ namespace System.IO.Tests
         public void TimeSpan_ArgumentValidation(long milliseconds)
         {
             TimeSpan timeout = TimeSpan.FromMilliseconds(milliseconds);
-            using var testDirectory = new TempDirectory(GetTestFilePath());
-            using var _ = new TempDirectory(Path.Combine(testDirectory.Path, GetTestFileName()));
-            using var fsw = new FileSystemWatcher(testDirectory.Path);
+            string testDirectory = TestDirectory;
+            string _ = Path.Combine(testDirectory, GetTestFileName());
+            using var fsw = new FileSystemWatcher(testDirectory);
 
             Assert.Throws<ArgumentOutOfRangeException>("timeout", () => fsw.WaitForChanged(WatcherChangeTypes.All, timeout));
         }
@@ -92,9 +92,10 @@ namespace System.IO.Tests
         [InlineData(true, false)]
         public void ZeroTimeout_TimesOut(bool enabledBeforeWait, bool useTimeSpan)
         {
-            using (var testDirectory = new TempDirectory(GetTestFilePath()))
-            using (var dir = new TempDirectory(Path.Combine(testDirectory.Path, GetTestFileName())))
-            using (var fsw = new FileSystemWatcher(testDirectory.Path))
+            string testDirectory = TestDirectory;
+            string dir = Path.Combine(testDirectory, GetTestFileName());
+            Directory.CreateDirectory(dir);
+            using (var fsw = new FileSystemWatcher(testDirectory))
             {
                 if (enabledBeforeWait) fsw.EnableRaisingEvents = true;
 
@@ -111,9 +112,10 @@ namespace System.IO.Tests
         [InlineData(true, true)]
         public void NonZeroTimeout_NoEvents_TimesOut(bool enabledBeforeWait, bool useTimeSpan)
         {
-            using (var testDirectory = new TempDirectory(GetTestFilePath()))
-            using (var dir = new TempDirectory(Path.Combine(testDirectory.Path, GetTestFileName())))
-            using (var fsw = new FileSystemWatcher(testDirectory.Path))
+            string testDirectory = TestDirectory;
+            string dir = Path.Combine(testDirectory, GetTestFileName());
+            Directory.CreateDirectory(dir);
+            using (var fsw = new FileSystemWatcher(testDirectory))
             {
                 if (enabledBeforeWait) fsw.EnableRaisingEvents = true;
                 const int timeoutMilliseconds = 1;
@@ -133,9 +135,10 @@ namespace System.IO.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/58418", typeof(PlatformDetection), nameof(PlatformDetection.IsMacCatalyst), nameof(PlatformDetection.IsArm64Process))]
         public void NonZeroTimeout_NoActivity_TimesOut(WatcherChangeTypes changeType, bool enabledBeforeWait, bool useTimeSpan)
         {
-            using (var testDirectory = new TempDirectory(GetTestFilePath()))
-            using (var dir = new TempDirectory(Path.Combine(testDirectory.Path, GetTestFileName())))
-            using (var fsw = new FileSystemWatcher(testDirectory.Path))
+            string testDirectory = TestDirectory;
+            string dir = Path.Combine(testDirectory, GetTestFileName());
+            Directory.CreateDirectory(dir);
+            using (var fsw = new FileSystemWatcher(testDirectory))
             {
                 if (enabledBeforeWait) fsw.EnableRaisingEvents = true;
                 const int timeoutMilliseconds = 1;
@@ -152,15 +155,15 @@ namespace System.IO.Tests
         [InlineData(WatcherChangeTypes.Deleted)]
         public void CreatedDeleted_Success(WatcherChangeTypes changeType)
         {
-            using (var testDirectory = new TempDirectory(GetTestFilePath()))
-            using (var fsw = new FileSystemWatcher(testDirectory.Path))
+            string testDirectory = TestDirectory;
+            using (var fsw = new FileSystemWatcher(testDirectory))
             {
                 for (int i = 1; i <= DefaultAttemptsForExpectedEvent; i++)
                 {
                     Task<WaitForChangedResult> t = Task.Run(() => fsw.WaitForChanged(changeType, LongWaitTimeout));
                     while (!t.IsCompleted)
                     {
-                        string path = Path.Combine(testDirectory.Path, Path.GetRandomFileName());
+                        string path = Path.Combine(testDirectory, Path.GetRandomFileName());
                         File.WriteAllText(path, "text");
                         Task.Delay(BetweenOperationsDelayMilliseconds).Wait();
                         if ((changeType & WatcherChangeTypes.Deleted) != 0)
@@ -190,12 +193,12 @@ namespace System.IO.Tests
         [OuterLoop("This test has a longer than average timeout and may fail intermittently")]
         public void Changed_Success()
         {
-            using (var testDirectory = new TempDirectory(GetTestFilePath()))
-            using (var fsw = new FileSystemWatcher(testDirectory.Path))
+            string testDirectory = TestDirectory;
+            using (var fsw = new FileSystemWatcher(testDirectory))
             {
                 for (int i = 1; i <= DefaultAttemptsForExpectedEvent; i++)
                 {
-                    string name = Path.Combine(testDirectory.Path, Path.GetRandomFileName());
+                    string name = Path.Combine(testDirectory, Path.GetRandomFileName());
                     File.Create(name).Dispose();
 
                     Task<WaitForChangedResult> t = Task.Run(() => fsw.WaitForChanged(WatcherChangeTypes.Changed, LongWaitTimeout));
@@ -226,20 +229,20 @@ namespace System.IO.Tests
         [OuterLoop("This test has a longer than average timeout and may fail intermittently")]
         public void Renamed_Success()
         {
-            using (var testDirectory = new TempDirectory(GetTestFilePath()))
-            using (var fsw = new FileSystemWatcher(testDirectory.Path))
+            string testDirectory = TestDirectory;
+            using (var fsw = new FileSystemWatcher(testDirectory))
             {
                 for (int i = 1; i <= DefaultAttemptsForExpectedEvent; i++)
                 {
                     Task<WaitForChangedResult> t = Task.Run(() =>
                         fsw.WaitForChanged(WatcherChangeTypes.Renamed | WatcherChangeTypes.Created, LongWaitTimeout)); // on some OSes, the renamed might come through as Deleted/Created
 
-                    string name = Path.Combine(testDirectory.Path, Path.GetRandomFileName());
+                    string name = Path.Combine(testDirectory, Path.GetRandomFileName());
                     File.Create(name).Dispose();
 
                     while (!t.IsCompleted)
                     {
-                        string newName = Path.Combine(testDirectory.Path, Path.GetRandomFileName());
+                        string newName = Path.Combine(testDirectory, Path.GetRandomFileName());
                         File.Move(name, newName);
                         name = newName;
                         Task.Delay(BetweenOperationsDelayMilliseconds).Wait();

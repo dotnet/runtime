@@ -33,10 +33,10 @@ namespace System.IO.Tests
         [Fact]
         public void FileSystemWatcher_Directory_Create()
         {
-            using (var testDirectory = new TempDirectory(GetTestFilePath()))
-            using (var watcher = new FileSystemWatcher(testDirectory.Path))
+            string testDirectory = TestDirectory;
+            using (var watcher = new FileSystemWatcher(testDirectory))
             {
-                string dirName = Path.Combine(testDirectory.Path, "dir");
+                string dirName = Path.Combine(testDirectory, "dir");
                 watcher.Filter = Path.GetFileName(dirName);
 
                 Action action = () => Directory.CreateDirectory(dirName);
@@ -49,15 +49,17 @@ namespace System.IO.Tests
         [Fact]
         public void FileSystemWatcher_Directory_Create_InNestedDirectory()
         {
-            using (var dir = new TempDirectory(GetTestFilePath()))
-            using (var firstDir = new TempDirectory(Path.Combine(dir.Path, "dir1")))
-            using (var nestedDir = new TempDirectory(Path.Combine(firstDir.Path, "nested")))
-            using (var watcher = new FileSystemWatcher(dir.Path, "*"))
+            string dir = TestDirectory;
+            string firstDir = Path.Combine(dir, "dir1");
+            string nestedDir = Path.Combine(firstDir, "nested");
+            Directory.CreateDirectory(firstDir);
+            Directory.CreateDirectory(nestedDir);
+            using (var watcher = new FileSystemWatcher(dir, "*"))
             {
                 watcher.IncludeSubdirectories = true;
                 watcher.NotifyFilter = NotifyFilters.DirectoryName;
 
-                string dirName = Path.Combine(nestedDir.Path, "dir");
+                string dirName = Path.Combine(nestedDir, "dir");
                 Action action = () => Directory.CreateDirectory(dirName);
                 Action cleanup = () => Directory.Delete(dirName);
 
@@ -69,15 +71,16 @@ namespace System.IO.Tests
         [OuterLoop("This test has a longer than average timeout and may fail intermittently")]
         public void FileSystemWatcher_Directory_Create_DeepDirectoryStructure()
         {
-            using (var dir = new TempDirectory(GetTestFilePath()))
-            using (var deepDir = new TempDirectory(Path.Combine(dir.Path, "dir", "dir", "dir", "dir", "dir", "dir", "dir")))
-            using (var watcher = new FileSystemWatcher(dir.Path, "*"))
+            string dir = TestDirectory;
+            string deepDir = Path.Combine(dir, "dir", "dir", "dir", "dir", "dir", "dir", "dir");
+            Directory.CreateDirectory(deepDir);
+            using (var watcher = new FileSystemWatcher(dir, "*"))
             {
                 watcher.IncludeSubdirectories = true;
                 watcher.NotifyFilter = NotifyFilters.DirectoryName;
 
                 // Put a directory at the very bottom and expect it to raise an event
-                string dirPath = Path.Combine(deepDir.Path, "leafdir");
+                string dirPath = Path.Combine(deepDir, "leafdir");
                 Action action = () => Directory.CreateDirectory(dirPath);
                 Action cleanup = () => Directory.Delete(dirPath);
 
@@ -88,14 +91,16 @@ namespace System.IO.Tests
         [ConditionalFact(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
         public void FileSystemWatcher_Directory_Create_SymLink()
         {
-            using (var testDirectory = new TempDirectory(GetTestFilePath()))
-            using (var dir = new TempDirectory(Path.Combine(testDirectory.Path, "dir")))
-            using (var temp = new TempDirectory(GetTestFilePath()))
-            using (var watcher = new FileSystemWatcher(Path.GetFullPath(dir.Path), "*"))
+            string testDirectory = TestDirectory;
+            string dir = Path.Combine(testDirectory, "dir");
+            string temp = GetTestFilePath();
+            Directory.CreateDirectory(dir);
+            Directory.CreateDirectory(temp);
+            using (var watcher = new FileSystemWatcher(Path.GetFullPath(dir), "*"))
             {
                 // Make the symlink in our path (to the temp folder) and make sure an event is raised
-                string symLinkPath = Path.Combine(dir.Path, GetRandomLinkName());
-                Action action = () => Assert.True(MountHelper.CreateSymbolicLink(symLinkPath, temp.Path, true));
+                string symLinkPath = Path.Combine(dir, GetRandomLinkName());
+                Action action = () => Assert.True(MountHelper.CreateSymbolicLink(symLinkPath, temp, true));
                 Action cleanup = () => Directory.Delete(symLinkPath);
 
                 ExpectEvent(watcher, WatcherChangeTypes.Created, action, cleanup, symLinkPath);
@@ -105,13 +110,13 @@ namespace System.IO.Tests
         [Fact]
         public void FileSystemWatcher_Directory_Create_SynchronizingObject()
         {
-            using (var testDirectory = new TempDirectory(GetTestFilePath()))
-            using (var watcher = new FileSystemWatcher(testDirectory.Path))
+            string testDirectory = TestDirectory;
+            using (var watcher = new FileSystemWatcher(testDirectory))
             {
                 TestISynchronizeInvoke invoker = new TestISynchronizeInvoke();
                 watcher.SynchronizingObject = invoker;
 
-                string dirName = Path.Combine(testDirectory.Path, "dir");
+                string dirName = Path.Combine(testDirectory, "dir");
                 watcher.Filter = Path.GetFileName(dirName);
 
                 Action action = () => Directory.CreateDirectory(dirName);

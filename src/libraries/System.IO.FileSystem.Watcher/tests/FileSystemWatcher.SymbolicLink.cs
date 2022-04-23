@@ -22,8 +22,9 @@ namespace System.IO.Tests
         public void FileSystemWatcher_FileSymbolicLink_TargetsFile_Fails()
         {
             // Arrange
-            using var tempFile = new TempFile(GetTestFilePath());
-            string linkPath = CreateSymbolicLinkToTarget(tempFile.Path, isDirectory: false);
+            string tempFile = GetTestFilePath();
+            File.Create(tempFile).Dispose();
+            string linkPath = CreateSymbolicLinkToTarget(tempFile, isDirectory: false);
 
             // Act - Assert
             Assert.Throws<ArgumentException>(() => new FileSystemWatcher(linkPath));
@@ -36,8 +37,9 @@ namespace System.IO.Tests
         public void FileSystemWatcher_DirectorySymbolicLink_TargetsFile_Fails()
         {
             // Arrange
-            using var tempFile = new TempFile(GetTestFilePath());
-            string linkPath = CreateSymbolicLinkToTarget(tempFile.Path, isDirectory: true);
+            string tempFile = GetTestFilePath();
+            File.Create(tempFile).Dispose();
+            string linkPath = CreateSymbolicLinkToTarget(tempFile, isDirectory: true);
             using var watcher = new FileSystemWatcher(linkPath);
 
             // Act - Assert
@@ -61,14 +63,16 @@ namespace System.IO.Tests
         public void FileSystemWatcher_SymbolicLink_TargetsDirectory_Create()
         {
             // Arrange
-            using var tempDir = new TempDirectory(GetTestFilePath());
-            string linkPath = CreateSymbolicLinkToTarget(tempDir.Path, isDirectory: true);
+            string tempDir = GetTestFilePath();
+            string linkPath = CreateSymbolicLinkToTarget(tempDir, isDirectory: true);
 
             using var watcher = new FileSystemWatcher(linkPath);
             watcher.NotifyFilter = NotifyFilters.DirectoryName;
 
             string subDirName = GetTestFileName();
-            string subDirPath = Path.Combine(tempDir.Path, subDirName);
+            string subDirPath = Path.Combine(tempDir, subDirName);
+            Directory.CreateDirectory(subDirName);
+            Directory.CreateDirectory(subDirPath);
 
             // Act - Assert
             ExpectEvent(watcher, WatcherChangeTypes.Created,
@@ -85,14 +89,16 @@ namespace System.IO.Tests
                 // Arrange
                 const string subDir = "subDir";
                 const string subDirLv2 = "subDirLv2";
-                using var tempDir = new TempDirectory(GetTestFilePath());
-                using var tempSubDir = new TempDirectory(Path.Combine(tempDir.Path, subDir));
+                string tempDir = GetTestFilePath();
+                string tempSubDir = Path.Combine(tempDir, subDir);
+                Directory.CreateDirectory(tempDir);
+                Directory.CreateDirectory(tempSubDir);
 
-                string linkPath = CreateSymbolicLinkToTarget(tempDir.Path, isDirectory: true);
+                string linkPath = CreateSymbolicLinkToTarget(tempDir, isDirectory: true);
                 using var watcher = new FileSystemWatcher(linkPath);
                 watcher.NotifyFilter = NotifyFilters.DirectoryName;
 
-                string subDirLv2Path = Path.Combine(tempSubDir.Path, subDirLv2);
+                string subDirLv2Path = Path.Combine(tempSubDir, subDirLv2);
 
                 // Act - Assert
                 ExpectNoEvent(watcher, WatcherChangeTypes.Created,
@@ -113,13 +119,15 @@ namespace System.IO.Tests
         public void FileSystemWatcher_SymbolicLink_IncludeSubdirectories_DoNotDereferenceChildLink()
         {
             // Arrange
-            using var dirA = new TempDirectory(GetTestFilePath());
-            using var dirB = new TempDirectory(GetTestFilePath());
+            string dirA = GetTestFilePath();
+            string dirB = GetTestFilePath();
+            Directory.CreateDirectory(dirA);
+            Directory.CreateDirectory(dirB);
 
-            string linkPath = Path.Combine(dirA.Path, GetRandomDirName() + ".link");
-            CreateSymbolicLinkToTarget(dirB.Path, isDirectory: true, linkPath);
+            string linkPath = Path.Combine(dirA, GetRandomDirName() + ".link");
+            CreateSymbolicLinkToTarget(dirB, isDirectory: true, linkPath);
 
-            using var watcher = new FileSystemWatcher(dirA.Path);
+            using var watcher = new FileSystemWatcher(dirA);
             watcher.NotifyFilter = NotifyFilters.DirectoryName;
             watcher.IncludeSubdirectories = true;
 

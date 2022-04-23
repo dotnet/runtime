@@ -13,10 +13,10 @@ namespace System.IO.Tests
         [Fact]
         public void FileSystemWatcher_File_Delete()
         {
-            using (var testDirectory = new TempDirectory(GetTestFilePath()))
-            using (var watcher = new FileSystemWatcher(testDirectory.Path))
+            string testDirectory = TestDirectory;
+            using (var watcher = new FileSystemWatcher(testDirectory))
             {
-                string fileName = Path.Combine(testDirectory.Path, "file");
+                string fileName = Path.Combine(testDirectory, "file");
                 watcher.Filter = Path.GetFileName(fileName);
 
                 Action action = () => File.Delete(fileName);
@@ -30,10 +30,10 @@ namespace System.IO.Tests
         [Fact]
         public void FileSystemWatcher_File_Delete_ForcedRestart()
         {
-            using (var testDirectory = new TempDirectory(GetTestFilePath()))
-            using (var watcher = new FileSystemWatcher(testDirectory.Path))
+            string testDirectory = TestDirectory;
+            using (var watcher = new FileSystemWatcher(testDirectory))
             {
-                string fileName = Path.Combine(testDirectory.Path, "file");
+                string fileName = Path.Combine(testDirectory, "file");
                 watcher.Filter = Path.GetFileName(fileName);
 
                 Action action = () =>
@@ -51,15 +51,17 @@ namespace System.IO.Tests
         [Fact]
         public void FileSystemWatcher_File_Delete_InNestedDirectory()
         {
-            using (var dir = new TempDirectory(GetTestFilePath()))
-            using (var watcher = new FileSystemWatcher(dir.Path, "*"))
-            using (var firstDir = new TempDirectory(Path.Combine(dir.Path, "dir1")))
-            using (var nestedDir = new TempDirectory(Path.Combine(firstDir.Path, "nested")))
+            string dir = TestDirectory;
+            string firstDir = Path.Combine(dir, "dir1");
+            string nestedDir = Path.Combine(firstDir, "nested");
+            Directory.CreateDirectory(firstDir);
+            Directory.CreateDirectory(nestedDir);
+            using (var watcher = new FileSystemWatcher(dir, "*"))
             {
                 watcher.IncludeSubdirectories = true;
                 watcher.NotifyFilter = NotifyFilters.FileName;
 
-                string fileName = Path.Combine(nestedDir.Path, "file");
+                string fileName = Path.Combine(nestedDir, "file");
                 Action action = () => File.Delete(fileName);
                 Action cleanup = () => File.Create(fileName).Dispose();
                 cleanup();
@@ -72,15 +74,16 @@ namespace System.IO.Tests
         [OuterLoop("This test has a longer than average timeout and may fail intermittently")]
         public void FileSystemWatcher_File_Delete_DeepDirectoryStructure()
         {
-            using (var dir = new TempDirectory(GetTestFilePath()))
-            using (var deepDir = new TempDirectory(Path.Combine(dir.Path, "dir", "dir", "dir", "dir", "dir", "dir", "dir")))
-            using (var watcher = new FileSystemWatcher(dir.Path, "*"))
+            string dir = TestDirectory;
+            string deepDir = Path.Combine(dir, "dir", "dir", "dir", "dir", "dir", "dir", "dir");
+            Directory.CreateDirectory(deepDir);
+            using (var watcher = new FileSystemWatcher(dir, "*"))
             {
                 watcher.IncludeSubdirectories = true;
                 watcher.NotifyFilter = NotifyFilters.FileName;
 
                 // Put a file at the very bottom and expect it to raise an event
-                string fileName = Path.Combine(deepDir.Path, "file");
+                string fileName = Path.Combine(deepDir, "file");
                 Action action = () => File.Delete(fileName);
                 Action cleanup = () => File.Create(fileName).Dispose();
                 cleanup();
@@ -94,15 +97,17 @@ namespace System.IO.Tests
         {
             FileSystemWatcherTest.Execute(() =>
             {
-                using (var testDirectory = new TempDirectory(GetTestFilePath()))
-                using (var dir = new TempDirectory(Path.Combine(testDirectory.Path, "dir")))
-                using (var temp = new TempFile(GetTestFilePath()))
-                using (var watcher = new FileSystemWatcher(dir.Path, "*"))
+                string testDirectory = TestDirectory;
+                string dir = Path.Combine(testDirectory, "dir");
+                string temp = GetTestFilePath();
+                Directory.CreateDirectory(dir);
+                File.Create(temp).Dispose();
+                using (var watcher = new FileSystemWatcher(dir, "*"))
                 {
                     // Make the symlink in our path (to the temp file) and make sure an event is raised
-                    string symLinkPath = Path.Combine(dir.Path, GetRandomLinkName());
+                    string symLinkPath = Path.Combine(dir, GetRandomLinkName());
                     Action action = () => File.Delete(symLinkPath);
-                    Action cleanup = () => Assert.True(MountHelper.CreateSymbolicLink(symLinkPath, temp.Path, false));
+                    Action cleanup = () => Assert.True(MountHelper.CreateSymbolicLink(symLinkPath, temp, false));
                     cleanup();
 
                     ExpectEvent(watcher, WatcherChangeTypes.Deleted, action, cleanup, symLinkPath);
@@ -113,13 +118,13 @@ namespace System.IO.Tests
         [Fact]
         public void FileSystemWatcher_File_Delete_SynchronizingObject()
         {
-            using (var testDirectory = new TempDirectory(GetTestFilePath()))
-            using (var watcher = new FileSystemWatcher(testDirectory.Path))
+            string testDirectory = TestDirectory;
+            using (var watcher = new FileSystemWatcher(testDirectory))
             {
                 TestISynchronizeInvoke invoker = new TestISynchronizeInvoke();
                 watcher.SynchronizingObject = invoker;
 
-                string fileName = Path.Combine(testDirectory.Path, "file");
+                string fileName = Path.Combine(testDirectory, "file");
                 watcher.Filter = Path.GetFileName(fileName);
 
                 Action action = () => File.Delete(fileName);

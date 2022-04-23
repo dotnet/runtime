@@ -44,17 +44,18 @@ namespace System.IO.Tests
         public void FileSystemWatcher_InternalBufferSize(bool setToHigherCapacity)
         {
             ManualResetEvent unblockHandler = new ManualResetEvent(false);
-            using (var testDirectory = new TempDirectory(GetTestFilePath()))
-            using (var file = new TempFile(Path.Combine(testDirectory.Path, "file")))
-            using (FileSystemWatcher watcher = CreateWatcher(testDirectory.Path, file.Path, unblockHandler))
+            string testDirectory = TestDirectory;
+            string file = Path.Combine(testDirectory, "file");
+            File.Create(file).Dispose();
+            using (FileSystemWatcher watcher = CreateWatcher(testDirectory, file, unblockHandler))
             {
-                int internalBufferOperationCapacity = CalculateInternalBufferOperationCapacity(watcher.InternalBufferSize, file.Path);
+                int internalBufferOperationCapacity = CalculateInternalBufferOperationCapacity(watcher.InternalBufferSize, file);
 
                 // Set the capacity high to ensure no error events arise.
                 if (setToHigherCapacity)
                     watcher.InternalBufferSize = watcher.InternalBufferSize * 12;
 
-                Action action = GetAction(unblockHandler, internalBufferOperationCapacity, file.Path);
+                Action action = GetAction(unblockHandler, internalBufferOperationCapacity, file);
                 Action cleanup = GetCleanup(unblockHandler);
 
                 if (setToHigherCapacity)
@@ -69,16 +70,17 @@ namespace System.IO.Tests
         public void FileSystemWatcher_InternalBufferSize_SynchronizingObject()
         {
             ManualResetEvent unblockHandler = new ManualResetEvent(false);
-            using (var testDirectory = new TempDirectory(GetTestFilePath()))
-            using (var file = new TempFile(Path.Combine(testDirectory.Path, "file")))
-            using (FileSystemWatcher watcher = CreateWatcher(testDirectory.Path, file.Path, unblockHandler))
+            string testDirectory = TestDirectory;
+            string file = Path.Combine(testDirectory, "file");
+            File.Create(file).Dispose();
+            using (FileSystemWatcher watcher = CreateWatcher(testDirectory, file, unblockHandler))
             {
                 TestISynchronizeInvoke invoker = new TestISynchronizeInvoke();
                 watcher.SynchronizingObject = invoker;
 
-                int internalBufferOperationCapacity = CalculateInternalBufferOperationCapacity(watcher.InternalBufferSize, file.Path);
+                int internalBufferOperationCapacity = CalculateInternalBufferOperationCapacity(watcher.InternalBufferSize, file);
 
-                Action action = GetAction(unblockHandler, internalBufferOperationCapacity, file.Path);
+                Action action = GetAction(unblockHandler, internalBufferOperationCapacity, file);
                 Action cleanup = GetCleanup(unblockHandler);
 
                 ExpectError(watcher, action, cleanup);

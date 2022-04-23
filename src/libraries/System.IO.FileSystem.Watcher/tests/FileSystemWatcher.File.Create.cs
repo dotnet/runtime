@@ -15,10 +15,10 @@ namespace System.IO.Tests
         [Fact]
         public void FileSystemWatcher_File_Create()
         {
-            using (var testDirectory = new TempDirectory(GetTestFilePath()))
-            using (var watcher = new FileSystemWatcher(testDirectory.Path))
+            string testDirectory = TestDirectory;
+            using (var watcher = new FileSystemWatcher(testDirectory))
             {
-                string fileName = Path.Combine(testDirectory.Path, "file");
+                string fileName = Path.Combine(testDirectory, "file");
                 watcher.Filter = Path.GetFileName(fileName);
 
                 Action action = () => File.Create(fileName).Dispose();
@@ -34,10 +34,10 @@ namespace System.IO.Tests
         {
             FileSystemWatcherTest.Execute(() =>
             {
-                using (var testDirectory = new TempDirectory(GetTestFilePath()))
-                using (var watcher = new FileSystemWatcher(testDirectory.Path))
+                string testDirectory = TestDirectory;
+                using (var watcher = new FileSystemWatcher(testDirectory))
                 {
-                    string fileName = Path.Combine(testDirectory.Path, "file");
+                    string fileName = Path.Combine(testDirectory, "file");
                     watcher.Filter = Path.GetFileName(fileName);
 
                     int numberOfRaisedEvents = 0;
@@ -70,10 +70,10 @@ namespace System.IO.Tests
         [Fact]
         public void FileSystemWatcher_File_Create_ForcedRestart()
         {
-            using (var testDirectory = new TempDirectory(GetTestFilePath()))
-            using (var watcher = new FileSystemWatcher(testDirectory.Path))
+            string testDirectory = TestDirectory;
+            using (var watcher = new FileSystemWatcher(testDirectory))
             {
-                string fileName = Path.Combine(testDirectory.Path, "file");
+                string fileName = Path.Combine(testDirectory, "file");
                 watcher.Filter = Path.GetFileName(fileName);
 
                 Action action = () =>
@@ -90,15 +90,17 @@ namespace System.IO.Tests
         [Fact]
         public void FileSystemWatcher_File_Create_InNestedDirectory()
         {
-            using (var dir = new TempDirectory(GetTestFilePath()))
-            using (var firstDir = new TempDirectory(Path.Combine(dir.Path, "dir1")))
-            using (var nestedDir = new TempDirectory(Path.Combine(firstDir.Path, "nested")))
-            using (var watcher = new FileSystemWatcher(dir.Path, "*"))
+            string dir = TestDirectory;
+            string firstDir = Path.Combine(dir, "dir1");
+            string nestedDir = Path.Combine(dir, "nested");
+            Directory.CreateDirectory(firstDir);
+            Directory.CreateDirectory(nestedDir);
+            using (var watcher = new FileSystemWatcher(dir, "*"))
             {
                 watcher.IncludeSubdirectories = true;
                 watcher.NotifyFilter = NotifyFilters.FileName;
 
-                string fileName = Path.Combine(nestedDir.Path, "file");
+                string fileName = Path.Combine(nestedDir, "file");
                 Action action = () => File.Create(fileName).Dispose();
                 Action cleanup = () => File.Delete(fileName);
 
@@ -110,15 +112,16 @@ namespace System.IO.Tests
         [OuterLoop("This test has a longer than average timeout and may fail intermittently")]
         public void FileSystemWatcher_File_Create_DeepDirectoryStructure()
         {
-            using (var dir = new TempDirectory(GetTestFilePath()))
-            using (var deepDir = new TempDirectory(Path.Combine(dir.Path, "dir", "dir", "dir", "dir", "dir", "dir", "dir")))
-            using (var watcher = new FileSystemWatcher(dir.Path, "*"))
+            string dir = TestDirectory;
+            string deepDir = Path.Combine(dir, "dir", "dir", "dir", "dir", "dir", "dir", "dir");
+            Directory.CreateDirectory(deepDir);
+            using (var watcher = new FileSystemWatcher(dir, "*"))
             {
                 watcher.IncludeSubdirectories = true;
                 watcher.NotifyFilter = NotifyFilters.FileName;
 
                 // Put a file at the very bottom and expect it to raise an event
-                string fileName = Path.Combine(deepDir.Path, "file");
+                string fileName = Path.Combine(deepDir, "file");
                 Action action = () => File.Create(fileName).Dispose();
                 Action cleanup = () => File.Delete(fileName);
 
@@ -129,14 +132,16 @@ namespace System.IO.Tests
         [ConditionalFact(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
         public void FileSystemWatcher_File_Create_SymLink()
         {
-            using (var testDirectory = new TempDirectory(GetTestFilePath()))
-            using (var dir = new TempDirectory(Path.Combine(testDirectory.Path, "dir")))
-            using (var temp = new TempFile(GetTestFilePath()))
-            using (var watcher = new FileSystemWatcher(dir.Path, "*"))
+            string testDirectory = TestDirectory;
+            string dir = Path.Combine(testDirectory, "dir");
+            string temp = GetTestFilePath();
+            Directory.CreateDirectory(dir);
+            File.Create(temp).Dispose();
+            using (var watcher = new FileSystemWatcher(dir, "*"))
             {
                 // Make the symlink in our path (to the temp file) and make sure an event is raised
-                string symLinkPath = Path.Combine(dir.Path, GetRandomLinkName());
-                Action action = () => Assert.True(MountHelper.CreateSymbolicLink(symLinkPath, temp.Path, false));
+                string symLinkPath = Path.Combine(dir, GetRandomLinkName());
+                Action action = () => Assert.True(MountHelper.CreateSymbolicLink(symLinkPath, temp, false));
                 Action cleanup = () => File.Delete(symLinkPath);
 
                 ExpectEvent(watcher, WatcherChangeTypes.Created, action, cleanup, symLinkPath);
@@ -148,13 +153,13 @@ namespace System.IO.Tests
         {
             FileSystemWatcherTest.Execute(() =>
             {
-                using (var testDirectory = new TempDirectory(GetTestFilePath()))
-                using (var watcher = new FileSystemWatcher(testDirectory.Path))
+                string testDirectory = TestDirectory;
+                using (var watcher = new FileSystemWatcher(testDirectory))
                 {
                     TestISynchronizeInvoke invoker = new TestISynchronizeInvoke();
                     watcher.SynchronizingObject = invoker;
 
-                    string fileName = Path.Combine(testDirectory.Path, "file");
+                    string fileName = Path.Combine(testDirectory, "file");
                     watcher.Filter = Path.GetFileName(fileName);
 
                     Action action = () => File.Create(fileName).Dispose();
