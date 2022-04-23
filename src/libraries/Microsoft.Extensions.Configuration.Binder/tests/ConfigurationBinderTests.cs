@@ -109,6 +109,14 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
         {
             public ICustomCollection<string> CustomCollection { get; set; }
         }
+
+        public interface ICustomSet<T> : ISet<T>
+        {
+        }
+        public class MyClassWithCustomSet
+        {
+            public ICustomSet<string> CustomSet { get; set; }
+        }
         
 
         public class NullableOptions
@@ -711,6 +719,19 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             var config = configurationBuilder.Build();
             var instance = config.Get<MyClassWithCustomCollection>()!;
             Assert.Null(instance.CustomCollection);
+        }
+
+        [Fact]
+        public void SkipsCustomSet()
+        {
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection( new Dictionary<string, string>
+            {
+                ["CustomSet:0"] = "Yo!",
+            });
+            var config = configurationBuilder.Build();
+            var instance = config.Get<MyClassWithCustomSet>()!;
+            Assert.Null(instance.CustomSet);
         }
 
         [Fact]

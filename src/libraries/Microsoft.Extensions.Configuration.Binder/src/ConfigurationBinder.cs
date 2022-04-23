@@ -291,27 +291,12 @@ namespace Microsoft.Extensions.Configuration
                 return (false, null);
             }
 
-            Type? collectionInterface = FindOpenGenericInterface(type, typeof(IReadOnlyList<>));
-            if (collectionInterface != null)
-            {
-                // IEnumerable<T> is guaranteed to have exactly one parameter
-                return (true, BindToCollection(type, config, options));
-            }
-
-            collectionInterface = FindOpenGenericInterface(type, typeof(IReadOnlyDictionary<,>));
-            if (collectionInterface != null)
-            {
-                Type dictionaryType = typeof(Dictionary<,>).MakeGenericType(type.GenericTypeArguments[0], type.GenericTypeArguments[1]);
-                object instance = Activator.CreateInstance(dictionaryType)!;
-                BindDictionary(instance, dictionaryType, config, options);
-                return (true, instance);
-            }
-
-            collectionInterface = FindOpenGenericInterface(type, typeof(IDictionary<,>));
+            Type? collectionInterface = FindOpenGenericInterface(type, typeof(IReadOnlyDictionary<,>)) ??
+                                        FindOpenGenericInterface(type, typeof(IDictionary<,>));
             if (collectionInterface != null)
             {
                 object instance = Activator.CreateInstance(typeof(Dictionary<,>).MakeGenericType(type.GenericTypeArguments[0], type.GenericTypeArguments[1]))!;
-                BindDictionary(instance, collectionInterface, config, options);
+                BindDictionary(instance, typeof(Dictionary<,>).MakeGenericType(type.GenericTypeArguments[0], type.GenericTypeArguments[1]), config, options);
                 return (true, instance);
             }
 
@@ -321,37 +306,35 @@ namespace Microsoft.Extensions.Configuration
 #endif
             if (collectionInterface != null)
             {
-                // ISet<T> is guaranteed to have exactly one parameter
-                return (true, BindToSet(type, config, options));
+                if (type == typeof(ISet<>))
+                {
+                    return (true, BindToSet(type, config, options));
+                }
+                // I[ReadOnly]Set<T> is guaranteed to have exactly one parameter
+                return (true, null);
             }
 
-            collectionInterface = FindOpenGenericInterface(type, typeof(IReadOnlyCollection<>));
+            collectionInterface = FindOpenGenericInterface(type, typeof(IReadOnlyCollection<>)) ??
+                                  FindOpenGenericInterface(type, typeof(ICollection<>));
             if (collectionInterface != null)
             {
-                // IReadOnlyCollection<T> is guaranteed to have exactly one parameter
+                // I[ReadOnly]Collection<T> is guaranteed to have exactly one parameter
                 return (true, BindToCollection(type, config, options));
             }
 
-            collectionInterface = FindOpenGenericInterface(type, typeof(ICollection<>));
-            if (collectionInterface != null)
-            {
-                // ICollection<T> is guaranteed to have exactly one parameter
-                return (true, BindToCollection(type, config, options));
-            }
-
-            // We have an interface, and it's null, so we only treat IEnumerable<> as the special case for a list.
+            // We have an interface, and it's null, so we only treat IEnumerable<> as the special case for a List.
             // If we have a custom interface that derives from IEnumerable<>, we have no way of knowing what implementation
             // to use, so return null.
             collectionInterface = FindOpenGenericInterface(type, typeof(IEnumerable<>));
             if (collectionInterface != null)
             {
-                // if it's *exactly* an IEnumerable<>, then treat it as a list
+                // If it's *exactly* an IEnumerable<>, then treat it as a List
                 if (type == typeof(IEnumerable<>))
                 {
                     return (true, BindToCollection(type, config, options));
                 }
 
-                // otherwise, we say it was a collection, but nothing we could instantiate.
+                // Otherwise, we say it was a collection, but nothing we could instantiate.
                 return (true, null);
             }
 
@@ -845,7 +828,6 @@ namespace Microsoft.Extensions.Configuration
         }
 
         // Determines if the type is descended from the desired type.
-        // IsAssignableFrom doesn't handle 
         private static Type? FindOpenGenericInterface(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)] Type type,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)] Type desiredType)
