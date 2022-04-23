@@ -82,7 +82,6 @@ namespace System.IO.Tests
         public void FileSystemWatcher_File_Changed_SynchronizingObject()
         {
             string file = CreateTestFile(TestDirectory, "file");
-            File.Create(file).Dispose();
             using (var watcher = new FileSystemWatcher(TestDirectory, Path.GetFileName(file)))
             {
                 TestISynchronizeInvoke invoker = new TestISynchronizeInvoke();
