@@ -539,7 +539,7 @@ private:
             checkBlock->bbJumpKind = BBJ_COND;
 
             // Fetch method table from object arg to call.
-            GenTree* thisTree = compiler->gtCloneExpr(origCall->gtArgs.GetThisArg()->GetEarlyNode());
+            GenTree* thisTree = compiler->gtCloneExpr(origCall->gtArgs.GetThisArg()->GetNode());
 
             // Create temp for this if the tree is costly.
             if (!thisTree->IsLocal())
@@ -684,7 +684,7 @@ private:
 
             // copy 'this' to temp with exact type.
             const unsigned thisTemp  = compiler->lvaGrabTemp(false DEBUGARG("guarded devirt this exact temp"));
-            GenTree*       clonedObj = compiler->gtCloneExpr(origCall->gtArgs.GetThisArg()->GetEarlyNode());
+            GenTree*       clonedObj = compiler->gtCloneExpr(origCall->gtArgs.GetThisArg()->GetNode());
             GenTree*       assign    = compiler->gtNewTempAssign(thisTemp, clonedObj);
             compiler->lvaSetClass(thisTemp, clsHnd, true);
             compiler->fgNewStmtAtEnd(thenBlock, assign);
@@ -1107,13 +1107,13 @@ private:
             checkBlock = CreateAndInsertBasicBlock(BBJ_COND, currBlock);
 
             assert(sizeCheck->GetEarlyNode()->OperIs(GT_LE));
-            GenTree*   sizeJmpTree = compiler->gtNewOperNode(GT_JTRUE, TYP_VOID, sizeCheck->GetEarlyNode());
+            GenTree*   sizeJmpTree = compiler->gtNewOperNode(GT_JTRUE, TYP_VOID, sizeCheck->GetNode());
             Statement* sizeJmpStmt = compiler->fgNewStmtFromTree(sizeJmpTree, stmt->GetDebugInfo());
             compiler->fgInsertStmtAtEnd(checkBlock, sizeJmpStmt);
 
             checkBlock2 = CreateAndInsertBasicBlock(BBJ_COND, checkBlock);
             assert(nullCheck->GetEarlyNode()->OperIs(GT_EQ));
-            GenTree*   nullJmpTree = compiler->gtNewOperNode(GT_JTRUE, TYP_VOID, nullCheck->GetEarlyNode());
+            GenTree*   nullJmpTree = compiler->gtNewOperNode(GT_JTRUE, TYP_VOID, nullCheck->GetNode());
             Statement* nullJmpStmt = compiler->fgNewStmtFromTree(nullJmpTree, stmt->GetDebugInfo());
             compiler->fgInsertStmtAtEnd(checkBlock2, nullJmpStmt);
         }
@@ -1130,7 +1130,7 @@ private:
             // The first argument is the real first argument for the call now.
             origCall->gtArgs.Remove(resultHandle);
 
-            GenTree*   asg     = compiler->gtNewTempAssign(resultLclNum, resultHandle->GetEarlyNode());
+            GenTree*   asg     = compiler->gtNewTempAssign(resultLclNum, resultHandle->GetNode());
             Statement* asgStmt = compiler->gtNewStmt(asg, stmt->GetDebugInfo());
             compiler->fgInsertStmtAtEnd(thenBlock, asgStmt);
         }
