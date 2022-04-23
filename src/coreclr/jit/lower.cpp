@@ -5473,14 +5473,14 @@ GenTree* Lowering::LowerAdd(GenTreeOp* node)
                 }
 
                 if (mul->OperIs(GT_MUL) && !(mul->gtFlags & GTF_SET_FLAGS) && varTypeIsIntegral(mul) &&
-                    !mul->gtOverflow() && !mul->isContained() &&
-                    !c->isContained())
+                    !mul->gtOverflow() && !mul->isContained() && !c->isContained())
                 {
                     GenTree* a = mul->gtGetOp1();
                     GenTree* b = mul->gtGetOp2();
 
                     // Transform "-a * b + c" to "c - a * b"
-                    if (a->OperIs(GT_NEG) && !b->OperIs(GT_NEG) && !a->isContained() && !a->gtGetOp1()->isContained())
+                    if (a->OperIs(GT_NEG) && !(a->gtFlags & GTF_SET_FLAGS) && !b->OperIs(GT_NEG) && !a->isContained() &&
+                        !a->gtGetOp1()->isContained())
                     {
                         mul->AsOp()->gtOp1 = a->gtGetOp1();
                         BlockRange().Remove(a);
@@ -5489,8 +5489,8 @@ GenTree* Lowering::LowerAdd(GenTreeOp* node)
                         node->ChangeOper(GT_SUB);
                     }
                     // Transform "a * -b + c" to "c - a * b"
-                    else if (b->OperIs(GT_NEG) && !a->OperIs(GT_NEG) && !b->isContained() &&
-                             !b->gtGetOp1()->isContained())
+                    else if (b->OperIs(GT_NEG) && !(b->gtFlags & GTF_SET_FLAGS) && !a->OperIs(GT_NEG) &&
+                             !b->isContained() && !b->gtGetOp1()->isContained())
                     {
                         mul->AsOp()->gtOp2 = b->gtGetOp1();
                         BlockRange().Remove(b);
