@@ -247,8 +247,7 @@ namespace System.IO
             File.Create(file).Dispose();
             return file;
         }
-        protected string CreateTestFile()
-            => CreateTestFile(GetTestFilePath());
+        protected string CreateTestFile() => CreateTestFile(GetTestFilePath());
 
     }
 }
