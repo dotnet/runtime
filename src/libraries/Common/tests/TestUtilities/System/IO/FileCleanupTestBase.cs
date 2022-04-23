@@ -234,6 +234,7 @@ namespace System.IO
         protected string CreateTestDirectory(params string[] paths)
         {
             string dir = Path.Combine(paths);
+            Assert.True(Path.IsPathRooted(file));
             Directory.CreateDirectory(dir);
             return dir;
         }
