@@ -102,18 +102,18 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             }
         }
 
-        public interface ICustomCollection<out T> : IEnumerable<T>
+        public interface ICustomCollectionDerivedFromIEnumerableT<out T> : IEnumerable<T> { }
+        public interface ICustomCollectionDerivedFromICollectionT<T> : ICollection<T> { }
+
+        public class MyClassWithCustomCollections
         {
-        }
-        public class MyClassWithCustomCollection
-        {
-            public ICustomCollection<string> CustomCollection { get; set; }
+            public ICustomCollectionDerivedFromIEnumerableT<string> CustomIEnumerableCollection { get; set; }
+            public ICustomCollectionDerivedFromICollectionT<string> CustomCollection { get; set; }
+
+            
         }
 
         public interface ICustomSet<T> : ISet<T>
-        {
-        }
-        public interface ICustomCollection2<T> : ICollection<T>
         {
         }
 
@@ -130,12 +130,6 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
         public interface ICustomDictionary<T, T1> : IDictionary<T, T1>
         {
         }
-
-        public class MyClassWithCustomCollection2
-        {
-            public ICustomCollection2<string> CustomCollection { get; set; }
-        }
-        
 
         public class NullableOptions
         {
@@ -728,7 +722,20 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
         }
 
         [Fact]
-        public void SkipsCustomCollection()
+        public void SkipsCustomIEnumerableCollection()
+        {
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection( new Dictionary<string, string>
+            {
+                ["CustomIEnumerableCollection:0"] = "Yo!",
+            });
+            var config = configurationBuilder.Build();
+            var instance = config.Get<MyClassWithCustomCollections>()!;
+            Assert.Null(instance.CustomIEnumerableCollection);
+        }
+
+        [Fact]
+        public void SkipsCustomICollection()
         {
             var configurationBuilder = new ConfigurationBuilder();
             configurationBuilder.AddInMemoryCollection( new Dictionary<string, string>
@@ -736,7 +743,7 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
                 ["CustomCollection:0"] = "Yo!",
             });
             var config = configurationBuilder.Build();
-            var instance = config.Get<MyClassWithCustomCollection>()!;
+            var instance = config.Get<MyClassWithCustomCollections>()!;
             Assert.Null(instance.CustomCollection);
         }
 
@@ -751,19 +758,6 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             var config = configurationBuilder.Build();
             var instance = config.Get<MyClassWithCustomDictionary>()!;
             Assert.Null(instance.CustomDictionary);
-        }
-
-        [Fact]
-        public void SkipsCustomCollection2()
-        {
-            var configurationBuilder = new ConfigurationBuilder();
-            configurationBuilder.AddInMemoryCollection( new Dictionary<string, string>
-            {
-                ["CustomCollection:0"] = "Yo!",
-            });
-            var config = configurationBuilder.Build();
-            var instance = config.Get<MyClassWithCustomCollection2>()!;
-            Assert.Null(instance.CustomCollection);
         }
 
         [Fact]
