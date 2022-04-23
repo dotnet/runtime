@@ -1698,34 +1698,16 @@ void Lowering::ContainCheckBinary(GenTreeOp* node)
     CheckImmedAndMakeContained(node, op2);
 
 #ifdef TARGET_ARM64
-    if (comp->opts.OptimizationEnabled() && varTypeIsIntegral(node) && !node->isContained())
+    if (comp->opts.OptimizationEnabled() && !node->isContained() && varTypeIsIntegral(node))
     {
-        // Find "a + b * c" in order to emit MADD
-        if (node->OperIs(GT_ADD) && !node->gtOverflow() && op2->OperIs(GT_MUL) && !op2->isContained() &&
-            !op2->gtOverflow() && varTypeIsIntegral(op2))
+        // Find "a + b * c" or "a - b * c".
+        // Then mark "b * c" op as contained in order to emit 'madd' or 'msub' respectively.
+        if (node->OperIs(GT_ADD, GT_SUB) && !(node->gtFlags & GTF_SET_FLAGS) && !node->gtOverflow() &&
+            !op1->isContained() && op2->OperIs(GT_MUL) && !(op2->gtFlags & GTF_SET_FLAGS) && !op2->gtOverflow() &&
+            !op2->isContained() && varTypeIsIntegral(op2) && !op2->gtGetOp1()->isContained() &&
+            !op2->gtGetOp2()->isContained())
         {
-            GenTree* a = op1;
-            GenTree* b = op2->gtGetOp1();
-            GenTree* c = op2->gtGetOp2();
-
-            if (!a->isContained() && !b->isContained() && !c->isContained())
-            {
-                node->ChangeOper(GT_MADD);
-                MakeSrcContained(node, op2);
-            }
-        }
-        // Find "a - b * c" in order to emit MSUB
-        else if (node->OperIs(GT_SUB) && !node->gtOverflow() && op2->OperIs(GT_MUL) && !op2->isContained() &&
-                 !op2->gtOverflow() && varTypeIsIntegral(op2))
-        {
-            GenTree* a = op1;
-            GenTree* b = op2->gtGetOp1();
-            GenTree* c = op2->gtGetOp2();
-
-            if (!a->isContained() && !b->isContained() && !c->isContained())
-            {
-                MakeSrcContained(node, op2);
-            }
+            MakeSrcContained(node, op2);
         }
     }
 

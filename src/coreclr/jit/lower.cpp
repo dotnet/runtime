@@ -3030,7 +3030,10 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
 #endif // FEATURE_HW_INTRINSICS
                  )
 #else // TARGET_ARM64
-            op1->OperIs(GT_AND, GT_ADD, GT_SUB)
+            op1->OperIs(GT_AND, GT_ADD, GT_SUB) &&
+            // This happens in order to emit ARM64 'madd' and 'msub' instructions.
+            // We cannot combine 'adds'/'subs' and 'mul'.
+            !(op1->gtGetOp2()->OperIs(GT_MUL) && op1->gtGetOp2()->isContained())
 #endif
                 )
         {
@@ -5455,8 +5458,8 @@ GenTree* Lowering::LowerAdd(GenTreeOp* node)
             if (comp->opts.OptimizationEnabled() && varTypeIsIntegral(node) && !node->gtOverflow() &&
                 !node->isContained())
             {
-                GenTree* mul;
-                GenTree* c;
+                GenTree* mul       = nullptr;
+                GenTree* c         = nullptr;
                 if (op1->OperIs(GT_MUL))
                 {
                     mul = op1;
