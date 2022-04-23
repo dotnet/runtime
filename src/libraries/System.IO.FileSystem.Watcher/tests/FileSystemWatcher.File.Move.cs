@@ -266,8 +266,7 @@ namespace System.IO.Tests
         private void FileMove_FromUnwatchedToWatched(WatcherChangeTypes eventType)
         {
             string dir_watched = CreateTestDirectory(TestDirectory, "dir_watched");
-            string dir_unwatched = CreateTestDirectory(TestDirectory, "dir_unwatched");
-            string testFile = CreateTestFile(dir_unwatched, "file");
+            string testFile = CreateTestFile(TestDirectory, "dir_unwatched", "file");
             using (var watcher = new FileSystemWatcher(dir_watched, "*"))
             {
                 string sourcePath = testFile; // unwatched
@@ -282,8 +281,7 @@ namespace System.IO.Tests
 
         private void FileMove_NestedDirectory(WatcherChangeTypes eventType, bool includeSubdirectories)
         {
-            string nestedDir = CreateTestDirectory(TestDirectory, "dir1", "nested");
-            string nestedFile = CreateTestFile(nestedDir, "nestedFile" + eventType.ToString());
+            string nestedFile = CreateTestFile(TestDirectory, "dir1", "nested", "nestedFile" + eventType.ToString());
             using (var watcher = new FileSystemWatcher(TestDirectory, "*"))
             {
                 watcher.NotifyFilter = NotifyFilters.FileName;

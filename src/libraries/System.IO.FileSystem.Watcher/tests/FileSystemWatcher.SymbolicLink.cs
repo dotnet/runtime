@@ -61,14 +61,14 @@ namespace System.IO.Tests
         public void FileSystemWatcher_SymbolicLink_TargetsDirectory_Create()
         {
             // Arrange
-            string tempDir = GetTestFilePath();
+            string tempDir = CreateTestDirectory();
             string linkPath = CreateSymbolicLinkToTarget(tempDir, isDirectory: true);
 
             using var watcher = new FileSystemWatcher(linkPath);
             watcher.NotifyFilter = NotifyFilters.DirectoryName;
 
-            string subDirName = CreateTestDirectory(GetTestFileName());
-            string subDirPath = CreateTestDirectory(tempDir, subDirName);
+            string subDirName = GetTestFileName();
+            string subDirPath = Path.Combine(tempDir, subDirName);
 
             // Act - Assert
             ExpectEvent(watcher, WatcherChangeTypes.Created,
