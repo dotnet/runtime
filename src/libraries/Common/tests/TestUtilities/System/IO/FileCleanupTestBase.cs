@@ -239,8 +239,7 @@ namespace System.IO
             return dir;
         }
 
-        protected string CreateTestDirectory()
-             => CreateTestDirectory(GetTestFilePath());
+        protected string CreateTestDirectory() => CreateTestDirectory(GetTestFilePath());
 
         protected string CreateTestFile(params string[] paths)
         {
