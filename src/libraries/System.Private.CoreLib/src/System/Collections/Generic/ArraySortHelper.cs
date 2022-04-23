@@ -613,6 +613,7 @@ namespace System.Collections.Generic
             if (typeof(T) == typeof(float)) return (float)(object)left < (float)(object)right ? true : false;
             if (typeof(T) == typeof(double)) return (double)(object)left < (double)(object)right ? true : false;
             if (typeof(T) == typeof(Half)) return (Half)(object)left < (Half)(object)right ? true : false;
+            if (left is null) return right is null ? false : true;
             return left.CompareTo(right) < 0 ? true : false;
         }
 
@@ -1496,6 +1497,7 @@ namespace System.Collections.Generic
             if (typeof(TKey) == typeof(float)) return (float)(object)left < (float)(object)right ? true : false;
             if (typeof(TKey) == typeof(double)) return (double)(object)left < (double)(object)right ? true : false;
             if (typeof(TKey) == typeof(Half)) return (Half)(object)left < (Half)(object)right ? true : false;
+            if (left is null) return right is null ? false : true;
             return left.CompareTo(right) < 0 ? true : false;
         }
 
