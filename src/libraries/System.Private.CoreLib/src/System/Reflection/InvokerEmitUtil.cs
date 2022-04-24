@@ -113,28 +113,20 @@ namespace System.Reflection
                     // Handle per-type differences.
                     if (elementType.IsValueType)
                     {
-                        LocalBuilder? local_return = il.DeclareLocal(typeof(object));
                         il.Emit(OpCodes.Ldobj, elementType);
                         il.Emit(OpCodes.Box, elementType);
-                        il.Emit(OpCodes.Stloc_S, local_return);
-                        il.Emit(OpCodes.Ldloc_S, local_return);
                     }
                     else if (elementType.IsPointer)
                     {
-                        LocalBuilder? local_return = il.DeclareLocal(NormalizePointerType(returnType)); // IntPtr.MakeByRefType()
                         il.Emit(OpCodes.Ldind_Ref);
-                        il.Emit(OpCodes.Stloc_S, local_return);
-                        il.Emit(OpCodes.Ldloc_S, local_return);
+                        il.Emit(OpCodes.Conv_U);
                         il.Emit(OpCodes.Ldtoken, elementType);
                         il.Emit(OpCodes.Call, Methods.Type_GetTypeFromHandle());
                         il.Emit(OpCodes.Call, Methods.Pointer_Box());
                     }
                     else
                     {
-                        LocalBuilder? local_return = il.DeclareLocal(elementType);
-                        il.Emit(OpCodes.Ldind_Ref);
-                        il.Emit(OpCodes.Stloc_S, local_return);
-                        il.Emit(OpCodes.Ldloc_S, local_return);
+                        il.Emit(OpCodes.Ldobj, elementType);
                     }
                 }
             }
