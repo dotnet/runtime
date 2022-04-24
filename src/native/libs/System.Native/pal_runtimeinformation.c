@@ -117,7 +117,7 @@ int32_t SystemNative_GetOSArchitecture()
         }
 
         // ix86 (possible values are i286, i386, i486, i586 and i686): x86
-        else if (isa[0] == 'i' && isa[2] == '8' && isa[3] == '6')
+        else if (strlen(isa) == strlen("i386") && isa[0] == 'i' && isa[2] == '8' && isa[3] == '6')
         {
             result = ARCH_X86;
         }
