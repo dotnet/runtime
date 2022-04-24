@@ -263,6 +263,8 @@ namespace System.IO.Tests.Enumeration
             };
 
             Assert.Equal(new string[] { fileTwo.FullName }, enumerable);
+
+            fileTwo.Attributes &= ~FileAttributes.ReadOnly;
         }
     }
 }
