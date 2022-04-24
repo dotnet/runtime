@@ -80,7 +80,7 @@ namespace System.IO.Tests
         public void TimeSpan_ArgumentValidation(long milliseconds)
         {
             TimeSpan timeout = TimeSpan.FromMilliseconds(milliseconds);
-            string _ = Path.Combine(TestDirectory, GetTestFileName());
+            string _ = CreateTestDirectory(TestDirectory, GetTestFileName());
             using var fsw = new FileSystemWatcher(TestDirectory);
 
             Assert.Throws<ArgumentOutOfRangeException>("timeout", () => fsw.WaitForChanged(WatcherChangeTypes.All, timeout));
@@ -91,7 +91,6 @@ namespace System.IO.Tests
         [InlineData(true, false)]
         public void ZeroTimeout_TimesOut(bool enabledBeforeWait, bool useTimeSpan)
         {
-            string dir = CreateTestDirectory(TestDirectory, GetTestFileName());
             using (var fsw = new FileSystemWatcher(TestDirectory))
             {
                 if (enabledBeforeWait) fsw.EnableRaisingEvents = true;
@@ -109,7 +108,6 @@ namespace System.IO.Tests
         [InlineData(true, true)]
         public void NonZeroTimeout_NoEvents_TimesOut(bool enabledBeforeWait, bool useTimeSpan)
         {
-            string dir = CreateTestDirectory(TestDirectory, GetTestFileName());
             using (var fsw = new FileSystemWatcher(TestDirectory))
             {
                 if (enabledBeforeWait) fsw.EnableRaisingEvents = true;
@@ -130,7 +128,6 @@ namespace System.IO.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/58418", typeof(PlatformDetection), nameof(PlatformDetection.IsMacCatalyst), nameof(PlatformDetection.IsArm64Process))]
         public void NonZeroTimeout_NoActivity_TimesOut(WatcherChangeTypes changeType, bool enabledBeforeWait, bool useTimeSpan)
         {
-            string dir = CreateTestDirectory(TestDirectory, GetTestFileName());
             using (var fsw = new FileSystemWatcher(TestDirectory))
             {
                 if (enabledBeforeWait) fsw.EnableRaisingEvents = true;

@@ -189,8 +189,8 @@ namespace System.IO.Tests
         {
             Assert.InRange(filesCount, 0, int.MaxValue);
 
-            string watchedTestDirectory = CreateTestDirectory(GetTestFilePath());
-            string unwatchedTestDirectory = CreateTestDirectory(GetTestFilePath());
+            string watchedTestDirectory = CreateTestDirectory();
+            string unwatchedTestDirectory = CreateTestDirectory();
 
             var dirs = Enumerable.Range(0, filesCount)
                             .Select(i => new
@@ -214,7 +214,7 @@ namespace System.IO.Tests
         private void DirectoryMove_FromWatchedToUnwatched(WatcherChangeTypes eventType)
         {
             string watchedTestDirectory = GetTestFilePath();
-            string unwatchedTestDirectory = CreateTestDirectory(GetTestFilePath());
+            string unwatchedTestDirectory = CreateTestDirectory();
             string dir = CreateTestDirectory(watchedTestDirectory, "dir");
             using (var watcher = new FileSystemWatcher(watchedTestDirectory, "*"))
             {
@@ -230,7 +230,7 @@ namespace System.IO.Tests
 
         private void DirectoryMove_FromUnwatchedToWatched(WatcherChangeTypes eventType)
         {
-            string watchedTestDirectory = CreateTestDirectory(GetTestFilePath());
+            string watchedTestDirectory = CreateTestDirectory();
             string unwatchedTestDirectory = GetTestFilePath();
             string dir = CreateTestDirectory(unwatchedTestDirectory, "dir");
             using (var watcher = new FileSystemWatcher(watchedTestDirectory, "*"))
@@ -247,9 +247,7 @@ namespace System.IO.Tests
 
         private void DirectoryMove_NestedDirectory(WatcherChangeTypes eventType, bool includeSubdirectories)
         {
-            string firstDir = Path.Combine(TestDirectory, "first");
-            string secondDir = Path.Combine(firstDir, "second");
-            string nestedDir = CreateTestDirectory(secondDir, "nested");
+            string nestedDir = CreateTestDirectory(TestDirectory, "first", "second", "nested");
             using (var watcher = new FileSystemWatcher(TestDirectory, "*"))
             {
                 watcher.IncludeSubdirectories = includeSubdirectories;

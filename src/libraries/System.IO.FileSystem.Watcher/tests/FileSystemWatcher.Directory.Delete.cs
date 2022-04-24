@@ -28,8 +28,7 @@ namespace System.IO.Tests
         [Fact]
         public void FileSystemWatcher_Directory_Delete_InNestedDirectory()
         {
-            string firstDir = Path.Combine(TestDirectory, "dir1");
-            string nestedDir = CreateTestDirectory(firstDir, "nested");
+            string nestedDir = CreateTestDirectory(TestDirectory, "dir1", "nested");
             using (var watcher = new FileSystemWatcher(TestDirectory, "*"))
             {
                 watcher.IncludeSubdirectories = true;
@@ -68,7 +67,7 @@ namespace System.IO.Tests
         public void FileSystemWatcher_Directory_Delete_SymLink()
         {
             string dir = CreateTestDirectory(TestDirectory, "dir");
-            string tempDir = CreateTestFile();
+            string tempDir = CreateTestDirectory();
             using (var watcher = new FileSystemWatcher(Path.GetFullPath(dir), "*"))
             {
                 // Make the symlink in our path (to the temp folder) and make sure an event is raised
