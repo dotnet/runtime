@@ -53,7 +53,7 @@ namespace System.Runtime.InteropServices
                         else
                         {
                             Debug.Fail("Call to IsWow64Process2() failed unexpectedly. Falling back to ProcessArchitecture");
-                            osArch = ProcessArchitecture;
+                            osArch = (int)ProcessArchitecture;
                         }
                     }
                     else
