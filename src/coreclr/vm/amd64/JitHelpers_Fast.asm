@@ -21,6 +21,7 @@ EXTERN  g_lowest_address:QWORD
 EXTERN  g_highest_address:QWORD
 EXTERN  g_card_table:QWORD
 EXTERN  g_region_shr:BYTE
+EXTERN  g_region_use_bitwise_write_barrier:BYTE
 EXTERN  g_region_to_generation_table:QWORD
 
 ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
@@ -355,6 +356,9 @@ ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
         je      Exit
     SkipCheck:
 
+        cmp     [g_region_use_bitwise_write_barrier], 0
+        je      CheckCardTableByte
+
         ; compute card table bit
         mov     rcx, rdi
         mov     al, 1
@@ -379,7 +383,9 @@ ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
 
     SetCardTableBit:
         lock or byte ptr [rcx], al
-else
+        jmp     CheckCardBundle
+endif
+CheckCardTableByte:
 
         ; move current rdi value into rcx and then increment the pointers
         mov     rcx, rdi
@@ -398,7 +404,9 @@ else
 
     UpdateCardTable:
         mov     byte ptr [rcx], 0FFh
-endif
+
+    CheckCardBundle:
+
 ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
         ; check if we need to update the card bundle table
         ; restore destination address from rdi - rdi has been incremented by 8 already

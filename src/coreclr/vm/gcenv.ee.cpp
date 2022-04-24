@@ -1004,6 +1004,7 @@ void GCToEEInterface::StompWriteBarrier(WriteBarrierParameters* args)
         g_ephemeral_high = args->ephemeral_high;
         g_region_to_generation_table = args->region_to_generation_table;
         g_region_shr = args->region_shr;
+        g_region_use_bitwise_write_barrier = args->region_use_bitwise_write_barrier;
         stompWBCompleteActions |= ::StompWriteBarrierEphemeral(args->is_runtime_suspended);
         break;
     case WriteBarrierOp::Initialize:
@@ -1030,6 +1031,7 @@ void GCToEEInterface::StompWriteBarrier(WriteBarrierParameters* args)
         g_highest_address = args->highest_address;
         g_region_to_generation_table = args->region_to_generation_table;
         g_region_shr = args->region_shr;
+        g_region_use_bitwise_write_barrier = args->region_use_bitwise_write_barrier;
         stompWBCompleteActions |= ::StompWriteBarrierResize(true, false);
 
         // StompWriteBarrierResize does not necessarily bash g_ephemeral_low

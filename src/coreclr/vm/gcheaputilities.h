@@ -31,6 +31,7 @@ extern "C" uint8_t* g_ephemeral_low;
 extern "C" uint8_t* g_ephemeral_high;
 extern "C" uint8_t* g_region_to_generation_table;
 extern "C" uint8_t  g_region_shr;
+extern "C" bool     g_region_use_bitwise_write_barrier;
 
 
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP

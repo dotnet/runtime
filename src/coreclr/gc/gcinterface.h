@@ -114,6 +114,9 @@ struct WriteBarrierParameters
 
     // shift count - how many bits to shift right to obtain region index from address
     uint8_t  region_shr;
+
+    // whether to use the more precise but slower write barrier
+    bool region_use_bitwise_write_barrier;
 };
 
 struct EtwGCSettingsInfo
