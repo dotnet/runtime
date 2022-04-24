@@ -36,7 +36,8 @@ namespace System.IO
             string failure = string.Empty;
             for (int i = 0; i <= 2; i++)
             {
-                TestDirectory = Path.Combine(tempDirectory, GetType().Name + "_" + Path.GetRandomFileName());
+                // Prefix with "#" to help spot leaked files
+                TestDirectory = Path.Combine(tempDirectory, "#" + GetType().Name + "_" + Path.GetRandomFileName());
                 try
                 {
                     Directory.CreateDirectory(TestDirectory);
