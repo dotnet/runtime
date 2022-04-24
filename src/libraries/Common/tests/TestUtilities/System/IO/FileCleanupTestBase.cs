@@ -69,9 +69,24 @@ namespace System.IO
         protected virtual void Dispose(bool disposing)
         {
             // No managed resources to clean up, so disposing is ignored.
+            try
+            {
+                try
+                {
+                    Directory.Delete(TestDirectory, recursive: true);
+                }
+                catch (UnauthorizedAccessException)
+                {
+                    DirectoryInfo di = new DirectoryInfo(TestDirectory);
+                    foreach (FileInfo file in di.GetFiles("*", SearchOption.AllDirectories))
+                    {
+                        file.IsReadOnly = false;
+                    }
 
-            try { Directory.Delete(TestDirectory, recursive: true); }
-            catch { } // avoid exceptions escaping Dispose
+                    Directory.Delete(TestDirectory, recursive: true);
+                }
+            }
+            catch {  } // avoid exceptions escaping Dispose
         }
 
         /// <summary>
