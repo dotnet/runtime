@@ -32,8 +32,7 @@ namespace System.Reflection
 
 #if true
                     // TEMP HACK FOR FORCING IL ON FIRST TIME:
-                    if (RuntimeFeature.IsDynamicCodeCompiled &&
-                        _method.DeclaringType != typeof(Type)) // Avoid stack crawl issue with Type.GetType().
+                    if (RuntimeFeature.IsDynamicCodeCompiled)
                     {
                         _emitInvoke = InvokerEmitUtil.CreateInvokeDelegate<MethodInvoker>(_method);
                     }
@@ -42,8 +41,7 @@ namespace System.Reflection
                 }
                 else
                 {
-                    if (RuntimeFeature.IsDynamicCodeCompiled &&
-                        _method.DeclaringType != typeof(Type)) // Avoid stack crawl issue with Type.GetType().
+                    if (RuntimeFeature.IsDynamicCodeCompiled)
                     {
                         _emitInvoke = InvokerEmitUtil.CreateInvokeDelegate<MethodInvoker>(_method);
                     }
