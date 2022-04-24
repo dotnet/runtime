@@ -4601,7 +4601,9 @@ void Lowering::ContainCheckStoreIndir(GenTreeStoreInd* node)
         MakeSrcContained(node, src);
     }
 
-    if (comp->opts.OptimizationEnabled() && src->OperIs(GT_BSWAP, GT_BSWAP16) &&
+    // If the source is a BSWAP, contain it on supported hardware to generate a MOVBE.
+    // Ensure that we are not double containing when the load has been contained.
+    if (comp->opts.OptimizationEnabled() && src->OperIs(GT_BSWAP, GT_BSWAP16) && !src->gtGetOp1()->isContained() &&
         comp->compOpportunisticallyDependsOn(InstructionSet_MOVBE) && IsSafeToContainMem(node, src))
     {
         MakeSrcContained(node, src);

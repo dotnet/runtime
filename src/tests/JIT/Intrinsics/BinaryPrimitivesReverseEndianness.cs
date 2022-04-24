@@ -212,6 +212,40 @@ namespace BinaryPrimitivesReverseEndianness
                 return Fail;
             }
 
+            /*
+             * READ & WRITE TESTS
+             */
+
+            ushort writeBackUInt16Input = (ushort)DateTime.UtcNow.Ticks;
+            ushort writeBackUInt16Output = writeBackUInt16Input;
+            ByteSwapUInt16_WriteBack(ref writeBackUInt16Output);
+            ushort writeBackUInt16Expected = ByteSwapUInt16_Control(writeBackUInt16Input);
+            if (writeBackUInt16Output != writeBackUInt16Expected)
+            {
+                ReportError("write back UInt16", writeBackUInt16Input, writeBackUInt16Output, writeBackUInt16Expected);
+                return Fail;
+            }
+
+            uint writeBackUInt32Input = (uint)DateTime.UtcNow.Ticks;
+            uint writeBackUInt32Output = writeBackUInt32Input;
+            ByteSwapUInt32_WriteBack(ref writeBackUInt32Output);
+            uint writeBackUInt32Expected = ByteSwapUInt32_Control(writeBackUInt32Input);
+            if (writeBackUInt32Output != writeBackUInt32Expected)
+            {
+                ReportError("write back UInt32", writeBackUInt32Input, writeBackUInt32Output, writeBackUInt32Expected);
+                return Fail;
+            }
+
+            ulong writeBackUInt64Input = (ulong)DateTime.UtcNow.Ticks;
+            ulong writeBackUInt64Output = writeBackUInt64Input;
+            ByteSwapUInt64_WriteBack(ref writeBackUInt64Output);
+            ulong writeBackUInt64Expected = ByteSwapUInt64_Control(writeBackUInt64Input);
+            if (writeBackUInt64Output != writeBackUInt64Expected)
+            {
+                ReportError("write back UInt64", writeBackUInt64Input, writeBackUInt64Output, writeBackUInt64Expected);
+                return Fail;
+            }
+
             return Pass;
         }
 
@@ -327,6 +361,24 @@ namespace BinaryPrimitivesReverseEndianness
         private static ulong ByteSwapUInt64_WriteCast(ref uint input)
         {
             return BinaryPrimitives.ReverseEndianness((ulong)input);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void ByteSwapUInt16_WriteBack(ref ushort value)
+        {
+            value = BinaryPrimitives.ReverseEndianness(value);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void ByteSwapUInt32_WriteBack(ref uint value)
+        {
+            value = BinaryPrimitives.ReverseEndianness(value);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void ByteSwapUInt64_WriteBack(ref ulong value)
+        {
+            value = BinaryPrimitives.ReverseEndianness(value);
         }
 
         private static string GetHexString<T>(T value)

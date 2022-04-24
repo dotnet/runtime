@@ -16314,13 +16314,13 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             if (memAccessKind == PERFSCORE_MEMORY_READ)
             {
                 result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-                result.insLatency += PERFSCORE_THROUGHPUT_2C;
+                result.insLatency += opSize == EA_8BYTE ? PERFSCORE_LATENCY_2C : PERFSCORE_LATENCY_1C;
             }
             else
             {
                 assert(memAccessKind == PERFSCORE_MEMORY_WRITE);
                 result.insThroughput = PERFSCORE_THROUGHPUT_2X;
-                result.insLatency += PERFSCORE_THROUGHPUT_2C;
+                result.insLatency += opSize == EA_8BYTE ? PERFSCORE_LATENCY_2C : PERFSCORE_LATENCY_1C;
             }
             break;
 
