@@ -24,6 +24,7 @@ namespace System.Text.Json
         /// for <typeparamref name="TValue"/> or its serializable members.
         /// </exception>
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(SerializationRequiresDynamicCodeMessage)]
         public static void Serialize<TValue>(
             Utf8JsonWriter writer,
             TValue value,
@@ -57,6 +58,7 @@ namespace System.Text.Json
         /// for <paramref name="inputType"/> or its serializable members.
         /// </exception>
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(SerializationRequiresDynamicCodeMessage)]
         public static void Serialize(
             Utf8JsonWriter writer,
             object? value,

@@ -42,6 +42,7 @@ namespace System.Text.Json
         /// UTF-8 methods since the implementation natively uses UTF-8.
         /// </remarks>
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(SerializationRequiresDynamicCodeMessage)]
         public static TValue? Deserialize<TValue>([StringSyntax(StringSyntaxAttribute.Json)] string json, JsonSerializerOptions? options = null)
         {
             if (json is null)
@@ -78,6 +79,7 @@ namespace System.Text.Json
         /// UTF-8 methods since the implementation natively uses UTF-8.
         /// </remarks>
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(SerializationRequiresDynamicCodeMessage)]
         public static TValue? Deserialize<TValue>([StringSyntax(StringSyntaxAttribute.Json)] ReadOnlySpan<char> json, JsonSerializerOptions? options = null)
         {
             // default/null span is treated as empty
@@ -114,6 +116,7 @@ namespace System.Text.Json
         /// UTF-8 methods since the implementation natively uses UTF-8.
         /// </remarks>
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(SerializationRequiresDynamicCodeMessage)]
         public static object? Deserialize([StringSyntax(StringSyntaxAttribute.Json)] string json, Type returnType, JsonSerializerOptions? options = null)
         {
             if (json is null)
@@ -157,6 +160,7 @@ namespace System.Text.Json
         /// UTF-8 methods since the implementation natively uses UTF-8.
         /// </remarks>
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(SerializationRequiresDynamicCodeMessage)]
         public static object? Deserialize([StringSyntax(StringSyntaxAttribute.Json)] ReadOnlySpan<char> json, Type returnType, JsonSerializerOptions? options = null)
         {
             if (returnType is null)

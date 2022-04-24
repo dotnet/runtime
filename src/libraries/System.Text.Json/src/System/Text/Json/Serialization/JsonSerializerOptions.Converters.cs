@@ -29,6 +29,7 @@ namespace System.Text.Json
         private static Func<Type, JsonSerializerOptions, JsonTypeInfo>? s_typeInfoCreationFunc;
 
         [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
         private static void RootReflectionSerializerDependencies()
         {
             // s_typeInfoCreationFunc is the last field assigned.
@@ -42,6 +43,7 @@ namespace System.Text.Json
             }
 
             [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
+            [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
             static JsonTypeInfo CreateJsonTypeInfo(Type type, JsonSerializerOptions options)
             {
                 JsonTypeInfo.ValidateType(type, null, null, options);
@@ -66,12 +68,14 @@ namespace System.Text.Json
         }
 
         [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
         private JsonTypeInfo<T> CreateReflectionJsonTypeInfo<T>()
         {
             return new ReflectionJsonTypeInfo<T>(this);
         }
 
         [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
         private static JsonConverter[] GetDefaultFactoryConverters()
         {
             return new JsonConverter[]
@@ -212,6 +216,7 @@ namespace System.Text.Json
         /// for <paramref name="typeToConvert"/> or its serializable members.
         /// </exception>
         [RequiresUnreferencedCode("Getting a converter for a type may require reflection which depends on unreferenced code.")]
+        [RequiresDynamicCode("Getting a converter for a type may require reflection which depends on unreferenced code.")]
         public JsonConverter GetConverter(Type typeToConvert)
         {
             if (typeToConvert is null)

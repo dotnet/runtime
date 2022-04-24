@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization.Converters;
 
 namespace System.Text.Json.Serialization
@@ -51,6 +52,8 @@ namespace System.Text.Json.Serialization
         }
 
         /// <inheritdoc />
+        [RequiresDynamicCode("Runtime code generation is not available for Aot form factor.")]
+        [SuppressMessage("AotAnalysis", "IL3051:'RequiresDynamicCodeAttribute' annotations must match across all interface implementations or overrides.", Justification = "Suppressing base type warnings")]
         public sealed override JsonConverter CreateConverter(Type typeToConvert, JsonSerializerOptions options) =>
             EnumConverterFactory.Create(typeToConvert, _converterOptions, _namingPolicy, options);
     }

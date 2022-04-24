@@ -26,6 +26,7 @@ namespace System.Text.Json
         /// for <typeparamref name="TValue"/> or its serializable members.
         /// </exception>
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(SerializationRequiresDynamicCodeMessage)]
         public static TValue? Deserialize<TValue>(ReadOnlySpan<byte> utf8Json, JsonSerializerOptions? options = null)
         {
             JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, typeof(TValue));
@@ -52,6 +53,7 @@ namespace System.Text.Json
         /// for <paramref name="returnType"/> or its serializable members.
         /// </exception>
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(SerializationRequiresDynamicCodeMessage)]
         public static object? Deserialize(ReadOnlySpan<byte> utf8Json, Type returnType, JsonSerializerOptions? options = null)
         {
             if (returnType is null)

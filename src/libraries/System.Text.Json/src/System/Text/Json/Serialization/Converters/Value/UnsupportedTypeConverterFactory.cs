@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.Serialization;
 
@@ -40,6 +41,8 @@ namespace System.Text.Json.Serialization.Converters
 #endif
         }
 
+        [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode", Justification = "The factory constructors are only invoked in the context of reflection serialization code paths " +
+            "and are marked with 'RequiresDynamicCode'")]
         public override JsonConverter CreateConverter(Type type, JsonSerializerOptions options)
         {
             JsonConverter converter = (JsonConverter)Activator.CreateInstance(

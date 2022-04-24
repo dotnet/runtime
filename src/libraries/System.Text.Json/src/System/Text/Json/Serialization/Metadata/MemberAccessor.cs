@@ -7,6 +7,7 @@ using System.Reflection;
 
 namespace System.Text.Json.Serialization.Metadata
 {
+    [RequiresDynamicCode("Runtime code generation is not available for Aot form factor.")]
     internal abstract class MemberAccessor
     {
         public abstract JsonTypeInfo.ConstructorDelegate? CreateConstructor(

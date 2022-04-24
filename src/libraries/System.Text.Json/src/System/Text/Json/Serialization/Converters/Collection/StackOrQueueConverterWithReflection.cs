@@ -13,9 +13,11 @@ namespace System.Text.Json.Serialization.Converters
         where TCollection : IEnumerable
     {
         [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
         public StackOrQueueConverterWithReflection() { }
 
         [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
         internal override void ConfigureJsonTypeInfoUsingReflection(JsonTypeInfo jsonTypeInfo, JsonSerializerOptions options)
         {
             jsonTypeInfo.AddMethodDelegate = options.MemberAccessorStrategy.CreateAddMethodDelegate<TCollection>();

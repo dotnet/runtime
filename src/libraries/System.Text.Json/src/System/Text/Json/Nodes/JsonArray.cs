@@ -99,6 +99,7 @@ namespace System.Text.Json.Nodes
         ///   The object to be added to the end of the <see cref="JsonArray"/>.
         /// </param>
         [RequiresUnreferencedCode(JsonValue.CreateUnreferencedCodeMessage)]
+        [RequiresDynamicCode(JsonValue.CreateUnreferencedCodeMessage)]
         public void Add<T>(T? value)
         {
             if (value == null)

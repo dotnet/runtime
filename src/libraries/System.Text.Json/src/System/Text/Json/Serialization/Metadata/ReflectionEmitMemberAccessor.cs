@@ -10,6 +10,7 @@ using System.Reflection.Emit;
 
 namespace System.Text.Json.Serialization.Metadata
 {
+    [RequiresDynamicCode("Runtime code generation is not available for Aot form factor.")]
     internal sealed class ReflectionEmitMemberAccessor : MemberAccessor
     {
         public override JsonTypeInfo.ConstructorDelegate? CreateConstructor(
@@ -183,6 +184,7 @@ namespace System.Text.Json.Serialization.Metadata
                 CreateImmutableEnumerableCreateRangeDelegate(typeof(TCollection), typeof(TElement), typeof(IEnumerable<TElement>)));
 
         [RequiresUnreferencedCode(IEnumerableConverterFactoryHelpers.ImmutableConvertersUnreferencedCodeMessage)]
+        [RequiresDynamicCode(IEnumerableConverterFactoryHelpers.ImmutableConvertersUnreferencedCodeMessage)]
         private static DynamicMethod CreateImmutableEnumerableCreateRangeDelegate(Type collectionType, Type elementType, Type enumerableType)
         {
             MethodInfo realMethod = collectionType.GetImmutableEnumerableCreateRangeMethod(elementType);
@@ -209,6 +211,7 @@ namespace System.Text.Json.Serialization.Metadata
                 CreateImmutableDictionaryCreateRangeDelegate(typeof(TCollection), typeof(TKey), typeof(TValue), typeof(IEnumerable<KeyValuePair<TKey, TValue>>)));
 
         [RequiresUnreferencedCode(IEnumerableConverterFactoryHelpers.ImmutableConvertersUnreferencedCodeMessage)]
+        [RequiresDynamicCode(IEnumerableConverterFactoryHelpers.ImmutableConvertersUnreferencedCodeMessage)]
         private static DynamicMethod CreateImmutableDictionaryCreateRangeDelegate(Type collectionType, Type keyType, Type valueType, Type enumerableType)
         {
             MethodInfo realMethod = collectionType.GetImmutableDictionaryCreateRangeMethod(keyType, valueType);

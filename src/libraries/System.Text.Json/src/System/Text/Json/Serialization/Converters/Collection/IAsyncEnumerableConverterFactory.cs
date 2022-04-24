@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
@@ -15,12 +15,15 @@ namespace System.Text.Json.Serialization
     internal sealed class IAsyncEnumerableConverterFactory : JsonConverterFactory
     {
         [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
         public IAsyncEnumerableConverterFactory() { }
 
         public override bool CanConvert(Type typeToConvert) => GetAsyncEnumerableInterface(typeToConvert) is not null;
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "The ctor is marked RequiresUnreferencedCode.")]
+        [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
+            Justification = "The ctor is marked with RequiresDynamicCode.")]
         public override JsonConverter CreateConverter(Type typeToConvert, JsonSerializerOptions options)
         {
             Type? asyncEnumerableInterface = GetAsyncEnumerableInterface(typeToConvert);

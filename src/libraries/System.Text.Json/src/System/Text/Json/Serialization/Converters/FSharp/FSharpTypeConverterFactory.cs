@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
@@ -11,18 +11,23 @@ namespace System.Text.Json.Serialization.Converters
     internal sealed class FSharpTypeConverterFactory : JsonConverterFactory
     {
         [RequiresUnreferencedCode(FSharpCoreReflectionProxy.FSharpCoreUnreferencedCodeMessage)]
+        [RequiresDynamicCode(FSharpCoreReflectionProxy.FSharpCoreUnreferencedCodeMessage)]
         public FSharpTypeConverterFactory() { }
 
         private ObjectConverterFactory? _recordConverterFactory;
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "The ctor is marked with RequiresUnreferencedCode.")]
+        [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
+            Justification = "The ctor is marked with RequiresDynamicCode.")]
         public override bool CanConvert(Type typeToConvert) =>
             FSharpCoreReflectionProxy.IsFSharpType(typeToConvert) &&
                 FSharpCoreReflectionProxy.Instance.DetectFSharpKind(typeToConvert) is not FSharpKind.Unrecognized;
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "The ctor is marked with RequiresUnreferencedCode.")]
+        [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
+            Justification = "The ctor is marked with RequiresDynamicCode.")]
         public override JsonConverter? CreateConverter(Type typeToConvert, JsonSerializerOptions options)
         {
             Debug.Assert(CanConvert(typeToConvert));

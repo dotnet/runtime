@@ -19,6 +19,7 @@ namespace System.Text.Json.Serialization.Converters
         private readonly bool _useDefaultConstructorInUnannotatedStructs;
 
         [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
         public ObjectConverterFactory(bool useDefaultConstructorInUnannotatedStructs = true)
         {
             _useDefaultConstructorInUnannotatedStructs = useDefaultConstructorInUnannotatedStructs;
@@ -36,6 +37,8 @@ namespace System.Text.Json.Serialization.Converters
             Justification = "The ctor is marked RequiresUnreferencedCode.")]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2067:UnrecognizedReflectionPattern",
             Justification = "The ctor is marked RequiresUnreferencedCode.")]
+        [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
+            Justification = "The ctor is marked with RequiresDynamicCode.")]
         public override JsonConverter CreateConverter(Type typeToConvert, JsonSerializerOptions options)
         {
             if (typeToConvert.IsKeyValuePair())
@@ -99,6 +102,7 @@ namespace System.Text.Json.Serialization.Converters
             return converter;
         }
 
+        [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
         private static JsonConverter CreateKeyValuePairConverter(Type type)
         {
             Debug.Assert(type.IsKeyValuePair());
