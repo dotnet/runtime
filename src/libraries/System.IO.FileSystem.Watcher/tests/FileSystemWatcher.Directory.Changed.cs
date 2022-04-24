@@ -43,7 +43,6 @@ namespace System.IO.Tests
         public void FileSystemWatcher_Directory_Changed_Nested(bool includeSubdirectories)
         {
             string nestedDir = CreateTestDirectory(TestDirectory, "dir1", "nested");
-
             using (var watcher = new FileSystemWatcher(TestDirectory, "*"))
             {
                 watcher.IncludeSubdirectories = includeSubdirectories;
