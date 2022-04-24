@@ -195,6 +195,7 @@ typedef struct
 	int max_data_items;
 	void **data_items;
 	GHashTable *data_hash;
+	GSList *imethod_items;
 #ifdef ENABLE_EXPERIMENT_TIERED
 	GHashTable *patchsite_hash;
 #endif
@@ -223,6 +224,7 @@ typedef struct
 	// If the current method (inlined_method) has the aggressive inlining attribute, we no longer
 	// bail out of inlining when having to generate certain opcodes (like call, throw).
 	int aggressive_inlining : 1;
+	int optimized : 1;
 } TransformData;
 
 #define STACK_TYPE_I4 0

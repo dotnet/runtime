@@ -64,6 +64,7 @@
 #include "interp-internals.h"
 #include "mintops.h"
 #include "interp-intrins.h"
+#include "tiering.h"
 
 #include <mono/mini/mini.h>
 #include <mono/mini/mini-runtime.h>
@@ -476,6 +477,10 @@ mono_interp_get_imethod (MonoMethod *method)
 	imethod->hasthis = sig->hasthis;
 	imethod->vararg = sig->call_convention == MONO_CALL_VARARG;
 	imethod->code_type = IMETHOD_CODE_UNKNOWN;
+	// always optimize code if tiering is disabled
+	// always optimize wrappers
+	if (!(mono_interp_opt & INTERP_OPT_TIERING) || method->wrapper_type != MONO_WRAPPER_NONE)
+		imethod->optimized = TRUE;
 	if (imethod->method->string_ctor)
 		imethod->rtype = m_class_get_byval_arg (mono_defaults.string_class);
 	else
@@ -634,6 +639,9 @@ append_imethod (MonoMemoryManager *memory_manager, GSList *list, InterpMethod *i
 	ret->data = entry;
 	ret = g_slist_concat (list, ret);
 
+	mono_interp_register_imethod_patch_site ((gpointer*)&entry->imethod);
+	mono_interp_register_imethod_patch_site ((gpointer*)&entry->target_imethod);
+
 	return ret;
 }
 
@@ -642,6 +650,9 @@ get_target_imethod (GSList *list, InterpMethod *imethod)
 {
 	while (list != NULL) {
 		InterpVTableEntry *entry = (InterpVTableEntry*) list->data;
+		// We don't account for tiering here so this comparison is racy
+		// The side effect is that we might end up with duplicates of the same
+		// method in the vtable list, but this is extremely uncommon.
 		if (entry->imethod == imethod)
 			return entry->target_imethod;
 		list = list->next;
@@ -711,10 +722,12 @@ get_virtual_method_fast (InterpMethod *imethod, MonoVTable *vtable, int offset)
 		/* Lazily initialize the method table slot */
 		mono_mem_manager_lock (memory_manager);
 		if (!table [offset]) {
-			if (imethod->method->is_inflated || offset < 0)
+			if (imethod->method->is_inflated || offset < 0) {
 				table [offset] = append_imethod (memory_manager, NULL, imethod, target_imethod);
-			else
+			} else {
 				table [offset] = (gpointer) ((gsize)target_imethod | 0x1);
+				mono_interp_register_imethod_patch_site (&table [offset]);
+			}
 		}
 		mono_mem_manager_unlock (memory_manager);
 	}
@@ -3758,6 +3771,12 @@ main_loop:
 						del->interp_invoke_impl = del_imethod;
 					}
 				}
+			}
+			if (del_imethod->optimized_imethod) {
+				del_imethod = del_imethod->optimized_imethod;
+				// don't patch for virtual calls
+				if (del->interp_invoke_impl)
+					del->interp_invoke_impl = del_imethod;
 			}
 			cmethod = del_imethod;
 			if (!is_multicast) {
@@ -6954,6 +6973,24 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			MINT_IN_BREAK;
 		}
 
+		MINT_IN_CASE(MINT_TIER_ENTER_METHOD) {
+			frame->imethod->entry_count++;
+			if (frame->imethod->entry_count > INTERP_TIER_ENTRY_LIMIT)
+				mono_interp_tier_up_frame_enter (frame, context, &ip);
+			else
+				ip++;
+			MINT_IN_BREAK;
+		}
+		MINT_IN_CASE(MINT_TIER_PATCHPOINT) {
+			if (frame->imethod->optimized_imethod) {
+				int bb_index = ip [1];
+				// Tier up current frame
+				g_error ("FIXME: Tier up current frame");
+			}
+			ip += 2;
+			MINT_IN_BREAK;
+		}
+
 		MINT_IN_CASE(MINT_LDLOCA_S)
 			LOCAL_VAR (ip [1], gpointer) = locals + ip [2];
 			ip += 3;
@@ -7071,6 +7108,8 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 				/* Not created from interpreted code */
 				g_assert (del->method);
 				del->interp_method = mono_interp_get_imethod (del->method);
+			} else if (((InterpMethod*)del->interp_method)->optimized_imethod) {
+				del->interp_method = ((InterpMethod*)del->interp_method)->optimized_imethod;
 			}
 			g_assert (del->interp_method);
 			LOCAL_VAR (ip [1], gpointer) = imethod_to_ftnptr (del->interp_method, FALSE);
@@ -7273,6 +7312,8 @@ interp_parse_options (const char *options)
 			mono_interp_opt &= ~INTERP_OPT_SUPER_INSTRUCTIONS;
 		else if (strncmp (arg, "-bblocks", 8) == 0)
 			mono_interp_opt &= ~INTERP_OPT_BBLOCKS;
+		else if (strncmp (arg, "-tiering", 8) == 0)
+			mono_interp_opt &= ~INTERP_OPT_TIERING;
 		else if (strncmp (arg, "-all", 4) == 0)
 			mono_interp_opt = INTERP_OPT_NONE;
 	}
@@ -8020,6 +8061,9 @@ mono_ee_interp_init (const char *opts)
 	if (mini_get_debug_options ()->mdb_optimizations)
 		mono_interp_opt = 0;
 	mono_interp_transform_init ();
+
+	if (mono_interp_opt & INTERP_OPT_TIERING)
+		mono_interp_tiering_init ();
 
 	mini_install_interp_callbacks (&mono_interp_callbacks);
 

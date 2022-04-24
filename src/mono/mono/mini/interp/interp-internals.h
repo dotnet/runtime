@@ -98,9 +98,13 @@ typedef enum {
 
 #define PROFILE_INTERP 0
 
-#define INTERP_IMETHOD_TAG_UNBOX(im) ((gpointer)((mono_u)(im) | 1))
-#define INTERP_IMETHOD_IS_TAGGED_UNBOX(im) ((mono_u)(im) & 1)
-#define INTERP_IMETHOD_UNTAG_UNBOX(im) ((InterpMethod*)((mono_u)(im) & ~1))
+#define INTERP_IMETHOD_TAG_1(im) ((gpointer)((mono_u)(im) | 1))
+#define INTERP_IMETHOD_IS_TAGGED_1(im) ((mono_u)(im) & 1)
+#define INTERP_IMETHOD_UNTAG_1(im) ((InterpMethod*)((mono_u)(im) & ~1))
+
+#define INTERP_IMETHOD_TAG_UNBOX(im) INTERP_IMETHOD_TAG_1(im)
+#define INTERP_IMETHOD_IS_TAGGED_UNBOX(im) INTERP_IMETHOD_IS_TAGGED_1(im)
+#define INTERP_IMETHOD_UNTAG_UNBOX(im) INTERP_IMETHOD_UNTAG_1(im)
 
 /*
  * Structure representing a method transformed for the interpreter
@@ -144,8 +148,11 @@ struct InterpMethod {
 #ifdef ENABLE_EXPERIMENT_TIERED
 	MiniTieredCounter tiered_counter;
 #endif
+	gint32 entry_count;
+	InterpMethod *optimized_imethod;
 	unsigned int init_locals : 1;
 	unsigned int vararg : 1;
+	unsigned int optimized : 1;
 	unsigned int needs_thread_attach : 1;
 #if PROFILE_INTERP
 	long calls;

@@ -33,6 +33,7 @@
 #include "interp-internals.h"
 #include "interp.h"
 #include "transform.h"
+#include "tiering.h"
 
 MonoInterpStats mono_interp_stats;
 
@@ -1056,12 +1057,15 @@ store_local (TransformData *td, int local)
 }
 
 static guint32
-get_data_item_wide_index (TransformData *td, void *ptr)
+get_data_item_wide_index (TransformData *td, void *ptr, gboolean *new_slot)
 {
 	gpointer p = g_hash_table_lookup (td->data_hash, ptr);
 	guint32 index;
-	if (p != NULL)
+	if (p != NULL) {
+		if (new_slot)
+			*new_slot = FALSE;
 		return GPOINTER_TO_UINT (p) - 1;
+	}
 	if (td->max_data_items == td->n_data_items) {
 		td->max_data_items = td->n_data_items == 0 ? 16 : 2 * td->max_data_items;
 		td->data_items = (gpointer*)g_realloc (td->data_items, td->max_data_items * sizeof(td->data_items [0]));
@@ -1070,15 +1074,28 @@ get_data_item_wide_index (TransformData *td, void *ptr)
 	td->data_items [index] = ptr;
 	++td->n_data_items;
 	g_hash_table_insert (td->data_hash, ptr, GUINT_TO_POINTER (index + 1));
+	if (new_slot)
+		*new_slot = TRUE;
 	return index;
 }
 
 static guint16
 get_data_item_index (TransformData *td, void *ptr)
 {
-	guint32 index = get_data_item_wide_index (td, ptr);
+	guint32 index = get_data_item_wide_index (td, ptr, NULL);
 	g_assertf (index <= G_MAXUINT16, "Interpreter data item index 0x%x for method '%s' overflows", index, td->method->name);
 	return (guint16)index;
+}
+
+static guint16
+get_data_item_index_imethod (TransformData *td, InterpMethod *imethod)
+{
+	gboolean new_slot;
+	guint32 index = get_data_item_wide_index (td, imethod, &new_slot);
+	g_assertf (index <= G_MAXUINT16, "Interpreter data item index 0x%x for method '%s' overflows", index, td->method->name);
+	if (new_slot && imethod && !imethod->optimized)
+		td->imethod_items = g_slist_prepend (td->imethod_items, (gpointer)(gsize)index);
+	return index;
 }
 
 static gboolean
@@ -2641,6 +2658,7 @@ interp_inline_method (TransformData *td, MonoMethod *target_method, MonoMethodHe
 	InterpBasicBlock **prev_offset_to_bb;
 	InterpBasicBlock *prev_cbb, *prev_entry_bb;
 	MonoMethod *prev_inlined_method;
+	GSList *prev_imethod_items;
 	MonoMethodSignature *csignature = mono_method_signature_internal (target_method);
 	int nargs = csignature->param_count + !!csignature->hasthis;
 	InterpInst *prev_last_ins;
@@ -2663,6 +2681,7 @@ interp_inline_method (TransformData *td, MonoMethod *target_method, MonoMethodHe
 	prev_cbb = td->cbb;
 	prev_entry_bb = td->entry_bb;
 	prev_aggressive_inlining = td->aggressive_inlining;
+	prev_imethod_items = td->imethod_items;
 	td->inlined_method = target_method;
 
 	prev_max_stack_height = td->max_stack_height;
@@ -2700,6 +2719,13 @@ interp_inline_method (TransformData *td, MonoMethod *target_method, MonoMethodHe
 			g_hash_table_remove (td->data_hash, td->data_items [i]);
 		}
 		td->n_data_items = prev_n_data_items;
+		/* Also remove any added indexes from the imethod list */
+		while (td->imethod_items != prev_imethod_items) {
+			GSList *to_free = td->imethod_items;
+			td->imethod_items = td->imethod_items->next;
+			g_slist_free_1 (to_free);
+		}
+
 		td->sp = td->stack + prev_sp_offset;
 		memcpy (&td->sp [-nargs], prev_param_area, nargs * sizeof (StackInfo));
 		td->last_ins = prev_last_ins;
@@ -3127,7 +3153,7 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 				interp_add_ins (td, MINT_TAILCALL);
 			}
 			interp_ins_set_sreg (td->last_ins, MINT_CALL_ARGS_SREG);
-			td->last_ins->data [0] = get_data_item_index (td, mono_interp_get_imethod (target_method));
+			td->last_ins->data [0] = get_data_item_index_imethod (td, mono_interp_get_imethod (target_method));
 			td->last_ins->data [1] = params_stack_size;
 			td->last_ins->flags |= INTERP_INST_FLAG_CALL;
 			td->last_ins->info.call_args = call_args;
@@ -3249,7 +3275,7 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 		interp_ins_set_dreg (td->last_ins, dreg);
 		interp_ins_set_sreg (td->last_ins, MINT_CALL_ARGS_SREG);
 		td->last_ins->flags |= INTERP_INST_FLAG_CALL;
-		td->last_ins->data [0] = get_data_item_index (td, (void *)mono_interp_get_imethod (target_method));
+		td->last_ins->data [0] = get_data_item_index_imethod (td, mono_interp_get_imethod (target_method));
 	} else {
 		if (is_delegate_invoke) {
 			interp_add_ins (td, MINT_CALL_DELEGATE);
@@ -3300,7 +3326,7 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 				interp_ins_set_dreg (td->last_ins, dreg);
 				interp_ins_set_sregs2 (td->last_ins, fp_sreg, MINT_CALL_ARGS_SREG);
 				td->last_ins->data [0] = get_data_item_index (td, csignature);
-				td->last_ins->data [1] = get_data_item_index (td, imethod);
+				td->last_ins->data [1] = get_data_item_index_imethod (td, imethod);
 				td->last_ins->data [2] = save_last_error;
 				/* Cache slot */
 				td->last_ins->data [3] = get_data_item_index_nonshared (td, NULL);
@@ -3326,7 +3352,7 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 			}
 			interp_ins_set_dreg (td->last_ins, dreg);
 			interp_ins_set_sreg (td->last_ins, MINT_CALL_ARGS_SREG);
-			td->last_ins->data [0] = get_data_item_index (td, (void *)imethod);
+			td->last_ins->data [0] = get_data_item_index_imethod (td, imethod);
 
 #ifdef ENABLE_EXPERIMENT_TIERED
 			if (MINT_IS_PATCHABLE_CALL (td->last_ins->opcode)) {
@@ -4009,10 +4035,10 @@ interp_emit_sfld_access (TransformData *td, MonoClassField *field, MonoClass *fi
 					return;
 			}
 		}
-		guint32 vtable_index = get_data_item_wide_index (td, vtable);
-		guint32 addr_index = get_data_item_wide_index (td, (char*)field_addr);
+		guint32 vtable_index = get_data_item_wide_index (td, vtable, NULL);
+		guint32 addr_index = get_data_item_wide_index (td, (char*)field_addr, NULL);
 		gboolean wide_data = is_data_item_wide_index (vtable_index) || is_data_item_wide_index (addr_index);
-		guint32 klass_index = !wide_data ? 0 : get_data_item_wide_index (td, field_class);
+		guint32 klass_index = !wide_data ? 0 : get_data_item_wide_index (td, field_class, NULL);
 		if (is_load) {
 			if (G_UNLIKELY (wide_data)) {
 				interp_add_ins (td, MINT_LDSFLD_W);
@@ -4278,6 +4304,9 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 		last_seq_point = interp_add_ins (td, MINT_SDB_SEQ_POINT);
 		last_seq_point->flags |= INTERP_INST_FLAG_SEQ_POINT_METHOD_ENTRY;
 	}
+
+	if (!td->optimized)
+		interp_add_ins (td, MINT_TIER_ENTER_METHOD);
 
 	if (mono_debugger_method_has_breakpoint (method)) {
 		interp_add_ins (td, MINT_BREAKPOINT);
@@ -4703,7 +4732,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			m = mono_get_method_checked (image, token, NULL, generic_context, error);
 			goto_if_nok (error, exit);
 			interp_add_ins (td, MINT_JMP);
-			td->last_ins->data [0] = get_data_item_index (td, mono_interp_get_imethod (m));
+			td->last_ins->data [0] = get_data_item_index_imethod (td, mono_interp_get_imethod (m));
 			td->ip += 5;
 			break;
 		}
@@ -5519,7 +5548,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				call_args [csignature->param_count + 1] = -1;
 
 				interp_add_ins (td, MINT_NEWOBJ_STRING);
-				td->last_ins->data [0] = get_data_item_index (td, mono_interp_get_imethod (m));
+				td->last_ins->data [0] = get_data_item_index_imethod (td, mono_interp_get_imethod (m));
 				push_type (td, stack_type [ret_mt], klass);
 
 				interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
@@ -5599,7 +5628,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 					}
 
 					// Inlining failed. Set the method to be executed as part of newobj instruction
-					newobj_fast->data [0] = get_data_item_index (td, mono_interp_get_imethod (m));
+					newobj_fast->data [0] = get_data_item_index_imethod (td, mono_interp_get_imethod (m));
 					/* The constructor was not inlined, abort inlining of current method */
 					if (!td->aggressive_inlining)
 						INLINE_FAILURE;
@@ -5607,7 +5636,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 					interp_add_ins (td, MINT_NEWOBJ_SLOW);
 					g_assert (!m_class_is_valuetype (klass));
 					interp_ins_set_dreg (td->last_ins, dreg);
-					td->last_ins->data [0] = get_data_item_index (td, mono_interp_get_imethod (m));
+					td->last_ins->data [0] = get_data_item_index_imethod (td, mono_interp_get_imethod (m));
 				}
 				goto_if_nok (error, exit);
 
@@ -7129,7 +7158,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 					break;
 				}
 
-				int index = get_data_item_index (td, mono_interp_get_imethod (m));
+				int index = get_data_item_index_imethod (td, mono_interp_get_imethod (m));
 				goto_if_nok (error, exit);
 				if (*td->ip == CEE_LDVIRTFTN) {
 					CHECK_STACK (td, 1);
@@ -9409,9 +9438,11 @@ retry:
 	td->seq_points = g_ptr_array_new ();
 	td->verbose_level = mono_interp_traceopt;
 	td->prof_coverage = mono_profiler_coverage_instrumentation_enabled (method);
+	td->disable_inlining = !rtm->optimized;
 	if (retry_compilation)
 		td->disable_inlining = TRUE;
 	rtm->data_items = td->data_items;
+	td->optimized = rtm->optimized;
 
 	if (td->prof_coverage)
 		td->coverage_info = mono_profiler_coverage_alloc (method, header->code_size);
@@ -9451,7 +9482,8 @@ retry:
 	if (td->has_localloc)
 		interp_fix_localloc_ret (td);
 
-	interp_optimize_code (td);
+	if (td->optimized)
+		interp_optimize_code (td);
 
 	interp_alloc_offsets (td);
 
@@ -9513,6 +9545,8 @@ retry:
 	rtm->data_items = (gpointer*)mono_mem_manager_alloc0 (td->mem_manager, td->n_data_items * sizeof (td->data_items [0]));
 	memcpy (rtm->data_items, td->data_items, td->n_data_items * sizeof (td->data_items [0]));
 
+	mono_interp_register_imethod_data_items (rtm->data_items, td->imethod_items);
+
 	/* Save debug info */
 	interp_save_debug_info (rtm, header, td, td->line_numbers);
 
@@ -9562,6 +9596,7 @@ exit:
 	g_ptr_array_free (td->seq_points, TRUE);
 	if (td->line_numbers)
 		g_array_free (td->line_numbers, TRUE);
+	g_slist_free (td->imethod_items);
 	mono_mempool_destroy (td->mempool);
 	if (retry_compilation)
 		goto retry;
