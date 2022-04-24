@@ -82,10 +82,10 @@ constexpr CorDebugRegister g_JITToCorDbgReg[] =
     REGISTER_LOONGARCH64_PC
 };
 
-inline void CORDbgSetIP(DT_CONTEXT *context, LPVOID eip) {
+inline void CORDbgSetIP(DT_CONTEXT *context, LPVOID ip) {
     LIMITED_METHOD_CONTRACT;
 
-    context->PC = (DWORD64)eip;
+    context->PC = (DWORD64)ip;
 }
 
 inline LPVOID CORDbgGetSP(const DT_CONTEXT * context) {

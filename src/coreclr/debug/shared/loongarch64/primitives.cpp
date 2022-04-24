@@ -19,42 +19,53 @@
 //
 void CORDbgCopyThreadContext(DT_CONTEXT* pDst, const DT_CONTEXT* pSrc)
 {
-    _ASSERTE(!"=====Not implements for loongarch64. --1");
-
     DWORD dstFlags = pDst->ContextFlags;
     DWORD srcFlags = pSrc->ContextFlags;
     LOG((LF_CORDB, LL_INFO1000000,
          "CP::CTC: pDst=0x%08x dstFlags=0x%x, pSrc=0x%08x srcFlags=0x%x\n",
          pDst, dstFlags, pSrc, srcFlags));
 
-#if 0
     if ((dstFlags & srcFlags & DT_CONTEXT_CONTROL) == DT_CONTEXT_CONTROL)
     {
-        CopyContextChunk(&(pDst->Fp), &(pSrc->Fp), &(pDst->V),
-                         DT_CONTEXT_CONTROL);
-        CopyContextChunk(&(pDst->Cpsr), &(pSrc->Cpsr), &(pDst->X),
-                         DT_CONTEXT_CONTROL);
+        LOG((LF_CORDB, LL_INFO1000000,
+             "CP::CTC: RA: pDst=0x%lx, pSrc=0x%lx, Flags=0x%x\n",
+             pDst->RA, pSrc->RA, DT_CONTEXT_CONTROL));
+        pDst->RA = pSrc->RA;
+
+        LOG((LF_CORDB, LL_INFO1000000,
+             "CP::CTC: SP: pDst=0x%lx, pSrc=0x%lx, Flags=0x%x\n",
+             pDst->SP, pSrc->SP, DT_CONTEXT_CONTROL));
+        pDst->SP = pSrc->SP;
+
+        LOG((LF_CORDB, LL_INFO1000000,
+             "CP::CTC: FP: pDst=0x%lx, pSrc=0x%lx, Flags=0x%x\n",
+             pDst->FP, pSrc->FP, DT_CONTEXT_CONTROL));
+        pDst->FP = pSrc->FP;
+
+        LOG((LF_CORDB, LL_INFO1000000,
+             "CP::CTC: PC: pDst=0x%lx, pSrc=0x%lx, Flags=0x%x\n",
+             pDst->PC, pSrc->PC, DT_CONTEXT_CONTROL));
+        pDst->PC = pSrc->PC;
     }
 
     if ((dstFlags & srcFlags & DT_CONTEXT_INTEGER) == DT_CONTEXT_INTEGER)
-        CopyContextChunk(&(pDst->X[0]), &(pSrc->X[0]), &(pDst->Fp),
+    {
+        CopyContextChunk(&pDst->A0, &pSrc->A0, &pDst->FP,
                          DT_CONTEXT_INTEGER);
+        CopyContextChunk(&pDst->S0, &pSrc->S0, &pDst->PC,
+                         DT_CONTEXT_INTEGER);
+    }
 
     if ((dstFlags & srcFlags & DT_CONTEXT_FLOATING_POINT) == DT_CONTEXT_FLOATING_POINT)
-        CopyContextChunk(&(pDst->V[0]), &(pSrc->V[0]), &(pDst->Bcr[0]),
+    {
+        CopyContextChunk(&pDst->F[0], &pSrc->F[0], &pDst->F[32],
                          DT_CONTEXT_FLOATING_POINT);
-
-    if ((dstFlags & srcFlags & DT_CONTEXT_DEBUG_REGISTERS) ==
-        DT_CONTEXT_DEBUG_REGISTERS)
-        CopyContextChunk(&(pDst->Bcr[0]), &(pSrc->Bcr[0]), &(pDst->Wvr[LOONGARCH64_MAX_WATCHPOINTS]),
-                         DT_CONTEXT_DEBUG_REGISTERS);
-#endif
+    }
 }
 
 #if defined(ALLOW_VMPTR_ACCESS) || !defined(RIGHT_SIDE_COMPILE)
 void SetDebuggerREGDISPLAYFromREGDISPLAY(DebuggerREGDISPLAY* pDRD, REGDISPLAY* pRD)
 {
-    _ASSERTE(!"=====Not implements for loongarch64. --2");
     SUPPORTS_DAC_HOST_ONLY;
 
     DT_CONTEXT* pContext = reinterpret_cast<DT_CONTEXT*>(pRD->pCurrentContext);
@@ -66,17 +77,15 @@ void SetDebuggerREGDISPLAYFromREGDISPLAY(DebuggerREGDISPLAY* pDRD, REGDISPLAY* p
     {
         pDRD->FP = (SIZE_T)CORDbgGetFP(pContext);
         pDRD->PC = (SIZE_T)pContext->PC;
+        pDRD->RA = (SIZE_T)pContext->RA;
     }
 
-#if 0
     if ((flags & DT_CONTEXT_INTEGER) == DT_CONTEXT_INTEGER)
     {
-        for(int i = 0 ; i < 29 ; i++)
-        {
-           pDRD->X[i] = (SIZE_T)pContext->X[i];
-        }
+        pDRD->TP = pContext->TP;
+        memcpy(&pDRD->A0, &pContext->A0, sizeof(pDRD->A0)*(21 - 4 + 1));
+        memcpy(&pDRD->S0, &pContext->S0, sizeof(pDRD->S0)* 9);
     }
-#endif
 
     pDRD->SP   = pRD->SP;
 

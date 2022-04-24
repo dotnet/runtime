@@ -13,7 +13,8 @@ class CrashInfo;
 #endif
 
 #if defined(__loongarch64)
-// See src/pal/src/include/pal/context.h
+// See src/coreclr/pal/src/include/pal/context.h
+#define MCREG_Ra(mc)      ((mc).gpr[1])
 #define MCREG_Fp(mc)      ((mc).gpr[22])
 #define MCREG_Sp(mc)      ((mc).gpr[3])
 #define MCREG_Pc(mc)      ((mc).pc)

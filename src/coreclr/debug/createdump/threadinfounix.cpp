@@ -224,8 +224,25 @@ ThreadInfo::GetThreadContext(uint32_t flags, CONTEXT* context) const
 #endif
     }
 #elif defined(__loongarch64)
-    assert(!"Unimplemented yet on Loongarch64!");
-#pragma message("Unimplemented yet on Loongarch64.")
+    if ((flags & CONTEXT_CONTROL) == CONTEXT_CONTROL)
+    {
+        context->Ra = MCREG_Ra(m_gpRegisters);
+        context->Sp = MCREG_Sp(m_gpRegisters);
+        context->Fp = MCREG_Fp(m_gpRegisters);
+        context->Pc = MCREG_Pc(m_gpRegisters);
+    }
+    if ((flags & CONTEXT_INTEGER) == CONTEXT_INTEGER)
+    {
+        context->Tp = m_gpRegisters.gpr[2];
+        memcpy(&context->A0, &m_gpRegisters.gpr[4], sizeof(context->A0)*(21 - 4 + 1));
+        memcpy(&context->S0, &m_gpRegisters.gpr[23], sizeof(context->S0)*9);
+    }
+    if ((flags & CONTEXT_FLOATING_POINT) == CONTEXT_FLOATING_POINT)
+    {
+        assert(sizeof(context->F) == sizeof(m_fpRegisters.fpregs));
+        memcpy(context->F, m_fpRegisters.fpregs, sizeof(context->F));
+        context->Fcsr = m_fpRegisters.fpscr;
+    }
 #else
 #error Platform not supported
 #endif

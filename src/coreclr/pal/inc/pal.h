@@ -2318,7 +2318,7 @@ typedef struct DECLSPEC_ALIGN(16) _CONTEXT {
     // Floating Point Registers
     //
     // TODO-LoongArch64: support the SIMD.
-    DWORD64 F[32];
+    ULONGLONG F[32];
     DWORD Fcsr;
 } CONTEXT, *PCONTEXT, *LPCONTEXT;
 
