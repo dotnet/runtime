@@ -52,11 +52,11 @@ namespace System.Runtime.InteropServices
                         }
                         else
                         {
-                            Debug.Fail("Call to IsWow64Process2() failed unexpectedly.");
+                            Debug.Fail("Call to IsWow64Process2() failed unexpectedly. Falling back to ProcessArchitecture");
+                            osArch = ProcessArchitecture;
                         }
                     }
-
-                    if (osArch == -1)
+                    else
                     {
                         Interop.Kernel32.SYSTEM_INFO sysInfo;
                         Interop.Kernel32.GetNativeSystemInfo(&sysInfo);
