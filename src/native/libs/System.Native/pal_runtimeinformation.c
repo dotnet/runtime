@@ -104,8 +104,7 @@ int32_t SystemNative_GetOSArchitecture()
         }
 
         // x86_64 or amd64: x64
-        else if (strcmp("x86_64", isa) == 0 ||
-            strcmp("amd64", isa) == 0)
+        else if (strcmp("x86_64", isa) == 0 || strcmp("amd64", isa) == 0)
         {
 #ifdef TARGET_OSX
             int is_translated_process = 0;
