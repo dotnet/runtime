@@ -94,8 +94,6 @@ namespace System.Runtime.InteropServices
         {
             switch (processMachine)
             {
-                case 0x01C0: // IMAGE_FILE_MACHINE_ARM
-                case 0x01C2: // IMAGE_FILE_MACHINE_THUMB
                 case 0x01C4: // IMAGE_FILE_MACHINE_ARMNT
                     return Architecture.Arm;
 
