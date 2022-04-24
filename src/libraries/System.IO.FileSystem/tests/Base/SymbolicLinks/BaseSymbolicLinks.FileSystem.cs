@@ -468,6 +468,9 @@ namespace System.IO.Tests
             // Verify that Target is resolved and is relative to Link's directory and not to the cwd.
             Assert.False(targetInfo.Exists);
             Assert.Equal(Path.GetDirectoryName(linkInfo.FullName), Path.GetDirectoryName(targetInfo.FullName));
+
+            linkInfo.Delete();
+            Directory.SetCurrentDirectory(Path.GetTempPath());
         }
 
         protected static string? GetAppExecLinkPath()
