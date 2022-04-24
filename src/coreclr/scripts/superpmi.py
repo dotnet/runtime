@@ -1969,7 +1969,7 @@ class SuperPMIReplayThroughputDiff:
                 # impacted collections and a detailed one that includes raw
                 # instruction count and all collections.
                 def is_significant(base, diff):
-                    return round((diff - base) / base, 2) != 0
+                    return round((diff - base) / base * 100, 2) != 0
 
                 if any(is_significant(base, diff) for (_, base, diff) in tp_diffs):
                     write_fh.write("|Collection|PDIFF|\n")
