@@ -2790,6 +2790,8 @@ public:
     // Check if this tree is a gc static base helper call
     bool gtIsStaticGCBaseHelperCall(GenTree* tree);
 
+    GenTree* gtCallGetDefinedRetBufLclAddr(GenTreeCall* call);
+
 //-------------------------------------------------------------------------
 // Functions to display the trees
 

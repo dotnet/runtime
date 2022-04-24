@@ -1782,6 +1782,10 @@ void CallArgs::EvalArgsToTemps(Compiler* comp, GenTreeCall* call)
         lateTail  = &arg.LateNextRef();
     }
 
+    // Make sure we did not do anything here that stops us from being able to
+    // find the local ret buf if we are optimizing it.
+    noway_assert(!call->IsOptimizingRetBufAsLocal() || (comp->gtCallGetDefinedRetBufLclAddr(call) != nullptr));
+
 #ifdef DEBUG
     if (comp->verbose)
     {
@@ -7453,7 +7457,7 @@ GenTree* Compiler::fgMorphTailCallViaHelpers(GenTreeCall* call, CORINFO_TAILCALL
         JITDUMP("Removing retbuf");
 
         call->gtArgs.Remove(call->gtArgs.GetRetBufferArg());
-        call->gtCallMoreFlags &= ~GTF_CALL_M_RETBUFFARG;
+        call->gtCallMoreFlags &= ~(GTF_CALL_M_RETBUFFARG | GTF_CALL_M_RETBUFFARG_LCLOPT);
     }
 
     const bool stubNeedsTargetFnPtr = (help.flags & CORINFO_TAILCALL_STORE_TARGET) != 0;
