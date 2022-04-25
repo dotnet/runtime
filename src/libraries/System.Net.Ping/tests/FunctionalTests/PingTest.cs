@@ -744,10 +744,8 @@ namespace System.Net.NetworkInformation.Tests
             Assert.Equal(IPStatus.TimedOut, reply.Status);
         }
 
-        private static bool IsSupportedAndOnUnixAndElevated => RemoteExecutor.IsSupported && PlatformDetection.IsUnixAndElevated;
-
         [PlatformSpecific(TestPlatforms.AnyUnix)]
-        [ConditionalTheory(nameof(IsSupportedAndOnUnixAndElevated))]
+        [ConditionalTheory(nameof(PlatformDetection), nameof(IsSupportedAndOnUnixAndElevated))]
         [InlineData(AddressFamily.InterNetwork)]
         [InlineData(AddressFamily.InterNetworkV6)]
         [OuterLoop] // Depends on sudo

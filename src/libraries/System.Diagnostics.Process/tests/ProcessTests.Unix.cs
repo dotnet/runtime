@@ -20,8 +20,6 @@ namespace System.Diagnostics.Tests
 {
     public partial class ProcessTests : ProcessTestBase
     {
-        private static bool IsSupportedAndOnUnixAndElevated => RemoteExecutor.IsSupported && PlatformDetection.IsUnixAndElevated;
-
         [Fact]
         private void TestWindowApisUnix()
         {
@@ -455,7 +453,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsSupportedAndOnUnixAndElevated))]
+        [ConditionalFact(nameof(PlatformDetection), nameof(IsUnixAndElevated))]
         public void TestPriorityClassUnix()
         {
             CreateDefaultProcess();
@@ -481,7 +479,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsSupportedAndOnUnixAndElevated))]
+        [ConditionalFact(nameof(PlatformDetection), nameof(IsUnixAndElevated))]
         public void TestBasePriorityOnUnix()
         {
             CreateDefaultProcess();
@@ -570,7 +568,7 @@ namespace System.Diagnostics.Tests
             return RemoteExecutor.SuccessExitCode;
         }
 
-        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(IsUnixAndElevatedAndRemoteExecutorSupported))]
         public void TestCheckChildProcessUserAndGroupIds()
         {
             string userName = GetCurrentRealUserName();
@@ -594,7 +592,7 @@ namespace System.Diagnostics.Tests
         /// Tests when running as root and starting a new process as a normal user,
         /// the new process doesn't have elevated privileges.
         /// </summary>
-        [ConditionalTheory(nameof(IsSupportedAndOnUnixAndElevated))]
+        [ConditionalTheory(nameof(PlatformDetection), nameof(IsUnixAndElevatedAndRemoteExecutorSupported))]
         [OuterLoop("Needs sudo access")]
         [InlineData(true)]
         [InlineData(false)]

@@ -54,6 +54,7 @@ namespace System
         public static bool IsSuperUser => IsBrowser || IsWindows ? false : libc.geteuid() == 0;
 
         public static bool IsUnixAndElevated => !IsWindows && IsSuperUser;
+        public static bool IsUnixAndElevatedAndRemoteExecutorSupported => IsUnixAndElevated && RemoteExecutor.IsSupported;
 
         public static Version OpenSslVersion => !IsOSXLike && !IsWindows && !IsAndroid ?
             GetOpenSslVersion() :

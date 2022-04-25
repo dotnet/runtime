@@ -23,9 +23,7 @@ namespace System.IO.Pipes.Tests
             _output = output;
         }
 
-        private static bool IsSupportedAndOnUnixAndElevated => RemoteExecutor.IsSupported && PlatformDetection.IsUnixAndElevated;
-
-        [ConditionalTheory(nameof(IsSupportedAndOnUnixAndElevated))]
+        [ConditionalTheory(nameof(PlatformDetection), nameof(IsUnixAndElevatedAndRemoteExecutorSupported))]
         [OuterLoop("Needs sudo access")]
         [InlineData(PipeOptions.None, PipeOptions.None)]
         [InlineData(PipeOptions.None, PipeOptions.CurrentUserOnly)]

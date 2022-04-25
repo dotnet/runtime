@@ -9,7 +9,7 @@ namespace System.Formats.Tar.Tests
 {
     public partial class TarWriter_WriteEntry_File_Tests : TarTestsBase
     {
-        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(IsUnixAndElevatedAndRemoteExecutorSupported))]
         [InlineData(TarFormat.Ustar)]
         [InlineData(TarFormat.Pax)]
         [InlineData(TarFormat.Gnu)]
@@ -52,7 +52,7 @@ namespace System.Formats.Tar.Tests
             }, format.ToString(), new RemoteInvokeOptions { RunAsSudo = true }).Dispose();
         }
 
-        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(IsUnixAndElevatedAndRemoteExecutorSupported))]
         [InlineData(TarFormat.Ustar)]
         [InlineData(TarFormat.Pax)]
         [InlineData(TarFormat.Gnu)]
@@ -100,7 +100,7 @@ namespace System.Formats.Tar.Tests
             }, format.ToString(), new RemoteInvokeOptions { RunAsSudo = true }).Dispose();
         }
 
-        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(IsUnixAndElevatedAndRemoteExecutorSupported))]
         [InlineData(TarFormat.Ustar)]
         [InlineData(TarFormat.Pax)]
         [InlineData(TarFormat.Gnu)]
