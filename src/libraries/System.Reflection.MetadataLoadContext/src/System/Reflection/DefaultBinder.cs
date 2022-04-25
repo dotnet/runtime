@@ -269,8 +269,13 @@ namespace System
 
         // Return any exact bindings that may exist. (This method is not defined on the
         // Binder and is used by RuntimeType.)
-        public static MethodBase? ExactBinding(MethodBase[] match!!, Type[] types, ParameterModifier[]? modifiers)
+        public static MethodBase? ExactBinding(MethodBase[] match, Type[] types, ParameterModifier[]? modifiers)
         {
+            if (match is null)
+            {
+                throw new ArgumentNullException(nameof(match));
+            }
+
             MethodBase[] aExactMatches = new MethodBase[match.Length];
             int cExactMatches = 0;
 
@@ -309,8 +314,13 @@ namespace System
 
         // Return any exact bindings that may exist. (This method is not defined on the
         //  Binder and is used by RuntimeType.)
-        public static PropertyInfo? ExactPropertyBinding(PropertyInfo[] match!!, Type? returnType, Type[]? types, ParameterModifier[]? modifiers)
+        public static PropertyInfo? ExactPropertyBinding(PropertyInfo[] match, Type? returnType, Type[]? types, ParameterModifier[]? modifiers)
         {
+            if (match is null)
+            {
+                throw new ArgumentNullException(nameof(match));
+            }
+
             PropertyInfo? bestMatch = null;
             int typesLength = (types != null) ? types.Length : 0;
             for (int i = 0; i < match.Length; i++)

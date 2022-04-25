@@ -58,9 +58,9 @@
       <Uri>https://github.com/dotnet/arcade</Uri>
       <Sha>1527dc867ccb652def4c0f57fbd2ebbed3a94019</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.Helix.Sdk" Version="7.0.0-beta.22179.1">
+    <Dependency Name="Microsoft.DotNet.Helix.Sdk" Version="7.0.0-beta.22220.1">
       <Uri>https://github.com/dotnet/arcade</Uri>
-      <Sha>1527dc867ccb652def4c0f57fbd2ebbed3a94019</Sha>
+      <Sha>a43c2434dc53af51e756e46553963adf2b72619a</Sha>
     </Dependency>
     <Dependency Name="Microsoft.DotNet.ApiCompat" Version="7.0.0-beta.22179.1">
       <Uri>https://github.com/dotnet/arcade</Uri>
@@ -135,6 +135,10 @@
       <Sha>78cb33dbb0fb5156f049b9e1778f47b508f1be9f</Sha>
     </Dependency>
     <Dependency Name="System.Drawing.Common.TestData" Version="7.0.0-beta.22214.1">
+      <Uri>https://github.com/dotnet/runtime-assets</Uri>
+      <Sha>78cb33dbb0fb5156f049b9e1778f47b508f1be9f</Sha>
+    </Dependency>
+    <Dependency Name="System.Formats.Tar.TestData" Version="7.0.0-beta.22214.1">
       <Uri>https://github.com/dotnet/runtime-assets</Uri>
       <Sha>78cb33dbb0fb5156f049b9e1778f47b508f1be9f</Sha>
     </Dependency>
@@ -234,9 +238,9 @@
       <Uri>https://github.com/dotnet/runtime</Uri>
       <Sha>b8dc04b445fc98d24fd92262364a9e5b5e23a5b9</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NET.ILLink.Tasks" Version="7.0.100-1.22205.1">
+    <Dependency Name="Microsoft.NET.ILLink.Tasks" Version="7.0.100-1.22222.1">
       <Uri>https://github.com/dotnet/linker</Uri>
-      <Sha>c6434f6e8a0a1bfbb77261ac9f85c98b781613e5</Sha>
+      <Sha>dec9a23c4c164111df76d427656357113c0d705a</Sha>
     </Dependency>
     <Dependency Name="Microsoft.DotNet.XHarness.TestRunners.Common" Version="1.0.0-prerelease.22214.2">
       <Uri>https://github.com/dotnet/xharness</Uri>

@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using Xunit;
 using Xunit.Sdk;
@@ -201,22 +202,64 @@ namespace System.IO.Tests
             }
         }
 
-        /// <summary>Invokes the specified test action with retry on failure (other than assertion failure).</summary>
-        /// <param name="action">The test action.</param>
-        /// <param name="maxAttempts">The maximum number of times to attempt to run the test.</param>
-        public static void ExecuteWithRetry(Action action, int maxAttempts = DefaultAttemptsForExpectedEvent)
+        // Pasted from RetryHelper.cs in order to force FSW tests to log retries to the Helix console.
+        // We don't want to do that for tests in general.
+        // Once we've gotten enough data, delete this and go back to the regular RetryHelper.
+        private static readonly Func<int, int> s_defaultBackoffFunc = i => Math.Min(i * 100, 60_000);
+        private static readonly Predicate<Exception> s_defaultRetryWhenFunc = _ => true;
+        private static readonly bool s_debug = Environment.GetEnvironmentVariable("DEBUG_RETRYHELPER") == "1";
+
+        /// <summary>Executes the <paramref name="test"/> action up to a maximum of <paramref name="maxAttempts"/> times.</summary>
+        /// <param name="maxAttempts">The maximum number of times to invoke <paramref name="test"/>.</param>
+        /// <param name="test">The test to invoke.</param>
+        /// <param name="backoffFunc">After a failure, invoked to determine how many milliseconds to wait before the next attempt.  It's passed the number of iterations attempted.</param>
+        /// <param name="retryWhen">Invoked to select the exceptions to retry on. If not set, any exception will trigger a retry.</param>
+        public static void Execute(Action test, int maxAttempts = 5, Func<int, int> backoffFunc = null, Predicate<Exception> retryWhen = null, [CallerMemberName] string? testName = null)
         {
-            for (int retry = 0; retry < maxAttempts; retry++)
+            // Validate arguments
+            if (maxAttempts < 1)
             {
+                throw new ArgumentOutOfRangeException(nameof(maxAttempts));
+            }
+            if (test == null)
+            {
+                throw new ArgumentNullException(nameof(test));
+            }
+
+            retryWhen ??= s_defaultRetryWhenFunc;
+
+            // Execute the test until it either passes or we run it maxAttempts times
+            var exceptions = new List<Exception>();
+            for (int i = 1; i <= maxAttempts; i++)
+            {
+                Exception lastException;
                 try
                 {
-                    action();
+                    test();
                     return;
                 }
-                catch (Exception e) when (!(e is XunitException) && retry < maxAttempts - 1)
+                catch (Exception e) when (retryWhen(e))
                 {
-                    Thread.Sleep(RetryDelayMilliseconds);
+                    lastException = e;
+                    exceptions.Add(e);
+                    if (i == maxAttempts)
+                    {
+                        throw new AggregateException(exceptions);
+                    }
                 }
+
+                if (PlatformDetection.IsInHelix || s_debug)
+                {
+                    // Dump into the console output so we can mine it
+                    Console.WriteLine($"RetryHelper: retrying {testName} {i}th time of {maxAttempts}: got {lastException.Message}");
+                }
+
+                if (s_debug)
+                {
+                    Debug.WriteLine($"RetryHelper: retrying {testName} {i}th time of {maxAttempts}: got {lastException.Message}");
+                }
+
+                Thread.Sleep((backoffFunc ?? s_defaultBackoffFunc)(i));
             }
         }
 

@@ -1943,6 +1943,12 @@ namespace System
         static decimal System.Numerics.IAdditionOperators<decimal, decimal, decimal>.operator checked +(decimal left, decimal right) { throw null; }
         static decimal System.Numerics.IDecrementOperators<decimal>.operator checked --(decimal value) { throw null; }
         static decimal System.Numerics.IDivisionOperators<decimal, decimal, decimal>.operator checked /(decimal left, decimal right) { throw null; }
+        int System.Numerics.IFloatingPoint<decimal>.GetExponentByteCount() { throw null; }
+        long System.Numerics.IFloatingPoint<decimal>.GetExponentShortestBitLength() { throw null; }
+        int System.Numerics.IFloatingPoint<decimal>.GetSignificandByteCount() { throw null; }
+        long System.Numerics.IFloatingPoint<decimal>.GetSignificandBitLength() { throw null; }
+        bool System.Numerics.IFloatingPoint<decimal>.TryWriteExponentLittleEndian(Span<byte> destination, out int bytesWritten) { throw null; }
+        bool System.Numerics.IFloatingPoint<decimal>.TryWriteSignificandLittleEndian(Span<byte> destination, out int bytesWritten) { throw null; }
         static decimal System.Numerics.IIncrementOperators<decimal>.operator checked ++(decimal value) { throw null; }
         static decimal System.Numerics.ISubtractionOperators<decimal, decimal, decimal>.operator checked -(decimal left, decimal right) { throw null; }
         static decimal System.Numerics.IUnaryNegationOperators<decimal, decimal>.operator checked -(decimal value) { throw null; }
@@ -2076,6 +2082,11 @@ namespace System
         public bool Equals(double obj) { throw null; }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public static double Exp(double x) { throw null; }
+        public static double Exp10(double x) { throw null; }
+        public static double Exp10M1(double x) { throw null; }
+        public static double Exp2(double x) { throw null; }
+        public static double Exp2M1(double x) { throw null; }
+        public static double ExpM1(double x) { throw null; }
         public static double Floor(double x) { throw null; }
         public static double FusedMultiplyAdd(double left, double right, double addend) { throw null; }
         public override int GetHashCode() { throw null; }
@@ -2094,11 +2105,18 @@ namespace System
         public static double Log(double x) { throw null; }
         public static double Log(double x, double newBase) { throw null; }
         public static double Log10(double x) { throw null; }
+        public static double Log10P1(double x) { throw null; }
         public static double Log2(double value) { throw null; }
+        public static double Log2P1(double x) { throw null; }
+        public static double LogP1(double x) { throw null; }
         public static double Max(double x, double y) { throw null; }
         public static double MaxMagnitude(double x, double y) { throw null; }
+        public static double MaxMagnitudeNumber(double x, double y) { throw null; }
+        public static double MaxNumber(double x, double y) { throw null; }
         public static double Min(double x, double y) { throw null; }
         public static double MinMagnitude(double x, double y) { throw null; }
+        public static double MinMagnitudeNumber(double x, double y) { throw null; }
+        public static double MinNumber(double x, double y) { throw null; }
         public static bool operator ==(double left, double right) { throw null; }
         public static bool operator >(double left, double right) { throw null; }
         public static bool operator >=(double left, double right) { throw null; }
@@ -2149,6 +2167,12 @@ namespace System
         static double System.Numerics.IDecrementOperators<double>.operator --(double value) { throw null; }
         static double System.Numerics.IDivisionOperators<double, double, double>.operator checked /(double left, double right) { throw null; }
         static double System.Numerics.IDivisionOperators<double, double, double>.operator /(double left, double right) { throw null; }
+        int System.Numerics.IFloatingPoint<double>.GetExponentByteCount() { throw null; }
+        long System.Numerics.IFloatingPoint<double>.GetExponentShortestBitLength() { throw null; }
+        int System.Numerics.IFloatingPoint<double>.GetSignificandByteCount() { throw null; }
+        long System.Numerics.IFloatingPoint<double>.GetSignificandBitLength() { throw null; }
+        bool System.Numerics.IFloatingPoint<double>.TryWriteExponentLittleEndian(Span<byte> destination, out int bytesWritten) { throw null; }
+        bool System.Numerics.IFloatingPoint<double>.TryWriteSignificandLittleEndian(Span<byte> destination, out int bytesWritten) { throw null; }
         static double System.Numerics.IIncrementOperators<double>.operator checked ++(double value) { throw null; }
         static double System.Numerics.IIncrementOperators<double>.operator ++(double value) { throw null; }
         static double System.Numerics.IModulusOperators<double, double, double>.operator %(double left, double right) { throw null; }
@@ -2655,6 +2679,11 @@ namespace System
         public bool Equals(System.Half other) { throw null; }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public static System.Half Exp(System.Half x) { throw null; }
+        public static System.Half Exp10(System.Half x) { throw null; }
+        public static System.Half Exp10M1(System.Half x) { throw null; }
+        public static System.Half Exp2(System.Half x) { throw null; }
+        public static System.Half Exp2M1(System.Half x) { throw null; }
+        public static System.Half ExpM1(System.Half x) { throw null; }
         public static System.Half Floor(System.Half x) { throw null; }
         public static System.Half FusedMultiplyAdd(System.Half left, System.Half right, System.Half addend) { throw null; }
         public override int GetHashCode() { throw null; }
@@ -2672,11 +2701,18 @@ namespace System
         public static System.Half Log(System.Half x) { throw null; }
         public static System.Half Log(System.Half x, System.Half newBase) { throw null; }
         public static System.Half Log10(System.Half x) { throw null; }
+        public static System.Half Log10P1(System.Half x) { throw null; }
         public static System.Half Log2(System.Half value) { throw null; }
+        public static System.Half Log2P1(System.Half x) { throw null; }
+        public static System.Half LogP1(System.Half x) { throw null; }
         public static System.Half Max(System.Half x, System.Half y) { throw null; }
         public static System.Half MaxMagnitude(System.Half x, System.Half y) { throw null; }
+        public static System.Half MaxMagnitudeNumber(System.Half x, System.Half y) { throw null; }
+        public static System.Half MaxNumber(System.Half x, System.Half y) { throw null; }
         public static System.Half Min(System.Half x, System.Half y) { throw null; }
         public static System.Half MinMagnitude(System.Half x, System.Half y) { throw null; }
+        public static System.Half MinMagnitudeNumber(System.Half x, System.Half y) { throw null; }
+        public static System.Half MinNumber(System.Half x, System.Half y) { throw null; }
         public static System.Half operator +(System.Half left, System.Half right) { throw null; }
         public static System.Half operator --(System.Half value) { throw null; }
         public static System.Half operator /(System.Half left, System.Half right) { throw null; }
@@ -2722,6 +2758,12 @@ namespace System
         static System.Half System.Numerics.IBitwiseOperators<System.Half, System.Half, System.Half>.operator ~(System.Half value) { throw null; }
         static System.Half System.Numerics.IDecrementOperators<System.Half>.operator checked --(System.Half value) { throw null; }
         static System.Half System.Numerics.IDivisionOperators<System.Half, System.Half, System.Half>.operator checked /(System.Half left, System.Half right) { throw null; }
+        int System.Numerics.IFloatingPoint<System.Half>.GetExponentByteCount() { throw null; }
+        long System.Numerics.IFloatingPoint<System.Half>.GetExponentShortestBitLength() { throw null; }
+        int System.Numerics.IFloatingPoint<System.Half>.GetSignificandByteCount() { throw null; }
+        long System.Numerics.IFloatingPoint<System.Half>.GetSignificandBitLength() { throw null; }
+        bool System.Numerics.IFloatingPoint<System.Half>.TryWriteExponentLittleEndian(Span<byte> destination, out int bytesWritten) { throw null; }
+        bool System.Numerics.IFloatingPoint<System.Half>.TryWriteSignificandLittleEndian(Span<byte> destination, out int bytesWritten) { throw null; }
         static System.Half System.Numerics.IIncrementOperators<System.Half>.operator checked ++(System.Half value) { throw null; }
         static System.Half System.Numerics.IMultiplyOperators<System.Half, System.Half, System.Half>.operator checked *(System.Half left, System.Half right) { throw null; }
         static System.Half System.Numerics.ISubtractionOperators<System.Half, System.Half, System.Half>.operator checked -(System.Half left, System.Half right) { throw null; }
@@ -4250,6 +4292,11 @@ namespace System
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public bool Equals(float obj) { throw null; }
         public static float Exp(float x) { throw null; }
+        public static float Exp10(float x) { throw null; }
+        public static float Exp10M1(float x) { throw null; }
+        public static float Exp2(float x) { throw null; }
+        public static float Exp2M1(float x) { throw null; }
+        public static float ExpM1(float x) { throw null; }
         public static float Floor(float x) { throw null; }
         public static float FusedMultiplyAdd(float left, float right, float addend) { throw null; }
         public override int GetHashCode() { throw null; }
@@ -4268,11 +4315,18 @@ namespace System
         public static float Log(float x) { throw null; }
         public static float Log(float x, float newBase) { throw null; }
         public static float Log10(float x) { throw null; }
+        public static float Log10P1(float x) { throw null; }
         public static float Log2(float value) { throw null; }
+        public static float Log2P1(float x) { throw null; }
+        public static float LogP1(float x) { throw null; }
         public static float Max(float x, float y) { throw null; }
         public static float MaxMagnitude(float x, float y) { throw null; }
+        public static float MaxMagnitudeNumber(float x, float y) { throw null; }
+        public static float MaxNumber(float x, float y) { throw null; }
         public static float Min(float x, float y) { throw null; }
         public static float MinMagnitude(float x, float y) { throw null; }
+        public static float MinMagnitudeNumber(float x, float y) { throw null; }
+        public static float MinNumber(float x, float y) { throw null; }
         public static bool operator ==(float left, float right) { throw null; }
         public static bool operator >(float left, float right) { throw null; }
         public static bool operator >=(float left, float right) { throw null; }
@@ -4323,6 +4377,12 @@ namespace System
         static float System.Numerics.IDecrementOperators<float>.operator --(float value) { throw null; }
         static float System.Numerics.IDivisionOperators<float, float, float>.operator checked /(float left, float right) { throw null; }
         static float System.Numerics.IDivisionOperators<float, float, float>.operator /(float left, float right) { throw null; }
+        int System.Numerics.IFloatingPoint<float>.GetExponentByteCount() { throw null; }
+        long System.Numerics.IFloatingPoint<float>.GetExponentShortestBitLength() { throw null; }
+        int System.Numerics.IFloatingPoint<float>.GetSignificandByteCount() { throw null; }
+        long System.Numerics.IFloatingPoint<float>.GetSignificandBitLength() { throw null; }
+        bool System.Numerics.IFloatingPoint<float>.TryWriteExponentLittleEndian(Span<byte> destination, out int bytesWritten) { throw null; }
+        bool System.Numerics.IFloatingPoint<float>.TryWriteSignificandLittleEndian(Span<byte> destination, out int bytesWritten) { throw null; }
         static float System.Numerics.IIncrementOperators<float>.operator checked ++(float value) { throw null; }
         static float System.Numerics.IIncrementOperators<float>.operator ++(float value) { throw null; }
         static float System.Numerics.IModulusOperators<float, float, float>.operator %(float left, float right) { throw null; }
@@ -9586,6 +9646,11 @@ namespace System.Numerics
     public partial interface IExponentialFunctions<TSelf> where TSelf : System.Numerics.IExponentialFunctions<TSelf>
     {
         static abstract TSelf Exp(TSelf x);
+        static abstract TSelf Exp10(TSelf x);
+        static abstract TSelf Exp10M1(TSelf x);
+        static abstract TSelf Exp2(TSelf x);
+        static abstract TSelf Exp2M1(TSelf x);
+        static abstract TSelf ExpM1(TSelf x);
     }
     public partial interface IFloatingPointIeee754<TSelf> : System.IComparable, System.IComparable<TSelf>, System.IEquatable<TSelf>, System.IFormattable, System.IParsable<TSelf>, System.ISpanFormattable, System.ISpanParsable<TSelf>, System.Numerics.IAdditionOperators<TSelf, TSelf, TSelf>, System.Numerics.IAdditiveIdentity<TSelf, TSelf>, System.Numerics.IComparisonOperators<TSelf, TSelf>, System.Numerics.IDecrementOperators<TSelf>, System.Numerics.IDivisionOperators<TSelf, TSelf, TSelf>, System.Numerics.IEqualityOperators<TSelf, TSelf>, System.Numerics.IExponentialFunctions<TSelf>, System.Numerics.IFloatingPoint<TSelf>, System.Numerics.IHyperbolicFunctions<TSelf>, System.Numerics.IIncrementOperators<TSelf>, System.Numerics.ILogarithmicFunctions<TSelf>, System.Numerics.IModulusOperators<TSelf, TSelf, TSelf>, System.Numerics.IMultiplicativeIdentity<TSelf, TSelf>, System.Numerics.IMultiplyOperators<TSelf, TSelf, TSelf>, System.Numerics.INumber<TSelf>, System.Numerics.INumberBase<TSelf>, System.Numerics.IPowerFunctions<TSelf>, System.Numerics.IRootFunctions<TSelf>, System.Numerics.ISignedNumber<TSelf>, System.Numerics.ISubtractionOperators<TSelf, TSelf, TSelf>, System.Numerics.ITrigonometricFunctions<TSelf>, System.Numerics.IUnaryNegationOperators<TSelf, TSelf>, System.Numerics.IUnaryPlusOperators<TSelf, TSelf> where TSelf : System.Numerics.IFloatingPointIeee754<TSelf>
     {
@@ -9609,6 +9674,10 @@ namespace System.Numerics
         static abstract bool IsNormal(TSelf value);
         static abstract bool IsPositiveInfinity(TSelf value);
         static abstract bool IsSubnormal(TSelf value);
+        static abstract TSelf MaxMagnitudeNumber(TSelf x, TSelf y);
+        static abstract TSelf MaxNumber(TSelf x, TSelf y);
+        static abstract TSelf MinMagnitudeNumber(TSelf x, TSelf y);
+        static abstract TSelf MinNumber(TSelf x, TSelf y);
         static abstract TSelf ReciprocalEstimate(TSelf x);
         static abstract TSelf ReciprocalSqrtEstimate(TSelf x);
         static abstract TSelf ScaleB(TSelf x, int n);
@@ -9617,11 +9686,23 @@ namespace System.Numerics
     {
         static abstract TSelf Ceiling(TSelf x);
         static abstract TSelf Floor(TSelf x);
+        int GetExponentByteCount();
+        long GetExponentShortestBitLength();
+        int GetSignificandByteCount();
+        long GetSignificandBitLength();
         static abstract TSelf Round(TSelf x);
         static abstract TSelf Round(TSelf x, int digits);
         static abstract TSelf Round(TSelf x, int digits, System.MidpointRounding mode);
         static abstract TSelf Round(TSelf x, System.MidpointRounding mode);
         static abstract TSelf Truncate(TSelf x);
+        bool TryWriteExponentLittleEndian(Span<byte> destination, out int bytesWritten);
+        bool TryWriteSignificandLittleEndian(Span<byte> destination, out int bytesWritten);
+        int WriteExponentLittleEndian(byte[] destination) { throw null; }
+        int WriteExponentLittleEndian(byte[] destination, int startIndex) { throw null; }
+        int WriteExponentLittleEndian(System.Span<byte> destination) { throw null; }
+        int WriteSignificandLittleEndian(byte[] destination) { throw null; }
+        int WriteSignificandLittleEndian(byte[] destination, int startIndex) { throw null; }
+        int WriteSignificandLittleEndian(System.Span<byte> destination) { throw null; }
     }
     public partial interface IHyperbolicFunctions<TSelf> where TSelf : System.Numerics.IHyperbolicFunctions<TSelf>
     {
@@ -9642,7 +9723,10 @@ namespace System.Numerics
         static abstract TSelf Log(TSelf x);
         static abstract TSelf Log(TSelf x, TSelf newBase);
         static abstract TSelf Log10(TSelf x);
+        static abstract TSelf Log10P1(TSelf x);
         static abstract TSelf Log2(TSelf x);
+        static abstract TSelf Log2P1(TSelf x);
+        static abstract TSelf LogP1(TSelf x);
     }
     public partial interface IMinMaxValue<TSelf> where TSelf : System.Numerics.IMinMaxValue<TSelf>
     {

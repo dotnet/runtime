@@ -43,11 +43,16 @@ namespace System.Resources
 
         public
 #if RESOURCES_EXTENSIONS
-        PreserializedResourceWriter(string fileName!!)
+        PreserializedResourceWriter(string fileName)
 #else
-        ResourceWriter(string fileName!!)
+        ResourceWriter(string fileName)
 #endif
         {
+            if (fileName is null)
+            {
+                throw new ArgumentNullException(nameof(fileName));
+            }
+
             _output = new FileStream(fileName, FileMode.Create, FileAccess.Write, FileShare.None);
             _resourceList = new SortedDictionary<string, object?>(FastResourceComparer.Default);
             _caseInsensitiveDups = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
@@ -55,13 +60,20 @@ namespace System.Resources
 
         public
 #if RESOURCES_EXTENSIONS
-        PreserializedResourceWriter(Stream stream!!)
+        PreserializedResourceWriter(Stream stream)
 #else
-        ResourceWriter(Stream stream!!)
+        ResourceWriter(Stream stream)
 #endif
         {
+            if (stream is null)
+            {
+                throw new ArgumentNullException(nameof(stream));
+            }
+
             if (!stream.CanWrite)
+            {
                 throw new ArgumentException(SR.Argument_StreamNotWritable);
+            }
 
             _output = stream;
             _resourceList = new SortedDictionary<string, object?>(FastResourceComparer.Default);
@@ -71,10 +83,17 @@ namespace System.Resources
         // Adds a string resource to the list of resources to be written to a file.
         // They aren't written until Generate() is called.
         //
-        public void AddResource(string name!!, string? value)
+        public void AddResource(string name, string? value)
         {
+            if (name is null)
+            {
+                throw new ArgumentNullException(nameof(name));
+            }
+
             if (_resourceList == null)
+            {
                 throw new InvalidOperationException(SR.InvalidOperation_ResourceWriterSaved);
+            }
 
             // Check for duplicate resources whose names vary only by case.
             _caseInsensitiveDups.Add(name, null);
@@ -84,10 +103,17 @@ namespace System.Resources
         // Adds a resource of type Object to the list of resources to be
         // written to a file.  They aren't written until Generate() is called.
         //
-        public void AddResource(string name!!, object? value)
+        public void AddResource(string name, object? value)
         {
+            if (name is null)
+            {
+                throw new ArgumentNullException(nameof(name));
+            }
+
             if (_resourceList == null)
+            {
                 throw new InvalidOperationException(SR.InvalidOperation_ResourceWriterSaved);
+            }
 
             // needed for binary compat
             if (value != null && value is Stream)
@@ -106,10 +132,17 @@ namespace System.Resources
         // written to a file.  They aren't written until Generate() is called.
         // closeAfterWrite parameter indicates whether to close the stream when done.
         //
-        public void AddResource(string name!!, Stream? value, bool closeAfterWrite = false)
+        public void AddResource(string name, Stream? value, bool closeAfterWrite = false)
         {
+            if (name is null)
+            {
+                throw new ArgumentNullException(nameof(name));
+            }
+
             if (_resourceList == null)
+            {
                 throw new InvalidOperationException(SR.InvalidOperation_ResourceWriterSaved);
+            }
 
             AddResourceInternal(name, value, closeAfterWrite);
         }
@@ -139,10 +172,17 @@ namespace System.Resources
         // Adds a named byte array as a resource to the list of resources to
         // be written to a file. They aren't written until Generate() is called.
         //
-        public void AddResource(string name!!, byte[]? value)
+        public void AddResource(string name, byte[]? value)
         {
+            if (name is null)
+            {
+                throw new ArgumentNullException(nameof(name));
+            }
+
             if (_resourceList == null)
+            {
                 throw new InvalidOperationException(SR.InvalidOperation_ResourceWriterSaved);
+            }
 
             // Check for duplicate resources whose names vary only by case.
             _caseInsensitiveDups.Add(name, null);

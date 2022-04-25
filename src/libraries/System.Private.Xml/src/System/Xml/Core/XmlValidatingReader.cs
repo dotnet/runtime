@@ -28,14 +28,18 @@ namespace System.Xml
             _impl.OuterReader = this;
         }
 
-        public XmlValidatingReader([StringSyntax(StringSyntaxAttribute.Xml)] string xmlFragment!!, XmlNodeType fragType, XmlParserContext context)
+        public XmlValidatingReader([StringSyntax(StringSyntaxAttribute.Xml)] string xmlFragment, XmlNodeType fragType, XmlParserContext context)
         {
+            ArgumentNullException.ThrowIfNull(xmlFragment);
+
             _impl = new XmlValidatingReaderImpl(xmlFragment, fragType, context);
             _impl.OuterReader = this;
         }
 
-        public XmlValidatingReader(Stream xmlFragment!!, XmlNodeType fragType, XmlParserContext context)
+        public XmlValidatingReader(Stream xmlFragment, XmlNodeType fragType, XmlParserContext context)
         {
+            ArgumentNullException.ThrowIfNull(xmlFragment);
+
             _impl = new XmlValidatingReaderImpl(xmlFragment, fragType, context);
             _impl.OuterReader = this;
         }

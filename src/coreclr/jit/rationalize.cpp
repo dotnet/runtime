@@ -452,18 +452,17 @@ void Rationalizer::RewriteAssignment(LIR::Use& use)
 
         case GT_CLS_VAR:
         {
-            bool isVolatile = (location->gtFlags & GTF_CLS_VAR_VOLATILE) != 0;
+            GenTreeFlags indFlags = location->gtFlags & (GTF_CLS_VAR_VOLATILE | GTF_CLS_VAR_TGT_HEAP);
+            static_assert_no_msg(GTF_CLS_VAR_VOLATILE == GTF_IND_VOLATILE);
+            static_assert_no_msg(GTF_CLS_VAR_TGT_HEAP == GTF_IND_TGT_HEAP);
 
-            location->gtFlags &= ~GTF_CLS_VAR_VOLATILE;
+            location->gtFlags &= ~indFlags;
             location->SetOper(GT_CLS_VAR_ADDR);
             location->gtType = TYP_BYREF;
 
             assignment->SetOper(GT_STOREIND);
             assignment->AsStoreInd()->SetRMWStatusDefault();
-            if (isVolatile)
-            {
-                assignment->gtFlags |= GTF_IND_VOLATILE;
-            }
+            assignment->gtFlags |= indFlags;
 
             // TODO: JIT dump
         }
@@ -585,7 +584,7 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
     LIR::Use use;
     if (parentStack.Height() < 2)
     {
-        use = LIR::Use::GetDummyUse(BlockRange(), *useEdge);
+        LIR::Use::MakeDummyUse(BlockRange(), *useEdge, &use);
     }
     else
     {
@@ -680,11 +679,6 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
             }
         }
         break;
-
-        case GT_ARGPLACE:
-            // Remove argplace and list nodes from the execution order.
-            BlockRange().Remove(node);
-            break;
 
 #if defined(TARGET_XARCH) || defined(TARGET_ARM)
         case GT_CLS_VAR:

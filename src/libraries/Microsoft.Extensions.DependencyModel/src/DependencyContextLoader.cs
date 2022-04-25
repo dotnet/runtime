@@ -52,8 +52,10 @@ namespace Microsoft.Extensions.DependencyModel
         }
 
         [RequiresAssemblyFiles("DependencyContext for an assembly from a application published as single-file is not supported. The method will return null. Make sure the calling code can handle this case.")]
-        public DependencyContext? Load(Assembly assembly!!)
+        public DependencyContext? Load(Assembly assembly)
         {
+            ThrowHelper.ThrowIfNull(assembly);
+
             DependencyContext? context = null;
             using (IDependencyContextReader reader = _jsonReaderFactory())
             {

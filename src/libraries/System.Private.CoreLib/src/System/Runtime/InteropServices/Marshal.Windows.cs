@@ -218,8 +218,10 @@ namespace System.Runtime.InteropServices
             }
         }
 
-        internal static Type? GetTypeFromProgID(string progID!!, string? server, bool throwOnError)
+        internal static Type? GetTypeFromProgID(string progID, string? server, bool throwOnError)
         {
+            ArgumentNullException.ThrowIfNull(progID);
+
             int hr = Interop.Ole32.CLSIDFromProgID(progID, out Guid clsid);
             if (hr < 0)
             {

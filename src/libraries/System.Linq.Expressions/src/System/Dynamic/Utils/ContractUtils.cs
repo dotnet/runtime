@@ -55,28 +55,6 @@ namespace System.Dynamic.Utils
         /// <param name="paramName">
         /// The parameter name to use in the <see cref="ArgumentException.ParamName"/> property when an exception is thrown.
         /// </param>
-        /// <exception cref="ArgumentNullException">
-        /// Thrown if <paramref name="value"/> is <c>null</c>.
-        /// </exception>
-        public static void RequiresNotNull(object value, string paramName)
-        {
-            Debug.Assert(!string.IsNullOrEmpty(paramName));
-
-            if (value == null)
-            {
-                throw new ArgumentNullException(paramName);
-            }
-        }
-
-        /// <summary>
-        /// Requires the <paramref name="value"/> to be non-<c>null</c>.
-        /// </summary>
-        /// <param name="value">
-        /// The value to check for being non-<c>null</c>.
-        /// </param>
-        /// <param name="paramName">
-        /// The parameter name to use in the <see cref="ArgumentException.ParamName"/> property when an exception is thrown.
-        /// </param>
         /// <param name="index">
         /// The index of the argument being checked for <c>null</c>.
         /// If an exception is thrown, this value is used in <see cref="ArgumentException.ParamName"/> if it's greater than or equal to 0.
@@ -108,7 +86,7 @@ namespace System.Dynamic.Utils
         /// </exception>
         public static void RequiresNotEmpty<T>(ICollection<T> collection, string paramName)
         {
-            RequiresNotNull(collection, paramName);
+            ArgumentNullException.ThrowIfNull(collection, paramName);
             if (collection.Count == 0)
             {
                 throw Error.NonEmptyCollectionRequired(paramName);
@@ -130,7 +108,7 @@ namespace System.Dynamic.Utils
         public static void RequiresNotNullItems<T>(IList<T> array, string arrayName)
         {
             Debug.Assert(!string.IsNullOrEmpty(arrayName));
-            RequiresNotNull(array, arrayName);
+            ArgumentNullException.ThrowIfNull(array, arrayName);
 
             for (int i = 0, n = array.Count; i < n; i++)
             {

@@ -37,7 +37,7 @@ namespace Microsoft.Interop
     /// Generic comparer to compare two <see cref="ImmutableArray{T}"/> instances element by element.
     /// </summary>
     /// <typeparam name="T">The type of immutable array element.</typeparam>
-    internal class ImmutableArraySequenceEqualComparer<T> : IEqualityComparer<ImmutableArray<T>>
+    internal sealed class ImmutableArraySequenceEqualComparer<T> : IEqualityComparer<ImmutableArray<T>>
     {
         private readonly IEqualityComparer<T> _elementComparer;
 
@@ -61,7 +61,7 @@ namespace Microsoft.Interop
         }
     }
 
-    internal class SyntaxEquivalentComparer : IEqualityComparer<SyntaxNode>
+    internal sealed class SyntaxEquivalentComparer : IEqualityComparer<SyntaxNode>
     {
         public static readonly SyntaxEquivalentComparer Instance = new();
 
@@ -78,7 +78,7 @@ namespace Microsoft.Interop
         }
     }
 
-    internal class CustomValueTupleElementComparer<T, U> : IEqualityComparer<(T, U)>
+    internal sealed class CustomValueTupleElementComparer<T, U> : IEqualityComparer<(T, U)>
     {
         private readonly IEqualityComparer<T> _item1Comparer;
         private readonly IEqualityComparer<U> _item2Comparer;
