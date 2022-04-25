@@ -17904,10 +17904,7 @@ GenTree* Compiler::gtCallGetDefinedRetBufLclAddr(GenTreeCall* call)
     }
 
     // This may be called very late to check validity of LIR.
-    if (node->IsCopyOrReload())
-    {
-        node = node->AsCopyOrReload()->gtGetOp1();
-    }
+    node = node->gtSkipReloadOrCopy();
 
 #ifdef DEBUG
     unsigned             size = typGetObjLayout(call->gtRetClsHnd)->GetSize();

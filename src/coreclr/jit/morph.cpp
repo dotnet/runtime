@@ -7457,7 +7457,7 @@ GenTree* Compiler::fgMorphTailCallViaHelpers(GenTreeCall* call, CORINFO_TAILCALL
         JITDUMP("Removing retbuf");
 
         call->gtArgs.Remove(call->gtArgs.GetRetBufferArg());
-        call->gtCallMoreFlags &= ~(GTF_CALL_M_RETBUFFARG | GTF_CALL_M_RETBUFFARG_LCLOPT);
+        call->gtCallMoreFlags &= ~GTF_CALL_M_RETBUFFARG;
     }
 
     const bool stubNeedsTargetFnPtr = (help.flags & CORINFO_TAILCALL_STORE_TARGET) != 0;
