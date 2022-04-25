@@ -116,6 +116,37 @@ namespace System.SpanTests
             Assert.Equal(expectedFull[length - 1], actualFull[length - 1]);
         }
 
+        [Theory]
+        [InlineData(3)] // non-vectorized, odd
+        [InlineData(4)] // non-vectorized, even
+        [InlineData(127)] // vectorized, odd
+        [InlineData(128)] // vectorized, even
+        public static void ReverseChar(int length)
+        {
+            char[] actual = new char[length];
+            char[] expected = new char[length];
+            for (int i = 0; i < length; i++)
+            {
+                actual[i] = expected[length - 1 - i] = (char)i;
+            }
+
+            var span = new Span<char>(actual);
+            span.Reverse();
+            Assert.Equal<char>(expected, actual);
+        }
+
+        [Fact]
+        public static void ReverseCharTwiceReturnsOriginal()
+        {
+            char[] actual = { 'a', 'b', 'c', 'd' };
+            char[] expected = { 'a', 'b', 'c', 'd' };
+
+            Span<char> span = actual;
+            span.Reverse();
+            span.Reverse();
+            Assert.Equal<char>(expected, actual);
+        }
+
         public static IEnumerable<object[]> GetReverseIntPtrOffsetArguments()
         {
             const int offset = 2;
