@@ -9,9 +9,9 @@ namespace System.Formats.Tar.Tests
 {
     public partial class TarWriter_WriteEntry_File_Tests : TarTestsBase
     {
-        private static bool IsRemoteExecutorSupportedAndOnUnixAndElevated => RemoteExecutor.IsSupported && PlatformDetection.IsUnixAndElevated;
+        private static bool IsRemoteExecutorSupportedAndOnUnixAndSuperUser => RemoteExecutor.IsSupported && PlatformDetection.IsUnixAndSuperUser;
 
-        [ConditionalTheory(nameof(IsRemoteExecutorSupportedAndOnUnixAndElevated))]
+        [ConditionalTheory(nameof(IsRemoteExecutorSupportedAndOnUnixAndSuperUser))]
         [InlineData(TarFormat.Ustar)]
         [InlineData(TarFormat.Pax)]
         [InlineData(TarFormat.Gnu)]
@@ -54,7 +54,7 @@ namespace System.Formats.Tar.Tests
             }, format.ToString(), new RemoteInvokeOptions { RunAsSudo = true }).Dispose();
         }
 
-        [ConditionalTheory(nameof(IsRemoteExecutorSupportedAndOnUnixAndElevated))]
+        [ConditionalTheory(nameof(IsRemoteExecutorSupportedAndOnUnixAndSuperUser))]
         [InlineData(TarFormat.Ustar)]
         [InlineData(TarFormat.Pax)]
         [InlineData(TarFormat.Gnu)]
@@ -102,7 +102,7 @@ namespace System.Formats.Tar.Tests
             }, format.ToString(), new RemoteInvokeOptions { RunAsSudo = true }).Dispose();
         }
 
-        [ConditionalTheory(nameof(IsRemoteExecutorSupportedAndOnUnixAndElevated))]
+        [ConditionalTheory(nameof(IsRemoteExecutorSupportedAndOnUnixAndSuperUser))]
         [InlineData(TarFormat.Ustar)]
         [InlineData(TarFormat.Pax)]
         [InlineData(TarFormat.Gnu)]

@@ -10,7 +10,7 @@ namespace System.IO.Tests
     {
         static bool IsBindMountSupported => OperatingSystem.IsLinux() && !PlatformDetection.IsInContainer;
 
-        private static bool IsBindMountSupportedAndOnUnixAndElevated => IsBindMountSupported && PlatformDetection.IsUnixAndElevated;
+        private static bool IsBindMountSupportedAndOnUnixAndSuperUser => IsBindMountSupported && PlatformDetection.IsUnixAndSuperUser;
 
         protected virtual void Delete(string path)
         {
@@ -116,7 +116,7 @@ namespace System.IO.Tests
 
         #region PlatformSpecific
 
-        [ConditionalFact(nameof(IsBindMountSupportedAndOnUnixAndElevated))]
+        [ConditionalFact(nameof(IsBindMountSupportedAndOnUnixAndSuperUser))]
         [OuterLoop("Needs sudo access")]
         [PlatformSpecific(TestPlatforms.Linux)]
         public void Unix_NonExistentPath_ReadOnlyVolume()
@@ -127,7 +127,7 @@ namespace System.IO.Tests
             });
         }
 
-        [ConditionalFact(nameof(IsBindMountSupportedAndOnUnixAndElevated))]
+        [ConditionalFact(nameof(IsBindMountSupportedAndOnUnixAndSuperUser))]
         [OuterLoop("Needs sudo access")]
         [PlatformSpecific(TestPlatforms.Linux)]
         public void Unix_ExistingDirectory_ReadOnlyVolume()
