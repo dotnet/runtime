@@ -3,11 +3,9 @@
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppMinimum);netstandard2.1</TargetFrameworks>
     <EnableDefaultItems>true</EnableDefaultItems>
-    <PackageDescription>.NET hosting infrastructure for Systemd Services.</PackageDescription>
-    <!-- Use targeting pack references instead of granular ones in the project file. -->
-    <DisableImplicitAssemblyReferences>false</DisableImplicitAssemblyReferences>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPackable>true</IsPackable>
+    <PackageDescription>.NET hosting infrastructure for Systemd Services.</PackageDescription>
     <Nullable>annotations</Nullable>
   </PropertyGroup>
 
@@ -27,9 +25,5 @@
 
   <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Hosting\src\Microsoft.Extensions.Hosting.csproj" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
-    <Reference Include="System.Runtime.InteropServices" />
   </ItemGroup>
 </Project>

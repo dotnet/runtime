@@ -8,8 +8,6 @@
 
 Commonly Used Types:
 Microsoft.Extensions.DependencyInjection.IServiceCollection</PackageDescription>
-    <!-- Use targeting pack references instead of granular ones in the project file. -->
-    <DisableImplicitAssemblyReferences>false</DisableImplicitAssemblyReferences>
   </PropertyGroup>
 
   <ItemGroup>

@@ -1,6 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <!-- Even though this library's contract isn't exposed in the shared framework, it is built as part of the shared framework build
+       (because the System.Net.Quic\src references this project) and hence need to define its dependencies. -->
+    <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Net.Quic.cs" />
