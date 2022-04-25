@@ -25,7 +25,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         public static void Main(string[] args)
         {
             IConfigurationRoot config = new ConfigurationBuilder().AddCommandLine(args).Build();
-            int proxyPort = 0;
+            int proxyPort = -1;
             if (config["proxy-port"] is not null && int.TryParse(config["proxy-port"], out int port))
                 proxyPort = port;
             int firefoxDebugPort = 6000;

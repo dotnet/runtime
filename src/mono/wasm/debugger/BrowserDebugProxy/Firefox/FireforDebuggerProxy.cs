@@ -28,7 +28,7 @@ public class FirefoxDebuggerProxy : DebuggerProxyBase
         {
             s_tcpListener = new TcpListener(IPAddress.Parse("127.0.0.1"), proxyPort);
             s_tcpListener.Start();
-            logger.LogInformation($"Now listening on {s_tcpListener.LocalEndpoint} for firefox debugging");
+            logger.LogInformation($"Now listening for Firefox on: {s_tcpListener.LocalEndpoint}");
         }
     }
 
