@@ -35,9 +35,9 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using ILLink.Shared;
+using ILLink.Shared.TrimAnalysis;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
-using Mono.Linker.Dataflow;
 
 namespace Mono.Linker
 {

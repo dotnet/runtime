@@ -935,18 +935,7 @@ namespace Mono.Linker.Dataflow
 			}
 		}
 
-		// Array types that are dynamically accessed should resolve to System.Array instead of its element type - which is what Cecil resolves to.
-		// Any data flow annotations placed on a type parameter which receives an array type apply to the array itself. None of the members in its
-		// element type should be marked.
-		public TypeDefinition? ResolveToTypeDefinition (TypeReference typeReference) => ResolveToTypeDefinition (_context, typeReference);
-
-		public static TypeDefinition? ResolveToTypeDefinition (LinkContext context, TypeReference typeReference)
-		{
-			if (typeReference is ArrayType)
-				return BCL.FindPredefinedType (WellKnownType.System_Array, context);
-
-			return context.TryResolve (typeReference);
-		}
+		public TypeDefinition? ResolveToTypeDefinition (TypeReference typeReference) => typeReference.ResolveToTypeDefinition (_context);
 
 		public abstract bool HandleCall (
 			MethodBody callingMethodBody,
