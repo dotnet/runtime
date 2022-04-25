@@ -5453,60 +5453,7 @@ GenTree* Lowering::LowerAdd(GenTreeOp* node)
             return next;
         }
 #ifdef TARGET_ARM64
-        if (BlockRange().TryGetUse(node, &use))
-        {
-            if (comp->opts.OptimizationEnabled() && varTypeIsIntegral(node) &&
-                !(node->gtFlags & GTF_SET_FLAGS) && !node->gtOverflow() &&
-                !node->isContained())
-            {
-                GenTree* mul       = nullptr;
-                GenTree* c         = nullptr;
-                if (op1->OperIs(GT_MUL))
-                {
-                    mul = op1;
-                    c   = op2;
-                }
-                else
-                {
-                    mul = op2;
-                    c   = op1;
-                }
-
-                if (mul->OperIs(GT_MUL) && !(mul->gtFlags & GTF_SET_FLAGS) && varTypeIsIntegral(mul) &&
-                    !mul->gtOverflow() && !mul->isContained() && !c->isContained())
-                {
-                    GenTree* a = mul->gtGetOp1();
-                    GenTree* b = mul->gtGetOp2();
-
-                    // Transform "-a * b + c" to "c - a * b"
-                    if (a->OperIs(GT_NEG) && !(a->gtFlags & GTF_SET_FLAGS) && !b->OperIs(GT_NEG) && !a->isContained() &&
-                        !a->gtGetOp1()->isContained())
-                    {
-                        mul->AsOp()->gtOp1 = a->gtGetOp1();
-                        BlockRange().Remove(a);
-                        node->gtOp1 = c;
-                        node->gtOp2 = mul;
-                        node->ChangeOper(GT_SUB);
-                    }
-                    // Transform "a * -b + c" to "c - a * b"
-                    else if (b->OperIs(GT_NEG) && !(b->gtFlags & GTF_SET_FLAGS) && !a->OperIs(GT_NEG) &&
-                             !b->isContained() && !b->gtGetOp1()->isContained())
-                    {
-                        mul->AsOp()->gtOp2 = b->gtGetOp1();
-                        BlockRange().Remove(b);
-                        node->gtOp1 = c;
-                        node->gtOp2 = mul;
-                        node->ChangeOper(GT_SUB);
-                    }
-                    // Transform "a * b + c" to "c + a * b"
-                    else if (op1->OperIs(GT_MUL))
-                    {
-                        node->gtOp1 = c;
-                        node->gtOp2 = mul;
-                    }
-                }
-            }
-        }
+        LowerAddForPossibleContainment(node);
 #endif // TARGET_ARM64
 
 #ifdef TARGET_XARCH

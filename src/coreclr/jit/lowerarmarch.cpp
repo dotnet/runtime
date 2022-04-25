@@ -146,6 +146,56 @@ bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode) const
 }
 
 //------------------------------------------------------------------------
+// IsContainableBinaryOp: Is the child node containable from the parent node?
+//
+// Return Value:
+//    True if the child node can be contained.
+//
+// Notes:
+//    This can handle the decision to emit 'madd' or 'msub'.
+//
+bool Lowering::IsContainableBinaryOp(GenTree* parentNode, GenTree* childNode) const
+{
+    if (parentNode->isContained())
+        return false;
+
+    if (!varTypeIsIntegral(parentNode))
+        return false;
+
+    if (parentNode->gtFlags & GTF_SET_FLAGS)
+        return false;
+
+    if (parentNode->gtOverflow())
+        return false;
+
+    GenTree* op1 = parentNode->gtGetOp1();
+    GenTree* op2 = parentNode->gtGetOp2();
+
+    if (op2 != childNode)
+        return false;
+
+    if (op1->isContained() || op2->isContained())
+        return false;
+
+    if (!varTypeIsIntegral(op2))
+        return false;
+
+    if (op2->gtFlags & GTF_SET_FLAGS)
+        return false;
+
+    if (op2->gtOverflow())
+        return false;
+
+    // Find "a + b * c" or "a - b * c".
+    if (parentNode->OperIs(GT_ADD, GT_SUB) && op2->OperIs(GT_MUL))
+    {
+        return !op2->gtGetOp1()->isContained() && !op2->gtGetOp2()->isContained();
+    }
+
+    return false;
+}
+
+//------------------------------------------------------------------------
 // LowerStoreLoc: Lower a store of a lclVar
 //
 // Arguments:
@@ -696,6 +746,85 @@ GenTree* Lowering::LowerModPow2(GenTree* node)
     use.ReplaceWith(cc);
 
     return cc->gtNext;
+}
+
+//------------------------------------------------------------------------
+// LowerAddForPossibleContainment: Tries to lower GT_ADD in such a way
+//                                 that would allow one of its operands
+//                                 to be contained.
+//
+// Arguments:
+//    node - the node to lower
+//
+void Lowering::LowerAddForPossibleContainment(GenTreeOp* node)
+{
+    assert(node->OperIs(GT_ADD));
+
+    if (!comp->opts.OptimizationEnabled())
+        return;
+
+    if (node->isContained())
+        return;
+
+    if (!varTypeIsIntegral(node))
+        return;
+
+    if (node->gtFlags & GTF_SET_FLAGS)
+        return;
+
+    if (node->gtOverflow())
+        return;
+
+    GenTree* op1 = node->gtGetOp1();
+    GenTree* op2 = node->gtGetOp2();
+
+    GenTree* mul = nullptr;
+    GenTree* c   = nullptr;
+    if (op1->OperIs(GT_MUL))
+    {
+        // Swap
+        mul = op1;
+        c   = op2;
+    }
+    else
+    {
+        mul = op2;
+        c   = op1;
+    }
+
+    if (mul->OperIs(GT_MUL) && !(mul->gtFlags & GTF_SET_FLAGS) && varTypeIsIntegral(mul) && !mul->gtOverflow() &&
+        !mul->isContained() && !c->isContained())
+    {
+        GenTree* a = mul->gtGetOp1();
+        GenTree* b = mul->gtGetOp2();
+
+        // Transform "-a * b + c" to "c - a * b"
+        if (a->OperIs(GT_NEG) && !(a->gtFlags & GTF_SET_FLAGS) && !b->OperIs(GT_NEG) && !a->isContained() &&
+            !a->gtGetOp1()->isContained())
+        {
+            mul->AsOp()->gtOp1 = a->gtGetOp1();
+            BlockRange().Remove(a);
+            node->gtOp1 = c;
+            node->gtOp2 = mul;
+            node->ChangeOper(GT_SUB);
+        }
+        // Transform "a * -b + c" to "c - a * b"
+        else if (b->OperIs(GT_NEG) && !(b->gtFlags & GTF_SET_FLAGS) && !a->OperIs(GT_NEG) && !b->isContained() &&
+                 !b->gtGetOp1()->isContained())
+        {
+            mul->AsOp()->gtOp2 = b->gtGetOp1();
+            BlockRange().Remove(b);
+            node->gtOp1 = c;
+            node->gtOp2 = mul;
+            node->ChangeOper(GT_SUB);
+        }
+        // Transform "a * b + c" to "c + a * b"
+        else if (op1->OperIs(GT_MUL))
+        {
+            node->gtOp1 = c;
+            node->gtOp2 = mul;
+        }
+    }
 }
 #endif
 
@@ -1698,17 +1827,9 @@ void Lowering::ContainCheckBinary(GenTreeOp* node)
     CheckImmedAndMakeContained(node, op2);
 
 #ifdef TARGET_ARM64
-    if (comp->opts.OptimizationEnabled() && !node->isContained() && varTypeIsIntegral(node))
+    if (comp->opts.OptimizationEnabled() && IsContainableBinaryOp(node, op2))
     {
-        // Find "a + b * c" or "a - b * c".
-        // Then mark "b * c" op as contained in order to emit 'madd' or 'msub' respectively.
-        if (node->OperIs(GT_ADD, GT_SUB) && !(node->gtFlags & GTF_SET_FLAGS) && !node->gtOverflow() &&
-            !op1->isContained() && op2->OperIs(GT_MUL) && !(op2->gtFlags & GTF_SET_FLAGS) && !op2->gtOverflow() &&
-            !op2->isContained() && varTypeIsIntegral(op2) && !op2->gtGetOp1()->isContained() &&
-            !op2->gtGetOp2()->isContained())
-        {
-            MakeSrcContained(node, op2);
-        }
+        MakeSrcContained(node, op2);
     }
 
     // Change ADD TO ADDEX for ADD(X, CAST(Y)) or ADD(CAST(X), Y) where CAST is int->long
