@@ -679,10 +679,6 @@ public:
 
     ValueNumPair VNPairForLoadStoreBitcast(ValueNumPair value, var_types indType, unsigned indSize);
 
-    ValueNum VNForEmptyMap(var_types type);
-
-    ValueNumPair VNPairForEmptyMap(var_types type);
-
     // Compute the ValueNumber for a cast
     ValueNum VNForCast(ValueNum  srcVN,
                        var_types castToType,

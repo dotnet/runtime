@@ -4249,19 +4249,6 @@ ValueNumPair ValueNumStore::VNPairForLoadStoreBitcast(ValueNumPair value, var_ty
     return ValueNumPair(liberalVN, conservVN);
 }
 
-ValueNum ValueNumStore::VNForEmptyMap(var_types type)
-{
-    // TODO-PhysicalVN: use one single VN here instead of allocating new ones.
-    return VNForExpr(nullptr, type);
-}
-
-ValueNumPair ValueNumStore::VNPairForEmptyMap(var_types type)
-{
-    ValueNum map = VNForEmptyMap(type);
-
-    return ValueNumPair(map, map);
-}
-
 //------------------------------------------------------------------------
 // IsVNNotAField: Is the value number a "NotAField" field sequence?
 //
