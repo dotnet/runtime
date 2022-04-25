@@ -139,7 +139,8 @@ namespace System.Xml
             _inclusivePrefixes = null;
         }
 
-        public static void WriteDeclaration()
+        [SuppressMessage("Performance", "CA1822:Mark members as static", Justification = "This class is should roughly mirror the XmlNodeWriter API where this is an instance method.")]
+        public void WriteDeclaration()
         {
         }
 

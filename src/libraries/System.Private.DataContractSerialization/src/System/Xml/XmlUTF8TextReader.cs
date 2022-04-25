@@ -736,6 +736,7 @@ namespace System.Xml
                 else
                 {
                     anyChar |= 0x80;
+                    // ch = 0; // ch not used after this point.
                 }
                 localName.SetValue(localNameOffset, offset - localNameOffset);
                 if (anyChar >= 0x80)

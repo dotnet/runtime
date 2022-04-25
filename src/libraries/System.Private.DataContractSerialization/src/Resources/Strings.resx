@@ -624,6 +624,9 @@
   <data name="XmlBadBOM" xml:space="preserve">
     <value>Unrecognized Byte Order Mark.</value>
   </data>
+  <data name="XmlMaxNameTableCharCountExceeded" xml:space="preserve">
+    <value>The maximum nametable character count quota ({0}) has been exceeded while reading XML data. The nametable is a data structure used to store strings encountered during XML processing - long XML documents with non-repeating element names, attribute names and attribute values may trigger this quota. This quota may be increased by changing the MaxNameTableCharCount property on the XmlDictionaryReaderQuotas object used when creating the XML reader.</value>
+  </data>
   <data name="XmlBase64DataExpected" xml:space="preserve">
     <value>Base64 encoded data expected. Found {0}.</value>
   </data>
@@ -785,6 +788,9 @@
   </data>
   <data name="XmlMaxArrayLengthExceeded" xml:space="preserve">
     <value>The maximum array length quota ({0}) has been exceeded while reading XML data. This quota may be increased by changing the MaxArrayLength property on the XmlDictionaryReaderQuotas object used when creating the XML reader.</value>
+  </data>
+  <data name="XmlMaxArrayLengthOrMaxItemsQuotaExceeded" xml:space="preserve">
+    <value>The maximum array length quota ({0}) or the maximum items in object graph quota has been exceeded while reading XML data. These quotas may be increased by changing the MaxArrayLength property on XmlDictionaryReaderQuotas or the MaxItemsInObjectGraph setting.</value>
   </data>
   <data name="XmlMaxBytesPerReadExceeded" xml:space="preserve">
     <value>The 'maximum bytes per Read operation' quota ({0}) has been exceeded while reading XML data. Long element start tags (consisting of the element name, attribute names and attribute values) may trigger this quota. This quota may be increased by changing the MaxBytesPerRead property on the XmlDictionaryReaderQuotas object used when creating the XML reader.</value>

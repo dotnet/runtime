@@ -29,7 +29,22 @@ namespace System.Xml
             _stream = stream;
             _ownsStream = ownsStream;
             _offset = 0;
-            _encoding = encoding;
+
+            if (encoding != null)
+                _encoding = encoding;
+        }
+
+        // Getting/Setting the Stream exists for fragmenting
+        public Stream Stream
+        {
+            get
+            {
+                return _stream;
+            }
+            set
+            {
+                _stream = value;
+            }
         }
 
         // StreamBuffer/BufferOffset exists only for the BinaryWriter to fix up nodes
@@ -53,18 +68,6 @@ namespace System.Xml
             get
             {
                 return (int)_stream.Position + _offset;
-            }
-        }
-
-        private int GetByteCount(char[] chars)
-        {
-            if (_encoding == null)
-            {
-                return s_UTF8Encoding.GetByteCount(chars);
-            }
-            else
-            {
-                return _encoding.GetByteCount(chars);
             }
         }
 
@@ -369,12 +372,7 @@ namespace System.Xml
             if (chars == charsMax)
                 return charCount;
 
-            char[] chArray = new char[charsMax - chars];
-            for (int i = 0; i < chArray.Length; i++)
-            {
-                chArray[i] = chars[i];
-            }
-            return (int)(chars - (charsMax - charCount)) + GetByteCount(chArray);
+            return (int)(chars - (charsMax - charCount)) + (_encoding ?? s_UTF8Encoding).GetByteCount(chars, (int)(charsMax - chars));
         }
 
         protected unsafe int UnsafeGetUTF8Chars(char* chars, int charCount, byte[] buffer, int offset)
