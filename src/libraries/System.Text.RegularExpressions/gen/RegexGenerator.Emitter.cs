@@ -917,7 +917,7 @@ namespace System.Text.RegularExpressions.Generator
                 Debug.Assert(target.LoopNode.Kind is RegexNodeKind.Setloop or RegexNodeKind.Setlazy or RegexNodeKind.Setloopatomic);
                 Debug.Assert(target.LoopNode.N == int.MaxValue);
 
-                writer.Write($"// The pattern begins with an atomic loop for {DescribeSet(target.LoopNode.Str)}, followed by ");
+                writer.Write($"// The pattern begins with an atomic loop for {DescribeSet(target.LoopNode.Str!)}, followed by ");
                 writer.WriteLine(
                     target.Literal.String is not null ? $"the string {Literal(target.Literal.String)}." :
                     target.Literal.Chars is not null ? $"one of the characters {Literal(new string(target.Literal.Chars))}" :
@@ -1027,7 +1027,7 @@ namespace System.Text.RegularExpressions.Generator
 
             // Helper to define names.  Names start unadorned, but as soon as there's repetition,
             // they begin to have a numbered suffix.
-            var usedNames = new Dictionary<string, int>();
+            Dictionary<string, int> usedNames = new();
 
             // Every RegexTree is rooted in the implicit Capture for the whole expression.
             // Skip the Capture node. We handle the implicit root capture specially.
@@ -1039,8 +1039,8 @@ namespace System.Text.RegularExpressions.Generator
             // In some cases, we need to emit declarations at the beginning of the method, but we only discover we need them later.
             // To handle that, we build up a collection of all the declarations to include, track where they should be inserted,
             // and then insert them at that position once everything else has been output.
-            var additionalDeclarations = new HashSet<string>();
-            var additionalLocalFunctions = new Dictionary<string, string[]>();
+            HashSet<string> additionalDeclarations = new();
+            Dictionary<string, string[]> additionalLocalFunctions = new();
 
             // Declare some locals.
             string sliceSpan = "slice";
@@ -3217,7 +3217,7 @@ namespace System.Text.RegularExpressions.Generator
                 // additional checks if we can prove that the loop can never match empty, which we can do by computing
                 // the minimum length of the child; only if it's 0 might iterations be empty.
                 bool iterationMayBeEmpty = child.ComputeMinLength() == 0;
-                string startingPos = null, sawEmpty = null;
+                string? startingPos = null, sawEmpty = null;
                 if (iterationMayBeEmpty)
                 {
                     startingPos = ReserveName("lazyloop_starting_pos");
@@ -3243,8 +3243,8 @@ namespace System.Text.RegularExpressions.Generator
                 // iterations, this state needs to be stored on to the backtracking stack.
                 int entriesPerIteration = 1/*pos*/ + (iterationMayBeEmpty ? 2/*startingPos+sawEmpty*/ : 0) + (expressionHasCaptures ? 1/*Crawlpos*/ : 0);
                 EmitStackPush(
-                    expressionHasCaptures && iterationMayBeEmpty ? new[] { "pos", startingPos, sawEmpty, "base.Crawlpos()" } :
-                    iterationMayBeEmpty ? new[] { "pos", startingPos, sawEmpty } :
+                    expressionHasCaptures && iterationMayBeEmpty ? new[] { "pos", startingPos!, sawEmpty!, "base.Crawlpos()" } :
+                    iterationMayBeEmpty ? new[] { "pos", startingPos!, sawEmpty! } :
                     expressionHasCaptures ? new[] { "pos", "base.Crawlpos()" } :
                     new[] { "pos" });
 
@@ -3323,7 +3323,7 @@ namespace System.Text.RegularExpressions.Generator
                         EmitUncaptureUntil(StackPop());
                     }
                     EmitStackPop(iterationMayBeEmpty ?
-                        new[] { sawEmpty, startingPos, "pos" } :
+                        new[] { sawEmpty!, startingPos!, "pos" } :
                         new[] { "pos" });
                     SliceInputSpan();
 
@@ -3373,7 +3373,7 @@ namespace System.Text.RegularExpressions.Generator
                     if (rm.Analysis.IsInLoop(node))
                     {
                         EmitStackPush(iterationMayBeEmpty ?
-                            new[] { iterationCount, startingPos, sawEmpty } :
+                            new[] { iterationCount, startingPos!, sawEmpty! } :
                             new[] { iterationCount });
                     }
 
@@ -3392,7 +3392,7 @@ namespace System.Text.RegularExpressions.Generator
                     if (rm.Analysis.IsInLoop(node))
                     {
                         EmitStackPop(iterationMayBeEmpty ?
-                            new[] { sawEmpty, startingPos, iterationCount } :
+                            new[] { sawEmpty!, startingPos!, iterationCount } :
                             new[] { iterationCount });
                     }
 
@@ -3818,9 +3818,9 @@ namespace System.Text.RegularExpressions.Generator
                 // here we still need the stack, because each iteration of _this_ loop may have its own state, e.g. we
                 // need to know where each iteration began so when backtracking we can jump back to that location.
                 EmitStackPush(
-                    expressionHasCaptures && iterationMayBeEmpty ? new[] { "base.Crawlpos()", startingPos, "pos" } :
+                    expressionHasCaptures && iterationMayBeEmpty ? new[] { "base.Crawlpos()", startingPos!, "pos" } :
                     expressionHasCaptures ? new[] { "base.Crawlpos()", "pos" } :
-                    iterationMayBeEmpty ? new[] { startingPos, "pos" } :
+                    iterationMayBeEmpty ? new[] { startingPos!, "pos" } :
                     new[] { "pos" });
                 writer.WriteLine();
 
@@ -3928,7 +3928,7 @@ namespace System.Text.RegularExpressions.Generator
                     Goto(originalDoneLabel);
                 }
                 EmitStackPop(iterationMayBeEmpty ?
-                    new[] { "pos", startingPos } :
+                    new[] { "pos", startingPos! } :
                     new[] { "pos" });
                 if (expressionHasCaptures)
                 {
@@ -4020,7 +4020,7 @@ namespace System.Text.RegularExpressions.Generator
 
                         // Store the loop's state
                         EmitStackPush(iterationMayBeEmpty ?
-                            new[] { startingPos, iterationCount } :
+                            new[] { startingPos!, iterationCount } :
                             new[] { iterationCount });
 
                         // Skip past the backtracking section
@@ -4032,7 +4032,7 @@ namespace System.Text.RegularExpressions.Generator
                         string backtrack = ReserveName("LoopBacktrack");
                         MarkLabel(backtrack, emitSemicolon: false);
                         EmitStackPop(iterationMayBeEmpty ?
-                            new[] { iterationCount, startingPos } :
+                            new[] { iterationCount, startingPos! } :
                             new[] { iterationCount });
 
                         // We're backtracking.  Check the timeout.
