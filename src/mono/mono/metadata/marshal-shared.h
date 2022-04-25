@@ -69,9 +69,6 @@ void
 mono_marshal_shared_emit_struct_conv (MonoMethodBuilder *mb, MonoClass *klass, gboolean to_object);
 
 void
-mono_marshal_shared_emit_struct_free (MonoMethodBuilder *mb, MonoClass *klass, int struct_var);
-
-void
 mono_marshal_shared_emit_thread_interrupt_checkpoint_call (MonoMethodBuilder *mb, MonoJitICallId checkpoint_icall_id);
 
 void

@@ -1222,18 +1222,6 @@ mono_marshal_shared_emit_struct_conv (MonoMethodBuilder *mb, MonoClass *klass, g
 }
 
 void
-mono_marshal_shared_emit_struct_free (MonoMethodBuilder *mb, MonoClass *klass, int struct_var)
-{
-	/* Call DestroyStructure */
-	/* FIXME: Only do this if needed */
-	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
-	mono_mb_emit_op (mb, CEE_MONO_CLASSCONST, klass);
-	mono_mb_emit_ldloc (mb, struct_var);
-	mono_mb_emit_icall (mb, mono_struct_delete_old);
-}
-
-
-void
 mono_marshal_shared_emit_thread_interrupt_checkpoint_call (MonoMethodBuilder *mb, MonoJitICallId checkpoint_icall_id)
 {
 	int pos_noabort, pos_noex;

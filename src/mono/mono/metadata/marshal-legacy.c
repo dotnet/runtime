@@ -27,6 +27,10 @@ enum {
 static GENERATE_GET_CLASS_WITH_CACHE (date_time, "System", "DateTime");
 static GENERATE_TRY_GET_CLASS_WITH_CACHE (icustom_marshaler, "System.Runtime.InteropServices", "ICustomMarshaler");
 
+static void
+emit_struct_free (MonoMethodBuilder *mb, MonoClass *klass, int struct_var);
+
+
 static int
 emit_marshal_array_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 					MonoMarshalSpec *spec,
@@ -304,7 +308,7 @@ emit_marshal_array_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 					mono_mb_emit_ldloc (mb, src_ptr);
 					mono_mb_emit_stloc (mb, loc);
 
-					mono_marshal_shared_emit_struct_free (mb, eklass, loc);
+					emit_struct_free (mb, eklass, loc);
 				}
 			}
 
@@ -995,7 +999,7 @@ emit_marshal_vtype_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 			}
 		}
 
-		mono_marshal_shared_emit_struct_free (mb, klass, conv_arg);
+		emit_struct_free (mb, klass, conv_arg);
 
 		if (m_type_is_byref (t))
 			mono_mb_patch_branch (mb, pos);
@@ -1578,7 +1582,6 @@ emit_marshal_safehandle_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 	return conv_arg;
 }
 
-
 static int
 emit_marshal_object_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 		     MonoMarshalSpec *spec,
@@ -1599,7 +1602,7 @@ emit_marshal_object_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 
 		if (mono_class_from_mono_type_internal (t) == mono_defaults.object_class) {
 			char *msg = g_strdup_printf ("Marshalling of type object is not implemented");
-			mono_marshal_shared_mb_emit_exception_marshal_directive  (mb, msg);
+			mono_marshal_shared_mb_emit_exception_marshal_directive (mb, msg);
 			break;
 		}
 
@@ -1607,13 +1610,13 @@ emit_marshal_object_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 			if (m_type_is_byref (t)) {
 				if (!(t->attrs & PARAM_ATTRIBUTE_OUT)) {
 					char *msg = g_strdup_printf ("Byref marshalling of delegates is not implemented.");
-					mono_marshal_shared_mb_emit_exception_marshal_directive  (mb, msg);
+					mono_marshal_shared_mb_emit_exception_marshal_directive (mb, msg);
 				}
 				mono_mb_emit_byte (mb, CEE_LDNULL);
 				mono_mb_emit_stloc (mb, conv_arg);
 			} else {
 				mono_mb_emit_ldarg (mb, argnum);
-				mono_mb_emit_icall_id (mb, mono_marshal_shared_conv_to_icall(MONO_MARSHAL_CONV_DEL_FTN, NULL));
+				mono_mb_emit_icall_id (mb, mono_marshal_shared_conv_to_icall (MONO_MARSHAL_CONV_DEL_FTN, NULL));
 				mono_mb_emit_stloc (mb, conv_arg);
 			}
 		} else if (klass == mono_class_try_get_stringbuilder_class ()) {
@@ -1624,7 +1627,7 @@ emit_marshal_object_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 			if (m_type_is_byref (t)) {
 				if (!(t->attrs & PARAM_ATTRIBUTE_OUT)) {
 					char *msg = g_strdup_printf ("Byref marshalling of stringbuilders is not implemented.");
-					mono_marshal_shared_mb_emit_exception_marshal_directive  (mb, msg);
+					mono_marshal_shared_mb_emit_exception_marshal_directive (mb, msg);
 				}
 				break;
 			}
@@ -1635,7 +1638,7 @@ emit_marshal_object_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 
 			if (conv == MONO_MARSHAL_CONV_INVALID) {
 				char *msg = g_strdup_printf ("stringbuilder marshalling conversion %d not implemented", encoding);
-				mono_marshal_shared_mb_emit_exception_marshal_directive  (mb, msg);
+				mono_marshal_shared_mb_emit_exception_marshal_directive (mb, msg);
 				break;
 			}
 
@@ -1643,7 +1646,7 @@ emit_marshal_object_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 			if (m_type_is_byref (t))
 				mono_mb_emit_byte (mb, CEE_LDIND_I);
 
-			mono_mb_emit_icall_id (mb, mono_marshal_shared_conv_to_icall(conv, NULL));
+			mono_mb_emit_icall_id (mb, mono_marshal_shared_conv_to_icall (conv, NULL));
 			mono_mb_emit_stloc (mb, conv_arg);
 		} else if (m_class_is_blittable (klass)) {
 			mono_mb_emit_byte (mb, CEE_LDNULL);
@@ -1748,7 +1751,7 @@ emit_marshal_object_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 				mono_mb_emit_ldarg (mb, argnum);
 				mono_mb_emit_ldloc (mb, conv_arg);
 
-				mono_mb_emit_icall_id (mb, mono_marshal_shared_conv_to_icall(conv, NULL));
+				mono_mb_emit_icall_id (mb, mono_marshal_shared_conv_to_icall (conv, NULL));
 			}
 
 			if (need_free) {
@@ -1764,7 +1767,7 @@ emit_marshal_object_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 				mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
 				mono_mb_emit_op (mb, CEE_MONO_CLASSCONST, klass);
 				mono_mb_emit_ldloc (mb, conv_arg);
-				mono_mb_emit_icall_id (mb, mono_marshal_shared_conv_to_icall(MONO_MARSHAL_CONV_FTN_DEL, NULL));
+				mono_mb_emit_icall_id (mb, mono_marshal_shared_conv_to_icall (MONO_MARSHAL_CONV_FTN_DEL, NULL));
 				mono_mb_emit_byte (mb, CEE_STIND_REF);
 			}
 			break;
@@ -1803,7 +1806,7 @@ emit_marshal_object_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 			mono_marshal_shared_emit_struct_conv (mb, klass, TRUE);
 
 			/* Free the structure returned by the native code */
-			mono_marshal_shared_emit_struct_free (mb, klass, conv_arg);
+			emit_struct_free (mb, klass, conv_arg);
 
 			if (m->orig_conv_args [argnum]) {
 				/*
@@ -1817,7 +1820,7 @@ emit_marshal_object_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 				if (!(t->attrs & PARAM_ATTRIBUTE_OUT)) {
 					g_assert (m->orig_conv_args [argnum]);
 
-					mono_marshal_shared_emit_struct_free (mb, klass, m->orig_conv_args [argnum]);
+					emit_struct_free (mb, klass, m->orig_conv_args [argnum]);
 				}
 
 				mono_mb_emit_ldloc (mb, conv_arg);
@@ -1828,7 +1831,7 @@ emit_marshal_object_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 		}
 		else
 			/* Free the original structure passed to native code */
-			mono_marshal_shared_emit_struct_free (mb, klass, conv_arg);
+			emit_struct_free (mb, klass, conv_arg);
 
 		mono_mb_patch_branch (mb, pos);
 		break;
@@ -1847,12 +1850,12 @@ emit_marshal_object_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 			mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
 			mono_mb_emit_op (mb, CEE_MONO_CLASSCONST, klass);
 			mono_mb_emit_ldloc (mb, 0);
-			mono_mb_emit_icall_id (mb, mono_marshal_shared_conv_to_icall(MONO_MARSHAL_CONV_FTN_DEL, NULL));
+			mono_mb_emit_icall_id (mb, mono_marshal_shared_conv_to_icall (MONO_MARSHAL_CONV_FTN_DEL, NULL));
 			mono_mb_emit_stloc (mb, 3);
 		} else if (klass == mono_class_try_get_stringbuilder_class ()) {
 			// FIXME:
 			char *msg = g_strdup_printf ("Return marshalling of stringbuilders is not implemented.");
-			mono_marshal_shared_mb_emit_exception_marshal_directive  (mb, msg);
+			mono_marshal_shared_mb_emit_exception_marshal_directive (mb, msg);
 		} else {
 			/* set src */
 			mono_mb_emit_stloc (mb, 0);
@@ -1883,7 +1886,7 @@ emit_marshal_object_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 			/* emit conversion code */
 			mono_marshal_shared_emit_struct_conv (mb, klass, TRUE);
 
-			mono_marshal_shared_emit_struct_free (mb, klass, loc);
+			emit_struct_free (mb, klass, loc);
 
 			/* Free the pointer allocated by unmanaged code */
 			mono_mb_emit_ldloc (mb, loc);
@@ -1901,7 +1904,7 @@ emit_marshal_object_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 			mono_mb_emit_ldarg (mb, argnum);
 			if (m_type_is_byref (t))
 				mono_mb_emit_byte (mb, CEE_LDIND_I);
-			mono_mb_emit_icall_id (mb, mono_marshal_shared_conv_to_icall(MONO_MARSHAL_CONV_FTN_DEL, NULL));
+			mono_mb_emit_icall_id (mb, mono_marshal_shared_conv_to_icall (MONO_MARSHAL_CONV_FTN_DEL, NULL));
 			mono_mb_emit_stloc (mb, conv_arg);
 			break;
 		}
@@ -1976,7 +1979,7 @@ emit_marshal_object_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 				int stind_op;
 				mono_mb_emit_ldarg (mb, argnum);
 				mono_mb_emit_ldloc (mb, conv_arg);
-				mono_mb_emit_icall_id (mb, mono_marshal_shared_conv_to_icall(MONO_MARSHAL_CONV_DEL_FTN, &stind_op));
+				mono_mb_emit_icall_id (mb, mono_marshal_shared_conv_to_icall (MONO_MARSHAL_CONV_DEL_FTN, &stind_op));
 				mono_mb_emit_byte (mb, stind_op);
 				break;
 			}
@@ -2036,7 +2039,7 @@ emit_marshal_object_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 
 	case MARSHAL_ACTION_MANAGED_CONV_RESULT:
 		if (m_class_is_delegate (klass)) {
-			mono_mb_emit_icall_id (mb, mono_marshal_shared_conv_to_icall(MONO_MARSHAL_CONV_DEL_FTN, NULL));
+			mono_mb_emit_icall_id (mb, mono_marshal_shared_conv_to_icall (MONO_MARSHAL_CONV_DEL_FTN, NULL));
 			mono_mb_emit_stloc (mb, 3);
 			break;
 		}
