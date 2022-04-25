@@ -145,6 +145,7 @@ bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode) const
     return false;
 }
 
+#ifdef TARGET_ARM64
 //------------------------------------------------------------------------
 // IsContainableBinaryOp: Is the child node containable from the parent node?
 //
@@ -194,6 +195,7 @@ bool Lowering::IsContainableBinaryOp(GenTree* parentNode, GenTree* childNode) co
 
     return false;
 }
+#endif // TARGET_ARM64
 
 //------------------------------------------------------------------------
 // LowerStoreLoc: Lower a store of a lclVar
