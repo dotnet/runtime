@@ -4813,6 +4813,8 @@ bool ValueNumStore::IsVNHandle(ValueNum vn)
 //
 ValueNum ValueNumStore::GetRelatedRelop(ValueNum vn, VN_RELATION_KIND vrk)
 {
+    assert(vn == VNNormalValue(vn));
+
     if (vrk == VN_RELATION_KIND::VRK_Same)
     {
         return vn;
@@ -4823,16 +4825,10 @@ ValueNum ValueNumStore::GetRelatedRelop(ValueNum vn, VN_RELATION_KIND vrk)
         return NoVN;
     }
 
-    // Pull out any exception set.
-    //
-    ValueNum valueVN;
-    ValueNum excepVN;
-    VNUnpackExc(vn, &valueVN, &excepVN);
-
     // Verify we have a binary func application
     //
     VNFuncApp funcAttr;
-    if (!GetVNFunc(valueVN, &funcAttr))
+    if (!GetVNFunc(vn, &funcAttr))
     {
         return NoVN;
     }
@@ -4932,8 +4928,7 @@ ValueNum ValueNumStore::GetRelatedRelop(ValueNum vn, VN_RELATION_KIND vrk)
 
     // Create the resulting VN, swapping arguments if needed.
     //
-    ValueNum newVN  = VNForFunc(TYP_INT, newFunc, funcAttr.m_args[swap ? 1 : 0], funcAttr.m_args[swap ? 0 : 1]);
-    ValueNum result = VNWithExc(newVN, excepVN);
+    ValueNum result = VNForFunc(TYP_INT, newFunc, funcAttr.m_args[swap ? 1 : 0], funcAttr.m_args[swap ? 0 : 1]);
 
     return result;
 }
