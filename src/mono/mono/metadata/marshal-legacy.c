@@ -1113,6 +1113,7 @@ emit_marshal_vtype_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 		g_assert_not_reached ();
 	}
 	return conv_arg;
+
 }
 
 static int
