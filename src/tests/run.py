@@ -849,14 +849,14 @@ def run_tests(args,
 
     # Setup the environment
     if args.long_gc:
-        print("Running Long GC Tests, extending timeout to 20 minutes.")
-        per_test_timeout = 20*60*1000
+        print("Running Long GC Tests, extending timeout to 40 minutes.")
+        per_test_timeout = 40*60*1000
         print("Setting RunningLongGCTests=1")
         os.environ["RunningLongGCTests"] = "1"
 
     if args.gcsimulator:
-        print("Running GCSimulator tests, extending timeout to one hour.")
-        per_test_timeout = 60*60*1000
+        print("Running GCSimulator tests, extending timeout to two hours.")
+        per_test_timeout = 120*60*1000
         print("Setting RunningGCSimulatorTests=1")
         os.environ["RunningGCSimulatorTests"] = "1"
 
@@ -875,8 +875,8 @@ def run_tests(args,
         os.environ["LargeVersionBubble"] = "true"
 
     if gc_stress:
-        print("Running GCStress, extending timeout to 120 minutes.")
-        per_test_timeout = 120*60*1000
+        print("Running GCStress, extending timeout to 240 minutes.")
+        per_test_timeout = 240*60*1000
 
     if args.limited_core_dumps:
         setup_coredump_generation(args.host_os)
@@ -885,7 +885,7 @@ def run_tests(args,
         print("Running test in an unloadable AssemblyLoadContext")
         os.environ["CLRCustomTestLauncher"] = args.runincontext_script_path
         os.environ["RunInUnloadableContext"] = "1";
-        per_test_timeout = 20*60*1000
+        per_test_timeout = 40*60*1000
 
     if args.tiering_test:
         print("Running test repeatedly to promote methods to tier1")
