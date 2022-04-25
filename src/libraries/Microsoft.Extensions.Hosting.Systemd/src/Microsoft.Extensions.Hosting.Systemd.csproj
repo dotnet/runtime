@@ -8,7 +8,6 @@
     <IsPackable>true</IsPackable>
     <PackageDescription>.NET hosting infrastructure for Systemd Services.</PackageDescription>
     <Nullable>annotations</Nullable>
-    <EnableLibraryImportGenerator>true</EnableLibraryImportGenerator>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">

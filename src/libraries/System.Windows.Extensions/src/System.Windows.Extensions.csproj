@@ -4,7 +4,6 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Nullable>annotations</Nullable>
     <Nullable>enable</Nullable>
-    <EnableLibraryImportGenerator>true</EnableLibraryImportGenerator>
     <IsPackable>true</IsPackable>
     <PackageDescription>Provides miscellaneous Windows-specific types
 

@@ -4,7 +4,6 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NoWarn>$(NoWarn);CA2249</NoWarn>
     <Nullable>enable</Nullable>
-    <EnableLibraryImportGenerator>true</EnableLibraryImportGenerator>
     <IsPackable>true</IsPackable>
     <PackageDescription>Provides the System.ServiceProcess.ServiceContainer class, which allows you to connect to a running or stopped service, manipulate it, or get information about it.
 

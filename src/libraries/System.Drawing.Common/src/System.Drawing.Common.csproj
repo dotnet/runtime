@@ -6,7 +6,6 @@
     <WarningsNotAsErrors>CS0618</WarningsNotAsErrors>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <Nullable>enable</Nullable>
-    <EnableLibraryImportGenerator>true</EnableLibraryImportGenerator>
     <IsPackable>true</IsPackable>
     <AddXamarinPlaceholderFilesToPackage>true</AddXamarinPlaceholderFilesToPackage>
     <PackageDescription>Provides access to GDI+ graphics functionality.

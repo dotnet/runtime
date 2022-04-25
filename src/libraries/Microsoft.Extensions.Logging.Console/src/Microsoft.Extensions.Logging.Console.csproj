@@ -7,7 +7,6 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>$(DefineConstants);NO_SUPPRESS_GC_TRANSITION</DefineConstants>
     <IncludePlatformAttributes>true</IncludePlatformAttributes>
-    <EnableLibraryImportGenerator>true</EnableLibraryImportGenerator>
     <IsPackable>true</IsPackable>
     <PackageDescription>Console logger provider implementation for Microsoft.Extensions.Logging.</PackageDescription>
   </PropertyGroup>

@@ -8,7 +8,6 @@
             CA1846: Prefer 'AsSpan' over 'Substring' when span-based overloads are available -->
     <NoWarn>$(NoWarn);CA1845;CA1846</NoWarn>
     <Nullable>annotations</Nullable>
-    <EnableLibraryImportGenerator>true</EnableLibraryImportGenerator>
     <IsPackable>true</IsPackable>
     <PackageDescription>Provides the System.Diagnostics.EventLog class, which allows the applications to use the windows event log service.
 
