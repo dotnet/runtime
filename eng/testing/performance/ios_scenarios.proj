@@ -82,12 +82,12 @@
 
           # Testing commands
           $(Python) test.py devicestartup --device-type ios --package-path MauiTesting.app --package-name net.dot.mauitesting --scenario-name "%(Identity)"
-          ((result|=$?))
+          ((result=$?))
           echo Result: $result
-          echo NewPath: $ORIGPYPATH
           
           # Post commands
           $(Python) post.py
+          echo NewPath: $ORIGPYPATH Helix Py Path: $HELIX_PYTHONPATH
           export PYTHONPATH=$ORIGPYPATH
           exit $result
         ]]>
@@ -111,12 +111,12 @@
 
           # Testing commands
           $(Python) test.py devicestartup --device-type ios --package-path Microsoft.NetConf2021.Maui.app --package-name net.dot.netconf2021.maui --scenario-name "%(Identity)"
-          ((result|=$?))
+          ((result=$?))
           echo Result: $result
-          echo NewPath: $ORIGPYPATH
           
           # Post commands
           $(Python) post.py
+          echo NewPath: $ORIGPYPATH Helix Py Path: $HELIX_PYTHONPATH
           export PYTHONPATH=$ORIGPYPATH
           exit $result
         ]]>
