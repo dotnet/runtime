@@ -220,18 +220,22 @@ namespace System.Text.Json.Serialization.Metadata
             // also assigns JsonPropertyInfo's JsonTypeInfo which causes SO if there are any
             // cycles in the object graph. For that reason properties cannot be added immediately.
             // This is a no-op for ReflectionJsonTypeInfo
-            LateAddProperties();
+            var propertyCache = LateAddProperties() ?? PropertyCache;
 
             DataExtensionProperty?.EnsureConfigured();
 
-            if (converter.ConverterStrategy == ConverterStrategy.Object && PropertyCache != null)
+            if (converter.ConverterStrategy == ConverterStrategy.Object && propertyCache != null)
             {
-                foreach (var jsonPropertyInfoKv in PropertyCache.List)
+                foreach (var jsonPropertyInfoKv in propertyCache.List)
                 {
                     JsonPropertyInfo jsonPropertyInfo = jsonPropertyInfoKv.Value!;
                     jsonPropertyInfo.DeclaringTypeNumberHandling = NumberHandling;
                     jsonPropertyInfo.EnsureConfigured();
                 }
+
+                // This code can be run in multiple threads therefore we assign only after all properties has been configured
+                // This only matters in case we call LateAddProperties
+                PropertyCache = propertyCache;
 
                 if (converter.ConstructorIsParameterized)
                 {
@@ -280,7 +284,7 @@ namespace System.Text.Json.Serialization.Metadata
         }
 #endif
 
-        internal virtual void LateAddProperties() { }
+        internal virtual JsonPropertyDictionary<JsonPropertyInfo>? LateAddProperties() { return null; }
 
         internal virtual JsonParameterInfoValues[] GetParameterInfoValues()
         {

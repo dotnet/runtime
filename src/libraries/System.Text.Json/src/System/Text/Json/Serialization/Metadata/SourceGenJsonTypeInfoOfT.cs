@@ -92,9 +92,9 @@ namespace System.Text.Json.Serialization.Metadata
             return new JsonMetadataServicesConverter<T>(converterCreator, strategy);
         }
 
-        internal override void LateAddProperties()
+        internal override JsonPropertyDictionary<JsonPropertyInfo>? LateAddProperties()
         {
-            AddPropertiesUsingSourceGenInfo();
+            return AddPropertiesUsingSourceGenInfo();
         }
 
         internal override JsonParameterInfoValues[] GetParameterInfoValues()
@@ -110,11 +110,11 @@ namespace System.Text.Json.Serialization.Metadata
             return array;
         }
 
-        internal void AddPropertiesUsingSourceGenInfo()
+        internal JsonPropertyDictionary<JsonPropertyInfo>? AddPropertiesUsingSourceGenInfo()
         {
             if (PropertyInfoForTypeInfo.ConverterStrategy != ConverterStrategy.Object)
             {
-                return;
+                return null;
             }
 
             JsonSerializerContext? context = Options.JsonSerializerContext;
@@ -123,23 +123,23 @@ namespace System.Text.Json.Serialization.Metadata
             {
                 if (typeof(T) == typeof(object))
                 {
-                    return;
+                    return null;
                 }
 
                 if (PropertyInfoForTypeInfo.ConverterBase.ElementType != null)
                 {
                     // Nullable<> or F# optional converter's strategy is set to element's strategy
-                    return;
+                    return null;
                 }
 
                 if (SerializeHandler != null && Options.JsonSerializerContext?.CanUseSerializationLogic == true)
                 {
                     ThrowOnDeserialize = true;
-                    return;
+                    return null;
                 }
 
                 ThrowHelper.ThrowInvalidOperationException_NoMetadataForTypeProperties(context, Type);
-                return;
+                return null;
             }
 
             Dictionary<string, JsonPropertyInfo>? ignoredMembers = null;
@@ -179,7 +179,7 @@ namespace System.Text.Json.Serialization.Metadata
                 CacheMember(jsonPropertyInfo, propertyCache, ref ignoredMembers);
             }
 
-            PropertyCache = propertyCache;
+            return propertyCache;
         }
 
         private void SetCreateObjectFunc(Func<T>? createObjectFunc)
