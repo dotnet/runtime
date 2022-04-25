@@ -37,18 +37,12 @@ namespace System.Text.Json.SourceGeneration.Tests
                     Assert.Contains("JsonSerializerOptions", exAsStr);
 
                     // This test uses reflection to:
-                    // - Access JsonSerializerOptions.s_defaultSimpleConverters
-                    // - Access JsonSerializerOptions.s_defaultFactoryConverters
-                    // - Access JsonSerializerOptions.s_typeInfoCreationFunc
+                    // - Access JsonSerializerOptions.s_reflectionTypeInfoResolver
                     //
                     // If any of them changes, this test will need to be kept in sync.
 
-                    // Confirm built-in converters not set.
-                    AssertFieldNull("s_defaultSimpleConverters", optionsInstance: null);
-                    AssertFieldNull("s_defaultFactoryConverters", optionsInstance: null);
-
-                    // Confirm type info dynamic creator not set.
-                    AssertFieldNull("s_typeInfoCreationFunc", optionsInstance: null);
+                    // Confirm reflection resolver not set.
+                    AssertFieldNull("s_reflectionTypeInfoResolver", optionsInstance: null);
 
                     static void AssertFieldNull(string fieldName, JsonSerializerOptions? optionsInstance)
                     {

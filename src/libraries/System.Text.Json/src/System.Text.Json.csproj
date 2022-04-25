@@ -124,6 +124,7 @@ System.Text.Json.Nodes.JsonValue</PackageDescription>
     <Compile Include="System\Text\Json\Serialization\JsonSerializer.Write.Node.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonSerializerContext.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonUnknownDerivedTypeHandling.cs" />
+    <Compile Include="System\Text\Json\Serialization\Metadata\DefaultJsonTypeInfoResolver.cs" />
     <Compile Include="System\Text\Json\Serialization\PolymorphicSerializationState.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonPolymorphicTypeConfiguration.cs" />
     <Compile Include="System\Text\Json\Serialization\ReferenceEqualsWrapper.cs" />

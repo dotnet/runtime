@@ -74,10 +74,6 @@ namespace System.Text.Json
         private void InitializeCachingContext()
         {
             _cachingContext = TrackedCachingContexts.GetOrCreate(this);
-            if (IsInitializedForReflectionSerializer)
-            {
-                _cachingContext.Options.IsInitializedForReflectionSerializer = true;
-            }
         }
 
         /// <summary>

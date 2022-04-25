@@ -364,10 +364,7 @@ namespace System.Text.Json
             }
 
             options ??= JsonSerializerOptions.Default;
-            if (!options.IsInitializedForReflectionSerializer)
-            {
-                options.InitializeForReflectionSerializer();
-            }
+            JsonSerializerOptions.EnsureInitializedForReflectionSerializer();
 
             return CreateAsyncEnumerableDeserializer(utf8Json, options, cancellationToken);
 

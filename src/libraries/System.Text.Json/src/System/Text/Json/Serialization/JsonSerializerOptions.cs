@@ -601,28 +601,20 @@ namespace System.Text.Json
 
         /// <summary>
         /// Initializes the converters for the reflection-based serializer.
-        /// <seealso cref="InitializeForReflectionSerializer"/> must be checked before calling.
         /// </summary>
         [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
-        internal void InitializeForReflectionSerializer()
+        [MemberNotNull(nameof(s_reflectionTypeInfoResolver))]
+        internal static void EnsureInitializedForReflectionSerializer()
         {
-            RootReflectionSerializerDependencies();
-            Volatile.Write(ref IsInitializedForReflectionSerializer, true);
-            if (_cachingContext != null)
-            {
-                _cachingContext.Options.IsInitializedForReflectionSerializer = true;
-            }
+            s_reflectionTypeInfoResolver ??= new DefaultJsonTypeInfoResolver();
         }
 
         private JsonTypeInfo GetJsonTypeInfoFromContextOrCreate(Type type)
         {
             JsonTypeInfo? info = _serializerContext?.GetTypeInfo(type);
-            if (info == null && IsInitializedForReflectionSerializer)
+            if (info == null && s_reflectionTypeInfoResolver != null)
             {
-                Debug.Assert(
-                    s_typeInfoCreationFunc != null,
-                    "Reflection-based JsonTypeInfo creator should be initialized if IsInitializedForReflectionSerializer is true.");
-                info = s_typeInfoCreationFunc(type, this);
+                info = s_reflectionTypeInfoResolver.GetTypeInfo(type, this);
             }
 
             if (info == null)
