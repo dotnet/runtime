@@ -1597,28 +1597,32 @@ public:
         unsigned const tmpNum             = compiler->lvaGrabTemp(true DEBUGARG("handle histogram profile tmp"));
         compiler->lvaTable[tmpNum].lvType = TYP_REF;
 
-        unsigned          helper;
-        GenTreeCall::Use* args = nullptr;
+        GenTree* helperCallNode;
         if (methodHistogram != nullptr)
         {
             GenTree* const tmpNode           = compiler->gtNewLclvNode(tmpNum, TYP_REF);
             GenTree* const baseMethodNode    = compiler->gtNewIconEmbMethHndNode(call->gtCallMethHnd);
             GenTree* const methodProfileNode = compiler->gtNewIconNode((ssize_t)methodHistogram, TYP_I_IMPL);
             GenTree* const classProfileNode  = compiler->gtNewIconNode((ssize_t)typeHistogram, TYP_I_IMPL);
-            args   = compiler->gtNewCallArgs(tmpNode, baseMethodNode, methodProfileNode, classProfileNode);
-            helper = is32 ? CORINFO_HELP_METHODPROFILE32 : CORINFO_HELP_METHODPROFILE64;
+            helperCallNode =
+                compiler->gtNewHelperCallNode(
+                    is32 ? CORINFO_HELP_METHODPROFILE32 : CORINFO_HELP_METHODPROFILE64,
+                    TYP_VOID,
+                    tmpNode, baseMethodNode, methodProfileNode, classProfileNode);
         }
         else
         {
             GenTree* const tmpNode          = compiler->gtNewLclvNode(tmpNum, TYP_REF);
             GenTree* const classProfileNode = compiler->gtNewIconNode((ssize_t)typeHistogram, TYP_I_IMPL);
-            args                            = compiler->gtNewCallArgs(tmpNode, classProfileNode);
-            helper                          = is32 ? CORINFO_HELP_CLASSPROFILE32 : CORINFO_HELP_CLASSPROFILE64;
+            helperCallNode =
+                compiler->gtNewHelperCallNode(
+                    is32 ? CORINFO_HELP_CLASSPROFILE32 : CORINFO_HELP_CLASSPROFILE64,
+                    TYP_VOID,
+                    tmpNode, classProfileNode);
         }
 
         // Generate the IR...
         //
-        GenTree* const helperCallNode = compiler->gtNewHelperCallNode(helper, TYP_VOID, args);
         GenTree* const tmpNode2       = compiler->gtNewLclvNode(tmpNum, TYP_REF);
         GenTree* const callCommaNode  = compiler->gtNewOperNode(GT_COMMA, TYP_REF, helperCallNode, tmpNode2);
         GenTree* const tmpNode3       = compiler->gtNewLclvNode(tmpNum, TYP_REF);
