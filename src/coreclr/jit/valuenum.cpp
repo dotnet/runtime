@@ -4529,6 +4529,78 @@ ValueNum ValueNumStore::ExtendPtrVN(GenTree* opA, FieldSeqNode* fldSeq, ssize_t 
 }
 
 //------------------------------------------------------------------------
+// fgValueNumberLocalStore: Assign VNs to the SSA definition corresponding
+//                          to a local store.
+//
+// Or update the current heap state in case the local was address-exposed.
+//
+// Arguments:
+//    storeNode  - The node performing the store
+//    lclDefNode - The local node representating the SSA definition
+//    offset     - The offset, relative to the local, of the target location
+//    storeSize  - The number of bytes being stored
+//    value      - (VN of) the value being stored
+//    normalize  - Whether "value" should be normalized to the local's type
+//                 (in case the store overwrites the entire variable) before
+//                 being written to the SSA descriptor
+//
+void Compiler::fgValueNumberLocalStore(GenTree*             storeNode,
+                                       GenTreeLclVarCommon* lclDefNode,
+                                       ssize_t              offset,
+                                       unsigned             storeSize,
+                                       ValueNumPair         value,
+                                       bool                 normalize)
+{
+    // Should not have been recorded as updating the GC heap.
+    assert(!GetMemorySsaMap(GcHeap)->Lookup(storeNode));
+
+    LclVarDsc* varDsc       = lvaGetDesc(lclDefNode);
+    unsigned   lclDefSsaNum = GetSsaNumForLocalVarDef(lclDefNode);
+
+    if (lclDefSsaNum != SsaConfig::RESERVED_SSA_NUM)
+    {
+        unsigned lclSize = lvaLclExactSize(lclDefNode->GetLclNum());
+
+        ValueNumPair newLclValue;
+        if (vnStore->LoadStoreIsEntire(lclSize, offset, storeSize))
+        {
+            newLclValue = normalize ? vnStore->VNPairForLoadStoreBitCast(value, varDsc->TypeGet(), lclSize) : value;
+        }
+        else
+        {
+            assert((lclDefNode->gtFlags & GTF_VAR_USEASG) != 0);
+            // The "lclDefNode" node will be labeled with the SSA number of its "use" identity
+            // (we looked in a side table above for its "def" identity).  Look up that value.
+            ValueNumPair oldLclValue = varDsc->GetPerSsaData(lclDefNode->GetSsaNum())->m_vnPair;
+            newLclValue              = vnStore->VNPairForStore(oldLclValue, lclSize, offset, storeSize, value);
+        }
+
+        // Any out-of-bounds stores should have made the local address-exposed.
+        assert(newLclValue.BothDefined());
+
+        // We normalize types stored in local locations because things outside VN itself look at them.
+        assert((genActualType(vnStore->TypeOfVN(newLclValue.GetLiberal())) == genActualType(varDsc)) || !normalize);
+
+        varDsc->GetPerSsaData(lclDefSsaNum)->m_vnPair = newLclValue;
+
+        JITDUMP("Tree [%06u] assigned VN to local var V%02u/%d: ", dspTreeID(storeNode), lclDefNode->GetLclNum(),
+                lclDefSsaNum);
+        JITDUMPEXEC(vnpPrint(newLclValue, 1));
+        JITDUMP("\n");
+    }
+    else if (varDsc->IsAddressExposed())
+    {
+        ValueNum heapVN = vnStore->VNForExpr(compCurBB, TYP_HEAP);
+        recordAddressExposedLocalStore(storeNode, heapVN DEBUGARG("local assign"));
+    }
+    else
+    {
+        JITDUMP("Tree [%06u] assigns to non-address-taken local var V%02u; excluded from SSA, so value not tracked\n",
+                dspTreeID(storeNode), lclDefNode->GetLclNum());
+    }
+}
+
+//------------------------------------------------------------------------
 // fgValueNumberArrayElemLoad: Value number a load from an array element.
 //
 // Arguments:
@@ -4680,78 +4752,6 @@ void Compiler::fgValueNumberArrayElemStore(GenTree* storeNode, VNFuncApp* addrFu
     ValueNum newHeapVN = vnStore->VNForMapStore(fgCurMemoryVN[GcHeap], elemTypeEqVN, newValAtArrType);
 
     recordGcHeapStore(storeNode, newHeapVN DEBUGARG("array element store"));
-}
-
-//------------------------------------------------------------------------
-// fgValueNumberLocalStore: Assign VNs to the SSA definition corresponding
-//                          to a local store.
-//
-// Or update the current heap state in case the local was address-exposed.
-//
-// Arguments:
-//    storeNode  - The node performing the store
-//    lclDefNode - The local node representating the SSA definition
-//    storeSize  - The number of bytes being stored
-//    offset     - The offset, relative to the local, of the target location
-//    value      - (VN of) the value being stored
-//    normalize  - Whether "value" should be normalized to the local's type
-//                 (in case the store overwrites the entire variable) before
-//                 being written to the SSA descriptor
-//
-void Compiler::fgValueNumberLocalStore(GenTree*             storeNode,
-                                       GenTreeLclVarCommon* lclDefNode,
-                                       unsigned             storeSize,
-                                       ssize_t              offset,
-                                       ValueNumPair         value,
-                                       bool                 normalize)
-{
-    // Should not have been recorded as updating the GC heap.
-    assert(!GetMemorySsaMap(GcHeap)->Lookup(storeNode));
-
-    LclVarDsc* varDsc       = lvaGetDesc(lclDefNode);
-    unsigned   lclDefSsaNum = GetSsaNumForLocalVarDef(lclDefNode);
-
-    if (lclDefSsaNum != SsaConfig::RESERVED_SSA_NUM)
-    {
-        unsigned lclSize = lvaLclExactSize(lclDefNode->GetLclNum());
-
-        ValueNumPair newLclValue;
-        if (vnStore->LoadStoreIsEntire(lclSize, offset, storeSize))
-        {
-            newLclValue = normalize ? vnStore->VNPairForLoadStoreBitCast(value, varDsc->TypeGet(), lclSize) : value;
-        }
-        else
-        {
-            assert((lclDefNode->gtFlags & GTF_VAR_USEASG) != 0);
-            // The "lclDefNode" node will be labeled with the SSA number of its "use" identity
-            // (we looked in a side table above for its "def" identity).  Look up that value.
-            ValueNumPair oldLclValue = varDsc->GetPerSsaData(lclDefNode->GetSsaNum())->m_vnPair;
-            newLclValue              = vnStore->VNPairForStore(oldLclValue, lclSize, offset, storeSize, value);
-        }
-
-        // Any out-of-bounds stores should have made the local address-exposed.
-        assert(newLclValue.BothDefined());
-
-        // We normalize types stored in local locations because things outside VN itself look at them.
-        assert((genActualType(vnStore->TypeOfVN(newLclValue.GetLiberal())) == genActualType(varDsc)) || !normalize);
-
-        varDsc->GetPerSsaData(lclDefSsaNum)->m_vnPair = newLclValue;
-
-        JITDUMP("Tree [%06u] assigned VN to local var V%02u/%d: ", dspTreeID(storeNode), lclDefNode->GetLclNum(),
-                lclDefSsaNum);
-        JITDUMPEXEC(vnpPrint(newLclValue, 1));
-        JITDUMP("\n");
-    }
-    else if (varDsc->IsAddressExposed())
-    {
-        ValueNum heapVN = vnStore->VNForExpr(compCurBB, TYP_HEAP);
-        recordAddressExposedLocalStore(storeNode, heapVN DEBUGARG("local assign"));
-    }
-    else
-    {
-        JITDUMP("Tree [%06u] assigns to non-address-taken local var V%02u; excluded from SSA, so value not tracked\n",
-                dspTreeID(storeNode), lclDefNode->GetLclNum());
-    }
 }
 
 //------------------------------------------------------------------------
@@ -8059,7 +8059,7 @@ void Compiler::fgValueNumberAssignment(GenTreeOp* tree)
         case GT_LCL_VAR:
         {
             GenTreeLclVarCommon* lcl = lhs->AsLclVarCommon();
-            fgValueNumberLocalStore(tree, lcl, lvaLclExactSize(lcl->GetLclNum()), 0, rhsVNPair, /* normalize */ false);
+            fgValueNumberLocalStore(tree, lcl, 0, lvaLclExactSize(lcl->GetLclNum()), rhsVNPair, /* normalize */ false);
         }
         break;
 
@@ -8080,7 +8080,7 @@ void Compiler::fgValueNumberAssignment(GenTreeOp* tree)
 
             // TODO-PhysicalVN: remove this quirk, it was added to avoid diffs.
             bool normalize = ((lclFld->gtFlags & GTF_VAR_USEASG) != 0);
-            fgValueNumberLocalStore(tree, lclFld, storeSize, storeOffset, rhsVNPair, normalize);
+            fgValueNumberLocalStore(tree, lclFld, storeOffset, storeSize, rhsVNPair, normalize);
         }
         break;
 
@@ -8149,7 +8149,7 @@ void Compiler::fgValueNumberAssignment(GenTreeOp* tree)
                     storeSize = lvaLclExactSize(lclVarTree->GetLclNum());
                 }
 
-                fgValueNumberLocalStore(tree, lclVarTree, storeSize, offset, rhsVNPair);
+                fgValueNumberLocalStore(tree, lclVarTree, offset, storeSize, rhsVNPair);
             }
             else
             {
