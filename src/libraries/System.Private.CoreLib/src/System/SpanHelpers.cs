@@ -423,8 +423,7 @@ namespace System
                     Vector256<int> tempFirst = Vector256.LoadUnsafe(ref buf, firstOffset);
                     Vector256<int> tempLast = Vector256.LoadUnsafe(ref buf, lastOffset);
 
-                    // Avx2 operates on two 128-bit lanes rather than the full 256-bit vector.
-                    // Perform a shuffle to reverse each 128-bit lane, then permute to finish reversing the vector:
+                    // Permute to reverse each vector:
                     //     +-------------------------------+
                     //     | A | B | C | D | E | F | G | H |
                     //     +-------------------------------+
@@ -497,8 +496,7 @@ namespace System
                     Vector256<long> tempFirst = Vector256.LoadUnsafe(ref buf, firstOffset);
                     Vector256<long> tempLast = Vector256.LoadUnsafe(ref buf, lastOffset);
 
-                    // Avx2 operates on two 128-bit lanes rather than the full 256-bit vector.
-                    // Perform a shuffle to reverse each 128-bit lane, then permute to finish reversing the vector:
+                    // Permute to reverse each vector:
                     //     +---------------+
                     //     | A | B | C | D |
                     //     +---------------+

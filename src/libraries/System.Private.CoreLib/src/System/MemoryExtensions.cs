@@ -1545,13 +1545,11 @@ namespace System
         /// </summary>
         public static void Reverse<T>(this Span<T> span)
         {
-            if (span.Length <= 1)
+            if (span.Length > 1)
             {
-                return;
+                SpanHelpers.Reverse(ref MemoryMarshal.GetReference(span), (nuint)span.Length);
             }
-            SpanHelpers.Reverse(ref MemoryMarshal.GetReference(span), (nuint)span.Length);
         }
-
 
         /// <summary>
         /// Creates a new span over the target array.

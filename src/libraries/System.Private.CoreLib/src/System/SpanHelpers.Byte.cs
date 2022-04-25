@@ -2245,7 +2245,7 @@ namespace System
             {
                 Vector256<byte> reverseMask = Vector256.Create(
                     (byte)15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0, // first 128-bit lane
-                    15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0); // first 128-bit lane
+                    15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0); // second 128-bit lane
                 nuint numElements = (nuint)Vector256<byte>.Count;
                 nuint numIters = (length / numElements) / 2;
                 for (nuint i = 0; i < numIters; i++)
