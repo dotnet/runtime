@@ -711,11 +711,11 @@ namespace System.IO.Tests
 
             if (TestDirectories)
             {
-                Assert.Equal(2, GetEntries(testDir.FullName, "*BBBBBBBBBB*").Length);
+                Assert.Equal(2, GetEntries(testDir.FullName, "*BBBBBBBB*").Length);
             }
             if (TestFiles)
             {
-                Assert.Equal(2, GetEntries(testDir.FullName, "*AAAAAAAAAA*").Length);
+                Assert.Equal(2, GetEntries(testDir.FullName, "*AAAAAAAA*").Length);
             }
         }
 

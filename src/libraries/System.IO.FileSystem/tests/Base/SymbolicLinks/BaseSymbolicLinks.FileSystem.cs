@@ -469,7 +469,6 @@ namespace System.IO.Tests
             Assert.False(targetInfo.Exists);
             Assert.Equal(Path.GetDirectoryName(linkInfo.FullName), Path.GetDirectoryName(targetInfo.FullName));
 
-            linkInfo.Delete();
             Directory.SetCurrentDirectory(Path.GetTempPath());
         }
 
