@@ -341,11 +341,7 @@ asm_diff_parser.add_argument("-retainOnlyTopFiles", action="store_true", help="R
 asm_diff_parser.add_argument("--diff_with_release", action="store_true", help="Specify if this is asmdiff using release binaries.")
 
 # subparser for throughput
-throughput_parser = subparsers.add_parser("tpdiff",
-                                          description=throughput_description, parents=[target_parser, superpmi_common_parser, replay_common_parser, base_diff_parser],
-                                          # Allow overriding build_type with new default
-                                          conflict_handler='resolve')
-
+throughput_parser = subparsers.add_parser("tpdiff", description=throughput_description, parents=[target_parser, superpmi_common_parser, replay_common_parser, base_diff_parser])
 add_core_root_arguments(throughput_parser, "Release", throughput_build_type_help)
 
 # subparser for upload
