@@ -730,6 +730,7 @@ mono_marshal_shared_conv_to_icall(MonoMarshalConv conv, int *ind_store_type)
 	}
 
 	return MONO_JIT_ICALL_ZeroIsReserved;
+
 }
 
 void
