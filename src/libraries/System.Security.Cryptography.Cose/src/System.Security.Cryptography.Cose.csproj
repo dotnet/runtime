@@ -2,7 +2,6 @@
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <Nullable>enable</Nullable>
     <IsPackable>true</IsPackable>
     <!-- Disabling baseline validation since this is a brand new package.
        Once this package has shipped a stable version, the following line

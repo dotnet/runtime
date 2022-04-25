@@ -55,7 +55,7 @@ namespace System.Reflection.Metadata.Ecma335
             {
                 if (baseReader == null)
                 {
-                    throw new ArgumentNullException(nameof(baseReader));
+                    Throw.ArgumentNull(nameof(baseReader));
                 }
 
                 if (baseReader.GetTableRowCount(TableIndex.EncMap) != 0)
@@ -75,7 +75,7 @@ namespace System.Reflection.Metadata.Ecma335
 
                 if (baseHeapSizes == null)
                 {
-                    throw new ArgumentNullException(nameof(baseHeapSizes));
+                    Throw.ArgumentNull(nameof(baseHeapSizes));
                 }
 
                 if (baseHeapSizes.Count != MetadataTokens.HeapCount)

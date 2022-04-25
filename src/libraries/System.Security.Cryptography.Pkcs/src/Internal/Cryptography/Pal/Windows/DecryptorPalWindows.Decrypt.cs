@@ -16,7 +16,7 @@ namespace Internal.Cryptography.Pal.Windows
 {
     internal sealed partial class DecryptorPalWindows : DecryptorPal
     {
-        public unsafe sealed override ContentInfo? TryDecrypt(
+        public sealed unsafe override ContentInfo? TryDecrypt(
             RecipientInfo recipientInfo,
             X509Certificate2? cert,
             AsymmetricAlgorithm? privateKey,

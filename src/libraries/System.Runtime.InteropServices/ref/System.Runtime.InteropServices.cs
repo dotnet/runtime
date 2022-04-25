@@ -99,7 +99,7 @@ namespace System.Runtime.InteropServices
         public AllowReversePInvokeCallsAttribute() { }
     }
     [System.CLSCompliant(false)]
-    [System.Runtime.InteropServices.CustomTypeMarshaller(typeof(string), BufferSize = 0x100,
+    [System.Runtime.InteropServices.CustomTypeMarshallerAttribute(typeof(string), BufferSize = 0x100,
         Features = System.Runtime.InteropServices.CustomTypeMarshallerFeatures.UnmanagedResources
             | System.Runtime.InteropServices.CustomTypeMarshallerFeatures.CallerAllocatedBuffer
             | System.Runtime.InteropServices.CustomTypeMarshallerFeatures.TwoStageMarshalling )]
@@ -110,6 +110,27 @@ namespace System.Runtime.InteropServices
         public byte* ToNativeValue() { throw null; }
         public void FromNativeValue(byte* value) { }
         public string? ToManaged() { throw null; }
+        public void FreeNative() { }
+    }
+    [System.CLSCompliantAttribute(false)]
+    [System.Runtime.InteropServices.CustomTypeMarshallerAttribute(typeof(System.Runtime.InteropServices.CustomTypeMarshallerAttribute.GenericPlaceholder[]),
+        System.Runtime.InteropServices.CustomTypeMarshallerKind.LinearCollection, BufferSize = 0x200,
+        Features = System.Runtime.InteropServices.CustomTypeMarshallerFeatures.UnmanagedResources
+            | System.Runtime.InteropServices.CustomTypeMarshallerFeatures.CallerAllocatedBuffer
+            | System.Runtime.InteropServices.CustomTypeMarshallerFeatures.TwoStageMarshalling)]
+    public unsafe ref struct ArrayMarshaller<T>
+    {
+        public ArrayMarshaller(int sizeOfNativeElement) { }
+        public ArrayMarshaller(T[]? array, int sizeOfNativeElement) { }
+        public ArrayMarshaller(T[]? array, System.Span<byte> buffer, int sizeOfNativeElement) { }
+        public System.ReadOnlySpan<T> GetManagedValuesSource() { throw null; }
+        public System.Span<T> GetManagedValuesDestination(int length) { throw null; }
+        public System.ReadOnlySpan<byte> GetNativeValuesSource(int length) { throw null; }
+        public System.Span<byte> GetNativeValuesDestination() { throw null; }
+        public ref byte GetPinnableReference() { throw null; }
+        public byte* ToNativeValue() { throw null; }
+        public void FromNativeValue(byte* value) { }
+        public T[]? ToManaged() { throw null; }
         public void FreeNative() { }
     }
     public readonly partial struct ArrayWithOffset : System.IEquatable<System.Runtime.InteropServices.ArrayWithOffset>
@@ -922,6 +943,11 @@ namespace System.Runtime.InteropServices
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public bool Equals(System.Runtime.InteropServices.NFloat other) { throw null; }
         public static System.Runtime.InteropServices.NFloat Exp(System.Runtime.InteropServices.NFloat x) { throw null; }
+        public static System.Runtime.InteropServices.NFloat Exp10(System.Runtime.InteropServices.NFloat x) { throw null; }
+        public static System.Runtime.InteropServices.NFloat Exp10M1(System.Runtime.InteropServices.NFloat x) { throw null; }
+        public static System.Runtime.InteropServices.NFloat Exp2(System.Runtime.InteropServices.NFloat x) { throw null; }
+        public static System.Runtime.InteropServices.NFloat Exp2M1(System.Runtime.InteropServices.NFloat x) { throw null; }
+        public static System.Runtime.InteropServices.NFloat ExpM1(System.Runtime.InteropServices.NFloat x) { throw null; }
         public static System.Runtime.InteropServices.NFloat Floor(System.Runtime.InteropServices.NFloat x) { throw null; }
         public static System.Runtime.InteropServices.NFloat FusedMultiplyAdd(System.Runtime.InteropServices.NFloat left, System.Runtime.InteropServices.NFloat right, System.Runtime.InteropServices.NFloat addend) { throw null; }
         public override int GetHashCode() { throw null; }
@@ -939,11 +965,18 @@ namespace System.Runtime.InteropServices
         public static System.Runtime.InteropServices.NFloat Log(System.Runtime.InteropServices.NFloat x) { throw null; }
         public static System.Runtime.InteropServices.NFloat Log(System.Runtime.InteropServices.NFloat x, System.Runtime.InteropServices.NFloat newBase) { throw null; }
         public static System.Runtime.InteropServices.NFloat Log10(System.Runtime.InteropServices.NFloat x) { throw null; }
+        public static System.Runtime.InteropServices.NFloat Log10P1(System.Runtime.InteropServices.NFloat x) { throw null; }
         public static System.Runtime.InteropServices.NFloat Log2(System.Runtime.InteropServices.NFloat value) { throw null; }
+        public static System.Runtime.InteropServices.NFloat Log2P1(System.Runtime.InteropServices.NFloat x) { throw null; }
+        public static System.Runtime.InteropServices.NFloat LogP1(System.Runtime.InteropServices.NFloat x) { throw null; }
         public static System.Runtime.InteropServices.NFloat Max(System.Runtime.InteropServices.NFloat x, System.Runtime.InteropServices.NFloat y) { throw null; }
         public static System.Runtime.InteropServices.NFloat MaxMagnitude(System.Runtime.InteropServices.NFloat x, System.Runtime.InteropServices.NFloat y) { throw null; }
+        public static System.Runtime.InteropServices.NFloat MaxMagnitudeNumber(System.Runtime.InteropServices.NFloat x, System.Runtime.InteropServices.NFloat y) { throw null; }
+        public static System.Runtime.InteropServices.NFloat MaxNumber(System.Runtime.InteropServices.NFloat x, System.Runtime.InteropServices.NFloat y) { throw null; }
         public static System.Runtime.InteropServices.NFloat Min(System.Runtime.InteropServices.NFloat x, System.Runtime.InteropServices.NFloat y) { throw null; }
         public static System.Runtime.InteropServices.NFloat MinMagnitude(System.Runtime.InteropServices.NFloat x, System.Runtime.InteropServices.NFloat y) { throw null; }
+        public static System.Runtime.InteropServices.NFloat MinMagnitudeNumber(System.Runtime.InteropServices.NFloat x, System.Runtime.InteropServices.NFloat y) { throw null; }
+        public static System.Runtime.InteropServices.NFloat MinNumber(System.Runtime.InteropServices.NFloat x, System.Runtime.InteropServices.NFloat y) { throw null; }
         public static System.Runtime.InteropServices.NFloat operator +(System.Runtime.InteropServices.NFloat left, System.Runtime.InteropServices.NFloat right) { throw null; }
         public static System.Runtime.InteropServices.NFloat operator --(System.Runtime.InteropServices.NFloat value) { throw null; }
         public static System.Runtime.InteropServices.NFloat operator /(System.Runtime.InteropServices.NFloat left, System.Runtime.InteropServices.NFloat right) { throw null; }
@@ -1053,6 +1086,27 @@ namespace System.Runtime.InteropServices
     public sealed partial class OptionalAttribute : System.Attribute
     {
         public OptionalAttribute() { }
+    }
+    [System.CLSCompliantAttribute(false)]
+    [System.Runtime.InteropServices.CustomTypeMarshallerAttribute(typeof(System.Runtime.InteropServices.CustomTypeMarshallerAttribute.GenericPlaceholder*[]),
+        System.Runtime.InteropServices.CustomTypeMarshallerKind.LinearCollection, BufferSize = 0x200,
+        Features = System.Runtime.InteropServices.CustomTypeMarshallerFeatures.UnmanagedResources
+            | System.Runtime.InteropServices.CustomTypeMarshallerFeatures.CallerAllocatedBuffer
+            | System.Runtime.InteropServices.CustomTypeMarshallerFeatures.TwoStageMarshalling)]
+    public unsafe ref struct PointerArrayMarshaller<T> where T : unmanaged
+    {
+        public PointerArrayMarshaller(int sizeOfNativeElement) { }
+        public PointerArrayMarshaller(T*[]? array, int sizeOfNativeElement) { }
+        public PointerArrayMarshaller(T*[]? array, System.Span<byte> buffer, int sizeOfNativeElement) { }
+        public System.ReadOnlySpan<IntPtr> GetManagedValuesSource() { throw null; }
+        public System.Span<IntPtr> GetManagedValuesDestination(int length) { throw null; }
+        public System.ReadOnlySpan<byte> GetNativeValuesSource(int length) { throw null; }
+        public System.Span<byte> GetNativeValuesDestination() { throw null; }
+        public ref byte GetPinnableReference() { throw null; }
+        public byte* ToNativeValue() { throw null; }
+        public void FromNativeValue(byte* value) { }
+        public T*[]? ToManaged() { throw null; }
+        public void FreeNative() { }
     }
     public enum PosixSignal
     {
@@ -1375,7 +1429,7 @@ namespace System.Runtime.InteropServices
         public string? EntryPoint;
     }
     [System.CLSCompliant(false)]
-    [System.Runtime.InteropServices.CustomTypeMarshaller(typeof(string), BufferSize = 0x100,
+    [System.Runtime.InteropServices.CustomTypeMarshallerAttribute(typeof(string), BufferSize = 0x100,
         Features = System.Runtime.InteropServices.CustomTypeMarshallerFeatures.UnmanagedResources
             | System.Runtime.InteropServices.CustomTypeMarshallerFeatures.CallerAllocatedBuffer
             | System.Runtime.InteropServices.CustomTypeMarshallerFeatures.TwoStageMarshalling )]
@@ -1389,7 +1443,7 @@ namespace System.Runtime.InteropServices
         public void FreeNative() { }
     }
     [System.CLSCompliant(false)]
-    [System.Runtime.InteropServices.CustomTypeMarshaller(typeof(string), BufferSize = 0x100,
+    [System.Runtime.InteropServices.CustomTypeMarshallerAttribute(typeof(string), BufferSize = 0x100,
         Features = System.Runtime.InteropServices.CustomTypeMarshallerFeatures.UnmanagedResources
             | System.Runtime.InteropServices.CustomTypeMarshallerFeatures.CallerAllocatedBuffer
             | System.Runtime.InteropServices.CustomTypeMarshallerFeatures.TwoStageMarshalling )]

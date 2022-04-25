@@ -126,10 +126,6 @@ namespace System.Xml.Xsl.XsltOld
             }
 
             // Built-int template rules
-            if (action == null && processor.RootAction!.builtInSheet != null)
-            {
-                action = processor.RootAction.builtInSheet.FindTemplate(processor, frame.Node!, Compiler.BuiltInMode);
-            }
             if (action == null)
             {
                 action = BuiltInTemplate(frame.Node!);

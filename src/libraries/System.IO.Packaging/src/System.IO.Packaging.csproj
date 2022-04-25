@@ -2,7 +2,6 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
-    <Nullable>enable</Nullable>
     <!-- Suppress `string.Contains(char)` offers better performance than `string.Contains(string)` to avoid ifdefs.-->
     <NoWarn>$(NoWarn);CA1847</NoWarn>
     <IsPackable>true</IsPackable>

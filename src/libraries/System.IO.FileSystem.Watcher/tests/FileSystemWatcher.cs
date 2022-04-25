@@ -5,6 +5,7 @@ using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using Xunit;
+using Xunit.Sdk;
 
 namespace System.IO.Tests
 {
@@ -174,23 +175,25 @@ namespace System.IO.Tests
         /// <summary>
         /// EndInit will begin EnableRaisingEvents if we previously set EnableRaisingEvents=true
         /// </summary>
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/24181", TestPlatforms.OSX)]
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
         public void EndInit_ResumesPausedEnableRaisingEvents(bool setBeforeBeginInit)
         {
-            using (var testDirectory = new TempDirectory(GetTestFilePath()))
-            using (var watcher = new TestFileSystemWatcher(testDirectory.Path, "*"))
+            FileSystemWatcherTest.Execute(() =>
             {
-                if (setBeforeBeginInit)
-                    watcher.EnableRaisingEvents = true;
-                watcher.BeginInit();
-                if (!setBeforeBeginInit)
-                    watcher.EnableRaisingEvents = true;
-                watcher.EndInit();
-                ExpectEvent(watcher, WatcherChangeTypes.Created | WatcherChangeTypes.Deleted, () => new TempFile(Path.Combine(testDirectory.Path, GetTestFileName())).Dispose(), null);
-            }
+                using (var testDirectory = new TempDirectory(GetTestFilePath()))
+                using (var watcher = new TestFileSystemWatcher(testDirectory.Path, "*"))
+                {
+                    if (setBeforeBeginInit)
+                        watcher.EnableRaisingEvents = true;
+                    watcher.BeginInit();
+                    if (!setBeforeBeginInit)
+                        watcher.EnableRaisingEvents = true;
+                    watcher.EndInit();
+                    ExpectEvent(watcher, WatcherChangeTypes.Created | WatcherChangeTypes.Deleted, () => new TempFile(Path.Combine(testDirectory.Path, GetTestFileName())).Dispose(), null);
+                }
+            }, maxAttempts: DefaultAttemptsForExpectedEvent, backoffFunc: (iteration) => RetryDelayMilliseconds, retryWhen: e => e is XunitException);
         }
 
         /// <summary>

@@ -106,7 +106,7 @@ namespace System.Text.RegularExpressions
             Regex? r = _regex;
             Debug.Assert(Text != null);
             return r != null ?
-                r.RunSingleMatch(false, Length, Text, _textbeg, _textend - _textbeg, _textpos)! :
+                r.RunSingleMatch(RegexRunnerMode.FullMatchRequired, Length, Text, _textbeg, _textend - _textbeg, _textpos)! :
                 this;
         }
 
@@ -272,39 +272,44 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>Tidy the match so that it can be used as an immutable result</summary>
-        internal void Tidy(int textpos, int beginningOfSpanSlice)
+        internal void Tidy(int textpos, int beginningOfSpanSlice, RegexRunnerMode mode)
         {
-            int[] matchcount = _matchcount;
-            int[][] matches = _matches;
+            Debug.Assert(mode != RegexRunnerMode.ExistenceRequired);
 
-            _textpos = textpos;
-            _capcount = matchcount[0];
+            int[] matchcount = _matchcount;
+            _capcount = matchcount[0]; // used to indicate Success
+            _textpos = textpos; // used to determine where to perform next match
+
+            int[][] matches = _matches;
             int[] interval = matches[0];
-            Index = interval[0];
-            Length = interval[1];
-            if (_balancing)
-            {
-                TidyBalancing();
-            }
+            Length = interval[1]; // the length of the match
+            Index = interval[0] + beginningOfSpanSlice; // the index of the match, adjusted for input slicing
 
             // At this point the Match is consistent for handing back to a caller, with regards to the span that was processed.
             // However, the caller may have actually provided a string, and may have done so with a non-zero beginning.
             // In such a case, all offsets need to be shifted by beginning, e.g. if beginning is 5 and a capture occurred at
             // offset 17, that 17 offset needs to be increased to 22 to account for the fact that it was actually 17 from the
             // beginning, which the implementation saw as 0 but which from the caller's perspective was 5.
-            Debug.Assert(!_balancing);
-            if (beginningOfSpanSlice != 0)
+            if (mode == RegexRunnerMode.FullMatchRequired)
             {
-                Index += beginningOfSpanSlice;
-                for (int groupNumber = 0; groupNumber < matches.Length; groupNumber++)
+                if (_balancing)
                 {
-                    int[] captures = matches[groupNumber];
-                    if (captures is not null)
+                    TidyBalancing();
+                }
+                Debug.Assert(!_balancing);
+
+                if (beginningOfSpanSlice != 0)
+                {
+                    for (int groupNumber = 0; groupNumber < matches.Length; groupNumber++)
                     {
-                        int capturesLength = matchcount[groupNumber] * 2; // each capture has an offset and a length
-                        for (int c = 0; c < capturesLength; c += 2)
+                        int[] captures = matches[groupNumber];
+                        if (captures is not null)
                         {
-                            captures[c] += beginningOfSpanSlice;
+                            int capturesLength = matchcount[groupNumber] * 2; // each capture has an offset and a length
+                            for (int c = 0; c < capturesLength; c += 2)
+                            {
+                                captures[c] += beginningOfSpanSlice;
+                            }
                         }
                     }
                 }

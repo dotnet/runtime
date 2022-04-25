@@ -241,6 +241,12 @@ namespace System.Text.Json.Serialization.Metadata
         }
 
 #if DEBUG
+        internal string GetPropertyDebugInfo(ReadOnlySpan<byte> unescapedPropertyName)
+        {
+            string propertyName = JsonHelpers.Utf8GetString(unescapedPropertyName);
+            return $"propertyName = {propertyName}; DebugInfo={GetDebugInfo()}";
+        }
+
         internal string GetDebugInfo()
         {
             ConverterStrategy strat = PropertyInfoForTypeInfo.ConverterStrategy;
@@ -249,7 +255,7 @@ namespace System.Text.Json.Serialization.Metadata
             bool propCacheInitialized = PropertyCache != null;
 
             StringBuilder sb = new();
-            sb.AppendLine($"{jtiTypeName} {{");
+            sb.AppendLine("{");
             sb.AppendLine($"  GetType: {jtiTypeName},");
             sb.AppendLine($"  Type: {typeName},");
             sb.AppendLine($"  ConverterStrategy: {strat},");
@@ -262,11 +268,8 @@ namespace System.Text.Json.Serialization.Metadata
                 foreach (var property in PropertyCache!.List)
                 {
                     JsonPropertyInfo pi = property.Value!;
-                    sb.AppendLine($"    {property.Key}: {{");
-                    sb.AppendLine($"      Ignored: {pi.IsIgnored},");
-                    sb.AppendLine($"      ShouldSerialize: {pi.ShouldSerialize},");
-                    sb.AppendLine($"      ShouldDeserialize: {pi.ShouldDeserialize},");
-                    sb.AppendLine("    },");
+                    sb.AppendLine($"    {property.Key}:");
+                    sb.AppendLine($"{pi.GetDebugInfo(indent: 6)},");
                 }
 
                 sb.AppendLine("  },");

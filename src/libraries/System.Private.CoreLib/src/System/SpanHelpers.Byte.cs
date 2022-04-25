@@ -341,26 +341,26 @@ namespace System
 
             uint uValue = value; // Use uint for comparisons to avoid unnecessary 8->32 extensions
             nuint offset = 0; // Use nuint for arithmetic to avoid unnecessary 64->32->64 truncations
-            nuint lengthToExamine = (nuint)(uint)length;
+            nuint lengthToExamine = (uint)length;
 
             if (Vector.IsHardwareAccelerated && length >= Vector<byte>.Count * 2)
             {
                 lengthToExamine = UnalignedCountVector(ref searchSpace);
             }
 
-        SequentialScan:
             while (lengthToExamine >= 8)
             {
                 lengthToExamine -= 8;
+                ref byte start = ref Unsafe.AddByteOffset(ref searchSpace, offset);
 
-                if (uValue == Unsafe.AddByteOffset(ref searchSpace, offset + 0) ||
-                    uValue == Unsafe.AddByteOffset(ref searchSpace, offset + 1) ||
-                    uValue == Unsafe.AddByteOffset(ref searchSpace, offset + 2) ||
-                    uValue == Unsafe.AddByteOffset(ref searchSpace, offset + 3) ||
-                    uValue == Unsafe.AddByteOffset(ref searchSpace, offset + 4) ||
-                    uValue == Unsafe.AddByteOffset(ref searchSpace, offset + 5) ||
-                    uValue == Unsafe.AddByteOffset(ref searchSpace, offset + 6) ||
-                    uValue == Unsafe.AddByteOffset(ref searchSpace, offset + 7))
+                if (uValue == Unsafe.AddByteOffset(ref start, 0) ||
+                    uValue == Unsafe.AddByteOffset(ref start, 1) ||
+                    uValue == Unsafe.AddByteOffset(ref start, 2) ||
+                    uValue == Unsafe.AddByteOffset(ref start, 3) ||
+                    uValue == Unsafe.AddByteOffset(ref start, 4) ||
+                    uValue == Unsafe.AddByteOffset(ref start, 5) ||
+                    uValue == Unsafe.AddByteOffset(ref start, 6) ||
+                    uValue == Unsafe.AddByteOffset(ref start, 7))
                 {
                     goto Found;
                 }
@@ -371,11 +371,12 @@ namespace System
             if (lengthToExamine >= 4)
             {
                 lengthToExamine -= 4;
+                ref byte start = ref Unsafe.AddByteOffset(ref searchSpace, offset);
 
-                if (uValue == Unsafe.AddByteOffset(ref searchSpace, offset + 0) ||
-                    uValue == Unsafe.AddByteOffset(ref searchSpace, offset + 1) ||
-                    uValue == Unsafe.AddByteOffset(ref searchSpace, offset + 2) ||
-                    uValue == Unsafe.AddByteOffset(ref searchSpace, offset + 3))
+                if (uValue == Unsafe.AddByteOffset(ref start, 0) ||
+                    uValue == Unsafe.AddByteOffset(ref start, 1) ||
+                    uValue == Unsafe.AddByteOffset(ref start, 2) ||
+                    uValue == Unsafe.AddByteOffset(ref start, 3))
                 {
                     goto Found;
                 }
@@ -385,24 +386,25 @@ namespace System
 
             while (lengthToExamine > 0)
             {
-                lengthToExamine -= 1;
+                lengthToExamine--;
 
                 if (uValue == Unsafe.AddByteOffset(ref searchSpace, offset))
                     goto Found;
 
-                offset += 1;
+                offset++;
             }
 
-            if (Vector.IsHardwareAccelerated && (offset < (nuint)(uint)length))
+            if (Vector.IsHardwareAccelerated && (offset < (uint)length))
             {
-                lengthToExamine = (((nuint)(uint)length - offset) & (nuint)~(Vector<byte>.Count - 1));
+                lengthToExamine = ((uint)length - offset) & (nuint)~(Vector<byte>.Count - 1);
 
-                Vector<byte> values = new Vector<byte>(value);
+                Vector<byte> values = new(value);
+                Vector<byte> matches;
 
-                while (lengthToExamine > offset)
+                while (offset < lengthToExamine)
                 {
-                    var matches = Vector.Equals(values, LoadVector(ref searchSpace, offset));
-                    if (Vector<byte>.Zero.Equals(matches))
+                    matches = Vector.Equals(values, LoadVector(ref searchSpace, offset));
+                    if (matches == Vector<byte>.Zero)
                     {
                         offset += (nuint)Vector<byte>.Count;
                         continue;
@@ -411,10 +413,17 @@ namespace System
                     goto Found;
                 }
 
-                if (offset < (nuint)(uint)length)
+                // The total length is at least Vector<byte>.Count, so instead of falling back to a
+                // sequential scan for the remainder, we check the vector read from the end -- note: unaligned read necessary.
+                // We do this only if at least one element is left.
+                if (offset < (uint)length)
                 {
-                    lengthToExamine = ((nuint)(uint)length - offset);
-                    goto SequentialScan;
+                    offset = (uint)(length - Vector<byte>.Count);
+                    matches = Vector.Equals(values, LoadVector(ref searchSpace, offset));
+                    if (matches != Vector<byte>.Zero)
+                    {
+                        goto Found;
+                    }
                 }
             }
 

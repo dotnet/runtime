@@ -771,9 +771,7 @@ regMaskTP LinearScan::getKillSetForStoreInd(GenTreeStoreInd* tree)
 
     regMaskTP killMask = RBM_NONE;
 
-    GenTree* data = tree->Data();
-
-    GCInfo::WriteBarrierForm writeBarrierForm = compiler->codeGen->gcInfo.gcIsWriteBarrierCandidate(tree, data);
+    GCInfo::WriteBarrierForm writeBarrierForm = compiler->codeGen->gcInfo.gcIsWriteBarrierCandidate(tree);
     if (writeBarrierForm != GCInfo::WBF_NoBarrier)
     {
         if (compiler->codeGen->genUseOptimizedWriteBarriers(writeBarrierForm))
@@ -787,9 +785,8 @@ regMaskTP LinearScan::getKillSetForStoreInd(GenTreeStoreInd* tree)
         else
         {
             // Figure out which helper we're going to use, and then get the kill set for that helper.
-            CorInfoHelpFunc helper =
-                compiler->codeGen->genWriteBarrierHelperForWriteBarrierForm(tree, writeBarrierForm);
-            killMask = compiler->compHelperCallKillSet(helper);
+            CorInfoHelpFunc helper = compiler->codeGen->genWriteBarrierHelperForWriteBarrierForm(writeBarrierForm);
+            killMask               = compiler->compHelperCallKillSet(helper);
         }
     }
     return killMask;
@@ -1644,13 +1641,6 @@ void LinearScan::buildUpperVectorRestoreRefPosition(Interval*    lclVarInterval,
 //
 int LinearScan::ComputeOperandDstCount(GenTree* operand)
 {
-    // GT_ARGPLACE is the only non-LIR node that is currently in the trees at this stage, though
-    // note that it is not in the linear order.
-    if (operand->OperIs(GT_ARGPLACE))
-    {
-        return 0;
-    }
-
     if (operand->isContained())
     {
         int dstCount = 0;
@@ -1718,9 +1708,7 @@ int LinearScan::ComputeAvailableSrcCount(GenTree* node)
 //
 void LinearScan::buildRefPositionsForNode(GenTree* tree, LsraLocation currentLoc)
 {
-    // The LIR traversal doesn't visit GT_ARGPLACE nodes.
     // GT_CLS_VAR nodes should have been eliminated by rationalizer.
-    assert(tree->OperGet() != GT_ARGPLACE);
     assert(tree->OperGet() != GT_CLS_VAR);
 
     // The set of internal temporary registers used by this node are stored in the
@@ -3979,7 +3967,7 @@ int LinearScan::BuildGCWriteBarrier(GenTree* tree)
 
 #if defined(TARGET_X86) && NOGC_WRITE_BARRIERS
 
-    bool useOptimizedWriteBarrierHelper = compiler->codeGen->genUseOptimizedWriteBarriers(tree, src);
+    bool useOptimizedWriteBarrierHelper = compiler->codeGen->genUseOptimizedWriteBarriers(tree->AsStoreInd());
     if (useOptimizedWriteBarrierHelper)
     {
         // Special write barrier:

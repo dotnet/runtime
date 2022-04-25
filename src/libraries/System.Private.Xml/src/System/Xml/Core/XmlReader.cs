@@ -1634,8 +1634,10 @@ namespace System.Xml
         }
 
         // Creates an XmlReader according for parsing XML from the given stream.
-        public static XmlReader Create(Stream input!!)
+        public static XmlReader Create(Stream input)
         {
+            ArgumentNullException.ThrowIfNull(input);
+
             // Avoid using XmlReader.Create(Stream, XmlReaderSettings), as it references a lot of types
             // that then can't be trimmed away.
             return new XmlTextReaderImpl(input, null, 0, XmlReaderSettings.s_defaultReaderSettings, null, string.Empty, null, false);
@@ -1662,8 +1664,10 @@ namespace System.Xml
         }
 
         // Creates an XmlReader according for parsing XML from the given TextReader.
-        public static XmlReader Create(TextReader input!!)
+        public static XmlReader Create(TextReader input)
         {
+            ArgumentNullException.ThrowIfNull(input);
+
             // Avoid using XmlReader.Create(TextReader, XmlReaderSettings), as it references a lot of types
             // that then can't be trimmed away.
             return new XmlTextReaderImpl(input, XmlReaderSettings.s_defaultReaderSettings, string.Empty, null);
@@ -1699,8 +1703,10 @@ namespace System.Xml
         // !!!!!!
         // NOTE: This method is called via reflection from System.Data.Common.dll.
         // !!!!!!
-        internal static XmlReader CreateSqlReader(Stream input!!, XmlReaderSettings? settings, XmlParserContext inputContext)
+        internal static XmlReader CreateSqlReader(Stream input, XmlReaderSettings? settings, XmlParserContext inputContext)
         {
+            ArgumentNullException.ThrowIfNull(input);
+
             settings ??= XmlReaderSettings.s_defaultReaderSettings;
 
             XmlReader reader;

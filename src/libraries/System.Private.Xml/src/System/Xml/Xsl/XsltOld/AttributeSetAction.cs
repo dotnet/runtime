@@ -9,7 +9,7 @@ namespace System.Xml.Xsl.XsltOld
     using System.Xml.XPath;
     using System.Collections;
 
-    internal class AttributeSetAction : ContainerAction
+    internal sealed class AttributeSetAction : ContainerAction
     {
         internal XmlQualifiedName? name;
 

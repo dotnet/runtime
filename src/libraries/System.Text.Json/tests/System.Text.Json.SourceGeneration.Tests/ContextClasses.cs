@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Reflection;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
 
@@ -11,7 +10,7 @@ namespace System.Text.Json.SourceGeneration.Tests
     public interface ITestContext
     {
         public JsonSourceGenerationMode JsonSourceGenerationMode { get; }
-        public bool IsIncludeFieldsEnabled => GetType().GetCustomAttribute<JsonSourceGenerationOptionsAttribute>()?.IncludeFields ?? false;
+        public bool IsIncludeFieldsEnabled { get; }
 
         public JsonTypeInfo<Location> Location { get; }
         public JsonTypeInfo<NumberTypes> NumberTypes { get; }
@@ -35,6 +34,8 @@ namespace System.Text.Json.SourceGeneration.Tests
         public JsonTypeInfo<byte[]> ByteArray { get; }
         public JsonTypeInfo<string> String { get; }
         public JsonTypeInfo<(string Label1, int Label2, bool)> ValueTupleStringInt32Boolean { get; }
+        public JsonTypeInfo<JsonDocument> JsonDocument { get; }
+        public JsonTypeInfo<JsonElement> JsonElement { get; }
         public JsonTypeInfo<RealWorldContextTests.ClassWithEnumAndNullable> ClassWithEnumAndNullable { get; }
         public JsonTypeInfo<RealWorldContextTests.ClassWithNullableProperties> ClassWithNullableProperties { get; }
         public JsonTypeInfo<ClassWithCustomConverter> ClassWithCustomConverter { get; }

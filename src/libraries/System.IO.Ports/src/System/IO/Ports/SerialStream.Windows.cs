@@ -555,9 +555,11 @@ namespace System.IO.Ports
         // -----------SECTION: constructor --------------------------*
 
         // this method is used by SerialPort upon SerialStream's creation
-        internal SerialStream(string portName!!, int baudRate, Parity parity, int dataBits, StopBits stopBits, int readTimeout, int writeTimeout, Handshake handshake,
+        internal SerialStream(string portName, int baudRate, Parity parity, int dataBits, StopBits stopBits, int readTimeout, int writeTimeout, Handshake handshake,
             bool dtrEnable, bool rtsEnable, bool discardNull, byte parityReplace)
         {
+            ArgumentNullException.ThrowIfNull(portName);
+
             if (!portName.StartsWith("COM", StringComparison.OrdinalIgnoreCase) ||
                 !uint.TryParse(
 #if NETCOREAPP
@@ -1803,7 +1805,7 @@ namespace System.IO.Ports
         // This is an internal object implementing IAsyncResult with fields
         // for all of the relevant data necessary to complete the IO operation.
         // This is used by AsyncFSCallback and all async methods.
-        internal unsafe sealed class SerialStreamAsyncResult : IAsyncResult
+        internal sealed unsafe class SerialStreamAsyncResult : IAsyncResult
         {
             // User code callback
             internal AsyncCallback _userCallback;

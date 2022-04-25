@@ -3033,6 +3033,8 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
                 // Currently we expect all indirections with constant addresses to be nonfaulting.
                 expectedFlags |= GTF_IND_NONFAULTING;
             }
+
+            assert(((tree->gtFlags & GTF_IND_TGT_NOT_HEAP) == 0) || ((tree->gtFlags & GTF_IND_TGT_HEAP) == 0));
             break;
 
         case GT_CALL:
@@ -3045,7 +3047,11 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
             {
                 // TODO-Cleanup: this is a patch for a violation in our GT_ASG propagation.
                 // see https://github.com/dotnet/runtime/issues/13758
-                actualFlags |= arg.GetEarlyNode()->gtFlags & GTF_ASG;
+                if (arg.GetEarlyNode() != nullptr)
+                {
+                    actualFlags |= arg.GetEarlyNode()->gtFlags & GTF_ASG;
+                }
+
                 if (arg.GetLateNode() != nullptr)
                 {
                     actualFlags |= arg.GetLateNode()->gtFlags & GTF_ASG;
