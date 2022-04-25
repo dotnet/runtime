@@ -3,24 +3,27 @@
 
 using System.Runtime.InteropServices;
 using Xunit;
+using Xunit.Sdk;
 
 namespace System.IO.Tests
 {
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/34583", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
     public class Directory_Changed_Tests : FileSystemWatcherTest
     {
         [Fact]
         public void FileSystemWatcher_Directory_Changed_LastWrite()
         {
-            using (var testDirectory = new TempDirectory(GetTestFilePath()))
-            using (var dir = new TempDirectory(Path.Combine(testDirectory.Path, "dir")))
-            using (var watcher = new FileSystemWatcher(testDirectory.Path, Path.GetFileName(dir.Path)))
+            FileSystemWatcherTest.Execute(() =>
             {
-                Action action = () => Directory.SetLastWriteTime(dir.Path, DateTime.Now + TimeSpan.FromSeconds(10));
+                using (var testDirectory = new TempDirectory(GetTestFilePath()))
+                using (var dir = new TempDirectory(Path.Combine(testDirectory.Path, "dir")))
+                using (var watcher = new FileSystemWatcher(testDirectory.Path, Path.GetFileName(dir.Path)))
+                {
+                    Action action = () => Directory.SetLastWriteTime(dir.Path, DateTime.Now + TimeSpan.FromSeconds(10));
 
-                WatcherChangeTypes expected = WatcherChangeTypes.Changed;
-                ExpectEvent(watcher, expected, action, expectedPath: dir.Path);
-            }
+                    WatcherChangeTypes expected = WatcherChangeTypes.Changed;
+                    ExpectEvent(watcher, expected, action, expectedPath: dir.Path);
+                }
+            }, maxAttempts: DefaultAttemptsForExpectedEvent, backoffFunc: (iteration) => RetryDelayMilliseconds, retryWhen: e => e is XunitException);
         }
 
         [Fact]

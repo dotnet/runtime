@@ -56,12 +56,16 @@ locale.setlocale(locale.LC_ALL, '')  # Use '' for auto, or force e.g. to 'en_US.
 #    library is not found in the Core_Root directory, we download a cached copy.
 #    Note: it would be better to download and use the official coredistools
 #    NuGet packages (like the setup-stress-dependencies scripts do).
+# 4. A copy of pintools, used to do throughput measurements.
 
 az_account_name = "clrjit2"
+
 az_superpmi_container_name = "superpmi"
-az_collections_root_folder = "collections"
 az_blob_storage_account_uri = "https://" + az_account_name + ".blob.core.windows.net/"
 az_blob_storage_superpmi_container_uri = az_blob_storage_account_uri + az_superpmi_container_name
+az_collections_root_folder = "collections"
+az_pintools_root_folder = "pintools"
+pintools_current_version = "1.0"
 
 az_jitrollingbuild_container_name = "jitrollingbuild"
 az_builds_root_folder = "builds"
@@ -88,6 +92,10 @@ Run SuperPMI replay on one or more collections.
 
 asm_diff_description = """\
 Run SuperPMI ASM diffs on one or more collections.
+"""
+
+throughput_description = """\
+Measure throughput using PIN on one or more collections.
 """
 
 upload_description = """\
@@ -134,6 +142,8 @@ target_arch_help = "Target architecture, for use with cross-compilation JIT (x64
 mch_arch_help = "Architecture of MCH files to download, used for cross-compilation altjit (x64, x86, arm, arm64). Default: target architecture."
 
 build_type_help = "Build type (Debug, Checked, Release). Default: Checked."
+
+throughput_build_type_help = "Build type (Debug, Checked, Release). Default: Release."
 
 core_root_help = "Core_Root location. Optional; it will be deduced if possible from runtime repo root."
 
@@ -310,22 +320,32 @@ replay_parser = subparsers.add_parser("replay", description=replay_description, 
 replay_parser.add_argument("-jit_path", help="Path to clrjit. Defaults to Core_Root JIT.")
 replay_parser.add_argument("-jitoption", action="append", help="Pass option through to the jit. Format is key=value, where key is the option name without leading COMPlus_")
 
-# subparser for asmdiffs
-asm_diff_parser = subparsers.add_parser("asmdiffs", description=asm_diff_description, parents=[core_root_parser, target_parser, superpmi_common_parser, replay_common_parser])
+base_diff_parser = argparse.ArgumentParser(add_help=False)
+base_diff_parser.add_argument("-base_jit_path", help="Path to baseline clrjit. Defaults to baseline JIT from rolling build, by computing baseline git hash.")
+base_diff_parser.add_argument("-diff_jit_path", help="Path to diff clrjit. Defaults to Core_Root JIT.")
+base_diff_parser.add_argument("-git_hash", help="Use this git hash as the current hash for use to find a baseline JIT. Defaults to current git hash of source tree.")
+base_diff_parser.add_argument("-base_git_hash", help="Use this git hash as the baseline JIT hash. Default: search for the baseline hash.")
+base_diff_parser.add_argument("-base_jit_option", action="append", help="Option to pass to the baseline JIT. Format is key=value, where key is the option name without leading COMPlus_...")
+base_diff_parser.add_argument("-diff_jit_option", action="append", help="Option to pass to the diff JIT. Format is key=value, where key is the option name without leading COMPlus_...")
 
-asm_diff_parser.add_argument("-base_jit_path", help="Path to baseline clrjit. Defaults to baseline JIT from rolling build, by computing baseline git hash.")
-asm_diff_parser.add_argument("-diff_jit_path", help="Path to diff clrjit. Defaults to Core_Root JIT.")
-asm_diff_parser.add_argument("-git_hash", help="Use this git hash as the current hash for use to find a baseline JIT. Defaults to current git hash of source tree.")
-asm_diff_parser.add_argument("-base_git_hash", help="Use this git hash as the baseline JIT hash. Default: search for the baseline hash.")
+# subparser for asmdiffs
+asm_diff_parser = subparsers.add_parser("asmdiffs", description=asm_diff_description, parents=[core_root_parser, target_parser, superpmi_common_parser, replay_common_parser, base_diff_parser])
 asm_diff_parser.add_argument("--diff_jit_dump", action="store_true", help="Generate JitDump output for diffs. Default: only generate asm, not JitDump.")
 asm_diff_parser.add_argument("--gcinfo", action="store_true", help="Include GC info in disassembly (sets COMPlus_JitGCDump/COMPlus_NgenGCDump; requires instructions to be prefixed by offsets).")
 asm_diff_parser.add_argument("--debuginfo", action="store_true", help="Include debug info after disassembly (sets COMPlus_JitDebugDump/COMPlus_NgenDebugDump).")
-asm_diff_parser.add_argument("-base_jit_option", action="append", help="Option to pass to the baseline JIT. Format is key=value, where key is the option name without leading COMPlus_...")
-asm_diff_parser.add_argument("-diff_jit_option", action="append", help="Option to pass to the diff JIT. Format is key=value, where key is the option name without leading COMPlus_...")
 asm_diff_parser.add_argument("-tag", help="Specify a word to add to the directory name where the asm diffs will be placed")
 asm_diff_parser.add_argument("-metrics", action="append", help="Metrics option to pass to jit-analyze. Can be specified multiple times, or pass comma-separated values.")
 asm_diff_parser.add_argument("-retainOnlyTopFiles", action="store_true", help="Retain only top .dasm files with largest improvements or regressions and delete remaining files.")
 asm_diff_parser.add_argument("--diff_with_release", action="store_true", help="Specify if this is asmdiff using release binaries.")
+
+# subparser for throughput
+throughput_parser = subparsers.add_parser("tpdiff",
+                                          description=throughput_description, parents=[core_root_parser, target_parser, superpmi_common_parser, replay_common_parser, base_diff_parser],
+                                          # Allow overriding build_type with new default
+                                          conflict_handler='resolve')
+
+# Override build type
+throughput_parser.add_argument("-build_type", default="Release", help=throughput_build_type_help)
 
 # subparser for upload
 upload_parser = subparsers.add_parser("upload", description=upload_description, parents=[core_root_parser, target_parser])
@@ -472,6 +492,23 @@ def read_csv_metrics(path):
             return row
 
     return None
+
+def determine_clrjit_compiler_version(clrjit_path):
+    """ Obtain the version of the compiler that was used to compile the clrjit at the specified path.
+
+    Returns:
+        A string extract from the binary or "unknown" if the string could not be found.
+        See 'jitBuildString' in buildstring.cpp in the JIT to see where this is defined.
+    """
+
+    with open(clrjit_path, "rb") as fh:
+        contents = fh.read()
+
+    match = re.search(b'RyuJIT built by ([^\0]*)? targeting ([^\0]*)-([^\0]*)\0', contents)
+    if match is None:
+        return "unknown"
+
+    return match.group(1).decode("ascii")
 
 ################################################################################
 # Helper classes
@@ -1762,6 +1799,207 @@ class SuperPMIReplayAsmDiffs:
         ################################################################################################ end of replay_with_asm_diffs()
 
 ################################################################################
+# SuperPMI Replay/TP diff
+################################################################################
+
+
+class SuperPMIReplayThroughputDiff:
+    """ SuperPMI Replay throughput diff class
+
+    Notes:
+        The object is responsible for replaying the mch files given to the
+        instance of the class and doing TP measurements of the two passed jits.
+    """
+
+    def __init__(self, coreclr_args, mch_files, base_jit_path, diff_jit_path):
+        """ Constructor
+
+        Args:
+            coreclr_args (CoreclrArguments) : parsed args
+            mch_files (list)                : list of MCH files to replay
+            base_jit_path (str)             : path to baseline clrjit
+            diff_jit_path (str)             : path to diff clrjit
+
+        """
+
+        self.base_jit_path = base_jit_path
+        self.diff_jit_path = diff_jit_path
+        self.mch_files = mch_files
+        self.superpmi_path = determine_superpmi_tool_path(coreclr_args)
+        self.pin_path = get_pin_exe_path(coreclr_args)
+        self.inscount_pintool_path = get_inscount_pintool_path(coreclr_args)
+
+        self.coreclr_args = coreclr_args
+        self.diff_mcl_contents = None
+
+    ############################################################################
+    # Instance Methods
+    ############################################################################
+
+    def replay_with_throughput_diff(self):
+        """ Replay SuperPMI collections measuring throughput differences.
+
+        Returns:
+            (bool) True on success; False otherwise
+        """
+
+        # Set up some settings we'll use below.
+
+        target_flags = []
+        if self.coreclr_args.arch != self.coreclr_args.target_arch:
+            target_flags += [ "-target", self.coreclr_args.target_arch ]
+
+        base_option_flags = []
+        if self.coreclr_args.base_jit_option:
+            for o in self.coreclr_args.base_jit_option:
+                base_option_flags += "-jitoption", o
+
+        diff_option_flags = []
+        if self.coreclr_args.diff_jit_option:
+            for o in self.coreclr_args.diff_jit_option:
+                diff_option_flags += "-jit2option", o
+
+        base_jit_compiler_version = determine_clrjit_compiler_version(self.base_jit_path)
+        diff_jit_compiler_version = determine_clrjit_compiler_version(self.diff_jit_path)
+
+        if base_jit_compiler_version != diff_jit_compiler_version:
+            logging.warning("Warning: Different compilers used for base and diff JITs. Results may be misleading.")
+            logging.warning("  Base JIT's compiler: {}".format(base_jit_compiler_version))
+            logging.warning("  Diff JIT's compiler: {}".format(diff_jit_compiler_version))
+
+        tp_diffs = []
+
+        with TempDir(None, self.coreclr_args.skip_cleanup) as temp_location:
+            logging.debug("")
+            logging.debug("Temp Location: %s", temp_location)
+            logging.debug("")
+
+            for mch_file in self.mch_files:
+
+                logging.info("Running throughput diff of %s", mch_file)
+
+                base_metrics_summary_file = os.path.join(temp_location, os.path.basename(mch_file) + "_base_metrics.csv")
+                diff_metrics_summary_file = os.path.join(temp_location, os.path.basename(mch_file) + "_diff_metrics.csv")
+
+                pin_options = [
+                    "-follow_execv", # attach to child processes
+                    "-t", self.inscount_pintool_path, "-quiet",
+                ]
+                flags = [
+                    "-applyDiff",
+                    "-baseMetricsSummary", base_metrics_summary_file, # Instruction counts are stored in these
+                    "-diffMetricsSummary", diff_metrics_summary_file,
+                ]
+                flags += target_flags
+                flags += base_option_flags
+                flags += diff_option_flags
+
+                if not self.coreclr_args.sequential and not self.coreclr_args.compile:
+                    flags += [ "-p" ]
+
+                if self.coreclr_args.break_on_assert:
+                    flags += [ "-boa" ]
+
+                if self.coreclr_args.break_on_error:
+                    flags += [ "-boe" ]
+
+                if self.coreclr_args.compile:
+                    flags += [ "-c", self.coreclr_args.compile ]
+
+                if self.coreclr_args.spmi_log_file is not None:
+                    flags += [ "-w", self.coreclr_args.spmi_log_file ]
+
+                if self.coreclr_args.error_limit is not None:
+                    flags += ["-failureLimit", self.coreclr_args.error_limit]
+
+                # Change the working directory to the Core_Root we will call SuperPMI from.
+                # This is done to allow libcoredistools to be loaded correctly on unix
+                # as the loadlibrary path will be relative to the current directory.
+                with ChangeDir(self.coreclr_args.core_root):
+                    command = [self.pin_path] + pin_options + ["--"] + [self.superpmi_path] + flags + [self.base_jit_path, self.diff_jit_path, mch_file]
+                    return_code = run_and_log(command)
+                    logging.debug("return_code: %s", return_code)
+
+                base_metrics = read_csv_metrics(base_metrics_summary_file)
+                diff_metrics = read_csv_metrics(diff_metrics_summary_file)
+
+                if base_metrics is not None and diff_metrics is not None:
+                    base_instructions = int(base_metrics["Diff executed instructions"])
+                    diff_instructions = int(diff_metrics["Diff executed instructions"])
+
+                    logging.info("Total instructions executed by base: {}".format(base_instructions))
+                    logging.info("Total instructions executed by diff: {}".format(diff_instructions))
+                    delta_instructions = diff_instructions - base_instructions
+                    logging.info("Total instructions executed delta: {} ({:.2%} of base)".format(delta_instructions, delta_instructions / base_instructions))
+                    tp_diffs.append((os.path.basename(mch_file), base_instructions, diff_instructions))
+                else:
+                    logging.warning("No metric files present?")
+
+                if not self.coreclr_args.skip_cleanup:
+                    if os.path.isfile(base_metrics_summary_file):
+                        os.remove(base_metrics_summary_file)
+                        base_metrics_summary_file = None
+
+                    if os.path.isfile(diff_metrics_summary_file):
+                        os.remove(diff_metrics_summary_file)
+                        diff_metrics_summary_file = None
+
+            ################################################################################################ end of for mch_file in self.mch_files
+
+        # Report the overall results summary of the tpdiff run
+
+        logging.info("Throughput diff summary:")
+
+        # Construct an overall Markdown summary file.
+
+        if len(tp_diffs) > 0:
+            overall_md_summary_file = create_unique_file_name(self.coreclr_args.spmi_location, "tpdiff_summary", "md")
+            if not os.path.isdir(self.coreclr_args.spmi_location):
+                os.makedirs(self.coreclr_args.spmi_location)
+            if os.path.isfile(overall_md_summary_file):
+                os.remove(overall_md_summary_file)
+
+            with open(overall_md_summary_file, "w") as write_fh:
+                if base_jit_compiler_version != diff_jit_compiler_version:
+                    write_fh.write("Warning: Different compilers used for base and diff JITs. Results may be misleading.\n")
+                    write_fh.write("Base JIT's compiler: {}\n".format(base_jit_compiler_version))
+                    write_fh.write("Diff JIT's compiler: {}\n".format(diff_jit_compiler_version))
+
+                # We write two tables, an overview one with just significantly
+                # impacted collections and a detailed one that includes raw
+                # instruction count and all collections.
+                def is_significant(base, diff):
+                    return round((diff - base) / base, 2) != 0
+
+                if any(is_significant(base, diff) for (_, base, diff) in tp_diffs):
+                    write_fh.write("|Collection|PDIFF|\n")
+                    write_fh.write("|---|---|\n")
+                    for mch_file, base_instructions, diff_instructions in tp_diffs:
+                        if is_significant(base_instructions, diff_instructions):
+                            write_fh.write("|{}|{}{:.2f}%|\n".format(
+                                mch_file,
+                                "+" if diff_instructions > base_instructions else "",
+                                (diff_instructions - base_instructions) / base_instructions * 100))
+                else:
+                    write_fh.write("No significant throughput differences found\n")
+
+                write_fh.write("\n<details>\n")
+                write_fh.write("<summary>Details</summary>\n\n")
+                write_fh.write("|Collection|Base # instructions|Diff # instructions|PDIFF|\n")
+                write_fh.write("|---|---|---|---|\n")
+                for mch_file, base_instructions, diff_instructions in tp_diffs:
+                    write_fh.write("|{}|{:,d}|{:,d}|{}{:.2f}%|\n".format(
+                        mch_file, base_instructions, diff_instructions,
+                        "+" if diff_instructions > base_instructions else "",
+                        (diff_instructions - base_instructions) / base_instructions * 100))
+                write_fh.write("\n</details>\n")
+
+            logging.info("  Summary Markdown file: %s", overall_md_summary_file)
+
+        return True
+        ################################################################################################ end of replay_with_throughput_diff()
+
+################################################################################
 # Argument handling helpers
 ################################################################################
 
@@ -2063,7 +2301,6 @@ def determine_jit_ee_version(coreclr_args):
     default_jit_ee_version = "unknown-jit-ee-version"
     logging.info("Using default JIT/EE Version: %s", default_jit_ee_version)
     return default_jit_ee_version
-
 
 def print_platform_specific_environment_vars(loglevel, coreclr_args, var, value):
     """ Print environment variables as set {}={} or export {}={}
@@ -2666,8 +2903,8 @@ def process_base_jit_path_arg(coreclr_args):
         1. Determine the current git hash using:
              git rev-parse HEAD
            or use the `-git_hash` argument (call the result `git_hash`).
-        2. Determine the baseline: where does this hash meet `main` using:
-             git merge-base `git_hash` main
+        2. Determine the baseline: where does this hash meet the newest `main` branch of any remote using:
+             git branch -r --sort=-committerdate -v --list "*/main" followed by git merge-base
            or use the `-base_git_hash` argument (call the result `base_git_hash`).
         3. If the `-base_git_hash` argument is used, use that directly as the exact git
            hash of the baseline JIT to use.
@@ -2723,16 +2960,28 @@ def process_base_jit_path_arg(coreclr_args):
 
         if coreclr_args.base_git_hash is None:
             # We've got the current hash; figure out the baseline hash.
-            command = [ "git", "merge-base", current_hash, "main" ]
+            # First find the newest hash for any branch matching */main.
+            command = [ "git", "branch", "-r", "--sort=-committerdate", "-v", "--list", "*/main" ]
+            logging.debug("Invoking: %s", " ".join(command))
+            proc = subprocess.Popen(command, stdout=subprocess.PIPE)
+            stdout_git_main_branch, _ = proc.communicate()
+            return_code = proc.returncode
+            if return_code != 0:
+                raise RuntimeError("Couldn't determine newest 'main' git hash")
+
+            main_hash = stdout_git_main_branch.decode('utf-8').strip().split()[1]
+
+            # Get the merge-base between the newest main and our current rev
+            command = [ "git", "merge-base", current_hash, main_hash ]
             logging.debug("Invoking: %s", " ".join(command))
             proc = subprocess.Popen(command, stdout=subprocess.PIPE)
             stdout_git_merge_base, _ = proc.communicate()
             return_code = proc.returncode
-            if return_code == 0:
-                baseline_hash = stdout_git_merge_base.decode('utf-8').strip()
-                logging.info("Baseline hash: %s", current_hash)
-            else:
+            if return_code != 0:
                 raise RuntimeError("Couldn't determine baseline git hash")
+
+            baseline_hash = stdout_git_merge_base.decode('utf-8').strip()
+            logging.info("Baseline hash: %s", baseline_hash)
         else:
             baseline_hash = coreclr_args.base_git_hash
 
@@ -2796,6 +3045,53 @@ def process_base_jit_path_arg(coreclr_args):
 
     raise RuntimeError("No baseline JIT found")
 
+def get_pintools_path(coreclr_args):
+    """ Get the local path where we expect pintools for this OS to be located
+    
+    Returns:
+        A path to the folder.
+    """
+    return os.path.join(coreclr_args.spmi_location, "pintools", pintools_current_version, coreclr_args.host_os.lower())
+
+def get_pin_exe_path(coreclr_args):
+    """ Get the local path where we expect the pin executable to be located
+    
+    Returns:
+        A path to the executable.
+    """
+    root = get_pintools_path(coreclr_args)
+    exe = "pin.exe" if coreclr_args.host_os.lower() == "windows" else "pin"
+    return os.path.join(root, exe)
+
+def get_inscount_pintool_path(coreclr_args):
+    """ Get the local path where we expect the clrjit inscount pintool to be located
+    
+    Returns:
+        A path to the pintool library.
+    """
+    if coreclr_args.host_os.lower() == "osx":
+        pintool_filename = "libclrjit_inscount.dylib"
+    elif coreclr_args.host_os.lower() == "windows":
+        pintool_filename = "clrjit_inscount.dll"
+    else:
+        pintool_filename = "libclrjit_inscount.so"
+
+    return os.path.join(get_pintools_path(coreclr_args), "clrjit_inscount_" + coreclr_args.arch, pintool_filename)
+
+def download_clrjit_pintool(coreclr_args):
+    """ Download the pintool package for doing measurements of the JIT from Azure Storage.
+    """
+
+    if os.path.isfile(get_pin_exe_path(coreclr_args)):
+        return
+
+    pin_dir_path = get_pintools_path(coreclr_args)
+    pintools_rel_path = "{}/{}/{}.zip".format(az_pintools_root_folder, pintools_current_version, coreclr_args.host_os.lower())
+    pintool_uri = "{}/{}".format(az_blob_storage_superpmi_container_uri, pintools_rel_path)
+    local_files = download_files([pintool_uri], pin_dir_path, verbose=False, is_azure_storage=True, fail_if_not_found=False)
+    if len(local_files) <= 0:
+        logging.error("Error: {} not found".format(pintools_rel_path))
+        raise RuntimeError("{} not found".format(pintools_rel_path))
 
 def setup_args(args):
     """ Setup the args for SuperPMI to use.
@@ -3018,6 +3314,40 @@ def setup_args(args):
                             lambda item: True,
                             "Specify private_store or set environment variable SUPERPMI_PRIVATE_STORE to use a private store.",
                             modify_arg=lambda arg: os.environ["SUPERPMI_PRIVATE_STORE"].split(";") if arg is None and "SUPERPMI_PRIVATE_STORE" in os.environ else arg)
+
+    def verify_base_diff_args():
+
+        coreclr_args.verify(args,
+                            "base_jit_path",
+                            lambda unused: True,
+                            "Unable to set base_jit_path")
+
+        coreclr_args.verify(args,
+                            "diff_jit_path",
+                            os.path.isfile,
+                            "Error: JIT not found at diff_jit_path {}".format,
+                            modify_arg=setup_jit_path_arg)
+
+        coreclr_args.verify(args,
+                            "git_hash",
+                            lambda unused: True,
+                            "Unable to set git_hash")
+
+        coreclr_args.verify(args,
+                            "base_git_hash",
+                            lambda unused: True,
+                            "Unable to set base_git_hash")
+
+        coreclr_args.verify(args,
+                            "base_jit_option",
+                            lambda unused: True,
+                            "Unable to set base_jit_option.")
+
+        coreclr_args.verify(args,
+                            "diff_jit_option",
+                            lambda unused: True,
+                            "Unable to set diff_jit_option.")
+
 
     if coreclr_args.mode == "collect":
 
@@ -3266,27 +3596,7 @@ def setup_args(args):
         verify_target_args()
         verify_superpmi_common_args()
         verify_replay_common_args()
-
-        coreclr_args.verify(args,
-                            "base_jit_path",
-                            lambda unused: True,
-                            "Unable to set base_jit_path")
-
-        coreclr_args.verify(args,
-                            "diff_jit_path",
-                            os.path.isfile,
-                            "Error: JIT not found at diff_jit_path {}".format,
-                            modify_arg=setup_jit_path_arg)
-
-        coreclr_args.verify(args,
-                            "git_hash",
-                            lambda unused: True,
-                            "Unable to set git_hash")
-
-        coreclr_args.verify(args,
-                            "base_git_hash",
-                            lambda unused: True,
-                            "Unable to set base_git_hash")
+        verify_base_diff_args()
 
         coreclr_args.verify(args,
                             "gcinfo",
@@ -3302,16 +3612,6 @@ def setup_args(args):
                             "diff_jit_dump",
                             lambda unused: True,
                             "Unable to set diff_jit_dump.")
-
-        coreclr_args.verify(args,
-                            "base_jit_option",
-                            lambda unused: True,
-                            "Unable to set base_jit_option.")
-
-        coreclr_args.verify(args,
-                            "diff_jit_option",
-                            lambda unused: True,
-                            "Unable to set diff_jit_option.")
 
         coreclr_args.verify(args,
                             "tag",
@@ -3380,6 +3680,21 @@ def setup_args(args):
                             "coredistools_location",
                             os.path.isfile,
                             "Unable to find coredistools.")
+
+    elif coreclr_args.mode == "tpdiff":
+
+        verify_target_args()
+        verify_superpmi_common_args()
+        verify_replay_common_args()
+        verify_base_diff_args()
+
+        coreclr_args.verify(coreclr_args.arch,
+                            "arch",
+                            lambda arch: arch == "x86" or arch == "x64",
+                            "Throughput measurements not supported on platform {}".format(coreclr_args.arch))
+
+        process_base_jit_path_arg(coreclr_args)
+        download_clrjit_pintool(coreclr_args)
 
     elif coreclr_args.mode == "upload":
 
@@ -3476,7 +3791,7 @@ def setup_args(args):
                             lambda unused: True,
                             "Unable to set pattern")
 
-    if coreclr_args.mode == "replay" or coreclr_args.mode == "asmdiffs" or coreclr_args.mode == "download":
+    if coreclr_args.mode == "replay" or coreclr_args.mode == "asmdiffs" or coreclr_args.mode == "tpdiff" or coreclr_args.mode == "download":
         if hasattr(coreclr_args, "private_store") and coreclr_args.private_store is not None:
             logging.info("Using private stores:")
             for path in coreclr_args.private_store:
@@ -3590,6 +3905,37 @@ def main(args):
 
         asm_diffs = SuperPMIReplayAsmDiffs(coreclr_args, mch_files, base_jit_path, diff_jit_path)
         success = asm_diffs.replay_with_asm_diffs()
+
+        end_time = datetime.datetime.now()
+        elapsed_time = end_time - begin_time
+
+        logging.debug("Finish time: %s", end_time.strftime("%H:%M:%S"))
+        logging.debug("Elapsed time: %s", elapsed_time)
+
+    elif coreclr_args.mode == "tpdiff":
+        local_mch_paths = process_mch_files_arg(coreclr_args)
+        mch_files = get_mch_files_for_replay(local_mch_paths, coreclr_args.filter)
+        if mch_files is None:
+            return 1
+
+        begin_time = datetime.datetime.now()
+
+        logging.info("SuperPMI throughput diff")
+        logging.debug("------------------------------------------------------------")
+        logging.debug("Start time: %s", begin_time.strftime("%H:%M:%S"))
+        
+        base_jit_path = coreclr_args.base_jit_path
+        diff_jit_path = coreclr_args.diff_jit_path
+
+        logging.info("Base JIT Path: %s", base_jit_path)
+        logging.info("Diff JIT Path: %s", diff_jit_path)
+
+        logging.info("Using MCH files:")
+        for mch_file in mch_files:
+            logging.info("  %s", mch_file)
+
+        tp_diff = SuperPMIReplayThroughputDiff(coreclr_args, mch_files, base_jit_path, diff_jit_path)
+        success = tp_diff.replay_with_throughput_diff()
 
         end_time = datetime.datetime.now()
         elapsed_time = end_time - begin_time

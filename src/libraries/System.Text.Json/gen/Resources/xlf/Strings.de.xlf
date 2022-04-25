@@ -32,6 +32,16 @@
         <target state="translated">Doppelter Typname</target>
         <note />
       </trans-unit>
+      <trans-unit id="FastPathPolymorphismNotSupportedMessageFormat">
+        <source>Type '{0}' is annotated with 'JsonDerivedTypeAttribute' which is not supported in 'JsonSourceGenerationMode.Serialization'.</source>
+        <target state="new">Type '{0}' is annotated with 'JsonDerivedTypeAttribute' which is not supported in 'JsonSourceGenerationMode.Serialization'.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="FastPathPolymorphismNotSupportedTitle">
+        <source>'JsonDerivedTypeAttribute' is not supported in 'JsonSourceGenerationMode.Serialization'.</source>
+        <target state="new">'JsonDerivedTypeAttribute' is not supported in 'JsonSourceGenerationMode.Serialization'.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="InaccessibleJsonIncludePropertiesNotSupportedFormat">
         <source>The member '{0}.{1}' has been annotated with the JsonIncludeAttribute but is not visible to the source generator.</source>
         <target state="translated">Der Member "{0}. {1}" wurde mit dem JsonIncludeAttribute versehen, ist jedoch für den Quellgenerator nicht sichtbar.</target>

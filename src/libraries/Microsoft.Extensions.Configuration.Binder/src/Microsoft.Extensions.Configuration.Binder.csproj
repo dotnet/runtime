@@ -12,6 +12,8 @@
 
   <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Configuration.Abstractions\src\Microsoft.Extensions.Configuration.Abstractions.csproj" />
+    <Compile Include="$(CommonPath)System\ThrowHelper.cs"
+             Link="Common\System\ThrowHelper.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">

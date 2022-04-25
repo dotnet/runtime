@@ -1508,7 +1508,7 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
         // TODO: handle 'if (SomeMethod(constArg))' patterns in fgFindJumpTargets
         // The previous version of inliner optimistically assumed this is "has const arg that feeds a conditional"
         multiplier += 3.0;
-        JITDUMP("\nCallsite passes a consant.  Multiplier increased to %g.", multiplier);
+        JITDUMP("\nCallsite passes a constant.  Multiplier increased to %g.", multiplier);
     }
 
     if ((m_FoldableBox > 0) && m_NonGenericCallsGeneric)

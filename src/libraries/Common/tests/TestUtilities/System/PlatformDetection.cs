@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Linq.Expressions;
 using System.Security;
 using System.Security.Authentication;
@@ -21,6 +22,9 @@ namespace System
         // means that one exception anywhere means all tests using PlatformDetection fail. If you feel a value is worth latching,
         // do it in a way that failures don't cascade.
         //
+
+        private static readonly Lazy<bool> s_IsInHelix = new Lazy<bool>(() => Environment.GetEnvironmentVariables().Keys.Cast<string>().Any(key => key.StartsWith("HELIX")));
+        public static bool IsInHelix => s_IsInHelix.Value;
 
         public static bool IsNetCore => Environment.Version.Major >= 5 || RuntimeInformation.FrameworkDescription.StartsWith(".NET Core", StringComparison.OrdinalIgnoreCase);
         public static bool IsMonoRuntime => Type.GetType("Mono.RuntimeStructs") != null;
@@ -62,9 +66,9 @@ namespace System
         public static bool Is64BitProcess => IntPtr.Size == 8;
         public static bool IsNotWindows => !IsWindows;
 
-        private static Lazy<bool> s_isCheckedRuntime => new Lazy<bool>(() => AssemblyConfigurationEquals("Checked"));
-        private static Lazy<bool> s_isReleaseRuntime => new Lazy<bool>(() => AssemblyConfigurationEquals("Release"));
-        private static Lazy<bool> s_isDebugRuntime => new Lazy<bool>(() => AssemblyConfigurationEquals("Debug"));
+        private static readonly Lazy<bool> s_isCheckedRuntime = new Lazy<bool>(() => AssemblyConfigurationEquals("Checked"));
+        private static readonly Lazy<bool> s_isReleaseRuntime = new Lazy<bool>(() => AssemblyConfigurationEquals("Release"));
+        private static readonly Lazy<bool> s_isDebugRuntime = new Lazy<bool>(() => AssemblyConfigurationEquals("Debug"));
 
         public static bool IsCheckedRuntime => s_isCheckedRuntime.Value;
         public static bool IsReleaseRuntime => s_isReleaseRuntime.Value;
@@ -205,7 +209,7 @@ namespace System
         // Linux - OpenSsl supports alpn from openssl 1.0.2 and higher.
         // OSX - SecureTransport doesn't expose alpn APIs. TODO https://github.com/dotnet/runtime/issues/27727
         // Android - Platform supports alpn from API level 29 and higher
-        private static Lazy<bool> s_supportsAlpn = new Lazy<bool>(GetAlpnSupport);
+        private static readonly Lazy<bool> s_supportsAlpn = new Lazy<bool>(GetAlpnSupport);
         private static bool GetAlpnSupport()
         {
             if (IsWindows && !IsWindows7 && !IsNetFramework)
@@ -234,11 +238,11 @@ namespace System
         public static bool SupportsAlpn => s_supportsAlpn.Value;
         public static bool SupportsClientAlpn => SupportsAlpn || IsOSX || IsMacCatalyst || IsiOS || IstvOS;
 
-        private static Lazy<bool> s_supportsTls10 = new Lazy<bool>(GetTls10Support);
-        private static Lazy<bool> s_supportsTls11 = new Lazy<bool>(GetTls11Support);
-        private static Lazy<bool> s_supportsTls12 = new Lazy<bool>(GetTls12Support);
-        private static Lazy<bool> s_supportsTls13 = new Lazy<bool>(GetTls13Support);
-        private static Lazy<bool> s_sendsCAListByDefault = new Lazy<bool>(GetSendsCAListByDefault);
+        private static readonly Lazy<bool> s_supportsTls10 = new Lazy<bool>(GetTls10Support);
+        private static readonly Lazy<bool> s_supportsTls11 = new Lazy<bool>(GetTls11Support);
+        private static readonly Lazy<bool> s_supportsTls12 = new Lazy<bool>(GetTls12Support);
+        private static readonly Lazy<bool> s_supportsTls13 = new Lazy<bool>(GetTls13Support);
+        private static readonly Lazy<bool> s_sendsCAListByDefault = new Lazy<bool>(GetSendsCAListByDefault);
 
         public static bool SupportsTls10 => s_supportsTls10.Value;
         public static bool SupportsTls11 => s_supportsTls11.Value;
@@ -247,7 +251,7 @@ namespace System
         public static bool SendsCAListByDefault => s_sendsCAListByDefault.Value;
         public static bool SupportsSendingCustomCANamesInTls => UsesAppleCrypto || IsOpenSslSupported || (PlatformDetection.IsWindows8xOrLater && SendsCAListByDefault);
 
-        private static Lazy<bool> s_largeArrayIsNotSupported = new Lazy<bool>(IsLargeArrayNotSupported);
+        private static readonly Lazy<bool> s_largeArrayIsNotSupported = new Lazy<bool>(IsLargeArrayNotSupported);
 
         [MethodImpl(MethodImplOptions.NoOptimization)]
         private static bool IsLargeArrayNotSupported()
@@ -361,7 +365,7 @@ namespace System
             return (IsLinux && File.Exists("/.dockerenv"));
         }
 
-        private static bool GetProtocolSupportFromWindowsRegistry(SslProtocols protocol, bool defaultProtocolSupport)
+        private static bool GetProtocolSupportFromWindowsRegistry(SslProtocols protocol, bool defaultProtocolSupport, bool disabledByDefault = false)
         {
             string registryProtocolName = protocol switch
             {
@@ -381,13 +385,18 @@ namespace System
             string serverKey = @$"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\{registryProtocolName}\Server";
 
             object client, server;
+            object clientDefault, serverDefault;
             try
             {
                 client = Registry.GetValue(clientKey, "Enabled", defaultProtocolSupport ? 1 : 0);
                 server = Registry.GetValue(serverKey, "Enabled", defaultProtocolSupport ? 1 : 0);
-                if (client is int c && server is int s)
+
+                clientDefault = Registry.GetValue(clientKey, "DisabledByDefault", 1);
+                serverDefault = Registry.GetValue(serverKey, "DisabledByDefault", 1);
+
+                if (client is int c && server is int s && clientDefault is int cd && serverDefault is int sd)
                 {
-                    return c == 1 && s == 1;
+                    return (c == 1 && s == 1) && (!disabledByDefault || (cd == 0 && sd == 0));
                 }
             }
             catch (SecurityException)
@@ -436,14 +445,16 @@ namespace System
 
         private static bool GetTls10Support()
         {
-            // on Windows, macOS, and Android TLS1.0/1.1 are supported.
+            // on macOS and Android TLS 1.0 is supported.
             if (IsOSXLike || IsAndroid)
             {
                 return true;
             }
+
+            // Windows depend on registry, enabled by default on all supported versions.
             if (IsWindows)
             {
-                return GetProtocolSupportFromWindowsRegistry(SslProtocols.Tls, true);
+                return GetProtocolSupportFromWindowsRegistry(SslProtocols.Tls, defaultProtocolSupport: true) && !IsWindows10Version20348OrGreater;
             }
 
             return OpenSslGetTlsSupport(SslProtocols.Tls);
@@ -451,13 +462,18 @@ namespace System
 
         private static bool GetTls11Support()
         {
-            // on Windows, macOS, and Android TLS1.0/1.1 are supported.            
             if (IsWindows)
             {
-                // TLS 1.1 and 1.2 can work on Windows7 but it is not enabled by default.
-                bool defaultProtocolSupport = !IsWindows7;
-                return GetProtocolSupportFromWindowsRegistry(SslProtocols.Tls11, defaultProtocolSupport);
+                // TLS 1.1 can work on Windows 7 but it is disabled by default.
+                if (IsWindows7)
+                {
+                    return GetProtocolSupportFromWindowsRegistry(SslProtocols.Tls11, defaultProtocolSupport: false, disabledByDefault: true);
+                }
+
+                // It is enabled on other versions unless explicitly disabled.
+                return GetProtocolSupportFromWindowsRegistry(SslProtocols.Tls11, defaultProtocolSupport: true) && !IsWindows10Version20348OrGreater;
             }
+            // on macOS and Android TLS 1.1 is supported.
             else if (IsOSXLike || IsAndroid)
             {
                 return true;
@@ -468,9 +484,19 @@ namespace System
 
         private static bool GetTls12Support()
         {
-            // TLS 1.1 and 1.2 can work on Windows7 but it is not enabled by default.
-            bool defaultProtocolSupport = !IsWindows7;
-            return GetProtocolSupportFromWindowsRegistry(SslProtocols.Tls12, defaultProtocolSupport);
+            if (IsWindows)
+            {
+                // TLS 1.2 can work on Windows 7 but it is disabled by default.
+                if (IsWindows7)
+                {
+                    return GetProtocolSupportFromWindowsRegistry(SslProtocols.Tls12, defaultProtocolSupport: false, disabledByDefault: true);
+                }
+
+                // It is enabled on other versions unless explicitly disabled.
+                return GetProtocolSupportFromWindowsRegistry(SslProtocols.Tls12, defaultProtocolSupport: true);
+            }
+
+            return true;
         }
 
         private static bool GetTls13Support()

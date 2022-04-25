@@ -44,8 +44,10 @@ namespace System.Security.Cryptography.X509Certificates
             _decoded = false;
         }
 
-        private static byte[] EncodeExtension(OidCollection enhancedKeyUsages!!)
+        private static byte[] EncodeExtension(OidCollection enhancedKeyUsages)
         {
+            ArgumentNullException.ThrowIfNull(enhancedKeyUsages);
+
             return X509Pal.Instance.EncodeX509EnhancedKeyUsageExtension(enhancedKeyUsages);
         }
 

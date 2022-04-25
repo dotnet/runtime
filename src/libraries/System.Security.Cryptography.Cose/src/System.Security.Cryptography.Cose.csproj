@@ -15,6 +15,7 @@
 
   <ItemGroup>
     <Compile Include="$(CommonPath)System\Memory\PointerMemoryManager.cs" Link="Common\System\Memory\PointerMemoryManager.cs" />
+    <Compile Include="$(LibrariesProjectRoot)System.Formats.Cbor\src\System\Formats\Cbor\CborInitialByte.cs" Link="System\Formats\Cbor\CborInitialByte.cs" />
     <Compile Include="System\Security\Cryptography\Cose\CoseHeaderLabel.cs" />
     <Compile Include="System\Security\Cryptography\Cose\CoseHeaderMap.cs" />
     <Compile Include="System\Security\Cryptography\Cose\CoseHelpers.cs" />
@@ -44,5 +45,10 @@
   
   <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net7.0'))">
     <Reference Include="System.Security.Cryptography" />
+  </ItemGroup>
+
+  <!-- For IncrementalHash -->
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
+    <PackageReference Include="System.Security.Cryptography.Algorithms" Version="$(SystemSecurityCryptographyAlgorithmsVersion)" />
   </ItemGroup>
 </Project>

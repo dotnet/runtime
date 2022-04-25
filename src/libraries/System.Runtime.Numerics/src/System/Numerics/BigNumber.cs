@@ -360,8 +360,10 @@ namespace System.Numerics
             }
         }
 
-        internal static BigInteger ParseBigInteger(string value!!, NumberStyles style, NumberFormatInfo info)
+        internal static BigInteger ParseBigInteger(string value, NumberStyles style, NumberFormatInfo info)
         {
+            ArgumentNullException.ThrowIfNull(value);
+
             return ParseBigInteger(value.AsSpan(), style, info);
         }
 

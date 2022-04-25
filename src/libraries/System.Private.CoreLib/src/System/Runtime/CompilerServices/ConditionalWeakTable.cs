@@ -93,7 +93,7 @@ namespace System.Runtime.CompilerServices
         /// <param name="key">The key to add.</param>
         /// <param name="value">The key's property value.</param>
         /// <returns>true if the key/value pair was added; false if the table already contained the key.</returns>
-        public bool TryAdd(TKey key, TValue value) // TODO: Expose in ref assembly https://github.com/dotnet/runtime/issues/29368
+        public bool TryAdd(TKey key, TValue value)
         {
             if (key is null)
             {
@@ -202,8 +202,10 @@ namespace System.Runtime.CompilerServices
         /// This rule permits the table to invoke createValueCallback outside the internal table lock
         /// to prevent deadlocks.
         /// </remarks>
-        public TValue GetValue(TKey key, CreateValueCallback createValueCallback!!)
+        public TValue GetValue(TKey key, CreateValueCallback createValueCallback)
         {
+            ArgumentNullException.ThrowIfNull(createValueCallback);
+
             // key is validated by TryGetValue
             return TryGetValue(key, out TValue? existingValue) ?
                 existingValue :

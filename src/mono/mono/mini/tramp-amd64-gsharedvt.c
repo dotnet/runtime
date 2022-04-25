@@ -27,6 +27,8 @@
 #include "mini-amd64.h"
 #include "mini-amd64-gsharedvt.h"
 
+MONO_PRAGMA_WARNING_DISABLE(4127) /* conditional expression is constant */
+
 #if defined (MONO_ARCH_GSHAREDVT_SUPPORTED)
 
 #define SRC_REG_SHIFT 0

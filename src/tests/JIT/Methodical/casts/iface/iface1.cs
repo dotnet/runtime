@@ -2,8 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
-namespace JitTest
+namespace JitTest_iface1_cs
 {
     internal interface Iface1
     {
@@ -20,13 +21,13 @@ namespace JitTest
         int Method3a();
     }
 
-    internal class BaseClass : Iface2
+    public class BaseClass : Iface2
     {
         public int Method1a() { return 1; }
         public int Method2a() { return 10; }
     }
 
-    internal class CoClass : BaseClass, Iface3
+    public class CoClass : BaseClass, Iface3
     {
         public int Method3a() { return 100; }
 
@@ -94,7 +95,8 @@ namespace JitTest
                 ;
         }
 
-        private static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             CoClass co = new CoClass();
             if (Static1(co) != 444)

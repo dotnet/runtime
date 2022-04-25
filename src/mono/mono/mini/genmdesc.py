@@ -2,7 +2,7 @@
 
 #
 # This tool is used to generate the cpu-<ARCH>.h files used by the JIT. The input is the
-# cpu-<ARCH>.md file, along with the instruction metadata in mini-ops.h.
+# cpu-<ARCH>.mdesc file, along with the instruction metadata in mini-ops.h.
 #
 
 import sys

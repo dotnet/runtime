@@ -84,11 +84,12 @@ namespace System.IO
         protected string GetRandomLinkName() => GetTestFileName() + ".link";
         protected string GetRandomDirName()  => GetTestFileName() + "_dir";
 
-        protected string GetRandomFilePath() => Path.Combine(ActualTestDirectory.Value, GetRandomFileName());
-        protected string GetRandomLinkPath() => Path.Combine(ActualTestDirectory.Value, GetRandomLinkName());
-        protected string GetRandomDirPath()  => Path.Combine(ActualTestDirectory.Value, GetRandomDirName());
+        protected string GetRandomFilePath() => Path.Combine(TestDirectoryActualCasing, GetRandomFileName());
+        protected string GetRandomLinkPath() => Path.Combine(TestDirectoryActualCasing, GetRandomLinkName());
+        protected string GetRandomDirPath()  => Path.Combine(TestDirectoryActualCasing, GetRandomDirName());
 
-        private Lazy<string> ActualTestDirectory => new Lazy<string>(() => GetTestDirectoryActualCasing());
+        private string _testDirectoryActualCasing;
+        private string TestDirectoryActualCasing => _testDirectoryActualCasing ??= GetTestDirectoryActualCasing();
 
         /// <summary>Gets a test file full path that is associated with the call site.</summary>
         /// <param name="index">An optional index value to use as a suffix on the file name.  Typically a loop index.</param>

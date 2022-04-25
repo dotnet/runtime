@@ -9,8 +9,10 @@ namespace System.Globalization
 {
     public partial class CompareInfo
     {
-        private SortKey InvariantCreateSortKey(string source!!, CompareOptions options)
+        private SortKey InvariantCreateSortKey(string source, CompareOptions options)
         {
+            ArgumentNullException.ThrowIfNull(source);
+
             if ((options & ValidCompareMaskOffFlags) != 0)
             {
                 throw new ArgumentException(SR.Argument_InvalidFlag, nameof(options));

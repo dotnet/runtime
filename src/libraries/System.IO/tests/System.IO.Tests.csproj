@@ -17,6 +17,7 @@
     <Compile Include="StreamWriter\StreamWriter.StringCtorTests.cs" />
     <Compile Include="BinaryWriter\BinaryWriter.DisposeAsync.cs" />
     <Compile Include="BinaryWriter\BinaryWriter.EncodingTests.cs" />
+    <Compile Include="BinaryWriter\BinaryWriter.EncodingTests_Serial.cs" />
     <Compile Include="BinaryWriter\BinaryWriter.WriteByteCharTests.cs" />
     <Compile Include="BinaryWriter\BinaryWriter.WriteTests.cs" />
     <Compile Include="BinaryWriter\BinaryWriterTests.cs" />
@@ -28,6 +29,7 @@
     <Compile Include="MemoryStream\MemoryStreamTests.cs" />
     <Compile Include="StreamReader\StreamReader.CtorTests.cs" />
     <Compile Include="StreamReader\StreamReaderTests.cs" />
+    <Compile Include="StreamReader\StreamReaderTests_Serial.cs" />
     <Compile Include="StreamWriter\StreamWriter.BaseStream.cs" />
     <Compile Include="StreamWriter\StreamWriter.CloseTests.cs" />
     <Compile Include="StreamWriter\StreamWriter.CtorTests.cs" />

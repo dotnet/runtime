@@ -118,8 +118,11 @@ namespace System.Xml
             return true;
         }
 
-        public virtual void AddNamespace(string prefix!!, [StringSyntax(StringSyntaxAttribute.Uri)] string uri!!)
+        public virtual void AddNamespace(string prefix, [StringSyntax(StringSyntaxAttribute.Uri)] string uri)
         {
+            ArgumentNullException.ThrowIfNull(prefix);
+            ArgumentNullException.ThrowIfNull(uri);
+
             Debug.Assert(_nameTable != null);
             Debug.Assert(_nsdecls != null);
             prefix = _nameTable.Add(prefix);
@@ -182,8 +185,11 @@ namespace System.Xml
             }
         }
 
-        public virtual void RemoveNamespace(string prefix!!, [StringSyntax(StringSyntaxAttribute.Uri)] string uri!!)
+        public virtual void RemoveNamespace(string prefix, [StringSyntax(StringSyntaxAttribute.Uri)] string uri)
         {
+            ArgumentNullException.ThrowIfNull(prefix);
+            ArgumentNullException.ThrowIfNull(uri);
+
             Debug.Assert(_nsdecls != null);
 
             int declIndex = LookupNamespaceDecl(prefix);
