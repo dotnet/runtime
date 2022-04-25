@@ -6629,6 +6629,8 @@ void Debugger::InitDebuggerLaunchJitInfo(Thread * pThread, EXCEPTION_POINTERS * 
     s_DebuggerLaunchJitInfo.dwProcessorArchitecture = PROCESSOR_ARCHITECTURE_ARM;
 #elif defined(TARGET_ARM64)
     s_DebuggerLaunchJitInfo.dwProcessorArchitecture = PROCESSOR_ARCHITECTURE_ARM64;
+#elif defined(TARGET_LOONGARCH64)
+    s_DebuggerLaunchJitInfo.dwProcessorArchitecture = PROCESSOR_ARCHITECTURE_LOONGARCH64;
 #else
 #error Unknown processor.
 #endif
@@ -13523,6 +13525,9 @@ LONG Debugger::FirstChanceSuspendHijackWorker(CONTEXT *pContext,
     SPEW(fprintf(stderr, "0x%x D::FCHF: code=0x%08x, addr=0x%08x, Pc=0x%p, Sp=0x%p, EFlags=0x%08x\n",
         tid, pExceptionRecord->ExceptionCode, pExceptionRecord->ExceptionAddress, pContext->Pc, pContext->Sp,
         pContext->EFlags));
+#elif defined(TARGET_LOONGARCH64)
+    SPEW(fprintf(stderr, "0x%x D::FCHF: code=0x%08x, addr=0x%08x, Pc=0x%p, Sp=0x%p\n",
+        tid, pExceptionRecord->ExceptionCode, pExceptionRecord->ExceptionAddress, pContext->Pc, pContext->Sp));
 #endif
 
     // This memory is used as IPC during the hijack. We will place a pointer to this in
