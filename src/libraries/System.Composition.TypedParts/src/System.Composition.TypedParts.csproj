@@ -2,6 +2,7 @@
   <PropertyGroup>
     <RootNamespace>System.Composition</RootNamespace>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
+    <Nullable>disable</Nullable>
     <IsTrimmable>false</IsTrimmable>
     <IsPackable>true</IsPackable>
     <StrongNameKeyId>Microsoft</StrongNameKeyId>

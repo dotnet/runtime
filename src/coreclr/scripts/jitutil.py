@@ -605,7 +605,7 @@ def download_with_progress_urlretrieve(uri, target_location, fail_if_not_found=T
             if try_num == num_tries - 1:
                 raise ex
 
-            if ex is urllib.error.HTTPError and ex == 404:
+            if isinstance(ex, urllib.error.HTTPError) and ex.code == 404:
                 if fail_if_not_found:
                     logging.error("HTTP 404 error")
                     raise ex

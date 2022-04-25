@@ -151,10 +151,7 @@ namespace Microsoft.Extensions.Logging
                 throw new ObjectDisposedException(nameof(LoggerFactory));
             }
 
-            if (provider == null)
-            {
-                throw new ArgumentNullException(nameof(provider));
-            }
+            ThrowHelper.ThrowIfNull(provider);
 
             lock (_sync)
             {

@@ -26,13 +26,13 @@ namespace System.IO
 
         internal const int DefaultBufferSize = 4096;
 
-        public static StreamReader OpenText(string path!!)
+        public static StreamReader OpenText(string path)
             => new StreamReader(path);
 
-        public static StreamWriter CreateText(string path!!)
+        public static StreamWriter CreateText(string path)
             => new StreamWriter(path, append: false);
 
-        public static StreamWriter AppendText(string path!!)
+        public static StreamWriter AppendText(string path)
             => new StreamWriter(path, append: true);
 
         /// <summary>
@@ -78,8 +78,11 @@ namespace System.IO
         //
         // On Windows, Delete will fail for a file that is open for normal I/O
         // or a file that is memory mapped.
-        public static void Delete(string path!!)
-            => FileSystem.DeleteFile(Path.GetFullPath(path));
+        public static void Delete(string path)
+        {
+            ArgumentNullException.ThrowIfNull(path);
+            FileSystem.DeleteFile(Path.GetFullPath(path));
+        }
 
         // Tests whether a file exists. The result is true if the file
         // given by the specified path exists; otherwise, the result is
@@ -375,8 +378,11 @@ namespace System.IO
         public static void Replace(string sourceFileName, string destinationFileName, string? destinationBackupFileName)
             => Replace(sourceFileName, destinationFileName, destinationBackupFileName, ignoreMetadataErrors: false);
 
-        public static void Replace(string sourceFileName!!, string destinationFileName!!, string? destinationBackupFileName, bool ignoreMetadataErrors)
+        public static void Replace(string sourceFileName, string destinationFileName, string? destinationBackupFileName, bool ignoreMetadataErrors)
         {
+            ArgumentNullException.ThrowIfNull(sourceFileName);
+            ArgumentNullException.ThrowIfNull(destinationFileName);
+
             FileSystem.ReplaceFile(
                 Path.GetFullPath(sourceFileName),
                 Path.GetFullPath(destinationFileName),
@@ -412,12 +418,18 @@ namespace System.IO
         }
 
         [SupportedOSPlatform("windows")]
-        public static void Encrypt(string path!!)
-            => FileSystem.Encrypt(path);
+        public static void Encrypt(string path)
+        {
+            ArgumentNullException.ThrowIfNull(path);
+            FileSystem.Encrypt(path);
+        }
 
         [SupportedOSPlatform("windows")]
-        public static void Decrypt(string path!!)
-            => FileSystem.Decrypt(path);
+        public static void Decrypt(string path)
+        {
+            ArgumentNullException.ThrowIfNull(path);
+            FileSystem.Decrypt(path);
+        }
 
         // If we use the path-taking constructors we will not have FileOptions.Asynchronous set and
         // we will have asynchronous file access faked by the thread pool. We want the real thing.

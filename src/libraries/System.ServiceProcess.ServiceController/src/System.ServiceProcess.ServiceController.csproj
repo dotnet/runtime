@@ -3,7 +3,6 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent);$(NetCoreAppMinimum)-windows;$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <NoWarn>$(NoWarn);CA2249</NoWarn>
-    <Nullable>enable</Nullable>
     <IsPackable>true</IsPackable>
     <PackageDescription>Provides the System.ServiceProcess.ServiceContainer class, which allows you to connect to a running or stopped service, manipulate it, or get information about it.
 
@@ -101,10 +100,6 @@ System.ServiceProcess.ServiceType</PackageDescription>
     <Reference Include="System.Threading" />
     <Reference Include="System.Threading.Thread" />
     <Reference Include="System.Threading.ThreadPool" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETStandard'">
-    <PackageReference Include="System.Buffers" Version="$(SystemBuffersVersion)" />
-    <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <Reference Include="System.ServiceProcess" />

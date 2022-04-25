@@ -10,7 +10,7 @@ namespace System.Xml.Xsl.XsltOld
     using System.Xml;
     using System.Xml.XPath;
 
-    internal class MessageAction : ContainerAction
+    internal sealed class MessageAction : ContainerAction
     {
         private bool _Terminate;
 

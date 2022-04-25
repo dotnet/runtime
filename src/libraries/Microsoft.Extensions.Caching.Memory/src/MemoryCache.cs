@@ -24,6 +24,9 @@ namespace Microsoft.Extensions.Caching.Memory
 
         private readonly MemoryCacheOptions _options;
 
+        private readonly List<WeakReference<Stats>>? _allStats;
+        private readonly Stats? _accumulatedStats;
+        private readonly ThreadLocal<Stats>? _stats;
         private CoherentState _coherentState;
         private bool _disposed;
         private DateTime _lastExpirationScan;
@@ -40,12 +43,22 @@ namespace Microsoft.Extensions.Caching.Memory
         /// </summary>
         /// <param name="optionsAccessor">The options of the cache.</param>
         /// <param name="loggerFactory">The factory used to create loggers.</param>
-        public MemoryCache(IOptions<MemoryCacheOptions> optionsAccessor!!, ILoggerFactory loggerFactory!!)
+        public MemoryCache(IOptions<MemoryCacheOptions> optionsAccessor, ILoggerFactory loggerFactory)
         {
+            ThrowHelper.ThrowIfNull(optionsAccessor);
+            ThrowHelper.ThrowIfNull(loggerFactory);
+
             _options = optionsAccessor.Value;
             _logger = loggerFactory.CreateLogger<MemoryCache>();
 
             _coherentState = new CoherentState();
+
+            if (_options.TrackStatistics)
+            {
+                _allStats = new List<WeakReference<Stats>>();
+                _accumulatedStats = new Stats();
+                _stats = new ThreadLocal<Stats>(() => new Stats(this));
+            }
 
             _lastExpirationScan = UtcNow;
             TrackLinkedCacheEntries = _options.TrackLinkedCacheEntries; // we store the setting now so it's consistent for entire MemoryCache lifetime
@@ -183,8 +196,10 @@ namespace Microsoft.Extensions.Caching.Memory
         }
 
         /// <inheritdoc />
-        public bool TryGetValue(object key!!, out object? result)
+        public bool TryGetValue(object key, out object? result)
         {
+            ThrowHelper.ThrowIfNull(key);
+
             CheckDisposed();
 
             DateTime utcNow = UtcNow;
@@ -208,6 +223,14 @@ namespace Microsoft.Extensions.Caching.Memory
                     }
 
                     StartScanForExpiredItemsIfNeeded(utcNow);
+                    // Hit
+                    if (_allStats is not null)
+                    {
+                        if (IntPtr.Size == 4)
+                            Interlocked.Increment(ref GetStats().Hits);
+                        else
+                            GetStats().Hits++;
+                    }
 
                     return true;
                 }
@@ -221,12 +244,23 @@ namespace Microsoft.Extensions.Caching.Memory
             StartScanForExpiredItemsIfNeeded(utcNow);
 
             result = null;
+            // Miss
+            if (_allStats is not null)
+            {
+                if (IntPtr.Size == 4)
+                    Interlocked.Increment(ref GetStats().Misses);
+                else
+                    GetStats().Misses++;
+            }
+
             return false;
         }
 
         /// <inheritdoc />
-        public void Remove(object key!!)
+        public void Remove(object key)
         {
+            ThrowHelper.ThrowIfNull(key);
+
             CheckDisposed();
 
             CoherentState coherentState = _coherentState; // Clear() can update the reference in the meantime
@@ -259,6 +293,27 @@ namespace Microsoft.Extensions.Caching.Memory
             }
         }
 
+        /// <summary>
+        /// Gets a snapshot of the current statistics for the memory cache.
+        /// </summary>
+        /// <returns>Returns <see langword="null"/> if statistics are not being tracked because <see cref="MemoryCacheOptions.TrackStatistics" /> is <see langword="false"/>.</returns>
+        public MemoryCacheStatistics? GetCurrentStatistics()
+        {
+            if (_allStats is not null)
+            {
+                (long hit, long miss) sumTotal = Sum();
+                return new MemoryCacheStatistics()
+                {
+                    TotalMisses = sumTotal.miss,
+                    TotalHits = sumTotal.hit,
+                    CurrentEntryCount = Count,
+                    CurrentEstimatedSize = _options.SizeLimit.HasValue ? Size : null
+                };
+            }
+
+            return null;
+        }
+
         internal void EntryExpired(CacheEntry entry)
         {
             // TODO: For efficiency consider processing these expirations in batches.
@@ -281,6 +336,72 @@ namespace Microsoft.Extensions.Caching.Memory
                 _lastExpirationScan = utcNow;
                 Task.Factory.StartNew(state => ((MemoryCache)state!).ScanForExpiredItems(), this,
                     CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
+            }
+        }
+
+        private (long, long) Sum()
+        {
+            lock (_allStats!)
+            {
+                long hits = _accumulatedStats!.Hits;
+                long misses = _accumulatedStats.Misses;
+
+                foreach (WeakReference<Stats> wr in _allStats)
+                {
+                    if (wr.TryGetTarget(out Stats? stats))
+                    {
+                        hits += Interlocked.Read(ref stats.Hits);
+                        misses += Interlocked.Read(ref stats.Misses);
+                    }
+                }
+
+                return (hits, misses);
+            }
+        }
+
+        private Stats GetStats() => _stats!.Value!;
+
+        internal sealed class Stats
+        {
+            private readonly MemoryCache? _memoryCache;
+            public long Hits;
+            public long Misses;
+
+            public Stats() { }
+
+            public Stats(MemoryCache memoryCache)
+            {
+                _memoryCache = memoryCache;
+                _memoryCache.AddToStats(this);
+            }
+
+            ~Stats() => _memoryCache?.RemoveFromStats(this);
+        }
+
+        private void RemoveFromStats(Stats current)
+        {
+            lock (_allStats!)
+            {
+                for (int i = 0; i < _allStats.Count; i++)
+                {
+                    if (_allStats[i].TryGetTarget(out Stats? stats) && stats == current)
+                    {
+                        _allStats.RemoveAt(i);
+                        break;
+                    }
+                }
+
+                _accumulatedStats!.Hits += Interlocked.Read(ref current.Hits);
+                _accumulatedStats.Misses += Interlocked.Read(ref current.Misses);
+                _allStats.TrimExcess();
+            }
+        }
+
+        private void AddToStats(Stats current)
+        {
+            lock (_allStats!)
+            {
+                _allStats.Add(new WeakReference<Stats>(current));
             }
         }
 
@@ -468,6 +589,7 @@ namespace Microsoft.Extensions.Caching.Memory
             {
                 if (disposing)
                 {
+                    _stats?.Dispose();
                     GC.SuppressFinalize(this);
                 }
 
@@ -486,8 +608,9 @@ namespace Microsoft.Extensions.Caching.Memory
             static void Throw() => throw new ObjectDisposedException(typeof(MemoryCache).FullName);
         }
 
-        private static void ValidateCacheKey(object key!!)
+        private static void ValidateCacheKey(object key)
         {
+            ThrowHelper.ThrowIfNull(key);
         }
 
         private sealed class CoherentState

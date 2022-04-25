@@ -3080,8 +3080,15 @@ char *DumpGenericPars(_Inout_updates_(SZSTRING_SIZE) char* szString, mdToken tok
         if ((attr & gpNotNullableValueTypeConstraint) != 0)
             szptr += sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr), "valuetype ");
         CHECK_REMAINING_SIZE;
+        if ((attr & gpAcceptByRefLike) != 0)
+            szptr += sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr), "byreflike ");
+        CHECK_REMAINING_SIZE;
         if ((attr & gpDefaultConstructorConstraint) != 0)
             szptr += sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr), ".ctor ");
+        CHECK_REMAINING_SIZE;
+        DWORD unknownAttr = attr & ~(gpSpecialConstraintMask | gpVarianceMask);
+        if (unknownAttr != 0)
+            szptr += sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr), "flags(0x%x) ", unknownAttr);
         CHECK_REMAINING_SIZE;
         if (NumConstrs)
         {
@@ -6964,8 +6971,8 @@ void DumpMetaInfo(_In_ __nullterminated const WCHAR* pwzFileName, _In_opt_z_ con
     if(pch && (!_wcsicmp(pch+1,W("lib")) || !_wcsicmp(pch+1,W("obj"))))
     {   // This works only when all the rest does not
         // Init and run.
-        if (MetaDataGetDispenser(CLSID_CorMetaDataDispenser,
-            IID_IMetaDataDispenserEx, (void **)&g_pDisp))
+        if (SUCCEEDED(MetaDataGetDispenser(CLSID_CorMetaDataDispenser,
+            IID_IMetaDataDispenserEx, (void **)&g_pDisp)))
                 {
                     WCHAR *pwzObjFileName=NULL;
                     if (pszObjFileName)

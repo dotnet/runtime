@@ -2,7 +2,6 @@
   <PropertyGroup>
     <NoWarn>$(NoWarn);0618</NoWarn>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
-    <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Data.Common.cs" />

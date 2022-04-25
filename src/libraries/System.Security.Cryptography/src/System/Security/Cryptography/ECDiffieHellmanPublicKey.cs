@@ -15,8 +15,11 @@ namespace System.Security.Cryptography
             _keyBlob = Array.Empty<byte>();
         }
 
-        protected ECDiffieHellmanPublicKey(byte[] keyBlob!!)
+        [Obsolete(Obsoletions.EcDhPublicKeyBlobMessage, DiagnosticId = Obsoletions.EcDhPublicKeyBlobDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        protected ECDiffieHellmanPublicKey(byte[] keyBlob)
         {
+            ArgumentNullException.ThrowIfNull(keyBlob);
+
             _keyBlob = (byte[])keyBlob.Clone();
         }
 
@@ -27,6 +30,7 @@ namespace System.Security.Cryptography
 
         protected virtual void Dispose(bool disposing) { }
 
+        [Obsolete(Obsoletions.EcDhPublicKeyBlobMessage, DiagnosticId = Obsoletions.EcDhPublicKeyBlobDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public virtual byte[] ToByteArray()
         {
             return (byte[])_keyBlob.Clone();

@@ -2,7 +2,6 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
-	<Nullable>enable</Nullable>
   </PropertyGroup>
   <!-- Compiled Source Files -->
   <ItemGroup>

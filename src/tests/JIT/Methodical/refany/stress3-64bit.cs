@@ -1,11 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
+using Xunit;
+namespace Test_stress3_64bit
+{
 // The .NET Foundation licenses this file to you under the MIT license.
 
 namespace JitTest
 {
     using System;
 
-    internal class StressTest
+    public class StressTest
     {
         private const int ITERATIONS = 4500;
 
@@ -25,7 +28,8 @@ namespace JitTest
             }
         }
 
-        private static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             try
             {
@@ -39,4 +43,5 @@ namespace JitTest
             }
         }
     }
+}
 }

@@ -197,7 +197,8 @@ void Rationalizer::RewriteNodeAsCall(GenTree**             use,
 #ifdef FEATURE_READYTORUN
                                      CORINFO_CONST_LOOKUP entryPoint,
 #endif
-                                     GenTreeCall::Use* args)
+                                     GenTree* arg1,
+                                     GenTree* arg2)
 {
     GenTree* const tree           = *use;
     GenTree* const treeFirstNode  = comp->fgGetFirstNode(tree);
@@ -206,7 +207,19 @@ void Rationalizer::RewriteNodeAsCall(GenTree**             use,
     BlockRange().Remove(treeFirstNode, tree);
 
     // Create the call node
-    GenTreeCall* call = comp->gtNewCallNode(CT_USER_FUNC, callHnd, tree->gtType, args);
+    GenTreeCall* call = comp->gtNewCallNode(CT_USER_FUNC, callHnd, tree->gtType);
+
+    if (arg2 != nullptr)
+    {
+        call->gtArgs.PushFront(comp, arg2);
+        call->gtFlags |= arg2->gtFlags & GTF_ALL_EFFECT;
+    }
+
+    if (arg1 != nullptr)
+    {
+        call->gtArgs.PushFront(comp, arg1);
+        call->gtFlags |= arg1->gtFlags & GTF_ALL_EFFECT;
+    }
 
 #if DEBUG
     CORINFO_SIG_INFO sig;
@@ -267,21 +280,13 @@ void Rationalizer::RewriteIntrinsicAsUserCall(GenTree** use, ArrayStack<GenTree*
 {
     GenTreeIntrinsic* intrinsic = (*use)->AsIntrinsic();
 
-    GenTreeCall::Use* args;
-    if (intrinsic->AsOp()->gtOp2 == nullptr)
-    {
-        args = comp->gtNewCallArgs(intrinsic->gtGetOp1());
-    }
-    else
-    {
-        args = comp->gtNewCallArgs(intrinsic->gtGetOp1(), intrinsic->gtGetOp2());
-    }
-
+    GenTree* arg1 = intrinsic->gtGetOp1();
+    GenTree* arg2 = intrinsic->gtGetOp2();
     RewriteNodeAsCall(use, parents, intrinsic->gtMethodHandle,
 #ifdef FEATURE_READYTORUN
                       intrinsic->gtEntryPoint,
 #endif
-                      args);
+                      arg1, arg2);
 }
 
 #ifdef DEBUG
@@ -447,18 +452,17 @@ void Rationalizer::RewriteAssignment(LIR::Use& use)
 
         case GT_CLS_VAR:
         {
-            bool isVolatile = (location->gtFlags & GTF_CLS_VAR_VOLATILE) != 0;
+            GenTreeFlags indFlags = location->gtFlags & (GTF_CLS_VAR_VOLATILE | GTF_CLS_VAR_TGT_HEAP);
+            static_assert_no_msg(GTF_CLS_VAR_VOLATILE == GTF_IND_VOLATILE);
+            static_assert_no_msg(GTF_CLS_VAR_TGT_HEAP == GTF_IND_TGT_HEAP);
 
-            location->gtFlags &= ~GTF_CLS_VAR_VOLATILE;
+            location->gtFlags &= ~indFlags;
             location->SetOper(GT_CLS_VAR_ADDR);
             location->gtType = TYP_BYREF;
 
             assignment->SetOper(GT_STOREIND);
             assignment->AsStoreInd()->SetRMWStatusDefault();
-            if (isVolatile)
-            {
-                assignment->gtFlags |= GTF_IND_VOLATILE;
-            }
+            assignment->gtFlags |= indFlags;
 
             // TODO: JIT dump
         }
@@ -580,7 +584,7 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
     LIR::Use use;
     if (parentStack.Height() < 2)
     {
-        use = LIR::Use::GetDummyUse(BlockRange(), *useEdge);
+        LIR::Use::MakeDummyUse(BlockRange(), *useEdge, &use);
     }
     else
     {
@@ -595,7 +599,8 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
             break;
 
         case GT_BOX:
-            // GT_BOX at this level just passes through so get rid of it
+        case GT_ARR_ADDR:
+            // BOX/ARR_ADDR at this level are just NOPs.
             use.ReplaceWith(node->gtGetOp1());
             BlockRange().Remove(node);
             break;
@@ -674,11 +679,6 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
             }
         }
         break;
-
-        case GT_ARGPLACE:
-            // Remove argplace and list nodes from the execution order.
-            BlockRange().Remove(node);
-            break;
 
 #if defined(TARGET_XARCH) || defined(TARGET_ARM)
         case GT_CLS_VAR:

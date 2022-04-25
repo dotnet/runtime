@@ -28,7 +28,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Theory]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/55774")]
         [InlineData(10)] // 2 bytes settings value.
         [InlineData(100)] // 4 bytes settings value.
         [InlineData(10_000_000)] // 8 bytes settings value.
@@ -278,7 +277,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/53090")]
         public async Task ReservedFrameType_Throws()
         {
             const int ReservedHttp2PriorityFrameId = 0x2;
@@ -680,7 +678,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ConditionalTheory(nameof(IsMsQuicSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/56194")]
         [InlineData(CancellationType.Dispose)]
         [InlineData(CancellationType.CancellationToken)]
         public async Task ResponseCancellation_ServerReceivesCancellation(CancellationType type)
@@ -702,7 +699,7 @@ namespace System.Net.Http.Functional.Tests
 
                 HttpRequestData request = await stream.ReadRequestDataAsync().ConfigureAwait(false);
 
-                int contentLength = 2*1024*1024;
+                int contentLength = 2 * 1024 * 1024;
                 var headers = new List<HttpHeaderData>();
                 headers.Append(new HttpHeaderData("Content-Length", contentLength.ToString(CultureInfo.InvariantCulture)));
 
@@ -716,7 +713,7 @@ namespace System.Net.Http.Functional.Tests
                 // We are asserting that PEER_RECEIVE_ABORTED would still arrive eventually
 
                 var ex = await Assert.ThrowsAsync<QuicStreamAbortedException>(() => SendDataForever(stream).WaitAsync(TimeSpan.FromSeconds(10)));
-                Assert.Equal((type == CancellationType.CancellationToken ? 268 : 0xffffffff), ex.ErrorCode);
+                Assert.Equal(268, ex.ErrorCode);
 
                 serverDone.Release();
             });
@@ -1138,7 +1135,7 @@ namespace System.Net.Http.Functional.Tests
 
                 await requestStream.WriteAsync(message);
                 await requestStream.FlushAsync();
-                
+
                 await Task.Delay(TimeSpan.FromSeconds(11)); // longer than client.Timeout
 
                 // Http3WriteStream is disposed after cancellation fired
@@ -1208,7 +1205,7 @@ namespace System.Net.Http.Functional.Tests
 
                 await requestStream.WriteAsync(message);
                 await requestStream.FlushAsync();
-                
+
                 cts.Cancel();
                 await Task.Delay(250);
 
@@ -1291,7 +1288,7 @@ namespace System.Net.Http.Functional.Tests
 
                 await requestStream.WriteAsync(message);
                 await requestStream.FlushAsync();
-                
+
                 // cancelling after SendAsync finished should not apply -- nothing should happen
                 cts.Cancel();
                 await Task.Delay(250);

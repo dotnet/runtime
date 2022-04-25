@@ -58,7 +58,7 @@ namespace System.Linq.Expressions
         /// <returns>The created <see cref="MemberAssignment"/>.</returns>
         public static MemberAssignment Bind(MemberInfo member, Expression expression)
         {
-            ContractUtils.RequiresNotNull(member, nameof(member));
+            ArgumentNullException.ThrowIfNull(member);
             ExpressionUtils.RequiresCanRead(expression, nameof(expression));
             Type memberType;
             ValidateSettableFieldOrPropertyMember(member, out memberType);
@@ -78,8 +78,8 @@ namespace System.Linq.Expressions
         [RequiresUnreferencedCode(PropertyFromAccessorRequiresUnreferencedCode)]
         public static MemberAssignment Bind(MethodInfo propertyAccessor, Expression expression)
         {
-            ContractUtils.RequiresNotNull(propertyAccessor, nameof(propertyAccessor));
-            ContractUtils.RequiresNotNull(expression, nameof(expression));
+            ArgumentNullException.ThrowIfNull(propertyAccessor);
+            ArgumentNullException.ThrowIfNull(expression);
             ValidateMethodInfo(propertyAccessor, nameof(propertyAccessor));
             return Bind(GetProperty(propertyAccessor, nameof(propertyAccessor)), expression);
         }

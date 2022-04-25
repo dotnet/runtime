@@ -212,7 +212,7 @@ namespace System.Runtime.CompilerServices
 #if CORERT
             // DebugFinalizableAsyncStateMachineBox looks like a small type, but it actually is not because
             // it will have a copy of all the slots from its parent. It will add another hundred(s) bytes
-            // per each async method in CoreRT / ProjectN binaries without adding much value. Avoid
+            // per each async method in NativeAOT binaries without adding much value. Avoid
             // generating this extra code until a better solution is implemented.
             var box = new AsyncStateMachineBox<TStateMachine>();
 #else
@@ -400,7 +400,7 @@ namespace System.Runtime.CompilerServices
 #if CORERT
             // DebugFinalizableAsyncStateMachineBox looks like a small type, but it actually is not because
             // it will have a copy of all the slots from its parent. It will add another hundred(s) bytes
-            // per each async method in CoreRT / ProjectN binaries without adding much value. Avoid
+            // per each async method in NativeAOT binaries without adding much value. Avoid
             // generating this extra code until a better solution is implemented.
             return new AsyncStateMachineBox<IAsyncStateMachine>();
 #else

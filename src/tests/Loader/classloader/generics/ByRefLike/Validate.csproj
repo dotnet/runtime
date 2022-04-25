@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <!-- See comment in InvalidCSharp project about local ILAsm. -->
+    <IlasmRoundTripIncompatible>true</IlasmRoundTripIncompatible>
+    <DisableProjectBuild Condition="'$(RuntimeFlavor)' == 'Mono'">true</DisableProjectBuild>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Validate.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestSourceDir)Common/CoreCLRTestLibrary/CoreCLRTestLibrary.csproj" />
+    <ProjectReference Include="InvalidCSharp.ilproj" />
+  </ItemGroup>
+</Project>

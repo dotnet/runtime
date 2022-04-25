@@ -27,8 +27,10 @@ namespace System.Diagnostics
 
         public Guid ActivityId { get { return _activityId.Value; } set { _activityId.Value = value; } }
 
-        public void StartLogicalOperation(object operationId!!)
+        public void StartLogicalOperation(object operationId)
         {
+            ArgumentNullException.ThrowIfNull(operationId);
+
             _stackWrapper.Push(operationId);
         }
 

@@ -16,7 +16,7 @@ using System.Net.Http;
 
 namespace Microsoft.WebAssembly.Diagnostics
 {
-    internal class MonoProxy : DevToolsProxy
+    internal sealed class MonoProxy : DevToolsProxy
     {
         private IList<string> urlSymbolServerList;
         private static HttpClient client = new HttpClient();
@@ -245,7 +245,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                             case var _ when url.StartsWith("wasm://", StringComparison.Ordinal):
                             case var _ when url.EndsWith(".wasm", StringComparison.Ordinal):
                                 {
-                                    Log("verbose", $"ignoring wasm: Debugger.scriptParsed {url}");
+                                    logger.LogTrace($"ignoring wasm: Debugger.scriptParsed {url}");
                                     return true;
                                 }
                         }
@@ -657,16 +657,19 @@ namespace Microsoft.WebAssembly.Diagnostics
             {
                 case "object":
                 case "methodId":
-                    args["details"]  = await context.SdbAgent.GetObjectProxy(objectId.Value, token);
+                    args["details"] = await context.SdbAgent.GetObjectProxy(objectId.Value, token);
                     break;
                 case "valuetype":
-                    args["details"]  = await context.SdbAgent.GetValueTypeProxy(objectId.Value, token);
+                    var valueType = context.SdbAgent.GetValueTypeClass(objectId.Value);
+                    if (valueType == null)
+                        throw new Exception($"Internal Error: No valuetype found for {objectId}.");
+                    args["details"] = await valueType.GetProxy(context.SdbAgent, token);
                     break;
                 case "pointer":
-                    args["details"]  = await context.SdbAgent.GetPointerContent(objectId.Value, token);
+                    args["details"] = await context.SdbAgent.GetPointerContent(objectId.Value, token);
                     break;
                 case "array":
-                    args["details"]  = await context.SdbAgent.GetArrayValuesProxy(objectId.Value, token);
+                    args["details"] = await context.SdbAgent.GetArrayValuesProxy(objectId.Value, token);
                     break;
                 case "cfo_res":
                 {
@@ -757,11 +760,14 @@ namespace Microsoft.WebAssembly.Diagnostics
                     }
                     case "valuetype":
                     {
-                        var resValType = await context.SdbAgent.GetValueTypeValues(objectId.Value, accessorPropertiesOnly, token);
-                        return resValType switch
+                        var valType = context.SdbAgent.GetValueTypeClass(objectId.Value);
+                        if (valType == null)
+                            return ValueOrError<JToken>.WithError($"Internal Error: No valuetype found for {objectId}.");
+                        var resValue = await valType.GetValues(context.SdbAgent, accessorPropertiesOnly, token);
+                        return resValue switch
                         {
                             null => ValueOrError<JToken>.WithError($"Could not get properties for {objectId}"),
-                            _    => ValueOrError<JToken>.WithValue(sortByAccessLevel ? JObject.FromObject(new { result = resValType }) : resValType)
+                            _ => ValueOrError<JToken>.WithValue(sortByAccessLevel ? JObject.FromObject(new { result = resValue }) : resValue)
                         };
                     }
                     case "array":
@@ -771,7 +777,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     }
                     case "methodId":
                     {
-                        var resMethod = await context.SdbAgent.InvokeMethodInObject(objectId.Value, objectId.SubValue, null, token);
+                        var resMethod = await context.SdbAgent.InvokeMethodInObject(objectId, objectId.SubValue, null, token);
                         return ValueOrError<JToken>.WithValue(sortByAccessLevel ? JObject.FromObject(new { result = new JArray(resMethod) }) : new JArray(resMethod));
                     }
                     case "object":
@@ -799,7 +805,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                         return ValueOrError<JToken>.WithError($"RuntimeGetProperties: unknown object id scheme: {objectId.Scheme}");
                 }
             }
-            catch (Exception ex) {
+            catch (Exception ex)
+            {
                 return ValueOrError<JToken>.WithError($"RuntimeGetProperties: Failed to get properties for {objectId}: {ex}");
             }
         }
@@ -1116,7 +1123,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
             foreach (string urlSymbolServer in urlSymbolServerList)
             {
-                string downloadURL = $"{urlSymbolServer}/{pdbName}/{asm.PdbGuid.ToString("N").ToUpper() + asm.PdbAge}/{pdbName}";
+                string downloadURL = $"{urlSymbolServer}/{pdbName}/{asm.PdbGuid.ToString("N").ToUpperInvariant() + asm.PdbAge}/{pdbName}";
 
                 try
                 {

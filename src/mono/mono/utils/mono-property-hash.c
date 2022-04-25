@@ -8,6 +8,7 @@
  * (C) 2008 Novell, Inc
  */
 
+#include <config.h>
 #include "mono-property-hash.h"
 
 struct _MonoPropertyHash {

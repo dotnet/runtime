@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Xunit;
-using Xunit.Sdk;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 
@@ -45,119 +44,6 @@ namespace System.Tests
         // no more than approx. 1.5 * 2^-7 (approx 1.17e-02).
         private const double CrossPlatformMachineEpsilonForEstimates = 1.171875e-02;
 
-        /// <summary>Verifies that two <see cref="double"/> values are equal, within the <paramref name="allowedVariance"/>.</summary>
-        /// <param name="expected">The expected value</param>
-        /// <param name="actual">The value to be compared against</param>
-        /// <param name="allowedVariance">The total variance allowed between the expected and actual results.</param>
-        /// <exception cref="EqualException">Thrown when the values are not equal</exception>
-        private static void AssertEqual(double expected, double actual, double variance)
-        {
-            if (double.IsNaN(expected))
-            {
-                if (double.IsNaN(actual))
-                {
-                    return;
-                }
-
-                throw new EqualException(ToStringPadded(expected), ToStringPadded(actual));
-            }
-            else if (double.IsNaN(actual))
-            {
-                throw new EqualException(ToStringPadded(expected), ToStringPadded(actual));
-            }
-
-            if (double.IsNegativeInfinity(expected))
-            {
-                if (double.IsNegativeInfinity(actual))
-                {
-                    return;
-                }
-
-                throw new EqualException(ToStringPadded(expected), ToStringPadded(actual));
-            }
-            else if (double.IsNegativeInfinity(actual))
-            {
-                throw new EqualException(ToStringPadded(expected), ToStringPadded(actual));
-            }
-
-            if (double.IsPositiveInfinity(expected))
-            {
-                if (double.IsPositiveInfinity(actual))
-                {
-                    return;
-                }
-
-                throw new EqualException(ToStringPadded(expected), ToStringPadded(actual));
-            }
-            else if (double.IsPositiveInfinity(actual))
-            {
-                throw new EqualException(ToStringPadded(expected), ToStringPadded(actual));
-            }
-
-            if (IsNegativeZero(expected))
-            {
-                if (IsNegativeZero(actual))
-                {
-                    return;
-                }
-
-                if (IsPositiveZero(variance) || IsNegativeZero(variance))
-                {
-                    throw new EqualException(ToStringPadded(expected), ToStringPadded(actual));
-                }
-
-                // When the variance is not +-0.0, then we are handling a case where
-                // the actual result is expected to not be exactly -0.0 on some platforms
-                // and we should fallback to checking if it is within the allowed variance instead.
-            }
-            else if (IsNegativeZero(actual))
-            {
-                if (IsPositiveZero(variance) || IsNegativeZero(variance))
-                {
-                    throw new EqualException(ToStringPadded(expected), ToStringPadded(actual));
-                }
-
-                // When the variance is not +-0.0, then we are handling a case where
-                // the actual result is expected to not be exactly -0.0 on some platforms
-                // and we should fallback to checking if it is within the allowed variance instead.
-            }
-
-            if (IsPositiveZero(expected))
-            {
-                if (IsPositiveZero(actual))
-                {
-                    return;
-                }
-
-                if (IsPositiveZero(variance) || IsNegativeZero(variance))
-                {
-                    throw new EqualException(ToStringPadded(expected), ToStringPadded(actual));
-                }
-
-                // When the variance is not +-0.0, then we are handling a case where
-                // the actual result is expected to not be exactly +0.0 on some platforms
-                // and we should fallback to checking if it is within the allowed variance instead.
-            }
-            else if (IsPositiveZero(actual))
-            {
-                if (IsPositiveZero(variance) || IsNegativeZero(variance))
-                {
-                    throw new EqualException(ToStringPadded(expected), ToStringPadded(actual));
-                }
-
-                // When the variance is not +-0.0, then we are handling a case where
-                // the actual result is expected to not be exactly +0.0 on some platforms
-                // and we should fallback to checking if it is within the allowed variance instead.
-            }
-
-            var delta = Math.Abs(actual - expected);
-
-            if (delta > variance)
-            {
-                throw new EqualException(ToStringPadded(expected), ToStringPadded(actual));
-            }
-        }
-
         [Fact]
         public static void E()
         {
@@ -174,199 +60,6 @@ namespace System.Tests
         public static void Tau()
         {
             Assert.Equal(unchecked((long)0x401921FB54442D18), BitConverter.DoubleToInt64Bits(Math.Tau));
-        }
-
-        /// <summary>Verifies that two <see cref="float"/> values are equal, within the <paramref name="variance"/>.</summary>
-        /// <param name="expected">The expected value</param>
-        /// <param name="actual">The value to be compared against</param>
-        /// <param name="variance">The total variance allowed between the expected and actual results.</param>
-        /// <exception cref="EqualException">Thrown when the values are not equal</exception>
-        private static void AssertEqual(float expected, float actual, float variance)
-        {
-            if (float.IsNaN(expected))
-            {
-                if (float.IsNaN(actual))
-                {
-                    return;
-                }
-
-                throw new EqualException(ToStringPadded(expected), ToStringPadded(actual));
-            }
-            else if (float.IsNaN(actual))
-            {
-                throw new EqualException(ToStringPadded(expected), ToStringPadded(actual));
-            }
-
-            if (float.IsNegativeInfinity(expected))
-            {
-                if (float.IsNegativeInfinity(actual))
-                {
-                    return;
-                }
-
-                throw new EqualException(ToStringPadded(expected), ToStringPadded(actual));
-            }
-            else if (float.IsNegativeInfinity(actual))
-            {
-                throw new EqualException(ToStringPadded(expected), ToStringPadded(actual));
-            }
-
-            if (float.IsPositiveInfinity(expected))
-            {
-                if (float.IsPositiveInfinity(actual))
-                {
-                    return;
-                }
-
-                throw new EqualException(ToStringPadded(expected), ToStringPadded(actual));
-            }
-            else if (float.IsPositiveInfinity(actual))
-            {
-                throw new EqualException(ToStringPadded(expected), ToStringPadded(actual));
-            }
-
-            if (IsNegativeZero(expected))
-            {
-                if (IsNegativeZero(actual))
-                {
-                    return;
-                }
-
-                if (IsPositiveZero(variance) || IsNegativeZero(variance))
-                {
-                    throw new EqualException(ToStringPadded(expected), ToStringPadded(actual));
-                }
-
-                // When the variance is not +-0.0, then we are handling a case where
-                // the actual result is expected to not be exactly -0.0 on some platforms
-                // and we should fallback to checking if it is within the allowed variance instead.
-            }
-            else if (IsNegativeZero(actual))
-            {
-                if (IsPositiveZero(variance) || IsNegativeZero(variance))
-                {
-                    throw new EqualException(ToStringPadded(expected), ToStringPadded(actual));
-                }
-
-                // When the variance is not +-0.0, then we are handling a case where
-                // the actual result is expected to not be exactly -0.0 on some platforms
-                // and we should fallback to checking if it is within the allowed variance instead.
-            }
-
-            if (IsPositiveZero(expected))
-            {
-                if (IsPositiveZero(actual))
-                {
-                    return;
-                }
-
-                if (IsPositiveZero(variance) || IsNegativeZero(variance))
-                {
-                    throw new EqualException(ToStringPadded(expected), ToStringPadded(actual));
-                }
-
-                // When the variance is not +-0.0, then we are handling a case where
-                // the actual result is expected to not be exactly +0.0 on some platforms
-                // and we should fallback to checking if it is within the allowed variance instead.
-            }
-            else if (IsPositiveZero(actual))
-            {
-                if (IsPositiveZero(variance) || IsNegativeZero(variance))
-                {
-                    throw new EqualException(ToStringPadded(expected), ToStringPadded(actual));
-                }
-
-                // When the variance is not +-0.0, then we are handling a case where
-                // the actual result is expected to not be exactly +0.0 on some platforms
-                // and we should fallback to checking if it is within the allowed variance instead.
-            }
-
-            var delta = Math.Abs(actual - expected);
-
-            if (delta > variance)
-            {
-                throw new EqualException(ToStringPadded(expected), ToStringPadded(actual));
-            }
-        }
-
-        private static unsafe bool IsNegativeZero(double value)
-        {
-            return (*(ulong*)(&value)) == 0x8000000000000000;
-        }
-
-        private static unsafe bool IsNegativeZero(float value)
-        {
-            return (*(uint*)(&value)) == 0x80000000;
-        }
-
-        private static unsafe bool IsPositiveZero(double value)
-        {
-            return (*(ulong*)(&value)) == 0x0000000000000000;
-        }
-
-        private static unsafe bool IsPositiveZero(float value)
-        {
-            return (*(uint*)(&value)) == 0x00000000;
-        }
-
-        // We have a custom ToString here to ensure that edge cases (specifically +-0.0,
-        // but also NaN and +-infinity) are correctly and consistently represented.
-        private static string ToStringPadded(double value)
-        {
-            if (double.IsNaN(value))
-            {
-                return "NaN".PadLeft(20);
-            }
-            else if (double.IsPositiveInfinity(value))
-            {
-                return "+\u221E".PadLeft(20);
-            }
-            else if (double.IsNegativeInfinity(value))
-            {
-                return "-\u221E".PadLeft(20);
-            }
-            else if (IsNegativeZero(value))
-            {
-                return "-0.0".PadLeft(20);
-            }
-            else if (IsPositiveZero(value))
-            {
-                return "+0.0".PadLeft(20);
-            }
-            else
-            {
-                return $"{value,20:G17}";
-            }
-        }
-
-        // We have a custom ToString here to ensure that edge cases (specifically +-0.0,
-        // but also NaN and +-infinity) are correctly and consistently represented.
-        private static string ToStringPadded(float value)
-        {
-            if (double.IsNaN(value))
-            {
-                return "NaN".PadLeft(10);
-            }
-            else if (double.IsPositiveInfinity(value))
-            {
-                return "+\u221E".PadLeft(10);
-            }
-            else if (double.IsNegativeInfinity(value))
-            {
-                return "-\u221E".PadLeft(10);
-            }
-            else if (IsNegativeZero(value))
-            {
-                return "-0.0".PadLeft(10);
-            }
-            else if (IsPositiveZero(value))
-            {
-                return "+0.0".PadLeft(10);
-            }
-            else
-            {
-                return $"{value,10:G9}";
-            }
         }
 
         [Fact]
@@ -415,7 +108,7 @@ namespace System.Tests
         [InlineData( double.PositiveInfinity, double.PositiveInfinity, 0.0)]
         public static void Abs_Double(double value, double expectedResult, double allowedVariance)
         {
-            AssertEqual(expectedResult, Math.Abs(value), allowedVariance);
+            AssertExtensions.Equal(expectedResult, Math.Abs(value), allowedVariance);
         }
 
         [Fact]
@@ -499,7 +192,7 @@ namespace System.Tests
         [InlineData( float.PositiveInfinity, float.PositiveInfinity, 0.0f)]
         public static void Abs_Single(float value, float expectedResult, float allowedVariance)
         {
-            AssertEqual(expectedResult, Math.Abs(value), allowedVariance);
+            AssertExtensions.Equal(expectedResult, Math.Abs(value), allowedVariance);
         }
 
         [Theory]
@@ -530,7 +223,7 @@ namespace System.Tests
         [InlineData( double.PositiveInfinity, double.NaN,          0.0 )]
         public static void Acos(double value, double expectedResult, double allowedVariance)
         {
-            AssertEqual(expectedResult, Math.Acos(value), allowedVariance);
+            AssertExtensions.Equal(expectedResult, Math.Acos(value), allowedVariance);
         }
 
         [Theory]
@@ -573,7 +266,7 @@ namespace System.Tests
         [InlineData( double.PositiveInfinity,  double.NaN,          0.0)]
         public static void Asin(double value, double expectedResult, double allowedVariance)
         {
-            AssertEqual(expectedResult, Math.Asin(value), allowedVariance);
+            AssertExtensions.Equal(expectedResult, Math.Asin(value), allowedVariance);
         }
 
         [Theory]
@@ -608,7 +301,7 @@ namespace System.Tests
         [InlineData( double.PositiveInfinity,  1.5707963267948966,  CrossPlatformMachineEpsilon * 10)]  // expected:  (pi / 2)
         public static void Atan(double value, double expectedResult, double allowedVariance)
         {
-            AssertEqual(expectedResult, Math.Atan(value), allowedVariance);
+            AssertExtensions.Equal(expectedResult, Math.Atan(value), allowedVariance);
         }
 
         public static IEnumerable<object[]> Atan2_TestData
@@ -713,7 +406,7 @@ namespace System.Tests
         [MemberData(nameof(Atan2_TestData))]
         public static void Atan2(double y, double x, double expectedResult, double allowedVariance)
         {
-            AssertEqual(expectedResult, Math.Atan2(y, x), allowedVariance);
+            AssertExtensions.Equal(expectedResult, Math.Atan2(y, x), allowedVariance);
         }
 
         [Theory]
@@ -723,7 +416,7 @@ namespace System.Tests
         [InlineData( double.PositiveInfinity, double.PositiveInfinity,  0.78539816339744831, CrossPlatformMachineEpsilon)]         // expected:  (pi / 4)
         public static void Atan2_IEEE(double y, double x, double expectedResult, double allowedVariance)
         {
-            AssertEqual(expectedResult, Math.Atan2(y, x), allowedVariance);
+            AssertExtensions.Equal(expectedResult, Math.Atan2(y, x), allowedVariance);
         }
 
         [Fact]
@@ -764,7 +457,7 @@ namespace System.Tests
         [InlineData(double.PositiveInfinity, double.PositiveInfinity,  0.0)]
         public static void Ceiling_Double(double value, double expectedResult, double allowedVariance)
         {
-            AssertEqual(expectedResult, Math.Ceiling(value), allowedVariance);
+            AssertExtensions.Equal(expectedResult, Math.Ceiling(value), allowedVariance);
         }
 
         [Theory]
@@ -776,7 +469,7 @@ namespace System.Tests
         [InlineData(-0.31830988618379067,    -0.0,                     0.0)]    // value: -(1 / pi)
         public static void Ceiling_Double_IEEE(double value, double expectedResult, double allowedVariance)
         {
-            AssertEqual(expectedResult, Math.Ceiling(value), allowedVariance);
+            AssertExtensions.Equal(expectedResult, Math.Ceiling(value), allowedVariance);
         }
 
         [Theory]
@@ -815,7 +508,7 @@ namespace System.Tests
         [InlineData( double.PositiveInfinity,  double.NaN,          0.0)]
         public static void Cos(double value, double expectedResult, double allowedVariance)
         {
-            AssertEqual(expectedResult, Math.Cos(value), allowedVariance);
+            AssertExtensions.Equal(expectedResult, Math.Cos(value), allowedVariance);
         }
 
         [Theory]
@@ -854,7 +547,7 @@ namespace System.Tests
         [InlineData( double.PositiveInfinity, double.PositiveInfinity, 0.0)]
         public static void Cosh(double value, double expectedResult, double allowedVariance)
         {
-            AssertEqual(expectedResult, Math.Cosh(value), allowedVariance);
+            AssertExtensions.Equal(expectedResult, Math.Cosh(value), allowedVariance);
         }
 
         [Theory]
@@ -893,7 +586,7 @@ namespace System.Tests
         [InlineData( double.PositiveInfinity, double.PositiveInfinity, 0.0)]
         public static void Exp(double value, double expectedResult, double allowedVariance)
         {
-            AssertEqual(expectedResult, Math.Exp(value), allowedVariance);
+            AssertExtensions.Equal(expectedResult, Math.Exp(value), allowedVariance);
         }
 
         [Fact]
@@ -939,14 +632,14 @@ namespace System.Tests
         [InlineData(double.PositiveInfinity,  double.PositiveInfinity, 0.0)]
         public static void Floor_Double(double value, double expectedResult, double allowedVariance)
         {
-            AssertEqual(expectedResult, Math.Floor(value), allowedVariance);
+            AssertExtensions.Equal(expectedResult, Math.Floor(value), allowedVariance);
         }
 
         [Theory]
         [InlineData(-0.0,                    -0.0,                     0.0)]
         public static void Floor_Double_IEEE(double value, double expectedResult, double allowedVariance)
         {
-            AssertEqual(expectedResult, Math.Floor(value), allowedVariance);
+            AssertExtensions.Equal(expectedResult, Math.Floor(value), allowedVariance);
         }
 
         [Fact]
@@ -1007,7 +700,7 @@ namespace System.Tests
         [InlineData( double.PositiveInfinity,  double.PositiveInfinity, 0.0)]
         public static void Log(double value, double expectedResult, double allowedVariance)
         {
-            AssertEqual(expectedResult, Math.Log(value), allowedVariance);
+            AssertExtensions.Equal(expectedResult, Math.Log(value), allowedVariance);
         }
 
         [Fact]
@@ -1065,7 +758,7 @@ namespace System.Tests
         [InlineData( double.PositiveInfinity,  double.PositiveInfinity, 0.0)]
         public static void Log10(double value, double expectedResult, double allowedVariance)
         {
-            AssertEqual(expectedResult, Math.Log10(value), allowedVariance);
+            AssertExtensions.Equal(expectedResult, Math.Log10(value), allowedVariance);
         }
 
         [Fact]
@@ -1102,7 +795,7 @@ namespace System.Tests
         [InlineData(-2.0,                    3.0,                     3.0)]
         public static void Max_Double_NotNetFramework(double x, double y, double expectedResult)
         {
-            AssertEqual(expectedResult, Math.Max(x, y), 0.0);
+            AssertExtensions.Equal(expectedResult, Math.Max(x, y), 0.0);
         }
 
         [Fact]
@@ -1160,7 +853,7 @@ namespace System.Tests
         [InlineData(-2.0,                   3.0,                    3.0)]
         public static void Max_Single_NotNetFramework(float x, float y, float expectedResult)
         {
-            AssertEqual(expectedResult, Math.Max(x, y), 0.0f);
+            AssertExtensions.Equal(expectedResult, Math.Max(x, y), 0.0f);
         }
 
         [Fact]
@@ -1225,7 +918,7 @@ namespace System.Tests
         [InlineData(-2.0,                    3.0,                     -2.0)]
         public static void Min_Double_NotNetFramework(double x, double y, double expectedResult)
         {
-            AssertEqual(expectedResult, Math.Min(x, y), 0.0);
+            AssertExtensions.Equal(expectedResult, Math.Min(x, y), 0.0);
         }
 
         [Fact]
@@ -1283,7 +976,7 @@ namespace System.Tests
         [InlineData(-2.0,                   3.0,                    -2.0)]
         public static void Min_Single_NotNetFramework(float x, float y, float expectedResult)
         {
-            AssertEqual(expectedResult, Math.Min(x, y), 0.0f);
+            AssertExtensions.Equal(expectedResult, Math.Min(x, y), 0.0f);
         }
 
         [Fact]
@@ -1469,7 +1162,7 @@ namespace System.Tests
         [MemberData(nameof(Pow_TestData))]
         public static void Pow(double x, double y, double expectedResult, double allowedVariance)
         {
-            AssertEqual(expectedResult, Math.Pow(x, y), allowedVariance);
+            AssertExtensions.Equal(expectedResult, Math.Pow(x, y), allowedVariance);
         }
 
         [Theory]
@@ -1480,7 +1173,7 @@ namespace System.Tests
         [InlineData( 1.0,         double.NaN,              1.0, CrossPlatformMachineEpsilon * 10)]
         public static void Pow_IEEE(float x, float y, float expectedResult, float allowedVariance)
         {
-            AssertEqual(expectedResult, Math.Pow(x, y), allowedVariance);
+            AssertExtensions.Equal(expectedResult, Math.Pow(x, y), allowedVariance);
         }
 
         [Theory]
@@ -1519,7 +1212,7 @@ namespace System.Tests
         [InlineData( double.PositiveInfinity,  0.0,                     0.0)]
         public static void ReciprocalEstimate(double value, double expectedResult, double allowedVariance)
         {
-            AssertEqual(expectedResult, Math.ReciprocalEstimate(value), allowedVariance);
+            AssertExtensions.Equal(expectedResult, Math.ReciprocalEstimate(value), allowedVariance);
         }
 
         [Theory]
@@ -1558,7 +1251,7 @@ namespace System.Tests
         [InlineData( double.PositiveInfinity,  0.0,                     0.0)]
         public static void ReciprocalSqrtEstimate(double value, double expectedResult, double allowedVariance)
         {
-            AssertEqual(expectedResult, Math.ReciprocalSqrtEstimate(value), allowedVariance);
+            AssertExtensions.Equal(expectedResult, Math.ReciprocalSqrtEstimate(value), allowedVariance);
         }
 
         [Fact]
@@ -1707,7 +1400,7 @@ namespace System.Tests
         [InlineData( double.PositiveInfinity,  double.NaN,          0.0)]
         public static void Sin(double value, double expectedResult, double allowedVariance)
         {
-            AssertEqual(expectedResult, Math.Sin(value), allowedVariance);
+            AssertExtensions.Equal(expectedResult, Math.Sin(value), allowedVariance);
         }
 
         [Theory]
@@ -1747,8 +1440,8 @@ namespace System.Tests
         public static void SinCos(double value, double expectedResultSin, double expectedResultCos, double allowedVarianceSin, double allowedVarianceCos)
         {
             (double resultSin, double resultCos) = Math.SinCos(value);
-            AssertEqual(expectedResultSin, resultSin, allowedVarianceSin);
-            AssertEqual(expectedResultCos, resultCos, allowedVarianceCos);
+            AssertExtensions.Equal(expectedResultSin, resultSin, allowedVarianceSin);
+            AssertExtensions.Equal(expectedResultCos, resultCos, allowedVarianceCos);
         }
 
         [Theory]
@@ -1787,7 +1480,7 @@ namespace System.Tests
         [InlineData( double.PositiveInfinity,  double.PositiveInfinity, 0.0)]
         public static void Sinh(double value, double expectedResult, double allowedVariance)
         {
-            AssertEqual(expectedResult, Math.Sinh(value), allowedVariance);
+            AssertExtensions.Equal(expectedResult, Math.Sinh(value), allowedVariance);
         }
 
         [Theory]
@@ -1826,7 +1519,7 @@ namespace System.Tests
         [InlineData( double.PositiveInfinity, double.PositiveInfinity, 0.0)]
         public static void Sqrt(double value, double expectedResult, double allowedVariance)
         {
-            AssertEqual(expectedResult, Math.Sqrt(value), allowedVariance);
+            AssertExtensions.Equal(expectedResult, Math.Sqrt(value), allowedVariance);
         }
 
         [Theory]
@@ -1863,7 +1556,7 @@ namespace System.Tests
         [InlineData( double.PositiveInfinity,  double.NaN,              0.0)]
         public static void Tan(double value, double expectedResult, double allowedVariance)
         {
-            AssertEqual(expectedResult, Math.Tan(value), allowedVariance);
+            AssertExtensions.Equal(expectedResult, Math.Tan(value), allowedVariance);
         }
 
         [Theory]
@@ -1871,7 +1564,7 @@ namespace System.Tests
         [InlineData( 1.5707963267948966,       16331239353195370.0,     0.0)]                               // value:  (pi / 2)
         public static void Tan_PiOver2(double value, double expectedResult, double allowedVariance)
         {
-            AssertEqual(expectedResult, Math.Tan(value), allowedVariance);
+            AssertExtensions.Equal(expectedResult, Math.Tan(value), allowedVariance);
         }
 
         [Theory]
@@ -1910,7 +1603,7 @@ namespace System.Tests
         [InlineData( double.PositiveInfinity,  1.0,                 CrossPlatformMachineEpsilon * 10)]
         public static void Tanh(double value, double expectedResult, double allowedVariance)
         {
-            AssertEqual(expectedResult, Math.Tanh(value), allowedVariance);
+            AssertExtensions.Equal(expectedResult, Math.Tanh(value), allowedVariance);
         }
 
         [Fact]
@@ -2295,7 +1988,7 @@ namespace System.Tests
         [InlineData( double.PositiveInfinity, double.PositiveInfinity, 0.0)]
         public static void Acosh(double value, double expectedResult, double allowedVariance)
         {
-            AssertEqual(expectedResult, Math.Acosh(value), allowedVariance);
+            AssertExtensions.Equal(expectedResult, Math.Acosh(value), allowedVariance);
         }
 
         [Theory]
@@ -2334,7 +2027,7 @@ namespace System.Tests
         [InlineData( double.PositiveInfinity,  double.PositiveInfinity, 0.0)]
         public static void Asinh(double value, double expectedResult, double allowedVariance)
         {
-            AssertEqual(expectedResult, Math.Asinh(value), allowedVariance);
+            AssertExtensions.Equal(expectedResult, Math.Asinh(value), allowedVariance);
         }
 
         [Theory]
@@ -2381,7 +2074,7 @@ namespace System.Tests
         [InlineData( double.PositiveInfinity,  double.NaN,              0.0)]
         public static void Atanh(double value, double expectedResult, double allowedVariance)
         {
-            AssertEqual(expectedResult, Math.Atanh(value), allowedVariance);
+            AssertExtensions.Equal(expectedResult, Math.Atanh(value), allowedVariance);
         }
 
         [Theory]
@@ -2420,7 +2113,7 @@ namespace System.Tests
         [InlineData( double.PositiveInfinity,  double.MaxValue)]
         public static void BitDecrement(double value, double expectedResult)
         {
-            AssertEqual(expectedResult, Math.BitDecrement(value), 0.0);
+            AssertExtensions.Equal(expectedResult, Math.BitDecrement(value), 0.0);
         }
 
         [Theory]
@@ -2459,7 +2152,7 @@ namespace System.Tests
         [InlineData( double.PositiveInfinity,  double.PositiveInfinity)]
         public static void BitIncrement(double value, double expectedResult)
         {
-            AssertEqual(expectedResult, Math.BitIncrement(value), 0.0);
+            AssertExtensions.Equal(expectedResult, Math.BitIncrement(value), 0.0);
         }
 
         [Theory]
@@ -2498,7 +2191,7 @@ namespace System.Tests
         [InlineData( double.PositiveInfinity,  double.PositiveInfinity, 0.0)]
         public static void Cbrt(double value, double expectedResult, double allowedVariance)
         {
-            AssertEqual(expectedResult, Math.Cbrt(value), allowedVariance);
+            AssertExtensions.Equal(expectedResult, Math.Cbrt(value), allowedVariance);
         }
 
         [Theory]
@@ -2686,7 +2379,7 @@ namespace System.Tests
         [InlineData( double.PositiveInfinity,  double.PositiveInfinity,  double.PositiveInfinity)]
         public static void CopySign(double x, double y, double expectedResult)
         {
-            AssertEqual(expectedResult, Math.CopySign(x, y), 0.0);
+            AssertExtensions.Equal(expectedResult, Math.CopySign(x, y), 0.0);
         }
 
         [Theory]
@@ -2758,7 +2451,7 @@ namespace System.Tests
         [InlineData( double.PositiveInfinity,  double.PositiveInfinity,  double.NegativeInfinity,  double.NaN)]
         public static void FusedMultiplyAdd(double x, double y, double z, double expectedResult)
         {
-            AssertEqual(expectedResult, Math.FusedMultiplyAdd(x, y, z), 0.0);
+            AssertExtensions.Equal(expectedResult, Math.FusedMultiplyAdd(x, y, z), 0.0);
         }
 
         [Theory]
@@ -2849,33 +2542,53 @@ namespace System.Tests
         [InlineData( double.PositiveInfinity,  double.PositiveInfinity, 0.0)]
         public static void Log2(double value, double expectedResult, double allowedVariance)
         {
-            AssertEqual(expectedResult, Math.Log2(value), allowedVariance);
+            AssertExtensions.Equal(expectedResult, Math.Log2(value), allowedVariance);
         }
 
         [Theory]
         [InlineData(double.NegativeInfinity, double.PositiveInfinity, double.PositiveInfinity)]
+        [InlineData(double.PositiveInfinity, double.NegativeInfinity, double.PositiveInfinity)]
         [InlineData(double.MinValue, double.MaxValue, double.MaxValue)]
+        [InlineData(double.MaxValue, double.MinValue, double.MaxValue)]
         [InlineData(double.NaN, double.NaN, double.NaN)]
-        [InlineData(-0.0, 0.0, 0.0)]
-        [InlineData(2.0, -3.0, -3.0)]
-        [InlineData(3.0, -2.0, 3.0)]
+        [InlineData(double.NaN, 1.0, double.NaN)]
+        [InlineData(1.0, double.NaN, double.NaN)]
         [InlineData(double.PositiveInfinity, double.NaN, double.NaN)]
+        [InlineData(double.NegativeInfinity, double.NaN, double.NaN)]
+        [InlineData(double.NaN, double.PositiveInfinity, double.NaN)]
+        [InlineData(double.NaN, double.NegativeInfinity, double.NaN)]
+        [InlineData(-0.0, 0.0, 0.0)]
+        [InlineData(0.0, -0.0, 0.0)]
+        [InlineData(2.0, -3.0, -3.0)]
+        [InlineData(-3.0, 2.0, -3.0)]
+        [InlineData(3.0, -2.0, 3.0)]
+        [InlineData(-2.0, 3.0, 3.0)]
         public static void MaxMagnitude(double x, double y, double expectedResult)
         {
-            AssertEqual(expectedResult, Math.MaxMagnitude(x, y), 0.0);
+            AssertExtensions.Equal(expectedResult, Math.MaxMagnitude(x, y), 0.0);
         }
 
         [Theory]
         [InlineData(double.NegativeInfinity, double.PositiveInfinity, double.NegativeInfinity)]
+        [InlineData(double.PositiveInfinity, double.NegativeInfinity, double.NegativeInfinity)]
         [InlineData(double.MinValue, double.MaxValue, double.MinValue)]
+        [InlineData(double.MaxValue, double.MinValue, double.MinValue)]
         [InlineData(double.NaN, double.NaN, double.NaN)]
-        [InlineData(-0.0, 0.0, -0.0)]
-        [InlineData(2.0, -3.0, 2.0)]
-        [InlineData(3.0, -2.0, -2.0)]
+        [InlineData(double.NaN, 1.0, double.NaN)]
+        [InlineData(1.0, double.NaN, double.NaN)]
         [InlineData(double.PositiveInfinity, double.NaN, double.NaN)]
+        [InlineData(double.NegativeInfinity, double.NaN, double.NaN)]
+        [InlineData(double.NaN, double.PositiveInfinity, double.NaN)]
+        [InlineData(double.NaN, double.NegativeInfinity, double.NaN)]
+        [InlineData(-0.0, 0.0, -0.0)]
+        [InlineData(0.0, -0.0, -0.0)]
+        [InlineData(2.0, -3.0, 2.0)]
+        [InlineData(-3.0, 2.0, 2.0)]
+        [InlineData(3.0, -2.0, -2.0)]
+        [InlineData(-2.0, 3.0, -2.0)]
         public static void MinMagnitude(double x, double y, double expectedResult)
         {
-            AssertEqual(expectedResult, Math.MinMagnitude(x, y), 0.0);
+            AssertExtensions.Equal(expectedResult, Math.MinMagnitude(x, y), 0.0);
         }
 
         [Theory]
@@ -2952,7 +2665,7 @@ namespace System.Tests
         [InlineData( -0.6787637026394024,      7,                             -86.88175393784351,       CrossPlatformMachineEpsilon * 100)]
         public static void ScaleB(double x, int n, double expectedResult, double allowedVariance)
         {
-            AssertEqual(expectedResult, Math.ScaleB(x, n), allowedVariance);
+            AssertExtensions.Equal(expectedResult, Math.ScaleB(x, n), allowedVariance);
         }
 
 

@@ -87,9 +87,11 @@ namespace System.IO.Pipes
         }
 
         // Create a NamedPipeClientStream from an existing server pipe handle.
-        public NamedPipeClientStream(PipeDirection direction, bool isAsync, bool isConnected, SafePipeHandle safePipeHandle!!)
+        public NamedPipeClientStream(PipeDirection direction, bool isAsync, bool isConnected, SafePipeHandle safePipeHandle)
             : base(direction, 0)
         {
+            ArgumentNullException.ThrowIfNull(safePipeHandle);
+
             if (safePipeHandle.IsInvalid)
             {
                 throw new ArgumentException(SR.Argument_InvalidHandle, nameof(safePipeHandle));
@@ -137,7 +139,7 @@ namespace System.IO.Pipes
                 cancellationToken.ThrowIfCancellationRequested();
 
                 // Determine how long we should wait in this connection attempt
-                int waitTime = timeout - elapsed;
+                int waitTime = timeout == Timeout.Infinite ? CancellationCheckInterval : timeout - elapsed;
                 if (cancellationToken.CanBeCanceled && waitTime > CancellationCheckInterval)
                 {
                     waitTime = CancellationCheckInterval;

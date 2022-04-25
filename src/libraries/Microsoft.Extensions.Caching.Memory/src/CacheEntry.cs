@@ -33,8 +33,11 @@ namespace Microsoft.Extensions.Caching.Memory
         private byte _evictionReason;
         private byte _priority = (byte)CacheItemPriority.Normal;
 
-        internal CacheEntry(object key!!, MemoryCache memoryCache!!)
+        internal CacheEntry(object key, MemoryCache memoryCache)
         {
+            ThrowHelper.ThrowIfNull(key);
+            ThrowHelper.ThrowIfNull(memoryCache);
+
             Key = key;
             _cache = memoryCache;
             if (memoryCache.TrackLinkedCacheEntries)

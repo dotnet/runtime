@@ -44,10 +44,7 @@ namespace Microsoft.Extensions.Logging.Debug
                 return;
             }
 
-            if (formatter == null)
-            {
-                throw new ArgumentNullException(nameof(formatter));
-            }
+            ThrowHelper.ThrowIfNull(formatter);
 
             string message = formatter(state, exception);
 

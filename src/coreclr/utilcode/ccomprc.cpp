@@ -221,9 +221,7 @@ void CCompRC::Destroy()
     // Free all resource libraries
 
     //*****************************************************************************
-    // Free the loaded library if we ever loaded it and only if we are not on
-    // Win 95 which has a known bug with DLL unloading (it randomly unloads a
-    // dll on shut down, not necessarily the one you asked for).  This is done
+    // Free the loaded library if we ever loaded it. This is done
     // only in debug mode to make coverage runs accurate.
     //*****************************************************************************
 

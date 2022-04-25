@@ -673,6 +673,12 @@ public:
     PTR_OnStackReplacementManager GetOnStackReplacementManager();
 #endif // FEATURE_ON_STACK_REPLACEMENT
 
+#ifndef DACCESS_COMPILE
+public:
+    virtual void RegisterDependentHandleToNativeObjectForCleanup(LADependentHandleToNativeObject *dependentHandle) {};
+    virtual void UnregisterDependentHandleToNativeObjectFromCleanup(LADependentHandleToNativeObject *dependentHandle) {};
+    virtual void CleanupDependentHandlesToNativeObjects() {};
+#endif
 };  // class LoaderAllocator
 
 typedef VPTR(LoaderAllocator) PTR_LoaderAllocator;
@@ -765,6 +771,20 @@ private:
     SList<HandleCleanupListItem> m_handleCleanupList;
 #if !defined(DACCESS_COMPILE)
     CustomAssemblyBinder* m_binderToRelease;
+#endif
+
+private:
+    class DependentHandleToNativeObjectHashTraits : public PtrSetSHashTraits<LADependentHandleToNativeObject *> {};
+    typedef SHash<DependentHandleToNativeObjectHashTraits> DependentHandleToNativeObjectSet;
+
+    CrstExplicitInit m_dependentHandleToNativeObjectSetCrst;
+    DependentHandleToNativeObjectSet m_dependentHandleToNativeObjectSet;
+
+#ifndef DACCESS_COMPILE
+public:
+    virtual void RegisterDependentHandleToNativeObjectForCleanup(LADependentHandleToNativeObject *dependentHandle);
+    virtual void UnregisterDependentHandleToNativeObjectFromCleanup(LADependentHandleToNativeObject *dependentHandle);
+    virtual void CleanupDependentHandlesToNativeObjects();
 #endif
 };
 

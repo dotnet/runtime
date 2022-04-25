@@ -74,7 +74,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(-2)]
         [InlineData((long)int.MaxValue + 1)]
         public void TestWaitForExitValidation(long milliseconds)

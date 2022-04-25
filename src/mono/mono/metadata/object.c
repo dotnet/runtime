@@ -1528,8 +1528,11 @@ build_imt_slots (MonoClass *klass, MonoVTable *vt, gpointer* imt, GSList *extra_
 				 * add_imt_builder_entry anyway.
 				 */
 				method = mono_class_get_method_by_index (mono_class_get_generic_class (iface)->container_class, method_slot_in_interface);
-				if (m_method_is_static (method))
+				if (m_method_is_static (method)) {
+					if (m_method_is_virtual (method))
+						vt_slot ++;
 					continue;
+				}
 				if (mono_method_get_imt_slot (method) != slot_num) {
 					vt_slot ++;
 					continue;
@@ -1542,8 +1545,11 @@ build_imt_slots (MonoClass *klass, MonoVTable *vt, gpointer* imt, GSList *extra_
 				continue;
 			}
 
-			if (m_method_is_static (method))
+			if (m_method_is_static (method)) {
+				if (m_method_is_virtual (method))
+					vt_slot ++;
 				continue;
+			}
 
 			if (method->flags & METHOD_ATTRIBUTE_VIRTUAL) {
 				add_imt_builder_entry (imt_builder, method, &imt_collisions_bitmap, vt_slot, slot_num);
@@ -1911,6 +1917,7 @@ alloc_vtable (MonoClass *klass, size_t vtable_size, size_t imt_table_bytes)
 	 * address bits.  The IMT has an odd number of entries, however, so on 32 bits the
 	 * alignment will be off.  In that case we allocate 4 more bytes and skip over them.
 	 */
+MONO_DISABLE_WARNING(4127) /* conditional expression is constant */
 	if (sizeof (gpointer) == 4 && (imt_table_bytes & 7)) {
 		g_assert ((imt_table_bytes & 7) == 4);
 		vtable_size += 4;
@@ -1918,6 +1925,7 @@ alloc_vtable (MonoClass *klass, size_t vtable_size, size_t imt_table_bytes)
 	} else {
 		alloc_offset = 0;
 	}
+MONO_RESTORE_WARNING
 
 	return (gpointer*) ((char*)m_class_alloc0 (klass, (guint)vtable_size) + alloc_offset);
 }
@@ -4840,6 +4848,20 @@ mono_runtime_try_invoke_span (MonoMethod *method, void *obj, MonoSpanOfObjects *
 			res = mono_runtime_try_invoke (box_method, NULL, box_args, &box_exc, error);
 			g_assert (box_exc == NULL);
 			mono_error_assert_ok (error);
+		}
+
+		if (has_byref_nullables) {
+			/*
+			 * The runtime invoke wrapper already converted byref nullables back,
+			 * and stored them in pa, we just need to copy them back to the
+			 * managed array.
+			 */
+			for (i = 0; i < params_length; i++) {
+				MonoType *t = sig->params [i];
+
+				if (m_type_is_byref (t) && t->type == MONO_TYPE_GENERICINST && mono_class_is_nullable (mono_class_from_mono_type_internal (t)))
+					mono_span_setref (params_span, i, pa [i]);
+			}
 		}
 	}
 	goto exit;
