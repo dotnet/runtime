@@ -261,33 +261,49 @@ namespace System.Text.RegularExpressions.Symbolic
         /// intermediate epsilons, if tryCreateFixedLengthMarker and length is fixed, add a fixed length
         /// marker at the end.
         /// </summary>
-        internal SymbolicRegexNode<TSet> CreateConcat(SymbolicRegexNode<TSet>[] nodes, bool tryCreateFixedLengthMarker)
+        internal SymbolicRegexNode<TSet> CreateConcat(SymbolicRegexNode<TSet>[] nodes, bool tryCreateFixedLengthMarker) =>
+            CreateConcatRev(EnumerateNodesInReverse(nodes), tryCreateFixedLengthMarker);
+
+        private static IEnumerable<SymbolicRegexNode<TSet>> EnumerateNodesInReverse(SymbolicRegexNode<TSet>[] nodes)
+        {
+            for (int i = nodes.Length - 1; i >= 0; i--)
+            {
+                yield return nodes[i];
+            }
+        }
+
+        /// <summary>
+        /// Make a concatenation of given nodes already given in reverse order, if any regex is nothing then return nothing, eliminate
+        /// intermediate epsilons, if tryCreateFixedLengthMarker and length is fixed, add a fixed length
+        /// marker at the end.
+        /// </summary>
+        internal SymbolicRegexNode<TSet> CreateConcatRev(IEnumerable<SymbolicRegexNode<TSet>> nodes, bool tryCreateFixedLengthMarker)
         {
             SymbolicRegexNode<TSet> sr = Epsilon;
 
-            if (nodes.Length != 0)
+            if (tryCreateFixedLengthMarker)
             {
-                if (tryCreateFixedLengthMarker)
+                int length = CalculateFixedLength(nodes);
+                if (length >= 0)
                 {
-                    int length = CalculateFixedLength(nodes);
-                    if (length >= 0)
-                    {
-                        sr = CreateFixedLengthMarker(length);
-                    }
+                    sr = CreateFixedLengthMarker(length);
+                }
+            }
+
+            // Iterate through all the nodes concatenating them together in reverse order.
+            // Here the nodes enumeration is already reversed, so reversing it back to the original concatenation order.
+            foreach (SymbolicRegexNode<TSet> node in nodes)
+            {
+                // If there's a nothing in the list, the whole concatenation can't match, so just return nothing.
+                if (node == _nothing)
+                {
+                    return _nothing;
                 }
 
-                // Iterate through all the nodes concatenating them together.  We iterate in reverse in order to
-                // avoid quadratic behavior in combination with the called CreateConcat method.
-                for (int i = nodes.Length - 1; i >= 0; i--)
-                {
-                    // If there's a nothing in the list, the whole concatenation can't match, so just return nothing.
-                    if (nodes[i] == _nothing)
-                    {
-                        return _nothing;
-                    }
+                // no node may itself be a concat node in the list
+                Debug.Assert(node._kind != SymbolicRegexNodeKind.Concat);
 
-                    sr = SymbolicRegexNode<TSet>.CreateConcat(this, nodes[i], sr);
-                }
+                sr = SymbolicRegexNode<TSet>.CreateConcat(this, node, sr);
             }
 
             return sr;
@@ -295,7 +311,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
         internal SymbolicRegexNode<TSet> CreateConcat(SymbolicRegexNode<TSet> left, SymbolicRegexNode<TSet> right) => SymbolicRegexNode<TSet>.CreateConcat(this, left, right);
 
-        private static int CalculateFixedLength(SymbolicRegexNode<TSet>[] nodes)
+        private static int CalculateFixedLength(IEnumerable<SymbolicRegexNode<TSet>> nodes)
         {
             int length = 0;
             foreach (SymbolicRegexNode<TSet> node in nodes)
@@ -370,9 +386,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
         internal SymbolicRegexNode<TSet> CreateDisableBacktrackingSimulation(SymbolicRegexNode<TSet> child)
         {
-            if (child == _nothing)
-                return _nothing;
-            return SymbolicRegexNode<TSet>.CreateDisableBacktrackingSimulation(this, child);
+            return child == _nothing ? _nothing : SymbolicRegexNode<TSet>.CreateDisableBacktrackingSimulation(this, child);
         }
 
         internal SymbolicRegexNode<TNewSet> Transform<TNewSet>(SymbolicRegexNode<TSet> sr, SymbolicRegexBuilder<TNewSet> builder, Func<SymbolicRegexBuilder<TNewSet>, TSet, TNewSet> setTransformer)

@@ -70,6 +70,7 @@ namespace System.Net.Security.Tests
         [ConditionalTheory]
         [MemberData(nameof(SslStream_StreamToStream_Authentication_Success_MemberData))]
         [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "X509 certificate store is not supported on iOS or tvOS.")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         public async Task SslStream_StreamToStream_Authentication_Success(X509Certificate serverCert = null, X509Certificate clientCert = null)
         {
             (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
@@ -86,6 +87,7 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         public async Task SslStream_StreamToStream_Authentication_IncorrectServerName_Fail()
         {
             (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
@@ -96,10 +98,10 @@ namespace System.Net.Security.Tests
                 Task t1 = client.AuthenticateAsClientAsync("incorrectServer");
                 Task t2 = server.AuthenticateAsServerAsync(certificate);
 
-                await Assert.ThrowsAsync<AuthenticationException>(() => t1);
+                await Assert.ThrowsAsync<AuthenticationException>(() => t1.WaitAsync(TestConfiguration.PassingTestTimeout));
                 try
                 {
-                    await t2;
+                    await t2.WaitAsync(TestConfiguration.PassingTestTimeout);
                 }
                 catch
                 {
@@ -129,6 +131,7 @@ namespace System.Net.Security.Tests
 
         [Fact]
         [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "X509 certificate store is not supported on iOS or tvOS.")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         public async Task Read_CorrectlyUnlocksAfterFailure()
         {
             (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
@@ -157,6 +160,7 @@ namespace System.Net.Security.Tests
 
         [Fact]
         [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "X509 certificate store is not supported on iOS or tvOS.")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         public async Task Write_CorrectlyUnlocksAfterFailure()
         {
             (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
@@ -181,6 +185,7 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         public async Task Read_InvokedSynchronously()
         {
             (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
@@ -206,6 +211,7 @@ namespace System.Net.Security.Tests
 
         [Fact]
         [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "X509 certificate store is not supported on iOS or tvOS.")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         public async Task Write_InvokedSynchronously()
         {
             (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
@@ -230,6 +236,7 @@ namespace System.Net.Security.Tests
 
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         public async Task SslStream_StreamToStream_Dispose_Throws()
         {
             if (this is SslStreamStreamToStreamTest_SyncBase)
@@ -282,6 +289,7 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         public async Task SslStream_StreamToStream_EOFDuringFrameRead_ThrowsIOException()
         {
             (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();

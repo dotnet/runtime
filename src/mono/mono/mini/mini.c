@@ -4221,7 +4221,7 @@ mono_jit_compile_method_inner (MonoMethod *method, int opt, MonoError *error)
 		}
 	}
 	MONO_PROFILER_RAISE (jit_done, (method, jinfo));
-	if (prof_method != method)
+	if (prof_method != method && !jinfo->has_generic_jit_info)
 		MONO_PROFILER_RAISE (jit_done, (prof_method, jinfo));
 
 	if (!mono_runtime_class_init_full (vtable, error))

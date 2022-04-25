@@ -205,7 +205,7 @@ namespace System.Net.Test.Common
             new HttpHeaderData("purpose", "prefetch"),
             new HttpHeaderData("server", ""),
             new HttpHeaderData("timing-allow-origin", "*"),
-            new HttpHeaderData("upgrading-insecure-requests", "1"),
+            new HttpHeaderData("upgrade-insecure-requests", "1"),
             new HttpHeaderData("user-agent", ""),
             new HttpHeaderData("x-forwarded-for", ""),
             new HttpHeaderData("x-frame-options", "deny"),
