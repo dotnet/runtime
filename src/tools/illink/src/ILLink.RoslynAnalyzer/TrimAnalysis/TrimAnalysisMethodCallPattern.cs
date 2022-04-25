@@ -13,13 +13,36 @@ using MultiValue = ILLink.Shared.DataFlow.ValueSet<ILLink.Shared.DataFlow.Single
 
 namespace ILLink.RoslynAnalyzer.TrimAnalysis
 {
-	public readonly record struct TrimAnalysisMethodCallPattern (
-		IMethodSymbol CalledMethod,
-		MultiValue Instance,
-		ImmutableArray<MultiValue> Arguments,
-		IOperation Operation,
-		ISymbol OwningSymbol)
+	public readonly record struct TrimAnalysisMethodCallPattern
 	{
+		public IMethodSymbol CalledMethod { init; get; }
+		public MultiValue Instance { init; get; }
+		public ImmutableArray<MultiValue> Arguments { init; get; }
+		public IOperation Operation { init; get; }
+		public ISymbol OwningSymbol { init; get; }
+
+		public TrimAnalysisMethodCallPattern (
+			IMethodSymbol calledMethod,
+			MultiValue instance,
+			ImmutableArray<MultiValue> arguments,
+			IOperation operation,
+			ISymbol owningSymbol)
+		{
+			CalledMethod = calledMethod;
+			Instance = instance.Clone ();
+			if (arguments.IsEmpty) {
+				Arguments = ImmutableArray<MultiValue>.Empty;
+			} else {
+				var builder = ImmutableArray.CreateBuilder<MultiValue> ();
+				foreach (var argument in arguments) {
+					builder.Add (argument.Clone ());
+				}
+				Arguments = builder.ToImmutableArray ();
+			}
+			Operation = operation;
+			OwningSymbol = owningSymbol;
+		}
+
 		public TrimAnalysisMethodCallPattern Merge (ValueSetLattice<SingleValue> lattice, TrimAnalysisMethodCallPattern other)
 		{
 			Debug.Assert (Operation == other.Operation);

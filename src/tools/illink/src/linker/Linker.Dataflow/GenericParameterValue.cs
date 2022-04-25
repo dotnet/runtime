@@ -21,8 +21,6 @@ namespace ILLink.Shared.TrimAnalysis
 			DynamicallyAccessedMemberTypes = dynamicallyAccessedMemberTypes;
 		}
 
-		public partial bool HasDefaultConstructorConstraint () => GenericParameter.GenericParameter.HasDefaultConstructorConstraint;
-
 		public override DynamicallyAccessedMemberTypes DynamicallyAccessedMemberTypes { get; }
 
 		public override IEnumerable<string> GetDiagnosticArgumentsForAnnotationMismatch ()

@@ -1,6 +1,8 @@
 // Copyright (c) .NET Foundation and contributors. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Collections.Immutable;
+
 namespace ILLink.Shared.TypeSystemProxy
 {
 	internal readonly partial struct MethodProxy : IMemberProxy
@@ -16,6 +18,7 @@ namespace ILLink.Shared.TypeSystemProxy
 		internal partial bool HasParameterOfType (int parameterIndex, string fullTypeName);
 		internal partial bool HasGenericParameters ();
 		internal partial bool HasGenericParametersCount (int genericParameterCount);
+		internal partial ImmutableArray<GenericParameterProxy> GetGenericParameters ();
 		internal partial bool IsStatic ();
 		internal partial bool ReturnsVoid ();
 	}

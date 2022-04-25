@@ -9,6 +9,11 @@ namespace ILLink.Shared.TypeSystemProxy
 	{
 		public GenericParameterProxy (ITypeParameterSymbol typeParameterSymbol) => TypeParameterSymbol = typeParameterSymbol;
 
+		internal partial bool HasDefaultConstructorConstraint () =>
+			TypeParameterSymbol.HasConstructorConstraint |
+			TypeParameterSymbol.HasValueTypeConstraint |
+			TypeParameterSymbol.HasUnmanagedTypeConstraint;
+
 		public readonly ITypeParameterSymbol TypeParameterSymbol;
 
 		public override string ToString () => TypeParameterSymbol.ToString ();

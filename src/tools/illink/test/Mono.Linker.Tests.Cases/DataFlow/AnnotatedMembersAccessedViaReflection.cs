@@ -608,9 +608,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				typeof (AnnotatedGenerics).RequiresPublicMethods ();
 			}
 
-			// Intrinsic is disabled https://github.com/dotnet/linker/issues/2559
 			// This should produce IL2071 https://github.com/dotnet/linker/issues/2144
-			[ExpectedWarning ("IL2070", "MakeGenericMethod", ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2070", "MakeGenericMethod")]
 			static void InstantiateGeneric (Type type = null)
 			{
 				// This should warn due to MakeGenericMethod - in this case the generic parameter is unannotated type

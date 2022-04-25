@@ -1,6 +1,7 @@
 // Copyright (c) .NET Foundation and contributors. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Collections.Immutable;
 using ILLink.RoslynAnalyzer;
 using Microsoft.CodeAnalysis;
 
@@ -9,6 +10,20 @@ namespace ILLink.Shared.TypeSystemProxy
 	internal readonly partial struct TypeProxy
 	{
 		public TypeProxy (ITypeSymbol type) => Type = type;
+
+		internal partial ImmutableArray<GenericParameterProxy> GetGenericParameters ()
+		{
+			if (Type is not INamedTypeSymbol namedType ||
+				namedType.TypeParameters.IsEmpty)
+				return ImmutableArray<GenericParameterProxy>.Empty;
+
+			var builder = ImmutableArray.CreateBuilder<GenericParameterProxy> (namedType.TypeParameters.Length);
+			foreach (var typeParameter in namedType.TypeParameters) {
+				builder.Add (new GenericParameterProxy (typeParameter));
+			}
+
+			return builder.ToImmutableArray ();
+		}
 
 		public readonly ITypeSymbol Type;
 

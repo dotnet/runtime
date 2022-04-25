@@ -12,7 +12,5 @@ namespace ILLink.Shared.TrimAnalysis
 	sealed partial record GenericParameterValue : ValueWithDynamicallyAccessedMembers
 	{
 		public readonly GenericParameterProxy GenericParameter;
-
-		public partial bool HasDefaultConstructorConstraint ();
 	}
 }

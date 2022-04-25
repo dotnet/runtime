@@ -12,11 +12,19 @@ using MultiValue = ILLink.Shared.DataFlow.ValueSet<ILLink.Shared.DataFlow.Single
 
 namespace ILLink.RoslynAnalyzer.TrimAnalysis
 {
-	public readonly record struct TrimAnalysisAssignmentPattern (
-		MultiValue Source,
-		MultiValue Target,
-		IOperation Operation)
+	public readonly record struct TrimAnalysisAssignmentPattern
 	{
+		public MultiValue Source { init; get; }
+		public MultiValue Target { init; get; }
+		public IOperation Operation { init; get; }
+
+		public TrimAnalysisAssignmentPattern (MultiValue source, MultiValue target, IOperation operation)
+		{
+			Source = source.Clone ();
+			Target = target.Clone ();
+			Operation = operation;
+		}
+
 		public TrimAnalysisAssignmentPattern Merge (ValueSetLattice<SingleValue> lattice, TrimAnalysisAssignmentPattern other)
 		{
 			Debug.Assert (Operation == other.Operation);
