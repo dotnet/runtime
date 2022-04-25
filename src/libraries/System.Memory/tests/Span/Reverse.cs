@@ -1,8 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.X86;
 using Xunit;
 using static System.TestHelpers;
 
@@ -70,11 +73,29 @@ namespace System.SpanTests
             Assert.Equal<byte>(expected, actual);
         }
 
-        [Fact]
-        public static void ReverseByteUnaligned()
+        public static IEnumerable<object[]> GetReverseByteUnalignedArguments()
         {
-            const int length = 32;
             const int offset = 1;
+
+            yield return new object[] { offset, 4 };
+            yield return new object[] { offset, 5 };
+
+            // vectorized execution paths
+            if (Avx2.IsSupported)
+            {
+                yield return new object[] { offset, offset + Vector256<byte>.Count * 2 }; // even
+                yield return new object[] { offset, offset + Vector256<byte>.Count * 2 + 1 }; // odd
+            }
+            else if (Sse2.IsSupported)
+            {
+                yield return new object[] { offset, offset + Vector128<byte>.Count * 2 }; // even
+                yield return new object[] { offset, offset + Vector128<byte>.Count * 2 + 1 }; // odd
+            }
+        }
+
+        [Theory, MemberData(nameof(GetReverseByteUnalignedArguments))]
+        public static void ReverseByteUnaligned(int offset, int length)
+        {
             var actualFull = new byte[length];
             for (int i = 0; i < length; i++)
             {
@@ -95,11 +116,30 @@ namespace System.SpanTests
             Assert.Equal(expectedFull[length - 1], actualFull[length - 1]);
         }
 
-        [Fact]
-        public static void ReverseIntPtrOffset()
+        public static IEnumerable<object[]> GetReverseIntPtrOffsetArguments()
         {
-            const int length = 32;
             const int offset = 2;
+
+            yield return new object[] { offset, 2 };
+
+            // vectorized execution paths
+            if (Avx2.IsSupported)
+            {
+                int vectorSize = IntPtr.Size == 4 ? Vector256<int>.Count : Vector256<long>.Count;
+                yield return new object[] { offset, offset + vectorSize * 2 }; // even
+                yield return new object[] { offset, offset + vectorSize * 2 + 1 }; // odd
+            }
+            else if (Sse2.IsSupported)
+            {
+                int vectorSize = IntPtr.Size == 4 ? Vector128<int>.Count : Vector128<long>.Count;
+                yield return new object[] { offset, offset + vectorSize * 2 }; // even
+                yield return new object[] { offset, offset + vectorSize * 2 + 1 }; // odd
+            }
+        }
+
+        [Theory, MemberData(nameof(GetReverseIntPtrOffsetArguments))]
+        public static void ReverseIntPtrOffset(int offset, int length)
+        {
             var actualFull = new IntPtr[length];
             for (int i = 0; i < length; i++)
             {
