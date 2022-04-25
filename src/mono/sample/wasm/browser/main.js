@@ -1,5 +1,3 @@
-var BINDING_GLOBAL;
-document.getElementById("demo").onclick = function() {click()};
 function wasm_exit(exit_code) {
     /* Set result in a tests_done element, to be read by xharness in runonly CI test */
     const tests_done_elem = document.createElement("label");
@@ -16,6 +14,12 @@ async function loadRuntime() {
     return globalThis.exports.createDotnetRuntime;
 }
 
+const anchorTagForAbsoluteUrlConversions = document.createElement('a');
+function toAbsoluteUrl(possiblyRelativeUrl) {
+  anchorTagForAbsoluteUrlConversions.href = possiblyRelativeUrl;
+  return anchorTagForAbsoluteUrlConversions.href;
+}
+
 async function main() {
     try {
         const createDotnetRuntime = await loadRuntime();
@@ -25,7 +29,7 @@ async function main() {
                 disableDotnet6Compatibility: true,
                 configSrc: "./mono-config.json",
                 locateFile: (path, prefix) => {
-                    return window.location.origin + "/" + prefix + path;
+                    return toAbsoluteUrl(prefix + path);
                 },
                 preInit: () => { console.log('user code Module.preInit') },
                 preRun: () => { console.log('user code Module.preRun') },
@@ -42,16 +46,16 @@ async function main() {
         console.debug(`ret: ${ret}`);
         let exit_code = ret == 42 ? 0 : 1;
         wasm_exit(exit_code);
-        BINDING_GLOBAL = BINDING;
+
+        document.getElementById("demo").onclick = function() {
+            const ret = testMeaning();
+            document.getElementById("out2").innerHTML = `${ret}`;
+        };
+
     } catch (err) {
         console.log(`WASM ERROR ${err}`);
         wasm_exit(2)
     }
 }
 
-function click() {
-    const testMeaning = BINDING_GLOBAL.bind_static_method("[Wasm.Browser.CJS.Sample] Sample.Test:TestMeaning");
-    const ret = testMeaning();
-    document.getElementById("out2").innerHTML = `${ret}`;
-}
 main();
