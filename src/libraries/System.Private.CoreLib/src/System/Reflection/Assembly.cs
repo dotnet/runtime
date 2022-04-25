@@ -272,7 +272,7 @@ namespace System.Reflection
 
                 if (!File.Exists(assemblyPath))
                     throw new FileNotFoundException(SR.Format(SR.FileNotFound_LoadFile, assemblyPath), assemblyPath);
-#endif
+#endif // !TARGET_WASM
 
                 AssemblyLoadContext alc = new IndividualAssemblyLoadContext($"Assembly.LoadFile({normalizedPath})");
                 result = alc.LoadFromAssemblyPath(normalizedPath);
