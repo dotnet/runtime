@@ -37,7 +37,7 @@
              Properties="RunningPublish=true
               ;RuntimeIdentifier=$(PackageRID)
               ;CoreCLRArtifactsPath=$(CoreCLRArtifactsPath)
-              ;R2ROverridePath=$(MSBuildThisFileDirectory)ReadyToRun.targets
+              ;R2ROverridePath=$(MSBuildThisFileDirectory)ReadyToRun.targets"
              Targets="$(_TargetsToRun)">
       <Output TaskParameter="TargetOutputs"
               ItemName="_RawCrossgenPublishFiles" />
