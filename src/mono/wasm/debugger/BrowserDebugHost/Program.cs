@@ -25,7 +25,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         public static void Main(string[] args)
         {
             IConfigurationRoot config = new ConfigurationBuilder().AddCommandLine(args).Build();
-            int proxyPort = -1;
+            int proxyPort = 0;
             if (config["proxy-port"] is not null && int.TryParse(config["proxy-port"], out int port))
                 proxyPort = port;
             int firefoxDebugPort = 6000;
@@ -60,7 +60,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 {
                     config.AddCommandLine(args);
                 })
-                .UseUrls($"http://127.0.0.1:{proxyPort+1}")
+                .UseUrls($"http://127.0.0.1:{proxyPort}")
                 .Build();
 
             host.Run();
