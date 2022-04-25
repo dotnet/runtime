@@ -22,7 +22,6 @@
 #include "comcallablewrapper.h"
 #include "../md/compiler/custattr.h"
 #include "siginfo.hpp"
-#include "eemessagebox.h"
 #include "finalizerthread.h"
 #include "interoplibinterface.h"
 

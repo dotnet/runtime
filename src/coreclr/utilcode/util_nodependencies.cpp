@@ -79,7 +79,7 @@ CHECK_SUPPORTED:
 
     if (!fSupportedPlatform)
     {
-        // The current platform isn't supported. Display a message box to this effect and exit.
+        // The current platform isn't supported. Display a message to this effect and exit.
         fprintf(stderr, "Platform not supported: The minimum supported platform is Windows 7\n");
         TerminateProcess(GetCurrentProcess(), NON_SUPPORTED_PLATFORM_TERMINATE_ERROR_CODE);
     }

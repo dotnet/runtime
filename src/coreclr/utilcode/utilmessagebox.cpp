@@ -69,48 +69,13 @@ typedef int (*MessageBoxWFnPtr)(HWND hWnd,
                                 LPCWSTR lpCaption,
                                 UINT uType);
 
-static int LateboundMessageBoxW(HWND hWnd,
-                            LPCWSTR lpText,
-                            LPCWSTR lpCaption,
-                            UINT uType)
-{
-#ifndef HOST_UNIX
-    // User32 should exist on all systems where displaying a message box makes sense.
-    HMODULE hGuiExtModule = WszLoadLibrary(W("user32"));
-    if (hGuiExtModule)
-    {
-        int result = IDCANCEL;
-        MessageBoxWFnPtr fnptr = (MessageBoxWFnPtr)GetProcAddress(hGuiExtModule, "MessageBoxW");
-        if (fnptr)
-            result = fnptr(hWnd, lpText, lpCaption, uType);
-
-        FreeLibrary(hGuiExtModule);
-        return result;
-    }
-#endif // !HOST_UNIX
-
-    // No luck. Output the caption and text to the debugger if present or stdout otherwise.
-    if (lpText == NULL)
-        lpText = W("<null>");
-    if (lpCaption == NULL)
-        lpCaption = W("<null>");
-    DbgWPrintf(W("**** MessageBox invoked, title '%s' ****\n"), lpCaption);
-    DbgWPrintf(W("  %s\n"), lpText);
-    DbgWPrintf(W("********\n"));
-    DbgWPrintf(W("\n"));
-
-    // Indicate to the caller that message box was not actually displayed
-    SetLastError(ERROR_NOT_SUPPORTED);
-    return 0;
-}
-
 // We'd like to use TaskDialogIndirect for asserts coming from managed code in particular
 // to display the detailedText in a scrollable way.  Also, we'd like to reuse the CLR's
 // plumbing code for the rest of parts of the assert dialog.  Note that the simple
 // Win32 MessageBox does not support the detailedText value.
 // If we later refactor MessageBoxImpl into its own DLL, move the lines referencing
 // "Microsoft.Windows.Common-Controls" version 6 in stdafx.h as well.
-int MessageBoxImpl(
+static int MessageBoxImpl(
                   HWND hWnd,            // Handle to Owner Window
                   LPCWSTR message,      // Message
                   LPCWSTR title,        // Dialog box title
@@ -129,7 +94,34 @@ int MessageBoxImpl(
     }
     CONTRACTL_END;
 
-    return LateboundMessageBoxW(hWnd, message, title, uType);
+#ifndef HOST_UNIX
+    // User32 should exist on all systems where displaying a message box makes sense.
+    HMODULE hGuiExtModule = WszLoadLibrary(W("user32"));
+    if (hGuiExtModule)
+    {
+        int result = IDCANCEL;
+        MessageBoxWFnPtr fnptr = (MessageBoxWFnPtr)GetProcAddress(hGuiExtModule, "MessageBoxW");
+        if (fnptr)
+            result = fnptr(hWnd, message, title, uType);
+
+        FreeLibrary(hGuiExtModule);
+        return result;
+    }
+#endif // !HOST_UNIX
+
+    // No luck. Output the caption and text to the debugger if present or stdout otherwise.
+    if (message == NULL)
+        message = W("<null>");
+    if (title == NULL)
+        title = W("<null>");
+    DbgWPrintf(W("**** '%s' ****\n"), title);
+    DbgWPrintf(W("  %s\n"), message);
+    DbgWPrintf(W("********\n"));
+    DbgWPrintf(W("\n"));
+
+    // Indicate to the caller that message box was not actually displayed
+    SetLastError(ERROR_NOT_SUPPORTED);
+    return 0;
 }
 
 static int UtilMessageBoxNonLocalizedVA(
@@ -290,12 +282,12 @@ int UtilMessageBoxVA(
     return result;
 }
 
-int UtilMessageBoxCatastrophicVA(
+int UtilMessageBoxCatastrophic(
                   UINT uText,       // Text for MessageBox
                   UINT uTitle,      // Title for MessageBox
                   UINT uType,       // Style of MessageBox
                   BOOL showFileNameInTitle,         // Flag to show FileName in Caption
-                  va_list args)     // Additional Arguments
+                  ...)     // Additional Arguments
 {
     CONTRACTL
     {
@@ -315,5 +307,13 @@ int UtilMessageBoxCatastrophicVA(
     // owned by the current thread and should prevent interaction with them until dismissed.
     uType |= MB_TASKMODAL;
 
-    return UtilMessageBoxVA(hwnd, uText, uTitle, uType, TRUE, showFileNameInTitle, args);
+
+    va_list args;
+    va_start(args, showFileNameInTitle);
+
+    int result = UtilMessageBoxVA(hwnd, uText, uTitle, uType, TRUE, showFileNameInTitle, args);
+
+    va_end(args);
+
+    return result;
 }

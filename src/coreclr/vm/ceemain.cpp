@@ -158,7 +158,6 @@
 #include "syncclean.hpp"
 #include "typeparse.h"
 #include "debuginfostore.h"
-#include "eemessagebox.h"
 #include "finalizerthread.h"
 #include "threadsuspend.h"
 #include "disassembler.h"

@@ -12,7 +12,6 @@
 #include "eepolicy.h"
 #include "corhost.h"
 #include "dbginterface.h"
-#include "eemessagebox.h"
 
 #include "eventreporter.h"
 #include "finalizerthread.h"
@@ -55,7 +54,7 @@ void SafeExitProcess(UINT exitCode, ShutdownCompleteAction sca = SCA_ExitProcess
                 _ASSERTE(!"Bad Exit value");
                 FAULT_NOT_FATAL();      // if we OOM we can simply give up
                 fprintf(stderr, "Error 0x%08x.\n\nBreakOnBadExit: returning bad exit code.", exitCode);
-                FreeBuildDebugBreak();
+                DebugBreak();
             }
         }
     }
