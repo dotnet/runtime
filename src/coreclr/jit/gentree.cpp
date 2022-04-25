@@ -7983,7 +7983,6 @@ GenTree* Compiler::gtClone(GenTree* tree, bool complexOK)
             break;
 
         case GT_LCL_VAR:
-        case GT_LCL_VAR_ADDR:
             copy = gtNewLclvNode(tree->AsLclVarCommon()->GetLclNum(),
                                  tree->TypeGet() DEBUGARG(tree->AsLclVar()->gtLclILoffs));
             goto FINISH_CLONING_LCL_NODE;
