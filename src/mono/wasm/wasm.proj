@@ -264,7 +264,6 @@
       <WasmSrcFilesCjs Include="$(NativeBinDir)src\cjs\*.js;" />
       <WasmSrcFilesEs6 Include="$(NativeBinDir)src\es6\*.js;" />
       <WasmHeaderFiles Include="$(NativeBinDir)include\wasm\*.h" />
-      <WasmHeaderFiles Include="$(NativeBinDir)wasm-config.h" />
     </ItemGroup>
 
     <Copy SourceFiles="$(NativeBinDir)dotnet.js;
