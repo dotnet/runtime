@@ -3,7 +3,6 @@
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <!-- SYSLIB0014: WebRequest, HttpWebRequest, ServicePoint, and WebClient are obsolete. Use HttpClient instead. -->
     <NoWarn>$(NoWarn);CS0809;SYSLIB0014</NoWarn>
-    <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Net.Requests.cs" />
