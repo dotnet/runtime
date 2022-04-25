@@ -8,7 +8,7 @@ using static Microsoft.Quic.MsQuic;
 
 namespace Microsoft.Quic
 {
-    internal class MsQuicException : QuicException
+    internal sealed class MsQuicException : QuicException
     {
         public int Status { get; }
 
