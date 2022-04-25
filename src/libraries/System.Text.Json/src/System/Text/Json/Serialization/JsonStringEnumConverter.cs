@@ -52,7 +52,7 @@ namespace System.Text.Json.Serialization
         }
 
         /// <inheritdoc />
-        [RequiresDynamicCode("Runtime code generation is not available for Aot form factor.")]
+        [RequiresDynamicCode("JSON serialization and deserialization might require types that might need runtime code generation. Use source generated paths for native aot applications.")]
         [SuppressMessage("AotAnalysis", "IL3051:'RequiresDynamicCodeAttribute' annotations must match across all interface implementations or overrides.", Justification = "Suppressing base type warnings")]
         public sealed override JsonConverter CreateConverter(Type typeToConvert, JsonSerializerOptions options) =>
             EnumConverterFactory.Create(typeToConvert, _converterOptions, _namingPolicy, options);

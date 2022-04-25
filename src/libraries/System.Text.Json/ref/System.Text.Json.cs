@@ -976,7 +976,7 @@ namespace System.Text.Json.Serialization
         public JsonStringEnumConverter() { }
         public JsonStringEnumConverter(System.Text.Json.JsonNamingPolicy? namingPolicy = null, bool allowIntegerValues = true) { }
         public sealed override bool CanConvert(System.Type typeToConvert) { throw null; }
-        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("Runtime code generation is not available for Aot form factor.")]
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("JSON serialization and deserialization might require types that might need runtime code generation. Use source generated paths for native aot applications.")]
         public sealed override System.Text.Json.Serialization.JsonConverter CreateConverter(System.Type typeToConvert, System.Text.Json.JsonSerializerOptions options) { throw null; }
     }
     public enum JsonUnknownDerivedTypeHandling
