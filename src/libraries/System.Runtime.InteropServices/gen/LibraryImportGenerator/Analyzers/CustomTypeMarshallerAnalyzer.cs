@@ -34,8 +34,8 @@ namespace Microsoft.Interop.Analyzers
 
         public static readonly DiagnosticDescriptor MarshallerTypeMustSpecifyManagedTypeRule =
             new DiagnosticDescriptor(
-                Ids.MarshallerTypeMustSpecifyManagedType,
-                "MarshallerTypeMustSpecifyManagedType",
+                Ids.InvalidCustomTypeMarshallerAttributeUsage,
+                "InvalidCustomTypeMarshallerAttributeUsage",
                 GetResourceString(nameof(SR.MarshallerTypeMustSpecifyManagedTypeMessage)),
                 Category,
                 DiagnosticSeverity.Error,
@@ -44,8 +44,8 @@ namespace Microsoft.Interop.Analyzers
 
         public static readonly DiagnosticDescriptor CustomTypeMarshallerAttributeMustBeValidRule =
             new DiagnosticDescriptor(
-                Ids.CustomTypeMarshallerAttributeMustBeValid,
-                "CustomTypeMarshallerAttributeMustBeValid",
+                Ids.InvalidCustomTypeMarshallerAttributeUsage,
+                "InvalidCustomTypeMarshallerAttributeUsage",
                 GetResourceString(nameof(SR.CustomTypeMarshallerAttributeMustBeValidMessage)),
                 Category,
                 DiagnosticSeverity.Error,
@@ -54,8 +54,8 @@ namespace Microsoft.Interop.Analyzers
 
         public static readonly DiagnosticDescriptor MarshallerKindMustBeValidRule =
             new DiagnosticDescriptor(
-                Ids.CustomTypeMarshallerAttributeMustBeValid,
-                "CustomTypeMarshallerAttributeMustBeValid",
+                Ids.InvalidCustomTypeMarshallerAttributeUsage,
+                "InvalidCustomTypeMarshallerAttributeUsage",
                 GetResourceString(nameof(SR.MarshallerKindMustBeValidMessage)),
                 Category,
                 DiagnosticSeverity.Error,
@@ -64,8 +64,8 @@ namespace Microsoft.Interop.Analyzers
 
         public static readonly DiagnosticDescriptor MarshallerDirectionMustBeValidRule =
             new DiagnosticDescriptor(
-                Ids.CustomTypeMarshallerAttributeMustBeValid,
-                "CustomTypeMarshallerAttributeMustBeValid",
+                Ids.InvalidCustomTypeMarshallerAttributeUsage,
+                "InvalidCustomTypeMarshallerAttributeUsage",
                 GetResourceString(nameof(SR.MarshallerDirectionMustBeValidMessage)),
                 Category,
                 DiagnosticSeverity.Error,
@@ -94,8 +94,8 @@ namespace Microsoft.Interop.Analyzers
 
         public static readonly DiagnosticDescriptor GetPinnableReferenceReturnTypeBlittableRule =
             new DiagnosticDescriptor(
-                Ids.GetPinnableReferenceReturnTypeBlittable,
-                "GetPinnableReferenceReturnTypeBlittable",
+                Ids.InvalidSignaturesInMarshallerShape,
+                "InvalidSignaturesInMarshallerShape",
                 GetResourceString(nameof(SR.GetPinnableReferenceReturnTypeBlittableMessage)),
                 Category,
                 DiagnosticSeverity.Error,
@@ -114,8 +114,8 @@ namespace Microsoft.Interop.Analyzers
 
         public static readonly DiagnosticDescriptor CustomMarshallerTypeMustSupportDirectionRule =
             new DiagnosticDescriptor(
-                Ids.CustomMarshallerTypeMustSupportDirection,
-                "CustomMarshallerTypeMustSupportDirection",
+                Ids.InvalidCustomTypeMarshallerAttributeUsage,
+                "InvalidCustomTypeMarshallerAttributeUsage",
                 GetResourceString(nameof(SR.CustomMarshallerTypeMustSupportDirectionMessage)),
                 Category,
                 DiagnosticSeverity.Error,
@@ -284,8 +284,8 @@ namespace Microsoft.Interop.Analyzers
 
         public static readonly DiagnosticDescriptor MarshallerGetPinnableReferenceRequiresTwoStageMarshallingRule =
             new DiagnosticDescriptor(
-                Ids.MarshallerGetPinnableReferenceRequiresTwoStageMarshalling,
-                "MarshallerGetPinnableReferenceRequiresTwoStageMarshalling",
+                Ids.ProvidedMethodsNotSpecifiedInFeatures,
+                "ProvidedMethodsNotSpecifiedInFeatures",
                 GetResourceString(nameof(SR.MarshallerGetPinnableReferenceRequiresTwoStageMarshallingMessage)),
                 Category,
                 DiagnosticSeverity.Error,
@@ -294,8 +294,8 @@ namespace Microsoft.Interop.Analyzers
 
         public static readonly DiagnosticDescriptor FreeNativeMethodProvidedShouldSpecifyUnmanagedResourcesFeatureRule =
             new DiagnosticDescriptor(
-                Ids.ProvidedMethodsNotSpecifiedInShape,
-                "ProvidedMethodsNotSpecifiedInShape",
+                Ids.ProvidedMethodsNotSpecifiedInFeatures,
+                "ProvidedMethodsNotSpecifiedInFeatures",
                 GetResourceString(nameof(SR.FreeNativeMethodProvidedShouldSpecifyUnmanagedResourcesFeatureMessage)),
                 Category,
                 DiagnosticSeverity.Warning,
@@ -304,8 +304,8 @@ namespace Microsoft.Interop.Analyzers
 
         public static readonly DiagnosticDescriptor ToNativeValueMethodProvidedShouldSpecifyTwoStageMarshallingFeatureRule =
             new DiagnosticDescriptor(
-                Ids.ProvidedMethodsNotSpecifiedInShape,
-                "ProvidedMethodsNotSpecifiedInShape",
+                Ids.ProvidedMethodsNotSpecifiedInFeatures,
+                "ProvidedMethodsNotSpecifiedInFeatures",
                 GetResourceString(nameof(SR.ToNativeValueMethodProvidedShouldSpecifyTwoStageMarshallingFeatureMessage)),
                 Category,
                 DiagnosticSeverity.Warning,
@@ -314,8 +314,8 @@ namespace Microsoft.Interop.Analyzers
 
         public static readonly DiagnosticDescriptor FromNativeValueMethodProvidedShouldSpecifyTwoStageMarshallingFeatureRule =
             new DiagnosticDescriptor(
-                Ids.ProvidedMethodsNotSpecifiedInShape,
-                "ProvidedMethodsNotSpecifiedInShape",
+                Ids.ProvidedMethodsNotSpecifiedInFeatures,
+                "ProvidedMethodsNotSpecifiedInFeatures",
                 GetResourceString(nameof(SR.FromNativeValueMethodProvidedShouldSpecifyTwoStageMarshallingFeatureMessage)),
                 Category,
                 DiagnosticSeverity.Warning,
@@ -324,8 +324,8 @@ namespace Microsoft.Interop.Analyzers
 
         public static readonly DiagnosticDescriptor CallerAllocatedBufferConstructorProvidedShouldSpecifyFeatureRule =
             new DiagnosticDescriptor(
-                Ids.ProvidedMethodsNotSpecifiedInShape,
-                "ProvidedMethodsNotSpecifiedInShape",
+                Ids.ProvidedMethodsNotSpecifiedInFeatures,
+                "ProvidedMethodsNotSpecifiedInFeatures",
                 GetResourceString(nameof(SR.CallerAllocatedBufferConstructorProvidedShouldSpecifyFeatureMessage)),
                 Category,
                 DiagnosticSeverity.Warning,
