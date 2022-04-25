@@ -13,8 +13,8 @@ namespace Microsoft.Extensions.Hosting
     public static class SystemdHostBuilderExtensions
     {
         /// <summary>
-        /// Sets the host lifetime to <see cref="SystemdLifetime" />,
-        /// provides notification messages for application started and stopping,
+        /// Configures the <see cref="IHost"/> lifetime to <see cref="SystemdLifetime"/>
+        /// which provides notification messages for application started and stopping,
         /// and configures console logging to the systemd format.
         /// </summary>
         /// <remarks>
@@ -27,27 +27,62 @@ namespace Microsoft.Extensions.Hosting
         ///     notifications. See https://www.freedesktop.org/software/systemd/man/systemd.service.html.
         ///   </para>
         /// </remarks>
-        /// <param name="hostBuilder">The <see cref="IHostBuilder"/> to use.</param>
-        /// <returns></returns>
+        /// <param name="hostBuilder">The <see cref="IHostBuilder"/> to configure.</param>
+        /// <returns>The <paramref name="hostBuilder"/> instance.</returns>
         public static IHostBuilder UseSystemd(this IHostBuilder hostBuilder)
         {
             if (SystemdHelpers.IsSystemdService())
             {
                 hostBuilder.ConfigureServices((hostContext, services) =>
                 {
-                    services.Configure<ConsoleLoggerOptions>(options =>
-                    {
-                        options.FormatterName = ConsoleFormatterNames.Systemd;
-                    });
-
-                    // IsSystemdService() will never return true for android/browser/iOS/tvOS
-#pragma warning disable CA1416 // Validate platform compatibility
-                    services.AddSingleton<ISystemdNotifier, SystemdNotifier>();
-                    services.AddSingleton<IHostLifetime, SystemdLifetime>();
-#pragma warning restore CA1416 // Validate platform compatibility
+                    AddSystemdServices(services);
                 });
             }
             return hostBuilder;
+        }
+
+        /// <summary>
+        /// Configures the lifetime of the <see cref="IHost"/> built from <paramref name="services"/> to
+        /// <see cref="SystemdLifetime"/> which provides notification messages for application started
+        /// and stopping, and configures console logging to the systemd format.
+        /// </summary>
+        /// <remarks>
+        ///   <para>
+        ///     This is context aware and will only activate if it detects the process is running
+        ///     as a systemd Service.
+        ///   </para>
+        ///   <para>
+        ///     The systemd service file must be configured with <c>Type=notify</c> to enable
+        ///     notifications. See https://www.freedesktop.org/software/systemd/man/systemd.service.html.
+        ///   </para>
+        /// </remarks>
+        /// <param name="services">
+        /// The <see cref="IServiceCollection"/> used to build the <see cref="IHost"/>.
+        /// For example, <see cref="HostApplicationBuilder.Services"/> or the <see cref="IServiceCollection"/> passed to the
+        /// <see cref="IHostBuilder.ConfigureServices(System.Action{HostBuilderContext, IServiceCollection})"/> callback.</param>
+        /// <returns>The <paramref name="services"/> instance.</returns>
+        public static IServiceCollection UseSystemd(this IServiceCollection services)
+        {
+            if (SystemdHelpers.IsSystemdService())
+            {
+                AddSystemdServices(services);
+            }
+            return services;
+        }
+
+        private static void AddSystemdServices(IServiceCollection services)
+        {
+            services.Configure<ConsoleLoggerOptions>(options =>
+            {
+                options.FormatterName = ConsoleFormatterNames.Systemd;
+            });
+
+            // IsSystemdService() will never return true for android/browser/iOS/tvOS
+#pragma warning disable CA1416 // Validate platform compatibility
+            services.AddSingleton<ISystemdNotifier, SystemdNotifier>();
+            services.AddSingleton<IHostLifetime, SystemdLifetime>();
+#pragma warning restore CA1416 // Validate platform compatibility
+
         }
     }
 }
