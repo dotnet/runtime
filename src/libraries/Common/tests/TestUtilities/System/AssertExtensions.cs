@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Xunit;
 using Xunit.Sdk;
 using System.Linq;
+using System.Text;
 
 namespace System
 {
@@ -433,22 +434,23 @@ namespace System
 
             void Throw()
             {
-                string exMessage = $"Collections are not equal.{Environment.NewLine}";
-                exMessage += $"Expected length: {expectedCount}, actual length: {actualCount}{Environment.NewLine}";
+                var sb = new StringBuilder();
+                sb.AppendLine("Collections are not equal.");
+                sb.AppendLine($"Expected length: {expectedCount}, actual length: {actualCount}");
 
-                exMessage += $"Expected elements:{Environment.NewLine}";
+                sb.AppendLine("Expected elements:");
                 foreach (T e in expected)
                 {
-                    exMessage += $"{e.ToString()}{Environment.NewLine}";
+                    sb.AppendLine(e.ToString());
                 }
 
-                exMessage += $"Actual elements:{Environment.NewLine}";
+                sb.AppendLine("Actual elements:");
                 foreach (T a in actual)
                 {
-                    exMessage += $"{a.ToString()}{Environment.NewLine}";
+                    sb.AppendLine(a.ToString());
                 }
 
-                throw new XunitException(exMessage);
+                throw new XunitException(sb.ToString());
             }
         }
 
