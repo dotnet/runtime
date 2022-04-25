@@ -22,16 +22,18 @@ namespace Microsoft.Extensions.Caching.Memory
         private CacheEntryTokens? _tokens; // might be null if user is not using the tokens or callbacks
         private TimeSpan _absoluteExpirationRelativeToNow;
         private TimeSpan _slidingExpiration;
-        private long _size = -1;
+        private long _size = NotSet;
         private CacheEntry? _previous; // this field is not null only before the entry is added to the cache and tracking is enabled
         private object? _value;
-        private DateTime _absoluteExpiration;
+        private long _absoluteExpirationTicks = NotSet;
         private short _absoluteExpirationOffsetMinutes;
         private bool _isDisposed;
         private bool _isExpired;
         private bool _isValueSet;
         private byte _evictionReason;
         private byte _priority = (byte)CacheItemPriority.Normal;
+
+        private const int NotSet = -1;
 
         internal CacheEntry(object key, MemoryCache memoryCache)
         {
@@ -51,40 +53,37 @@ namespace Microsoft.Extensions.Caching.Memory
         // internal for testing
         internal static CacheEntry? Current => _current.Value;
 
-        private ref ulong RawAbsoluteExpiration => ref Unsafe.As<DateTime, ulong>(ref _absoluteExpiration);
-
-        internal bool HasAbsoluteExpiration => RawAbsoluteExpiration != 0;
-
-        internal DateTime AbsoluteExpiration => _absoluteExpiration;
-
-        internal void SetAbsoluteExpirationUtc(DateTime value)
+        internal long AbsoluteExpirationTicks
         {
-            Debug.Assert(value.Kind == DateTimeKind.Utc);
-            _absoluteExpiration = value;
-            _absoluteExpirationOffsetMinutes = 0;
+            get => _absoluteExpirationTicks;
+            set
+            {
+                _absoluteExpirationTicks = value;
+                _absoluteExpirationOffsetMinutes = 0;
+            }
         }
 
         DateTimeOffset? ICacheEntry.AbsoluteExpiration
         {
             get
             {
-                if (!HasAbsoluteExpiration)
+                if (_absoluteExpirationTicks < 0)
                     return null;
 
                 var offset = new TimeSpan(_absoluteExpirationOffsetMinutes * TimeSpan.TicksPerMinute);
-                return new DateTimeOffset(_absoluteExpiration.Ticks + offset.Ticks, offset);
+                return new DateTimeOffset(_absoluteExpirationTicks + offset.Ticks, offset);
             }
             set
             {
                 if (value is null)
                 {
-                    _absoluteExpiration = default;
+                    _absoluteExpirationTicks = NotSet;
                     _absoluteExpirationOffsetMinutes = default;
                 }
                 else
                 {
                     DateTimeOffset expiration = value.GetValueOrDefault();
-                    _absoluteExpiration = expiration.UtcDateTime;
+                    _absoluteExpirationTicks = expiration.UtcTicks;
                     _absoluteExpirationOffsetMinutes = (short)(expiration.Offset.Ticks / TimeSpan.TicksPerMinute);
                 }
             }
@@ -163,11 +162,7 @@ namespace Microsoft.Extensions.Caching.Memory
                     throw new ArgumentOutOfRangeException(nameof(value), value, $"{nameof(value)} must be non-negative.");
                 }
 
-                // disallow entry size changes after it has been committed
-                if (_isDisposed)
-                    return;
-
-                _size = value ?? -1;
+                _size = value ?? NotSet;
             }
         }
 
@@ -195,31 +190,40 @@ namespace Microsoft.Extensions.Caching.Memory
 
                 if (_cache.TrackLinkedCacheEntries)
                 {
-                    Debug.Assert(_current.Value == this, "Entries disposed in invalid order");
-                    _current.Value = _previous;
+                    CommitWithTracking();
                 }
-
-                // Don't commit or propagate options if the CacheEntry Value was never set.
-                // We assume an exception occurred causing the caller to not set the Value successfully,
-                // so don't use this entry.
-                if (_isValueSet)
+                else if (_isValueSet)
                 {
                     _cache.SetEntry(this);
-
-                    CacheEntry? parent = _previous;
-                    if (parent != null)
-                    {
-                        if (HasAbsoluteExpiration && (!parent.HasAbsoluteExpiration || RawAbsoluteExpiration < parent.RawAbsoluteExpiration))
-                        {
-                            parent._absoluteExpiration = _absoluteExpiration;
-                            parent._absoluteExpirationOffsetMinutes = _absoluteExpirationOffsetMinutes;
-                        }
-                        _tokens?.PropagateTokens(parent);
-                    }
                 }
-
-                _previous = null; // we don't want to root unnecessary objects
             }
+        }
+
+        private void CommitWithTracking()
+        {
+            Debug.Assert(_current.Value == this, "Entries disposed in invalid order");
+            _current.Value = _previous;
+
+            // Don't commit or propagate options if the CacheEntry Value was never set.
+            // We assume an exception occurred causing the caller to not set the Value successfully,
+            // so don't use this entry.
+            if (_isValueSet)
+            {
+                _cache.SetEntry(this);
+
+                CacheEntry? parent = _previous;
+                if (parent != null)
+                {
+                    if ((ulong)_absoluteExpirationTicks < (ulong)parent._absoluteExpirationTicks)
+                    {
+                        parent._absoluteExpirationTicks = _absoluteExpirationTicks;
+                        parent._absoluteExpirationOffsetMinutes = _absoluteExpirationOffsetMinutes;
+                    }
+                    _tokens?.PropagateTokens(parent);
+                }
+            }
+
+            _previous = null; // we don't want to root unnecessary objects
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)] // added based on profiling
@@ -241,7 +245,7 @@ namespace Microsoft.Extensions.Caching.Memory
         [MethodImpl(MethodImplOptions.AggressiveInlining)] // added based on profiling
         private bool CheckForExpiredTime(DateTime utcNow)
         {
-            if (!HasAbsoluteExpiration && _slidingExpiration.Ticks == 0)
+            if (_absoluteExpirationTicks < 0 && _slidingExpiration.Ticks == 0)
             {
                 return false;
             }
@@ -250,7 +254,7 @@ namespace Microsoft.Extensions.Caching.Memory
 
             bool FullCheck(DateTime utcNow)
             {
-                if (HasAbsoluteExpiration && _absoluteExpiration <= utcNow)
+                if ((ulong)_absoluteExpirationTicks <= (ulong)utcNow.Ticks)
                 {
                     SetExpired(EvictionReason.Expired);
                     return true;
@@ -282,21 +286,18 @@ namespace Microsoft.Extensions.Caching.Memory
 
         internal void InvokeEvictionCallbacks() => _tokens?.InvokeEvictionCallbacks(this);
 
-        internal bool CanPropagateTokens() => _tokens != null && _tokens.CanPropagateTokens();
-
         internal void PropagateOptionsToCurrent()
         {
-            CacheEntry? parent = _current.Value;
-            if (parent == null)
+            if ((_tokens == null || !_tokens.CanPropagateTokens()) && _absoluteExpirationTicks < 0 || _current.Value is not CacheEntry parent)
             {
                 return;
             }
 
             // Copy expiration tokens and AbsoluteExpiration to the cache entries hierarchy.
             // We do this regardless of it gets cached because the tokens are associated with the value we'll return.
-            if (HasAbsoluteExpiration && (!parent.HasAbsoluteExpiration || RawAbsoluteExpiration < parent.RawAbsoluteExpiration))
+            if ((ulong)_absoluteExpirationTicks < (ulong)parent._absoluteExpirationTicks)
             {
-                parent._absoluteExpiration = _absoluteExpiration;
+                parent._absoluteExpirationTicks = _absoluteExpirationTicks;
                 parent._absoluteExpirationOffsetMinutes = _absoluteExpirationOffsetMinutes;
             }
 

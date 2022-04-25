@@ -9,8 +9,10 @@ namespace Microsoft.Extensions.Caching.Memory
 {
     public class MemoryCacheOptions : IOptions<MemoryCacheOptions>
     {
-        private long _sizeLimit = -1;
+        private long _sizeLimit = NotSet;
         private double _compactionPercentage = 0.05;
+
+        private const int NotSet = -1;
 
         public ISystemClock? Clock { get; set; }
 
@@ -36,7 +38,7 @@ namespace Microsoft.Extensions.Caching.Memory
                     throw new ArgumentOutOfRangeException(nameof(value), value, $"{nameof(value)} must be non-negative.");
                 }
 
-                _sizeLimit = value ?? -1;
+                _sizeLimit = value ?? NotSet;
             }
         }
 

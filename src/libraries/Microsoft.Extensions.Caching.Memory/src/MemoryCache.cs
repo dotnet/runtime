@@ -110,10 +110,10 @@ namespace Microsoft.Extensions.Caching.Memory
             // it was set by cascading it to its parent.
             if (entry.AbsoluteExpirationRelativeToNow.Ticks > 0)
             {
-                DateTime absoluteExpiration = utcNow + entry.AbsoluteExpirationRelativeToNow;
-                if (!entry.HasAbsoluteExpiration || absoluteExpiration < entry.AbsoluteExpiration)
+                long absoluteExpiration = (utcNow + entry.AbsoluteExpirationRelativeToNow).Ticks;
+                if ((ulong)absoluteExpiration < (ulong)entry.AbsoluteExpirationTicks)
                 {
-                    entry.SetAbsoluteExpirationUtc(absoluteExpiration);
+                    entry.AbsoluteExpirationTicks = absoluteExpiration;
                 }
             }
 
@@ -215,7 +215,7 @@ namespace Microsoft.Extensions.Caching.Memory
                     entry.LastAccessed = utcNow;
                     result = entry.Value;
 
-                    if (TrackLinkedCacheEntries && (entry.CanPropagateTokens() || entry.HasAbsoluteExpiration))
+                    if (TrackLinkedCacheEntries)
                     {
                         // When this entry is retrieved in the scope of creating another entry,
                         // that entry needs a copy of these expiration tokens.
