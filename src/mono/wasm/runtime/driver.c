@@ -28,6 +28,7 @@
 #include <mono/jit/jit.h>
 #include <mono/jit/mono-private-unstable.h>
 
+#include "wasm-config.h"
 #include "pinvoke.h"
 #include "gc-common.h"
 
