@@ -182,14 +182,11 @@ namespace System.Net.Quic.Implementations.MsQuic
             Internals.SocketAddress address = IPEndPointExtensions.Serialize(listenEndPoint);
 
             Debug.Assert(_stateHandle.IsAllocated);
-
-            MemoryHandle[]? handles = null;
-            // TODO: should they be pinned? The content is pinned, but the array holding the individual buffers isn't.
-            QUIC_BUFFER[]? buffers = null;
             try
             {
                 Debug.Assert(!Monitor.IsEntered(_state), "!Monitor.IsEntered(_state)");
-                MsQuicAlpnHelper.Prepare(applicationProtocols, out handles, out buffers);
+                using var msquicBuffers = new MsQuicBuffers();
+                msquicBuffers.Initialize(applicationProtocols, applicationProtocol => applicationProtocol.Protocol);
                 // TODO: is the layout same for SocketAddress.Buffer and QuicAddr?
                 // TODO: maybe add simple extensions/helpers:
                 //       - QuicAddr ToQuicAddr(this IPEndPoint ipEndPoint)
@@ -198,7 +195,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                 {
                     ThrowIfFailure(MsQuicApi.Api.ApiTable->ListenerStart(
                         _state.Handle.QuicHandle,
-                        (QUIC_BUFFER*)Marshal.UnsafeAddrOfPinnedArrayElement(buffers, 0),
+                        msquicBuffers.Buffers,
                         (uint)applicationProtocols.Count,
                         (QuicAddr*)paddress), "ListenerStart failed");
                 }
@@ -207,10 +204,6 @@ namespace System.Net.Quic.Implementations.MsQuic
             {
                 _stateHandle.Free();
                 throw;
-            }
-            finally
-            {
-                MsQuicAlpnHelper.Return(ref handles, ref buffers);
             }
 
             Debug.Assert(!Monitor.IsEntered(_state), "!Monitor.IsEntered(_state)");

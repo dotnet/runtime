@@ -146,27 +146,18 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             SafeMsQuicConfigurationHandle configurationHandle;
             X509Certificate2[]? intermediates = null;
 
-            MemoryHandle[]? handles = null;
-            // TODO: should they be pinned? The content is pinned, but the array holding the individual buffers isn't.
-            QUIC_BUFFER[]? buffers = null;
-            try
-            {
-                QUIC_HANDLE* handle;
-                MsQuicAlpnHelper.Prepare(alpnProtocols, out handles, out buffers);
-                ThrowIfFailure(MsQuicApi.Api.ApiTable->ConfigurationOpen(
-                    MsQuicApi.Api.Registration.QuicHandle,
-                    (QUIC_BUFFER*)Marshal.UnsafeAddrOfPinnedArrayElement(buffers, 0),
-                    (uint)alpnProtocols.Count,
-                    &settings,
-                    (uint)sizeof(QUIC_SETTINGS),
-                    (void*)IntPtr.Zero,
-                    &handle), "ConfigurationOpen failed");
-                configurationHandle = new SafeMsQuicConfigurationHandle(handle);
-            }
-            finally
-            {
-                MsQuicAlpnHelper.Return(ref handles, ref buffers);
-            }
+            QUIC_HANDLE* handle;
+            using var msquicBuffers = new MsQuicBuffers();
+            msquicBuffers.Initialize(alpnProtocols, alpnProtocol => alpnProtocol.Protocol);
+            ThrowIfFailure(MsQuicApi.Api.ApiTable->ConfigurationOpen(
+                MsQuicApi.Api.Registration.QuicHandle,
+                msquicBuffers.Buffers,
+                (uint)alpnProtocols.Count,
+                &settings,
+                (uint)sizeof(QUIC_SETTINGS),
+                (void*)IntPtr.Zero,
+                &handle), "ConfigurationOpen failed");
+            configurationHandle = new SafeMsQuicConfigurationHandle(handle);
 
             try
             {
