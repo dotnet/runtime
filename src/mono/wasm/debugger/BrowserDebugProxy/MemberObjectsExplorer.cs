@@ -50,7 +50,7 @@ namespace BrowserDebugProxy
 
             if (!typeFieldsBrowsableInfo.TryGetValue(field.Name, out DebuggerBrowsableState? state))
             {
-                // for backing fields, we should get it from the properties
+                // for backing fields, we are getting it from the properties
                 typePropertiesBrowsableInfo.TryGetValue(field.Name, out state);
             }
             fieldValue["__state"] = state?.ToString();
@@ -291,7 +291,7 @@ namespace BrowserDebugProxy
             }
         }
 
-        public static async Task<IDictionary<string, JObject>> GetNonAutomaticPropertyValues(
+        public static async Task<Dictionary<string, JObject>> GetNonAutomaticPropertyValues(
             MonoSDBHelper sdbHelper,
             int typeId,
             string containerTypeName,
@@ -301,7 +301,7 @@ namespace BrowserDebugProxy
             bool isValueType,
             bool isOwn,
             CancellationToken token,
-            IDictionary<string, JObject> allMembers,
+            Dictionary<string, JObject> allMembers,
             bool includeStatic = false)
         {
             using var retDebuggerCmdReader = await sdbHelper.GetTypePropertiesReader(typeId, token);
@@ -335,7 +335,6 @@ namespace BrowserDebugProxy
                 {
                     if (backingField["__isBackingField"]?.Value<bool>() == true)
                     {
-                        // FIXME: this should be checked only for this type - add a typeID to it?
                         // Update backingField's access with the one from the property getter
                         backingField["__section"] = getterAttrs switch
                         {
@@ -347,7 +346,6 @@ namespace BrowserDebugProxy
 
                         if (state is not null)
                         {
-                            // FIXME: primitive types?
                             string namePrefix = GetNamePrefixForValues(propName, containerTypeName, isOwn, state);
 
                             string backingFieldTypeName = backingField["value"]?["className"]?.Value<string>();
@@ -497,7 +495,7 @@ namespace BrowserDebugProxy
                 if (!getCommandType.HasFlag(GetObjectCommandOptions.WithProperties))
                     return GetMembersResult.FromValues(allMembers.Values, sortByAccessLevel);
 
-                allMembers = (Dictionary<string, JObject>)await GetNonAutomaticPropertyValues(
+                allMembers = await GetNonAutomaticPropertyValues(
                     sdbHelper,
                     typeId,
                     typeName,

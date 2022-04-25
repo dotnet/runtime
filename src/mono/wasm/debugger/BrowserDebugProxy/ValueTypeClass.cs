@@ -60,12 +60,11 @@ namespace BrowserDebugProxy
             var typePropertiesBrowsableInfo = typeInfo?.Info?.DebuggerBrowsableProperties;
 
             IReadOnlyList<FieldTypeClass> fieldTypes = await sdbAgent.GetTypeFields(typeId, token);
-            IEnumerable<FieldTypeClass> writableFields = fieldTypes.Where(f => !f.Attributes.HasFlag(FieldAttributes.Literal) && !f.Attributes.HasFlag(FieldAttributes.Static));
+            // statics should not be in valueType fields: CallFunctionOnTests.PropertyGettersTest
+            IEnumerable<FieldTypeClass> writableFields = fieldTypes
+                .Where(f => !f.Attributes.HasFlag(FieldAttributes.Literal)
+                    && !f.Attributes.HasFlag(FieldAttributes.Static));
 
-            // FIXME: save the field values buffer, and expand on demand
-            int numWritableFields = writableFields.Count();
-
-            // FIXME: add the static oens too? and tests for that! EvaluateOnCallFrame has some?
             JArray fields = new();
             foreach (var field in writableFields)
             {
@@ -249,28 +248,26 @@ namespace BrowserDebugProxy
             using MonoBinaryReader getParentsReader = await sdbHelper.SendDebuggerAgentCommand(CmdType.GetParents, commandParamsWriter, token);
             int numParents = getParentsReader.ReadInt32();
 
-            List<int> typesToGetProperties = new();
-            typesToGetProperties.Add(TypeId);
-
-            // FIXME: this list can be removed.. but also need to process for object's own typeId first
-            for (int i = 0; i < numParents; i++)
-                typesToGetProperties.Add(getParentsReader.ReadInt32());
-
-            var allMembers = new Dictionary<string, JObject>();
             if (!fieldsExpanded)
             {
                 await ExpandedFieldValues(sdbHelper, includeStatic, token);
                 fieldsExpanded = true;
             }
+
+            var allMembers = new Dictionary<string, JObject>();
             foreach (var f in fields)
                 allMembers[f["name"].Value<string>()] = f as JObject;
 
-            for (int i = 0; i < typesToGetProperties.Count; i++)
+            int typeId = TypeId;
+            var parentsCntPlusSelf = numParents + 1;
+            for (int i = 0; i < parentsCntPlusSelf; i++)
             {
-                //FIXME: change GetNonAutomaticPropertyValues to return a jobject instead
-                var res = await MemberObjectsExplorer.GetNonAutomaticPropertyValues(
+                // isParent:
+                if (i != 0) typeId = getParentsReader.ReadInt32();
+
+                allMembers = await MemberObjectsExplorer.GetNonAutomaticPropertyValues(
                     sdbHelper,
-                    typesToGetProperties[i],
+                    typeId,
                     className,
                     Buffer,
                     autoExpand,
@@ -280,10 +277,7 @@ namespace BrowserDebugProxy
                     token,
                     allMembers,
                     includeStatic);
-                foreach (var kvp in res)
-                    allMembers[kvp.Key] = kvp.Value;
             }
-
             _combinedResult = GetMembersResult.FromValues(allMembers.Values, splitMembersByAccessLevel);
         }
 

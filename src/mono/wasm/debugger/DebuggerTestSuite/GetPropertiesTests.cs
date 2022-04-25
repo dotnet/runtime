@@ -422,9 +422,9 @@ namespace DebuggerTests
                 {"DateTimeForOverride",             TGetter("DateTimeForOverride")},
 
                 {"StringPropertyForOverrideWithAutoProperty",   TString("DerivedClass#StringPropertyForOverrideWithAutoProperty")},
-                {"Base_AutoStringPropertyForOverrideWithField", TString("DerivedClass#Base_AutoStringPropertyForOverrideWithField")}, // should be twice
-                {"Base_GetterForOverrideWithField",             TString("DerivedClass#Base_GetterForOverrideWithField")}, // should be twice
-                {"BaseBase_MemberForOverride",                  TString("DerivedClass#BaseBase_MemberForOverride")}, // should be 3 times
+                {"Base_AutoStringPropertyForOverrideWithField", TString("DerivedClass#Base_AutoStringPropertyForOverrideWithField")},
+                {"Base_GetterForOverrideWithField",             TString("DerivedClass#Base_GetterForOverrideWithField")},
+                {"BaseBase_MemberForOverride",                  TString("DerivedClass#BaseBase_MemberForOverride")},
 
                 // inherited public
                 {"Base_AutoStringProperty",         TString("base#Base_AutoStringProperty")},

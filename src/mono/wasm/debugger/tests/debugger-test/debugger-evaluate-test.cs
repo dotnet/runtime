@@ -47,7 +47,7 @@ namespace DebuggerTests
         {
             var asm = System.Reflection.Assembly.LoadFrom("debugger-test-with-source-link.dll");
             var myType = asm.GetType("DebuggerTests.ClassToCheckFieldValue");
-            var myMethod = myType.GetConstructor(new Type[] { });
+            var a = myMethod.Invoke(new object[]{});
             var a = myMethod.Invoke(new object[] { });
         }
 

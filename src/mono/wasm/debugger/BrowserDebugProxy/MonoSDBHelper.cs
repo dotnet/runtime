@@ -1401,20 +1401,17 @@ namespace Microsoft.WebAssembly.Diagnostics
                     return null;
 
                 var parmCount = getCAttrsRetReader.ReadInt32();
-                var monoType = (ElementType) getCAttrsRetReader.ReadByte(); //MonoTypeEnum -> MONO_TYPE_STRING
+                var monoType = (ElementType)getCAttrsRetReader.ReadByte(); //MonoTypeEnum -> MONO_TYPE_STRING
                 if (monoType != ElementType.String)
                     return null;
 
                 var stringId = getCAttrsRetReader.ReadInt32();
                 var dispAttrStr = await GetStringValue(stringId, token);
                 ExecutionContext context = proxy.GetContext(sessionId);
-                // logger.LogDebug($"** GetValueFromDebuggerDisplayAttribute calling GetObjectMemberValues");
                 GetMembersResult members = await GetTypeMemberValues(
                     dotnetObjectId,
                     GetObjectCommandOptions.WithProperties | GetObjectCommandOptions.ForDebuggerDisplayAttribute,
                     token);
-                // FIXME: flatten, it's flattened already
-                // JArray objectValues = new JArray(members.JObject);
                 JArray objectValues = new JArray(members.Flatten());
 
                 var thisObj = CreateJObject<string>(value: "", type: "object", description: "", writable: false, objectId: dotnetObjectId.ToString());
@@ -1648,8 +1645,6 @@ namespace Microsoft.WebAssembly.Diagnostics
                 : throw new ArgumentException($"Cannot invoke method with id {methodId} on {dotnetObjectId}", nameof(dotnetObjectId));
         }
 
-        // FIXME: removable?
-
         public async Task<int> GetPropertyMethodIdByName(int typeId, string propertyName, CancellationToken token)
         {
             using var retDebuggerCmdReader =  await GetTypePropertiesReader(typeId, token);
@@ -1832,16 +1827,15 @@ namespace Microsoft.WebAssembly.Diagnostics
             "ushort",
             "float",
             "double",
-            "object", // object in primitive?
         };
 
         public static bool IsPrimitiveType(string simplifiedClassName)
             => s_primitiveTypeNames.Contains(simplifiedClassName);
 
-        public async Task<JObject> CreateJObjectForValueType(MonoBinaryReader retDebuggerCmdReader, string name, long initialPos, bool forDebuggerDisplayAttribute, CancellationToken token)
+        public async Task<JObject> CreateJObjectForValueType(
+            MonoBinaryReader retDebuggerCmdReader, string name, long initialPos, bool forDebuggerDisplayAttribute, CancellationToken token)
         {
             // FIXME: debugger proxy
-            //JObject fieldValueType = null;
             var isEnum = retDebuggerCmdReader.ReadByte() == 1;
             var isBoxed = retDebuggerCmdReader.ReadByte() == 1;
             var typeId = retDebuggerCmdReader.ReadInt32();
@@ -1879,8 +1873,6 @@ namespace Microsoft.WebAssembly.Diagnostics
                                                         isEnum,
                                                         token);
             valueTypes[valueType.Id.Value] = valueType;
-
-            // FIXME: check if this gets called more than once.. maybe with different values of forDebugg.. ?
             return await valueType.ToJObject(this, forDebuggerDisplayAttribute, token);
         }
 
@@ -2114,7 +2106,6 @@ namespace Microsoft.WebAssembly.Diagnostics
                         {
                             var asyncProxyMembersFromObject = await MemberObjectsExplorer.GetObjectMemberValues(
                                 this, dotnetObjectId.Value, GetObjectCommandOptions.WithProperties, token);
-                            // is it supposed to be an infinite loop?
                             var hoistedLocalVariable = await GetHoistedLocalVariables(dotnetObjectId.Value, asyncProxyMembersFromObject.Flatten(), token);
                             asyncLocalsFull = new JArray(asyncLocalsFull.Union(hoistedLocalVariable));
                         }
@@ -2155,12 +2146,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                 using var retDebuggerCmdReader = await SendDebuggerAgentCommand(CmdFrame.GetThis, commandParamsWriter, token);
                 retDebuggerCmdReader.ReadByte(); //ignore type
                 var objectId = retDebuggerCmdReader.ReadInt32();
-                logger.LogDebug($"** StackFrameGetValues calling GetObjectMemberValues");
-                // infinite loop again?
                 GetMembersResult asyncProxyMembers = await MemberObjectsExplorer.GetObjectMemberValues(this, objectId, GetObjectCommandOptions.WithProperties, token);
-                //Console.WriteLine($"asyncProxyMembers: {asyncProxyMembers}");
                 var asyncLocals = await GetHoistedLocalVariables(objectId, asyncProxyMembers.Flatten(), token);
-                //Console.WriteLine($"** StackFrameGetValues returning {asyncLocals}");
                 return asyncLocals;
             }
 
@@ -2395,11 +2382,8 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         public async Task<JArray> GetObjectProxy(int objectId, CancellationToken token)
         {
-            //Console.WriteLine($"-- GetObjectProxy");
             GetMembersResult members = await MemberObjectsExplorer.GetObjectMemberValues(this, objectId, GetObjectCommandOptions.WithSetter, token);
-            // FIXME: will this mean that the result object won't get gc'ed?
-            //Console.WriteLine($"-- GetObjectProxy members: {members}");
-            JArray ret = members.Flatten();// originally: members.Flatten().Result; // why?
+            JArray ret = members.Flatten();
             var typeIds = await GetTypeIdsForObject(objectId, true, token);
             foreach (var typeId in typeIds)
             {
@@ -2531,35 +2515,6 @@ namespace Microsoft.WebAssembly.Diagnostics
         {
             foreach (var item in addedArr)
                 arr.Add(item);
-        }
-
-        public static void AddRange(this JArray arr, IEnumerable<JToken> addedArr)
-        {
-            foreach (var item in addedArr)
-                arr.Add(item);
-        }
-
-        public static void TryAddRange(this Dictionary<string, JToken> dict, JArray addedArr)
-        {
-            foreach (var item in addedArr)
-            {
-                var key = item["name"]?.Value<string>();
-                if (key == null)
-                    continue;
-                dict.TryAdd(key, item);
-            }
-        }
-
-        public static JArray GetValuesByKeys(this Dictionary<string, JToken> dict, List<string> keys)
-        {
-            var result = new JArray();
-            foreach (var name in keys)
-            {
-                if (!dict.TryGetValue(name, out var obj))
-                    continue;
-                result.Add(obj);
-            }
-            return result;
         }
 
         public static bool IsNullValuedObject(this JObject obj)
