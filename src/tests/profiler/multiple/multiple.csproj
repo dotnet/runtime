@@ -5,6 +5,10 @@
     <CLRTestKind>BuildAndRun</CLRTestKind>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <CLRTestPriority>0</CLRTestPriority>
+    <!-- this test provides no value for JITStress -->
+    <JitOptimizationSensitive>true</JitOptimizationSensitive>
+    <!-- This test provides no value for GCStress -->
+    <GCStressIncompatible>true</GCStressIncompatible>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildProjectName).cs" />
