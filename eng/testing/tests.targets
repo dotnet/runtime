@@ -8,7 +8,8 @@
     <RunScriptInputName Condition="'$(TargetOS)' == 'Browser' and '$(OS)' != 'Windows_NT' and '$(BuildAOTTestsOnHelix)' == 'true'">WasmRunnerAOTTemplate.sh</RunScriptInputName>
     <RunScriptInputName Condition="'$(TargetOS)' == 'Browser' and '$(OS)' != 'Windows_NT' and '$(BuildAOTTestsOnHelix)' != 'true'">WasmRunnerTemplate.sh</RunScriptInputName>
     <RunScriptInputName Condition="'$(TargetOS)' == 'Browser' and '$(OS)' == 'Windows_NT'">WasmRunnerTemplate.cmd</RunScriptInputName>
-    <RunScriptInputName Condition="$(OutputRid.StartsWith('linux-bionic'))">BionicRunnerTemplate.sh</RunScriptInputName>
+    <RunScriptInputName Condition="$(OutputRid.StartsWith('linux-bionic')) and '$(OS)' != 'Windows_NT'">BionicRunnerTemplate.sh</RunScriptInputName>
+    <RunScriptInputName Condition="$(OutputRid.StartsWith('linux-bionic')) and '$(OS)' == 'Windows_NT'">BionicRunnerTemplate.cmd</RunScriptInputName>
     <InnerRunScriptInputName>BionicRunOnDevice.sh</InnerRunScriptInputName>
   </PropertyGroup>
 
@@ -114,7 +115,7 @@
 
     <Exec Condition="'$(TargetOS)' != 'windows' and '$(OS)' != 'Windows_NT'" Command="chmod +x $(RunScriptOutputPath)" />
     <Copy Condition="$(OutputRid.StartsWith('linux-bionic'))" SourceFiles="$(InnerRunScriptInputPath)" DestinationFiles="$(InnerRunScriptOutputPath)" />
-    <Exec Condition="$(OutputRid.StartsWith('linux-bionic'))" Command="chmod +x $(InnerRunScriptOutputPath)" />
+    <Exec Condition="$(OutputRid.StartsWith('linux-bionic')) and '$(OS)' != 'Windows_NT'" Command="chmod +x $(InnerRunScriptOutputPath)" />
 
     <PropertyGroup Condition="$(OutputRid.StartsWith('linux-bionic'))">
       <_AndroidArchitecture Condition="'$(TargetArchitecture)' == 'x64'">x86_64</_AndroidArchitecture>
