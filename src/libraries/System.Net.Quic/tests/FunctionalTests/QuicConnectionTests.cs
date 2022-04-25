@@ -115,6 +115,11 @@ namespace System.Net.Quic.Tests
 
                     // Pending ops should fail
                     await Assert.ThrowsAsync<QuicOperationAbortedException>(() => acceptTask);
+
+                    // TODO: This may not always throw QuicOperationAbortedException due to a data race with MsQuic worker threads
+                    // (CloseAsync may be processed before OpenStreamAsync as it is scheduled to the front of the operation queue)
+                    // To be revisited once we standartize on exceptions.
+                    // [ActiveIssue("https://github.com/dotnet/runtime/issues/55619")]
                     await Assert.ThrowsAsync<QuicOperationAbortedException>(() => connectTask);
 
                     // Subsequent attempts should fail
