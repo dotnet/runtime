@@ -180,7 +180,9 @@ namespace BinderTracingTests
         //   ResolutionAttempted : ApplicationAssemblies                (DefaultALC)    [MismatchedAssemblyName]
         //   ResolutionAttempted : AssemblyLoadContextResolvingEvent    (DefaultALC)    [AssemblyNotFound]
         //   ResolutionAttempted : AppDomainAssemblyResolveEvent        (DefaultALC)    [AssemblyNotFound]
-        [BinderTest(isolate: true, additionalLoadsToTrack: new string[] { DependentAssemblyName + "_Copy" } )]
+        [BinderTest(isolate: true,
+            additionalLoadsToTrack: new string[] { DependentAssemblyName + "_Copy" },
+            activeIssue: "https://github.com/dotnet/runtime/issues/68521")] // Emit-based Invoke causes AssemblyNotFound instead of MismatchedAssemblyName.
         public static BindOperation ApplicationAssemblies_MismatchedAssemblyName()
         {
             var assemblyName = new AssemblyName($"{DependentAssemblyName}_Copy, Culture=neutral, PublicKeyToken=null");

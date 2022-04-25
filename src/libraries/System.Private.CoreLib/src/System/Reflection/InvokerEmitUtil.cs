@@ -9,6 +9,9 @@ namespace System.Reflection
 {
     internal static class InvokerEmitUtil
     {
+        // If changed, update native stack walking code that also uses this prefix to ignore reflection frames.
+        private const string InvokeStubPrefix = "InvokeStub_";
+
         // This is an instance method to avoid overhead of shuffle thunk.
         internal unsafe delegate object? InvokeFunc<T>(T obj, object? target, IntPtr* arguments);
 
@@ -22,7 +25,7 @@ namespace System.Reflection
             Type[] delegateParameters = new Type[3] { typeof(T), typeof(object), typeof(IntPtr*) };
 
             var dm = new DynamicMethod(
-                "InvokeStub_" + method.DeclaringType!.Name + "." + method.Name,
+                InvokeStubPrefix + method.DeclaringType!.Name + "." + method.Name,
                 returnType: typeof(object),
                 delegateParameters,
                 owner: typeof(T),
@@ -133,7 +136,7 @@ namespace System.Reflection
 
             il.Emit(OpCodes.Ret);
 
-            // Create the delegate.
+            // Create the delegate; it is also compiled at this point due to skipVisibility=true.
             return (InvokeFunc<T>)dm.CreateDelegate(typeof(InvokeFunc<T>));
         }
 
