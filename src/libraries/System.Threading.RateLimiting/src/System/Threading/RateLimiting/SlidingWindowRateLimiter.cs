@@ -52,6 +52,8 @@ namespace System.Threading.RateLimiting
             _requestsPerSegment = new int[options.SegmentsPerWindow];
             _currentSegmentIndex = 0;
 
+            _idleSince = _lastReplenishmentTick = Stopwatch.GetTimestamp();
+
             if (_options.AutoReplenishment)
             {
                 _renewTimer = new Timer(Replenish, this, ReplenishmentPeriod, ReplenishmentPeriod);

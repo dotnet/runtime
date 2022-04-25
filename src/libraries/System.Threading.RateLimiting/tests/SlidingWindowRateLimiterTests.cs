@@ -57,13 +57,13 @@ namespace System.Threading.RateLimiting.Test
         [Fact]
         public override async Task CanAcquireResourceAsync_QueuesAndGrabsOldest()
         {
-            var limiter = new SlidingWindowRateLimiter(new SlidingWindowRateLimiterOptions(1, QueueProcessingOrder.OldestFirst, 2,
+            var limiter = new SlidingWindowRateLimiter(new SlidingWindowRateLimiterOptions(4, QueueProcessingOrder.OldestFirst, 5,
                 TimeSpan.FromMinutes(0), 1, autoReplenishment: false));
-            var lease = await limiter.WaitAsync();
+            var lease = await limiter.WaitAsync(4);
 
             Assert.True(lease.IsAcquired);
-            var wait1 = limiter.WaitAsync();
-            var wait2 = limiter.WaitAsync();
+            var wait1 = limiter.WaitAsync(2);
+            var wait2 = limiter.WaitAsync(3);
             Assert.False(wait1.IsCompleted);
             Assert.False(wait2.IsCompleted);
 
@@ -75,7 +75,7 @@ namespace System.Threading.RateLimiting.Test
             Assert.False(wait2.IsCompleted);
 
             lease.Dispose();
-            Assert.Equal(0, limiter.GetAvailablePermits());
+            Assert.Equal(2, limiter.GetAvailablePermits());
             Assert.True(limiter.TryReplenish());
 
             lease = await wait2;
@@ -105,7 +105,7 @@ namespace System.Threading.RateLimiting.Test
             Assert.False(wait1.IsCompleted);
 
             lease.Dispose();
-            Assert.Equal(0, limiter.GetAvailablePermits());
+            Assert.Equal(1, limiter.GetAvailablePermits());
             Assert.True(limiter.TryReplenish());
             Assert.True(limiter.TryReplenish());
 
@@ -123,8 +123,6 @@ namespace System.Threading.RateLimiting.Test
 
             var failedLease = await limiter.WaitAsync(1);
             Assert.False(failedLease.IsAcquired);
-            Assert.True(failedLease.TryGetMetadata(MetadataName.RetryAfter, out var timeSpan));
-            Assert.Equal(TimeSpan.Zero, timeSpan);
         }
 
         [Fact]
@@ -198,24 +196,20 @@ namespace System.Threading.RateLimiting.Test
         [Fact]
         public override async Task QueueAvailableAfterQueueLimitHitAndResources_BecomeAvailable()
         {
-            var limiter = new SlidingWindowRateLimiter(new SlidingWindowRateLimiterOptions(1, QueueProcessingOrder.OldestFirst, 1,
+            var limiter = new SlidingWindowRateLimiter(new SlidingWindowRateLimiterOptions(2, QueueProcessingOrder.OldestFirst, 2,
                 TimeSpan.Zero, 1, autoReplenishment: false));
-            var lease = limiter.Acquire(1);
-            var wait = limiter.WaitAsync(1);
+            var lease = limiter.Acquire(2);
+            var wait = limiter.WaitAsync(2);
 
-            var failedLease = await limiter.WaitAsync(1);
+            var failedLease = await limiter.WaitAsync(2);
             Assert.False(failedLease.IsAcquired);
 
             limiter.TryReplenish();
             lease = await wait;
             Assert.True(lease.IsAcquired);
 
-            wait = limiter.WaitAsync(1);
+            wait = limiter.WaitAsync(2);
             Assert.False(wait.IsCompleted);
-
-            limiter.TryReplenish();
-            lease = await wait;
-            Assert.True(lease.IsAcquired);
         }
 
         [Fact]
@@ -422,7 +416,7 @@ namespace System.Threading.RateLimiting.Test
         public override void MetadataNamesContainsAllMetadata()
         {
             var limiter = new SlidingWindowRateLimiter(new SlidingWindowRateLimiterOptions(1, QueueProcessingOrder.OldestFirst, 1,
-                TimeSpan.Zero, 0, autoReplenishment: false));
+                TimeSpan.Zero, 1, autoReplenishment: false));
             using var lease = limiter.Acquire(1);
             Assert.Collection(lease.MetadataNames, metadataName => Assert.Equal(metadataName, MetadataName.RetryAfter.Name));
         }
@@ -431,7 +425,7 @@ namespace System.Threading.RateLimiting.Test
         public override async Task DisposeReleasesQueuedAcquires()
         {
             var limiter = new SlidingWindowRateLimiter(new SlidingWindowRateLimiterOptions(1, QueueProcessingOrder.OldestFirst, 3,
-                TimeSpan.Zero, 0, autoReplenishment: false));
+                TimeSpan.Zero, 1, autoReplenishment: false));
             var lease = limiter.Acquire(1);
             var wait1 = limiter.WaitAsync(1);
             var wait2 = limiter.WaitAsync(1);
@@ -458,7 +452,7 @@ namespace System.Threading.RateLimiting.Test
         public override async Task DisposeAsyncReleasesQueuedAcquires()
         {
             var limiter = new SlidingWindowRateLimiter(new SlidingWindowRateLimiterOptions(1, QueueProcessingOrder.OldestFirst, 3,
-                TimeSpan.Zero, 0, autoReplenishment: false));
+                TimeSpan.Zero, 1, autoReplenishment: false));
             var lease = limiter.Acquire(1);
             var wait1 = limiter.WaitAsync(1);
             var wait2 = limiter.WaitAsync(1);
@@ -479,56 +473,6 @@ namespace System.Threading.RateLimiting.Test
             // Throws after disposal
             Assert.Throws<ObjectDisposedException>(() => limiter.Acquire(1));
             await Assert.ThrowsAsync<ObjectDisposedException>(() => limiter.WaitAsync(1).AsTask());
-        }
-
-        [Fact]
-        public async Task RetryMetadataOnFailedWaitAsync()
-        {
-            var options = new SlidingWindowRateLimiterOptions(3, QueueProcessingOrder.OldestFirst, 1,
-                TimeSpan.FromSeconds(20), 1, autoReplenishment: false);
-            var limiter = new SlidingWindowRateLimiter(options);
-
-            using var lease = limiter.Acquire(2);
-
-            var failedLease = await limiter.WaitAsync(2);
-            Assert.False(failedLease.IsAcquired);
-            Assert.True(failedLease.TryGetMetadata(MetadataName.RetryAfter.Name, out var metadata));
-            var metaDataTime = Assert.IsType<TimeSpan>(metadata);
-            Assert.Equal(options.Window.Ticks, metaDataTime.Ticks);
-        }
-
-        [Fact]
-        public async Task CorrectRetryMetadataWithQueuedItem()
-        {
-            var options = new SlidingWindowRateLimiterOptions(2, QueueProcessingOrder.OldestFirst, 1,
-                TimeSpan.FromSeconds(20), 1, autoReplenishment: false);
-            var limiter = new SlidingWindowRateLimiter(options);
-
-            using var lease = limiter.Acquire(2);
-            // Queue item which changes the retry after time for failed items
-            var wait = limiter.WaitAsync(1);
-            Assert.False(wait.IsCompleted);
-
-            var failedLease = await limiter.WaitAsync(2);
-            Assert.False(failedLease.IsAcquired);
-            Assert.True(failedLease.TryGetMetadata(MetadataName.RetryAfter, out var typedMetadata));
-            Assert.Equal(options.Window.Ticks * 3, typedMetadata.Ticks);
-        }
-
-
-        [Fact]
-        public async Task CorrectRetryMetadataWithNonZeroAvailableItems()
-        {
-            var options = new SlidingWindowRateLimiterOptions(3, QueueProcessingOrder.OldestFirst, 1,
-                TimeSpan.FromSeconds(20), 1, autoReplenishment: false);
-            var limiter = new SlidingWindowRateLimiter(options);
-
-            using var lease = limiter.Acquire(2);
-
-            var failedLease = await limiter.WaitAsync(3);
-            Assert.False(failedLease.IsAcquired);
-            Assert.True(failedLease.TryGetMetadata(MetadataName.RetryAfter, out var typedMetadata));
-            Assert.Equal(options.Window.Ticks * 2, typedMetadata.Ticks);
         }
 
         [Fact]
@@ -557,7 +501,7 @@ namespace System.Threading.RateLimiting.Test
         public override async Task CanAcquireResourcesWithWaitAsyncWithQueuedItemsIfNewestFirst()
         {
             var limiter = new SlidingWindowRateLimiter(new SlidingWindowRateLimiterOptions(2, QueueProcessingOrder.NewestFirst, 2,
-                TimeSpan.Zero, 0, autoReplenishment: false));
+                TimeSpan.Zero, 1, autoReplenishment: false));
 
             var lease = limiter.Acquire(1);
             Assert.True(lease.IsAcquired);
@@ -579,14 +523,14 @@ namespace System.Threading.RateLimiting.Test
         [Fact]
         public override async Task CannotAcquireResourcesWithWaitAsyncWithQueuedItemsIfOldestFirst()
         {
-            var limiter = new SlidingWindowRateLimiter(new SlidingWindowRateLimiterOptions(2, QueueProcessingOrder.OldestFirst, 3,
-                TimeSpan.Zero, 0, autoReplenishment: false));
+            var limiter = new SlidingWindowRateLimiter(new SlidingWindowRateLimiterOptions(3, QueueProcessingOrder.OldestFirst, 5,
+                TimeSpan.Zero, 1, autoReplenishment: false));
 
-            var lease = limiter.Acquire(1);
+            var lease = limiter.Acquire(3);
             Assert.True(lease.IsAcquired);
 
             var wait = limiter.WaitAsync(2);
-            var wait2 = limiter.WaitAsync(1);
+            var wait2 = limiter.WaitAsync(2);
             Assert.False(wait.IsCompleted);
             Assert.False(wait2.IsCompleted);
 
@@ -606,7 +550,7 @@ namespace System.Threading.RateLimiting.Test
         public override async Task CanAcquireResourcesWithAcquireWithQueuedItemsIfNewestFirst()
         {
             var limiter = new SlidingWindowRateLimiter(new SlidingWindowRateLimiterOptions(2, QueueProcessingOrder.NewestFirst, 3,
-                TimeSpan.Zero, 0, autoReplenishment: false));
+                TimeSpan.Zero, 1, autoReplenishment: false));
 
             var lease = limiter.Acquire(1);
             Assert.True(lease.IsAcquired);
@@ -628,7 +572,7 @@ namespace System.Threading.RateLimiting.Test
         public override async Task CannotAcquireResourcesWithAcquireWithQueuedItemsIfOldestFirst()
         {
             var limiter = new SlidingWindowRateLimiter(new SlidingWindowRateLimiterOptions(2, QueueProcessingOrder.OldestFirst, 3,
-                TimeSpan.Zero, 0, autoReplenishment: false));
+                TimeSpan.Zero, 1, autoReplenishment: false));
 
             var lease = limiter.Acquire(1);
             Assert.True(lease.IsAcquired);
@@ -657,8 +601,8 @@ namespace System.Threading.RateLimiting.Test
         [Fact]
         public override async Task IdleDurationUpdatesWhenIdle()
         {
-            var limiter = new SlidingWindowRateLimiter(new SlidingWindowRateLimiterOptions(1, QueueProcessingOrder.OldestFirst, 2,
-                TimeSpan.FromMilliseconds(2), 1, autoReplenishment: false));
+            var limiter = new SlidingWindowRateLimiter(new SlidingWindowRateLimiterOptions(3, QueueProcessingOrder.OldestFirst, 2,
+                TimeSpan.FromMilliseconds(2), 2, autoReplenishment: false));
             Assert.NotNull(limiter.IdleDuration);
             var previousDuration = limiter.IdleDuration;
             await Task.Delay(15);
@@ -669,7 +613,7 @@ namespace System.Threading.RateLimiting.Test
         public override void IdleDurationUpdatesWhenChangingFromActive()
         {
             var limiter = new SlidingWindowRateLimiter(new SlidingWindowRateLimiterOptions(1, QueueProcessingOrder.OldestFirst, 2,
-                TimeSpan.Zero, 0, autoReplenishment: false));
+                TimeSpan.Zero, 1, autoReplenishment: false));
             limiter.Acquire(1);
             limiter.TryReplenish();
             Assert.NotNull(limiter.IdleDuration);
