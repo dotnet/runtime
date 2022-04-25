@@ -122,15 +122,13 @@ public:
 
         auto thProcessor = [&](intptr_t thWritten)
         {
-            if (ICorJitInfo::IsUnknownTypeHandle(thWritten)) return;
+            if (thWritten == 0 || ICorJitInfo::IsUnknownHandle(thWritten))
+                return;
 
-            if (thWritten != 0)
+            TypeHandle th = *(TypeHandle*)&thWritten;
+            if (!th.IsNull())
             {
-                TypeHandle th = *(TypeHandle*)&thWritten;
-                if (!th.IsNull())
-                {
-                    typeHandlesEncountered.Append(th);
-                }
+                typeHandlesEncountered.Append(th);
             }
             return;
         };
@@ -257,7 +255,7 @@ void PgoManager::WritePgoData()
                             {
                                 fprintf(pgoDataFile, s_TypeHandle, "NULL");
                             }
-                            else if (ICorJitInfo::IsUnknownTypeHandle(typehandleData))
+                            else if (ICorJitInfo::IsUnknownHandle(typehandleData))
                             {
                                 fprintf(pgoDataFile, s_TypeHandle, "UNKNOWN");
                             }
@@ -268,7 +266,7 @@ void PgoManager::WritePgoData()
                                 TypeString::AppendType(ss, th, TypeString::FormatNamespace | TypeString::FormatFullInst | TypeString::FormatAssembly);
                                 if (ss.GetCount() > 8192)
                                 {
-                                    fprintf(pgoDataFile, s_TypeHandle, "unknown");
+                                    fprintf(pgoDataFile, s_TypeHandle, "UNKNOWN");
                                 }
                                 else
                                 {
@@ -279,10 +277,15 @@ void PgoManager::WritePgoData()
                         }
                     case ICorJitInfo::PgoInstrumentationKind::MethodHandle:
                         {
-                            MethodDesc* md = *(MethodDesc**)(data + entryOffset);
+                            intptr_t methodHandleData = *(intptr_t*)(data + entryOffset);
+                            MethodDesc* md = reinterpret_cast<MethodDesc*>(methodHandleData);
                             if (md == nullptr)
                             {
                                 fprintf(pgoDataFile, "MethodHandle: NULL");
+                            }
+                            else if (ICorJitInfo::IsUnknownHandle(methodHandleData))
+                            {
+                                fprintf(pgoDataFile, "MethodHandle: UNKNOWN");
                             }
                             else
                             {
@@ -294,7 +297,7 @@ void PgoManager::WritePgoData()
                                 // MethodName|@|fully_qualified_type_name
                                 if (tTypeName.GetCount() + 1 + tMethodName.GetCount() > 8192)
                                 {
-                                    fprintf(pgoDataFile, "MethodHandle: unknown");
+                                    fprintf(pgoDataFile, "MethodHandle: UNKNOWN");
                                 }
                                 else
                                 {
@@ -511,7 +514,7 @@ void PgoManager::ReadPgoData()
 
                             TypeHandle th;
                             INT_PTR ptrVal = 0;
-                            if ((strcmp(typeString, "NULL") != 0) || (strcmp(typeString, "UNKNOWN") != 0))
+                            if ((strcmp(typeString, "NULL") != 0) && (strcmp(typeString, "UNKNOWN") != 0))
                             {
                                 // As early type loading is likely problematic, simply drop the string into the data, and fix it up later
                                 void* tempString = malloc(endOfString);
@@ -546,7 +549,7 @@ void PgoManager::ReadPgoData()
 
                             TypeHandle th;
                             INT_PTR ptrVal = 0;
-                            if (strcmp(methodString, "NULL") != 0)
+                            if ((strcmp(methodString, "NULL") != 0) && (strcmp(methodString, "UNKNOWN") != 0))
                             {
                                 // As early type loading is likely problematic, simply drop the string into the data, and fix it up later
                                 void* tempString = malloc(endOfString);
