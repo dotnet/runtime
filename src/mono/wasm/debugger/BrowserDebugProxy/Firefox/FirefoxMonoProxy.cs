@@ -23,7 +23,6 @@ internal sealed class FirefoxMonoProxy : MonoProxy
     {
         if (contexts.TryGetValue(sessionId, out ExecutionContext context))
             return context as FirefoxExecutionContext;
-        logger.LogDebug("vou dar erro");
         throw new ArgumentException($"Invalid Session: \"{sessionId}\"", nameof(sessionId));
     }
 
@@ -247,7 +246,10 @@ internal sealed class FirefoxMonoProxy : MonoProxy
                 if (messageArgs != null && messageArgs.Count == 2)
                 {
                     if (messageArgs[0].Value<string>() == MonoConstants.RUNTIME_IS_READY && messageArgs[1].Value<string>() == MonoConstants.RUNTIME_IS_READY_ID)
+                    {
+                        ResetCmdId();
                         await RuntimeReady(sessionId, token);
+                    }
                 }
             }
             return true;
@@ -306,6 +308,7 @@ internal sealed class FirefoxMonoProxy : MonoProxy
                         {
                             if (messageArgs[0].Value<string>() == MonoConstants.RUNTIME_IS_READY && messageArgs[1].Value<string>() == MonoConstants.RUNTIME_IS_READY_ID)
                             {
+                                ResetCmdId();
                                 await Task.WhenAll(
                                     ForwardMessageToIde(args, token),
                                     RuntimeReady(sessionId, token));
@@ -358,6 +361,7 @@ internal sealed class FirefoxMonoProxy : MonoProxy
                     await SendResume(sessionId, token);
                     return true;
                 }
+            case "isAttached":
             case "attach":
                 {
                     var ctx = GetContextFixefox(sessionId);

@@ -46,7 +46,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         }
 
         protected int GetNewCmdId() => Interlocked.Increment(ref next_cmd_id);
-
+        protected int ResetCmdId() => next_cmd_id = 0;
         protected virtual Task<bool> AcceptEvent(SessionId sessionId, JObject args, CancellationToken token)
         {
             return Task.FromResult(false);
