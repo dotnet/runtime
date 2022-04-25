@@ -480,8 +480,8 @@ namespace System.IO.Tests
                 try
                 {
                     // Remove events as there is racecondition on macOS.
-                    // When creating directory and then observe parent folder, watcher receives Create event altought it is not registered yet.
-                    // When creating file and then observe parent folder, watcher receives Create and Changed event altought it is not registered yet.
+                    // When creating directory and then observe parent folder, watcher receives Create event although it is not registered yet.
+                    // When creating file and then observe parent folder, watcher receives Create and Changed event although it is not registered yet.
                     actualEvents = actualEvents.Where(e => (e.EventType & eventTypesToIgnore) == 0);
 
                     AssertExtensions.CollectionEqual(expectedEvents, actualEvents, EqualityComparer<FiredEvent>.Default);

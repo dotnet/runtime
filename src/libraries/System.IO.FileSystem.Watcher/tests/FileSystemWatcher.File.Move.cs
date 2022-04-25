@@ -72,7 +72,7 @@ namespace System.IO.Tests
             if (PlatformDetection.IsOSXLike)
             {
                 // Remove events as there is racecondition on macOS.
-                // When creating file and then observe parent folder, watcher receives Create and Changed event altought it is not registered yet.
+                // When creating file and then observe parent folder, watcher receives Create and Changed event although it is not registered yet.
                 eventTypesToIgnore = WatcherChangeTypes.Created | WatcherChangeTypes.Changed;
             }
 
