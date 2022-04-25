@@ -182,7 +182,7 @@ namespace System.Net.Http
                     QuicConnection? conn = _connection;
                     if (conn != null)
                     {
-                        if (HttpTelemetry.Log.IsEnabled() && queueStartingTimestamp == 0 && conn.GetRemoteAvailableBidirectionalStreamCount() == 0)
+                        if (HttpTelemetry.Log.IsEnabled() && queueStartingTimestamp == 0)
                         {
                             // the call below will almost certainly block, measure waiting time for telemetry purposes
                             queueStartingTimestamp = Stopwatch.GetTimestamp();
