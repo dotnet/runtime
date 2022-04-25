@@ -9,8 +9,10 @@ namespace Microsoft.Extensions.Hosting.Internal
     {
         private Action<HostBuilderContext, TContainerBuilder> _action;
 
-        public ConfigureContainerAdapter(Action<HostBuilderContext, TContainerBuilder> action!!)
+        public ConfigureContainerAdapter(Action<HostBuilderContext, TContainerBuilder> action)
         {
+            ThrowHelper.ThrowIfNull(action);
+
             _action = action;
         }
 

@@ -3039,6 +3039,18 @@ void CodeGen::genCodeForNegNot(GenTree* tree)
     regNumber   targetReg = tree->GetRegNum();
     instruction ins       = genGetInsForOper(tree->OperGet(), targetType);
 
+    if ((tree->gtFlags & GTF_SET_FLAGS) != 0)
+    {
+        switch (tree->OperGet())
+        {
+            case GT_NEG:
+                ins = INS_negs;
+                break;
+            default:
+                noway_assert(!"Unexpected UnaryOp with GTF_SET_FLAGS set");
+        }
+    }
+
     // The arithmetic node must be sitting in a register (since it's not contained)
     assert(!tree->isContained());
     // The dst can only be a register.
@@ -3071,13 +3083,18 @@ void CodeGen::genCodeForBswap(GenTree* tree)
     assert(operand->isUsedFromReg());
     regNumber operandReg = genConsumeReg(operand);
 
-    if (tree->OperIs(GT_BSWAP16))
+    if (tree->OperIs(GT_BSWAP))
     {
-        inst_RV_RV(INS_rev16, targetReg, operandReg, targetType);
+        inst_RV_RV(INS_rev, targetReg, operandReg, targetType);
     }
     else
     {
-        inst_RV_RV(INS_rev, targetReg, operandReg, targetType);
+        inst_RV_RV(INS_rev16, targetReg, operandReg, targetType);
+
+        if (!genCanOmitNormalizationForBswap16(tree))
+        {
+            GetEmitter()->emitIns_Mov(INS_uxth, EA_4BYTE, targetReg, targetReg, /* canSkip */ false);
+        }
     }
 
     genProduceReg(tree);
@@ -3813,7 +3830,7 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
     GenTree* data = tree->Data();
     GenTree* addr = tree->Addr();
 
-    GCInfo::WriteBarrierForm writeBarrierForm = gcInfo.gcIsWriteBarrierCandidate(tree, data);
+    GCInfo::WriteBarrierForm writeBarrierForm = gcInfo.gcIsWriteBarrierCandidate(tree);
     if (writeBarrierForm != GCInfo::WBF_NoBarrier)
     {
         // data and addr must be in registers.
@@ -3822,9 +3839,9 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
         genConsumeOperands(tree);
 
         // At this point, we should not have any interference.
-        // That is, 'data' must not be in REG_WRITE_BARRIER_DST_BYREF,
+        // That is, 'data' must not be in REG_WRITE_BARRIER_DST,
         //  as that is where 'addr' must go.
-        noway_assert(data->GetRegNum() != REG_WRITE_BARRIER_DST_BYREF);
+        noway_assert(data->GetRegNum() != REG_WRITE_BARRIER_DST);
 
         // 'addr' goes into x14 (REG_WRITE_BARRIER_DST)
         genCopyRegIfNeeded(addr, REG_WRITE_BARRIER_DST);
@@ -4939,7 +4956,7 @@ void CodeGen::genStoreIndTypeSIMD12(GenTree* treeNode)
 
 #ifdef DEBUG
     // Should not require a write barrier
-    GCInfo::WriteBarrierForm writeBarrierForm = gcInfo.gcIsWriteBarrierCandidate(treeNode, data);
+    GCInfo::WriteBarrierForm writeBarrierForm = gcInfo.gcIsWriteBarrierCandidate(treeNode->AsStoreInd());
     assert(writeBarrierForm == GCInfo::WBF_NoBarrier);
 #endif
 
@@ -10046,7 +10063,7 @@ void CodeGen::instGen_MemoryBarrier(BarrierKind barrierKind)
 }
 
 //-----------------------------------------------------------------------------------
-// genCodeForMadd: Emit a madd/msub (Multiply-Add) instruction
+// genCodeForMadd: Emit a madd (Multiply-Add) instruction
 //
 // Arguments:
 //     tree - GT_MADD tree where op1 or op2 is GT_ADD
@@ -10087,6 +10104,31 @@ void CodeGen::genCodeForMadd(GenTreeOp* tree)
 
     GetEmitter()->emitIns_R_R_R_R(useMsub ? INS_msub : INS_madd, emitActualTypeSize(tree), tree->GetRegNum(),
                                   a->GetRegNum(), b->GetRegNum(), c->GetRegNum());
+    genProduceReg(tree);
+}
+
+//-----------------------------------------------------------------------------------
+// genCodeForMsub: Emit a msub (Multiply-Subtract) instruction
+//
+// Arguments:
+//     tree - GT_MSUB tree where op2 is GT_MUL
+//
+void CodeGen::genCodeForMsub(GenTreeOp* tree)
+{
+    assert(tree->OperIs(GT_MSUB) && varTypeIsIntegral(tree) && !(tree->gtFlags & GTF_SET_FLAGS));
+    genConsumeOperands(tree);
+
+    assert(tree->gtGetOp2()->OperIs(GT_MUL));
+    assert(tree->gtGetOp2()->isContained());
+
+    GenTree* a = tree->gtGetOp1();
+    GenTree* b = tree->gtGetOp2()->gtGetOp1();
+    GenTree* c = tree->gtGetOp2()->gtGetOp2();
+
+    // d = a - b * c
+    // MSUB d, b, c, a
+    GetEmitter()->emitIns_R_R_R_R(INS_msub, emitActualTypeSize(tree), tree->GetRegNum(), b->GetRegNum(), c->GetRegNum(),
+                                  a->GetRegNum());
     genProduceReg(tree);
 }
 
@@ -10162,6 +10204,42 @@ void CodeGen::genCodeForAddEx(GenTreeOp* tree)
         GetEmitter()->emitIns_R_R_R_I(tree->gtSetFlags() ? INS_adds : INS_add, emitActualTypeSize(tree), dstReg, op1Reg,
                                       op2Reg, cns, INS_OPTS_LSL);
     }
+    genProduceReg(tree);
+}
+
+//------------------------------------------------------------------------
+// genCodeForCond: Generates the code sequence for a GenTree node that
+// represents a conditional instruction.
+//
+// Arguments:
+//    tree - conditional op
+//
+void CodeGen::genCodeForCond(GenTreeOp* tree)
+{
+    assert(tree->OperIs(GT_CSNEG_MI));
+    assert(!(tree->gtFlags & GTF_SET_FLAGS) && (tree->gtFlags & GTF_USE_FLAGS));
+    genConsumeOperands(tree);
+
+    instruction ins;
+    insCond     cond;
+    switch (tree->OperGet())
+    {
+        case GT_CSNEG_MI:
+        {
+            ins  = INS_csneg;
+            cond = INS_COND_MI;
+            break;
+        }
+
+        default:
+            unreached();
+    }
+
+    regNumber dstReg = tree->GetRegNum();
+    regNumber op1Reg = tree->gtGetOp1()->GetRegNum();
+    regNumber op2Reg = tree->gtGetOp2()->GetRegNum();
+
+    GetEmitter()->emitIns_R_R_R_COND(ins, emitActualTypeSize(tree), dstReg, op1Reg, op2Reg, cond);
     genProduceReg(tree);
 }
 

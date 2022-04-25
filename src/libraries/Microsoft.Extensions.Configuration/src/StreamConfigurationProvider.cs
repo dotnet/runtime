@@ -22,8 +22,10 @@ namespace Microsoft.Extensions.Configuration
         /// Constructor.
         /// </summary>
         /// <param name="source">The source.</param>
-        public StreamConfigurationProvider(StreamConfigurationSource source!!)
+        public StreamConfigurationProvider(StreamConfigurationSource source)
         {
+            ThrowHelper.ThrowIfNull(source);
+
             Source = source;
         }
 

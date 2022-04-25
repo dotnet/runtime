@@ -8,8 +8,10 @@ namespace System.Runtime.InteropServices.CustomMarshalers
 {
     internal sealed class EnumVariantViewOfEnumerator : ComTypes.IEnumVARIANT, ICustomAdapter
     {
-        public EnumVariantViewOfEnumerator(IEnumerator enumerator!!)
+        public EnumVariantViewOfEnumerator(IEnumerator enumerator)
         {
+            ArgumentNullException.ThrowIfNull(enumerator);
+
             Enumerator = enumerator;
         }
 

@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 //
-// This class generates most of the implementation of the MetadataReader for the ProjectN format,
+// This class generates most of the implementation of the MetadataReader for the NativeAOT format,
 // ensuring that the contract defined by CsPublicGen2 is implemented.The generated file is
 // 'NativeFormatReaderGen.cs', and any missing implementation is the supplied in the human-authored
 // source counterpart 'NativeFormatReader.cs'.

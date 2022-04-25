@@ -19,6 +19,10 @@ namespace Microsoft.Interop
 
         public const string CustomTypeMarshallerAttributeGenericPlaceholder = "System.Runtime.InteropServices.CustomTypeMarshallerAttribute.GenericPlaceholder";
 
+        public const string AnsiStringMarshaller = "System.Runtime.InteropServices.AnsiStringMarshaller";
+        public const string Utf16StringMarshaller = "System.Runtime.InteropServices.Utf16StringMarshaller";
+        public const string Utf8StringMarshaller = "System.Runtime.InteropServices.Utf8StringMarshaller";
+
         public const string LCIDConversionAttribute = "System.Runtime.InteropServices.LCIDConversionAttribute";
 
         public const string SuppressGCTransitionAttribute = "System.Runtime.InteropServices.SuppressGCTransitionAttribute";
@@ -52,9 +56,9 @@ namespace Microsoft.Interop
 
         public const string System_Runtime_InteropServices_MemoryMarshal = "System.Runtime.InteropServices.MemoryMarshal";
 
-        public const string System_Runtime_InteropServices_GeneratedMarshalling_ArrayMarshaller_Metadata = "System.Runtime.InteropServices.GeneratedMarshalling.ArrayMarshaller`1";
+        public const string System_Runtime_InteropServices_ArrayMarshaller_Metadata = "System.Runtime.InteropServices.ArrayMarshaller`1";
 
-        public const string System_Runtime_InteropServices_GeneratedMarshalling_PtrArrayMarshaller_Metadata = "System.Runtime.InteropServices.GeneratedMarshalling.PtrArrayMarshaller`1";
+        public const string System_Runtime_InteropServices_PointerArrayMarshaller_Metadata = "System.Runtime.InteropServices.PointerArrayMarshaller`1";
 
         public const string System_Runtime_InteropServices_SafeHandle = "System.Runtime.InteropServices.SafeHandle";
 

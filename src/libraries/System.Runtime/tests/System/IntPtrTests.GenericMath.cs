@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Globalization;
-using System.Runtime.Versioning;
 using Xunit;
 
 namespace System.Tests
@@ -218,6 +217,27 @@ namespace System.Tests
                 Assert.Equal((nint)0x00000000, BinaryIntegerHelper<nint>.TrailingZeroCount((nint)0x7FFFFFFF));
                 Assert.Equal((nint)0x0000001F, BinaryIntegerHelper<nint>.TrailingZeroCount(unchecked((nint)0x80000000)));
                 Assert.Equal((nint)0x00000000, BinaryIntegerHelper<nint>.TrailingZeroCount(unchecked((nint)0xFFFFFFFF)));
+            }
+        }
+
+        [Fact]
+        public static void GetShortestBitLengthTest()
+        {
+            if (Environment.Is64BitProcess)
+            {
+                Assert.Equal(0x00, BinaryIntegerHelper<nint>.GetShortestBitLength(unchecked((nint)0x0000000000000000)));
+                Assert.Equal(0x01, BinaryIntegerHelper<nint>.GetShortestBitLength(unchecked((nint)0x0000000000000001)));
+                Assert.Equal(0x3F, BinaryIntegerHelper<nint>.GetShortestBitLength(unchecked((nint)0x7FFFFFFFFFFFFFFF)));
+                Assert.Equal(0x40, BinaryIntegerHelper<nint>.GetShortestBitLength(unchecked((nint)0x8000000000000000)));
+                Assert.Equal(0x01, BinaryIntegerHelper<nint>.GetShortestBitLength(unchecked((nint)0xFFFFFFFFFFFFFFFF)));
+            }
+            else
+            {
+                Assert.Equal(0x00, BinaryIntegerHelper<nint>.GetShortestBitLength((nint)0x00000000));
+                Assert.Equal(0x01, BinaryIntegerHelper<nint>.GetShortestBitLength((nint)0x00000001));
+                Assert.Equal(0x1F, BinaryIntegerHelper<nint>.GetShortestBitLength((nint)0x7FFFFFFF));
+                Assert.Equal(0x20, BinaryIntegerHelper<nint>.GetShortestBitLength(unchecked((nint)0x80000000)));
+                Assert.Equal(0x01, BinaryIntegerHelper<nint>.GetShortestBitLength(unchecked((nint)0xFFFFFFFF)));
             }
         }
 
@@ -1645,6 +1665,90 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void GetByteCountTest()
+        {
+            if (Environment.Is64BitProcess)
+            {
+                Assert.Equal(8, BinaryIntegerHelper<nint>.GetByteCount(unchecked((nint)0x0000000000000000)));
+                Assert.Equal(8, BinaryIntegerHelper<nint>.GetByteCount(unchecked((nint)0x0000000000000001)));
+                Assert.Equal(8, BinaryIntegerHelper<nint>.GetByteCount(unchecked((nint)0x7FFFFFFFFFFFFFFF)));
+                Assert.Equal(8, BinaryIntegerHelper<nint>.GetByteCount(unchecked((nint)0x8000000000000000)));
+                Assert.Equal(8, BinaryIntegerHelper<nint>.GetByteCount(unchecked((nint)0xFFFFFFFFFFFFFFFF)));
+            }
+            else
+            {
+                Assert.Equal(4, BinaryIntegerHelper<nint>.GetByteCount((nint)0x00000000));
+                Assert.Equal(4, BinaryIntegerHelper<nint>.GetByteCount((nint)0x00000001));
+                Assert.Equal(4, BinaryIntegerHelper<nint>.GetByteCount((nint)0x7FFFFFFF));
+                Assert.Equal(4, BinaryIntegerHelper<nint>.GetByteCount(unchecked((nint)0x80000000)));
+                Assert.Equal(4, BinaryIntegerHelper<nint>.GetByteCount(unchecked((nint)0xFFFFFFFF)));
+            }
+        }
+
+        [Fact]
+        public static void TryWriteLittleEndianTest()
+        {
+            if (Environment.Is64BitProcess)
+            {
+                Span<byte> destination = stackalloc byte[8];
+                int bytesWritten = 0;
+
+                Assert.True(BinaryIntegerHelper<nint>.TryWriteLittleEndian(unchecked((nint)0x0000000000000000), destination, out bytesWritten));
+                Assert.Equal(8, bytesWritten);
+                Assert.Equal(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, destination.ToArray());
+
+                Assert.True(BinaryIntegerHelper<nint>.TryWriteLittleEndian(unchecked((nint)0x0000000000000001), destination, out bytesWritten));
+                Assert.Equal(8, bytesWritten);
+                Assert.Equal(new byte[] { 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, destination.ToArray());
+
+                Assert.True(BinaryIntegerHelper<nint>.TryWriteLittleEndian(unchecked((nint)0x7FFFFFFFFFFFFFFF), destination, out bytesWritten));
+                Assert.Equal(8, bytesWritten);
+                Assert.Equal(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x7F }, destination.ToArray());
+
+                Assert.True(BinaryIntegerHelper<nint>.TryWriteLittleEndian(unchecked((nint)0x8000000000000000), destination, out bytesWritten));
+                Assert.Equal(8, bytesWritten);
+                Assert.Equal(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80 }, destination.ToArray());
+
+                Assert.True(BinaryIntegerHelper<nint>.TryWriteLittleEndian(unchecked((nint)0xFFFFFFFFFFFFFFFF), destination, out bytesWritten));
+                Assert.Equal(8, bytesWritten);
+                Assert.Equal(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF }, destination.ToArray());
+
+                Assert.False(BinaryIntegerHelper<nint>.TryWriteLittleEndian(default, Span<byte>.Empty, out bytesWritten));
+                Assert.Equal(0, bytesWritten);
+                Assert.Equal(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF }, destination.ToArray());
+            }
+            else
+            {
+                Span<byte> destination = stackalloc byte[4];
+                int bytesWritten = 0;
+
+                Assert.True(BinaryIntegerHelper<nint>.TryWriteLittleEndian((nint)0x00000000, destination, out bytesWritten));
+                Assert.Equal(4, bytesWritten);
+                Assert.Equal(new byte[] { 0x00, 0x00, 0x00, 0x00 }, destination.ToArray());
+
+                Assert.True(BinaryIntegerHelper<nint>.TryWriteLittleEndian((nint)0x00000001, destination, out bytesWritten));
+                Assert.Equal(4, bytesWritten);
+                Assert.Equal(new byte[] { 0x01, 0x00, 0x00, 0x00 }, destination.ToArray());
+
+                Assert.True(BinaryIntegerHelper<nint>.TryWriteLittleEndian((nint)0x7FFFFFFF, destination, out bytesWritten));
+                Assert.Equal(4, bytesWritten);
+                Assert.Equal(new byte[] { 0xFF, 0xFF, 0xFF, 0x7F }, destination.ToArray());
+
+                Assert.True(BinaryIntegerHelper<nint>.TryWriteLittleEndian(unchecked((nint)0x80000000), destination, out bytesWritten));
+                Assert.Equal(4, bytesWritten);
+                Assert.Equal(new byte[] { 0x00, 0x00, 0x00, 0x80 }, destination.ToArray());
+
+                Assert.True(BinaryIntegerHelper<nint>.TryWriteLittleEndian(unchecked((nint)0xFFFFFFFF), destination, out bytesWritten));
+                Assert.Equal(4, bytesWritten);
+                Assert.Equal(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF }, destination.ToArray());
+
+                Assert.False(BinaryIntegerHelper<nint>.TryWriteLittleEndian(default, Span<byte>.Empty, out bytesWritten));
+                Assert.Equal(0, bytesWritten);
+                Assert.Equal(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF }, destination.ToArray());
+            }
+        }
+
+        [Fact]
         public static void op_LeftShiftTest()
         {
             if (Environment.Is64BitProcess)
@@ -1683,6 +1787,27 @@ namespace System.Tests
                 Assert.Equal((nint)0x3FFFFFFF, ShiftOperatorsHelper<nint, nint>.op_RightShift((nint)0x7FFFFFFF, 1));
                 Assert.Equal(unchecked((nint)0xC0000000), ShiftOperatorsHelper<nint, nint>.op_RightShift(unchecked((nint)0x80000000), 1));
                 Assert.Equal(unchecked((nint)0xFFFFFFFF), ShiftOperatorsHelper<nint, nint>.op_RightShift(unchecked((nint)0xFFFFFFFF), 1));
+            }
+        }
+
+        [Fact]
+        public static void op_UnsignedRightShiftTest()
+        {
+            if (Environment.Is64BitProcess)
+            {
+                Assert.Equal(unchecked((nint)0x0000000000000000), ShiftOperatorsHelper<nint, nint>.op_UnsignedRightShift(unchecked((nint)0x0000000000000000), 1));
+                Assert.Equal(unchecked((nint)0x0000000000000000), ShiftOperatorsHelper<nint, nint>.op_UnsignedRightShift(unchecked((nint)0x0000000000000001), 1));
+                Assert.Equal(unchecked((nint)0x3FFFFFFFFFFFFFFF), ShiftOperatorsHelper<nint, nint>.op_UnsignedRightShift(unchecked((nint)0x7FFFFFFFFFFFFFFF), 1));
+                Assert.Equal(unchecked((nint)0x4000000000000000), ShiftOperatorsHelper<nint, nint>.op_UnsignedRightShift(unchecked((nint)0x8000000000000000), 1));
+                Assert.Equal(unchecked((nint)0x7FFFFFFFFFFFFFFF), ShiftOperatorsHelper<nint, nint>.op_UnsignedRightShift(unchecked((nint)0xFFFFFFFFFFFFFFFF), 1));
+            }
+            else
+            {
+                Assert.Equal((nint)0x00000000, ShiftOperatorsHelper<nint, nint>.op_UnsignedRightShift((nint)0x00000000, 1));
+                Assert.Equal((nint)0x00000000, ShiftOperatorsHelper<nint, nint>.op_UnsignedRightShift((nint)0x00000001, 1));
+                Assert.Equal((nint)0x3FFFFFFF, ShiftOperatorsHelper<nint, nint>.op_UnsignedRightShift((nint)0x7FFFFFFF, 1));
+                Assert.Equal((nint)0x40000000, ShiftOperatorsHelper<nint, nint>.op_UnsignedRightShift(unchecked((nint)0x80000000), 1));
+                Assert.Equal((nint)0x7FFFFFFF, ShiftOperatorsHelper<nint, nint>.op_UnsignedRightShift(unchecked((nint)0xFFFFFFFF), 1));
             }
         }
 

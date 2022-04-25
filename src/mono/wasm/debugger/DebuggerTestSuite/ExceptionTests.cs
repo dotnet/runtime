@@ -2,12 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.WebAssembly.Diagnostics;
 using Newtonsoft.Json.Linq;
 using System.Threading;
 using Xunit;
+using Xunit.Sdk;
 
 namespace DebuggerTests
 {
@@ -67,9 +66,9 @@ namespace DebuggerTests
             await SetPauseOnException("all");
 
             var eval_expr = "window.setTimeout(function () { exceptions_test (); }, 1)";
-            var pause_location = await EvaluateAndCheck(eval_expr, null, 0, 0, "exception_caught_test", null, null);
+            var pause_location = await EvaluateAndCheck(eval_expr, null, 0, 0, null);
+            pause_location = await WaitForJSException(pause_location, "exception_caught_test");
 
-            Assert.Equal("exception", pause_location["reason"]);
             await CheckValue(pause_location["data"], JObject.FromObject(new
             {
                 type = "object",
@@ -81,9 +80,9 @@ namespace DebuggerTests
             var exception_members = await GetProperties(pause_location["data"]["objectId"]?.Value<string>());
             await CheckString(exception_members, "message", "exception caught");
 
-            pause_location = await SendCommandAndCheck(null, "Debugger.resume", null, 0, 0, "exception_uncaught_test");
+            pause_location = await SendCommandAndCheck(null, "Debugger.resume", null, 0, 0, null);
+            pause_location = await WaitForJSException(pause_location, "exception_uncaught_test");
 
-            Assert.Equal("exception", pause_location["reason"]);
             await CheckValue(pause_location["data"], JObject.FromObject(new
             {
                 type = "object",
@@ -94,6 +93,36 @@ namespace DebuggerTests
 
             exception_members = await GetProperties(pause_location["data"]["objectId"]?.Value<string>());
             await CheckString(exception_members, "message", "exception uncaught");
+
+            async Task<JObject> WaitForJSException(JObject pause_location, string exp_fn_name)
+            {
+                while (true)
+                {
+                    if (pause_location != null)
+                    {
+                        AssertEqual("exception", pause_location["reason"]?.Value<string>(), $"Expected to only pause because of an exception. {pause_location}");
+
+                        string actual_fn_name = pause_location["callFrames"]?[0]?["functionName"]?.Value<string>();
+
+                        // return if we hit a managed exception, or an uncaught one
+                        if (pause_location["data"]?["objectId"]?.Value<string>()?.StartsWith("dotnet:object:", StringComparison.Ordinal) == true)
+                        {
+                            Console.WriteLine($"Hit an unexpected managed exception, with function name: {actual_fn_name}. {pause_location}");
+                            throw new XunitException($"Hit an unexpected managed exception, with function name: {actual_fn_name}");
+                        }
+
+                        if (pause_location["data"]?["uncaught"]?.Value<bool>() == true)
+                            break;
+
+                        if (actual_fn_name == exp_fn_name)
+                            break;
+                    }
+
+                    pause_location = await SendCommandAndCheck(JObject.FromObject(new { }), "Debugger.resume", null, 0, 0, null);
+                }
+
+                return pause_location;
+            }
         }
 
         // FIXME? BUG? We seem to get the stack trace for Runtime.exceptionThrown at `call_method`,

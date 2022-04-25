@@ -17,7 +17,6 @@ namespace System.DirectoryServices.AccountManagement
         {
             CheckDisposed();
 
-            // Parameter validation
             if (index < 0)
                 throw new ArgumentOutOfRangeException(nameof(index));
 

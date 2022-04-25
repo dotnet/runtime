@@ -296,7 +296,7 @@ void AliasSet::AddNode(Compiler* compiler, GenTree* node)
 
             m_lclVarReads.Add(compiler, lclNum);
         }
-        if (!operand->IsArgPlaceHolderNode() && operand->isContained())
+        if (operand->isContained())
         {
             AddNode(compiler, operand);
         }

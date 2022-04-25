@@ -90,8 +90,10 @@ mono_100ns_datetime (void)
 {
 	ULARGE_INTEGER ft;
 
+MONO_DISABLE_WARNING(4127) /* conditional expression is constant */
 	if (sizeof(ft) != sizeof(FILETIME))
 		g_assert_not_reached ();
+MONO_RESTORE_WARNING
 
 	GetSystemTimeAsFileTime ((FILETIME*) &ft);
 	return ft.QuadPart;

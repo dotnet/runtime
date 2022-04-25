@@ -91,7 +91,7 @@ BOOL STDMETHODCALLTYPE _CorDllMain(HINSTANCE hInst, DWORD dwReason, LPVOID lpRes
 			image = mono_image_open_from_module_handle (alc, hInst, mono_path_resolve_symlinks (file_name), TRUE, NULL);
 		} else {
 			init_from_coree = TRUE;
-			mono_runtime_load (file_name, NULL);
+			mono_runtime_load (file_name);
 			error = (gchar*) mono_check_corlib_version ();
 			if (error) {
 				g_free (error);
@@ -103,7 +103,6 @@ BOOL STDMETHODCALLTYPE _CorDllMain(HINSTANCE hInst, DWORD dwReason, LPVOID lpRes
 			image = mono_image_open (file_name, NULL);
 			if (image) {
 				image->storage->has_entry_point = TRUE;
-				mono_close_exe_image ();
 				/* Decrement reference count to zero. (Image will not be closed.) */
 				mono_image_close (image);
 			}
@@ -161,7 +160,7 @@ __int32 STDMETHODCALLTYPE _CorExeMain(void)
 
 	file_name = mono_get_module_file_name (NULL);
 	init_from_coree = TRUE;
-	domain = mono_runtime_load (file_name, NULL);
+	domain = mono_runtime_load (file_name);
 
 	corlib_version_error = (gchar*) mono_check_corlib_version ();
 	if (corlib_version_error) {
@@ -175,7 +174,6 @@ __int32 STDMETHODCALLTYPE _CorExeMain(void)
 	MonoAssemblyOpenRequest req;
 	mono_assembly_request_prepare_open (&req, mono_alc_get_default ());
 	assembly = mono_assembly_request_open (file_name, &req, NULL);
-	mono_close_exe_image ();
 	if (!assembly) {
 		g_free (file_name);
 		MessageBox (NULL, L"Cannot open assembly.", NULL, MB_ICONERROR);

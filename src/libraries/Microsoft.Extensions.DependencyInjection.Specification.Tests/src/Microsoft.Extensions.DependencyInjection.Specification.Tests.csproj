@@ -8,6 +8,7 @@
     <CLSCompliant>false</CLSCompliant>
     <IsPackable>true</IsPackable>
     <IsTrimmable>false</IsTrimmable>
+    <NoWarn>$(NoWarn);CA1852</NoWarn>
     <PackageDescription>Suite of xUnit.net tests to check for container compatibility with Microsoft.Extensions.DependencyInjection.</PackageDescription>
     <!-- this assembly doesn't need to be binplaced -->
     <EnableBinPlacing>false</EnableBinPlacing>
