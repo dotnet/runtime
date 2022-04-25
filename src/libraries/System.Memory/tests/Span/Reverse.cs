@@ -160,36 +160,38 @@ namespace System.SpanTests
             Assert.Equal(expectedFull[1], actualFull[1]);
         }
 
-        [Fact]
-        public static void ReverseValueTypeWithoutReferences()
+        [Theory]
+        [InlineData(2048)] // even
+        [InlineData(2049)] // odd
+        public static void ReverseValueTypeWithoutReferencesFourBytesSize(int length)
         {
-            const int length = 2048;
-            int[] actual = new int[length];
-            int[] expected = new int[length];
+            (short, short)[] actual = new (short, short)[length];
+            (short, short)[] expected = new (short, short)[length];
             for (int i = 0; i < length; i++)
             {
-                actual[i] = expected[length - 1 - i] = i;
+                actual[i] = expected[length - 1 - i] = ((short)i, (short)(i >> 16));
             }
 
-            var span = new Span<int>(actual);
+            var span = new Span<(short, short)>(actual);
             span.Reverse();
-            Assert.Equal<int>(expected, actual);
+            Assert.Equal<(short, short)>(expected, actual);
         }
 
-        [Fact]
-        public static void ReverseValueTypeWithoutReferencesPointerSize()
+        [Theory]
+        [InlineData(16)] // even
+        [InlineData(15)] // odd
+        public static void ReverseValueTypeWithoutReferencesEightByteSize(int length)
         {
-            const int length = 15;
-            long[] actual = new long[length];
-            long[] expected = new long[length];
+            (int, int)[] actual = new (int, int)[length];
+            (int, int)[] expected = new (int, int)[length];
             for (int i = 0; i < length; i++)
             {
-                actual[i] = expected[length -i - 1] = i;
+                actual[i] = expected[length - 1 - i] = (-i, i);
             }
 
-            var span = new Span<long>(actual);
+            var span = new Span<(int, int)>(actual);
             span.Reverse();
-            Assert.Equal<long>(expected, actual);
+            Assert.Equal<(int, int)>(expected, actual);
         }
 
         [Fact]
