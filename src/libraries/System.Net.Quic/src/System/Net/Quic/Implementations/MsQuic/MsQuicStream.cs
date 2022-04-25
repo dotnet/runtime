@@ -421,7 +421,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             }
         }
 
-        internal override ValueTask<int> ReadAsync(Memory<byte> destination, CancellationToken cancellationToken = default)
+        internal override async ValueTask<int> ReadAsync(Memory<byte> destination, CancellationToken cancellationToken = default)
         {
             ThrowIfDisposed();
 
@@ -459,7 +459,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                 // Success scenario: EOS already reached, completing synchronously. No transition (final state)
                 if (initialReadState == ReadState.ReadsCompleted)
                 {
-                    return new ValueTask<int>(0);
+                    return 0;
                 }
 
                 // Success scenario: no data available yet, will return a task to wait on. Transition None->PendingRead
@@ -493,8 +493,6 @@ namespace System.Net.Quic.Implementations.MsQuic
                     {
                         _state.ReceiveCancellationRegistration = default;
                     }
-
-                    return _state.ReceiveResettableCompletionSource.GetValueTask();
                 }
 
                 // Success scenario: data already available, completing synchronously.
@@ -518,6 +516,23 @@ namespace System.Net.Quic.Implementations.MsQuic
                 }
             }
 
+            if (initialReadState == ReadState.None)
+            {
+                // wait for the read to finish
+                bytesRead = await _state.ReceiveResettableCompletionSource.GetValueTask().ConfigureAwait(false);
+
+                // Reset the read state
+                lock (_state)
+                {
+                    if (_state.ReadState == ReadState.PendingReadFinished)
+                    {
+                        _state.ReadState = ReadState.None;
+                    }
+                }
+
+                return bytesRead;
+            }
+
             // methods below need to be called outside of the lock
             if (bytesRead > -1)
             {
@@ -528,7 +543,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                     EnableReceive();
                 }
 
-                return new ValueTask<int>(bytesRead);
+                return bytesRead;
             }
 
             // All success scenarios returned at this point. Failure scenarios below:
@@ -551,7 +566,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                     break;
             }
 
-            return ValueTask.FromException<int>(ExceptionDispatchInfo.SetCurrentStackTrace(ex!));
+            throw ex;
         }
 
         /// <returns>The number of bytes copied.</returns>
@@ -982,6 +997,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                 switch (state.ReadState)
                 {
                     case ReadState.None:
+                    case ReadState.PendingReadFinished:
                         // ReadAsync() hasn't been called yet. Stash the buffer so the next ReadAsync call completes synchronously.
 
                         // We are overwriting state.ReceiveQuicBuffers here even if we only partially consumed them
@@ -1035,7 +1051,8 @@ namespace System.Net.Quic.Implementations.MsQuic
                         state.ReceiveCancellationRegistration.Unregister();
                         shouldComplete = true;
                         state.Stream = null;
-                        // state.ReadState will be set to None later once the ReceiveResettableCompletionSource is completed to avoid data race on parallel reads.
+                        state.ReadState = ReadState.PendingReadFinished;
+                        // state.ReadState will be set to None later once the ReceiveResettableCompletionSource is awaited.
 
                         readLength = CopyMsQuicBuffersToUserBuffer(new ReadOnlySpan<QuicBuffer>(receiveEvent.Buffers, (int)receiveEvent.BufferCount), state.ReceiveUserBuffer.Span);
 
@@ -1056,17 +1073,12 @@ namespace System.Net.Quic.Implementations.MsQuic
                         // This will eat any received data.
                         return MsQuicStatusCodes.Success;
                 }
-
             }
 
             if (shouldComplete)
             {
                 state.ReceiveResettableCompletionSource.Complete(readLength);
-
-                lock (state)
-                {
-                    state.ReadState = ReadState.None;
-                }
+                // _state.ReadState will be reset to None on the reading thread.
             }
 
             // Returning Success when the entire buffer hasn't been consumed will cause MsQuic to disable further receive events until EnableReceive() is called.
@@ -1667,6 +1679,11 @@ namespace System.Net.Quic.Implementations.MsQuic
             /// User called ReadAsync()
             /// </summary>
             PendingRead,
+
+            /// <summary>
+            /// Read was completed from the MsQuic callback.
+            /// </summary>
+            PendingReadFinished,
 
             // following states are final:
 
