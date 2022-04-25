@@ -22865,7 +22865,7 @@ bool GenTreeLclFld::IsOffsetMisaligned() const
 
 bool GenTree::IsInvariant() const
 {
-    return OperIsConst() || Compiler::impIsAddressInLocal(this);
+    return OperIsConst() || OperIsLocalAddr() || Compiler::impIsAddressInLocal(this);
 }
 
 //------------------------------------------------------------------------
