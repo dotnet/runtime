@@ -63,12 +63,9 @@
   <Target Name="RunPublishedCrossgen" AfterTargets="PublishCrossgen"
           Condition="'$(TargetOS)' == '$(HostOS)' and '$(TargetArchitecture)' == '$(BuildArchitecture)'">
     <!-- Run the published crossgen if we're not cross-compiling -->
-    <Exec Command="@(FilesToPackage) $(CoreCLRArtifactsPath)IL/System.Private.CoreLib.dll --out $(IntermediateOutputPath)S.P.C.tmp" Condition="'%(FileName)%(Extension)' == 'crossgen2$(ExeSuffix)'"
-          ConsoleToMsBuild="true">
-      <Output TaskParameter="ConsoleOutput" PropertyName="CrossgenOutput" />
+    <Exec Command="@(FilesToPackage) $(CoreCLRArtifactsPath)IL/System.Private.CoreLib.dll --out $(IntermediateOutputPath)S.P.C.tmp" Condition="'%(FileName)%(Extension)' == 'crossgen2$(ExeSuffix)'">
       <Output TaskParameter="ExitCode" PropertyName="CrossgenExitCode" />
     </Exec>
-    <Error Text="Crossgen failed with code $(CrossgenExitCode), output: $(CrossgenOutput)" Condition="$(CrossgenExitCode) != 0" />
   </Target>
 
   <PropertyGroup>
