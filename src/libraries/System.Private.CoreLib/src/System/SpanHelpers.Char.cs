@@ -388,7 +388,7 @@ namespace System
 
                 while (minLength >= (i + (nuint)(sizeof(nuint) / sizeof(char))))
                 {
-                    if (Unsafe.ReadUnaligned<nuint> (ref Unsafe.As<char, byte>(ref Unsafe.Add(ref first, (nint)i))) !=
+                    if (Unsafe.ReadUnaligned<nuint>(ref Unsafe.As<char, byte>(ref Unsafe.Add(ref first, (nint)i))) !=
                         Unsafe.ReadUnaligned<nuint>(ref Unsafe.As<char, byte>(ref Unsafe.Add(ref second, (nint)i))))
                     {
                         break;
@@ -428,83 +428,88 @@ namespace System
 
             fixed (char* pChars = &searchSpace)
             {
-                char* pCh = pChars;
-                char* pEndCh = pCh + length;
+                nuint offset = 0; // Use nuint for arithmetic to avoid unnecessary 64->32->64 truncations
+                nuint lengthToExamine = (uint)length;
 
                 if (Vector.IsHardwareAccelerated && length >= Vector<ushort>.Count * 2)
                 {
                     // Figure out how many characters to read sequentially until we are vector aligned
                     // This is equivalent to:
-                    //         unaligned = ((int)pCh % Unsafe.SizeOf<Vector<ushort>>()) / elementsPerByte
+                    //         unaligned = ((int)pCh % Unsafe.SizeOf<Vector<ushort>>()) / ElementsPerByte
                     //         length = (Vector<ushort>.Count - unaligned) % Vector<ushort>.Count
-                    const int elementsPerByte = sizeof(ushort) / sizeof(byte);
-                    int unaligned = ((int)pCh & (Unsafe.SizeOf<Vector<ushort>>() - 1)) / elementsPerByte;
-                    length = (Vector<ushort>.Count - unaligned) & (Vector<ushort>.Count - 1);
+                    const int ElementsPerByte = sizeof(ushort) / sizeof(byte);
+                    int unaligned = (int)((uint)((int)pChars & (Unsafe.SizeOf<Vector<ushort>>() - 1)) / ElementsPerByte);
+                    lengthToExamine = (uint)((Vector<ushort>.Count - unaligned) & (Vector<ushort>.Count - 1));
                 }
 
-        SequentialScan:
-                while (length >= 4)
+                while (lengthToExamine >= 4)
                 {
-                    length -= 4;
+                    lengthToExamine -= 4;
+                    char* pStart = pChars + offset;
 
-                    if (value == *pCh ||
-                        value == *(pCh + 1) ||
-                        value == *(pCh + 2) ||
-                        value == *(pCh + 3))
+                    if (value == pStart[0] ||
+                        value == pStart[1] ||
+                        value == pStart[2] ||
+                        value == pStart[3])
                     {
                         goto Found;
                     }
 
-                    pCh += 4;
+                    offset += 4;
                 }
 
-                while (length > 0)
+                while (lengthToExamine > 0)
                 {
-                    length--;
+                    lengthToExamine--;
 
-                    if (value == *pCh)
+                    if (value == pChars[offset])
                         goto Found;
 
-                    pCh++;
+                    offset++;
                 }
 
                 // We get past SequentialScan only if IsHardwareAccelerated is true. However, we still have the redundant check to allow
-                // the JIT to see that the code is unreachable and eliminate it when the platform does not have hardware accelerated.
-                if (Vector.IsHardwareAccelerated && pCh < pEndCh)
+                // the JIT to see that the code is unreachable and eliminate it when the platform does not have hardware acceleration.
+                if (Vector.IsHardwareAccelerated && (offset < (uint)length))
                 {
                     // Get the highest multiple of Vector<ushort>.Count that is within the search space.
                     // That will be how many times we iterate in the loop below.
-                    // This is equivalent to: length = Vector<ushort>.Count * ((int)(pEndCh - pCh) / Vector<ushort>.Count)
-                    length = (int)((pEndCh - pCh) & ~(Vector<ushort>.Count - 1));
+                    // This is equivalent to: lengthToExamine = Vector<ushort>.Count + ((uint)length - offset) / Vector<ushort>.Count)
+                    lengthToExamine = ((uint)length - offset) & (nuint)~(Vector<ushort>.Count - 1);
 
-                    // Get comparison Vector
-                    Vector<ushort> vComparison = new Vector<ushort>(value);
+                    Vector<ushort> values = new(value);
+                    Vector<ushort> matches;
 
-                    while (length > 0)
+                    while (offset < lengthToExamine)
                     {
                         // Using Unsafe.Read instead of ReadUnaligned since the search space is pinned and pCh is always vector aligned
-                        Debug.Assert(((int)pCh & (Unsafe.SizeOf<Vector<ushort>>() - 1)) == 0);
-                        Vector<ushort> vMatches = Vector.Equals(vComparison, Unsafe.Read<Vector<ushort>>(pCh));
-                        if (Vector<ushort>.Zero.Equals(vMatches))
+                        Debug.Assert(((int)(pChars + offset) % Unsafe.SizeOf<Vector<ushort>>()) == 0);
+                        matches = Vector.Equals(values, Unsafe.Read<Vector<ushort>>(pChars + offset));
+                        if (matches == Vector<ushort>.Zero)
                         {
-                            pCh += Vector<ushort>.Count;
-                            length -= Vector<ushort>.Count;
+                            offset += (nuint)Vector<ushort>.Count;
                             continue;
                         }
 
                         goto Found;
                     }
 
-                    if (pCh < pEndCh)
+                    // The total length is at least Vector<ushort>.Count, so instead of falling back to a
+                    // sequential scan for the remainder, we check the vector read from the end -- note: unaligned read necessary.
+                    // We do this only if at least one element is left.
+                    if (offset < (uint)length)
                     {
-                        length = (int)(pEndCh - pCh);
-                        goto SequentialScan;
+                        matches = Vector.Equals(values, Unsafe.ReadUnaligned<Vector<ushort>>(pChars + (uint)length - (uint)Vector<ushort>.Count));
+                        if (matches != Vector<ushort>.Zero)
+                        {
+                            goto Found;
+                        }
                     }
                 }
 
                 return false;
 
-        Found:
+            Found:
                 return true;
             }
         }
