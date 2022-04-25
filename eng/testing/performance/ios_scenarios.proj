@@ -82,9 +82,12 @@
 
           # Testing commands
           $(Python) test.py devicestartup --device-type ios --package-path MauiTesting.app --package-name net.dot.mauitesting --scenario-name "%(Identity)"
-
+          ((result|=$?))
+          
           # Post commands
-          $(Python) post.py   
+          $(Python) post.py
+          export PYTHONPATH=$(ORIGPYPATH)
+          exit $result
         ]]>
 	  </CustomCommands>
 	</XHarnessAppBundleToTest>
@@ -106,9 +109,12 @@
 
           # Testing commands
           $(Python) test.py devicestartup --device-type ios --package-path Microsoft.NetConf2021.Maui.app --package-name net.dot.netconf2021.maui --scenario-name "%(Identity)"
-
+          ((result|=$?))
+          
           # Post commands
-          $(Python) post.py   
+          $(Python) post.py
+          export PYTHONPATH=$(ORIGPYPATH)
+          exit $result
         ]]>
 	  </CustomCommands>
 	</XHarnessAppBundleToTest>
