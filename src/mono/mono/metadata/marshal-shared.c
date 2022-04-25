@@ -191,7 +191,7 @@ mono_marshal_shared_conv_str_inverse  (MonoMarshalConv conv)
 }
 
 /*
- * mono_mb_emit_exception_marshal_directive:
+ * mono_marshal_shared_mb_emit_exception_marshal_directive:
  *
  *   This function assumes ownership of MSG, which should be malloc-ed.
  */
@@ -1214,6 +1214,7 @@ mono_marshal_shared_emit_struct_conv_full (MonoMethodBuilder *mb, MonoClass *kla
 			mono_mb_emit_add_to_local (mb, 1, usize);
 		}
 	}
+
 }
 
 void
