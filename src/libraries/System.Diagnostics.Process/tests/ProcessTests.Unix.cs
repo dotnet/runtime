@@ -455,7 +455,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(IsUnixAndSuperUser))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsUnixAndSuperUser))]
         public void TestPriorityClassUnix()
         {
             CreateDefaultProcess();
@@ -481,7 +481,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(IsUnixAndSuperUser))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsUnixAndSuperUser))]
         public void TestBasePriorityOnUnix()
         {
             CreateDefaultProcess();
