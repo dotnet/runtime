@@ -30,7 +30,7 @@ namespace ILLink.Shared.TrimAnalysis
 		private partial bool TryResolveTypeNameAndMark (string typeName, out TypeProxy type)
 		{
 			if (!_context.TypeNameResolver.TryResolveTypeName (typeName, _origin.Provider, out TypeReference? typeRef, out AssemblyDefinition? typeAssembly)
-				|| ReflectionMethodBodyScanner.ResolveToTypeDefinition (_context, typeRef) is not TypeDefinition foundType) {
+				|| typeRef.ResolveToTypeDefinition (_context) is not TypeDefinition foundType) {
 				type = default;
 				return false;
 			} else {

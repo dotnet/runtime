@@ -3,7 +3,6 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using ILLink.RoslynAnalyzer;
 using ILLink.RoslynAnalyzer.DataFlow;
@@ -27,37 +26,10 @@ namespace ILLink.Shared.TrimAnalysis
 			_owningSymbol = owningSymbol;
 			_operation = operation;
 			_diagnosticContext = diagnosticContext;
+			_annotations = new FlowAnnotations ();
 			_reflectionAccessAnalyzer = new ReflectionAccessAnalyzer ();
 			_requireDynamicallyAccessedMembersAction = new (diagnosticContext, _reflectionAccessAnalyzer);
 		}
-
-		// TODO: This is relatively expensive on the analyzer since it doesn't cache the annotation information
-		// In linker this is an optimization to avoid the heavy lifting of analysis if there's no point
-		// it's unclear if the same optimization makes sense for the analyzer.
-		private partial bool MethodRequiresDataFlowAnalysis (MethodProxy method) => FlowAnnotations.RequiresDataFlowAnalysis (method.Method);
-
-		private partial DynamicallyAccessedMemberTypes GetReturnValueAnnotation (MethodProxy method) => FlowAnnotations.GetMethodReturnValueAnnotation (method.Method);
-
-		private partial MethodReturnValue GetMethodReturnValue (MethodProxy method, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
-			=> new (method.Method, dynamicallyAccessedMemberTypes);
-
-		private partial GenericParameterValue GetGenericParameterValue (GenericParameterProxy genericParameter)
-			=> new (genericParameter.TypeParameterSymbol);
-
-		private partial MethodThisParameterValue GetMethodThisParameterValue (MethodProxy method, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
-			=> new (method.Method, dynamicallyAccessedMemberTypes);
-
-		private partial MethodThisParameterValue GetMethodThisParameterValue (MethodProxy method)
-			=> GetMethodThisParameterValue (method, method.Method.GetDynamicallyAccessedMemberTypes ());
-
-		private partial DynamicallyAccessedMemberTypes GetMethodParameterAnnotation (MethodProxy method, int parameterIndex)
-		{
-			Debug.Assert (method.Method.Parameters.Length > parameterIndex);
-			return FlowAnnotations.GetMethodParameterAnnotation (method.Method.Parameters[parameterIndex]);
-		}
-
-		private partial MethodParameterValue GetMethodParameterValue (MethodProxy method, int parameterIndex, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
-			=> new (method.Method.Parameters[parameterIndex], dynamicallyAccessedMemberTypes);
 
 		private partial IEnumerable<SystemReflectionMethodBaseValue> GetMethodsOnTypeHierarchy (TypeProxy type, string name, BindingFlags? bindingFlags)
 		{
