@@ -3507,7 +3507,6 @@ void CodeGen::genStructPutArgPush(GenTreePutArgStk* putArgNode)
     const unsigned byteSize = putArgNode->GetStackByteSize();
     assert((byteSize % TARGET_POINTER_SIZE == 0) && ((byteSize < XMM_REGSIZE_BYTES) || layout->HasGCPtr()));
     const unsigned numSlots = byteSize / TARGET_POINTER_SIZE;
-    assert(putArgNode->gtNumSlots == numSlots);
 
     for (int i = numSlots - 1; i >= 0; --i)
     {
@@ -3557,7 +3556,6 @@ void CodeGen::genStructPutArgPartialRepMovs(GenTreePutArgStk* putArgNode)
     const unsigned byteSize = putArgNode->GetStackByteSize();
     assert(byteSize % TARGET_POINTER_SIZE == 0);
     const unsigned numSlots = byteSize / TARGET_POINTER_SIZE;
-    assert(putArgNode->gtNumSlots == numSlots);
 
     // No need to disable GC the way COPYOBJ does. Here the refs are copied in atomic operations always.
     for (unsigned i = 0; i < numSlots;)
@@ -5018,7 +5016,7 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
 
     assert(!varTypeIsFloating(targetType) || (genTypeSize(targetType) == genTypeSize(data->TypeGet())));
 
-    GCInfo::WriteBarrierForm writeBarrierForm = gcInfo.gcIsWriteBarrierCandidate(tree, data);
+    GCInfo::WriteBarrierForm writeBarrierForm = gcInfo.gcIsWriteBarrierCandidate(tree);
     if (writeBarrierForm != GCInfo::WBF_NoBarrier)
     {
         // data and addr must be in registers.
@@ -5286,10 +5284,8 @@ bool CodeGen::genEmitOptimizedGCWriteBarrier(GCInfo::WriteBarrierForm writeBarri
         tgtAnywhere = 1;
     }
 
-    // We might want to call a modified version of genGCWriteBarrier() to get the benefit of
-    // the FEATURE_COUNT_GC_WRITE_BARRIERS code there, but that code doesn't look like it works
-    // with rationalized RyuJIT IR. So, for now, just emit the helper call directly here.
-
+    // Here we might want to call a modified version of genGCWriteBarrier() to get the benefit
+    // of the FEATURE_COUNT_GC_WRITE_BARRIERS code. For now, just emit the helper call directly.
     genEmitHelperCall(regToHelper[tgtAnywhere][reg],
                       0,           // argSize
                       EA_PTRSIZE); // retSize
@@ -5381,7 +5377,7 @@ void CodeGen::genCall(GenTreeCall* call)
     // The call will pop its arguments.
     // for each putarg_stk:
     target_ssize_t stackArgBytes = 0;
-    for (CallArg& arg : call->gtArgs.Args())
+    for (CallArg& arg : call->gtArgs.EarlyArgs())
     {
         GenTree* argNode = arg.GetEarlyNode();
         if (argNode->OperIs(GT_PUTARG_STK) && ((argNode->gtFlags & GTF_LATE_ARG) == 0))
@@ -5390,7 +5386,7 @@ void CodeGen::genCall(GenTreeCall* call)
             unsigned size   = argNode->AsPutArgStk()->GetStackByteSize();
             stackArgBytes += size;
 #ifdef DEBUG
-            assert(size == (arg.AbiInfo.NumSlots * TARGET_POINTER_SIZE));
+            assert(size == arg.AbiInfo.ByteSize);
 #ifdef FEATURE_PUT_STRUCT_ARG_STK
             if (!source->OperIs(GT_FIELD_LIST) && (source->TypeGet() == TYP_STRUCT))
             {
@@ -5402,7 +5398,7 @@ void CodeGen::genCall(GenTreeCall* call)
                 // Note that on x64/ux this will be handled by unrolling in genStructPutArgUnroll.
                 assert((argBytes == obj->GetLayout()->GetSize()) || obj->Addr()->IsLocalAddrExpr());
 #endif // TARGET_X86
-                assert((arg.AbiInfo.NumSlots * TARGET_POINTER_SIZE) == argBytes);
+                assert(arg.AbiInfo.ByteSize == argBytes);
             }
 #endif // FEATURE_PUT_STRUCT_ARG_STK
 #endif // DEBUG
@@ -7971,7 +7967,7 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* putArgStk)
 #ifdef DEBUG
         CallArg* callArg   = putArgStk->gtCall->gtArgs.FindByNode(putArgStk);
         assert(callArg != nullptr);
-        assert(argOffset == callArg->AbiInfo.SlotNum * TARGET_POINTER_SIZE);
+        assert(argOffset == callArg->AbiInfo.ByteOffset);
 #endif
 
         if (data->isContainedIntOrIImmed())

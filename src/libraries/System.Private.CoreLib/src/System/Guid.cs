@@ -8,6 +8,7 @@ using System.Globalization;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 using System.Runtime.Versioning;
 
 namespace System
@@ -870,6 +871,11 @@ namespace System
 
         private static bool EqualsCore(in Guid left, in Guid right)
         {
+            if (Vector128.IsHardwareAccelerated)
+            {
+                return Vector128.LoadUnsafe(ref Unsafe.As<Guid, byte>(ref Unsafe.AsRef(in left))) == Vector128.LoadUnsafe(ref Unsafe.As<Guid, byte>(ref Unsafe.AsRef(in right)));
+            }
+
             ref int rA = ref Unsafe.AsRef(in left._a);
             ref int rB = ref Unsafe.AsRef(in right._a);
 
