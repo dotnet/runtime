@@ -242,16 +242,18 @@ subparsers.required = True
 # You normally use the default host OS, but for Azure Storage upload and other
 # operations, it can be useful to allow it to be specified.
 
-core_root_parser = argparse.ArgumentParser(add_help=False)
+def add_core_root_arguments(parser, build_type_default, build_type_help):
+    parser.add_argument("-arch", help=arch_help)
+    parser.add_argument("-build_type", default=build_type_default, help=build_type_help)
+    parser.add_argument("-host_os", help=host_os_help)
+    parser.add_argument("-core_root", help=core_root_help)
+    parser.add_argument("-log_level", help=log_level_help)
+    parser.add_argument("-log_file", help=log_file_help)
+    parser.add_argument("-spmi_location", help=spmi_location_help)
+    parser.add_argument("--no_progress", action="store_true", help=download_no_progress_help)
 
-core_root_parser.add_argument("-arch", help=arch_help)
-core_root_parser.add_argument("-build_type", default="Checked", help=build_type_help)
-core_root_parser.add_argument("-host_os", help=host_os_help)
-core_root_parser.add_argument("-core_root", help=core_root_help)
-core_root_parser.add_argument("-log_level", help=log_level_help)
-core_root_parser.add_argument("-log_file", help=log_file_help)
-core_root_parser.add_argument("-spmi_location", help=spmi_location_help)
-core_root_parser.add_argument("--no_progress", action="store_true", help=download_no_progress_help)
+core_root_parser = argparse.ArgumentParser(add_help=False)
+add_core_root_arguments(core_root_parser, "Checked", build_type_help)
 
 # Create a set of arguments common to target specification. Used for collect, replay, asmdiffs, upload, upload-private, download, list-collections.
 
@@ -339,13 +341,8 @@ asm_diff_parser.add_argument("-retainOnlyTopFiles", action="store_true", help="R
 asm_diff_parser.add_argument("--diff_with_release", action="store_true", help="Specify if this is asmdiff using release binaries.")
 
 # subparser for throughput
-throughput_parser = subparsers.add_parser("tpdiff",
-                                          description=throughput_description, parents=[core_root_parser, target_parser, superpmi_common_parser, replay_common_parser, base_diff_parser],
-                                          # Allow overriding build_type with new default
-                                          conflict_handler='resolve')
-
-# Override build type
-throughput_parser.add_argument("-build_type", default="Release", help=throughput_build_type_help)
+throughput_parser = subparsers.add_parser("tpdiff", description=throughput_description, parents=[target_parser, superpmi_common_parser, replay_common_parser, base_diff_parser])
+add_core_root_arguments(throughput_parser, "Release", throughput_build_type_help)
 
 # subparser for upload
 upload_parser = subparsers.add_parser("upload", description=upload_description, parents=[core_root_parser, target_parser])
