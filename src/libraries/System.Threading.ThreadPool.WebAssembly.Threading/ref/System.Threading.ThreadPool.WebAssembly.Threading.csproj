@@ -3,7 +3,6 @@
     <AssemblyName>System.Threading.ThreadPool</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
-    <Nullable>enable</Nullable>
     <FeatureWasmThreads>true</FeatureWasmThreads>
     <!-- tell references.targets to bump the assembly file version -->
     <IsExperimentalRefAssembly>true</IsExperimentalRefAssembly>

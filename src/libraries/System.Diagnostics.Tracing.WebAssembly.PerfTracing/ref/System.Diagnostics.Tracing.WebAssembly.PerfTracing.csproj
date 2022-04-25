@@ -2,7 +2,6 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
-    <Nullable>enable</Nullable>
     <FeatureWasmPerfTracing>true</FeatureWasmPerfTracing>
     <AssemblyName>System.Diagnostics.Tracing</AssemblyName>
     <!-- tell references.targets to bump the assembly version -->
