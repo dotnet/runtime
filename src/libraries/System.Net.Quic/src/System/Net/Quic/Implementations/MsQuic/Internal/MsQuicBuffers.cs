@@ -45,6 +45,7 @@ internal unsafe struct MsQuicBuffers : IDisposable
         {
             ArrayPool<MemoryHandle>.Shared.Return(_handles);
             _handles = ArrayPool<MemoryHandle>.Shared.Rent(inputs.Count);
+            Array.Clear(_handles);
         }
         if (_count < inputs.Count)
         {
@@ -71,7 +72,7 @@ internal unsafe struct MsQuicBuffers : IDisposable
     /// </summary>
     public void Reset()
     {
-        for (int i = 0; i < _handles.Length; ++i)
+        for (int i = 0; i < _count; ++i)
         {
             _handles[i].Dispose();
         }
