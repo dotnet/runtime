@@ -158,7 +158,6 @@
 #include "syncclean.hpp"
 #include "typeparse.h"
 #include "debuginfostore.h"
-#include "eemessagebox.h"
 #include "finalizerthread.h"
 #include "threadsuspend.h"
 #include "disassembler.h"
@@ -1223,9 +1222,6 @@ void STDMETHODCALLTYPE EEShutDownHelper(BOOL fIsDllUnloading)
     STRESS_LOG1(LF_STARTUP, LL_INFO10, "EEShutDown entered unloading = %d", fIsDllUnloading);
 
 #ifdef _DEBUG
-    if (_DbgBreakCount)
-        _ASSERTE(!"An assert was hit before EE Shutting down");
-
     if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_BreakOnEEShutdown))
         _ASSERTE(!"Shutting down EE!");
 #endif
@@ -1432,12 +1428,7 @@ part2:
                 g_fEEShutDown |= ShutDown_Phase2;
 
                 // Shutdown finalizer before we suspend all background threads. Otherwise we
-                // never get to finalize anything. Obviously.
-
-#ifdef _DEBUG
-                if (_DbgBreakCount)
-                    _ASSERTE(!"An assert was hit After Finalizer run");
-#endif
+                // never get to finalize anything.
 
                 // No longer process exceptions
                 g_fNoExceptions = true;
@@ -1488,11 +1479,6 @@ part2:
 #if USE_DISASSEMBLER
                 Disassembler::StaticClose();
 #endif // USE_DISASSEMBLER
-
-#ifdef _DEBUG
-                if (_DbgBreakCount)
-                    _ASSERTE(!"EE Shutting down after an assert");
-#endif
 
                 WriteJitHelperCountToSTRESSLOG();
 
