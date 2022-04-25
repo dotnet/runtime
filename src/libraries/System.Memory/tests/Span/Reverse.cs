@@ -80,17 +80,12 @@ namespace System.SpanTests
             yield return new object[] { offset, 4 };
             yield return new object[] { offset, 5 };
 
-            // vectorized execution paths
-            if (Avx2.IsSupported)
-            {
-                yield return new object[] { offset, offset + Vector256<byte>.Count * 2 }; // even
-                yield return new object[] { offset, offset + Vector256<byte>.Count * 2 + 1 }; // odd
-            }
-            else if (Sse2.IsSupported)
-            {
-                yield return new object[] { offset, offset + Vector128<byte>.Count * 2 }; // even
-                yield return new object[] { offset, offset + Vector128<byte>.Count * 2 + 1 }; // odd
-            }
+            // vectorized execution paths for AVX2
+            yield return new object[] { offset, offset + Vector256<byte>.Count * 2 }; // even
+            yield return new object[] { offset, offset + Vector256<byte>.Count * 2 + 1 }; // odd
+            // vectorized execution paths for SSE2
+            yield return new object[] { offset, offset + Vector128<byte>.Count * 2 }; // even
+            yield return new object[] { offset, offset + Vector128<byte>.Count * 2 + 1 }; // odd
         }
 
         [Theory, MemberData(nameof(GetReverseByteUnalignedArguments))]
@@ -153,19 +148,14 @@ namespace System.SpanTests
 
             yield return new object[] { offset, 2 };
 
-            // vectorized execution paths
-            if (Avx2.IsSupported)
-            {
-                int vectorSize = IntPtr.Size == 4 ? Vector256<int>.Count : Vector256<long>.Count;
-                yield return new object[] { offset, offset + vectorSize * 2 }; // even
-                yield return new object[] { offset, offset + vectorSize * 2 + 1 }; // odd
-            }
-            else if (Sse2.IsSupported)
-            {
-                int vectorSize = IntPtr.Size == 4 ? Vector128<int>.Count : Vector128<long>.Count;
-                yield return new object[] { offset, offset + vectorSize * 2 }; // even
-                yield return new object[] { offset, offset + vectorSize * 2 + 1 }; // odd
-            }
+            // vectorized execution paths for AVX2
+            int avx2VectorSize = IntPtr.Size == 4 ? Vector256<int>.Count : Vector256<long>.Count;
+            yield return new object[] { offset, offset + avx2VectorSize * 2 }; // even
+            yield return new object[] { offset, offset + avx2VectorSize * 2 + 1 }; // odd
+            // vectorized execution paths for SSE
+            int ss2VectorSize = IntPtr.Size == 4 ? Vector128<int>.Count : Vector128<long>.Count;
+            yield return new object[] { offset, offset + ss2VectorSize * 2 }; // even
+            yield return new object[] { offset, offset + ss2VectorSize * 2 + 1 }; // odd
         }
 
         [Theory, MemberData(nameof(GetReverseIntPtrOffsetArguments))]
@@ -290,16 +280,14 @@ namespace System.SpanTests
                 return;
             }
 
-            ref T first = ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(array), index);
-            ref T last = ref Unsafe.Add(ref Unsafe.Add(ref first, length), -1);
+            int firstIndex = index;
+            int lastIndex = firstIndex + length - 1;
             do
             {
-                T temp = first;
-                first = last;
-                last = temp;
-                first = ref Unsafe.Add(ref first, 1);
-                last = ref Unsafe.Add(ref last, -1);
-            } while (Unsafe.IsAddressLessThan(ref first, ref last));
+                (array[firstIndex], array[lastIndex]) = (array[lastIndex], array[firstIndex]);
+                firstIndex++;
+                lastIndex--;
+            } while (firstIndex < lastIndex);
         }
     }
 }
