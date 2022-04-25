@@ -483,7 +483,7 @@ namespace System.Diagnostics.Tests
                 if (PlatformDetection.IsNotWindowsServerCore) // for this particular Windows version it fails with Attempted to perform an unauthorized operation (#46619)
                 {
                     // ensure the new user can access the .exe (otherwise you get Access is denied exception)
-                    SetAccessControl(username, p.StartInfo.FileName, add: true);
+                    SetAccessControl(username, p.StartInfo.FileName, p.StartInfo.WorkingDirectory, add: true);
                 }
 
                 p.StartInfo.LoadUserProfile = true;
@@ -530,29 +530,38 @@ namespace System.Diagnostics.Tests
 
                 if (PlatformDetection.IsNotWindowsServerCore)
                 {
-                    SetAccessControl(username, p.StartInfo.FileName, add: false); // remove the access
+                    SetAccessControl(username, p.StartInfo.FileName, p.StartInfo.WorkingDirectory, add: false); // remove the access
                 }
 
                 Assert.Equal(Interop.ExitCodes.NERR_Success, Interop.NetUserDel(null, username));
             }
         }
 
-        private static void SetAccessControl(string userName, string filePath, bool add)
+        private static void SetAccessControl(string userName, string filePath, string directoryPath, bool add)
         {
             FileInfo fileInfo = new FileInfo(filePath);
-            FileSecurity accessControl = fileInfo.GetAccessControl();
-            FileSystemAccessRule fileSystemAccessRule = new FileSystemAccessRule(userName, FileSystemRights.ReadAndExecute, AccessControlType.Allow);
+            FileSecurity fileSecurity = fileInfo.GetAccessControl();
+            Apply(userName, fileSecurity, FileSystemRights.ReadAndExecute, add);
+            fileInfo.SetAccessControl(fileSecurity);
 
-            if (add)
-            {
-                accessControl.AddAccessRule(fileSystemAccessRule);
-            }
-            else
-            {
-                accessControl.RemoveAccessRule(fileSystemAccessRule);
-            }
+            DirectoryInfo directoryInfo = new DirectoryInfo(directoryPath);
+            DirectorySecurity directorySecurity = directoryInfo.GetAccessControl();
+            Apply(userName, directorySecurity, FileSystemRights.Read , add);
+            directoryInfo.SetAccessControl(directorySecurity);
 
-            fileInfo.SetAccessControl(accessControl);
+            static void Apply(string userName, FileSystemSecurity accessControl, FileSystemRights rights, bool add)
+            {
+                FileSystemAccessRule fileSystemAccessRule = new FileSystemAccessRule(userName, rights, AccessControlType.Allow);
+
+                if (add)
+                {
+                    accessControl.AddAccessRule(fileSystemAccessRule);
+                }
+                else
+                {
+                    accessControl.RemoveAccessRule(fileSystemAccessRule);
+                }
+            }
         }
 
         private static List<string> GetNamesOfUserProfiles()
