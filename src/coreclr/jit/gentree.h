@@ -1916,7 +1916,11 @@ public:
 
     // Simpler variant of the above which just returns the local node if this is an expression that
     // yields an address into a local
-    GenTreeLclVarCommon* IsLocalAddrExpr();
+    const GenTreeLclVarCommon* IsLocalAddrExpr() const;
+    GenTreeLclVarCommon*       IsLocalAddrExpr()
+    {
+        return const_cast<GenTreeLclVarCommon*>(static_cast<const GenTree*>(this)->IsLocalAddrExpr());
+    }
 
     // Determine if this tree represents the value of an entire implicit byref parameter,
     // and if so return the tree for the parameter.

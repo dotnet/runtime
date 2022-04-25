@@ -16308,7 +16308,7 @@ bool GenTree::IsLocalExpr(Compiler* comp, GenTreeLclVarCommon** pLclVarTree, Fie
 // If this tree evaluates some sum of a local address and some constants,
 // return the node for the local being addressed
 
-GenTreeLclVarCommon* GenTree::IsLocalAddrExpr()
+const GenTreeLclVarCommon* GenTree::IsLocalAddrExpr() const
 {
     if (OperGet() == GT_ADDR)
     {
@@ -22865,7 +22865,7 @@ bool GenTreeLclFld::IsOffsetMisaligned() const
 
 bool GenTree::IsInvariant() const
 {
-    return OperIsConst() || Compiler::impIsAddressInLocal(this);
+    return OperIsConst() || IsLocalAddrExpr();
 }
 
 //------------------------------------------------------------------------
