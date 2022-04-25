@@ -12,6 +12,12 @@ mono_interp_tiering_init (void)
 	enable_tiering = TRUE;
 }
 
+gboolean
+mono_interp_tiering_enabled (void)
+{
+	return enable_tiering;
+}
+
 static InterpMethod*
 get_tier_up_imethod (InterpMethod *imethod)
 {
@@ -160,4 +166,49 @@ mono_interp_tier_up_frame_enter (InterpFrame *frame, ThreadContext *context, con
 	context->stack_pointer = (guchar*)frame->stack + optimized_method->alloca_size;
 	frame->imethod = optimized_method;
 	*ip = optimized_method->code;
+}
+
+static int
+lookup_patchpoint_data (InterpMethod *imethod, int data)
+{
+       int *position = imethod->patchpoint_data;
+       while (*position != G_MAXINT32) {
+               if (*position == data)
+                       return *(position + 1);
+               position += 2;
+       }
+       return G_MAXINT32;
+}
+
+void
+mono_interp_tier_up_frame_patchpoint (InterpFrame *frame, ThreadContext *context, const guint16 **ip)
+{
+	InterpMethod *unoptimized_method = frame->imethod;
+	InterpMethod *optimized_method;
+	if (unoptimized_method->optimized_imethod)
+		optimized_method = unoptimized_method->optimized_imethod;
+	else
+		optimized_method = tier_up_method (unoptimized_method, context);
+	for (int i = 0; i < unoptimized_method->num_clauses; i++) {
+		MonoExceptionClause *clause = &unoptimized_method->clauses [i];
+		if (clause->flags != MONO_EXCEPTION_CLAUSE_FINALLY)
+			continue;
+		// Patch return addresses used by MINT_CALL_HANDLER + MINT_ENDFINALLY
+		guint16 **ip_addr = (guint16**)((char*)frame->stack + unoptimized_method->clause_data_offsets [i]);
+		guint16 *ret_ip = *ip_addr;
+		// ret_ip could be junk on stack, do a quick check first
+		if (ret_ip < unoptimized_method->code)
+			continue;
+		int native_offset = (int)(ret_ip - unoptimized_method->code);
+		int call_handler_index = lookup_patchpoint_data (unoptimized_method, native_offset);
+		if (call_handler_index != G_MAXINT32) {
+			int offset = lookup_patchpoint_data (optimized_method, call_handler_index);
+			g_assert (offset != G_MAXINT32);
+			*ip_addr = optimized_method->code + offset;
+		}
+	}
+	context->stack_pointer = (guchar*)frame->stack + optimized_method->alloca_size;
+	frame->imethod = optimized_method;
+	int bb_index = (*ip) [1];
+	*ip = optimized_method->code + lookup_patchpoint_data (optimized_method, bb_index);
 }

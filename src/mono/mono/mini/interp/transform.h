@@ -126,6 +126,11 @@ struct _InterpBasicBlock {
 	// This block has special semantics and it shouldn't be optimized away
 	int eh_block : 1;
 	int dead: 1;
+	// If patchpoint is set we will store mapping information between native offset and bblock index within
+	// InterpMethod. In the unoptimized method we will map from native offset to the bb_index while in the
+	// optimized method we will map the bb_index to the corresponding native offset.
+	int patchpoint_data: 1;
+	int emit_patchpoint: 1;
 };
 
 typedef enum {
@@ -217,6 +222,8 @@ typedef struct
 	MonoProfilerCoverageInfo *coverage_info;
 	GList *dont_inline;
 	int inline_depth;
+	int patchpoint_data_n;
+	int *patchpoint_data;
 	int has_localloc : 1;
 	// If method compilation fails due to certain limits being exceeded, we disable inlining
 	// and retry compilation.

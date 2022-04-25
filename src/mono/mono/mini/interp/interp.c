@@ -3596,6 +3596,7 @@ main_loop:
 		MINT_IN_CASE(MINT_NIY)
 		MINT_IN_CASE(MINT_DEF)
 		MINT_IN_CASE(MINT_DUMMY_USE)
+		MINT_IN_CASE(MINT_TIER_PATCHPOINT_DATA)
 			g_assert_not_reached ();
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_BREAK)
@@ -6982,12 +6983,11 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_TIER_PATCHPOINT) {
-			if (frame->imethod->optimized_imethod) {
-				int bb_index = ip [1];
-				// Tier up current frame
-				g_error ("FIXME: Tier up current frame");
-			}
-			ip += 2;
+			frame->imethod->entry_count++;
+			if (frame->imethod->entry_count > INTERP_TIER_ENTRY_LIMIT)
+				mono_interp_tier_up_frame_patchpoint (frame, context, &ip);
+			else
+				ip += 2;
 			MINT_IN_BREAK;
 		}
 

@@ -150,6 +150,20 @@ struct InterpMethod {
 #endif
 	gint32 entry_count;
 	InterpMethod *optimized_imethod;
+	// This data is used to resolve native offsets from unoptimized method to native offsets
+	// in the optimized method. We rely on keys identifying a certain logical execution point
+	// to be equal between unoptimized and optimized method. In unoptimized method we map from
+	// native_offset to a key and in optimized_method we map from key to a native offset.
+	//
+	// The logical execution points that are being tracked are some basic block starts (in this
+	// case we don't need any tracking in the unoptimized method, just the mapping from bbindex
+	// to its native offset) and call handler returns. Call handler returns store the return ip
+	// on the stack so once we tier up the method we need to update these to IPs in the optimized
+	// method. The key for a call handler is its index, in appearance order in the IL, multiplied
+	// by -1. (So we don't collide with basic block indexes)
+	//
+	// Since we have both positive and negative keys in this array, we use G_MAXINTRE as terminator.
+	int *patchpoint_data;
 	unsigned int init_locals : 1;
 	unsigned int vararg : 1;
 	unsigned int optimized : 1;

@@ -8,6 +8,9 @@
 void
 mono_interp_tiering_init (void);
 
+gboolean
+mono_interp_tiering_enabled (void);
+
 void
 mono_interp_register_imethod_data_items (gpointer *data_items, GSList *indexes);
 
@@ -16,5 +19,8 @@ mono_interp_register_imethod_patch_site (gpointer *imethod_ptr);
 
 void
 mono_interp_tier_up_frame_enter (InterpFrame *frame, ThreadContext *context, const guint16 **ip);
+
+void
+mono_interp_tier_up_frame_patchpoint (InterpFrame *frame, ThreadContext *context, const guint16 **ip);
 
 #endif /* __MONO_MINI_INTERP_TIERING_H__ */

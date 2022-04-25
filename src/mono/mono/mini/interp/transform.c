@@ -759,6 +759,19 @@ handle_branch (TransformData *td, int long_op, int offset)
 	InterpBasicBlock *target_bb = td->offset_to_bb [target];
 	g_assert (target_bb);
 
+	if (offset < 0 && td->sp == td->stack && !td->inlined_method) {
+		// Backwards branch inside unoptimized method where the IL stack is empty
+		// This is candidate for a patchpoint
+		if (!td->rtm->optimized)
+			target_bb->emit_patchpoint = TRUE;
+		if (mono_interp_tiering_enabled () && !target_bb->patchpoint_data && td->rtm->optimized) {
+			// The optimized imethod will store mapping from bb index to native offset so it
+			// can resume execution in the optimized method, once we tier up in patchpoint
+			td->patchpoint_data_n++;
+			target_bb->patchpoint_data = TRUE;
+		}
+	}
+
 	if (long_op == MINT_LEAVE || long_op == MINT_LEAVE_CHECK)
 		target_bb->eh_block = TRUE;
 
@@ -4227,6 +4240,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 	MonoMethodSignature *signature = mono_method_signature_internal (method);
 	int num_args = signature->hasthis + signature->param_count;
 	int arglist_local = -1;
+	int call_handler_count = 0;
 	gboolean ret = TRUE;
 	gboolean emitted_funccall_seq_point = FALSE;
 	guint32 *arg_locals = NULL;
@@ -4316,7 +4330,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 		if (td->verbose_level) {
 			char *tmp = mono_disasm_code (NULL, method, td->ip, end);
 			char *name = mono_method_full_name (method, TRUE);
-			g_print ("Method %s, original code:\n", name);
+			g_print ("Method %s, optimized %d, original code:\n", name, rtm->optimized);
 			g_print ("%s\n", tmp);
 			g_free (tmp);
 			g_free (name);
@@ -6737,6 +6751,17 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 						(!MONO_OFFSET_IN_CLAUSE (clause, (target_offset + in_offset)))) {
 					handle_branch (td, MINT_CALL_HANDLER, clause->handler_offset - in_offset);
 					td->last_ins->data [2] = i;
+
+					if (mono_interp_tiering_enabled ()) {
+						// In the optimized method we will remember the native_offset of this bb_index
+						// In the unoptimized method we will have to maintain the mapping between the
+						// native offset of this bb and its bb_index
+						td->patchpoint_data_n++;
+						interp_add_ins (td, MINT_TIER_PATCHPOINT_DATA);
+						call_handler_count++;
+						td->last_ins->data [0] = call_handler_count;
+						g_assert (call_handler_count < G_MAXUINT16);
+					}
 				}
 			}
 
@@ -7492,6 +7517,9 @@ compute_native_offset_estimates (TransformData *td)
 	for (bb = td->entry_bb; bb != NULL; bb = bb->next_bb) {
 		InterpInst *ins;
 		bb->native_offset_estimate = noe;
+		if (bb->emit_patchpoint)
+			noe += 2;
+
 		for (ins = bb->first_ins; ins != NULL; ins = ins->next) {
 			int opcode = ins->opcode;
 			// Skip dummy opcodes for more precise offset computation
@@ -7716,12 +7744,26 @@ emit_compacted_instruction (TransformData *td, guint16* start_ip, InterpInst *in
 	return ip;
 }
 
+static int
+add_patchpoint_data (TransformData *td, int patchpoint_data_index, int native_offset, int key)
+{
+	if (td->rtm->optimized) {
+		td->patchpoint_data [patchpoint_data_index++] = key;
+		td->patchpoint_data [patchpoint_data_index++] = native_offset;
+	} else {
+		td->patchpoint_data [patchpoint_data_index++] = native_offset;
+		td->patchpoint_data [patchpoint_data_index++] = key;
+	}
+	return patchpoint_data_index;
+}
+
 // Generates the final code, after we are done with all the passes
 static void
 generate_compacted_code (TransformData *td)
 {
 	guint16 *ip;
 	int size;
+	int patchpoint_data_index = 0;
 	td->relocs = g_ptr_array_new ();
 	InterpBasicBlock *bb;
 
@@ -7732,12 +7774,30 @@ generate_compacted_code (TransformData *td)
 	// Generate the compacted stream of instructions
 	td->new_code = ip = (guint16*)mono_mem_manager_alloc0 (td->mem_manager, size * sizeof (guint16));
 
+	if (td->patchpoint_data_n) {
+		g_assert (mono_interp_tiering_enabled ());
+		td->patchpoint_data = (int*)mono_mem_manager_alloc0 (td->mem_manager, (td->patchpoint_data_n * 2 + 1) * sizeof (int));
+		td->patchpoint_data [td->patchpoint_data_n * 2] = G_MAXINT32;
+	}
+
 	for (bb = td->entry_bb; bb != NULL; bb = bb->next_bb) {
 		InterpInst *ins = bb->first_ins;
 		bb->native_offset = ip - td->new_code;
 		td->cbb = bb;
+		if (bb->patchpoint_data)
+			patchpoint_data_index = add_patchpoint_data (td, patchpoint_data_index, bb->native_offset, bb->index);
+		if (bb->emit_patchpoint) {
+			// Add patchpoint in unoptimized method
+			*ip++ = MINT_TIER_PATCHPOINT;
+			*ip++ = (guint16)bb->index;
+		}
 		while (ins) {
-			ip = emit_compacted_instruction (td, ip, ins);
+			if (ins->opcode == MINT_TIER_PATCHPOINT_DATA) {
+				int native_offset = (int)(ip - td->new_code);
+				patchpoint_data_index = add_patchpoint_data (td, patchpoint_data_index, native_offset, -ins->data [0]);
+			} else {
+				ip = emit_compacted_instruction (td, ip, ins);
+			}
 			ins = ins->next;
 		}
 	}
@@ -9546,6 +9606,7 @@ retry:
 	memcpy (rtm->data_items, td->data_items, td->n_data_items * sizeof (td->data_items [0]));
 
 	mono_interp_register_imethod_data_items (rtm->data_items, td->imethod_items);
+	rtm->patchpoint_data = td->patchpoint_data;
 
 	/* Save debug info */
 	interp_save_debug_info (rtm, header, td, td->line_numbers);
