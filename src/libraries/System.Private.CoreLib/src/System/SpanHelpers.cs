@@ -594,7 +594,9 @@ namespace System
             ref T last = ref Unsafe.Subtract(ref Unsafe.Add(ref first, (int)length), 1);
             do
             {
-                (last, first) = (first, last);
+                T temp = first;
+                first = last;
+                last = temp;
                 first = ref Unsafe.Add(ref first, 1);
                 last = ref Unsafe.Subtract(ref last, 1);
             } while (Unsafe.IsAddressLessThan(ref first, ref last));
