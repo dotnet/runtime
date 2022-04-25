@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <Nullable>enable</Nullable>
     <TargetFramework>$(NetCoreAppCurrent)-Browser</TargetFramework>
     <NoWarn>$(NoWarn);CA1419</NoWarn> <!-- // TODO https://github.com/dotnet/roslyn-analyzers/issues/5232: not intended for use with P/Invoke -->
   </PropertyGroup>

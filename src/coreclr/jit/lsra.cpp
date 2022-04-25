@@ -9428,10 +9428,6 @@ void LinearScan::DumpOperandDefs(
 {
     assert(operand != nullptr);
     assert(operandString != nullptr);
-    if (operand->OperIs(GT_ARGPLACE))
-    {
-        return;
-    }
 
     int dstCount = ComputeOperandDstCount(operand);
 

@@ -21,7 +21,7 @@ namespace System.Text.RegularExpressions.Symbolic
             var bddBuilder = new SymbolicRegexBuilder<BDD>(charSetSolver, charSetSolver);
             var converter = new RegexNodeConverter(bddBuilder, culture, regexTree.CaptureNumberSparseMapping);
 
-            SymbolicRegexNode<BDD> rootNode = converter.ConvertToSymbolicRegexNode(regexTree.Root, tryCreateFixedLengthMarker: true);
+            SymbolicRegexNode<BDD> rootNode = converter.ConvertToSymbolicRegexNode(regexTree.Root);
             BDD[] minterms = rootNode.ComputeMinterms();
 
             _matcher = minterms.Length > 64 ?
@@ -40,7 +40,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// all runner instances, but the runner itself has state (e.g. for captures, positions, etc.)
         /// and must not be shared between concurrent uses.
         /// </remarks>
-        private sealed class Runner<TSet> : RegexRunner where TSet : IComparable<TSet>
+        private sealed class Runner<TSet> : RegexRunner where TSet : IComparable<TSet>, IEquatable<TSet>
         {
             /// <summary>The matching engine.</summary>
             /// <remarks>The matcher is stateless and may be shared by any number of threads executing concurrently.</remarks>

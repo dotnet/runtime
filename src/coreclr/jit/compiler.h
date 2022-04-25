@@ -2605,8 +2605,6 @@ public:
 
     GenTree* gtNewNothingNode();
 
-    GenTree* gtNewArgPlaceHolderNode(var_types type, CORINFO_CLASS_HANDLE clsHnd);
-
     GenTree* gtUnusedValNode(GenTree* expr);
 
     GenTree* gtNewKeepAliveNode(GenTree* op);
@@ -5508,14 +5506,7 @@ private:
 #endif
 
     //-------- Determine the order in which the trees will be evaluated -------
-
-    unsigned fgTreeSeqNum;
-    GenTree* fgTreeSeqLst;
-    GenTree* fgTreeSeqBeg;
-
-    GenTree* fgSetTreeSeq(GenTree* tree, GenTree* prev = nullptr, bool isLIR = false);
-    void fgSetTreeSeqHelper(GenTree* tree, bool isLIR);
-    void fgSetTreeSeqFinish(GenTree* tree, bool isLIR);
+    GenTree* fgSetTreeSeq(GenTree* tree, bool isLIR = false);
     void fgSetStmtSeq(Statement* stmt);
     void fgSetBlockOrder(BasicBlock* block);
 
@@ -10658,7 +10649,6 @@ public:
             case GT_JMPTABLE:
             case GT_CLS_VAR:
             case GT_CLS_VAR_ADDR:
-            case GT_ARGPLACE:
             case GT_PHYSREG:
             case GT_EMITNOP:
             case GT_PINVOKE_PROLOG:
@@ -10845,7 +10835,7 @@ public:
             {
                 GenTreeCall* const call = node->AsCall();
 
-                for (CallArg& arg : call->gtArgs.Args())
+                for (CallArg& arg : call->gtArgs.EarlyArgs())
                 {
                     result = WalkTree(&arg.EarlyNodeRef(), call);
                     if (result == fgWalkResult::WALK_ABORT)
