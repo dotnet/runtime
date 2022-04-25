@@ -1917,7 +1917,7 @@ public:
     // Simpler variant of the above which just returns the local node if this is an expression that
     // yields an address into a local
     const GenTreeLclVarCommon* IsLocalAddrExpr() const;
-    GenTreeLclVarCommon* IsLocalAddrExpr()
+    GenTreeLclVarCommon*       IsLocalAddrExpr()
     {
         return const_cast<GenTreeLclVarCommon*>(static_cast<const GenTree*>(this)->IsLocalAddrExpr());
     }
