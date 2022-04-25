@@ -35,17 +35,18 @@ export function configure_emscripten_startup(module: DotnetModule, exportedAPI: 
         (typeof (globalThis.document) === "object") &&
         (typeof (globalThis.document.createElement) === "function")
     ) {
-      // blazor injects a module preload link element for dotnet.[version].[sha].js
-      let x = Array.from (document.head.getElementsByTagName('link')).filter(elt => elt.rel !== undefined && elt.rel == 'modulepreload' && elt.href !== undefined && elt.href.indexOf('dotnet') != -1 && elt.href.indexOf ('.js') != -1);
-      if (x.length == 1) {
-        console.log("determined url of main script to be " + x[0].href);
-        (<any>module)["mainScriptUrlOrBlob"] = x[0].href;
-      } else {
-        const temp = globalThis.document.createElement("a");
-        temp.href = "dotnet.js";
-        console.log("determined url of main script to be " + temp.href);
-        (<any>module)["mainScriptUrlOrBlob"] = temp.href;
-      }
+        // blazor injects a module preload link element for dotnet.[version].[sha].js
+        const blazorDotNetJS = Array.from (document.head.getElementsByTagName("link")).filter(elt => elt.rel !== undefined && elt.rel == "modulepreload" && elt.href !== undefined && elt.href.indexOf("dotnet") != -1 && elt.href.indexOf (".js") != -1);
+        if (blazorDotNetJS.length == 1) {
+            const hr = blazorDotNetJS[0].href;
+            console.log("determined url of main script to be " + hr);
+            (<any>module)["mainScriptUrlOrBlob"] = hr;
+        } else {
+            const temp = globalThis.document.createElement("a");
+            temp.href = "dotnet.js";
+            console.log("determined url of main script to be " + temp.href);
+            (<any>module)["mainScriptUrlOrBlob"] = temp.href;
+        }
     }
 
     // these could be overriden on DotnetModuleConfig
