@@ -993,12 +993,10 @@ namespace System.Net.Security
             // We don't catch exceptions in this method, so it's safe for "accepted" be initialized with true.
             bool success = false;
             X509Chain? chain = null;
-            X509Certificate2Collection? remoteCertificateStore = null;
 
             try
             {
-                X509Certificate2? certificate = CertificateValidationPal.GetRemoteCertificate(_securityContext, out remoteCertificateStore);
-
+                X509Certificate2? certificate = CertificateValidationPal.GetRemoteCertificate(_securityContext!, ref chain);
                 if (_remoteCertificate != null && certificate != null &&
                     certificate.RawDataMemory.Span.SequenceEqual(_remoteCertificate.RawDataMemory.Span))
                 {
@@ -1016,17 +1014,16 @@ namespace System.Net.Security
                 }
                 else
                 {
-                    chain = new X509Chain();
+                    if (chain == null)
+                    {
+                        chain = new X509Chain();
+                    }
+
                     chain.ChainPolicy.RevocationMode = _sslAuthenticationOptions.CertificateRevocationCheckMode;
                     chain.ChainPolicy.RevocationFlag = X509RevocationFlag.ExcludeRoot;
 
                     // Authenticate the remote party: (e.g. when operating in server mode, authenticate the client).
                     chain.ChainPolicy.ApplicationPolicy.Add(_sslAuthenticationOptions.IsServer ? s_clientAuthOid : s_serverAuthOid);
-
-                    if (remoteCertificateStore != null)
-                    {
-                        chain.ChainPolicy.ExtraStore.AddRange(remoteCertificateStore);
-                    }
 
                     if (trust != null)
                     {
@@ -1102,15 +1099,6 @@ namespace System.Net.Security
                     }
 
                     chain.Dispose();
-                }
-
-                if (remoteCertificateStore != null)
-                {
-                    int certCount = remoteCertificateStore.Count;
-                    for (int i = 0; i < certCount; i++)
-                    {
-                        remoteCertificateStore[i].Dispose();
-                    }
                 }
             }
 

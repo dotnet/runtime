@@ -167,8 +167,11 @@ namespace System.Reflection.Emit
             return sigHelp;
         }
 
-        internal static SignatureHelper GetTypeSigToken(Module module!!, Type type!!)
+        internal static SignatureHelper GetTypeSigToken(Module module, Type type)
         {
+            ArgumentNullException.ThrowIfNull(module);
+            ArgumentNullException.ThrowIfNull(type);
+
             return new SignatureHelper(module, type);
         }
         #endregion
@@ -739,8 +742,10 @@ namespace System.Reflection.Emit
             AddArgument(clsArgument, null, null);
         }
 
-        public void AddArgument(Type argument!!, bool pinned)
+        public void AddArgument(Type argument, bool pinned)
         {
+            ArgumentNullException.ThrowIfNull(argument);
+
             IncrementArgCounts();
             AddOneArgTypeHelper(argument, pinned);
         }

@@ -12,14 +12,6 @@ namespace Microsoft.Interop
 {
     public static class MarshallerHelpers
     {
-        public static readonly ExpressionSyntax IsWindows = InvocationExpression(
-                                                        MemberAccessExpression(
-                                                            SyntaxKind.SimpleMemberAccessExpression,
-                                                            ParseTypeName("System.OperatingSystem"),
-                                                            IdentifierName("IsWindows")));
-
-        public static readonly TypeSyntax InteropServicesMarshalType = ParseTypeName(TypeNames.System_Runtime_InteropServices_Marshal);
-
         public static readonly TypeSyntax SystemIntPtrType = ParseTypeName(TypeNames.System_IntPtr);
 
         public static ForStatementSyntax GetForLoop(ExpressionSyntax lengthExpression, string indexerIdentifier)
@@ -244,49 +236,6 @@ namespace Microsoft.Interop
                 {
                     yield return nestedElements;
                 }
-            }
-        }
-
-        public static class StringMarshaller
-        {
-            public static ExpressionSyntax AllocationExpression(CharEncoding encoding, string managedIdentifier)
-            {
-                string methodName = encoding switch
-                {
-                    CharEncoding.Utf8 => "StringToCoTaskMemUTF8", // Not in .NET Standard 2.0, so we use the hard-coded name
-                    CharEncoding.Utf16 => nameof(System.Runtime.InteropServices.Marshal.StringToCoTaskMemUni),
-                    CharEncoding.Ansi => nameof(System.Runtime.InteropServices.Marshal.StringToCoTaskMemAnsi),
-                    _ => throw new System.ArgumentOutOfRangeException(nameof(encoding))
-                };
-
-                // Marshal.StringToCoTaskMemUTF8(<managed>)
-                // or
-                // Marshal.StringToCoTaskMemUni(<managed>)
-                // or
-                // Marshal.StringToCoTaskMemAnsi(<managed>)
-                return InvocationExpression(
-                    MemberAccessExpression(
-                        SyntaxKind.SimpleMemberAccessExpression,
-                        InteropServicesMarshalType,
-                        IdentifierName(methodName)),
-                    ArgumentList(
-                        SingletonSeparatedList<ArgumentSyntax>(
-                            Argument(IdentifierName(managedIdentifier)))));
-            }
-
-            public static ExpressionSyntax FreeExpression(string nativeIdentifier)
-            {
-                // Marshal.FreeCoTaskMem((IntPtr)<nativeIdentifier>)
-                return InvocationExpression(
-                    MemberAccessExpression(
-                        SyntaxKind.SimpleMemberAccessExpression,
-                        InteropServicesMarshalType,
-                        IdentifierName(nameof(System.Runtime.InteropServices.Marshal.FreeCoTaskMem))),
-                    ArgumentList(SingletonSeparatedList(
-                        Argument(
-                            CastExpression(
-                                SystemIntPtrType,
-                                IdentifierName(nativeIdentifier))))));
             }
         }
     }

@@ -14,7 +14,7 @@ using Newtonsoft.Json.Linq;
 
 namespace BrowserDebugProxy
 {
-    internal class ValueTypeClass
+    internal sealed class ValueTypeClass
     {
         private readonly bool autoExpand;
         private JArray proxy;
@@ -106,7 +106,7 @@ namespace BrowserDebugProxy
                 var retMethod = await sdbAgent.InvokeMethod(Buffer, methodId, token, "methodRet");
                 description = retMethod["value"]?["value"].Value<string>();
                 if (className.Equals("System.Guid"))
-                    description = description.ToUpper(); //to keep the old behavior
+                    description = description.ToUpperInvariant(); //to keep the old behavior
             }
             else if (!forDebuggerDisplayAttribute)
             {

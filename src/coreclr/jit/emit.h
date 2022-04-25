@@ -2014,8 +2014,9 @@ private:
 
     void emitCheckFuncletBranch(instrDesc* jmp, insGroup* jmpIG); // Check for illegal branches between funclets
 
-    bool emitFwdJumps;   // forward jumps present?
-    bool emitNoGCIG;     // Are we generating IGF_NOGCINTERRUPT insGroups (for prologs, epilogs, etc.)
+    bool     emitFwdJumps;         // forward jumps present?
+    unsigned emitNoGCRequestCount; // Count of number of nested "NO GC" region requests we have.
+    bool     emitNoGCIG;           // Are we generating IGF_NOGCINTERRUPT insGroups (for prologs, epilogs, etc.)
     bool emitForceNewIG; // If we generate an instruction, and not another instruction group, force create a new emitAdd
                          // instruction group.
 
@@ -3308,38 +3309,6 @@ inline void emitter::emitNewIG()
 
     emitGenIG(ig);
 }
-
-#if !defined(JIT32_GCENCODER)
-// Start a new instruction group that is not interruptable
-inline void emitter::emitDisableGC()
-{
-    emitNoGCIG = true;
-
-    if (emitCurIGnonEmpty())
-    {
-        emitNxtIG(true);
-    }
-    else
-    {
-        emitCurIG->igFlags |= IGF_NOGCINTERRUPT;
-    }
-}
-
-// Start a new instruction group that is interruptable
-inline void emitter::emitEnableGC()
-{
-    emitNoGCIG = false;
-
-    // The next time an instruction needs to be generated, force a new instruction group.
-    // It will be an emitAdd group in that case. Note that the next thing we see might be
-    // a label, which will force a non-emitAdd group.
-    //
-    // Note that we can't just create a new instruction group here, because we don't know
-    // if there are going to be any instructions added to it, and we don't support empty
-    // instruction groups.
-    emitForceNewIG = true;
-}
-#endif // !defined(JIT32_GCENCODER)
 
 /*****************************************************************************/
 #endif // _EMIT_H_

@@ -6,6 +6,7 @@
 namespace System.Runtime.CompilerServices
 {
     // Define IsExternalInit type to support records.
-    internal class IsExternalInit
-    { }
+    internal sealed class IsExternalInit
+    {
+    }
 }

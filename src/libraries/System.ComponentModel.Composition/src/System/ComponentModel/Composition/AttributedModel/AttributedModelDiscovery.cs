@@ -24,23 +24,30 @@ namespace System.ComponentModel.Composition.AttributedModel
             return new ReflectionComposablePartDefinition(creationInfo);
         }
 
-        public static ReflectionComposablePartDefinition CreatePartDefinition(Type type!!, PartCreationPolicyAttribute? partCreationPolicy, bool ignoreConstructorImports, ICompositionElement? origin)
+        public static ReflectionComposablePartDefinition CreatePartDefinition(Type type, PartCreationPolicyAttribute? partCreationPolicy, bool ignoreConstructorImports, ICompositionElement? origin)
         {
+            ArgumentNullException.ThrowIfNull(type);
+
             AttributedPartCreationInfo creationInfo = new AttributedPartCreationInfo(type, partCreationPolicy, ignoreConstructorImports, origin);
 
             return new ReflectionComposablePartDefinition(creationInfo);
         }
 
-        public static ReflectionComposablePart CreatePart(object attributedPart!!)
+        public static ReflectionComposablePart CreatePart(object attributedPart)
         {
+            ArgumentNullException.ThrowIfNull(attributedPart);
+
             // If given an instance then we want to pass the default composition options because we treat it as a shared part
             ReflectionComposablePartDefinition definition = AttributedModelDiscovery.CreatePartDefinition(attributedPart.GetType(), PartCreationPolicyAttribute.Shared, true, (ICompositionElement?)null);
 
             return new ReflectionComposablePart(definition, attributedPart);
         }
 
-        public static ReflectionComposablePart CreatePart(object attributedPart!!, ReflectionContext reflectionContext!!)
+        public static ReflectionComposablePart CreatePart(object attributedPart, ReflectionContext reflectionContext)
         {
+            ArgumentNullException.ThrowIfNull(attributedPart);
+            ArgumentNullException.ThrowIfNull(reflectionContext);
+
             // If given an instance then we want to pass the default composition options because we treat it as a shared part
             var mappedType = reflectionContext.MapType(IntrospectionExtensions.GetTypeInfo(attributedPart.GetType()));
             if (mappedType.Assembly.ReflectionOnly)
@@ -53,8 +60,11 @@ namespace System.ComponentModel.Composition.AttributedModel
             return CreatePart(definition, attributedPart);
         }
 
-        public static ReflectionComposablePart CreatePart(ComposablePartDefinition partDefinition!!, object attributedPart!!)
+        public static ReflectionComposablePart CreatePart(ComposablePartDefinition partDefinition, object attributedPart)
         {
+            ArgumentNullException.ThrowIfNull(partDefinition);
+            ArgumentNullException.ThrowIfNull(attributedPart);
+
             return new ReflectionComposablePart((ReflectionComposablePartDefinition)partDefinition, attributedPart);
         }
 

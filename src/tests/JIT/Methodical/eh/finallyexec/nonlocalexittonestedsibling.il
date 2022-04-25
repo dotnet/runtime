@@ -14,9 +14,9 @@
 .assembly extern xunit.core {}
  
  
- .namespace hello
+ .namespace hello_nonlocalexittonestedsibling_finallyexec_il
  {
-   .class private auto ansi beforefieldinit Class1
+   .class public auto ansi beforefieldinit Class1
           extends [mscorlib]System.Object
    {
     .field private static class [eh_common]TestUtil.TestLog testLog
@@ -51,7 +51,7 @@
 
       ldloc.s    expectedOut
       newobj     instance void [eh_common]TestUtil.TestLog::.ctor(object)
-      stsfld     class [eh_common]TestUtil.TestLog hello.Class1::testLog
+      stsfld     class [eh_common]TestUtil.TestLog hello_nonlocalexittonestedsibling_finallyexec_il.Class1::testLog
       ret
     } 
     
@@ -69,7 +69,7 @@
                 class [mscorlib]System.ArithmeticException V_3,
                 string V_4,
                 int32 V_5)
-		ldsfld     class [eh_common]TestUtil.TestLog hello.Class1::testLog
+		ldsfld     class [eh_common]TestUtil.TestLog hello_nonlocalexittonestedsibling_finallyexec_il.Class1::testLog
 		callvirt   instance void [eh_common]TestUtil.TestLog::StartRecording()
 		
         ldc.i4     0x4d2
@@ -192,10 +192,10 @@
  
        branch_00ce:
        
-		ldsfld     class [eh_common]TestUtil.TestLog hello.Class1::testLog
+		ldsfld     class [eh_common]TestUtil.TestLog hello_nonlocalexittonestedsibling_finallyexec_il.Class1::testLog
       	callvirt   instance void [eh_common]TestUtil.TestLog::StopRecording()
       
-      	ldsfld     class [eh_common]TestUtil.TestLog hello.Class1::testLog
+      	ldsfld     class [eh_common]TestUtil.TestLog hello_nonlocalexittonestedsibling_finallyexec_il.Class1::testLog
       	callvirt   instance int32 [eh_common]TestUtil.TestLog::VerifyOutput()
         
          ret

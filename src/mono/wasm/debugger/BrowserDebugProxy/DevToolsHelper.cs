@@ -61,7 +61,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         public bool Equals(MessageId other) => other.sessionId == sessionId && other.id == id;
     }
 
-    internal class DotnetObjectId
+    internal sealed class DotnetObjectId
     {
         private int? _intValue;
 
@@ -200,7 +200,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         }
     }
 
-    internal class MonoCommands
+    internal sealed class MonoCommands
     {
         public string expression { get; set; }
         public string objectGroup { get; set; } = "mono-debugger";
@@ -248,7 +248,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         public const string EVENT_RAISED = "mono_wasm_debug_event_raised:aef14bca-5519-4dfe-b35a-f867abc123ae";
     }
 
-    internal class Frame
+    internal sealed class Frame
     {
         public Frame(MethodInfoWithDebugInformation method, SourceLocation location, int id)
         {
@@ -262,7 +262,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         public int Id { get; private set; }
     }
 
-    internal class Breakpoint
+    internal sealed class Breakpoint
     {
         public SourceLocation Location { get; private set; }
         public int RemoteId { get; set; }
@@ -311,7 +311,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         All
     }
 
-    internal class ExecutionContext
+    internal sealed class ExecutionContext
     {
         public ExecutionContext(MonoSDBHelper sdbAgent, int id, object auxData)
         {
@@ -374,7 +374,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         }
     }
 
-    internal class PerScopeCache
+    internal sealed class PerScopeCache
     {
         public Dictionary<string, JObject> Locals { get; } = new Dictionary<string, JObject>();
         public Dictionary<string, JObject> MemberReferences { get; } = new Dictionary<string, JObject>();

@@ -13,8 +13,10 @@ namespace System.Collections.Generic
     {
         // public static Comparer<T> Default is runtime-specific
 
-        public static Comparer<T> Create(Comparison<T> comparison!!)
+        public static Comparer<T> Create(Comparison<T> comparison)
         {
+            ArgumentNullException.ThrowIfNull(comparison);
+
             return new ComparisonComparer<T>(comparison);
         }
 

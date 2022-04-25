@@ -172,17 +172,29 @@ namespace System.Text.Json.Serialization.Metadata
             }
 
             // No cached item was found. Try the main dictionary which has all of the properties.
-            Debug.Assert(PropertyCache != null);
-
-            if (PropertyCache.TryGetValue(JsonHelpers.Utf8GetString(propertyName), out JsonPropertyInfo? info))
+#if DEBUG
+            if (PropertyCache == null)
             {
-                Debug.Assert(info != null);
+                Debug.Fail($"Property cache is null. {GetPropertyDebugInfo(propertyName)}");
+            }
+#endif
+
+            if (PropertyCache!.TryGetValue(JsonHelpers.Utf8GetString(propertyName), out JsonPropertyInfo? info))
+            {
+                Debug.Assert(info != null, "PropertyCache contains null JsonPropertyInfo");
 
                 if (Options.PropertyNameCaseInsensitive)
                 {
                     if (propertyName.SequenceEqual(info.NameAsUtf8Bytes))
                     {
-                        Debug.Assert(key == GetKey(info.NameAsUtf8Bytes.AsSpan()));
+#if DEBUG
+                        ulong recomputedKey = GetKey(info.NameAsUtf8Bytes.AsSpan());
+                        if (key != recomputedKey)
+                        {
+                            string propertyNameStr = JsonHelpers.Utf8GetString(propertyName);
+                            Debug.Fail($"key {key} [propertyName={propertyNameStr}] does not match re-computed value {recomputedKey} for the same sequence (case-insensitive). {info.GetDebugInfo()}");
+                        }
+#endif
 
                         // Use the existing byte[] reference instead of creating another one.
                         utf8PropertyName = info.NameAsUtf8Bytes!;
@@ -195,7 +207,14 @@ namespace System.Text.Json.Serialization.Metadata
                 }
                 else
                 {
-                    Debug.Assert(key == GetKey(info.NameAsUtf8Bytes.AsSpan()));
+#if DEBUG
+                    ulong recomputedKey = GetKey(info.NameAsUtf8Bytes.AsSpan());
+                    if (key != recomputedKey)
+                    {
+                        string propertyNameStr = JsonHelpers.Utf8GetString(propertyName);
+                        Debug.Fail($"key {key} [propertyName={propertyNameStr}] does not match re-computed value {recomputedKey} for the same sequence (case-sensitive). {info.GetDebugInfo()}");
+                    }
+#endif
                     utf8PropertyName = info.NameAsUtf8Bytes;
                 }
             }
@@ -461,7 +480,8 @@ namespace System.Text.Json.Serialization.Metadata
                     (name.Length < 7 || name[6] == ((key & ((ulong)0xFF << BitsInByte * 6)) >> BitsInByte * 6)) &&
                     // Verify embedded length.
                     (name.Length >= 0xFF || (key & ((ulong)0xFF << BitsInByte * 7)) >> BitsInByte * 7 == (ulong)name.Length) &&
-                    (name.Length < 0xFF || (key & ((ulong)0xFF << BitsInByte * 7)) >> BitsInByte * 7 == 0xFF));
+                    (name.Length < 0xFF || (key & ((ulong)0xFF << BitsInByte * 7)) >> BitsInByte * 7 == 0xFF),
+                    "Embedded bytes not as expected");
             }
 #endif
 

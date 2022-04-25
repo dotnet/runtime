@@ -32,6 +32,9 @@ using_wasm=false
 use_latest_dotnet=false
 logical_machine=
 javascript_engine="v8"
+iosmono=false
+iosllvmbuild=""
+maui_version=""
 
 while (($# > 0)); do
   lowerI="$(echo $1 | tr "[:upper:]" "[:lower:]")"
@@ -142,6 +145,18 @@ while (($# > 0)); do
       use_latest_dotnet=true
       shift 1
       ;;
+    --iosmono)
+      iosmono=true
+      shift 1
+      ;;
+    --iosllvmbuild)
+      iosllvmbuild=$2
+      shift 2
+      ;;
+    --mauiversion)
+      maui_version=$2
+      shift 2
+      ;;
     *)
       echo "Common settings:"
       echo "  --corerootdirectory <value>    Directory where Core_Root exists, if running perf testing with --corerun"
@@ -167,6 +182,9 @@ while (($# > 0)); do
       echo "  --wasmaot                      Indicate wasm aot"
       echo "  --latestdotnet                 --dotnet-versions will not be specified. --dotnet-versions defaults to LKG version in global.json "
       echo "  --alpine                       Set for runs on Alpine"
+      echo "  --iosmono                      Set for ios Mono/Maui runs"
+      echo "  --iosllvmbuild                 Set LLVM for iOS Mono/Maui runs"
+      echo "  --mauiversion                  Set the maui version for Mono/Maui runs"
       echo ""
       exit 0
       ;;
@@ -205,7 +223,9 @@ if [[ "$internal" == true ]]; then
     creator=
     extra_benchmark_dotnet_arguments=
 
-    if [[ "$architecture" == "arm64" ]]; then
+    if [[ "$logical_machine" == "perfiphone12mini" ]]; then
+        queue=OSX.1015.Amd64.Iphone.Perf
+    elif [[ "$architecture" == "arm64" ]]; then
         queue=Ubuntu.1804.Arm64.Perf
     else
         if [[ "$logical_machine" == "perfowl" ]]; then
@@ -261,6 +281,11 @@ if [[ "$monoaot" == "true" ]]; then
     extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments --category-exclusion-filter NoAOT NoWASM"
 fi
 
+if [[ "$iosmono" == "true" ]]; then
+    configurations="$configurations iOSLlvmBuild=$iosllvmbuild"
+    extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments"
+fi
+
 cleaned_branch_name="main"
 if [[ $branch == *"refs/heads/release"* ]]; then
     cleaned_branch_name=${branch/refs\/heads\//}
@@ -280,6 +305,10 @@ else
 
     docs_directory=$performance_directory/docs
     mv $docs_directory $workitem_directory
+fi
+
+if [[ -n "$maui_version" ]]; then
+    setup_arguments="$setup_arguments --maui-version $maui_version"
 fi
 
 if [[ -n "$wasm_bundle_directory" ]]; then
@@ -318,6 +347,28 @@ if [[ "$use_baseline_core_run" == true ]]; then
   mv $baseline_core_root_directory $new_baseline_core_root
 fi
 
+if [[ "$iosmono" == "true" ]]; then
+    if [[ "$iosllvmbuild" == "True" ]]; then
+        # LLVM Mono .app
+        mkdir -p $payload_directory/iosHelloWorld/llvm && cp -rv $source_directory/iosHelloWorld/llvm $payload_directory/iosHelloWorld/llvm
+    else
+        # NoLLVM Mono .app, Maui iOS IPA, Maui Maccatalyst, Maui iOS Podcast IPA
+        mkdir -p $payload_directory/iosHelloWorld/nollvm && cp -rv $source_directory/iosHelloWorld/nollvm $payload_directory/iosHelloWorld/nollvm
+        mkdir -p $payload_directory/MauiMacCatalystDefault && cp -rv $source_directory/MauiMacCatalystDefault/MauiMacCatalystDefault.app $payload_directory/MauiMacCatalystDefault
+        cp -v $source_directory/MauiiOSDefaultIPA/MauiiOSDefault.ipa $payload_directory/MauiiOSDefault.ipa
+        cp -v $source_directory/MauiiOSPodcastIPA/MauiiOSPodcast.ipa $payload_directory/MauiiOSPodcast.ipa
+        # Get the .app so we can resign in the xharness item
+        cp -v $source_directory/MauiiOSDefaultIPA/MauiiOSDefault.ipa $source_directory/MauiiOSDefaultIPA/MauiiOSDefault.zip
+        unzip -d $source_directory/MauiiOSDefaultIPA $source_directory/MauiiOSDefaultIPA/MauiiOSDefault.zip
+        mv $source_directory/MauiiOSDefaultIPA/Payload/MauiTesting.app $payload_directory/
+        # Get the .app so we can resign in the xharness item for podcast
+        cp -v $source_directory/MauiiOSPodcastIPA/MauiiOSPodcast.ipa $source_directory/MauiiOSPodcastIPA/MauiiOSPodcast.zip
+        unzip -d $source_directory/MauiiOSPodcastIPA $source_directory/MauiiOSPodcastIPA/MauiiOSPodcast.zip
+        ls -aR $source_directory/MauiiOSPodcastIPA/
+        mv $source_directory/MauiiOSPodcastIPA/Payload/Microsoft.NetConf2021.Maui.app $payload_directory/
+    fi
+fi
+
 ci=true
 
 _script_dir=$(pwd)/eng/common
@@ -345,3 +396,4 @@ Write-PipelineSetVariable -name "_BuildConfig" -value "$_BuildConfig" -is_multi_
 Write-PipelineSetVariable -name "Compare" -value "$compare" -is_multi_job_variable false
 Write-PipelineSetVariable -name "MonoDotnet" -value "$using_mono" -is_multi_job_variable false
 Write-PipelineSetVariable -name "WasmDotnet" -value "$using_wasm" -is_multi_job_variable false
+Write-PipelineSetVariable -Name 'iOSLlvmBuild' -Value "$iosllvmbuild" -is_multi_job_variable false

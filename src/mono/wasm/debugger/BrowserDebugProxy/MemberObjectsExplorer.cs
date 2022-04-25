@@ -533,7 +533,7 @@ namespace BrowserDebugProxy
 
     }
 
-    internal class GetMembersResult
+    internal sealed class GetMembersResult
     {
         // public:
         public JArray Result { get; set; }

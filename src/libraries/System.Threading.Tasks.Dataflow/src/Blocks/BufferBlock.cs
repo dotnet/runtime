@@ -43,8 +43,13 @@ namespace System.Threading.Tasks.Dataflow
         /// <summary>Initializes the <see cref="BufferBlock{T}"/> with the specified <see cref="DataflowBlockOptions"/>.</summary>
         /// <param name="dataflowBlockOptions">The options with which to configure this <see cref="BufferBlock{T}"/>.</param>
         /// <exception cref="System.ArgumentNullException">The <paramref name="dataflowBlockOptions"/> is null (Nothing in Visual Basic).</exception>
-        public BufferBlock(DataflowBlockOptions dataflowBlockOptions!!)
+        public BufferBlock(DataflowBlockOptions dataflowBlockOptions)
         {
+            if (dataflowBlockOptions is null)
+            {
+                throw new ArgumentNullException(nameof(dataflowBlockOptions));
+            }
+
             // Ensure we have options that can't be changed by the caller
             dataflowBlockOptions = dataflowBlockOptions.DefaultOrClone();
 
@@ -142,8 +147,13 @@ namespace System.Threading.Tasks.Dataflow
         public void Complete() { CompleteCore(exception: null, storeExceptionEvenIfAlreadyCompleting: false); }
 
         /// <include file='XmlDocs/CommonXmlDocComments.xml' path='CommonXmlDocComments/Blocks/Member[@name="Fault"]/*' />
-        void IDataflowBlock.Fault(Exception exception!!)
+        void IDataflowBlock.Fault(Exception exception)
         {
+            if (exception is null)
+            {
+                throw new ArgumentNullException(nameof(exception));
+            }
+
             CompleteCore(exception, storeExceptionEvenIfAlreadyCompleting: false);
         }
 

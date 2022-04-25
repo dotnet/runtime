@@ -15,7 +15,7 @@ using BrowserDebugProxy;
 
 namespace Microsoft.WebAssembly.Diagnostics
 {
-    internal class MemberReferenceResolver
+    internal sealed class MemberReferenceResolver
     {
         private SessionId sessionId;
         private int scopeId;
