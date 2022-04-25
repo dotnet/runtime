@@ -191,6 +191,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 			// TODO: consider not tracking patterns unless the target is something
 			// annotated with DAMT.
 			TrimAnalysisPatterns.Add (
+				// This will copy the values if necessary
 				new TrimAnalysisAssignmentPattern (source, target, operation),
 				isReturnValue: false
 			);
@@ -264,6 +265,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 				}
 			}
 
+			// This will copy the values if necessary
 			TrimAnalysisPatterns.Add (new TrimAnalysisMethodCallPattern (
 				calledMethod,
 				instance,

@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
@@ -654,6 +655,55 @@ namespace ILLink.Shared.TrimAnalysis
 				}
 				break;
 
+			//
+			// System.Linq.Expressions.Expression
+			//
+			// static Call (Type, String, Type[], Expression[])
+			//
+			case IntrinsicId.Expression_Call: {
+					BindingFlags bindingFlags = BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.FlattenHierarchy;
+
+					var targetValue = GetMethodParameterValue (
+						calledMethod,
+						0,
+						GetDynamicallyAccessedMemberTypesFromBindingFlagsForMethods (bindingFlags));
+
+					// This is true even if we "don't know" - so it's only false if we're sure that there are no type arguments
+					bool hasTypeArguments = (argumentValues[2].AsSingleValue () as ArrayValue)?.Size.AsConstInt () != 0;
+					foreach (var value in argumentValues[0]) {
+						if (value is SystemTypeValue systemTypeValue) {
+							foreach (var stringParam in argumentValues[1]) {
+								if (stringParam is KnownStringValue stringValue) {
+									foreach (var method in GetMethodsOnTypeHierarchy (systemTypeValue.RepresentedType, stringValue.Contents, bindingFlags)) {
+										ValidateGenericMethodInstantiation (method.RepresentedMethod, argumentValues[2], calledMethod);
+										MarkMethod (method.RepresentedMethod);
+									}
+								} else {
+									if (hasTypeArguments) {
+										// We don't know what method the `MakeGenericMethod` was called on, so we have to assume
+										// that the method may have requirements which we can't fullfil -> warn.
+										_diagnosticContext.AddDiagnostic (DiagnosticId.MakeGenericMethod, calledMethod.GetDisplayName ());
+									}
+
+									_requireDynamicallyAccessedMembersAction.Invoke (value, targetValue);
+								}
+							}
+						} else {
+							if (hasTypeArguments) {
+								// We don't know what method the `MakeGenericMethod` was called on, so we have to assume
+								// that the method may have requirements which we can't fullfil -> warn.
+								_diagnosticContext.AddDiagnostic (DiagnosticId.MakeGenericMethod, calledMethod.GetDisplayName ());
+							}
+
+							_requireDynamicallyAccessedMembersAction.Invoke (value, targetValue);
+						}
+					}
+				}
+				break;
+
+			//
+			// Nullable.GetUnderlyingType(Type)
+			//
 			case IntrinsicId.Nullable_GetUnderlyingType:
 				if (argumentValues[0].IsEmpty ()) {
 					returnValue = MultiValueLattice.Top;
@@ -662,7 +712,13 @@ namespace ILLink.Shared.TrimAnalysis
 
 				foreach (var singlevalue in argumentValues[0].AsEnumerable ()) {
 					AddReturnValue (singlevalue switch {
-						SystemTypeValue systemType => systemType,
+						SystemTypeValue systemType =>
+							systemType.RepresentedType.IsTypeOf ("System", "Nullable`1")
+								// This will happen if there's typeof(Nullable<>).MakeGenericType(unknown) - we know the return value is Nullable<>
+								// but we don't know of what. So we represent it as known type, but not as known nullable type.
+								// Has to be special cased here, since we need to return "unknown" type.
+								? GetMethodReturnValue (calledMethod, returnValueDynamicallyAccessedMemberTypes)
+								: MultiValueLattice.Top, // This returns null at runtime, so return empty value
 						NullableSystemTypeValue nullableSystemType => nullableSystemType.UnderlyingTypeValue,
 						NullableValueWithDynamicallyAccessedMembers nullableDamValue => nullableDamValue.UnderlyingTypeValue,
 						ValueWithDynamicallyAccessedMembers damValue => damValue,
@@ -671,49 +727,89 @@ namespace ILLink.Shared.TrimAnalysis
 				}
 				break;
 
+			//
+			// System.Type
+			//
+			// Type MakeGenericType (params Type[] typeArguments)
+			//
 			case IntrinsicId.Type_MakeGenericType:
 				if (instanceValue.IsEmpty () || argumentValues[0].IsEmpty ()) {
 					returnValue = MultiValueLattice.Top;
 					break;
 				}
 
-				// Contains part of the analysis done in the Linker, but is not complete
-				// instanceValue here is like argumentValues[0] in linker
 				foreach (var value in instanceValue) {
-					// Nullables without a type argument are considered SystemTypeValues
-					if (!(value is SystemTypeValue typeValue && typeValue.RepresentedType.IsTypeOf (WellKnownType.System_Nullable_T))) {
-						// We still don't want to lose track of the type if it is not Nullable<T>
-						AddReturnValue (value);
-						continue;
-					}
-					// We have a nullable
-					foreach (var argumentValue in argumentValues[0]) {
-						if ((argumentValue as ArrayValue)?.TryGetValueByIndex (0, out var underlyingMultiValue) != true) {
-							continue;
-						}
-						foreach (var underlyingValue in underlyingMultiValue) {
-							switch (underlyingValue) {
-							// Don't warn on these types - it will throw instead
-							case NullableValueWithDynamicallyAccessedMembers:
-							case NullableSystemTypeValue:
-							case SystemTypeValue maybeArrayValue when maybeArrayValue.RepresentedType.IsTypeOf (WellKnownType.System_Array):
-								AddReturnValue (MultiValueLattice.Top);
-								break;
-							case SystemTypeValue systemTypeValue:
-								AddReturnValue (new NullableSystemTypeValue (typeValue.RepresentedType, new SystemTypeValue (systemTypeValue.RepresentedType)));
-								break;
-							// Generic Parameters and method parameters with annotations
-							case ValueWithDynamicallyAccessedMembers damValue:
-								AddReturnValue (new NullableValueWithDynamicallyAccessedMembers (typeValue.RepresentedType, damValue));
-								break;
-							// Everything else assume it has no annotations
-							default:
-								AddReturnValue (GetMethodReturnValue (calledMethod, returnValueDynamicallyAccessedMemberTypes));
-								break;
+					if (value is SystemTypeValue typeValue) {
+						var genericParameterValues = GetGenericParameterValues (typeValue.RepresentedType.GetGenericParameters ());
+						if (!AnalyzeGenericInstantiationTypeArray (argumentValues[0], calledMethod, genericParameterValues)) {
+							bool hasUncheckedAnnotation = false;
+							foreach (var genericParameter in genericParameterValues) {
+								if (genericParameter.DynamicallyAccessedMemberTypes != DynamicallyAccessedMemberTypes.None ||
+									(genericParameter.GenericParameter.HasDefaultConstructorConstraint () && !typeValue.RepresentedType.IsTypeOf ("System", "Nullable`1"))) {
+									// If we failed to analyze the array, we go through the analyses again
+									// and intentionally ignore one particular annotation:
+									// Special case: Nullable<T> where T : struct
+									//  The struct constraint in C# implies new() constraints, but Nullable doesn't make a use of that part.
+									//  There are several places even in the framework where typeof(Nullable<>).MakeGenericType would warn
+									//  without any good reason to do so.
+									hasUncheckedAnnotation = true;
+									break;
+								}
+							}
+							if (hasUncheckedAnnotation) {
+								_diagnosticContext.AddDiagnostic (DiagnosticId.MakeGenericType, calledMethod.GetDisplayName ());
 							}
 						}
+
+						// Nullables without a type argument are considered SystemTypeValues
+						if (typeValue.RepresentedType.IsTypeOf ("System", "Nullable`1")) {
+							foreach (var argumentValue in argumentValues[0]) {
+								if ((argumentValue as ArrayValue)?.TryGetValueByIndex (0, out var underlyingMultiValue) == true) {
+									foreach (var underlyingValue in underlyingMultiValue) {
+										switch (underlyingValue) {
+										// Don't warn on these types - it will throw instead
+										case NullableValueWithDynamicallyAccessedMembers:
+										case NullableSystemTypeValue:
+										case SystemTypeValue maybeArrayValue when maybeArrayValue.RepresentedType.IsTypeOf ("System", "Array"):
+											AddReturnValue (MultiValueLattice.Top);
+											break;
+										case SystemTypeValue systemTypeValue:
+											AddReturnValue (new NullableSystemTypeValue (typeValue.RepresentedType, new SystemTypeValue (systemTypeValue.RepresentedType)));
+											break;
+										// Generic Parameters and method parameters with annotations
+										case ValueWithDynamicallyAccessedMembers damValue:
+											AddReturnValue (new NullableValueWithDynamicallyAccessedMembers (typeValue.RepresentedType, damValue));
+											break;
+										// Everything else assume it has no annotations
+										default:
+											// This returns just Nullable<> SystemTypeValue - so some things will work, but GetUnderlyingType won't propagate anything
+											// It's special cased to do that.
+											AddReturnValue (value);
+											break;
+										}
+									}
+								} else {
+									// This returns just Nullable<> SystemTypeValue - so some things will work, but GetUnderlyingType won't propagate anything
+									// It's special cased to do that.
+									AddReturnValue (value);
+								}
+							}
+							// We want to skip adding the `value` to the return Value because we have already added Nullable<value>
+							continue;
+						}
 						// We haven't found any generic parameters with annotations, so there's nothing to validate.
+					} else if (value == NullValue.Instance) {
+						// At runtime this would throw - so it has no effect on analysis
+						AddReturnValue (MultiValueLattice.Top);
+					} else {
+						// We have no way to "include more" to fix this if we don't know, so we have to warn
+						_diagnosticContext.AddDiagnostic (DiagnosticId.MakeGenericType, calledMethod.GetDisplayName ());
 					}
+
+					// We don't want to lose track of the type
+					// in case this is e.g. Activator.CreateInstance(typeof(Foo<>).MakeGenericType(...));
+					// Note this is not called in the Nullable case - we skipt this via the 'continue'.
+					AddReturnValue (value);
 				}
 				break;
 
@@ -822,6 +918,34 @@ namespace ILLink.Shared.TrimAnalysis
 				}
 				break;
 
+			//
+			// System.Reflection.MethodInfo
+			//
+			// MakeGenericMethod (Type[] typeArguments)
+			//
+			case IntrinsicId.MethodInfo_MakeGenericMethod: {
+					if (instanceValue.IsEmpty ()) {
+						returnValue = MultiValueLattice.Top;
+						break;
+					}
+
+					foreach (var methodValue in instanceValue) {
+						if (methodValue is SystemReflectionMethodBaseValue methodBaseValue) {
+							ValidateGenericMethodInstantiation (methodBaseValue.RepresentedMethod, argumentValues[0], calledMethod);
+						} else if (methodValue == NullValue.Instance) {
+							// Nothing to do
+						} else {
+							// We don't know what method the `MakeGenericMethod` was called on, so we have to assume
+							// that the method may have requirements which we can't fullfil -> warn.
+							_diagnosticContext.AddDiagnostic (DiagnosticId.MakeGenericMethod, calledMethod.GetDisplayName ());
+						}
+					}
+
+					// MakeGenericMethod doesn't change the identity of the MethodBase we're tracking so propagate to the return value
+					AddReturnValue (instanceValue);
+				}
+				break;
+
 			case IntrinsicId.None:
 				// Verify the argument values match the annotations on the parameter definition
 				if (requiresDataFlowAnalysis) {
@@ -891,6 +1015,82 @@ namespace ILLink.Shared.TrimAnalysis
 			// "unknown" and consumers may warn.
 			if (!foundAny)
 				yield return NullValue.Instance;
+		}
+
+		bool AnalyzeGenericInstantiationTypeArray (in MultiValue arrayParam, in MethodProxy calledMethod, ImmutableArray<GenericParameterValue> genericParameters)
+		{
+			bool hasRequirements = false;
+			foreach (var genericParameter in genericParameters) {
+				if (genericParameter.DynamicallyAccessedMemberTypes != DynamicallyAccessedMemberTypes.None) {
+					hasRequirements = true;
+					break;
+				}
+			}
+
+			// If there are no requirements, then there's no point in warning
+			if (!hasRequirements)
+				return true;
+
+			foreach (var typesValue in arrayParam) {
+				if (typesValue is not ArrayValue array) {
+					return false;
+				}
+
+				int? size = array.Size.AsConstInt ();
+				if (size == null || size != genericParameters.Length) {
+					return false;
+				}
+
+				bool allIndicesKnown = true;
+				for (int i = 0; i < size.Value; i++) {
+					if (!array.TryGetValueByIndex (i, out MultiValue value) || value.AsSingleValue () is UnknownValue) {
+						allIndicesKnown = false;
+						break;
+					}
+				}
+
+				if (!allIndicesKnown) {
+					return false;
+				}
+
+				for (int i = 0; i < size.Value; i++) {
+					if (array.TryGetValueByIndex (i, out MultiValue value)) {
+						// https://github.com/dotnet/linker/issues/2428
+						// We need to report the target as "this" - as that was the previous behavior
+						// but with the annotation from the generic parameter.
+						var targetValue = GetMethodThisParameterValue (calledMethod, genericParameters[i].DynamicallyAccessedMemberTypes);
+						_requireDynamicallyAccessedMembersAction.Invoke (value, targetValue);
+					}
+				}
+			}
+			return true;
+		}
+
+		void ValidateGenericMethodInstantiation (
+			MethodProxy genericMethod,
+			in MultiValue genericParametersArray,
+			MethodProxy reflectionMethod)
+		{
+			if (!genericMethod.HasGenericParameters ()) {
+				return;
+			}
+
+			var genericParameterValues = GetGenericParameterValues (genericMethod.GetGenericParameters ());
+			if (!AnalyzeGenericInstantiationTypeArray (genericParametersArray, reflectionMethod, genericParameterValues)) {
+				_diagnosticContext.AddDiagnostic (DiagnosticId.MakeGenericMethod, reflectionMethod.GetDisplayName ());
+			}
+		}
+
+		ImmutableArray<GenericParameterValue> GetGenericParameterValues (ImmutableArray<GenericParameterProxy> genericParameters)
+		{
+			if (genericParameters.IsEmpty)
+				return ImmutableArray<GenericParameterValue>.Empty;
+
+			var builder = ImmutableArray.CreateBuilder<GenericParameterValue> (genericParameters.Length);
+			foreach (var genericParameter in genericParameters) {
+				builder.Add (GetGenericParameterValue (genericParameter));
+			}
+			return builder.ToImmutableArray ();
 		}
 
 		internal static BindingFlags? GetBindingFlagsFromValue (in MultiValue parameter) => (BindingFlags?) parameter.AsConstInt ();

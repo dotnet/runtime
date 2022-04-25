@@ -6,6 +6,7 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 namespace Mono.Linker.Tests.Cases.Reflection
 {
 	[Reference ("System.Core.dll")]
+	[ExpectedNoWarnings]
 	public class ExpressionCallStringAndLocals
 	{
 		public static void Main ()

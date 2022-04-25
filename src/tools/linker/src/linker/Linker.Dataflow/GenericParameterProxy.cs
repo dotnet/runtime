@@ -11,6 +11,8 @@ namespace ILLink.Shared.TypeSystemProxy
 
 		public static implicit operator GenericParameterProxy (GenericParameter genericParameter) => new (genericParameter);
 
+		internal partial bool HasDefaultConstructorConstraint () => GenericParameter.HasDefaultConstructorConstraint;
+
 		public readonly GenericParameter GenericParameter;
 
 		public override string ToString () => GenericParameter.ToString ();

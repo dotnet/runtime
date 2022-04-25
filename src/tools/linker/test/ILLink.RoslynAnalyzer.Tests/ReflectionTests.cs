@@ -49,8 +49,13 @@ namespace ILLink.RoslynAnalyzer.Tests
 		[Fact]
 		public Task ExpressionCallString ()
 		{
-			// https://github.com/dotnet/linker/issues/2578
-			return RunTest (allowMissingWarnings: true);
+			return RunTest ();
+		}
+
+		[Fact]
+		public Task ExpressionCallStringAndLocals ()
+		{
+			return RunTest ();
 		}
 
 		[Fact]

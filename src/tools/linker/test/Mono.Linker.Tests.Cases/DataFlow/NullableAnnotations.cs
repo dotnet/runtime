@@ -58,7 +58,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			TestGetUnderlyingTypeOfCreatedNullableOnStructs ();
 			TestGetUnderlyingTypeOnEmptyInput ();
 			ImproperMakeGenericTypeDoesntWarn ();
+			GetUnderlyingTypeOnNonNullableKnownType.Test ();
 			MakeGenericTypeWithUnknownValue (new object[2] { 1, 2 });
+			MakeGenericTypeWithKnowAndUnknownArray ();
 		}
 
 		[Kept]
@@ -269,12 +271,42 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		}
 
 		[Kept]
-		[ExpectedWarning ("IL2075")]
+		class GetUnderlyingTypeOnNonNullableKnownType
+		{
+			public int Field;
+
+			[Kept]
+			public static void Test ()
+			{
+				// At runtime this returns null and thus should actually throw (calling GetFields on null)
+				// Linker should not produce warnings but should also not mark anything
+				Nullable.GetUnderlyingType (typeof (GetUnderlyingTypeOnNonNullableKnownType)).GetFields ();
+			}
+		}
+
+		[Kept]
+		[ExpectedWarning ("IL2075", "GetFields")]
 		static void MakeGenericTypeWithUnknownValue (object[] maybetypes)
 		{
 			Type[] types = new Type[] { maybetypes[0] as Type };  // Roundabout way to get UnknownValue - it is getting tricky to do that reliably
 			Type nullable = typeof (Nullable<>).MakeGenericType (types);
-			nullable.GetProperties ();  // Must WARN
+			nullable.GetProperties ();   // This works - we still know it's Nullable<>, so we can get its properties
+			Nullable.GetUnderlyingType (nullable).GetFields (); // This must warn - since we have no idea what the underlying type is for the unknownTypes case
+		}
+
+		[Kept]
+		// https://github.com/dotnet/linker/issues/2755
+		[ExpectedWarning ("IL2075", "GetFields", ProducedBy = ProducedBy.Trimmer)]
+		static void MakeGenericTypeWithKnowAndUnknownArray (Type[] unknownTypes = null, int p = 0)
+		{
+			Type[] types = p switch {
+				0 => new Type[] { typeof (TestType) },
+				1 => unknownTypes,
+				2 => new Type[] { typeof (TestType) }
+			};
+			Type nullable = typeof (Nullable<>).MakeGenericType (types);
+			nullable.GetProperties ();   // This works - we still know it's Nullable<>, so we can get its properties
+			Nullable.GetUnderlyingType (nullable).GetFields (); // This must warn - since we have no idea what the underlying type is for the unknownTypes case
 		}
 	}
 }

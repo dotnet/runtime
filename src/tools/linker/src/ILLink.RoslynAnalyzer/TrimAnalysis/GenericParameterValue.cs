@@ -17,11 +17,6 @@ namespace ILLink.Shared.TrimAnalysis
 	{
 		public GenericParameterValue (ITypeParameterSymbol typeParameterSymbol) => GenericParameter = new (typeParameterSymbol);
 
-		public partial bool HasDefaultConstructorConstraint () =>
-			GenericParameter.TypeParameterSymbol.HasConstructorConstraint |
-			GenericParameter.TypeParameterSymbol.HasValueTypeConstraint |
-			GenericParameter.TypeParameterSymbol.HasUnmanagedTypeConstraint;
-
 		public override DynamicallyAccessedMemberTypes DynamicallyAccessedMemberTypes => GenericParameter.TypeParameterSymbol.GetDynamicallyAccessedMemberTypes ();
 
 		public override IEnumerable<string> GetDiagnosticArgumentsForAnnotationMismatch ()

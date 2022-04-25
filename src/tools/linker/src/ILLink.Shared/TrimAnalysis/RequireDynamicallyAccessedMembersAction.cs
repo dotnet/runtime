@@ -23,7 +23,7 @@ namespace ILLink.Shared.TrimAnalysis
 			foreach (var uniqueValue in value) {
 				if (targetValue.DynamicallyAccessedMemberTypes == DynamicallyAccessedMemberTypes.PublicParameterlessConstructor
 					&& uniqueValue is GenericParameterValue genericParam
-					&& genericParam.HasDefaultConstructorConstraint ()) {
+					&& genericParam.GenericParameter.HasDefaultConstructorConstraint ()) {
 					// We allow a new() constraint on a generic parameter to satisfy DynamicallyAccessedMemberTypes.PublicParameterlessConstructor
 				} else if (uniqueValue is ValueWithDynamicallyAccessedMembers valueWithDynamicallyAccessedMembers) {
 					if (uniqueValue is NullableValueWithDynamicallyAccessedMembers nullableValue) {
