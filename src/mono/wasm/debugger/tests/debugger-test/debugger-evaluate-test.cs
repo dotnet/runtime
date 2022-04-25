@@ -530,7 +530,7 @@ namespace DebuggerTests
         public List<string> Items = new List<string> { "should not be expanded" };
     }
 
-    public static class EvaluateBrowsableProperties
+    public static class EvaluateBrowsableClass
     {
         public class TestEvaluateFieldsNone
         {
@@ -756,7 +756,7 @@ namespace DebuggerTests
         }
     }
 
-    public static class EvaluateBrowsableStaticProperties
+    public static class EvaluateBrowsableStaticClass
     {
         public class TestEvaluateFieldsNone
         {
@@ -983,7 +983,7 @@ namespace DebuggerTests
         }
     }
 
-    public static class EvaluateBrowsableCustomProperties
+    public static class EvaluateBrowsableCustomPropertiesClass
     {
         public class TestEvaluatePropertiesNone
         {

@@ -660,8 +660,6 @@ namespace Microsoft.WebAssembly.Diagnostics
             switch (objectId.Scheme)
             {
                 case "method":
-                    // FIXME:
-                    Console.WriteLine($"IN GetMethodProxy: UNFINISHED METHOD {objectId}");
                     args["details"] = await context.SdbAgent.GetMethodProxy(objectId.ValueAsJson, token);
                     break;
                 case "object":
@@ -680,7 +678,6 @@ namespace Microsoft.WebAssembly.Diagnostics
                     args["details"] = await context.SdbAgent.GetArrayValuesProxy(objectId.Value, token);
                     break;
                 case "cfo_res":
-                    // FIXME: RunOnCFOValueTypeResult
                     Result cfo_res = await SendMonoCommand(id, MonoCommands.CallFunctionOn(RuntimeId, args), token);
                     cfo_res = Result.OkFromObject(new { result = cfo_res.Value?["result"]?["value"]});
                     SendResponse(id, cfo_res, token);
@@ -764,10 +761,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                                 new GetMembersResult((JArray)resScope.Value?["result"], sortByAccessLevel: false))
                             : ValueOrError<GetMembersResult>.WithError(resScope);
                     case "valuetype":
-                        var valType = context.SdbAgent.GetValueTypeClass(objectId.Value);
-                        if (valType == null)
-                            return ValueOrError<GetMembersResult>.WithError($"Internal Error: No valuetype found for {objectId}.");
-                        var resValue = await valType.GetMemberValues(context.SdbAgent, getObjectOptions, sortByAccessLevel, token);
+                        var resValue = await MemberObjectsExplorer.GetValueTypeMemberValues(
+                            context.SdbAgent, objectId.Value, getObjectOptions, token, sortByAccessLevel, includeStatic: false);
                         return resValue switch
                         {
                             null => ValueOrError<GetMembersResult>.WithError($"Could not get properties for {objectId}"),
@@ -780,7 +775,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                         var resMethod = await context.SdbAgent.InvokeMethod(objectId, token);
                         return ValueOrError<GetMembersResult>.WithValue(GetMembersResult.FromValues(new JArray(resMethod)));
                     case "object":
-                        var resObj = await MemberObjectsExplorer.GetObjectMemberValues(context.SdbAgent, objectId.Value, getObjectOptions, token, sortByAccessLevel, includeStatic: true);
+                        var resObj = await MemberObjectsExplorer.GetObjectMemberValues(
+                            context.SdbAgent, objectId.Value, getObjectOptions, token, sortByAccessLevel, includeStatic: true);
                         return ValueOrError<GetMembersResult>.WithValue(resObj);
                     case "pointer":
                         var resPointer = new JArray { await context.SdbAgent.GetPointerContent(objectId.Value, token) };
@@ -789,7 +785,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                         Result res = await SendMonoCommand(id, MonoCommands.GetDetails(RuntimeId, objectId.Value, args), token);
                         string value_json_str = res.Value["result"]?["value"]?["__value_as_json_string__"]?.Value<string>();
                         if (res.IsOk && value_json_str == null)
-                            return ValueOrError<GetMembersResult>.WithError($"Internal error: Could not find expected __value_as_json_string__ field in the result: {res}");
+                            return ValueOrError<GetMembersResult>.WithError(
+                                $"Internal error: Could not find expected __value_as_json_string__ field in the result: {res}");
 
                         return value_json_str != null
                                     ? ValueOrError<GetMembersResult>.WithValue(GetMembersResult.FromValues(JArray.Parse(value_json_str)))

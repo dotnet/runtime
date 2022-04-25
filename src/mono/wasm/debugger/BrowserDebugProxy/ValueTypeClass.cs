@@ -16,14 +16,14 @@ namespace BrowserDebugProxy
 {
     internal class ValueTypeClass
     {
-        private readonly JArray fields;
         private readonly bool autoExpand;
         private JArray proxy;
         private GetMembersResult _combinedResult;
-        // private GetMembersResult _combinedStaticResult;
         private bool propertiesExpanded;
+        private bool fieldsExpanded;
+        private string className;
+        private JArray fields;
 
-        public string ClassName { get; init; }
         public DotnetObjectId Id { get; init; }
         public byte[] Buffer { get; init; }
         public int TypeId { get; init; }
@@ -36,7 +36,7 @@ namespace BrowserDebugProxy
 
             Buffer = buffer;
             this.fields = fields;
-            ClassName = className;
+            this.className = className;
             TypeId = typeId;
             autoExpand = ShouldAutoExpand(className);
             Id = objectId;
@@ -71,11 +71,6 @@ namespace BrowserDebugProxy
             {
                 var fieldValue = await sdbAgent.CreateJObjectForVariableValue(cmdReader, field.Name, token, true, field.TypeId, false);
 
-                //     state == DebuggerBrowsableState.Never)
-                // {
-                //     continue;
-                // }
-
                 fieldValue["__section"] = field.Attributes switch
                 {
                     FieldAttributes.Private => "private",
@@ -85,13 +80,13 @@ namespace BrowserDebugProxy
 
                 if (field.IsBackingField)
                     fieldValue["__isBackingField"] = true;
+                else
+                {
+                    typeFieldsBrowsableInfo.TryGetValue(field.Name, out DebuggerBrowsableState? state);
+                    fieldValue["__state"] = state?.ToString();
+                }
 
-                // should be only when not backing
-                string typeName = await sdbAgent.GetTypeName(field.TypeId, token);
-                typeFieldsBrowsableInfo.TryGetValue(field.Name, out DebuggerBrowsableState? state);
-
-                fieldValue["__state"] = state?.ToString();
-                fields.Merge(await MemberObjectsExplorer.GetExpandedMemberValues(sdbAgent, typeName, field.Name, fieldValue, state, token));
+                fields.Add(fieldValue);
             }
 
             long endPos = cmdReader.BaseStream.Position;
@@ -105,13 +100,13 @@ namespace BrowserDebugProxy
 
         public async Task<JObject> ToJObject(MonoSDBHelper sdbAgent, bool forDebuggerDisplayAttribute, CancellationToken token)
         {
-            string description = ClassName;
-            if (ShouldAutoInvokeToString(ClassName) || IsEnum)
+            string description = className;
+            if (ShouldAutoInvokeToString(className) || IsEnum)
             {
                 int methodId = await sdbAgent.GetMethodIdByName(TypeId, "ToString", token);
-                var retMethod = await sdbAgent.InvokeMethod(Buffer, methodId, token);
+                var retMethod = await sdbAgent.InvokeMethod(Buffer, methodId, token, "methodRet");
                 description = retMethod["value"]?["value"].Value<string>();
-                if (ClassName.Equals("System.Guid"))
+                if (className.Equals("System.Guid"))
                     description = description.ToUpper(); //to keep the old behavior
             }
             else if (!forDebuggerDisplayAttribute)
@@ -121,7 +116,7 @@ namespace BrowserDebugProxy
                     description = displayString;
             }
 
-            var obj = MonoSDBHelper.CreateJObject<string>(null, "object", description, false, ClassName, Id.ToString(), null, null, true, true, IsEnum);
+            var obj = MonoSDBHelper.CreateJObject<string>(null, "object", description, false, className, Id.ToString(), null, null, true, true, IsEnum);
             return obj;
         }
 
@@ -134,6 +129,11 @@ namespace BrowserDebugProxy
             if (retDebuggerCmdReader == null)
                 return null;
 
+            if (!fieldsExpanded)
+            {
+                await ExpandedFieldValues(sdbHelper, includeStatic: false, token);
+                fieldsExpanded = true;
+            }
             proxy = new JArray(fields);
 
             var nProperties = retDebuggerCmdReader.ReadInt32();
@@ -170,13 +170,13 @@ namespace BrowserDebugProxy
             return proxy;
         }
 
-        // FIXME: this is flattening
-        public async Task<GetMembersResult> GetMemberValues(MonoSDBHelper sdbHelper, GetObjectCommandOptions getObjectOptions, bool sortByAccessLevel, CancellationToken token)
+        public async Task<GetMembersResult> GetMemberValues(
+            MonoSDBHelper sdbHelper, GetObjectCommandOptions getObjectOptions, bool sortByAccessLevel, bool includeStatic, CancellationToken token)
         {
             // 1
             if (!propertiesExpanded)
             {
-                await ExpandPropertyValues(sdbHelper, sortByAccessLevel, token);
+                await ExpandPropertyValues(sdbHelper, sortByAccessLevel, includeStatic, token);
                 propertiesExpanded = true;
             }
 
@@ -223,9 +223,27 @@ namespace BrowserDebugProxy
             }
         }
 
-        public async Task ExpandPropertyValues(MonoSDBHelper sdbHelper, bool splitMembersByAccessLevel, CancellationToken token)
+        public async Task ExpandedFieldValues(MonoSDBHelper sdbHelper, bool includeStatic, CancellationToken token)
         {
+            JArray visibleFields = new();
+            foreach (JObject field in fields)
+            {
+                if (!Enum.TryParse(field["__state"]?.Value<string>(), out DebuggerBrowsableState state))
+                {
+                    visibleFields.Add(field);
+                    continue;
+                }
+                var fieldValue = field["value"] ?? field["get"];
+                string typeName = fieldValue?["className"]?.Value<string>();
+                JArray fieldMembers = await MemberObjectsExplorer.GetExpandedMemberValues(
+                    sdbHelper, typeName, field["name"]?.Value<string>(), field, state, includeStatic, token);
+                visibleFields.AddRange(fieldMembers);
+            }
+            fields = visibleFields;
+        }
 
+        public async Task ExpandPropertyValues(MonoSDBHelper sdbHelper, bool splitMembersByAccessLevel, bool includeStatic, CancellationToken token)
+        {
             using var commandParamsWriter = new MonoBinaryWriter();
             commandParamsWriter.Write(TypeId);
             using MonoBinaryReader getParentsReader = await sdbHelper.SendDebuggerAgentCommand(CmdType.GetParents, commandParamsWriter, token);
@@ -239,6 +257,11 @@ namespace BrowserDebugProxy
                 typesToGetProperties.Add(getParentsReader.ReadInt32());
 
             var allMembers = new Dictionary<string, JObject>();
+            if (!fieldsExpanded)
+            {
+                await ExpandedFieldValues(sdbHelper, includeStatic, token);
+                fieldsExpanded = true;
+            }
             foreach (var f in fields)
                 allMembers[f["name"].Value<string>()] = f as JObject;
 
@@ -248,14 +271,15 @@ namespace BrowserDebugProxy
                 var res = await MemberObjectsExplorer.GetNonAutomaticPropertyValues(
                     sdbHelper,
                     typesToGetProperties[i],
-                    ClassName,
+                    className,
                     Buffer,
                     autoExpand,
                     Id,
                     isValueType: true,
                     isOwn: i == 0,
                     token,
-                    allMembers);
+                    allMembers,
+                    includeStatic);
                 foreach (var kvp in res)
                     allMembers[kvp.Key] = kvp.Value;
             }

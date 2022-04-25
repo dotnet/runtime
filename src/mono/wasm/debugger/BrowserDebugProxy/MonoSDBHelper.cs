@@ -1840,7 +1840,6 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         public async Task<JObject> CreateJObjectForValueType(MonoBinaryReader retDebuggerCmdReader, string name, long initialPos, bool forDebuggerDisplayAttribute, CancellationToken token)
         {
-            // Console.WriteLine ($"** CreateJObjectFromValueType ENTER, name: {name}");
             // FIXME: debugger proxy
             //JObject fieldValueType = null;
             var isEnum = retDebuggerCmdReader.ReadByte() == 1;
@@ -1849,28 +1848,19 @@ namespace Microsoft.WebAssembly.Diagnostics
             var className = await GetTypeName(typeId, token);
             var numValues = retDebuggerCmdReader.ReadInt32();
 
-            // Console.WriteLine ($"-- CreateJObjectFromValueType: name: {name}, isBoxed: {isBoxed}, numValues: {numValues}, typeId: {typeId}, className: {className}");
-            // Console.WriteLine ($"-- CreateJObjectFromValueType: name: {name}, isBoxed: {isBoxed}, numValues: {numValues}, typeId: {typeId}, className: {className}");
             if (className.IndexOf("System.Nullable<", StringComparison.Ordinal) == 0) //should we call something on debugger-agent to check???
             {
                 retDebuggerCmdReader.ReadByte(); //ignoring the boolean type
                 var isNull = retDebuggerCmdReader.ReadInt32();
 
-                // Read the value, even it isNull==true, to correctly advance the reader
+                // Read the value, even if isNull==true, to correctly advance the reader
                 var value = await CreateJObjectForVariableValue(retDebuggerCmdReader, name, token);
                 if (isNull != 0)
-                {
-                    // //Console.WriteLine ($"nullable, not null.. ");
                     return value;
-                }
                 else
-                {
-                    // //Console.WriteLine ($"nullable is null, and the value we got: {value}");
                     return CreateJObject<string>(null, "object", className, false, className, null, null, "null", true);
-                }
             }
-
-            if (isBoxed)// && numValues == 1)
+            if (isBoxed && numValues == 1)
             {
                 if (IsPrimitiveType(className))
                 {
@@ -2278,13 +2268,11 @@ namespace Microsoft.WebAssembly.Diagnostics
         // FIXME: support valuetypes
         public async Task<GetMembersResult> GetValuesFromDebuggerProxyAttribute(int objectId, int typeId, CancellationToken token)
         {
-            //Console.WriteLine($"GetValuesFromDebuggerProxyAttribute: ENTER");
             try
             {
                 int methodId = await FindDebuggerProxyConstructorIdFor(typeId, token);
                 if (methodId == -1)
                 {
-                    //Console.WriteLine($"GetValuesFromDebuggerProxyAttribute: could not find proxy constructor id for objectId {objectId}");
                     logger.LogInformation($"GetValuesFromDebuggerProxyAttribute: could not find proxy constructor id for objectId {objectId}");
                     return null;
                 }
@@ -2295,8 +2283,12 @@ namespace Microsoft.WebAssembly.Diagnostics
                 // FIXME: move method invocation to valueTypeclass?
                 if (valueTypes.TryGetValue(objectId, out var valueType))
                 {
-                    ctorArgsWriter.Write((int)1); // num args
-                    ctorArgsWriter.Write(valueType.Buffer);
+                    //FIXME: Issue #68390
+                    //ctorArgsWriter.Write((byte)0); //not used but needed
+                    //ctorArgsWriter.Write(0); //not used but needed
+                    //ctorArgsWriter.Write((int)1); // num args
+                    //ctorArgsWriter.Write(valueType.Buffer);
+                    return null;
                 }
                 else
                 {
@@ -2308,7 +2300,6 @@ namespace Microsoft.WebAssembly.Diagnostics
                 }
 
                 var retMethod = await InvokeMethod(ctorArgsWriter.GetParameterBuffer(), methodId, token);
-                //Console.WriteLine($"* GetValuesFromDebuggerProxyAttribute got from InvokeMethod: {retMethod}");
                 logger.LogInformation($"* GetValuesFromDebuggerProxyAttribute got from InvokeMethod: {retMethod}");
                 if (!DotnetObjectId.TryParse(retMethod?["value"]?["objectId"]?.Value<string>(), out DotnetObjectId dotnetObjectId))
                     throw new Exception($"Invoking .ctor ({methodId}) for DebuggerTypeProxy on type {typeId} returned {retMethod}");
@@ -2317,12 +2308,10 @@ namespace Microsoft.WebAssembly.Diagnostics
                                                                             GetObjectCommandOptions.WithProperties | GetObjectCommandOptions.ForDebuggerProxyAttribute,
                                                                             token);
 
-                //Console.WriteLine($"* GetValuesFromDebuggerProxyAttribute returning for obj: {objectId} {members}");
                 return members;
             }
             catch (Exception e)
             {
-                Console.WriteLine($"Could not evaluate DebuggerTypeProxyAttribute of type {await GetTypeName(typeId, token)} - {e}");
                 logger.LogInformation($"Could not evaluate DebuggerTypeProxyAttribute of type {await GetTypeName(typeId, token)} - {e}");
             }
 
@@ -2339,7 +2328,6 @@ namespace Microsoft.WebAssembly.Diagnostics
 
                 var methodId = -1;
                 var parmCount = getCAttrsRetReader.ReadInt32();
-                // why are we breaking after the first loop? Why this logic was changed?
                 for (int j = 0; j < parmCount; j++)
                 {
                     var monoTypeId = getCAttrsRetReader.ReadByte();
@@ -2351,7 +2339,6 @@ namespace Microsoft.WebAssembly.Diagnostics
                     using var commandParamsWriter = new MonoBinaryWriter();
                     commandParamsWriter.Write(cAttrTypeId);
                     var className = await GetTypeNameOriginal(cAttrTypeId, token);
-                    // //Console.WriteLine ($"FindDebuggerProxyConstructorIdFor: className: {className}");
                     if (className.IndexOf('[') > 0)
                     {
                         className = className.Remove(className.IndexOf('['));
@@ -2376,15 +2363,9 @@ namespace Microsoft.WebAssembly.Diagnostics
                         var genericTypeId = await GetTypeByName(typeToSearch, token);
                         if (genericTypeId < 0)
                             break;
-                        // //Console.WriteLine ($"FindDebuggerProxyConstructorIdFor: genericTypeid: {genericTypeId}");
-                        methodId = await GetMethodIdByName(genericTypeId, ".ctor", token);
+                        cAttrTypeId = genericTypeId;
                     }
-                    else
-                    {
-                        // //Console.WriteLine ($"FindDebuggerProxyConstructorIdFor: genericTypeid: {cAttrTypeId}");
-                        methodId = await GetMethodIdByName(cAttrTypeId, ".ctor", token);
-                    }
-
+                    methodId = await GetMethodIdByName(cAttrTypeId, ".ctor", token);
                     break;
                 }
 
