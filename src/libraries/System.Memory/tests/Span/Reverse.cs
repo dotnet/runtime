@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using Xunit;
 using static System.TestHelpers;
 
@@ -43,14 +45,12 @@ namespace System.SpanTests
         {
             for (int length = 0; length < byte.MaxValue; length++)
             {
-                var actual = new byte[length];
+                byte[] actual = new byte[length];
+                byte[] expected = new byte[length];
                 for (int i = 0; i < length; i++)
                 {
-                    actual[i] = (byte)i;
+                    actual[i] = expected[length - 1 - i] = (byte)i;
                 }
-                byte[] expected = new byte[length];
-                Array.Copy(actual, expected, length);
-                Array.Reverse(expected);
 
                 var span = new Span<byte>(actual);
                 span.Reverse();
@@ -82,7 +82,7 @@ namespace System.SpanTests
             }
             byte[] expectedFull = new byte[length];
             Array.Copy(actualFull, expectedFull, length);
-            Array.Reverse(expectedFull, offset, length - offset - 1);
+            ArrayReverse(expectedFull, offset, length - offset - 1);
 
             var expectedSpan = new Span<byte>(expectedFull, offset, length - offset - 1);
             var actualSpan = new Span<byte>(actualFull, offset, length - offset - 1);
@@ -107,7 +107,7 @@ namespace System.SpanTests
             }
             IntPtr[] expectedFull = new IntPtr[length];
             Array.Copy(actualFull, expectedFull, length);
-            Array.Reverse(expectedFull, offset, length - offset);
+            ArrayReverse(expectedFull, offset, length - offset);
 
             var expectedSpan = new Span<IntPtr>(expectedFull, offset, length - offset);
             var actualSpan = new Span<IntPtr>(actualFull, offset, length - offset);
@@ -125,13 +125,11 @@ namespace System.SpanTests
         {
             const int length = 2048;
             int[] actual = new int[length];
+            int[] expected = new int[length];
             for (int i = 0; i < length; i++)
             {
-                actual[i] = i;
+                actual[i] = expected[length - 1 - i] = i;
             }
-            int[] expected = new int[length];
-            Array.Copy(actual, expected, length);
-            Array.Reverse(expected);
 
             var span = new Span<int>(actual);
             span.Reverse();
@@ -143,13 +141,11 @@ namespace System.SpanTests
         {
             const int length = 15;
             long[] actual = new long[length];
+            long[] expected = new long[length];
             for (int i = 0; i < length; i++)
             {
-                actual[i] = i;
+                actual[i] = expected[length -i - 1] = i;
             }
-            long[] expected = new long[length];
-            Array.Copy(actual, expected, length);
-            Array.Reverse(expected);
 
             var span = new Span<long>(actual);
             span.Reverse();
@@ -161,13 +157,11 @@ namespace System.SpanTests
         {
             const int length = 2048;
             string[] actual = new string[length];
+            string[] expected = new string[length];
             for (int i = 0; i < length; i++)
             {
-                actual[i] = i.ToString();
+                actual[i] = expected[length - 1 - i] = i.ToString();
             }
-            string[] expected = new string[length];
-            Array.Copy(actual, expected, length);
-            Array.Reverse(expected);
 
             var span = new Span<string>(actual);
             span.Reverse();
@@ -212,6 +206,27 @@ namespace System.SpanTests
             var span = new Span<TestValueTypeWithReference>(actual);
             span.Reverse();
             Assert.Equal<TestValueTypeWithReference>(expected, actual);
+        }
+
+        // this copy of the old Array.Reverse implementation allows us to test new,
+        // vectorized logic used by both Array.Reverse and Span.Reverse
+        static void ArrayReverse<T>(T[] array, int index, int length)
+        {
+            if (length <= 1)
+            {
+                return;
+            }
+
+            ref T first = ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(array), index);
+            ref T last = ref Unsafe.Add(ref Unsafe.Add(ref first, length), -1);
+            do
+            {
+                T temp = first;
+                first = last;
+                last = temp;
+                first = ref Unsafe.Add(ref first, 1);
+                last = ref Unsafe.Add(ref last, -1);
+            } while (Unsafe.IsAddressLessThan(ref first, ref last));
         }
     }
 }
