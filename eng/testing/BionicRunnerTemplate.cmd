@@ -14,8 +14,8 @@ IF [%HELIX_WORKITEM_UPLOAD_ROOT%] == [] (
 
 FOR /F %%i IN ("%ASSEMBLY_NAME%") DO @SET TEST_SCRIPT=%%~ni.sh
 
-IF /I [%1] NEQ [-runtime-path] (
-    ECHO You must specify the runtime path with -runtime-path C:\path\to\runtime
+IF /I [%1] NEQ [--runtime-path] (
+    ECHO You must specify the runtime path with --runtime-path C:\path\to\runtime
     EXIT /b 1
 )
 

@@ -6,7 +6,7 @@
   -->
 
   <PropertyGroup>
-    <WindowsShell Condition="'$(TargetOS)' == 'windows' or '$(BrowserHost)' == 'windows'">true</WindowsShell>
+    <WindowsShell Condition="'$(TargetOS)' == 'windows' or '$(BrowserHost)' == 'windows' or ($(TargetRuntimeIdentifier.ToLowerInvariant().StartsWith('linux-bionic')) and '$(OS)' == 'Windows_NT')">true</WindowsShell>
 
     <!-- Set Helix build to build number if available -->
     <HelixBuild Condition="'$(HelixBuild)' == ''">$(BUILD_BUILDNUMBER)</HelixBuild>
@@ -185,7 +185,7 @@
         so if we don't use "call", then we cause the parent script to exit, and anything after will not be executed.
       -->
       <HelixCommand Condition="'$(WindowsShell)' == 'true'">$(HelixCommand)call RunTests.cmd</HelixCommand>
-      <HelixCommand Condition="'$(WindowsShell)' == 'true' and '$(IncludeHelixCorrelationPayload)' == 'true'">$(HelixCommand) --runtime-path %HELIX_CORRELATION_PAYLOAD%</HelixCommand>
+      <HelixCommand Condition="'$(WindowsShell)' == 'true' and ($(TargetRuntimeIdentifier.ToLowerInvariant().StartsWith('linux-bionic')) or '$(IncludeHelixCorrelationPayload)' == 'true')">$(HelixCommand) --runtime-path %HELIX_CORRELATION_PAYLOAD%</HelixCommand>
 
       <HelixCommand Condition="'$(WindowsShell)' != 'true'">$(HelixCommand)./RunTests.sh</HelixCommand>
       <HelixCommand Condition="'$(WindowsShell)' != 'true' and ($(TargetRuntimeIdentifier.ToLowerInvariant().StartsWith('linux-bionic')) or '$(IncludeHelixCorrelationPayload)' == 'true')">$(HelixCommand) --runtime-path "$HELIX_CORRELATION_PAYLOAD"</HelixCommand>
