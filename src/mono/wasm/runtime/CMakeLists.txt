@@ -8,7 +8,7 @@ option(DISABLE_WASM_USER_THREADS "defined if the build does not allow user threa
 set(CMAKE_EXECUTABLE_SUFFIX ".js")
 add_executable(dotnet corebindings.c driver.c pinvoke.c)
 
-target_include_directories(dotnet PUBLIC ${MONO_INCLUDES} ${MONO_OBJ_INCLUDES})
+target_include_directories(dotnet PUBLIC ${MONO_INCLUDES} ${MONO_OBJ_INCLUDES} ${CMAKE_CURRENT_BINARY_DIR})
 target_compile_options(dotnet PUBLIC @${NATIVE_BIN_DIR}/src/emcc-default.rsp @${NATIVE_BIN_DIR}/src/emcc-compile.rsp -DCORE_BINDINGS -DGEN_PINVOKE=1)
 
 set_target_properties(dotnet PROPERTIES COMPILE_FLAGS ${CONFIGURATION_EMCC_FLAGS})
