@@ -25,7 +25,7 @@ async function main() {
                 disableDotnet6Compatibility: true,
                 configSrc: "./mono-config.json",
                 locateFile: (path, prefix) => {
-                    return window.location.protocol + "//" + location.host + "/" + prefix + path;
+                    return window.location.origin + "/" + prefix + path;
                 },
                 preInit: () => { console.log('user code Module.preInit') },
                 preRun: () => { console.log('user code Module.preRun') },
