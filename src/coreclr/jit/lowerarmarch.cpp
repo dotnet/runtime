@@ -166,9 +166,6 @@ bool Lowering::IsContainableBinaryOp(GenTree* parentNode, GenTree* childNode) co
     if (parentNode->gtFlags & GTF_SET_FLAGS)
         return false;
 
-    if (parentNode->gtOverflow())
-        return false;
-
     GenTree* op1 = parentNode->gtGetOp1();
     GenTree* op2 = parentNode->gtGetOp2();
 
@@ -184,12 +181,15 @@ bool Lowering::IsContainableBinaryOp(GenTree* parentNode, GenTree* childNode) co
     if (op2->gtFlags & GTF_SET_FLAGS)
         return false;
 
-    if (op2->gtOverflow())
-        return false;
-
     // Find "a + b * c" or "a - b * c".
     if (parentNode->OperIs(GT_ADD, GT_SUB) && op2->OperIs(GT_MUL))
     {
+        if (parentNode->gtOverflow())
+            return false;
+
+        if (op2->gtOverflow())
+            return false;
+
         return !op2->gtGetOp1()->isContained() && !op2->gtGetOp2()->isContained();
     }
 
