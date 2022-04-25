@@ -89,7 +89,7 @@ namespace System.IO
         protected string GetRandomDirPath()  => Path.Combine(TestDirectoryActualCasing, GetRandomDirName());
 
         private string _testDirectoryActualCasing;
-        private string TestDirectoryActualCasing => _testDirectoryActualCasing ?? (_testDirectoryActualCasing = GetTestDirectoryActualCasing());
+        private string TestDirectoryActualCasing => _testDirectoryActualCasing ??= GetTestDirectoryActualCasing();
 
         /// <summary>Gets a test file full path that is associated with the call site.</summary>
         /// <param name="index">An optional index value to use as a suffix on the file name.  Typically a loop index.</param>
