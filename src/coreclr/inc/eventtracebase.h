@@ -939,7 +939,7 @@ namespace ETW
         static VOID MethodRestored(MethodDesc * pMethodDesc);
         static VOID MethodTableRestored(MethodTable * pMethodTable);
         static VOID DynamicMethodDestroyed(MethodDesc *pMethodDesc);
-        static VOID LogMethodInstrumentationData(MethodDesc* method, uint32_t cbData, BYTE *data, TypeHandle* pTypeHandles, uint32_t typeHandles);
+        static VOID LogMethodInstrumentationData(MethodDesc* method, uint32_t cbData, BYTE *data, TypeHandle* pTypeHandles, uint32_t numTypeHandles, MethodDesc** pMethods, uint32_t numMethods);
 #else // FEATURE_EVENT_TRACE
     public:
         static VOID GetR2RGetEntryPointStart(MethodDesc *pMethodDesc) {};
@@ -951,7 +951,7 @@ namespace ETW
         static VOID MethodRestored(MethodDesc * pMethodDesc) {};
         static VOID MethodTableRestored(MethodTable * pMethodTable) {};
         static VOID DynamicMethodDestroyed(MethodDesc *pMethodDesc) {};
-        static VOID LogMethodInstrumentationData(MethodDesc* method, uint32_t cbData, BYTE *data, TypeHandle* pTypeHandles, uint32_t typeHandles) {};
+        static VOID LogMethodInstrumentationData(MethodDesc* method, uint32_t cbData, BYTE *data, TypeHandle* pTypeHandles, uint32_t numTypeHandles, MethodDesc** pMethods, uint32_t numMethods) {};
 #endif // FEATURE_EVENT_TRACE
     };
 

@@ -518,6 +518,7 @@ class SchemaAndDataWriter
     ICorJitInfo::PgoInstrumentationSchema prevSchema = {};
     int64_t lastIntDataWritten = 0;
     int64_t lastTypeDataWritten = 0;
+    int64_t lastMethodDataWritten = 0;
 
 public:
     SchemaAndDataWriter(const ByteWriter& byteWriter, uint8_t* pInstrumentationData) :
@@ -534,8 +535,8 @@ public:
         return true;
     }
 
-    template<class TypeHandleProcessor>
-    bool AppendDataFromLastSchema(TypeHandleProcessor& thProcessor)
+    template<class TypeHandleProcessor, class MethodHandleProcessor>
+    bool AppendDataFromLastSchema(TypeHandleProcessor& thProcessor, MethodHandleProcessor& mhProcessor)
     {
         uint8_t *pData = (pInstrumentationData + prevSchema.Offset);
         for (int32_t iDataElem = 0; iDataElem < prevSchema.Count; iDataElem++)
@@ -574,6 +575,20 @@ public:
 
                     bool returnValue = WriteCompressedIntToBytes(logicalDataToWrite - lastTypeDataWritten, byteWriter);
                     lastTypeDataWritten = logicalDataToWrite;
+                    if (!returnValue)
+                        return false;
+                    pData += sizeof(intptr_t);
+                    break;
+                }
+                case ICorJitInfo::PgoInstrumentationKind::MethodHandle:
+                {
+                    logicalDataToWrite = *(volatile intptr_t*)pData;
+
+                    // As there could be tearing otherwise, inform the caller of exactly what value was written.
+                    mhProcessor(logicalDataToWrite);
+
+                    bool returnValue = WriteCompressedIntToBytes(logicalDataToWrite - lastMethodDataWritten, byteWriter);
+                    lastMethodDataWritten = logicalDataToWrite;
                     if (!returnValue)
                         return false;
                     pData += sizeof(intptr_t);

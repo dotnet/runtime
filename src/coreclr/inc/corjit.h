@@ -423,9 +423,9 @@ public:
 #define UNKNOWN_HANDLE_MIN 1
 #define UNKNOWN_HANDLE_MAX 33
 
-    static inline bool IsUnknownHandle(intptr_t typeHandle)
+    static inline bool IsUnknownHandle(intptr_t handle)
     {
-        return ((typeHandle >= UNKNOWN_HANDLE_MIN) && (typeHandle <= UNKNOWN_HANDLE_MAX));
+        return ((handle >= UNKNOWN_HANDLE_MIN) && (handle <= UNKNOWN_HANDLE_MAX));
     }
 
     // get profile information to be used for optimizing a current method.  The format
