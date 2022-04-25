@@ -18,14 +18,14 @@ internal unsafe struct MsQuicBuffers : IDisposable
     // Handles to pinned memory blocks from the user.
     private MemoryHandle[] _handles;
     // Native memory block which holds the pinned memory pointers from _handles and can be passed to MsQuic as QUIC_BUFFER*.
-    private IntPtr _buffers;
+    private void* _buffers;
     // Number of QUIC_BUFFER instance currently allocated in _buffers, so that we can reuse the memory instead of reallocating.
     private int _count;
 
     public MsQuicBuffers()
     {
         _handles = Array.Empty<MemoryHandle>();
-        _buffers = IntPtr.Zero;
+        _buffers = null;
         _count = 0;
     }
 
@@ -49,8 +49,8 @@ internal unsafe struct MsQuicBuffers : IDisposable
         }
         if (_count < inputs.Count)
         {
-            Marshal.FreeHGlobal(_buffers);
-            _buffers = Marshal.AllocHGlobal(sizeof(QUIC_BUFFER) * inputs.Count);
+            NativeMemory.Free(_buffers);
+            _buffers = NativeMemory.Alloc((nuint)sizeof(QUIC_BUFFER), (nuint)inputs.Count);
         }
 
         _count = inputs.Count;
@@ -86,6 +86,6 @@ internal unsafe struct MsQuicBuffers : IDisposable
     {
         Reset();
         ArrayPool<MemoryHandle>.Shared.Return(_handles);
-        Marshal.FreeHGlobal(_buffers);
+        NativeMemory.Free(_buffers);
     }
 }
