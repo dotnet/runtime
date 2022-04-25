@@ -678,7 +678,7 @@ private:
         // mark the entire struct as address exposed results in CQ regressions.
         GenTreeCall* callTree  = user->IsCall() ? user->AsCall() : nullptr;
         bool         isThisArg = (callTree != nullptr) && callTree->gtArgs.HasThisPointer() &&
-                         (val.Node() == callTree->gtArgs.GetThisArg()->GetEarlyNode());
+                         (val.Node() == callTree->gtArgs.GetThisArg()->GetNode());
         bool exposeParentLcl = varDsc->lvIsStructField && !isThisArg;
 
         bool hasHiddenStructArg = false;
@@ -687,7 +687,7 @@ private:
             if (varTypeIsStruct(varDsc) && varDsc->lvIsTemp)
             {
                 if ((callTree != nullptr) && callTree->gtArgs.HasRetBuffer() &&
-                    (val.Node() == callTree->gtArgs.GetRetBufferArg()->GetEarlyNode()))
+                    (val.Node() == callTree->gtArgs.GetRetBufferArg()->GetNode()))
                 {
                     assert(!exposeParentLcl);
 
