@@ -44,7 +44,7 @@ namespace System.Threading.RateLimiting
         /// <param name="options">Options to specify the behavior of the <see cref="FixedWindowRateLimiter"/>.</param>
         public FixedWindowRateLimiter(FixedWindowRateLimiterOptions options)
         {
-            _options = options;
+            _options = options ?? throw new ArgumentNullException(nameof(options));
             _requestCount = options.PermitLimit;
 
             _idleSince = _lastReplenishmentTick = Stopwatch.GetTimestamp();
@@ -72,7 +72,7 @@ namespace System.Threading.RateLimiting
             if (requestCount == 0 && !_disposed)
             {
                 // Check if the requests are permitted in a window
-                // Requests will be allowed if the total served request is the max allowed requests (permit limit).
+                // Requests will be allowed if the total served request is less than the max allowed requests (permit limit).
                 if (_requestCount > 0)
                 {
                     return SuccessfulLease;
@@ -219,7 +219,7 @@ namespace System.Threading.RateLimiting
             FixedWindowRateLimiter limiter = (state as FixedWindowRateLimiter)!;
             Debug.Assert(limiter is not null);
 
-            // Use Environment.TickCount instead of DateTime.UtcNow to avoid issues on systems where the clock can change
+            // Use Stopwatch instead of DateTime.UtcNow to avoid issues on systems where the clock can change
             long nowTicks = Stopwatch.GetTimestamp();
             limiter!.ReplenishInternal(nowTicks);
         }
@@ -261,7 +261,7 @@ namespace System.Threading.RateLimiting
                 Deque<RequestRegistration> queue = _queue;
 
                 _requestCount += resourcesToAdd;
-                Debug.Assert(_requestCount <= _options.PermitLimit);
+                Debug.Assert(_requestCount == _options.PermitLimit);
                 while (queue.Count > 0)
                 {
                     RequestRegistration nextPendingRequest =

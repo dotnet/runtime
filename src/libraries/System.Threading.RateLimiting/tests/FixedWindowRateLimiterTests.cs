@@ -105,7 +105,6 @@ namespace System.Threading.RateLimiting.Test
             lease.Dispose();
             Assert.Equal(1, limiter.GetAvailablePermits());
             Assert.True(limiter.TryReplenish());
-            Assert.True(limiter.TryReplenish());
 
             lease = await wait1;
             Assert.True(lease.IsAcquired);
@@ -165,7 +164,6 @@ namespace System.Threading.RateLimiting.Test
             Assert.False(lease2.IsAcquired);
             Assert.False(wait3.IsCompleted);
 
-            limiter.TryReplenish();
             limiter.TryReplenish();
 
             lease = await wait3;

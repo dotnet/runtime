@@ -45,9 +45,9 @@ namespace System.Threading.RateLimiting
         /// Initializes the <see cref="SlidingWindowRateLimiter"/>.
         /// </summary>
         /// <param name="options">Options to specify the behavior of the <see cref="SlidingWindowRateLimiter"/>.</param>
-        public SlidingWindowRateLimiter(SlidingWindowRateLimiterOptions options!!)
+        public SlidingWindowRateLimiter(SlidingWindowRateLimiterOptions options)
         {
-            _options = options;
+            _options = options ?? throw new ArgumentNullException(nameof(options));
             _requestCount = options.PermitLimit;
             _requestsPerSegment = new int[options.SegmentsPerWindow];
             _currentSegmentIndex = 0;
@@ -213,7 +213,7 @@ namespace System.Threading.RateLimiting
             SlidingWindowRateLimiter limiter = (state as SlidingWindowRateLimiter)!;
             Debug.Assert(limiter is not null);
 
-            // Use Environment.TickCount instead of DateTime.UtcNow to avoid issues on systems where the clock can change
+            // Use Stopwatch instead of DateTime.UtcNow to avoid issues on systems where the clock can change
             long nowTicks = Stopwatch.GetTimestamp();
             limiter!.ReplenishInternal(nowTicks);
         }
@@ -236,8 +236,8 @@ namespace System.Threading.RateLimiting
 
                 _lastReplenishmentTick = nowTicks;
 
-                _currentSegmentIndex = (_currentSegmentIndex + 1) % _options.SegmentsPerWindow;
                 int oldSegmentRequestCount = _requestsPerSegment[_currentSegmentIndex];
+                _currentSegmentIndex = (_currentSegmentIndex + 1) % _options.SegmentsPerWindow;
                 _requestsPerSegment[_currentSegmentIndex] = 0;
 
                 if (oldSegmentRequestCount == 0)
@@ -272,7 +272,7 @@ namespace System.Threading.RateLimiting
                         if (!nextPendingRequest.Tcs.TrySetResult(SuccessfulLease))
                         {
                             // Queued item was canceled so add count back
-                            _requestCount += nextPendingRequest.Count;
+                            _requestCount -= nextPendingRequest.Count;
                             _requestsPerSegment[_currentSegmentIndex] -= _requestCount;
                             // Updating queue count is handled by the cancellation code
                             _queueCount += nextPendingRequest.Count;
