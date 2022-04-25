@@ -263,8 +263,16 @@ namespace System.Reflection
                 if (s_loadfile.TryGetValue(normalizedPath, out result))
                     return result;
 
-                if (!File.Exists(normalizedPath))
-                    throw new FileNotFoundException(SR.Format(SR.FileNotFound_LoadFile, normalizedPath), normalizedPath);
+// we cannot check for file presence on WASM. The files could be embedded and not physically present.
+#if !TARGET_WASM
+                string assemblyPath = normalizedPath;
+#if MONO
+                assemblyPath?.Replace('\\', Path.DirectorySeparatorChar);
+#endif
+
+                if (!File.Exists(assemblyPath))
+                    throw new FileNotFoundException(SR.Format(SR.FileNotFound_LoadFile, assemblyPath), assemblyPath);
+#endif
 
                 AssemblyLoadContext alc = new IndividualAssemblyLoadContext($"Assembly.LoadFile({normalizedPath})");
                 result = alc.LoadFromAssemblyPath(normalizedPath);
