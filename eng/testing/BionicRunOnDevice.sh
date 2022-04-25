@@ -54,8 +54,10 @@ if [ -d "$_RuntimeDir/openssl" ]; then
 		;;
 	esac
 	export LD_LIBRARY_PATH=$_RuntimeDir/openssl/prefab/modules/ssl/libs/android.$_thisArchAndroid:$_RuntimeDir/openssl/prefab/modules/crypto/libs/android.$_thisArchAndroid
-	#proof of sanity
-	ls -lh $_RuntimeDir/openssl/prefab/modules/ssl/libs/android.$_thisArchAndroid
 fi
+# Android sets an invalid value for HOME, which we bypass on "real" Android via
+# some env var setup in the task. Since we aren't using the Android task system
+# for Bionic, we need to override the value another way
+export HOME=$currentDirectory
 cd $currentDirectory
 $runtimeExe exec --runtimeconfig ${currentTest}.runtimeconfig.json --depsfile ${currentTest}.deps.json xunit.console.dll ${currentTest}.dll -xml testResults.xml -nologo -nocolor -notrait category=IgnoreForCI -notrait category=OuterLoop -notrait category=failing
