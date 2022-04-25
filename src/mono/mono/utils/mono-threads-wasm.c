@@ -8,6 +8,7 @@
 
 #include <mono/utils/mono-threads.h>
 #include <mono/utils/mono-mmap.h>
+#include <mono/utils/mono-threads-debug.h>
 
 #include <glib.h>
 
@@ -331,13 +332,13 @@ mono_threads_schedule_background_job (background_job_cb cb)
 {
 #ifndef DISABLE_THREADS
 	if (!mono_threads_wasm_is_browser_thread ()) {
-		fprintf(stdout, "worker %p queued job %p\n", (gpointer)pthread_self(), (gpointer) cb);
+		THREADS_DEBUG ("worker %p queued job %p\n", (gpointer)pthread_self(), (gpointer) cb);
 		mono_threads_wasm_async_run_in_main_thread_vi ((void (*)(gpointer))mono_threads_schedule_background_job, cb);
 		return;
 	}
 #endif
 
-	fprintf(stdout, "main thread queued job %p\n", (gpointer) cb);
+	THREADS_DEBUG ("main thread queued job %p\n", (gpointer) cb);
 
 	if (!jobs)
 		schedule_background_exec ();
