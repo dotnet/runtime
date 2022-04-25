@@ -6425,7 +6425,7 @@ void Lowering::CheckCallArg(GenTree* arg)
 {
     if (!arg->IsValue() && !arg->OperIsPutArgStk())
     {
-        assert(arg->OperIsStore() || arg->OperIsCopyBlkOp());
+        assert(arg->OperIsStore() || arg->IsNothingNode() || arg->OperIsCopyBlkOp());
         return;
     }
 
