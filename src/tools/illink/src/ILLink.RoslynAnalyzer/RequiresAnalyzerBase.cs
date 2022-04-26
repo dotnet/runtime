@@ -353,9 +353,11 @@ namespace ILLink.RoslynAnalyzer
 
 		private bool HasMismatchingAttributes (ISymbol member1, ISymbol member2)
 		{
-			bool member1HasAttribute = member1.IsOverrideInRequiresScope (RequiresAttributeName);
-			bool member2HasAttribute = member2.IsOverrideInRequiresScope (RequiresAttributeName);
-			return member1HasAttribute ^ member2HasAttribute;
+			bool member1CreatesRequirement = member1.TargetHasRequiresAttribute (RequiresAttributeName, out _);
+			bool member2CreatesRequirement = member2.TargetHasRequiresAttribute (RequiresAttributeName, out _);
+			bool member1FulfillsRequirement = member1.IsOverrideInRequiresScope (RequiresAttributeName);
+			bool member2FulfillsRequirement = member2.IsOverrideInRequiresScope (RequiresAttributeName);
+			return (member1CreatesRequirement && !member2FulfillsRequirement) || (member2CreatesRequirement && !member1FulfillsRequirement);
 		}
 
 		protected abstract string GetMessageFromAttribute (AttributeData requiresAttribute);
