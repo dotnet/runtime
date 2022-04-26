@@ -89,6 +89,7 @@
           $(Python) post.py
           echo NewPath: $ORIGPYPATH Helix Py Path: $HELIX_PYTHONPATH
           export PYTHONPATH=$ORIGPYPATH
+          echo Python Path Post Update: $PYTHONPATH
           exit $result
         ]]>
 	  </CustomCommands>
@@ -118,6 +119,7 @@
           $(Python) post.py
           echo NewPath: $ORIGPYPATH Helix Py Path: $HELIX_PYTHONPATH
           export PYTHONPATH=$ORIGPYPATH
+          echo Python Path Post Update: $PYTHONPATH
           exit $result
         ]]>
 	  </CustomCommands>
