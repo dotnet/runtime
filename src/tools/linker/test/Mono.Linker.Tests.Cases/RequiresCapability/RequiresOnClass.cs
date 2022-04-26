@@ -324,9 +324,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 		[RequiresDynamicCode ("RDC")]
 		class DerivedWithRequiresOnTypeOverBaseWithNoRequires : BaseWithNoRequires
 		{
-			// https://github.com/dotnet/linker/issues/2763
-			[ExpectedWarning ("IL2046", ProducedBy = ProducedBy.Analyzer)]
-			[ExpectedWarning ("IL3051", ProducedBy = ProducedBy.Analyzer)]
+			// Should not warn since the members are not static
 			public override void Method ()
 			{
 			}
