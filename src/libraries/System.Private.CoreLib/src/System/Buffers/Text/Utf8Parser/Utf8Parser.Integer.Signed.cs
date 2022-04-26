@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Internal.Runtime.CompilerServices;
+using System.Runtime.CompilerServices;
 
 namespace System.Buffers.Text
 {
@@ -47,6 +47,7 @@ namespace System.Buffers.Text
             {
                 case 'g':
                 case 'd':
+                case 'r':
                     standardFormat = default;
                     goto FastPath;
 
@@ -98,6 +99,7 @@ namespace System.Buffers.Text
             {
                 case 'g':
                 case 'd':
+                case 'r':
                     standardFormat = default;
                     goto FastPath;
 
@@ -149,6 +151,7 @@ namespace System.Buffers.Text
             {
                 case 'g':
                 case 'd':
+                case 'r':
                     standardFormat = default;
                     goto FastPath;
 
@@ -200,6 +203,7 @@ namespace System.Buffers.Text
             {
                 case 'g':
                 case 'd':
+                case 'r':
                     standardFormat = default;
                     goto FastPath;
 

@@ -391,7 +391,7 @@ VOID Frame::Push(Thread *pThread)
     // declared in the same source function. We cannot predict the order
     // in which the C compiler will lay them out in the stack frame.
     // So GetOsPageSize() is a guess of the maximum stack frame size of any method
-    // with multiple Frames in mscorwks.dll
+    // with multiple Frames in coreclr.dll
     _ASSERTE((pThread->IsExecutingOnAltStack() ||
              (m_Next == FRAME_TOP) ||
              (PBYTE(m_Next) + (2 * GetOsPageSize())) > PBYTE(this)) &&
@@ -903,6 +903,7 @@ GCFrame::GCFrame(Thread *pThread, OBJECTREF *pObjRefs, UINT numObjRefs, BOOL may
         NOTHROW;
         GC_NOTRIGGER;
         MODE_COOPERATIVE;
+        PRECONDITION(pThread != NULL);
     }
     CONTRACTL_END;
 
@@ -929,24 +930,16 @@ GCFrame::GCFrame(Thread *pThread, OBJECTREF *pObjRefs, UINT numObjRefs, BOOL may
 
 #endif // USE_CHECKED_OBJECTREFS
 
+#ifdef _DEBUG
+    m_Next          = NULL;
+    m_pCurThread    = NULL;
+#endif // _DEBUG
+
     m_pObjRefs      = pObjRefs;
     m_numObjRefs    = numObjRefs;
-    m_pCurThread    = pThread;
     m_MaybeInterior = maybeInterior;
 
-    // Push the GC frame to the per-thread list
-    m_Next = pThread->GetGCFrame();
-
-    // GetOsPageSize() is used to relax the assert for cases where two Frames are
-    // declared in the same source function. We cannot predict the order
-    // in which the C compiler will lay them out in the stack frame.
-    // So GetOsPageSize() is a guess of the maximum stack frame size of any method
-    // with multiple Frames in mscorwks.dll
-    _ASSERTE(((m_Next == NULL) ||
-              (PBYTE(m_Next) + (2 * GetOsPageSize())) > PBYTE(this)) &&
-             "Pushing a GCFrame out of order ?");
-
-    pThread->SetGCFrame(this);
+    Push(pThread);
 }
 
 GCFrame::~GCFrame()
@@ -956,6 +949,7 @@ GCFrame::~GCFrame()
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
+        PRECONDITION(m_pCurThread != NULL);
     }
     CONTRACTL_END;
 
@@ -966,6 +960,54 @@ GCFrame::~GCFrame()
     {
         m_pCurThread->DisablePreemptiveGC();
     }
+
+    Pop();
+
+    if (!wasCoop)
+    {
+        m_pCurThread->EnablePreemptiveGC();
+    }
+}
+
+void GCFrame::Push(Thread* pThread)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_COOPERATIVE;
+        PRECONDITION(pThread != NULL);
+        PRECONDITION(m_Next == NULL);
+        PRECONDITION(m_pCurThread == NULL);
+    }
+    CONTRACTL_END;
+
+    // Push the GC frame to the per-thread list
+    m_Next = pThread->GetGCFrame();
+    m_pCurThread = pThread;
+
+    // GetOsPageSize() is used to relax the assert for cases where two Frames are
+    // declared in the same source function. We cannot predict the order
+    // in which the compiler will lay them out in the stack frame.
+    // So GetOsPageSize() is a guess of the maximum stack frame size of any method
+    // with multiple GCFrames in coreclr.dll
+    _ASSERTE(((m_Next == NULL) ||
+              (PBYTE(m_Next) + (2 * GetOsPageSize())) > PBYTE(this)) &&
+             "Pushing a GCFrame out of order ?");
+
+    pThread->SetGCFrame(this);
+}
+
+void GCFrame::Pop()
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_COOPERATIVE;
+        PRECONDITION(m_pCurThread != NULL);
+    }
+    CONTRACTL_END;
 
     // When the frame is destroyed, make sure it is no longer in the
     // frame chain managed by the Thread.
@@ -981,12 +1023,8 @@ GCFrame::~GCFrame()
     for(UINT i = 0; i < m_numObjRefs; i++)
         Thread::ObjectRefNew(&m_pObjRefs[i]);       // Unprotect them
 #endif
-
-    if (!wasCoop)
-    {
-        m_pCurThread->EnablePreemptiveGC();
-    }
 }
+#endif // !DACCESS_COMPILE
 
 //
 // GCFrame Object Scanning
@@ -995,9 +1033,6 @@ GCFrame::~GCFrame()
 // protected by the programmer explicitly protecting it in a GC Frame
 // via the GCPROTECTBEGIN / GCPROTECTEND facility...
 //
-
-#endif // !DACCESS_COMPILE
-
 void GCFrame::GcScanRoots(promote_func *fn, ScanContext* sc)
 {
     WRAPPER_NO_CONTRACT;

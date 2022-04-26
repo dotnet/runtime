@@ -165,9 +165,9 @@ namespace System.IO.Pipelines
         /// <returns>A task that represents the asynchronous copy operation.</returns>
         public virtual Task CopyToAsync(PipeWriter destination, CancellationToken cancellationToken = default)
         {
-            if (destination == null)
+            if (destination is null)
             {
-                throw new ArgumentNullException(nameof(destination));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.destination);
             }
 
             if (cancellationToken.IsCancellationRequested)
@@ -187,9 +187,9 @@ namespace System.IO.Pipelines
         /// <returns>A task that represents the asynchronous copy operation.</returns>
         public virtual Task CopyToAsync(Stream destination, CancellationToken cancellationToken = default)
         {
-            if (destination == null)
+            if (destination is null)
             {
-                throw new ArgumentNullException(nameof(destination));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.destination);
             }
 
             if (cancellationToken.IsCancellationRequested)

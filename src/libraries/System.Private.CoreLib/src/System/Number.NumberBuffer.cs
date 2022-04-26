@@ -3,7 +3,7 @@
 
 using System.Diagnostics;
 using System.Text;
-using Internal.Runtime.CompilerServices;
+using System.Runtime.CompilerServices;
 
 namespace System
 {
@@ -48,6 +48,7 @@ namespace System
                 CheckConsistency();
             }
 
+#pragma warning disable CA1822
             [Conditional("DEBUG")]
             public void CheckConsistency()
             {
@@ -73,6 +74,7 @@ namespace System
 
 #endif // DEBUG
             }
+#pragma warning restore CA1822
 
             public byte* GetDigitsPointer()
             {

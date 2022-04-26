@@ -1,11 +1,6 @@
 ; Licensed to the .NET Foundation under one or more agreements.
 ; The .NET Foundation licenses this file to you under the MIT license.
 
-;; ==++==
-;;
-
-;;
-;; ==--==
 #include "ksarm64.h"
 #include "asmconstants.h"
 #include "asmmacros.h"
@@ -209,27 +204,6 @@ Done
 
         NESTED_END
 
-; ------------------------------------------------------------------
-; The call in fixup precode initally points to this function.
-; The pupose of this function is to load the MethodDesc and forward the call to prestub.
-        NESTED_ENTRY PrecodeFixupThunk
-
-        ; x12 = FixupPrecode *
-        ; On Exit
-        ; x12 = MethodDesc*
-        ; x13, x14 Trashed
-        ; Inline computation done by FixupPrecode::GetMethodDesc()
-        ldrb    w13, [x12, #Offset_PrecodeChunkIndex]              ; m_PrecodeChunkIndex
-        ldrb    w14, [x12, #Offset_MethodDescChunkIndex]           ; m_MethodDescChunkIndex
-
-        add     x12,x12,w13,uxtw #FixupPrecode_ALIGNMENT_SHIFT_1
-        add     x13,x12,w13,uxtw #FixupPrecode_ALIGNMENT_SHIFT_2
-        ldr     x13, [x13,#SIZEOF__FixupPrecode]
-        add     x12,x13,w14,uxtw #MethodDesc_ALIGNMENT_SHIFT
-
-        b ThePreStub
-
-        NESTED_END
 ; ------------------------------------------------------------------
 
         NESTED_ENTRY ThePreStub
@@ -549,41 +523,6 @@ Exit
     LEAF_ENTRY JIT_PatchedCodeLast
         ret      lr
     LEAF_END
-
-;------------------------------------------------
-; ExternalMethodFixupStub
-;
-; In NGEN images, calls to cross-module external methods initially
-; point to a jump thunk that calls into the following function that will
-; call into a VM helper. The VM helper is responsible for patching up the
-; thunk, upon executing the precode, so that all subsequent calls go directly
-; to the actual method body.
-;
-; This is done lazily for performance reasons.
-;
-; On entry:
-;
-; x12 = Address of thunk
-
-    NESTED_ENTRY ExternalMethodFixupStub
-
-    PROLOG_WITH_TRANSITION_BLOCK
-
-    add         x0, sp, #__PWTB_TransitionBlock ; pTransitionBlock
-    mov         x1, x12                         ; pThunk
-    mov         x2, #0                          ; sectionIndex
-    mov         x3, #0                          ; pModule
-
-    bl          ExternalMethodFixupWorker
-
-    ; mov the address we patched to in x12 so that we can tail call to it
-    mov         x12, x0
-
-    EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
-    PATCH_LABEL ExternalMethodFixupPatchLabel
-    EPILOG_BRANCH_REG   x12
-
-    NESTED_END
 
 ; void SinglecastDelegateInvokeStub(Delegate *pThis)
     LEAF_ENTRY SinglecastDelegateInvokeStub
@@ -1217,8 +1156,9 @@ Fail
     mov x12, x0
 
     EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
-    ; Share patch label
-    b ExternalMethodFixupPatchLabel
+    PATCH_LABEL ExternalMethodFixupPatchLabel
+    EPILOG_BRANCH_REG   x12
+
     NESTED_END
 
     MACRO
@@ -1425,7 +1365,7 @@ __HelperNakedFuncName SETS "$helper":CC:"Naked"
         PROLOG_WITH_TRANSITION_BLOCK
 
         add     x0, sp, #__PWTB_TransitionBlock ; TransitionBlock *
-        mov     x1, x10 ; stub-identifying token
+        mov     x1, x9 ; stub-identifying token
         bl      OnCallCountThresholdReached
         mov     x9, x0
 
@@ -1434,6 +1374,14 @@ __HelperNakedFuncName SETS "$helper":CC:"Naked"
     NESTED_END
 
 #endif ; FEATURE_TIERED_COMPILATION
+
+    LEAF_ENTRY  JIT_ValidateIndirectCall
+        ret lr
+    LEAF_END
+
+    LEAF_ENTRY  JIT_DispatchIndirectCall
+        br x9
+    LEAF_END
 
 ; Must be at very end of file
     END

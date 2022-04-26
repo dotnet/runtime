@@ -41,8 +41,33 @@ BOOL ShouldDisplayMsgBoxOnCriticalFailure()
 #endif // _DEBUG
 }
 
+// Output printf-style formatted text to the debugger if it's present or stdout otherwise.
+static void DbgWPrintf(const LPCWSTR wszFormat, ...)
+{
+    WCHAR wszBuffer[4096];
 
+    va_list args;
+    va_start(args, wszFormat);
 
+    _vsnwprintf_s(wszBuffer, sizeof(wszBuffer) / sizeof(WCHAR), _TRUNCATE, wszFormat, args);
+
+    va_end(args);
+
+    if (IsDebuggerPresent())
+    {
+        OutputDebugStringW(wszBuffer);
+    }
+    else
+    {
+        fwprintf(stdout, W("%s"), wszBuffer);
+        fflush(stdout);
+    }
+}
+
+typedef int (*MessageBoxWFnPtr)(HWND hWnd,
+                                LPCWSTR lpText,
+                                LPCWSTR lpCaption,
+                                UINT uType);
 
 // We'd like to use TaskDialogIndirect for asserts coming from managed code in particular
 // to display the detailedText in a scrollable way.  Also, we'd like to reuse the CLR's
@@ -50,7 +75,7 @@ BOOL ShouldDisplayMsgBoxOnCriticalFailure()
 // Win32 MessageBox does not support the detailedText value.
 // If we later refactor MessageBoxImpl into its own DLL, move the lines referencing
 // "Microsoft.Windows.Common-Controls" version 6 in stdafx.h as well.
-int MessageBoxImpl(
+static int MessageBoxImpl(
                   HWND hWnd,            // Handle to Owner Window
                   LPCWSTR message,      // Message
                   LPCWSTR title,        // Dialog box title
@@ -69,70 +94,37 @@ int MessageBoxImpl(
     }
     CONTRACTL_END;
 
-    return WszMessageBox(hWnd, message, title, uType);
+#ifndef HOST_UNIX
+    // User32 should exist on all systems where displaying a message box makes sense.
+    HMODULE hGuiExtModule = WszLoadLibrary(W("user32"));
+    if (hGuiExtModule)
+    {
+        int result = IDCANCEL;
+        MessageBoxWFnPtr fnptr = (MessageBoxWFnPtr)GetProcAddress(hGuiExtModule, "MessageBoxW");
+        if (fnptr)
+            result = fnptr(hWnd, message, title, uType);
+
+        FreeLibrary(hGuiExtModule);
+        return result;
+    }
+#endif // !HOST_UNIX
+
+    // No luck. Output the caption and text to the debugger if present or stdout otherwise.
+    if (message == NULL)
+        message = W("<null>");
+    if (title == NULL)
+        title = W("<null>");
+    DbgWPrintf(W("**** '%s' ****\n"), title);
+    DbgWPrintf(W("  %s\n"), message);
+    DbgWPrintf(W("********\n"));
+    DbgWPrintf(W("\n"));
+
+    // Indicate to the caller that message box was not actually displayed
+    SetLastError(ERROR_NOT_SUPPORTED);
+    return 0;
 }
 
-int UtilMessageBoxVA(
-                  HWND hWnd,        // Handle to Owner Window
-                  UINT uText,       // Resource Identifier for Text message
-                  UINT uTitle,      // Resource Identifier for Title
-                  UINT uType,       // Style of MessageBox
-                  BOOL displayForNonInteractive,    // Display even if the process is running non interactive
-                  BOOL showFileNameInTitle,         // Flag to show FileName in Caption
-                  va_list args)     // Additional Arguments
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        INJECT_FAULT(return IDCANCEL;);
-    }
-    CONTRACTL_END;
-
-    SString text;
-    SString title;
-    int result = IDCANCEL;
-
-    EX_TRY
-    {
-        text.LoadResource(CCompRC::Error, uText);
-        title.LoadResource(CCompRC::Error, uTitle);
-
-        result = UtilMessageBoxNonLocalizedVA(hWnd, (LPWSTR)text.GetUnicode(),
-            (LPWSTR)title.GetUnicode(), uType, displayForNonInteractive, showFileNameInTitle, NULL, args);
-    }
-    EX_CATCH
-    {
-        result = IDCANCEL;
-    }
-    EX_END_CATCH(SwallowAllExceptions);
-
-    return result;
-}
-
-int UtilMessageBoxNonLocalizedVA(
-                  HWND hWnd,        // Handle to Owner Window
-                  LPCWSTR lpText,   // Text message
-                  LPCWSTR lpTitle,  // Title
-                  UINT uType,       // Style of MessageBox
-                  BOOL displayForNonInteractive,    // Display even if the process is running non interactive
-                  BOOL showFileNameInTitle,         // Flag to show FileName in Caption
-                  BOOL * pInputFromUser,            // To distinguish between user pressing abort vs. assuming abort.
-                  va_list args)     // Additional Arguments
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        INJECT_FAULT(return IDCANCEL;);
-
-        // Assert if none of MB_ICON is set
-        PRECONDITION((uType & MB_ICONMASK) != 0);
-    }
-    CONTRACTL_END;
-
-    return UtilMessageBoxNonLocalizedVA(hWnd, lpText, lpTitle, NULL, uType, displayForNonInteractive, showFileNameInTitle, pInputFromUser, args);
-}
-
-int UtilMessageBoxNonLocalizedVA(
+static int UtilMessageBoxNonLocalizedVA(
                   HWND hWnd,        // Handle to Owner Window
                   LPCWSTR lpText,   // Text message
                   LPCWSTR lpTitle,  // Title
@@ -253,51 +245,39 @@ int UtilMessageBoxNonLocalizedVA(
     return result;
 }
 
-int UtilMessageBox(
+int UtilMessageBoxVA(
                   HWND hWnd,        // Handle to Owner Window
                   UINT uText,       // Resource Identifier for Text message
                   UINT uTitle,      // Resource Identifier for Title
                   UINT uType,       // Style of MessageBox
                   BOOL displayForNonInteractive,    // Display even if the process is running non interactive
                   BOOL showFileNameInTitle,         // Flag to show FileName in Caption
-                  ...)              // Additional Arguments
+                  va_list args)     // Additional Arguments
 {
     CONTRACTL
     {
         NOTHROW;
+        INJECT_FAULT(return IDCANCEL;);
     }
     CONTRACTL_END;
 
-    va_list marker;
-    va_start(marker, showFileNameInTitle);
+    SString text;
+    SString title;
+    int result = IDCANCEL;
 
-    int result = UtilMessageBoxVA(hWnd, uText, uTitle, uType, displayForNonInteractive, showFileNameInTitle, marker);
-    va_end( marker );
-
-    return result;
-}
-
-int UtilMessageBoxNonLocalized(
-                  HWND hWnd,        // Handle to Owner Window
-                  LPCWSTR lpText,   // Text message
-                  LPCWSTR lpTitle,  // Title message
-                  UINT uType,       // Style of MessageBox
-                  BOOL displayForNonInteractive,    // Display even if the process is running non interactive
-                  BOOL showFileNameInTitle,         // Flag to show FileName in Caption
-                  ... )             // Additional Arguments
-{
-    CONTRACTL
+    EX_TRY
     {
-        NOTHROW;
+        text.LoadResource(CCompRC::Error, uText);
+        title.LoadResource(CCompRC::Error, uTitle);
+
+        result = UtilMessageBoxNonLocalizedVA(hWnd, (LPWSTR)text.GetUnicode(),
+            (LPWSTR)title.GetUnicode(), NULL, uType, displayForNonInteractive, showFileNameInTitle, NULL, args);
     }
-    CONTRACTL_END;
-
-    va_list marker;
-    va_start(marker, showFileNameInTitle);
-
-    int result = UtilMessageBoxNonLocalizedVA(
-        hWnd, lpText, lpTitle, uType, displayForNonInteractive, showFileNameInTitle, NULL, marker);
-    va_end( marker );
+    EX_CATCH
+    {
+        result = IDCANCEL;
+    }
+    EX_END_CATCH(SwallowAllExceptions);
 
     return result;
 }
@@ -307,51 +287,7 @@ int UtilMessageBoxCatastrophic(
                   UINT uTitle,      // Title for MessageBox
                   UINT uType,       // Style of MessageBox
                   BOOL showFileNameInTitle,         // Flag to show FileName in Caption
-                  ...)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-    }
-    CONTRACTL_END;
-
-    va_list marker;
-    va_start(marker, showFileNameInTitle);
-
-    int result = UtilMessageBoxCatastrophicVA(uText, uTitle, uType, showFileNameInTitle, marker);
-    va_end( marker );
-
-    return result;
-}
-
-int UtilMessageBoxCatastrophicNonLocalized(
-                  LPCWSTR lpText,    // Text for MessageBox
-                  LPCWSTR lpTitle,   // Title for MessageBox
-                  UINT uType,        // Style of MessageBox
-                  BOOL showFileNameInTitle,         // Flag to show FileName in Caption
-                  ...)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-    }
-    CONTRACTL_END;
-
-    va_list marker;
-    va_start(marker, showFileNameInTitle);
-
-    int result = UtilMessageBoxCatastrophicNonLocalizedVA(lpText, lpTitle, uType, showFileNameInTitle, marker);
-    va_end( marker );
-
-    return result;
-}
-
-int UtilMessageBoxCatastrophicVA(
-                  UINT uText,       // Text for MessageBox
-                  UINT uTitle,      // Title for MessageBox
-                  UINT uType,       // Style of MessageBox
-                  BOOL showFileNameInTitle,         // Flag to show FileName in Caption
-                  va_list args)     // Additional Arguments
+                  ...)     // Additional Arguments
 {
     CONTRACTL
     {
@@ -371,34 +307,13 @@ int UtilMessageBoxCatastrophicVA(
     // owned by the current thread and should prevent interaction with them until dismissed.
     uType |= MB_TASKMODAL;
 
-    return UtilMessageBoxVA(hwnd, uText, uTitle, uType, TRUE, showFileNameInTitle, args);
+
+    va_list args;
+    va_start(args, showFileNameInTitle);
+
+    int result = UtilMessageBoxVA(hwnd, uText, uTitle, uType, TRUE, showFileNameInTitle, args);
+
+    va_end(args);
+
+    return result;
 }
-
-int UtilMessageBoxCatastrophicNonLocalizedVA(
-                  LPCWSTR lpText,   // Text for MessageBox
-                  LPCWSTR lpTitle,  // Title for MessageBox
-                  UINT uType,       // Style of MessageBox
-                  BOOL showFileNameInTitle, // Flag to show FileName in Caption
-                  va_list args)     // Additional Arguments
-{
-    CONTRACTL
-    {
-        NOTHROW;
-    }
-    CONTRACTL_END;
-
-    HWND hwnd = NULL;
-
-    // We are already in a catastrophic situation so we can tolerate faults as well as GC mode violations to keep going.
-    CONTRACT_VIOLATION(FaultNotFatal | GCViolation | ModeViolation);
-
-    if (!ShouldDisplayMsgBoxOnCriticalFailure())
-        return IDABORT;
-
-    // Add the MB_TASKMODAL style to indicate that the dialog should be displayed on top of the windows
-    // owned by the current thread and should prevent interaction with them until dismissed.
-    uType |= MB_TASKMODAL;
-
-    return UtilMessageBoxNonLocalizedVA(hwnd, lpText, lpTitle, uType, TRUE, showFileNameInTitle, NULL, args);
-}
-

@@ -27,7 +27,7 @@ namespace System.Net.Http.Json
             MediaTypeHeaderValue? mediaType,
             JsonSerializerOptions? options)
         {
-            if (inputType == null)
+            if (inputType is null)
             {
                 throw new ArgumentNullException(nameof(inputType));
             }

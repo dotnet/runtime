@@ -1,8 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <NoWarn>$(NoWarn);0618</NoWarn>
-    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
-    <Nullable>enable</Nullable>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Data.Common.cs" />

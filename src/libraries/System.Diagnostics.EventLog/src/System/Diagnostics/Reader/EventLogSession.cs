@@ -205,8 +205,7 @@ namespace System.Diagnostics.Eventing.Reader
 
         public EventLogInformation GetLogInformation(string logName, PathType pathType)
         {
-            if (logName == null)
-                throw new ArgumentNullException(nameof(logName));
+            ArgumentNullException.ThrowIfNull(logName);
 
             return new EventLogInformation(this, logName, pathType);
         }
@@ -218,11 +217,9 @@ namespace System.Diagnostics.Eventing.Reader
 
         public void ExportLog(string path, PathType pathType, string query, string targetFilePath, bool tolerateQueryErrors)
         {
-            if (path == null)
-                throw new ArgumentNullException(nameof(path));
+            ArgumentNullException.ThrowIfNull(path);
+            ArgumentNullException.ThrowIfNull(targetFilePath);
 
-            if (targetFilePath == null)
-                throw new ArgumentNullException(nameof(targetFilePath));
             UnsafeNativeMethods.EvtExportLogFlags flag = pathType switch
             {
                 PathType.LogName => UnsafeNativeMethods.EvtExportLogFlags.EvtExportLogChannelPath,
@@ -254,8 +251,7 @@ namespace System.Diagnostics.Eventing.Reader
 
         public void ClearLog(string logName, string backupPath)
         {
-            if (logName == null)
-                throw new ArgumentNullException(nameof(logName));
+            ArgumentNullException.ThrowIfNull(logName);
 
             NativeWrapper.EvtClearLog(this.Handle, logName, backupPath, 0);
         }

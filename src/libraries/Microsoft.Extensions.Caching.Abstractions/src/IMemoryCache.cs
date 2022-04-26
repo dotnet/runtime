@@ -16,7 +16,7 @@ namespace Microsoft.Extensions.Caching.Memory
         /// <param name="key">An object identifying the requested entry.</param>
         /// <param name="value">The located value or null.</param>
         /// <returns>True if the key was found.</returns>
-        bool TryGetValue(object key, out object value);
+        bool TryGetValue(object key, out object? value);
 
         /// <summary>
         /// Create or overwrite an entry in the cache.
@@ -30,5 +30,13 @@ namespace Microsoft.Extensions.Caching.Memory
         /// </summary>
         /// <param name="key">An object identifying the entry.</param>
         void Remove(object key);
+
+#if NET6_0_OR_GREATER
+        /// <summary>
+        /// Gets a snapshot of the cache statistics if available.
+        /// </summary>
+        /// <returns>An instance of <see cref="MemoryCacheStatistics"/> containing a snapshot of the cache statistics.</returns>
+        MemoryCacheStatistics? GetCurrentStatistics() => null;
+#endif
     }
 }

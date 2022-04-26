@@ -19,34 +19,28 @@ namespace System.IO.Pipes
 
         public void AddAccessRule(PipeAccessRule rule)
         {
-            if (rule == null)
-                throw new ArgumentNullException(nameof(rule));
+            ArgumentNullException.ThrowIfNull(rule);
 
             base.AddAccessRule(rule);
         }
 
         public void SetAccessRule(PipeAccessRule rule)
         {
-            if (rule == null)
-                throw new ArgumentNullException(nameof(rule));
+            ArgumentNullException.ThrowIfNull(rule);
 
             base.SetAccessRule(rule);
         }
 
         public void ResetAccessRule(PipeAccessRule rule)
         {
-            if (rule == null)
-                throw new ArgumentNullException(nameof(rule));
+            ArgumentNullException.ThrowIfNull(rule);
 
             base.ResetAccessRule(rule);
         }
 
         public bool RemoveAccessRule(PipeAccessRule rule)
         {
-            if (rule == null)
-            {
-                throw new ArgumentNullException(nameof(rule));
-            }
+            ArgumentNullException.ThrowIfNull(rule);
 
             // If the rule to be removed matches what is there currently then
             // remove it unaltered. That is, don't mask off the Synchronize bit.
@@ -84,15 +78,11 @@ namespace System.IO.Pipes
 
         public void RemoveAccessRuleSpecific(PipeAccessRule rule)
         {
-            if (rule == null)
-            {
-                throw new ArgumentNullException(nameof(rule));
-            }
+            ArgumentNullException.ThrowIfNull(rule);
 
             // If the rule to be removed matches what is there currently then
             // remove it unaltered. That is, don't mask off the Synchronize bit
-            AuthorizationRuleCollection rules = GetAccessRules(true, true,
-                    rule.IdentityReference.GetType());
+            AuthorizationRuleCollection rules = GetAccessRules(true, true, rule.IdentityReference.GetType());
 
             for (int i = 0; i < rules.Count; i++)
             {

@@ -175,10 +175,10 @@ namespace System.Reflection.Metadata.Ecma335
         }
 
         // internal for testing
-        internal int SerializeHandle(ImmutableArray<int> map, StringHandle handle) => map[handle.GetWriterVirtualIndex()];
-        internal int SerializeHandle(BlobHandle handle) => handle.GetHeapOffset();
-        internal int SerializeHandle(GuidHandle handle) => handle.Index;
-        internal int SerializeHandle(UserStringHandle handle) => handle.GetHeapOffset();
+        internal static int SerializeHandle(ImmutableArray<int> map, StringHandle handle) => map[handle.GetWriterVirtualIndex()];
+        internal static int SerializeHandle(BlobHandle handle) => handle.GetHeapOffset();
+        internal static int SerializeHandle(GuidHandle handle) => handle.Index;
+        internal static int SerializeHandle(UserStringHandle handle) => handle.GetHeapOffset();
 
         /// <summary>
         /// Adds specified blob to Blob heap, if it's not there already.
@@ -188,7 +188,7 @@ namespace System.Reflection.Metadata.Ecma335
         /// <exception cref="ArgumentNullException"><paramref name="value"/> is null.</exception>
         public BlobHandle GetOrAddBlob(BlobBuilder value)
         {
-            if (value == null)
+            if (value is null)
             {
                 Throw.ArgumentNull(nameof(value));
             }
@@ -205,7 +205,7 @@ namespace System.Reflection.Metadata.Ecma335
         /// <exception cref="ArgumentNullException"><paramref name="value"/> is null.</exception>
         public BlobHandle GetOrAddBlob(byte[] value)
         {
-            if (value == null)
+            if (value is null)
             {
                 Throw.ArgumentNull(nameof(value));
             }
@@ -303,7 +303,7 @@ namespace System.Reflection.Metadata.Ecma335
         /// <exception cref="ArgumentNullException"><paramref name="value"/> is null.</exception>
         public BlobHandle GetOrAddDocumentName(string value)
         {
-            if (value == null)
+            if (value is null)
             {
                 Throw.ArgumentNull(nameof(value));
             }
@@ -426,7 +426,7 @@ namespace System.Reflection.Metadata.Ecma335
         /// <exception cref="ArgumentNullException"><paramref name="value"/> is null.</exception>
         public StringHandle GetOrAddString(string value)
         {
-            if (value == null)
+            if (value is null)
             {
                 Throw.ArgumentNull(nameof(value));
             }
@@ -482,7 +482,7 @@ namespace System.Reflection.Metadata.Ecma335
         /// <exception cref="ArgumentNullException"><paramref name="value"/> is null.</exception>
         public UserStringHandle GetOrAddUserString(string value)
         {
-            if (value == null)
+            if (value is null)
             {
                 Throw.ArgumentNull(nameof(value));
             }

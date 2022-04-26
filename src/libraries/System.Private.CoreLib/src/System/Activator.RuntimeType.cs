@@ -18,8 +18,7 @@ namespace System
 
         public static object? CreateInstance([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.NonPublicConstructors | DynamicallyAccessedMemberTypes.PublicConstructors)] Type type, BindingFlags bindingAttr, Binder? binder, object?[]? args, CultureInfo? culture, object?[]? activationAttributes)
         {
-            if (type is null)
-                throw new ArgumentNullException(nameof(type));
+            ArgumentNullException.ThrowIfNull(type);
 
             if (type is System.Reflection.Emit.TypeBuilder)
                 throw new NotSupportedException(SR.NotSupported_CreateInstanceWithTypeBuilder);
@@ -91,8 +90,7 @@ namespace System
 
         internal static object? CreateInstance(Type type, bool nonPublic, bool wrapExceptions)
         {
-            if (type is null)
-                throw new ArgumentNullException(nameof(type));
+            ArgumentNullException.ThrowIfNull(type);
 
             if (type.UnderlyingSystemType is not RuntimeType rt)
                 throw new ArgumentException(SR.Arg_MustBeType, nameof(type));

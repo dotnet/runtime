@@ -117,9 +117,9 @@ namespace System.Text.Json
         /// </exception>
         public static JsonDocument Parse(Stream utf8Json, JsonDocumentOptions options = default)
         {
-            if (utf8Json == null)
+            if (utf8Json is null)
             {
-                throw new ArgumentNullException(nameof(utf8Json));
+                ThrowHelper.ThrowArgumentNullException(nameof(utf8Json));
             }
 
             ArraySegment<byte> drained = ReadToEnd(utf8Json);
@@ -200,9 +200,9 @@ namespace System.Text.Json
             JsonDocumentOptions options = default,
             CancellationToken cancellationToken = default)
         {
-            if (utf8Json == null)
+            if (utf8Json is null)
             {
-                throw new ArgumentNullException(nameof(utf8Json));
+                ThrowHelper.ThrowArgumentNullException(nameof(utf8Json));
             }
 
             return ParseAsyncCore(utf8Json, options, cancellationToken);
@@ -313,9 +313,9 @@ namespace System.Text.Json
         /// </exception>
         public static JsonDocument Parse([StringSyntax(StringSyntaxAttribute.Json)] string json, JsonDocumentOptions options = default)
         {
-            if (json == null)
+            if (json is null)
             {
-                throw new ArgumentNullException(nameof(json));
+                ThrowHelper.ThrowArgumentNullException(nameof(json));
             }
 
             return Parse(json.AsMemory(), options);

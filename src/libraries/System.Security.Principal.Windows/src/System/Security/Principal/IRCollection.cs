@@ -68,20 +68,14 @@ namespace System.Security.Principal
 
         public void Add(IdentityReference identity)
         {
-            if (identity == null)
-            {
-                throw new ArgumentNullException(nameof(identity));
-            }
+            ArgumentNullException.ThrowIfNull(identity);
 
             _identities.Add(identity);
         }
 
         public bool Remove(IdentityReference identity)
         {
-            if (identity == null)
-            {
-                throw new ArgumentNullException(nameof(identity));
-            }
+            ArgumentNullException.ThrowIfNull(identity);
 
             if (Contains(identity))
             {
@@ -98,10 +92,7 @@ namespace System.Security.Principal
 
         public bool Contains(IdentityReference identity)
         {
-            if (identity == null)
-            {
-                throw new ArgumentNullException(nameof(identity));
-            }
+            ArgumentNullException.ThrowIfNull(identity);
 
             return _identities.Contains(identity);
         }
@@ -133,10 +124,7 @@ namespace System.Security.Principal
 
             set
             {
-                if (value is null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
+                ArgumentNullException.ThrowIfNull(value);
                 _identities[index] = value;
             }
         }
@@ -156,10 +144,7 @@ namespace System.Security.Principal
 
         public IdentityReferenceCollection Translate(Type targetType, bool forceSuccess)
         {
-            if (targetType == null)
-            {
-                throw new ArgumentNullException(nameof(targetType));
-            }
+            ArgumentNullException.ThrowIfNull(targetType);
 
             //
             // Target type must be a subclass of IdentityReference
@@ -396,10 +381,8 @@ namespace System.Security.Principal
 
         internal IdentityReferenceEnumerator(IdentityReferenceCollection collection)
         {
-            if (collection is null)
-            {
-                throw new ArgumentNullException(nameof(collection));
-            }
+            ArgumentNullException.ThrowIfNull(collection);
+
             _collection = collection;
             _current = -1;
         }

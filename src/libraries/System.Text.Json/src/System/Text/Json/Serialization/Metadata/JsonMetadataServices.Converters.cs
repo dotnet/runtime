@@ -1,7 +1,6 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization.Converters;
 
@@ -129,6 +128,13 @@ namespace System.Text.Json.Serialization.Metadata
         private static JsonConverter<JsonValue>? s_jsonValueConverter;
 
         /// <summary>
+        /// Returns a <see cref="JsonConverter{T}"/> instance that converts <see cref="JsonDocument"/> values.
+        /// </summary>
+        /// <remarks>This API is for use by the output of the System.Text.Json source generator and should not be called directly.</remarks>
+        public static JsonConverter<JsonDocument> JsonDocumentConverter => s_jsonDocumentConverter ??= new JsonDocumentConverter();
+        private static JsonConverter<JsonDocument>? s_jsonDocumentConverter;
+
+        /// <summary>
         /// Returns a <see cref="JsonConverter{T}"/> instance that converts <see cref="object"/> values.
         /// </summary>
         /// <remarks>This API is for use by the output of the System.Text.Json source generator and should not be called directly.</remarks>
@@ -219,7 +225,14 @@ namespace System.Text.Json.Serialization.Metadata
         /// <returns>A <see cref="JsonConverter{T}"/> instance that converts <typeparamref name="T"/> values.</returns>
         /// <remarks>This API is for use by the output of the System.Text.Json source generator and should not be called directly.</remarks>
         public static JsonConverter<T> GetEnumConverter<T>(JsonSerializerOptions options) where T : struct, Enum
-            => new EnumConverter<T>(EnumConverterOptions.AllowNumbers, options ?? throw new ArgumentNullException(nameof(options)));
+        {
+            if (options is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(options));
+            }
+
+            return new EnumConverter<T>(EnumConverterOptions.AllowNumbers, options);
+        }
 
         /// <summary>
         /// Creates a <see cref="JsonConverter{T}"/> instance that converts <typeparamref name="T?"/> values.
@@ -230,9 +243,9 @@ namespace System.Text.Json.Serialization.Metadata
         /// <remarks>This API is for use by the output of the System.Text.Json source generator and should not be called directly.</remarks>
         public static JsonConverter<T?> GetNullableConverter<T>(JsonTypeInfo<T> underlyingTypeInfo) where T : struct
         {
-            if (underlyingTypeInfo == null)
+            if (underlyingTypeInfo is null)
             {
-                throw new ArgumentNullException(nameof(underlyingTypeInfo));
+                ThrowHelper.ThrowArgumentNullException(nameof(underlyingTypeInfo));
             }
 
             JsonConverter<T>? underlyingConverter = underlyingTypeInfo.PropertyInfoForTypeInfo?.ConverterBase as JsonConverter<T>;

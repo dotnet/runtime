@@ -106,6 +106,9 @@ void EEHashTableBase<KeyType, Helper, bDefaultCopyIsDeep>::ClearHashTable()
     }
 
     m_pVolatileBucketTable->m_dwNumBuckets = 0;
+#ifdef TARGET_64BIT
+    m_pVolatileBucketTable->m_dwNumBucketsMul = 0;
+#endif
     m_dwNumEntries = 0;
 }
 
@@ -193,8 +196,10 @@ BOOL EEHashTableBase<KeyType, Helper, bDefaultCopyIsDeep>::Init(DWORD dwNumBucke
 
     // The first slot links to the next list.
     m_pVolatileBucketTable->m_pBuckets++;
-
     m_pVolatileBucketTable->m_dwNumBuckets = dwNumBuckets;
+#ifdef TARGET_64BIT
+    m_pVolatileBucketTable->m_dwNumBucketsMul = dwNumBuckets == 0 ? 0 : GetFastModMultiplier(dwNumBuckets);
+#endif
 
     m_Heap = pHeap;
 
@@ -637,7 +642,13 @@ FORCEINLINE EEHashEntry_t *EEHashTableBase<KeyType, Helper, bDefaultCopyIsDeep>:
 
     _ASSERTE(pBucketTable->m_dwNumBuckets != 0);
 
-    DWORD           dwBucket = dwHash % pBucketTable->m_dwNumBuckets;
+    DWORD dwBucket;
+#ifdef TARGET_64BIT
+    _ASSERTE(pBucketTable->m_dwNumBucketsMul != 0);
+    dwBucket = FastMod(dwHash, pBucketTable->m_dwNumBuckets, pBucketTable->m_dwNumBucketsMul);
+#else
+    dwBucket = dwHash % pBucketTable->m_dwNumBuckets;
+#endif
     EEHashEntry_t * pSearch;
 
     for (pSearch = pBucketTable->m_pBuckets[dwBucket]; pSearch; pSearch = pSearch->pNext)
@@ -774,6 +785,9 @@ BOOL EEHashTableBase<KeyType, Helper, bDefaultCopyIsDeep>::GrowHashTable()
 
     pNewBucketTable->m_pBuckets = pNewBuckets;
     pNewBucketTable->m_dwNumBuckets = dwNewNumBuckets;
+#ifdef TARGET_64BIT
+    pNewBucketTable->m_dwNumBucketsMul = dwNewNumBuckets == 0 ? 0 : GetFastModMultiplier(dwNewNumBuckets);
+#endif
 
     // Add old table to the to free list. Note that the SyncClean thing will only
     // delete the buckets at a safe point

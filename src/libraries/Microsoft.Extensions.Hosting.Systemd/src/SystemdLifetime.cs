@@ -21,9 +21,13 @@ namespace Microsoft.Extensions.Hosting.Systemd
 
         public SystemdLifetime(IHostEnvironment environment, IHostApplicationLifetime applicationLifetime, ISystemdNotifier systemdNotifier, ILoggerFactory loggerFactory)
         {
-            Environment = environment ?? throw new ArgumentNullException(nameof(environment));
-            ApplicationLifetime = applicationLifetime ?? throw new ArgumentNullException(nameof(applicationLifetime));
-            SystemdNotifier = systemdNotifier ?? throw new ArgumentNullException(nameof(systemdNotifier));
+            ThrowHelper.ThrowIfNull(environment);
+            ThrowHelper.ThrowIfNull(applicationLifetime);
+            ThrowHelper.ThrowIfNull(systemdNotifier);
+
+            Environment = environment;
+            ApplicationLifetime = applicationLifetime;
+            SystemdNotifier = systemdNotifier;
             Logger = loggerFactory.CreateLogger("Microsoft.Hosting.Lifetime");
         }
 
@@ -41,12 +45,12 @@ namespace Microsoft.Extensions.Hosting.Systemd
         {
             _applicationStartedRegistration = ApplicationLifetime.ApplicationStarted.Register(state =>
             {
-                ((SystemdLifetime)state).OnApplicationStarted();
+                ((SystemdLifetime)state!).OnApplicationStarted();
             },
             this);
             _applicationStoppingRegistration = ApplicationLifetime.ApplicationStopping.Register(state =>
             {
-                ((SystemdLifetime)state).OnApplicationStopping();
+                ((SystemdLifetime)state!).OnApplicationStopping();
             },
             this);
 

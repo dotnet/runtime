@@ -18,10 +18,7 @@ namespace System.Xml.Resolvers
                                              string? role,
                                              Type? ofObjectToReturn)
         {
-            if (absoluteUri == null)
-            {
-                throw new ArgumentNullException(nameof(absoluteUri));
-            }
+            ArgumentNullException.ThrowIfNull(absoluteUri);
 
             PreloadedData? data;
             if (!_mappings.TryGetValue(absoluteUri, out data))

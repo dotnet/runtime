@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections;
@@ -33,8 +33,7 @@ namespace System.Security
 
         public SecurityElement(string tag)
         {
-            if (tag == null)
-                throw new ArgumentNullException(nameof(tag));
+            ArgumentNullException.ThrowIfNull(tag);
 
             if (!IsValidTag(tag))
                 throw new ArgumentException(SR.Format(SR.Argument_InvalidElementTag, tag));
@@ -44,8 +43,7 @@ namespace System.Security
 
         public SecurityElement(string tag, string? text)
         {
-            if (tag == null)
-                throw new ArgumentNullException(nameof(tag));
+            ArgumentNullException.ThrowIfNull(tag);
 
             if (!IsValidTag(tag))
                 throw new ArgumentException(SR.Format(SR.Argument_InvalidElementTag, tag));
@@ -64,8 +62,7 @@ namespace System.Security
             get => _tag;
             set
             {
-                if (value == null)
-                    throw new ArgumentNullException(nameof(Tag));
+                ArgumentNullException.ThrowIfNull(value, nameof(Tag));
 
                 if (!IsValidTag(value))
                     throw new ArgumentException(SR.Format(SR.Argument_InvalidElementTag, value));
@@ -193,11 +190,8 @@ namespace System.Security
 
         public void AddAttribute(string name, string value)
         {
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
-
-            if (value == null)
-                throw new ArgumentNullException(nameof(value));
+            ArgumentNullException.ThrowIfNull(name);
+            ArgumentNullException.ThrowIfNull(value);
 
             if (!IsValidAttributeName(name))
                 throw new ArgumentException(SR.Format(SR.Argument_InvalidElementName, name));
@@ -210,8 +204,7 @@ namespace System.Security
 
         public void AddChild(SecurityElement child)
         {
-            if (child == null)
-                throw new ArgumentNullException(nameof(child));
+            ArgumentNullException.ThrowIfNull(child);
 
             _children ??= new ArrayList(ChildrenTypical);
 
@@ -499,8 +492,7 @@ namespace System.Security
 
         public string? Attribute(string name)
         {
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
+            ArgumentNullException.ThrowIfNull(name);
 
             // Note: we don't check for validity here because an
             // if an invalid name is passed we simply won't find it.
@@ -531,10 +523,10 @@ namespace System.Security
 
         public SecurityElement? SearchForChildByTag(string tag)
         {
+            ArgumentNullException.ThrowIfNull(tag);
+
             // Go through all the children and see if we can
             // find the ones that are asked for (matching tags)
-            if (tag == null)
-                throw new ArgumentNullException(nameof(tag));
 
             // Note: we don't check for a valid tag here because
             // an invalid tag simply won't be found.
@@ -550,10 +542,10 @@ namespace System.Security
 
         public string? SearchForTextOfTag(string tag)
         {
+            ArgumentNullException.ThrowIfNull(tag);
+
             // Search on each child in order and each
             // child's child, depth-first
-            if (tag == null)
-                throw new ArgumentNullException(nameof(tag));
 
             // Note: we don't check for a valid tag here because
             // an invalid tag simply won't be found.
@@ -573,10 +565,8 @@ namespace System.Security
 
         public static SecurityElement? FromString(string xml)
         {
-            if (xml == null)
-                throw new ArgumentNullException(nameof(xml));
-
-            return default;
+            ArgumentNullException.ThrowIfNull(xml);
+            return null;
         }
     }
 }

@@ -17,10 +17,7 @@ namespace Microsoft.Extensions.Hosting
         /// <returns>True if the environment name is <see cref="EnvironmentName.Development"/>, otherwise false.</returns>
         public static bool IsDevelopment(this IHostEnvironment hostEnvironment)
         {
-            if (hostEnvironment == null)
-            {
-                throw new ArgumentNullException(nameof(hostEnvironment));
-            }
+            ThrowHelper.ThrowIfNull(hostEnvironment);
 
             return hostEnvironment.IsEnvironment(Environments.Development);
         }
@@ -32,10 +29,7 @@ namespace Microsoft.Extensions.Hosting
         /// <returns>True if the environment name is <see cref="EnvironmentName.Staging"/>, otherwise false.</returns>
         public static bool IsStaging(this IHostEnvironment hostEnvironment)
         {
-            if (hostEnvironment == null)
-            {
-                throw new ArgumentNullException(nameof(hostEnvironment));
-            }
+            ThrowHelper.ThrowIfNull(hostEnvironment);
 
             return hostEnvironment.IsEnvironment(Environments.Staging);
         }
@@ -47,10 +41,7 @@ namespace Microsoft.Extensions.Hosting
         /// <returns>True if the environment name is <see cref="EnvironmentName.Production"/>, otherwise false.</returns>
         public static bool IsProduction(this IHostEnvironment hostEnvironment)
         {
-            if (hostEnvironment == null)
-            {
-                throw new ArgumentNullException(nameof(hostEnvironment));
-            }
+            ThrowHelper.ThrowIfNull(hostEnvironment);
 
             return hostEnvironment.IsEnvironment(Environments.Production);
         }
@@ -65,10 +56,7 @@ namespace Microsoft.Extensions.Hosting
             this IHostEnvironment hostEnvironment,
             string environmentName)
         {
-            if (hostEnvironment == null)
-            {
-                throw new ArgumentNullException(nameof(hostEnvironment));
-            }
+            ThrowHelper.ThrowIfNull(hostEnvironment);
 
             return string.Equals(
                 hostEnvironment.EnvironmentName,

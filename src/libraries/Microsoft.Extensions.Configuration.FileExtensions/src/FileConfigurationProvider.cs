@@ -25,7 +25,9 @@ namespace Microsoft.Extensions.Configuration
         /// <param name="source">The source settings.</param>
         public FileConfigurationProvider(FileConfigurationSource source)
         {
-            Source = source ?? throw new ArgumentNullException(nameof(source));
+            ThrowHelper.ThrowIfNull(source);
+
+            Source = source;
 
             if (Source.ReloadOnChange && Source.FileProvider != null)
             {

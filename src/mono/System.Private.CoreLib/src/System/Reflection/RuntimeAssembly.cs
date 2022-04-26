@@ -135,8 +135,7 @@ namespace System.Reflection
 
         internal static AssemblyName? CreateAssemblyName(string assemblyString, out RuntimeAssembly? assemblyFromResolveEvent)
         {
-            if (assemblyString == null)
-                throw new ArgumentNullException(nameof(assemblyString));
+            ArgumentNullException.ThrowIfNull(assemblyString);
 
             if ((assemblyString.Length == 0) ||
                 (assemblyString[0] == '\0'))
@@ -228,10 +227,8 @@ namespace System.Reflection
 
         public override ManifestResourceInfo? GetManifestResourceInfo(string resourceName)
         {
-            if (resourceName == null)
-                throw new ArgumentNullException(nameof(resourceName));
-            if (resourceName.Length == 0)
-                throw new ArgumentException("String cannot have zero length.");
+            ArgumentException.ThrowIfNullOrEmpty(resourceName);
+
             ManifestResourceInfo result = new ManifestResourceInfo(null, null, 0);
             var this_assembly = this;
             bool found = GetManifestResourceInfoInternal(new QCallAssembly(ref this_assembly), resourceName, result);
@@ -243,12 +240,7 @@ namespace System.Reflection
 
         public override Stream? GetManifestResourceStream(string name)
         {
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
-
-            if (name.Length == 0)
-                throw new ArgumentException("String cannot have zero length.",
-                    nameof(name));
+            ArgumentException.ThrowIfNullOrEmpty(name);
 
             unsafe
             {
@@ -272,8 +264,8 @@ namespace System.Reflection
 
         public override Stream? GetManifestResourceStream(Type type, string name)
         {
-            if (type == null && name == null)
-                throw new ArgumentNullException(nameof(type));
+            if (name == null)
+                ArgumentNullException.ThrowIfNull(type);
 
             string? nameSpace = type?.Namespace;
 
@@ -292,11 +284,7 @@ namespace System.Reflection
         [RequiresUnreferencedCode("Types might be removed")]
         public override Type GetType(string name, bool throwOnError, bool ignoreCase)
         {
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
-
-            if (name.Length == 0)
-                throw new ArgumentException("Name cannot be empty");
+            ArgumentException.ThrowIfNullOrEmpty(name);
 
             return InternalGetType(null, name, throwOnError, ignoreCase);
         }
@@ -323,10 +311,7 @@ namespace System.Reflection
 
         public override Module? GetModule(string name)
         {
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
-            if (name.Length == 0)
-                throw new ArgumentException("Name can't be empty");
+            ArgumentException.ThrowIfNullOrEmpty(name);
 
             Module[] modules = GetModules(true);
             foreach (Module module in modules)
@@ -410,8 +395,7 @@ namespace System.Reflection
 
         public override Assembly GetSatelliteAssembly(CultureInfo culture, Version? version)
         {
-            if (culture == null)
-                throw new ArgumentNullException(nameof(culture));
+            ArgumentNullException.ThrowIfNull(culture);
 
             return InternalGetSatelliteAssembly(this, culture, version, true)!;
         }
@@ -450,10 +434,7 @@ namespace System.Reflection
         [RequiresAssemblyFiles(ThrowingMessageInRAF)]
         public override FileStream? GetFile(string name)
         {
-            if (name == null)
-                throw new ArgumentNullException(nameof(name), SR.ArgumentNull_FileName);
-            if (name.Length == 0)
-                throw new ArgumentException(SR.Argument_EmptyFileName);
+            ArgumentException.ThrowIfNullOrEmpty(name);
             if (Location.Length == 0)
             {
                 // Throw if the assembly was loaded from memory, indicated by Location returning an empty string

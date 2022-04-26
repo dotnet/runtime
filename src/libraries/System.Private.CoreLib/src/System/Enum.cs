@@ -8,7 +8,6 @@ using System.Globalization;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using Internal.Runtime.CompilerServices;
 
 // The code below includes partial support for float/double and
 // pointer sized enums.
@@ -283,61 +282,51 @@ namespace System
         #endregion
 
         #region Public Static Methods
-        public static string? GetName<TEnum>(TEnum value) where TEnum : struct, Enum
-            => GetEnumName((RuntimeType)typeof(TEnum), ToUInt64(value));
+        public static string? GetName<TEnum>(TEnum value) where TEnum : struct, Enum =>
+            GetEnumName((RuntimeType)typeof(TEnum), ToUInt64(value));
 
         public static string? GetName(Type enumType, object value)
         {
-            if (enumType is null)
-                throw new ArgumentNullException(nameof(enumType));
-
+            ArgumentNullException.ThrowIfNull(enumType);
             return enumType.GetEnumName(value);
         }
 
-        public static string[] GetNames<TEnum>() where TEnum : struct, Enum
-            => new ReadOnlySpan<string>(InternalGetNames((RuntimeType)typeof(TEnum))).ToArray();
+        public static string[] GetNames<TEnum>() where TEnum : struct, Enum =>
+            new ReadOnlySpan<string>(InternalGetNames((RuntimeType)typeof(TEnum))).ToArray();
 
         public static string[] GetNames(Type enumType)
         {
-            if (enumType is null)
-                throw new ArgumentNullException(nameof(enumType));
-
+            ArgumentNullException.ThrowIfNull(enumType);
             return enumType.GetEnumNames();
         }
 
-        internal static string[] InternalGetNames(RuntimeType enumType)
-        {
+        internal static string[] InternalGetNames(RuntimeType enumType) =>
             // Get all of the names
-            return GetEnumInfo(enumType, true).Names;
-        }
+            GetEnumInfo(enumType, true).Names;
 
         public static Type GetUnderlyingType(Type enumType)
         {
-            if (enumType == null)
-                throw new ArgumentNullException(nameof(enumType));
-
+            ArgumentNullException.ThrowIfNull(enumType);
             return enumType.GetEnumUnderlyingType();
         }
 
 #if !CORERT
-        public static TEnum[] GetValues<TEnum>() where TEnum : struct, Enum
-            => (TEnum[])GetValues(typeof(TEnum));
+        public static TEnum[] GetValues<TEnum>() where TEnum : struct, Enum =>
+            (TEnum[])GetValues(typeof(TEnum));
 #endif
 
         [RequiresDynamicCode("It might not be possible to create an array of the enum type at runtime. Use the GetValues<TEnum> overload instead.")]
         public static Array GetValues(Type enumType)
         {
-            if (enumType is null)
-                throw new ArgumentNullException(nameof(enumType));
-
+            ArgumentNullException.ThrowIfNull(enumType);
             return enumType.GetEnumValues();
         }
 
         [Intrinsic]
         public bool HasFlag(Enum flag)
         {
-            if (flag is null)
-                throw new ArgumentNullException(nameof(flag));
+            ArgumentNullException.ThrowIfNull(flag);
+
             if (GetType() != flag.GetType() && !GetType().IsEquivalentTo(flag.GetType()))
                 throw new ArgumentException(SR.Format(SR.Argument_EnumTypeDoesNotMatch, flag.GetType(), GetType()));
 
@@ -420,8 +409,7 @@ namespace System
 
         public static bool IsDefined(Type enumType, object value)
         {
-            if (enumType is null)
-                throw new ArgumentNullException(nameof(enumType));
+            ArgumentNullException.ThrowIfNull(enumType);
 
             return enumType.IsEnumDefined(value);
         }
@@ -510,7 +498,7 @@ namespace System
             return result;
         }
 
-        public static bool TryParse(Type enumType, string? value, out object? result) =>
+        public static bool TryParse(Type enumType, string? value, [NotNullWhen(true)] out object? result) =>
             TryParse(enumType, value, ignoreCase: false, out result);
 
         /// <summary>
@@ -520,10 +508,10 @@ namespace System
         /// <param name="value">The span representation of the name or numeric value of one or more enumerated constants.</param>
         /// <param name="result">When this method returns <see langword="true"/>, an object containing an enumeration constant representing the parsed value.</param>
         /// <returns><see langword="true"/> if the conversion succeeded; <see langword="false"/> otherwise.</returns>
-        public static bool TryParse(Type enumType, ReadOnlySpan<char> value, out object? result) =>
+        public static bool TryParse(Type enumType, ReadOnlySpan<char> value, [NotNullWhen(true)] out object? result) =>
           TryParse(enumType, value, ignoreCase: false, out result);
 
-        public static bool TryParse(Type enumType, string? value, bool ignoreCase, out object? result) =>
+        public static bool TryParse(Type enumType, string? value, bool ignoreCase, [NotNullWhen(true)] out object? result) =>
             TryParse(enumType, value, ignoreCase, throwOnFailure: false, out result);
 
         /// <summary>
@@ -534,16 +522,16 @@ namespace System
         /// <param name="ignoreCase"><see langword="true"/> to read <paramref name="enumType"/> in case insensitive mode; <see langword="false"/> to read <paramref name="enumType"/> in case sensitive mode.</param>
         /// <param name="result">When this method returns <see langword="true"/>, an object containing an enumeration constant representing the parsed value.</param>
         /// <returns><see langword="true"/> if the conversion succeeded; <see langword="false"/> otherwise.</returns>
-        public static bool TryParse(Type enumType, ReadOnlySpan<char> value, bool ignoreCase, out object? result) =>
+        public static bool TryParse(Type enumType, ReadOnlySpan<char> value, bool ignoreCase, [NotNullWhen(true)] out object? result) =>
             TryParse(enumType, value, ignoreCase, throwOnFailure: false, out result);
 
-        private static bool TryParse(Type enumType, string? value, bool ignoreCase, bool throwOnFailure, out object? result)
+        private static bool TryParse(Type enumType, string? value, bool ignoreCase, bool throwOnFailure, [NotNullWhen(true)] out object? result)
         {
             if (value == null)
             {
                 if (throwOnFailure)
                 {
-                    throw new ArgumentNullException(nameof(value));
+                    ThrowHelper.ThrowArgumentNullException(ExceptionArgument.value);
                 }
                 result = null;
                 return false;
@@ -552,7 +540,7 @@ namespace System
             return TryParse(enumType, value.AsSpan(), ignoreCase, throwOnFailure, out result);
         }
 
-        private static bool TryParse(Type enumType, ReadOnlySpan<char> value, bool ignoreCase, bool throwOnFailure, out object? result)
+        private static bool TryParse(Type enumType, ReadOnlySpan<char> value, bool ignoreCase, bool throwOnFailure, [NotNullWhen(true)] out object? result)
         {
             // Validation on the enum type itself.  Failures here are considered non-parsing failures
             // and thus always throw rather than returning false.
@@ -654,7 +642,7 @@ namespace System
             {
                 if (throwOnFailure)
                 {
-                    throw new ArgumentNullException(nameof(value));
+                    ArgumentNullException.Throw(nameof(value));
                 }
                 result = default;
                 return false;
@@ -1024,8 +1012,7 @@ namespace System
 
         public static object ToObject(Type enumType, object value)
         {
-            if (value == null)
-                throw new ArgumentNullException(nameof(value));
+            ArgumentNullException.ThrowIfNull(value);
 
             // Delegate rest of error checking to the other functions
             TypeCode typeCode = Convert.GetTypeCode(value);
@@ -1046,15 +1033,12 @@ namespace System
             };
         }
 
-        public static string Format(Type enumType, object value, string format)
+        public static string Format(Type enumType, object value, [StringSyntax(StringSyntaxAttribute.EnumFormat)] string format)
         {
+            ArgumentNullException.ThrowIfNull(value);
+            ArgumentNullException.ThrowIfNull(format);
+
             RuntimeType rtType = ValidateRuntimeType(enumType);
-
-            if (value == null)
-                throw new ArgumentNullException(nameof(value));
-
-            if (format == null)
-                throw new ArgumentNullException(nameof(format));
 
             // If the value is an Enum then we need to extract the underlying value from it
             Type valueType = value.GetType();
@@ -1319,14 +1303,14 @@ namespace System
 
         #region IFormattable
         [Obsolete("The provider argument is not used. Use ToString(String) instead.")]
-        public string ToString(string? format, IFormatProvider? provider)
+        public string ToString([StringSyntax(StringSyntaxAttribute.EnumFormat)] string? format, IFormatProvider? provider)
         {
             return ToString(format);
         }
         #endregion
 
         #region Public Methods
-        public string ToString(string? format)
+        public string ToString([StringSyntax(StringSyntaxAttribute.EnumFormat)] string? format)
         {
             if (string.IsNullOrEmpty(format))
             {
@@ -1500,8 +1484,8 @@ namespace System
 
         private static RuntimeType ValidateRuntimeType(Type enumType)
         {
-            if (enumType == null)
-                throw new ArgumentNullException(nameof(enumType));
+            ArgumentNullException.ThrowIfNull(enumType);
+
             if (!enumType.IsEnum)
                 throw new ArgumentException(SR.Arg_MustBeEnum, nameof(enumType));
             if (enumType is not RuntimeType rtType)

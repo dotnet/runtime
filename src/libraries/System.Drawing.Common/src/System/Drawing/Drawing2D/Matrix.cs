@@ -54,8 +54,8 @@ namespace System.Drawing.Drawing2D
 
         public unsafe Matrix(RectangleF rect, PointF[] plgpts)
         {
-            if (plgpts == null)
-                throw new ArgumentNullException(nameof(plgpts));
+            ArgumentNullException.ThrowIfNull(plgpts);
+
             if (plgpts.Length != 3)
                 throw Gdip.StatusException(Gdip.InvalidParameter);
 
@@ -68,8 +68,8 @@ namespace System.Drawing.Drawing2D
 
         public unsafe Matrix(Rectangle rect, Point[] plgpts)
         {
-            if (plgpts == null)
-                throw new ArgumentNullException(nameof(plgpts));
+            ArgumentNullException.ThrowIfNull(plgpts);
+
             if (plgpts.Length != 3)
                 throw Gdip.StatusException(Gdip.InvalidParameter);
 
@@ -176,8 +176,8 @@ namespace System.Drawing.Drawing2D
 
         public void Multiply(Matrix matrix, MatrixOrder order)
         {
-            if (matrix == null)
-                throw new ArgumentNullException(nameof(matrix));
+            ArgumentNullException.ThrowIfNull(matrix);
+
             if (matrix.NativeMatrix == NativeMatrix)
                 throw new InvalidOperationException(SR.GdiplusObjectBusy);
 
@@ -248,8 +248,7 @@ namespace System.Drawing.Drawing2D
 
         public unsafe void TransformPoints(PointF[] pts)
         {
-            if (pts == null)
-                throw new ArgumentNullException(nameof(pts));
+            ArgumentNullException.ThrowIfNull(pts);
 
             fixed (PointF* p = pts)
             {
@@ -262,8 +261,7 @@ namespace System.Drawing.Drawing2D
 
         public unsafe void TransformPoints(Point[] pts)
         {
-            if (pts == null)
-                throw new ArgumentNullException(nameof(pts));
+            ArgumentNullException.ThrowIfNull(pts);
 
             fixed (Point* p = pts)
             {
@@ -276,8 +274,7 @@ namespace System.Drawing.Drawing2D
 
         public unsafe void TransformVectors(PointF[] pts)
         {
-            if (pts == null)
-                throw new ArgumentNullException(nameof(pts));
+            ArgumentNullException.ThrowIfNull(pts);
 
             fixed (PointF* p = pts)
             {
@@ -292,8 +289,7 @@ namespace System.Drawing.Drawing2D
 
         public unsafe void TransformVectors(Point[] pts)
         {
-            if (pts == null)
-                throw new ArgumentNullException(nameof(pts));
+            ArgumentNullException.ThrowIfNull(pts);
 
             fixed (Point* p = pts)
             {

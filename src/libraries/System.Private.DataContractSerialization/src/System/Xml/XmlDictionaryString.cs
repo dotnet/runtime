@@ -23,10 +23,9 @@ namespace System.Xml
 
         public XmlDictionaryString(IXmlDictionary dictionary, string value, int key)
         {
-            if (dictionary == null)
-                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentNullException(nameof(dictionary)));
-            if (value == null)
-                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentNullException(nameof(value)));
+            ArgumentNullException.ThrowIfNull(dictionary);
+            ArgumentNullException.ThrowIfNull(value);
+
             if (key < MinKey || key > MaxKey)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException(nameof(key), SR.Format(SR.ValueMustBeInRange, MinKey, MaxKey)));
             _dictionary = dictionary;
@@ -105,8 +104,8 @@ namespace System.Xml
 
             public bool TryLookup(string value, [NotNullWhen(true)] out XmlDictionaryString? result)
             {
-                if (value == null)
-                    throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(value));
+                ArgumentNullException.ThrowIfNull(value);
+
                 if (value.Length == 0)
                 {
                     result = _empty;
@@ -129,8 +128,8 @@ namespace System.Xml
 
             public bool TryLookup(XmlDictionaryString value, [NotNullWhen(true)] out XmlDictionaryString? result)
             {
-                if (value == null)
-                    throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentNullException(nameof(value)));
+                ArgumentNullException.ThrowIfNull(value);
+
                 if (value.Dictionary != this)
                 {
                     result = null;

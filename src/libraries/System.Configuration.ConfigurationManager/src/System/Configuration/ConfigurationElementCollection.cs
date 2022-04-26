@@ -31,7 +31,10 @@ namespace System.Configuration
 
         protected ConfigurationElementCollection(IComparer comparer)
         {
-            if (comparer == null) throw new ArgumentNullException(nameof(comparer));
+            if (comparer is null)
+            {
+                throw new ArgumentNullException(nameof(comparer));
+            }
 
             _comparer = comparer;
         }

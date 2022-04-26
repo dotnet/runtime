@@ -10,13 +10,11 @@ namespace System.Net
 {
     internal static partial class UnmanagedCertificateContext
     {
-        internal static unsafe X509Certificate2Collection GetRemoteCertificatesFromStoreContext(IntPtr certContext)
+        internal static unsafe void GetRemoteCertificatesFromStoreContext(IntPtr certContext, X509Certificate2Collection result)
         {
-            X509Certificate2Collection result = new X509Certificate2Collection();
-
             if (certContext == IntPtr.Zero)
             {
-                return result;
+                return;
             }
 
             Interop.Crypt32.CERT_CONTEXT context = *(Interop.Crypt32.CERT_CONTEXT*)certContext;
@@ -35,15 +33,17 @@ namespace System.Net
                         break;
                     }
 
-                    var cert = new X509Certificate2(new IntPtr(next));
-                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(certContext, $"Adding remote certificate:{cert}");
+                    if ((IntPtr)next != certContext)
+                    {
+                        var cert = new X509Certificate2(new IntPtr(next));
+                        if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(certContext, $"Adding remote certificate:{cert}");
 
-                    result.Add(cert);
+                        result.Add(cert);
+                    }
+
                     last = next;
                 }
             }
-
-            return result;
         }
     }
 }

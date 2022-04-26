@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
@@ -27,9 +27,9 @@ namespace System.Text.Json.Nodes
 
         public override void WriteTo(Utf8JsonWriter writer, JsonSerializerOptions? options = null)
         {
-            if (writer == null)
+            if (writer is null)
             {
-                throw new ArgumentNullException(nameof(writer));
+                ThrowHelper.ThrowArgumentNullException(nameof(writer));
             }
 
             if (_converter != null)

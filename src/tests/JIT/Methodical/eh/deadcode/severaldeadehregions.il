@@ -8,23 +8,27 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
+.assembly extern xunit.core {}
 .assembly extern mscorlib
 {
   .ver 0:0:0:0
 }
 .assembly extern eh_common{}
 
-.assembly test
+.assembly 'severaldeadehregions'
 {
   .ver 0:0:0:0
 }
-.module test.exe
 .imagebase 0x00400000
 .subsystem 0x00000003
 .file alignment 512
 .corflags 0x00000001
 
+.class public auto ansi Test_severaldeadehregions extends [mscorlib] System.Object {
 .method public static int32 main() {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     .maxstack  400
     .locals init (int32 V_0,
@@ -177,4 +181,5 @@ skip:
 	  ldloc.s    testLog
 	  callvirt   instance int32 [eh_common]TestUtil.TestLog::VerifyOutput()
       ret
+}
 }

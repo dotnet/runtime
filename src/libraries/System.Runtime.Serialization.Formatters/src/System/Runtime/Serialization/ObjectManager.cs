@@ -660,10 +660,8 @@ namespace System.Runtime.Serialization
         [RequiresUnreferencedCode(ObjectManagerUnreferencedCodeMessage)]
         public void RegisterObject(object obj, long objectID, SerializationInfo? info, long idOfContainingObj, MemberInfo? member, int[]? arrayIndex)
         {
-            if (obj == null)
-            {
-                throw new ArgumentNullException(nameof(obj));
-            }
+            ArgumentNullException.ThrowIfNull(obj);
+
             if (objectID <= 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(objectID), SR.ArgumentOutOfRange_ObjectID);
@@ -773,10 +771,8 @@ namespace System.Runtime.Serialization
         [RequiresUnreferencedCode(ObjectManagerUnreferencedCodeMessage)]
         internal void CompleteISerializableObject(object obj, SerializationInfo? info, StreamingContext context)
         {
-            if (obj == null)
-            {
-                throw new ArgumentNullException(nameof(obj));
-            }
+            ArgumentNullException.ThrowIfNull(obj);
+
             if (!(obj is ISerializable))
             {
                 throw new ArgumentException(SR.Serialization_NotISer);
@@ -931,10 +927,7 @@ namespace System.Runtime.Serialization
             {
                 throw new ArgumentOutOfRangeException(objectToBeFixed <= 0 ? nameof(objectToBeFixed) : nameof(objectRequired), SR.Serialization_IdTooSmall);
             }
-            if (member == null)
-            {
-                throw new ArgumentNullException(nameof(member));
-            }
+            ArgumentNullException.ThrowIfNull(member);
             if (!(member is FieldInfo)) // .NET Framework checks specifically for RuntimeFieldInfo and SerializationFieldInfo, but the former is an implementation detail in corelib
             {
                 throw new SerializationException(SR.Format(SR.Serialization_InvalidType, member.GetType()));
@@ -952,10 +945,7 @@ namespace System.Runtime.Serialization
             {
                 throw new ArgumentOutOfRangeException(objectToBeFixed <= 0 ? nameof(objectToBeFixed) : nameof(objectRequired), SR.Serialization_IdTooSmall);
             }
-            if (memberName == null)
-            {
-                throw new ArgumentNullException(nameof(memberName));
-            }
+            ArgumentNullException.ThrowIfNull(memberName);
 
             //Create a new fixup holder
             FixupHolder fixup = new FixupHolder(objectRequired, memberName, FixupHolder.DelayedFixup);
@@ -976,10 +966,7 @@ namespace System.Runtime.Serialization
             {
                 throw new ArgumentOutOfRangeException(arrayToBeFixed <= 0 ? nameof(arrayToBeFixed) : nameof(objectRequired), SR.Serialization_IdTooSmall);
             }
-            if (indices == null)
-            {
-                throw new ArgumentNullException(nameof(indices));
-            }
+            ArgumentNullException.ThrowIfNull(indices);
 
             FixupHolder fixup = new FixupHolder(objectRequired, indices, FixupHolder.ArrayFixup);
             RegisterFixup(fixup, arrayToBeFixed, objectRequired);

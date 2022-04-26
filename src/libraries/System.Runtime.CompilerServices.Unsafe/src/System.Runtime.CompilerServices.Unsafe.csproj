@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
+    <ExcludeResourcesImport>true</ExcludeResourcesImport>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(CoreLibProject)" />
+  </ItemGroup>
+</Project>

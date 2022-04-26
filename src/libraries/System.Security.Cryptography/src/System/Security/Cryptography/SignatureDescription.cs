@@ -18,8 +18,8 @@ namespace System.Security.Cryptography
 
         public SignatureDescription(SecurityElement el)
         {
-            if (el == null)
-                throw new ArgumentNullException(nameof(el));
+            ArgumentNullException.ThrowIfNull(el);
+
             KeyAlgorithm = el.SearchForTextOfTag("Key");
             DigestAlgorithm = el.SearchForTextOfTag("Digest");
             FormatterAlgorithm = el.SearchForTextOfTag("Formatter");

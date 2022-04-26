@@ -14,10 +14,7 @@ namespace System.Security.Authentication.ExtendedProtection
     {
         public ServiceNameCollection(ICollection items)
         {
-            if (items == null)
-            {
-                throw new ArgumentNullException(nameof(items));
-            }
+            ArgumentNullException.ThrowIfNull(items);
 
             // Normalize and filter for duplicates.
             AddIfNew(items, expectStrings: true);
@@ -135,10 +132,7 @@ namespace System.Security.Authentication.ExtendedProtection
         /// </summary>
         private void AddIfNew(string serviceName)
         {
-            if (string.IsNullOrEmpty(serviceName))
-            {
-                throw new ArgumentException(SR.security_ServiceNameCollection_EmptyServiceName);
-            }
+            ArgumentException.ThrowIfNullOrEmpty(serviceName);
 
             serviceName = NormalizeServiceName(serviceName);
 

@@ -218,9 +218,10 @@ namespace System.Xml.Linq
 
         public static XElement LoadStream(XmlReader reader, XName rootName, params XName[] streamNames)
         {
-            if (reader == null) throw new ArgumentNullException(nameof(reader));
-            if (rootName == null) throw new ArgumentNullException(nameof(rootName));
-            if (streamNames == null) throw new ArgumentNullException(nameof(streamNames));
+            ArgumentNullException.ThrowIfNull(reader);
+            ArgumentNullException.ThrowIfNull(rootName);
+            ArgumentNullException.ThrowIfNull(streamNames);
+
             for (int i = 0; i < streamNames.Length; i++)
             {
                 if (streamNames[i] == null) throw new ArgumentNullException("streamNames[" + i + "]");
@@ -239,7 +240,8 @@ namespace System.Xml.Linq
 
         public static IEnumerable<XElement> Stream(this XElement source)
         {
-            if (source == null) throw new ArgumentNullException(nameof(source));
+            ArgumentNullException.ThrowIfNull(source);
+
             StreamLoader loader = source.Annotation<StreamLoader>();
             if (loader == null) throw new InvalidOperationException("No stream associated with the element.");
             return loader.Stream(source);
@@ -247,7 +249,8 @@ namespace System.Xml.Linq
 
         public static IEnumerable<XElement> Stream(this IEnumerable<XElement> source)
         {
-            if (source == null) throw new ArgumentNullException(nameof(source));
+            ArgumentNullException.ThrowIfNull(source);
+
             return Enumerable.SelectMany(source, e => e.Stream());
         }
 

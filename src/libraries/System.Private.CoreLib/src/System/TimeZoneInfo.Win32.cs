@@ -322,16 +322,14 @@ namespace System
         /// </summary>
         public static TimeZoneInfo FindSystemTimeZoneById(string id)
         {
+            ArgumentNullException.ThrowIfNull(id);
+
             // Special case for Utc to avoid having TryGetTimeZone creating a new Utc object
             if (string.Equals(id, UtcId, StringComparison.OrdinalIgnoreCase))
             {
                 return Utc;
             }
 
-            if (id == null)
-            {
-                throw new ArgumentNullException(nameof(id));
-            }
             if (id.Length == 0 || id.Length > MaxKeyLength || id.Contains('\0'))
             {
                 throw new TimeZoneNotFoundException(SR.Format(SR.TimeZoneNotFound_MissingData, id));

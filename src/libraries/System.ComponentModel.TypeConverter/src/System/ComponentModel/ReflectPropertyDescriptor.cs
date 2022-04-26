@@ -483,14 +483,8 @@ namespace System.ComponentModel
         /// </summary>
         public override void AddValueChanged(object component, EventHandler handler)
         {
-            if (component == null)
-            {
-                throw new ArgumentNullException(nameof(component));
-            }
-            if (handler == null)
-            {
-                throw new ArgumentNullException(nameof(handler));
-            }
+            ArgumentNullException.ThrowIfNull(component);
+            ArgumentNullException.ThrowIfNull(handler);
 
             // If there's an event called <propertyname>Changed, hook the caller's handler directly up to that on the component
             EventDescriptor changedEvent = ChangedEventValue;

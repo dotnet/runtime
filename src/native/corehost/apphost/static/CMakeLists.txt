@@ -45,11 +45,6 @@ include(../../hostpolicy/files.cmake)
 include(../../hostcommon/files.cmake)
 
 if(MSVC)
-    add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4996>)
-    add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4267>)
-    add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4018>)
-    add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4200>)
-    add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4244>)
     # Host components don't try to handle asynchronous exceptions
     add_compile_options(/EHsc)
 elseif (CMAKE_CXX_COMPILER_ID MATCHES GNU)
@@ -213,7 +208,7 @@ if(CLR_CMAKE_TARGET_FREEBSD)
   set(CLR_CMAKE_USE_SYSTEM_LIBUNWIND 1)
 endif()
 
-if(CLR_CMAKE_USE_SYSTEM_LIBUNWIND)
+if(CLR_CMAKE_USE_SYSTEM_LIBUNWIND AND NOT CLR_CMAKE_TARGET_OSX)
     find_unwind_libs(UNWIND_LIBS)
 
     LIST(APPEND NATIVE_LIBS

@@ -54,10 +54,8 @@ namespace System.Data.Common
 
         public static ReadOnlyCollection<DbColumn> GetColumnSchema(this DbDataReader reader)
         {
-            if (reader is null)
-            {
-                throw new ArgumentNullException(nameof(reader));
-            }
+            ArgumentNullException.ThrowIfNull(reader);
+
             if (reader is IDbColumnSchemaGenerator schemaGenerator)
             {
                 return schemaGenerator.GetColumnSchema();

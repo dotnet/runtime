@@ -80,7 +80,7 @@ namespace ILCompiler.DependencyAnalysis
 #endif
 
         [DllImport(NativeObjectWriterFileName)]
-        private static extern IntPtr InitObjWriter(string objectFilePath, string triple = null);
+        private static extern IntPtr InitObjWriter([MarshalAs(UnmanagedType.LPUTF8Str)] string objectFilePath, string triple = null);
 
         [DllImport(NativeObjectWriterFileName)]
         private static extern void FinishObjWriter(IntPtr objWriter);
@@ -795,7 +795,7 @@ namespace ILCompiler.DependencyAnalysis
             // For now consider all method symbols address taken.
             // We could restrict this in the future to those that are referenced from
             // reflection tables, EH tables, were actually address taken in code, or are referenced from vtables.
-            if ((_options & ObjectWritingOptions.ControlFlowGuard) != 0 && target is IMethodNode)
+            if ((_options & ObjectWritingOptions.ControlFlowGuard) != 0 && (target is IMethodNode || target is AssemblyStubNode))
             {
                 flags |= SymbolRefFlags.AddressTakenFunction;
             }

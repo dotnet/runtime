@@ -24,10 +24,7 @@ namespace System.Drawing
 
         public TextureBrush(Image image, WrapMode wrapMode)
         {
-            if (image == null)
-            {
-                throw new ArgumentNullException(nameof(image));
-            }
+            ArgumentNullException.ThrowIfNull(image);
 
             if (wrapMode < WrapMode.Tile || wrapMode > WrapMode.Clamp)
             {
@@ -45,10 +42,7 @@ namespace System.Drawing
 
         public TextureBrush(Image image, WrapMode wrapMode, RectangleF dstRect)
         {
-            if (image == null)
-            {
-                throw new ArgumentNullException(nameof(image));
-            }
+            ArgumentNullException.ThrowIfNull(image);
 
             if (wrapMode < WrapMode.Tile || wrapMode > WrapMode.Clamp)
             {
@@ -70,10 +64,7 @@ namespace System.Drawing
 
         public TextureBrush(Image image, WrapMode wrapMode, Rectangle dstRect)
         {
-            if (image == null)
-            {
-                throw new ArgumentNullException(nameof(image));
-            }
+            ArgumentNullException.ThrowIfNull(image);
 
             if (wrapMode < WrapMode.Tile || wrapMode > WrapMode.Clamp)
             {
@@ -97,10 +88,7 @@ namespace System.Drawing
 
         public TextureBrush(Image image, RectangleF dstRect, ImageAttributes? imageAttr)
         {
-            if (image == null)
-            {
-                throw new ArgumentNullException(nameof(image));
-            }
+            ArgumentNullException.ThrowIfNull(image);
 
             IntPtr brush;
             int status = Gdip.GdipCreateTextureIA(new HandleRef(image, image.nativeImage),
@@ -120,10 +108,7 @@ namespace System.Drawing
 
         public TextureBrush(Image image, Rectangle dstRect, ImageAttributes? imageAttr)
         {
-            if (image == null)
-            {
-                throw new ArgumentNullException(nameof(image));
-            }
+            ArgumentNullException.ThrowIfNull(image);
 
             IntPtr brush;
             int status = Gdip.GdipCreateTextureIAI(new HandleRef(image, image.nativeImage),
@@ -220,10 +205,7 @@ namespace System.Drawing
 
         public void MultiplyTransform(Matrix matrix, MatrixOrder order)
         {
-            if (matrix == null)
-            {
-                throw new ArgumentNullException(nameof(matrix));
-            }
+            ArgumentNullException.ThrowIfNull(matrix);
 
             // Multiplying the transform by a disposed matrix is a nop in GDI+, but throws
             // with the libgdiplus backend. Simulate a nop for compatability with GDI+.

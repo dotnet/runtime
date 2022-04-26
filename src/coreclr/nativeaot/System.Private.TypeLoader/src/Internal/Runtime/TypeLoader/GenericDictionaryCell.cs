@@ -513,7 +513,7 @@ namespace Internal.Runtime.TypeLoader
 
             internal override IntPtr Create(TypeBuilder builder)
             {
-                IntPtr result = TypeLoaderEnvironment.Instance.TryGetDefaultConstructorForType(Type);
+                IntPtr result = TypeLoaderEnvironment.TryGetDefaultConstructorForType(Type);
 
 
                 if (result == IntPtr.Zero)
@@ -580,11 +580,11 @@ namespace Internal.Runtime.TypeLoader
                     canUseRetrieveExactFunctionPointerIfPossible = true;
                 else if (!Method.OwningType.IsValueType) // If the owning type isn't a valuetype, concerns about unboxing stubs are moot
                     canUseRetrieveExactFunctionPointerIfPossible = true;
-                else if (TypeLoaderEnvironment.Instance.IsStaticMethodSignature(MethodSignature)) // Static methods don't have unboxing stub concerns
+                else if (TypeLoaderEnvironment.IsStaticMethodSignature(MethodSignature)) // Static methods don't have unboxing stub concerns
                     canUseRetrieveExactFunctionPointerIfPossible = true;
 
                 if (canUseRetrieveExactFunctionPointerIfPossible &&
-                    builder.RetrieveExactFunctionPointerIfPossible(Method, out exactFunctionPointer))
+                    TypeBuilder.RetrieveExactFunctionPointerIfPossible(Method, out exactFunctionPointer))
                 {
                     // If we succeed in finding a non-shareable function pointer for this method, it means
                     // that we found a method body for it that was statically compiled. We'll use that body
@@ -748,7 +748,7 @@ namespace Internal.Runtime.TypeLoader
                 if (Method is NoMetadataMethodDesc)
                 {
                     // If the method does not have metadata, use the NameAndSignature property which should work in that case.
-                    if (TypeLoaderEnvironment.Instance.IsStaticMethodSignature(Method.NameAndSignature.Signature))
+                    if (TypeLoaderEnvironment.IsStaticMethodSignature(Method.NameAndSignature.Signature))
                         return true;
                 }
                 else
@@ -784,7 +784,7 @@ namespace Internal.Runtime.TypeLoader
                 if (Method.FunctionPointer != IntPtr.Zero)
                 {
                     if (Method.Instantiation.Length > 0
-                        || TypeLoaderEnvironment.Instance.IsStaticMethodSignature(MethodSignature)
+                        || TypeLoaderEnvironment.IsStaticMethodSignature(MethodSignature)
                         || (Method.OwningType.IsValueType && !Method.UnboxingStub))
                     {
                         Debug.Assert(methodDictionary != IntPtr.Zero);
@@ -1813,7 +1813,7 @@ namespace Internal.Runtime.TypeLoader
                     break;
 
                 default:
-                    parser.ThrowBadImageFormatException();
+                    NativeParser.ThrowBadImageFormatException();
                     cell = null;
                     break;
             }

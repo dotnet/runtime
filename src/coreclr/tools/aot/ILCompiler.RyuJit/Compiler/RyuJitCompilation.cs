@@ -53,10 +53,8 @@ namespace ILCompiler
             _instructionSetMap = new Dictionary<string, InstructionSet>();
             foreach (var instructionSetInfo in InstructionSetFlags.ArchitectureToValidInstructionSets(TypeSystemContext.Target.Architecture))
             {
-                if (!instructionSetInfo.Specifiable)
-                    continue;
-
-                _instructionSetMap.Add(instructionSetInfo.ManagedName, instructionSetInfo.InstructionSet);
+                if (instructionSetInfo.ManagedName != "")
+                    _instructionSetMap.Add(instructionSetInfo.ManagedName, instructionSetInfo.InstructionSet);
             }
 
             _profileDataManager = profileDataManager;
@@ -210,7 +208,7 @@ namespace ILCompiler
                     Logger.LogWarning(method, DiagnosticId.COMInteropNotSupportedInFullAOT);
                 }
                 if ((_compilationOptions & RyuJitCompilationOptions.UseResilience) != 0)
-                    Logger.LogMessage($"Ignoring unresolved method {method}, because: {exception.Message}");
+                    Logger.LogMessage($"Method '{method}' will always throw because: {exception.Message}");
                 else
                     Logger.LogError($"Method will always throw because: {exception.Message}", 1005, method, MessageSubCategory.AotAnalysis);
             }
@@ -231,7 +229,7 @@ namespace ILCompiler
                 if (!InstructionSetSupport.IsInstructionSetSupported(instructionSet)
                     && InstructionSetSupport.OptimisticFlags.HasInstructionSet(instructionSet))
                 {
-                    return HardwareIntrinsicHelpers.EmitIsSupportedIL(method, _hardwareIntrinsicFlags);
+                    return HardwareIntrinsicHelpers.EmitIsSupportedIL(method, _hardwareIntrinsicFlags, instructionSet);
                 }
             }
 

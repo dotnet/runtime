@@ -43,9 +43,9 @@ namespace System.Reflection.Metadata
         /// </remarks>
         public MetadataStringDecoder(Encoding encoding)
         {
-            if (encoding == null)
+            if (encoding is null)
             {
-                throw new ArgumentNullException(nameof(encoding));
+                Throw.ArgumentNull(nameof(encoding));
             }
 
             // Non-enforcement of (encoding is UTF8Encoding) here is by design.

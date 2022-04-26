@@ -116,15 +116,8 @@ namespace System.ComponentModel
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public static TypeDescriptionProvider AddAttributes(Type type, params Attribute[] attributes)
         {
-            if (type == null)
-            {
-                throw new ArgumentNullException(nameof(type));
-            }
-
-            if (attributes == null)
-            {
-                throw new ArgumentNullException(nameof(attributes));
-            }
+            ArgumentNullException.ThrowIfNull(type);
+            ArgumentNullException.ThrowIfNull(attributes);
 
             TypeDescriptionProvider existingProvider = GetProvider(type);
             TypeDescriptionProvider provider = new AttributeProvider(existingProvider, attributes);
@@ -145,15 +138,8 @@ namespace System.ComponentModel
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public static TypeDescriptionProvider AddAttributes(object instance, params Attribute[] attributes)
         {
-            if (instance == null)
-            {
-                throw new ArgumentNullException(nameof(instance));
-            }
-
-            if (attributes == null)
-            {
-                throw new ArgumentNullException(nameof(attributes));
-            }
+            ArgumentNullException.ThrowIfNull(instance);
+            ArgumentNullException.ThrowIfNull(attributes);
 
             TypeDescriptionProvider existingProvider = GetProvider(instance);
             TypeDescriptionProvider provider = new AttributeProvider(existingProvider, attributes);
@@ -186,15 +172,8 @@ namespace System.ComponentModel
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public static void AddProvider(TypeDescriptionProvider provider, Type type)
         {
-            if (provider == null)
-            {
-                throw new ArgumentNullException(nameof(provider));
-            }
-
-            if (type == null)
-            {
-                throw new ArgumentNullException(nameof(type));
-            }
+            ArgumentNullException.ThrowIfNull(provider);
+            ArgumentNullException.ThrowIfNull(type);
 
             lock (s_providerTable)
             {
@@ -219,15 +198,9 @@ namespace System.ComponentModel
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public static void AddProvider(TypeDescriptionProvider provider, object instance)
         {
-            if (provider == null)
-            {
-                throw new ArgumentNullException(nameof(provider));
-            }
+            ArgumentNullException.ThrowIfNull(provider);
+            ArgumentNullException.ThrowIfNull(instance);
 
-            if (instance == null)
-            {
-                throw new ArgumentNullException(nameof(instance));
-            }
             bool refreshNeeded;
 
             // Get the root node, hook it up, and stuff it back into
@@ -259,15 +232,8 @@ namespace System.ComponentModel
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public static void AddProviderTransparent(TypeDescriptionProvider provider, Type type)
         {
-            if (provider == null)
-            {
-                throw new ArgumentNullException(nameof(provider));
-            }
-
-            if (type == null)
-            {
-                throw new ArgumentNullException(nameof(type));
-            }
+            ArgumentNullException.ThrowIfNull(provider);
+            ArgumentNullException.ThrowIfNull(type);
 
             AddProvider(provider, type);
         }
@@ -282,15 +248,8 @@ namespace System.ComponentModel
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public static void AddProviderTransparent(TypeDescriptionProvider provider, object instance)
         {
-            if (provider == null)
-            {
-                throw new ArgumentNullException(nameof(provider));
-            }
-
-            if (instance == null)
-            {
-                throw new ArgumentNullException(nameof(instance));
-            }
+            ArgumentNullException.ThrowIfNull(provider);
+            ArgumentNullException.ThrowIfNull(instance);
 
             AddProvider(provider, instance);
         }
@@ -362,15 +321,8 @@ namespace System.ComponentModel
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public static void CreateAssociation(object primary, object secondary)
         {
-            if (primary == null)
-            {
-                throw new ArgumentNullException(nameof(primary));
-            }
-
-            if (secondary == null)
-            {
-                throw new ArgumentNullException(nameof(secondary));
-            }
+            ArgumentNullException.ThrowIfNull(primary);
+            ArgumentNullException.ThrowIfNull(secondary);
 
             if (primary == secondary)
             {
@@ -445,17 +397,11 @@ namespace System.ComponentModel
             Type[]? argTypes,
             object[]? args)
         {
-            if (objectType == null)
-            {
-                throw new ArgumentNullException(nameof(objectType));
-            }
+            ArgumentNullException.ThrowIfNull(objectType);
 
             if (argTypes != null)
             {
-                if (args == null)
-                {
-                    throw new ArgumentNullException(nameof(args));
-                }
+                ArgumentNullException.ThrowIfNull(args);
 
                 if (argTypes.Length != args.Length)
                 {
@@ -577,15 +523,8 @@ namespace System.ComponentModel
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public static object GetAssociation(Type type, object primary)
         {
-            if (type == null)
-            {
-                throw new ArgumentNullException(nameof(type));
-            }
-
-            if (primary == null)
-            {
-                throw new ArgumentNullException(nameof(primary));
-            }
+            ArgumentNullException.ThrowIfNull(type);
+            ArgumentNullException.ThrowIfNull(primary);
 
             object associatedObject = primary;
 
@@ -927,10 +866,7 @@ namespace System.ComponentModel
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type,
             string typeName)
         {
-            if (type == null)
-            {
-                throw new ArgumentNullException(typeName);
-            }
+            ArgumentNullException.ThrowIfNull(type);
 
             return NodeFor(type).GetTypeDescriptor(type);
         }
@@ -991,10 +927,7 @@ namespace System.ComponentModel
         [RequiresUnreferencedCode(EditorRequiresUnreferencedCode + " The Type of component cannot be statically discovered.")]
         public static object? GetEditor(object component, Type editorBaseType, bool noCustomTypeDesc)
         {
-            if (editorBaseType == null)
-            {
-                throw new ArgumentNullException(nameof(editorBaseType));
-            }
+            ArgumentNullException.ThrowIfNull(editorBaseType);
 
             return GetDescriptor(component, noCustomTypeDesc)!.GetEditor(editorBaseType);
         }
@@ -1007,10 +940,7 @@ namespace System.ComponentModel
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type,
             Type editorBaseType)
         {
-            if (editorBaseType == null)
-            {
-                throw new ArgumentNullException(nameof(editorBaseType));
-            }
+            ArgumentNullException.ThrowIfNull(editorBaseType);
 
             return GetDescriptor(type, nameof(type))!.GetEditor(editorBaseType);
         }
@@ -1224,10 +1154,7 @@ namespace System.ComponentModel
         [RequiresUnreferencedCode("The Type of component cannot be statically discovered.")]
         public static string? GetFullComponentName(object component)
         {
-            if (component == null)
-            {
-                throw new ArgumentNullException(nameof(component));
-            }
+            ArgumentNullException.ThrowIfNull(component);
 
             return GetProvider(component).GetFullComponentName(component);
         }
@@ -1432,10 +1359,7 @@ namespace System.ComponentModel
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public static TypeDescriptionProvider GetProvider(Type type)
         {
-            if (type == null)
-            {
-                throw new ArgumentNullException(nameof(type));
-            }
+            ArgumentNullException.ThrowIfNull(type);
 
             return NodeFor(type, true);
         }
@@ -1450,10 +1374,7 @@ namespace System.ComponentModel
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public static TypeDescriptionProvider GetProvider(object instance)
         {
-            if (instance == null)
-            {
-                throw new ArgumentNullException(nameof(instance));
-            }
+            ArgumentNullException.ThrowIfNull(instance);
 
             return NodeFor(instance, true);
         }
@@ -1477,10 +1398,7 @@ namespace System.ComponentModel
         [return: DynamicallyAccessedMembers(ReflectTypesDynamicallyAccessedMembers)]
         public static Type GetReflectionType([DynamicallyAccessedMembers(ReflectTypesDynamicallyAccessedMembers)] Type type)
         {
-            if (type == null)
-            {
-                throw new ArgumentNullException(nameof(type));
-            }
+            ArgumentNullException.ThrowIfNull(type);
 
             return NodeFor(type).GetReflectionType(type);
         }
@@ -1492,10 +1410,7 @@ namespace System.ComponentModel
         [RequiresUnreferencedCode("GetReflectionType is not trim compatible because the Type of object cannot be statically discovered.")]
         public static Type GetReflectionType(object instance)
         {
-            if (instance == null)
-            {
-                throw new ArgumentNullException(nameof(instance));
-            }
+            ArgumentNullException.ThrowIfNull(instance);
 
             return NodeFor(instance).GetReflectionType(instance);
         }
@@ -2481,15 +2396,8 @@ namespace System.ComponentModel
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public static void RemoveAssociation(object primary, object secondary)
         {
-            if (primary == null)
-            {
-                throw new ArgumentNullException(nameof(primary));
-            }
-
-            if (secondary == null)
-            {
-                throw new ArgumentNullException(nameof(secondary));
-            }
+            ArgumentNullException.ThrowIfNull(primary);
+            ArgumentNullException.ThrowIfNull(secondary);
 
             Hashtable assocTable = AssociationTable;
             IList? associations = (IList?)assocTable?[primary];
@@ -2518,10 +2426,7 @@ namespace System.ComponentModel
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public static void RemoveAssociations(object primary)
         {
-            if (primary == null)
-            {
-                throw new ArgumentNullException(nameof(primary));
-            }
+            ArgumentNullException.ThrowIfNull(primary);
 
             Hashtable assocTable = AssociationTable;
             assocTable?.Remove(primary);
@@ -2536,15 +2441,8 @@ namespace System.ComponentModel
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public static void RemoveProvider(TypeDescriptionProvider provider, Type type)
         {
-            if (provider == null)
-            {
-                throw new ArgumentNullException(nameof(provider));
-            }
-
-            if (type == null)
-            {
-                throw new ArgumentNullException(nameof(type));
-            }
+            ArgumentNullException.ThrowIfNull(provider);
+            ArgumentNullException.ThrowIfNull(type);
 
             // Walk the nodes until we find the right one, and then remove it.
             NodeRemove(type, provider);
@@ -2560,15 +2458,8 @@ namespace System.ComponentModel
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public static void RemoveProvider(TypeDescriptionProvider provider, object instance)
         {
-            if (provider == null)
-            {
-                throw new ArgumentNullException(nameof(provider));
-            }
-
-            if (instance == null)
-            {
-                throw new ArgumentNullException(nameof(instance));
-            }
+            ArgumentNullException.ThrowIfNull(provider);
+            ArgumentNullException.ThrowIfNull(instance);
 
             // Walk the nodes until we find the right one, and then remove it.
             NodeRemove(instance, provider);
@@ -2585,15 +2476,8 @@ namespace System.ComponentModel
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public static void RemoveProviderTransparent(TypeDescriptionProvider provider, Type type)
         {
-            if (provider == null)
-            {
-                throw new ArgumentNullException(nameof(provider));
-            }
-
-            if (type == null)
-            {
-                throw new ArgumentNullException(nameof(type));
-            }
+            ArgumentNullException.ThrowIfNull(provider);
+            ArgumentNullException.ThrowIfNull(type);
 
             RemoveProvider(provider, type);
         }
@@ -2607,15 +2491,8 @@ namespace System.ComponentModel
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public static void RemoveProviderTransparent(TypeDescriptionProvider provider, object instance)
         {
-            if (provider == null)
-            {
-                throw new ArgumentNullException(nameof(provider));
-            }
-
-            if (instance == null)
-            {
-                throw new ArgumentNullException(nameof(instance));
-            }
+            ArgumentNullException.ThrowIfNull(provider);
+            ArgumentNullException.ThrowIfNull(instance);
 
             RemoveProvider(provider, instance);
         }
@@ -2650,10 +2527,7 @@ namespace System.ComponentModel
         /// </summary>
         public static void SortDescriptorArray(IList infos)
         {
-            if (infos == null)
-            {
-                throw new ArgumentNullException(nameof(infos));
-            }
+            ArgumentNullException.ThrowIfNull(infos);
 
             ArrayList.Adapter(infos).Sort(MemberDescriptorComparer.Instance);
         }
@@ -2683,10 +2557,7 @@ namespace System.ComponentModel
             [return: NotNullIfNotNull("instance")]
             public override ICustomTypeDescriptor? GetTypeDescriptor([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type objectType, object? instance)
             {
-                if (objectType == null)
-                {
-                    throw new ArgumentNullException(nameof(objectType));
-                }
+                ArgumentNullException.ThrowIfNull(objectType);
 
                 if (instance == null)
                 {
@@ -3057,10 +2928,7 @@ namespace System.ComponentModel
             [RequiresUnreferencedCode(EditorRequiresUnreferencedCode)]
             object? ICustomTypeDescriptor.GetEditor(Type editorBaseType)
             {
-                if (editorBaseType == null)
-                {
-                    throw new ArgumentNullException(nameof(editorBaseType));
-                }
+                ArgumentNullException.ThrowIfNull(editorBaseType);
 
                 object? editor = _primary.GetEditor(editorBaseType) ?? _secondary.GetEditor(editorBaseType);
 
@@ -3159,17 +3027,11 @@ namespace System.ComponentModel
                 Type[]? argTypes,
                 object[]? args)
             {
-                if (objectType == null)
-                {
-                    throw new ArgumentNullException(nameof(objectType));
-                }
+                ArgumentNullException.ThrowIfNull(objectType);
 
                 if (argTypes != null)
                 {
-                    if (args == null)
-                    {
-                        throw new ArgumentNullException(nameof(args));
-                    }
+                    ArgumentNullException.ThrowIfNull(args);
 
                     if (argTypes.Length != args.Length)
                     {
@@ -3186,10 +3048,7 @@ namespace System.ComponentModel
             /// </summary>
             public override IDictionary? GetCache(object instance)
             {
-                if (instance == null)
-                {
-                    throw new ArgumentNullException(nameof(instance));
-                }
+                ArgumentNullException.ThrowIfNull(instance);
 
                 return Provider.GetCache(instance);
             }
@@ -3201,20 +3060,14 @@ namespace System.ComponentModel
             [RequiresUnreferencedCode("The Type of instance cannot be statically discovered.")]
             public override ICustomTypeDescriptor GetExtendedTypeDescriptor(object instance)
             {
-                if (instance == null)
-                {
-                    throw new ArgumentNullException(nameof(instance));
-                }
+                ArgumentNullException.ThrowIfNull(instance);
 
                 return new DefaultExtendedTypeDescriptor(this, instance);
             }
 
             protected internal override IExtenderProvider[] GetExtenderProviders(object instance)
             {
-                if (instance == null)
-                {
-                    throw new ArgumentNullException(nameof(instance));
-                }
+                ArgumentNullException.ThrowIfNull(instance);
 
                 return Provider.GetExtenderProviders(instance);
             }
@@ -3231,10 +3084,7 @@ namespace System.ComponentModel
             [RequiresUnreferencedCode("The Type of component cannot be statically discovered.")]
             public override string? GetFullComponentName(object component)
             {
-                if (component == null)
-                {
-                    throw new ArgumentNullException(nameof(component));
-                }
+                ArgumentNullException.ThrowIfNull(component);
 
                 return Provider.GetFullComponentName(component);
             }
@@ -3248,20 +3098,14 @@ namespace System.ComponentModel
                 [DynamicallyAccessedMembers(ReflectTypesDynamicallyAccessedMembers)] Type objectType,
                 object? instance)
             {
-                if (objectType == null)
-                {
-                    throw new ArgumentNullException(nameof(objectType));
-                }
+                ArgumentNullException.ThrowIfNull(objectType);
 
                 return Provider.GetReflectionType(objectType, instance);
             }
 
             public override Type GetRuntimeType(Type objectType)
             {
-                if (objectType == null)
-                {
-                    throw new ArgumentNullException(nameof(objectType));
-                }
+                ArgumentNullException.ThrowIfNull(objectType);
 
                 return Provider.GetRuntimeType(objectType);
             }
@@ -3272,10 +3116,7 @@ namespace System.ComponentModel
             /// </summary>
             public override ICustomTypeDescriptor GetTypeDescriptor([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type objectType, object? instance)
             {
-                if (objectType == null)
-                {
-                    throw new ArgumentNullException(nameof(objectType));
-                }
+                ArgumentNullException.ThrowIfNull(objectType);
 
                 if (instance != null && !objectType.IsInstanceOfType(instance))
                 {
@@ -3287,10 +3128,8 @@ namespace System.ComponentModel
 
             public override bool IsSupportedType(Type type)
             {
-                if (type == null)
-                {
-                    throw new ArgumentNullException(nameof(type));
-                }
+                ArgumentNullException.ThrowIfNull(type);
+
                 return Provider.IsSupportedType(type);
             }
 
@@ -3449,10 +3288,7 @@ namespace System.ComponentModel
                 [RequiresUnreferencedCode(EditorRequiresUnreferencedCode)]
                 object? ICustomTypeDescriptor.GetEditor(Type editorBaseType)
                 {
-                    if (editorBaseType == null)
-                    {
-                        throw new ArgumentNullException(nameof(editorBaseType));
-                    }
+                    ArgumentNullException.ThrowIfNull(editorBaseType);
 
                     // Check to see if the provider we get is a ReflectTypeDescriptionProvider.
                     // If so, we can call on it directly rather than creating another
@@ -3776,10 +3612,7 @@ namespace System.ComponentModel
                 [RequiresUnreferencedCode(EditorRequiresUnreferencedCode)]
                 object? ICustomTypeDescriptor.GetEditor(Type editorBaseType)
                 {
-                    if (editorBaseType == null)
-                    {
-                        throw new ArgumentNullException(nameof(editorBaseType));
-                    }
+                    ArgumentNullException.ThrowIfNull(editorBaseType);
 
                     // Check to see if the provider we get is a ReflectTypeDescriptionProvider.
                     // If so, we can call on it directly rather than creating another

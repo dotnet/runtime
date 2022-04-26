@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent);net48</TargetFrameworks>
+    <Nullable>enable</Nullable>
+    <EnablePreviewFeatures>true</EnablePreviewFeatures>
+    <GenerateRequiresPreviewFeaturesAttribute>true</GenerateRequiresPreviewFeaturesAttribute>
+    <IgnoreForCI Condition="'$(TargetOS)' == 'Browser'">true</IgnoreForCI>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\ByteUtils.cs">
+      <Link>CommonTest\System\Security\Cryptography\ByteUtils.cs</Link>
+    </Compile>
+    <Compile Include="CoseHeaderLabelTests.cs" />
+    <Compile Include="CoseHeaderMapTests.cs" />
+    <Compile Include="CoseMessageTests.DecoseSign1.cs" />
+    <Compile Include="CoseSign1MessageTests.Sign.CustomHeaderMaps.Stream.cs" />
+    <Compile Include="CoseSign1MessageTests.Sign.CustomHeaderMaps.cs" />
+    <Compile Include="CoseSign1MessageTests.Verify.Stream.cs" />
+    <Compile Include="CoseSign1MessageTests.Verify.cs" />
+    <Compile Include="CoseSign1MessageTests.Sign.cs" />
+    <Compile Include="CoseTestHelpers.cs" />
+  </ItemGroup>
+  
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
+    <Compile Include="$(CoreLibSharedDir)System\Runtime\Versioning\RequiresPreviewFeaturesAttribute.cs" Link="System\Runtime\Versioning\RequiresPreviewFeaturesAttribute.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.IdentityModel.Tokens" Version="6.15.0" />
+  </ItemGroup>
+  
+  <ItemGroup>
+    <ProjectReference Include="..\src\System.Security.Cryptography.Cose.csproj" />
+  </ItemGroup>
+</Project>

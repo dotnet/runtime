@@ -112,7 +112,7 @@ namespace System.Text
         }
 
         // non-validating ctor
-        private Rune(uint scalarValue, bool unused)
+        private Rune(uint scalarValue, bool _)
         {
             UnicodeDebug.AssertIsValidScalar(scalarValue);
             _value = scalarValue;
@@ -849,7 +849,7 @@ namespace System.Text
 
             if ((uint)index >= (uint)input!.Length)
             {
-                ThrowHelper.ThrowArgumentOutOfRange_IndexException();
+                ThrowHelper.ThrowArgumentOutOfRange_IndexMustBeLessException();
             }
 
             // Optimistically assume input is within BMP.

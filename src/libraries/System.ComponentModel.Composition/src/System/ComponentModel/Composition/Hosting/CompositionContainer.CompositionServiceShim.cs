@@ -13,10 +13,8 @@ namespace System.ComponentModel.Composition.Hosting
 
             public CompositionServiceShim(CompositionContainer innerContainer)
             {
-                if (innerContainer == null)
-                {
-                    throw new ArgumentNullException(nameof(innerContainer));
-                }
+                ArgumentNullException.ThrowIfNull(innerContainer);
+
                 _innerContainer = innerContainer;
             }
 

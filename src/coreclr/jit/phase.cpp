@@ -180,6 +180,7 @@ void Phase::PostPhase(PhaseStatus status)
         PHASE_MERGE_FINALLY_CHAINS,
         PHASE_CLONE_FINALLY,
         PHASE_MERGE_THROWS,
+        PHASE_FWD_SUB,
         PHASE_MORPH_GLOBAL,
         PHASE_INVERT_LOOPS,
         PHASE_OPTIMIZE_LAYOUT,

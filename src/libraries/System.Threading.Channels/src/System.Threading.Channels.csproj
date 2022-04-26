@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppMinimum);netstandard2.1;netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
-    <Nullable>enable</Nullable>
     <IsPackable>true</IsPackable>
     <PackageDescription>Provides types for passing data between producers and consumers.
 
@@ -45,18 +44,11 @@ System.Threading.Channel&lt;T&gt;</PackageDescription>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.Concurrent" />
-    <Reference Include="System.Diagnostics.Debug" />
-    <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Threading" />
     <Reference Include="System.Threading.ThreadPool" />
-    <Reference Include="System.Threading.Tasks" />
-    <Reference Include="System.Threading.Tasks.Extensions" />
   </ItemGroup>
   <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'netstandard2.1'))">
     <PackageReference Include="System.Threading.Tasks.Extensions" Version="$(SystemThreadingTasksExtensionsVersion)" />
-    <!-- S.R.C.Unsafe isn't a primary but transitive dependency and this P2P makes sure that the live version is used. -->
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.CompilerServices.Unsafe\src\System.Runtime.CompilerServices.Unsafe.ilproj" PrivateAssets="all" />
   </ItemGroup>
 </Project>

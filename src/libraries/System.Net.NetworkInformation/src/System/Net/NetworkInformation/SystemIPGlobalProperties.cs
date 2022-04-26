@@ -102,7 +102,7 @@ namespace System.Net.NetworkInformation
 
         ///
         /// Gets the active TCP connections. Uses the native GetTcpTable API.
-        private unsafe List<SystemTcpConnectionInformation> GetAllTcpConnections()
+        private static unsafe List<SystemTcpConnectionInformation> GetAllTcpConnections()
         {
             uint size = 0;
             uint result;
@@ -379,8 +379,8 @@ namespace System.Net.NetworkInformation
         public override async Task<UnicastIPAddressInformationCollection> GetUnicastAddressesAsync()
         {
             // Wait for the address table to stabilize.
-            var tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-            if (!TeredoHelper.UnsafeNotifyStableUnicastIpAddressTable(s => ((TaskCompletionSource<bool>)s).TrySetResult(true), tcs))
+            var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            if (!TeredoHelper.UnsafeNotifyStableUnicastIpAddressTable(s => ((TaskCompletionSource)s).TrySetResult(), tcs))
             {
                 await tcs.Task.ConfigureAwait(false);
             }

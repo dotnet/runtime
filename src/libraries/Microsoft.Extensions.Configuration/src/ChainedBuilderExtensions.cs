@@ -29,14 +29,8 @@ namespace Microsoft.Extensions.Configuration
         /// <returns>The <see cref="IConfigurationBuilder"/>.</returns>
         public static IConfigurationBuilder AddConfiguration(this IConfigurationBuilder configurationBuilder, IConfiguration config, bool shouldDisposeConfiguration)
         {
-            if (configurationBuilder == null)
-            {
-                throw new ArgumentNullException(nameof(configurationBuilder));
-            }
-            if (config == null)
-            {
-                throw new ArgumentNullException(nameof(config));
-            }
+            ThrowHelper.ThrowIfNull(configurationBuilder);
+            ThrowHelper.ThrowIfNull(config);
 
             configurationBuilder.Add(new ChainedConfigurationSource
             {

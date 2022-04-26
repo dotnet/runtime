@@ -10,7 +10,7 @@ namespace System.IO.Tests
     {
         #region Utilities
 
-        public bool Exists(string path)
+        public virtual bool Exists(string path)
         {
             return Directory.Exists(path);
         }
@@ -55,17 +55,6 @@ namespace System.IO.Tests
             Assert.False(Exists(invalidPath));
             if (!trimmed.Contains(invalidPath.ToCharArray()[0]))
                 Assert.False(Exists(TestDirectory + Path.DirectorySeparatorChar + invalidPath));
-        }
-
-        [Fact]
-        public void PathAlreadyExistsAsFile()
-        {
-            string path = GetTestFilePath();
-            File.Create(path).Dispose();
-
-            Assert.False(Exists(IOServices.RemoveTrailingSlash(path)));
-            Assert.False(Exists(IOServices.RemoveTrailingSlash(IOServices.RemoveTrailingSlash(path))));
-            Assert.False(Exists(IOServices.RemoveTrailingSlash(IOServices.AddTrailingSlashIfNeeded(path))));
         }
 
         [Fact]
@@ -178,18 +167,6 @@ namespace System.IO.Tests
             string path = IOInputs.ExtendedPrefix + Path.Combine(TestDirectory, "extended", component);
             Directory.CreateDirectory(path);
             Assert.True(Exists(path));
-        }
-
-        [ConditionalFact(nameof(UsingNewNormalization))]
-        [PlatformSpecific(TestPlatforms.Windows)]  // Extended path already exists as file
-        public void ExtendedPathAlreadyExistsAsFile()
-        {
-            string path = IOInputs.ExtendedPrefix + GetTestFilePath();
-            File.Create(path).Dispose();
-
-            Assert.False(Exists(IOServices.RemoveTrailingSlash(path)));
-            Assert.False(Exists(IOServices.RemoveTrailingSlash(IOServices.RemoveTrailingSlash(path))));
-            Assert.False(Exists(IOServices.RemoveTrailingSlash(IOServices.AddTrailingSlashIfNeeded(path))));
         }
 
         [ConditionalFact(nameof(UsingNewNormalization))]
@@ -387,15 +364,42 @@ namespace System.IO.Tests
             Assert.False(Exists(Path.Combine(IOServices.GetNonExistentDrive(), "nonexistentsubdir")));
         }
 
+        #endregion
+    }
+
+    public class Directory_ExistsAsFile : FileSystemTest
+    {
+        [Fact]
+        public void PathAlreadyExistsAsFile()
+        {
+            string path = GetTestFilePath();
+            File.Create(path).Dispose();
+
+            Assert.False(Directory.Exists(IOServices.RemoveTrailingSlash(path)));
+            Assert.False(Directory.Exists(IOServices.RemoveTrailingSlash(IOServices.RemoveTrailingSlash(path))));
+            Assert.False(Directory.Exists(IOServices.RemoveTrailingSlash(IOServices.AddTrailingSlashIfNeeded(path))));
+        }
+
+        [ConditionalFact(nameof(UsingNewNormalization))]
+        [PlatformSpecific(TestPlatforms.Windows)]  // Extended path already exists as file
+        public void ExtendedPathAlreadyExistsAsFile()
+        {
+            string path = IOInputs.ExtendedPrefix + GetTestFilePath();
+            File.Create(path).Dispose();
+
+            Assert.False(Directory.Exists(IOServices.RemoveTrailingSlash(path)));
+            Assert.False(Directory.Exists(IOServices.RemoveTrailingSlash(IOServices.RemoveTrailingSlash(path))));
+            Assert.False(Directory.Exists(IOServices.RemoveTrailingSlash(IOServices.AddTrailingSlashIfNeeded(path))));
+        }
+
         [Fact]
         [PlatformSpecific(TestPlatforms.AnyUnix & ~TestPlatforms.Browser)]  // Makes call to native code (libc)
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/67853", TestPlatforms.tvOS)]
         public void FalseForNonRegularFile()
         {
             string fileName = GetTestFilePath();
             Assert.Equal(0, mkfifo(fileName, 0));
             Assert.False(Directory.Exists(fileName));
         }
-
-        #endregion
     }
 }

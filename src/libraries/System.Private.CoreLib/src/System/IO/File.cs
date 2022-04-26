@@ -27,13 +27,13 @@ namespace System.IO
         internal const int DefaultBufferSize = 4096;
 
         public static StreamReader OpenText(string path)
-            => new StreamReader(path ?? throw new ArgumentNullException(nameof(path)));
+            => new StreamReader(path);
 
         public static StreamWriter CreateText(string path)
-            => new StreamWriter(path ?? throw new ArgumentNullException(nameof(path)), append: false);
+            => new StreamWriter(path, append: false);
 
         public static StreamWriter AppendText(string path)
-            => new StreamWriter(path ?? throw new ArgumentNullException(nameof(path)), append: true);
+            => new StreamWriter(path, append: true);
 
         /// <summary>
         /// Copies an existing file to a new file.
@@ -49,14 +49,8 @@ namespace System.IO
         /// </summary>
         public static void Copy(string sourceFileName, string destFileName, bool overwrite)
         {
-            if (sourceFileName == null)
-                throw new ArgumentNullException(nameof(sourceFileName), SR.ArgumentNull_FileName);
-            if (destFileName == null)
-                throw new ArgumentNullException(nameof(destFileName), SR.ArgumentNull_FileName);
-            if (sourceFileName.Length == 0)
-                throw new ArgumentException(SR.Argument_EmptyFileName, nameof(sourceFileName));
-            if (destFileName.Length == 0)
-                throw new ArgumentException(SR.Argument_EmptyFileName, nameof(destFileName));
+            ArgumentException.ThrowIfNullOrEmpty(sourceFileName);
+            ArgumentException.ThrowIfNullOrEmpty(destFileName);
 
             FileSystem.CopyFile(Path.GetFullPath(sourceFileName), Path.GetFullPath(destFileName), overwrite);
         }
@@ -85,7 +79,10 @@ namespace System.IO
         // On Windows, Delete will fail for a file that is open for normal I/O
         // or a file that is memory mapped.
         public static void Delete(string path)
-            => FileSystem.DeleteFile(Path.GetFullPath(path ?? throw new ArgumentNullException(nameof(path))));
+        {
+            ArgumentNullException.ThrowIfNull(path);
+            FileSystem.DeleteFile(Path.GetFullPath(path));
+        }
 
         // Tests whether a file exists. The result is true if the file
         // given by the specified path exists; otherwise, the result is
@@ -292,12 +289,8 @@ namespace System.IO
 
         public static void WriteAllBytes(string path, byte[] bytes)
         {
-            if (path == null)
-                throw new ArgumentNullException(nameof(path), SR.ArgumentNull_Path);
-            if (path.Length == 0)
-                throw new ArgumentException(SR.Argument_EmptyPath, nameof(path));
-            if (bytes == null)
-                throw new ArgumentNullException(nameof(bytes));
+            ArgumentException.ThrowIfNullOrEmpty(path);
+            ArgumentNullException.ThrowIfNull(bytes);
 
             using SafeFileHandle sfh = OpenHandle(path, FileMode.Create, FileAccess.Write, FileShare.Read);
             RandomAccess.WriteAtOffset(sfh, bytes, 0);
@@ -344,10 +337,7 @@ namespace System.IO
         public static void WriteAllLines(string path, IEnumerable<string> contents, Encoding encoding)
         {
             Validate(path, encoding);
-
-            if (contents == null)
-                throw new ArgumentNullException(nameof(contents));
-
+            ArgumentNullException.ThrowIfNull(contents);
             InternalWriteAllLines(new StreamWriter(path, false, encoding), contents);
         }
 
@@ -381,10 +371,7 @@ namespace System.IO
         public static void AppendAllLines(string path, IEnumerable<string> contents, Encoding encoding)
         {
             Validate(path, encoding);
-
-            if (contents == null)
-                throw new ArgumentNullException(nameof(contents));
-
+            ArgumentNullException.ThrowIfNull(contents);
             InternalWriteAllLines(new StreamWriter(path, true, encoding), contents);
         }
 
@@ -393,10 +380,8 @@ namespace System.IO
 
         public static void Replace(string sourceFileName, string destinationFileName, string? destinationBackupFileName, bool ignoreMetadataErrors)
         {
-            if (sourceFileName == null)
-                throw new ArgumentNullException(nameof(sourceFileName));
-            if (destinationFileName == null)
-                throw new ArgumentNullException(nameof(destinationFileName));
+            ArgumentNullException.ThrowIfNull(sourceFileName);
+            ArgumentNullException.ThrowIfNull(destinationFileName);
 
             FileSystem.ReplaceFile(
                 Path.GetFullPath(sourceFileName),
@@ -418,14 +403,8 @@ namespace System.IO
 
         public static void Move(string sourceFileName, string destFileName, bool overwrite)
         {
-            if (sourceFileName == null)
-                throw new ArgumentNullException(nameof(sourceFileName), SR.ArgumentNull_FileName);
-            if (destFileName == null)
-                throw new ArgumentNullException(nameof(destFileName), SR.ArgumentNull_FileName);
-            if (sourceFileName.Length == 0)
-                throw new ArgumentException(SR.Argument_EmptyFileName, nameof(sourceFileName));
-            if (destFileName.Length == 0)
-                throw new ArgumentException(SR.Argument_EmptyFileName, nameof(destFileName));
+            ArgumentException.ThrowIfNullOrEmpty(sourceFileName);
+            ArgumentException.ThrowIfNullOrEmpty(destFileName);
 
             string fullSourceFileName = Path.GetFullPath(sourceFileName);
             string fullDestFileName = Path.GetFullPath(destFileName);
@@ -440,11 +419,17 @@ namespace System.IO
 
         [SupportedOSPlatform("windows")]
         public static void Encrypt(string path)
-            => FileSystem.Encrypt(path ?? throw new ArgumentNullException(nameof(path)));
+        {
+            ArgumentNullException.ThrowIfNull(path);
+            FileSystem.Encrypt(path);
+        }
 
         [SupportedOSPlatform("windows")]
         public static void Decrypt(string path)
-            => FileSystem.Decrypt(path ?? throw new ArgumentNullException(nameof(path)));
+        {
+            ArgumentNullException.ThrowIfNull(path);
+            FileSystem.Decrypt(path);
+        }
 
         // If we use the path-taking constructors we will not have FileOptions.Asynchronous set and
         // we will have asynchronous file access faked by the thread pool. We want the real thing.
@@ -609,12 +594,8 @@ namespace System.IO
 
         public static Task WriteAllBytesAsync(string path, byte[] bytes, CancellationToken cancellationToken = default(CancellationToken))
         {
-            if (path == null)
-                throw new ArgumentNullException(nameof(path), SR.ArgumentNull_Path);
-            if (path.Length == 0)
-                throw new ArgumentException(SR.Argument_EmptyPath, nameof(path));
-            if (bytes == null)
-                throw new ArgumentNullException(nameof(bytes));
+            ArgumentException.ThrowIfNullOrEmpty(path);
+            ArgumentNullException.ThrowIfNull(bytes);
 
             return cancellationToken.IsCancellationRequested
                 ? Task.FromCanceled(cancellationToken)
@@ -665,10 +646,7 @@ namespace System.IO
         public static Task WriteAllLinesAsync(string path, IEnumerable<string> contents, Encoding encoding, CancellationToken cancellationToken = default(CancellationToken))
         {
             Validate(path, encoding);
-
-            if (contents == null)
-                throw new ArgumentNullException(nameof(contents));
-
+            ArgumentNullException.ThrowIfNull(contents);
             return cancellationToken.IsCancellationRequested
                 ? Task.FromCanceled(cancellationToken)
                 : InternalWriteAllLinesAsync(AsyncStreamWriter(path, encoding, append: false), contents, cancellationToken);
@@ -713,10 +691,7 @@ namespace System.IO
         public static Task AppendAllLinesAsync(string path, IEnumerable<string> contents, Encoding encoding, CancellationToken cancellationToken = default(CancellationToken))
         {
             Validate(path, encoding);
-
-            if (contents == null)
-                throw new ArgumentNullException(nameof(contents));
-
+            ArgumentNullException.ThrowIfNull(contents);
             return cancellationToken.IsCancellationRequested
                 ? Task.FromCanceled(cancellationToken)
                 : InternalWriteAllLinesAsync(AsyncStreamWriter(path, encoding, append: true), contents, cancellationToken);
@@ -764,12 +739,8 @@ namespace System.IO
 
         private static void Validate(string path, Encoding encoding)
         {
-            if (path == null)
-                throw new ArgumentNullException(nameof(path));
-            if (encoding == null)
-                throw new ArgumentNullException(nameof(encoding));
-            if (path.Length == 0)
-                throw new ArgumentException(SR.Argument_EmptyPath, nameof(path));
+            ArgumentException.ThrowIfNullOrEmpty(path);
+            ArgumentNullException.ThrowIfNull(encoding);
         }
 
         private static byte[] ReadAllBytesUnknownLength(SafeFileHandle sfh)

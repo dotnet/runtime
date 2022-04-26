@@ -32,9 +32,9 @@
 
 
 
-.namespace hello
+.namespace hello_backwardleaveincatch_leaves_il
 {
-  .class private auto ansi beforefieldinit Class1
+  .class public auto ansi beforefieldinit Class1
          extends [mscorlib]System.Object
   {
     .method public hidebysig static void 
@@ -75,7 +75,7 @@
     } 
 
     .method public hidebysig static int32 
-            Main(string[] args) cil managed
+            Main() cil managed
     {
       .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
           01 00 00 00
@@ -127,10 +127,10 @@
 
       .try
       {
-        call       void hello.Class1::inTry()
+        call       void hello_backwardleaveincatch_leaves_il.Class1::inTry()
         .try
         {
-          call       void hello.Class1::inTry2()
+          call       void hello_backwardleaveincatch_leaves_il.Class1::inTry2()
           ldc.i4.1
           stloc.0
           newobj     instance void [mscorlib]System.Exception::.ctor()
@@ -140,14 +140,14 @@
         }  
         catch [mscorlib]System.Exception
         {
-          call       void hello.Class1::inCatch()
+          call       void hello_backwardleaveincatch_leaves_il.Class1::inCatch()
           leave.s before
         }  
 
       }  
       finally
       {
-        call       void hello.Class1::inFinally()
+        call       void hello_backwardleaveincatch_leaves_il.Class1::inFinally()
         endfinally
       }  
     done: 

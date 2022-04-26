@@ -19,3 +19,18 @@ RUN curl -sSL "https://netcorenativeassets.blob.core.windows.net/resource-packag
     && echo $'#!/usr/bin/env bash\n\
 "/usr/local/v8/d8" --snapshot_blob="/usr/local/v8/snapshot_blob.bin" "$@"\n' > /usr/local/bin/v8 \
     && chmod +x /usr/local/bin/v8
+
+# install chromium dependencies to run debugger tests:
+RUN sudo apt-get install libnss3 -y \
+    && apt-get install libatk1.0-0 -y \
+    && apt-get install libatk-bridge2.0-0 -y \
+    && apt-get install libcups2 -y \
+    && apt-get install libdrm2 -y \
+    && apt-get install libxkbcommon-x11-0 -y \
+    && apt-get install libxcomposite-dev -y \
+    && apt-get install libxdamage1 -y \
+    && apt-get install libxrandr2 -y \
+    && apt-get install libgbm-dev -y \
+    && apt-get install libpango-1.0-0 -y \
+    && apt-get install libcairo2 -y \
+    && apt-get install libasound2 -y 

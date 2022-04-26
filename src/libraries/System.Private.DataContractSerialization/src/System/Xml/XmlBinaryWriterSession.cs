@@ -27,9 +27,9 @@ namespace System.Xml
 
         public virtual bool TryAdd(XmlDictionaryString value, out int key)
         {
+            ArgumentNullException.ThrowIfNull(value);
+
             IntArray? keys;
-            if (value == null)
-                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(value));
 
             if (_maps.TryGetValue(value.Dictionary, out keys))
             {

@@ -23,12 +23,12 @@ struct InitVarDscInfo
     // handles arguments.
     regMaskTP fltArgSkippedRegMask;
     bool      anyFloatStackArgs;
+    bool      hasSplitParam;
 #endif // TARGET_ARM
 
 #if FEATURE_FASTTAILCALL
     // It is used to calculate argument stack size information in byte
     unsigned stackArgSize;
-    bool     hasMultiSlotStruct;
 #endif // FEATURE_FASTTAILCALL
 
 public:
@@ -46,11 +46,11 @@ public:
 #ifdef TARGET_ARM
         fltArgSkippedRegMask = RBM_NONE;
         anyFloatStackArgs    = false;
+        hasSplitParam        = false;
 #endif // TARGET_ARM
 
 #if FEATURE_FASTTAILCALL
-        stackArgSize       = 0;
-        hasMultiSlotStruct = false;
+        stackArgSize = 0;
 #endif // FEATURE_FASTTAILCALL
     }
 

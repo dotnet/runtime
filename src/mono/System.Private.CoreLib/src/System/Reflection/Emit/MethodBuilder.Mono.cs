@@ -99,7 +99,7 @@ namespace System.Reflection.Emit
                 Array.Copy(parameterTypes, this.parameters, parameterTypes.Length);
             }
             type = tb;
-            table_idx = get_next_table_index(this, 0x06, 1);
+            table_idx = get_next_table_index(0x06, 1);
 
             ((ModuleBuilder)tb.Module).RegisterToken(this, MetadataToken);
         }
@@ -386,8 +386,7 @@ namespace System.Reflection.Emit
 
         public void SetCustomAttribute(CustomAttributeBuilder customBuilder)
         {
-            if (customBuilder == null)
-                throw new ArgumentNullException(nameof(customBuilder));
+            ArgumentNullException.ThrowIfNull(customBuilder);
 
             switch (customBuilder.Ctor.ReflectedType!.FullName)
             {
@@ -473,13 +472,10 @@ namespace System.Reflection.Emit
             }
         }
 
-        [ComVisible(true)]
         public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
         {
-            if (con == null)
-                throw new ArgumentNullException(nameof(con));
-            if (binaryAttribute == null)
-                throw new ArgumentNullException(nameof(binaryAttribute));
+            ArgumentNullException.ThrowIfNull(con);
+            ArgumentNullException.ThrowIfNull(binaryAttribute);
             SetCustomAttribute(new CustomAttributeBuilder(con, binaryAttribute));
         }
 
@@ -505,9 +501,9 @@ namespace System.Reflection.Emit
             return name.GetHashCode();
         }
 
-        internal override int get_next_table_index(object obj, int table, int count)
+        internal override int get_next_table_index(int table, int count)
         {
-            return type.get_next_table_index(obj, table, count);
+            return type.get_next_table_index(table, count);
         }
 
         private static void ExtendArray<T>([NotNull] ref T[]? array, T elem)
@@ -541,17 +537,16 @@ namespace System.Reflection.Emit
             return new NotSupportedException("The invoked member is not supported in a dynamic module.");
         }
 
+        [RequiresDynamicCode("The native code for this instantiation might not be available at runtime.")]
         [RequiresUnreferencedCode("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]
         public override MethodInfo MakeGenericMethod(params Type[] typeArguments)
         {
             if (!IsGenericMethodDefinition)
                 throw new InvalidOperationException("Method is not a generic method definition");
-            if (typeArguments == null)
-                throw new ArgumentNullException(nameof(typeArguments));
+            ArgumentNullException.ThrowIfNull(typeArguments);
             foreach (Type type in typeArguments)
             {
-                if (type == null)
-                    throw new ArgumentNullException(nameof(typeArguments));
+                ArgumentNullException.ThrowIfNull(type, nameof(typeArguments));
             }
 
             return new MethodOnTypeBuilderInst(this, typeArguments);
@@ -595,8 +590,7 @@ namespace System.Reflection.Emit
 
         public GenericTypeParameterBuilder[] DefineGenericParameters(params string[] names)
         {
-            if (names == null)
-                throw new ArgumentNullException(nameof(names));
+            ArgumentNullException.ThrowIfNull(names);
             if (names.Length == 0)
                 throw new ArgumentException(SR.Arg_EmptyArray, nameof(names));
             type.check_not_created();

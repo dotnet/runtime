@@ -133,10 +133,7 @@ namespace System.Diagnostics
         }
 
         /// <summary>Additional logic invoked when the Process is closed.</summary>
-        private void CloseCore()
-        {
-            // Nop
-        }
+        partial void CloseCore();
 
         /// <devdoc>
         ///     Make sure we are watching for a process exit.
@@ -220,46 +217,14 @@ namespace System.Diagnostics
                 if (handle.IsInvalid)
                 {
                     _exited = true;
+                    return;
                 }
-                else
-                {
-                    int localExitCode;
 
-                    // Although this is the wrong way to check whether the process has exited,
-                    // it was historically the way we checked for it, and a lot of code then took a dependency on
-                    // the fact that this would always be set before the pipes were closed, so they would read
-                    // the exit code out after calling ReadToEnd() or standard output or standard error. In order
-                    // to allow 259 to function as a valid exit code and to break as few people as possible that
-                    // took the ReadToEnd dependency, we check for an exit code before doing the more correct
-                    // check to see if we have been signaled.
-                    if (Interop.Kernel32.GetExitCodeProcess(handle, out localExitCode) && localExitCode != Interop.Kernel32.HandleOptions.STILL_ACTIVE)
-                    {
-                        _exitCode = localExitCode;
-                        _exited = true;
-                    }
-                    else
-                    {
-                        // The best check for exit is that the kernel process object handle is invalid,
-                        // or that it is valid and signaled.  Checking if the exit code != STILL_ACTIVE
-                        // does not guarantee the process is closed,
-                        // since some process could return an actual STILL_ACTIVE exit code (259).
-                        if (!_signaled) // if we just came from WaitForExit, don't repeat
-                        {
-                            using (var wh = new Interop.Kernel32.ProcessWaitHandle(handle))
-                            {
-                                _signaled = wh.WaitOne(0);
-                            }
-                        }
-                        if (_signaled)
-                        {
-                            if (!Interop.Kernel32.GetExitCodeProcess(handle, out localExitCode))
-                                throw new Win32Exception();
+                if (!ProcessManager.HasExited(handle, ref _signaled, out int localExitCode))
+                    return;
 
-                            _exitCode = localExitCode;
-                            _exited = true;
-                        }
-                    }
-                }
+                _exited = true;
+                _exitCode = localExitCode;
             }
         }
 
@@ -825,7 +790,7 @@ namespace System.Diagnostics
         // methods such as WriteLine as well as native CRT functions like printf) which are making an
         // assumption that the console standard handles (obtained via GetStdHandle()) are opened
         // for synchronous I/O and hence they can work fine with ReadFile/WriteFile synchronously!
-        private void CreatePipe(out SafeFileHandle parentHandle, out SafeFileHandle childHandle, bool parentInputs)
+        private static void CreatePipe(out SafeFileHandle parentHandle, out SafeFileHandle childHandle, bool parentInputs)
         {
             Interop.Kernel32.SECURITY_ATTRIBUTES securityAttributesParent = default;
             securityAttributesParent.bInheritHandle = Interop.BOOL.TRUE;

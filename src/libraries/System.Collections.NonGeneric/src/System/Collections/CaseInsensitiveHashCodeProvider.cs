@@ -22,10 +22,8 @@ namespace System.Collections
 
         public CaseInsensitiveHashCodeProvider(CultureInfo culture)
         {
-            if (culture == null)
-            {
-                throw new ArgumentNullException(nameof(culture));
-            }
+            ArgumentNullException.ThrowIfNull(culture);
+
             _compareInfo = culture.CompareInfo;
         }
 
@@ -36,10 +34,7 @@ namespace System.Collections
 
         public int GetHashCode(object obj)
         {
-            if (obj == null)
-            {
-                throw new ArgumentNullException(nameof(obj));
-            }
+            ArgumentNullException.ThrowIfNull(obj);
 
             string? s = obj as string;
             return s != null ?

@@ -7,7 +7,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>$(DefineConstants);Windows</DefineConstants>
     <!-- There is a Windows and a non-Windows version of this test to allow it to be compiled for all targets -->
-    <CLRTestTargetUnsupported Condition="'$(TargetsWindows)' != 'true'">true</CLRTestTargetUnsupported>    
+    <CLRTestTargetUnsupported Condition="'$(TargetsWindows)' != 'true'">true</CLRTestTargetUnsupported>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="GlobalInstance.cs" />
@@ -17,8 +17,8 @@
     <Compile Include="../../ServerContracts/ServerGuids.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="../MockReferenceTrackerRuntime/CMakeLists.txt" />
-    <ProjectReference Include="../../NativeServer/CMakeLists.txt" />
+    <CMakeProjectReference Include="../MockReferenceTrackerRuntime/CMakeLists.txt" />
+    <CMakeProjectReference Include="../../NativeServer/CMakeLists.txt" />
     <ProjectReference Include="../../NETServer/NETServer.csproj">
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
       <OutputItemType>Content</OutputItemType>

@@ -20,8 +20,7 @@ namespace System.Net.Mail
 
         internal static void Register(ISmtpAuthenticationModule module)
         {
-            if (module == null)
-                throw new ArgumentNullException(nameof(module));
+            ArgumentNullException.ThrowIfNull(module);
 
             lock (s_modules)
             {

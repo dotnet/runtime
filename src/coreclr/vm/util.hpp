@@ -19,27 +19,6 @@
 #include "posterror.h"
 #include "clr_std/type_traits"
 
-
-// Prevent the use of UtilMessageBox and WszMessageBox from inside the EE.
-#undef UtilMessageBoxCatastrophic
-#undef UtilMessageBoxCatastrophicNonLocalized
-#undef UtilMessageBoxCatastrophic
-#undef UtilMessageBoxCatastrophicNonLocalizedVA
-#undef UtilMessageBox
-#undef UtilMessageBoxNonLocalized
-#undef UtilMessageBoxVA
-#undef UtilMessageBoxNonLocalizedVA
-#undef WszMessageBox
-#define UtilMessageBoxCatastrophic __error("Use one of the EEMessageBox APIs (defined in eemessagebox.h) from inside the EE")
-#define UtilMessageBoxCatastrophicNonLocalized __error("Use one of the EEMessageBox APIs (defined in eemessagebox.h) from inside the EE")
-#define UtilMessageBoxCatastrophicVA __error("Use one of the EEMessageBox APIs (defined in eemessagebox.h) from inside the EE")
-#define UtilMessageBoxCatastrophicNonLocalizedVA __error("Use one of the EEMessageBox APIs (defined in eemessagebox.h) from inside the EE")
-#define UtilMessageBox __error("Use one of the EEMessageBox APIs (defined in eemessagebox.h) from inside the EE")
-#define UtilMessageBoxNonLocalized __error("Use one of the EEMessageBox APIs (defined in eemessagebox.h) from inside the EE")
-#define UtilMessageBoxVA __error("Use one of the EEMessageBox APIs (defined in eemessagebox.h) from inside the EE")
-#define UtilMessageBoxNonLocalizedVA __error("Use one of the EEMessageBox APIs (defined in eemessagebox.h) from inside the EE")
-#define WszMessageBox __error("Use one of the EEMessageBox APIs (defined in eemessagebox.h) from inside the EE")
-
 // Hot cache lines need to be aligned to cache line size to improve performance
 #if defined(TARGET_ARM64)
 #define MAX_CACHE_LINE_SIZE 128
@@ -1005,5 +984,32 @@ public:
 // Extract the file version from an executable.
 HRESULT GetFileVersion(LPCWSTR wszFilePath, ULARGE_INTEGER* pFileVersion);
 #endif // !TARGET_UNIX
+
+#define ENUM_PAGE_SIZES \
+    ENUM_PAGE_SIZE(4096)  \
+    ENUM_PAGE_SIZE(8192)  \
+    ENUM_PAGE_SIZE(16384) \
+    ENUM_PAGE_SIZE(32768) \
+    ENUM_PAGE_SIZE(65536)
+
+void FillStubCodePage(BYTE* pageBase, const void* code, int codeSize, int pageSize);
+
+#ifdef TARGET_64BIT
+// We use modified Daniel Lemire's fastmod algorithm (https://github.com/dotnet/runtime/pull/406),
+// which allows to avoid the long multiplication if the divisor is less than 2**31.
+// This is a copy of HashHelpers.cs, see that impl (or linked PR) for more details
+inline UINT64 GetFastModMultiplier(UINT32 divisor)
+{
+    return UINT64_MAX / divisor + 1;
+}
+
+inline UINT32 FastMod(UINT32 value, UINT32 divisor, UINT64 multiplier)
+{
+    _ASSERTE(divisor <= INT_MAX);
+    UINT32 highbits = (UINT32)(((((multiplier * value) >> 32) + 1) * divisor) >> 32);
+    _ASSERTE(highbits == value % divisor);
+    return highbits;
+}
+#endif
 
 #endif /* _H_UTIL */

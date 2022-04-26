@@ -133,10 +133,7 @@ namespace System.ComponentModel.DataAnnotations
         public static bool TryValidateObject(object instance, ValidationContext validationContext,
             ICollection<ValidationResult>? validationResults, bool validateAllProperties)
         {
-            if (instance == null)
-            {
-                throw new ArgumentNullException(nameof(instance));
-            }
+            ArgumentNullException.ThrowIfNull(instance);
 
             if (validationContext != null && instance != validationContext.ObjectInstance)
             {
@@ -279,14 +276,9 @@ namespace System.ComponentModel.DataAnnotations
         public static void ValidateObject(object instance, ValidationContext validationContext,
             bool validateAllProperties)
         {
-            if (instance == null)
-            {
-                throw new ArgumentNullException(nameof(instance));
-            }
-            if (validationContext == null)
-            {
-                throw new ArgumentNullException(nameof(validationContext));
-            }
+            ArgumentNullException.ThrowIfNull(instance);
+            ArgumentNullException.ThrowIfNull(validationContext);
+
             if (instance != validationContext.ObjectInstance)
             {
                 throw new ArgumentException(SR.Validator_InstanceMustMatchValidationContextInstance, nameof(instance));
@@ -411,12 +403,9 @@ namespace System.ComponentModel.DataAnnotations
         private static List<ValidationError> GetObjectValidationErrors(object instance,
             ValidationContext validationContext, bool validateAllProperties, bool breakOnFirstError)
         {
-            Debug.Assert(instance != null);
+            ArgumentNullException.ThrowIfNull(validationContext);
 
-            if (validationContext == null)
-            {
-                throw new ArgumentNullException(nameof(validationContext));
-            }
+            Debug.Assert(instance != null);
 
             // Step 1: Validate the object properties' validation attributes
             var errors = new List<ValidationError>();
@@ -565,10 +554,7 @@ namespace System.ComponentModel.DataAnnotations
         private static List<ValidationError> GetValidationErrors(object? value,
             ValidationContext validationContext, IEnumerable<ValidationAttribute> attributes, bool breakOnFirstError)
         {
-            if (validationContext == null)
-            {
-                throw new ArgumentNullException(nameof(validationContext));
-            }
+            ArgumentNullException.ThrowIfNull(validationContext);
 
             var errors = new List<ValidationError>();
             ValidationError? validationError;

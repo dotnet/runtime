@@ -12,7 +12,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace System.Xml.Xsl.XsltOld
 {
-    internal class NumberAction : ContainerAction
+    internal sealed class NumberAction : ContainerAction
     {
         internal sealed class FormatInfo
         {
@@ -471,7 +471,7 @@ namespace System.Xml.Xsl.XsltOld
             return false;
         }
 
-        private XPathNodeType BasicNodeType(XPathNodeType type)
+        private static XPathNodeType BasicNodeType(XPathNodeType type)
         {
             if (type == XPathNodeType.SignificantWhitespace || type == XPathNodeType.Whitespace)
             {

@@ -3080,8 +3080,15 @@ char *DumpGenericPars(_Inout_updates_(SZSTRING_SIZE) char* szString, mdToken tok
         if ((attr & gpNotNullableValueTypeConstraint) != 0)
             szptr += sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr), "valuetype ");
         CHECK_REMAINING_SIZE;
+        if ((attr & gpAcceptByRefLike) != 0)
+            szptr += sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr), "byreflike ");
+        CHECK_REMAINING_SIZE;
         if ((attr & gpDefaultConstructorConstraint) != 0)
             szptr += sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr), ".ctor ");
+        CHECK_REMAINING_SIZE;
+        DWORD unknownAttr = attr & ~(gpSpecialConstraintMask | gpVarianceMask);
+        if (unknownAttr != 0)
+            szptr += sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr), "flags(0x%x) ", unknownAttr);
         CHECK_REMAINING_SIZE;
         if (NumConstrs)
         {
@@ -3333,8 +3340,8 @@ void PrettyPrintOverrideDecl(ULONG i, __inout __nullterminated char* szString, v
         // In that case the full "method" syntax must be used
         if ((TypeFromToken(tkOverrider) == mdtMethodDef) && !needsFullTokenPrint)
         {
-            PCCOR_SIGNATURE pComSigDecl;
-            ULONG cComSigDecl;
+            PCCOR_SIGNATURE pComSigDecl = NULL;
+            ULONG cComSigDecl = 0;
             mdToken tkDeclSigTok = tkDecl;
             bool successfullyGotDeclSig = false;
             bool successfullyGotBodySig = false;
@@ -3875,7 +3882,7 @@ BOOL DumpMethod(mdToken FuncToken, const char *pszClassName, DWORD dwEntryPointT
             szString[0] = 0;
             if (dwTargetRVA != 0)
             {
-                void* newTarget;
+                void* newTarget = NULL;
                 if(g_pPELoader->getVAforRVA(dwTargetRVA,&newTarget))
                 {
                     DisassembleWrapper(g_pImport, (unsigned char*)newTarget, GUICookie, FuncToken,pszArgname, ulArgs);
@@ -6056,7 +6063,7 @@ void DumpStatistics(IMAGE_COR20_HEADER *CORHeader, void* GUICookie)
         {
             ++methodBodies;
 
-            COR_ILMETHOD_FAT *pMethod;
+            COR_ILMETHOD_FAT *pMethod = NULL;
             g_pPELoader->getVAforRVA(rva, (void **) &pMethod);
             if (pMethod->IsFat())
             {
@@ -6646,8 +6653,8 @@ void DumpEATEntries(void* GUICookie,
 #endif
                     if(pExpTable->dwNumATEntries && pExpTable->dwAddrTableRVA)
                     {
-                        DWORD* pExpAddr;
-                        BYTE *pCont;
+                        DWORD* pExpAddr = NULL;
+                        BYTE *pCont = NULL;
                         DWORD dwTokRVA;
                         mdToken* pTok;
                         g_pPELoader->getVAforRVA(VAL32(pExpTable->dwAddrTableRVA), (void **) &pExpAddr);
@@ -6695,9 +6702,9 @@ void DumpEATEntries(void* GUICookie,
                     }
                     if(pExpTable->dwNumNamePtrs && pExpTable->dwNamePtrRVA && pExpTable->dwOrdTableRVA)
                     {
-                        DWORD *pNamePtr;
-                        WORD    *pOrd;
-                        char*   szName;
+                        DWORD*  pNamePtr = NULL;
+                        WORD*   pOrd     = NULL;
+                        char*   szName   = NULL;
                         g_pPELoader->getVAforRVA(VAL32(pExpTable->dwNamePtrRVA), (void **) &pNamePtr);
                         g_pPELoader->getVAforRVA(VAL32(pExpTable->dwOrdTableRVA), (void **) &pOrd);
 #ifdef _DEBUG
@@ -6964,8 +6971,8 @@ void DumpMetaInfo(_In_ __nullterminated const WCHAR* pwzFileName, _In_opt_z_ con
     if(pch && (!_wcsicmp(pch+1,W("lib")) || !_wcsicmp(pch+1,W("obj"))))
     {   // This works only when all the rest does not
         // Init and run.
-        if (MetaDataGetDispenser(CLSID_CorMetaDataDispenser,
-            IID_IMetaDataDispenserEx, (void **)&g_pDisp))
+        if (SUCCEEDED(MetaDataGetDispenser(CLSID_CorMetaDataDispenser,
+            IID_IMetaDataDispenserEx, (void **)&g_pDisp)))
                 {
                     WCHAR *pwzObjFileName=NULL;
                     if (pszObjFileName)

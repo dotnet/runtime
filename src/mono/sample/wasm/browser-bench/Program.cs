@@ -18,6 +18,7 @@ namespace Sample
             new AppStartTask(),
             new ExceptionsTask(),
             new JsonTask(),
+            new VectorTask(),
             new WebSocketTask()
         };
         static Test instance = new Test();

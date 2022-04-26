@@ -52,7 +52,3 @@ T:System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverageAttribute
 T:System.Runtime.CompilerServices.AsyncMethodBuilderAttribute
 T:System.Reflection.DefaultMemberAttribute
 T:System.Timers.TimersDescriptionAttribute
-
-// These do not need to be persisted in the implementation
-T:System.ComponentModel.EditorBrowsableAttribute
-T:System.ObsoleteAttribute

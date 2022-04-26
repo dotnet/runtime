@@ -93,6 +93,11 @@
         ret
     }
 
+    .method public hidebysig static void StaticMethodString(string param) cil managed 
+    {
+        ret
+    }
+
     .method public hidebysig static int32 StaticIntMethod() cil managed
     {
         ldc.i4.0
@@ -165,6 +170,18 @@
     .field public specialname rtspecialname uint8 value__
     .field public static literal valuetype ByteEnum A = uint8(0)
     .field public static literal valuetype ByteEnum B = uint8(0)
+}
+
+.class private auto ansi sealed RefIntDelegate
+       extends [System.Runtime]System.MulticastDelegate
+{
+    .method public hidebysig specialname rtspecialname instance void  .ctor(object 'object', native int 'method') runtime managed
+    {
+    }
+
+    .method public hidebysig newslot virtual instance int32  Invoke(int32& x) runtime managed
+    {
+    }
 }
 
 .class public auto ansi beforefieldinit FtnTestsType
@@ -264,6 +281,54 @@
         ret
     }
 
+    .method static public hidebysig void LdvirtFtn.InstanceMethodClosed_Valid() cil managed
+    {
+        // static void StaticMethodString(this string x)
+        // var f = new Action("xyz".StaticMethodString);
+        // f()
+
+        ldstr       "xyz"
+        ldftn       void TestClass::StaticMethodString(string)
+        newobj      instance void [System.Runtime]System.Action::.ctor(object, native int)
+        callvirt    instance void [System.Runtime]System.Action::Invoke()
+        ret
+    }
+
+    .method static public hidebysig void LdvirtFtn.InstanceMethodOpen_Valid() cil managed
+    {
+        ldnull
+        ldftn       instance class [System.Runtime]System.Type [System.Runtime]System.Object::GetType()
+        newobj      instance void class [System.Runtime]System.Func`2<object, class [System.Runtime]System.Type>::.ctor(object, native int)
+        ldstr       "obj"
+        callvirt    instance !1 class [System.Runtime]System.Func`2<object, class [System.Runtime]System.Type>::Invoke(!0)
+        pop
+        ret
+    }
+
+    .method static public hidebysig void LdvirtFtn.InstanceValueTypeMethodOpen_Valid() cil managed
+    {
+        .locals init (int32 V_0)
+
+        ldnull
+        ldftn       instance int32 [System.Runtime]System.Int32::GetHashCode()
+        newobj      instance void RefIntDelegate::.ctor(object, native int)
+        ldloca.s    V_0
+        callvirt    instance int32 RefIntDelegate::Invoke(int32&)
+        pop
+        ret
+    }
+
+    .method static public hidebysig void LdvirtFtn.InstanceValueTypeMethodOpenObjRef_Invalid_DelegateCtor() cil managed
+    {
+        ldnull
+        ldftn       instance int32 [System.Runtime]System.Int32::GetHashCode()
+        newobj      instance void class [System.Runtime]System.Func`2<int32, int32>::.ctor(object, native int)
+        ldc.i4.0
+        callvirt    instance !1 class [System.Runtime]System.Func`2<int32, int32>::Invoke(!0)
+        pop
+        ret
+    }
+
     .method static public hidebysig void LdvirtFtn.StaticMethod_Invalid_LdvirtftnOnStatic() cil managed
     {
         ldnull
@@ -274,7 +339,7 @@
         ret
     }
 
-    .method static public hidebysig void LdvirtFtn.ValueTypeNoBox_Invalid_StackObjRef.StackUnexpected.StackUnexpected.DelegateCtorSigO(int32 i) cil managed
+    .method static public hidebysig void LdvirtFtn.ValueTypeNoBox_Invalid_StackObjRef.StackUnexpected.StackUnexpected.DelegateCtorSigO.DelegateCtor(int32 i) cil managed
     {
         // (int i)
         // var f = new System.Func<int, int>(i.CompareTo);
@@ -290,7 +355,7 @@
         ret
     }
 
-    .method static public hidebysig void LdvirtFtn.ValueTypeWrongBox_Invalid_StackUnexpected.DelegateCtorSigO.DelegatePattern(int32 i) cil managed
+    .method static public hidebysig void LdvirtFtn.ValueTypeWrongBox_Invalid_StackUnexpected.DelegateCtorSigO.DelegatePattern.DelegateCtor(int32 i) cil managed
     {
         // (int i)
         // var f = new System.Func<int, int>(i.CompareTo);
@@ -307,7 +372,7 @@
         ret
     }
 
-    .method static public hidebysig void LdvirtFtn.ObjectForTestClassInstance_Invalid_StackUnexpected(object c) cil managed
+    .method static public hidebysig void LdvirtFtn.ObjectForTestClassInstance_Invalid_StackUnexpected.DelegateCtor(object c) cil managed
     {
         // (object c)
         // var a = new System.Action(c.InstanceMethod);

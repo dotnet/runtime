@@ -5,7 +5,7 @@
     <RunAOTCompilation>false</RunAOTCompilation>
     <InvariantGlobalization>true</InvariantGlobalization>
     <TestRuntime>true</TestRuntime>
-    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <MainLibraryFileName>Android.Device_Emulator.InvariantCultureOnlyMode.Test.dll</MainLibraryFileName>
     <IncludesTestRunner>false</IncludesTestRunner>
     <ExpectedExitCode>42</ExpectedExitCode>

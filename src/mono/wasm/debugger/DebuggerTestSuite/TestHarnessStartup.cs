@@ -19,7 +19,6 @@ using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json.Linq;
-using System.Collections.Generic;
 
 namespace Microsoft.WebAssembly.Diagnostics
 {
@@ -77,7 +76,12 @@ namespace Microsoft.WebAssembly.Diagnostics
             catch (Exception e) { Logger.LogError(e, "webserver: SendNodeList failed"); }
         }
 
-        public async Task LaunchAndServe(ProcessStartInfo psi, HttpContext context, Func<string, Task<string>> extract_conn_url)
+        public async Task LaunchAndServe(ProcessStartInfo psi,
+                                         HttpContext context,
+                                         Func<string, Task<string>> extract_conn_url,
+                                         string test_id,
+                                         string message_prefix,
+                                         int get_con_url_timeout_ms=20000)
         {
 
             if (!context.WebSockets.IsWebSocketRequest)
@@ -94,46 +98,56 @@ namespace Microsoft.WebAssembly.Diagnostics
                 proc.ErrorDataReceived += (sender, e) =>
                 {
                     var str = e.Data;
-                    Logger.LogTrace($"browser-stderr: {str}");
+                    Logger.LogTrace($"{message_prefix} browser-stderr: {str}");
 
                     if (tcs.Task.IsCompleted)
                         return;
 
-                    var match = parseConnection.Match(str);
-                    if (match.Success)
+                    if (!string.IsNullOrEmpty(str))
                     {
-                        tcs.TrySetResult(match.Groups[1].Captures[0].Value);
+                        var match = parseConnection.Match(str);
+                        if (match.Success)
+                        {
+                            tcs.TrySetResult(match.Groups[1].Captures[0].Value);
+                        }
                     }
                 };
 
                 proc.OutputDataReceived += (sender, e) =>
                 {
-                    Logger.LogTrace($"browser-stdout: {e.Data}");
+                    Logger.LogTrace($"{message_prefix} browser-stdout: {e.Data}");
                 };
 
                 proc.BeginErrorReadLine();
                 proc.BeginOutputReadLine();
 
-                if (await Task.WhenAny(tcs.Task, Task.Delay(20000)) != tcs.Task)
+                if (await Task.WhenAny(tcs.Task, Task.Delay(get_con_url_timeout_ms)) != tcs.Task)
                 {
-                    Logger.LogError("Didnt get the con string after 20s.");
-                    throw new Exception("node.js timedout");
+                    Logger.LogError($"{message_prefix} Timed out after {get_con_url_timeout_ms/1000}s waiting for a connection string from {psi.FileName}");
+                    return;
                 }
                 var line = await tcs.Task;
                 var con_str = extract_conn_url != null ? await extract_conn_url(line) : line;
 
-                Logger.LogInformation($"launching proxy for {con_str}");
+                Logger.LogInformation($"{message_prefix} launching proxy for {con_str}");
 
-                var proxy = new DebuggerProxy(_loggerFactory, null);
+                string logFilePath = Path.Combine(DebuggerTests.DebuggerTestBase.TestLogPath, $"{test_id}-proxy.log");
+                File.Delete(logFilePath);
+
+                var proxyLoggerFactory = LoggerFactory.Create(
+                    builder => builder
+                        .AddFile(logFilePath, minimumLevel: LogLevel.Debug)
+                        .AddFilter(null, LogLevel.Trace));
+
+                var proxy = new DebuggerProxy(proxyLoggerFactory, null, loggerId: test_id);
                 var browserUri = new Uri(con_str);
-                var ideSocket = await context.WebSockets.AcceptWebSocketAsync();
+                var ideSocket = await context.WebSockets.AcceptWebSocketAsync().ConfigureAwait(false);
 
-                await proxy.Run(browserUri, ideSocket);
-                Logger.LogInformation("Proxy done");
+                await proxy.Run(browserUri, ideSocket).ConfigureAwait(false);
             }
             catch (Exception e)
             {
-                Logger.LogError("got exception {0}", e);
+                Logger.LogError($"{message_prefix} got exception {e}");
             }
             finally
             {
@@ -172,13 +186,25 @@ namespace Microsoft.WebAssembly.Diagnostics
             {
                 router.MapGet("launch-chrome-and-connect", async context =>
                 {
-                    Logger.LogInformation("New test request");
+                    string test_id;
+                    if (context.Request.Query.TryGetValue("test_id", out var value) && value.Count == 1)
+                        test_id = value[0];
+                    else
+                        test_id = "unknown";
+
+                    string message_prefix = $"[testId: {test_id}]";
+                    Logger.LogInformation($"{message_prefix} New test request for test id {test_id}");
                     try
                     {
                         var client = new HttpClient();
                         var psi = new ProcessStartInfo();
 
                         psi.Arguments = $"--headless --disable-gpu --lang=en-US --incognito --remote-debugging-port={devToolsUrl.Port} http://{TestHarnessProxy.Endpoint.Authority}/{options.PagePath}";
+                        if (File.Exists("/.dockerenv"))
+                        {
+                            Logger.LogInformation("Detected a container, disabling sandboxing for debugger tests.");
+                            psi.Arguments = "--no-sandbox " + psi.Arguments;
+                        }
                         psi.UseShellExecute = false;
                         psi.FileName = options.ChromePath;
                         psi.RedirectStandardError = true;
@@ -198,7 +224,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                                 await Task.Delay(100);
 
                                 var res = await client.GetStringAsync(new Uri(new Uri(str), "/json/list"));
-                                Logger.LogTrace("res is {0}", res);
+                                Logger.LogTrace($"{message_prefix}res is {res}");
 
                                 if (!String.IsNullOrEmpty(res))
                                 {
@@ -211,20 +237,20 @@ namespace Microsoft.WebAssembly.Diagnostics
                                 var elapsed = DateTime.Now - start;
                                 if (elapsed.Milliseconds > 5000)
                                 {
-                                    Logger.LogError($"Unable to get DevTools /json/list response in {elapsed.Seconds} seconds, stopping");
+                                    Logger.LogError($"{message_prefix} Unable to get DevTools /json/list response in {elapsed.Seconds} seconds, stopping");
                                     return null;
                                 }
                             }
 
                             var wsURl = obj[0]?["webSocketDebuggerUrl"]?.Value<string>();
-                            Logger.LogTrace(">>> {0}", wsURl);
+                            Logger.LogTrace($"{message_prefix} >>> {wsURl}");
 
                             return wsURl;
-                        });
+                        }, test_id, message_prefix).ConfigureAwait(false);
                     }
                     catch (Exception ex)
                     {
-                        Logger.LogError($"launch-chrome-and-connect failed with {ex.ToString()}");
+                        Logger.LogError($"{message_prefix} launch-chrome-and-connect failed with {ex.ToString()}");
                     }
                 });
             });
@@ -251,7 +277,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     router.MapGet("json/version", SendNodeVersion);
                     router.MapGet("launch-done-and-connect", async context =>
                     {
-                        await LaunchAndServe(psi, context, null);
+                        await LaunchAndServe(psi, context, null, null, null);
                     });
                 });
             }

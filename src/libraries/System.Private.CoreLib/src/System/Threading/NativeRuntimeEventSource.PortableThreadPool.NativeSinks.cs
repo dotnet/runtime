@@ -2,10 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Threading;
-using System.Diagnostics.Tracing;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using Internal.Runtime.CompilerServices;
 
 namespace System.Diagnostics.Tracing
 {
@@ -152,13 +149,26 @@ namespace System.Diagnostics.Tracing
         }
 
         [Event(63, Level = EventLevel.Verbose, Message = Messages.IOEnqueue, Task = Tasks.ThreadPool, Opcode = Opcodes.IOEnqueue, Version = 0, Keywords = Keywords.ThreadingKeyword | Keywords.ThreadTransferKeyword)]
-        private unsafe void ThreadPoolIOEnqueue(
+        private static unsafe void ThreadPoolIOEnqueue(
             IntPtr NativeOverlapped,
             IntPtr Overlapped,
             bool MultiDequeues,
             ushort ClrInstanceID = DefaultClrInstanceId)
         {
             LogThreadPoolIOEnqueue(NativeOverlapped, Overlapped, MultiDequeues, ClrInstanceID);
+        }
+
+        [NonEvent]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public unsafe void ThreadPoolIOEnqueue(NativeOverlapped* nativeOverlapped)
+        {
+            if (IsEnabled(EventLevel.Verbose, Keywords.ThreadingKeyword | Keywords.ThreadTransferKeyword))
+            {
+                ThreadPoolIOEnqueue(
+                    (IntPtr)nativeOverlapped,
+                    (IntPtr)OverlappedData.GetOverlappedFromNative(nativeOverlapped).GetHashCode(),
+                    false);
+            }
         }
 
         // TODO: This event is fired for minor compat with CoreCLR in this case. Consider removing this method and use
@@ -174,12 +184,24 @@ namespace System.Diagnostics.Tracing
         }
 
         [Event(64, Level = EventLevel.Verbose, Message = Messages.IO, Task = Tasks.ThreadPool, Opcode = Opcodes.IODequeue, Version = 0, Keywords = Keywords.ThreadingKeyword | Keywords.ThreadTransferKeyword)]
-        private unsafe void ThreadPoolIODequeue(
+        private static unsafe void ThreadPoolIODequeue(
             IntPtr NativeOverlapped,
             IntPtr Overlapped,
             ushort ClrInstanceID = DefaultClrInstanceId)
         {
             LogThreadPoolIODequeue(NativeOverlapped, Overlapped, ClrInstanceID);
+        }
+
+        [NonEvent]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public unsafe void ThreadPoolIODequeue(NativeOverlapped* nativeOverlapped)
+        {
+            if (IsEnabled(EventLevel.Verbose, Keywords.ThreadingKeyword | Keywords.ThreadTransferKeyword))
+            {
+                ThreadPoolIODequeue(
+                    (IntPtr)nativeOverlapped,
+                    (IntPtr)OverlappedData.GetOverlappedFromNative(nativeOverlapped).GetHashCode());
+            }
         }
 
         // TODO: This event is fired for minor compat with CoreCLR in this case. Consider removing this method and use

@@ -401,7 +401,8 @@ namespace System.Threading.RateLimiting.Test
             var wait = limiter.WaitAsync(1, cts.Token);
 
             cts.Cancel();
-            await Assert.ThrowsAsync<OperationCanceledException>(() => wait.AsTask());
+            var ex = await Assert.ThrowsAsync<TaskCanceledException>(() => wait.AsTask());
+            Assert.Equal(cts.Token, ex.CancellationToken);
 
             lease.Dispose();
 
@@ -418,11 +419,34 @@ namespace System.Threading.RateLimiting.Test
             var cts = new CancellationTokenSource();
             cts.Cancel();
 
-            await Assert.ThrowsAsync<TaskCanceledException>(() => limiter.WaitAsync(1, cts.Token).AsTask());
+            var ex = await Assert.ThrowsAsync<TaskCanceledException>(() => limiter.WaitAsync(1, cts.Token).AsTask());
+            Assert.Equal(cts.Token, ex.CancellationToken);
 
             lease.Dispose();
 
             Assert.Equal(1, limiter.GetAvailablePermits());
+        }
+
+        [Fact]
+        public override async Task CancelUpdatesQueueLimit()
+        {
+            var limiter = new ConcurrencyLimiter(new ConcurrencyLimiterOptions(1, QueueProcessingOrder.OldestFirst, 1));
+            var lease = limiter.Acquire(1);
+            Assert.True(lease.IsAcquired);
+
+            var cts = new CancellationTokenSource();
+            var wait = limiter.WaitAsync(1, cts.Token);
+
+            cts.Cancel();
+            var ex = await Assert.ThrowsAsync<TaskCanceledException>(() => wait.AsTask());
+            Assert.Equal(cts.Token, ex.CancellationToken);
+
+            wait = limiter.WaitAsync(1);
+            Assert.False(wait.IsCompleted);
+
+            lease.Dispose();
+            lease = await wait;
+            Assert.True(lease.IsAcquired);
         }
 
         [Fact]
@@ -513,6 +537,33 @@ namespace System.Threading.RateLimiting.Test
             Assert.True(failedLease.TryGetMetadata(MetadataName.ReasonPhrase, out var typedMetadata));
             Assert.Equal("Queue limit reached", typedMetadata);
             Assert.Collection(failedLease.MetadataNames, item => item.Equals(MetadataName.ReasonPhrase.Name));
+        }
+
+        [Fact]
+        public override void NullIdleDurationWhenActive()
+        {
+            var limiter = new ConcurrencyLimiter(new ConcurrencyLimiterOptions(1, QueueProcessingOrder.OldestFirst, 1));
+            using var lease = limiter.Acquire(1);
+            Assert.Null(limiter.IdleDuration);
+        }
+
+        [Fact]
+        public override async Task IdleDurationUpdatesWhenIdle()
+        {
+            var limiter = new ConcurrencyLimiter(new ConcurrencyLimiterOptions(1, QueueProcessingOrder.OldestFirst, 1));
+            Assert.NotNull(limiter.IdleDuration);
+            var previousDuration = limiter.IdleDuration;
+            await Task.Delay(15);
+            Assert.True(previousDuration < limiter.IdleDuration);
+        }
+
+        [Fact]
+        public override void IdleDurationUpdatesWhenChangingFromActive()
+        {
+            var limiter = new ConcurrencyLimiter(new ConcurrencyLimiterOptions(1, QueueProcessingOrder.OldestFirst, 1));
+            var lease = limiter.Acquire(1);
+            lease.Dispose();
+            Assert.NotNull(limiter.IdleDuration);
         }
     }
 }

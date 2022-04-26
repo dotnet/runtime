@@ -6,7 +6,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 
     <!-- We don't run the scanner in optimized builds -->
-    <NativeAotMultimoduleIncompatible>true</NativeAotMultimoduleIncompatible>
+    <CLRTestTargetUnsupported Condition="'$(IlcMultiModule)' == 'true'">true</CLRTestTargetUnsupported>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Dataflow.cs" />

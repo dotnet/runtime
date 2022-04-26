@@ -18,7 +18,7 @@ namespace System.Text.Encodings.Web
         {
             if (settings is null)
             {
-                throw new ArgumentNullException(nameof(settings));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.settings);
             }
 
             _innerEncoder = new OptimizedInboxTextEncoder(EscaperImplementation.Singleton, settings.GetAllowedCodePointsBitmap());

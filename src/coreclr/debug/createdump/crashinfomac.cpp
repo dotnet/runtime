@@ -12,7 +12,7 @@ CrashInfo::Initialize()
     kern_return_t result = ::task_for_pid(mach_task_self(), m_pid, &m_task);
     if (result != KERN_SUCCESS)
     {
-        fprintf(stderr, "task_for_pid(%d) FAILED %x %s\n", m_pid, result, mach_error_string(result));
+        printf_error("task_for_pid(%d) FAILED %x %s\n", m_pid, result, mach_error_string(result));
         return false;
     }
     return true;
@@ -37,14 +37,14 @@ CrashInfo::EnumerateAndSuspendThreads()
     kern_return_t result = ::task_suspend(Task());
     if (result != KERN_SUCCESS)
     {
-        fprintf(stderr, "task_suspend(%d) FAILED %x %s\n", m_pid, result, mach_error_string(result));
+        printf_error("task_suspend(%d) FAILED %x %s\n", m_pid, result, mach_error_string(result));
         return false;
     }
 
     result = ::task_threads(Task(), &threadList, &threadCount);
     if (result != KERN_SUCCESS)
     {
-        fprintf(stderr, "task_threads(%d) FAILED %x %s\n", m_pid, result, mach_error_string(result));
+        printf_error("task_threads(%d) FAILED %x %s\n", m_pid, result, mach_error_string(result));
         return false;
     }
 
@@ -248,13 +248,33 @@ void CrashInfo::VisitModule(MachOModule& module)
     if (m_coreclrPath.empty())
     {
         size_t last = module.Name().rfind(DIRECTORY_SEPARATOR_STR_A MAKEDLLNAME_A("coreclr"));
-        if (last != std::string::npos) {
+        if (last != std::string::npos)
+        {
             m_coreclrPath = module.Name().substr(0, last + 1);
+            m_runtimeBaseAddress = module.BaseAddress();
 
             uint64_t symbolOffset;
             if (!module.TryLookupSymbol("g_dacTable", &symbolOffset))
             {
                 TRACE("TryLookupSymbol(g_dacTable) FAILED\n");
+            }
+        }
+        else if (g_checkForSingleFile)
+        {
+            uint64_t symbolOffset;
+            if (module.TryLookupSymbol("DotNetRuntimeInfo", &symbolOffset))
+            {
+                m_coreclrPath = GetDirectory(module.Name());
+                m_runtimeBaseAddress = module.BaseAddress();
+
+                RuntimeInfo runtimeInfo { };
+                if (ReadMemory((void*)(module.BaseAddress() + symbolOffset), &runtimeInfo, sizeof(RuntimeInfo)))
+                {
+                    if (strcmp(runtimeInfo.Signature, RUNTIME_INFO_SIGNATURE) == 0)
+                    {
+                        TRACE("Found valid single-file runtime info\n");
+                    }
+                }
             }
         }
     }
@@ -328,7 +348,7 @@ CrashInfo::VisitSection(MachOModule& module, const section_64& section)
 uint32_t
 CrashInfo::GetMemoryRegionFlags(uint64_t start)
 {
-    MemoryRegion search(0, start, start + PAGE_SIZE);
+    MemoryRegion search(0, start, start + PAGE_SIZE, 0);
     const MemoryRegion* region = SearchMemoryRegions(m_allMemoryRegions, search);
     if (region != nullptr) {
         return region->Flags();

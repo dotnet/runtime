@@ -624,6 +624,18 @@ ClrDataAccess::GetRegisterName(int regNum, unsigned int count, _Inout_updates_z_
     {
         W("eax"), W("ecx"), W("edx"), W("ebx"), W("esp"), W("ebp"), W("esi"), W("edi"),
     };
+#elif defined(TARGET_LOONGARCH64)
+    static const WCHAR *regs[] =
+    {
+        W("R0"), W("AT"), W("V0"), W("V1"),
+        W("A0"), W("A1"), W("A2"), W("A3"),
+        W("A4"), W("A5"), W("A6"), W("A7"),
+        W("T0"), W("T1"), W("T2"), W("T3"),
+        W("T8"), W("T9"), W("S0"), W("S1"),
+        W("S2"), W("S3"), W("S4"), W("S5"),
+        W("S6"), W("S7"), W("K0"), W("K1"),
+        W("GP"), W("SP"), W("FP"), W("RA")
+    };
 #endif
 
     // Caller frame registers are encoded as "-(reg+1)".
@@ -1151,6 +1163,9 @@ HRESULT ClrDataAccess::GetTieredVersions(
                     break;
                 case NativeCodeVersion::OptimizationTier1:
                     nativeCodeAddrs[count].OptimizationTier = DacpTieredVersionData::OptimizationTier_OptimizedTier1;
+                    break;
+                case NativeCodeVersion::OptimizationTier1OSR:
+                    nativeCodeAddrs[count].OptimizationTier = DacpTieredVersionData::OptimizationTier_OptimizedTier1OSR;
                     break;
                 case NativeCodeVersion::OptimizationTierOptimized:
                     nativeCodeAddrs[count].OptimizationTier = DacpTieredVersionData::OptimizationTier_Optimized;
@@ -2377,22 +2392,11 @@ ClrDataAccess::GetFailedAssemblyLocation(CLRDATA_ADDRESS assembly, unsigned int 
     SOSDacEnter();
     FailedAssembly* pAssembly = PTR_FailedAssembly(TO_TADDR(assembly));
 
-    // Turn from bytes to wide characters
-    if (!pAssembly->location.IsEmpty())
-    {
-        if (!pAssembly->location.DacGetUnicode(count, location, pNeeded))
-        {
-            hr = E_FAIL;
-        }
-    }
-    else
-    {
-        if (pNeeded)
-            *pNeeded = 1;
+    if (pNeeded)
+        *pNeeded = 1;
 
-        if (location)
-            location[0] = 0;
-    }
+    if (location)
+        location[0] = 0;
 
     SOSDacLeave();
     return hr;
@@ -2607,10 +2611,7 @@ ClrDataAccess::GetAssemblyData(CLRDATA_ADDRESS cdBaseDomainPtr, CLRDATA_ADDRESS 
     assemblyData->ModuleCount = 0;
     assemblyData->isDomainNeutral = FALSE;
 
-    pAssembly->GetManifestFile();
-
-    ModuleIterator mi = pAssembly->IterateModules();
-    while (mi.Next())
+    if (pAssembly->GetModule())
     {
         assemblyData->ModuleCount++;
     }
@@ -2628,17 +2629,17 @@ ClrDataAccess::GetAssemblyName(CLRDATA_ADDRESS assembly, unsigned int count, _In
     if (name)
         name[0] = 0;
 
-    if (!pAssembly->GetManifestFile()->GetPath().IsEmpty())
+    if (!pAssembly->GetPEAssembly()->GetPath().IsEmpty())
     {
-        if (!pAssembly->GetManifestFile()->GetPath().DacGetUnicode(count, name, pNeeded))
+        if (!pAssembly->GetPEAssembly()->GetPath().DacGetUnicode(count, name, pNeeded))
             hr = E_FAIL;
         else if (name)
             name[count-1] = 0;
     }
-    else if (!pAssembly->GetManifestFile()->IsDynamic())
+    else if (!pAssembly->GetPEAssembly()->IsDynamic())
     {
         StackSString displayName;
-        pAssembly->GetManifestFile()->GetDisplayName(displayName, 0);
+        pAssembly->GetPEAssembly()->GetDisplayName(displayName, 0);
 
         const WCHAR *val = displayName.GetUnicode();
 
@@ -2673,9 +2674,9 @@ ClrDataAccess::GetAssemblyLocation(CLRDATA_ADDRESS assembly, int count, _Inout_u
     Assembly* pAssembly = PTR_Assembly(TO_TADDR(assembly));
 
     // Turn from bytes to wide characters
-    if (!pAssembly->GetManifestFile()->GetPath().IsEmpty())
+    if (!pAssembly->GetPEAssembly()->GetPath().IsEmpty())
     {
-        if (!pAssembly->GetManifestFile()->GetPath().
+        if (!pAssembly->GetPEAssembly()->GetPath().
             DacGetUnicode(count, location, pNeeded))
         {
             hr = E_FAIL;
@@ -2703,21 +2704,14 @@ ClrDataAccess::GetAssemblyModuleList(CLRDATA_ADDRESS assembly, unsigned int coun
     SOSDacEnter();
 
     Assembly* pAssembly = PTR_Assembly(TO_TADDR(assembly));
-    ModuleIterator mi = pAssembly->IterateModules();
-    unsigned int n = 0;
     if (modules)
     {
-        while (mi.Next() && n < count)
-            modules[n++] = HOST_CDADDR(mi.GetModule());
-    }
-    else
-    {
-        while (mi.Next())
-            n++;
+        if (pAssembly->GetModule() && count > 0)
+            modules[0] = HOST_CDADDR(pAssembly->GetModule());
     }
 
     if (pNeeded)
-        *pNeeded = n;
+        *pNeeded = 1;
 
     SOSDacLeave();
     return hr;
@@ -2767,17 +2761,17 @@ ClrDataAccess::GetGCHeapStaticData(struct DacpGcHeapDetails *detailsData)
     detailsData->card_table = PTR_CDADDR(g_card_table);
     detailsData->mark_array = (CLRDATA_ADDRESS)*g_gcDacGlobals->mark_array;
     detailsData->next_sweep_obj = (CLRDATA_ADDRESS)*g_gcDacGlobals->next_sweep_obj;
-    if (g_gcDacGlobals->saved_sweep_ephemeral_seg != nullptr)
-    {
-        detailsData->saved_sweep_ephemeral_seg = (CLRDATA_ADDRESS)*g_gcDacGlobals->saved_sweep_ephemeral_seg;
-        detailsData->saved_sweep_ephemeral_start = (CLRDATA_ADDRESS)*g_gcDacGlobals->saved_sweep_ephemeral_start;
-    }
-    else
+    if (IsRegionGCEnabled())
     {
         // with regions, we don't have these variables anymore
         // use special value -1 in saved_sweep_ephemeral_seg to signal the region case
         detailsData->saved_sweep_ephemeral_seg = (CLRDATA_ADDRESS)-1;
         detailsData->saved_sweep_ephemeral_start = 0;
+    }
+    else
+    {
+        detailsData->saved_sweep_ephemeral_seg = (CLRDATA_ADDRESS)*g_gcDacGlobals->saved_sweep_ephemeral_seg;
+        detailsData->saved_sweep_ephemeral_start = (CLRDATA_ADDRESS)*g_gcDacGlobals->saved_sweep_ephemeral_start;
     }
     detailsData->background_saved_lowest_address = (CLRDATA_ADDRESS)*g_gcDacGlobals->background_saved_lowest_address;
     detailsData->background_saved_highest_address = (CLRDATA_ADDRESS)*g_gcDacGlobals->background_saved_highest_address;
@@ -3454,7 +3448,7 @@ ClrDataAccess::TraverseLoaderHeap(CLRDATA_ADDRESS loaderHeapAddr, VISITHEAP pFun
 
     SOSDacEnter();
 
-    LoaderHeap *pLoaderHeap = PTR_LoaderHeap(TO_TADDR(loaderHeapAddr));
+    ExplicitControlLoaderHeap *pLoaderHeap = PTR_ExplicitControlLoaderHeap(TO_TADDR(loaderHeapAddr));
     PTR_LoaderHeapBlock block = pLoaderHeap->m_pFirstBlock;
     while (block.IsValid())
     {
@@ -5150,6 +5144,22 @@ HRESULT ClrDataAccess::GetTaggedMemory(
         hr = S_FALSE;
     }
 
+    SOSDacLeave();
+    return hr;
+}
+
+HRESULT ClrDataAccess::GetGlobalAllocationContext(
+        CLRDATA_ADDRESS *allocPtr,
+        CLRDATA_ADDRESS *allocLimit)
+{
+    if (allocPtr == nullptr || allocLimit == nullptr)
+    {
+        return E_INVALIDARG;
+    }
+
+    SOSDacEnter();
+    *allocPtr = (CLRDATA_ADDRESS)((&g_global_alloc_context)->alloc_ptr);
+    *allocLimit = (CLRDATA_ADDRESS)((&g_global_alloc_context)->alloc_limit);
     SOSDacLeave();
     return hr;
 }

@@ -10,6 +10,6 @@
     <Compile Include="out_of_range_fp_to_int_conversions.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="CMakeLists.txt" />
+    <CMakeProjectReference Include="CMakeLists.txt" />
   </ItemGroup>
 </Project>

@@ -10,13 +10,13 @@ internal static partial class Interop
 {
     internal static partial class Sys
     {
-        [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_INotifyInit", SetLastError = true)]
+        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_INotifyInit", SetLastError = true)]
         internal static partial SafeFileHandle INotifyInit();
 
-        [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_INotifyAddWatch", CharSet = CharSet.Ansi, SetLastError = true)]
+        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_INotifyAddWatch", StringMarshalling = StringMarshalling.Utf8, SetLastError = true)]
         internal static partial int INotifyAddWatch(SafeFileHandle fd, string pathName, uint mask);
 
-        [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_INotifyRemoveWatch", SetLastError = true)]
+        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_INotifyRemoveWatch", SetLastError = true)]
         private static partial int INotifyRemoveWatch_private(SafeFileHandle fd, int wd);
 
         internal static int INotifyRemoveWatch(SafeFileHandle fd, int wd)

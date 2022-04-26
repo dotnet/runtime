@@ -5,8 +5,14 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
-class Test4
+public class
+#if XASSEM
+Test4_xassem
+#else
+Test4
+#endif
 {
     public static string teststr1 = null;
     public static string[] teststr2 = new string[3];
@@ -243,7 +249,8 @@ class Test4
         return passed;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         if (TestSameObjRef())
         {

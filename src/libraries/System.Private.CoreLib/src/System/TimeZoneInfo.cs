@@ -584,10 +584,7 @@ namespace System
         /// </summary>
         public static DateTimeOffset ConvertTime(DateTimeOffset dateTimeOffset, TimeZoneInfo destinationTimeZone)
         {
-            if (destinationTimeZone == null)
-            {
-                throw new ArgumentNullException(nameof(destinationTimeZone));
-            }
+            ArgumentNullException.ThrowIfNull(destinationTimeZone);
 
             // calculate the destination time zone offset
             DateTime utcDateTime = dateTimeOffset.UtcDateTime;
@@ -607,10 +604,7 @@ namespace System
         /// </summary>
         public static DateTime ConvertTime(DateTime dateTime, TimeZoneInfo destinationTimeZone)
         {
-            if (destinationTimeZone == null)
-            {
-                throw new ArgumentNullException(nameof(destinationTimeZone));
-            }
+            ArgumentNullException.ThrowIfNull(destinationTimeZone);
 
             // Special case to give a way clearing the cache without exposing ClearCachedData()
             if (dateTime.Ticks == 0)
@@ -636,15 +630,8 @@ namespace System
 
         private static DateTime ConvertTime(DateTime dateTime, TimeZoneInfo sourceTimeZone, TimeZoneInfo destinationTimeZone, TimeZoneInfoOptions flags, CachedData cachedData)
         {
-            if (sourceTimeZone == null)
-            {
-                throw new ArgumentNullException(nameof(sourceTimeZone));
-            }
-
-            if (destinationTimeZone == null)
-            {
-                throw new ArgumentNullException(nameof(destinationTimeZone));
-            }
+            ArgumentNullException.ThrowIfNull(sourceTimeZone);
+            ArgumentNullException.ThrowIfNull(destinationTimeZone);
 
             DateTimeKind sourceKind = cachedData.GetCorrespondingKind(sourceTimeZone);
             if (((flags & TimeZoneInfoOptions.NoThrowOnInvalidTime) == 0) && (dateTime.Kind != DateTimeKind.Unspecified) && (dateTime.Kind != sourceKind))
@@ -759,10 +746,8 @@ namespace System
 
         public static TimeZoneInfo FromSerializedString(string source)
         {
-            if (source == null)
-            {
-                throw new ArgumentNullException(nameof(source));
-            }
+            ArgumentNullException.ThrowIfNull(source);
+
             if (source.Length == 0)
             {
                 throw new ArgumentException(SR.Format(SR.Argument_InvalidSerializedString, source), nameof(source));
@@ -821,10 +806,7 @@ namespace System
         /// </summary>
         public bool HasSameRules(TimeZoneInfo other)
         {
-            if (other == null)
-            {
-                throw new ArgumentNullException(nameof(other));
-            }
+            ArgumentNullException.ThrowIfNull(other);
 
             // check the utcOffset and supportsDaylightSavingTime members
             if (_baseUtcOffset != other._baseUtcOffset ||
@@ -1021,10 +1003,7 @@ namespace System
 
         void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
         {
-            if (info == null)
-            {
-                throw new ArgumentNullException(nameof(info));
-            }
+            ArgumentNullException.ThrowIfNull(info);
 
             info.AddValue("Id", _id); // Do not rename (binary serialization)
             info.AddValue("DisplayName", _displayName); // Do not rename (binary serialization)
@@ -1037,10 +1016,7 @@ namespace System
 
         private TimeZoneInfo(SerializationInfo info, StreamingContext context)
         {
-            if (info == null)
-            {
-                throw new ArgumentNullException(nameof(info));
-            }
+            ArgumentNullException.ThrowIfNull(info);
 
             _id = (string)info.GetValue("Id", typeof(string))!; // Do not rename (binary serialization)
             _displayName = (string?)info.GetValue("DisplayName", typeof(string)); // Do not rename (binary serialization)
@@ -2023,15 +1999,7 @@ namespace System
         /// </summary>
         private static void ValidateTimeZoneInfo(string id, TimeSpan baseUtcOffset, AdjustmentRule[]? adjustmentRules, out bool adjustmentRulesSupportDst)
         {
-            if (id == null)
-            {
-                throw new ArgumentNullException(nameof(id));
-            }
-
-            if (id.Length == 0)
-            {
-                throw new ArgumentException(SR.Format(SR.Argument_InvalidId, id), nameof(id));
-            }
+            ArgumentException.ThrowIfNullOrEmpty(id);
 
             if (UtcOffsetOutOfRange(baseUtcOffset))
             {

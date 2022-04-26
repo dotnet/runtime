@@ -42,8 +42,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public int Add(ActiveDirectorySite site)
         {
-            if (site == null)
-                throw new ArgumentNullException(nameof(site));
+            ArgumentNullException.ThrowIfNull(site);
 
             if (!site.existing)
                 throw new InvalidOperationException(SR.Format(SR.SiteNotCommitted, site.Name));
@@ -56,8 +55,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public void AddRange(ActiveDirectorySite[] sites)
         {
-            if (sites == null)
-                throw new ArgumentNullException(nameof(sites));
+            ArgumentNullException.ThrowIfNull(sites);
 
             for (int i = 0; ((i) < (sites.Length)); i = ((i) + (1)))
                 this.Add(sites[i]);
@@ -65,8 +63,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public void AddRange(ActiveDirectorySiteCollection sites)
         {
-            if (sites == null)
-                throw new ArgumentNullException(nameof(sites));
+            ArgumentNullException.ThrowIfNull(sites);
 
             int count = sites.Count;
             for (int i = 0; i < count; i++)
@@ -75,8 +72,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public bool Contains(ActiveDirectorySite site)
         {
-            if (site == null)
-                throw new ArgumentNullException(nameof(site));
+            ArgumentNullException.ThrowIfNull(site);
 
             if (!site.existing)
                 throw new InvalidOperationException(SR.Format(SR.SiteNotCommitted, site.Name));
@@ -103,8 +99,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public int IndexOf(ActiveDirectorySite site)
         {
-            if (site == null)
-                throw new ArgumentNullException(nameof(site));
+            ArgumentNullException.ThrowIfNull(site);
 
             if (!site.existing)
                 throw new InvalidOperationException(SR.Format(SR.SiteNotCommitted, site.Name));
@@ -126,8 +121,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public void Insert(int index, ActiveDirectorySite site)
         {
-            if (site == null)
-                throw new ArgumentNullException(nameof(site));
+            ArgumentNullException.ThrowIfNull(site);
 
             if (!site.existing)
                 throw new InvalidOperationException(SR.Format(SR.SiteNotCommitted, site.Name));
@@ -140,8 +134,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public void Remove(ActiveDirectorySite site)
         {
-            if (site == null)
-                throw new ArgumentNullException(nameof(site));
+            ArgumentNullException.ThrowIfNull(site);
 
             if (!site.existing)
                 throw new InvalidOperationException(SR.Format(SR.SiteNotCommitted, site.Name));
@@ -234,7 +227,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         protected override void OnValidate(object value)
         {
-            if (value == null) throw new ArgumentNullException(nameof(value));
+            ArgumentNullException.ThrowIfNull(value);
 
             if (!(value is ActiveDirectorySite))
                 throw new ArgumentException(null, nameof(value));

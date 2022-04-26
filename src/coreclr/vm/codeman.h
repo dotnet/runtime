@@ -478,7 +478,7 @@ struct HeapList
     size_t              maxCodeHeapSize;// Size of the entire contiguous block of memory
     size_t              reserveForJumpStubs; // Amount of memory reserved for jump stubs in this block
 
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
     BYTE*               CLRPersonalityRoutine;  // jump thunk to personality routine
 #endif
 
@@ -1420,6 +1420,13 @@ private:
     static unsigned m_LCG_JumpStubBlockFullCount;
 
 public:
+
+    static void DumpExecutionManagerUsage()
+    {
+        fprintf(stderr, "JumpStub usage count:\n");
+        fprintf(stderr, "Normal: %u, LCG: %u\n", m_normal_JumpStubLookup, m_LCG_JumpStubLookup);
+    }
+
     struct JumpStubCache
     {
         JumpStubCache()

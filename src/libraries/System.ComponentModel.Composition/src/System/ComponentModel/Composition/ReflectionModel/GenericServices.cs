@@ -13,10 +13,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
     {
         internal static IList<Type> GetPureGenericParameters(this Type type)
         {
-            if (type == null)
-            {
-                throw new ArgumentNullException(nameof(type));
-            }
+            ArgumentNullException.ThrowIfNull(type);
 
             if (type.IsGenericType && type.ContainsGenericParameters)
             {
@@ -38,10 +35,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
 
         internal static int GetPureGenericArity(this Type type)
         {
-            if (type == null)
-            {
-                throw new ArgumentNullException(nameof(type));
-            }
+            ArgumentNullException.ThrowIfNull(type);
 
             int genericArity = 0;
             if (type.IsGenericType && type.ContainsGenericParameters)

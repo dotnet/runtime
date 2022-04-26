@@ -39,6 +39,7 @@ namespace System.IO
             }
         }
 
+#pragma warning disable IDE0060
         public static void Encrypt(string path)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_FileEncryption);
@@ -48,6 +49,7 @@ namespace System.IO
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_FileEncryption);
         }
+#pragma warning restore IDE0060
 
         private static void LinkOrCopyFile (string sourceFullPath, string destFullPath)
         {
@@ -106,8 +108,8 @@ namespace System.IO
             }
         }
 
-
-        public static void ReplaceFile(string sourceFullPath, string destFullPath, string? destBackupFullPath, bool ignoreMetadataErrors)
+#pragma warning disable IDE0060
+        public static void ReplaceFile(string sourceFullPath, string destFullPath, string? destBackupFullPath, bool ignoreMetadataErrors /* unused */)
         {
             // Unix rename works in more cases, we limit to what is allowed by Windows File.Replace.
             // These checks are not atomic, the file could change after a check was performed and before it is renamed.
@@ -172,6 +174,7 @@ namespace System.IO
             // Finally, rename the source to the destination, overwriting the destination.
             Interop.CheckIo(Interop.Sys.Rename(sourceFullPath, destFullPath));
         }
+#pragma warning restore IDE0060
 
         public static void MoveFile(string sourceFullPath, string destFullPath)
         {
@@ -387,40 +390,69 @@ namespace System.IO
             }
         }
 
-        public static void MoveDirectory(string sourceFullPath, string destFullPath)
+        private static void MoveDirectory(string sourceFullPath, string destFullPath, bool isCaseSensitiveRename)
         {
-            // Windows doesn't care if you try and copy a file via "MoveDirectory"...
-            if (FileExists(sourceFullPath))
+            // isCaseSensitiveRename is only set for case-insensitive systems (like macOS).
+            Debug.Assert(!isCaseSensitiveRename || !PathInternal.IsCaseSensitive);
+
+            ReadOnlySpan<char> srcNoDirectorySeparator = Path.TrimEndingDirectorySeparator(sourceFullPath.AsSpan());
+            ReadOnlySpan<char> destNoDirectorySeparator = Path.TrimEndingDirectorySeparator(destFullPath.AsSpan());
+
+            // When the path ends with a directory separator, it must not be a file.
+            // On Unix 'rename' fails with ENOTDIR, on wasm we need to manually check.
+            if (OperatingSystem.IsBrowser() && Path.EndsInDirectorySeparator(sourceFullPath) && FileExists(sourceFullPath))
             {
-                // ... but it doesn't like the source to have a trailing slash ...
+                throw new IOException(SR.Format(SR.IO_PathNotFound_Path, sourceFullPath));
+            }
 
-                // On Windows we end up with ERROR_INVALID_NAME, which is
-                // "The filename, directory name, or volume label syntax is incorrect."
-                //
-                // This surfaces as an IOException, if we let it go beyond here it would
-                // give DirectoryNotFound.
+            // The destination must not exist (unless it is a case-sensitive rename).
+            // On Unix 'rename' will overwrite the destination file if it already exists, we need to manually check.
+            if (!isCaseSensitiveRename && Interop.Sys.LStat(destNoDirectorySeparator, out Interop.Sys.FileStatus destFileStatus) >= 0)
+            {
+                // Maintain order of exceptions as on Windows.
 
-                if (Path.EndsInDirectorySeparator(sourceFullPath))
+                // Throw if the source doesn't exist.
+                if (Interop.Sys.LStat(srcNoDirectorySeparator, out Interop.Sys.FileStatus sourceFileStatus) < 0)
+                {
+                    throw new DirectoryNotFoundException(SR.Format(SR.IO_PathNotFound_Path, sourceFullPath));
+                }
+                // Source and destination must not be the same file unless it is a case-sensitive rename.
+                else if (sourceFileStatus.Dev == destFileStatus.Dev &&
+                         sourceFileStatus.Ino == destFileStatus.Ino)
+                {
+                    // isCaseSensitiveRename is only true when the system is case-insensitive (like macOS).
+                    // On a case-sensitive system (like Linux), there can stil be case-insensitive filesystems mounted.
+                    // When both paths refer to the same file and they differ only in casing, we fall through to Rename.
+                    if (!PathInternal.IsCaseSensitive && // handled by isCaseSensitiveRename.
+                        !srcNoDirectorySeparator.Equals(destNoDirectorySeparator, StringComparison.OrdinalIgnoreCase) ||     // different paths.
+                        Path.GetFileName(srcNoDirectorySeparator).SequenceEqual(Path.GetFileName(destNoDirectorySeparator))) // same names.
+                    {
+                        throw new IOException(SR.IO_SourceDestMustBeDifferent);
+                    }
+                }
+                // When the path ends with a directory separator, it must be a directory.
+                else if ((sourceFileStatus.Mode & Interop.Sys.FileTypes.S_IFMT) != Interop.Sys.FileTypes.S_IFDIR
+                    && Path.EndsInDirectorySeparator(sourceFullPath))
+                {
                     throw new IOException(SR.Format(SR.IO_PathNotFound_Path, sourceFullPath));
-
-                // ... but it doesn't care if the destination has a trailing separator.
-                destFullPath = Path.TrimEndingDirectorySeparator(destFullPath);
+                }
+                else
+                {
+                    throw new IOException(SR.Format(SR.IO_AlreadyExists_Name, destFullPath));
+                }
             }
 
-            if (FileExists(destFullPath))
-            {
-                // Some Unix distros will overwrite the destination file if it already exists.
-                // Throwing IOException to match Windows behavior.
-                throw new IOException(SR.Format(SR.IO_AlreadyExists_Name, destFullPath));
-            }
-
-            if (Interop.Sys.Rename(sourceFullPath, destFullPath) < 0)
+            if (Interop.Sys.Rename(sourceFullPath, destNoDirectorySeparator) < 0)
             {
                 Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
                 switch (errorInfo.Error)
                 {
                     case Interop.Error.EACCES: // match Win32 exception
                         throw new IOException(SR.Format(SR.UnauthorizedAccess_IODenied_Path, sourceFullPath), errorInfo.RawErrno);
+                    case Interop.Error.ENOENT:
+                        throw new DirectoryNotFoundException(SR.Format(SR.IO_PathNotFound_Path, sourceFullPath));
+                    case Interop.Error.ENOTDIR: // sourceFullPath exists and it's not a directory
+                        throw new IOException(SR.Format(SR.IO_PathNotFound_Path, sourceFullPath));
                     default:
                         throw Interop.GetExceptionForIoErrno(errorInfo, isDirectory: true);
                 }
@@ -579,7 +611,9 @@ namespace System.IO
             return DriveInfoInternal.GetLogicalDrives();
         }
 
+#pragma warning disable IDE0060
         internal static string? GetLinkTarget(ReadOnlySpan<char> linkPath, bool isDirectory) => Interop.Sys.ReadLink(linkPath);
+#pragma warning restore IDE0060
 
         internal static void CreateSymbolicLink(string path, string pathToTarget, bool isDirectory)
         {
@@ -592,7 +626,7 @@ namespace System.IO
             ValueStringBuilder sb = new(Interop.DefaultPathBufferSize);
             sb.Append(linkPath);
 
-            string? linkTarget = GetLinkTarget(linkPath, isDirectory: false /* Irrelevant in Unix */);
+            string? linkTarget = Interop.Sys.ReadLink(linkPath);
             if (linkTarget == null)
             {
                 sb.Dispose();
@@ -625,7 +659,7 @@ namespace System.IO
                     }
 
                     GetLinkTargetFullPath(ref sb, current);
-                    current = GetLinkTarget(sb.AsSpan(), isDirectory: false);
+                    current = Interop.Sys.ReadLink(sb.AsSpan());
                     visitCount++;
                 }
             }

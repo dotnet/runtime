@@ -16,14 +16,14 @@
 
   <PropertyGroup Condition="'$(DisableImplicitFrameworkReferences)' != 'true' and
                             '$(TargetFrameworkIdentifier)' == '.NETCoreApp' and
-                            $([MSBuild]::VersionGreaterThanOrEquals($(TargetFrameworkVersion), '$(NetCoreAppCurrentVersion)'))">
+                            '$(TargetFrameworkVersion)' == 'v$(NetCoreAppCurrentVersion)'">
     <UseLocalTargetingRuntimePack Condition="'$(UseLocalTargetingRuntimePack)' == ''">true</UseLocalTargetingRuntimePack>
     <!-- Tests don't yet use a live build of the apphost: https://github.com/dotnet/runtime/issues/58109. -->
     <UseLocalAppHostPack Condition="'$(UseLocalAppHostPack)' == ''">false</UseLocalAppHostPack>
     <EnableTargetingPackDownload>false</EnableTargetingPackDownload>
     <GenerateErrorForMissingTargetingPacks>false</GenerateErrorForMissingTargetingPacks>
     <!-- Hardcode the apphost version until the SDK understands the net7.0 tfm. -->
-    <_AppHostBaselinePackVersion Condition="'$(UseLocalAppHostPack)' != 'true'">6.0.0-rc.1.21411.2</_AppHostBaselinePackVersion>
+    <_AppHostBaselinePackVersion Condition="'$(UseLocalAppHostPack)' != 'true'">6.0.3</_AppHostBaselinePackVersion>
   </PropertyGroup>
 
   <!-- Add Known* items if the SDK doesn't support the TargetFramework yet. -->
@@ -67,20 +67,14 @@
     </Reference>
   </ItemGroup>
 
-  <!-- DisableImplicitAssemblyReferences support. -->
   <Target Name="RemoveFrameworkReferences"
           BeforeTargets="_HandlePackageFileConflicts"
           AfterTargets="ResolveTargetingPackAssets"
-          Condition="'$(DisableImplicitAssemblyReferences)' == 'true' and
-                     '$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
+          Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <!-- Point MicrosoftNetCoreAppRefPackRefDir to the acquired targeting pack to use it later for AssemblySearchPaths resolution. -->
-    <PropertyGroup Condition="'$(UseLocalTargetingRuntimePack)' != 'true'">
+    <PropertyGroup Condition="'$(TargetFrameworkVersion)' != 'v$(NetCoreAppCurrentVersion)'">
       <MicrosoftNetCoreAppRefPackRefDir>%(ResolvedFrameworkReference.TargetingPackPath)\ref\net$(TargetFrameworkVersion.TrimStart('v'))\</MicrosoftNetCoreAppRefPackRefDir>
     </PropertyGroup>
-    <ItemGroup>
-      <Reference Remove="@(Reference)"
-                 Condition="'%(Reference.FrameworkReferenceName)' == '$(LocalFrameworkOverrideName)'" />
-    </ItemGroup>
   </Target>
 
   <!-- Add the resolved targeting pack to the assembly search path. -->
@@ -142,16 +136,25 @@
           AfterTargets="ResolveTargetingPackAssets">
     <ItemGroup>
       <_targetingPackReferenceExclusion Include="$(TargetName)" />
-      <_targetingPackReferenceExclusion Include="@(_ResolvedProjectReferencePaths->'%(Filename)')" />
+      <_targetingPackReferenceExclusion Include="@(_ResolvedProjectReferencePaths->Metadata('Filename'))" />
       <_targetingPackReferenceExclusion Include="@(DefaultReferenceExclusion)" />
     </ItemGroup>
 
+    <!-- Filter out shims from the targeting pack references as an opt-in. -->
+    <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and
+                          '$(SkipTargetingPackShimReferences)' == 'true'">
+      <_targetingPackReferenceExclusion Include="@(NetFxReference)" />
+      <_targetingPackReferenceExclusion Include="netstandard" />
+    </ItemGroup>
+
     <ItemGroup>
-      <_targetingPackReferenceWithExclusion Include="@(Reference)">
-        <Exclusion>%(_targetingPackReferenceExclusion.Identity)</Exclusion>
-      </_targetingPackReferenceWithExclusion>
-      <Reference Remove="@(_targetingPackReferenceWithExclusion)"
-                 Condition="'%(_targetingPackReferenceWithExclusion.ExternallyResolved)' == 'true' and '%(_targetingPackReferenceWithExclusion.Filename)' == '%(_targetingPackReferenceWithExclusion.Exclusion)'" />
+      <_targetingPackReferenceWithProjectName Include="@(Reference->WithMetadataValue('ExternallyResolved', 'true')->Metadata('Filename'))"
+                                              OriginalIdentity="%(Identity)" />
+      <_targetingPackIncludedReferenceWithProjectName Include="@(_targetingPackReferenceWithProjectName)"
+                                                      Exclude="@(_targetingPackReferenceExclusion)" />
+      <_targetingPackExcludedReferenceWithProjectName Include="@(_targetingPackReferenceWithProjectName)"
+                                                      Exclude="@(_targetingPackIncludedReferenceWithProjectName)" />
+      <Reference Remove="@(_targetingPackExcludedReferenceWithProjectName->Metadata('OriginalIdentity'))" />
     </ItemGroup>
   </Target>
 </Project>

@@ -8,12 +8,16 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
+.assembly extern xunit.core {}
 .assembly extern mscorlib {}
 .assembly extern eh_common {}
-.assembly test {}
-.module test.exe
+.assembly 'trythrowexcept' {}
 
+.class public auto ansi Test_trythrowexcept extends [mscorlib] System.Object {
 .method public static int32 main() {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     .maxstack  2
     .locals init (
@@ -79,4 +83,5 @@ handler_begin:  pop
 
          ret
   .try try_start to filter_begin filter filter_begin handler handler_begin to done
+}
 }

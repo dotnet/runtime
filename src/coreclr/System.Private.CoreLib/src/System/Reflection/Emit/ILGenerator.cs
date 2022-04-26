@@ -476,8 +476,7 @@ namespace System.Reflection.Emit
 
         public virtual void Emit(OpCode opcode, MethodInfo meth)
         {
-            if (meth == null)
-                throw new ArgumentNullException(nameof(meth));
+            ArgumentNullException.ThrowIfNull(meth);
 
             if (opcode.Equals(OpCodes.Call) || opcode.Equals(OpCodes.Callvirt) || opcode.Equals(OpCodes.Newobj))
             {
@@ -588,8 +587,7 @@ namespace System.Reflection.Emit
 
         public virtual void EmitCall(OpCode opcode, MethodInfo methodInfo, Type[]? optionalParameterTypes)
         {
-            if (methodInfo == null)
-                throw new ArgumentNullException(nameof(methodInfo));
+            ArgumentNullException.ThrowIfNull(methodInfo);
 
             if (!(opcode.Equals(OpCodes.Call) || opcode.Equals(OpCodes.Callvirt) || opcode.Equals(OpCodes.Newobj)))
                 throw new ArgumentException(SR.Argument_NotMethodCallOpcode, nameof(opcode));
@@ -623,8 +621,7 @@ namespace System.Reflection.Emit
 
         public virtual void Emit(OpCode opcode, SignatureHelper signature)
         {
-            if (signature == null)
-                throw new ArgumentNullException(nameof(signature));
+            ArgumentNullException.ThrowIfNull(signature);
 
             int stackchange = 0;
             ModuleBuilder modBuilder = (ModuleBuilder)m_methodBuilder.Module;
@@ -657,8 +654,7 @@ namespace System.Reflection.Emit
 
         public virtual void Emit(OpCode opcode, ConstructorInfo con)
         {
-            if (con == null)
-                throw new ArgumentNullException(nameof(con));
+            ArgumentNullException.ThrowIfNull(con);
 
             int stackchange = 0;
 
@@ -774,8 +770,7 @@ namespace System.Reflection.Emit
 
         public virtual void Emit(OpCode opcode, Label[] labels)
         {
-            if (labels == null)
-                throw new ArgumentNullException(nameof(labels));
+            ArgumentNullException.ThrowIfNull(labels);
 
             // Emitting a switch table
 
@@ -820,12 +815,9 @@ namespace System.Reflection.Emit
 
         public virtual void Emit(OpCode opcode, LocalBuilder local)
         {
-            // Puts the opcode onto the IL stream followed by the information for local variable local.
+            ArgumentNullException.ThrowIfNull(local);
 
-            if (local == null)
-            {
-                throw new ArgumentNullException(nameof(local));
-            }
+            // Puts the opcode onto the IL stream followed by the information for local variable local.
             int tempVal = local.GetLocalIndex();
             if (local.GetMethodBuilder() != m_methodBuilder)
             {
@@ -1022,10 +1014,7 @@ namespace System.Reflection.Emit
             else
             {
                 // execute this branch if previous clause is Catch or Fault
-                if (exceptionType == null)
-                {
-                    throw new ArgumentNullException(nameof(exceptionType));
-                }
+                ArgumentNullException.ThrowIfNull(exceptionType);
 
                 Emit(OpCodes.Leave, current.GetEndLabel());
             }
@@ -1124,10 +1113,7 @@ namespace System.Reflection.Emit
         {
             // Emits the il to throw an exception
 
-            if (excType == null)
-            {
-                throw new ArgumentNullException(nameof(excType));
-            }
+            ArgumentNullException.ThrowIfNull(excType);
 
             if (!excType.IsSubclassOf(typeof(Exception)) && excType != typeof(Exception))
             {
@@ -1190,15 +1176,12 @@ namespace System.Reflection.Emit
 
         public virtual void EmitWriteLine(FieldInfo fld)
         {
+            ArgumentNullException.ThrowIfNull(fld);
+
             // Emits the IL necessary to call WriteLine with fld.  It is
             // an error to call EmitWriteLine with a fld which is not of
             // one of the types for which Console.WriteLine implements overloads. (e.g.
             // we do *not* call ToString on the fields.
-
-            if (fld == null)
-            {
-                throw new ArgumentNullException(nameof(fld));
-            }
 
             Type consoleType = Type.GetType(ConsoleTypeFullName, throwOnError: true)!;
             MethodInfo prop = consoleType.GetMethod("get_Out")!;
@@ -1252,10 +1235,7 @@ namespace System.Reflection.Emit
                 throw new InvalidOperationException(SR.InvalidOperation_TypeHasBeenCreated);
             }
 
-            if (localType == null)
-            {
-                throw new ArgumentNullException(nameof(localType));
-            }
+            ArgumentNullException.ThrowIfNull(localType);
 
             if (methodBuilder.m_bIsBaked)
             {
@@ -1273,11 +1253,7 @@ namespace System.Reflection.Emit
             // Specifying the namespace to be used in evaluating locals and watches
             // for the current active lexical scope.
 
-            if (usingNamespace == null)
-                throw new ArgumentNullException(nameof(usingNamespace));
-
-            if (usingNamespace.Length == 0)
-                throw new ArgumentException(SR.Argument_EmptyName, nameof(usingNamespace));
+            ArgumentException.ThrowIfNullOrEmpty(usingNamespace);
 
             MethodBuilder? methodBuilder = m_methodBuilder as MethodBuilder;
             if (methodBuilder == null)

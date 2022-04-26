@@ -796,20 +796,9 @@ namespace System.ComponentModel.Composition.Hosting
 
         private static ImportDefinition BuildImportDefinition(Type type, Type metadataViewType, string contractName, ImportCardinality cardinality)
         {
-            if (type == null)
-            {
-                throw new ArgumentNullException(nameof(type));
-            }
-
-            if (metadataViewType == null)
-            {
-                throw new ArgumentNullException(nameof(metadataViewType));
-            }
-
-            if (contractName == null)
-            {
-                throw new ArgumentNullException(nameof(contractName));
-            }
+            ArgumentNullException.ThrowIfNull(type);
+            ArgumentNullException.ThrowIfNull(metadataViewType);
+            ArgumentNullException.ThrowIfNull(contractName);
 
             IEnumerable<KeyValuePair<string, Type>> requiredMetadata = CompositionServices.GetRequiredMetadata(metadataViewType);
             IDictionary<string, object?> metadata = CompositionServices.GetImportMetadata(type, null);

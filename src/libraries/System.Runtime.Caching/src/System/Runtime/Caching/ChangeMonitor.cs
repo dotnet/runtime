@@ -221,7 +221,7 @@ namespace System.Runtime.Caching
         // be called immediately (on the same thread??).
         public void NotifyOnChanged(OnChangedCallback onChangedCallback)
         {
-            if (onChangedCallback == null)
+            if (onChangedCallback is null)
             {
                 throw new ArgumentNullException(nameof(onChangedCallback));
             }

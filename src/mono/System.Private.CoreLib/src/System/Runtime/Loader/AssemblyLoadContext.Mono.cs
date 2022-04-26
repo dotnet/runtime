@@ -7,7 +7,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
-using Internal.Runtime.CompilerServices;
 using Mono;
 
 namespace System.Runtime.Loader
@@ -36,6 +35,7 @@ namespace System.Runtime.Loader
 
         [RequiresUnreferencedCode("Types and members the loaded assembly depends on might be removed")]
         [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
+#pragma warning disable IDE0060
         private Assembly InternalLoadFromPath(string? assemblyPath, string? nativeImagePath)
         {
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
@@ -44,6 +44,7 @@ namespace System.Runtime.Loader
             // TODO: Handle nativeImagePath
             return InternalLoadFile(NativeALC, assemblyPath, ref stackMark);
         }
+#pragma warning restore IDE0060
 
         [RequiresUnreferencedCode("Types and members the loaded assembly depends on might be removed")]
         internal Assembly InternalLoad(byte[] arrAssembly, byte[]? arrSymbols)
@@ -70,8 +71,7 @@ namespace System.Runtime.Loader
         // Returns the load context in which the specified assembly has been loaded
         public static AssemblyLoadContext? GetLoadContext(Assembly assembly)
         {
-            if (assembly == null)
-                throw new ArgumentNullException(nameof(assembly));
+            ArgumentNullException.ThrowIfNull(assembly);
 
             AssemblyLoadContext? loadContextForAssembly = null;
 

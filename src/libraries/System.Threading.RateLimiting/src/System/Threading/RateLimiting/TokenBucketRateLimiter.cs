@@ -11,11 +11,12 @@ namespace System.Threading.RateLimiting
     /// <summary>
     /// <see cref="RateLimiter"/> implementation that replenishes tokens periodically instead of via a release mechanism.
     /// </summary>
-    public sealed class TokenBucketRateLimiter : RateLimiter
+    public sealed class TokenBucketRateLimiter : ReplenishingRateLimiter
     {
         private int _tokenCount;
         private int _queueCount;
-        private uint _lastReplenishmentTick = (uint)Environment.TickCount;
+        private long _lastReplenishmentTick;
+        private long? _idleSince;
         private bool _disposed;
 
         private readonly Timer? _renewTimer;
@@ -27,6 +28,16 @@ namespace System.Threading.RateLimiting
 
         private static readonly RateLimitLease SuccessfulLease = new TokenBucketLease(true, null);
         private static readonly RateLimitLease FailedLease = new TokenBucketLease(false, null);
+        private static readonly double TickFrequency = (double)TimeSpan.TicksPerSecond / Stopwatch.Frequency;
+
+        /// <inheritdoc />
+        public override TimeSpan? IdleDuration => _idleSince is null ? null : new TimeSpan((long)((Stopwatch.GetTimestamp() - _idleSince) * TickFrequency));
+
+        /// <inheritdoc />
+        public override bool IsAutoReplenishing => _options.AutoReplenishment;
+
+        /// <inheritdoc />
+        public override TimeSpan ReplenishmentPeriod => _options.ReplenishmentPeriod;
 
         /// <summary>
         /// Initializes the <see cref="TokenBucketRateLimiter"/>.
@@ -36,6 +47,8 @@ namespace System.Threading.RateLimiting
         {
             _options = options ?? throw new ArgumentNullException(nameof(options));
             _tokenCount = options.TokenLimit;
+
+            _idleSince = _lastReplenishmentTick = Stopwatch.GetTimestamp();
 
             if (_options.AutoReplenishment)
             {
@@ -124,14 +137,13 @@ namespace System.Threading.RateLimiting
                     }
                 }
 
-                TaskCompletionSource<RateLimitLease> tcs = new TaskCompletionSource<RateLimitLease>(TaskCreationOptions.RunContinuationsAsynchronously);
-
+                CancelQueueState tcs = new CancelQueueState(tokenCount, this, cancellationToken);
                 CancellationTokenRegistration ctr = default;
                 if (cancellationToken.CanBeCanceled)
                 {
                     ctr = cancellationToken.Register(static obj =>
                     {
-                        ((TaskCompletionSource<RateLimitLease>)obj!).TrySetException(new OperationCanceledException());
+                        ((CancelQueueState)obj!).TrySetCanceled();
                     }, tcs);
                 }
 
@@ -140,7 +152,6 @@ namespace System.Threading.RateLimiting
                 _queueCount += tokenCount;
                 Debug.Assert(_queueCount <= _options.QueueLimit);
 
-                // handle cancellation
                 return new ValueTask<RateLimitLease>(registration.Tcs.Task);
             }
         }
@@ -174,6 +185,7 @@ namespace System.Threading.RateLimiting
                 // b. if there are items queued but the processing order is newest first, then we can lease the incoming request since it is the newest
                 if (_queueCount == 0 || (_queueCount > 0 && _options.QueueProcessingOrder == QueueProcessingOrder.NewestFirst))
                 {
+                    _idleSince = null;
                     _tokenCount -= tokenCount;
                     Debug.Assert(_tokenCount >= 0);
                     lease = SuccessfulLease;
@@ -189,10 +201,10 @@ namespace System.Threading.RateLimiting
         /// Attempts to replenish the bucket.
         /// </summary>
         /// <returns>
-        /// False if <see cref="TokenBucketRateLimiterOptions.AutoReplenishment"/> is enabled, otherwise true.
+        /// <see langword="false"/> if <see cref="TokenBucketRateLimiterOptions.AutoReplenishment"/> is enabled, otherwise <see langword="true"/>.
         /// Does not reflect if tokens were replenished.
         /// </returns>
-        public bool TryReplenish()
+        public override bool TryReplenish()
         {
             if (_options.AutoReplenishment)
             {
@@ -207,21 +219,14 @@ namespace System.Threading.RateLimiting
             TokenBucketRateLimiter limiter = (state as TokenBucketRateLimiter)!;
             Debug.Assert(limiter is not null);
 
-            // Use Environment.TickCount instead of DateTime.UtcNow to avoid issues on systems where the clock can change
-            uint nowTicks = (uint)Environment.TickCount;
+            // Use Stopwatch instead of DateTime.UtcNow to avoid issues on systems where the clock can change
+            long nowTicks = Stopwatch.GetTimestamp();
             limiter!.ReplenishInternal(nowTicks);
         }
 
         // Used in tests that test behavior with specific time intervals
-        private void ReplenishInternal(uint nowTicks)
+        private void ReplenishInternal(long nowTicks)
         {
-            bool wrapped = false;
-            // (uint)TickCount will wrap every ~50 days, we can detect that by checking if the new ticks is less than the last replenishment
-            if (nowTicks < _lastReplenishmentTick)
-            {
-                wrapped = true;
-            }
-
             // method is re-entrant (from Timer), lock to avoid multiple simultaneous replenishes
             lock (Lock)
             {
@@ -230,9 +235,7 @@ namespace System.Threading.RateLimiting
                     return;
                 }
 
-                // Fix the wrapping by using a long and adding uint.MaxValue in the wrapped case
-                long nonWrappedTicks = wrapped ? (long)nowTicks + uint.MaxValue : nowTicks;
-                if (nonWrappedTicks - _lastReplenishmentTick < _options.ReplenishmentPeriod.TotalMilliseconds)
+                if ((long)((nowTicks - _lastReplenishmentTick) * TickFrequency) < _options.ReplenishmentPeriod.Ticks)
                 {
                     return;
                 }
@@ -276,21 +279,30 @@ namespace System.Threading.RateLimiting
 
                         _queueCount -= nextPendingRequest.Count;
                         _tokenCount -= nextPendingRequest.Count;
-                        Debug.Assert(_queueCount >= 0);
                         Debug.Assert(_tokenCount >= 0);
 
                         if (!nextPendingRequest.Tcs.TrySetResult(SuccessfulLease))
                         {
                             // Queued item was canceled so add count back
                             _tokenCount += nextPendingRequest.Count;
+                            // Updating queue count is handled by the cancellation code
+                            _queueCount += nextPendingRequest.Count;
                         }
                         nextPendingRequest.CancellationTokenRegistration.Dispose();
+                        Debug.Assert(_queueCount >= 0);
                     }
                     else
                     {
                         // Request cannot be fulfilled
                         break;
                     }
+                }
+
+                if (_tokenCount == _options.TokenLimit)
+                {
+                    Debug.Assert(_idleSince is null);
+                    Debug.Assert(_queueCount == 0);
+                    _idleSince = Stopwatch.GetTimestamp();
                 }
             }
         }
@@ -380,7 +392,34 @@ namespace System.Threading.RateLimiting
             public TaskCompletionSource<RateLimitLease> Tcs { get; }
 
             public CancellationTokenRegistration CancellationTokenRegistration { get; }
+        }
 
+        private sealed class CancelQueueState : TaskCompletionSource<RateLimitLease>
+        {
+            private readonly int _tokenCount;
+            private readonly TokenBucketRateLimiter _limiter;
+            private readonly CancellationToken _cancellationToken;
+
+            public CancelQueueState(int tokenCount, TokenBucketRateLimiter limiter, CancellationToken cancellationToken)
+                : base(TaskCreationOptions.RunContinuationsAsynchronously)
+            {
+                _tokenCount = tokenCount;
+                _limiter = limiter;
+                _cancellationToken = cancellationToken;
+            }
+
+            public new bool TrySetCanceled()
+            {
+                if (TrySetCanceled(_cancellationToken))
+                {
+                    lock (_limiter.Lock)
+                    {
+                        _limiter._queueCount -= _tokenCount;
+                    }
+                    return true;
+                }
+                return false;
+            }
         }
     }
 }

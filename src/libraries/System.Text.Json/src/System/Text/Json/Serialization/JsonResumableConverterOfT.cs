@@ -12,11 +12,12 @@ namespace System.Text.Json.Serialization
     {
         public sealed override T? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
-            // Bridge from resumable to value converters.
-            if (options == null)
+            if (options is null)
             {
-                throw new ArgumentNullException(nameof(options));
+                ThrowHelper.ThrowArgumentNullException(nameof(options));
             }
+
+            // Bridge from resumable to value converters.
 
             ReadStack state = default;
             state.Initialize(typeToConvert, options, supportContinuation: false);
@@ -26,14 +27,15 @@ namespace System.Text.Json.Serialization
 
         public sealed override void Write(Utf8JsonWriter writer, T value, JsonSerializerOptions options)
         {
-            // Bridge from resumable to value converters.
-            if (options == null)
+            if (options is null)
             {
-                throw new ArgumentNullException(nameof(options));
+                ThrowHelper.ThrowArgumentNullException(nameof(options));
             }
 
+            // Bridge from resumable to value converters.
+
             WriteStack state = default;
-            state.Initialize(typeof(T), options, supportContinuation: false);
+            state.Initialize(typeof(T), options, supportContinuation: false, supportAsync: false);
             try
             {
                 TryWrite(writer, value, options, ref state);

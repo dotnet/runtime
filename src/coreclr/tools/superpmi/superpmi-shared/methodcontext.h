@@ -66,6 +66,8 @@ static_assert((int)EXTRA_JIT_FLAGS::HAS_DYNAMIC_PROFILE == (int)CORJIT_FLAGS::Co
 
 class MethodContext
 {
+    friend class CompileResult;
+
 public:
     MethodContext();
 
@@ -193,13 +195,11 @@ public:
 
     void recCanInline(CORINFO_METHOD_HANDLE callerHnd,
                       CORINFO_METHOD_HANDLE calleeHnd,
-                      uint32_t*                pRestrictions,
                       CorInfoInline         response,
                       DWORD                 exceptionCode);
     void dmpCanInline(DLDL key, const Agnostic_CanInline& value);
     CorInfoInline repCanInline(CORINFO_METHOD_HANDLE callerHnd,
                                CORINFO_METHOD_HANDLE calleeHnd,
-                               uint32_t*             pRestrictions,
                                DWORD*                exceptionCode);
 
     void recResolveToken(CORINFO_RESOLVED_TOKEN* pResolvedToken, DWORD exceptionCode);
@@ -317,11 +317,13 @@ public:
                                 CORINFO_CONST_LOOKUP*   pLookup);
 
     void recGetReadyToRunDelegateCtorHelper(CORINFO_RESOLVED_TOKEN* pTargetMethod,
+                                            mdToken                 targetConstraint,
                                             CORINFO_CLASS_HANDLE    delegateType,
                                             CORINFO_LOOKUP*         pLookup);
     void dmpGetReadyToRunDelegateCtorHelper(GetReadyToRunDelegateCtorHelper_TOKENIn key,
                                             Agnostic_CORINFO_LOOKUP                 pLookup);
     void repGetReadyToRunDelegateCtorHelper(CORINFO_RESOLVED_TOKEN* pTargetMethod,
+                                            mdToken                 targetConstraint,
                                             CORINFO_CLASS_HANDLE    delegateType,
                                             CORINFO_LOOKUP*         pLookup);
 
@@ -598,9 +600,9 @@ public:
     void dmpIsValidStringRef(DLD key, DWORD value);
     bool repIsValidStringRef(CORINFO_MODULE_HANDLE module, unsigned metaTOK);
 
-    void recGetStringLiteral(CORINFO_MODULE_HANDLE module, unsigned metaTOK, int length, const char16_t* result);
-    void dmpGetStringLiteral(DLD key, DD value);
-    const char16_t* repGetStringLiteral(CORINFO_MODULE_HANDLE module, unsigned metaTOK, int* length);
+    void recGetStringLiteral(CORINFO_MODULE_HANDLE module, unsigned metaTOK, char16_t* buffer, int bufferSize, int length);
+    void dmpGetStringLiteral(DLDD key, DD value);
+    int repGetStringLiteral(CORINFO_MODULE_HANDLE module, unsigned metaTOK, char16_t* buffer, int bufferSize);
 
     void recGetHelperName(CorInfoHelpFunc funcNum, const char* result);
     void dmpGetHelperName(DWORD key, DWORD value);
@@ -753,6 +755,10 @@ public:
     bool repGetSystemVAmd64PassStructInRegisterDescriptor(
         CORINFO_CLASS_HANDLE structHnd, SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR* structPassInRegDescPtr);
 
+    void recGetLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE structHnd, DWORD value);
+    void dmpGetLoongArch64PassStructInRegisterFlags(DWORDLONG key, DWORD value);
+    DWORD repGetLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE structHnd);
+
     void recGetRelocTypeHint(void* target, WORD result);
     void dmpGetRelocTypeHint(DWORDLONG key, DWORD value);
     WORD repGetRelocTypeHint(void* target);
@@ -781,10 +787,20 @@ public:
     void dmpGetTypeInstantiationArgument(DWORDLONG key, DWORDLONG value);
     CORINFO_CLASS_HANDLE repGetTypeInstantiationArgument(CORINFO_CLASS_HANDLE cls, unsigned index);
 
-    void recAppendClassName(
-        CORINFO_CLASS_HANDLE cls, bool fNamespace, bool fFullInst, bool fAssembly, const char16_t* result);
-    void dmpAppendClassName(const Agnostic_AppendClassName& key, DWORD value);
-    const WCHAR* repAppendClassName(CORINFO_CLASS_HANDLE cls, bool fNamespace, bool fFullInst, bool fAssembly);
+    void recAppendClassName(int                  nBufLenIn,
+                            CORINFO_CLASS_HANDLE cls,
+                            bool                 fNamespace,
+                            bool                 fFullInst,
+                            bool                 fAssembly,
+                            int                  nLenOut,
+                            const char16_t*      result);
+    void dmpAppendClassName(const Agnostic_AppendClassNameIn& key, const Agnostic_AppendClassNameOut& value);
+    int repAppendClassName(char16_t**           ppBuf,
+                           int*                 pnBufLen,
+                           CORINFO_CLASS_HANDLE cls,
+                           bool                 fNamespace,
+                           bool                 fFullInst,
+                           bool                 fAssembly);
 
     void recGetTailCallHelpers(
         CORINFO_RESOLVED_TOKEN* callToken,
@@ -1097,6 +1113,7 @@ enum mcPackets
     Packet_GetAssemblyName = 191,
     Packet_IsIntrinsic = 192,
     Packet_UpdateEntryPointForTailCall = 193,
+    Packet_GetLoongArch64PassStructInRegisterFlags = 194,
 };
 
 void SetDebugDumpVariables();

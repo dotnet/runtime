@@ -1,11 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <NoWarn>$(NoWarn);CS0809</NoWarn>
-    <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="System.Security.Cryptography.Csp.cs" />
+    <Compile Include="System.Security.Cryptography.Csp.Forwards.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\System.Runtime\ref\System.Runtime.csproj" />

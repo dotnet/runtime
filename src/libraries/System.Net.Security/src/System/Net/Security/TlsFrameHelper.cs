@@ -33,7 +33,7 @@ namespace System.Net.Security
         CertificateVerify = 15,
         ClientKeyExchange = 16,
         Finished = 20,
-        KeyEpdate = 24,
+        KeyUpdate = 24,
         MessageHash = 254
     }
 
@@ -207,7 +207,7 @@ namespace System.Net.Security
         {
             if (frame.Length < 5 || frame[1] < 3)
             {
-                return - 1;
+                return -1;
             }
 
             return ((frame[3] << 8) | frame[4]) + HeaderSize;
@@ -256,7 +256,9 @@ namespace System.Net.Security
             // Check if we have full frame.
             bool isComplete = frame.Length >= HeaderSize + info.Header.Length;
 
+#pragma warning disable SYSLIB0039 // TLS 1.0 and 1.1 are obsolete
             if (((int)info.Header.Version >= (int)SslProtocols.Tls) &&
+#pragma warning restore SYSLIB0039
                 (info.HandshakeType == TlsHandshakeType.ClientHello || info.HandshakeType == TlsHandshakeType.ServerHello))
             {
                 if (!TryParseHelloFrame(frame.Slice(HeaderSize), ref info, options, callback))
@@ -300,8 +302,10 @@ namespace System.Net.Security
             {
                 SslProtocols.Tls13 => s_protocolMismatch13,
                 SslProtocols.Tls12 => s_protocolMismatch12,
+#pragma warning disable SYSLIB0039 // TLS 1.0 and 1.1 are obsolete
                 SslProtocols.Tls11 => s_protocolMismatch11,
                 SslProtocols.Tls => s_protocolMismatch10,
+#pragma warning restore SYSLIB0039
 #pragma warning disable 0618
                 SslProtocols.Ssl3 => s_protocolMismatch30,
 #pragma warning restore 0618
@@ -314,7 +318,9 @@ namespace System.Net.Security
             {
                 return CreateProtocolVersionAlert(version);
             }
+#pragma warning disable SYSLIB0039 // TLS 1.0 and 1.1 are obsolete
             else if ((int)version > (int)SslProtocols.Tls)
+#pragma warning restore SYSLIB0039
             {
                 // Create TLS1.2 alert
                 byte[] buffer = new byte[] { (byte)TlsContentType.Alert, 3, 3, 0, 2, 2, (byte)reason };
@@ -323,12 +329,14 @@ namespace System.Net.Security
                     case SslProtocols.Tls13:
                         buffer[2] = 4;
                         break;
+#pragma warning disable SYSLIB0039 // TLS 1.0 and 1.1 are obsolete
                     case SslProtocols.Tls11:
                         buffer[2] = 2;
                         break;
                     case SslProtocols.Tls:
                         buffer[2] = 1;
                         break;
+#pragma warning restore SYSLIB0039
                 }
 
                 return buffer;
@@ -703,8 +711,10 @@ namespace System.Net.Security
             {
                 4 => SslProtocols.Tls13,
                 3 => SslProtocols.Tls12,
+#pragma warning disable SYSLIB0039 // TLS 1.0 and 1.1 are obsolete
                 2 => SslProtocols.Tls11,
                 1 => SslProtocols.Tls,
+#pragma warning restore SYSLIB0039
 #pragma warning disable 0618
                 0 => SslProtocols.Ssl3,
 #pragma warning restore 0618

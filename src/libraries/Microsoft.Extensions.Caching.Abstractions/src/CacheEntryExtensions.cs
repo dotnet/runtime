@@ -32,10 +32,7 @@ namespace Microsoft.Extensions.Caching.Memory
             this ICacheEntry entry,
             IChangeToken expirationToken)
         {
-            if (expirationToken == null)
-            {
-                throw new ArgumentNullException(nameof(expirationToken));
-            }
+            ThrowHelper.ThrowIfNull(expirationToken);
 
             entry.ExpirationTokens.Add(expirationToken);
             return entry;
@@ -94,10 +91,7 @@ namespace Microsoft.Extensions.Caching.Memory
             this ICacheEntry entry,
             PostEvictionDelegate callback)
         {
-            if (callback == null)
-            {
-                throw new ArgumentNullException(nameof(callback));
-            }
+            ThrowHelper.ThrowIfNull(callback);
 
             return entry.RegisterPostEvictionCallback(callback, state: null);
         }
@@ -112,12 +106,9 @@ namespace Microsoft.Extensions.Caching.Memory
         public static ICacheEntry RegisterPostEvictionCallback(
             this ICacheEntry entry,
             PostEvictionDelegate callback,
-            object state)
+            object? state)
         {
-            if (callback == null)
-            {
-                throw new ArgumentNullException(nameof(callback));
-            }
+            ThrowHelper.ThrowIfNull(callback);
 
             entry.PostEvictionCallbacks.Add(new PostEvictionCallbackRegistration()
             {
@@ -168,10 +159,7 @@ namespace Microsoft.Extensions.Caching.Memory
         /// <returns>The <see cref="ICacheEntry"/> for chaining.</returns>
         public static ICacheEntry SetOptions(this ICacheEntry entry, MemoryCacheEntryOptions options)
         {
-            if (options == null)
-            {
-                throw new ArgumentNullException(nameof(options));
-            }
+            ThrowHelper.ThrowIfNull(options);
 
             entry.AbsoluteExpiration = options.AbsoluteExpiration;
             entry.AbsoluteExpirationRelativeToNow = options.AbsoluteExpirationRelativeToNow;
@@ -186,7 +174,7 @@ namespace Microsoft.Extensions.Caching.Memory
 
             foreach (PostEvictionCallbackRegistration postEvictionCallback in options.PostEvictionCallbacks)
             {
-                entry.RegisterPostEvictionCallback(postEvictionCallback.EvictionCallback, postEvictionCallback.State);
+                entry.RegisterPostEvictionCallback(postEvictionCallback.EvictionCallback!, postEvictionCallback.State);
             }
 
             return entry;

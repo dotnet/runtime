@@ -15,7 +15,8 @@ internal static partial class Interop
             internal const int MS_RLSD_ON = 0x80;
         }
 
-        [GeneratedDllImport(Libraries.Kernel32, SetLastError = true)]
+        [LibraryImport(Libraries.Kernel32, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool GetCommModemStatus(
             SafeFileHandle hFile,
             ref int lpModemStat);

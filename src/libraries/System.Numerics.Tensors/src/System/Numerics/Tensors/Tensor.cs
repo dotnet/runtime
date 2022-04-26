@@ -310,7 +310,7 @@ namespace System.Numerics.Tensors
         /// <param name="reverseStride">False (default) to indicate that the first dimension is most major (farthest apart) and the last dimension is most minor (closest together): akin to row-major in a rank-2 tensor.  True to indicate that the last dimension is most major (farthest apart) and the first dimension is most minor (closest together): akin to column-major in a rank-2 tensor.</param>
         protected Tensor(Array fromArray, bool reverseStride)
         {
-            if (fromArray == null)
+            if (fromArray is null)
             {
                 throw new ArgumentNullException(nameof(fromArray));
             }
@@ -640,20 +640,22 @@ namespace System.Numerics.Tensors
         {
             get
             {
-                if (indices == null)
+                if (indices is null)
                 {
                     throw new ArgumentNullException(nameof(indices));
                 }
+
                 var span = new ReadOnlySpan<int>(indices);
                 return this[span];
             }
 
             set
             {
-                if (indices == null)
+                if (indices is null)
                 {
                     throw new ArgumentNullException(nameof(indices));
                 }
+
                 var span = new ReadOnlySpan<int>(indices);
                 this[span] = value;
             }
@@ -932,10 +934,11 @@ namespace System.Numerics.Tensors
         /// </param>
         protected virtual void CopyTo(T[] array, int arrayIndex)
         {
-            if (array == null)
+            if (array is null)
             {
                 throw new ArgumentNullException(nameof(array));
             }
+
             if (array.Length < arrayIndex + Length)
             {
                 throw new ArgumentException(SR.NumberGreaterThenAvailableSpace, nameof(array));

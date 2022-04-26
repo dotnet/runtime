@@ -44,9 +44,9 @@ namespace System.Text.Json
             JsonSerializerOptions? options = null,
             CancellationToken cancellationToken = default)
         {
-            if (utf8Json == null)
+            if (utf8Json is null)
             {
-                throw new ArgumentNullException(nameof(utf8Json));
+                ThrowHelper.ThrowArgumentNullException(nameof(utf8Json));
             }
 
             Type runtimeType = GetRuntimeType(value);
@@ -74,9 +74,9 @@ namespace System.Text.Json
             TValue value,
             JsonSerializerOptions? options = null)
         {
-            if (utf8Json == null)
+            if (utf8Json is null)
             {
-                throw new ArgumentNullException(nameof(utf8Json));
+                ThrowHelper.ThrowArgumentNullException(nameof(utf8Json));
             }
 
             Type runtimeType = GetRuntimeType(value);
@@ -111,9 +111,9 @@ namespace System.Text.Json
             JsonSerializerOptions? options = null,
             CancellationToken cancellationToken = default)
         {
-            if (utf8Json == null)
+            if (utf8Json is null)
             {
-                throw new ArgumentNullException(nameof(utf8Json));
+                ThrowHelper.ThrowArgumentNullException(nameof(utf8Json));
             }
 
             Type runtimeType = GetRuntimeTypeAndValidateInputType(value, inputType);
@@ -145,9 +145,9 @@ namespace System.Text.Json
             Type inputType,
             JsonSerializerOptions? options = null)
         {
-            if (utf8Json == null)
+            if (utf8Json is null)
             {
-                throw new ArgumentNullException(nameof(utf8Json));
+                ThrowHelper.ThrowArgumentNullException(nameof(utf8Json));
             }
 
             Type runtimeType = GetRuntimeTypeAndValidateInputType(value, inputType);
@@ -177,14 +177,13 @@ namespace System.Text.Json
             JsonTypeInfo<TValue> jsonTypeInfo,
             CancellationToken cancellationToken = default)
         {
-            if (utf8Json == null)
+            if (utf8Json is null)
             {
-                throw new ArgumentNullException(nameof(utf8Json));
+                ThrowHelper.ThrowArgumentNullException(nameof(utf8Json));
             }
-
-            if (jsonTypeInfo == null)
+            if (jsonTypeInfo is null)
             {
-                throw new ArgumentNullException(nameof(jsonTypeInfo));
+                ThrowHelper.ThrowArgumentNullException(nameof(jsonTypeInfo));
             }
 
             return WriteStreamAsync(utf8Json, value, jsonTypeInfo, cancellationToken);
@@ -209,14 +208,13 @@ namespace System.Text.Json
             TValue value,
             JsonTypeInfo<TValue> jsonTypeInfo)
         {
-            if (utf8Json == null)
+            if (utf8Json is null)
             {
-                throw new ArgumentNullException(nameof(utf8Json));
+                ThrowHelper.ThrowArgumentNullException(nameof(utf8Json));
             }
-
-            if (jsonTypeInfo == null)
+            if (jsonTypeInfo is null)
             {
-                throw new ArgumentNullException(nameof(jsonTypeInfo));
+                ThrowHelper.ThrowArgumentNullException(nameof(jsonTypeInfo));
             }
 
             WriteStream(utf8Json, value, jsonTypeInfo);
@@ -248,14 +246,13 @@ namespace System.Text.Json
             JsonSerializerContext context,
             CancellationToken cancellationToken = default)
         {
-            if (utf8Json == null)
+            if (utf8Json is null)
             {
-                throw new ArgumentNullException(nameof(utf8Json));
+                ThrowHelper.ThrowArgumentNullException(nameof(utf8Json));
             }
-
-            if (context == null)
+            if (context is null)
             {
-                throw new ArgumentNullException(nameof(context));
+                ThrowHelper.ThrowArgumentNullException(nameof(context));
             }
 
             Type runtimeType = GetRuntimeTypeAndValidateInputType(value, inputType);
@@ -289,14 +286,13 @@ namespace System.Text.Json
             Type inputType,
             JsonSerializerContext context)
         {
-            if (utf8Json == null)
+            if (utf8Json is null)
             {
-                throw new ArgumentNullException(nameof(utf8Json));
+                ThrowHelper.ThrowArgumentNullException(nameof(utf8Json));
             }
-
-            if (context == null)
+            if (context is null)
             {
-                throw new ArgumentNullException(nameof(context));
+                ThrowHelper.ThrowArgumentNullException(nameof(context));
             }
 
             Type runtimeType = GetRuntimeTypeAndValidateInputType(value, inputType);
@@ -316,7 +312,8 @@ namespace System.Text.Json
             using (var writer = new Utf8JsonWriter(bufferWriter, writerOptions))
             {
                 WriteStack state = new WriteStack { CancellationToken = cancellationToken };
-                JsonConverter converter = state.Initialize(jsonTypeInfo, supportContinuation: true);
+                jsonTypeInfo.EnsureConfigured();
+                JsonConverter converter = state.Initialize(jsonTypeInfo, supportContinuation: true, supportAsync: true);
 
                 bool isFinalBlock;
 
@@ -389,7 +386,8 @@ namespace System.Text.Json
             using (var writer = new Utf8JsonWriter(bufferWriter, writerOptions))
             {
                 WriteStack state = default;
-                JsonConverter converter = state.Initialize(jsonTypeInfo, supportContinuation: true);
+                jsonTypeInfo.EnsureConfigured();
+                JsonConverter converter = state.Initialize(jsonTypeInfo, supportContinuation: true, supportAsync: false);
 
                 bool isFinalBlock;
 

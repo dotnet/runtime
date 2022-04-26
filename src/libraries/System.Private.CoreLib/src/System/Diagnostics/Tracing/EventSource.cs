@@ -466,8 +466,10 @@ namespace System.Diagnostics.Tracing
                 return;
             }
 
-            if (eventSource == null)
+            if (eventSource is null)
+            {
                 throw new ArgumentNullException(nameof(eventSource));
+            }
 
             // User-defined EventCommands should not conflict with the reserved commands.
             if ((int)command <= (int)EventCommand.Update && (int)command != (int)EventCommand.SendManifest)
@@ -1839,7 +1841,7 @@ namespace System.Diagnostics.Tracing
                         }
                         else if (typeCode == TypeCode.DateTime)
                         {
-                            decoded = *(DateTime*)dataPointer;
+                            decoded = DateTime.FromFileTimeUtc(*(long*)dataPointer);
                         }
                         else if (IntPtr.Size == 8 && dataType == typeof(IntPtr))
                         {
@@ -4175,7 +4177,7 @@ namespace System.Diagnostics.Tracing
         /// </summary>
         public void EnableEvents(EventSource eventSource, EventLevel level, EventKeywords matchAnyKeyword, IDictionary<string, string?>? arguments)
         {
-            if (eventSource == null)
+            if (eventSource is null)
             {
                 throw new ArgumentNullException(nameof(eventSource));
             }
@@ -4196,7 +4198,7 @@ namespace System.Diagnostics.Tracing
         /// </summary>
         public void DisableEvents(EventSource eventSource)
         {
-            if (eventSource == null)
+            if (eventSource is null)
             {
                 throw new ArgumentNullException(nameof(eventSource));
             }
@@ -5024,7 +5026,7 @@ namespace System.Diagnostics.Tracing
 #if FEATURE_ADVANCED_MANAGED_ETW_CHANNELS
     public
 #else
-    internal
+    internal sealed
 #endif
     class EventChannelAttribute : Attribute
     {

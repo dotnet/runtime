@@ -498,16 +498,6 @@ namespace Internal.JitInterface
         CORINFO_INLINE_TYPECHECK_SOURCE_TOKEN  = 0x00000001, // Type handle comes from an ldtoken
     }
 
-    public enum CorInfoInlineRestrictions
-    {
-        INLINE_RESPECT_BOUNDARY = 0x00000001, // You can inline if there are no calls from the method being inlined
-        INLINE_NO_CALLEE_LDSTR = 0x00000002, // You can inline only if you guarantee that if inlinee does an ldstr
-        // inlinee's module will never see that string (by any means).
-        // This is due to how we implement the NoStringInterningAttribute
-        // (by reusing the fixup table).
-        INLINE_SAME_THIS = 0x00000004, // You can inline only if the callee is on the same this reference as caller
-    }
-
     // If you add more values here, keep it in sync with TailCallTypeMap in ..\vm\ClrEtwAll.man
     // and the string enum in CEEInfo::reportTailCallDecision in ..\vm\JITInterface.cpp
     public enum CorInfoTailCall
@@ -604,7 +594,7 @@ namespace Internal.JitInterface
         CORINFO_FLG_ARRAY = 0x00080000, // class is an array class (initialized differently)
         CORINFO_FLG_OVERLAPPING_FIELDS = 0x00100000, // struct or class has fields that overlap (aka union)
         CORINFO_FLG_INTERFACE = 0x00200000, // it is an interface
-        CORINFO_FLG_DONT_PROMOTE = 0x00400000, // don't try to promote fieds of types outside of AOT compilation version bubble
+        CORINFO_FLG_DONT_DIG_FIELDS = 0x00400000, // don't try to ask about fields outside of AOT compilation version bubble
         CORINFO_FLG_CUSTOMLAYOUT = 0x00800000, // does this struct have custom layout?
         CORINFO_FLG_CONTAINS_GC_PTR = 0x01000000, // does the class contain a gc ptr ?
         CORINFO_FLG_DELEGATE = 0x02000000, // is this a subclass of delegate or multicast delegate ?
@@ -1334,7 +1324,7 @@ namespace Internal.JitInterface
         CORJIT_FLAG_DEBUG_EnC = 3, // We are in Edit-n-Continue mode
         CORJIT_FLAG_DEBUG_INFO = 4, // generate line and local-var info
         CORJIT_FLAG_MIN_OPT = 5, // disable all jit optimizations (not necesarily debuggable code)
-        CORJIT_FLAG_UNUSED1 = 6,
+        CORJIT_FLAG_ENABLE_CFG = 6, // generate CFG enabled code
         CORJIT_FLAG_MCJIT_BACKGROUND = 7, // Calling from multicore JIT background thread, do not call JitComplete
         CORJIT_FLAG_UNUSED2 = 8,
         CORJIT_FLAG_UNUSED3 = 9,
@@ -1343,7 +1333,7 @@ namespace Internal.JitInterface
         CORJIT_FLAG_UNUSED6 = 12,
         CORJIT_FLAG_OSR = 13, // Generate alternate version for On Stack Replacement
         CORJIT_FLAG_ALT_JIT = 14, // JIT should consider itself an ALT_JIT
-        CORJIT_FLAG_FEATURE_SIMD = 17,
+        CORJIT_FLAG_UNUSED10 = 17,
         CORJIT_FLAG_MAKEFINALCODE = 18, // Use the final code generator, i.e., not the interpreter.
         CORJIT_FLAG_READYTORUN = 19, // Use version-resilient code generation
         CORJIT_FLAG_PROF_ENTERLEAVE = 20, // Instrument prologues/epilogues

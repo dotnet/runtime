@@ -387,11 +387,7 @@ namespace System.Xml
         public override Task<int> ReadContentAsBase64Async(byte[] buffer, int index, int count)
         {
             CheckAsyncCall();
-            // check arguments
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer));
-            }
+            ArgumentNullException.ThrowIfNull(buffer);
             if (count < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(count));
@@ -456,11 +452,7 @@ namespace System.Xml
         public override async Task<int> ReadContentAsBinHexAsync(byte[] buffer, int index, int count)
         {
             CheckAsyncCall();
-            // check arguments
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer));
-            }
+            ArgumentNullException.ThrowIfNull(buffer);
             if (count < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(count));
@@ -534,11 +526,7 @@ namespace System.Xml
         public override Task<int> ReadElementContentAsBase64Async(byte[] buffer, int index, int count)
         {
             CheckAsyncCall();
-            // check arguments
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer));
-            }
+            ArgumentNullException.ThrowIfNull(buffer);
             if (count < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(count));
@@ -603,11 +591,7 @@ namespace System.Xml
         public override async Task<int> ReadElementContentAsBinHexAsync(byte[] buffer, int index, int count)
         {
             CheckAsyncCall();
-            // check arguments
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer));
-            }
+            ArgumentNullException.ThrowIfNull(buffer);
             if (count < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(count));
@@ -668,11 +652,7 @@ namespace System.Xml
             {
                 throw new InvalidOperationException(SR.Format(SR.Xml_InvalidReadValueChunk, _curNode.type));
             }
-            // check arguments
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer));
-            }
+            ArgumentNullException.ThrowIfNull(buffer);
             if (count < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(count));
@@ -3575,7 +3555,7 @@ namespace System.Xml
             return _parseText_dummyTask.Result;
         }
 
-        private (int, int, int, bool) ParseText_NoValue(int outOrChars, int pos)
+        private static (int, int, int, bool) ParseText_NoValue(int outOrChars, int pos)
         {
             return (pos, pos, outOrChars, true);
         }

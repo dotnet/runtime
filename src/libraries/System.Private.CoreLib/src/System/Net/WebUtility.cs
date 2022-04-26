@@ -64,10 +64,8 @@ namespace System.Net
 
         public static void HtmlEncode(string? value, TextWriter output)
         {
-            if (output == null)
-            {
-                throw new ArgumentNullException(nameof(output));
-            }
+            ArgumentNullException.ThrowIfNull(output);
+
             if (string.IsNullOrEmpty(value))
             {
                 output.Write(value);
@@ -207,10 +205,7 @@ namespace System.Net
 
         public static void HtmlDecode(string? value, TextWriter output)
         {
-            if (output == null)
-            {
-                throw new ArgumentNullException(nameof(output));
-            }
+            ArgumentNullException.ThrowIfNull(output);
 
             if (string.IsNullOrEmpty(value))
             {
@@ -697,10 +692,7 @@ namespace System.Net
         {
             if (bytes == null && count == 0)
                 return false;
-            if (bytes == null)
-            {
-                throw new ArgumentNullException(nameof(bytes));
-            }
+            ArgumentNullException.ThrowIfNull(bytes);
             if (offset < 0 || offset > bytes.Length)
             {
                 throw new ArgumentOutOfRangeException(nameof(offset));

@@ -20,10 +20,8 @@ namespace System.Security.AccessControl
         protected DirectoryObjectSecurity(CommonSecurityDescriptor securityDescriptor)
             : base(securityDescriptor)
         {
-            if (securityDescriptor == null)
-            {
-                throw new ArgumentNullException(nameof(securityDescriptor));
-            }
+            ArgumentNullException.ThrowIfNull(securityDescriptor);
+
         }
 
         #region Private Methods
@@ -522,10 +520,7 @@ namespace System.Security.AccessControl
 
         protected void AddAccessRule(ObjectAccessRule rule)
         {
-            if (rule == null)
-            {
-                throw new ArgumentNullException(nameof(rule));
-            }
+            ArgumentNullException.ThrowIfNull(rule);
 
             WriteLock();
 
@@ -543,10 +538,7 @@ namespace System.Security.AccessControl
 
         protected void SetAccessRule(ObjectAccessRule rule)
         {
-            if (rule == null)
-            {
-                throw new ArgumentNullException(nameof(rule));
-            }
+            ArgumentNullException.ThrowIfNull(rule);
 
             WriteLock();
 
@@ -562,10 +554,7 @@ namespace System.Security.AccessControl
 
         protected void ResetAccessRule(ObjectAccessRule rule)
         {
-            if (rule == null)
-            {
-                throw new ArgumentNullException(nameof(rule));
-            }
+            ArgumentNullException.ThrowIfNull(rule);
 
             WriteLock();
 
@@ -581,10 +570,7 @@ namespace System.Security.AccessControl
 
         protected bool RemoveAccessRule(ObjectAccessRule rule)
         {
-            if (rule == null)
-            {
-                throw new ArgumentNullException(nameof(rule));
-            }
+            ArgumentNullException.ThrowIfNull(rule);
 
             WriteLock();
 
@@ -605,10 +591,7 @@ namespace System.Security.AccessControl
 
         protected void RemoveAccessRuleAll(ObjectAccessRule rule)
         {
-            if (rule == null)
-            {
-                throw new ArgumentNullException(nameof(rule));
-            }
+            ArgumentNullException.ThrowIfNull(rule);
 
             WriteLock();
 
@@ -629,10 +612,7 @@ namespace System.Security.AccessControl
 
         protected void RemoveAccessRuleSpecific(ObjectAccessRule rule)
         {
-            if (rule == null)
-            {
-                throw new ArgumentNullException(nameof(rule));
-            }
+            ArgumentNullException.ThrowIfNull(rule);
 
             if (SecurityDescriptor == null)
             {
@@ -653,10 +633,7 @@ namespace System.Security.AccessControl
 
         protected void AddAuditRule(ObjectAuditRule rule)
         {
-            if (rule == null)
-            {
-                throw new ArgumentNullException(nameof(rule));
-            }
+            ArgumentNullException.ThrowIfNull(rule);
 
             WriteLock();
 
@@ -672,10 +649,7 @@ namespace System.Security.AccessControl
 
         protected void SetAuditRule(ObjectAuditRule rule)
         {
-            if (rule == null)
-            {
-                throw new ArgumentNullException(nameof(rule));
-            }
+            ArgumentNullException.ThrowIfNull(rule);
 
             WriteLock();
 
@@ -691,10 +665,7 @@ namespace System.Security.AccessControl
 
         protected bool RemoveAuditRule(ObjectAuditRule rule)
         {
-            if (rule == null)
-            {
-                throw new ArgumentNullException(nameof(rule));
-            }
+            ArgumentNullException.ThrowIfNull(rule);
 
             WriteLock();
 
@@ -710,10 +681,7 @@ namespace System.Security.AccessControl
 
         protected void RemoveAuditRuleAll(ObjectAuditRule rule)
         {
-            if (rule == null)
-            {
-                throw new ArgumentNullException(nameof(rule));
-            }
+            ArgumentNullException.ThrowIfNull(rule);
 
             WriteLock();
 
@@ -729,10 +697,7 @@ namespace System.Security.AccessControl
 
         protected void RemoveAuditRuleSpecific(ObjectAuditRule rule)
         {
-            if (rule == null)
-            {
-                throw new ArgumentNullException(nameof(rule));
-            }
+            ArgumentNullException.ThrowIfNull(rule);
 
             WriteLock();
 

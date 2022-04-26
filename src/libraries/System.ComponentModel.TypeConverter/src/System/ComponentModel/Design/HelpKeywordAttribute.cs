@@ -61,7 +61,9 @@ namespace System.ComponentModel.Design
         /// </summary>
         public HelpKeywordAttribute(string keyword)
         {
-            HelpKeyword = keyword ?? throw new ArgumentNullException(nameof(keyword));
+            ArgumentNullException.ThrowIfNull(keyword);
+
+            HelpKeyword = keyword;
         }
 
         /// <summary>
@@ -69,10 +71,7 @@ namespace System.ComponentModel.Design
         /// </summary>
         public HelpKeywordAttribute(Type t)
         {
-            if (t == null)
-            {
-                throw new ArgumentNullException(nameof(t));
-            }
+            ArgumentNullException.ThrowIfNull(t);
 
             HelpKeyword = t.FullName;
         }

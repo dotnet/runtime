@@ -58,7 +58,8 @@ namespace System.Globalization
             [MemberNotNull(nameof(_str))]
             set
             {
-                _str = value ?? throw new ArgumentNullException(nameof(value));
+                ArgumentNullException.ThrowIfNull(value);
+                _str = value;
                 _indexes = null;
             }
         }
@@ -159,7 +160,7 @@ namespace System.Globalization
             }
             if ((uint)index > (uint)str.Length)
             {
-                ThrowHelper.ThrowArgumentOutOfRange_IndexException();
+                ThrowHelper.ThrowArgumentOutOfRange_IndexMustBeLessOrEqualException();
             }
 
             return GetNextTextElementLength(str.AsSpan(index));
@@ -186,7 +187,7 @@ namespace System.Globalization
             }
             if ((uint)index > (uint)str.Length)
             {
-                ThrowHelper.ThrowArgumentOutOfRange_IndexException();
+                ThrowHelper.ThrowArgumentOutOfRange_IndexMustBeLessOrEqualException();
             }
 
             return new TextElementEnumerator(str, index);

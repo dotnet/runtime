@@ -69,10 +69,8 @@ namespace System.IO
         //
         public virtual int Read(char[] buffer, int index, int count)
         {
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer), SR.ArgumentNull_Buffer);
-            }
+            ArgumentNullException.ThrowIfNull(buffer);
+
             if (index < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_NeedNonNegNum);
@@ -267,10 +265,8 @@ namespace System.IO
 
         public virtual Task<int> ReadAsync(char[] buffer, int index, int count)
         {
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer), SR.ArgumentNull_Buffer);
-            }
+            ArgumentNullException.ThrowIfNull(buffer);
+
             if (index < 0 || count < 0)
             {
                 throw new ArgumentOutOfRangeException(index < 0 ? nameof(index) : nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
@@ -301,10 +297,8 @@ namespace System.IO
 
         public virtual Task<int> ReadBlockAsync(char[] buffer, int index, int count)
         {
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer), SR.ArgumentNull_Buffer);
-            }
+            ArgumentNullException.ThrowIfNull(buffer);
+
             if (index < 0 || count < 0)
             {
                 throw new ArgumentOutOfRangeException(index < 0 ? nameof(index) : nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
@@ -341,8 +335,7 @@ namespace System.IO
 
         public static TextReader Synchronized(TextReader reader)
         {
-            if (reader == null)
-                throw new ArgumentNullException(nameof(reader));
+            ArgumentNullException.ThrowIfNull(reader);
 
             return reader is SyncTextReader ? reader : new SyncTextReader(reader);
         }
@@ -406,8 +399,8 @@ namespace System.IO
             [MethodImpl(MethodImplOptions.Synchronized)]
             public override Task<int> ReadBlockAsync(char[] buffer, int index, int count)
             {
-                if (buffer == null)
-                    throw new ArgumentNullException(nameof(buffer), SR.ArgumentNull_Buffer);
+                ArgumentNullException.ThrowIfNull(buffer);
+
                 if (index < 0 || count < 0)
                     throw new ArgumentOutOfRangeException(index < 0 ? nameof(index) : nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
                 if (buffer.Length - index < count)
@@ -419,8 +412,8 @@ namespace System.IO
             [MethodImpl(MethodImplOptions.Synchronized)]
             public override Task<int> ReadAsync(char[] buffer, int index, int count)
             {
-                if (buffer == null)
-                    throw new ArgumentNullException(nameof(buffer), SR.ArgumentNull_Buffer);
+                ArgumentNullException.ThrowIfNull(buffer);
+
                 if (index < 0 || count < 0)
                     throw new ArgumentOutOfRangeException(index < 0 ? nameof(index) : nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
                 if (buffer.Length - index < count)

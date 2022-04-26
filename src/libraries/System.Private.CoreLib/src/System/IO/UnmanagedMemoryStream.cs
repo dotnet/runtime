@@ -84,10 +84,8 @@ namespace System.IO
         /// <param name="access"></param>
         protected void Initialize(SafeBuffer buffer, long offset, long length, FileAccess access)
         {
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer));
-            }
+            ArgumentNullException.ThrowIfNull(buffer);
+
             if (offset < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_NeedNonNegNum);
@@ -163,8 +161,8 @@ namespace System.IO
         [CLSCompliant(false)]
         protected unsafe void Initialize(byte* pointer, long length, long capacity, FileAccess access)
         {
-            if (pointer == null)
-                throw new ArgumentNullException(nameof(pointer));
+            ArgumentNullException.ThrowIfNull(pointer);
+
             if (length < 0 || capacity < 0)
                 throw new ArgumentOutOfRangeException((length < 0) ? nameof(length) : nameof(capacity), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (length > capacity)

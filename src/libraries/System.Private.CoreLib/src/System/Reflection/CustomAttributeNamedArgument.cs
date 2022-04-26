@@ -15,8 +15,7 @@ namespace System.Reflection
 
         public CustomAttributeNamedArgument(MemberInfo memberInfo, object? value)
         {
-            if (memberInfo is null)
-                throw new ArgumentNullException(nameof(memberInfo));
+            ArgumentNullException.ThrowIfNull(memberInfo);
 
             Type type = memberInfo switch
             {
@@ -31,7 +30,9 @@ namespace System.Reflection
 
         public CustomAttributeNamedArgument(MemberInfo memberInfo, CustomAttributeTypedArgument typedArgument)
         {
-            _memberInfo = memberInfo ?? throw new ArgumentNullException(nameof(memberInfo));
+            ArgumentNullException.ThrowIfNull(memberInfo);
+
+            _memberInfo = memberInfo;
             _value = typedArgument;
         }
 

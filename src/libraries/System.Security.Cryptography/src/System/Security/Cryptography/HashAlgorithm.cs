@@ -45,8 +45,7 @@ namespace System.Security.Cryptography
         {
             if (_disposed)
                 throw new ObjectDisposedException(null);
-            if (buffer == null)
-                throw new ArgumentNullException(nameof(buffer));
+            ArgumentNullException.ThrowIfNull(buffer);
 
             HashCore(buffer, 0, buffer.Length);
             return CaptureHashCodeAndReinitialize();
@@ -80,8 +79,8 @@ namespace System.Security.Cryptography
 
         public byte[] ComputeHash(byte[] buffer, int offset, int count)
         {
-            if (buffer == null)
-                throw new ArgumentNullException(nameof(buffer));
+            ArgumentNullException.ThrowIfNull(buffer);
+
             if (offset < 0)
                 throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (count < 0 || (count > buffer.Length))
@@ -126,8 +125,8 @@ namespace System.Security.Cryptography
             Stream inputStream,
             CancellationToken cancellationToken = default)
         {
-            if (inputStream == null)
-                throw new ArgumentNullException(nameof(inputStream));
+            ArgumentNullException.ThrowIfNull(inputStream);
+
             if (_disposed)
                 throw new ObjectDisposedException(null);
 
@@ -242,8 +241,8 @@ namespace System.Security.Cryptography
 
         private void ValidateTransformBlock(byte[] inputBuffer, int inputOffset, int inputCount)
         {
-            if (inputBuffer == null)
-                throw new ArgumentNullException(nameof(inputBuffer));
+            ArgumentNullException.ThrowIfNull(inputBuffer);
+
             if (inputOffset < 0)
                 throw new ArgumentOutOfRangeException(nameof(inputOffset), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (inputCount < 0 || inputCount > inputBuffer.Length)

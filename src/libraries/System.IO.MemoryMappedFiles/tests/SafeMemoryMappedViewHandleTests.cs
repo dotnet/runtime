@@ -10,7 +10,7 @@ namespace System.IO.MemoryMappedFiles.Tests
     /// <summary>
     /// Tests for SafeMemoryMappedViewHandle
     /// </summary>
-    public class SafeMemoryMappedViewHandleTests : MemoryMappedFilesTestBase
+    public partial class SafeMemoryMappedViewHandleTests : MemoryMappedFilesTestBase
     {
         /// <summary>
         /// Tests that external code can use SafeMemoryMappedViewHandle as the result of a P/Invoke on Windows.
@@ -66,7 +66,7 @@ namespace System.IO.MemoryMappedFiles.Tests
             Assert.NotNull(handle);
         }
 
-        [DllImport("libc")]
-        private static unsafe extern SafeMemoryMappedViewHandle mmap(IntPtr addr, nint lengthint, int prot, int flags, int fd, nuint offset);
+        [LibraryImport("libc")]
+        private static unsafe partial SafeMemoryMappedViewHandle mmap(IntPtr addr, nint lengthint, int prot, int flags, int fd, nuint offset);
     }
 }

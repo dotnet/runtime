@@ -72,9 +72,9 @@ namespace System.Text.Json
         /// </exception>
         public static byte[] SerializeToUtf8Bytes<TValue>(TValue value, JsonTypeInfo<TValue> jsonTypeInfo)
         {
-            if (jsonTypeInfo == null)
+            if (jsonTypeInfo is null)
             {
-                throw new ArgumentNullException(nameof(jsonTypeInfo));
+                ThrowHelper.ThrowArgumentNullException(nameof(jsonTypeInfo));
             }
 
             return WriteBytesUsingGeneratedSerializer(value, jsonTypeInfo);
@@ -103,9 +103,9 @@ namespace System.Text.Json
         /// </exception>
         public static byte[] SerializeToUtf8Bytes(object? value, Type inputType, JsonSerializerContext context)
         {
-            if (context == null)
+            if (context is null)
             {
-                throw new ArgumentNullException(nameof(context));
+                ThrowHelper.ThrowArgumentNullException(nameof(context));
             }
 
             Type runtimeType = GetRuntimeTypeAndValidateInputType(value, inputType);

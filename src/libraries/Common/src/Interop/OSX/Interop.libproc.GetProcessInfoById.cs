@@ -8,7 +8,7 @@ using System.Runtime.InteropServices;
 
 internal static partial class Interop
 {
-    internal static partial class libproc
+    internal static partial class @libproc
     {
         // Constants from sys\param.h
         private const int MAXCOMLEN = 16;
@@ -89,7 +89,7 @@ internal static partial class Interop
         /// the data is valid. If the sizes do not match then the data is invalid, most likely due
         /// to not having enough permissions to query for the data of that specific process
         /// </returns>
-        [GeneratedDllImport(Interop.Libraries.libproc, SetLastError = true)]
+        [LibraryImport(Interop.Libraries.libproc, SetLastError = true)]
         private static unsafe partial int proc_pidinfo(
             int pid,
             int flavor,

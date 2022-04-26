@@ -17,7 +17,6 @@
 #include "nibblemapmacros.h"
 #include "generics.h"
 #include "dynamicmethod.h"
-#include "eemessagebox.h"
 #include "eventtrace.h"
 #include "threadsuspend.h"
 
@@ -286,7 +285,7 @@ void UnwindInfoTable::AddToUnwindInfoTable(UnwindInfoTable** unwindInfoPtr, PT_R
             // Add to the function table
             pRtlGrowFunctionTable(unwindInfo->hHandle, unwindInfo->cTableCurCount);
 
-            STRESS_LOG5(LF_JIT, LL_INFO1000, "AddToUnwindTable Handle: %p [%p, %p] ADDING 0x%xp TO END, now 0x%x entries\n",
+            STRESS_LOG5(LF_JIT, LL_INFO1000, "AddToUnwindTable Handle: %p [%p, %p] ADDING 0x%p TO END, now 0x%x entries\n",
                 unwindInfo->hHandle, unwindInfo->iRangeStart, unwindInfo->iRangeEnd,
                 data->BeginAddress, unwindInfo->cTableCurCount);
             return;
@@ -812,7 +811,7 @@ ExecutionManager::DeleteRangeHelper
 
 //-----------------------------------------------------------------------------
 
-#if defined(TARGET_ARM) || defined(TARGET_ARM64)
+#if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
 #define EXCEPTION_DATA_SUPPORTS_FUNCTION_FRAGMENTS
 #endif
 
@@ -850,6 +849,41 @@ BOOL IsFunctionFragment(TADDR baseAddress, PTR_RUNTIME_FUNCTION pFunctionEntry)
 #elif defined(TARGET_ARM64)
 
     // ARM64 is a little bit more flexible, in the sense that it supports partial prologs. However only one of the
+    // prolog regions are allowed to alter SP and that's the Host Record. Partial prologs are used in ShrinkWrapping
+    // scenarios which is not supported, hence we don't need to worry about them. discarding partial prologs
+    // simplifies identifying a host record a lot.
+    //
+    // 1. Prolog only: The host record. Epilog Count and E bit are all 0.
+    // 2. Prolog and some epilogs: The host record with accompanying epilog-only records
+    // 3. Epilogs only: First unwind code is Phantom prolog (Starting with an end_c, indicating an empty prolog)
+    // 4. No prologs or epilogs: First unwind code is Phantom prolog  (Starting with an end_c, indicating an empty prolog)
+    //
+
+    int EpilogCount = (int)(unwindHeader >> 22) & 0x1F;
+    int CodeWords = unwindHeader >> 27;
+    PTR_DWORD pUnwindCodes = (PTR_DWORD)(baseAddress + pFunctionEntry->UnwindData);
+    // Skip header.
+    pUnwindCodes++;
+
+    // Skip extended header.
+    if ((CodeWords == 0) && (EpilogCount == 0))
+    {
+        EpilogCount = (*pUnwindCodes) & 0xFFFF;
+        pUnwindCodes++;
+    }
+
+    // Skip epilog scopes.
+    BOOL Ebit = (unwindHeader >> 21) & 0x1;
+    if (!Ebit && (EpilogCount != 0))
+    {
+        // EpilogCount is the number of exception scopes defined right after the unwindHeader
+        pUnwindCodes += EpilogCount;
+    }
+
+    return ((*pUnwindCodes & 0xFF) == 0xE5);
+#elif defined(TARGET_LOONGARCH64)
+
+    // LOONGARCH64 is a little bit more flexible, in the sense that it supports partial prologs. However only one of the
     // prolog regions are allowed to alter SP and that's the Host Record. Partial prologs are used in ShrinkWrapping
     // scenarios which is not supported, hence we don't need to worry about them. discarding partial prologs
     // simplifies identifying a host record a lot.
@@ -1044,6 +1078,47 @@ PTR_VOID GetUnwindDataBlob(TADDR moduleBase, PTR_RUNTIME_FUNCTION pRuntimeFuncti
 
     *pSize = size;
     return xdata;
+
+
+#elif defined(TARGET_LOONGARCH64)
+    // TODO: maybe optimize further.
+    // if this function uses packed unwind data then at least one of the two least significant bits
+    // will be non-zero.  if this is the case then there will be no xdata record to enumerate.
+    _ASSERTE((pRuntimeFunction->UnwindData & 0x3) == 0);
+
+    // compute the size of the unwind info
+    PTR_ULONG xdata    = dac_cast<PTR_ULONG>(pRuntimeFunction->UnwindData + moduleBase);
+    ULONG epilogScopes = 0;
+    ULONG unwindWords  = 0;
+    ULONG size = 0;
+
+    //If both Epilog Count and Code Word is not zero
+    //Info of Epilog and Unwind scopes are given by 1 word header
+    //Otherwise this info is given by a 2 word header
+    if ((xdata[0] >> 27) != 0)
+    {
+        size = 4;
+        epilogScopes = (xdata[0] >> 22) & 0x1f;
+        unwindWords = (xdata[0] >> 27) & 0x1f;
+    }
+    else
+    {
+        size = 8;
+        epilogScopes = xdata[1] & 0xffff;
+        unwindWords = (xdata[1] >> 16) & 0xff;
+    }
+
+    if (!(xdata[0] & (1 << 21)))
+        size += 4 * epilogScopes;
+
+    size += 4 * unwindWords;
+
+    _ASSERTE(xdata[0] & (1 << 20)); // personality routine should be always present
+    size += 4;                      // exception handler RVA
+
+    *pSize = size;
+    return xdata;
+
 
 #else
     PORTABILITY_ASSERT("GetUnwindDataBlob");
@@ -1396,13 +1471,6 @@ void EEJitManager::SetCpuInfo()
                 }
             }
 
-            static ConfigDWORD fFeatureSIMD;
-
-            if (fFeatureSIMD.val(CLRConfig::EXTERNAL_FeatureSIMD) != 0)
-            {
-                CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_FEATURE_SIMD);
-            }
-
             if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_SIMD16ByteOnly) != 0)
             {
                 CPUCompileFlags.Clear(InstructionSet_AVX2);
@@ -1449,11 +1517,6 @@ void EEJitManager::SetCpuInfo()
 #endif // defined(TARGET_X86) || defined(TARGET_AMD64)
 
 #if defined(TARGET_ARM64)
-    static ConfigDWORD fFeatureSIMD;
-    if (fFeatureSIMD.val(CLRConfig::EXTERNAL_FeatureSIMD) != 0)
-    {
-        CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_FEATURE_SIMD);
-    }
 #if defined(TARGET_UNIX)
     PAL_GetJitCpuCapabilityFlags(&CPUCompileFlags);
 
@@ -1604,6 +1667,11 @@ void EEJitManager::SetCpuInfo()
         CPUCompileFlags.Clear(InstructionSet_Atomics);
     }
 
+    if (!CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableArm64Rcpc))
+    {
+        CPUCompileFlags.Clear(InstructionSet_Rcpc);
+    }
+
     if (!CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableArm64Crc32))
     {
         CPUCompileFlags.Clear(InstructionSet_Crc32);
@@ -1634,6 +1702,10 @@ void EEJitManager::SetCpuInfo()
         CPUCompileFlags.Clear(InstructionSet_Sha256);
     }
 #endif
+
+#if defined(TARGET_LOONGARCH64)
+    // TODO-LoongArch64: set LoongArch64's InstructionSet features !
+#endif // TARGET_LOONGARCH64
 
     // These calls are very important as it ensures the flags are consistent with any
     // removals specified above. This includes removing corresponding 64-bit ISAs
@@ -1731,9 +1803,10 @@ CORINFO_OS getClrVmOs();
 //                     is used to help understand problems we see with JIT loading that come in via Watson dumps. Since we don't throw
 //                     an exception immediately upon failure, we can lose information about what the failure was if we don't store this
 //                     information in a way that persists into a process dump.
+// targetOs          - Target OS for JIT
 //
 
-static void LoadAndInitializeJIT(LPCWSTR pwzJitName, OUT HINSTANCE* phJit, OUT ICorJitCompiler** ppICorJitCompiler, IN OUT JIT_LOAD_DATA* pJitLoadData)
+static void LoadAndInitializeJIT(LPCWSTR pwzJitName, OUT HINSTANCE* phJit, OUT ICorJitCompiler** ppICorJitCompiler, IN OUT JIT_LOAD_DATA* pJitLoadData, CORINFO_OS targetOs)
 {
     STANDARD_VM_CONTRACT;
 
@@ -1823,7 +1896,7 @@ static void LoadAndInitializeJIT(LPCWSTR pwzJitName, OUT HINSTANCE* phJit, OUT I
                         pJitLoadData->jld_status = JIT_LOAD_STATUS_DONE_VERSION_CHECK;
 
                         // Specify to the JIT that it is working with the OS that we are compiled against
-                        pICorJitCompiler->setTargetOS(getClrVmOs());
+                        pICorJitCompiler->setTargetOS(targetOs);
 
                         // The JIT has loaded and passed the version identifier test, so publish the JIT interface to the caller.
                         *ppICorJitCompiler = pICorJitCompiler;
@@ -1907,7 +1980,7 @@ BOOL EEJitManager::LoadJIT()
 #endif
 
     g_JitLoadData.jld_id = JIT_LOAD_MAIN;
-    LoadAndInitializeJIT(ExecutionManager::GetJitName(), &m_JITCompiler, &newJitCompiler, &g_JitLoadData);
+    LoadAndInitializeJIT(ExecutionManager::GetJitName(), &m_JITCompiler, &newJitCompiler, &g_JitLoadData, getClrVmOs());
 #endif // !FEATURE_MERGE_JIT_AND_ENGINE
 
 #ifdef ALLOW_SXS_JIT
@@ -1938,26 +2011,49 @@ BOOL EEJitManager::LoadJIT()
             altJitName = MAKEDLLNAME_W(W("clrjit_win_x86_x86"));
 #elif defined(TARGET_AMD64)
             altJitName = MAKEDLLNAME_W(W("clrjit_win_x64_x64"));
-#elif defined(TARGET_ARM)
-            altJitName = MAKEDLLNAME_W(W("clrjit_win_arm_arm"));
-#elif defined(TARGET_ARM64)
-            altJitName = MAKEDLLNAME_W(W("clrjit_win_arm64_arm64"));
 #endif
 #else // TARGET_WINDOWS
 #ifdef TARGET_X86
             altJitName = MAKEDLLNAME_W(W("clrjit_unix_x86_x86"));
 #elif defined(TARGET_AMD64)
             altJitName = MAKEDLLNAME_W(W("clrjit_unix_x64_x64"));
-#elif defined(TARGET_ARM)
-            altJitName = MAKEDLLNAME_W(W("clrjit_unix_arm_arm"));
-#elif defined(TARGET_ARM64)
-            altJitName = MAKEDLLNAME_W(W("clrjit_unix_arm64_arm64"));
+#elif defined(TARGET_LOONGARCH64)
+            altJitName = MAKEDLLNAME_W(W("clrjit_unix_loongarch64_loongarch64"));
 #endif
 #endif // TARGET_WINDOWS
+
+#if defined(TARGET_ARM)
+            altJitName = MAKEDLLNAME_W(W("clrjit_universal_arm_arm"));
+#elif defined(TARGET_ARM64)
+            altJitName = MAKEDLLNAME_W(W("clrjit_universal_arm64_arm64"));
+#endif // TARGET_ARM
         }
 
+        CORINFO_OS targetOs = getClrVmOs();
+        LPWSTR altJitOsConfig;
+        IfFailThrow(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_AltJitOs, &altJitOsConfig));
+        if (altJitOsConfig != NULL)
+        {
+            // We have some inconsistency all over the place with osx vs macos, let's handle both here
+            if ((_wcsicmp(altJitOsConfig, W("macos")) == 0) || (_wcsicmp(altJitOsConfig, W("osx")) == 0))
+            {
+                targetOs = CORINFO_MACOS;
+            }
+            else if ((_wcsicmp(altJitOsConfig, W("linux")) == 0) || (_wcsicmp(altJitOsConfig, W("unix")) == 0))
+            {
+                targetOs = CORINFO_UNIX;
+            }
+            else if (_wcsicmp(altJitOsConfig, W("windows")) == 0)
+            {
+                targetOs = CORINFO_WINNT;
+            }
+            else
+            {
+                _ASSERTE(!"Unknown AltJitOS, it has to be either Windows, Linux or macOS");
+            }
+        }
         g_JitLoadData.jld_id = JIT_LOAD_ALTJIT;
-        LoadAndInitializeJIT(altJitName, &m_AltJITCompiler, &newAltJitCompiler, &g_JitLoadData);
+        LoadAndInitializeJIT(altJitName, &m_AltJITCompiler, &newAltJitCompiler, &g_JitLoadData, targetOs);
     }
 
 #endif // ALLOW_SXS_JIT
@@ -2306,7 +2402,7 @@ static size_t GetDefaultReserveForJumpStubs(size_t codeHeapSize)
 {
     LIMITED_METHOD_CONTRACT;
 
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
     //
     // Keep a small default reserve at the end of the codeheap for jump stubs. It should reduce
     // chance that we won't be able allocate jump stub because of lack of suitable address space.
@@ -2401,7 +2497,7 @@ HeapList* LoaderCodeHeap::CreateCodeHeap(CodeHeapRequestInfo *pInfo, LoaderHeap 
     // this first allocation is critical as it sets up correctly the loader heap info
     HeapList *pHp = new HeapList;
 
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
     pHp->CLRPersonalityRoutine = (BYTE *)pCodeHeap->m_LoaderHeap.AllocMem(JUMP_ALLOCATE_SIZE);
 #else
     // Ensure that the heap has a reserved block of memory and so the GetReservedBytesFree()
@@ -2554,7 +2650,7 @@ HeapList* EEJitManager::NewCodeHeap(CodeHeapRequestInfo *pInfo, DomainCodeHeapLi
 
     size_t reserveSize = initialRequestSize;
 
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
     reserveSize += JUMP_ALLOCATE_SIZE;
 #endif
 
@@ -3145,7 +3241,7 @@ JumpStubBlockHeader *  EEJitManager::allocJumpStubBlock(MethodDesc* pMD, DWORD n
     requestInfo.setThrowOnOutOfMemoryWithinRange(throwOnOutOfMemoryWithinRange);
 
     TADDR                  mem;
-    ExecutableWriterHolder<JumpStubBlockHeader> blockWriterHolder;
+    ExecutableWriterHolderNoLog<JumpStubBlockHeader> blockWriterHolder;
 
     // Scope the lock
     {
@@ -3165,7 +3261,7 @@ JumpStubBlockHeader *  EEJitManager::allocJumpStubBlock(MethodDesc* pMD, DWORD n
 
         NibbleMapSetUnlocked(pCodeHeap, mem, TRUE);
 
-        blockWriterHolder = ExecutableWriterHolder<JumpStubBlockHeader>((JumpStubBlockHeader *)mem, sizeof(JumpStubBlockHeader));
+        blockWriterHolder.AssignExecutableWriterHolder((JumpStubBlockHeader *)mem, sizeof(JumpStubBlockHeader));
 
         _ASSERTE(IS_ALIGNED(blockWriterHolder.GetRW(), CODE_SIZE_ALIGN));
     }
@@ -4089,10 +4185,10 @@ PTR_RUNTIME_FUNCTION EEJitManager::LazyGetFunctionEntry(EECodeInfo * pCodeInfo)
         if (RUNTIME_FUNCTION__BeginAddress(pFunctionEntry) <= address && address < RUNTIME_FUNCTION__EndAddress(pFunctionEntry, baseAddress))
         {
 
-#if defined(EXCEPTION_DATA_SUPPORTS_FUNCTION_FRAGMENTS) && defined(TARGET_ARM64)
-            // If we might have fragmented unwind, and we're on ARM64, make sure
-            // to returning the root record, as the trailing records don't have
-            // prolog unwind codes.
+#if defined(EXCEPTION_DATA_SUPPORTS_FUNCTION_FRAGMENTS) && (defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64))
+            // If we might have fragmented unwind, and we're on ARM64/LoongArch64,
+            // make sure to returning the root record,
+            // as the trailing records don't have prolog unwind codes.
             pFunctionEntry = FindRootEntry(pFunctionEntry, baseAddress);
 #endif
 
@@ -5231,7 +5327,7 @@ PCODE ExecutionManager::getNextJumpStub(MethodDesc* pMD, PCODE target,
 
     JumpStubBlockHeader ** ppHead   = &(pJumpStubCache->m_pBlocks);
     JumpStubBlockHeader *  curBlock = *ppHead;
-    ExecutableWriterHolder<JumpStubBlockHeader> curBlockWriterHolder;
+    ExecutableWriterHolderNoLog<JumpStubBlockHeader> curBlockWriterHolder;
 
     // allocate a new jumpstub from 'curBlock' if it is not fully allocated
     //
@@ -5247,7 +5343,7 @@ PCODE ExecutionManager::getNextJumpStub(MethodDesc* pMD, PCODE target,
             {
                 // We will update curBlock->m_used at "DONE"
                 size_t blockSize = sizeof(JumpStubBlockHeader) + (size_t) numJumpStubs * BACK_TO_BACK_JUMP_ALLOCATE_SIZE;
-                curBlockWriterHolder = ExecutableWriterHolder<JumpStubBlockHeader>(curBlock, blockSize);
+                curBlockWriterHolder.AssignExecutableWriterHolder(curBlock, blockSize);
                 jumpStubRW = (BYTE *)((TADDR)jumpStub + (TADDR)curBlockWriterHolder.GetRW() - (TADDR)curBlock);
                 goto DONE;
             }
@@ -5287,7 +5383,7 @@ PCODE ExecutionManager::getNextJumpStub(MethodDesc* pMD, PCODE target,
         RETURN(NULL);
     }
 
-    curBlockWriterHolder = ExecutableWriterHolder<JumpStubBlockHeader>(curBlock, sizeof(JumpStubBlockHeader) + ((size_t) (curBlock->m_used + 1) * BACK_TO_BACK_JUMP_ALLOCATE_SIZE));
+    curBlockWriterHolder.AssignExecutableWriterHolder(curBlock, sizeof(JumpStubBlockHeader) + ((size_t) (curBlock->m_used + 1) * BACK_TO_BACK_JUMP_ALLOCATE_SIZE));
 
     jumpStubRW = (BYTE *) curBlockWriterHolder.GetRW() + sizeof(JumpStubBlockHeader) + ((size_t) curBlock->m_used * BACK_TO_BACK_JUMP_ALLOCATE_SIZE);
     jumpStub = (BYTE *) curBlock + sizeof(JumpStubBlockHeader) + ((size_t) curBlock->m_used * BACK_TO_BACK_JUMP_ALLOCATE_SIZE);
@@ -5446,21 +5542,11 @@ static void EnumRuntimeFunctionEntriesToFindEntry(PTR_RUNTIME_FUNCTION pRtf, PTR
         return;
     }
 
-    // Review conversion of size_t to ULONG.
-#if defined(_MSC_VER)
-#pragma warning(push)
-#pragma warning(disable:4267)
-#endif // defined(_MSC_VER)
+    UINT_PTR indexToLocate = pRtf - firstFunctionEntry;
 
-    ULONG indexToLocate = pRtf - firstFunctionEntry;
-
-#if defined(_MSC_VER)
-#pragma warning(pop)
-#endif // defined(_MSC_VER)
-
-    ULONG low = 0; // index in the function entry table of low end of search range
-    ULONG high = (pProgramExceptionsDirectory->Size) / sizeof(T_RUNTIME_FUNCTION) - 1; // index of high end of search range
-    ULONG mid = (low + high) / 2; // index of entry to be compared
+    UINT_PTR low = 0; // index in the function entry table of low end of search range
+    UINT_PTR high = (pProgramExceptionsDirectory->Size) / sizeof(T_RUNTIME_FUNCTION) - 1; // index of high end of search range
+    UINT_PTR mid = (low + high) / 2; // index of entry to be compared
 
     if (indexToLocate > high)
     {

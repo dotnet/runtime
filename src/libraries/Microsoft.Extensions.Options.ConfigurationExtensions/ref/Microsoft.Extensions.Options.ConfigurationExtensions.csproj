@@ -2,6 +2,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
   </PropertyGroup>
+
   <ItemGroup>
     <Compile Include="Microsoft.Extensions.Options.ConfigurationExtensions.cs" />
   </ItemGroup>
@@ -18,9 +19,5 @@
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.DependencyInjection.Abstractions\ref\Microsoft.Extensions.DependencyInjection.Abstractions.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Options\ref\Microsoft.Extensions.Options.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Primitives\ref\Microsoft.Extensions.Primitives.csproj" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and '$(TargetFramework)' != '$(NetCoreAppCurrent)'">
-    <Reference Include="System.Runtime" />
   </ItemGroup>
 </Project>

@@ -86,10 +86,7 @@ namespace System.DirectoryServices.ActiveDirectory
         #region public methods
         public static ActiveDirectorySchema GetSchema(DirectoryContext context)
         {
-            if (context == null)
-            {
-                throw new ArgumentNullException(nameof(context));
-            }
+            ArgumentNullException.ThrowIfNull(context);
 
             // contexttype should be Forest, DirectoryServer or ConfigurationSet
             if ((context.ContextType != DirectoryContextType.Forest) &&

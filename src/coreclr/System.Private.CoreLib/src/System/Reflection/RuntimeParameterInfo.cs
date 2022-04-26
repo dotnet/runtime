@@ -509,22 +509,20 @@ namespace System.Reflection
 
         public override object[] GetCustomAttributes(Type attributeType, bool inherit)
         {
-            if (attributeType == null)
-                throw new ArgumentNullException(nameof(attributeType));
-
-            if (MdToken.IsNullToken(m_tkParamDef))
-                return Array.Empty<object>();
+            ArgumentNullException.ThrowIfNull(attributeType);
 
             if (attributeType.UnderlyingSystemType is not RuntimeType attributeRuntimeType)
                 throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
+
+            if (MdToken.IsNullToken(m_tkParamDef))
+                return CustomAttribute.CreateAttributeArrayHelper(attributeRuntimeType, 0);
 
             return CustomAttribute.GetCustomAttributes(this, attributeRuntimeType);
         }
 
         public override bool IsDefined(Type attributeType, bool inherit)
         {
-            if (attributeType == null)
-                throw new ArgumentNullException(nameof(attributeType));
+            ArgumentNullException.ThrowIfNull(attributeType);
 
             if (MdToken.IsNullToken(m_tkParamDef))
                 return false;

@@ -37,10 +37,7 @@ namespace System.Security.Cryptography
 
         public CryptoStream(Stream stream, ICryptoTransform transform, CryptoStreamMode mode, bool leaveOpen)
         {
-            if (transform is null)
-            {
-                throw new ArgumentNullException(nameof(transform));
-            }
+            ArgumentNullException.ThrowIfNull(transform);
 
             _stream = stream;
             _transform = transform;
@@ -721,8 +718,7 @@ namespace System.Security.Cryptography
 
         private void CheckCopyToArguments(Stream destination, int bufferSize)
         {
-            if (destination is null)
-                throw new ArgumentNullException(nameof(destination));
+            ArgumentNullException.ThrowIfNull(destination);
 
             EnsureNotDisposed(destination, nameof(destination));
 

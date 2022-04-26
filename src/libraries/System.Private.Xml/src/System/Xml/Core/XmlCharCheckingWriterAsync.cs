@@ -219,10 +219,8 @@ namespace System.Xml
 
         public override Task WriteCharsAsync(char[] buffer, int index, int count)
         {
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer));
-            }
+            ArgumentNullException.ThrowIfNull(buffer);
+
             if (index < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(index));

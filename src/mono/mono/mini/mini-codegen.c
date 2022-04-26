@@ -485,12 +485,11 @@ mono_print_ins_index_strbuf (int i, MonoInst *ins)
 		case OP_VPHI:
 		case OP_XPHI:
 		case OP_FPHI: {
-			int i;
 			g_string_append_printf (sbuf, " [%d (", (int)ins->inst_c0);
-			for (i = 0; i < ins->inst_phi_args [0]; i++) {
-				if (i)
+			for (j = 0; j < ins->inst_phi_args [0]; j++) {
+				if (j)
 					g_string_append_printf (sbuf, ", ");
-				g_string_append_printf (sbuf, "R%d", ins->inst_phi_args [i + 1]);
+				g_string_append_printf (sbuf, "R%d", ins->inst_phi_args [j + 1]);
 			}
 			g_string_append_printf (sbuf, ")]");
 			break;
@@ -612,7 +611,7 @@ mono_print_ins_index_strbuf (int i, MonoInst *ins)
 
 		if (ins->opcode == OP_VCALL || ins->opcode == OP_VCALL_REG || ins->opcode == OP_VCALL_MEMBASE) {
 			/*
-			 * These are lowered opcodes, but they are in the .md files since the old
+			 * These are lowered opcodes, but they are in the .mdesc files since the old
 			 * JIT passes them to backends.
 			 */
 			if (ins->dreg != -1)
@@ -1116,6 +1115,8 @@ get_callee_mask (const char spec)
 static gint8 desc_to_fixed_reg [256];
 static gboolean desc_to_fixed_reg_inited = FALSE;
 
+MONO_DISABLE_WARNING(4127) /* conditional expression is constant */
+
 /*
  * Local register allocation.
  * We first scan the list of instructions and we save the liveness info of
@@ -1436,6 +1437,7 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 				continue;
 			}
 
+			gboolean need_assign = FALSE;
 			if (rs->ifree_mask & (regmask (dest_sreg))) {
 				if (is_global_ireg (sreg)) {
 					int k;
@@ -1454,8 +1456,8 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 						DEBUG (printf ("\tshortcut assignment of R%d to %s\n", sreg, mono_arch_regname (dest_sreg)));
 						assign_reg (cfg, rs, sreg, dest_sreg, 0);
 					} else if (val < -1) {
-						/* FIXME: */
-						g_assert_not_reached ();
+						/* sreg is spilled, it can be assigned to dest_sreg */
+						need_assign = TRUE;
 					} else {
 						/* Argument already in hard reg, need to copy */
 						MonoInst *copy = create_copy_ins (cfg, bb, tmp, dest_sreg, val, NULL, ip, 0);
@@ -1476,9 +1478,9 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 				}
 			} else {
 				gboolean need_spill = TRUE;
-				gboolean need_assign = TRUE;
 				int k;
 
+				need_assign = TRUE;
 				dreg_mask &= ~ (regmask (dest_sreg));
 				for (k = 0; k < num_sregs; ++k) {
 					if (k != j)
@@ -1538,18 +1540,17 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 				if (need_spill) {
 					free_up_hreg (cfg, bb, tmp, ins, dest_sreg, 0);
 				}
+			}
+			if (need_assign) {
+				if (rs->vassign [sreg] < -1) {
+					int spill;
 
-				if (need_assign) {
-					if (rs->vassign [sreg] < -1) {
-						int spill;
-
-						/* Need to emit a spill store */
-						spill = - rs->vassign [sreg] - 1;
-						create_spilled_store (cfg, bb, spill, dest_sreg, sreg, tmp, NULL, ins, bank);
-					}
-					/* force-set sreg2 */
-					assign_reg (cfg, rs, sregs [j], dest_sreg, 0);
+					/* Need to emit a spill store */
+					spill = - rs->vassign [sreg] - 1;
+					create_spilled_store (cfg, bb, spill, dest_sreg, sreg, tmp, NULL, ins, bank);
 				}
+				/* force-set sreg */
+				assign_reg (cfg, rs, sregs [j], dest_sreg, 0);
 			}
 			sregs [j] = dest_sreg;
 		}
@@ -1746,7 +1747,7 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 
 		if (spec [MONO_INST_CLOB] == 'c') {
-			int j, dreg, dreg2, cur_bank;
+			int dreg, dreg2, cur_bank;
 			regmask_t s;
 			guint64 clob_mask;
 
@@ -2040,7 +2041,7 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 		if (((dreg_is_fp (spec) && sreg1_is_fp (spec)) || spec [MONO_INST_CLOB] == '1') && ins->dreg != sregs [0]) {
 			MonoInst *sreg2_copy = NULL;
 			MonoInst *copy;
-			int bank = reg_bank (spec_src1);
+			bank = reg_bank (spec_src1);
 
 			if (ins->dreg == sregs [1]) {
 				/*
@@ -2188,12 +2189,12 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 	 * arguments required by the fp opcodes are at the top of the stack.
 	 */
 	if (has_fp) {
-		MonoInst *prev = NULL;
 		MonoInst *fxch;
-		int tmp;
+		int fpstack_tmp;
 
 		g_assert (num_sregs <= 2);
 
+		prev = NULL;
 		for (ins = bb->code; ins; ins = ins->next) {
 			spec = ins_get_spec (ins->opcode);
 
@@ -2229,9 +2230,9 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 					mono_bblock_insert_after_ins (bb, prev, fxch);
 					prev = fxch;
 
-					tmp = fpstack [sp - 1];
+					fpstack_tmp = fpstack [sp - 1];
 					fpstack [sp - 1] = fpstack [i];
-					fpstack [i] = tmp;
+					fpstack [i] = fpstack_tmp;
 				}
 
 				/* Then move it to %st(1) */
@@ -2243,9 +2244,9 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 				mono_bblock_insert_after_ins (bb, prev, fxch);
 				prev = fxch;
 
-				tmp = fpstack [sp - 1];
+				fpstack_tmp = fpstack [sp - 1];
 				fpstack [sp - 1] = fpstack [sp - 2];
-				fpstack [sp - 2] = tmp;
+				fpstack [sp - 2] = fpstack_tmp;
 			}
 
 			if (sreg2_is_fp (spec)) {
@@ -2267,9 +2268,9 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 					mono_bblock_insert_after_ins (bb, prev, fxch);
 					prev = fxch;
 
-					tmp = fpstack [sp - 1];
+					fpstack_tmp = fpstack [sp - 1];
 					fpstack [sp - 1] = fpstack [i];
-					fpstack [i] = tmp;
+					fpstack [i] = fpstack_tmp;
 				}
 
 				sp --;
@@ -2294,9 +2295,9 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 					mono_bblock_insert_after_ins (bb, prev, fxch);
 					prev = fxch;
 
-					tmp = fpstack [sp - 1];
+					fpstack_tmp = fpstack [sp - 1];
 					fpstack [sp - 1] = fpstack [i];
-					fpstack [i] = tmp;
+					fpstack [i] = fpstack_tmp;
 				}
 
 				sp --;
@@ -2332,6 +2333,8 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 	}
 #endif
 }
+
+MONO_RESTORE_WARNING
 
 CompRelation
 mono_opcode_to_cond (int opcode)
@@ -2737,7 +2740,6 @@ mini_type_is_hfa (MonoType *t, int *out_nfields, int *out_esize)
 		if (field->type->attrs & FIELD_ATTRIBUTE_STATIC)
 			continue;
 		ftype = mono_field_get_type_internal (field);
-		ftype = mini_native_type_replace_type (ftype);
 
 		if (MONO_TYPE_ISSTRUCT (ftype)) {
 			int nested_nfields, nested_esize;

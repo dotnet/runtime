@@ -32,10 +32,7 @@ namespace System.Net.Sockets
         {
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, family);
 
-            // Validate parameter
-            if (family != AddressFamily.InterNetwork &&
-                family != AddressFamily.InterNetworkV6 &&
-                family != AddressFamily.Unknown)
+            if (family is not (AddressFamily.InterNetwork or AddressFamily.InterNetworkV6 or AddressFamily.Unknown))
             {
                 throw new ArgumentException(SR.Format(SR.net_protocol_invalid_family, "TCP"), nameof(family));
             }
@@ -47,13 +44,9 @@ namespace System.Net.Sockets
         // Initializes a new instance of the System.Net.Sockets.TcpClient class with the specified end point.
         public TcpClient(IPEndPoint localEP)
         {
+            ArgumentNullException.ThrowIfNull(localEP);
+
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, localEP);
-
-            if (localEP == null)
-            {
-                throw new ArgumentNullException(nameof(localEP));
-            }
-
             _family = localEP.AddressFamily; // set before calling CreateSocket
             InitializeClientSocket();
             _clientSocket.Bind(localEP);
@@ -63,12 +56,9 @@ namespace System.Net.Sockets
         // the specified host.
         public TcpClient(string hostname, int port)
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, hostname);
+            ArgumentNullException.ThrowIfNull(hostname);
 
-            if (hostname == null)
-            {
-                throw new ArgumentNullException(nameof(hostname));
-            }
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, hostname);
             if (!TcpValidationHelpers.ValidatePortNumber(port))
             {
                 throw new ArgumentOutOfRangeException(nameof(port));
@@ -131,13 +121,9 @@ namespace System.Net.Sockets
         // Connects the Client to the specified port on the specified host.
         public void Connect(string hostname, int port)
         {
-
             ThrowIfDisposed();
 
-            if (hostname == null)
-            {
-                throw new ArgumentNullException(nameof(hostname));
-            }
+            ArgumentNullException.ThrowIfNull(hostname);
             if (!TcpValidationHelpers.ValidatePortNumber(port))
             {
                 throw new ArgumentOutOfRangeException(nameof(port));
@@ -231,10 +217,7 @@ namespace System.Net.Sockets
         {
             ThrowIfDisposed();
 
-            if (address == null)
-            {
-                throw new ArgumentNullException(nameof(address));
-            }
+            ArgumentNullException.ThrowIfNull(address);
             if (!TcpValidationHelpers.ValidatePortNumber(port))
             {
                 throw new ArgumentOutOfRangeException(nameof(port));
@@ -249,10 +232,7 @@ namespace System.Net.Sockets
         {
             ThrowIfDisposed();
 
-            if (remoteEP == null)
-            {
-                throw new ArgumentNullException(nameof(remoteEP));
-            }
+            ArgumentNullException.ThrowIfNull(remoteEP);
 
             Client.Connect(remoteEP);
             _family = Client.AddressFamily;

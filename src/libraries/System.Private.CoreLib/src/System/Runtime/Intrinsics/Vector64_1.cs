@@ -4,12 +4,9 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
-using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
-
-using Internal.Runtime.CompilerServices;
 
 namespace System.Runtime.Intrinsics
 {
@@ -327,7 +324,7 @@ namespace System.Runtime.Intrinsics
         public override string ToString()
             => ToString("G", CultureInfo.InvariantCulture);
 
-        private string ToString(string? format, IFormatProvider? formatProvider)
+        private string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format, IFormatProvider? formatProvider)
         {
             ThrowHelper.ThrowForUnsupportedIntrinsicsVector64BaseType<T>();
 

@@ -36,10 +36,7 @@ namespace System.Runtime.InteropServices
         [UnsupportedOSPlatform("tvos")]
         public static PosixSignalRegistration Create(PosixSignal signal, Action<PosixSignalContext> handler)
         {
-            if (handler is null)
-            {
-                throw new ArgumentNullException(nameof(handler));
-            }
+            ArgumentNullException.ThrowIfNull(handler);
 
             return Register(signal, handler);
         }

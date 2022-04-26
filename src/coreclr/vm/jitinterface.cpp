@@ -661,10 +661,11 @@ bool CEEInfo::isValidStringRef (
     return result;
 }
 
-const char16_t* CEEInfo::getStringLiteral (
+int CEEInfo::getStringLiteral (
         CORINFO_MODULE_HANDLE       moduleHnd,
         mdToken                     metaTOK,
-        int*                        length)
+        char16_t*                   buffer,
+        int                         bufferSize)
 {
     CONTRACTL{
         THROWS;
@@ -674,13 +675,25 @@ const char16_t* CEEInfo::getStringLiteral (
 
     Module* module = GetModule(moduleHnd);
 
-    const char16_t* result = nullptr;
+    _ASSERTE(bufferSize >= 0);
+
+    int result = -1;
 
     JIT_TO_EE_TRANSITION();
 
     if (IsDynamicScope(moduleHnd))
     {
-        *length = GetDynamicResolver(moduleHnd)->GetStringLiteralLength(metaTOK);
+        GCX_COOP();
+        STRINGREF strRef = GetDynamicResolver(moduleHnd)->GetStringLiteral(metaTOK);
+        if (strRef != NULL)
+        {
+            StringObject* strObj = STRINGREFToObject(strRef);
+            result = (int)strObj->GetStringLength();
+            if (buffer != NULL)
+            {
+                memcpyNoGCRefs(buffer, strObj->GetBuffer(), min(bufferSize, result) * sizeof(char16_t));
+            }
+        }
     }
     else
     {
@@ -688,13 +701,12 @@ const char16_t* CEEInfo::getStringLiteral (
         LPCWSTR pString;
         if (!FAILED((module)->GetMDImport()->GetUserString(metaTOK, &dwCharCount, NULL, &pString)))
         {
-            // For string.Empty pString will be null
-            *length = dwCharCount;
-            result = (const char16_t *)pString;
-        }
-        else
-        {
-            *length = -1;
+            _ASSERTE(dwCharCount >= 0 && dwCharCount <= INT_MAX);
+            result = (int)dwCharCount;
+            if (buffer != NULL)
+            {
+                memcpyNoGCRefs(buffer, pString, min(bufferSize, result) * sizeof(char16_t));
+            }
         }
     }
 
@@ -953,7 +965,7 @@ void CEEInfo::resolveToken(/* IN, OUT */ CORINFO_RESOLVED_TOKEN * pResolvedToken
                 ThrowBadTokenException(pResolvedToken);
 
             {
-                DomainFile *pTargetModule = pModule->LoadModule(GetAppDomain(), metaTOK);
+                DomainAssembly *pTargetModule = pModule->LoadModule(GetAppDomain(), metaTOK);
                 if (pTargetModule == NULL)
                     COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
                 th = TypeHandle(pTargetModule->GetModule()->GetGlobalMethodTable());
@@ -2029,53 +2041,53 @@ bool CEEInfo::checkMethodModifier(CORINFO_METHOD_HANDLE hMethod,
     return result;
 }
 
+static unsigned MarkGCField(BYTE* gcPtrs, CorInfoGCType type)
+{
+    STANDARD_VM_CONTRACT;
+
+    // Ensure that if we have multiple fields with the same offset,
+    // that we don't double count the data in the gc layout.
+    if (*gcPtrs == TYPE_GC_NONE)
+    {
+        *gcPtrs = type;
+        return 1;
+    }
+    else if (*gcPtrs != type)
+    {
+        COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
+    }
+
+    return 0;
+}
+
 /*********************************************************************/
 static unsigned ComputeGCLayout(MethodTable * pMT, BYTE* gcPtrs)
 {
     STANDARD_VM_CONTRACT;
 
-    unsigned result = 0;
-
     _ASSERTE(pMT->IsValueType());
 
     if (pMT->HasSameTypeDefAs(g_pByReferenceClass))
-    {
-        if (gcPtrs[0] == TYPE_GC_NONE)
-        {
-            gcPtrs[0] = TYPE_GC_BYREF;
-            result++;
-        }
-        else if (gcPtrs[0] != TYPE_GC_BYREF)
-        {
-            COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
-        }
-        return result;
-    }
+        return MarkGCField(gcPtrs, TYPE_GC_BYREF);
 
+    unsigned result = 0;
     ApproxFieldDescIterator fieldIterator(pMT, ApproxFieldDescIterator::INSTANCE_FIELDS);
     for (FieldDesc *pFD = fieldIterator.Next(); pFD != NULL; pFD = fieldIterator.Next())
     {
         int fieldStartIndex = pFD->GetOffset() / TARGET_POINTER_SIZE;
 
-        if (pFD->GetFieldType() != ELEMENT_TYPE_VALUETYPE)
-        {
-            if (pFD->IsObjRef())
-            {
-                if (gcPtrs[fieldStartIndex] == TYPE_GC_NONE)
-                {
-                    gcPtrs[fieldStartIndex] = TYPE_GC_REF;
-                    result++;
-                }
-                else if (gcPtrs[fieldStartIndex] != TYPE_GC_REF)
-                {
-                    COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
-                }
-            }
-        }
-        else
+        if (pFD->GetFieldType() == ELEMENT_TYPE_VALUETYPE)
         {
             MethodTable * pFieldMT = pFD->GetApproxFieldTypeHandleThrowing().AsMethodTable();
             result += ComputeGCLayout(pFieldMT, gcPtrs + fieldStartIndex);
+        }
+        else if (pFD->IsObjRef())
+        {
+            result += MarkGCField(gcPtrs + fieldStartIndex, TYPE_GC_REF);
+        }
+        else if (pFD->IsByRef())
+        {
+            result += MarkGCField(gcPtrs + fieldStartIndex, TYPE_GC_BYREF);
         }
     }
     return result;
@@ -2089,7 +2101,7 @@ unsigned CEEInfo::getClassGClayout (CORINFO_CLASS_HANDLE clsHnd, BYTE* gcPtrs)
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
-    unsigned result;
+    unsigned result = 0;
 
     JIT_TO_EE_TRANSITION();
 
@@ -2364,13 +2376,6 @@ CORINFO_METHOD_HANDLE CEEInfo::GetDelegateCtor(
         GC_TRIGGERS;
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
-
-    if (isVerifyOnly())
-    {
-        // No sense going through the optimized case just for verification and it can cause issues parsing
-        // uninstantiated generic signatures.
-        return methHnd;
-    }
 
     CORINFO_METHOD_HANDLE result = NULL;
 
@@ -2697,9 +2702,6 @@ void CEEInfo::ScanToken(Module * pModule, CORINFO_RESOLVED_TOKEN * pResolvedToke
     if (pModule->IsSystem())
         return;
 
-    if (isVerifyOnly())
-        return;
-
     //
     // Scan method instantiation
     //
@@ -2883,10 +2885,6 @@ void CEEInfo::ComputeRuntimeLookupForSharedGenericToken(DictionaryEntryKind entr
         STANDARD_VM_CHECK;
         PRECONDITION(CheckPointer(pResultLookup));
     } CONTRACTL_END;
-
-
-    // We should never get here when we are only verifying
-    _ASSERTE(!isVerifyOnly());
 
     pResultLookup->lookupKind.needsRuntimeLookup = true;
     pResultLookup->lookupKind.runtimeLookupFlags = 0;
@@ -3356,12 +3354,12 @@ const char* CEEInfo::getHelperName (CorInfoHelpFunc ftnNum)
 
 
 /*********************************************************************/
-int CEEInfo::appendClassName(_Outptr_result_buffer_(*pnBufLen) char16_t** ppBuf,
-                             int* pnBufLen,
-                             CORINFO_CLASS_HANDLE    clsHnd,
-                             bool fNamespace,
-                             bool fFullInst,
-                             bool fAssembly)
+int CEEInfo::appendClassName(_Outptr_opt_result_buffer_(*pnBufLen) char16_t**   ppBuf,
+                             int*                                               pnBufLen,
+                             CORINFO_CLASS_HANDLE                               clsHnd,
+                             bool                                               fNamespace,
+                             bool                                               fFullInst,
+                             bool                                               fAssembly)
 {
     CONTRACTL {
         MODE_PREEMPTIVE;
@@ -3383,14 +3381,24 @@ int CEEInfo::appendClassName(_Outptr_result_buffer_(*pnBufLen) char16_t** ppBuf,
     nLen = (int)wcslen(szString);
     if (*pnBufLen > 0)
     {
-    wcscpy_s((WCHAR*)*ppBuf, *pnBufLen, szString );
-    (*ppBuf)[(*pnBufLen) - 1] = W('\0');
-    (*ppBuf) += nLen;
-    (*pnBufLen) -= nLen;
+        // Copy as much as will fit.
+        WCHAR* pBuf = (WCHAR*)*ppBuf;
+        int nLenToCopy = min(*pnBufLen, nLen + /* null terminator */ 1);
+        for (int i = 0; i < nLenToCopy - 1; i++)
+        {
+            pBuf[i] = szString[i];
+        }
+        pBuf[nLenToCopy - 1] = 0; // null terminate the string if it wasn't already
+
+        // Update the buffer pointer and buffer size pointer based on the amount actually copied.
+        // Don't include the null terminator. `*ppBuf` will point at the added null terminator.
+        (*ppBuf) += nLenToCopy - 1;
+        (*pnBufLen) -= nLenToCopy - 1;
     }
 
     EE_TO_JIT_TRANSITION();
 
+    // Return the actual length of the string, not including the null terminator.
     return nLen;
 }
 
@@ -3690,13 +3698,6 @@ CorInfoInitClassResult CEEInfo::initClass(
 
     JIT_TO_EE_TRANSITION();
     {
-
-    // Do not bother figuring out the initialization if we are only verifying the method.
-    if (isVerifyOnly())
-    {
-        result = CORINFO_INITCLASS_NOT_REQUIRED;
-        goto exit;
-    }
 
     FieldDesc * pFD = (FieldDesc *)field;
     _ASSERTE(pFD == NULL || pFD->IsStatic());
@@ -5173,7 +5174,7 @@ void CEEInfo::getCallInfo(
         {
             BYTE * indcell = NULL;
 
-            if (!(flags & CORINFO_CALLINFO_KINDONLY) && !isVerifyOnly())
+            if (!(flags & CORINFO_CALLINFO_KINDONLY))
             {
                 // We shouldn't be using GetLoaderAllocator here because for LCG, we need to get the
                 // VirtualCallStubManager from where the stub will be used.
@@ -5826,9 +5827,6 @@ CorInfoHelpFunc CEEInfo::getCastingHelper(CORINFO_RESOLVED_TOKEN * pResolvedToke
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
-    if (isVerifyOnly())
-        return fThrowing ? CORINFO_HELP_CHKCASTANY : CORINFO_HELP_ISINSTANCEOFANY;
-
     CorInfoHelpFunc result = CORINFO_HELP_UNDEF;
 
     JIT_TO_EE_TRANSITION();
@@ -5983,6 +5981,7 @@ bool CEEInfo::getReadyToRunHelper(
 /***********************************************************************/
 void CEEInfo::getReadyToRunDelegateCtorHelper(
         CORINFO_RESOLVED_TOKEN * pTargetMethod,
+        mdToken                  targetConstraint,
         CORINFO_CLASS_HANDLE     delegateType,
         CORINFO_LOOKUP *   pLookup
         )
@@ -6026,7 +6025,7 @@ CorInfoHelpFunc CEEInfo::getBoxHelper(CORINFO_CLASS_HANDLE clsHnd)
     }
     else
     {
-        if(VMClsHnd.IsTypeDesc())
+        if (VMClsHnd.IsTypeDesc() || !VMClsHnd.IsValueType())
             COMPlusThrow(kInvalidOperationException,W("InvalidOperation_TypeCannotBeBoxed"));
 
         // we shouldn't allow boxing of types that contains stack pointers
@@ -6555,15 +6554,18 @@ bool getILIntrinsicImplementationForUnsafe(MethodDesc * ftn,
     if (tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__AS_POINTER)->GetMemberDef())
     {
         // Return the argument that was passed in.
-        static const BYTE ilcode[] = { CEE_LDARG_0, CEE_CONV_U, CEE_RET };
-        methInfo->ILCode = const_cast<BYTE*>(ilcode);
-        methInfo->ILCodeSize = sizeof(ilcode);
-        methInfo->maxStack = 1;
-        methInfo->EHcount = 0;
-        methInfo->options = (CorInfoOptions)0;
+        static const BYTE ilcode[] =
+        {
+            CEE_LDARG_0,
+            CEE_CONV_U,
+            CEE_RET
+        };
+
+        setILIntrinsicMethodInfo(methInfo,const_cast<BYTE*>(ilcode),sizeof(ilcode), 1);
+
         return true;
     }
-    if (tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__SIZEOF)->GetMemberDef())
+    else if (tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__SIZEOF)->GetMemberDef())
     {
         _ASSERTE(ftn->HasMethodInstantiation());
         Instantiation inst = ftn->GetMethodInstantiation();
@@ -6571,18 +6573,14 @@ bool getILIntrinsicImplementationForUnsafe(MethodDesc * ftn,
         _ASSERTE(ftn->GetNumGenericMethodArgs() == 1);
         mdToken tokGenericArg = FindGenericMethodArgTypeSpec(CoreLibBinder::GetModule()->GetMDImport());
 
-        static BYTE ilcode[] = { CEE_PREFIX1, (CEE_SIZEOF & 0xFF), 0,0,0,0, CEE_RET };
+        static const BYTE ilcode[] =
+        {
+            CEE_PREFIX1, (CEE_SIZEOF & 0xFF), (BYTE)(tokGenericArg), (BYTE)(tokGenericArg >> 8), (BYTE)(tokGenericArg >> 16), (BYTE)(tokGenericArg >> 24),
+            CEE_RET
+        };
 
-        ilcode[2] = (BYTE)(tokGenericArg);
-        ilcode[3] = (BYTE)(tokGenericArg >> 8);
-        ilcode[4] = (BYTE)(tokGenericArg >> 16);
-        ilcode[5] = (BYTE)(tokGenericArg >> 24);
+        setILIntrinsicMethodInfo(methInfo,const_cast<BYTE*>(ilcode),sizeof(ilcode), 1);
 
-        methInfo->ILCode = const_cast<BYTE*>(ilcode);
-        methInfo->ILCodeSize = sizeof(ilcode);
-        methInfo->maxStack = 1;
-        methInfo->EHcount = 0;
-        methInfo->options = (CorInfoOptions)0;
         return true;
     }
     else if (tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__BYREF_AS)->GetMemberDef() ||
@@ -6591,12 +6589,14 @@ bool getILIntrinsicImplementationForUnsafe(MethodDesc * ftn,
              tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__AS_REF_IN)->GetMemberDef())
     {
         // Return the argument that was passed in.
-        static const BYTE ilcode[] = { CEE_LDARG_0, CEE_RET };
-        methInfo->ILCode = const_cast<BYTE*>(ilcode);
-        methInfo->ILCodeSize = sizeof(ilcode);
-        methInfo->maxStack = 1;
-        methInfo->EHcount = 0;
-        methInfo->options = (CorInfoOptions)0;
+        static const BYTE ilcode[] =
+        {
+            CEE_LDARG_0,
+            CEE_RET
+        };
+
+        setILIntrinsicMethodInfo(methInfo,const_cast<BYTE*>(ilcode),sizeof(ilcode), 1);
+
         return true;
     }
     else if (tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__BYREF_ADD)->GetMemberDef() ||
@@ -6604,101 +6604,165 @@ bool getILIntrinsicImplementationForUnsafe(MethodDesc * ftn,
     {
         mdToken tokGenericArg = FindGenericMethodArgTypeSpec(CoreLibBinder::GetModule()->GetMDImport());
 
-        static BYTE ilcode[] = { CEE_LDARG_1,
-            CEE_PREFIX1, (CEE_SIZEOF & 0xFF), 0,0,0,0,
+        static const BYTE ilcode[] =
+        {
+            CEE_LDARG_0,
+            CEE_LDARG_1,
+            CEE_PREFIX1, (CEE_SIZEOF & 0xFF), (BYTE)(tokGenericArg), (BYTE)(tokGenericArg >> 8), (BYTE)(tokGenericArg >> 16), (BYTE)(tokGenericArg >> 24),
             CEE_CONV_I,
             CEE_MUL,
-            CEE_LDARG_0,
             CEE_ADD,
-            CEE_RET };
+            CEE_RET
+        };
 
-        ilcode[3] = (BYTE)(tokGenericArg);
-        ilcode[4] = (BYTE)(tokGenericArg >> 8);
-        ilcode[5] = (BYTE)(tokGenericArg >> 16);
-        ilcode[6] = (BYTE)(tokGenericArg >> 24);
+        setILIntrinsicMethodInfo(methInfo,const_cast<BYTE*>(ilcode),sizeof(ilcode), 3);
 
-        methInfo->ILCode = const_cast<BYTE*>(ilcode);
-        methInfo->ILCodeSize = sizeof(ilcode);
-        methInfo->maxStack = 2;
-        methInfo->EHcount = 0;
-        methInfo->options = (CorInfoOptions)0;
         return true;
     }
-    else if (tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__BYREF_INTPTR_ADD)->GetMemberDef())
+    else if (tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__BYREF_INTPTR_ADD)->GetMemberDef() ||
+             tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__BYREF_UINTPTR_ADD)->GetMemberDef())
     {
         mdToken tokGenericArg = FindGenericMethodArgTypeSpec(CoreLibBinder::GetModule()->GetMDImport());
 
-        static BYTE ilcode[] = { CEE_LDARG_1,
-            CEE_PREFIX1, (CEE_SIZEOF & 0xFF), 0,0,0,0,
-            CEE_MUL,
+        static const BYTE ilcode[] =
+        {
             CEE_LDARG_0,
+            CEE_LDARG_1,
+            CEE_PREFIX1, (CEE_SIZEOF & 0xFF), (BYTE)(tokGenericArg), (BYTE)(tokGenericArg >> 8), (BYTE)(tokGenericArg >> 16), (BYTE)(tokGenericArg >> 24),
+            CEE_MUL,
             CEE_ADD,
-            CEE_RET };
+            CEE_RET
+        };
 
-        ilcode[3] = (BYTE)(tokGenericArg);
-        ilcode[4] = (BYTE)(tokGenericArg >> 8);
-        ilcode[5] = (BYTE)(tokGenericArg >> 16);
-        ilcode[6] = (BYTE)(tokGenericArg >> 24);
+        setILIntrinsicMethodInfo(methInfo,const_cast<BYTE*>(ilcode),sizeof(ilcode), 3);
 
-        methInfo->ILCode = const_cast<BYTE*>(ilcode);
-        methInfo->ILCodeSize = sizeof(ilcode);
-        methInfo->maxStack = 2;
-        methInfo->EHcount = 0;
-        methInfo->options = (CorInfoOptions)0;
         return true;
     }
-    else if (tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__BYREF_ADD_BYTE_OFFSET)->GetMemberDef())
+    else if (tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__BYREF_INTPTR_ADD_BYTE_OFFSET)->GetMemberDef() ||
+        tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__BYREF_UINTPTR_ADD_BYTE_OFFSET)->GetMemberDef())
     {
-        static BYTE ilcode[] = { CEE_LDARG_0, CEE_LDARG_1, CEE_ADD, CEE_RET };
+        static const BYTE ilcode[] =
+        {
+            CEE_LDARG_0,
+            CEE_LDARG_1,
+            CEE_ADD,
+            CEE_RET
+        };
 
-        methInfo->ILCode = const_cast<BYTE*>(ilcode);
-        methInfo->ILCodeSize = sizeof(ilcode);
-        methInfo->maxStack = 2;
-        methInfo->EHcount = 0;
-        methInfo->options = (CorInfoOptions)0;
+        setILIntrinsicMethodInfo(methInfo,const_cast<BYTE*>(ilcode),sizeof(ilcode), 2);
+
         return true;
     }
     else if (tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__BYREF_ARE_SAME)->GetMemberDef())
     {
         // Compare the two arguments
-        static const BYTE ilcode[] = { CEE_LDARG_0, CEE_LDARG_1, CEE_PREFIX1, (CEE_CEQ & 0xFF), CEE_RET };
-        methInfo->ILCode = const_cast<BYTE*>(ilcode);
-        methInfo->ILCodeSize = sizeof(ilcode);
-        methInfo->maxStack = 2;
-        methInfo->EHcount = 0;
-        methInfo->options = (CorInfoOptions)0;
+        static const BYTE ilcode[] =
+        {
+            CEE_LDARG_0,
+            CEE_LDARG_1,
+            CEE_PREFIX1, (CEE_CEQ & 0xFF),
+            CEE_RET
+        };
+
+        setILIntrinsicMethodInfo(methInfo,const_cast<BYTE*>(ilcode),sizeof(ilcode), 2);
+
+        return true;
+    }
+    else if (tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__PTR_BYREF_COPY)->GetMemberDef() ||
+        tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__BYREF_PTR_COPY)->GetMemberDef())
+    {
+        _ASSERTE(ftn->HasMethodInstantiation());
+        Instantiation inst = ftn->GetMethodInstantiation();
+        _ASSERTE(ftn->GetNumGenericMethodArgs() == 1);
+        mdToken tokGenericArg = FindGenericMethodArgTypeSpec(CoreLibBinder::GetModule()->GetMDImport());
+
+        static const BYTE ilcode[] =
+        {
+            CEE_LDARG_0,
+            CEE_LDARG_1,
+            CEE_LDOBJ, (BYTE)(tokGenericArg), (BYTE)(tokGenericArg >> 8), (BYTE)(tokGenericArg >> 16), (BYTE)(tokGenericArg >> 24),
+            CEE_STOBJ, (BYTE)(tokGenericArg), (BYTE)(tokGenericArg >> 8), (BYTE)(tokGenericArg >> 16), (BYTE)(tokGenericArg >> 24),
+            CEE_RET
+        };
+
+        setILIntrinsicMethodInfo(methInfo,const_cast<BYTE*>(ilcode),sizeof(ilcode), 3);
+
+        return true;
+    }
+    else if (tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__PTR_COPY_BLOCK)->GetMemberDef() ||
+        tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__BYREF_COPY_BLOCK)->GetMemberDef())
+    {
+        static const BYTE ilcode[] =
+        {
+            CEE_LDARG_0,
+            CEE_LDARG_1,
+            CEE_LDARG_2,
+            CEE_PREFIX1, (CEE_CPBLK & 0xFF),
+            CEE_RET
+        };
+
+        setILIntrinsicMethodInfo(methInfo,const_cast<BYTE*>(ilcode),sizeof(ilcode), 3);
+
+        return true;
+    }
+    else if (tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__PTR_COPY_BLOCK_UNALIGNED)->GetMemberDef() ||
+        tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__BYREF_COPY_BLOCK_UNALIGNED)->GetMemberDef())
+    {
+        static const BYTE ilcode[] =
+        {
+            CEE_LDARG_0,
+            CEE_LDARG_1,
+            CEE_LDARG_2,
+            CEE_PREFIX1, (CEE_UNALIGNED & 0xFF), 0x01,
+            CEE_PREFIX1, (CEE_CPBLK & 0xFF),
+            CEE_RET
+        };
+
+        setILIntrinsicMethodInfo(methInfo,const_cast<BYTE*>(ilcode),sizeof(ilcode), 3);
+
         return true;
     }
     else if (tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__BYREF_IS_ADDRESS_GREATER_THAN)->GetMemberDef())
     {
         // Compare the two arguments
-        static const BYTE ilcode[] = { CEE_LDARG_0, CEE_LDARG_1, CEE_PREFIX1, (CEE_CGT_UN & 0xFF), CEE_RET };
-        methInfo->ILCode = const_cast<BYTE*>(ilcode);
-        methInfo->ILCodeSize = sizeof(ilcode);
-        methInfo->maxStack = 2;
-        methInfo->EHcount = 0;
-        methInfo->options = (CorInfoOptions)0;
+        static const BYTE ilcode[] =
+        {
+            CEE_LDARG_0,
+            CEE_LDARG_1,
+            CEE_PREFIX1, (CEE_CGT_UN & 0xFF),
+            CEE_RET
+        };
+
+        setILIntrinsicMethodInfo(methInfo,const_cast<BYTE*>(ilcode),sizeof(ilcode), 2);
+
         return true;
     }
     else if (tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__BYREF_IS_ADDRESS_LESS_THAN)->GetMemberDef())
     {
         // Compare the two arguments
-        static const BYTE ilcode[] = { CEE_LDARG_0, CEE_LDARG_1, CEE_PREFIX1, (CEE_CLT_UN & 0xFF), CEE_RET };
-        methInfo->ILCode = const_cast<BYTE*>(ilcode);
-        methInfo->ILCodeSize = sizeof(ilcode);
-        methInfo->maxStack = 2;
-        methInfo->EHcount = 0;
-        methInfo->options = (CorInfoOptions)0;
+        static const BYTE ilcode[] =
+        {
+            CEE_LDARG_0,
+            CEE_LDARG_1,
+            CEE_PREFIX1, (CEE_CLT_UN & 0xFF),
+            CEE_RET
+        };
+
+        setILIntrinsicMethodInfo(methInfo,const_cast<BYTE*>(ilcode),sizeof(ilcode), 2);
+
         return true;
     }
     else if (tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__BYREF_NULLREF)->GetMemberDef())
     {
-        static const BYTE ilcode[] = { CEE_LDC_I4_0, CEE_CONV_U, CEE_RET };
-        methInfo->ILCode = const_cast<BYTE*>(ilcode);
-        methInfo->ILCodeSize = sizeof(ilcode);
-        methInfo->maxStack = 1;
-        methInfo->EHcount = 0;
-        methInfo->options = (CorInfoOptions)0;
+        static const BYTE ilcode[] =
+        {
+            CEE_LDC_I4_0,
+            CEE_CONV_U,
+            CEE_RET
+        };
+
+        setILIntrinsicMethodInfo(methInfo,const_cast<BYTE*>(ilcode),sizeof(ilcode), 1);
+
         return true;
     }
     else if (tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__BYREF_IS_NULL)->GetMemberDef())
@@ -6706,22 +6770,50 @@ bool getILIntrinsicImplementationForUnsafe(MethodDesc * ftn,
         // 'ldnull' opcode would produce type o, and we can't compare & against o (ECMA-335, Table III.4).
         // However, we can compare & against native int, so we'll use that instead.
 
-        static const BYTE ilcode[] = { CEE_LDARG_0, CEE_LDC_I4_0, CEE_CONV_U, CEE_PREFIX1, (CEE_CEQ & 0xFF), CEE_RET };
-        methInfo->ILCode = const_cast<BYTE*>(ilcode);
-        methInfo->ILCodeSize = sizeof(ilcode);
-        methInfo->maxStack = 2;
-        methInfo->EHcount = 0;
-        methInfo->options = (CorInfoOptions)0;
+        static const BYTE ilcode[] =
+        {
+            CEE_LDARG_0,
+            CEE_LDC_I4_0,
+            CEE_CONV_U,
+            CEE_PREFIX1, (CEE_CEQ & 0xFF),
+            CEE_RET
+        };
+
+        setILIntrinsicMethodInfo(methInfo,const_cast<BYTE*>(ilcode),sizeof(ilcode), 2);
+
         return true;
     }
-    else if (tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__BYREF_INIT_BLOCK_UNALIGNED)->GetMemberDef())
+    else if (tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__BYREF_INIT_BLOCK)->GetMemberDef() ||
+            tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__PTR_INIT_BLOCK)->GetMemberDef())
     {
-        static const BYTE ilcode[] = { CEE_LDARG_0, CEE_LDARG_1, CEE_LDARG_2, CEE_PREFIX1, (CEE_UNALIGNED & 0xFF), 0x01, CEE_PREFIX1, (CEE_INITBLK & 0xFF), CEE_RET };
-        methInfo->ILCode = const_cast<BYTE*>(ilcode);
-        methInfo->ILCodeSize = sizeof(ilcode);
-        methInfo->maxStack = 3;
-        methInfo->EHcount = 0;
-        methInfo->options = (CorInfoOptions)0;
+        static const BYTE ilcode[] =
+        {
+            CEE_LDARG_0,
+            CEE_LDARG_1,
+            CEE_LDARG_2,
+            CEE_PREFIX1, (CEE_INITBLK & 0xFF),
+            CEE_RET
+        };
+
+        setILIntrinsicMethodInfo(methInfo,const_cast<BYTE*>(ilcode),sizeof(ilcode), 3);
+
+        return true;
+    }
+    else if (tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__BYREF_INIT_BLOCK_UNALIGNED)->GetMemberDef() ||
+            tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__PTR_INIT_BLOCK_UNALIGNED)->GetMemberDef())
+    {
+        static const BYTE ilcode[] =
+        {
+            CEE_LDARG_0,
+            CEE_LDARG_1,
+            CEE_LDARG_2,
+            CEE_PREFIX1, (CEE_UNALIGNED & 0xFF), 0x01,
+            CEE_PREFIX1, (CEE_INITBLK & 0xFF),
+            CEE_RET
+        };
+
+        setILIntrinsicMethodInfo(methInfo,const_cast<BYTE*>(ilcode),sizeof(ilcode), 3);
+
         return true;
     }
     else if (tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__BYREF_BYTE_OFFSET)->GetMemberDef())
@@ -6734,11 +6826,8 @@ bool getILIntrinsicImplementationForUnsafe(MethodDesc * ftn,
             CEE_RET
         };
 
-        methInfo->ILCode = const_cast<BYTE*>(ilcode);
-        methInfo->ILCodeSize = sizeof(ilcode);
-        methInfo->maxStack = 2;
-        methInfo->EHcount = 0;
-        methInfo->options = (CorInfoOptions)0;
+        setILIntrinsicMethodInfo(methInfo,const_cast<BYTE*>(ilcode),sizeof(ilcode), 2);
+
         return true;
     }
     else if (tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__BYREF_READ_UNALIGNED)->GetMemberDef() ||
@@ -6749,7 +6838,7 @@ bool getILIntrinsicImplementationForUnsafe(MethodDesc * ftn,
         _ASSERTE(ftn->GetNumGenericMethodArgs() == 1);
         mdToken tokGenericArg = FindGenericMethodArgTypeSpec(CoreLibBinder::GetModule()->GetMDImport());
 
-        static const BYTE ilcode[]
+        static const BYTE ilcode[] =
         {
             CEE_LDARG_0,
             CEE_PREFIX1, (CEE_UNALIGNED & 0xFF), 1,
@@ -6757,11 +6846,8 @@ bool getILIntrinsicImplementationForUnsafe(MethodDesc * ftn,
             CEE_RET
         };
 
-        methInfo->ILCode = const_cast<BYTE*>(ilcode);
-        methInfo->ILCodeSize = sizeof(ilcode);
-        methInfo->maxStack = 2;
-        methInfo->EHcount = 0;
-        methInfo->options = (CorInfoOptions)0;
+        setILIntrinsicMethodInfo(methInfo,const_cast<BYTE*>(ilcode),sizeof(ilcode), 2);
+
         return true;
     }
     else if (tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__BYREF_WRITE_UNALIGNED)->GetMemberDef() ||
@@ -6772,7 +6858,7 @@ bool getILIntrinsicImplementationForUnsafe(MethodDesc * ftn,
         _ASSERTE(ftn->GetNumGenericMethodArgs() == 1);
         mdToken tokGenericArg = FindGenericMethodArgTypeSpec(CoreLibBinder::GetModule()->GetMDImport());
 
-        static const BYTE ilcode[]
+        static const BYTE ilcode[] =
         {
             CEE_LDARG_0,
             CEE_LDARG_1,
@@ -6781,22 +6867,128 @@ bool getILIntrinsicImplementationForUnsafe(MethodDesc * ftn,
             CEE_RET
         };
 
-        methInfo->ILCode = const_cast<BYTE*>(ilcode);
-        methInfo->ILCodeSize = sizeof(ilcode);
-        methInfo->maxStack = 2;
-        methInfo->EHcount = 0;
-        methInfo->options = (CorInfoOptions)0;
+        setILIntrinsicMethodInfo(methInfo,const_cast<BYTE*>(ilcode),sizeof(ilcode), 2);
+
+        return true;
+    }
+    else if (tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__READ)->GetMemberDef())
+    {
+        _ASSERTE(ftn->HasMethodInstantiation());
+        Instantiation inst = ftn->GetMethodInstantiation();
+        _ASSERTE(ftn->GetNumGenericMethodArgs() == 1);
+        mdToken tokGenericArg = FindGenericMethodArgTypeSpec(CoreLibBinder::GetModule()->GetMDImport());
+
+        static const BYTE ilcode[] =
+        {
+            CEE_LDARG_0,
+            CEE_LDOBJ, (BYTE)(tokGenericArg), (BYTE)(tokGenericArg >> 8), (BYTE)(tokGenericArg >> 16), (BYTE)(tokGenericArg >> 24),
+            CEE_RET
+        };
+
+        setILIntrinsicMethodInfo(methInfo,const_cast<BYTE*>(ilcode),sizeof(ilcode), 2);
+
         return true;
     }
     else if (tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__SKIPINIT)->GetMemberDef())
     {
-        static BYTE ilcode[] = { CEE_RET };
+        static const BYTE ilcode[] =
+        {
+            CEE_RET
+        };
 
-        methInfo->ILCode = const_cast<BYTE*>(ilcode);
-        methInfo->ILCodeSize = sizeof(ilcode);
-        methInfo->maxStack = 0;
-        methInfo->EHcount = 0;
-        methInfo->options = (CorInfoOptions)0;
+        setILIntrinsicMethodInfo(methInfo,const_cast<BYTE*>(ilcode),sizeof(ilcode), 0);
+
+        return true;
+    }
+    else if (tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__BYREF_INT_SUBTRACT)->GetMemberDef() ||
+             tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__PTR_INT_SUBTRACT)->GetMemberDef())
+    {
+        mdToken tokGenericArg = FindGenericMethodArgTypeSpec(CoreLibBinder::GetModule()->GetMDImport());
+
+        static const BYTE ilcode[] =
+        {
+            CEE_LDARG_0,
+            CEE_LDARG_1,
+            CEE_PREFIX1, (CEE_SIZEOF & 0xFF), (BYTE)(tokGenericArg), (BYTE)(tokGenericArg >> 8), (BYTE)(tokGenericArg >> 16), (BYTE)(tokGenericArg >> 24),
+            CEE_CONV_I,
+            CEE_MUL,
+            CEE_SUB,
+            CEE_RET
+        };
+
+        setILIntrinsicMethodInfo(methInfo,const_cast<BYTE*>(ilcode),sizeof(ilcode), 3);
+
+        return true;
+    }
+    else if (tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__BYREF_INTPTR_SUBTRACT)->GetMemberDef() ||
+             tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__BYREF_UINTPTR_SUBTRACT)->GetMemberDef())
+    {
+        mdToken tokGenericArg = FindGenericMethodArgTypeSpec(CoreLibBinder::GetModule()->GetMDImport());
+
+        static const BYTE ilcode[] =
+        {
+            CEE_LDARG_0,
+            CEE_LDARG_1,
+            CEE_PREFIX1, (CEE_SIZEOF & 0xFF), (BYTE)(tokGenericArg), (BYTE)(tokGenericArg >> 8), (BYTE)(tokGenericArg >> 16), (BYTE)(tokGenericArg >> 24),
+            CEE_MUL,
+            CEE_SUB,
+            CEE_RET
+        };
+
+        setILIntrinsicMethodInfo(methInfo,const_cast<BYTE*>(ilcode),sizeof(ilcode), 3);
+
+        return true;
+    }
+    else if (tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__BYREF_INTPTR_SUBTRACT_BYTE_OFFSET)->GetMemberDef() ||
+        tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__BYREF_UINTPTR_SUBTRACT_BYTE_OFFSET)->GetMemberDef())
+    {
+        static const BYTE ilcode[] =
+        {
+            CEE_LDARG_0,
+            CEE_LDARG_1,
+            CEE_SUB,
+            CEE_RET
+        };
+
+        setILIntrinsicMethodInfo(methInfo,const_cast<BYTE*>(ilcode),sizeof(ilcode), 2);
+
+        return true;
+    }
+    else if (tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__WRITE)->GetMemberDef())
+    {
+        _ASSERTE(ftn->HasMethodInstantiation());
+        Instantiation inst = ftn->GetMethodInstantiation();
+        _ASSERTE(ftn->GetNumGenericMethodArgs() == 1);
+        mdToken tokGenericArg = FindGenericMethodArgTypeSpec(CoreLibBinder::GetModule()->GetMDImport());
+
+        static const BYTE ilcode[] =
+        {
+            CEE_LDARG_0,
+            CEE_LDARG_1,
+            CEE_STOBJ, (BYTE)(tokGenericArg), (BYTE)(tokGenericArg >> 8), (BYTE)(tokGenericArg >> 16), (BYTE)(tokGenericArg >> 24),
+            CEE_RET
+        };
+
+        setILIntrinsicMethodInfo(methInfo,const_cast<BYTE*>(ilcode),sizeof(ilcode), 2);
+
+        return true;
+    }
+    else if (tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__UNBOX)->GetMemberDef())
+    {
+        _ASSERTE(ftn->HasMethodInstantiation());
+        Instantiation inst = ftn->GetMethodInstantiation();
+        _ASSERTE(ftn->GetNumGenericMethodArgs() == 1);
+        mdToken tokGenericArg = FindGenericMethodArgTypeSpec(CoreLibBinder::GetModule()->GetMDImport());
+
+        static const BYTE ilcode[] =
+        {
+            CEE_LDARG_0,
+            CEE_UNBOX, (BYTE)(tokGenericArg), (BYTE)(tokGenericArg >> 8), (BYTE)(tokGenericArg >> 16), (BYTE)(tokGenericArg >> 24),
+            CEE_RET
+        };
+
+        setILIntrinsicMethodInfo(methInfo,const_cast<BYTE*>(ilcode),sizeof(ilcode), 2);
+
         return true;
     }
 
@@ -7218,6 +7410,15 @@ bool getILIntrinsicImplementationForActivator(MethodDesc* ftn,
     return true;
 }
 
+void setILIntrinsicMethodInfo(CORINFO_METHOD_INFO* methInfo,uint8_t* ilcode, int ilsize, int maxstack)
+{
+    methInfo->ILCode = ilcode;
+    methInfo->ILCodeSize = ilsize;
+    methInfo->maxStack = maxstack;
+    methInfo->EHcount = 0;
+    methInfo->options = (CorInfoOptions)0;
+}
+
 //---------------------------------------------------------------------------------------
 //
 //static
@@ -7523,8 +7724,7 @@ bool containsStackCrawlMarkLocal(MethodDesc* ftn)
  *************************************************************/
 
 CorInfoInline CEEInfo::canInline (CORINFO_METHOD_HANDLE hCaller,
-                                  CORINFO_METHOD_HANDLE hCallee,
-                                  uint32_t*             pRestrictions)
+                                  CORINFO_METHOD_HANDLE hCallee)
 {
     CONTRACTL {
         THROWS;
@@ -7534,7 +7734,6 @@ CorInfoInline CEEInfo::canInline (CORINFO_METHOD_HANDLE hCaller,
 
     CorInfoInline result = INLINE_PASS;  // By default we pass.
                                          // Do not set pass in the rest of the method.
-    DWORD         dwRestrictions = 0;    // By default, no restrictions
     const char *  szFailReason = NULL;   // for reportInlineDecision
 
     JIT_TO_EE_TRANSITION();
@@ -7606,23 +7805,6 @@ CorInfoInline CEEInfo::canInline (CORINFO_METHOD_HANDLE hCaller,
             result = INLINE_NEVER;
             szFailReason = "Inlinee is MethodImpl'd by another method within the same type";
             goto exit;
-        }
-    }
-
-    //
-    // Perform the Cross-Assembly inlining checks
-    //
-    {
-        Module *    pCalleeModule   = pCallee->GetModule();
-
-        // TODO: We can probably be smarter here if the caller is jitted, as we will
-        // know for sure if the inlinee has really no string interning active (currently
-        // it's only on in the ngen case (besides requiring the attribute)), but this is getting
-        // too subtle. Will only do if somebody screams about it, as bugs here are going to
-        // be tough to find
-        if ((pOrigCallerModule != pCalleeModule) &&  pCalleeModule->IsNoStringInterning())
-        {
-            dwRestrictions |= INLINE_NO_CALLEE_LDSTR;
         }
     }
 
@@ -7698,28 +7880,6 @@ CorInfoInline CEEInfo::canInline (CORINFO_METHOD_HANDLE hCaller,
 exit: ;
 
     EE_TO_JIT_TRANSITION();
-
-    if (result == INLINE_PASS && dwRestrictions)
-    {
-        if (pRestrictions)
-        {
-            *pRestrictions = dwRestrictions;
-        }
-        else
-        {
-            // If the jitter didn't want to know about restrictions, it shouldn't be inlining
-            result = INLINE_FAIL;
-            szFailReason = "Inlinee has restrictions the JIT doesn't want";
-        }
-    }
-    else
-    {
-        if (pRestrictions)
-        {
-            // Denied inlining, makes no sense to pass out restrictions,
-            *pRestrictions = 0;
-        }
-    }
 
     if (dontInline(result))
     {
@@ -8845,19 +9005,26 @@ void CEEInfo::getFunctionEntryPoint(CORINFO_METHOD_HANDLE  ftnHnd,
     // Resolve methodImpl.
     ftn = ftn->GetMethodTable()->MapMethodDeclToMethodImpl(ftn);
 
-    ret = (void *)ftn->TryGetMultiCallableAddrOfCode(accessFlags);
-
-    // TryGetMultiCallableAddrOfCode returns NULL if indirect access is desired
-    if (ret == NULL)
+    if (!ftn->IsFCall() && ftn->IsVersionableWithPrecode() && (ftn->GetPrecodeType() == PRECODE_FIXUP) && !ftn->IsPointingToStableNativeCode())
     {
-        // should never get here for EnC methods or if interception via remoting stub is required
-        _ASSERTE(!ftn->IsEnCMethod());
-
-        ret = (void *)ftn->GetAddrOfSlot();
-
+        ret = ((FixupPrecode*)ftn->GetOrCreatePrecode())->GetTargetSlot();
         accessType = IAT_PVALUE;
     }
+    else
+    {
+        ret = (void *)ftn->TryGetMultiCallableAddrOfCode(accessFlags);
 
+        // TryGetMultiCallableAddrOfCode returns NULL if indirect access is desired
+        if (ret == NULL)
+        {
+            // should never get here for EnC methods or if interception via remoting stub is required
+            _ASSERTE(!ftn->IsEnCMethod());
+
+            ret = (void *)ftn->GetAddrOfSlot();
+
+            accessType = IAT_PVALUE;
+        }
+    }
 
 #if defined(FEATURE_GDBJIT)
     CalledMethod * pCM = new CalledMethod(orig_ftn, ret, m_pCalledMethods);
@@ -9287,7 +9454,7 @@ CorInfoTypeWithMod CEEInfo::getArgType (
 
     case ELEMENT_TYPE_PTR:
         // Load the type eagerly under debugger to make the eval work
-        if (!isVerifyOnly() && CORDisableJITOptimizations(pModule->GetDebuggerInfoBits()))
+        if (CORDisableJITOptimizations(pModule->GetDebuggerInfoBits()))
         {
             // NOTE: in some IJW cases, when the type pointed at is unmanaged,
             // the GetTypeHandle may fail, because there is no TypeDef for such type.
@@ -9318,6 +9485,33 @@ CorInfoTypeWithMod CEEInfo::getArgType (
     EE_TO_JIT_TRANSITION();
 
     return result;
+}
+
+// Now the implementation is only focused on the float fields info,
+// while a struct-arg has no more than two fields and total size is no larger than two-pointer-size.
+// These depends on the platform's ABI rules.
+//
+// The returned value's encoding details how a struct argument uses float registers:
+// see the enum `StructFloatFieldInfoFlags`.
+uint32_t CEEInfo::getLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cls)
+{
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    JIT_TO_EE_TRANSITION_LEAF();
+
+    uint32_t size = STRUCT_NO_FLOAT_FIELD;
+
+#if defined(TARGET_LOONGARCH64)
+    size = (uint32_t)MethodTable::GetLoongArch64PassStructInRegisterFlags(cls);
+#endif
+
+    EE_TO_JIT_TRANSITION_LEAF();
+
+    return size;
 }
 
 /*********************************************************************/
@@ -10515,6 +10709,23 @@ void* CEEJitInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,         /* IN  */
         }
 #endif
 
+        if (dynamicFtnNum == DYNAMIC_CORINFO_HELP_ISINSTANCEOFINTERFACE ||
+            dynamicFtnNum == DYNAMIC_CORINFO_HELP_ISINSTANCEOFANY ||
+            dynamicFtnNum == DYNAMIC_CORINFO_HELP_ISINSTANCEOFARRAY ||
+            dynamicFtnNum == DYNAMIC_CORINFO_HELP_ISINSTANCEOFCLASS ||
+            dynamicFtnNum == DYNAMIC_CORINFO_HELP_CHKCASTANY ||
+            dynamicFtnNum == DYNAMIC_CORINFO_HELP_CHKCASTARRAY ||
+            dynamicFtnNum == DYNAMIC_CORINFO_HELP_CHKCASTINTERFACE ||
+            dynamicFtnNum == DYNAMIC_CORINFO_HELP_CHKCASTCLASS ||
+            dynamicFtnNum == DYNAMIC_CORINFO_HELP_CHKCASTCLASS_SPECIAL ||
+            dynamicFtnNum == DYNAMIC_CORINFO_HELP_UNBOX)
+        {
+            Precode* pPrecode = Precode::GetPrecodeFromEntryPoint((PCODE)hlpDynamicFuncTable[dynamicFtnNum].pfnHelper);
+            _ASSERTE(pPrecode->GetType() == PRECODE_FIXUP);
+            *ppIndirection = ((FixupPrecode*)pPrecode)->GetTargetSlot();
+            return NULL;
+        }
+
         pfnHelper = hlpDynamicFuncTable[dynamicFtnNum].pfnHelper;
 
 #ifdef _PREFAST_
@@ -10857,6 +11068,12 @@ void reservePersonalityRoutineSpace(uint32_t &unwindSize)
 
     // Add space for personality routine, it must be 4-byte aligned.
     unwindSize += sizeof(ULONG);
+#elif defined(TARGET_LOONGARCH64)
+    // The JIT passes in a 4-byte aligned block of unwind data.
+    _ASSERTE(IS_ALIGNED(unwindSize, sizeof(ULONG)));
+
+    // Add space for personality routine, it must be 4-byte aligned.
+    unwindSize += sizeof(ULONG);
 #else
     PORTABILITY_ASSERT("reservePersonalityRoutineSpace");
 #endif // !defined(TARGET_AMD64)
@@ -11071,6 +11288,13 @@ void CEEJitInfo::allocUnwindInfo (
 
     ULONG * pPersonalityRoutineRW = (ULONG*)((BYTE *)pUnwindInfoRW + ALIGN_UP(unwindSize, sizeof(ULONG)));
     *pPersonalityRoutineRW = (TADDR)ProcessCLRException - baseAddress;
+
+#elif defined(TARGET_LOONGARCH64)
+
+    *(LONG *)pUnwindInfoRW |= (1 << 20); // X bit
+
+    ULONG * pPersonalityRoutineRW = (ULONG*)((BYTE *)pUnwindInfoRW + ALIGN_UP(unwindSize, sizeof(ULONG)));
+    *pPersonalityRoutineRW = ExecutionManager::GetCLRPersonalityRoutineValue();
 
 #endif
 
@@ -11352,7 +11576,7 @@ bool CEEJitInfo::doesFieldBelongToClass(CORINFO_FIELD_HANDLE fldHnd, CORINFO_CLA
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
-    bool result;
+    bool result = false;
 
     JIT_TO_EE_TRANSITION();
 
@@ -11473,12 +11697,6 @@ void* CEEJitInfo::getFieldAddress(CORINFO_FIELD_HANDLE fieldHnd,
     if (ppIndirection != NULL)
         *ppIndirection = NULL;
 
-    // Do not bother with initialization if we are only verifying the method.
-    if (isVerifyOnly())
-    {
-        return (void *)0x10;
-    }
-
     JIT_TO_EE_TRANSITION();
 
     FieldDesc* field = (FieldDesc*) fieldHnd;
@@ -11527,12 +11745,6 @@ CORINFO_CLASS_HANDLE CEEJitInfo::getStaticFieldCurrentClass(CORINFO_FIELD_HANDLE
     if (pIsSpeculative != NULL)
     {
         *pIsSpeculative = true;
-    }
-
-    // Only examine the field's value if we are producing jitted code.
-    if (isVerifyOnly())
-    {
-        return result;
     }
 
     JIT_TO_EE_TRANSITION();
@@ -12117,7 +12329,6 @@ CorJitResult invokeCompileMethodHelper(EEJitManager *jitMgr,
         // If we're doing an "import_only" compilation, it's for verification, so don't interpret.
         // (We assume that importation is completely architecture-independent, or at least nearly so.)
         if (FAILED(ret) &&
-            !jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_IMPORT_ONLY) &&
             (forceInterpreter || !jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_MAKEFINALCODE)))
         {
             if (SUCCEEDED(ret = Interpreter::GenerateInterpreterStub(comp, info, nativeEntry, nativeSizeOfCode)))
@@ -12142,7 +12353,6 @@ CorJitResult invokeCompileMethodHelper(EEJitManager *jitMgr,
         // If we're doing an "import_only" compilation, it's for verification, so don't interpret.
         // (We assume that importation is completely architecture-independent, or at least nearly so.)
         if (FAILED(ret) &&
-            !jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_IMPORT_ONLY) &&
             (forceInterpreter || !jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_MAKEFINALCODE)))
         {
             if (SUCCEEDED(ret = Interpreter::GenerateInterpreterStub(comp, info, nativeEntry, nativeSizeOfCode)))
@@ -12167,7 +12377,7 @@ CorJitResult invokeCompileMethodHelper(EEJitManager *jitMgr,
     // If the JIT fails we keep the IL around and will
     // try reJIT the same IL.  VSW 525059
     //
-    if (SUCCEEDED(ret) && !jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_IMPORT_ONLY) && !((CEEJitInfo*)comp)->JitAgain())
+    if (SUCCEEDED(ret) && !((CEEJitInfo*)comp)->JitAgain())
     {
         ((CEEJitInfo*)comp)->CompressDebugInfo();
 
@@ -12327,14 +12537,6 @@ CORJIT_FLAGS GetDebuggerCompileFlags(Module* pModule, CORJIT_FLAGS flags)
         flags.Set(CORJIT_FLAGS::CORJIT_FLAG_DEBUG_CODE);
     }
 
-    if (flags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_IMPORT_ONLY))
-    {
-        // If we are only verifying the method, dont need any debug info and this
-        // prevents getVars()/getBoundaries() from being called unnecessarily.
-        flags.Clear(CORJIT_FLAGS::CORJIT_FLAG_DEBUG_INFO);
-        flags.Clear(CORJIT_FLAGS::CORJIT_FLAG_DEBUG_CODE);
-    }
-
     return flags;
 }
 
@@ -12352,10 +12554,7 @@ CORJIT_FLAGS GetCompileFlags(MethodDesc * ftn, CORJIT_FLAGS flags, CORINFO_METHO
     //
     // Get CPU specific flags
     //
-    if (!flags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_IMPORT_ONLY))
-    {
-        flags.Add(ExecutionManager::GetEEJitManager()->GetCPUCompileFlags());
-    }
+    flags.Add(ExecutionManager::GetEEJitManager()->GetCPUCompileFlags());
 
     //
     // Find the debugger and profiler related flags
@@ -12580,12 +12779,8 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
 
     getMethodInfoHelper(ftn, ftnHnd, ILHeader, &methodInfo);
 
-    // If it's generic then we can only enter through an instantiated md (unless we're just verifying it)
-    _ASSERTE(flags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_IMPORT_ONLY) || !ftn->IsGenericMethodDefinition());
-
-    // If it's an instance method then it must not be entered from a generic class
-    _ASSERTE(flags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_IMPORT_ONLY) || ftn->IsStatic() ||
-             ftn->GetNumGenericClassArgs() == 0 || ftn->HasClassInstantiation());
+    // If it's generic then we can only enter through an instantiated md
+    _ASSERTE(!ftn->IsGenericMethodDefinition());
 
     // method attributes and signature are consistant
     _ASSERTE(!!ftn->IsStatic() == ((methodInfo.args.callConv & CORINFO_CALLCONV_HASTHIS) == 0));
@@ -12622,8 +12817,7 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
 
     for (;;)
     {
-        CEEJitInfo jitInfo(ftn, ILHeader, jitMgr, flags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_IMPORT_ONLY),
-            !flags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_NO_INLINING));
+        CEEJitInfo jitInfo(ftn, ILHeader, jitMgr, !flags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_NO_INLINING));
 
 #if (defined(TARGET_AMD64) || defined(TARGET_ARM64))
 #ifdef TARGET_AMD64
@@ -12702,8 +12896,7 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
 #ifdef PERF_TRACK_METHOD_JITTIMES
             //Because we're not calling QPC enough.  I'm not going to track times if we're just importing.
             LARGE_INTEGER methodJitTimeStart = {0};
-            if (!flags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_IMPORT_ONLY))
-                QueryPerformanceCounter (&methodJitTimeStart);
+            QueryPerformanceCounter (&methodJitTimeStart);
 
 #endif
             LOG((LF_CORDB, LL_EVERYTHING, "Calling invokeCompileMethod...\n"));
@@ -12728,12 +12921,11 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
 #ifdef PERF_TRACK_METHOD_JITTIMES
             //store the time in the string buffer.  Module name and token are unique enough.  Also, do not
             //capture importing time, just actual compilation time.
-            if (!flags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_IMPORT_ONLY))
             {
                 LARGE_INTEGER methodJitTimeStop;
                 QueryPerformanceCounter(&methodJitTimeStop);
                 SString codeBase;
-                ftn->GetModule()->GetDomainFile()->GetPEAssembly()->GetPathOrCodeBase(codeBase);
+                ftn->GetModule()->GetDomainAssembly()->GetPEAssembly()->GetPathOrCodeBase(codeBase);
                 codeBase.AppendPrintf(W(",0x%x,%d,%d\n"),
                                  //(const WCHAR *)codeBase, //module name
                                  ftn->GetMemberDef(), //method token
@@ -12755,8 +12947,7 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
             // Note: if we're only importing (ie, verifying/
             // checking to make sure we could JIT, but not actually generating code (
             // eg, for inlining), then DON'T TELL THE DEBUGGER about this.
-            if (!flags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_IMPORT_ONLY) &&
-                !flags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_MCJIT_BACKGROUND)
+            if (!flags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_MCJIT_BACKGROUND)
 #ifdef FEATURE_STACK_SAMPLING
                 && !flags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_SAMPLING_JIT_BACKGROUND)
 #endif // FEATURE_STACK_SAMPLING
@@ -12779,12 +12970,6 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
         {
             jitInfo.BackoutJitData(jitMgr);
             ThrowExceptionForJit(res);
-        }
-
-        if (flags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_IMPORT_ONLY))
-        {
-            // We are done
-            break;
         }
 
         if (!nativeEntry)
@@ -13186,12 +13371,7 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
                     return TRUE;
                 }
 
-                // For generic instantiations compiled into the ngen image of some other
-                // client assembly, we need to ensure that we intern the string
-                // in the defining assembly.
-                bool mayNeedToSyncWithFixups = pInfoModule != currentModule;
-
-                result = (size_t) pInfoModule->ResolveStringRef(TokenFromRid(rid, mdtString), currentModule->GetDomain(), mayNeedToSyncWithFixups);
+                result = (size_t) pInfoModule->ResolveStringRef(TokenFromRid(rid, mdtString), currentModule->GetDomain());
             }
         }
         break;
@@ -13960,9 +14140,7 @@ InfoAccessType CEEInfo::constructStringLiteral(CORINFO_MODULE_HANDLE scopeHnd,
 InfoAccessType CEEInfo::emptyStringLiteral(void ** ppValue)
 {
     LIMITED_METHOD_CONTRACT;
-    _ASSERTE(isVerifyOnly());
-    *ppValue = (void *)0x10;
-    return IAT_PVALUE;
+    UNREACHABLE();      // only called on derived class.
 }
 
 void* CEEInfo::getFieldAddress(CORINFO_FIELD_HANDLE fieldHnd,
@@ -13978,12 +14156,6 @@ void* CEEInfo::getFieldAddress(CORINFO_FIELD_HANDLE fieldHnd,
 
     if (ppIndirection != NULL)
         *ppIndirection = NULL;
-
-    // Do not bother with initialization if we are only verifying the method.
-    if (isVerifyOnly())
-    {
-        return (void *)0x10;
-    }
 
     JIT_TO_EE_TRANSITION();
 
@@ -14002,10 +14174,7 @@ CORINFO_CLASS_HANDLE CEEInfo::getStaticFieldCurrentClass(CORINFO_FIELD_HANDLE fi
                                                          bool* pIsSpeculative)
 {
     LIMITED_METHOD_CONTRACT;
-    _ASSERTE(isVerifyOnly());
-    if (pIsSpeculative != NULL)
-        *pIsSpeculative = true;
-    return NULL;
+    UNREACHABLE();      // only called on derived class.
 }
 
 void* CEEInfo::getMethodSync(CORINFO_METHOD_HANDLE ftnHnd,

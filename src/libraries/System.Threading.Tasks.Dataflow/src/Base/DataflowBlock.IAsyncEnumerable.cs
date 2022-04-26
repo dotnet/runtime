@@ -16,14 +16,14 @@ namespace System.Threading.Tasks.Dataflow
         /// <exception cref="System.ArgumentNullException">The <paramref name="source"/> is null (Nothing in Visual Basic).</exception>
         public static IAsyncEnumerable<TOutput> ReceiveAllAsync<TOutput>(this IReceivableSourceBlock<TOutput> source, CancellationToken cancellationToken = default)
         {
-            if (source == null)
+            if (source is null)
             {
                 throw new ArgumentNullException(nameof(source));
             }
 
-            return ReceiveAllAsyncCore(source, cancellationToken);
+            return Core(source, cancellationToken);
 
-            static async IAsyncEnumerable<TOutput> ReceiveAllAsyncCore(IReceivableSourceBlock<TOutput> source, [EnumeratorCancellation] CancellationToken cancellationToken)
+            static async IAsyncEnumerable<TOutput> Core(IReceivableSourceBlock<TOutput> source, [EnumeratorCancellation] CancellationToken cancellationToken)
             {
                 while (await source.OutputAvailableAsync(cancellationToken).ConfigureAwait(false))
                 {

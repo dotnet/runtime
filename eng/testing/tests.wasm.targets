@@ -5,16 +5,27 @@
     <WasmGenerateAppBundle Condition="'$(WasmGenerateAppBundle)' == ''">true</WasmGenerateAppBundle>
     <BundleTestAppTargets>$(BundleTestAppTargets);BundleTestWasmApp</BundleTestAppTargets>
     <DebuggerSupport Condition="'$(DebuggerSupport)' == '' and '$(Configuration)' == 'Debug'">true</DebuggerSupport>
-    <WasmNativeStrip Condition="'$(WasmNativeStrip)' == ''">false</WasmNativeStrip>
+
+    <!-- set this when provisioning emsdk on CI -->
+    <EMSDK_PATH Condition="'$(EMSDK_PATH)' == '' and '$(ContinuousIntegrationBuild)' == 'true' and '$(MonoProjectRoot)' != ''">$([MSBuild]::NormalizeDirectory($(MonoProjectRoot), 'wasm', 'emsdk'))</EMSDK_PATH>
+
     <!-- Some tests expect to load satellite assemblies by path, eg. System.Runtime.Loader.Tests,
          so, just setting it true by default -->
     <IncludeSatelliteAssembliesInVFS Condition="'$(IncludeSatelliteAssembliesInVFS)' == ''">true</IncludeSatelliteAssembliesInVFS>
 
+    <!--
+      - For regular library tests, it will use the symbols file from the runtime pack.
+      - for AOT library tests, we use WasmNativeStrip=false, so we already have symbols
+    -->
+    <WasmNativeStrip Condition="'$(WasmNativeStrip)' == ''">false</WasmNativeStrip>
+    <WasmEmitSymbolMap Condition="'$(WasmEmitSymbolMap)' == '' and '$(RunAOTCompilation)' != 'true'">true</WasmEmitSymbolMap>
+
     <!-- Run only if previous command succeeded -->
     <_ShellCommandSeparator Condition="'$(OS)' == 'Windows_NT'">&amp;&amp;</_ShellCommandSeparator>
     <_ShellCommandSeparator Condition="'$(OS)' != 'Windows_NT'">&amp;&amp;</_ShellCommandSeparator>
-    <WasmNativeStrip>false</WasmNativeStrip>
     <_WasmMainJSFileName Condition="'$(WasmMainJSPath)' != ''">$([System.IO.Path]::GetFileName('$(WasmMainJSPath)'))</_WasmMainJSFileName>
+    <_WasmStrictVersionMatch Condition="'$(ContinuousIntegrationBuild)' == 'true'">true</_WasmStrictVersionMatch>
+    <XUnitUseRandomizedTestOrderer Condition="'$(XUnitUseRandomizedTestOrderer)' == '' and '$(IsTestProject)' == 'true'">true</XUnitUseRandomizedTestOrderer>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -22,6 +33,10 @@
     <BuildAOTTestsOn Condition="'$(BuildAOTTestsOnHelix)' == 'true'">helix</BuildAOTTestsOn>
     <BuildAOTTestsOn Condition="'$(BuildAOTTestsOn)' == ''">local</BuildAOTTestsOn>
   </PropertyGroup>
+
+  <ItemGroup>
+    <_AOT_InternalForceInterpretAssemblies Include="@(HighAotMemoryUsageAssembly)" />
+  </ItemGroup>
 
   <!-- 
     This is running during compile time and therefore $(Scenario) is empty, unless the specific project sets it.
@@ -46,6 +61,8 @@
 
     <_XHarnessArgs Condition="'$(IsFunctionalTest)' == 'true'"     >$(_XHarnessArgs) --expected-exit-code=$(ExpectedExitCode)</_XHarnessArgs>
     <_XHarnessArgs Condition="'$(WasmXHarnessArgs)' != ''"         >$(_XHarnessArgs) $(WasmXHarnessArgs)</_XHarnessArgs>
+    <_XHarnessArgs                                                 >$(_XHarnessArgs) -s dotnet.js.symbols</_XHarnessArgs>
+    <_XHarnessArgs Condition="'$(WasmXHarnessArgsCli)' != ''"      >$(_XHarnessArgs) $(WasmXHarnessArgsCli)</_XHarnessArgs>
 
     <_AppArgs Condition="'$(IsFunctionalTest)' != 'true' and '$(Scenario)' != 'BuildWasmApps' and '$(WasmMainAssemblyFileName)' == ''">--run WasmTestRunner.dll $(AssemblyName).dll</_AppArgs>
     <_AppArgs Condition="'$(IsFunctionalTest)' != 'true' and '$(WasmMainAssemblyFileName)' != ''">--run $(WasmMainAssemblyFileName)</_AppArgs>
@@ -53,6 +70,9 @@
 
     <_AppArgs Condition="'$(WasmTestAppArgs)' != ''">$(_AppArgs) $(WasmTestAppArgs)</_AppArgs>
 
+    <WasmXHarnessMonoArgs Condition="'$(XunitShowProgress)' == 'true'">$(WasmXHarnessMonoArgs) --setenv=XHARNESS_LOG_TEST_START=1</WasmXHarnessMonoArgs>
+
+    <!-- There two flavors of WasmXHarnessArgs and WasmXHarnessMonoArgs, one is MSBuild property and the other is environment variable -->
     <RunScriptCommand Condition="'$(OS)' != 'Windows_NT'">$HARNESS_RUNNER $(_XHarnessArgs) %24XHARNESS_ARGS %24WasmXHarnessArgs -- $(WasmXHarnessMonoArgs) %24WasmXHarnessMonoArgs $(_AppArgs) %24WasmTestAppArgs</RunScriptCommand>
     <RunScriptCommand Condition="'$(OS)' == 'Windows_NT'">%HARNESS_RUNNER% $(_XHarnessArgs) %XHARNESS_ARGS% %WasmXHarnessArgs%  -- $(WasmXHarnessMonoArgs) %WasmXHarnessMonoArgs% $(_AppArgs) %WasmTestAppArgs%</RunScriptCommand>
   </PropertyGroup>
@@ -118,7 +138,7 @@
     <PropertyGroup>
       <_MainAssemblyPath Condition="'%(WasmAssembliesToBundle.FileName)' == $(AssemblyName) and '%(WasmAssembliesToBundle.Extension)' == '.dll'">%(WasmAssembliesToBundle.Identity)</_MainAssemblyPath>
       <RuntimeConfigFilePath>$([System.IO.Path]::ChangeExtension($(_MainAssemblyPath), '.runtimeconfig.json'))</RuntimeConfigFilePath>
-      <EmccLinkOptimizationFlag Condition="'$(EmccLinkOptimizationFlag)' == ''">-Oz -Wl%252C-O0 -Wl%252C-lto-O0</EmccLinkOptimizationFlag>
+      <EmccLinkOptimizationFlag Condition="'$(EmccLinkOptimizationFlag)' == ''">-Oz -Wl,-O0 -Wl,-lto-O0</EmccLinkOptimizationFlag>
     </PropertyGroup>
 
     <Error Text="Item WasmAssembliesToBundle is empty. This is likely an authoring error." Condition="@(WasmAssembliesToBundle->Count()) == 0" />
@@ -155,6 +175,8 @@
       <_WasmPropertyNames Include="WasmNativeStrip" />
       <_WasmPropertyNames Include="WasmEnableES6" />
       <_WasmPropertyNames Include="_WasmDevel" />
+      <_WasmPropertyNames Include="_WasmStrictVersionMatch" />
+      <_WasmPropertyNames Include="WasmEmitSymbolMap" />
 
       <_WasmPropertiesToPass
         Include="$(%(_WasmPropertyNames.Identity))"
@@ -162,13 +184,19 @@
         ConditionToUse__="%(_WasmPropertyNames.ConditionToUse__)" />
 
       <_WasmVFSFilesToCopy Include="@(WasmFilesToIncludeInFileSystem)" />
-      <_WasmVFSFilesToCopy TargetPath="%(FileName)%(Extension)" Condition="'%(TargetPath)' == ''" />
+      <_WasmVFSFilesToCopy TargetPath="%(FileName)%(Extension)" Condition="'%(_WasmVFSFilesToCopy.TargetPath)' == ''" />
+
+      <_WasmExtraFilesToCopy Include="@(WasmExtraFilesToDeploy)" />
+      <_WasmExtraFilesToCopy TargetPath="%(FileName)%(Extension)" Condition="'%(_WasmExtraFilesToCopy.TargetPath)' == ''" />
 
       <!-- Example of passing items to the project
 
           <_WasmItemsToPass Include="@(BundleFiles)" OriginalItemName__="BundleFiles" ConditionToUse__="'$(Foo)' != 'true'" />
 
       -->
+
+      <_WasmItemsToPass Include="@(_AOT_InternalForceInterpretAssemblies)" OriginalItemName__="_AOT_InternalForceInterpretAssemblies" />
+
     </ItemGroup>
 
     <!-- This file gets imported by the project file on helix -->
@@ -178,7 +206,8 @@
         OutputFile="$(BundleDir)publish\ProxyProjectForAOTOnHelix.props" />
 
     <Copy SourceFiles="@(BundleFiles)"         DestinationFolder="$(BundleDir)%(TargetDir)" />
-    <Copy SourceFiles="@(_WasmVFSFilesToCopy)" DestinationFiles="$(BundleDir)\extraFiles\%(_WasmVFSFilesToCopy.TargetPath)" />
+    <Copy SourceFiles="@(_WasmVFSFilesToCopy)" DestinationFiles="$(BundleDir)\vfsFiles\%(_WasmVFSFilesToCopy.TargetPath)" />
+    <Copy SourceFiles="@(_WasmExtraFilesToCopy)" DestinationFiles="$(BundleDir)\extraFiles\%(_WasmExtraFilesToCopy.TargetPath)" />
   </Target>
 
   <Target Name="PrepareForWasmBuildApp">
@@ -188,7 +217,6 @@
       <WasmMainJSPath Condition="'$(WasmMainJSPath)' == ''">$(MonoProjectRoot)\wasm\test-main.js</WasmMainJSPath>
       <WasmInvariantGlobalization>$(InvariantGlobalization)</WasmInvariantGlobalization>
       <WasmGenerateRunV8Script>true</WasmGenerateRunV8Script>
-      <WasmNativeStrip>false</WasmNativeStrip>
 
       <WasmNativeDebugSymbols Condition="'$(DebuggerSupport)' == 'true' and '$(WasmNativeDebugSymbols)' == ''">true</WasmNativeDebugSymbols>
       <WasmDebugLevel Condition="'$(DebuggerSupport)' == 'true' and '$(WasmDebugLevel)' == ''">-1</WasmDebugLevel>
@@ -233,6 +261,27 @@
       <ResolvedFileToPublish Include="@(_PdbFilesToCheck)"
                              Condition="Exists(%(_PdbFilesToCheck.Identity))"
                              RelativePath="%(_PdbFilesToCheck.FileName)%(_PdbFilesToCheck.Extension)" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="ProvideNodeNpmRestoreScripts" BeforeTargets="GenerateRunScript">
+    <!-- Combine optional alias on all NodeNpmModule and trim separator where alias is empty -->
+    <ItemGroup>
+      <_NodeNpmModuleString Include="%(NodeNpmModule.Identity):%(NodeNpmModule.Alias)" />
+      <_NodeNpmModuleStringTrimmed Include="@(_NodeNpmModuleString->Trim(':'))" />
+    </ItemGroup>
+    <PropertyGroup>
+      <NodeNpmModuleString>@(_NodeNpmModuleStringTrimmed, ',')</NodeNpmModuleString>
+    </PropertyGroup>
+
+    <!-- Restore NPM packages -->
+    <ItemGroup Condition="'$(OS)' != 'Windows_NT'">
+      <SetScriptCommands Include="if [[ &quot;$SCENARIO&quot; == &quot;WasmTestOnNodeJs&quot; || &quot;$SCENARIO&quot; == &quot;wasmtestonnodejs&quot; ]]; then export WasmXHarnessMonoArgs=&quot;$WasmXHarnessMonoArgs --setenv=NPM_MODULES=$(NodeNpmModuleString)&quot;; fi" />
+      <RunScriptCommands Include="if [[ &quot;$SCENARIO&quot; == &quot;WasmTestOnNodeJs&quot; || &quot;$SCENARIO&quot; == &quot;wasmtestonnodejs&quot; ]]; then npm ci; fi" />
+    </ItemGroup>
+    <ItemGroup Condition="'$(OS)' == 'Windows_NT'">
+      <SetScriptCommands Include="if /I [%SCENARIO%]==[WasmTestOnNodeJS] ( set &quot;WasmXHarnessMonoArgs=%WasmXHarnessMonoArgs% --setenv=NPM_MODULES^=$(NodeNpmModuleString)&quot; )" />
+      <RunScriptCommands Include="if /I [%SCENARIO%]==[WasmTestOnNodeJS] ( call npm ci )" />
     </ItemGroup>
   </Target>
 </Project>

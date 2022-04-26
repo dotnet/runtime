@@ -63,14 +63,10 @@ namespace System.Runtime.InteropServices.ObjectiveC
             delegate* unmanaged<IntPtr, void> trackedObjectEnteredFinalization,
             UnhandledExceptionPropagationHandler unhandledExceptionPropagationHandler)
         {
-            if (beginEndCallback is null)
-                throw new ArgumentNullException(nameof(beginEndCallback));
-            if (isReferencedCallback is null)
-                throw new ArgumentNullException(nameof(isReferencedCallback));
-            if (trackedObjectEnteredFinalization is null)
-                throw new ArgumentNullException(nameof(trackedObjectEnteredFinalization));
-            if (unhandledExceptionPropagationHandler is null)
-                throw new ArgumentNullException(nameof(unhandledExceptionPropagationHandler));
+            ArgumentNullException.ThrowIfNull(beginEndCallback);
+            ArgumentNullException.ThrowIfNull(isReferencedCallback);
+            ArgumentNullException.ThrowIfNull(trackedObjectEnteredFinalization);
+            ArgumentNullException.ThrowIfNull(unhandledExceptionPropagationHandler);
 
             if (s_unhandledExceptionPropagationHandler != null
                 || !TryInitializeReferenceTracker(beginEndCallback, isReferencedCallback, trackedObjectEnteredFinalization))
@@ -110,8 +106,7 @@ namespace System.Runtime.InteropServices.ObjectiveC
             object obj,
             out Span<IntPtr> taggedMemory)
         {
-            if (obj is null)
-                throw new ArgumentNullException(nameof(obj));
+            ArgumentNullException.ThrowIfNull(obj);
 
             IntPtr refCountHandle = CreateReferenceTrackingHandleInternal(
                 ObjectHandleOnStack.Create(ref obj),
@@ -164,8 +159,7 @@ namespace System.Runtime.InteropServices.ObjectiveC
         /// </remarks>
         public static void SetMessageSendCallback(MessageSendFunction msgSendFunction, IntPtr func)
         {
-            if (func == IntPtr.Zero)
-                throw new ArgumentNullException(nameof(func));
+            ArgumentNullException.ThrowIfNull(func);
 
             if (msgSendFunction < MessageSendFunction.MsgSend || msgSendFunction > MessageSendFunction.MsgSendSuperStret)
                 throw new ArgumentOutOfRangeException(nameof(msgSendFunction));

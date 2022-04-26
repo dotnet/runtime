@@ -11,6 +11,8 @@ EVP_PKEY* CryptoNative_EvpPKeyCreateRsa(RSA* currentKey)
 {
     assert(currentKey != NULL);
 
+    ERR_clear_error();
+
     EVP_PKEY* pkey = EVP_PKEY_new();
 
     if (pkey == NULL)
@@ -29,6 +31,8 @@ EVP_PKEY* CryptoNative_EvpPKeyCreateRsa(RSA* currentKey)
 
 EVP_PKEY* CryptoNative_RsaGenerateKey(int keySize)
 {
+    ERR_clear_error();
+
     EVP_PKEY_CTX* ctx = EVP_PKEY_CTX_new_id(EVP_PKEY_RSA, NULL);
 
     if (ctx == NULL)
@@ -99,6 +103,8 @@ int32_t CryptoNative_RsaDecrypt(EVP_PKEY* pkey,
     assert(padding >= RsaPaddingPkcs1 && padding <= RsaPaddingOaepOrPss);
     assert(digest != NULL || padding == RsaPaddingPkcs1);
 
+    ERR_clear_error();
+
     EVP_PKEY_CTX* ctx = EVP_PKEY_CTX_new(pkey, NULL);
 
     int ret = -1;
@@ -152,6 +158,8 @@ int32_t CryptoNative_RsaEncrypt(EVP_PKEY* pkey,
     assert(destination != NULL);
     assert(padding >= RsaPaddingPkcs1 && padding <= RsaPaddingOaepOrPss);
     assert(digest != NULL || padding == RsaPaddingPkcs1);
+
+    ERR_clear_error();
 
     EVP_PKEY_CTX* ctx = EVP_PKEY_CTX_new(pkey, NULL);
 
@@ -227,6 +235,8 @@ int32_t CryptoNative_RsaSignHash(EVP_PKEY* pkey,
     assert(padding >= RsaPaddingPkcs1 && padding <= RsaPaddingOaepOrPss);
     assert(digest != NULL || padding == RsaPaddingPkcs1);
 
+    ERR_clear_error();
+
     EVP_PKEY_CTX* ctx = EVP_PKEY_CTX_new(pkey, NULL);
 
     int ret = -1;
@@ -280,6 +290,8 @@ int32_t CryptoNative_RsaVerifyHash(EVP_PKEY* pkey,
     assert(signature != NULL);
     assert(padding >= RsaPaddingPkcs1 && padding <= RsaPaddingOaepOrPss);
     assert(digest != NULL || padding == RsaPaddingPkcs1);
+
+    ERR_clear_error();
 
     EVP_PKEY_CTX* ctx = EVP_PKEY_CTX_new(pkey, NULL);
 

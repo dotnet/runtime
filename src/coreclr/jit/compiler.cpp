@@ -319,7 +319,6 @@ unsigned totalLoopCount;          // counts the total number of natural loops
 unsigned totalUnnatLoopCount;     // counts the total number of (not-necessarily natural) loops
 unsigned totalUnnatLoopOverflows; // # of methods that identified more unnatural loops than we can represent
 unsigned iterLoopCount;           // counts the # of loops with an iterator (for like)
-unsigned simpleTestLoopCount;     // counts the # of loops with an iterator and a simple loop condition (iter < const)
 unsigned constIterLoopCount;      // counts the # of loops with a constant iterator (for like)
 bool     hasMethodLoops;          // flag to keep track if we already counted a method as having loops
 unsigned loopsThisMethod;         // counts the number of loops in the current method
@@ -538,12 +537,12 @@ var_types Compiler::getPrimitiveTypeForStruct(unsigned structSize, CORINFO_CLASS
             useType = TYP_SHORT;
             break;
 
-#if !defined(TARGET_XARCH) || defined(UNIX_AMD64_ABI)
+#if !defined(TARGET_XARCH) || defined(UNIX_AMD64_ABI) || defined(TARGET_LOONGARCH64)
         case 3:
             useType = TYP_INT;
             break;
 
-#endif // !TARGET_XARCH || UNIX_AMD64_ABI
+#endif // !TARGET_XARCH || UNIX_AMD64_ABI || TARGET_LOONGARCH64
 
 #ifdef TARGET_64BIT
         case 4:
@@ -551,14 +550,14 @@ var_types Compiler::getPrimitiveTypeForStruct(unsigned structSize, CORINFO_CLASS
             useType = TYP_INT;
             break;
 
-#if !defined(TARGET_XARCH) || defined(UNIX_AMD64_ABI)
+#if !defined(TARGET_XARCH) || defined(UNIX_AMD64_ABI) || defined(TARGET_LOONGARCH64)
         case 5:
         case 6:
         case 7:
             useType = TYP_I_IMPL;
             break;
 
-#endif // !TARGET_XARCH || UNIX_AMD64_ABI
+#endif // !TARGET_XARCH || UNIX_AMD64_ABI || TARGET_LOONGARCH64
 #endif // TARGET_64BIT
 
         case TARGET_POINTER_SIZE:
@@ -750,10 +749,11 @@ var_types Compiler::getArgTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
                     useType         = TYP_UNKNOWN;
                 }
 
-#elif defined(TARGET_X86) || defined(TARGET_ARM)
+#elif defined(TARGET_X86) || defined(TARGET_ARM) || defined(TARGET_LOONGARCH64)
 
                 // Otherwise we pass this struct by value on the stack
                 // setup wbPassType and useType indicate that this is passed by value according to the X86/ARM32 ABI
+                // On LOONGARCH64 struct that is 1-16 bytes is passed by value in one/two register(s)
                 howToPassStruct = SPK_ByValue;
                 useType         = TYP_STRUCT;
 
@@ -777,7 +777,7 @@ var_types Compiler::getArgTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
             howToPassStruct = SPK_ByValue;
             useType         = TYP_STRUCT;
 
-#elif defined(TARGET_AMD64) || defined(TARGET_ARM64)
+#elif defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
 
             // Otherwise we pass this struct by reference to a copy
             // setup wbPassType and useType indicate that this is passed using one register (by reference to a copy)
@@ -901,6 +901,22 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
         canReturnInRegister = false;
         howToReturnStruct   = SPK_ByReference;
         useType             = TYP_UNKNOWN;
+    }
+#elif TARGET_LOONGARCH64
+    if (structSize <= (TARGET_POINTER_SIZE * 2))
+    {
+        uint32_t floatFieldFlags = info.compCompHnd->getLoongArch64PassStructInRegisterFlags(clsHnd);
+
+        if ((floatFieldFlags & STRUCT_FLOAT_FIELD_ONLY_ONE) != 0)
+        {
+            howToReturnStruct = SPK_PrimitiveType;
+            useType           = (structSize > 4) ? TYP_DOUBLE : TYP_FLOAT;
+        }
+        else if (floatFieldFlags & (STRUCT_HAS_FLOAT_FIELDS_MASK ^ STRUCT_FLOAT_FIELD_ONLY_ONE))
+        {
+            howToReturnStruct = SPK_ByValue;
+            useType           = TYP_STRUCT;
+        }
     }
 #endif
     if (TargetOS::IsWindows && !TargetArchitecture::IsArm32 && callConvIsInstanceMethodCallConv(callConv) &&
@@ -1043,6 +1059,12 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
                 //  (reference to a return buffer)
                 howToReturnStruct = SPK_ByReference;
                 useType           = TYP_UNKNOWN;
+
+#elif defined(TARGET_LOONGARCH64)
+
+                // On LOONGARCH64 struct that is 1-16 bytes is returned by value in one/two register(s)
+                howToReturnStruct = SPK_ByValue;
+                useType           = TYP_STRUCT;
 
 #else //  TARGET_XXX
 
@@ -1556,7 +1578,6 @@ void Compiler::compShutdown()
     fprintf(fout, "Total number of 'unnatural' loops is %5u\n", totalUnnatLoopCount);
     fprintf(fout, "# of methods overflowing unnat loop limit is %5u\n", totalUnnatLoopOverflows);
     fprintf(fout, "Total number of loops with an         iterator is %5u\n", iterLoopCount);
-    fprintf(fout, "Total number of loops with a simple   iterator is %5u\n", simpleTestLoopCount);
     fprintf(fout, "Total number of loops with a constant iterator is %5u\n", constIterLoopCount);
 
     fprintf(fout, "--------------------------------------------------\n");
@@ -1885,7 +1906,6 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
     compQmarkRationalized = false;
     compQmarkUsed         = false;
     compFloatingPointUsed = false;
-    compUnsafeCastUsed    = false;
 
     compSuppressedZeroInit = false;
 
@@ -1919,7 +1939,6 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
     m_blockToEHPreds     = nullptr;
     m_fieldSeqStore      = nullptr;
     m_zeroOffsetFieldMap = nullptr;
-    m_arrayInfoMap       = nullptr;
     m_refAnyClass        = nullptr;
     for (MemoryKind memoryKind : allMemoryKinds())
     {
@@ -2222,6 +2241,11 @@ void Compiler::compSetProcessor()
         info.genCPU = CPU_X86_PENTIUM_4;
     else
         info.genCPU = CPU_X86;
+
+#elif defined(TARGET_LOONGARCH64)
+
+    info.genCPU = CPU_LOONGARCH64;
+
 #endif
 
     //
@@ -2235,7 +2259,7 @@ void Compiler::compSetProcessor()
     opts.compUseCMOV = jitFlags.IsSet(JitFlags::JIT_FLAG_USE_CMOV);
 #ifdef DEBUG
     if (opts.compUseCMOV)
-        opts.compUseCMOV                = !compStressCompile(STRESS_USE_CMOV, 50);
+        opts.compUseCMOV                   = !compStressCompile(STRESS_USE_CMOV, 50);
 #endif // DEBUG
 
 #endif // TARGET_X86
@@ -2410,15 +2434,17 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     opts.compJitAlignLoopBoundary       = (unsigned short)JitConfig.JitAlignLoopBoundary();
     opts.compJitAlignLoopMinBlockWeight = (unsigned short)JitConfig.JitAlignLoopMinBlockWeight();
 
-    opts.compJitAlignLoopForJcc      = JitConfig.JitAlignLoopForJcc() == 1;
-    opts.compJitAlignLoopMaxCodeSize = (unsigned short)JitConfig.JitAlignLoopMaxCodeSize();
-    opts.compJitHideAlignBehindJmp   = JitConfig.JitHideAlignBehindJmp() == 1;
+    opts.compJitAlignLoopForJcc            = JitConfig.JitAlignLoopForJcc() == 1;
+    opts.compJitAlignLoopMaxCodeSize       = (unsigned short)JitConfig.JitAlignLoopMaxCodeSize();
+    opts.compJitHideAlignBehindJmp         = JitConfig.JitHideAlignBehindJmp() == 1;
+    opts.compJitOptimizeStructHiddenBuffer = JitConfig.JitOptimizeStructHiddenBuffer() == 1;
 #else
-    opts.compJitAlignLoopAdaptive       = true;
-    opts.compJitAlignLoopBoundary       = DEFAULT_ALIGN_LOOP_BOUNDARY;
-    opts.compJitAlignLoopMinBlockWeight = DEFAULT_ALIGN_LOOP_MIN_BLOCK_WEIGHT;
-    opts.compJitAlignLoopMaxCodeSize    = DEFAULT_MAX_LOOPSIZE_FOR_ALIGN;
-    opts.compJitHideAlignBehindJmp      = true;
+    opts.compJitAlignLoopAdaptive          = true;
+    opts.compJitAlignLoopBoundary          = DEFAULT_ALIGN_LOOP_BOUNDARY;
+    opts.compJitAlignLoopMinBlockWeight    = DEFAULT_ALIGN_LOOP_MIN_BLOCK_WEIGHT;
+    opts.compJitAlignLoopMaxCodeSize       = DEFAULT_MAX_LOOPSIZE_FOR_ALIGN;
+    opts.compJitHideAlignBehindJmp         = true;
+    opts.compJitOptimizeStructHiddenBuffer = true;
 #endif
 
 #ifdef TARGET_XARCH
@@ -2667,8 +2693,6 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 #endif // DEBUG
 
 #ifdef FEATURE_SIMD
-    // Minimum bar for availing SIMD benefits is SSE2 on AMD64/x86.
-    featureSIMD = jitFlags->IsSet(JitFlags::JIT_FLAG_FEATURE_SIMD);
     setUsesSIMDTypes(false);
 #endif // FEATURE_SIMD
 
@@ -3892,7 +3916,7 @@ _SetMinOpts:
     fgCanRelocateEHRegions = true;
 }
 
-#ifdef TARGET_ARMARCH
+#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64)
 // Function compRsvdRegCheck:
 //  given a curState to use for calculating the total frame size
 //  it will return true if the REG_OPT_RSVD should be reserved so
@@ -3935,6 +3959,10 @@ bool Compiler::compRsvdRegCheck(FrameLayoutState curState)
 
     // TODO-ARM64-CQ: update this!
     JITDUMP(" Returning true (ARM64)\n\n");
+    return true; // just always assume we'll need it, for now
+
+#elif defined(TARGET_LOONGARCH64)
+    JITDUMP(" Returning true (LOONGARCH64)\n\n");
     return true; // just always assume we'll need it, for now
 
 #else  // TARGET_ARM
@@ -4060,7 +4088,7 @@ bool Compiler::compRsvdRegCheck(FrameLayoutState curState)
     return false;
 #endif // TARGET_ARM
 }
-#endif // TARGET_ARMARCH
+#endif // TARGET_ARMARCH || TARGET_LOONGARCH64
 
 //------------------------------------------------------------------------
 // compGetTieringName: get a string describing tiered compilation settings
@@ -4077,6 +4105,15 @@ const char* Compiler::compGetTieringName(bool wantShortName) const
 {
     const bool tier0 = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0);
     const bool tier1 = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER1);
+
+    if (!opts.compMinOptsIsSet)
+    {
+        // If 'compMinOptsIsSet' is not set, just return here. Otherwise, if this method is called
+        // by the assertAbort(), we would recursively call assert while trying to get MinOpts()
+        // and eventually stackoverflow.
+        return "Optimization-Level-Not-Yet-Set";
+    }
+
     assert(!tier0 || !tier1); // We don't expect multiple TIER flags to be set at one time.
 
     if (tier0)
@@ -4457,9 +4494,8 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
                 if (lvaGetDesc(i)->TypeGet() == TYP_REF)
                 {
                     // confirm that the argument is a GC pointer (for debugging (GC stress))
-                    GenTree*          op   = gtNewLclvNode(i, TYP_REF);
-                    GenTreeCall::Use* args = gtNewCallArgs(op);
-                    op                     = gtNewHelperCallNode(CORINFO_HELP_CHECK_OBJ, TYP_VOID, args);
+                    GenTree* op = gtNewLclvNode(i, TYP_REF);
+                    op          = gtNewHelperCallNode(CORINFO_HELP_CHECK_OBJ, TYP_VOID, op);
 
                     fgEnsureFirstBBisScratch();
                     fgNewStmtAtEnd(fgFirstBB, op);
@@ -4657,6 +4693,9 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     // Figure out what locals are address-taken.
     //
     DoPhase(this, PHASE_STR_ADRLCL, &Compiler::fgMarkAddressExposedLocals);
+    // Run a simple forward substitution pass.
+    //
+    DoPhase(this, PHASE_FWD_SUB, &Compiler::fgForwardSub);
 
     // Apply the type update to implicit byref parameters; also choose (based on address-exposed
     // analysis) which implicit byref promotions to keep (requires copy to initialize) or discard.
@@ -4933,6 +4972,17 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         }
     }
 
+#ifdef DEBUG
+    // Run this before we potentially tear down dominators.
+    fgDebugCheckLinks(compStressCompile(STRESS_REMORPH_TREES, 50));
+#endif
+
+    // Remove dead blocks
+    DoPhase(this, PHASE_REMOVE_DEAD_BLOCKS, &Compiler::fgRemoveDeadBlocks);
+
+    // Dominator and reachability sets are no longer valid.
+    fgDomsComputed = false;
+
     // Insert GC Polls
     DoPhase(this, PHASE_INSERT_GC_POLLS, &Compiler::fgInsertGCPolls);
 
@@ -4941,8 +4991,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     DoPhase(this, PHASE_DETERMINE_FIRST_COLD_BLOCK, &Compiler::fgDetermineFirstColdBlock);
 
 #ifdef DEBUG
-    fgDebugCheckLinks(compStressCompile(STRESS_REMORPH_TREES, 50));
-
     // Stash the current estimate of the function's size if necessary.
     if (verbose)
     {
@@ -4983,12 +5031,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 #endif // TARGET_ARM
 
     // Assign registers to variables, etc.
-
-    ///////////////////////////////////////////////////////////////////////////////
-    // Dominator and reachability sets are no longer valid. They haven't been
-    // maintained up to here, and shouldn't be used (unless recomputed).
-    ///////////////////////////////////////////////////////////////////////////////
-    fgDomsComputed = false;
 
     // Create LinearScan before Lowering, so that Lowering can call LinearScan methods
     // for determining whether locals are register candidates and (for xarch) whether
@@ -5233,24 +5275,36 @@ void Compiler::generatePatchpointInfo()
     // but would need to adjust all consumers, too.
     for (unsigned lclNum = 0; lclNum < info.compLocalsCount; lclNum++)
     {
-        LclVarDsc* const varDsc = lvaGetDesc(lclNum);
+        // If there are shadowed params, the patchpoint info should refer to the shadow copy.
+        //
+        unsigned varNum = lclNum;
+
+        if (gsShadowVarInfo != nullptr)
+        {
+            unsigned const shadowNum = gsShadowVarInfo[lclNum].shadowCopy;
+            if (shadowNum != BAD_VAR_NUM)
+            {
+                assert(shadowNum < lvaCount);
+                assert(shadowNum >= info.compLocalsCount);
+
+                varNum = shadowNum;
+            }
+        }
+
+        LclVarDsc* const varDsc = lvaGetDesc(varNum);
 
         // We expect all these to have stack homes, and be FP relative
         assert(varDsc->lvOnFrame);
         assert(varDsc->lvFramePointerBased);
 
         // Record FramePtr relative offset (no localloc yet)
-        patchpointInfo->SetOffset(lclNum, varDsc->GetStackOffset() + offsetAdjust);
-
         // Note if IL stream contained an address-of that potentially leads to exposure.
-        // This bit of IL may be skipped by OSR partial importation.
-        if (varDsc->lvHasLdAddrOp)
-        {
-            patchpointInfo->SetIsExposed(lclNum);
-        }
+        // That bit of IL might be skipped by OSR partial importation.
+        const bool isExposed = varDsc->lvHasLdAddrOp;
+        patchpointInfo->SetOffsetAndExposure(lclNum, varDsc->GetStackOffset() + offsetAdjust, isExposed);
 
-        JITDUMP("--OSR-- V%02u is at virtual offset %d%s\n", lclNum, patchpointInfo->Offset(lclNum),
-                patchpointInfo->IsExposed(lclNum) ? " (exposed)" : "");
+        JITDUMP("--OSR-- V%02u is at virtual offset %d%s%s\n", lclNum, patchpointInfo->Offset(lclNum),
+                patchpointInfo->IsExposed(lclNum) ? " (exposed)" : "", (varNum != lclNum) ? " (shadowed)" : "");
     }
 
     // Special offsets
@@ -5285,6 +5339,18 @@ void Compiler::generatePatchpointInfo()
         JITDUMP("--OSR-- monitor acquired V%02u virtual offset is %d\n", lvaMonAcquired,
                 patchpointInfo->MonitorAcquiredOffset());
     }
+
+#if defined(TARGET_AMD64)
+    // Record callee save registers.
+    // Currently only needed for x64.
+    //
+    regMaskTP rsPushRegs = codeGen->regSet.rsGetModifiedRegsMask() & RBM_CALLEE_SAVED;
+    rsPushRegs |= RBM_FPBASE;
+    patchpointInfo->SetCalleeSaveRegisters((uint64_t)rsPushRegs);
+    JITDUMP("--OSR-- Tier0 callee saves: ");
+    JITDUMPEXEC(dspRegMask((regMaskTP)patchpointInfo->CalleeSaveRegisters()));
+    JITDUMP("\n");
+#endif
 
     // Register this with the runtime.
     info.compCompHnd->setPatchpointInfo(patchpointInfo);
@@ -7433,16 +7499,12 @@ Compiler::NodeToIntMap* Compiler::FindReachableNodesInNodeTestData()
                 {
                     GenTreeCall* call = tree->AsCall();
                     unsigned     i    = 0;
-                    for (GenTreeCall::Use& use : call->Args())
+                    for (CallArg& arg : call->gtArgs.Args())
                     {
-                        if ((use.GetNode()->gtFlags & GTF_LATE_ARG) != 0)
+                        GenTree* argNode = arg.GetNode();
+                        if (GetNodeTestData()->Lookup(argNode, &tlAndN))
                         {
-                            // Find the corresponding late arg.
-                            GenTree* lateArg = call->fgArgInfo->GetArgNode(i);
-                            if (GetNodeTestData()->Lookup(lateArg, &tlAndN))
-                            {
-                                reachable->Set(lateArg, 0);
-                            }
+                            reachable->Set(argNode, 0);
                         }
                         i++;
                     }
@@ -8845,6 +8907,20 @@ void dTreeLIR(GenTree* tree)
     cTreeLIR(JitTls::GetCompiler(), tree);
 }
 
+void dTreeRange(GenTree* first, GenTree* last)
+{
+    Compiler* comp = JitTls::GetCompiler();
+    GenTree*  cur  = first;
+    while (true)
+    {
+        cTreeLIR(comp, cur);
+        if (cur == last)
+            break;
+
+        cur = cur->gtNext;
+    }
+}
+
 void dTrees()
 {
     cTrees(JitTls::GetCompiler());
@@ -9049,7 +9125,7 @@ Compiler::LoopDsc* dFindLoop(unsigned loopNum)
 
     if (loopNum >= comp->optLoopCount)
     {
-        printf("loopNum %u out of range\n");
+        printf("loopNum %u out of range\n", loopNum);
         return nullptr;
     }
 
@@ -9123,10 +9199,6 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
                 {
                     chars += printf("[VAR_DEATH]");
                 }
-                if (tree->gtFlags & GTF_VAR_ARR_INDEX)
-                {
-                    chars += printf("[VAR_ARR_INDEX]");
-                }
 #if defined(DEBUG)
                 if (tree->gtDebugFlags & GTF_DEBUG_VAR_CSE_REF)
                 {
@@ -9142,6 +9214,10 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
                 if (tree->gtFlags & GTF_FLD_VOLATILE)
                 {
                     chars += printf("[FLD_VOLATILE]");
+                }
+                if (tree->gtFlags & GTF_FLD_TGT_HEAP)
+                {
+                    chars += printf("[FLD_TGT_HEAP]");
                 }
                 break;
 
@@ -9166,13 +9242,13 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
                 {
                     chars += printf("[IND_VOLATILE]");
                 }
-                if (tree->gtFlags & GTF_IND_TGTANYWHERE)
-                {
-                    chars += printf("[IND_TGTANYWHERE]");
-                }
                 if (tree->gtFlags & GTF_IND_TGT_NOT_HEAP)
                 {
                     chars += printf("[IND_TGT_NOT_HEAP]");
+                }
+                if (tree->gtFlags & GTF_IND_TGT_HEAP)
+                {
+                    chars += printf("[IND_TGT_HEAP]");
                 }
                 if (tree->gtFlags & GTF_IND_TLS_REF)
                 {
@@ -9201,6 +9277,10 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
                 if (tree->gtFlags & GTF_CLS_VAR_ASG_LHS)
                 {
                     chars += printf("[CLS_VAR_ASG_LHS]");
+                }
+                if (tree->gtFlags & GTF_CLS_VAR_TGT_HEAP)
+                {
+                    chars += printf("[CLS_VAR_TGT_HEAP]");
                 }
                 break;
 
@@ -9272,8 +9352,14 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
                 }
                 break;
 
-            case GT_CNS_INT:
+            case GT_ARR_ADDR:
+                if (tree->gtFlags & GTF_ARR_ADDR_NONNULL)
+                {
+                    chars += printf("[ARR_ADDR_NONNULL]");
+                }
+                break;
 
+            case GT_CNS_INT:
             {
                 GenTreeFlags handleKind = (tree->gtFlags & GTF_ICON_HDL_MASK);
 
@@ -9441,10 +9527,6 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
                     if (call->gtCallMoreFlags & GTF_CALL_M_TAILCALL)
                     {
                         chars += printf("[CALL_M_TAILCALL]");
-                    }
-                    if (call->gtCallMoreFlags & GTF_CALL_M_VARARGS)
-                    {
-                        chars += printf("[CALL_M_VARARGS]");
                     }
                     if (call->gtCallMoreFlags & GTF_CALL_M_RETBUFFARG)
                     {
@@ -9699,24 +9781,52 @@ bool Compiler::killGCRefs(GenTree* tree)
 
 bool Compiler::lvaIsOSRLocal(unsigned varNum)
 {
-    if (!opts.IsOSR())
+    LclVarDsc* const varDsc = lvaGetDesc(varNum);
+
+#ifdef DEBUG
+    if (opts.IsOSR())
     {
-        return false;
+        if (varDsc->lvIsOSRLocal)
+        {
+            // Sanity check for promoted fields of OSR locals.
+            //
+            if (varNum >= info.compLocalsCount)
+            {
+                assert(varDsc->lvIsStructField);
+                assert(varDsc->lvParentLcl < info.compLocalsCount);
+            }
+        }
     }
-
-    if (varNum < info.compLocalsCount)
+    else
     {
-        return true;
+        assert(!varDsc->lvIsOSRLocal);
     }
+#endif
 
-    LclVarDsc* varDsc = lvaGetDesc(varNum);
+    return varDsc->lvIsOSRLocal;
+}
 
-    if (varDsc->lvIsStructField)
+//------------------------------------------------------------------------------
+// gtTypeForNullCheck: helper to get the most optimal and correct type for nullcheck
+//
+// Arguments:
+//    tree - the node for nullcheck;
+//
+var_types Compiler::gtTypeForNullCheck(GenTree* tree)
+{
+    if (varTypeIsArithmetic(tree))
     {
-        return (varDsc->lvParentLcl < info.compLocalsCount);
+#if defined(TARGET_XARCH)
+        // Just an optimization for XARCH - smaller mov
+        if (varTypeIsLong(tree))
+        {
+            return TYP_INT;
+        }
+#endif
+        return tree->TypeGet();
     }
-
-    return false;
+    // for the rest: probe a single byte to avoid potential AVEs
+    return TYP_BYTE;
 }
 
 //------------------------------------------------------------------------------
@@ -9735,7 +9845,7 @@ void Compiler::gtChangeOperToNullCheck(GenTree* tree, BasicBlock* block)
 {
     assert(tree->OperIs(GT_FIELD, GT_IND, GT_OBJ, GT_BLK));
     tree->ChangeOper(GT_NULLCHECK);
-    tree->ChangeType(TYP_INT);
+    tree->ChangeType(gtTypeForNullCheck(tree));
     block->bbFlags |= BBF_HAS_NULLCHECK;
     optMethodFlags |= OMF_HAS_NULLCHECK;
 }
@@ -9822,6 +9932,9 @@ void Compiler::EnregisterStats::RecordLocal(const LclVarDsc* varDsc)
             case DoNotEnregisterReason::AddrExposed:
                 m_addrExposed++;
                 break;
+            case DoNotEnregisterReason::HiddenBufferStructArg:
+                m_hiddenStructArg++;
+                break;
             case DoNotEnregisterReason::DontEnregStructs:
                 m_dontEnregStructs++;
                 break;
@@ -9888,6 +10001,10 @@ void Compiler::EnregisterStats::RecordLocal(const LclVarDsc* varDsc)
 
             case DoNotEnregisterReason::ReturnSpCheck:
                 m_returnSpCheck++;
+                break;
+
+            case DoNotEnregisterReason::SimdUserForcesDep:
+                m_simdUserForcesDep++;
                 break;
 
             default:
@@ -9988,6 +10105,7 @@ void Compiler::EnregisterStats::Dump(FILE* fout) const
     }
 
     PRINT_STATS(m_addrExposed, notEnreg);
+    PRINT_STATS(m_hiddenStructArg, notEnreg);
     PRINT_STATS(m_dontEnregStructs, notEnreg);
     PRINT_STATS(m_notRegSizeStruct, notEnreg);
     PRINT_STATS(m_localField, notEnreg);
@@ -10011,6 +10129,7 @@ void Compiler::EnregisterStats::Dump(FILE* fout) const
     PRINT_STATS(m_swizzleArg, notEnreg);
     PRINT_STATS(m_blockOpRet, notEnreg);
     PRINT_STATS(m_returnSpCheck, notEnreg);
+    PRINT_STATS(m_simdUserForcesDep, notEnreg);
 
     fprintf(fout, "\nAddr exposed details:\n");
     if (m_addrExposed == 0)

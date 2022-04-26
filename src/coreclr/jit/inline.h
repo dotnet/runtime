@@ -581,7 +581,6 @@ struct InlineCandidateInfo : public GuardedDevirtualizationCandidateInfo
     CORINFO_CLASS_HANDLE   clsHandle;
     CORINFO_CONTEXT_HANDLE exactContextHnd;
     GenTree*               retExpr;
-    DWORD                  dwRestrictions;
     unsigned               preexistingSpillTemp;
     unsigned               clsAttr;
     unsigned               methAttr;
@@ -668,8 +667,7 @@ struct InlineInfo
         return numberOfGcRefLocals > 0;
     }
 
-    bool     thisDereferencedFirst;
-    unsigned typeContextArg;
+    bool thisDereferencedFirst;
 
 #ifdef FEATURE_SIMD
     bool hasSIMDTypeArgLocalOrReturn;

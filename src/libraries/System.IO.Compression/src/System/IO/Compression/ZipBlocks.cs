@@ -133,7 +133,6 @@ namespace System.IO.Compression
         // Then, the search for the zip64 record will fail because the expected size is wrong,
         // and a nulled out Zip64ExtraField will be returned. Thus, even though there was Zip64 data,
         // it will not be used. It is questionable whether this situation is possible to detect
-
         // unlike the other functions that have try-pattern semantics, these functions always return a
         // Zip64ExtraField. If a Zip64 extra field actually doesn't exist, all of the fields in the
         // returned struct will be null
@@ -183,46 +182,55 @@ namespace System.IO.Compression
             if (extraField.Tag != TagConstant)
                 return false;
 
-            // this pattern needed because nested using blocks trigger CA2202
-            MemoryStream? ms = null;
-            try
+            zip64Block._size = extraField.Size;
+
+            using (MemoryStream ms = new MemoryStream(extraField.Data))
+            using (BinaryReader reader = new BinaryReader(ms))
             {
-                ms = new MemoryStream(extraField.Data);
-                using (BinaryReader reader = new BinaryReader(ms))
-                {
-                    ms = null;
+                // The spec section 4.5.3:
+                //      The order of the fields in the zip64 extended
+                //      information record is fixed, but the fields MUST
+                //      only appear if the corresponding Local or Central
+                //      directory record field is set to 0xFFFF or 0xFFFFFFFF.
+                // However tools commonly write the fields anyway; the prevailing convention
+                // is to respect the size, but only actually use the values if their 32 bit
+                // values were all 0xFF.
 
-                    zip64Block._size = extraField.Size;
-
-                    ushort expectedSize = 0;
-
-                    if (readUncompressedSize) expectedSize += 8;
-                    if (readCompressedSize) expectedSize += 8;
-                    if (readLocalHeaderOffset) expectedSize += 8;
-                    if (readStartDiskNumber) expectedSize += 4;
-
-                    // if it is not the expected size, perhaps there is another extra field that matches
-                    if (expectedSize != zip64Block._size)
-                        return false;
-
-                    if (readUncompressedSize) zip64Block._uncompressedSize = reader.ReadInt64();
-                    if (readCompressedSize) zip64Block._compressedSize = reader.ReadInt64();
-                    if (readLocalHeaderOffset) zip64Block._localHeaderOffset = reader.ReadInt64();
-                    if (readStartDiskNumber) zip64Block._startDiskNumber = reader.ReadInt32();
-
-                    // original values are unsigned, so implies value is too big to fit in signed integer
-                    if (zip64Block._uncompressedSize < 0) throw new InvalidDataException(SR.FieldTooBigUncompressedSize);
-                    if (zip64Block._compressedSize < 0) throw new InvalidDataException(SR.FieldTooBigCompressedSize);
-                    if (zip64Block._localHeaderOffset < 0) throw new InvalidDataException(SR.FieldTooBigLocalHeaderOffset);
-                    if (zip64Block._startDiskNumber < 0) throw new InvalidDataException(SR.FieldTooBigStartDiskNumber);
-
+                if (extraField.Size < sizeof(long))
                     return true;
-                }
-            }
-            finally
-            {
-                if (ms != null)
-                    ms.Dispose();
+
+                long value64 = reader.ReadInt64();
+                if (readUncompressedSize)
+                    zip64Block._uncompressedSize = value64;
+
+                if (ms.Position > extraField.Size - sizeof(long))
+                    return true;
+
+                value64 = reader.ReadInt64();
+                if (readCompressedSize)
+                    zip64Block._compressedSize = value64;
+
+                if (ms.Position > extraField.Size - sizeof(long))
+                    return true;
+
+                value64 = reader.ReadInt64();
+                if (readLocalHeaderOffset)
+                    zip64Block._localHeaderOffset = value64;
+
+                if (ms.Position > extraField.Size - sizeof(int))
+                    return true;
+
+                int value32 = reader.ReadInt32();
+                if (readStartDiskNumber)
+                    zip64Block._startDiskNumber = value32;
+
+                // original values are unsigned, so implies value is too big to fit in signed integer
+                if (zip64Block._uncompressedSize < 0) throw new InvalidDataException(SR.FieldTooBigUncompressedSize);
+                if (zip64Block._compressedSize < 0) throw new InvalidDataException(SR.FieldTooBigCompressedSize);
+                if (zip64Block._localHeaderOffset < 0) throw new InvalidDataException(SR.FieldTooBigLocalHeaderOffset);
+                if (zip64Block._startDiskNumber < 0) throw new InvalidDataException(SR.FieldTooBigStartDiskNumber);
+
+                return true;
             }
         }
 
@@ -453,7 +461,7 @@ namespace System.IO.Compression
         public long RelativeOffsetOfLocalHeader;
 
         public byte[] Filename;
-        public byte[]? FileComment;
+        public byte[] FileComment;
         public List<ZipGenericExtraField>? ExtraFields;
 
         // if saveExtraFieldsAndComments is false, FileComment and ExtraFields will be null
@@ -513,13 +521,7 @@ namespace System.IO.Compression
             // of the ExtraField block. Thus we must force the stream's position to the proper place.
             reader.BaseStream.AdvanceToPosition(endExtraFields);
 
-            if (saveExtraFieldsAndComments)
-                header.FileComment = reader.ReadBytes(header.FileCommentLength);
-            else
-            {
-                reader.BaseStream.Position += header.FileCommentLength;
-                header.FileComment = null;
-            }
+            header.FileComment = reader.ReadBytes(header.FileCommentLength);
 
             header.UncompressedSize = zip64.UncompressedSize == null
                                                     ? uncompressedSizeSmall
@@ -560,7 +562,7 @@ namespace System.IO.Compression
         public uint OffsetOfStartOfCentralDirectoryWithRespectToTheStartingDiskNumber;
         public byte[] ArchiveComment;
 
-        public static void WriteBlock(Stream stream, long numberOfEntries, long startOfCentralDirectory, long sizeOfCentralDirectory, byte[]? archiveComment)
+        public static void WriteBlock(Stream stream, long numberOfEntries, long startOfCentralDirectory, long sizeOfCentralDirectory, byte[] archiveComment)
         {
             BinaryWriter writer = new BinaryWriter(stream);
 
@@ -580,10 +582,10 @@ namespace System.IO.Compression
             writer.Write(startOfCentralDirectoryTruncated);
 
             // Should be valid because of how we read archiveComment in TryReadBlock:
-            Debug.Assert((archiveComment == null) || (archiveComment.Length <= ZipFileCommentMaxLength));
+            Debug.Assert(archiveComment.Length <= ZipFileCommentMaxLength);
 
-            writer.Write(archiveComment != null ? (ushort)archiveComment.Length : (ushort)0); // zip file comment length
-            if (archiveComment != null)
+            writer.Write((ushort)archiveComment.Length); // zip file comment length
+            if (archiveComment.Length > 0)
                 writer.Write(archiveComment);
         }
 

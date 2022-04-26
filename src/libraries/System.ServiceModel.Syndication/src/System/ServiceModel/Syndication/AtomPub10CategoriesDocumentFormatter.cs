@@ -62,7 +62,7 @@ namespace System.ServiceModel.Syndication
 
         public override bool CanRead(XmlReader reader)
         {
-            if (reader == null)
+            if (reader is null)
             {
                 throw new ArgumentNullException(nameof(reader));
             }
@@ -74,7 +74,7 @@ namespace System.ServiceModel.Syndication
 
         void IXmlSerializable.ReadXml(XmlReader reader)
         {
-            if (reader == null)
+            if (reader is null)
             {
                 throw new ArgumentNullException(nameof(reader));
             }
@@ -84,10 +84,11 @@ namespace System.ServiceModel.Syndication
 
         void IXmlSerializable.WriteXml(XmlWriter writer)
         {
-            if (writer == null)
+            if (writer is null)
             {
                 throw new ArgumentNullException(nameof(writer));
             }
+
             if (Document == null)
             {
                 throw new InvalidOperationException(SR.DocumentFormatterDoesNotHaveDocument);
@@ -98,10 +99,11 @@ namespace System.ServiceModel.Syndication
 
         public override void ReadFrom(XmlReader reader)
         {
-            if (reader == null)
+            if (reader is null)
             {
                 throw new ArgumentNullException(nameof(reader));
             }
+
             if (!CanRead(reader))
             {
                 throw new XmlException(SR.Format(SR.UnknownDocumentXml, reader.LocalName, reader.NamespaceURI));
@@ -112,10 +114,11 @@ namespace System.ServiceModel.Syndication
 
         public override void WriteTo(XmlWriter writer)
         {
-            if (writer == null)
+            if (writer is null)
             {
                 throw new ArgumentNullException(nameof(writer));
             }
+
             if (Document == null)
             {
                 throw new InvalidOperationException(SR.DocumentFormatterDoesNotHaveDocument);

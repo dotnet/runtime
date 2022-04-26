@@ -21,6 +21,7 @@
 #include <mono/metadata/abi-details.h>
 #include <mono/metadata/tokentype.h>
 #include <mono/metadata/marshal.h>
+#include <mono/metadata/metadata-update.h>
 #include <mono/utils/checked-build.h>
 #include <mono/utils/mono-counters.h>
 #include <mono/utils/mono-error-internals.h>
@@ -346,6 +347,10 @@ mono_class_setup_fields (MonoClass *klass)
 				mono_class_set_type_load_failure (klass, "Missing field layout info for %s", field->name);
 				break;
 			}
+			if (m_type_is_byref (field->type) && (offset % MONO_ABI_ALIGNOF (gpointer) != 0)) {
+				mono_class_set_type_load_failure (klass, "Field '%s' has an invalid offset", field->name);
+				break;
+			}
 			if (offset < -1) { /*-1 is used to encode special static fields */
 				mono_class_set_type_load_failure (klass, "Field '%s' has a negative offset %d", field->name, offset);
 				break;
@@ -648,6 +653,15 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token, MonoError 
 			mono_class_set_field_count (klass, field_last - first_field_idx);
 		if (cols [MONO_TYPEDEF_METHOD_LIST] <= table_info_get_rows (&image->tables [MONO_TABLE_METHOD]))
 			mono_class_set_method_count (klass, method_last - first_method_idx);
+	} else if (G_UNLIKELY (cols [MONO_TYPEDEF_FIELD_LIST] == 0 && cols [MONO_TYPEDEF_METHOD_LIST] == 0 && image->has_updates)) {
+		uint32_t first_field_idx, first_method_idx, field_count, method_count;
+		if (mono_metadata_update_get_typedef_skeleton (image, type_token, &first_method_idx, &method_count, &first_field_idx, &field_count)) {
+			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_METADATA_UPDATE, "Creating class '%s.%s' from skeleton (first_method_idx = 0x%08x, count = 0x%08x, first_field_idx = 0x%08x, count=0x%08x)", nspace, name, first_method_idx, method_count, first_field_idx, field_count);
+			mono_class_set_first_field_idx (klass, first_field_idx - 1);
+			mono_class_set_first_method_idx (klass, first_method_idx - 1);
+			mono_class_set_field_count (klass, field_count);
+			mono_class_set_method_count (klass, method_count);
+		}
 	}
 
 	/* reserve space to store vector pointer in arrays */
@@ -681,15 +695,8 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token, MonoError 
 		return NULL;
 	}
 
-	if (klass->image->assembly_name && !strcmp (klass->image->assembly_name, "Mono.Simd") && !strcmp (nspace, "Mono.Simd")) {
-		if (!strncmp (name, "Vector", 6))
-			klass->simd_type = !strcmp (name + 6, "2d") || !strcmp (name + 6, "2ul") || !strcmp (name + 6, "2l") || !strcmp (name + 6, "4f") || !strcmp (name + 6, "4ui") || !strcmp (name + 6, "4i") || !strcmp (name + 6, "8s") || !strcmp (name + 6, "8us") || !strcmp (name + 6, "16b") || !strcmp (name + 6, "16sb");
-	} else if (klass->image->assembly_name && !strcmp (klass->image->assembly_name, "System.Numerics") && !strcmp (nspace, "System.Numerics")) {
-		/* The JIT can't handle SIMD types with != 16 size yet */
-		//if (!strcmp (name, "Vector2") || !strcmp (name, "Vector3") || !strcmp (name, "Vector4"))
-		if (!strcmp (name, "Vector4"))
-			klass->simd_type = 1;
-	}
+	if (mono_get_runtime_callbacks ()->init_class)
+		mono_get_runtime_callbacks ()->init_class (klass);
 
 	// compute is_byreflike
 	if (m_class_is_valuetype (klass))
@@ -814,7 +821,7 @@ mono_class_setup_method_has_preserve_base_overrides_attribute (MonoMethod *metho
 static gboolean
 check_valid_generic_inst_arguments (MonoGenericInst *inst, MonoError *error)
 {
-	for (int i = 0; i < inst->type_argc; i++) {
+	for (guint i = 0; i < inst->type_argc; i++) {
 		if (!mono_type_is_valid_generic_argument (inst->type_argv [i])) {
 			char *type_name = mono_type_full_name (inst->type_argv [i]);
 			mono_error_set_invalid_program (error, "generic type cannot be instantiated with type '%s'", type_name);
@@ -864,19 +871,8 @@ mono_class_create_generic_inst (MonoGenericClass *gclass)
 	klass->enumtype = gklass->enumtype;
 	klass->valuetype = gklass->valuetype;
 
-	if (gklass->image->assembly_name && !strcmp (gklass->image->assembly_name, "System.Numerics.Vectors") && !strcmp (gklass->name_space, "System.Numerics") && !strcmp (gklass->name, "Vector`1")) {
-		g_assert (gclass->context.class_inst);
-		g_assert (gclass->context.class_inst->type_argc > 0);
-		if (mono_type_is_primitive (gclass->context.class_inst->type_argv [0]))
-			klass->simd_type = 1;
-	}
-
-	if (mono_is_corlib_image (gklass->image) &&
-		(!strcmp (gklass->name, "Vector`1") || !strcmp (gklass->name, "Vector64`1") || !strcmp (gklass->name, "Vector128`1") || !strcmp (gklass->name, "Vector256`1"))) {
-		MonoType *etype = gclass->context.class_inst->type_argv [0];
-		if (mono_type_is_primitive (etype) && etype->type != MONO_TYPE_CHAR && etype->type != MONO_TYPE_BOOLEAN)
-			klass->simd_type = 1;
-	}
+	if (mono_get_runtime_callbacks ()->init_class)
+		mono_get_runtime_callbacks ()->init_class (klass);
 
 	klass->is_array_special_interface = gklass->is_array_special_interface;
 
@@ -1015,7 +1011,7 @@ mono_class_create_bounded_array (MonoClass *eclass, guint32 rank, gboolean bound
 	MonoClass *klass, *cached, *k;
 	MonoClass *parent = NULL;
 	GSList *list, *rootlist = NULL;
-	int nsize;
+	size_t nsize;
 	char *name;
 	MonoMemoryManager *mm;
 
@@ -1735,12 +1731,12 @@ mono_class_interface_match (const uint8_t *bitmap, int id)
 static char*
 concat_two_strings_with_zero (MonoImage *image, const char *s1, const char *s2)
 {
-	int null_length = strlen ("(null)");
-	int len = (s1 ? strlen (s1) : null_length) + (s2 ? strlen (s2) : null_length) + 2;
-	char *s = (char *)mono_image_alloc (image, len);
+	size_t null_length = strlen ("(null)");
+	size_t len = (s1 ? strlen (s1) : null_length) + (s2 ? strlen (s2) : null_length) + 2;
+	char *s = (char *)mono_image_alloc (image, (int)len);
 	int result;
 
-	result = g_snprintf (s, len, "%s%c%s", s1 ? s1 : "(null)", '\0', s2 ? s2 : "(null)");
+	result = g_snprintf (s, (glong)len, "%s%c%s", s1 ? s1 : "(null)", '\0', s2 ? s2 : "(null)");
 	g_assert (result == len - 1);
 
 	return s;
@@ -1828,6 +1824,50 @@ type_has_references (MonoClass *klass, MonoType *ftype)
 	return FALSE;
 }
 
+static gboolean
+class_has_ref_fields (MonoClass *klass)
+{
+	/*
+	 * has_ref_fields is not set if this is called recursively, but this is not a problem since this is only used
+	 * during field layout, and instance fields are initialized before static fields, and instance fields can't
+	 * embed themselves.
+	 */
+	return klass->has_ref_fields;
+}
+
+static gboolean
+class_is_byreference (MonoClass* klass)
+{
+	const char* klass_name_space = m_class_get_name_space (klass);
+	const char* klass_name = m_class_get_name (klass);
+	MonoImage* klass_image = m_class_get_image (klass);
+	gboolean in_corlib = klass_image == mono_defaults.corlib;
+
+	if (in_corlib &&
+		!strcmp (klass_name_space, "System") &&
+		!strcmp (klass_name, "ByReference`1")) {
+		return TRUE;
+	}
+
+	return FALSE;
+}
+
+static gboolean
+type_has_ref_fields (MonoType *ftype)
+{
+	if (m_type_is_byref (ftype) || (MONO_TYPE_ISSTRUCT (ftype) && class_has_ref_fields (mono_class_from_mono_type_internal (ftype))))
+		return TRUE;
+
+	/* Check for the ByReference`1 type */
+	if (MONO_TYPE_ISSTRUCT (ftype)) {
+		MonoClass* klass = mono_class_from_mono_type_internal (ftype);
+		return class_is_byreference (klass);
+	}
+
+	return FALSE;
+}
+
+
 /**
  * mono_class_is_gparam_with_nonblittable_parent:
  * \param klass  a generic parameter
@@ -1903,6 +1943,11 @@ validate_struct_fields_overlaps (guint8 *layout_check, int layout_size, MonoClas
 		// try to call mono_class_setup_fields which is what we're doing already
 		field = &m_class_get_fields (klass) [i];
 		field_offset = field_offsets [i];
+		/*
+		 * metadata-update: adding fields to existing structs isn't supported; when a brand
+		 * new struct is added in an update, the fields will be in m_class_get_fields.  so
+		 * nothing new to do here.
+		 */
 
 		if (!field)
 			continue;
@@ -1917,7 +1962,7 @@ validate_struct_fields_overlaps (guint8 *layout_check, int layout_size, MonoClas
 		if (mono_type_is_struct (ftype)) {
 			// recursively check the layout of the embedded struct
 			MonoClass *embedded_class = mono_class_from_mono_type_internal (ftype);
-                        mono_class_setup_fields (embedded_class);
+			mono_class_setup_fields (embedded_class);
 
 			const int embedded_fields_count = mono_class_get_field_count (embedded_class);
 			int *embedded_offsets = g_new0 (int, embedded_fields_count);
@@ -1937,7 +1982,7 @@ validate_struct_fields_overlaps (guint8 *layout_check, int layout_size, MonoClas
 		} else {
 			int align = 0;
 			int size = mono_type_size (field->type, &align);
-			guint8 type = type_has_references (klass, ftype) ? 1 : 2;
+			guint8 type = type_has_references (klass, ftype) ? 1 : (m_type_is_byref (ftype) || class_is_byreference (klass)) ? 2 : 3;
 
 			// Mark the bytes used by this fields type based on if it contains references or not.
 			// Make sure there are no overlaps between object and non-object fields.
@@ -1979,6 +2024,7 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 	gboolean gc_aware_layout = FALSE;
 	gboolean has_static_fields = FALSE;
 	gboolean has_references = FALSE;
+	gboolean has_ref_fields = FALSE;
 	gboolean has_static_refs = FALSE;
 	MonoClassField *field;
 	gboolean blittable;
@@ -2005,6 +2051,7 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 		min_align = klass->parent->min_align;
 		/* we use | since it may have been set already */
 		has_references = klass->has_references | klass->parent->has_references;
+		has_ref_fields = klass->has_ref_fields | klass->parent->has_ref_fields;
 	} else {
 		min_align = 1;
 	}
@@ -2112,7 +2159,7 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 	if (klass == mono_defaults.string_class)
 		blittable = FALSE;
 
-	/* Compute klass->has_references */
+	/* Compute klass->has_references and klass->has_ref_fields */
 	/*
 	 * Process non-static fields first, since static fields might recursively
 	 * refer to the class itself.
@@ -2127,6 +2174,9 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 			ftype = mono_type_get_basic_type_from_generic (ftype);
 			if (type_has_references (klass, ftype))
 				has_references = TRUE;
+
+			if (type_has_ref_fields (ftype))
+				has_ref_fields = TRUE;
 		}
 	}
 
@@ -2250,7 +2300,7 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 			}
 			ftype = mono_type_get_underlying_type (field->type);
 			ftype = mono_type_get_basic_type_from_generic (ftype);
-			if (type_has_references (klass, ftype)) {
+			if (type_has_references (klass, ftype) || m_type_is_byref (ftype)) {
 				if (field_offsets [i] % TARGET_SIZEOF_VOID_P) {
 					mono_class_set_type_load_failure (klass, "Reference typed field '%s' has explicit offset that is not pointer-size aligned.", field->name);
 				}
@@ -2264,7 +2314,7 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 
 		/* check for incorrectly aligned or overlapped by a non-object field */
 		guint8 *layout_check;
-		if (has_references) {
+		if (has_references || has_ref_fields) {
 			layout_check = g_new0 (guint8, real_size);
 			int invalid_field_offset;
 			if (!validate_struct_fields_overlaps (layout_check, real_size, klass, field_offsets, top, &invalid_field_offset)) {
@@ -2316,8 +2366,8 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 			/* Emit info to help debugging */
 			g_print ("%s\n", mono_class_full_name (klass));
 			g_print ("%d %d %d %d\n", klass->instance_size, instance_size, klass->blittable, blittable);
-			g_print ("%d %d %d %d\n", klass->has_references, has_references, klass->packing_size, packing_size);
-			g_print ("%d %d\n", klass->min_align, min_align);
+			g_print ("%d %d %d %d\n", klass->has_references, has_references, klass->has_ref_fields, has_ref_fields);
+			g_print ("%d %d %d %d\n", klass->packing_size, packing_size, klass->min_align, min_align);
 			for (i = 0; i < top; ++i) {
 				field = &klass->fields [i];
 				if (!(field->type->attrs & FIELD_ATTRIBUTE_STATIC))
@@ -2330,6 +2380,7 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 	}
 	klass->blittable = blittable;
 	klass->has_references = has_references;
+	klass->has_ref_fields = has_ref_fields;
 	klass->packing_size = packing_size;
 	klass->min_align = min_align;
 	klass->any_field_has_auto_layout = any_field_has_auto_layout;
@@ -2421,10 +2472,11 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 	// - Disallow on structs/static fields/nonref fields
 	gboolean has_weak_fields = FALSE;
 
+#ifdef ENABLE_WEAK_ATTR
 	if (mono_class_has_static_metadata (klass)) {
 		for (MonoClass *p = klass; p != NULL; p = p->parent) {
 			gpointer iter = NULL;
-			guint32 first_field_idx = mono_class_get_first_field_idx (p);
+			first_field_idx = mono_class_get_first_field_idx (p);
 
 			while ((field = mono_class_get_fields_internal (p, &iter))) {
 				guint32 field_idx = first_field_idx + (field - p->fields);
@@ -2435,6 +2487,7 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 			}
 		}
 	}
+#endif
 
 	/*
 	 * Check that any fields of IsByRefLike type are instance
@@ -2647,7 +2700,7 @@ generic_array_methods (MonoClass *klass)
 
 		generic_array_method_info [i].array_method = m;
 
-		name = (gchar *)mono_image_alloc (mono_defaults.corlib, strlen (iname) + strlen (mname) + 1);
+		name = (gchar *)mono_image_alloc (mono_defaults.corlib, (guint)(strlen (iname) + strlen (mname) + 1));
 		strcpy (name, iname);
 		strcpy (name + strlen (iname), mname);
 		generic_array_method_info [i].name = name;
@@ -3791,7 +3844,7 @@ mono_class_setup_interface_id (MonoClass *klass)
 void
 mono_class_setup_interfaces (MonoClass *klass, MonoError *error)
 {
-	int i, interface_count;
+	int interface_count;
 	MonoClass *iface, **interfaces;
 
 	error_init (error);
@@ -3853,7 +3906,7 @@ mono_class_setup_interfaces (MonoClass *klass, MonoError *error)
 
 		interface_count = gklass->interface_count;
 		interfaces = mono_class_new0 (klass, MonoClass *, interface_count);
-		for (i = 0; i < interface_count; i++) {
+		for (int i = 0; i < interface_count; i++) {
 			interfaces [i] = mono_class_inflate_generic_class_checked (gklass->interfaces [i], mono_generic_class_get_context (mono_class_get_generic_class (klass)), error);
 			if (!is_ok (error)) {
 				mono_class_set_type_load_failure (klass, "Could not setup the interfaces");

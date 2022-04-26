@@ -105,10 +105,22 @@ namespace System.Data
             get { return _remotingFormat; }
             set
             {
-                if (value != SerializationFormat.Binary && value != SerializationFormat.Xml)
+                switch (value)
                 {
-                    throw ExceptionBuilder.InvalidRemotingFormat(value);
+                    case SerializationFormat.Xml:
+                        break;
+
+                    case SerializationFormat.Binary:
+                        if (LocalAppContextSwitches.AllowUnsafeSerializationFormatBinary)
+                        {
+                            break;
+                        }
+                        throw ExceptionBuilder.SerializationFormatBinaryNotSupported();
+
+                    default:
+                        throw ExceptionBuilder.InvalidRemotingFormat(value);
                 }
+
                 _remotingFormat = value;
                 // this property is inherited to DataTable from DataSet.So we set this value to DataTable also
                 for (int i = 0; i < Tables.Count; i++)
@@ -253,6 +265,12 @@ namespace System.Data
                         schemaSerializationMode = (SchemaSerializationMode)e.Value!;
                         break;
                 }
+            }
+
+            if (remotingFormat == SerializationFormat.Binary &&
+                !LocalAppContextSwitches.AllowUnsafeSerializationFormatBinary)
+            {
+                throw ExceptionBuilder.SerializationFormatBinaryNotSupported();
             }
 
             if (schemaSerializationMode == SchemaSerializationMode.ExcludeSchema)
@@ -1222,7 +1240,7 @@ namespace System.Data
 
                     foreach (DataRow row in table.Rows)
                     {
-                        table.CopyRow(destTable, row);
+                        DataTable.CopyRow(destTable, row);
                     }
                 }
 
@@ -1329,7 +1347,7 @@ namespace System.Data
                             // Loop through the rows.
                             if (bitMatrix[i][j])
                             {
-                                table.CopyRow(destTable, table.Rows[j]);
+                                DataTable.CopyRow(destTable, table.Rows[j]);
                                 bitMatrix[i].HasChanges--;
                             }
                         }
@@ -1410,7 +1428,7 @@ namespace System.Data
         IList IListSource.GetList() => DefaultViewManager;
 
         [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
-        internal string GetRemotingDiffGram(DataTable table)
+        internal static string GetRemotingDiffGram(DataTable table)
         {
             StringWriter strWriter = new StringWriter(CultureInfo.InvariantCulture);
             XmlTextWriter writer = new XmlTextWriter(strWriter);
@@ -1732,7 +1750,7 @@ namespace System.Data
             }
         }
 
-        internal bool MoveToElement(XmlReader reader, int depth)
+        internal static bool MoveToElement(XmlReader reader, int depth)
         {
             while (!reader.EOF && reader.NodeType != XmlNodeType.EndElement && reader.NodeType != XmlNodeType.Element && reader.Depth > depth)
             {
@@ -1748,7 +1766,7 @@ namespace System.Data
                 reader.Read();
             }
         }
-        internal void ReadEndElement(XmlReader reader)
+        internal static void ReadEndElement(XmlReader reader)
         {
             while (reader.NodeType == XmlNodeType.Whitespace)
             {
@@ -2924,7 +2942,7 @@ namespace System.Data
         /// Gets the collection of parent relations which belong to a
         /// specified table.
         /// </summary>
-        internal DataRelationCollection GetParentRelations(DataTable table) => table.ParentRelations;
+        internal static DataRelationCollection GetParentRelations(DataTable table) => table.ParentRelations;
 
         /// <summary>
         /// Merges this <see cref='System.Data.DataSet'/> into a specified <see cref='System.Data.DataSet'/>.
@@ -3456,7 +3474,9 @@ namespace System.Data
             XmlWriter writer = new XmlTextWriter(stream, null);
             if (writer != null)
             {
+#pragma warning disable IL2026 // suppressed in ILLink.Suppressions.LibraryBuild.xml
                 WriteXmlSchema(this, writer);
+#pragma warning restore IL2026
             }
             stream.Position = 0;
             return XmlSchema.Read(new XmlTextReader(stream), null);
@@ -3488,7 +3508,9 @@ namespace System.Data
                 }
             }
 
+#pragma warning disable IL2026 // suppressed in ILLink.Suppressions.LibraryBuild.xml
             ReadXmlSerializableInternal(reader);
+#pragma warning restore IL2026
 
             if (xmlTextParser != null)
             {
@@ -3508,7 +3530,9 @@ namespace System.Data
 
         void IXmlSerializable.WriteXml(XmlWriter writer)
         {
+#pragma warning disable IL2026 // suppressed in ILLink.Suppressions.LibraryBuild.xml
             WriteXmlInternal(writer);
+#pragma warning restore IL2026
         }
 
         [RequiresUnreferencedCode("DataSet.WriteXml uses XmlSerialization underneath which is not trimming safe. Members from serialized types may be trimmed if not referenced directly.")]

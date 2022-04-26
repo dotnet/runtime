@@ -30,8 +30,10 @@ namespace System.Formats.Asn1
         /// </exception>
         public void WriteObjectIdentifier(string oidValue, Asn1Tag? tag = null)
         {
-            if (oidValue == null)
+            if (oidValue is null)
+            {
                 throw new ArgumentNullException(nameof(oidValue));
+            }
 
             WriteObjectIdentifier(oidValue.AsSpan(), tag);
         }

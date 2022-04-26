@@ -2,8 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
-namespace JitTest
+namespace JitTest_call_cs
 {
     internal interface ISomething
     {
@@ -11,7 +12,7 @@ namespace JitTest
         VT RetSomething(VT vt);
     }
 
-    internal struct VT : ISomething
+    public struct VT : ISomething
     {
         private int _m_vn;
         private String _m_vs;
@@ -61,7 +62,8 @@ namespace JitTest
             Console.WriteLine("Got : " + vt.ToString());
         }
 
-        private static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             VT vt = new VT(10, "10");
             vt._DoSomething(new VT(0, "-"), ref vt);

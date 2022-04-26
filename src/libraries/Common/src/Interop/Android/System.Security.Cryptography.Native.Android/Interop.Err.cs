@@ -10,22 +10,22 @@ internal static partial class Interop
 {
     internal static partial class Crypto
     {
-        [GeneratedDllImport(Libraries.AndroidCryptoNative, EntryPoint = "CryptoNative_ErrClearError")]
+        [LibraryImport(Libraries.AndroidCryptoNative, EntryPoint = "CryptoNative_ErrClearError")]
         internal static partial ulong ErrClearError();
 
-        [GeneratedDllImport(Libraries.AndroidCryptoNative, EntryPoint = "CryptoNative_ErrGetErrorAlloc")]
+        [LibraryImport(Libraries.AndroidCryptoNative, EntryPoint = "CryptoNative_ErrGetErrorAlloc")]
         private static partial ulong ErrGetErrorAlloc([MarshalAs(UnmanagedType.Bool)] out bool isAllocFailure);
 
-        [GeneratedDllImport(Libraries.AndroidCryptoNative, EntryPoint = "CryptoNative_ErrPeekError")]
+        [LibraryImport(Libraries.AndroidCryptoNative, EntryPoint = "CryptoNative_ErrPeekError")]
         internal static partial ulong ErrPeekError();
 
-        [GeneratedDllImport(Libraries.AndroidCryptoNative, EntryPoint = "CryptoNative_ErrPeekLastError")]
+        [LibraryImport(Libraries.AndroidCryptoNative, EntryPoint = "CryptoNative_ErrPeekLastError")]
         internal static partial ulong ErrPeekLastError();
 
-        [GeneratedDllImport(Libraries.AndroidCryptoNative, EntryPoint = "CryptoNative_ErrReasonErrorString")]
+        [LibraryImport(Libraries.AndroidCryptoNative, EntryPoint = "CryptoNative_ErrReasonErrorString")]
         internal static partial IntPtr ErrReasonErrorString(ulong error);
 
-        [GeneratedDllImport(Libraries.AndroidCryptoNative, EntryPoint = "CryptoNative_ErrErrorStringN")]
+        [LibraryImport(Libraries.AndroidCryptoNative, EntryPoint = "CryptoNative_ErrErrorStringN")]
         private static unsafe partial void ErrErrorStringN(ulong e, byte* buf, int len);
 
         private static unsafe string ErrErrorStringN(ulong error)

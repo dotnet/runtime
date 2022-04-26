@@ -44,10 +44,9 @@ namespace System.IO
 
         public BinaryWriter(Stream output, Encoding encoding, bool leaveOpen)
         {
-            if (output == null)
-                throw new ArgumentNullException(nameof(output));
-            if (encoding == null)
-                throw new ArgumentNullException(nameof(encoding));
+            ArgumentNullException.ThrowIfNull(output);
+            ArgumentNullException.ThrowIfNull(encoding);
+
             if (!output.CanWrite)
                 throw new ArgumentException(SR.Argument_StreamNotWritable);
 
@@ -156,8 +155,8 @@ namespace System.IO
         //
         public virtual void Write(byte[] buffer)
         {
-            if (buffer == null)
-                throw new ArgumentNullException(nameof(buffer));
+            ArgumentNullException.ThrowIfNull(buffer);
+
             OutStream.Write(buffer, 0, buffer.Length);
         }
 
@@ -200,7 +199,7 @@ namespace System.IO
                     buffer = rented;
                 }
 
-                int actualByteCount = _encoding.GetBytes(MemoryMarshal.CreateReadOnlySpan(ref ch, 1), buffer);
+                int actualByteCount = _encoding.GetBytes(new ReadOnlySpan<char>(in ch), buffer);
                 OutStream.Write(buffer.Slice(0, actualByteCount));
 
                 if (rented != null)
@@ -217,8 +216,7 @@ namespace System.IO
         //
         public virtual void Write(char[] chars)
         {
-            if (chars == null)
-                throw new ArgumentNullException(nameof(chars));
+            ArgumentNullException.ThrowIfNull(chars);
 
             WriteCharsCommonWithoutLengthPrefix(chars, useThisWriteOverride: false);
         }
@@ -230,8 +228,8 @@ namespace System.IO
         //
         public virtual void Write(char[] chars, int index, int count)
         {
-            if (chars == null)
-                throw new ArgumentNullException(nameof(chars));
+            ArgumentNullException.ThrowIfNull(chars);
+
             if (index < 0)
                 throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (count < 0)
@@ -349,8 +347,7 @@ namespace System.IO
         //
         public virtual void Write(string value)
         {
-            if (value == null)
-                throw new ArgumentNullException(nameof(value));
+            ArgumentNullException.ThrowIfNull(value);
 
             // Common: UTF-8, small string, avoid 2-pass calculation
             // Less common: UTF-8, large string, avoid 2-pass calculation

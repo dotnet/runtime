@@ -8,7 +8,8 @@ internal static partial class Interop
 {
     internal static partial class Advapi32
     {
-        [GeneratedDllImport(Libraries.Advapi32, SetLastError = true)]
+        [LibraryImport(Libraries.Advapi32, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         public static partial bool CryptReleaseContext(
             IntPtr hProv,
             int dwFlags);

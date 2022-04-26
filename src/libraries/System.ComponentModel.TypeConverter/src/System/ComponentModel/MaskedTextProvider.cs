@@ -227,10 +227,7 @@ namespace System.ComponentModel
         /// </summary>
         public MaskedTextProvider(string mask, CultureInfo? culture, bool allowPromptAsInput, char promptChar, char passwordChar, bool restrictToAscii)
         {
-            if (string.IsNullOrEmpty(mask))
-            {
-                throw new ArgumentException(SR.MaskedTextProviderMaskNullOrEmpty, nameof(mask));
-            }
+            ArgumentException.ThrowIfNullOrEmpty(mask);
 
             foreach (char c in mask)
             {
@@ -887,10 +884,7 @@ namespace System.ComponentModel
         /// </summary>
         public bool Add(string input, out int testPosition, out MaskedTextResultHint resultHint)
         {
-            if (input == null)
-            {
-                throw new ArgumentNullException(nameof(input));
-            }
+            ArgumentNullException.ThrowIfNull(input);
 
             testPosition = LastAssignedPosition + 1;
 
@@ -1263,10 +1257,7 @@ namespace System.ComponentModel
         /// </summary>
         public bool InsertAt(string input, int position, out int testPosition, out MaskedTextResultHint resultHint)
         {
-            if (input == null)
-            {
-                throw new ArgumentNullException(nameof(input));
-            }
+            ArgumentNullException.ThrowIfNull(input);
 
             if (position < 0 || position >= _testString.Length)
             {
@@ -1824,10 +1815,7 @@ namespace System.ComponentModel
         /// </summary>
         public bool Replace(string input, int position, out int testPosition, out MaskedTextResultHint resultHint)
         {
-            if (input == null)
-            {
-                throw new ArgumentNullException(nameof(input));
-            }
+            ArgumentNullException.ThrowIfNull(input);
 
             if (position < 0 || position >= _testString.Length)
             {
@@ -1863,10 +1851,7 @@ namespace System.ComponentModel
         /// </summary>
         public bool Replace(string input, int startPosition, int endPosition, out int testPosition, out MaskedTextResultHint resultHint)
         {
-            if (input == null)
-            {
-                throw new ArgumentNullException(nameof(input));
-            }
+            ArgumentNullException.ThrowIfNull(input);
 
             if (endPosition >= _testString.Length)
             {
@@ -2049,10 +2034,7 @@ namespace System.ComponentModel
         /// </summary>
         public bool Set(string input, out int testPosition, out MaskedTextResultHint resultHint)
         {
-            if (input == null)
-            {
-                throw new ArgumentNullException(nameof(input));
-            }
+            ArgumentNullException.ThrowIfNull(input);
 
             testPosition = 0;
 

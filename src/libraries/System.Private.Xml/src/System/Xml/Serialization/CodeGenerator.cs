@@ -17,7 +17,6 @@ using System.Xml;
 using System.Xml.Serialization.Configuration;
 using System.Security;
 using System.Text.RegularExpressions;
-using System.Xml.Extensions;
 
 namespace System.Xml.Serialization
 {
@@ -167,7 +166,7 @@ namespace System.Xml.Serialization
             return localTmp;
         }
 
-        internal Type GetVariableType(object var)
+        internal static Type GetVariableType(object var)
         {
             if (var is ArgBuilder)
                 return ((ArgBuilder)var).ArgType;
@@ -339,7 +338,7 @@ namespace System.Xml.Serialization
             OpCodes.Blt,
         };
 
-        private OpCode GetBranchCode(Cmp cmp)
+        private static OpCode GetBranchCode(Cmp cmp)
         {
             return s_branchCodes[(int)cmp];
         }
@@ -431,6 +430,15 @@ namespace System.Xml.Serialization
         {
             Load(len);
             _ilGen!.Emit(OpCodes.Newarr, elementType);
+        }
+
+        internal void StackallocSpan(Type elementType, int len)
+        {
+            Ldc(len);
+            _ilGen!.Emit(OpCodes.Conv_U);
+            _ilGen!.Emit(OpCodes.Localloc);
+            Ldc(len);
+            _ilGen!.Emit(OpCodes.Newobj, typeof(Span<>).MakeGenericType(elementType).GetConstructor(new Type[] { typeof(void*), typeof(int) })!);
         }
 
         internal void LoadArrayElement(object obj, object arrayIndex)
@@ -712,7 +720,7 @@ namespace System.Xml.Serialization
         };
 
 
-        private OpCode GetLdindOpCode(TypeCode typeCode)
+        private static OpCode GetLdindOpCode(TypeCode typeCode)
         {
             return s_ldindOpCodes[(int)typeCode];
         }
@@ -728,6 +736,16 @@ namespace System.Xml.Serialization
             {
                 _ilGen!.Emit(OpCodes.Ldobj, type);
             }
+        }
+
+        internal void LdindU1()
+        {
+            _ilGen!.Emit(OpCodes.Ldind_U1);
+        }
+
+        internal void StindI1()
+        {
+            _ilGen!.Emit(OpCodes.Stind_I1);
         }
 
         internal void Stobj(Type type)
@@ -1024,7 +1042,7 @@ namespace System.Xml.Serialization
             OpCodes.Ldelem_Ref, //String = 18,
         };
 
-        private OpCode GetLdelemOpCode(TypeCode typeCode)
+        private static OpCode GetLdelemOpCode(TypeCode typeCode)
         {
             return s_ldelemOpCodes[(int)typeCode];
         }
@@ -1072,7 +1090,7 @@ namespace System.Xml.Serialization
             OpCodes.Stelem_Ref, //String = 18,
         };
 
-        private OpCode GetStelemOpCode(TypeCode typeCode)
+        private static OpCode GetStelemOpCode(TypeCode typeCode)
         {
             return s_stelemOpCodes[(int)typeCode];
         }
@@ -1184,7 +1202,7 @@ namespace System.Xml.Serialization
             OpCodes.Nop, //String = 18,
         };
 
-        private OpCode GetConvOpCode(TypeCode typeCode)
+        private static OpCode GetConvOpCode(TypeCode typeCode)
         {
             return s_convOpCodes[(int)typeCode];
         }
@@ -1610,9 +1628,9 @@ namespace System.Xml.Serialization
             this.ParameterTypes = parameterTypes;
         }
 
+        [Conditional("DEBUG")]
         public void Validate(Type? returnType, Type[] parameterTypes, MethodAttributes attributes)
         {
-#if DEBUG
             Debug.Assert(this.MethodBuilder.ReturnType == returnType);
             Debug.Assert(this.MethodBuilder.Attributes == attributes);
             Debug.Assert(this.ParameterTypes.Length == parameterTypes.Length);
@@ -1620,7 +1638,6 @@ namespace System.Xml.Serialization
             {
                 Debug.Assert(this.ParameterTypes[i] == parameterTypes[i]);
             }
-#endif
         }
     }
 

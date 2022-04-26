@@ -69,6 +69,8 @@ static LONG CALLBACK seh_unhandled_exception_filter(EXCEPTION_POINTERS* ep)
 	return EXCEPTION_CONTINUE_SEARCH;
 }
 
+MONO_DISABLE_WARNING(4127) /* conditional expression is constant */
+
 #if HAVE_API_SUPPORT_WIN32_RESET_STKOFLW
 static gpointer
 get_win32_restore_stack (void)
@@ -123,6 +125,8 @@ get_win32_restore_stack (void)
 	return NULL;
 }
 #endif /* HAVE_API_SUPPORT_WIN32_RESET_STKOFLW */
+
+MONO_RESTORE_WARNING
 
 /*
  * Unhandled Exception Filter
@@ -230,6 +234,8 @@ void win32_seh_set_handler(int type, MonoW32ExceptionHandler handler)
 #endif /* TARGET_WIN32 */
 
 #ifndef DISABLE_JIT
+
+MONO_DISABLE_WARNING(4127) /* conditional expression is constant */
 /*
  * mono_arch_get_restore_context:
  *
@@ -372,6 +378,9 @@ mono_arch_get_call_filter (MonoTrampInfo **info, gboolean aot)
 
 	return start;
 }
+
+MONO_RESTORE_WARNING
+
 #endif /* !DISABLE_JIT */
 
 /*
@@ -441,6 +450,9 @@ mono_amd64_resume_unwind (guint64 dummy1, guint64 dummy2, guint64 dummy3, guint6
 }
 
 #ifndef DISABLE_JIT
+
+MONO_DISABLE_WARNING(4127)
+
 /*
  * get_throw_trampoline:
  *
@@ -561,6 +573,8 @@ get_throw_trampoline (MonoTrampInfo **info, gboolean rethrow, gboolean corlib, g
 
 	return start;
 }
+
+MONO_RESTORE_WARNING
 
 /**
  * mono_arch_get_throw_exception:
@@ -1413,7 +1427,7 @@ mono_arch_unwindinfo_insert_range_in_table (const gpointer code_block, gsize blo
 			new_entry->handle = NULL;
 			new_entry->begin_range = begin_range;
 			new_entry->end_range = end_range;
-			new_entry->rt_funcs_max_count = (block_size / MONO_UNWIND_INFO_RT_FUNC_SIZE) + 1;
+			new_entry->rt_funcs_max_count = (DWORD)((block_size / MONO_UNWIND_INFO_RT_FUNC_SIZE) + 1);
 			new_entry->rt_funcs_current_count = 0;
 			new_entry->rt_funcs = g_new0 (RUNTIME_FUNCTION, new_entry->rt_funcs_max_count);
 
@@ -1660,11 +1674,11 @@ mono_arch_unwindinfo_insert_rt_func_in_table (const gpointer code, gsize code_si
 		PRUNTIME_FUNCTION current_rt_funcs = found_entry->rt_funcs;
 
 		RUNTIME_FUNCTION new_rt_func_data;
-		new_rt_func_data.BeginAddress = code_offset;
-		new_rt_func_data.EndAddress = code_offset + code_size;
+		new_rt_func_data.BeginAddress = (DWORD)code_offset;
+		new_rt_func_data.EndAddress = (DWORD)(code_offset + code_size);
 
 		gsize aligned_unwind_data = ALIGN_TO(end_range, sizeof(host_mgreg_t));
-		new_rt_func_data.UnwindData = aligned_unwind_data - found_entry->begin_range;
+		new_rt_func_data.UnwindData = (DWORD)(aligned_unwind_data - found_entry->begin_range);
 
 		g_assert_checked (new_rt_func_data.UnwindData == ALIGN_TO(new_rt_func_data.EndAddress, sizeof (host_mgreg_t)));
 
@@ -1708,8 +1722,8 @@ mono_arch_unwindinfo_insert_rt_func_in_table (const gpointer code, gsize code_si
 		}
 
 		// Update the stats for current entry.
-		found_entry->rt_funcs_current_count = entry_count;
-		found_entry->rt_funcs_max_count = max_entry_count;
+		found_entry->rt_funcs_current_count = (DWORD)entry_count;
+		found_entry->rt_funcs_max_count = (DWORD)max_entry_count;
 
 		if (new_rt_funcs == NULL && g_rtl_grow_function_table != NULL) {
 			// No new table just report increase in use.

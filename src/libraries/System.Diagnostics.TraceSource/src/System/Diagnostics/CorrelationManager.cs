@@ -29,10 +29,7 @@ namespace System.Diagnostics
 
         public void StartLogicalOperation(object operationId)
         {
-            if (operationId == null)
-            {
-                throw new ArgumentNullException(nameof(operationId));
-            }
+            ArgumentNullException.ThrowIfNull(operationId);
 
             _stackWrapper.Push(operationId);
         }
@@ -95,7 +92,7 @@ namespace System.Diagnostics
                 }
             }
 
-            private IEnumerator GetEnumerator(StackNode? n)
+            private static IEnumerator GetEnumerator(StackNode? n)
             {
                 while (n != null)
                 {

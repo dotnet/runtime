@@ -16,7 +16,7 @@ namespace Microsoft.Extensions.Options
         /// </summary>
         /// <param name="name">The name of the options.</param>
         /// <param name="action">The action to register.</param>
-        public ConfigureNamedOptions(string name, Action<TOptions> action)
+        public ConfigureNamedOptions(string? name, Action<TOptions>? action)
         {
             Name = name;
             Action = action;
@@ -25,24 +25,21 @@ namespace Microsoft.Extensions.Options
         /// <summary>
         /// The options name.
         /// </summary>
-        public string Name { get; }
+        public string? Name { get; }
 
         /// <summary>
         /// The configuration action.
         /// </summary>
-        public Action<TOptions> Action { get; }
+        public Action<TOptions>? Action { get; }
 
         /// <summary>
         /// Invokes the registered configure <see cref="Action"/> if the <paramref name="name"/> matches.
         /// </summary>
         /// <param name="name">The name of the options instance being configured.</param>
         /// <param name="options">The options instance to configure.</param>
-        public virtual void Configure(string name, TOptions options)
+        public virtual void Configure(string? name, TOptions options)
         {
-            if (options == null)
-            {
-                throw new ArgumentNullException(nameof(options));
-            }
+            ThrowHelper.ThrowIfNull(options);
 
             // Null name is used to configure all named options.
             if (Name == null || name == Name)
@@ -73,7 +70,7 @@ namespace Microsoft.Extensions.Options
         /// <param name="name">The name of the options.</param>
         /// <param name="dependency">A dependency.</param>
         /// <param name="action">The action to register.</param>
-        public ConfigureNamedOptions(string name, TDep dependency, Action<TOptions, TDep> action)
+        public ConfigureNamedOptions(string? name, TDep dependency, Action<TOptions, TDep>? action)
         {
             Name = name;
             Action = action;
@@ -83,12 +80,12 @@ namespace Microsoft.Extensions.Options
         /// <summary>
         /// The options name.
         /// </summary>
-        public string Name { get; }
+        public string? Name { get; }
 
         /// <summary>
         /// The configuration action.
         /// </summary>
-        public Action<TOptions, TDep> Action { get; }
+        public Action<TOptions, TDep>? Action { get; }
 
         /// <summary>
         /// The dependency.
@@ -100,12 +97,9 @@ namespace Microsoft.Extensions.Options
         /// </summary>
         /// <param name="name">The name of the options instance being configured.</param>
         /// <param name="options">The options instance to configure.</param>
-        public virtual void Configure(string name, TOptions options)
+        public virtual void Configure(string? name, TOptions options)
         {
-            if (options == null)
-            {
-                throw new ArgumentNullException(nameof(options));
-            }
+            ThrowHelper.ThrowIfNull(options);
 
             // Null name is used to configure all named options.
             if (Name == null || name == Name)
@@ -139,7 +133,7 @@ namespace Microsoft.Extensions.Options
         /// <param name="dependency">A dependency.</param>
         /// <param name="dependency2">A second dependency.</param>
         /// <param name="action">The action to register.</param>
-        public ConfigureNamedOptions(string name, TDep1 dependency, TDep2 dependency2, Action<TOptions, TDep1, TDep2> action)
+        public ConfigureNamedOptions(string? name, TDep1 dependency, TDep2 dependency2, Action<TOptions, TDep1, TDep2>? action)
         {
             Name = name;
             Action = action;
@@ -150,12 +144,12 @@ namespace Microsoft.Extensions.Options
         /// <summary>
         /// The options name.
         /// </summary>
-        public string Name { get; }
+        public string? Name { get; }
 
         /// <summary>
         /// The configuration action.
         /// </summary>
-        public Action<TOptions, TDep1, TDep2> Action { get; }
+        public Action<TOptions, TDep1, TDep2>? Action { get; }
 
         /// <summary>
         /// The first dependency.
@@ -172,12 +166,9 @@ namespace Microsoft.Extensions.Options
         /// </summary>
         /// <param name="name">The name of the options instance being configured.</param>
         /// <param name="options">The options instance to configure.</param>
-        public virtual void Configure(string name, TOptions options)
+        public virtual void Configure(string? name, TOptions options)
         {
-            if (options == null)
-            {
-                throw new ArgumentNullException(nameof(options));
-            }
+            ThrowHelper.ThrowIfNull(options);
 
             // Null name is used to configure all named options.
             if (Name == null || name == Name)
@@ -214,7 +205,7 @@ namespace Microsoft.Extensions.Options
         /// <param name="dependency2">A second dependency.</param>
         /// <param name="dependency3">A third dependency.</param>
         /// <param name="action">The action to register.</param>
-        public ConfigureNamedOptions(string name, TDep1 dependency, TDep2 dependency2, TDep3 dependency3, Action<TOptions, TDep1, TDep2, TDep3> action)
+        public ConfigureNamedOptions(string? name, TDep1 dependency, TDep2 dependency2, TDep3 dependency3, Action<TOptions, TDep1, TDep2, TDep3>? action)
         {
             Name = name;
             Action = action;
@@ -226,12 +217,12 @@ namespace Microsoft.Extensions.Options
         /// <summary>
         /// The options name.
         /// </summary>
-        public string Name { get; }
+        public string? Name { get; }
 
         /// <summary>
         /// The configuration action.
         /// </summary>
-        public Action<TOptions, TDep1, TDep2, TDep3> Action { get; }
+        public Action<TOptions, TDep1, TDep2, TDep3>? Action { get; }
 
         /// <summary>
         /// The first dependency.
@@ -253,12 +244,9 @@ namespace Microsoft.Extensions.Options
         /// </summary>
         /// <param name="name">The name of the options instance being configured.</param>
         /// <param name="options">The options instance to configure.</param>
-        public virtual void Configure(string name, TOptions options)
+        public virtual void Configure(string? name, TOptions options)
         {
-            if (options == null)
-            {
-                throw new ArgumentNullException(nameof(options));
-            }
+            ThrowHelper.ThrowIfNull(options);
 
             // Null name is used to configure all named options.
             if (Name == null || name == Name)
@@ -298,7 +286,7 @@ namespace Microsoft.Extensions.Options
         /// <param name="dependency3">A third dependency.</param>
         /// <param name="dependency4">A fourth dependency.</param>
         /// <param name="action">The action to register.</param>
-        public ConfigureNamedOptions(string name, TDep1 dependency1, TDep2 dependency2, TDep3 dependency3, TDep4 dependency4, Action<TOptions, TDep1, TDep2, TDep3, TDep4> action)
+        public ConfigureNamedOptions(string? name, TDep1 dependency1, TDep2 dependency2, TDep3 dependency3, TDep4 dependency4, Action<TOptions, TDep1, TDep2, TDep3, TDep4>? action)
         {
             Name = name;
             Action = action;
@@ -311,12 +299,12 @@ namespace Microsoft.Extensions.Options
         /// <summary>
         /// The options name.
         /// </summary>
-        public string Name { get; }
+        public string? Name { get; }
 
         /// <summary>
         /// The configuration action.
         /// </summary>
-        public Action<TOptions, TDep1, TDep2, TDep3, TDep4> Action { get; }
+        public Action<TOptions, TDep1, TDep2, TDep3, TDep4>? Action { get; }
 
         /// <summary>
         /// The first dependency.
@@ -343,12 +331,9 @@ namespace Microsoft.Extensions.Options
         /// </summary>
         /// <param name="name">The name of the options instance being configured.</param>
         /// <param name="options">The options instance to configure.</param>
-        public virtual void Configure(string name, TOptions options)
+        public virtual void Configure(string? name, TOptions options)
         {
-            if (options == null)
-            {
-                throw new ArgumentNullException(nameof(options));
-            }
+            ThrowHelper.ThrowIfNull(options);
 
             // Null name is used to configure all named options.
             if (Name == null || name == Name)
@@ -391,7 +376,7 @@ namespace Microsoft.Extensions.Options
         /// <param name="dependency4">A fourth dependency.</param>
         /// <param name="dependency5">A fifth dependency.</param>
         /// <param name="action">The action to register.</param>
-        public ConfigureNamedOptions(string name, TDep1 dependency1, TDep2 dependency2, TDep3 dependency3, TDep4 dependency4, TDep5 dependency5, Action<TOptions, TDep1, TDep2, TDep3, TDep4, TDep5> action)
+        public ConfigureNamedOptions(string? name, TDep1 dependency1, TDep2 dependency2, TDep3 dependency3, TDep4 dependency4, TDep5 dependency5, Action<TOptions, TDep1, TDep2, TDep3, TDep4, TDep5>? action)
         {
             Name = name;
             Action = action;
@@ -405,12 +390,12 @@ namespace Microsoft.Extensions.Options
         /// <summary>
         /// The options name.
         /// </summary>
-        public string Name { get; }
+        public string? Name { get; }
 
         /// <summary>
         /// The configuration action.
         /// </summary>
-        public Action<TOptions, TDep1, TDep2, TDep3, TDep4, TDep5> Action { get; }
+        public Action<TOptions, TDep1, TDep2, TDep3, TDep4, TDep5>? Action { get; }
 
         /// <summary>
         /// The first dependency.
@@ -442,12 +427,9 @@ namespace Microsoft.Extensions.Options
         /// </summary>
         /// <param name="name">The name of the options instance being configured.</param>
         /// <param name="options">The options instance to configure.</param>
-        public virtual void Configure(string name, TOptions options)
+        public virtual void Configure(string? name, TOptions options)
         {
-            if (options == null)
-            {
-                throw new ArgumentNullException(nameof(options));
-            }
+            ThrowHelper.ThrowIfNull(options);
 
             // Null name is used to configure all named options.
             if (Name == null || name == Name)

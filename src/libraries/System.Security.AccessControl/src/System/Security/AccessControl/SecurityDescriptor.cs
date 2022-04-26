@@ -259,10 +259,7 @@ namespace System.Security.AccessControl
 
         public void GetBinaryForm(byte[] binaryForm, int offset)
         {
-            if (binaryForm == null)
-            {
-                throw new ArgumentNullException(nameof(binaryForm));
-            }
+            ArgumentNullException.ThrowIfNull(binaryForm);
 
             if (offset < 0)
             {
@@ -469,14 +466,11 @@ namespace System.Security.AccessControl
         public RawSecurityDescriptor(byte[] binaryForm, int offset)
             : base()
         {
+            ArgumentNullException.ThrowIfNull(binaryForm);
+
             //
             // The array passed in must be valid
             //
-
-            if (binaryForm == null)
-            {
-                throw new ArgumentNullException(nameof(binaryForm));
-            }
 
             if (offset < 0)
             {
@@ -623,10 +617,7 @@ namespace System.Security.AccessControl
 
         private static byte[] BinaryFormFromSddlForm(string sddlForm)
         {
-            if (sddlForm == null)
-            {
-                throw new ArgumentNullException(nameof(sddlForm));
-            }
+            ArgumentNullException.ThrowIfNull(sddlForm);
 
             int error;
             IntPtr byteArray = IntPtr.Zero;
@@ -941,10 +932,7 @@ namespace System.Security.AccessControl
 
         internal CommonSecurityDescriptor(bool isContainer, bool isDS, RawSecurityDescriptor rawSecurityDescriptor, bool trusted)
         {
-            if (rawSecurityDescriptor == null)
-            {
-                throw new ArgumentNullException(nameof(rawSecurityDescriptor));
-            }
+            ArgumentNullException.ThrowIfNull(rawSecurityDescriptor);
 
             CreateFromParts(
                 isContainer,
@@ -1201,10 +1189,7 @@ namespace System.Security.AccessControl
 
         public void PurgeAccessControl(SecurityIdentifier sid)
         {
-            if (sid == null)
-            {
-                throw new ArgumentNullException(nameof(sid));
-            }
+            ArgumentNullException.ThrowIfNull(sid);
 
             if (DiscretionaryAcl != null)
             {
@@ -1214,10 +1199,7 @@ namespace System.Security.AccessControl
 
         public void PurgeAudit(SecurityIdentifier sid)
         {
-            if (sid == null)
-            {
-                throw new ArgumentNullException(nameof(sid));
-            }
+            ArgumentNullException.ThrowIfNull(sid);
 
             if (SystemAcl != null)
             {

@@ -24,10 +24,11 @@ namespace System.ServiceModel.Syndication
 
         public AtomPub10ServiceDocumentFormatter(Type documentTypeToCreate) : base()
         {
-            if (documentTypeToCreate == null)
+            if (documentTypeToCreate is null)
             {
                 throw new ArgumentNullException(nameof(documentTypeToCreate));
             }
+
             if (!typeof(ServiceDocument).IsAssignableFrom(documentTypeToCreate))
             {
                 throw new ArgumentException(SR.Format(SR.InvalidObjectTypePassed, nameof(documentTypeToCreate), nameof(ServiceDocument)), nameof(documentTypeToCreate));
@@ -47,7 +48,7 @@ namespace System.ServiceModel.Syndication
 
         public override bool CanRead(XmlReader reader)
         {
-            if (reader == null)
+            if (reader is null)
             {
                 throw new ArgumentNullException(nameof(reader));
             }
@@ -59,7 +60,7 @@ namespace System.ServiceModel.Syndication
 
         void IXmlSerializable.ReadXml(XmlReader reader)
         {
-            if (reader == null)
+            if (reader is null)
             {
                 throw new ArgumentNullException(nameof(reader));
             }
@@ -69,10 +70,11 @@ namespace System.ServiceModel.Syndication
 
         void IXmlSerializable.WriteXml(XmlWriter writer)
         {
-            if (writer == null)
+            if (writer is null)
             {
                 throw new ArgumentNullException(nameof(writer));
             }
+
             if (Document == null)
             {
                 throw new InvalidOperationException(SR.DocumentFormatterDoesNotHaveDocument);
@@ -83,7 +85,7 @@ namespace System.ServiceModel.Syndication
 
         public override void ReadFrom(XmlReader reader)
         {
-            if (reader == null)
+            if (reader is null)
             {
                 throw new ArgumentNullException(nameof(reader));
             }
@@ -99,10 +101,11 @@ namespace System.ServiceModel.Syndication
 
         public override void WriteTo(XmlWriter writer)
         {
-            if (writer == null)
+            if (writer is null)
             {
                 throw new ArgumentNullException(nameof(writer));
             }
+
             if (Document == null)
             {
                 throw new InvalidOperationException(SR.DocumentFormatterDoesNotHaveDocument);

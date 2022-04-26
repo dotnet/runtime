@@ -2,7 +2,6 @@
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <CLSCompliant>false</CLSCompliant>
-    <Nullable>enable</Nullable>
   </PropertyGroup>
 
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
@@ -11,10 +10,11 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="System.Diagnostics.DiagnosticSource.Typeforwards.netcoreapp.cs" Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'"/>
     <Compile Include="System.Diagnostics.DiagnosticSource.cs" />
     <Compile Include="System.Diagnostics.DiagnosticSourceActivity.cs" />
-    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\RequiresUnreferencedCodeAttribute.cs"
-             Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'" />
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\RequiresUnreferencedCodeAttribute.cs" Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'" />
+    <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\IsExternalInit.cs" Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">

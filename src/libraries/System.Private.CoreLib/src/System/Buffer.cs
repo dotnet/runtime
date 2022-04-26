@@ -9,8 +9,6 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-using Internal.Runtime.CompilerServices;
-
 namespace System
 {
     public static partial class Buffer
@@ -21,10 +19,8 @@ namespace System
         // array element indices and counts, use Array.Copy.
         public static unsafe void BlockCopy(Array src, int srcOffset, Array dst, int dstOffset, int count)
         {
-            if (src == null)
-                throw new ArgumentNullException(nameof(src));
-            if (dst == null)
-                throw new ArgumentNullException(nameof(dst));
+            ArgumentNullException.ThrowIfNull(src);
+            ArgumentNullException.ThrowIfNull(dst);
 
             nuint uSrcLen = src.NativeLength;
             if (src.GetType() != typeof(byte[]))
@@ -65,9 +61,7 @@ namespace System
 
         public static int ByteLength(Array array)
         {
-            // Is the array present?
-            if (array == null)
-                throw new ArgumentNullException(nameof(array));
+            ArgumentNullException.ThrowIfNull(array);
 
             // Is it of primitive types?
             if (!array.GetCorElementTypeOfElementType().IsPrimitiveType())

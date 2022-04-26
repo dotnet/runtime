@@ -4159,11 +4159,9 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			code = emit_float_to_int (cfg, code, ins->dreg, ins->sreg1, 2, FALSE);
 			break;
 		case OP_FCONV_TO_I4:
-		case OP_FCONV_TO_I:
 			code = emit_float_to_int (cfg, code, ins->dreg, ins->sreg1, 4, TRUE);
 			break;
 		case OP_FCONV_TO_U4:
-		case OP_FCONV_TO_U:
 			code = emit_float_to_int (cfg, code, ins->dreg, ins->sreg1, 4, FALSE);
 			break;
 		case OP_LCONV_TO_R_UN:

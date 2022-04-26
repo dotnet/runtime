@@ -8,7 +8,7 @@ namespace System.Xml.Xsl.XsltOld
     using System.Xml;
     using System.Xml.XPath;
 
-    internal class CallTemplateAction : ContainerAction
+    internal sealed class CallTemplateAction : ContainerAction
     {
         private const int ProcessedChildren = 2;
         private const int ProcessedTemplate = 3;

@@ -14,7 +14,7 @@ CrashInfo::Initialize()
     m_fd = open(memPath, O_RDONLY);
     if (m_fd == -1)
     {
-        fprintf(stderr, "open(%s) FAILED %d (%s)\n", memPath, errno, strerror(errno));
+        printf_error("open(%s) FAILED %d (%s)\n", memPath, errno, strerror(errno));
         return false;
     }
     // Get the process info
@@ -58,7 +58,7 @@ CrashInfo::EnumerateAndSuspendThreads()
     DIR* taskDir = opendir(taskPath);
     if (taskDir == nullptr)
     {
-        fprintf(stderr, "opendir(%s) FAILED %s\n", taskPath, strerror(errno));
+        printf_error("opendir(%s) FAILED %s\n", taskPath, strerror(errno));
         return false;
     }
 
@@ -76,7 +76,7 @@ CrashInfo::EnumerateAndSuspendThreads()
             }
             else
             {
-                fprintf(stderr, "ptrace(ATTACH, %d) FAILED %s\n", tid, strerror(errno));
+                printf_error("ptrace(ATTACH, %d) FAILED %s\n", tid, strerror(errno));
                 closedir(taskDir);
                 return false;
             }
@@ -102,7 +102,7 @@ CrashInfo::GetAuxvEntries()
     int fd = open(auxvPath, O_RDONLY, 0);
     if (fd == -1)
     {
-        fprintf(stderr, "open(%s) FAILED %s\n", auxvPath, strerror(errno));
+        printf_error("open(%s) FAILED %s\n", auxvPath, strerror(errno));
         return false;
     }
     bool result = false;
@@ -159,7 +159,7 @@ CrashInfo::EnumerateModuleMappings()
     FILE* mapsFile = fopen(mapPath, "r");
     if (mapsFile == nullptr)
     {
-        fprintf(stderr, "fopen(%s) FAILED %s\n", mapPath, strerror(errno));
+        printf_error("fopen(%s) FAILED %s\n", mapPath, strerror(errno));
         return false;
     }
     // linuxGateAddress is the beginning of the kernel's mapping of
@@ -178,7 +178,7 @@ CrashInfo::EnumerateModuleMappings()
         char* permissions = nullptr;
         char* moduleName = nullptr;
 
-        int c = sscanf(line, "%" PRIx64 "-%" PRIx64 " %m[-rwxsp] %" PRIx64 " %*[:0-9a-f] %*d %ms\n", &start, &end, &permissions, &offset, &moduleName);
+        int c = sscanf(line, "%" PRIx64 "-%" PRIx64 " %m[-rwxsp] %" PRIx64 " %*[:0-9a-f] %*d %m[^\n]\n", &start, &end, &permissions, &offset, &moduleName);
         if (c == 4 || c == 5)
         {
             // r = read
@@ -263,21 +263,57 @@ CrashInfo::VisitModule(uint64_t baseAddress, std::string& moduleName)
     if (baseAddress == 0 || baseAddress == m_auxvValues[AT_SYSINFO_EHDR]) {
         return;
     }
+    // For reasons unknown the main app singlefile module name is empty in the DSO. This replaces
+    // it with the one found in the /proc/<pid>/maps.
+    if (moduleName.empty())
+    {
+        MemoryRegion search(0, baseAddress, baseAddress + PAGE_SIZE);
+        const MemoryRegion* region = SearchMemoryRegions(m_moduleMappings, search);
+        if (region != nullptr)
+        {
+            moduleName = region->FileName();
+            TRACE("VisitModule using module name from mappings '%s'\n", moduleName.c_str());
+        }
+    }
     AddModuleInfo(false, baseAddress, nullptr, moduleName);
     if (m_coreclrPath.empty())
     {
         size_t last = moduleName.rfind(DIRECTORY_SEPARATOR_STR_A MAKEDLLNAME_A("coreclr"));
-        if (last != std::string::npos) {
+        if (last != std::string::npos)
+        {
             m_coreclrPath = moduleName.substr(0, last + 1);
+            m_runtimeBaseAddress = baseAddress;
 
             // Now populate the elfreader with the runtime module info and
             // lookup the DAC table symbol to ensure that all the memory
             // necessary is in the core dump.
-            if (PopulateForSymbolLookup(baseAddress)) {
+            if (PopulateForSymbolLookup(baseAddress))
+            {
                 uint64_t symbolOffset;
                 if (!TryLookupSymbol("g_dacTable", &symbolOffset))
                 {
                     TRACE("TryLookupSymbol(g_dacTable) FAILED\n");
+                }
+            }
+        }
+        else if (g_checkForSingleFile)
+        {
+            if (PopulateForSymbolLookup(baseAddress))
+            {
+                uint64_t symbolOffset;
+                if (TryLookupSymbol("DotNetRuntimeInfo", &symbolOffset))
+                {
+                    m_coreclrPath = GetDirectory(moduleName);
+                    m_runtimeBaseAddress = baseAddress;
+
+                    RuntimeInfo runtimeInfo { };
+                    if (ReadMemory((void*)(baseAddress + symbolOffset), &runtimeInfo, sizeof(RuntimeInfo)))
+                    {
+                        if (strcmp(runtimeInfo.Signature, RUNTIME_INFO_SIGNATURE) == 0)
+                        {
+                            TRACE("Found valid single-file runtime info\n");
+                        }
+                    }
                 }
             }
         }
@@ -314,7 +350,7 @@ CrashInfo::VisitProgramHeader(uint64_t loadbias, uint64_t baseAddress, Phdr* phd
 uint32_t
 CrashInfo::GetMemoryRegionFlags(uint64_t start)
 {
-    MemoryRegion search(0, start, start + PAGE_SIZE);
+    MemoryRegion search(0, start, start + PAGE_SIZE, 0);
     const MemoryRegion* region = SearchMemoryRegions(m_moduleMappings, search);
     if (region != nullptr) {
         return region->Flags();
@@ -377,7 +413,7 @@ GetStatus(pid_t pid, pid_t* ppid, pid_t* tgid, std::string* name)
     FILE *statusFile = fopen(statusPath, "r");
     if (statusFile == nullptr)
     {
-        fprintf(stderr, "GetStatus fopen(%s) FAILED\n", statusPath);
+        printf_error("GetStatus fopen(%s) FAILED\n", statusPath);
         return false;
     }
 

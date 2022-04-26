@@ -25,7 +25,8 @@ Param(
     [switch] $NoPGO,
     [switch] $DynamicPGO,
     [switch] $FullPGO,
-    [switch] $iOSLlvmBuild
+    [switch] $iOSLlvmBuild,
+    [string] $MauiVersion
 )
 
 $RunFromPerformanceRepo = ($Repository -eq "dotnet/performance") -or ($Repository -eq "dotnet-performance")
@@ -48,6 +49,7 @@ if ($Internal) {
         "perfowl" { $Queue = "Windows.10.Amd64.20H2.Owl.Perf"  }
         "perfsurf" { $Queue = "Windows.10.Arm64.Perf.Surf"  }
         "perfpixel4a" { $Queue = "Windows.10.Amd64.Pixel.Perf" }
+        "perfampere" { $Queue = "Windows.Server.Arm64.Perf" }
         Default { $Queue = "Windows.10.Amd64.19H1.Tiger.Perf" }
     }
     $PerfLabArguments = "--upload-to-perflab-container"
@@ -143,19 +145,20 @@ if ($UseBaselineCoreRun) {
     Move-Item -Path $BaselineCoreRootDirectory -Destination $NewBaselineCoreRoot
 }
 
+if($MauiVersion -ne "")
+{
+    $SetupArguments = "$SetupArguments --maui-version $MauiVersion"
+}
+
 if ($AndroidMono) {
     if(!(Test-Path $WorkItemDirectory))
     {
         mkdir $WorkItemDirectory
     }
-    if(Test-Path "$SourceDirectory\androidHelloWorld\HelloAndroid.apk") {
-        Copy-Item -path "$SourceDirectory\androidHelloWorld\HelloAndroid.apk" $PayloadDirectory -Verbose
-    }
-        
-    if(Test-Path "$SourceDirectory\androidHelloWorldWithDiag\HelloAndroidWithDiag.apk") {
-        Copy-Item -path "$SourceDirectory\androidHelloWorldWithDiag\HelloAndroidWithDiag.apk" $PayloadDirectory -Verbose
-    }
-    Copy-Item -path "$SourceDirectory\MauiAndroidDefault.apk" $PayloadDirectory
+
+    Copy-Item -path "$SourceDirectory\androidHelloWorld\HelloAndroid.apk" $PayloadDirectory -Verbose      
+    Copy-Item -path "$SourceDirectory\MauiAndroidDefault.apk" $PayloadDirectory -Verbose
+    Copy-Item -path "$SourceDirectory\MauiAndroidPodcast.apk" $PayloadDirectory -Verbose
     $SetupArguments = $SetupArguments -replace $Architecture, 'arm64'
 }
 
@@ -168,8 +171,9 @@ if ($iOSMono) {
         Copy-Item -path "$SourceDirectory\iosHelloWorld\llvm" $PayloadDirectory\iosHelloWorld\llvm -Recurse
     } else {
         Copy-Item -path "$SourceDirectory\iosHelloWorld\nollvm" $PayloadDirectory\iosHelloWorld\nollvm -Recurse
-        Copy-Item -path "$SourceDirectory\MauiiOSDefault" $PayloadDirectory\MauiiOSDefault -Recurse
-        Copy-Item -path "$SourceDirectory\MauiMacCatalystDefault" $PayloadDirectory\MauiMacCatalystDefault -Recurse
+        Copy-Item -path "$SourceDirectory\MauiiOSDefaultIPA" $PayloadDirectory\MauiiOSDefaultIPA -Recurse
+        Copy-Item -path "$SourceDirectory\MauiMacCatalystDefault\MauiMacCatalystDefault.app" $PayloadDirectory\MauiMacCatalystDefault -Recurse
+        Copy-Item -path "$SourceDirectory\MauiiOSPodcastIPA" $PayloadDirectory\MauiiOSPodcastIPA -Recurse
     }
 
     $SetupArguments = $SetupArguments -replace $Architecture, 'arm64'

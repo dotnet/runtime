@@ -12,6 +12,7 @@ using Microsoft.WebAssembly.Diagnostics;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Xunit;
+using Xunit.Abstractions;
 using Xunit.Sdk;
 
 namespace DebuggerTests
@@ -26,7 +27,14 @@ namespace DebuggerTests
 
         public bool UseCallFunctionOnBeforeGetProperties;
 
+        private const int DefaultTestTimeoutMs = 1 * 60 * 1000;
+        protected TimeSpan TestTimeout = TimeSpan.FromMilliseconds(DefaultTestTimeoutMs);
+
         static string s_debuggerTestAppPath;
+        static int s_idCounter = -1;
+
+        public int Id { get; init; }
+
         protected static string DebuggerTestAppPath
         {
             get
@@ -82,14 +90,17 @@ namespace DebuggerTests
             {
                 chrome_path = FindChromePath();
                 if (!string.IsNullOrEmpty(chrome_path))
+                {
+                    chrome_path = Path.GetFullPath(chrome_path);
                     Console.WriteLine ($"** Using chrome from {chrome_path}");
+                }
                 else
                     throw new Exception("Could not find an installed Chrome to use");
             }
 
             return chrome_path;
 
-            string FindChromePath()
+            static string FindChromePath()
             {
                 string chrome_path_env_var = Environment.GetEnvironmentVariable("CHROME_PATH_FOR_DEBUGGER_TESTS");
                 if (!string.IsNullOrEmpty(chrome_path_env_var))
@@ -100,17 +111,44 @@ namespace DebuggerTests
                     Console.WriteLine ($"warning: Could not find CHROME_PATH_FOR_DEBUGGER_TESTS={chrome_path_env_var}");
                 }
 
+                // Look for a chrome installed in artifacts, for local runs
+                string baseDir = Path.Combine(Path.GetDirectoryName(typeof(DebuggerTestBase).Assembly.Location), "..", "..");
+                string path = Path.Combine(baseDir, "chrome", "chrome-linux", "chrome");
+                if (File.Exists(path))
+                    return path;
+                path = Path.Combine(baseDir, "chrome", "chrome-win", "chrome.exe");
+                if (File.Exists(path))
+                    return path;
+
                 return PROBE_LIST.FirstOrDefault(p => File.Exists(p));
+            }
+        }
+
+        static string s_testLogPath = null;
+        public static string TestLogPath
+        {
+            get
+            {
+                if (s_testLogPath == null)
+                {
+                    string logPathVar = Environment.GetEnvironmentVariable("TEST_LOG_PATH");
+                    logPathVar = string.IsNullOrEmpty(logPathVar) ? Environment.CurrentDirectory : logPathVar;
+                    Interlocked.CompareExchange(ref s_testLogPath, logPathVar, null);
+                    Console.WriteLine ($"logPathVar: {logPathVar}, s_testLogPath: {s_testLogPath}");
+                }
+
+                return s_testLogPath;
             }
         }
 
         public DebuggerTestBase(string driver = "debugger-driver.html")
         {
+            Id = Interlocked.Increment(ref s_idCounter);
             // the debugger is working in locale of the debugged application. For example Datetime.ToString()
             // we want the test to mach it. We are also starting chrome with --lang=en-US
             System.Globalization.CultureInfo.CurrentCulture = new System.Globalization.CultureInfo("en-US");
 
-            insp = new Inspector();
+            insp = new Inspector(Id);
             cli = insp.Client;
             scripts = SubscribeToScripts(insp);
 
@@ -134,7 +172,7 @@ namespace DebuggerTests
              };
 
             await Ready();
-            await insp.OpenSessionAsync(fn);
+            await insp.OpenSessionAsync(fn, TestTimeout);
         }
 
         public virtual async Task DisposeAsync() => await insp.ShutdownAsync().ConfigureAwait(false);
@@ -285,10 +323,10 @@ namespace DebuggerTests
             await CheckValue(l["value"], TString(value), name);
         }
 
-        internal async Task<JToken> CheckSymbol(JToken locals, string name, string value)
+        internal async Task<JToken> CheckSymbol(JToken locals, string name, char value)
         {
             var l = GetAndAssertObjectWithName(locals, name);
-            await CheckValue(l["value"], TSymbol(value), name);
+            await CheckValue(l["value"], TChar(value), name);
             return l;
         }
 
@@ -475,6 +513,29 @@ namespace DebuggerTests
                 locals_fn: locals_fn);
         }
 
+        internal async Task<JObject> SetNextIPAndCheck(string script_id, string script_loc, int line, int column, string function_name,
+            Func<JObject, Task> wait_for_event_fn = null, Func<JToken, Task> locals_fn = null, bool expected_error = false)
+        {
+            var setNextIPArgs = JObject.FromObject(new
+                {
+                    scriptId = script_id,
+                    lineNumber = line,
+                    columnNumber = column
+                });
+
+            if (!expected_error)
+            {
+                return await SendCommandAndCheck(
+                    JObject.FromObject(new { location = setNextIPArgs }), "DotnetDebugger.setNextIP", script_loc, line, column, function_name,
+                    wait_for_event_fn: wait_for_event_fn,
+                    locals_fn: locals_fn);
+            }
+
+            var res = await cli.SendCommand("DotnetDebugger.setNextIP", JObject.FromObject(new { location = setNextIPArgs }), token);
+            Assert.False(res.IsOk);
+            return JObject.FromObject(res);
+        }
+
         internal async Task<JObject> EvaluateAndCheck(
                                         string expression, string script_loc, int line, int column, string function_name,
                                         Func<JObject, Task> wait_for_event_fn = null, Func<JToken, Task> locals_fn = null)
@@ -648,7 +709,7 @@ namespace DebuggerTests
             }
         }
 
-        internal async Task CheckProps(JToken actual, object exp_o, string label, int num_fields = -1)
+        internal async Task CheckProps(JToken actual, object exp_o, string label, int num_fields = -1, bool skip_num_fields_check = false)
         {
             if (exp_o.GetType().IsArray || exp_o is JArray)
             {
@@ -677,8 +738,11 @@ namespace DebuggerTests
             if (exp == null)
                 exp = JObject.FromObject(exp_o);
 
-            num_fields = num_fields < 0 ? exp.Values<JToken>().Count() : num_fields;
-            Assert.True(num_fields == actual.Count(), $"[{label}] Number of fields don't match, Expected: {num_fields}, Actual: {actual.Count()}");
+            if (!skip_num_fields_check)
+            {
+                num_fields = num_fields < 0 ? exp.Values<JToken>().Count() : num_fields;
+                Assert.True(num_fields == actual.Count(), $"[{label}] Number of fields don't match, Expected: {num_fields}, Actual: {actual.Count()}");
+            }
 
             foreach (var kvp in exp)
             {
@@ -771,7 +835,7 @@ namespace DebuggerTests
         }
 
         // Find an object with @name, *fetch* the object, and check against @o
-        internal async Task<JToken> CompareObjectPropertiesFor(JToken locals, string name, object o, string label = null, int num_fields = -1)
+        internal async Task<JToken> CompareObjectPropertiesFor(JToken locals, string name, object o, string label = null, int num_fields = -1, bool skip_num_fields_check = false)
         {
             if (label == null)
                 label = name;
@@ -779,7 +843,7 @@ namespace DebuggerTests
             try
             {
                 if (o != null)
-                    await CheckProps(props, o, label, num_fields);
+                    await CheckProps(props, o, label, num_fields, skip_num_fields_check);
                 return props;
             }
             catch
@@ -985,7 +1049,7 @@ namespace DebuggerTests
             });
 
             var res = await cli.SendCommand("Debugger.removeBreakpoint", remove_bp, token);
-            Assert.True(expect_ok ? res.IsOk : res.IsErr);
+            Assert.True(expect_ok ? res.IsOk : !res.IsOk);
 
             return res;
         }
@@ -997,7 +1061,7 @@ namespace DebuggerTests
                 JObject.FromObject(new { lineNumber = line, columnNumber = column, urlRegex = url_key, condition });
 
             var bp1_res = await cli.SendCommand("Debugger.setBreakpointByUrl", bp1_req, token);
-            Assert.True(expect_ok ? bp1_res.IsOk : bp1_res.IsErr);
+            Assert.True(expect_ok ? bp1_res.IsOk : !bp1_res.IsOk);
 
             return bp1_res;
         }
@@ -1110,6 +1174,8 @@ namespace DebuggerTests
         internal static JObject TBool(bool value) => JObject.FromObject(new { type = "boolean", value = @value, description = @value ? "true" : "false" });
 
         internal static JObject TSymbol(string value) => JObject.FromObject(new { type = "symbol", value = @value, description = @value });
+        
+        internal static JObject TChar(char value) => JObject.FromObject(new { type = "symbol", value = @value, description = $"{(int)value} '{@value}'" });
 
         /*
         	For target names with generated method names like
@@ -1307,6 +1373,20 @@ namespace DebuggerTests
 
             await cli.SendCommand("Runtime.evaluate", run_method, token);
             return await insp.WaitFor(Inspector.PAUSE);
+        }
+
+        public async Task<JObject> WaitForBreakpointResolvedEvent()
+        {
+            try
+            {
+                var res = await insp.WaitForEvent("Debugger.breakpointResolved");
+                Console.WriteLine ($"breakpoint resolved to {res}");
+                return res;
+            }
+            catch (TaskCanceledException)
+            {
+                throw new XunitException($"Timed out waiting for Debugger.breakpointResolved event");
+            }
         }
 
         internal async Task SetJustMyCode(bool enabled)

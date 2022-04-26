@@ -115,10 +115,15 @@ namespace System.Resources
         ResourceReader(Stream stream)
 #endif
         {
-            if (stream == null)
+            if (stream is null)
+            {
                 throw new ArgumentNullException(nameof(stream));
+            }
+
             if (!stream.CanRead)
+            {
                 throw new ArgumentException(SR.Argument_StreamNotReadable);
+            }
 
             _resCache = new Dictionary<string, ResourceLocator>(FastResourceComparer.Default);
             _store = new BinaryReader(stream, Encoding.UTF8);

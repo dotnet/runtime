@@ -103,10 +103,7 @@ namespace System.Net.Mime
 
         internal void SetContent(Stream stream)
         {
-            if (stream == null)
-            {
-                throw new ArgumentNullException(nameof(stream));
-            }
+            ArgumentNullException.ThrowIfNull(stream);
 
             if (_streamSet)
             {
@@ -121,10 +118,7 @@ namespace System.Net.Mime
 
         internal void SetContent(Stream stream, string? name, string? mimeType)
         {
-            if (stream == null)
-            {
-                throw new ArgumentNullException(nameof(stream));
-            }
+            ArgumentNullException.ThrowIfNull(stream);
 
             if (mimeType != null && mimeType != string.Empty)
             {
@@ -139,15 +133,13 @@ namespace System.Net.Mime
 
         internal void SetContent(Stream stream, ContentType? contentType)
         {
-            if (stream == null)
-            {
-                throw new ArgumentNullException(nameof(stream));
-            }
+            ArgumentNullException.ThrowIfNull(stream);
+
             _contentType = contentType;
             SetContent(stream);
         }
 
-        internal void Complete(IAsyncResult result, Exception? e)
+        internal static void Complete(IAsyncResult result, Exception? e)
         {
             //if we already completed and we got called again,
             //it mean's that there was an exception in the callback and we
@@ -268,7 +260,7 @@ namespace System.Net.Mime
         internal void ContentStreamCallbackHandler(IAsyncResult result)
         {
             MimePartContext context = (MimePartContext)result.AsyncState!;
-            Stream outputStream = context._writer.EndGetContentStream(result);
+            Stream outputStream = BaseWriter.EndGetContentStream(result);
             context._outputStream = GetEncodedStream(outputStream);
 
             _readCallback = new AsyncCallback(ReadCallback);

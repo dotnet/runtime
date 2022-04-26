@@ -62,11 +62,7 @@ namespace System.Xml
 
         internal int ReadContentAsBase64(byte[] buffer, int index, int count)
         {
-            // check arguments
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer));
-            }
+            ArgumentNullException.ThrowIfNull(buffer);
             if (count < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(count));
@@ -118,11 +114,7 @@ namespace System.Xml
 
         internal int ReadContentAsBinHex(byte[] buffer, int index, int count)
         {
-            // check arguments
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer));
-            }
+            ArgumentNullException.ThrowIfNull(buffer);
             if (count < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(count));
@@ -174,11 +166,7 @@ namespace System.Xml
 
         internal int ReadElementContentAsBase64(byte[] buffer, int index, int count)
         {
-            // check arguments
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer));
-            }
+            ArgumentNullException.ThrowIfNull(buffer);
             if (count < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(count));
@@ -230,11 +218,7 @@ namespace System.Xml
 
         internal int ReadElementContentAsBinHex(byte[] buffer, int index, int count)
         {
-            // check arguments
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer));
-            }
+            ArgumentNullException.ThrowIfNull(buffer);
             if (count < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(count));

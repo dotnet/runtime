@@ -10,8 +10,6 @@ using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics.X86;
 using System.Text;
 
-using Internal.Runtime.CompilerServices;
-
 namespace System.Runtime.Intrinsics
 {
     // We mark certain methods with AggressiveInlining to ensure that the JIT will
@@ -388,7 +386,7 @@ namespace System.Runtime.Intrinsics
         public override string ToString()
             => ToString("G", CultureInfo.InvariantCulture);
 
-        private string ToString(string? format, IFormatProvider? formatProvider)
+        private string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format, IFormatProvider? formatProvider)
         {
             ThrowHelper.ThrowForUnsupportedIntrinsicsVector256BaseType<T>();
 

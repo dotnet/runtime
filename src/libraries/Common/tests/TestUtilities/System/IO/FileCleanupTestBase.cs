@@ -84,11 +84,12 @@ namespace System.IO
         protected string GetRandomLinkName() => GetTestFileName() + ".link";
         protected string GetRandomDirName()  => GetTestFileName() + "_dir";
 
-        protected string GetRandomFilePath() => Path.Combine(ActualTestDirectory.Value, GetRandomFileName());
-        protected string GetRandomLinkPath() => Path.Combine(ActualTestDirectory.Value, GetRandomLinkName());
-        protected string GetRandomDirPath()  => Path.Combine(ActualTestDirectory.Value, GetRandomDirName());
+        protected string GetRandomFilePath() => Path.Combine(TestDirectoryActualCasing, GetRandomFileName());
+        protected string GetRandomLinkPath() => Path.Combine(TestDirectoryActualCasing, GetRandomLinkName());
+        protected string GetRandomDirPath()  => Path.Combine(TestDirectoryActualCasing, GetRandomDirName());
 
-        private Lazy<string> ActualTestDirectory => new Lazy<string>(() => GetTestDirectoryActualCasing());
+        private string _testDirectoryActualCasing;
+        private string TestDirectoryActualCasing => _testDirectoryActualCasing ??= GetTestDirectoryActualCasing();
 
         /// <summary>Gets a test file full path that is associated with the call site.</summary>
         /// <param name="index">An optional index value to use as a suffix on the file name.  Typically a loop index.</param>
@@ -103,7 +104,7 @@ namespace System.IO
         /// <param name="lineNumber">The line number of the function calling this method.</param>
         protected string GetTestFileName(int? index = null, [CallerMemberName] string memberName = null, [CallerLineNumber] int lineNumber = 0)
         {
-            string testFileName = GenerateTestFileName(index, memberName, lineNumber);
+            string testFileName = PathGenerator.GenerateTestFileName(index, memberName, lineNumber);
             string testFilePath = Path.Combine(TestDirectory, testFileName);
 
             const int maxLength = 260 - 5; // Windows MAX_PATH minus a bit
@@ -121,7 +122,7 @@ namespace System.IO
                     int halfExcessLength = (int)Math.Ceiling((double)excessLength / 2);
                     memberName = memberName.Substring(0, halfMemberNameLength - halfExcessLength) + "..." + memberName.Substring(halfMemberNameLength + halfExcessLength);
 
-                    testFileName = GenerateTestFileName(index, memberName, lineNumber);
+                    testFileName = PathGenerator.GenerateTestFileName(index, memberName, lineNumber);
                     testFilePath = Path.Combine(TestDirectory, testFileName);
                 }
                 else
@@ -166,14 +167,6 @@ namespace System.IO
             }
             return sb.ToString();
         }
-
-        private string GenerateTestFileName(int? index, string memberName, int lineNumber) =>
-            string.Format(
-                index.HasValue ? "{0}_{1}_{2}_{3}" : "{0}_{1}_{3}",
-                memberName ?? "TestBase",
-                lineNumber,
-                index.GetValueOrDefault(),
-                Guid.NewGuid().ToString("N").Substring(0, 8)); // randomness to avoid collisions between derived test classes using same base method concurrently
 
         // Some Windows versions like Windows Nano Server have the %TEMP% environment variable set to "C:\TEMP" but the
         // actual folder name is "C:\Temp", which prevents asserting path values using Assert.Equal due to case sensitiveness.

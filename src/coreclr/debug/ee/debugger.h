@@ -437,27 +437,6 @@ CONTEXT * GetManagedStoppedCtx(Thread * pThread);
 // Never NULL.
 CONTEXT * GetManagedLiveCtx(Thread * pThread);
 
-
-#undef UtilMessageBoxCatastrophic
-#undef UtilMessageBoxCatastrophicNonLocalized
-#undef UtilMessageBoxCatastrophicVA
-#undef UtilMessageBoxCatastrophicNonLocalizedVA
-#undef UtilMessageBox
-#undef UtilMessageBoxNonLocalized
-#undef UtilMessageBoxVA
-#undef UtilMessageBoxNonLocalizedVA
-#undef WszMessageBox
-#define UtilMessageBoxCatastrophic __error("Use g_pDebugger->MessageBox from inside the left side of the debugger")
-#define UtilMessageBoxCatastrophicNonLocalized __error("Use g_pDebugger->MessageBox from inside the left side of the debugger")
-#define UtilMessageBoxCatastrophicVA __error("Use g_pDebugger->MessageBox from inside the left side of the debugger")
-#define UtilMessageBoxCatastrophicNonLocalizedVA __error("Use g_pDebugger->MessageBox from inside the left side of the debugger")
-#define UtilMessageBox __error("Use g_pDebugger->MessageBox from inside the left side of the debugger")
-#define UtilMessageBoxNonLocalized __error("Use g_pDebugger->MessageBox from inside the left side of the debugger")
-#define UtilMessageBoxVA __error("Use g_pDebugger->MessageBox from inside the left side of the debugger")
-#define UtilMessageBoxNonLocalizedVA __error("Use g_pDebugger->MessageBox from inside the left side of the debugger")
-#define WszMessageBox __error("Use g_pDebugger->MessageBox from inside the left side of the debugger")
-
-
 /* ------------------------------------------------------------------------ *
  * Module classes
  * ------------------------------------------------------------------------ */
@@ -472,7 +451,7 @@ typedef DPTR(class DebuggerModule) PTR_DebuggerModule;
 class DebuggerModule
 {
   public:
-    DebuggerModule(Module * pRuntimeModule, DomainFile * pDomainFile, AppDomain * pAppDomain);
+    DebuggerModule(Module * pRuntimeModule, DomainAssembly * pDomainAssembly, AppDomain * pAppDomain);
 
     // Do we have any optimized code in the module?
     // JMC-probes aren't emitted in optimized code,
@@ -504,16 +483,16 @@ class DebuggerModule
     // If the Runtime module is shared, then this gives a common DM.
     // If the runtime module is not shared, then this is an identity function.
     //
-    // The runtime has the notion of "DomainFile", which is 1:1 with DebuggerModule
+    // The runtime has the notion of "DomainAssembly", which is 1:1 with DebuggerModule
     // and thus 1:1 with CordbModule.  The CordbModule hash table on the RS now uses
-    // the DomainFile as the key instead of DebuggerModule.  This is a temporary
+    // the DomainAssembly as the key instead of DebuggerModule.  This is a temporary
     // workaround to facilitate the removal of DebuggerModule.
     // </TODO>
     DebuggerModule * GetPrimaryModule();
-    DomainFile * GetDomainFile()
+    DomainAssembly * GetDomainAssembly()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return m_pRuntimeDomainFile;
+        return m_pRuntimeDomainAssembly;
     }
 
     // Called by DebuggerModuleTable to set our primary module
@@ -528,7 +507,7 @@ class DebuggerModule
     DebuggerModule* m_pPrimaryModule;
 
     PTR_Module     m_pRuntimeModule;
-    PTR_DomainFile m_pRuntimeDomainFile;
+    PTR_DomainAssembly m_pRuntimeDomainAssembly;
 
     AppDomain*     m_pAppDomain;
 
@@ -1604,10 +1583,6 @@ public:
                               DWORD *which,
                               BOOL skipPrologs=FALSE);
 
-    // If a method has multiple copies of code (because of EnC or code-pitching),
-    // this returns the DJI corresponding to 'pbAddr'
-    DebuggerJitInfo *GetJitInfoByAddress(const BYTE *pbAddr );
-
     void Init(TADDR newAddress);
 
 #if defined(FEATURE_EH_FUNCLETS)
@@ -1893,9 +1868,9 @@ public:
                     DWORD dwModuleName,
                     Assembly *pAssembly,
                     AppDomain *pAppDomain,
-                    DomainFile * pDomainFile,
+                    DomainAssembly * pDomainAssembly,
                     BOOL fAttaching);
-    DebuggerModule * AddDebuggerModule(DomainFile * pDomainFile);
+    DebuggerModule * AddDebuggerModule(DomainAssembly * pDomainAssembly);
 
 
     void UnloadModule(Module* pRuntimeModule,
@@ -2068,8 +2043,8 @@ public:
 
     bool HandleIPCEvent(DebuggerIPCEvent* event);
 
-    DebuggerModule * LookupOrCreateModule(VMPTR_DomainFile vmDomainFile);
-    DebuggerModule * LookupOrCreateModule(DomainFile * pDomainFile);
+    DebuggerModule * LookupOrCreateModule(VMPTR_DomainAssembly vmDomainAssembly);
+    DebuggerModule * LookupOrCreateModule(DomainAssembly * pDomainAssembly);
     DebuggerModule * LookupOrCreateModule(Module * pModule, AppDomain * pAppDomain);
 
     HRESULT GetAndSendInterceptCommand(DebuggerIPCEvent *event);
@@ -2437,7 +2412,7 @@ public:
     }
 
     // send a custom debugger notification to the RS
-    void SendCustomDebuggerNotification(Thread * pThread, DomainFile * pDomain, mdTypeDef classToken);
+    void SendCustomDebuggerNotification(Thread * pThread, DomainAssembly * pDomain, mdTypeDef classToken);
 
     // Send an MDA notification. This ultimately translates to an ICorDebugMDA object on the Right-Side.
     void SendMDANotification(

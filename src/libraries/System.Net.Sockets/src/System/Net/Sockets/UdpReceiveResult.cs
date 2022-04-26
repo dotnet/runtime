@@ -20,15 +20,8 @@ namespace System.Net.Sockets
         /// <param name="remoteEndPoint">The remote endpoint of the UDP packet</param>
         public UdpReceiveResult(byte[] buffer, IPEndPoint remoteEndPoint)
         {
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer));
-            }
-
-            if (remoteEndPoint == null)
-            {
-                throw new ArgumentNullException(nameof(remoteEndPoint));
-            }
+            ArgumentNullException.ThrowIfNull(buffer);
+            ArgumentNullException.ThrowIfNull(remoteEndPoint);
 
             _buffer = buffer;
             _remoteEndPoint = remoteEndPoint;

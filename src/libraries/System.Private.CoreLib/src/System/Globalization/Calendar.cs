@@ -84,10 +84,8 @@ namespace System.Globalization
 
         public static Calendar ReadOnly(Calendar calendar)
         {
-            if (calendar == null)
-            {
-                throw new ArgumentNullException(nameof(calendar));
-            }
+            ArgumentNullException.ThrowIfNull(calendar);
+
             if (calendar.IsReadOnly)
             {
                 return calendar;
@@ -713,7 +711,7 @@ namespace System.Globalization
 
         internal static int GetSystemTwoDigitYearSetting(CalendarId CalID, int defaultYearValue)
         {
-            int twoDigitYearMax = GlobalizationMode.UseNls ? CalendarData.NlsGetTwoDigitYearMax(CalID) : CalendarData.IcuGetTwoDigitYearMax(CalID);
+            int twoDigitYearMax = GlobalizationMode.UseNls ? CalendarData.NlsGetTwoDigitYearMax(CalID) : CalendarData.IcuGetTwoDigitYearMax();
             return twoDigitYearMax >= 0 ? twoDigitYearMax : defaultYearValue;
         }
     }

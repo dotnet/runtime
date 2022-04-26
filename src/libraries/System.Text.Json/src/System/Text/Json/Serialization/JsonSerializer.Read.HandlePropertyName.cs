@@ -17,14 +17,20 @@ namespace System.Text.Json
         /// Also sets state.Current.JsonPropertyInfo to a non-null value.
         /// </summary>
         internal static JsonPropertyInfo LookupProperty(
-            object obj,
+            object? obj,
             ReadOnlySpan<byte> unescapedPropertyName,
             ref ReadStack state,
             JsonSerializerOptions options,
             out bool useExtensionProperty,
             bool createExtensionProperty = true)
         {
-            Debug.Assert(state.Current.JsonTypeInfo.PropertyInfoForTypeInfo.ConverterStrategy == ConverterStrategy.Object);
+#if DEBUG
+            if (state.Current.JsonTypeInfo.PropertyInfoForTypeInfo.ConverterStrategy != ConverterStrategy.Object)
+            {
+                string objTypeName = obj?.GetType().FullName ?? "<null>";
+                Debug.Fail($"obj.GetType() => {objTypeName}; {state.Current.JsonTypeInfo.GetPropertyDebugInfo(unescapedPropertyName)}");
+            }
+#endif
 
             useExtensionProperty = false;
 
@@ -49,6 +55,7 @@ namespace System.Text.Json
 
                     if (createExtensionProperty)
                     {
+                        Debug.Assert(obj != null, "obj is null");
                         CreateDataExtensionProperty(obj, dataExtProperty, options);
                     }
 
@@ -58,7 +65,7 @@ namespace System.Text.Json
             }
 
             state.Current.JsonPropertyInfo = jsonPropertyInfo;
-            state.Current.NumberHandling = jsonPropertyInfo.NumberHandling;
+            state.Current.NumberHandling = jsonPropertyInfo.EffectiveNumberHandling;
             return jsonPropertyInfo;
         }
 
@@ -82,9 +89,9 @@ namespace System.Text.Json
                 unescapedPropertyName = propertyName;
             }
 
-            if (options.ReferenceHandlingStrategy == ReferenceHandlingStrategy.Preserve)
+            if (state.Current.CanContainMetadata)
             {
-                if (propertyName.Length > 0 && propertyName[0] == '$')
+                if (IsMetadataPropertyName(propertyName, state.Current.BaseJsonTypeInfo.PolymorphicTypeResolver))
                 {
                     ThrowHelper.ThrowUnexpectedMetadataException(propertyName, ref reader, ref state);
                 }
@@ -105,7 +112,7 @@ namespace System.Text.Json
             {
                 // Create the appropriate dictionary type. We already verified the types.
 #if DEBUG
-                Type underlyingIDictionaryType = jsonPropertyInfo.DeclaredPropertyType.GetCompatibleGenericInterface(typeof(IDictionary<,>))!;
+                Type underlyingIDictionaryType = jsonPropertyInfo.PropertyType.GetCompatibleGenericInterface(typeof(IDictionary<,>))!;
                 Type[] genericArgs = underlyingIDictionaryType.GetGenericArguments();
 
                 Debug.Assert(underlyingIDictionaryType.IsGenericType);
@@ -116,21 +123,21 @@ namespace System.Text.Json
                     genericArgs[1].UnderlyingSystemType == typeof(JsonElement) ||
                     genericArgs[1].UnderlyingSystemType == typeof(Nodes.JsonNode));
 #endif
-                if (jsonPropertyInfo.RuntimeTypeInfo.CreateObject == null)
+                if (jsonPropertyInfo.JsonTypeInfo.CreateObject == null)
                 {
                     // Avoid a reference to the JsonNode type for trimming
-                    if (jsonPropertyInfo.DeclaredPropertyType.FullName == JsonTypeInfo.JsonObjectTypeName)
+                    if (jsonPropertyInfo.PropertyType.FullName == JsonTypeInfo.JsonObjectTypeName)
                     {
                         extensionData = jsonPropertyInfo.ConverterBase.CreateObject(options);
                     }
                     else
                     {
-                        ThrowHelper.ThrowNotSupportedException_SerializationNotSupported(jsonPropertyInfo.DeclaredPropertyType);
+                        ThrowHelper.ThrowNotSupportedException_SerializationNotSupported(jsonPropertyInfo.PropertyType);
                     }
                 }
                 else
                 {
-                    extensionData = jsonPropertyInfo.RuntimeTypeInfo.CreateObject();
+                    extensionData = jsonPropertyInfo.JsonTypeInfo.CreateObject();
                 }
 
                 jsonPropertyInfo.SetExtensionDictionaryAsObject(obj, extensionData);

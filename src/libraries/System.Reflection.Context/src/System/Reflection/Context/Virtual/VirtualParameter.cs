@@ -10,10 +10,19 @@ namespace System.Reflection.Context.Virtual
     {
         public VirtualParameter(MemberInfo member, Type parameterType, string? name, int position)
         {
+            if (member is null)
+            {
+                throw new ArgumentNullException(nameof(member));
+            }
+            if (parameterType is null)
+            {
+                throw new ArgumentNullException(nameof(parameterType));
+            }
+
             Debug.Assert(position >= -1);
 
-            ClassImpl = parameterType ?? throw new ArgumentNullException(nameof(parameterType));
-            MemberImpl = member ?? throw new ArgumentNullException(nameof(member));
+            ClassImpl = parameterType;
+            MemberImpl = member;
             NameImpl = name;
             PositionImpl = position;
         }

@@ -325,7 +325,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
     assert(category != HW_Category_Scalar);
     assert(!HWIntrinsicInfo::isScalarIsa(HWIntrinsicInfo::lookupIsa(intrinsic)));
 
-    if (!featureSIMD || !IsBaselineSimdIsaSupported())
+    if (!IsBaselineSimdIsaSupported())
     {
         return nullptr;
     }
@@ -1560,6 +1560,49 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             retNode = gtNewSimdBinOpNode(GT_XOR, retType, op1, op2, simdBaseJitType, simdSize,
                                          /* isSimdAsHWIntrinsic */ false);
+            break;
+        }
+
+        case NI_AdvSimd_Arm64_LoadPairScalarVector64:
+        case NI_AdvSimd_Arm64_LoadPairScalarVector64NonTemporal:
+        case NI_AdvSimd_Arm64_LoadPairVector128:
+        case NI_AdvSimd_Arm64_LoadPairVector128NonTemporal:
+        case NI_AdvSimd_Arm64_LoadPairVector64:
+        case NI_AdvSimd_Arm64_LoadPairVector64NonTemporal:
+        {
+            op1 = impPopStack().val;
+
+            if (op1->OperIs(GT_CAST))
+            {
+                // Although the API specifies a pointer, if what we have is a BYREF, that's what
+                // we really want, so throw away the cast.
+                if (op1->gtGetOp1()->TypeGet() == TYP_BYREF)
+                {
+                    op1 = op1->gtGetOp1();
+                }
+            }
+
+            GenTree* loadIntrinsic = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, simdBaseJitType, simdSize);
+            // This operation contains an implicit indirection
+            //   it could point into the global heap or
+            //   it could throw a null reference exception.
+            //
+            loadIntrinsic->gtFlags |= (GTF_GLOB_REF | GTF_EXCEPT);
+
+            assert(HWIntrinsicInfo::IsMultiReg(intrinsic));
+
+            const unsigned lclNum = lvaGrabTemp(true DEBUGARG("Return value temp for multireg intrinsic"));
+            impAssignTempGen(lclNum, loadIntrinsic, sig->retTypeSigClass, (unsigned)CHECK_SPILL_ALL);
+
+            LclVarDsc* varDsc = lvaGetDesc(lclNum);
+            // The following is to exclude the fields of the local to have SSA.
+            varDsc->lvIsMultiRegRet = true;
+
+            GenTreeLclVar* lclVar = gtNewLclvNode(lclNum, varDsc->lvType);
+            lclVar->SetDoNotCSE();
+            lclVar->SetMultiReg();
+
+            retNode = lclVar;
             break;
         }
 

@@ -24,10 +24,7 @@ namespace System.Net.Sockets
 
         private UnixDomainSocketEndPoint(string path, string? boundFileName)
         {
-            if (path == null)
-            {
-                throw new ArgumentNullException(nameof(path));
-            }
+            ArgumentNullException.ThrowIfNull(path);
 
             BoundFileName = boundFileName;
 
@@ -63,10 +60,7 @@ namespace System.Net.Sockets
 
         internal UnixDomainSocketEndPoint(SocketAddress socketAddress)
         {
-            if (socketAddress == null)
-            {
-                throw new ArgumentNullException(nameof(socketAddress));
-            }
+            ArgumentNullException.ThrowIfNull(socketAddress);
 
             if (socketAddress.Family != EndPointAddressFamily ||
                 socketAddress.Size > s_nativeAddressSize)

@@ -32,10 +32,7 @@ namespace System.ComponentModel.Design
         /// </summary>
         public override void SetSavedLicenseKey(Type type, string key)
         {
-            if (type == null)
-            {
-                throw new ArgumentNullException(nameof(type));
-            }
+            ArgumentNullException.ThrowIfNull(type);
 
             _savedLicenseKeys[type.AssemblyQualifiedName!] = key;
         }

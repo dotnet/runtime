@@ -87,10 +87,8 @@ namespace System.Collections.Concurrent
         /// </returns>
         public static OrderablePartitioner<TSource> Create<TSource>(IList<TSource> list, bool loadBalance)
         {
-            if (list == null)
-            {
-                throw new ArgumentNullException(nameof(list));
-            }
+            ArgumentNullException.ThrowIfNull(list);
+
             if (loadBalance)
             {
                 return (new DynamicPartitionerForIList<TSource>(list));
@@ -115,13 +113,11 @@ namespace System.Collections.Concurrent
         /// </returns>
         public static OrderablePartitioner<TSource> Create<TSource>(TSource[] array, bool loadBalance)
         {
+            ArgumentNullException.ThrowIfNull(array);
+
             // This implementation uses 'ldelem' instructions for element retrieval, rather than using a
             // method call.
 
-            if (array == null)
-            {
-                throw new ArgumentNullException(nameof(array));
-            }
             if (loadBalance)
             {
                 return (new DynamicPartitionerForArray<TSource>(array));
@@ -168,10 +164,7 @@ namespace System.Collections.Concurrent
         /// </remarks>
         public static OrderablePartitioner<TSource> Create<TSource>(IEnumerable<TSource> source, EnumerablePartitionerOptions partitionerOptions)
         {
-            if (source == null)
-            {
-                throw new ArgumentNullException(nameof(source));
-            }
+            ArgumentNullException.ThrowIfNull(source);
 
             if ((partitionerOptions & (~EnumerablePartitionerOptions.NoBuffering)) != 0)
                 throw new ArgumentOutOfRangeException(nameof(partitionerOptions));

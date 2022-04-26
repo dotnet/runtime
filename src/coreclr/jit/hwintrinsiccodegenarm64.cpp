@@ -367,11 +367,32 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             switch (intrin.numOperands)
             {
                 case 1:
-                    GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op1Reg, opt);
+                    if (intrin.op1->isContained())
+                    {
+                        assert(ins == INS_ld1);
+
+                        // Emit 'ldr target, [base, index]'
+                        GenTreeAddrMode* lea = intrin.op1->AsAddrMode();
+                        assert(lea->GetScale() == 1);
+                        assert(lea->Offset() == 0);
+                        GetEmitter()->emitIns_R_R_R(INS_ldr, emitSize, targetReg, lea->Base()->GetRegNum(),
+                                                    lea->Index()->GetRegNum());
+                    }
+                    else
+                    {
+                        GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op1Reg, opt);
+                    }
                     break;
 
                 case 2:
-                    if (isRMW)
+                    // This handles optimizations for instructions that have
+                    // an implicit 'zero' vector of what would be the second operand.
+                    if (HWIntrinsicInfo::SupportsContainment(intrin.id) && intrin.op2->isContained() &&
+                        intrin.op2->IsVectorZero())
+                    {
+                        GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op1Reg, opt);
+                    }
+                    else if (isRMW)
                     {
                         assert(targetReg != op2Reg);
 
@@ -497,29 +518,6 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             case NI_Crc32_Arm64_ComputeCrc32:
             case NI_Crc32_Arm64_ComputeCrc32C:
                 GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt);
-                break;
-
-            case NI_AdvSimd_CompareEqual:
-            case NI_AdvSimd_Arm64_CompareEqual:
-            case NI_AdvSimd_Arm64_CompareEqualScalar:
-                if (intrin.op1->isContained())
-                {
-                    assert(HWIntrinsicInfo::SupportsContainment(intrin.id));
-                    assert(intrin.op1->IsVectorZero());
-
-                    GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op2Reg, opt);
-                }
-                else if (intrin.op2->isContained())
-                {
-                    assert(HWIntrinsicInfo::SupportsContainment(intrin.id));
-                    assert(intrin.op2->IsVectorZero());
-
-                    GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op1Reg, opt);
-                }
-                else
-                {
-                    GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt);
-                }
                 break;
 
             case NI_AdvSimd_AbsoluteCompareLessThan:
@@ -694,6 +692,18 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             }
             break;
 
+            case NI_AdvSimd_Arm64_LoadPairVector128:
+            case NI_AdvSimd_Arm64_LoadPairVector128NonTemporal:
+            case NI_AdvSimd_Arm64_LoadPairVector64:
+            case NI_AdvSimd_Arm64_LoadPairVector64NonTemporal:
+                GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, node->GetOtherReg(), op1Reg);
+                break;
+
+            case NI_AdvSimd_Arm64_LoadPairScalarVector64:
+            case NI_AdvSimd_Arm64_LoadPairScalarVector64NonTemporal:
+                GetEmitter()->emitIns_R_R_R(ins, emitTypeSize(intrin.baseType), targetReg, node->GetOtherReg(), op1Reg);
+                break;
+
             case NI_AdvSimd_Store:
                 GetEmitter()->emitIns_R_R(ins, emitSize, op2Reg, op1Reg, opt);
                 break;
@@ -862,7 +872,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     regNumber baseReg;
                     regNumber indexReg = op2Reg;
 
-                    // Optimize the case of op1 is in memory and trying to access ith element.
+                    // Optimize the case of op1 is in memory and trying to access i'th element.
                     if (!intrin.op1->isUsedFromReg())
                     {
                         assert(intrin.op1->isContained());

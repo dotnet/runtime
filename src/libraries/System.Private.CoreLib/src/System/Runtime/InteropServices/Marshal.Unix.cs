@@ -160,16 +160,17 @@ namespace System.Runtime.InteropServices
             }
         }
 
+#pragma warning disable IDE0060
         internal static Type? GetTypeFromProgID(string progID, string? server, bool throwOnError)
         {
-            if (progID == null)
-                throw new ArgumentNullException(nameof(progID));
+            ArgumentNullException.ThrowIfNull(progID);
 
             if (throwOnError)
                 throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
 
             return null;
         }
+#pragma warning restore IDE0060
 
         /// <summary>
         /// Get the last system error on the current thread

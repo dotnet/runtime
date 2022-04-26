@@ -673,7 +673,7 @@ namespace System.Net.WebSockets
                         // received the header but were only able to read a part of the fragment, so we should skip
                         // reading another header and just proceed to use that same header and read more data associated
                         // with it.  If instead its payload length is zero, then we've completed the processing of
-                        // thta message, and we should read the next header.
+                        // that message, and we should read the next header.
                         MessageHeader header = _lastReceiveHeader;
                         if (header.Processed)
                         {
@@ -1521,7 +1521,7 @@ namespace System.Net.WebSockets
             }
         }
 
-        private void ThrowOperationInProgress(string? methodName) => throw new InvalidOperationException(SR.Format(SR.net_Websockets_AlreadyOneOutstandingOperation, methodName));
+        private static void ThrowOperationInProgress(string? methodName) => throw new InvalidOperationException(SR.Format(SR.net_Websockets_AlreadyOneOutstandingOperation, methodName));
 
         /// <summary>Creates an OperationCanceledException instance, using a default message and the specified inner exception and token.</summary>
         private static Exception CreateOperationCanceledException(Exception innerException, CancellationToken cancellationToken = default(CancellationToken))

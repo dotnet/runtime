@@ -71,10 +71,7 @@ namespace System.ComponentModel
 
         public void AddHandlers(EventHandlerList listToAddFrom)
         {
-            if (listToAddFrom == null)
-            {
-                throw new ArgumentNullException(nameof(listToAddFrom));
-            }
+            ArgumentNullException.ThrowIfNull(listToAddFrom);
 
             ListEntry? currentListEntry = listToAddFrom._head;
             while (currentListEntry != null)

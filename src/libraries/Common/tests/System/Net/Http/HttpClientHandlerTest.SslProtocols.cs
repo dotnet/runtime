@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.IO;
 using System.Net.Security;
 using System.Net.Test.Common;
@@ -35,6 +36,7 @@ namespace System.Net.Http.Functional.Tests
 
         [Theory]
         [InlineData(SslProtocols.None)]
+#pragma warning disable SYSLIB0039 // TLS 1.0 and 1.1 are obsolete
         [InlineData(SslProtocols.Tls)]
         [InlineData(SslProtocols.Tls11)]
         [InlineData(SslProtocols.Tls12)]
@@ -49,6 +51,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(SslProtocols.Tls | SslProtocols.Tls13)]
         [InlineData(SslProtocols.Tls | SslProtocols.Tls11 | SslProtocols.Tls12 | SslProtocols.Tls13)]
 #endif
+#pragma warning restore SYSLIB0039
         public void SetGetProtocols_Roundtrips(SslProtocols protocols)
         {
             using (HttpClientHandler handler = CreateHttpClientHandler())
@@ -118,12 +121,14 @@ namespace System.Net.Http.Functional.Tests
                     // We currently know that some platforms like Debian 10 OpenSSL
                     // will by default block < TLS 1.2
 #pragma warning disable 0618 // SSL2/3 are deprecated
+#pragma warning disable SYSLIB0039 // TLS 1.0 and 1.1 are obsolete
 #if !NETFRAMEWORK
                     handler.SslProtocols = SslProtocols.Tls | SslProtocols.Tls11 | SslProtocols.Tls12 | SslProtocols.Tls13;
 #else
                     handler.SslProtocols = SslProtocols.Tls | SslProtocols.Tls11 | SslProtocols.Tls12 | (SslProtocols)12288;
 #endif
 #pragma warning restore 0618
+#pragma warning restore SYSLIB0039
                 }
 
                 // Use a different SNI for each connection to prevent TLS 1.3 renegotiation issue: https://github.com/dotnet/runtime/issues/47378
@@ -161,6 +166,7 @@ namespace System.Net.Http.Functional.Tests
                 yield return new object[] { SslProtocols.Ssl3, Configuration.Http.SSLv3RemoteServer };
             }
 #pragma warning restore 0618
+#pragma warning disable SYSLIB0039 // TLS 1.0 and 1.1 are obsolete
             if (PlatformDetection.SupportsTls10)
             {
                 yield return new object[] { SslProtocols.Tls, Configuration.Http.TLSv10RemoteServer };
@@ -170,6 +176,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 yield return new object[] { SslProtocols.Tls11, Configuration.Http.TLSv11RemoteServer };
             }
+#pragma warning restore SYSLIB0039
 
             if (PlatformDetection.SupportsTls12)
             {
@@ -261,16 +268,20 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(SslProtocols.Ssl2, SslProtocols.Tls12)]
         [InlineData(SslProtocols.Ssl3, SslProtocols.Tls12)]
 #pragma warning restore 0618
+#pragma warning disable SYSLIB0039 // TLS 1.0 and 1.1 are obsolete
         [InlineData(SslProtocols.Tls11, SslProtocols.Tls)]
         [InlineData(SslProtocols.Tls11 | SslProtocols.Tls12, SslProtocols.Tls)] // Skip this on WinHttpHandler.
         [InlineData(SslProtocols.Tls12, SslProtocols.Tls11)]
         [InlineData(SslProtocols.Tls, SslProtocols.Tls12)]
+#pragma warning restore SYSLIB0039
         public async Task GetAsync_AllowedClientSslVersionDiffersFromServer_ThrowsException(
             SslProtocols allowedClientProtocols, SslProtocols acceptedServerProtocols)
         {
+#pragma warning disable SYSLIB0039 // TLS 1.0 and 1.1 are obsolete
             if (IsWinHttpHandler &&
                 allowedClientProtocols == (SslProtocols.Tls11 | SslProtocols.Tls12) &&
                 acceptedServerProtocols == SslProtocols.Tls)
+#pragma warning restore SYSLIB0039
             {
                 // Native WinHTTP sometimes uses multiple TCP connections to try other TLS protocols when
                 // getting TLS protocol failures as part of its TLS fallback algorithm. The loopback server
@@ -294,9 +305,10 @@ namespace System.Net.Http.Functional.Tests
                     {
                         await serverTask;
                     }
-                    catch (Exception e) when (e is IOException || e is AuthenticationException)
+                    catch (Exception e) when (e is IOException || e is AuthenticationException || e is Win32Exception)
                     {
                         // Some SSL implementations simply close or reset connection after protocol mismatch.
+                        // The call may fail if neither of the requested protocols is available
                         // Newer OpenSSL sends Fatal Alert message before closing.
                         return;
                     }

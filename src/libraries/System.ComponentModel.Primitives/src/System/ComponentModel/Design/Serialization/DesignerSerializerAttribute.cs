@@ -18,14 +18,8 @@ namespace System.ComponentModel.Design.Serialization
         /// </summary>
         public DesignerSerializerAttribute(Type serializerType, Type baseSerializerType)
         {
-            if (serializerType == null)
-            {
-                throw new ArgumentNullException(nameof(serializerType));
-            }
-            if (baseSerializerType == null)
-            {
-                throw new ArgumentNullException(nameof(baseSerializerType));
-            }
+            ArgumentNullException.ThrowIfNull(serializerType);
+            ArgumentNullException.ThrowIfNull(baseSerializerType);
 
             SerializerTypeName = serializerType.AssemblyQualifiedName;
             SerializerBaseTypeName = baseSerializerType.AssemblyQualifiedName;
@@ -36,10 +30,7 @@ namespace System.ComponentModel.Design.Serialization
         /// </summary>
         public DesignerSerializerAttribute(string? serializerTypeName, Type baseSerializerType)
         {
-            if (baseSerializerType == null)
-            {
-                throw new ArgumentNullException(nameof(baseSerializerType));
-            }
+            ArgumentNullException.ThrowIfNull(baseSerializerType);
 
             SerializerTypeName = serializerTypeName;
             SerializerBaseTypeName = baseSerializerType.AssemblyQualifiedName;

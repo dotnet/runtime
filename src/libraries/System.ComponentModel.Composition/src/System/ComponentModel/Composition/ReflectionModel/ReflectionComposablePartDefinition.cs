@@ -23,10 +23,8 @@ namespace System.ComponentModel.Composition.ReflectionModel
 
         public ReflectionComposablePartDefinition(IReflectionPartCreationInfo creationInfo)
         {
-            if (creationInfo == null)
-            {
-                throw new ArgumentNullException(nameof(creationInfo));
-            }
+            ArgumentNullException.ThrowIfNull(creationInfo);
+
             _creationInfo = creationInfo;
         }
 

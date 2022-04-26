@@ -1,8 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Nullable>enable</Nullable>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
-    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
   </PropertyGroup>
   <!-- Shared CoreCLR -->
   <ItemGroup>

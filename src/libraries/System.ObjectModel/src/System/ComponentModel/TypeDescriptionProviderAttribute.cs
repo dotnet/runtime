@@ -13,10 +13,7 @@ namespace System.ComponentModel
         /// </summary>
         public TypeDescriptionProviderAttribute([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] string typeName)
         {
-            if (typeName == null)
-            {
-                throw new ArgumentNullException(nameof(typeName));
-            }
+            ArgumentNullException.ThrowIfNull(typeName);
 
             TypeName = typeName;
         }
@@ -26,10 +23,7 @@ namespace System.ComponentModel
         /// </summary>
         public TypeDescriptionProviderAttribute([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type type)
         {
-            if (type == null)
-            {
-                throw new ArgumentNullException(nameof(type));
-            }
+            ArgumentNullException.ThrowIfNull(type);
 
             TypeName = type.AssemblyQualifiedName!;
         }

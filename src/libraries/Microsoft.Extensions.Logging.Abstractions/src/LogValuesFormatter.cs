@@ -25,10 +25,7 @@ namespace Microsoft.Extensions.Logging
 
         public LogValuesFormatter(string format)
         {
-            if (format == null)
-            {
-                throw new ArgumentNullException(nameof(format));
-            }
+            ThrowHelper.ThrowIfNull(format);
 
             OriginalFormat = format;
 

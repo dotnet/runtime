@@ -23,7 +23,8 @@ namespace System.Xml.Linq
         /// <param name="name">The name to assign to the new <see cref="XStreamingElement"/> node</param>
         public XStreamingElement(XName name)
         {
-            if (name == null) throw new ArgumentNullException(nameof(name));
+            ArgumentNullException.ThrowIfNull(name);
+
             this.name = name;
         }
 
@@ -60,7 +61,7 @@ namespace System.Xml.Linq
             }
             set
             {
-                if (value == null) throw new ArgumentNullException(nameof(value));
+                ArgumentNullException.ThrowIfNull(value);
                 name = value;
             }
         }
@@ -155,7 +156,8 @@ namespace System.Xml.Linq
         /// <param name="writer"><see cref="XmlWriter"/> to write to </param>
         public void Save(XmlWriter writer)
         {
-            if (writer == null) throw new ArgumentNullException(nameof(writer));
+            ArgumentNullException.ThrowIfNull(writer);
+
             writer.WriteStartDocument();
             WriteTo(writer);
             writer.WriteEndDocument();
@@ -216,7 +218,8 @@ namespace System.Xml.Linq
         /// <param name="writer"></param>
         public void WriteTo(XmlWriter writer)
         {
-            if (writer == null) throw new ArgumentNullException(nameof(writer));
+            ArgumentNullException.ThrowIfNull(writer);
+
             new StreamingElementWriter(writer).WriteStreamingElement(this);
         }
 

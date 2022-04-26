@@ -43,15 +43,13 @@
 #include <mono/metadata/threads-types.h>
 #include <mono/metadata/runtime.h>
 #include <mono/metadata/w32event.h>
-#include <mono/metadata/w32file.h>
 #include <mono/metadata/threads.h>
 #include <mono/metadata/profiler-private.h>
 #include <mono/metadata/coree.h>
 #include <mono/metadata/jit-info.h>
-#include <mono/utils/mono-experiments.h>
 #include <mono/utils/w32subset.h>
 #include "external-only.h"
-#include "mono/utils/mono-tls-inline.h"
+#include <mono/utils/mono-tls-inline.h>
 
 /*
  * There is only one domain, but some code uses the domain TLS
@@ -67,44 +65,7 @@
 		mono_thread_info_tls_set (info, TLS_KEY_DOMAIN, (x));	\
 } while (FALSE)
 
-static MonoImage *exe_image;
 static MonoDomain *mono_root_domain;
-
-gboolean mono_dont_free_domains;
-
-/* AppConfigInfo: Information about runtime versions supported by an
- * aplication.
- */
-typedef struct {
-	GSList *supported_runtimes;
-	char *required_runtime;
-	int configuration_count;
-	int startup_count;
-} AppConfigInfo;
-
-static const MonoRuntimeInfo *current_runtime = NULL;
-
-#define NOT_AVAIL {0xffffU,0xffffU,0xffffU,0xffffU}
-
-/* This is the list of runtime versions supported by this JIT.
- */
-static const MonoRuntimeInfo supported_runtimes[] = {
-	{"v4.0.30319","4.5", { {4,0,0,0}, {10,0,0,0}, {4,0,0,0}, {4,0,0,0}, {4,0,0,0} } },
-	{"mobile",    "2.1", { {2,0,5,0}, {10,0,0,0}, {2,0,5,0}, {2,0,5,0}, {4,0,0,0} } },
-	{"moonlight", "2.1", { {2,0,5,0}, { 9,0,0,0}, {3,5,0,0}, {3,0,0,0}, NOT_AVAIL } },
-};
-
-#undef NOT_AVAIL
-
-
-/* The stable runtime version */
-#define DEFAULT_RUNTIME_VERSION "v4.0.30319"
-
-static GSList*
-get_runtimes_from_exe (const char *exe_file, MonoImage **exe_image);
-
-static const MonoRuntimeInfo*
-get_runtime_by_version (const char *version);
 
 static MonoDomain *
 create_root_domain (void)
@@ -128,10 +89,6 @@ create_root_domain (void)
 
 	MONO_PROFILER_RAISE (domain_loading, (domain));
 
-#ifndef DISABLE_PERFCOUNTERS
-	mono_atomic_inc_i32 (&mono_perfcounters->loader_appdomains);
-	mono_atomic_inc_i32 (&mono_perfcounters->loader_total_appdomains);
-#endif
 
 	MONO_PROFILER_RAISE (domain_loaded, (domain));
 
@@ -144,20 +101,14 @@ create_root_domain (void)
  * Creates the initial application domain and initializes the mono_defaults
  * structure.
  * This function is guaranteed to not run any IL code.
- * If exe_filename is not NULL, the method will determine the required runtime
- * from the exe configuration file or the version PE field.
- * If runtime_version is not NULL, that runtime version will be used.
- * Either exe_filename or runtime_version must be provided.
  *
  * Returns: the initial domain.
  */
 static MonoDomain *
-mono_init_internal (const char *filename, const char *exe_filename, const char *runtime_version)
+mono_init_internal (const char *root_domain_name)
 {
 	static MonoDomain *domain = NULL;
-	MonoAssembly *ass = NULL;
-	MonoImageOpenStatus status = MONO_IMAGE_OK;
-	GSList *runtimes = NULL;
+	MonoAssembly *corlib_assembly = NULL;
 
 	if (domain)
 		g_assert_not_reached ();
@@ -172,11 +123,7 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 #endif
 
 	mono_w32event_init ();
-	mono_w32file_init ();
 
-#ifndef DISABLE_PERFCOUNTERS
-	mono_perfcounters_init ();
-#endif
 	mono_counters_init ();
 
 	mono_counters_register ("Max HashTable Chain Length", MONO_COUNTER_INT|MONO_COUNTER_METADATA, &mono_g_hash_table_max_chain_length);
@@ -201,82 +148,9 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 
 	SET_APPDOMAIN (domain);
 
-#if defined(ENABLE_EXPERIMENT_null)
-	if (mono_experiment_enabled (MONO_EXPERIMENT_null))
-		g_warning ("null experiment enabled");
-#endif
+	corlib_assembly = mono_assembly_load_corlib ();
 
-	/* Get a list of runtimes supported by the exe */
-	if (exe_filename != NULL) {
-		/*
-		 * This function will load the exe file as a MonoImage. We need to close it, but
-		 * that would mean it would be reloaded later. So instead, we save it to
-		 * exe_image, and close it during shutdown.
-		 */
-		runtimes = get_runtimes_from_exe (exe_filename, &exe_image);
-#ifdef HOST_WIN32
-		if (!exe_image) {
-			exe_image = mono_assembly_open_from_bundle (mono_alc_get_default (), exe_filename, NULL, NULL);
-			if (!exe_image)
-				exe_image = mono_image_open (exe_filename, NULL);
-		}
-		mono_fixup_exe_image (exe_image);
-#endif
-	} else if (runtime_version != NULL) {
-		const MonoRuntimeInfo* rt = get_runtime_by_version (runtime_version);
-		if (rt != NULL)
-			runtimes = g_slist_prepend (runtimes, (gpointer)rt);
-	}
-
-	if (runtimes == NULL) {
-		const MonoRuntimeInfo *default_runtime = get_runtime_by_version (DEFAULT_RUNTIME_VERSION);
-		g_assert (default_runtime);
-		runtimes = g_slist_prepend (runtimes, (gpointer)default_runtime);
-		if (runtime_version != NULL)
-			g_print ("WARNING: The requested runtime version \"%s\" is unavailable.\n", runtime_version);
-		else
-			g_print ("WARNING: The runtime version supported by this application is unavailable.\n");
-		g_print ("Using default runtime: %s\n", default_runtime->runtime_version);
-	}
-
-	/* The selected runtime will be the first one for which there is a mscrolib.dll */
-	GSList *tmp = runtimes;
-	while (tmp != NULL) {
-		current_runtime = (MonoRuntimeInfo*)tmp->data;
-		g_assert (current_runtime);
-		ass = mono_assembly_load_corlib (&status);
-		if (status != MONO_IMAGE_OK && status != MONO_IMAGE_ERROR_ERRNO)
-			break;
-		tmp = tmp->next;
-	}
-
-	g_slist_free (runtimes);
-
-	if ((status != MONO_IMAGE_OK) || (ass == NULL)) {
-		switch (status){
-		case MONO_IMAGE_ERROR_ERRNO: {
-			char *corlib_file = g_build_filename (mono_assembly_getrootdir (), "mono", current_runtime->framework_version, "mscorlib.dll", (const char*)NULL);
-			g_print ("The assembly mscorlib.dll was not found or could not be loaded.\n");
-			g_print ("It should have been installed in the `%s' directory.\n", corlib_file);
-			g_free (corlib_file);
-			break;
-		}
-		case MONO_IMAGE_IMAGE_INVALID:
-			g_print ("The file %s/mscorlib.dll is an invalid CIL image\n",
-				 mono_assembly_getrootdir ());
-			break;
-		case MONO_IMAGE_MISSING_ASSEMBLYREF:
-			g_print ("Missing assembly reference in %s/mscorlib.dll\n",
-				 mono_assembly_getrootdir ());
-			break;
-		case MONO_IMAGE_OK:
-			/* to suppress compiler warning */
-			break;
-		}
-
-		exit (1);
-	}
-	mono_defaults.corlib = mono_assembly_get_image_internal (ass);
+	mono_defaults.corlib = mono_assembly_get_image_internal (corlib_assembly);
 
 	mono_defaults.object_class = mono_class_load_from_name (
                 mono_defaults.corlib, "System", "Object");
@@ -398,7 +272,7 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 	mono_defaults.critical_finalizer_object = mono_class_try_load_from_name (mono_defaults.corlib,
 			"System.Runtime.ConstrainedExecution", "CriticalFinalizerObject");
 
-	mono_assembly_load_friends (ass);
+	mono_assembly_load_friends (corlib_assembly);
 
 	mono_defaults.attribute_class = mono_class_load_from_name (
 		mono_defaults.corlib, "System", "Attribute");
@@ -416,7 +290,8 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 	mono_defaults.alc_class = mono_class_get_assembly_load_context_class ();
 	mono_defaults.appcontext_class = mono_class_try_load_from_name (mono_defaults.corlib, "System", "AppContext");
 
-	domain->friendly_name = g_path_get_basename (filename);
+	// in the past we got a filename as the root_domain_name so try to get the basename
+	domain->friendly_name = g_path_get_basename (root_domain_name);
 
 	MONO_PROFILER_RAISE (domain_name, (domain, domain->friendly_name));
 
@@ -425,45 +300,44 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 
 /**
  * mono_init:
+ * \param root_domain_name Friendly name to give to the initial domain
  *
  * Creates the initial application domain and initializes the mono_defaults
  * structure.
  *
  * This function is guaranteed to not run any IL code.
- * The runtime is initialized using the default runtime version.
  *
  * Returns: the initial domain.
  */
 MonoDomain *
-mono_init (const char *domain_name)
+mono_init (const char *root_domain_name)
 {
-	return mono_init_internal (domain_name, NULL, DEFAULT_RUNTIME_VERSION);
+	return mono_init_internal (root_domain_name);
 }
 
 /**
  * mono_init_from_assembly:
- * \param domain_name name to give to the initial domain
- * \param filename filename to load on startup
+ * \param root_domain_name Friendly name to give to the initial domain
+ * \param filename ignored
  *
  * Used by the runtime, users should use mono_jit_init instead.
  *
  * Creates the initial application domain and initializes the mono_defaults
  * structure.
  * This function is guaranteed to not run any IL code.
- * The runtime is initialized using the runtime version required by the
- * provided executable. The version is determined by looking at the exe
- * configuration file and the version PE field)
  *
  * \returns the initial domain.
  */
 MonoDomain *
-mono_init_from_assembly (const char *domain_name, const char *filename)
+mono_init_from_assembly (const char *root_domain_name, const char *filename)
 {
-	return mono_init_internal (domain_name, filename, NULL);
+	return mono_init (root_domain_name);
 }
 
 /**
  * mono_init_version:
+ * \param root_domain_name Friendly name to give to the initial domain
+ * \param version ignored
  *
  * Used by the runtime, users should use \c mono_jit_init instead.
  *
@@ -471,24 +345,13 @@ mono_init_from_assembly (const char *domain_name, const char *filename)
  * structure.
  *
  * This function is guaranteed to not run any IL code.
- * The runtime is initialized using the provided rutime version.
  *
  * \returns the initial domain.
  */
 MonoDomain *
-mono_init_version (const char *domain_name, const char *version)
+mono_init_version (const char *root_domain_name, const char *version)
 {
-	return mono_init_internal (domain_name, NULL, version);
-}
-
-void
-mono_close_exe_image (void)
-{
-	gboolean do_close = exe_image != NULL;
-	/* FIXME: shutdown hack. We mess something up and try to double-close/free it. */
-	do_close = do_close && !exe_image->has_updates;
-	if (do_close)
-		mono_image_close (exe_image);
+	return mono_init (root_domain_name);
 }
 
 /**
@@ -817,72 +680,4 @@ MonoClass*
 mono_get_exception_class (void)
 {
 	return mono_defaults.exception_class;
-}
-
-static const MonoRuntimeInfo*
-get_runtime_by_version (const char *version)
-{
-	int n;
-	int max = G_N_ELEMENTS (supported_runtimes);
-	int vlen;
-
-	if (!version)
-		return NULL;
-
-	for (n=0; n<max; n++) {
-		if (strcmp (version, supported_runtimes[n].runtime_version) == 0)
-			return &supported_runtimes[n];
-	}
-
-	vlen = strlen (version);
-	if (vlen >= 4 && version [1] - '0' >= 4) {
-		for (n=0; n<max; n++) {
-			if (strncmp (version, supported_runtimes[n].runtime_version, 4) == 0)
-				return &supported_runtimes[n];
-		}
-	}
-
-	return NULL;
-}
-
-static GSList*
-get_runtimes_from_exe (const char *file, MonoImage **out_image)
-{
-	const MonoRuntimeInfo* runtime = NULL;
-	MonoImage *image = NULL;
-	GSList *runtimes = NULL;
-
-	/* Look for a runtime with the exact version */
-	image = mono_assembly_open_from_bundle (mono_alc_get_default (), file, NULL, NULL);
-
-	if (image == NULL)
-		image = mono_image_open (file, NULL);
-
-	if (image == NULL) {
-		/* The image is wrong or the file was not found. In this case return
-		 * a default runtime and leave to the initialization method the work of
-		 * reporting the error.
-		 */
-		runtime = get_runtime_by_version (DEFAULT_RUNTIME_VERSION);
-		runtimes = g_slist_prepend (runtimes, (gpointer)runtime);
-		return runtimes;
-	}
-
-	*out_image = image;
-
-	runtime = get_runtime_by_version (image->version);
-	if (runtime != NULL)
-		runtimes = g_slist_prepend (runtimes, (gpointer)runtime);
-	return runtimes;
-}
-
-/**
- * mono_get_runtime_info:
- *
- * Returns: the version of the current runtime instance.
- */
-const MonoRuntimeInfo*
-mono_get_runtime_info (void)
-{
-	return current_runtime;
 }

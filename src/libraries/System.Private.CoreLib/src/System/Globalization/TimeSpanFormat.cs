@@ -437,7 +437,7 @@ namespace System.Globalization
                         if (nextChar >= 0 && nextChar != (int)'%')
                         {
                             char nextCharChar = (char)nextChar;
-                            StringBuilder origStringBuilder = FormatCustomized(value, MemoryMarshal.CreateReadOnlySpan<char>(ref nextCharChar, 1), dtfi, result);
+                            StringBuilder origStringBuilder = FormatCustomized(value, new ReadOnlySpan<char>(in nextCharChar), dtfi, result);
                             Debug.Assert(ReferenceEquals(origStringBuilder, result));
                             tokenLen = 2;
                         }

@@ -22,12 +22,10 @@ namespace Microsoft.Extensions.Configuration
         /// <returns>The <see cref="IConfigurationBuilder"/>.</returns>
         public static IConfigurationBuilder SetFileProvider(this IConfigurationBuilder builder, IFileProvider fileProvider)
         {
-            if (builder == null)
-            {
-                throw new ArgumentNullException(nameof(builder));
-            }
+            ThrowHelper.ThrowIfNull(builder);
+            ThrowHelper.ThrowIfNull(fileProvider);
 
-            builder.Properties[FileProviderKey] = fileProvider ?? throw new ArgumentNullException(nameof(fileProvider));
+            builder.Properties[FileProviderKey] = fileProvider;
             return builder;
         }
 
@@ -38,10 +36,7 @@ namespace Microsoft.Extensions.Configuration
         /// <returns>The default <see cref="IFileProvider"/>.</returns>
         public static IFileProvider GetFileProvider(this IConfigurationBuilder builder)
         {
-            if (builder == null)
-            {
-                throw new ArgumentNullException(nameof(builder));
-            }
+            ThrowHelper.ThrowIfNull(builder);
 
             if (builder.Properties.TryGetValue(FileProviderKey, out object? provider))
             {
@@ -59,15 +54,8 @@ namespace Microsoft.Extensions.Configuration
         /// <returns>The <see cref="IConfigurationBuilder"/>.</returns>
         public static IConfigurationBuilder SetBasePath(this IConfigurationBuilder builder, string basePath)
         {
-            if (builder == null)
-            {
-                throw new ArgumentNullException(nameof(builder));
-            }
-
-            if (basePath == null)
-            {
-                throw new ArgumentNullException(nameof(basePath));
-            }
+            ThrowHelper.ThrowIfNull(builder);
+            ThrowHelper.ThrowIfNull(basePath);
 
             return builder.SetFileProvider(new PhysicalFileProvider(basePath));
         }
@@ -80,10 +68,7 @@ namespace Microsoft.Extensions.Configuration
         /// <returns>The <see cref="IConfigurationBuilder"/>.</returns>
         public static IConfigurationBuilder SetFileLoadExceptionHandler(this IConfigurationBuilder builder, Action<FileLoadExceptionContext> handler)
         {
-            if (builder == null)
-            {
-                throw new ArgumentNullException(nameof(builder));
-            }
+            ThrowHelper.ThrowIfNull(builder);
 
             builder.Properties[FileLoadExceptionHandlerKey] = handler;
             return builder;
@@ -96,10 +81,7 @@ namespace Microsoft.Extensions.Configuration
         /// <returns>The <see cref="IConfigurationBuilder"/>.</returns>
         public static Action<FileLoadExceptionContext>? GetFileLoadExceptionHandler(this IConfigurationBuilder builder)
         {
-            if (builder == null)
-            {
-                throw new ArgumentNullException(nameof(builder));
-            }
+            ThrowHelper.ThrowIfNull(builder);
 
             if (builder.Properties.TryGetValue(FileLoadExceptionHandlerKey, out object? handler))
             {

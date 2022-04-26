@@ -13,7 +13,9 @@ This is a list of additions and edits to be made in ECMA-335 specifications. It 
 - [Static Interface Methods](#static-interface-methods)
 - [Covariant Return Types](#covariant-return-types)
 - [Unsigned data conversion with overflow detection](#unsigned-data-conversion-with-overflow-detection)
+- [Ref field support](#ref-fields)
 - [Rules for IL rewriters](#rules-for-il-rewriters)
+- [Checked user-defined operators](#checked-user-defined-operators)
 
 ## Signatures
 
@@ -453,7 +455,7 @@ https://www.ecma-international.org/publications-and-standards/standards/ecma-335
 
 (Add second paragraph)
 
-Static interface methods may be marked as virtual. Valid object types implementing such interfaces shall provide implementations
+Static interface methods may be marked as virtual. Valid object types implementing such interfaces may provide implementations
 for these methods by means of Method Implementations (II.15.1.4). Polymorphic behavior of calls to these methods is facilitated
 by the constrained. call IL instruction where the constrained. prefix specifies the type to use for lookup of the static interface
 method.
@@ -531,7 +533,6 @@ or static method actually implemented directly on the type.
 (Add to the end of the 1st paragraph)
 
 Interfaces may define static virtual methods that get resolved at runtime based on actual types involved.
-These static virtual methods must be marked as abstract in the defining interfaces.
 
 ### II.12.2 Implementing virtual methods on interfaces
 
@@ -754,7 +755,7 @@ the call itself doesn't involve any instance or `this` pointer.
 (Edit bulleted section "This contains informative text only" starting at the bottom of page
 233):
 
-Edit section *7.b*: Static | Virtual | !Abstract
+Remove section *7.b*: ~~Static | Virtual~~
 
 (Add new section 41 after the last section 40:)
 
@@ -950,6 +951,48 @@ on the top of the stack is reinterpreted as an unsigned value before the convers
 Note that integer values of less than 4 bytes are extended to int32 (not native int) on the
 evaluation stack.
 
+## Ref Fields
+To improve the usefulness of ref structs, support for fields which are defined as ByRefs is needed. Currently their functionality can be approximated by Span<T> fields, but not all types can be converted into Span<T> types simply. In order to support these scenarios, support for generalizing ByRef fields, and converting TypedReference, ArgIterator and RuntimeArgumentHandle into following the normal rules of C# ref structs is desired. With this set of changes, it becomes possible to have ByRef fields of T, but support for pointers to ByRef fields or ByRefs to ByRefs is not added to the ECMA specification.
+
+Changes to the spec. These changes are relative to the 6th edition (June 2012) of the ECMA-335 specification published by ECMA available at:
+
+https://www.ecma-international.org/publications-and-standards/standards/ecma-335/
+
+### I.8.2.1.1 Managed pointers and related types
+- First paragraph. Replace “Managed pointer types are only allowed for local variable (§I.8.6.1.3) and parameter signatures (§I.8.6.1.4); they cannot be used for field signatures (§I.8.6.1.2), as the element type of an array (§I.8.9.1), and boxing a value of managed pointer type is disallowed (§I.8.2.4).” with “Managed pointer types are only allowed for local variable (§I.8.6.1.3), parameter signatures (§I.8.6.1.4), and instance fields of byref-like types; they cannot be used for field signatures(§I.8.6.1.2) of static fields, or of instance fields of types which are not byref-like, as the element type of an array (§I.8.9.1), and boxing a value of managed pointer type is disallowed (§I.8.2.4).”
+- Add a new paragraph before the paragraph on the three special types. “Byref-like types are value types which may contain managed pointers, or pointers onto the VES stack. Byref-like types have the same restrictions as byrefs. Value types which are marked with the System.Runtime.CompilerServices.IsByRefLikeAttribute attribute are considered to be byref-like types.”
+- Replace “Typed references have the same restrictions as byrefs.” With “Typed references are byref-like types and have the same restrictions as normal byref-like types.”
+- Replace “They can be used for local variable and parameter signatures. The use of these types for fields, method return types, the element type of an array, or in boxing is not verifiable (§I.8.8). These two types are referred to as byref-like types.” With “If a function uses these types only for local variable and parameter signatures, then the use of those types is verifiable. Otherwise these types have the same restrictions as normal byref-like types.”
+
+### I.8.6.1.1
+- Add to the first paragraph a modified version of the third paragraph of I.8.6.1.3. "The typed reference ~~local variable signature~~ type signature states that the type is a structure which will contain both a managed pointer to a location and a runtime representation of the type that can be stored at that location. A typed reference signature is similar to a byref constraint(§I.8.6.1.2), but while the byref specifies the type as part of the byref constraint (and hence statically as part of the type description), a typed reference provides the type information dynamically."
+- Add a second paragraph which is a slight modification of the former fourth paragraph in section I.8.6.1.3. "The typed reference signature is actually represented as a built-in value type, like the integer and floating-point types. In the Base Class Library (see Partition IV Library) the type is known as System.TypedReference and in the assembly language used in Partition II it is designated by the keyword typedref. This type shall only be used for parameters, the type of a field, return values and local variables. It shall not be boxed, nor shall it be used as the type of an element of an array.
+- Move CLS Rule 14 to this section.
+
+### I.8.6.1.2
+- Move the contents of the byref constraint paragraph from Section I.8.6.1.3 to a bullet point.
+“- The byref constraint states that the content of the corresponding location is a managed pointer. A managed pointer can point to a local variable, parameter, field of a compound type, or element of an array. However, when a call crosses a remoting boundary (see §I.12.5) a conforming implementation can use a copy-in/copy-out mechanism instead of a managed pointer. Thus programs shall not rely on the aliasing behavior of true pointers. A managed pointer cannot point to another managed pointer, but a managed pointer can point to a byref-like type.”
+
+### I.8.6.1.3
+- Edit the second sentence of the first paragraph. "A local signature specifies the contract on a local variable allocated during the running of a method. A local signature contains a full location signature~~, plus it can specify one additional constraint:~~."
+- Remove the rest of this section. Its contents have been moved into sections I.8.6.1.1 and I.8.6.1.2
+
+### I.8.7
+- In the section about type compatibility when determining a type from a signature: The byref constraint is to be referenced from section I8.6.1.2 insetad of I.8.6.1.3
+
+### I.8.9.2
+- Insert at the end of the first paragraph “An unmanaged pointer type cannot point to a managed pointer.”
+
+Changes to signatures:
+### II.23.2.10
+- Remove special case for TYPEDBYREF
+
+### II.23.2.11
+- Remove special case for TYPEDBYREF
+
+### II.23.2.12
+- Add TYPEDBYREF as a form of Type
+
 ## Rules for IL Rewriters
 
 There are apis such as `System.Runtime.CompilerServices.RuntimeHelpers.CreateSpan<T>(...)` which require that the PE file have a particular structure. In particular, that api requires that the associated RVA of a FieldDef which is used to create a span must be naturally aligned over the data type that `CreateSpan` is instantiated over. There are 2 major concerns.
@@ -958,3 +1001,15 @@ There are apis such as `System.Runtime.CompilerServices.RuntimeHelpers.CreateSpa
 2. That in the presence of IL rewriters that the RVA remains aligned. This section descibes metadata which will be processed by IL rewriters in order to maintain the required alignment.
 
 In order to maintain alignment, if the field needs alignment to be preserved, the field must be of a type locally defined within the module which has a Pack (§II.10.7) value of the desired alignment. Unlike other uses of the .pack directive, in this circumstance the .pack specifies a minimum alignment.
+
+## Checked user-defined operators
+
+Section "I.10.3.1 Unary operators" of ECMA-335 adds *op_CheckedIncrement*, *op_CheckedDecrement*, *op_CheckedUnaryNegation* as the names for methods implementing checked `++`, `--` and `-` unary operators.
+
+Section "I.10.3.2 Binary operators" of ECMA-335 adds *op_CheckedAddition*, *op_CheckedSubtraction*,
+*op_CheckedMultiply*, *op_CheckedDivision* as the names for methods implementing checked `+`, `-`, `*`, and `/` binary operators.
+
+Section "I.10.3.3 Conversion operators" of ECMA-335 adds *op_CheckedExplicit* as the name for a method
+implementing checked explicit conversion operator.
+
+A checked user-defined operator is expected to throw an exception when the result of an operation is too large to represent in the destination type. What does it mean to be too large actually depends on the nature of the destination type. Typically the exception thrown is a System.OverflowException.

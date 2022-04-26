@@ -6,7 +6,7 @@ endif(FEATURE_GDBJIT)
 
 set(CLR_SOURCES
     mscoree.cpp
-    unixinterface.cpp
+    exports.cpp
 )
 
 if(CLR_CMAKE_TARGET_WIN32)

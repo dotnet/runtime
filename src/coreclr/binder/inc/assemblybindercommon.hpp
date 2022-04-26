@@ -32,7 +32,6 @@ namespace BINDER_SPACE
     public:
         static HRESULT BindAssembly(/* in */  AssemblyBinder      *pBinder, 
                                     /* in */  AssemblyName        *pAssemblyName,
-                                    /* in */  LPCWSTR              szCodeBase,
                                     /* in */  bool                 excludeAppPaths,
                                     /* out */ Assembly           **ppAssembly);
 
@@ -74,11 +73,6 @@ namespace BINDER_SPACE
                                   /* in */  bool                skipVersionCompatibilityCheck,
                                   /* in */  bool                excludeAppPaths,
                                   /* out */ BindResult         *pBindResult);
-
-        static HRESULT BindWhereRef(/* in */  ApplicationContext *pApplicationContext,
-                                    /* in */  PathString         &assemblyPath,
-                                    /* in */  bool                excludeAppPaths,
-                                    /* out */ BindResult         *pBindResult);
 
         static HRESULT BindLocked(/* in */  ApplicationContext *pApplicationContext,
                                   /* in */  AssemblyName       *pAssemblyName,

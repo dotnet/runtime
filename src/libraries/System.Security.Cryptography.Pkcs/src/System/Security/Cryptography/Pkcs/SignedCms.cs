@@ -3,6 +3,7 @@
 
 using System.Buffers;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Formats.Asn1;
 using System.Linq;
@@ -42,8 +43,11 @@ namespace System.Security.Cryptography.Pkcs
 
         public SignedCms(SubjectIdentifierType signerIdentifierType, ContentInfo contentInfo, bool detached)
         {
-            if (contentInfo == null)
+            if (contentInfo is null)
+            {
                 throw new ArgumentNullException(nameof(contentInfo));
+            }
+
             if (contentInfo.Content == null)
                 throw new ArgumentException(SR.Format(SR.Arg_EmptyOrNullString_Named, "contentInfo.Content"), nameof(contentInfo));
 
@@ -92,7 +96,7 @@ namespace System.Security.Cryptography.Pkcs
                     if (choice.Certificate.HasValue)
                     {
                         coll.Add(new X509Certificate2(choice.Certificate.Value
-#if NET5_0_OR_GREATER
+#if NETCOREAPP
                             .Span
 #else
                             .ToArray()
@@ -160,8 +164,10 @@ namespace System.Security.Cryptography.Pkcs
 
         public void Decode(byte[] encodedMessage)
         {
-            if (encodedMessage == null)
+            if (encodedMessage is null)
+            {
                 throw new ArgumentNullException(nameof(encodedMessage));
+            }
 
             Decode(new ReadOnlySpan<byte>(encodedMessage));
         }
@@ -294,13 +300,14 @@ namespace System.Security.Cryptography.Pkcs
             return wrappedContent;
         }
 
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public void ComputeSignature() => ComputeSignature(new CmsSigner(_signerIdentifierType), true);
 
         public void ComputeSignature(CmsSigner signer) => ComputeSignature(signer, true);
 
         public void ComputeSignature(CmsSigner signer, bool silent)
         {
-            if (signer == null)
+            if (signer is null)
             {
                 throw new ArgumentNullException(nameof(signer));
             }
@@ -397,7 +404,7 @@ namespace System.Security.Cryptography.Pkcs
 
             if (index < 0 || index >= _signedData.SignerInfos.Length)
             {
-                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_IndexMustBeLess);
             }
 
             AlgorithmIdentifierAsn signerAlgorithm = _signedData.SignerInfos[index].DigestAlgorithm;
@@ -409,8 +416,10 @@ namespace System.Security.Cryptography.Pkcs
 
         public void RemoveSignature(SignerInfo signerInfo)
         {
-            if (signerInfo == null)
+            if (signerInfo is null)
+            {
                 throw new ArgumentNullException(nameof(signerInfo));
+            }
 
             int idx = SignerInfos.FindIndexForSigner(signerInfo);
 

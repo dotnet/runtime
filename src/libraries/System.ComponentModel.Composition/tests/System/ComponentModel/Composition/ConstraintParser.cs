@@ -136,15 +136,8 @@ namespace System.ComponentModel.Composition
 
         private static bool TryParseExpressionAsMetadataConstraintBody(Expression expression, Expression parameter, out string requiredMetadataKey, out Type requiredMetadataType)
         {
-            if (expression == null)
-            {
-                throw new ArgumentNullException(nameof(expression));
-            }
-
-            if (parameter == null)
-            {
-                throw new ArgumentNullException(nameof(parameter));
-            }
+            ArgumentNullException.ThrowIfNull(expression);
+            ArgumentNullException.ThrowIfNull(parameter);
 
             requiredMetadataKey = null;
             requiredMetadataType = null;
@@ -221,10 +214,7 @@ namespace System.ComponentModel.Composition
         private static bool TryParseConstant<T>(ConstantExpression constant, out T result)
             where T : class
         {
-            if (constant == null)
-            {
-                throw new ArgumentNullException(nameof(constant));
-            }
+            ArgumentNullException.ThrowIfNull(constant);
 
             if (constant.Type == typeof(T) && constant.Value != null)
             {

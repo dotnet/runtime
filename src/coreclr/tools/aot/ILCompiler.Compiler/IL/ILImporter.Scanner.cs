@@ -31,7 +31,7 @@ namespace Internal.IL
         private DependencyList _dependencies = new DependencyList();
 
         private readonly byte[] _ilBytes;
-        
+
         private class BasicBlock
         {
             // Common fields
@@ -82,7 +82,7 @@ namespace Internal.IL
 
             _compilation = compilation;
             _factory = (ILScanNodeFactory)compilation.NodeFactory;
-            
+
             _ilBytes = methodIL.GetILBytes();
 
             _canonMethodIL = methodIL;
@@ -149,7 +149,7 @@ namespace Internal.IL
                     _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.MonitorEnter), reason);
                     _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.MonitorExit), reason);
                 }
-                
+
             }
 
             FindBasicBlocks();
@@ -263,6 +263,8 @@ namespace Internal.IL
             var runtimeDeterminedMethod = (MethodDesc)_methodIL.GetObject(token);
             var method = (MethodDesc)_canonMethodIL.GetObject(token);
 
+            _compilation.TypeSystemContext.EnsureLoadableMethod(method);
+
             _compilation.NodeFactory.MetadataManager.GetDependenciesDueToAccess(ref _dependencies, _compilation.NodeFactory, _canonMethodIL, method);
 
             if (method.IsRawPInvoke())
@@ -316,35 +318,6 @@ namespace Internal.IL
                     else
                     {
                         _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.NewObject), reason);
-                    }
-                }
-
-                if (owningType.IsDelegate)
-                {
-                    // If this is a verifiable delegate construction sequence, the previous instruction is a ldftn/ldvirtftn
-                    if (_previousInstructionOffset >= 0 && _ilBytes[_previousInstructionOffset] == (byte)ILOpcode.prefix1)
-                    {
-                        // TODO: for ldvirtftn we need to also check for the `dup` instruction, otherwise this is a normal newobj.
-
-                        ILOpcode previousOpcode = (ILOpcode)(0x100 + _ilBytes[_previousInstructionOffset + 1]);
-                        if (previousOpcode == ILOpcode.ldvirtftn || previousOpcode == ILOpcode.ldftn)
-                        {
-                            int delTargetToken = ReadILTokenAt(_previousInstructionOffset + 2);
-                            var delTargetMethod = (MethodDesc)_methodIL.GetObject(delTargetToken);
-                            TypeDesc canonDelegateType = method.OwningType.ConvertToCanonForm(CanonicalFormKind.Specific);
-                            DelegateCreationInfo info = _compilation.GetDelegateCtor(canonDelegateType, delTargetMethod, previousOpcode == ILOpcode.ldvirtftn);
-                            
-                            if (info.NeedsRuntimeLookup)
-                            {
-                                _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.DelegateCtor, info), reason);
-                            }
-                            else
-                            {
-                                _dependencies.Add(_factory.ReadyToRunHelper(ReadyToRunHelperId.DelegateCtor, info), reason);
-                            }
-
-                            return;
-                        }
                     }
                 }
             }
@@ -441,7 +414,7 @@ namespace Internal.IL
                     // type though, so we would fail to resolve and box. We have a special path for those to avoid boxing.
                     directMethod = _compilation.TypeSystemContext.TryResolveConstrainedEnumMethod(constrained, method);
                 }
-                
+
                 if (directMethod != null)
                 {
                     // Either
@@ -454,6 +427,11 @@ namespace Internal.IL
                     Debug.Assert(!methodAfterConstraintResolution.OwningType.IsInterface);
                     resolvedConstraint = true;
 
+                    exactType = constrained;
+                }
+                else if (method.Signature.IsStatic)
+                {
+                    Debug.Assert(method.OwningType.IsInterface);
                     exactType = constrained;
                 }
                 else if (constrained.IsValueType)
@@ -483,8 +461,16 @@ namespace Internal.IL
 
             if (targetMethod.Signature.IsStatic)
             {
-                // Static methods are always direct calls
-                directCall = true;
+                if (_constrained != null && (!resolvedConstraint || forceUseRuntimeLookup))
+                {
+                    // Constrained call to static virtual interface method we didn't resolve statically
+                    Debug.Assert(targetMethod.IsVirtual && targetMethod.OwningType.IsInterface);
+                }
+                else
+                {
+                    // Static methods are always direct calls
+                    directCall = true;
+                }
             }
             else if ((opcode != ILOpcode.callvirt && opcode != ILOpcode.ldvirtftn) || resolvedConstraint)
             {
@@ -505,9 +491,38 @@ namespace Internal.IL
                 ThrowHelper.ThrowBadImageFormatException();
             }
 
+            MethodDesc targetForDelegate = !resolvedConstraint || forceUseRuntimeLookup ? runtimeDeterminedMethod : targetMethod;
+            TypeDesc constraintForDelegate = !resolvedConstraint || forceUseRuntimeLookup ? _constrained : null;
+            int numDependenciesBeforeTargetDetermination = _dependencies.Count;
+
             bool allowInstParam = opcode != ILOpcode.ldvirtftn && opcode != ILOpcode.ldftn;
 
-            if (directCall && !allowInstParam && targetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific).RequiresInstArg())
+            if (directCall && resolvedConstraint && exactContextNeedsRuntimeLookup)
+            {
+                // We want to do a direct call to a shared method on a valuetype. We need to provide
+                // a generic context, but the JitInterface doesn't provide a way for us to do it from here.
+                // So we do the next best thing and ask RyuJIT to look up a fat pointer.
+                //
+                // We have the canonical version of the method - find the runtime determined version.
+                // This is simplified because we know the method is on a valuetype.
+                Debug.Assert(targetMethod.OwningType.IsValueType);
+                MethodDesc targetOfLookup;
+                if (_constrained.IsRuntimeDeterminedType)
+                    targetOfLookup = _compilation.TypeSystemContext.GetMethodForRuntimeDeterminedType(targetMethod.GetTypicalMethodDefinition(), (RuntimeDeterminedType)_constrained);
+                else if (_constrained.HasInstantiation)
+                    targetOfLookup = _compilation.TypeSystemContext.GetMethodForInstantiatedType(targetMethod.GetTypicalMethodDefinition(), (InstantiatedType)_constrained);
+                else
+                    targetOfLookup = targetMethod.GetMethodDefinition();
+                if (targetOfLookup.HasInstantiation)
+                {
+                    targetOfLookup = targetOfLookup.MakeInstantiatedMethod(runtimeDeterminedMethod.Instantiation);
+                }
+                Debug.Assert(targetOfLookup.GetCanonMethodTarget(CanonicalFormKind.Specific) == targetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific));
+                _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.MethodEntry, targetOfLookup), reason);
+
+                targetForDelegate = targetOfLookup;
+            }
+            else if (directCall && !allowInstParam && targetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific).RequiresInstArg())
             {
                 // Needs a single address to call this method but the method needs a hidden argument.
                 // We need a fat function pointer for this that captures both things.
@@ -520,27 +535,6 @@ namespace Internal.IL
                 {
                     _dependencies.Add(_factory.FatFunctionPointer(runtimeDeterminedMethod), reason);
                 }
-            }
-            else if (directCall && resolvedConstraint && exactContextNeedsRuntimeLookup)
-            {
-                // We want to do a direct call to a shared method on a valuetype. We need to provide
-                // a generic context, but the JitInterface doesn't provide a way for us to do it from here.
-                // So we do the next best thing and ask RyuJIT to look up a fat pointer.
-                //
-                // We have the canonical version of the method - find the runtime determined version.
-                // This is simplified because we know the method is on a valuetype.
-                Debug.Assert(targetMethod.OwningType.IsValueType);
-                MethodDesc targetOfLookup;
-                if (_constrained.IsRuntimeDeterminedType)
-                    targetOfLookup = _compilation.TypeSystemContext.GetMethodForRuntimeDeterminedType(targetMethod.GetTypicalMethodDefinition(), (RuntimeDeterminedType)_constrained);
-                else
-                    targetOfLookup = _compilation.TypeSystemContext.GetMethodForInstantiatedType(targetMethod.GetTypicalMethodDefinition(), (InstantiatedType)_constrained);
-                if (targetOfLookup.HasInstantiation)
-                {
-                    targetOfLookup = targetOfLookup.MakeInstantiatedMethod(runtimeDeterminedMethod.Instantiation);
-                }
-                Debug.Assert(targetOfLookup.GetCanonMethodTarget(CanonicalFormKind.Specific) == targetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific));
-                _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.MethodEntry, targetOfLookup), reason);
             }
             else if (directCall)
             {
@@ -634,7 +628,7 @@ namespace Internal.IL
                             else
                                 _dependencies.Add(_factory.ConstructedTypeSymbol(_constrained), reason);
                         }
-                        
+
                         if (referencingArrayAddressMethod && !_isReadOnly)
                         {
                             // Address method is special - it expects an instantiation argument, unless a readonly prefix was applied.
@@ -690,6 +684,15 @@ namespace Internal.IL
                     _dependencies.Add(GetMethodEntrypoint(targetMethod), reason);
                 }
             }
+            else if (method.Signature.IsStatic)
+            {
+                // This should be an unresolved static virtual interface method call. Other static methods should
+                // have been handled as a directCall above.
+                Debug.Assert(targetMethod.OwningType.IsInterface && targetMethod.IsVirtual && _constrained != null);
+
+                var constrainedCallInfo = new ConstrainedCallInfo(_constrained, runtimeDeterminedMethod);
+                _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.ConstrainedDirectCall, constrainedCallInfo), reason);
+            }
             else if (method.HasInstantiation)
             {
                 // Generic virtual method call
@@ -732,22 +735,40 @@ namespace Internal.IL
                         targetMethod : MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(targetMethod);
                 _dependencies.Add(_factory.VirtualMethodUse(slotDefiningMethod), reason);
             }
+
+            // Is this a verifiable delegate creation sequence (load function pointer followed by newobj)?
+            if ((opcode == ILOpcode.ldftn || opcode == ILOpcode.ldvirtftn)
+                && _currentOffset + 5 < _ilBytes.Length
+                && _basicBlocks[_currentOffset] == null
+                && _ilBytes[_currentOffset] == (byte)ILOpcode.newobj)
+            {
+                // TODO: for ldvirtftn we need to also check for the `dup` instruction
+                int ctorToken = ReadILTokenAt(_currentOffset + 1);
+                var ctorMethod = (MethodDesc)_methodIL.GetObject(ctorToken);
+                if (ctorMethod.OwningType.IsDelegate)
+                {
+                    // Yep, verifiable delegate creation
+
+                    // Drop any dependencies we inserted so far - the delegate construction helper is the only dependency
+                    while (_dependencies.Count > numDependenciesBeforeTargetDetermination)
+                        _dependencies.RemoveAt(_dependencies.Count - 1);
+
+                    TypeDesc canonDelegateType = ctorMethod.OwningType.ConvertToCanonForm(CanonicalFormKind.Specific);
+                    DelegateCreationInfo info = _compilation.GetDelegateCtor(canonDelegateType, targetForDelegate, constraintForDelegate, opcode == ILOpcode.ldvirtftn);
+
+                    if (info.NeedsRuntimeLookup)
+                        _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.DelegateCtor, info), reason);
+                    else
+                        _dependencies.Add(_factory.ReadyToRunHelper(ReadyToRunHelperId.DelegateCtor, info), reason);
+                }
+            }
         }
 
         private void ImportLdFtn(int token, ILOpcode opCode)
         {
-            // Is this a verifiable delegate creation? If so, we will handle it when we reach the newobj
-            if (_ilBytes[_currentOffset] == (byte)ILOpcode.newobj)
-            {
-                int delegateToken = ReadILTokenAt(_currentOffset + 1);
-                var delegateType = ((MethodDesc)_methodIL.GetObject(delegateToken)).OwningType;
-                if (delegateType.IsDelegate)
-                    return;
-            }
-
             ImportCall(opCode, token);
         }
-        
+
         private void ImportBranch(ILOpcode opcode, BasicBlock target, BasicBlock fallthrough)
         {
             ImportFallthrough(target);
@@ -808,12 +829,27 @@ namespace Internal.IL
         private void ImportRefAnyVal(int token)
         {
             _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.GetRefAny), "refanyval");
+            ImportTypedRefOperationDependencies(token, "refanyval");
         }
 
         private void ImportMkRefAny(int token)
         {
             _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.TypeHandleToRuntimeType), "mkrefany");
             _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.TypeHandleToRuntimeTypeHandle), "mkrefany");
+            ImportTypedRefOperationDependencies(token, "mkrefany");
+        }
+
+        private void ImportTypedRefOperationDependencies(int token, string reason)
+        {
+            var type = (TypeDesc)_methodIL.GetObject(token);
+            if (type.IsRuntimeDeterminedSubtype)
+            {
+                _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.TypeHandle, type), reason);
+            }
+            else
+            {
+                _dependencies.Add(_factory.ConstructedTypeSymbol(type), reason);
+            }
         }
 
         private void ImportLdToken(int token)
@@ -1035,11 +1071,11 @@ namespace Internal.IL
 
             if (type.IsNullable)
             {
-                _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.Box), reason);
+                _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.Box_Nullable), reason);
             }
             else
             {
-                _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.Box_Nullable), reason);
+                _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.Box), reason);
             }
         }
 
@@ -1129,7 +1165,7 @@ namespace Internal.IL
                     {
                         _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.ThrowDivZero), "_divbyzero");
                     }
-                    break;                    
+                    break;
                 case ILOpcode.rem:
                 case ILOpcode.rem_un:
                     if (_compilation.TypeSystemContext.Target.Architecture == TargetArchitecture.ARM)
@@ -1154,7 +1190,7 @@ namespace Internal.IL
 
         private int ReadILTokenAt(int ilOffset)
         {
-            return (int)(_ilBytes[ilOffset] 
+            return (int)(_ilBytes[ilOffset]
                 + (_ilBytes[ilOffset + 1] << 8)
                 + (_ilBytes[ilOffset + 2] << 16)
                 + (_ilBytes[ilOffset + 3] << 24));
@@ -1256,13 +1292,13 @@ namespace Internal.IL
 
         private bool IsEETypePtrOf(MethodDesc method)
         {
-            if (method.IsIntrinsic && (method.Name == "EETypePtrOf" || method.Name == "MethodTableOf") && method.Instantiation.Length == 1)
+            if (method.IsIntrinsic && (method.Name == "EETypePtrOf" || method.Name == "Of") && method.Instantiation.Length == 1)
             {
                 MetadataType owningType = method.OwningType as MetadataType;
                 if (owningType != null)
                 {
                     return (owningType.Name == "EETypePtr" && owningType.Namespace == "System")
-                        || (owningType.Name == "Object" && owningType.Namespace == "System");
+                        || (owningType.Name == "MethodTable" && owningType.Namespace == "Internal.Runtime");
                 }
             }
 

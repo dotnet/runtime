@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk.IL">
+  <PropertyGroup>
+    <RestorePackages>true</RestorePackages>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DebugType>PdbOnly</DebugType>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="tailcall.il" />
+  </ItemGroup>
+</Project>

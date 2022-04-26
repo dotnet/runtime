@@ -52,9 +52,6 @@ namespace System.IO.Tests
         {
             // Checks that errors aren't thrown when calling Exists() on paths with impossible to create characters
             Assert.False(Exists(invalidPath));
-
-            Assert.False(Exists(".."));
-            Assert.False(Exists("."));
         }
 
         [Fact]
@@ -98,17 +95,6 @@ namespace System.IO.Tests
             string path = GetTestFilePath();
             File.Create(path).Dispose();
             Assert.False(Exists(path + Path.AltDirectorySeparatorChar));
-        }
-
-        [Fact]
-        public void PathAlreadyExistsAsDirectory()
-        {
-            string path = GetTestFilePath();
-            Directory.CreateDirectory(path);
-
-            Assert.False(Exists(IOServices.RemoveTrailingSlash(path)));
-            Assert.False(Exists(IOServices.RemoveTrailingSlash(IOServices.RemoveTrailingSlash(path))));
-            Assert.False(Exists(IOServices.RemoveTrailingSlash(IOServices.AddTrailingSlashIfNeeded(path))));
         }
 
         [Fact]
@@ -244,15 +230,37 @@ namespace System.IO.Tests
             Assert.False(Exists(component));
         }
 
+        #endregion
+    }
+
+    public class File_ExistsAsDirectory : FileSystemTest
+    {
+        [Fact]
+        public void DotAsPathReturnsFalse()
+        {
+            Assert.False(File.Exists("."));
+            Assert.False(File.Exists(".."));
+        }
+
+        [Fact]
+        public void PathAlreadyExistsAsDirectory()
+        {
+            string path = GetTestFilePath();
+            Directory.CreateDirectory(path);
+
+            Assert.False(File.Exists(IOServices.RemoveTrailingSlash(path)));
+            Assert.False(File.Exists(IOServices.RemoveTrailingSlash(IOServices.RemoveTrailingSlash(path))));
+            Assert.False(File.Exists(IOServices.RemoveTrailingSlash(IOServices.AddTrailingSlashIfNeeded(path))));
+        }
+
         [Fact]
         [PlatformSpecific(TestPlatforms.AnyUnix & ~TestPlatforms.Browser)]  // Uses P/Invokes
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/67853", TestPlatforms.tvOS)]
         public void FalseForNonRegularFile()
         {
             string fileName = GetTestFilePath();
             Assert.Equal(0, mkfifo(fileName, 0));
             Assert.True(File.Exists(fileName));
         }
-
-        #endregion
     }
 }

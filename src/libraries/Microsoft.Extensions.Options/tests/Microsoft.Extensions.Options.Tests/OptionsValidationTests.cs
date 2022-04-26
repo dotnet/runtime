@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Generic;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
@@ -74,5 +75,19 @@ namespace Microsoft.Extensions.Options.Tests
             }
         }
 
+        [Fact]
+        public void ValidationCannotBeNull()
+        {
+            string validName = "Name";
+            string validFailureMessage = "Something's wrong";
+            object validDependency = new();
+
+            Assert.Throws<ArgumentNullException>(() => new ValidateOptions<object>(validName, null, validFailureMessage));
+            Assert.Throws<ArgumentNullException>(() => new ValidateOptions<object, object>(validName, validDependency, null, validFailureMessage));
+            Assert.Throws<ArgumentNullException>(() => new ValidateOptions<object, object, object>(validName, validDependency, validDependency, null, validFailureMessage));
+            Assert.Throws<ArgumentNullException>(() => new ValidateOptions<object, object, object, object>(validName, validDependency, validDependency, validDependency, null, validFailureMessage));
+            Assert.Throws<ArgumentNullException>(() => new ValidateOptions<object, object, object, object, object>(validName, validDependency, validDependency, validDependency, validDependency, null, validFailureMessage));
+            Assert.Throws<ArgumentNullException>(() => new ValidateOptions<object, object, object, object, object, object>(validName, validDependency, validDependency, validDependency, validDependency, validDependency, null, validFailureMessage));
+        }
     }
 }

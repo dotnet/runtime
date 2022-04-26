@@ -27,10 +27,7 @@ namespace System.ComponentModel.Composition.Hosting
 
             public void AddPartManager(PartManager part)
             {
-                if (part == null)
-                {
-                    throw new ArgumentNullException(nameof(part));
-                }
+                ArgumentNullException.ThrowIfNull(part);
 
                 if (!_removedPartManagers.Remove(part))
                 {
@@ -40,10 +37,7 @@ namespace System.ComponentModel.Composition.Hosting
 
             public void RemovePartManager(PartManager part)
             {
-                if (part == null)
-                {
-                    throw new ArgumentNullException(nameof(part));
-                }
+                ArgumentNullException.ThrowIfNull(part);
 
                 if (!_addedPartManagers.Remove(part))
                 {

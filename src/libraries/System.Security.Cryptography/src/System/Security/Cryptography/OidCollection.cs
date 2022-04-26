@@ -68,12 +68,12 @@ namespace System.Security.Cryptography
 
         void ICollection.CopyTo(Array array, int index)
         {
-            if (array == null)
-                throw new ArgumentNullException(nameof(array));
+            ArgumentNullException.ThrowIfNull(array);
+
             if (array.Rank != 1)
                 throw new ArgumentException(SR.Arg_RankMultiDimNotSupported);
             if (index < 0 || index >= array.Length)
-                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_IndexMustBeLess);
             if (index + Count > array.Length)
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
 
@@ -86,13 +86,12 @@ namespace System.Security.Cryptography
 
         public void CopyTo(Oid[] array, int index)
         {
+            ArgumentNullException.ThrowIfNull(array);
+
             // Need to do part of the argument validation ourselves as OidCollection throws
             // ArgumentOutOfRangeException where List<>.CopyTo() throws ArgumentException.
-
-            if (array == null)
-                throw new ArgumentNullException(nameof(array));
             if (index < 0 || index >= array.Length)
-                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_IndexMustBeLess);
 
             Array.Copy(_oids, 0, array, index, _count);
         }

@@ -4,6 +4,7 @@
 using System.Buffers;
 using System.Collections;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
@@ -11,7 +12,6 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Text;
-using Internal.Runtime.CompilerServices;
 
 namespace System
 {
@@ -83,8 +83,7 @@ namespace System
 
         private static string Ctor(char[] value, int startIndex, int length)
         {
-            if (value == null)
-                throw new ArgumentNullException(nameof(value));
+            ArgumentNullException.ThrowIfNull(value);
 
             if (startIndex < 0)
                 throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_StartIndex);
@@ -93,7 +92,7 @@ namespace System
                 throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_NegativeLength);
 
             if (startIndex > value.Length - length)
-                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
 
             if (length == 0)
                 return Empty;
@@ -201,7 +200,7 @@ namespace System
                 if (length == 0)
                     return Empty;
 
-                throw new ArgumentNullException(nameof(value));
+                ArgumentNullException.Throw(nameof(value));
             }
 
             byte* pStart = (byte*)(value + startIndex);
@@ -261,7 +260,7 @@ namespace System
                 if (length == 0)
                     return Empty;
 
-                throw new ArgumentNullException(nameof(value));
+                ArgumentNullException.Throw(nameof(value));
             }
 
             byte* pStart = (byte*)(value + startIndex);
@@ -310,8 +309,7 @@ namespace System
 
         public static string Create<TState>(int length, TState state, SpanAction<char, TState> action)
         {
-            if (action == null)
-                throw new ArgumentNullException(nameof(action));
+            ArgumentNullException.ThrowIfNull(action);
 
             if (length <= 0)
             {
@@ -340,6 +338,7 @@ namespace System
         public static string Create(IFormatProvider? provider, Span<char> initialBuffer, [InterpolatedStringHandlerArgument("provider", "initialBuffer")] ref DefaultInterpolatedStringHandler handler) =>
             handler.ToStringAndClear();
 
+        [Intrinsic] // When input is a string literal
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static implicit operator ReadOnlySpan<char>(string? value) =>
             value != null ? new ReadOnlySpan<char>(ref value.GetRawStringData(), value.Length) : default;
@@ -371,10 +370,11 @@ namespace System
             return this;
         }
 
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        [Obsolete("This API should not be used to create mutable strings. See https://go.microsoft.com/fwlink/?linkid=2084035 for alternatives.")]
         public static unsafe string Copy(string str)
         {
-            if (str == null)
-                throw new ArgumentNullException(nameof(str));
+            ArgumentNullException.ThrowIfNull(str);
 
             string result = FastAllocateString(str.Length);
 
@@ -393,12 +393,12 @@ namespace System
         //
         public unsafe void CopyTo(int sourceIndex, char[] destination, int destinationIndex, int count)
         {
-            if (destination == null)
-                throw new ArgumentNullException(nameof(destination));
+            ArgumentNullException.ThrowIfNull(destination);
+
             if (count < 0)
                 throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NegativeCount);
             if (sourceIndex < 0)
-                throw new ArgumentOutOfRangeException(nameof(sourceIndex), SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(sourceIndex), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
             if (count > Length - sourceIndex)
                 throw new ArgumentOutOfRangeException(nameof(sourceIndex), SR.ArgumentOutOfRange_IndexCount);
             if (destinationIndex > destination.Length - count || destinationIndex < 0)
@@ -418,7 +418,7 @@ namespace System
         {
             if ((uint)Length <= (uint)destination.Length)
             {
-                Buffer.Memmove(ref destination._pointer.Value, ref _firstChar, (uint)Length);
+                Buffer.Memmove(ref destination._reference.Value, ref _firstChar, (uint)Length);
             }
             else
             {
@@ -435,7 +435,7 @@ namespace System
             bool retVal = false;
             if ((uint)Length <= (uint)destination.Length)
             {
-                Buffer.Memmove(ref destination._pointer.Value, ref _firstChar, (uint)Length);
+                Buffer.Memmove(ref destination._reference.Value, ref _firstChar, (uint)Length);
                 retVal = true;
             }
             return retVal;
@@ -463,13 +463,13 @@ namespace System
         {
             // Range check everything.
             if (startIndex < 0 || startIndex > Length || startIndex > Length - length)
-                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
 
             if (length <= 0)
             {
                 if (length == 0)
                     return Array.Empty<char>();
-                throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_NegativeLength);
             }
 
             char[] chars = new char[length];

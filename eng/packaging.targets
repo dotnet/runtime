@@ -5,14 +5,11 @@
     <!-- Don't restore prebuilt packages during sourcebuild. -->
     <DisablePackageBaselineValidation Condition="'$(DotNetBuildFromSource)' == 'true'">true</DisablePackageBaselineValidation>
     <PackageValidationBaselineVersion Condition="'$(PackageValidationBaselineVersion)' == ''">$(NetCoreAppLatestStablePackageBaselineVersion)</PackageValidationBaselineVersion>
-    <!-- PackDependsOn is the right hook in a targets file if the NuGet.Build.Tasks.Pack nuget package is used, otherwise
-         BeforePack must be used. Setting both to ensure that we are always running before other targets. --> 
-    <PackDependsOn>AddNETStandardCompatErrorFileForPackaging;IncludeAnalyzersInPackage;$(PackDependsOn)</PackDependsOn>
-    <BeforePack>AddNETStandardCompatErrorFileForPackaging;IncludeAnalyzersInPackage;$(BeforePack)</BeforePack>
-    <TargetsForTfmSpecificContentInPackage>$(TargetsForTfmSpecificContentInPackage);AddRuntimeSpecificFilesToPackage;IncludePrivateProjectReferencesWithPackAttributeInPackage</TargetsForTfmSpecificContentInPackage>
-    <IncludeBuildOutput Condition="'$(TargetFrameworkSuffix)' != ''">false</IncludeBuildOutput>
+    <BeforePack>$(BeforePack);IncludeAnalyzersInPackage;AddNETStandardCompatErrorFileForPackaging</BeforePack>
+    <TargetsForTfmSpecificContentInPackage>$(TargetsForTfmSpecificContentInPackage);AddRuntimeSpecificFilesToPackage;IncludeProjectReferencesWithPackAttributeInPackage</TargetsForTfmSpecificContentInPackage>
+    <IncludeBuildOutput Condition="'$(TargetPlatformIdentifier)' != ''">false</IncludeBuildOutput>
     <!-- Don't include target platform specific dependencies, since we use the target platform to represent RIDs instead -->
-    <SuppressDependenciesWhenPacking Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and '$(TargetPlatformIdentifier)' != ''">true</SuppressDependenciesWhenPacking>
+    <SuppressDependenciesWhenPacking Condition="'$(TargetPlatformIdentifier)' != ''">true</SuppressDependenciesWhenPacking>
     <PackageDesignerMarkerFile>$(MSBuildThisFileDirectory)useSharedDesignerContext.txt</PackageDesignerMarkerFile>
     <!-- Generate packages for rid specific projects or for allconfigurations during build. -->
     <!-- A package isn't generated if in servicing or in runtimelab. Intended to be overridden at project level. -->
@@ -43,7 +40,7 @@
     <Version Condition="'$(VersionSuffix)' != ''">$(Version)-$(VersionSuffix)</Version>
     <_IsWindowsDesktopApp Condition="$(WindowsDesktopCoreAppLibrary.Contains('$(AssemblyName);'))">true</_IsWindowsDesktopApp>
     <_IsAspNetCoreApp Condition="$(AspNetCoreAppLibrary.Contains('$(AssemblyName);'))">true</_IsAspNetCoreApp>
-    <_AssemblyInTargetingPack Condition="('$(IsNETCoreAppSrc)' == 'true' or '$(_IsAspNetCoreApp)' == 'true' or '$(_IsWindowsDesktopApp)' == 'true') and '$(TargetFrameworkIdentifier)' != '.NETFramework'">true</_AssemblyInTargetingPack>
+    <_AssemblyInTargetingPack Condition="('$(IsNETCoreAppSrc)' == 'true' or '$(IsNetCoreAppRef)' == 'true' or '$(_IsAspNetCoreApp)' == 'true' or '$(_IsWindowsDesktopApp)' == 'true') and '$(TargetFrameworkIdentifier)' != '.NETFramework'">true</_AssemblyInTargetingPack>
     <!-- Assembly version do not get updated in non-netfx ref pack assemblies. -->
     <AssemblyVersion Condition="'$(_AssemblyInTargetingPack)' != 'true'">$(MajorVersion).$(MinorVersion).0.$(ServicingVersion)</AssemblyVersion>
   </PropertyGroup>
@@ -71,20 +68,37 @@
         <!-- Placeholders don't need a dependency group. -->
         <NoWarn>$(NoWarn);NU5128</NoWarn>
       </PropertyGroup>
-      <ItemGroup Condition="'$(AddNETFrameworkPlaceholderFileToPackage)' == 'true'">
-        <None Include="$(PlaceholderFile)" PackagePath="$(BuildOutputTargetFolder)/$(NetFrameworkMinimum)" Pack="true" />
-        <None Include="$(PlaceholderFile)" PackagePath="runtimes/win/$(BuildOutputTargetFolder)/$(NetFrameworkMinimum)" Pack="true" Condition="$(TargetFrameworks.Contains('netstandard2.0-windows'))" />
-      </ItemGroup>
-      <ItemGroup Condition="'$(AddXamarinPlaceholderFilesToPackage)' == 'true'">
-        <None Include="$(PlaceholderFile)" PackagePath="$(BuildOutputTargetFolder)/MonoAndroid10" Pack="true" />
-        <None Include="$(PlaceholderFile)" PackagePath="$(BuildOutputTargetFolder)/MonoTouch10" Pack="true" />
-        <None Include="$(PlaceholderFile)" PackagePath="$(BuildOutputTargetFolder)/xamarinios10" Pack="true" />
-        <None Include="$(PlaceholderFile)" PackagePath="$(BuildOutputTargetFolder)/xamarinmac20" Pack="true" />
-        <None Include="$(PlaceholderFile)" PackagePath="$(BuildOutputTargetFolder)/xamarintvos10" Pack="true" />
-        <None Include="$(PlaceholderFile)" PackagePath="$(BuildOutputTargetFolder)/xamarinwatchos10" Pack="true" />
+      <ItemGroup>
+        <None Include="$(PlaceholderFile)"
+              Pack="true"
+              PackagePath="$(BuildOutputTargetFolder)\$(NetFrameworkMinimum)\"
+              Condition="'$(AddNETFrameworkPlaceholderFileToPackage)' == 'true'" />
+        <None Include="$(PlaceholderFile)"
+              Pack="true"
+              PackagePath="$(BuildOutputTargetFolder)\MonoAndroid10\;
+                           $(BuildOutputTargetFolder)\MonoTouch10\;
+                           $(BuildOutputTargetFolder)\xamarinios10\;
+                           $(BuildOutputTargetFolder)\xamarinmac20\;
+                           $(BuildOutputTargetFolder)\xamarintvos10\;
+                           $(BuildOutputTargetFolder)\xamarinwatchos10\"
+              Condition="'$(AddXamarinPlaceholderFilesToPackage)' == 'true'" />
       </ItemGroup>
     </When>
   </Choose>
+
+  <!-- Include a netstandard compat error if the project targets both .NETStandard and
+       .NETCoreApp. This prohibits users to consume packages on an older .NETCoreApp version
+       than the minimum supported one. -->
+  <ItemGroup>
+    <NETStandardCompatError Include="netcoreapp2.0"
+                            Supported="$(NetCoreAppMinimum)"
+                            Condition="$(TargetFrameworks.Contains('netstandard2.')) and
+                                       ($(TargetFrameworks.Contains('$(NetCoreAppMinimum)')) or $(TargetFrameworks.Contains('$(NetCoreAppCurrent)')))" />
+    <NETStandardCompatError Include="net461"
+                            Supported="$(NetFrameworkMinimum)"
+                            Condition="$(TargetFrameworks.Contains('netstandard2.0')) and
+                                       ($(TargetFrameworks.Contains('$(NetFrameworkMinimum)')) or $(TargetFrameworks.Contains('net47')) or $(TargetFrameworks.Contains('net48')))" />
+  </ItemGroup>
 
   <!-- TODO: Remove this target when no library relies on the intellisense documentation file anymore.-->
   <Target Name="ChangeDocumentationFileForPackaging"
@@ -96,19 +110,18 @@
     </ItemGroup>
   </Target>
 
-  <!-- Add runtime specific file into the package if the tfm is RID specific or if the tfm targets .NETFramework and netstandard2.0-windows TFM is present.
-       This is necessary as compatible RID specific tfms win over compatible RID agnostic tfms. Hence without this, netstandard2.0-windows would win over net461. -->
+  <!-- Add runtime specific file into the package if the tfm is RID specific. -->
   <Target Name="AddRuntimeSpecificFilesToPackage"
           DependsOnTargets="BuiltProjectOutputGroup;
                             DocumentationProjectOutputGroup;
                             SatelliteDllsProjectOutputGroup;
                             $(TargetsForTfmSpecificBuildOutput)"
-          Condition="'$(TargetFrameworkSuffix)' != '' or
-                     ('$(TargetFrameworkIdentifier)' == '.NETFramework' and $(TargetFrameworks.Contains('netstandard2.0-windows')))">
+          Condition="'$(TargetPlatformIdentifier)' != ''">
     <PropertyGroup>
       <RuntimeSymbolPath>$(TargetDir)$(TargetName).pdb</RuntimeSymbolPath>
-      <_packageTargetRuntime Condition="'$(TargetFrameworkIdentifier)' != '.NETFramework'">$(PackageTargetRuntime)</_packageTargetRuntime>
-      <_packageTargetRuntime Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">win</_packageTargetRuntime>
+      <_packageTargetRuntime>$(TargetPlatformIdentifier.ToLowerInvariant().Replace('windows', 'win'))</_packageTargetRuntime>
+      <_targetFrameworkWithoutSuffix>$(TargetFramework)</_targetFrameworkWithoutSuffix>
+      <_targetFrameworkWithoutSuffix Condition="$(TargetFramework.Contains('-'))">$(TargetFramework.SubString(0, $(TargetFramework.IndexOf('-'))))</_targetFrameworkWithoutSuffix>
     </PropertyGroup>
 
     <ItemGroup>
@@ -116,10 +129,10 @@
                                               @(BuiltProjectOutputGroupOutput);
                                               @(DocumentationProjectOutputGroupOutput)" />
       <TfmSpecificPackageFile Include="@(TfmRuntimeSpecificPackageFile)"
-                              PackagePath="runtimes/$(_packageTargetRuntime)/$(BuildOutputTargetFolder)/$(TargetFrameworkWithoutSuffix)" />
+                              PackagePath="runtimes\$(_packageTargetRuntime)\$(BuildOutputTargetFolder)\$(_targetFrameworkWithoutSuffix)\" />
       <TfmSpecificDebugSymbolsFile Include="$(RuntimeSymbolPath)"
-                                   TargetPath="/runtimes/$(_packageTargetRuntime)/$(BuildOutputTargetFolder)/$(TargetFrameworkWithoutSuffix)/%(Filename)%(Extension)"
-                                   TargetFramework="$(TargetFrameworkWithoutSuffix)"
+                                   TargetPath="/runtimes/$(_packageTargetRuntime)/$(BuildOutputTargetFolder)/$(_targetFrameworkWithoutSuffix)/%(Filename)%(Extension)"
+                                   TargetFramework="$(_targetFrameworkWithoutSuffix)"
                                    Condition="'$(IncludeSymbols)' == 'true' and Exists('$(RuntimeSymbolPath)')" />
     </ItemGroup>
   </Target>
@@ -155,9 +168,8 @@
           Condition="'@(AnalyzerReference)' != '' and '$(IncludeMultiTargetRoslynComponentTargets)' == 'true'"
           DependsOnTargets="GenerateMultiTargetRoslynComponentTargetsFile">
     <ItemGroup>
-      <Content Include="$(MultiTargetRoslynComponentTargetsFileIntermediatePath)"
-               PackagePath="build\$(PackageId).targets"
-               Pack="True" />
+      <Content Include="$(MultiTargetRoslynComponentTargetsFileIntermediatePath)" PackagePath="buildTransitive\netstandard2.0\$(PackageId).targets" />
+      <Content Include="$(MultiTargetRoslynComponentTargetsFileIntermediatePath)" PackagePath="buildTransitive\%(NETStandardCompatError.Supported)\$(PackageId).targets" Condition="'@(NETStandardCompatError)' != ''" />
     </ItemGroup>
   </Target>
 
@@ -177,30 +189,13 @@
                       Overwrite="true" />
   </Target>
 
-  <!-- Include a netstandard compat error if the project targets both .NETStandard and
-       .NETCoreApp. This prohibits users to consume packages on an older .NETCoreApp version
-       than the minimum supported one. -->
-  <ItemGroup>
-    <NETStandardCompatError Include="netcoreapp2.0"
-                            Supported="$(NetCoreAppMinimum)"
-                            Condition="$(TargetFrameworks.Contains('netstandard2.')) and
-                                       ($(TargetFrameworks.Contains('$(NetCoreAppMinimum)')) or $(TargetFrameworks.Contains('$(NetCoreAppCurrent)'))) and
-                                       '$(DisableNETStandardCompatErrorForNETCoreApp)' != 'true'" />
-    <NETStandardCompatError Include="net461"
-                            Supported="$(NetFrameworkMinimum)"
-                            Condition="$(TargetFrameworks.Contains('netstandard2.0')) and
-                                       ($(TargetFrameworks.Contains('$(NetFrameworkMinimum)')) or $(TargetFrameworks.Contains('net47')) or $(TargetFrameworks.Contains('net48'))) and
-                                       '$(DisableNETStandardCompatErrorForNETFramework)' != 'true'" />
-
-  </ItemGroup>
-
   <!-- Add targets file that marks a .NETStandard applicable tfm as unsupported. -->
   <Target Name="AddNETStandardCompatErrorFileForPackaging"
-          Condition="'@(NETStandardCompatError)' != ''"
+          Condition="'@(NETStandardCompatError)' != '' and '$(DisableNETStandardCompatErrors)' != 'true'"
           Inputs="%(NETStandardCompatError.Identity)"
           Outputs="unused">
     <PropertyGroup>
-      <_NETStandardCompatErrorFilePath>$(BaseIntermediateOutputPath)netstandardcompaterrors\%(NETStandardCompatError.Identity)\$(PackageId).targets</_NETStandardCompatErrorFilePath>
+      <_NETStandardCompatErrorFilePath>$(BaseIntermediateOutputPath)netstandardcompaterror_%(NETStandardCompatError.Identity).targets</_NETStandardCompatErrorFilePath>
       <_NETStandardCompatErrorFileTarget>NETStandardCompatError_$(PackageId.Replace('.', '_'))_$([System.String]::new('%(NETStandardCompatError.Supported)').Replace('.', '_'))</_NETStandardCompatErrorFileTarget>
       <_NETStandardCompatErrorFileContent>
 <![CDATA[<Project InitialTargets="$(_NETStandardCompatErrorFileTarget)">
@@ -210,6 +205,7 @@
   </Target>
 </Project>]]>
       </_NETStandardCompatErrorFileContent>
+      <_NETStandardCompatErrorPlaceholderFilePackagePath>buildTransitive$([System.IO.Path]::DirectorySeparatorChar)%(NETStandardCompatError.Supported)</_NETStandardCompatErrorPlaceholderFilePackagePath>
     </PropertyGroup>
 
     <WriteLinesToFile File="$(_NETStandardCompatErrorFilePath)"
@@ -218,24 +214,30 @@
                       WriteOnlyWhenDifferent="true" />
 
     <ItemGroup>
+      <_PackageBuildFile Include="@(None->Metadata('PackagePath'));
+                                  @(Content->Metadata('PackagePath'))" />
+      <_PackageBuildFile PackagePathWithoutFilename="$([System.IO.Path]::GetDirectoryName('%(Identity)'))" />
+
       <None Include="$(_NETStandardCompatErrorFilePath)"
-            PackagePath="buildTransitive\%(NETStandardCompatError.Identity)"
+            PackagePath="buildTransitive\%(NETStandardCompatError.Identity)\$(PackageId).targets"
             Pack="true" />
+      <!-- Add the placeholder file to the supported target framework buildTransitive folder, if it's empty. -->
       <None Include="$(PlaceholderFile)"
-            PackagePath="buildTransitive\%(NETStandardCompatError.Supported)"
-            Pack="true" />
-      <FileWrites Include="$(_NETStandardCompatErrorFilePath)" />
+            PackagePath="$(_NETStandardCompatErrorPlaceholderFilePackagePath)\"
+            Pack="true"
+            Condition="'@(_PackageBuildFile)' == '' or
+                       !@(_PackageBuildFile->AnyHaveMetadataValue('PackagePathWithoutFilename', '$(_NETStandardCompatErrorPlaceholderFilePackagePath)'))" />
     </ItemGroup>
   </Target>
 
-  <Target Name="IncludePrivateProjectReferencesWithPackAttributeInPackage"
-          Condition="'@(ProjectReference->WithMetadataValue('PrivateAssets', 'all')->WithMetadataValue('Pack', 'true'))' != ''"
+  <Target Name="IncludeProjectReferencesWithPackAttributeInPackage"
+          Condition="'@(ProjectReference)' != '' and @(ProjectReference->AnyHaveMetadataValue('Pack', 'true'))"
           DependsOnTargets="BuildOnlySettings;ResolveReferences">
     <ItemGroup>
       <!-- Add ReferenceCopyLocalPaths for ProjectReferences which are flagged as Pack="true" into the package. -->
-      <_projectReferenceCopyLocalPaths Include="@(ReferenceCopyLocalPaths->WithMetadataValue('ReferenceSourceTarget', 'ProjectReference')->WithMetadataValue('PrivateAssets', 'all')->WithMetadataValue('Pack', 'true'))" />
+      <_projectReferenceCopyLocalPaths Include="@(ReferenceCopyLocalPaths->WithMetadataValue('ReferenceSourceTarget', 'ProjectReference')->WithMetadataValue('Pack', 'true'))" />
       <TfmSpecificPackageFile Include="@(_projectReferenceCopyLocalPaths)"
-                              PackagePath="$([MSBuild]::ValueOrDefault('%(ReferenceCopyLocalPaths.PackagePath)', '$(BuildOutputTargetFolder)/$(TargetFramework)'))" />
+                              PackagePath="$([MSBuild]::ValueOrDefault('%(ReferenceCopyLocalPaths.PackagePath)', '$(BuildOutputTargetFolder)\$(TargetFramework)\'))" />
       <TfmSpecificDebugSymbolsFile Include="@(TfmSpecificPackageFile->WithMetadataValue('Extension', '.pdb'))"
                                    TargetPath="/%(TfmSpecificPackageFile.PackagePath)/%(Filename)%(Extension)"
                                    TargetFramework="$(TargetFramework)"
@@ -251,7 +253,7 @@
       <_referenceAssemblyPaths Include="@(_projectReferenceCopyLocalPaths->WithMetadataValue('Extension', '.dll')->WithMetadataValue('IncludeReferenceAssemblyInPackage', 'true')->Metadata('ReferenceAssembly'))" />
       <_referenceAssemblyPaths Include="@(_projectReferenceCopyLocalPaths->WithMetadataValue('Extension', '.xml')->WithMetadataValue('IncludeReferenceAssemblyInPackage', 'true'))" />
       <TfmSpecificPackageFile Include="@(_referenceAssemblyPaths)"
-                              PackagePath="ref/$(TargetFramework)" />
+                              PackagePath="ref\$(TargetFramework)\" />
     </ItemGroup>
   </Target>
 

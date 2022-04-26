@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Linq;
 using System.Reflection;
 using Xunit;
 
@@ -47,6 +48,11 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             {
                 get { return null; }
             }
+
+            public IEnumerable<string> NonInstantiatedIEnumerable { get; set; } = null!;
+            public IEnumerable<string> InstantiatedIEnumerable { get; set; } = new List<string>();
+            public ICollection<string> InstantiatedICollection { get; set; } = new List<string>();
+            public IReadOnlyCollection<string> InstantiatedIReadOnlyCollection { get; set; } = new List<string>();
         }
 
         public class NestedOptions
@@ -218,6 +224,107 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             var options = config.Get<ComplexOptions>();
             
             Assert.Equal("Yo", options.NamedProperty);
+        }
+
+        [Fact]
+        public void CanBindNonInstantiatedIEnumerableWithItems()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"NonInstantiatedIEnumerable:0", "Yo1"},
+                {"NonInstantiatedIEnumerable:1", "Yo2"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<ComplexOptions>()!;
+
+            Assert.Equal(2, options.NonInstantiatedIEnumerable.Count());
+            Assert.Equal("Yo1", options.NonInstantiatedIEnumerable.ElementAt(0));
+            Assert.Equal("Yo2", options.NonInstantiatedIEnumerable.ElementAt(1));
+        }
+
+        [Fact]
+        public void CanBindInstantiatedIEnumerableWithItems()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"InstantiatedIEnumerable:0", "Yo1"},
+                {"InstantiatedIEnumerable:1", "Yo2"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<ComplexOptions>()!;
+
+            Assert.Equal(2, options.InstantiatedIEnumerable.Count());
+            Assert.Equal("Yo1", options.InstantiatedIEnumerable.ElementAt(0));
+            Assert.Equal("Yo2", options.InstantiatedIEnumerable.ElementAt(1));
+        }
+
+        [Fact]
+        public void CanBindInstantiatedICollectionWithItems()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"InstantiatedICollection:0", "Yo1"},
+                {"InstantiatedICollection:1", "Yo2"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<ComplexOptions>()!;
+
+            Assert.Equal(2, options.InstantiatedICollection.Count());
+            Assert.Equal("Yo1", options.InstantiatedICollection.ElementAt(0));
+            Assert.Equal("Yo2", options.InstantiatedICollection.ElementAt(1));
+        }
+
+        [Fact]
+        public void CanBindInstantiatedIReadOnlyCollectionWithItems()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"InstantiatedIReadOnlyCollection:0", "Yo1"},
+                {"InstantiatedIReadOnlyCollection:1", "Yo2"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<ComplexOptions>()!;
+
+            Assert.Equal(2, options.InstantiatedIReadOnlyCollection.Count);
+            Assert.Equal("Yo1", options.InstantiatedIReadOnlyCollection.ElementAt(0));
+            Assert.Equal("Yo2", options.InstantiatedIReadOnlyCollection.ElementAt(1));
+        }
+
+        [Fact]
+        public void CanBindInstantiatedIEnumerableWithNullItems()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"InstantiatedIEnumerable:0", null},
+                {"InstantiatedIEnumerable:1", "Yo1"},
+                {"InstantiatedIEnumerable:2", "Yo2"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<ComplexOptions>()!;
+
+            Assert.Equal(2, options.InstantiatedIEnumerable.Count());
+            Assert.Equal("Yo1", options.InstantiatedIEnumerable.ElementAt(0));
+            Assert.Equal("Yo2", options.InstantiatedIEnumerable.ElementAt(1));
         }
 
         [Fact]
@@ -936,6 +1043,82 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
                 exception.Message);
         }
 
+        [Fact]
+        public void DoesNotReadPropertiesUnnecessarily()
+        {
+            ConfigurationBuilder configurationBuilder = new();
+            configurationBuilder.AddInMemoryCollection(new Dictionary<string, string>
+            {
+                { nameof(ClassWithReadOnlyPropertyThatThrows.Safe), "value" },
+                { nameof(ClassWithReadOnlyPropertyThatThrows.StringThrows), "value" },
+                { $"{nameof(ClassWithReadOnlyPropertyThatThrows.EnumerableThrows)}:0", "0" },
+            });
+            IConfiguration config = configurationBuilder.Build();
+
+            ClassWithReadOnlyPropertyThatThrows bound = config.Get<ClassWithReadOnlyPropertyThatThrows>();
+            Assert.Equal("value", bound.Safe);
+        }
+
+        /// <summary>
+        /// Binding to mutable structs is important to support properties
+        /// like JsonConsoleFormatterOptions.JsonWriterOptions.
+        /// </summary>
+        [Fact]
+        public void CanBindNestedStructProperties()
+        {
+            ConfigurationBuilder configurationBuilder = new();
+            configurationBuilder.AddInMemoryCollection(new Dictionary<string, string>
+            {
+                { "ReadWriteNestedStruct:String", "s" },
+                { "ReadWriteNestedStruct:DeeplyNested:Int32", "100" },
+                { "ReadWriteNestedStruct:DeeplyNested:Boolean", "true" },
+            });
+            IConfiguration config = configurationBuilder.Build();
+
+            StructWithNestedStructs bound = config.Get<StructWithNestedStructs>();
+            Assert.Equal("s", bound.ReadWriteNestedStruct.String);
+            Assert.Equal(100, bound.ReadWriteNestedStruct.DeeplyNested.Int32);
+            Assert.True(bound.ReadWriteNestedStruct.DeeplyNested.Boolean);
+        }
+
+        [Fact]
+        public void IgnoresReadOnlyNestedStructProperties()
+        {
+            ConfigurationBuilder configurationBuilder = new();
+            configurationBuilder.AddInMemoryCollection(new Dictionary<string, string>
+            {
+                { "ReadOnlyNestedStruct:String", "s" },
+                { "ReadOnlyNestedStruct:DeeplyNested:Int32", "100" },
+                { "ReadOnlyNestedStruct:DeeplyNested:Boolean", "true" },
+            });
+            IConfiguration config = configurationBuilder.Build();
+
+            StructWithNestedStructs bound = config.Get<StructWithNestedStructs>();
+            Assert.Null(bound.ReadOnlyNestedStruct.String);
+            Assert.Equal(0, bound.ReadWriteNestedStruct.DeeplyNested.Int32);
+            Assert.False(bound.ReadWriteNestedStruct.DeeplyNested.Boolean);
+        }
+
+        [Fact]
+        public void CanBindNullableNestedStructProperties()
+        {
+            ConfigurationBuilder configurationBuilder = new();
+            configurationBuilder.AddInMemoryCollection(new Dictionary<string, string>
+            {
+                { "NullableNestedStruct:String", "s" },
+                { "NullableNestedStruct:DeeplyNested:Int32", "100" },
+                { "NullableNestedStruct:DeeplyNested:Boolean", "true" },
+            });
+            IConfiguration config = configurationBuilder.Build();
+
+            StructWithNestedStructs bound = config.Get<StructWithNestedStructs>();
+            Assert.NotNull(bound.NullableNestedStruct);
+            Assert.Equal("s", bound.NullableNestedStruct.Value.String);
+            Assert.Equal(100, bound.NullableNestedStruct.Value.DeeplyNested.Int32);
+            Assert.True(bound.NullableNestedStruct.Value.DeeplyNested.Boolean);
+        }
+
+
         private interface ISomeInterface
         {
         }
@@ -976,6 +1159,36 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             public ThrowsWhenActivated ThrowsWhenActivatedProperty { get; set; }
 
             public NestedOptions1 NestedOptionsProperty { get; set; }
+        }
+
+        private class ClassWithReadOnlyPropertyThatThrows
+        {
+            public string StringThrows => throw new InvalidOperationException(nameof(StringThrows));
+
+            public IEnumerable<int> EnumerableThrows => throw new InvalidOperationException(nameof(EnumerableThrows));
+
+            public string Safe { get; set; }
+        }
+
+        private struct StructWithNestedStructs
+        {
+            public Nested ReadWriteNestedStruct { get; set; }
+
+            public Nested ReadOnlyNestedStruct { get; }
+
+            public Nested? NullableNestedStruct { get; set; }
+
+            public struct Nested
+            {
+                public string String { get; set; }
+                public DeeplyNested DeeplyNested { get; set; }
+            }
+
+            public struct DeeplyNested
+            {
+                public int Int32 { get; set; }
+                public bool Boolean { get; set; }
+            }
         }
     }
 }

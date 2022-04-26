@@ -20,9 +20,7 @@ namespace System.Text
 
         public EncoderReplacementFallback(string replacement)
         {
-            // Must not be null
-            if (replacement == null)
-                throw new ArgumentNullException(nameof(replacement));
+            ArgumentNullException.ThrowIfNull(replacement);
 
             // Make sure it doesn't have bad surrogate pairs
             bool bFoundHigh = false;

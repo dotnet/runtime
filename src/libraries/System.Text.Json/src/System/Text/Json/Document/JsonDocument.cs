@@ -105,9 +105,9 @@ namespace System.Text.Json
         /// </exception>
         public void WriteTo(Utf8JsonWriter writer)
         {
-            if (writer == null)
+            if (writer is null)
             {
-                throw new ArgumentNullException(nameof(writer));
+                ThrowHelper.ThrowArgumentNullException(nameof(writer));
             }
 
             RootElement.WriteTo(writer);
@@ -1103,7 +1103,7 @@ namespace System.Text.Json
             }
         }
 
-        private void CheckExpectedType(JsonTokenType expected, JsonTokenType actual)
+        private static void CheckExpectedType(JsonTokenType expected, JsonTokenType actual)
         {
             if (expected != actual)
             {

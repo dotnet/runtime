@@ -19,10 +19,7 @@ namespace System.Net.Http
 
         public StreamContent(Stream content)
         {
-            if (content == null)
-            {
-                throw new ArgumentNullException(nameof(content));
-            }
+            ArgumentNullException.ThrowIfNull(content);
 
             // Indicate that we should use default buffer size by setting size to 0.
             InitializeContent(content, 0);
@@ -30,10 +27,8 @@ namespace System.Net.Http
 
         public StreamContent(Stream content, int bufferSize)
         {
-            if (content == null)
-            {
-                throw new ArgumentNullException(nameof(content));
-            }
+            ArgumentNullException.ThrowIfNull(content);
+
             if (bufferSize <= 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(bufferSize));

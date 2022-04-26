@@ -8,8 +8,8 @@ using System.Globalization;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 using System.Runtime.Versioning;
-using Internal.Runtime.CompilerServices;
 
 namespace System
 {
@@ -18,13 +18,13 @@ namespace System
     [Serializable]
     [NonVersionable] // This only applies to field layout
     [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public readonly partial struct Guid : ISpanFormattable, IComparable, IComparable<Guid>, IEquatable<Guid>
-#if FEATURE_GENERIC_MATH
-#pragma warning disable SA1001, CA2252 // SA1001: Comma positioning; CA2252: Preview Features
-        , IComparisonOperators<Guid, Guid>,
-          ISpanParseable<Guid>
-#pragma warning restore SA1001, CA2252
-#endif // FEATURE_GENERIC_MATH
+    public readonly partial struct Guid
+        : ISpanFormattable,
+          IComparable,
+          IComparable<Guid>,
+          IEquatable<Guid>,
+          IComparisonOperators<Guid, Guid>,
+          ISpanParsable<Guid>
     {
         public static readonly Guid Empty;
 
@@ -93,10 +93,8 @@ namespace System
         // Creates a new GUID initialized to the value represented by the arguments.
         public Guid(int a, short b, short c, byte[] d)
         {
-            if (d == null)
-            {
-                throw new ArgumentNullException(nameof(d));
-            }
+            ArgumentNullException.ThrowIfNull(d);
+
             if (d.Length != 8)
             {
                 throw new ArgumentException(SR.Format(SR.Arg_GuidArrayCtor, "8"), nameof(d));
@@ -215,10 +213,7 @@ namespace System
         // then 12) such as: "CA761232-ED42-11CE-BACD-00AA0057B223"
         public Guid(string g)
         {
-            if (g == null)
-            {
-                throw new ArgumentNullException(nameof(g));
-            }
+            ArgumentNullException.ThrowIfNull(g);
 
             var result = new GuidResult(GuidParseThrowStyle.All);
             bool success = TryParseGuid(g, ref result);
@@ -227,8 +222,11 @@ namespace System
             this = result.ToGuid();
         }
 
-        public static Guid Parse(string input) =>
-            Parse(input != null ? (ReadOnlySpan<char>)input : throw new ArgumentNullException(nameof(input)));
+        public static Guid Parse(string input)
+        {
+            ArgumentNullException.ThrowIfNull(input);
+            return Parse((ReadOnlySpan<char>)input);
+        }
 
         public static Guid Parse(ReadOnlySpan<char> input)
         {
@@ -265,12 +263,15 @@ namespace System
             }
         }
 
-        public static Guid ParseExact(string input, string format) =>
-            ParseExact(
-                input != null ? (ReadOnlySpan<char>)input : throw new ArgumentNullException(nameof(input)),
-                format != null ? (ReadOnlySpan<char>)format : throw new ArgumentNullException(nameof(format)));
+        public static Guid ParseExact(string input, [StringSyntax(StringSyntaxAttribute.GuidFormat)] string format)
+        {
+            ArgumentNullException.ThrowIfNull(input);
+            ArgumentNullException.ThrowIfNull(format);
 
-        public static Guid ParseExact(ReadOnlySpan<char> input, ReadOnlySpan<char> format)
+            return ParseExact((ReadOnlySpan<char>)input, (ReadOnlySpan<char>)format);
+        }
+
+        public static Guid ParseExact(ReadOnlySpan<char> input, [StringSyntax(StringSyntaxAttribute.GuidFormat)] ReadOnlySpan<char> format)
         {
             if (format.Length != 1)
             {
@@ -294,7 +295,7 @@ namespace System
             return result.ToGuid();
         }
 
-        public static bool TryParseExact([NotNullWhen(true)] string? input, [NotNullWhen(true)] string? format, out Guid result)
+        public static bool TryParseExact([NotNullWhen(true)] string? input, [NotNullWhen(true), StringSyntax(StringSyntaxAttribute.GuidFormat)] string? format, out Guid result)
         {
             if (input == null)
             {
@@ -305,7 +306,7 @@ namespace System
             return TryParseExact((ReadOnlySpan<char>)input, format, out result);
         }
 
-        public static bool TryParseExact(ReadOnlySpan<char> input, ReadOnlySpan<char> format, out Guid result)
+        public static bool TryParseExact(ReadOnlySpan<char> input, [StringSyntax(StringSyntaxAttribute.GuidFormat)] ReadOnlySpan<char> format, out Guid result)
         {
             if (format.Length != 1)
             {
@@ -397,7 +398,7 @@ namespace System
                 return false;
             }
 
-            Span<byte> bytes = MemoryMarshal.AsBytes(new Span<GuidResult>(ref result, 1));
+            Span<byte> bytes = MemoryMarshal.AsBytes(new Span<GuidResult>(ref result));
             int invalidIfNegative = 0;
             bytes[0] = DecodeByte(guidString[6],   guidString[7],  ref invalidIfNegative);
             bytes[1] = DecodeByte(guidString[4],   guidString[5],  ref invalidIfNegative);
@@ -483,7 +484,7 @@ namespace System
                 return false;
             }
 
-            Span<byte> bytes = MemoryMarshal.AsBytes(new Span<GuidResult>(ref result, 1));
+            Span<byte> bytes = MemoryMarshal.AsBytes(new Span<GuidResult>(ref result));
             int invalidIfNegative = 0;
             bytes[0] = DecodeByte(guidString[6], guidString[7], ref invalidIfNegative);
             bytes[1] = DecodeByte(guidString[4], guidString[5], ref invalidIfNegative);
@@ -870,6 +871,11 @@ namespace System
 
         private static bool EqualsCore(in Guid left, in Guid right)
         {
+            if (Vector128.IsHardwareAccelerated)
+            {
+                return Vector128.LoadUnsafe(ref Unsafe.As<Guid, byte>(ref Unsafe.AsRef(in left))) == Vector128.LoadUnsafe(ref Unsafe.As<Guid, byte>(ref Unsafe.AsRef(in right)));
+            }
+
             ref int rA = ref Unsafe.AsRef(in left._a);
             ref int rB = ref Unsafe.AsRef(in right._a);
 
@@ -1017,7 +1023,7 @@ namespace System
 
         public static bool operator !=(Guid a, Guid b) => !EqualsCore(a, b);
 
-        public string ToString(string? format)
+        public string ToString([StringSyntax(StringSyntaxAttribute.GuidFormat)] string? format)
         {
             return ToString(format, null);
         }
@@ -1053,7 +1059,7 @@ namespace System
 
         // IFormattable interface
         // We currently ignore provider
-        public string ToString(string? format, IFormatProvider? provider)
+        public string ToString([StringSyntax(StringSyntaxAttribute.GuidFormat)] string? format, IFormatProvider? provider)
         {
             if (string.IsNullOrEmpty(format))
             {
@@ -1100,7 +1106,7 @@ namespace System
         }
 
         // Returns whether the guid is successfully formatted as a span.
-        public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format = default)
+        public bool TryFormat(Span<char> destination, out int charsWritten, [StringSyntax(StringSyntaxAttribute.GuidFormat)] ReadOnlySpan<char> format = default)
         {
             if (format.Length == 0)
             {
@@ -1223,19 +1229,18 @@ namespace System
             return true;
         }
 
-        bool ISpanFormattable.TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? provider)
+        bool ISpanFormattable.TryFormat(Span<char> destination, out int charsWritten, [StringSyntax(StringSyntaxAttribute.GuidFormat)] ReadOnlySpan<char> format, IFormatProvider? provider)
         {
             // Like with the IFormattable implementation, provider is ignored.
             return TryFormat(destination, out charsWritten, format);
         }
 
-#if FEATURE_GENERIC_MATH
         //
         // IComparisonOperators
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static bool IComparisonOperators<Guid, Guid>.operator <(Guid left, Guid right)
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_LessThan(TSelf, TOther)" />
+        public static bool operator <(Guid left, Guid right)
         {
             if (left._a != right._a)
             {
@@ -1295,8 +1300,8 @@ namespace System
             return false;
         }
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static bool IComparisonOperators<Guid, Guid>.operator <=(Guid left, Guid right)
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_LessThanOrEqual(TSelf, TOther)" />
+        public static bool operator <=(Guid left, Guid right)
         {
             if (left._a != right._a)
             {
@@ -1356,8 +1361,8 @@ namespace System
             return true;
         }
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static bool IComparisonOperators<Guid, Guid>.operator >(Guid left, Guid right)
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_GreaterThan(TSelf, TOther)" />
+        public static bool operator >(Guid left, Guid right)
         {
             if (left._a != right._a)
             {
@@ -1417,8 +1422,8 @@ namespace System
             return false;
         }
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static bool IComparisonOperators<Guid, Guid>.operator >=(Guid left, Guid right)
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_GreaterThanOrEqual(TSelf, TOther)" />
+        public static bool operator >=(Guid left, Guid right)
         {
             if (left._a != right._a)
             {
@@ -1479,40 +1484,23 @@ namespace System
         }
 
         //
-        // IEqualityOperators
+        // IParsable
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static bool IEqualityOperators<Guid, Guid>.operator ==(Guid left, Guid right)
-            => left == right;
+        /// <inheritdoc cref="IParsable{TSelf}.Parse(string, IFormatProvider?)" />
+        public static Guid Parse(string s, IFormatProvider? provider) => Parse(s);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static bool IEqualityOperators<Guid, Guid>.operator !=(Guid left, Guid right)
-            => left != right;
+        /// <inheritdoc cref="IParsable{TSelf}.TryParse(string?, IFormatProvider?, out TSelf)" />
+        public static bool TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out Guid result) => TryParse(s, out result);
 
         //
-        // IParseable
+        // ISpanParsable
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static Guid IParseable<Guid>.Parse(string s, IFormatProvider? provider)
-            => Parse(s);
+        /// <inheritdoc cref="ISpanParsable{TSelf}.Parse(ReadOnlySpan{char}, IFormatProvider?)" />
+        public static Guid Parse(ReadOnlySpan<char> s, IFormatProvider? provider) => Parse(s);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static bool IParseable<Guid>.TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out Guid result)
-            => TryParse(s, out result);
-
-        //
-        // ISpanParseable
-        //
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static Guid ISpanParseable<Guid>.Parse(ReadOnlySpan<char> s, IFormatProvider? provider)
-            => Parse(s);
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static bool ISpanParseable<Guid>.TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out Guid result)
-            => TryParse(s, out result);
-#endif // FEATURE_GENERIC_MATH
+        /// <inheritdoc cref="ISpanParsable{TSelf}.TryParse(ReadOnlySpan{char}, IFormatProvider?, out TSelf)" />
+        public static bool TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out Guid result) => TryParse(s, out result);
     }
 }

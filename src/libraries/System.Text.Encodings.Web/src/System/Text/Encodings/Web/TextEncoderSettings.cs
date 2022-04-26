@@ -26,9 +26,9 @@ namespace System.Text.Encodings.Web
         /// </summary>
         public TextEncoderSettings(TextEncoderSettings other)
         {
-            if (other == null)
+            if (other is null)
             {
-                throw new ArgumentNullException(nameof(other));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.other);
             }
 
             _allowedCodePointsBitmap = other.GetAllowedCodePointsBitmap(); // copy byval
@@ -40,10 +40,11 @@ namespace System.Text.Encodings.Web
         /// </summary>
         public TextEncoderSettings(params UnicodeRange[] allowedRanges)
         {
-            if (allowedRanges == null)
+            if (allowedRanges is null)
             {
-                throw new ArgumentNullException(nameof(allowedRanges));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.allowedRanges);
             }
+
             AllowRanges(allowedRanges);
         }
 
@@ -60,9 +61,9 @@ namespace System.Text.Encodings.Web
         /// </summary>
         public virtual void AllowCharacters(params char[] characters)
         {
-            if (characters == null)
+            if (characters is null)
             {
-                throw new ArgumentNullException(nameof(characters));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.characters);
             }
 
             for (int i = 0; i < characters.Length; i++)
@@ -76,9 +77,9 @@ namespace System.Text.Encodings.Web
         /// </summary>
         public virtual void AllowCodePoints(IEnumerable<int> codePoints)
         {
-            if (codePoints == null)
+            if (codePoints is null)
             {
-                throw new ArgumentNullException(nameof(codePoints));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.codePoints);
             }
 
             foreach (var allowedCodePoint in codePoints)
@@ -96,9 +97,9 @@ namespace System.Text.Encodings.Web
         /// </summary>
         public virtual void AllowRange(UnicodeRange range)
         {
-            if (range == null)
+            if (range is null)
             {
-                throw new ArgumentNullException(nameof(range));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.range);
             }
 
             int firstCodePoint = range.FirstCodePoint;
@@ -116,9 +117,9 @@ namespace System.Text.Encodings.Web
         /// </summary>
         public virtual void AllowRanges(params UnicodeRange[] ranges)
         {
-            if (ranges == null)
+            if (ranges is null)
             {
-                throw new ArgumentNullException(nameof(ranges));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.ranges);
             }
 
             for (int i = 0; i < ranges.Length; i++)
@@ -148,9 +149,9 @@ namespace System.Text.Encodings.Web
         /// </summary>
         public virtual void ForbidCharacters(params char[] characters)
         {
-            if (characters == null)
+            if (characters is null)
             {
-                throw new ArgumentNullException(nameof(characters));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.characters);
             }
 
             for (int i = 0; i < characters.Length; i++)
@@ -164,9 +165,9 @@ namespace System.Text.Encodings.Web
         /// </summary>
         public virtual void ForbidRange(UnicodeRange range)
         {
-            if (range == null)
+            if (range is null)
             {
-                throw new ArgumentNullException(nameof(range));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.range);
             }
 
             int firstCodePoint = range.FirstCodePoint;
@@ -184,9 +185,9 @@ namespace System.Text.Encodings.Web
         /// </summary>
         public virtual void ForbidRanges(params UnicodeRange[] ranges)
         {
-            if (ranges == null)
+            if (ranges is null)
             {
-                throw new ArgumentNullException(nameof(ranges));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.ranges);
             }
 
             for (int i = 0; i < ranges.Length; i++)
