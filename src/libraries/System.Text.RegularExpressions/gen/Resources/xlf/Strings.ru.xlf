@@ -148,8 +148,8 @@
         <note />
       </trans-unit>
       <trans-unit id="LimitedSourceGenerationMessage">
-        <source>The RegexGenerator couldn't generate a complete source implementation for the specified regular expression, due to an unsupported option or too complex a regular expression.  The implementation will interpret the regular expression at run-time.</source>
-        <target state="translated">Средству RegexGenerator не удалось создать полную реализацию источника для указанного регулярного выражения, так как параметр не поддерживается или регулярное выражение является слишком сложным. Реализация будет интерпретировать регулярное выражение во время выполнения.</target>
+        <source>The RegexGenerator couldn't generate a complete source implementation for the specified regular expression due to an internal limitation.</source>
+        <target state="needs-review-translation">Средству RegexGenerator не удалось создать полную реализацию источника для указанного регулярного выражения, так как параметр не поддерживается или регулярное выражение является слишком сложным. Реализация будет интерпретировать регулярное выражение во время выполнения.</target>
         <note />
       </trans-unit>
       <trans-unit id="LimitedSourceGenerationTitle">

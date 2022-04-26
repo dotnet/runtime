@@ -148,8 +148,8 @@
         <note />
       </trans-unit>
       <trans-unit id="LimitedSourceGenerationMessage">
-        <source>The RegexGenerator couldn't generate a complete source implementation for the specified regular expression, due to an unsupported option or too complex a regular expression.  The implementation will interpret the regular expression at run-time.</source>
-        <target state="translated">RegexGenerator 無法為指定的規則運算式產生完整的來源實作，因為不支援的選項或規則運算式太複雜。實作會在執行時間解譯規則運算式。</target>
+        <source>The RegexGenerator couldn't generate a complete source implementation for the specified regular expression due to an internal limitation.</source>
+        <target state="needs-review-translation">RegexGenerator 無法為指定的規則運算式產生完整的來源實作，因為不支援的選項或規則運算式太複雜。實作會在執行時間解譯規則運算式。</target>
         <note />
       </trans-unit>
       <trans-unit id="LimitedSourceGenerationTitle">
