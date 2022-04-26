@@ -356,7 +356,9 @@ namespace System.Text.RegularExpressions
 
             // Generate length check.  If the input isn't long enough to possibly match, fail quickly.
             // It's rare for min required length to be 0, so we don't bother special-casing the check,
-            // especially since we want the "return false" code regardless.
+            // especially since we want the "return false" code regardless.  This differs from the source
+            // generator, where the return false is emitted at the end of the find method, and thus
+            // avoids the branch for the 0 case.
             int minRequiredLength = _regexTree.FindOptimizations.MinRequiredLength;
             Debug.Assert(minRequiredLength >= 0);
             Label returnFalse = DefineLabel();
@@ -4972,10 +4974,6 @@ namespace System.Text.RegularExpressions
                 Call(tryFindNextStartingPositionMethod);
                 BrfalseFar(returnLabel);
 
-                // Check the timeout every time we run the whole match logic at a new starting location, as each such
-                // operation could do work at least linear in the length of the input.
-                EmitTimeoutCheckIfNeeded();
-
                 // if (TryMatchAtCurrentPosition(text) || runtextpos == text.length) // or == 0 for rtl
                 //   return;
                 Ldthis();
@@ -4995,12 +4993,16 @@ namespace System.Text.RegularExpressions
                 Ceq();
                 BrtrueFar(returnLabel);
 
-                // runtextpos += 1 // or -1 for rtl
+                // runtextpos++ // or -- for rtl
                 Ldthis();
                 Ldthisfld(s_runtextposField);
                 Ldc(!rtl ? 1 : -1);
                 Add();
                 Stfld(s_runtextposField);
+
+                // Check the timeout every time we run the whole match logic at a new starting location, as each such
+                // operation could do work at least linear in the length of the input.
+                EmitTimeoutCheckIfNeeded();
 
                 // End loop body.
                 BrFar(whileLoopBody);
