@@ -451,9 +451,9 @@ namespace System.Net.Quic.Implementations.MsQuic
                 abortError = _state.ReadErrorCode;
 
                 // Failure scenario: pre-canceled token. Transition: Any non-final -> Aborted
-                // PendingRead state indicates there is another concurrent read operation in flight
+                // PendingRead or PendingReadFinished state indicates there is another concurrent read operation in flight
                 // which is forbidden, so it is handled separately
-                if (initialReadState != ReadState.PendingRead && cancellationToken.IsCancellationRequested)
+                if (initialReadState != ReadState.PendingRead && initialReadState != ReadState.PendingReadFinished && cancellationToken.IsCancellationRequested)
                 {
                     initialReadState = ReadState.Aborted;
                     CleanupReadStateAndCheckPending(_state, ReadState.Aborted);
