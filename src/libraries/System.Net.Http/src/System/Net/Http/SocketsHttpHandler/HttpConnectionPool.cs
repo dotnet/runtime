@@ -419,11 +419,12 @@ namespace System.Net.Http
         // If not, then it must be unavailable at the moment; we will detect this and ensure it is not added back to the available pool.
 
         [DoesNotReturn]
-        private static void ThrowGetVersionException(HttpRequestMessage request, int desiredVersion)
+        private void ThrowGetVersionException(HttpRequestMessage request, int desiredVersion)
         {
             Debug.Assert(desiredVersion == 2 || desiredVersion == 3);
-
-            throw new HttpRequestException(SR.Format(SR.net_http_requested_version_cannot_establish, request.Version, request.VersionPolicy, desiredVersion));
+#pragma warning disable CA1416
+            throw new HttpRequestException(SR.Format(SR.net_http_requested_version_cannot_establish, request.Version, request.VersionPolicy, desiredVersion, (_poolManager.Settings._quicImplementationProvider ?? QuicImplementationProviders.Default).IsSupported));
+#pragma warning restore CA1416
         }
 
         private bool CheckExpirationOnGet(HttpConnectionBase connection)
