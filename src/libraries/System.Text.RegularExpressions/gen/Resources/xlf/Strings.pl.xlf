@@ -148,8 +148,8 @@
         <note />
       </trans-unit>
       <trans-unit id="LimitedSourceGenerationMessage">
-        <source>The RegexGenerator couldn't generate a complete source implementation for the specified regular expression, due to an unsupported option or too complex a regular expression.  The implementation will interpret the regular expression at run-time.</source>
-        <target state="translated">Obiekt RegexGenerator nie może wygenerować pełnej implementacji źródła dla określonego wyrażenia regularnego z powodu nieobsługiwanych opcji lub zbyt złożonego wyrażenia regularnego.  Implementacja będzie interpretować wyrażenie regularne w czasie wykonywania.</target>
+        <source>The RegexGenerator couldn't generate a complete source implementation for the specified regular expression due to an internal limitation.</source>
+        <target state="needs-review-translation">Obiekt RegexGenerator nie może wygenerować pełnej implementacji źródła dla określonego wyrażenia regularnego z powodu nieobsługiwanych opcji lub zbyt złożonego wyrażenia regularnego.  Implementacja będzie interpretować wyrażenie regularne w czasie wykonywania.</target>
         <note />
       </trans-unit>
       <trans-unit id="LimitedSourceGenerationTitle">
