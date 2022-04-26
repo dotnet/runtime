@@ -21462,8 +21462,8 @@ GenTree* Compiler::gtNewSimdShuffleNode(var_types   type,
     bool     crossLane  = false;
     bool     needsZero  = varTypeIsSmallInt(simdBaseType);
     uint64_t value      = 0;
-    uint8_t  vecCns[32] = { };
-    uint8_t  mskCns[32] = { };
+    uint8_t  vecCns[32] = {};
+    uint8_t  mskCns[32] = {};
 
     for (size_t index = 0; index < elementCount; index++)
     {
@@ -21634,8 +21634,8 @@ GenTree* Compiler::gtNewSimdShuffleNode(var_types   type,
                 nodeBuilder.AddOperand(i, gtNewIconNode(vecCns[i]));
             }
 
-            op2 = gtNewSimdHWIntrinsicNode(type, std::move(nodeBuilder), NI_Vector128_Create, simdBaseJitType,
-                                           simdSize);
+            op2 =
+                gtNewSimdHWIntrinsicNode(type, std::move(nodeBuilder), NI_Vector128_Create, simdBaseJitType, simdSize);
 
             return gtNewSimdHWIntrinsicNode(type, op1, op2, NI_SSSE3_Shuffle, simdBaseJitType, simdSize,
                                             isSimdAsHWIntrinsic);
@@ -21671,8 +21671,8 @@ GenTree* Compiler::gtNewSimdShuffleNode(var_types   type,
             op1 = impCloneExpr(op1, &op1Dup, clsHnd, (unsigned)CHECK_SPILL_ALL,
                                nullptr DEBUGARG("Clone op1 for vector shuffle"));
 
-            retNode = gtNewSimdHWIntrinsicNode(type, op1, op1Dup, cnsNode, NI_SSE_Shuffle, simdBaseJitType,
-                                               simdSize, isSimdAsHWIntrinsic);
+            retNode = gtNewSimdHWIntrinsicNode(type, op1, op1Dup, cnsNode, NI_SSE_Shuffle, simdBaseJitType, simdSize,
+                                               isSimdAsHWIntrinsic);
         }
     }
 
@@ -21689,17 +21689,16 @@ GenTree* Compiler::gtNewSimdShuffleNode(var_types   type,
             nodeBuilder.AddOperand(i, gtNewIconNode(mskCns[i]));
         }
 
-        op2 = gtNewSimdHWIntrinsicNode(type, std::move(nodeBuilder), NI_Vector128_Create, simdBaseJitType,
-                                       simdSize);
+        op2 = gtNewSimdHWIntrinsicNode(type, std::move(nodeBuilder), NI_Vector128_Create, simdBaseJitType, simdSize);
 
         GenTree* zero = gtNewSimdZeroNode(type, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
-        retNode = gtNewSimdCndSelNode(type, op2, retNode, zero, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
+        retNode       = gtNewSimdCndSelNode(type, op2, retNode, zero, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
     }
 
     return retNode;
 #elif defined(TARGET_ARM64)
     uint64_t value      = 0;
-    uint8_t  vecCns[16] = { };
+    uint8_t  vecCns[16] = {};
 
     for (size_t index = 0; index < elementCount; index++)
     {
