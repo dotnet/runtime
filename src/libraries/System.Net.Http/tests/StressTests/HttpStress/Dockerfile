@@ -4,14 +4,24 @@ FROM $SDK_BASE_IMAGE
 WORKDIR /app
 COPY . .
 
-# Pulling the msquic Debian package from packages.microsoft.com
+# Build latest msquic locally
 RUN apt-get update -y
-RUN apt-get install -y gnupg2 software-properties-common
-RUN curl -sSL https://packages.microsoft.com/keys/microsoft.asc | apt-key add -
-RUN apt-add-repository https://packages.microsoft.com/debian/11/prod
-RUN apt-get update -y
-RUN apt-get install -y libmsquic
 RUN apt-get upgrade -y
+RUN apt-get install -y cmake clang ruby-dev gem lttng-tools libssl-dev && \
+    gem install fpm
+RUN git clone --recursive https://github.com/dotnet/msquic
+RUN cd msquic/src/msquic && \
+    mkdir build && \
+    options="-DQUIC_BUILD_TOOLS=off -DQUIC_BUILD_TEST=off -DQUIC_BUILD_PERF=off" && \
+    cmake -B build -DCMAKE_BUILD_TYPE=Release -DQUIC_ENABLE_LOGGING=false -DQUIC_USE_SYSTEM_LIBCRYPTO=true -DQUIC_BUILD_TOOLS=off -DQUIC_BUILD_TEST=off -DQUIC_BUILD_PERF=off && \
+    cd build && \
+    cmake --build . --config Release
+RUN cd msquic/src/msquic/build/bin/Release && \
+    rm libmsquic.so && \
+    fpm -f -s dir -t deb -n libmsquic -v $( find -type f | cut -d "." -f 4- ) \
+      --license MIT --url https://github.com/microsoft/msquic --log error \
+      $( ls ./* | cut -d "/" -f 2 | sed -r "s/(.*)/\1=\/usr\/lib\/\1/g" ) && \
+      dpkg -i libmsquic_*.deb
 
 ARG VERSION=7.0
 ARG CONFIGURATION=Release
