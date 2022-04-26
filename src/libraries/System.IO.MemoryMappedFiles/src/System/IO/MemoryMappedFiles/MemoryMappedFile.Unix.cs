@@ -202,6 +202,12 @@ namespace System.IO.MemoryMappedFiles
                         // the result of native shm_open does not work well with our subsequent call to mmap.
                         return null;
                     }
+                    else if (errorInfo.Error == Interop.Error.ENAMETOOLONG)
+                    {
+                        Debug.Fail($"shm_open failed with ENAMETOOLONG for {Encoding.UTF8.GetByteCount(mapName)} byte long name.");
+                        // in theory it should not happen anymore, but just to be extra safe we use the fallback
+                        return null;
+                    }
                     else if (errorInfo.Error != Interop.Error.EEXIST) // map with same name already existed
                     {
                         throw Interop.GetExceptionForIoErrno(errorInfo);
