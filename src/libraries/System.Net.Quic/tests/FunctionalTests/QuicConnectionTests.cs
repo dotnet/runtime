@@ -120,7 +120,7 @@ namespace System.Net.Quic.Tests
                     // (CloseAsync may be processed before OpenStreamAsync as it is scheduled to the front of the operation queue)
                     // To be revisited once we standartize on exceptions.
                     // [ActiveIssue("https://github.com/dotnet/runtime/issues/55619")]
-                    await Assert.ThrowsAsync<QuicOperationAbortedException>(() => connectTask);
+                    await Assert.ThrowsAnyAsync<QuicException>(() => connectTask);
 
                     // Subsequent attempts should fail
                     // TODO: Should these be QuicOperationAbortedException, to match above? Or vice-versa?

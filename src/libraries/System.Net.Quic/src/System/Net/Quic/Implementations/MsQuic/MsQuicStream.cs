@@ -1635,7 +1635,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             if (!state.StartCompletionSource.Task.IsCompleted)
             {
-                state.StartCompletionSource.SetException(
+                state.StartCompletionSource.TrySetException(
                     ExceptionDispatchInfo.SetCurrentStackTrace(GetConnectionAbortedException(state)));
             }
 
@@ -1676,12 +1676,18 @@ namespace System.Net.Quic.Implementations.MsQuic
         {
             Debug.Assert(!Monitor.IsEntered(_state));
 
-            using var registration = cancellationToken.UnsafeRegister((state, token) => {
-                ((State)state!).StartCompletionSource.SetCanceled(token);
+            using var registration = cancellationToken.UnsafeRegister((state, token) =>
+            {
+                ((State)state!).StartCompletionSource.TrySetCanceled(token);
             }, _state);
 
             uint status = MsQuicApi.Api.StreamStartDelegate(_state.Handle, QUIC_STREAM_START_FLAGS.SHUTDOWN_ON_FAIL | QUIC_STREAM_START_FLAGS.INDICATE_PEER_ACCEPT);
-            QuicExceptionHelpers.ThrowIfFailed(status, "Could not start stream.");
+
+            if (!MsQuicStatusHelper.SuccessfulStatusCode(status))
+            {
+                _state.StartCompletionSource.TrySetException(QuicExceptionHelpers.CreateExceptionForHResult(status, "Could not start stream."));
+                throw QuicExceptionHelpers.CreateExceptionForHResult(status, "Could not start stream.");
+            }
 
             await _state.StartCompletionSource.Task.ConfigureAwait(false);
         }
