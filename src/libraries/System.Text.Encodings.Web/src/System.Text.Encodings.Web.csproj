@@ -61,7 +61,7 @@ System.Text.Encodings.Web.JavaScriptEncoder</PackageDescription>
     <Compile Include="Polyfills\System.Text.Rune.netstandard20.cs" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFrameworkMoniker)' == '$(NetCoreAppCurrentTargetFrameworkMoniker)'">
+  <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', '$(NetCoreAppCurrent)'))">
     <Reference Include="System.Memory" />
     <Reference Include="System.Numerics.Vectors" />
     <Reference Include="System.Runtime" />

@@ -106,7 +106,7 @@ System.Collections.Immutable.ImmutableStack&lt;T&gt;</PackageDescription>
     <None Include="Interfaces.cd" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFrameworkMoniker)' == '$(NetCoreAppCurrentTargetFrameworkMoniker)'">
+  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
     <Reference Include="System.Collections" />
     <Reference Include="System.Linq" />
     <Reference Include="System.Runtime" />

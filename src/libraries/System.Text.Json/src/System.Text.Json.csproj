@@ -350,7 +350,7 @@ System.Text.Json.Nodes.JsonValue</PackageDescription>
     <ProjectReference Include="$(LibrariesProjectRoot)System.Text.Encodings.Web\src\System.Text.Encodings.Web.csproj" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFrameworkMoniker)' == '$(NetCoreAppCurrentTargetFrameworkMoniker)'">
+  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.Concurrent" />
     <Reference Include="System.Memory" />

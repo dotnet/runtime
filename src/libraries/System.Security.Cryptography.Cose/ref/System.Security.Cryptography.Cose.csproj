@@ -7,9 +7,11 @@
 
   <ItemGroup>
     <Compile Include="System.Security.Cryptography.Cose.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
     <Compile Include="$(CoreLibSharedDir)System\Runtime\Versioning\RequiresPreviewFeaturesAttribute.cs"
-             Link="System\Runtime\Versioning\RequiresPreviewFeaturesAttribute.cs"
-             Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'" />
+             Link="System\Runtime\Versioning\RequiresPreviewFeaturesAttribute.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">

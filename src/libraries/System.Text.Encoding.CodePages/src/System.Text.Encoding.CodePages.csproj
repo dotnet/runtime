@@ -77,7 +77,7 @@ System.Text.CodePagesEncodingProvider</PackageDescription>
     <None Include="Data\PreferredCodePageNames.csv" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFrameworkMoniker)' == '$(NetCoreAppCurrentTargetFrameworkMoniker)'">
+  <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', '$(NetCoreAppCurrent)'))">
     <Reference Include="System.Collections" />
     <Reference Include="System.Diagnostics.Debug" />
     <Reference Include="System.Diagnostics.Tools" />

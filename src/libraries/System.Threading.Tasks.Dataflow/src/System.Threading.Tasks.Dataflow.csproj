@@ -66,7 +66,7 @@ System.Threading.Tasks.Dataflow.WriteOnceBlock&lt;T&gt;</PackageDescription>
     <Content Include="XmlDocs\System.Threading.Tasks.Dataflow.xml" Pack="false" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFrameworkMoniker)' == '$(NetCoreAppCurrentTargetFrameworkMoniker)'">
+  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.Concurrent" />
     <Reference Include="System.Diagnostics.Tracing" />
