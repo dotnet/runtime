@@ -1733,7 +1733,7 @@ namespace System.Runtime.InteropServices.ComTypes
     public partial interface IEnumFORMATETC
     {
         void Clone(out System.Runtime.InteropServices.ComTypes.IEnumFORMATETC newEnum);
-        int Next(int celt, System.Runtime.InteropServices.ComTypes.FORMATETC[] rgelt, int[] pceltFetched);
+        int Next(int celt, System.Runtime.InteropServices.ComTypes.FORMATETC[] rgelt, int[]? pceltFetched);
         int Reset();
         int Skip(int celt);
     }
