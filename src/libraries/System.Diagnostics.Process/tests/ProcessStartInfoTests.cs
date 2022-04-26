@@ -475,15 +475,20 @@ namespace System.Diagnostics.Tests
             bool hasStarted = false;
             SafeProcessHandle handle = null;
             Process p = null;
+            string workingDirectory = null;
 
             try
             {
                 p = CreateProcessLong();
 
+                workingDirectory = string.IsNullOrEmpty(p.StartInfo.WorkingDirectory)
+                    ? Directory.GetCurrentDirectory()
+                    : p.StartInfo.WorkingDirectory;
+
                 if (PlatformDetection.IsNotWindowsServerCore) // for this particular Windows version it fails with Attempted to perform an unauthorized operation (#46619)
                 {
                     // ensure the new user can access the .exe (otherwise you get Access is denied exception)
-                    SetAccessControl(username, p.StartInfo.FileName, p.StartInfo.WorkingDirectory, add: true);
+                    SetAccessControl(username, p.StartInfo.FileName, workingDirectory, add: true);
                 }
 
                 p.StartInfo.LoadUserProfile = true;
@@ -530,7 +535,7 @@ namespace System.Diagnostics.Tests
 
                 if (PlatformDetection.IsNotWindowsServerCore)
                 {
-                    SetAccessControl(username, p.StartInfo.FileName, p.StartInfo.WorkingDirectory, add: false); // remove the access
+                    SetAccessControl(username, p.StartInfo.FileName, workingDirectory, add: false); // remove the access
                 }
 
                 Assert.Equal(Interop.ExitCodes.NERR_Success, Interop.NetUserDel(null, username));
