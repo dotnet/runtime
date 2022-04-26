@@ -46,7 +46,7 @@ namespace System.Text.Json.Serialization.Metadata
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
                 Justification = "Constructor is marked as RequiresUnreferencedCode")]
         [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
-            Justification = "The ctor is marked with RequiresDynamicCode.")]
+            Justification = "The ctor is marked RequiresDynamicCode.")]
         internal override void Configure()
         {
             base.Configure();

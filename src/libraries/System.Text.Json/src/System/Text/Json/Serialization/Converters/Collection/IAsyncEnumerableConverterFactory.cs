@@ -23,7 +23,7 @@ namespace System.Text.Json.Serialization
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "The ctor is marked RequiresUnreferencedCode.")]
         [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
-            Justification = "The ctor is marked with RequiresDynamicCode.")]
+            Justification = "The ctor is marked RequiresDynamicCode.")]
         public override JsonConverter CreateConverter(Type typeToConvert, JsonSerializerOptions options)
         {
             Type? asyncEnumerableInterface = GetAsyncEnumerableInterface(typeToConvert);

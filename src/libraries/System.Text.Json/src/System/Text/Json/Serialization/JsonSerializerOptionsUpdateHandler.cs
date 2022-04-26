@@ -14,7 +14,7 @@ namespace System.Text.Json
     /// <summary>Handler used to clear JsonSerializerOptions reflection cache upon a metadata update.</summary>
     internal static class JsonSerializerOptionsUpdateHandler
     {
-        [RequiresDynamicCode("JSON serialization and deserialization might require types that might need runtime code generation. Use source generated paths for native aot applications.")]
+        [RequiresDynamicCode("JSON serialization and deserialization might require types that cannot be statically analyzed and might need runtime code generation. Use System.Text.Json source generation for native AOT applications.")]
         public static void ClearCache(Type[]? types)
         {
             // Ignore the types, and just clear out all reflection caches from serializer options.

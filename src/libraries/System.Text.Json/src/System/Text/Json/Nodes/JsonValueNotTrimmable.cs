@@ -15,9 +15,9 @@ namespace System.Text.Json.Nodes
         public JsonValueNotTrimmable(TValue value, JsonNodeOptions? options = null) : base(value, options) { }
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "The ctor is marked with RequiresUnreferencedCode.")]
+            Justification = "The ctor is marked RequiresUnreferencedCode.")]
         [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
-            Justification = "The ctor is marked with RequiresDynamicCode.")]
+            Justification = "The ctor is marked RequiresDynamicCode.")]
         public override void WriteTo(Utf8JsonWriter writer, JsonSerializerOptions? options = null)
         {
             if (writer is null)

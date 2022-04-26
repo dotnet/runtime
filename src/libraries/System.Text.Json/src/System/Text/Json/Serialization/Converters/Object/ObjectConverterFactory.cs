@@ -38,7 +38,7 @@ namespace System.Text.Json.Serialization.Converters
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2067:UnrecognizedReflectionPattern",
             Justification = "The ctor is marked RequiresUnreferencedCode.")]
         [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
-            Justification = "The ctor is marked with RequiresDynamicCode.")]
+            Justification = "The ctor is marked RequiresDynamicCode.")]
         public override JsonConverter CreateConverter(Type typeToConvert, JsonSerializerOptions options)
         {
             if (typeToConvert.IsKeyValuePair())

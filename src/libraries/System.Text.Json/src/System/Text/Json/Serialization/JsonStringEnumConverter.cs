@@ -21,6 +21,7 @@ namespace System.Text.Json.Serialization
         /// Constructor. Creates the <see cref="JsonStringEnumConverter"/> with the
         /// default naming policy and allows integer values.
         /// </summary>
+        [RequiresDynamicCode("JSON serialization and deserialization might require types that cannot be statically analyzed and might need runtime code generation. Use System.Text.Json source generation for native AOT applications.")]
         public JsonStringEnumConverter()
             : this(namingPolicy: null, allowIntegerValues: true)
         {
@@ -37,6 +38,7 @@ namespace System.Text.Json.Serialization
         /// True to allow undefined enum values. When true, if an enum value isn't
         /// defined it will output as a number rather than a string.
         /// </param>
+        [RequiresDynamicCode("JSON serialization and deserialization might require types that cannot be statically analyzed and might need runtime code generation. Use System.Text.Json source generation for native AOT applications.")]
         public JsonStringEnumConverter(JsonNamingPolicy? namingPolicy = null, bool allowIntegerValues = true)
         {
             _namingPolicy = namingPolicy;
@@ -52,8 +54,6 @@ namespace System.Text.Json.Serialization
         }
 
         /// <inheritdoc />
-        [RequiresDynamicCode("JSON serialization and deserialization might require types that might need runtime code generation. Use source generated paths for native aot applications.")]
-        [SuppressMessage("AotAnalysis", "IL3051:'RequiresDynamicCodeAttribute' annotations must match across all interface implementations or overrides.", Justification = "Suppressing base type warnings")]
         public sealed override JsonConverter CreateConverter(Type typeToConvert, JsonSerializerOptions options) =>
             EnumConverterFactory.Create(typeToConvert, _converterOptions, _namingPolicy, options);
     }

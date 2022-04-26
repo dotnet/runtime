@@ -216,7 +216,7 @@ namespace System.Text.Json
         /// for <paramref name="typeToConvert"/> or its serializable members.
         /// </exception>
         [RequiresUnreferencedCode("Getting a converter for a type may require reflection which depends on unreferenced code.")]
-        [RequiresDynamicCode("Getting a converter for a type may require reflection which depends on unreferenced code.")]
+        [RequiresDynamicCode("Getting a converter for a type may require reflection which depends on dynamic code.")]
         public JsonConverter GetConverter(Type typeToConvert)
         {
             if (typeToConvert is null)

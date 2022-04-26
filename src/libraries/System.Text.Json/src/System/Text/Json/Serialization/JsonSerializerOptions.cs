@@ -571,7 +571,7 @@ namespace System.Text.Json
 
         // The cached value used to determine if ReferenceHandler should use Preserve or IgnoreCycles semanitcs or None of them.
         internal ReferenceHandlingStrategy ReferenceHandlingStrategy = ReferenceHandlingStrategy.None;
-        [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode", Justification = "Dyanmic path is guarded by the the runtime feature switch.")]
+        [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode", Justification = "Dyanmic path is guarded by the runtime feature switch.")]
         internal MemberAccessor MemberAccessorStrategy
         {
             get
