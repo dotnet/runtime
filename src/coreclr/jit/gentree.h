@@ -8298,6 +8298,11 @@ inline uint64_t GenTree::GetIntegralVectorConstElement(size_t index)
                 {
                     return 0xFFFFFFFFFFFFFFFF;
                 }
+
+                default:
+                {
+                    unreached();
+                }
             }
         }
     }
