@@ -23,6 +23,7 @@
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/w32event.h>
 #include <mono/metadata/metadata-internals.h>
+#include "mono/utils/mono-logger-internals.h"
 #include <runtime_version.h>
 #include <mono/metadata/profiler.h>
 
