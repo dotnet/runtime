@@ -315,6 +315,23 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			public override void Method () { }
 		}
 
+		class BaseWithNoRequires
+		{
+			public virtual void Method () { }
+		}
+
+		[RequiresUnreferencedCode ("RUC")]
+		[RequiresDynamicCode ("RDC")]
+		class DerivedWithRequiresOnTypeOverBaseWithNoRequires : BaseWithNoRequires
+		{
+			// https://github.com/dotnet/linker/issues/2763
+			[ExpectedWarning ("IL2046", ProducedBy = ProducedBy.Analyzer)]
+			[ExpectedWarning ("IL3051", ProducedBy = ProducedBy.Analyzer)]
+			public override void Method ()
+			{
+			}
+		}
+
 		public interface InterfaceWithoutRequires
 		{
 			[RequiresUnreferencedCode ("RUC")]
@@ -502,6 +519,9 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
 				// Doesn't warn since DerivedWithoutRequiresOnType has no static methods
 				typeof (DerivedWithoutRequiresOnType).RequiresPublicMethods ();
+
+				// Doesn't warn since the type has no statics
+				typeof (DerivedWithRequiresOnTypeOverBaseWithNoRequires).RequiresPublicMethods ();
 			}
 
 			[ExpectedWarning ("IL2026", "BaseWithoutRequiresOnType.Method()")]
