@@ -378,6 +378,39 @@ KoZIhvcNAwcECJ01qtX2EKx6oIAEEM7op+R2U3GQbYwlEj5X+h0AAAAAAAAAAAAA
             Assert.Equal(expectedSize, reDecoded.ContentInfo.Content.Length);
         }
 
+        [Fact]
+        [OuterLoop(/* Leaks key on disk if interrupted */)]
+        public static void Decrypt_DoesNotAlterAsnOctetStringContent()
+        {
+            // The content in the message happens to be an ASN.1 OCTET STRING.
+            // We used to decode this for compatibility purposes, but that has
+            // been removed. Instead, test that the content remains untouched.
+            byte[] expectedContent = new byte[] { 4, 3, 1, 2, 3 };
+            byte[] encodedMessage =
+                ("3082010C06092A864886F70D010703A081FE3081FB0201003181C83081C5020100302" +
+                 "E301A311830160603550403130F5253414B65795472616E7366657231021031D935FB" +
+                 "63E8CFAB48A0BF7B397B67C0300D06092A864886F70D0101010500048180586BCA530" +
+                 "9A74A211859714715D90B8E13A7712838746877DF7D68B0BCF36DE3F77854276C8EAD" +
+                 "389ADD8402697E4FFF215143E0E63676349592CB3A86FF556230D5F4AC4A9A6758219" +
+                 "9E65281A8B63DFBCFB7180E6B54C6E38BECAF09624C6B6D2B3058F280FE8F0BF8EBA3" +
+                 "57AECC1B9B177E98671A9659B034501AE3D58789302B06092A864886F70D010701301" +
+                 "406082A864886F70D0307040810B222648FDC0DE38008036BB59C8B6A784B").HexToByteArray();
+            EnvelopedCms ecms = new EnvelopedCms();
+            ecms.Decode(encodedMessage);
+
+            using (X509Certificate2 privateCert = Certificates.RSAKeyTransfer1.TryGetCertificateWithPrivateKey())
+            {
+                if (privateCert == null)
+                {
+                    return; //Private key not available.
+                }
+
+                ecms.Decrypt(new X509Certificate2Collection(privateCert));
+            }
+
+            Assert.Equal(expectedContent, ecms.ContentInfo.Content);
+        }
+
         private static void Assert_Certificate_Roundtrip(CertLoader certificateLoader)
         {
             ContentInfo contentInfo = new ContentInfo(new byte[] { 1, 2, 3 });
