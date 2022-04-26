@@ -76,46 +76,41 @@ namespace System.Security.Cryptography
                 hashAlgorithmName,
                 static hashAlgorithmName =>
                 {
-                    using (IncrementalHash hasher = IncrementalHash.CreateHash(hashAlgorithmName))
+                    ReadOnlyMemory<byte> digestInfoPrefix;
+                    int digestLength;
+
+                    if (hashAlgorithmName == HashAlgorithmName.MD5)
                     {
-                        // SHA-2-512 is the biggest we expect
-                        Span<byte> stackDest = stackalloc byte[512 / 8];
-                        ReadOnlyMemory<byte> digestInfoPrefix;
-
-                        if (hashAlgorithmName == HashAlgorithmName.MD5)
-                        {
-                            digestInfoPrefix = s_digestInfoMD5;
-                        }
-                        else if (hashAlgorithmName == HashAlgorithmName.SHA1)
-                        {
-                            digestInfoPrefix = s_digestInfoSha1;
-                        }
-                        else if (hashAlgorithmName == HashAlgorithmName.SHA256)
-                        {
-                            digestInfoPrefix = s_digestInfoSha256;
-                        }
-                        else if (hashAlgorithmName == HashAlgorithmName.SHA384)
-                        {
-                            digestInfoPrefix = s_digestInfoSha384;
-                        }
-                        else if (hashAlgorithmName == HashAlgorithmName.SHA512)
-                        {
-                            digestInfoPrefix = s_digestInfoSha512;
-                        }
-                        else
-                        {
-                            Debug.Fail("Unknown digest algorithm");
-                            throw new CryptographicException();
-                        }
-
-                        if (hasher.TryGetHashAndReset(stackDest, out int bytesWritten))
-                        {
-                            return new RsaPaddingProcessor(hashAlgorithmName, bytesWritten, digestInfoPrefix);
-                        }
-
-                        byte[] big = hasher.GetHashAndReset();
-                        return new RsaPaddingProcessor(hashAlgorithmName, big.Length, digestInfoPrefix);
+                        digestInfoPrefix = s_digestInfoMD5;
+                        digestLength = MD5.HashSizeInBytes;
                     }
+                    else if (hashAlgorithmName == HashAlgorithmName.SHA1)
+                    {
+                        digestInfoPrefix = s_digestInfoSha1;
+                        digestLength = SHA1.HashSizeInBytes;
+                    }
+                    else if (hashAlgorithmName == HashAlgorithmName.SHA256)
+                    {
+                        digestInfoPrefix = s_digestInfoSha256;
+                        digestLength = SHA256.HashSizeInBytes;
+                    }
+                    else if (hashAlgorithmName == HashAlgorithmName.SHA384)
+                    {
+                        digestInfoPrefix = s_digestInfoSha384;
+                        digestLength = SHA384.HashSizeInBytes;
+                    }
+                    else if (hashAlgorithmName == HashAlgorithmName.SHA512)
+                    {
+                        digestInfoPrefix = s_digestInfoSha512;
+                        digestLength = SHA512.HashSizeInBytes;
+                    }
+                    else
+                    {
+                        Debug.Fail("Unknown digest algorithm");
+                        throw new CryptographicException();
+                    }
+
+                    return new RsaPaddingProcessor(hashAlgorithmName, digestLength, digestInfoPrefix);
                 });
         }
 
