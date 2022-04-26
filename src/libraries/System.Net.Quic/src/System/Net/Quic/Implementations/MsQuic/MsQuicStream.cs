@@ -522,7 +522,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             if (initialReadState == ReadState.None)
             {
-                // wait for the read to finish
+                // wait for the incoming data to finish the read.
                 bytesRead = await _state.ReceiveResettableCompletionSource.GetValueTask().ConfigureAwait(false);
 
                 // Reset the read state
@@ -1000,9 +1000,12 @@ namespace System.Net.Quic.Implementations.MsQuic
             {
                 switch (state.ReadState)
                 {
+                    // ReadAsync() hasn't been called yet.
                     case ReadState.None:
+                    // A pending read has just been finished, and this is a second event in a row (before reading thread
+                    // managed to clear the state)
                     case ReadState.PendingReadFinished:
-                        // ReadAsync() hasn't been called yet. Stash the buffer so the next ReadAsync call completes synchronously.
+                        // Stash the buffer so the next ReadAsync call completes synchronously.
 
                         // We are overwriting state.ReceiveQuicBuffers here even if we only partially consumed them
                         // and it is intended, because unconsumed data will arrive again from the point we've stopped.
@@ -1656,9 +1659,11 @@ namespace System.Net.Quic.Implementations.MsQuic
         // IndividualReadComplete(+FIN)  --(user calls ReadAsync() & consumes only partial data)->  None
         // IndividualReadComplete(+FIN)  --(user calls ReadAsync() & consumes full data)->  ReadsCompleted
         //
-        // PendingRead  --(data arrives in event RECV & completes user's ReadAsync())->  None
-        // PendingRead  --(data arrives in event RECV with FIN flag & completes user's ReadAsync() with only partial data)->  None
+        // PendingRead  --(data arrives in event RECV & completes user's ReadAsync())->  PendingReadFinished
+        // PendingRead  --(data arrives in event RECV with FIN flag & completes user's ReadAsync() with only partial data)->  PendingReadFinished
         // PendingRead  --(data arrives in event RECV with FIN flag & completes user's ReadAsync() with full data)->  ReadsCompleted
+        //
+        // PendingReadFinished --(reading thread awaits ReceiveResettableCompletionSource)-> None
         //
         // Any non-final state  --(event PEER_SEND_SHUTDOWN or SHUTDOWN_COMPLETED with ConnectionClosed=false)->  ReadsCompleted
         // Any non-final state  --(event PEER_SEND_ABORT)->  Aborted
