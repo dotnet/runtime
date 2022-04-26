@@ -25,6 +25,10 @@ namespace TLens.Analyzers
 						throw new NotImplementedException ();
 
 					var md = mr.Resolve ();
+
+					if (md == null)
+						continue;
+
 					if (md == method)
 						continue;
 

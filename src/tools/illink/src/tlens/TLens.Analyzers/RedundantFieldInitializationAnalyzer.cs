@@ -73,8 +73,8 @@ namespace TLens.Analyzers
 
 					case MetadataType.UIntPtr:
 					case MetadataType.IntPtr:
-						if (instr.Previous.OpCode.Code == Code.Ldsfld)
-							throw new NotImplementedException ("test with Zero property");
+						if (!IsLoadIntPtrOrUIntPtrZero (instr.Previous))
+							continue;
 
 						break;
 
@@ -96,6 +96,20 @@ namespace TLens.Analyzers
 		static bool IsDefaultNumeric (Instruction instruction)
 		{
 			return instruction.OpCode.Code == Code.Ldc_I4_0;
+		}
+
+		static bool IsLoadIntPtrOrUIntPtrZero (Instruction instruction)
+		{
+			if (instruction.OpCode.Code != Code.Ldsfld)
+				return false;
+
+			if (instruction.Operand is not FieldReference fr || fr == null)
+				return false;
+
+			if (fr.DeclaringType.FullName != "System.IntPtr" && fr.DeclaringType.FullName != "System.UIntPtr")
+				return false;
+
+			return fr.Name == "Zero";
 		}
 
 		public override void PrintResults (int maxCount)
