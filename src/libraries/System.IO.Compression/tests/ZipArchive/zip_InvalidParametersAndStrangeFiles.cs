@@ -578,11 +578,22 @@ namespace System.IO.Compression.Tests
             }
         }
 
+        [Theory]
+        [InlineData("small.zip", false)]
+        [InlineData("large.zip", true)]
+        public static async Task ZipArchive_StartDiskNumberSize(string zipname, bool largerThanInt32)
+        {
+            using (ZipArchive archive = new ZipArchive(await StreamHelpers.CreateTempCopyStream(bad(zipname)), ZipArchiveMode.Read))
+            {
+                Assert.Equal(archive.StartDiskNumber > int.MaxValue, largerThanInt32);
+            }
+        }
+
         [Fact]
         public static async Task ZipArchiveEntry_InvalidLastWriteTime_Read()
         {
             using (ZipArchive archive = new ZipArchive(await StreamHelpers.CreateTempCopyStream(
-                 bad("invaliddate.zip")), ZipArchiveMode.Read))
+                bad("invaliddate.zip")), ZipArchiveMode.Read))
             {
                 Assert.Equal(new DateTime(1980, 1, 1, 0, 0, 0), archive.Entries[0].LastWriteTime.DateTime); //"Date isn't correct on invalid date"
             }
