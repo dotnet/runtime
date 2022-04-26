@@ -557,6 +557,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             switch (initialReadState)
             {
                 case ReadState.PendingRead:
+                case ReadState.PendingReadFinished:
                     ex = new InvalidOperationException(SR.Format(SR.net_io_invalidnestedcall, "read"));
                     break;
                 case ReadState.Aborted:
