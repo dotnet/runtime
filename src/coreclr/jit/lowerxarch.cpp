@@ -4604,12 +4604,16 @@ void Lowering::ContainCheckStoreIndir(GenTreeStoreInd* node)
 
     // If the source is a BSWAP, contain it on supported hardware to generate a MOVBE.
     if (comp->opts.OptimizationEnabled() && src->OperIs(GT_BSWAP, GT_BSWAP16) &&
-        comp->compOpportunisticallyDependsOn(InstructionSet_MOVBE) && IsSafeToContainMem(node, src))
+        comp->compOpportunisticallyDependsOn(InstructionSet_MOVBE))
     {
-        // Prefer containing in the store in case the load has been contained.
-        src->gtGetOp1()->ClearContained();
+        unsigned swapSize = src->OperIs(GT_BSWAP16) ? 2 : genTypeSize(src);
+        if ((swapSize == genTypeSize(node)) && IsSafeToContainMem(node, src))
+        {
+            // Prefer containing in the store in case the load has been contained.
+            src->gtGetOp1()->ClearContained();
 
-        MakeSrcContained(node, src);
+            MakeSrcContained(node, src);
+        }
     }
 
     ContainCheckIndir(node);
