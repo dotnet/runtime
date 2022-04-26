@@ -22,6 +22,11 @@
         <target state="translated">Typ natywny „{0}” musi ustawić pole „BufferSize” w zastosowanym atrybucie „System.Runtime.InteropServices.CustomTypeMarshallerAttribute”, aby określić rozmiar buforu przydzielonego przez funkcję wywołującą, ponieważ ma on konstruktora, który przyjmuje przydzieloną funkcję wywołującą o wartości „Span&lt;byte&gt;”</target>
         <note />
       </trans-unit>
+      <trans-unit id="CallerAllocConstructorMustHaveBufferSizeTitle">
+        <source>'BufferSize' should be set on 'CustomTypeMarshallerAttribute'</source>
+        <target state="new">'BufferSize' should be set on 'CustomTypeMarshallerAttribute'</target>
+        <note />
+      </trans-unit>
       <trans-unit id="CallerAllocMarshallingShouldSupportAllocatingMarshallingFallbackDescription">
         <source>A type that supports marshalling from managed to native using a caller-allocated buffer should also support marshalling from managed to native where using a caller-allocated buffer is impossible.</source>
         <target state="translated">Typ, który obsługuje skierowanie z parametru zarządzanego do natywnego przy użyciu bufora przydzielonego przez funkcję wywołującą, powinien również obsługiwać skierowanie z parametru zarządzanego do natywnego, gdy użycie bufora przydzielonego przez funkcję wywołującą jest niemożliwe.</target>
@@ -132,6 +137,11 @@
         <target state="translated">Konwertuj na element „LibraryImport” z sufiksem „{0}”</target>
         <note />
       </trans-unit>
+      <trans-unit id="CustomMarshallerTypeMustHaveRequiredShapeTitle">
+        <source>Marshaller type does not have the required shape</source>
+        <target state="new">Marshaller type does not have the required shape</target>
+        <note />
+      </trans-unit>
       <trans-unit id="CustomMarshallerTypeMustSupportDirectionDescription">
         <source>A native must set the 'Direction' property on the 'CustomTypeMarshallerAttribute' to a value that sets at least one known flag value on the 'CustomTypeMarshallerDirection' enum</source>
         <target state="translated">Typ natywny musi ustawić właściwość „Direction” w atrybucie „CustomTypeMarshallerAttribute” na wartość, która ustawia co najmniej jedną znaną wartość flagi w wyliczeniu „CustomTypeMarshallerDirection”</target>
@@ -227,9 +237,24 @@
         <target state="translated">Metoda „{0}” powinna być „statyczna”, „częściowa” i nieogólna, gdy jest oznaczona za pomocą atrybutu „LibraryImportAttribute”. Generowanie źródła funkcji P/Invoke zignoruje metodę „{0}”.</target>
         <note />
       </trans-unit>
+      <trans-unit id="InvalidCustomTypeMarshallerAttributeUsageTitle">
+        <source>Invalid `CustomTypeMarshallerAttribute` usage</source>
+        <target state="new">Invalid `CustomTypeMarshallerAttribute` usage</target>
+        <note />
+      </trans-unit>
       <trans-unit id="InvalidLibraryImportAttributeUsageTitle">
         <source>Invalid 'LibraryImportAttribute' usage</source>
         <target state="translated">Nieprawidłowe użycie parametru „LibraryImportAttribute”</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidNativeTypeTitle">
+        <source>Specified native type is invalid</source>
+        <target state="new">Specified native type is invalid</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidSignaturesInMarshallerShapeTitle">
+        <source>Marshaller type has incompatible method signatures</source>
+        <target state="new">Marshaller type has incompatible method signatures</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidStringMarshallingConfigurationDescription">
@@ -352,6 +377,11 @@
         <target state="translated">Typ „{0}” nie określa typu zarządzanego w atrybucie „System.Runtime.InteropServices.CustomTypeMarshallerAttribute” zastosowanym do typu</target>
         <note />
       </trans-unit>
+      <trans-unit id="MissingAllocatingMarshallingFallbackTitle">
+        <source>Marshaller type does not support allocating constructor</source>
+        <target state="new">Marshaller type does not support allocating constructor</target>
+        <note />
+      </trans-unit>
       <trans-unit id="NativeGenericTypeMustBeClosedOrMatchArityDescription">
         <source>The native type '{0}' must be a closed generic or have the same number of generic parameters as the managed type so the emitted code can use a specific instantiation.</source>
         <target state="translated">Typ natywny „{0}” musi być zamkniętym typem ogólnym lub mieć taką samą liczbę parametrów ogólnych jak typ zarządzany, aby emitowany kod mógł używać określonego tworzenia wystąpienia.</target>
@@ -410,6 +440,11 @@
       <trans-unit id="OutTwoStageMarshallingRequiresFromNativeValueMessage">
         <source>The marshaller type '{0}' supports marshalling in the 'Out' direction with the 'TwoStageMarshalling' feature, but it does not provide a 'FromNativeValue' instance method that returns 'void' and takes one parameter.</source>
         <target state="translated">Typ elementu przeprowadzającego marshalling „{0}” obsługuje skierowanie w kierunku „na zewnątrz” z funkcją „TwoStageMarshalling”, ale nie zapewnia metody wystąpienia „FromNativeValue”, która zwraca wartość „void” i przyjmuje jeden parametr.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ProvidedMethodsNotSpecifiedInFeaturesTitle">
+        <source>Marshaller type defines a well-known method without specifying support for the corresponding feature</source>
+        <target state="new">Marshaller type defines a well-known method without specifying support for the corresponding feature</target>
         <note />
       </trans-unit>
       <trans-unit id="RefNativeValueUnsupportedDescription">
