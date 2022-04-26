@@ -352,42 +352,7 @@ namespace DebuggerTests
                 bp_check.Value["locations"][0]["lineNumber"].Value<int>(),
                 bp_check.Value["locations"][0]["columnNumber"].Value<int>(),
                 "LoopToBreak");
-
-            await StepAndCheck(StepKind.Over, "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 40, 12, "StaticMethod4",
-            locals_fn: async (locals) =>
-                {
-                    CheckNumber(locals, "a", 10);
-                    CheckNumber(locals, "b", 20);
-                    await Task.CompletedTask;
-                }
-            );
-            await StepAndCheck(StepKind.Over, "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 41, 12, "StaticMethod4",
-            locals_fn: async (locals) =>
-                {
-                    CheckNumber(locals, "a", 10);
-                    CheckNumber(locals, "b", 20);
-                    await Task.CompletedTask;
-                }
-            );
-            await StepAndCheck(StepKind.Over, "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 42, 12, "StaticMethod4",
-            locals_fn: async (locals) =>
-                {
-                    CheckNumber(locals, "a", 10);
-                    CheckNumber(locals, "b", 20);
-                    await Task.CompletedTask;
-                }
-            );
-            await StepAndCheck(StepKind.Over, "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 43, 8, "StaticMethod4",
-            locals_fn: async (locals) =>
-                {
-                    CheckNumber(locals, "a", 10);
-                    CheckNumber(locals, "b", 20);
-                    await Task.CompletedTask;
-                }
-            );
-            //pause_location = await SendCommandAndCheck(JObject.FromObject(new { }), "Debugger.resume", "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 38, 8, "StaticMethod4");
         }
-
 
         [Fact]
         public async Task ConditionalBreakpointInALoopStopMoreThanOnce()
