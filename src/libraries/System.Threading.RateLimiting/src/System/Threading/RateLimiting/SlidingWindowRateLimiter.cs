@@ -236,8 +236,8 @@ namespace System.Threading.RateLimiting
 
                 _lastReplenishmentTick = nowTicks;
 
-                int oldSegmentRequestCount = _requestsPerSegment[_currentSegmentIndex];
                 _currentSegmentIndex = (_currentSegmentIndex + 1) % _options.SegmentsPerWindow;
+                int oldSegmentRequestCount = _requestsPerSegment[_currentSegmentIndex];
                 _requestsPerSegment[_currentSegmentIndex] = 0;
 
                 if (oldSegmentRequestCount == 0)
