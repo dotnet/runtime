@@ -184,7 +184,6 @@ namespace System.Net.Http
                     {
                         if (HttpTelemetry.Log.IsEnabled() && queueStartingTimestamp == 0)
                         {
-                            // the call below will almost certainly block, measure waiting time for telemetry purposes
                             queueStartingTimestamp = Stopwatch.GetTimestamp();
                         }
 
