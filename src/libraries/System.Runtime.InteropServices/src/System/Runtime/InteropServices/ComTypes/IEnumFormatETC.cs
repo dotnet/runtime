@@ -24,7 +24,7 @@ namespace System.Runtime.InteropServices.ComTypes
         ///     in NULL for that parameter).
         /// </summary>
         [PreserveSig]
-        int Next(int celt, [Out, MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 0)] FORMATETC[] rgelt, [Out, MarshalAs(UnmanagedType.LPArray)] int[] pceltFetched);
+        int Next(int celt, [Out, MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 0)] FORMATETC[] rgelt, [Out, MarshalAs(UnmanagedType.LPArray)] int[]? pceltFetched);
 
         /// <summary>
         ///     Skips over the next specified number of elements in the enumeration sequence.
