@@ -1,8 +1,7 @@
 ARG SDK_BASE_IMAGE=mcr.microsoft.com/dotnet/nightly/sdk:6.0-bullseye-slim
 FROM $SDK_BASE_IMAGE
 
-WORKDIR /app
-COPY . .
+WORKDIR /msquic
 
 # Build latest msquic locally
 RUN apt-get update -y
@@ -22,6 +21,9 @@ RUN cd msquic/src/msquic/build/bin/Release && \
       --license MIT --url https://github.com/microsoft/msquic --log error \
       $( ls ./* | cut -d "/" -f 2 | sed -r "s/(.*)/\1=\/usr\/lib\/\1/g" ) && \
       dpkg -i libmsquic_*.deb
+
+WORKDIR /app
+COPY . .
 
 ARG VERSION=7.0
 ARG CONFIGURATION=Release
