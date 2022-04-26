@@ -8237,7 +8237,7 @@ inline bool GenTree::IsVectorConst()
 }
 
 //-------------------------------------------------------------------
-// GetVectorConstIntegralElement: Gets the value of a given element in an integral vector constant
+// GetIntegralVectorConstElement: Gets the value of a given element in an integral vector constant
 //
 // Returns:
 //     The value of a given element in an integral vector constant
@@ -8257,12 +8257,12 @@ inline uint64_t GenTree::GetIntegralVectorConstElement(size_t index)
 #if defined(TARGET_XARCH)
         if ((intrinsicId == NI_Vector128_Create) || (intrinsicId == NI_Vector256_Create))
         {
-            return (uint64_t)node->Op(index)->AsIntConCommon()->IntegralValue();
+            return (uint64_t)node->Op(index + 1)->AsIntConCommon()->IntegralValue();
         }
 #elif defined(TARGET_ARM64)
         if ((intrinsicId == NI_Vector64_Create) || (intrinsicId == NI_Vector128_Create))
         {
-            return (uint64_t)node->Op(index)->AsIntConCommon()->IntegralValue();
+            return (uint64_t)node->Op(index + 1)->AsIntConCommon()->IntegralValue();
         }
 #endif // !TARGET_XARCH && !TARGET_ARM64
 
