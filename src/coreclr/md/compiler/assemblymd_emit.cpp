@@ -36,7 +36,7 @@ STDMETHODIMP RegMeta::DefineAssembly(         // S_OK or error.
     HRESULT     hr = S_OK;
 
     AssemblyRec *pRecord = NULL;        // The assembly record.
-    RID          iRecord;               // RID of the assembly record.
+    RID          iRecord = 0;           // RID of the assembly record.
 
     if (szName == NULL || pMetaData == NULL || pma == NULL)
         return E_INVALIDARG;

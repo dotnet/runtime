@@ -25,14 +25,8 @@ namespace System.ComponentModel.Composition.Hosting
 
             public DependentsTraversal(FilteredCatalog catalog, Func<ImportDefinition, bool> importFilter)
             {
-                if (catalog == null)
-                {
-                    throw new ArgumentNullException(nameof(catalog));
-                }
-                if (importFilter == null)
-                {
-                    throw new ArgumentNullException(nameof(importFilter));
-                }
+                ArgumentNullException.ThrowIfNull(catalog);
+                ArgumentNullException.ThrowIfNull(importFilter);
 
                 _parts = catalog._innerCatalog;
                 _importFilter = importFilter;

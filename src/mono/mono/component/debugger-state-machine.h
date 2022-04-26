@@ -66,4 +66,4 @@ mono_debugger_state (JsonWriter *writer);
 char *
 mono_debugger_state_str (void);
 
-#endif // __MONO_DEBUGGER_STATE_MACHINE__ 
+#endif // __MONO_DEBUGGER_STATE_MACHINE__

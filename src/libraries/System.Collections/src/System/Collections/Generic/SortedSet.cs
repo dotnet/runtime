@@ -83,10 +83,7 @@ namespace System.Collections.Generic
         public SortedSet(IEnumerable<T> collection, IComparer<T>? comparer)
             : this(comparer)
         {
-            if (collection == null)
-            {
-                throw new ArgumentNullException(nameof(collection));
-            }
+            ArgumentNullException.ThrowIfNull(collection);
 
             // These are explicit type checks in the mold of HashSet. It would have worked better with
             // something like an ISorted<T> interface. (We could make this work for SortedList.Keys, etc.)
@@ -466,7 +463,6 @@ namespace System.Collections.Generic
                             {
                                 parentOfMatch = newGrandParent;
                             }
-                            grandParent = newGrandParent;
                         }
                     }
                 }
@@ -513,10 +509,7 @@ namespace System.Collections.Generic
 
         public void CopyTo(T[] array, int index, int count)
         {
-            if (array == null)
-            {
-                throw new ArgumentNullException(nameof(array));
-            }
+            ArgumentNullException.ThrowIfNull(array);
 
             if (index < 0)
             {
@@ -549,10 +542,7 @@ namespace System.Collections.Generic
 
         void ICollection.CopyTo(Array array, int index)
         {
-            if (array == null)
-            {
-                throw new ArgumentNullException(nameof(array));
-            }
+            ArgumentNullException.ThrowIfNull(array);
 
             if (array.Rank != 1)
             {
@@ -823,7 +813,7 @@ namespace System.Collections.Generic
                 return set1.Count == set2.Count && set1.SetEquals(set2);
             }
 
-            bool found = false;
+            bool found;
             foreach (T item1 in set1)
             {
                 found = false;
@@ -861,10 +851,7 @@ namespace System.Collections.Generic
 
         public void UnionWith(IEnumerable<T> other)
         {
-            if (other == null)
-            {
-                throw new ArgumentNullException(nameof(other));
-            }
+            ArgumentNullException.ThrowIfNull(other);
 
             SortedSet<T>? asSorted = other as SortedSet<T>;
             TreeSubSet? treeSubset = this as TreeSubSet;
@@ -1004,10 +991,7 @@ namespace System.Collections.Generic
 
         public virtual void IntersectWith(IEnumerable<T> other)
         {
-            if (other == null)
-            {
-                throw new ArgumentNullException(nameof(other));
-            }
+            ArgumentNullException.ThrowIfNull(other);
 
             if (Count == 0)
                 return;
@@ -1089,10 +1073,7 @@ namespace System.Collections.Generic
 
         public void ExceptWith(IEnumerable<T> other)
         {
-            if (other == null)
-            {
-                throw new ArgumentNullException(nameof(other));
-            }
+            ArgumentNullException.ThrowIfNull(other);
 
             if (count == 0)
                 return;
@@ -1130,10 +1111,7 @@ namespace System.Collections.Generic
 
         public void SymmetricExceptWith(IEnumerable<T> other)
         {
-            if (other == null)
-            {
-                throw new ArgumentNullException(nameof(other));
-            }
+            ArgumentNullException.ThrowIfNull(other);
 
             if (Count == 0)
             {
@@ -1200,10 +1178,7 @@ namespace System.Collections.Generic
 
         public bool IsSubsetOf(IEnumerable<T> other)
         {
-            if (other == null)
-            {
-                throw new ArgumentNullException(nameof(other));
-            }
+            ArgumentNullException.ThrowIfNull(other);
 
             if (Count == 0)
             {
@@ -1238,10 +1213,7 @@ namespace System.Collections.Generic
 
         public bool IsProperSubsetOf(IEnumerable<T> other)
         {
-            if (other == null)
-            {
-                throw new ArgumentNullException(nameof(other));
-            }
+            ArgumentNullException.ThrowIfNull(other);
 
             if (other is ICollection c)
             {
@@ -1265,10 +1237,7 @@ namespace System.Collections.Generic
 
         public bool IsSupersetOf(IEnumerable<T> other)
         {
-            if (other == null)
-            {
-                throw new ArgumentNullException(nameof(other));
-            }
+            ArgumentNullException.ThrowIfNull(other);
 
             if (other is ICollection c && c.Count == 0)
                 return true;
@@ -1295,10 +1264,7 @@ namespace System.Collections.Generic
 
         public bool IsProperSupersetOf(IEnumerable<T> other)
         {
-            if (other == null)
-            {
-                throw new ArgumentNullException(nameof(other));
-            }
+            ArgumentNullException.ThrowIfNull(other);
 
             if (Count == 0)
                 return false;
@@ -1330,10 +1296,7 @@ namespace System.Collections.Generic
 
         public bool SetEquals(IEnumerable<T> other)
         {
-            if (other == null)
-            {
-                throw new ArgumentNullException(nameof(other));
-            }
+            ArgumentNullException.ThrowIfNull(other);
 
             SortedSet<T>? asSorted = other as SortedSet<T>;
             if (asSorted != null && HasEqualComparer(asSorted))
@@ -1361,10 +1324,7 @@ namespace System.Collections.Generic
 
         public bool Overlaps(IEnumerable<T> other)
         {
-            if (other == null)
-            {
-                throw new ArgumentNullException(nameof(other));
-            }
+            ArgumentNullException.ThrowIfNull(other);
 
             if (Count == 0)
                 return false;
@@ -1473,10 +1433,8 @@ namespace System.Collections.Generic
 
         public int RemoveWhere(Predicate<T> match)
         {
-            if (match == null)
-            {
-                throw new ArgumentNullException(nameof(match));
-            }
+            ArgumentNullException.ThrowIfNull(match);
+
             List<T> matches = new List<T>(this.Count);
 
             BreadthFirstTreeWalk(n =>
@@ -1580,10 +1538,7 @@ namespace System.Collections.Generic
 
         protected virtual void GetObjectData(SerializationInfo info, StreamingContext context)
         {
-            if (info == null)
-            {
-                throw new ArgumentNullException(nameof(info));
-            }
+            ArgumentNullException.ThrowIfNull(info);
 
             info.AddValue(CountName, count); // This is the length of the bucket array.
             info.AddValue(ComparerName, comparer, typeof(IComparer<T>));
@@ -1923,7 +1878,7 @@ namespace System.Collections.Generic
             {
                 _current = null;
                 Node? node = _tree.root;
-                Node? next = null, other = null;
+                Node? next, other;
                 while (node != null)
                 {
                     next = (_reverse ? node.Right : node.Left);
@@ -1962,7 +1917,7 @@ namespace System.Collections.Generic
 
                 _current = _stack.Pop();
                 Node? node = (_reverse ? _current.Left : _current.Right);
-                Node? next = null, other = null;
+                Node? next, other;
                 while (node != null)
                 {
                     next = (_reverse ? node.Right : node.Left);

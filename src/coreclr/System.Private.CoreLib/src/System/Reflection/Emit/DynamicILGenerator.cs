@@ -34,9 +34,9 @@ namespace System.Reflection.Emit
 
         public override LocalBuilder DeclareLocal(Type localType, bool pinned)
         {
+            ArgumentNullException.ThrowIfNull(localType);
+
             LocalBuilder localBuilder;
-            if (localType == null)
-                throw new ArgumentNullException(nameof(localType));
 
             RuntimeType? rtType = localType as RuntimeType;
 
@@ -57,11 +57,10 @@ namespace System.Reflection.Emit
         //
         public override void Emit(OpCode opcode, MethodInfo meth)
         {
-            if (meth == null)
-                throw new ArgumentNullException(nameof(meth));
+            ArgumentNullException.ThrowIfNull(meth);
 
             int stackchange = 0;
-            int token = 0;
+            int token;
             DynamicMethod? dynMeth = meth as DynamicMethod;
             if (dynMeth == null)
             {
@@ -112,8 +111,7 @@ namespace System.Reflection.Emit
 
         public override void Emit(OpCode opcode, ConstructorInfo con)
         {
-            if (con == null)
-                throw new ArgumentNullException(nameof(con));
+            ArgumentNullException.ThrowIfNull(con);
 
             RuntimeConstructorInfo? rtConstructor = con as RuntimeConstructorInfo;
             if (rtConstructor == null)
@@ -139,8 +137,7 @@ namespace System.Reflection.Emit
 
         public override void Emit(OpCode opcode, Type type)
         {
-            if (type == null)
-                throw new ArgumentNullException(nameof(type));
+            ArgumentNullException.ThrowIfNull(type);
 
             RuntimeType? rtType = type as RuntimeType;
 
@@ -155,8 +152,7 @@ namespace System.Reflection.Emit
 
         public override void Emit(OpCode opcode, FieldInfo field)
         {
-            if (field == null)
-                throw new ArgumentNullException(nameof(field));
+            ArgumentNullException.ThrowIfNull(field);
 
             RuntimeFieldInfo? runtimeField = field as RuntimeFieldInfo;
             if (runtimeField == null)
@@ -175,8 +171,7 @@ namespace System.Reflection.Emit
 
         public override void Emit(OpCode opcode, string str)
         {
-            if (str == null)
-                throw new ArgumentNullException(nameof(str));
+            ArgumentNullException.ThrowIfNull(str);
 
             int tempVal = GetTokenForString(str);
             EnsureCapacity(7);
@@ -266,8 +261,7 @@ namespace System.Reflection.Emit
 
         public override void EmitCall(OpCode opcode, MethodInfo methodInfo, Type[]? optionalParameterTypes)
         {
-            if (methodInfo == null)
-                throw new ArgumentNullException(nameof(methodInfo));
+            ArgumentNullException.ThrowIfNull(methodInfo);
 
             if (!(opcode.Equals(OpCodes.Call) || opcode.Equals(OpCodes.Callvirt) || opcode.Equals(OpCodes.Newobj)))
                 throw new ArgumentException(SR.Argument_NotMethodCallOpcode, nameof(opcode));
@@ -305,8 +299,7 @@ namespace System.Reflection.Emit
 
         public override void Emit(OpCode opcode, SignatureHelper signature)
         {
-            if (signature == null)
-                throw new ArgumentNullException(nameof(signature));
+            ArgumentNullException.ThrowIfNull(signature);
 
             int stackchange = 0;
             EnsureCapacity(7);
@@ -376,8 +369,7 @@ namespace System.Reflection.Emit
             else
             {
                 // execute this branch if previous clause is Catch or Fault
-                if (exceptionType == null)
-                    throw new ArgumentNullException(nameof(exceptionType));
+                ArgumentNullException.ThrowIfNull(exceptionType);
 
                 if (rtType == null)
                     throw new ArgumentException(SR.Argument_MustBeRuntimeType);
@@ -895,8 +887,8 @@ namespace System.Reflection.Emit
         {
             if (codeSize < 0)
                 throw new ArgumentOutOfRangeException(nameof(codeSize), SR.ArgumentOutOfRange_GenericPositive);
-            if (codeSize > 0 && code == null)
-                throw new ArgumentNullException(nameof(code));
+            if (codeSize > 0)
+                ArgumentNullException.ThrowIfNull(code);
 
             m_code = new Span<byte>(code, codeSize).ToArray();
             m_maxStackSize = maxStackSize;
@@ -913,8 +905,8 @@ namespace System.Reflection.Emit
             if (exceptionsSize < 0)
                 throw new ArgumentOutOfRangeException(nameof(exceptionsSize), SR.ArgumentOutOfRange_GenericPositive);
 
-            if (exceptionsSize > 0 && exceptions == null)
-                throw new ArgumentNullException(nameof(exceptions));
+            if (exceptionsSize > 0)
+                ArgumentNullException.ThrowIfNull(exceptions);
 
             m_exceptions = new Span<byte>(exceptions, exceptionsSize).ToArray();
         }
@@ -930,8 +922,8 @@ namespace System.Reflection.Emit
             if (signatureSize < 0)
                 throw new ArgumentOutOfRangeException(nameof(signatureSize), SR.ArgumentOutOfRange_GenericPositive);
 
-            if (signatureSize > 0 && localSignature == null)
-                throw new ArgumentNullException(nameof(localSignature));
+            if (signatureSize > 0)
+                ArgumentNullException.ThrowIfNull(localSignature);
 
             m_localSignature = new Span<byte>(localSignature, signatureSize).ToArray();
         }

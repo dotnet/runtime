@@ -47,7 +47,9 @@ unsigned Compiler::fgCheckInlineDepthAndRecursion(InlineInfo* inlineInfo)
             // This inline candidate has the same IL code buffer as an already
             // inlined method does.
             inlineResult->NoteFatal(InlineObservation::CALLSITE_IS_RECURSIVE);
-            break;
+
+            // No need to note CALLSITE_DEPTH we're already rejecting this candidate
+            return depth;
         }
 
         if (depth > InlineStrategy::IMPLEMENTATION_MAX_INLINE_DEPTH)
@@ -717,11 +719,18 @@ Compiler::fgWalkResult Compiler::fgLateDevirtualization(GenTree** pTree, fgWalkD
             }
 #endif // DEBUG
 
+            CORINFO_CONTEXT_HANDLE context                = nullptr;
             CORINFO_METHOD_HANDLE  method                 = call->gtCallMethHnd;
             unsigned               methodFlags            = 0;
-            CORINFO_CONTEXT_HANDLE context                = nullptr;
             const bool             isLateDevirtualization = true;
-            bool explicitTailCall = (call->AsCall()->gtCallMoreFlags & GTF_CALL_M_EXPLICIT_TAILCALL) != 0;
+            const bool             explicitTailCall       = call->IsTailPrefixedCall();
+
+            if ((call->gtCallMoreFlags & GTF_CALL_M_LATE_DEVIRT) != 0)
+            {
+                context                          = call->gtLateDevirtualizationInfo->exactContextHnd;
+                call->gtLateDevirtualizationInfo = nullptr;
+            }
+
             comp->impDevirtualizeCall(call, nullptr, &method, &methodFlags, &context, nullptr, isLateDevirtualization,
                                       explicitTailCall);
             *madeChanges = true;
@@ -1335,7 +1344,6 @@ _Done:
     compLocallocUsed |= InlineeCompiler->compLocallocUsed;
     compLocallocOptimized |= InlineeCompiler->compLocallocOptimized;
     compQmarkUsed |= InlineeCompiler->compQmarkUsed;
-    compUnsafeCastUsed |= InlineeCompiler->compUnsafeCastUsed;
     compGSReorderStackLayout |= InlineeCompiler->compGSReorderStackLayout;
     compHasBackwardJump |= InlineeCompiler->compHasBackwardJump;
 
@@ -1425,6 +1433,13 @@ _Done:
         {
             // Save the basic block flags from the retExpr basic block.
             iciCall->gtInlineCandidateInfo->retExpr->AsRetExpr()->bbFlags = pInlineInfo->retBB->bbFlags;
+        }
+
+        if (bottomBlock != nullptr)
+        {
+            // We've split the iciblock into two and the RET_EXPR was possibly moved to the bottomBlock
+            // so let's update its flags with retBB's ones
+            bottomBlock->bbFlags |= pInlineInfo->retBB->bbFlags & BBF_COMPACT_UPD;
         }
         iciCall->ReplaceWith(pInlineInfo->retExpr, this);
     }

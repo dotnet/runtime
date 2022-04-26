@@ -325,10 +325,8 @@ namespace Microsoft.Win32
 
         public static RegistryKey OpenRemoteBaseKey(RegistryHive hKey, string machineName, RegistryView view)
         {
-            if (machineName == null)
-            {
-                throw new ArgumentNullException(nameof(machineName));
-            }
+            ArgumentNullException.ThrowIfNull(machineName);
+
             ValidateKeyView(view);
 
             return OpenRemoteBaseKeyCore(hKey, machineName, view);
@@ -405,10 +403,7 @@ namespace Microsoft.Win32
         public void SetAccessControl(RegistrySecurity registrySecurity)
         {
             EnsureWriteable();
-            if (registrySecurity == null)
-            {
-                throw new ArgumentNullException(nameof(registrySecurity));
-            }
+            ArgumentNullException.ThrowIfNull(registrySecurity);
 
             registrySecurity.Persist(Handle, Name);
         }
@@ -449,7 +444,8 @@ namespace Microsoft.Win32
 
         public static RegistryKey FromHandle(SafeRegistryHandle handle, RegistryView view)
         {
-            if (handle == null) throw new ArgumentNullException(nameof(handle));
+            ArgumentNullException.ThrowIfNull(handle);
+
             ValidateKeyView(view);
 
             return new RegistryKey(handle, writable: true, view: view);
@@ -559,10 +555,7 @@ namespace Microsoft.Win32
 
         public void SetValue(string? name, object value, RegistryValueKind valueKind)
         {
-            if (value == null)
-            {
-                throw new ArgumentNullException(nameof(value));
-            }
+            ArgumentNullException.ThrowIfNull(value);
 
             if (name != null && name.Length > MaxValueLength)
             {
@@ -586,7 +579,7 @@ namespace Microsoft.Win32
             SetValueCore(name, value, valueKind);
         }
 
-        private RegistryValueKind CalculateValueKind(object value)
+        private static RegistryValueKind CalculateValueKind(object value)
         {
             // This logic matches what used to be in SetValue(string name, object value) in the v1.0 and v1.1 days.
             // Even though we could add detection for an int64 in here, we want to maintain compatibility with the
@@ -723,21 +716,18 @@ namespace Microsoft.Win32
 
         private static void ValidateKeyName(string name)
         {
-            if (name == null)
-            {
-                throw new ArgumentNullException(nameof(name));
-            }
+            ArgumentNullException.ThrowIfNull(name);
 
-            int nextSlash = name.IndexOf("\\", StringComparison.OrdinalIgnoreCase);
+            int nextSlash = name.IndexOf('\\');
             int current = 0;
-            while (nextSlash != -1)
+            while (nextSlash >= 0)
             {
                 if ((nextSlash - current) > MaxKeyLength)
                 {
                     throw new ArgumentException(SR.Arg_RegKeyStrLenBug, nameof(name));
                 }
                 current = nextSlash + 1;
-                nextSlash = name.IndexOf("\\", current, StringComparison.OrdinalIgnoreCase);
+                nextSlash = name.IndexOf('\\', current);
             }
 
             if ((name.Length - current) > MaxKeyLength)

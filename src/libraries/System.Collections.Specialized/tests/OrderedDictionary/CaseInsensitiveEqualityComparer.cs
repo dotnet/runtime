@@ -27,10 +27,7 @@ namespace System.Collections.Specialized.Tests
 
         public int GetHashCode(object obj)
         {
-            if (obj == null)
-            {
-                throw new ArgumentNullException(nameof(obj));
-            }
+            ArgumentNullException.ThrowIfNull(obj);
 
             string s = obj as string;
             if (s != null)

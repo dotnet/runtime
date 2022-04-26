@@ -24,10 +24,22 @@ namespace System.Threading.RateLimiting.Test
         public abstract Task CanAcquireResourceAsync_QueuesAndGrabsNewest();
 
         [Fact]
-        public abstract Task FailsWhenQueuingMoreThanLimit();
+        public abstract Task FailsWhenQueuingMoreThanLimit_OldestFirst();
+
+        [Fact]
+        public abstract Task DropsOldestWhenQueuingMoreThanLimit_NewestFirst();
+
+        [Fact]
+        public abstract Task DropsMultipleOldestWhenQueuingMoreThanLimit_NewestFirst();
+
+        [Fact]
+        public abstract Task DropsRequestedLeaseIfPermitCountGreaterThanQueueLimitAndNoAvailability_NewestFirst();
 
         [Fact]
         public abstract Task QueueAvailableAfterQueueLimitHitAndResources_BecomeAvailable();
+
+        [Fact]
+        public abstract Task LargeAcquiresAndQueuesDoNotIntegerOverflow();
 
         [Fact]
         public abstract void ThrowsWhenAcquiringMoreThanLimit();
@@ -69,6 +81,9 @@ namespace System.Threading.RateLimiting.Test
         public abstract Task CanCancelWaitAsyncBeforeQueuing();
 
         [Fact]
+        public abstract Task CancelUpdatesQueueLimit();
+
+        [Fact]
         public abstract Task CanAcquireResourcesWithAcquireWithQueuedItemsIfNewestFirst();
 
         [Fact]
@@ -85,5 +100,14 @@ namespace System.Threading.RateLimiting.Test
 
         [Fact]
         public abstract Task DisposeAsyncReleasesQueuedAcquires();
+
+        [Fact]
+        public abstract void NullIdleDurationWhenActive();
+
+        [Fact]
+        public abstract Task IdleDurationUpdatesWhenIdle();
+
+        [Fact]
+        public abstract void IdleDurationUpdatesWhenChangingFromActive();
     }
 }

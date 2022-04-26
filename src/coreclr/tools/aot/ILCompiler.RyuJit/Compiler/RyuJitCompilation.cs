@@ -5,9 +5,11 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Threading;
+using System.Threading.Tasks;
 
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysisFramework;
+using ILLink.Shared;
 
 using Internal.IL;
 using Internal.IL.Stubs;
@@ -21,10 +23,10 @@ namespace ILCompiler
         private readonly ConditionalWeakTable<Thread, CorInfoImpl> _corinfos = new ConditionalWeakTable<Thread, CorInfoImpl>();
         internal readonly RyuJitCompilationOptions _compilationOptions;
         private readonly ExternSymbolMappedField _hardwareIntrinsicFlags;
-        private CountdownEvent _compilationCountdown;
         private readonly Dictionary<string, InstructionSet> _instructionSetMap;
         private readonly ProfileDataManager _profileDataManager;
         private readonly MethodImportationErrorProvider _methodImportationErrorProvider;
+        private readonly int _parallelism;
 
         public InstructionSetSupport InstructionSetSupport { get; }
 
@@ -40,7 +42,8 @@ namespace ILCompiler
             InstructionSetSupport instructionSetSupport,
             ProfileDataManager profileDataManager,
             MethodImportationErrorProvider errorProvider,
-            RyuJitCompilationOptions options)
+            RyuJitCompilationOptions options,
+            int parallelism)
             : base(dependencyGraph, nodeFactory, roots, ilProvider, debugInformationProvider, devirtualizationManager, inliningPolicy, logger)
         {
             _compilationOptions = options;
@@ -50,15 +53,15 @@ namespace ILCompiler
             _instructionSetMap = new Dictionary<string, InstructionSet>();
             foreach (var instructionSetInfo in InstructionSetFlags.ArchitectureToValidInstructionSets(TypeSystemContext.Target.Architecture))
             {
-                if (!instructionSetInfo.Specifiable)
-                    continue;
-
-                _instructionSetMap.Add(instructionSetInfo.ManagedName, instructionSetInfo.InstructionSet);
+                if (instructionSetInfo.ManagedName != "")
+                    _instructionSetMap.Add(instructionSetInfo.ManagedName, instructionSetInfo.InstructionSet);
             }
 
             _profileDataManager = profileDataManager;
 
             _methodImportationErrorProvider = errorProvider;
+
+            _parallelism = parallelism;
         }
 
         public ProfileDataManager ProfileData => _profileDataManager;
@@ -88,6 +91,9 @@ namespace ILCompiler
             NodeFactory.SetMarkingComplete();
 
             ObjectWritingOptions options = default;
+            if ((_compilationOptions & RyuJitCompilationOptions.UseDwarf5) != 0)
+                options |= ObjectWritingOptions.UseDwarf5;
+            
             if (_debugInformationProvider is not NullDebugInformationProvider)
                 options |= ObjectWritingOptions.GenerateDebugInfo;
 
@@ -125,7 +131,7 @@ namespace ILCompiler
                 methodsToCompile.Add(methodCodeNodeNeedingCode);
             }
 
-            if ((_compilationOptions & RyuJitCompilationOptions.SingleThreadedCompilation) != 0)
+            if (_parallelism == 1)
             {
                 CompileSingleThreaded(methodsToCompile);
             }
@@ -141,23 +147,10 @@ namespace ILCompiler
                 Logger.Writer.WriteLine($"Compiling {methodsToCompile.Count} methods...");
             }
 
-            WaitCallback compileSingleMethodDelegate = m =>
-            {
-                CorInfoImpl corInfo = _corinfos.GetValue(Thread.CurrentThread, thread => new CorInfoImpl(this));
-                CompileSingleMethod(corInfo, (MethodCodeNode)m);
-            };
-
-            using (_compilationCountdown = new CountdownEvent(methodsToCompile.Count))
-            {
-
-                foreach (MethodCodeNode methodCodeNodeNeedingCode in methodsToCompile)
-                {
-                    ThreadPool.QueueUserWorkItem(compileSingleMethodDelegate, methodCodeNodeNeedingCode);
-                }
-
-                _compilationCountdown.Wait();
-                _compilationCountdown = null;
-            }
+            Parallel.ForEach(
+                methodsToCompile,
+                new ParallelOptions { MaxDegreeOfParallelism = _parallelism },
+                CompileSingleMethod);
         }
 
 
@@ -176,52 +169,48 @@ namespace ILCompiler
             }
         }
 
+        private void CompileSingleMethod(MethodCodeNode methodCodeNodeNeedingCode)
+        {
+            CorInfoImpl corInfo = _corinfos.GetValue(Thread.CurrentThread, thread => new CorInfoImpl(this));
+            CompileSingleMethod(corInfo, methodCodeNodeNeedingCode);
+        }
+
         private void CompileSingleMethod(CorInfoImpl corInfo, MethodCodeNode methodCodeNodeNeedingCode)
         {
-            try
+            MethodDesc method = methodCodeNodeNeedingCode.Method;
+
+            TypeSystemException exception = _methodImportationErrorProvider.GetCompilationError(method);
+
+            // If we previously failed to import the method, do not try to import it again and go
+            // directly to the error path.
+            if (exception == null)
             {
-                MethodDesc method = methodCodeNodeNeedingCode.Method;
-
-                TypeSystemException exception = _methodImportationErrorProvider.GetCompilationError(method);
-
-                // If we previously failed to import the method, do not try to import it again and go
-                // directly to the error path.
-                if (exception == null)
+                try
                 {
-                    try
-                    {
-                        corInfo.CompileMethod(methodCodeNodeNeedingCode);
-                    }
-                    catch (TypeSystemException ex)
-                    {
-                        exception = ex;
-                    }
+                    corInfo.CompileMethod(methodCodeNodeNeedingCode);
                 }
-
-                if (exception != null)
+                catch (TypeSystemException ex)
                 {
-                    // TODO: fail compilation if a switch was passed
-
-                    // Try to compile the method again, but with a throwing method body this time.
-                    MethodIL throwingIL = TypeSystemThrowingILEmitter.EmitIL(method, exception);
-                    corInfo.CompileMethod(methodCodeNodeNeedingCode, throwingIL);
-
-                    if (exception is TypeSystemException.InvalidProgramException
-                        && method.OwningType is MetadataType mdOwningType
-                        && mdOwningType.HasCustomAttribute("System.Runtime.InteropServices", "ClassInterfaceAttribute"))
-                    {
-                        Logger.LogWarning("COM interop is not supported with full ahead of time compilation", 3052, method, MessageSubCategory.AotAnalysis);
-                    }
-                    else
-                    {
-                        Logger.LogWarning($"Method will always throw because: {exception.Message}", 1005, method, MessageSubCategory.AotAnalysis);
-                    }
+                    exception = ex;
                 }
             }
-            finally
+
+            if (exception != null)
             {
-                if (_compilationCountdown != null)
-                    _compilationCountdown.Signal();
+                // Try to compile the method again, but with a throwing method body this time.
+                MethodIL throwingIL = TypeSystemThrowingILEmitter.EmitIL(method, exception);
+                corInfo.CompileMethod(methodCodeNodeNeedingCode, throwingIL);
+
+                if (exception is TypeSystemException.InvalidProgramException
+                    && method.OwningType is MetadataType mdOwningType
+                    && mdOwningType.HasCustomAttribute("System.Runtime.InteropServices", "ClassInterfaceAttribute"))
+                {
+                    Logger.LogWarning(method, DiagnosticId.COMInteropNotSupportedInFullAOT);
+                }
+                if ((_compilationOptions & RyuJitCompilationOptions.UseResilience) != 0)
+                    Logger.LogMessage($"Method '{method}' will always throw because: {exception.Message}");
+                else
+                    Logger.LogError($"Method will always throw because: {exception.Message}", 1005, method, MessageSubCategory.AotAnalysis);
             }
         }
 
@@ -240,7 +229,7 @@ namespace ILCompiler
                 if (!InstructionSetSupport.IsInstructionSetSupported(instructionSet)
                     && InstructionSetSupport.OptimisticFlags.HasInstructionSet(instructionSet))
                 {
-                    return HardwareIntrinsicHelpers.EmitIsSupportedIL(method, _hardwareIntrinsicFlags);
+                    return HardwareIntrinsicHelpers.EmitIsSupportedIL(method, _hardwareIntrinsicFlags, instructionSet);
                 }
             }
 
@@ -252,7 +241,8 @@ namespace ILCompiler
     public enum RyuJitCompilationOptions
     {
         MethodBodyFolding = 0x1,
-        SingleThreadedCompilation = 0x2,
-        ControlFlowGuardAnnotations = 0x4,
+        ControlFlowGuardAnnotations = 0x2,
+        UseDwarf5 = 0x4,
+        UseResilience = 0x8,
     }
 }

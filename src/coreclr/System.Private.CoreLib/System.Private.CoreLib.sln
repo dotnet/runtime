@@ -6,7 +6,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Private.CoreLib", "S
 EndProject
 Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "System.Private.CoreLib.Shared", "..\..\libraries\System.Private.CoreLib\src\System.Private.CoreLib.Shared.shproj", "{845C8B26-350B-4E63-BD11-2C8150444E28}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Private.CoreLib.Generators", "..\..\libraries\System.Private.CoreLib\generators\System.Private.CoreLib.Generators.csproj", "{7196828B-5E00-4BC6-9A1E-492C948E41A3}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Private.CoreLib.Generators", "..\..\libraries\System.Private.CoreLib\gen\System.Private.CoreLib.Generators.csproj", "{7196828B-5E00-4BC6-9A1E-492C948E41A3}"
 EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution

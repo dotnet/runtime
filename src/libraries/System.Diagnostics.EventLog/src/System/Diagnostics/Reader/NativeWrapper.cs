@@ -20,7 +20,7 @@ namespace System.Diagnostics.Eventing.Reader
     /// </summary>
     internal static class NativeWrapper
     {
-        public class SystemProperties
+        public sealed class SystemProperties
         {
             // Indicates if the SystemProperties values were already computed (for this event Instance, surely).
             public bool filled;
@@ -862,7 +862,7 @@ namespace System.Diagnostics.Eventing.Reader
         public static IList<object> EvtRenderBufferWithContextUserOrValues(EventLogHandle contextHandle, EventLogHandle eventHandle)
         {
             IntPtr buffer = IntPtr.Zero;
-            IntPtr pointer = IntPtr.Zero;
+            IntPtr pointer;
             int bufferNeeded;
             int propCount;
             UnsafeNativeMethods.EvtRenderFlags flag = UnsafeNativeMethods.EvtRenderFlags.EvtRenderEventValues;

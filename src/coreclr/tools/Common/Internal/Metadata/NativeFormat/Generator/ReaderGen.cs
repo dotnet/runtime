@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 //
-// This class generates most of the implementation of the MetadataReader for the ProjectN format,
+// This class generates most of the implementation of the MetadataReader for the NativeAOT format,
 // ensuring that the contract defined by CsPublicGen2 is implemented.The generated file is
 // 'NativeFormatReaderGen.cs', and any missing implementation is the supplied in the human-authored
 // source counterpart 'NativeFormatReader.cs'.
@@ -20,6 +20,8 @@ class ReaderGen : CsWriter
         WriteLine("#pragma warning disable 649");
         WriteLine("#pragma warning disable 169");
         WriteLine("#pragma warning disable 282 // There is no defined ordering between fields in multiple declarations of partial class or struct");
+        WriteLine("#pragma warning disable CA1066 // IEquatable<T> implementations aren't used");
+        WriteLine("#pragma warning disable IDE0059");
         WriteLine();
 
         WriteLine("using System;");

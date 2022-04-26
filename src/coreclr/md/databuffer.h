@@ -40,7 +40,7 @@ public:
     inline DataBuffer();
     // Creates memory block (pbData, of size cbSize).
     inline DataBuffer(
-        __in_bcount(cbSize) BYTE  *pbData,
+        _In_reads_bytes_(cbSize) BYTE  *pbData,
                             UINT32 cbSize);
     // Creates memory block copy.
     inline DataBuffer(
@@ -49,7 +49,7 @@ public:
     inline void Clear();
     // Initializes memory block to data (pbData, of size cbSize). The object should be empty before.
     inline void Init(
-        __in_bcount(cbSize) BYTE  *pbData,
+        _In_reads_bytes_(cbSize) BYTE  *pbData,
                             UINT32 cbSize);
 
     //
@@ -64,7 +64,7 @@ public:
     template<class T>
     __checkReturn
     inline BOOL PeekData(
-        __deref_out T **ppTypeData);
+        _Outptr_ T **ppTypeData);
     // Reads data of type T at offset nOffset without skipping the read data (returns pointer to the type in
     // *ppTypeData).
     // Returns FALSE if there's not enough data (of size T) at offset nOffset in the buffer, doesn't
@@ -75,7 +75,7 @@ public:
     __checkReturn
     inline BOOL PeekDataAt(
                     UINT32 nOffset,
-        __deref_out T    **ppTypeData);
+        _Outptr_ T    **ppTypeData);
     // Reads data of type T and skips the data (instead of reading the bytes, returns pointer to the type in
     // *ppTypeData).
     // Returns FALSE if there's not enough data (of size T) in the blob, doesn't initialize the pointer
@@ -85,7 +85,7 @@ public:
     template<class T>
     __checkReturn
     inline BOOL GetData(
-        __deref_out T **ppTypeData);
+        _Outptr_ T **ppTypeData);
     // Reads data of size cbDataSize and skips the data (instead of reading the bytes, returns pointer to
     // the bytes in *ppbDataPointer).
     // Returns FALSE if there's not enough data in the blob, doesn't initialize the pointer *ppbDataPointer
@@ -95,7 +95,7 @@ public:
     __checkReturn
     inline BOOL GetDataOfSize(
                                  UINT32 cbDataSize,
-        __out_bcount(cbDataSize) BYTE **ppbDataPointer);
+        _Out_writes_bytes_(cbDataSize) BYTE **ppbDataPointer);
 
     // Returns TRUE if the represented memory is empty.
     inline BOOL IsEmpty() const

@@ -34,6 +34,8 @@
 #include "aot-runtime.h"
 #include "mono/utils/mono-tls-inline.h"
 
+MONO_DISABLE_WARNING(4127) /* conditional expression is constant */
+
 static gpointer signal_exception_trampoline;
 
 gpointer
@@ -130,19 +132,19 @@ mono_win32_get_handle_stackoverflow (void)
  *
  * Stack walking part of this method is from mono_handle_exception
  *
- * The idea is simple; 
+ * The idea is simple;
  *  - walk the stack to free some space (64k)
  *  - set esp to new stack location
  *  - call mono_arch_handle_exception with stack overflow exception
  *  - set esp to SEH handlers stack
  *  - done
  */
-static void 
+static void
 win32_handle_stack_overflow (EXCEPTION_POINTERS* ep, CONTEXT *sctx)
 {
 	MonoJitInfo rji;
 	MonoJitTlsData *jit_tls = mono_tls_get_jit_tls ();
-	MonoLMF *lmf = jit_tls->lmf;		
+	MonoLMF *lmf = jit_tls->lmf;
 	MonoContext initial_ctx;
 	MonoContext ctx;
 	guint32 free_stack = 0;
@@ -295,7 +297,7 @@ mono_arch_get_restore_context (MonoTrampInfo **info, gboolean aot)
 	const int size = 128;
 
 	start = code = mono_global_codeman_reserve (size);
-	
+
 	/* load ctx */
 	x86_mov_reg_membase (code, X86_EAX, X86_ESP, 4, 4);
 
@@ -371,7 +373,7 @@ mono_arch_get_restore_context (MonoTrampInfo **info, gboolean aot)
  * mono_arch_get_call_filter:
  *
  * Returns a pointer to a method which calls an exception filter. We
- * also use this function to call finally handlers (we pass NULL as 
+ * also use this function to call finally handlers (we pass NULL as
  * @exc object in this case).
  */
 gpointer
@@ -495,7 +497,7 @@ mono_x86_throw_exception (host_mgreg_t *regs, MonoObject *exc,
 }
 
 void
-mono_x86_throw_corlib_exception (host_mgreg_t *regs, guint32 ex_token_index, 
+mono_x86_throw_corlib_exception (host_mgreg_t *regs, guint32 ex_token_index,
 								 host_mgreg_t eip, gint32 pc_offset)
 {
 	guint32 ex_token = MONO_TOKEN_TYPE_DEF | ex_token_index;
@@ -512,7 +514,7 @@ mono_x86_throw_corlib_exception (host_mgreg_t *regs, guint32 ex_token_index,
 }
 
 static void
-mono_x86_resume_unwind (host_mgreg_t *regs, MonoObject *exc, 
+mono_x86_resume_unwind (host_mgreg_t *regs, MonoObject *exc,
 						host_mgreg_t eip, gboolean rethrow)
 {
 	MonoContext ctx;
@@ -535,7 +537,7 @@ mono_x86_resume_unwind (host_mgreg_t *regs, MonoObject *exc,
  *
  *  Generate a call to mono_x86_throw_exception/
  * mono_x86_throw_corlib_exception.
- * If LLVM is true, generate code which assumes the caller is LLVM generated code, 
+ * If LLVM is true, generate code which assumes the caller is LLVM generated code,
  * which doesn't push the arguments.
  */
 static guint8*
@@ -551,7 +553,7 @@ get_throw_trampoline (const char *name, gboolean rethrow, gboolean llvm, gboolea
 
 	stack_size = 128;
 
-	/* 
+	/*
 	 * On apple, the stack is misaligned by the pushing of the return address.
 	 */
 	if (!llvm && corlib)
@@ -644,7 +646,7 @@ get_throw_trampoline (const char *name, gboolean rethrow, gboolean llvm, gboolea
 	} else if (corlib) {
 		x86_mov_reg_membase (code, X86_EAX, X86_ESP, stack_size + 8, 4);
 		if (llvm_abs) {
-			/* 
+			/*
 			 * The caller is LLVM code which passes the absolute address not a pc offset,
 			 * so compensate by passing 0 as 'ip' and passing the negated abs address as
 			 * the pc offset.
@@ -691,28 +693,28 @@ get_throw_trampoline (const char *name, gboolean rethrow, gboolean llvm, gboolea
 
 /**
  * mono_arch_get_throw_exception:
- * \returns a function pointer which can be used to raise 
- * exceptions. The returned function has the following 
- * signature: void (*func) (MonoException *exc); 
+ * \returns a function pointer which can be used to raise
+ * exceptions. The returned function has the following
+ * signature: void (*func) (MonoException *exc);
  * For example to raise an arithmetic exception you can use:
  *
- * x86_push_imm (code, mono_get_exception_arithmetic ()); 
- * x86_call_code (code, arch_get_throw_exception ()); 
+ * x86_push_imm (code, mono_get_exception_arithmetic ());
+ * x86_call_code (code, arch_get_throw_exception ());
  *
  */
-gpointer 
+gpointer
 mono_arch_get_throw_exception (MonoTrampInfo **info, gboolean aot)
 {
 	return get_throw_trampoline ("throw_exception", FALSE, FALSE, FALSE, FALSE, FALSE, info, aot, FALSE);
 }
 
-gpointer 
+gpointer
 mono_arch_get_rethrow_exception (MonoTrampInfo **info, gboolean aot)
 {
 	return get_throw_trampoline ("rethrow_exception", TRUE, FALSE, FALSE, FALSE, FALSE, info, aot, FALSE);
 }
 
-gpointer 
+gpointer
 mono_arch_get_rethrow_preserve_exception (MonoTrampInfo **info, gboolean aot)
 {
 	return get_throw_trampoline ("rethrow_preserve_exception", TRUE, FALSE, FALSE, FALSE, FALSE, info, aot, TRUE);
@@ -720,14 +722,14 @@ mono_arch_get_rethrow_preserve_exception (MonoTrampInfo **info, gboolean aot)
 
 /**
  * mono_arch_get_throw_corlib_exception:
- * \returns a function pointer which can be used to raise 
- * corlib exceptions. The returned function has the following 
- * signature: void (*func) (guint32 ex_token, guint32 offset); 
- * Here, offset is the offset which needs to be substracted from the caller IP 
- * to get the IP of the throw. Passing the offset has the advantage that it 
+ * \returns a function pointer which can be used to raise
+ * corlib exceptions. The returned function has the following
+ * signature: void (*func) (guint32 ex_token, guint32 offset);
+ * Here, offset is the offset which needs to be substracted from the caller IP
+ * to get the IP of the throw. Passing the offset has the advantage that it
  * needs no relocations in the caller.
  */
-gpointer 
+gpointer
 mono_arch_get_throw_corlib_exception (MonoTrampInfo **info, gboolean aot)
 {
 	return get_throw_trampoline ("throw_corlib_exception", FALSE, FALSE, TRUE, FALSE, FALSE, info, aot, FALSE);
@@ -739,8 +741,8 @@ mono_arch_exceptions_init (void)
 	guint8 *tramp;
 	MonoTrampInfo *tinfo;
 
-/* 
- * If we're running WoW64, we need to set the usermode exception policy 
+/*
+ * If we're running WoW64, we need to set the usermode exception policy
  * for SEHs to behave. This requires hotfix http://support.microsoft.com/kb/976038
  * or (eventually) Windows 7 SP1.
  */
@@ -799,8 +801,8 @@ mono_arch_exceptions_init (void)
  * See exceptions-amd64.c for docs.
  */
 gboolean
-mono_arch_unwind_frame (MonoJitTlsData *jit_tls, 
-						MonoJitInfo *ji, MonoContext *ctx, 
+mono_arch_unwind_frame (MonoJitTlsData *jit_tls,
+						MonoJitInfo *ji, MonoContext *ctx,
 						MonoContext *new_ctx, MonoLMF **lmf,
 						host_mgreg_t **save_locations,
 						StackFrameInfo *frame)
@@ -1074,7 +1076,7 @@ restore_soft_guard_pages (void)
 	return NULL;
 }
 
-/* 
+/*
  * this function modifies mctx so that when it is restored, it
  * won't execcute starting at mctx.eip, but in a function that
  * will restore the protection on the soft-guard pages and return back to

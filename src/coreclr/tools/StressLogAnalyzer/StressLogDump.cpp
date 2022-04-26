@@ -1,12 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-// ==++==
-//
-
-//
-// ==--==
-
 #include "strike.h"
 #include "util.h"
 #include <stdio.h>
@@ -39,7 +33,7 @@ void GcHistAddLog(LPCSTR msg, StressMsg* stressMsg);
 
 
 /*********************************************************************************/
-static const WCHAR* getTime(const FILETIME* time, __out_ecount (buffLen) WCHAR* buff, int buffLen)
+static const WCHAR* getTime(const FILETIME* time, _Out_writes_ (buffLen) WCHAR* buff, int buffLen)
 {
     SYSTEMTIME systemTime;
     static const WCHAR badTime[] = W("BAD TIME");

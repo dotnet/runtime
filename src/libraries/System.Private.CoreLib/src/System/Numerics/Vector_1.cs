@@ -9,8 +9,6 @@ using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Text;
 
-using Internal.Runtime.CompilerServices;
-
 namespace System.Numerics
 {
     /* Note: The following patterns are used throughout the code here and are described here
@@ -83,7 +81,7 @@ namespace System.Numerics
 
             if ((index < 0) || ((values.Length - index) < Count))
             {
-                ThrowHelper.ThrowArgumentOutOfRange_IndexException();
+                ThrowHelper.ThrowArgumentOutOfRange_IndexMustBeLessOrEqualException();
             }
 
             this = Unsafe.ReadUnaligned<Vector<T>>(ref Unsafe.As<T, byte>(ref values[index]));
@@ -237,7 +235,7 @@ namespace System.Numerics
 
             for (int index = 0; index < Count; index++)
             {
-                var value = Scalar<T>.Add(left.GetElementUnsafe(index), right.GetElementUnsafe(index));
+                T value = Scalar<T>.Add(left.GetElementUnsafe(index), right.GetElementUnsafe(index));
                 result.SetElementUnsafe(index, value);
             }
 
@@ -287,7 +285,7 @@ namespace System.Numerics
 
             for (int index = 0; index < Count; index++)
             {
-                var value = Scalar<T>.Divide(left.GetElementUnsafe(index), right.GetElementUnsafe(index));
+                T value = Scalar<T>.Divide(left.GetElementUnsafe(index), right.GetElementUnsafe(index));
                 result.SetElementUnsafe(index, value);
             }
 
@@ -449,7 +447,7 @@ namespace System.Numerics
 
             for (int index = 0; index < Count; index++)
             {
-                var value = Scalar<T>.Multiply(left.GetElementUnsafe(index), right.GetElementUnsafe(index));
+                T value = Scalar<T>.Multiply(left.GetElementUnsafe(index), right.GetElementUnsafe(index));
                 result.SetElementUnsafe(index, value);
             }
 
@@ -467,7 +465,7 @@ namespace System.Numerics
 
             for (int index = 0; index < Count; index++)
             {
-                var element = Scalar<T>.Multiply(value.GetElementUnsafe(index), factor);
+                T element = Scalar<T>.Multiply(value.GetElementUnsafe(index), factor);
                 result.SetElementUnsafe(index, element);
             }
 
@@ -500,7 +498,7 @@ namespace System.Numerics
 
             for (int index = 0; index < Count; index++)
             {
-                var value = Scalar<T>.Subtract(left.GetElementUnsafe(index), right.GetElementUnsafe(index));
+                T value = Scalar<T>.Subtract(left.GetElementUnsafe(index), right.GetElementUnsafe(index));
                 result.SetElementUnsafe(index, value);
             }
 
@@ -538,7 +536,7 @@ namespace System.Numerics
 
             if ((uint)startIndex >= (uint)destination.Length)
             {
-                ThrowHelper.ThrowStartIndexArgumentOutOfRange_ArgumentOutOfRange_Index();
+                ThrowHelper.ThrowStartIndexArgumentOutOfRange_ArgumentOutOfRange_IndexMustBeLess();
             }
 
             if ((destination.Length - startIndex) < Count)
@@ -601,7 +599,7 @@ namespace System.Numerics
 
             for (int index = 0; index < Count; index++)
             {
-                var value = this.GetElementUnsafe(index);
+                T value = this.GetElementUnsafe(index);
                 hashCode.Add(value);
             }
 
@@ -616,14 +614,14 @@ namespace System.Numerics
         /// <summary>Returns a String representing this vector, using the specified format string to format individual elements.</summary>
         /// <param name="format">The format of individual elements.</param>
         /// <returns>The string representation.</returns>
-        public string ToString(string? format)
+        public string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format)
             => ToString(format, CultureInfo.CurrentCulture);
 
         /// <summary>Returns a String representing this vector, using the specified format string to format individual elements and the given IFormatProvider.</summary>
         /// <param name="format">The format of individual elements.</param>
         /// <param name="formatProvider">The format provider to use when formatting elements.</param>
         /// <returns>The string representation.</returns>
-        public string ToString(string? format, IFormatProvider? formatProvider)
+        public string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format, IFormatProvider? formatProvider)
         {
             ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
 

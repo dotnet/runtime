@@ -12,7 +12,9 @@ namespace Microsoft.Extensions.DependencyModel.Resolution
 
         public CompositeCompilationAssemblyResolver(ICompilationAssemblyResolver[] resolvers)
         {
-            _resolvers = resolvers ?? throw new ArgumentNullException(nameof(resolvers));
+            ThrowHelper.ThrowIfNull(resolvers);
+
+            _resolvers = resolvers;
         }
 
         public bool TryResolveAssemblyPaths(CompilationLibrary library, List<string>? assemblies)

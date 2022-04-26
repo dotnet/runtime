@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.ComponentModel;
@@ -72,7 +72,7 @@ namespace System
         /// <param name="data">The string data.</param>
         public BinaryData(string data)
         {
-            if (data == null)
+            if (data is null)
             {
                 throw new ArgumentNullException(nameof(data));
             }
@@ -112,7 +112,7 @@ namespace System
         /// <returns>A value representing all of the data remaining in <paramref name="stream"/>.</returns>
         public static BinaryData FromStream(Stream stream)
         {
-            if (stream == null)
+            if (stream is null)
             {
                 throw new ArgumentNullException(nameof(stream));
             }
@@ -129,7 +129,7 @@ namespace System
         /// <returns>A value representing all of the data remaining in <paramref name="stream"/>.</returns>
         public static Task<BinaryData> FromStreamAsync(Stream stream, CancellationToken cancellationToken = default)
         {
-            if (stream == null)
+            if (stream is null)
             {
                 throw new ArgumentNullException(nameof(stream));
             }
@@ -205,6 +205,12 @@ namespace System
         public override unsafe string ToString()
         {
             ReadOnlySpan<byte> span = _bytes.Span;
+
+            if (span.IsEmpty)
+            {
+                return string.Empty;
+            }
+
             fixed (byte* ptr = span)
             {
                 return Encoding.UTF8.GetString(ptr, span.Length);

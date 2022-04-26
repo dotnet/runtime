@@ -135,7 +135,7 @@ namespace Internal.Runtime.Augments
                 foreach (int lowerBound in lowerBounds)
                 {
                     if (lowerBound != 0)
-                        throw new PlatformNotSupportedException(SR.Arg_NotSupportedNonZeroLowerBound);
+                        throw new PlatformNotSupportedException(SR.PlatformNotSupported_NonZeroLowerBound);
                 }
             }
 
@@ -143,42 +143,16 @@ namespace Internal.Runtime.Augments
             {
                 // We just checked above that all lower bounds are zero. In that case, we should actually allocate
                 // a new SzArray instead.
-                RuntimeTypeHandle elementTypeHandle = new RuntimeTypeHandle(typeHandleForArrayType.ToEETypePtr().ArrayElementType);
-                int length = lengths[0];
-                if (length < 0)
-                    throw new OverflowException(); // For compat: we need to throw OverflowException(): Array.CreateInstance throws ArgumentOutOfRangeException()
-                return Array.CreateInstance(Type.GetTypeFromHandle(elementTypeHandle), length);
+                Type elementType = Type.GetTypeFromHandle(new RuntimeTypeHandle(typeHandleForArrayType.ToEETypePtr().ArrayElementType))!;
+                return RuntimeImports.RhNewArray(elementType.MakeArrayType().TypeHandle.ToEETypePtr(), lengths[0]);
             }
 
-            // Create a local copy of the lenghts that cannot be motified by the caller
-            int* pLengths = stackalloc int[lengths.Length];
+            // Create a local copy of the lengths that cannot be modified by the caller
+            int* pImmutableLengths = stackalloc int[lengths.Length];
             for (int i = 0; i < lengths.Length; i++)
-                pLengths[i] = lengths[i];
+                pImmutableLengths[i] = lengths[i];
 
-            return Array.NewMultiDimArray(typeHandleForArrayType.ToEETypePtr(), pLengths, lengths.Length);
-        }
-
-        //
-        // Helper to create an array from a newobj instruction
-        //
-        public static unsafe Array NewObjArray(RuntimeTypeHandle typeHandleForArrayType, int[] arguments)
-        {
-            EETypePtr eeTypePtr = typeHandleForArrayType.ToEETypePtr();
-            Debug.Assert(eeTypePtr.IsArray);
-
-            fixed (int* pArguments = arguments)
-            {
-                return ArrayHelpers.NewObjArray((IntPtr)eeTypePtr.ToPointer(), arguments.Length, pArguments);
-            }
-        }
-
-        public static ref byte GetSzArrayElementAddress(Array array, int index)
-        {
-            if ((uint)index >= (uint)array.Length)
-                throw new IndexOutOfRangeException();
-
-            ref byte start = ref Unsafe.As<RawArrayData>(array).Data;
-            return ref Unsafe.Add(ref start, (IntPtr)(nint)((nuint)index * array.ElementSize));
+            return Array.NewMultiDimArray(typeHandleForArrayType.ToEETypePtr(), pImmutableLengths, lengths.Length);
         }
 
         public static IntPtr GetAllocateObjectHelperForType(RuntimeTypeHandle type)
@@ -729,7 +703,7 @@ namespace Internal.Runtime.Augments
 
         public static bool IsAssignable(object srcObject, RuntimeTypeHandle dstType)
         {
-            EETypePtr srcEEType = srcObject.EETypePtr;
+            EETypePtr srcEEType = srcObject.GetEETypePtr();
             return RuntimeImports.AreTypesAssignable(srcEEType, dstType.ToEETypePtr());
         }
 
@@ -812,9 +786,8 @@ namespace Internal.Runtime.Augments
             get
             {
                 ReflectionExecutionDomainCallbacks callbacks = s_reflectionExecutionDomainCallbacks;
-                if (callbacks != null)
-                    return callbacks;
-                throw new InvalidOperationException(SR.InvalidOperation_TooEarly);
+                Debug.Assert(callbacks != null);
+                return callbacks;
             }
         }
 
@@ -831,9 +804,8 @@ namespace Internal.Runtime.Augments
             get
             {
                 TypeLoaderCallbacks callbacks = s_typeLoaderCallbacks;
-                if (callbacks != null)
-                    return callbacks;
-                throw new InvalidOperationException(SR.InvalidOperation_TooEarly);
+                Debug.Assert(callbacks != null);
+                return callbacks;
             }
         }
 
@@ -842,9 +814,8 @@ namespace Internal.Runtime.Augments
             get
             {
                 InteropCallbacks callbacks = s_interopCallbacks;
-                if (callbacks != null)
-                    return callbacks;
-                throw new InvalidOperationException(SR.InvalidOperation_TooEarly);
+                Debug.Assert(callbacks != null);
+                return callbacks;
             }
         }
 
@@ -880,7 +851,7 @@ namespace Internal.Runtime.Augments
 
         public static unsafe RuntimeTypeHandle GetRuntimeTypeHandleFromObjectReference(object obj)
         {
-            return new RuntimeTypeHandle(obj.EETypePtr);
+            return new RuntimeTypeHandle(obj.GetEETypePtr());
         }
 
         // Move memory which may be on the heap which may have object references in it.
@@ -1093,6 +1064,11 @@ namespace Internal.Runtime.Augments
         public static bool IsPrimitive(RuntimeTypeHandle typeHandle)
         {
             return typeHandle.ToEETypePtr().IsPrimitive && !typeHandle.ToEETypePtr().IsEnum;
+        }
+
+        public static byte[] ComputePublicKeyToken(byte[] publicKey)
+        {
+            return System.Reflection.AssemblyNameHelpers.ComputePublicKeyToken(publicKey);
         }
     }
 }

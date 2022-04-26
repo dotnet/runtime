@@ -138,9 +138,6 @@ namespace
         AssemblySpec *spec = request.AssemblySpec;
         _ASSERTE(spec != nullptr);
 
-        if (request.AssemblyPath.IsEmpty())
-            request.AssemblyPath = spec->GetCodeBase();
-
         if (spec->GetName() != nullptr)
             spec->GetDisplayName(ASM_DISPLAYF_VERSION | ASM_DISPLAYF_CULTURE | ASM_DISPLAYF_PUBLIC_KEY_TOKEN, request.AssemblyName);
 
@@ -176,8 +173,8 @@ namespace BinderTracing
 {
     static thread_local bool t_AssemblyLoadStartInProgress = false;
 
-    AssemblyBindOperation::AssemblyBindOperation(AssemblySpec *assemblySpec, const WCHAR *assemblyPath)
-        : m_bindRequest { assemblySpec, nullptr, assemblyPath }
+    AssemblyBindOperation::AssemblyBindOperation(AssemblySpec *assemblySpec, const SString& assemblyPath)
+        : m_bindRequest { assemblySpec, SString::Empty(), assemblyPath }
         , m_populatedBindRequest { false }
         , m_checkedIgnoreBind { false }
         , m_ignoreBind { false }

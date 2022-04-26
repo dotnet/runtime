@@ -41,12 +41,14 @@ namespace System.Security.Cryptography.Xml
 
         public KeyInfoX509Data(X509Certificate cert, X509IncludeOption includeOption)
         {
-            if (cert == null)
+            if (cert is null)
+            {
                 throw new ArgumentNullException(nameof(cert));
+            }
 
             X509Certificate2 certificate = new X509Certificate2(cert);
-            X509ChainElementCollection elements = null;
-            X509Chain chain = null;
+            X509ChainElementCollection elements;
+            X509Chain chain;
             switch (includeOption)
             {
                 case X509IncludeOption.ExcludeRoot:
@@ -102,8 +104,10 @@ namespace System.Security.Cryptography.Xml
 
         public void AddCertificate(X509Certificate certificate)
         {
-            if (certificate == null)
+            if (certificate is null)
+            {
                 throw new ArgumentNullException(nameof(certificate));
+            }
 
             if (_certificates == null)
                 _certificates = new ArrayList();
@@ -264,8 +268,10 @@ namespace System.Security.Cryptography.Xml
 
         public override void LoadXml(XmlElement element)
         {
-            if (element == null)
+            if (element is null)
+            {
                 throw new ArgumentNullException(nameof(element));
+            }
 
             XmlNamespaceManager nsm = new XmlNamespaceManager(element.OwnerDocument.NameTable);
             nsm.AddNamespace("ds", SignedXml.XmlDsigNamespaceUrl);

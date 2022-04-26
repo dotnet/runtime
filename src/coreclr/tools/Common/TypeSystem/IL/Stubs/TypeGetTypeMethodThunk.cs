@@ -41,6 +41,14 @@ namespace Internal.IL.Stubs
             }
         }
 
+        public override string DiagnosticName
+        {
+            get
+            {
+                return $"{_helperMethod.DiagnosticName}_{Signature.Length}_{DefaultAssemblyName}";
+            }
+        }
+
         public override TypeDesc OwningType
         {
             get;

@@ -116,7 +116,6 @@ namespace System.Xml.Serialization
             _r = r;
             _d = null;
             _soap12 = (encodingStyle == Soap12.Encoding);
-            Init(tempAssembly);
 
             _schemaNsID = r.NameTable.Add(XmlSchema.Namespace);
             _schemaNs2000ID = r.NameTable.Add("http://www.w3.org/2000/10/XMLSchema");
@@ -520,7 +519,7 @@ namespace System.Xml.Serialization
         private object? ReadTypedPrimitive(XmlQualifiedName type, bool elementCanBeType)
         {
             InitPrimitiveIDs();
-            object? value = null;
+            object? value;
             if (!IsPrimitiveNamespace(type.Namespace) || (object)type.Name == (object)_urTypeID)
                 return ReadXmlNodes(elementCanBeType);
 
@@ -682,7 +681,7 @@ namespace System.Xml.Serialization
         protected object? ReadTypedNull(XmlQualifiedName type)
         {
             InitPrimitiveIDs();
-            object? value = null;
+            object? value;
             if (!IsPrimitiveNamespace(type.Namespace) || (object)type.Name == (object)_urTypeID)
             {
                 return null;
@@ -947,7 +946,7 @@ namespace System.Xml.Serialization
         {
             if (GetNullAttr()) return 0;
             string? arrayType = _r.GetAttribute(_arrayTypeID, _soapNsID);
-            SoapArrayInfo arrayInfo = ParseArrayType(arrayType);
+            SoapArrayInfo arrayInfo = ParseArrayType(arrayType!);
             if (arrayInfo.dimensions != 1) throw new InvalidOperationException(SR.Format(SR.XmlInvalidArrayDimentions, CurrentTag()));
             XmlQualifiedName qname = ToXmlQualifiedName(arrayInfo.qname, false);
             if (qname.Name != name) throw new InvalidOperationException(SR.Format(SR.XmlInvalidArrayTypeName, qname.Name, name, CurrentTag()));
@@ -963,7 +962,7 @@ namespace System.Xml.Serialization
             public int jaggedDimensions;
         }
 
-        private SoapArrayInfo ParseArrayType(string? value)
+        private SoapArrayInfo ParseArrayType(string value)
         {
             if (value == null)
             {
@@ -975,8 +974,7 @@ namespace System.Xml.Serialization
                 throw new ArgumentException(SR.Format(SR.XmlEmptyArrayType, CurrentTag()), nameof(value));
             }
 
-            char[] chars = value.ToCharArray();
-            int charsLength = chars.Length;
+            int charsLength = value.Length;
 
             SoapArrayInfo soapArrayInfo = default;
 
@@ -984,16 +982,16 @@ namespace System.Xml.Serialization
             int pos = charsLength - 1;
 
             // Must end with ]
-            if (chars[pos] != ']')
+            if (value[pos] != ']')
             {
                 throw new ArgumentException(SR.XmlInvalidArraySyntax, nameof(value));
             }
             pos--;
 
             // Find [
-            while (pos != -1 && chars[pos] != '[')
+            while (pos != -1 && value[pos] != '[')
             {
-                if (chars[pos] == ',')
+                if (value[pos] == ',')
                     throw new ArgumentException(SR.Format(SR.XmlInvalidArrayDimentions, CurrentTag()), nameof(value));
                 pos--;
             }
@@ -1005,19 +1003,9 @@ namespace System.Xml.Serialization
             int len = charsLength - pos - 2;
             if (len > 0)
             {
-                string lengthString = new string(chars, pos + 1, len);
-                try
-                {
-                    soapArrayInfo.length = int.Parse(lengthString, CultureInfo.InvariantCulture);
-                }
-                catch (Exception e)
-                {
-                    if (e is OutOfMemoryException)
-                    {
-                        throw;
-                    }
-                    throw new ArgumentException(SR.Format(SR.XmlInvalidArrayLength, lengthString), nameof(value));
-                }
+                ReadOnlySpan<char> lengthStringSpan = value.AsSpan(pos + 1, len);
+                if (!int.TryParse(lengthStringSpan, CultureInfo.InvariantCulture, out soapArrayInfo.length))
+                    throw new ArgumentException(SR.Format(SR.XmlInvalidArrayLength, new string(lengthStringSpan)), nameof(value));
             }
             else
             {
@@ -1027,14 +1015,14 @@ namespace System.Xml.Serialization
             pos--;
 
             soapArrayInfo.jaggedDimensions = 0;
-            while (pos != -1 && chars[pos] == ']')
+            while (pos != -1 && value[pos] == ']')
             {
                 pos--;
                 if (pos < 0)
                     throw new ArgumentException(SR.XmlMismatchedArrayBrackets, nameof(value));
-                if (chars[pos] == ',')
+                if (value[pos] == ',')
                     throw new ArgumentException(SR.Format(SR.XmlInvalidArrayDimentions, CurrentTag()), nameof(value));
-                else if (chars[pos] != '[')
+                else if (value[pos] != '[')
                     throw new ArgumentException(SR.XmlInvalidArraySyntax, nameof(value));
                 pos--;
                 soapArrayInfo.jaggedDimensions++;
@@ -1043,11 +1031,11 @@ namespace System.Xml.Serialization
             soapArrayInfo.dimensions = 1;
 
             // everything else is qname - validation of qnames?
-            soapArrayInfo.qname = new string(chars, 0, pos + 1);
+            soapArrayInfo.qname = new string(value.AsSpan(0, pos + 1));
             return soapArrayInfo;
         }
 
-        private SoapArrayInfo ParseSoap12ArrayType(string? itemType, string? arraySize)
+        private static SoapArrayInfo ParseSoap12ArrayType(string? itemType, string? arraySize)
         {
             SoapArrayInfo soapArrayInfo = default;
 
@@ -1770,10 +1758,9 @@ namespace System.Xml.Serialization
         protected void ReadReferencedElements()
         {
             _r.MoveToContent();
-            string? dummy;
             while (_r.NodeType != XmlNodeType.EndElement && _r.NodeType != XmlNodeType.None)
             {
-                ReadReferencingElement(null, null, true, out dummy);
+                ReadReferencingElement(null, null, true, out _);
                 _r.MoveToContent();
             }
             DoFixups();
@@ -1790,8 +1777,7 @@ namespace System.Xml.Serialization
         [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         protected object? ReadReferencedElement(string? name, string? ns)
         {
-            string? dummy;
-            return ReadReferencingElement(name, ns, out dummy);
+            return ReadReferencingElement(name, ns, out _);
         }
 
         [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
@@ -1810,7 +1796,7 @@ namespace System.Xml.Serialization
         [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         protected object? ReadReferencingElement(string? name, string? ns, bool elementCanBeType, out string? fixupReference)
         {
-            object? o = null;
+            object? o;
             EnsureCallbackTables();
 
             _r.MoveToContent();
@@ -1885,8 +1871,7 @@ namespace System.Xml.Serialization
             string? xsiTypeName = null;
             string? xsiTypeNs = null;
             int skippableNodeCount = 0;
-            int lineNumber = -1, linePosition = -1;
-            XmlNode? unknownNode = null;
+            XmlNode? unknownNode;
             if (Reader.NodeType == XmlNodeType.Attribute)
             {
                 XmlAttribute attr = Document.CreateAttribute(elemName, elemNs);
@@ -1895,7 +1880,7 @@ namespace System.Xml.Serialization
             }
             else
                 unknownNode = Document.CreateElement(elemName, elemNs);
-            GetCurrentPosition(out lineNumber, out linePosition);
+            GetCurrentPosition(out _, out _);
             XmlElement? unknownElement = unknownNode as XmlElement;
 
             while (Reader.MoveToNextAttribute())
@@ -2459,7 +2444,7 @@ namespace System.Xml.Serialization
                 return GenerateLiteralMembersElement(xmlMembersMapping);
         }
 
-        private string? GetChoiceIdentifierSource(MemberMapping[] mappings, MemberMapping member)
+        private static string? GetChoiceIdentifierSource(MemberMapping[] mappings, MemberMapping member)
         {
             string? choiceSource = null;
             if (member.ChoiceIdentifier != null)
@@ -3994,7 +3979,7 @@ namespace System.Xml.Serialization
             }
         }
 
-        private string ExpectedElements(Member[] members)
+        private static string ExpectedElements(Member[] members)
         {
             if (IsSequence(members))
                 return "null";
@@ -4196,7 +4181,7 @@ namespace System.Xml.Serialization
             }
         }
 
-        private bool IsSequence(Member[] members)
+        private static bool IsSequence(Member[] members)
         {
             for (int i = 0; i < members.Length; i++)
             {
@@ -4986,7 +4971,10 @@ namespace System.Xml.Serialization
 
         private void WriteParamsRead(int length)
         {
-            Writer.Write("bool[] paramsRead = new bool[");
+            const int StackallocLimit = 32; // arbitrary limit
+            Writer.Write(length <= StackallocLimit ?
+                "System.Span<bool> paramsRead = stackalloc bool[" :
+                "System.Span<bool> paramsRead = new bool[");
             Writer.Write(length.ToString(CultureInfo.InvariantCulture));
             Writer.WriteLine("];");
         }

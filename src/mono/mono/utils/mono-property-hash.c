@@ -8,6 +8,7 @@
  * (C) 2008 Novell, Inc
  */
 
+#include <config.h>
 #include "mono-property-hash.h"
 
 struct _MonoPropertyHash {
@@ -56,7 +57,7 @@ mono_property_hash_insert (MonoPropertyHash *hash, gpointer object, guint32 prop
 	}
 
 	g_hash_table_insert (prop_hash, object, value);
-}	
+}
 
 static void
 remove_object (gpointer key, gpointer value, gpointer user_data)
@@ -82,4 +83,4 @@ mono_property_hash_lookup (MonoPropertyHash *hash, gpointer object, guint32 prop
 		return NULL;
 	return g_hash_table_lookup (prop_hash, object);
 }
-	
+

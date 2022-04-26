@@ -37,8 +37,7 @@ namespace System.Reflection
         [RequiresUnreferencedCode("Methods might be removed")]
         public MethodInfo? GetMethod(string name)
         {
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
+            ArgumentNullException.ThrowIfNull(name);
 
             return GetMethodImpl(name, Module.DefaultLookup, null, CallingConventions.Any, null, null);
         }
@@ -48,14 +47,12 @@ namespace System.Reflection
         [RequiresUnreferencedCode("Methods might be removed")]
         public MethodInfo? GetMethod(string name, BindingFlags bindingAttr, Binder? binder, CallingConventions callConvention, Type[] types, ParameterModifier[]? modifiers)
         {
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
-            if (types == null)
-                throw new ArgumentNullException(nameof(types));
+            ArgumentNullException.ThrowIfNull(name);
+            ArgumentNullException.ThrowIfNull(types);
+
             for (int i = 0; i < types.Length; i++)
             {
-                if (types[i] == null)
-                    throw new ArgumentNullException(nameof(types));
+                ArgumentNullException.ThrowIfNull(types[i], nameof(types));
             }
             return GetMethodImpl(name, bindingAttr, binder, callConvention, types, modifiers);
         }

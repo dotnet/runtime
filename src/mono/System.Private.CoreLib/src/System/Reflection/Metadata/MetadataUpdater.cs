@@ -29,7 +29,7 @@ namespace System.Reflection.Metadata
         {
             if (assembly is not RuntimeAssembly runtimeAssembly)
             {
-                if (assembly is null) throw new ArgumentNullException(nameof(assembly));
+                ArgumentNullException.ThrowIfNull(assembly);
                 throw new ArgumentException(SR.Argument_MustBeRuntimeAssembly);
             }
 
@@ -55,7 +55,8 @@ namespace System.Reflection.Metadata
 
         private static string InitializeApplyUpdateCapabilities()
         {
-            return ApplyUpdateEnabled(justComponentCheck: 1) != 0 ? "Baseline" : string.Empty ;
+            const string caps = "Baseline AddMethodToExistingType AddStaticFieldToExistingType NewTypeDefinition";
+            return ApplyUpdateEnabled(justComponentCheck: 1) != 0 ? caps : string.Empty ;
         }
 
         [MethodImpl (MethodImplOptions.InternalCall)]

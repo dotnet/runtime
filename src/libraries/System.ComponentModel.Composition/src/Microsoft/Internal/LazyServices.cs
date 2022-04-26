@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Globalization;
 
 namespace Microsoft.Internal
 {
@@ -11,10 +10,7 @@ namespace Microsoft.Internal
         public static T GetNotNullValue<T>(this Lazy<T> lazy, string argument)
             where T : class
         {
-            if (lazy == null)
-            {
-                throw new ArgumentNullException(nameof(lazy));
-            }
+            ArgumentNullException.ThrowIfNull(lazy);
 
             T value = lazy.Value;
             if (value == null)

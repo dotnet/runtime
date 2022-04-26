@@ -191,7 +191,7 @@ namespace System.Resources
                 if (bytes == ResourceManager.MagicNumber)
                 {
                     int resMgrHeaderVersion = br.ReadInt32();
-                    string? readerTypeName = null, resSetTypeName = null;
+                    string? readerTypeName, resSetTypeName;
                     if (resMgrHeaderVersion == ResourceManager.HeaderVersionNumber)
                     {
                         br.ReadInt32();  // We don't want the number of bytes to skip.
@@ -235,7 +235,9 @@ namespace System.Resources
                         {
                             Debug.Assert(readerTypeName != null, "Reader Type name should be set");
                             Debug.Assert(resSetTypeName != null, "ResourceSet Type name should be set");
+#pragma warning disable IL2026 // suppressed in ILLink.Suppressions.LibraryBuild.xml
                             return InternalGetResourceSetFromSerializedData(store, readerTypeName, resSetTypeName, _mediator);
+#pragma warning restore IL2026
                         }
                         else
                         {
@@ -341,7 +343,7 @@ namespace System.Resources
 
             char c = Type.Delimiter;
             string resourceName = nameSpace != null && name != null ?
-                string.Concat(nameSpace, new ReadOnlySpan<char>(ref c, 1), name) :
+                string.Concat(nameSpace, new ReadOnlySpan<char>(in c), name) :
                 string.Concat(nameSpace, name);
 
             string? canonicalName = null;

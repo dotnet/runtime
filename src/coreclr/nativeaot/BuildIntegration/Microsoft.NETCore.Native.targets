@@ -20,7 +20,12 @@ The .NET Foundation licenses this file to you under the MIT license.
     <NativeOutputPath Condition="'$(NativeOutputPath)' == ''">$(OutputPath)native\</NativeOutputPath>
     <NativeCompilationDuringPublish Condition="'$(NativeCompilationDuringPublish)' == ''">true</NativeCompilationDuringPublish>
     <IlcBuildTasksPath Condition="'$(IlcBuildTasksPath)' == ''">$(MSBuildThisFileDirectory)..\tools\netstandard\ILCompiler.Build.Tasks.dll</IlcBuildTasksPath>
-    <IlcHostPath Condition="'$(IlcPath)' != ''">$(IlcPath)</IlcHostPath>
+    <IlcToolsPath Condition="'$(IlcPath)' != '' and '$(IlcToolsPath)' == ''">$(IlcPath)\tools\</IlcToolsPath>
+    <IlcSdkPath Condition="'$(IlcPath)' != '' and '$(IlcSdkPath)' == ''">$(IlcPath)\sdk\</IlcSdkPath>
+    <IlcFrameworkPath Condition="'$(IlcPath)' != '' and '$(IlcFrameworkPath)' == ''">$(IlcPath)\framework\</IlcFrameworkPath>
+    <IlcFrameworkNativePath Condition="'$(IlcPath)' != '' and '$(IlcFrameworkNativePath)' == ''">$(IlcPath)\framework\</IlcFrameworkNativePath>
+    <IlcFrameworkNativePath Condition="'$(IlcFrameworkNativePath)' == '' and '$(IlcFrameworkPath)' != ''">$(IlcFrameworkPath)</IlcFrameworkNativePath>
+    <IlcMibcPath Condition="'$(IlcPath)' != '' and '$(IlcMibcPath)' == ''">$(IlcPath)\mibc\</IlcMibcPath>
     <TargetOS Condition="'$([MSBuild]::IsOSPlatform(Windows))' == 'true'">windows</TargetOS>
     <TargetOS Condition="'$([MSBuild]::IsOSPlatform(OSX))' == 'true'">OSX</TargetOS>
     <TargetOS Condition="'$(TargetOS)' == ''">$(OS)</TargetOS>
@@ -28,6 +33,7 @@ The .NET Foundation licenses this file to you under the MIT license.
     <!-- Workaround for https://github.com/dotnet/runtimelab/issues/771 -->
     <ErrorOnDuplicatePublishOutputFiles>false</ErrorOnDuplicatePublishOutputFiles>
     <PublishTrimmed Condition="'$(PublishTrimmed)' == ''">true</PublishTrimmed>
+    <RunILLink>false</RunILLink>
   </PropertyGroup>
 
   <!-- Set up the defaults for the compatibility mode -->
@@ -36,8 +42,6 @@ The .NET Foundation licenses this file to you under the MIT license.
 
     <IlcGenerateStackTraceData Condition="$(IlcGenerateStackTraceData) == ''">true</IlcGenerateStackTraceData>
     <IlcScanReflection Condition="$(IlcScanReflection) == ''">true</IlcScanReflection>
-    <SuppressTrimAnalysisWarnings Condition="$(SuppressTrimAnalysisWarnings) == ''">true</SuppressTrimAnalysisWarnings>
-    <TrimmerDefaultAction Condition="$([MSBuild]::VersionLessThan('$(NETCoreSdkVersion)', '6.0.0'))">copyused</TrimmerDefaultAction>
   </PropertyGroup>
 
   <!-- Set up default feature switches -->
@@ -102,17 +106,24 @@ The .NET Foundation licenses this file to you under the MIT license.
   </ItemGroup>
 
   <ItemGroup>
-    <_ExcludedPrivateSdkAssemblies Include="$(IlcPath)\sdk\System.Private.Reflection.Core.dll" Condition="$(IlcDisableReflection) == 'true'" />
-    <PrivateSdkAssemblies Include="$(IlcPath)\sdk\*.dll" Exclude="@(_ExcludedPrivateSdkAssemblies)"/>
+    <_ExcludedPrivateSdkAssemblies Include="$(IlcSdkPath)System.Private.Reflection.Core.dll" Condition="$(IlcDisableReflection) == 'true'" />
+    <PrivateSdkAssemblies Include="$(IlcSdkPath)*.dll" Exclude="@(_ExcludedPrivateSdkAssemblies)"/>
 
     <!-- Exclude unmanaged dlls -->
-    <FrameworkAssemblies Include="$(IlcPath)\framework\*.dll" Exclude="$(IlcPath)\framework\*.Native.dll;$(IlcPath)\framework\msquic.dll" />
+    <FrameworkAssemblies Include="$(IlcFrameworkPath)*.dll" Exclude="$(IlcFrameworkPath)*.Native.dll;$(IlcFrameworkPath)msquic.dll" />
 
-    <MibcFile Include="$(IlcPath)\mibc\*.mibc" Condition="'$(IlcPgoOptimize)' == 'true'" />
+    <MibcFile Include="$(IlcMibcPath)*.mibc" Condition="'$(IlcPgoOptimize)' == 'true'" />
 
     <DefaultFrameworkAssemblies Include="@(FrameworkAssemblies)" />
     <DefaultFrameworkAssemblies Include="@(PrivateSdkAssemblies)" />
   </ItemGroup>
+
+  <ItemDefinitionGroup>
+    <ManagedBinary>
+      <IlcRspFile>$(NativeIntermediateOutputPath)\%(Filename).ilc.rsp</IlcRspFile>
+      <IlcOutputFile>$(NativeIntermediateOutputPath)\%(Filename)$(IlcOutputFileExt)</IlcOutputFile>
+    </ManagedBinary>
+  </ItemDefinitionGroup>
 
   <Target Name="_ComputeManagedAssemblyForILLink"
           AfterTargets="_ComputeManagedAssemblyToLink"
@@ -121,32 +132,28 @@ The .NET Foundation licenses this file to you under the MIT license.
       <ManagedAssemblyToLink Remove="@(ManagedAssemblyToLink)" />
       <ManagedAssemblyToLink Include="@(DefaultFrameworkAssemblies);@(_ManagedResolvedAssembliesToPublish);@(ManagedBinary)" />
     </ItemGroup>
-    <ItemGroup Condition="$([MSBuild]::VersionLessThan('$(TargetFrameworkVersion)', '6.0'))">
-      <ManagedAssemblyToLink Remove="@(ManagedAssemblyToLink)" />
-      <ManagedAssemblyToLink Include="@(DefaultFrameworkAssemblies)">
-        <IsTrimmable>true</IsTrimmable>
-      </ManagedAssemblyToLink>
-      <ManagedAssemblyToLink Include="@(_ManagedResolvedAssembliesToPublish);@(ManagedBinary)" />
-    </ItemGroup>
   </Target>
 
   <!-- The properties below need to be defined only after we've found the correct runtime package reference -->
   <Target Name="SetupProperties" DependsOnTargets="$(IlcSetupPropertiesDependsOn)" BeforeTargets="Publish">
     <PropertyGroup>
       <!-- Define paths used in build targets to point to the runtime-specific ILCompiler implementation -->
-      <IlcHostPath Condition="'$(IlcPath)' == ''">$(IlcHostPackagePath)</IlcHostPath>
-      <IlcPath Condition="'$(IlcPath)' == ''">$(RuntimePackagePath)</IlcPath>
+      <IlcToolsPath Condition="'$(IlcToolsPath)' == ''">$(IlcHostPackagePath)\tools\</IlcToolsPath>
+      <IlcSdkPath Condition="'$(IlcSdkPath)' == ''">$(RuntimePackagePath)\sdk\</IlcSdkPath>
+      <IlcFrameworkPath Condition="'$(IlcFrameworkPath)' == ''">$(RuntimePackagePath)\framework\</IlcFrameworkPath>
+      <IlcFrameworkNativePath Condition="'$(IlcFrameworkNativePath)' == ''">$(RuntimePackagePath)\framework\</IlcFrameworkNativePath>
+      <IlcMibcPath Condition="'$(IlcMibcPath)' == ''">$(RuntimePackagePath)\mibc\</IlcMibcPath>
     </PropertyGroup>
 
-    <!-- If running from a package these values need to be set again with the resolved IlcPath -->
+    <!-- If running from a package these values need to be set again with the resolved IlcXYZPath -->
     <ItemGroup>
-      <_ExcludedPrivateSdkAssemblies Include="$(IlcPath)\sdk\System.Private.Reflection.Core.dll" Condition="$(IlcDisableReflection) == 'true'" />
-      <PrivateSdkAssemblies Include="$(IlcPath)\sdk\*.dll" Exclude="@(_ExcludedPrivateSdkAssemblies)"/>
+      <_ExcludedPrivateSdkAssemblies Include="$(IlcSdkPath)System.Private.Reflection.Core.dll" Condition="$(IlcDisableReflection) == 'true'" />
+      <PrivateSdkAssemblies Include="$(IlcSdkPath)*.dll" Exclude="@(_ExcludedPrivateSdkAssemblies)"/>
 
       <!-- Exclude unmanaged dlls -->
-      <FrameworkAssemblies Include="$(IlcPath)\framework\*.dll" Exclude="$(IlcPath)\framework\*.Native.dll;$(IlcPath)\framework\msquic.dll" />
+      <FrameworkAssemblies Include="$(IlcFrameworkPath)*.dll" Exclude="$(IlcFrameworkPath)*.Native.dll;$(IlcFrameworkPath)msquic.dll" />
 
-      <MibcFile Include="$(IlcPath)\mibc\*.mibc" Condition="'$(IlcPgoOptimize)' == 'true'" />
+      <MibcFile Include="$(IlcMibcPath)*.mibc" Condition="'$(IlcPgoOptimize)' == 'true'" />
 
       <DefaultFrameworkAssemblies Include="@(FrameworkAssemblies)" />
       <DefaultFrameworkAssemblies Include="@(PrivateSdkAssemblies)" />
@@ -182,39 +189,10 @@ The .NET Foundation licenses this file to you under the MIT license.
     <MSBuild Projects="@(ProjectToBuild)" BuildInParallel="true" />
   </Target>
 
-  <Target Name="IlcCompile"
+  <Target Name="WriteIlcRspFileForCompilation"
       Inputs="@(IlcCompileInput);@(RdXmlFile)"
-      Outputs="$(NativeIntermediateOutputPath)%(ManagedBinary.Filename)$(IlcOutputFileExt)"
+      Outputs="%(ManagedBinary.IlcRspFile)"
       DependsOnTargets="$(IlcCompileDependsOn)">
-
-    <!-- Set up default properties that have their defaults in the 6.0 SDK (Can be dropped once we drop 5.0 support) -->
-    <PropertyGroup Condition="$([MSBuild]::VersionLessThan('$(NETCoreSdkVersion)', '6.0.0'))">
-      <TrimmerSingleWarn Condition="'$(TrimmerSingleWarn)' == ''">true</TrimmerSingleWarn>
-    </PropertyGroup>
-
-    <!-- Set up single warn trimming like in the 6.0 SDK (Can be dropped once we drop 5.0 support) -->
-    <ItemGroup Condition="$([MSBuild]::VersionLessThan('$(NETCoreSdkVersion)', '6.0.0'))">
-      <!-- Don't collapse to a single warning for the intermediate assembly.
-           This just sets metadata on the items in ManagedAssemblyToLink that came from IntermediateAssembly. -->
-      <!-- Find ManagedAssemblyToLink _except_ IntermediateAssembly -->
-      <__SingleWarnIntermediateAssembly Include="@(ManagedAssemblyToLink)" />
-      <__SingleWarnIntermediateAssembly Remove="@(IntermediateAssembly)" />
-      <!-- Subtract these from ManagedAssemblyToLink, to get the intersection. -->
-      <_SingleWarnIntermediateAssembly Include="@(ManagedAssemblyToLink)" />
-      <_SingleWarnIntermediateAssembly Remove="@(__SingleWarnIntermediateAssembly)" />
-      <!-- Set metadata on the intersection. -->
-      <_SingleWarnIntermediateAssembly>
-        <TrimmerSingleWarn Condition=" '%(_SingleWarnIntermediateAssembly.TrimmerSingleWarn)' == '' ">false</TrimmerSingleWarn>
-      </_SingleWarnIntermediateAssembly>
-      <!-- Replace these items in ManagedAssemblyToLink. -->
-      <ManagedAssemblyToLink Remove="@(_SingleWarnIntermediateAssembly)" />
-      <ManagedAssemblyToLink Include="@(_SingleWarnIntermediateAssembly)" />
-
-      <!-- Don't collapse to a single warning for project references -->
-      <ManagedAssemblyToLink Condition=" '%(ManagedAssemblyToLink.ProjectReferenceOriginalItemSpec)' != '' ">
-        <TrimmerSingleWarn Condition=" '%(ManagedAssemblyToLink.TrimmerSingleWarn)' == '' ">false</TrimmerSingleWarn>
-      </ManagedAssemblyToLink>
-    </ItemGroup>
 
     <ItemGroup>
       <_IlcRootedAssemblies Include="@(TrimmerRootAssembly)" />
@@ -234,6 +212,7 @@ The .NET Foundation licenses this file to you under the MIT license.
       <IlcArg Condition="$(IlcMultiModule) == 'true'" Include="--multifile" />
       <IlcArg Condition="$(Optimize) == 'true'" Include="-O" />
       <IlcArg Condition="$(NativeDebugSymbols) == 'true'" Include="-g" />
+      <IlcArg Condition="$(IlcDwarfVersion) == '5'" Include="--gdwarf-5" />
       <IlcArg Condition="$(IlcGenerateMapFile) == 'true'" Include="--map:$(NativeIntermediateOutputPath)%(ManagedBinary.Filename).map.xml" />
       <IlcArg Condition="$(IlcGenerateDgmlFile) == 'true'" Include="--dgmllog:$(NativeIntermediateOutputPath)%(ManagedBinary.Filename).codegen.dgml.xml" />
       <IlcArg Condition="$(IlcGenerateDgmlFile) == 'true'" Include="--scandgmllog:$(NativeIntermediateOutputPath)%(ManagedBinary.Filename).scan.dgml.xml" />
@@ -252,9 +231,10 @@ The .NET Foundation licenses this file to you under the MIT license.
       <IlcArg Condition="$(IlcFoldIdenticalMethodBodies) == 'true'" Include="--methodbodyfolding" />
       <IlcArg Condition="$(Optimize) == 'true' and $(IlcOptimizationPreference) == 'Size'" Include="--Os" />
       <IlcArg Condition="$(Optimize) == 'true' and $(IlcOptimizationPreference) == 'Speed'" Include="--Ot" />
+      <IlcArg Condition="$(IlcInstructionSet) != ''" Include="--instructionset:$(IlcInstructionSet)" />
       <IlcArg Condition="$(IlcDisableReflection) == 'true'" Include="--disablereflection" />
       <IlcArg Condition="$(IlcDisableReflection) == 'true'" Include="--feature:System.Collections.Generic.DefaultComparers=false" />
-      <IlcArg Condition="$(IlcSingleThreaded) == 'true'" Include="--singlethreaded" />
+      <IlcArg Condition="$(IlcSingleThreaded) == 'true'" Include="--parallelism:1" />
       <IlcArg Condition="$(IlcSystemModule) != ''" Include="--systemmodule:$(IlcSystemModule)" />
       <IlcArg Condition="$(IlcDumpIL) == 'true'" Include="--ildump:$(NativeIntermediateOutputPath)%(ManagedBinary.Filename).il" />
       <IlcArg Condition="$(NoWarn) != ''" Include='--nowarn:"$([MSBuild]::Escape($(NoWarn)))"' />
@@ -266,6 +246,7 @@ The .NET Foundation licenses this file to you under the MIT license.
       <IlcArg Include="@(_IlcTrimmedAssemblies->'--trim:%(Identity)')" />
       <IlcArg Include="@(_IlcNoSingleWarnAssemblies->'--nosinglewarnassembly:%(Filename)')" />
       <IlcArg Condition="'$(TrimmerDefaultAction)' == 'copyused' or '$(TrimmerDefaultAction)' == 'copy'" Include="--defaultrooting" />
+      <IlcArg Include="--resilient" />
 
       <IlcArg Condition="$(IlcDisableReflection) == 'true'" Include="--feature:System.Reflection.IsReflectionExecutionAvailable=false" />
 
@@ -273,22 +254,24 @@ The .NET Foundation licenses this file to you under the MIT license.
       <IlcArg Include="--feature:System.Linq.Expressions.CanCompileToIL=false" />
       <IlcArg Include="--feature:System.Linq.Expressions.CanEmitObjectArrayDelegate=false" />
       <IlcArg Include="--feature:System.Linq.Expressions.CanCreateArbitraryDelegates=false" />
-
-      <!-- 6.0 SDK introduces a way to control this through the CustomResourceTypesSupport property, defaulting to false when trimming -->
-      <IlcArg Condition="$([MSBuild]::VersionLessThan('$(NETCoreSdkVersion)', '6.0.0')) and $(CustomResourceTypesSupport) != 'true'" Include="--feature:System.Resources.ResourceManager.AllowCustomResourceTypes=false" />
     </ItemGroup>
 
     <MakeDir Directories="$(NativeIntermediateOutputPath)" />
-    <WriteLinesToFile File="$(NativeIntermediateOutputPath)%(ManagedBinary.Filename).ilc.rsp" Lines="@(IlcArg)" Overwrite="true" />
+    <WriteLinesToFile File="%(ManagedBinary.IlcRspFile)" Lines="@(IlcArg)" Overwrite="true" WriteOnlyWhenDifferent="true" />
+  </Target>
 
+  <Target Name="IlcCompile"
+      Inputs="@(IlcCompileInput);@(RdXmlFile);%(ManagedBinary.IlcRspFile)"
+      Outputs="%(ManagedBinary.IlcOutputFile)"
+      DependsOnTargets="WriteIlcRspFileForCompilation;$(IlcCompileDependsOn)">
     <Message Text="Generating native code" Condition="$(_BuildingInCompatibleMode) != 'true'" Importance="high" />
-    <Message Text="Generating compatible native code. To optimize for size or speed, visit https://aka.ms/OptimizeCoreRT" Condition="$(_BuildingInCompatibleMode) == 'true'" Importance="high" />
+    <Message Text="Generating compatible native code. To optimize for size or speed, visit https://aka.ms/OptimizeNativeAOT" Condition="$(_BuildingInCompatibleMode) == 'true'" Importance="high" />
 
-    <Exec Command="&quot;$(IlcHostPath)\tools\ilc&quot; @&quot;$(NativeIntermediateOutputPath)%(ManagedBinary.Filename).ilc.rsp&quot;" />
+    <Exec Command="&quot;$(IlcToolsPath)\ilc&quot; @&quot;$(NativeIntermediateOutputPath)%(ManagedBinary.Filename).ilc.rsp&quot;" />
 
     <!-- Trick ILLinker into not actually running -->
-    <MakeDir Directories="$(IntermediateLinkDir)" />
-    <Touch Files="$(_LinkSemaphore)" AlwaysCreate="true" />
+    <MakeDir Condition="$([MSBuild]::VersionLessThan('$(NETCoreSdkVersion)', '7.0.0'))" Directories="$(IntermediateLinkDir)" />
+    <Touch Condition="$([MSBuild]::VersionLessThan('$(NETCoreSdkVersion)', '7.0.0'))" Files="$(_LinkSemaphore)" AlwaysCreate="true" />
   </Target>
 
   <Import Project="$(MSBuildThisFileDirectory)Microsoft.NETCore.Native.Windows.props" Condition="'$(TargetOS)' == 'windows'" />
@@ -351,7 +334,7 @@ The .NET Foundation licenses this file to you under the MIT license.
       <_IgnoreLinkerWarnings>false</_IgnoreLinkerWarnings>
       <_IgnoreLinkerWarnings Condition="'$(TargetOS)' == 'OSX'">true</_IgnoreLinkerWarnings>
     </PropertyGroup>
-    
+
     <Exec Command="$(CppLinker) @(CustomLinkerArg, ' ')" Condition="'$(TargetOS)' != 'windows' and '$(NativeLib)' != 'Static'" IgnoreStandardErrorWarningFormat="$(_IgnoreLinkerWarnings)" />
     <Exec Command="$(CppLibCreator) @(CustomLibArg, ' ')" Condition="'$(TargetOS)' != 'windows' and '$(NativeLib)' == 'Static'" />
 

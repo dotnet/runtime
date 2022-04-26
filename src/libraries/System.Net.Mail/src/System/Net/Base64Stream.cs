@@ -158,20 +158,14 @@ namespace System.Net
 
         public override int EndRead(IAsyncResult asyncResult)
         {
-            if (asyncResult == null)
-            {
-                throw new ArgumentNullException(nameof(asyncResult));
-            }
+            ArgumentNullException.ThrowIfNull(asyncResult);
 
             return ReadAsyncResult.End(asyncResult);
         }
 
         public override void EndWrite(IAsyncResult asyncResult)
         {
-            if (asyncResult == null)
-            {
-                throw new ArgumentNullException(nameof(asyncResult));
-            }
+            ArgumentNullException.ThrowIfNull(asyncResult);
 
             WriteAsyncResult.End(asyncResult);
         }

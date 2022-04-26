@@ -283,6 +283,7 @@ void SpinLock::dbg_PreEnterLock()
         // SpinLock can not be nested.
         _ASSERTE ((pThread->m_StateNC & Thread::TSNC_OwnsSpinLock) == 0);
 
+        IncCantAllocCount();
         pThread->SetThreadStateNC(Thread::TSNC_OwnsSpinLock);
 
         if (!pThread->PreemptiveGCDisabled())
@@ -321,6 +322,7 @@ void SpinLock::dbg_LeaveLock()
     if (pThread)
     {
         _ASSERTE ((pThread->m_StateNC & Thread::TSNC_OwnsSpinLock) != 0);
+        DecCantAllocCount();
         pThread->ResetThreadStateNC(Thread::TSNC_OwnsSpinLock);
         INCONTRACT(pThread->EndNoTriggerGC());
     }

@@ -4,5 +4,16 @@
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
+
+  <PropertyGroup Condition="'$(BrowserHost)' != 'windows'">
+    <ExecXHarnessCmd>$HARNESS_RUNNER</ExecXHarnessCmd>
+    <XHarnessOutput>$XHARNESS_OUT</XHarnessOutput>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(BrowserHost)' == 'windows'">
+    <ExecXHarnessCmd>%HARNESS_RUNNER%</ExecXHarnessCmd>
+    <XHarnessOutput>%XHARNESS_OUT%</XHarnessOutput>
+  </PropertyGroup>
+
   <Import Project="..\Directory.Build.props"/>
 </Project>

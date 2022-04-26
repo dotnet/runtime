@@ -133,7 +133,9 @@ namespace System.IO.Hashing
         public static byte[] Hash(byte[] source)
         {
             if (source is null)
+            {
                 throw new ArgumentNullException(nameof(source));
+            }
 
             return Hash(new ReadOnlySpan<byte>(source));
         }
@@ -150,7 +152,9 @@ namespace System.IO.Hashing
         public static byte[] Hash(byte[] source, int seed)
         {
             if (source is null)
+            {
                 throw new ArgumentNullException(nameof(source));
+            }
 
             return Hash(new ReadOnlySpan<byte>(source), seed);
         }

@@ -5,6 +5,7 @@ using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
@@ -56,15 +57,18 @@ namespace System
     // the range of the Decimal type.
     [StructLayout(LayoutKind.Sequential)]
     [Serializable]
-    [System.Runtime.Versioning.NonVersionable] // This only applies to field layout
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public readonly partial struct Decimal : ISpanFormattable, IComparable, IConvertible, IComparable<decimal>, IEquatable<decimal>, ISerializable, IDeserializationCallback
-#if FEATURE_GENERIC_MATH
-#pragma warning disable SA1001, CA2252 // SA1001: Comma positioning; CA2252: Preview Features
-        , IMinMaxValue<decimal>,
-          ISignedNumber<decimal>
-#pragma warning restore SA1001, CA2252
-#endif // FEATURE_GENERIC_MATH
+    [NonVersionable] // This only applies to field layout
+    [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    public readonly partial struct Decimal
+        : ISpanFormattable,
+          IComparable,
+          IConvertible,
+          IComparable<decimal>,
+          IEquatable<decimal>,
+          ISerializable,
+          IDeserializationCallback,
+          IFloatingPoint<decimal>,
+          IMinMaxValue<decimal>
     {
         // Sign mask for the flags field. A value of zero in this bit indicates a
         // positive Decimal value, and a value of one in this bit indicates a
@@ -98,6 +102,15 @@ namespace System
         // Constant representing the smallest possible Decimal value. The value of
         // this constant is -79,228,162,514,264,337,593,543,950,335.
         public const decimal MinValue = -79228162514264337593543950335m;
+
+        /// <summary>Represents the additive identity (0).</summary>
+        private const decimal AdditiveIdentity = 0m;
+
+        /// <summary>Represents the multiplicative identity (1).</summary>
+        private const decimal MultiplicativeIdentity = 1m;
+
+        /// <summary>Represents the number negative one (-1).</summary>
+        private const decimal NegativeOne = -1m;
 
         // The lo, mid, hi, and flags fields contain the representation of the
         // Decimal value. The lo, mid, and hi fields contain the 96-bit integer
@@ -184,8 +197,7 @@ namespace System
 
         private Decimal(SerializationInfo info, StreamingContext context)
         {
-            if (info == null)
-                throw new ArgumentNullException(nameof(info));
+            ArgumentNullException.ThrowIfNull(info);
 
             _flags = info.GetInt32("flags");
             _hi32 = (uint)info.GetInt32("hi");
@@ -194,8 +206,7 @@ namespace System
 
         void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
         {
-            if (info == null)
-                throw new ArgumentNullException(nameof(info));
+            ArgumentNullException.ThrowIfNull(info);
 
             // Serialize both the old and the new format
             info.AddValue("flags", _flags);
@@ -332,13 +343,45 @@ namespace System
             _flags = flags;
         }
 
-        // Returns the absolute value of the given Decimal. If d is
-        // positive, the result is d. If d is negative, the result
-        // is -d.
-        //
-        internal static decimal Abs(in decimal d)
+        /// <summary>
+        /// Gets the scaling factor of the decimal, which is a number from 0 to 28 that represents the number of decimal digits.
+        /// </summary>
+        public byte Scale => (byte)(_flags >> ScaleShift);
+
+        private sbyte Exponent
         {
-            return new decimal(in d, d._flags & ~SignMask);
+            get
+            {
+                // Decimal tracks its exponent as a scale between 0 and 28. This scale is used
+                // with the significand as `significand / 10^scale`
+                //
+                // The IFloatingPoint contract however follows the general IEEE 754 algorithm
+                // which is `-1^s * b^e * (b^(1-p) * m)`
+                //
+                // In this algorithm
+                // * `s` is the sign
+                // * `b` is the radix (10 for decimal)
+                // * `e` is the exponent
+                // * `p` is the number of bits in the significand
+                // * `m` is the significand itself
+                //
+                // For a value such as decimal.MaxValue, the significand is 79228162514264337593543950335
+                // and the scale is 0. Since decimal tracks 96 significand bits, the required algorithm (simplified)
+                // gives us 7.9228162514264337593543950335 * 10^-67 * 10^e. To get back to our original value we
+                // then need the exponent to be 95.
+                //
+                // For a value such as 1E-28, the significand is 1 and the scale is 28. The required algorithm (simplified)
+                // gives us 1.0 * 10^-95 * 10^e. To get back to our original value we need the exponent to be 67.
+                //
+                // Given that scale is bound by 0 and 28, inclusive, the returned exponent will be between 95
+                // and 67, inclusive. That is between `(p - 1)` and `(p - 1) - MaxScale`.
+                //
+                // The generalized algorithm for converting from scale to exponent is then `exponent = 95 - scale`.
+
+                sbyte exponent = (sbyte)(95 - Scale);
+                Debug.Assert((exponent >= 67) && (exponent <= 95));
+                return exponent;
+            }
         }
 
         // Adds two Decimal values.
@@ -441,7 +484,7 @@ namespace System
             return Number.FormatDecimal(this, null, NumberFormatInfo.CurrentInfo);
         }
 
-        public string ToString(string? format)
+        public string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format)
         {
             return Number.FormatDecimal(this, format, NumberFormatInfo.CurrentInfo);
         }
@@ -451,12 +494,12 @@ namespace System
             return Number.FormatDecimal(this, null, NumberFormatInfo.GetInstance(provider));
         }
 
-        public string ToString(string? format, IFormatProvider? provider)
+        public string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format, IFormatProvider? provider)
         {
             return Number.FormatDecimal(this, format, NumberFormatInfo.GetInstance(provider));
         }
 
-        public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format = default, IFormatProvider? provider = null)
+        public bool TryFormat(Span<char> destination, out int charsWritten, [StringSyntax(StringSyntaxAttribute.NumericFormat)] ReadOnlySpan<char> format = default, IFormatProvider? provider = null)
         {
             return Number.TryFormatDecimal(this, format, NumberFormatInfo.GetInstance(provider), destination, out charsWritten);
         }
@@ -614,20 +657,6 @@ namespace System
             return new decimal(lo, mid, hi, flags);
         }
 
-        // Returns the larger of two Decimal values.
-        //
-        internal static ref readonly decimal Max(in decimal d1, in decimal d2)
-        {
-            return ref DecCalc.VarDecCmp(in d1, in d2) >= 0 ? ref d1 : ref d2;
-        }
-
-        // Returns the smaller of two Decimal values.
-        //
-        internal static ref readonly decimal Min(in decimal d1, in decimal d2)
-        {
-            return ref DecCalc.VarDecCmp(in d1, in d2) < 0 ? ref d1 : ref d2;
-        }
-
         public static decimal Remainder(decimal d1, decimal d2)
         {
             DecCalc.VarDecMod(ref AsMutable(ref d1), ref AsMutable(ref d2));
@@ -675,8 +704,6 @@ namespace System
                 DecCalc.InternalRound(ref AsMutable(ref d), (uint)scale, mode);
             return d;
         }
-
-        internal static int Sign(in decimal d) => (d.Low64 | d.High) == 0 ? 0 : (d._flags >> 31) | 1;
 
         // Subtracts two Decimal values.
         //
@@ -765,7 +792,7 @@ namespace System
             if ((d.High | d.Mid) == 0)
             {
                 int i = (int)d.Low;
-                if (!d.IsNegative)
+                if (!IsNegative(d))
                 {
                     if (i >= 0) return i;
                 }
@@ -788,7 +815,7 @@ namespace System
             if (d.High == 0)
             {
                 long l = (long)d.Low64;
-                if (!d.IsNegative)
+                if (!IsNegative(d))
                 {
                     if (l >= 0) return l;
                 }
@@ -833,7 +860,7 @@ namespace System
             if ((d.High| d.Mid) == 0)
             {
                 uint i = d.Low;
-                if (!d.IsNegative || i == 0)
+                if (!IsNegative(d) || i == 0)
                     return i;
             }
             throw new OverflowException(SR.Overflow_UInt32);
@@ -850,7 +877,7 @@ namespace System
             if (d.High == 0)
             {
                 ulong l = d.Low64;
-                if (!d.IsNegative || l == 0)
+                if (!IsNegative(d) || l == 0)
                     return l;
             }
             throw new OverflowException(SR.Overflow_UInt64);
@@ -950,8 +977,10 @@ namespace System
 
         public static decimal operator -(decimal d) => new decimal(in d, d._flags ^ SignMask);
 
+        /// <inheritdoc cref="IIncrementOperators{TSelf}.op_Increment(TSelf)" />
         public static decimal operator ++(decimal d) => Add(d, One);
 
+        /// <inheritdoc cref="IDecrementOperators{TSelf}.op_Decrement(TSelf)" />
         public static decimal operator --(decimal d) => Subtract(d, One);
 
         public static decimal operator +(decimal d1, decimal d2)
@@ -966,34 +995,43 @@ namespace System
             return d1;
         }
 
+        /// <inheritdoc cref="IMultiplyOperators{TSelf, TOther, TResult}.op_Multiply(TSelf, TOther)" />
         public static decimal operator *(decimal d1, decimal d2)
         {
             DecCalc.VarDecMul(ref AsMutable(ref d1), ref AsMutable(ref d2));
             return d1;
         }
 
+        /// <inheritdoc cref="IDivisionOperators{TSelf, TOther, TResult}.op_Division(TSelf, TOther)" />
         public static decimal operator /(decimal d1, decimal d2)
         {
             DecCalc.VarDecDiv(ref AsMutable(ref d1), ref AsMutable(ref d2));
             return d1;
         }
 
+        /// <inheritdoc cref="IModulusOperators{TSelf, TOther, TResult}.op_Modulus(TSelf, TOther)" />
         public static decimal operator %(decimal d1, decimal d2)
         {
             DecCalc.VarDecMod(ref AsMutable(ref d1), ref AsMutable(ref d2));
             return d1;
         }
 
+        /// <inheritdoc cref="IEqualityOperators{TSelf, TOther}.op_Equality(TSelf, TOther)" />
         public static bool operator ==(decimal d1, decimal d2) => DecCalc.VarDecCmp(in d1, in d2) == 0;
 
+        /// <inheritdoc cref="IEqualityOperators{TSelf, TOther}.op_Inequality(TSelf, TOther)" />
         public static bool operator !=(decimal d1, decimal d2) => DecCalc.VarDecCmp(in d1, in d2) != 0;
 
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_LessThan(TSelf, TOther)" />
         public static bool operator <(decimal d1, decimal d2) => DecCalc.VarDecCmp(in d1, in d2) < 0;
 
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_LessThanOrEqual(TSelf, TOther)" />
         public static bool operator <=(decimal d1, decimal d2) => DecCalc.VarDecCmp(in d1, in d2) <= 0;
 
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_GreaterThan(TSelf, TOther)" />
         public static bool operator >(decimal d1, decimal d2) => DecCalc.VarDecCmp(in d1, in d2) > 0;
 
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_GreaterThanOrEqual(TSelf, TOther)" />
         public static bool operator >=(decimal d1, decimal d2) => DecCalc.VarDecCmp(in d1, in d2) >= 0;
 
         //
@@ -1080,152 +1118,146 @@ namespace System
             return Convert.DefaultToType((IConvertible)this, type, provider);
         }
 
-#if FEATURE_GENERIC_MATH
         //
         // IAdditionOperators
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static decimal IAdditionOperators<decimal, decimal, decimal>.operator +(decimal left, decimal right)
-            => checked(left + right);
-
-        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        // static checked decimal IAdditionOperators<decimal, decimal, decimal>.operator +(decimal left, decimal right)
-        //     => checked(left + right);
+        /// <inheritdoc cref="IAdditionOperators{TSelf, TOther, TResult}.op_Addition(TSelf, TOther)" />
+        static decimal IAdditionOperators<decimal, decimal, decimal>.operator checked +(decimal left, decimal right) => left + right;
 
         //
         // IAdditiveIdentity
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static decimal IAdditiveIdentity<decimal, decimal>.AdditiveIdentity => 0.0m;
-
-        //
-        // IComparisonOperators
-        //
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static bool IComparisonOperators<decimal, decimal>.operator <(decimal left, decimal right)
-            => left < right;
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static bool IComparisonOperators<decimal, decimal>.operator <=(decimal left, decimal right)
-            => left <= right;
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static bool IComparisonOperators<decimal, decimal>.operator >(decimal left, decimal right)
-            => left > right;
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static bool IComparisonOperators<decimal, decimal>.operator >=(decimal left, decimal right)
-            => left >= right;
+        /// <inheritdoc cref="IAdditiveIdentity{TSelf, TResult}.AdditiveIdentity" />
+        static decimal IAdditiveIdentity<decimal, decimal>.AdditiveIdentity => AdditiveIdentity;
 
         //
         // IDecrementOperators
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static decimal IDecrementOperators<decimal>.operator --(decimal value)
-            => --value;
-
-        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        // static checked decimal IDecrementOperators<decimal>.operator --(decimal value)
-        //     => checked(--value);
+        /// <inheritdoc cref="IDecrementOperators{TSelf}.op_CheckedDecrement(TSelf)" />
+        static decimal IDecrementOperators<decimal>.operator checked --(decimal value) => --value;
 
         //
         // IDivisionOperators
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static decimal IDivisionOperators<decimal, decimal, decimal>.operator /(decimal left, decimal right)
-            => left / right;
-
-        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        // static checked decimal IDivisionOperators<decimal, decimal, decimal>.operator /(decimal left, decimal right)
-        //     => checked(left / right);
+        /// <inheritdoc cref="IDivisionOperators{TSelf, TOther, TResult}.op_CheckedDivision(TSelf, TOther)" />
+        static decimal IDivisionOperators<decimal, decimal, decimal>.operator checked /(decimal left, decimal right) => left / right;
 
         //
-        // IEqualityOperators
+        // IFloatingPoint
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static bool IEqualityOperators<decimal, decimal>.operator ==(decimal left, decimal right)
-            => left == right;
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.GetExponentShortestBitLength()" />
+        long IFloatingPoint<decimal>.GetExponentShortestBitLength()
+        {
+            sbyte exponent = Exponent;
+            return (sizeof(sbyte) * 8) - sbyte.LeadingZeroCount(exponent);
+        }
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static bool IEqualityOperators<decimal, decimal>.operator !=(decimal left, decimal right)
-            => left != right;
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.GetExponentByteCount()" />
+        int IFloatingPoint<decimal>.GetExponentByteCount() => sizeof(sbyte);
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.TryWriteExponentLittleEndian(Span{byte}, out int)" />
+        bool IFloatingPoint<decimal>.TryWriteExponentLittleEndian(Span<byte> destination, out int bytesWritten)
+        {
+            if (destination.Length >= sizeof(sbyte))
+            {
+                sbyte exponent = Exponent;
+                Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), exponent);
+
+                bytesWritten = sizeof(sbyte);
+                return true;
+            }
+            else
+            {
+                bytesWritten = 0;
+                return false;
+            }
+        }
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.GetSignificandBitLength()" />
+        long IFloatingPoint<decimal>.GetSignificandBitLength() => 96;
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.GetSignificandByteCount()" />
+        int IFloatingPoint<decimal>.GetSignificandByteCount() => sizeof(ulong) + sizeof(uint);
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.TryWriteSignificandLittleEndian(Span{byte}, out int)" />
+        bool IFloatingPoint<decimal>.TryWriteSignificandLittleEndian(Span<byte> destination, out int bytesWritten)
+        {
+            if (destination.Length >= (sizeof(ulong) + sizeof(uint)))
+            {
+                ref byte address = ref MemoryMarshal.GetReference(destination);
+
+                Unsafe.WriteUnaligned(ref address, _lo64);
+                Unsafe.WriteUnaligned(ref Unsafe.AddByteOffset(ref address, sizeof(ulong)), _hi32);
+
+                bytesWritten = sizeof(ulong) + sizeof(uint);
+                return true;
+            }
+            else
+            {
+                bytesWritten = 0;
+                return false;
+            }
+        }
 
         //
         // IIncrementOperators
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static decimal IIncrementOperators<decimal>.operator ++(decimal value)
-            => ++value;
-
-        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        // static checked decimal IIncrementOperators<decimal>.operator ++(decimal value)
-        //     => checked(++value);
+        /// <inheritdoc cref="IIncrementOperators{TSelf}.op_CheckedIncrement(TSelf)" />
+        static decimal IIncrementOperators<decimal>.operator checked ++(decimal value) => ++value;
 
         //
         // IMinMaxValue
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        /// <inheritdoc cref="IMinMaxValue{TSelf}.MinValue" />
         static decimal IMinMaxValue<decimal>.MinValue => MinValue;
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        /// <inheritdoc cref="IMinMaxValue{TSelf}.MaxValue" />
         static decimal IMinMaxValue<decimal>.MaxValue => MaxValue;
-
-        //
-        // IModulusOperators
-        //
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static decimal IModulusOperators<decimal, decimal, decimal>.operator %(decimal left, decimal right)
-            => left % right;
-
-        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        // static checked decimal IModulusOperators<decimal, decimal, decimal>.operator %(decimal left, decimal right)
-        //     => checked(left % right);
 
         //
         // IMultiplicativeIdentity
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static decimal IMultiplicativeIdentity<decimal, decimal>.MultiplicativeIdentity => 1.0m;
+        /// <inheritdoc cref="IMultiplicativeIdentity{TSelf, TResult}.MultiplicativeIdentity" />
+        static decimal IMultiplicativeIdentity<decimal, decimal>.MultiplicativeIdentity => MultiplicativeIdentity;
 
         //
         // IMultiplyOperators
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static decimal IMultiplyOperators<decimal, decimal, decimal>.operator *(decimal left, decimal right)
-            => left * right;
-
-        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        // static checked decimal IMultiplyOperators<decimal, decimal, decimal>.operator *(decimal left, decimal right)
-        //     => checked(left * right);
+        /// <inheritdoc cref="IMultiplyOperators{TSelf, TOther, TResult}.op_CheckedMultiply(TSelf, TOther)" />
+        public static decimal operator checked *(decimal left, decimal right) => left * right;
 
         //
         // INumber
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static decimal INumber<decimal>.One => 1.0m;
+        /// <inheritdoc cref="INumber{TSelf}.Abs(TSelf)" />
+        public static decimal Abs(decimal value)
+        {
+            return new decimal(in value, value._flags & ~SignMask);
+        }
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static decimal INumber<decimal>.Zero => 0.0m;
+        /// <inheritdoc cref="INumber{TSelf}.Clamp(TSelf, TSelf, TSelf)" />
+        public static decimal Clamp(decimal value, decimal min, decimal max) => Math.Clamp(value, min, max);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static decimal INumber<decimal>.Abs(decimal value)
-            => Math.Abs(value);
+        /// <inheritdoc cref="INumber{TSelf}.CopySign(TSelf, TSelf)" />
+        public static decimal CopySign(decimal value, decimal sign)
+        {
+            return new decimal(in value, (value._flags & ~SignMask) | (sign._flags & SignMask));
+        }
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        /// <inheritdoc cref="INumber{TSelf}.CreateChecked{TOther}(TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static decimal INumber<decimal>.Create<TOther>(TOther value)
+        public static decimal CreateChecked<TOther>(TOther value)
+            where TOther : INumber<TOther>
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -1290,9 +1322,10 @@ namespace System
             }
         }
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        /// <inheritdoc cref="INumber{TSelf}.CreateSaturating{TOther}(TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static decimal INumber<decimal>.CreateSaturating<TOther>(TOther value)
+        public static decimal CreateSaturating<TOther>(TOther value)
+            where TOther : INumber<TOther>
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -1357,9 +1390,10 @@ namespace System
             }
         }
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        /// <inheritdoc cref="INumber{TSelf}.CreateTruncating{TOther}(TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static decimal INumber<decimal>.CreateTruncating<TOther>(TOther value)
+        public static decimal CreateTruncating<TOther>(TOther value)
+            where TOther : INumber<TOther>
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -1424,37 +1458,34 @@ namespace System
             }
         }
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static decimal INumber<decimal>.Clamp(decimal value, decimal min, decimal max)
-            => Math.Clamp(value, min, max);
+        /// <inheritdoc cref="INumber{TSelf}.IsNegative(TSelf)" />
+        public static bool IsNegative(decimal value) => value._flags < 0;
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static (decimal Quotient, decimal Remainder) INumber<decimal>.DivRem(decimal left, decimal right)
-            => (left / right, left % right);
+        /// <inheritdoc cref="INumber{TSelf}.Max(TSelf, TSelf)" />
+        public static decimal Max(decimal x, decimal y)
+        {
+            return DecCalc.VarDecCmp(in x, in y) >= 0 ? x : y;
+        }
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static decimal INumber<decimal>.Max(decimal x, decimal y)
-            => Math.Max(x, y);
+        /// <inheritdoc cref="INumber{TSelf}.MaxMagnitude(TSelf, TSelf)" />
+        public static decimal MaxMagnitude(decimal x, decimal y) => (Abs(x) >= Abs(y)) ? x : y;
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static decimal INumber<decimal>.Min(decimal x, decimal y)
-            => Math.Min(x, y);
+        /// <inheritdoc cref="INumber{TSelf}.Min(TSelf, TSelf)" />
+        public static decimal Min(decimal x, decimal y)
+        {
+            return DecCalc.VarDecCmp(in x, in y) < 0 ? x : y;
+        }
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static decimal INumber<decimal>.Parse(string s, NumberStyles style, IFormatProvider? provider)
-            => Parse(s, style, provider);
+        /// <inheritdoc cref="INumber{TSelf}.MinMagnitude(TSelf, TSelf)" />
+        public static decimal MinMagnitude(decimal x, decimal y) => (Abs(x) <= Abs(y)) ? x : y;
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static decimal INumber<decimal>.Parse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider)
-            => Parse(s, style, provider);
+        /// <inheritdoc cref="INumber{TSelf}.Sign(TSelf)" />
+        public static int Sign(decimal d) => (d.Low64 | d.High) == 0 ? 0 : (d._flags >> 31) | 1;
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static decimal INumber<decimal>.Sign(decimal value)
-            => Math.Sign(value);
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        /// <inheritdoc cref="INumber{TSelf}.TryCreate{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumber<decimal>.TryCreate<TOther>(TOther value, out decimal result)
+        public static bool TryCreate<TOther>(TOther value, out decimal result)
+            where TOther : INumber<TOther>
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -1534,80 +1565,51 @@ namespace System
             }
         }
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static bool INumber<decimal>.TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out decimal result)
-            => TryParse(s, style, provider, out result);
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static bool INumber<decimal>.TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out decimal result)
-            => TryParse(s, style, provider, out result);
-
         //
-        // IParseable
+        // INumberBase
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static decimal IParseable<decimal>.Parse(string s, IFormatProvider? provider)
-            => Parse(s, provider);
+        /// <inheritdoc cref="INumberBase{TSelf}.One" />
+        static decimal INumberBase<decimal>.One => One;
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static bool IParseable<decimal>.TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out decimal result)
-            => TryParse(s, NumberStyles.Number, provider, out result);
+        /// <inheritdoc cref="INumberBase{TSelf}.Zero" />
+        static decimal INumberBase<decimal>.Zero => Zero;
+
+        //
+        // IParsable
+        //
+
+        public static bool TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out decimal result) => TryParse(s, NumberStyles.Number, provider, out result);
 
         //
         // ISignedNumber
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static decimal ISignedNumber<decimal>.NegativeOne => -1;
+        /// <inheritdoc cref="ISignedNumber{TSelf}.NegativeOne" />
+        static decimal ISignedNumber<decimal>.NegativeOne => NegativeOne;
 
         //
-        // ISpanParseable
+        // ISpanParsable
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static decimal ISpanParseable<decimal>.Parse(ReadOnlySpan<char> s, IFormatProvider? provider)
-            => Parse(s, NumberStyles.Number, provider);
+        /// <inheritdoc cref="ISpanParsable{TSelf}.Parse(ReadOnlySpan{char}, IFormatProvider?)" />
+        public static decimal Parse(ReadOnlySpan<char> s, IFormatProvider? provider) => Parse(s, NumberStyles.Number, provider);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static bool ISpanParseable<decimal>.TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out decimal result)
-            => TryParse(s, NumberStyles.Number, provider, out result);
+        /// <inheritdoc cref="ISpanParsable{TSelf}.TryParse(ReadOnlySpan{char}, IFormatProvider?, out TSelf)" />
+        public static bool TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out decimal result) => TryParse(s, NumberStyles.Number, provider, out result);
 
         //
         // ISubtractionOperators
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static decimal ISubtractionOperators<decimal, decimal, decimal>.operator -(decimal left, decimal right)
-            => left - right;
-
-        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        // static checked decimal ISubtractionOperators<decimal, decimal, decimal>.operator -(decimal left, decimal right)
-        //     => checked(left - right);
+        /// <inheritdoc cref="ISubtractionOperators{TSelf, TOther, TResult}.op_CheckedSubtraction(TSelf, TOther)" />
+        static decimal ISubtractionOperators<decimal, decimal, decimal>.operator checked -(decimal left, decimal right) => left - right;
 
         //
         // IUnaryNegationOperators
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static decimal IUnaryNegationOperators<decimal, decimal>.operator -(decimal value)
-            => -value;
-
-        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        // static checked decimal IUnaryNegationOperators<decimal, decimal>.operator -(decimal value)
-        //     => checked(-value);
-
-        //
-        // IUnaryPlusOperators
-        //
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static decimal IUnaryPlusOperators<decimal, decimal>.operator +(decimal value)
-            => +value;
-
-        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        // static checked decimal IUnaryPlusOperators<decimal, decimal>.operator +(decimal value)
-        //     => checked(+value);
-#endif // FEATURE_GENERIC_MATH
+        /// <inheritdoc cref="IUnaryNegationOperators{TSelf, TResult}.op_CheckedUnaryNegation(TSelf)" />
+        static decimal IUnaryNegationOperators<decimal, decimal>.operator checked -(decimal value) => -value;
     }
 }

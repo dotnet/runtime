@@ -1,6 +1,6 @@
 #include "config.h"
 
-#include "metadata/attrdefs.h"
+#include <mono/metadata/attrdefs.h>
 #include "metadata/marshal-internals.h"
 #include "metadata/marshal.h"
 #include "utils/mono-compiler.h"
@@ -174,7 +174,7 @@ emit_marshal_variant_noilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 
 #ifndef ENABLE_ILGEN
 static void
-emit_managed_wrapper_noilgen (MonoMethodBuilder *mb, MonoMethodSignature *invoke_sig, MonoMarshalSpec **mspecs, EmitMarshalContext* m, MonoMethod *method, MonoGCHandle target_handle)
+emit_managed_wrapper_noilgen (MonoMethodBuilder *mb, MonoMethodSignature *invoke_sig, MonoMarshalSpec **mspecs, EmitMarshalContext* m, MonoMethod *method, MonoGCHandle target_handle, MonoError *error)
 {
 	MonoMethodSignature *sig, *csig;
 	int i;
@@ -243,6 +243,11 @@ mb_set_dynamic_noilgen (MonoMethodBuilder *mb)
 
 static void
 mb_emit_exception_noilgen (MonoMethodBuilder *mb, const char *exc_nspace, const char *exc_name, const char *msg)
+{
+}
+
+static void
+emit_marshal_directive_exception_noilgen (EmitMarshalContext *m, int argnum, const char* msg)
 {
 }
 
@@ -404,6 +409,7 @@ mono_marshal_noilgen_init (void)
 	cb.mb_set_dynamic = mb_set_dynamic_noilgen;
 	cb.mb_emit_exception = mb_emit_exception_noilgen;
 	cb.mb_emit_exception_for_error = mb_emit_exception_for_error_noilgen;
+	cb.emit_marshal_directive_exception = emit_marshal_directive_exception_noilgen;
 	cb.mb_emit_byte = mb_emit_byte_noilgen;
 	mono_install_marshal_callbacks (&cb);
 }

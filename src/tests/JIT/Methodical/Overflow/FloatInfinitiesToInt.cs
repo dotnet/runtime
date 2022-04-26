@@ -3,8 +3,11 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
-internal class FloatOvfToInt
+namespace Test_FloatInfinitiesToInt
+{
+public class FloatOvfToInt
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static long FloatToLong(float f)
@@ -300,32 +303,12 @@ internal class FloatOvfToInt
         return res;
     }
 
-    public static void Usage()
+    [Fact]
+    public static int TestEntryPoint()
     {
-        Console.WriteLine("FloatOvfToInt [print|test]");
+        int res = TestValues();
+        Console.WriteLine("Test " + (res == 100 ? "passed" : "failed"));
+        return res;
     }
-
-    public static int Main(String[] args)
-    {
-        if (args.Length != 1)
-        {
-            int res = TestValues();
-            Console.WriteLine("Test " + (res == 100 ? "passed" : "failed"));
-            return res;
-        }
-        switch (args[0])
-        {
-            case "print":
-                PrintValues();
-                break;
-            case "test":
-                int res = TestValues();
-                Console.WriteLine("Test " + (res == 100 ? "passed" : "failed"));
-                return res;
-            default:
-                Usage();
-                break;
-        }
-        return 0;
-    }
+}
 }

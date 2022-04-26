@@ -815,7 +815,7 @@ void CLRException::HandlerState::CleanupTry()
     Exception::HandlerState::CleanupTry();
 }
 
-void CLRException::HandlerState::SetupCatch(INDEBUG_COMMA(__in_z const char * szFile) int lineNum)
+void CLRException::HandlerState::SetupCatch(INDEBUG_COMMA(_In_z_ const char * szFile) int lineNum)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
@@ -1138,7 +1138,7 @@ void EEResourceException::GetMessage(SString &result)
     // since we don't want to call managed code here.
     //
 
-    result.Printf("%s (message resource %s)",
+    result.Printf("%s (message resource %S)",
                   CoreLibBinder::GetExceptionName(m_kind), m_resourceName.GetUnicode());
 }
 
@@ -1728,7 +1728,7 @@ void DECLSPEC_NORETURN EEFileLoadException::Throw(AssemblySpec  *pSpec, HRESULT 
         COMPlusThrowOM();
 
     StackSString name;
-    pSpec->GetFileOrDisplayName(0, name);
+    pSpec->GetDisplayName(0, name);
     EX_THROW_WITH_INNER(EEFileLoadException, (name, hr), pInnerException);
 }
 

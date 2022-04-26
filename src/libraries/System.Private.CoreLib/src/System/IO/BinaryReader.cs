@@ -47,14 +47,9 @@ namespace System.IO
 
         public BinaryReader(Stream input, Encoding encoding, bool leaveOpen)
         {
-            if (input == null)
-            {
-                throw new ArgumentNullException(nameof(input));
-            }
-            if (encoding == null)
-            {
-                throw new ArgumentNullException(nameof(encoding));
-            }
+            ArgumentNullException.ThrowIfNull(input);
+            ArgumentNullException.ThrowIfNull(encoding);
+
             if (!input.CanRead)
             {
                 throw new ArgumentException(SR.Argument_StreamNotReadable);
@@ -319,10 +314,8 @@ namespace System.IO
 
         public virtual int Read(char[] buffer, int index, int count)
         {
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer), SR.ArgumentNull_Buffer);
-            }
+            ArgumentNullException.ThrowIfNull(buffer);
+
             if (index < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_NeedNonNegNum);
@@ -451,10 +444,8 @@ namespace System.IO
 
         public virtual int Read(byte[] buffer, int index, int count)
         {
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer), SR.ArgumentNull_Buffer);
-            }
+            ArgumentNullException.ThrowIfNull(buffer);
+
             if (index < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_NeedNonNegNum);
@@ -557,7 +548,7 @@ namespace System.IO
             }
 
             int bytesRead = 0;
-            int n = 0;
+            int n;
 
             ThrowIfDisposed();
 

@@ -35,11 +35,6 @@ Can return nullptr if there isn't a corresponding shared object.
 PALEXPORT const ASN1_OBJECT* CryptoNative_GetObjectDefinitionByName(const char* friendlyName);
 
 /*
-Direct shim to OBJ_sn2nid.
-*/
-PALEXPORT int32_t CryptoNative_ObjSn2Nid(const char* sn);
-
-/*
 Direct shim to OBJ_txt2nid.
 */
 PALEXPORT int32_t CryptoNative_ObjTxt2Nid(const char* sn);
@@ -78,11 +73,6 @@ PALEXPORT int32_t CryptoNative_Asn1OctetStringSet(ASN1_OCTET_STRING* s, const ui
 Direct shim to ASN1_OCTET_STRING_free.
 */
 PALEXPORT void CryptoNative_Asn1OctetStringFree(ASN1_STRING* a);
-
-/*
-Direct shim to ASN1_STRING_free.
-*/
-PALEXPORT void CryptoNative_Asn1StringFree(ASN1_STRING* a);
 
 /*
 Returns the number of bytes it will take to convert

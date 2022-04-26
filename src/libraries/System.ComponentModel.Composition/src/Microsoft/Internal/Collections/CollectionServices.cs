@@ -58,10 +58,7 @@ namespace Microsoft.Internal.Collections
 
         public static ReadOnlyCollection<T> ToReadOnlyCollection<T>(this IEnumerable<T> source)
         {
-            if (source == null)
-            {
-                throw new ArgumentNullException(nameof(source));
-            }
+            ArgumentNullException.ThrowIfNull(source);
 
             return new ReadOnlyCollection<T>(source.AsArray());
         }
@@ -170,10 +167,7 @@ namespace Microsoft.Internal.Collections
 
         public static EnumerableCardinality GetCardinality<T>(this IEnumerable<T> source)
         {
-            if (source == null)
-            {
-                throw new ArgumentNullException(nameof(source));
-            }
+            ArgumentNullException.ThrowIfNull(source);
 
             // Cast to ICollection instead of ICollection<T> for performance reasons.
             if (source is ICollection collection)
@@ -204,10 +198,7 @@ namespace Microsoft.Internal.Collections
 
         public static Stack<T> Copy<T>(this Stack<T> stack)
         {
-            if (stack == null)
-            {
-                throw new ArgumentNullException(nameof(stack));
-            }
+            ArgumentNullException.ThrowIfNull(stack);
 
             // Stack<T>.GetEnumerator walks from top to bottom
             // of the stack, whereas Stack<T>(IEnumerable<T>)

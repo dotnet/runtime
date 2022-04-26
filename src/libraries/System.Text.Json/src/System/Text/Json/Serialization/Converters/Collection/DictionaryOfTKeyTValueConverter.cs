@@ -20,16 +20,6 @@ namespace System.Text.Json.Serialization.Converters
             ((TCollection)state.Current.ReturnValue!)[key] = value;
         }
 
-        protected override void CreateCollection(ref Utf8JsonReader reader, ref ReadStack state)
-        {
-            if (state.Current.JsonTypeInfo.CreateObject == null)
-            {
-                ThrowHelper.ThrowNotSupportedException_SerializationNotSupported(state.Current.JsonTypeInfo.Type);
-            }
-
-            state.Current.ReturnValue = state.Current.JsonTypeInfo.CreateObject();
-        }
-
         protected internal override bool OnWriteResume(
             Utf8JsonWriter writer,
             TCollection value,
@@ -90,7 +80,7 @@ namespace System.Text.Json.Serialization.Converters
                         return false;
                     }
 
-                    state.Current.EndDictionaryElement();
+                    state.Current.EndDictionaryEntry();
                 } while (enumerator.MoveNext());
             }
 

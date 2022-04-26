@@ -227,10 +227,7 @@ namespace System.ComponentModel
         /// </summary>
         public MaskedTextProvider(string mask, CultureInfo? culture, bool allowPromptAsInput, char promptChar, char passwordChar, bool restrictToAscii)
         {
-            if (string.IsNullOrEmpty(mask))
-            {
-                throw new ArgumentException(SR.MaskedTextProviderMaskNullOrEmpty, nameof(mask));
-            }
+            ArgumentException.ThrowIfNullOrEmpty(mask);
 
             foreach (char c in mask)
             {
@@ -826,9 +823,7 @@ namespace System.ComponentModel
         /// </summary>
         public bool Add(char input)
         {
-            int dummyVar;
-            MaskedTextResultHint dummyVar2;
-            return Add(input, out dummyVar, out dummyVar2);
+            return Add(input, out _, out _);
         }
 
         /// <summary>
@@ -876,9 +871,7 @@ namespace System.ComponentModel
         /// </summary>
         public bool Add(string input)
         {
-            int dummyVar;
-            MaskedTextResultHint dummyVar2;
-            return Add(input, out dummyVar, out dummyVar2);
+            return Add(input, out _, out _);
         }
 
         /// <summary>
@@ -891,10 +884,7 @@ namespace System.ComponentModel
         /// </summary>
         public bool Add(string input, out int testPosition, out MaskedTextResultHint resultHint)
         {
-            if (input == null)
-            {
-                throw new ArgumentNullException(nameof(input));
-            }
+            ArgumentNullException.ThrowIfNull(input);
 
             testPosition = LastAssignedPosition + 1;
 
@@ -913,8 +903,7 @@ namespace System.ComponentModel
         /// </summary>
         public void Clear()
         {
-            MaskedTextResultHint dummyHint;
-            Clear(out dummyHint);
+            Clear(out _);
         }
 
         /// <summary>
@@ -1255,9 +1244,7 @@ namespace System.ComponentModel
         /// </summary>
         public bool InsertAt(string input, int position)
         {
-            int dummyVar;
-            MaskedTextResultHint dummyVar2;
-            return InsertAt(input, position, out dummyVar, out dummyVar2);
+            return InsertAt(input, position, out _, out _);
         }
 
         /// <summary>
@@ -1270,10 +1257,7 @@ namespace System.ComponentModel
         /// </summary>
         public bool InsertAt(string input, int position, out int testPosition, out MaskedTextResultHint resultHint)
         {
-            if (input == null)
-            {
-                throw new ArgumentNullException(nameof(input));
-            }
+            ArgumentNullException.ThrowIfNull(input);
 
             if (position < 0 || position >= _testString.Length)
             {
@@ -1516,9 +1500,7 @@ namespace System.ComponentModel
         /// </summary>
         public bool Remove()
         {
-            int dummyVar;
-            MaskedTextResultHint dummyVar2;
-            return Remove(out dummyVar, out dummyVar2);
+            return Remove(out _, out _);
         }
 
         /// <summary>
@@ -1564,9 +1546,7 @@ namespace System.ComponentModel
         /// </summary>
         public bool RemoveAt(int startPosition, int endPosition)
         {
-            int dummyVar;
-            MaskedTextResultHint dummyVar2;
-            return RemoveAt(startPosition, endPosition, out dummyVar, out dummyVar2);
+            return RemoveAt(startPosition, endPosition, out _, out _);
         }
 
         /// <summary>
@@ -1730,9 +1710,7 @@ namespace System.ComponentModel
         /// </summary>
         public bool Replace(char input, int position)
         {
-            int dummyVar;
-            MaskedTextResultHint dummyVar2;
-            return Replace(input, position, out dummyVar, out dummyVar2);
+            return Replace(input, position, out _, out _);
         }
 
         /// <summary>
@@ -1823,9 +1801,7 @@ namespace System.ComponentModel
         /// </summary>
         public bool Replace(string input, int position)
         {
-            int dummyVar;
-            MaskedTextResultHint dummyVar2;
-            return Replace(input, position, out dummyVar, out dummyVar2);
+            return Replace(input, position, out _, out _);
         }
 
         /// <summary>
@@ -1839,10 +1815,7 @@ namespace System.ComponentModel
         /// </summary>
         public bool Replace(string input, int position, out int testPosition, out MaskedTextResultHint resultHint)
         {
-            if (input == null)
-            {
-                throw new ArgumentNullException(nameof(input));
-            }
+            ArgumentNullException.ThrowIfNull(input);
 
             if (position < 0 || position >= _testString.Length)
             {
@@ -1878,10 +1851,7 @@ namespace System.ComponentModel
         /// </summary>
         public bool Replace(string input, int startPosition, int endPosition, out int testPosition, out MaskedTextResultHint resultHint)
         {
-            if (input == null)
-            {
-                throw new ArgumentNullException(nameof(input));
-            }
+            ArgumentNullException.ThrowIfNull(input);
 
             if (endPosition >= _testString.Length)
             {
@@ -2051,10 +2021,7 @@ namespace System.ComponentModel
         /// </summary>
         public bool Set(string input)
         {
-            int dummyVar;
-            MaskedTextResultHint dummyVar2;
-
-            return Set(input, out dummyVar, out dummyVar2);
+            return Set(input, out _, out _);
         }
 
         /// <summary>
@@ -2067,12 +2034,8 @@ namespace System.ComponentModel
         /// </summary>
         public bool Set(string input, out int testPosition, out MaskedTextResultHint resultHint)
         {
-            if (input == null)
-            {
-                throw new ArgumentNullException(nameof(input));
-            }
+            ArgumentNullException.ThrowIfNull(input);
 
-            resultHint = MaskedTextResultHint.Unknown;
             testPosition = 0;
 
             if (input.Length == 0) // Clearing the input text.
@@ -2511,7 +2474,7 @@ namespace System.ComponentModel
 
             // If any char is actually accepted, then the hint is success, otherwise whatever the last character result is.
             // Need a temp variable for
-            MaskedTextResultHint tempHint = resultHint;
+            MaskedTextResultHint tempHint;
 
             foreach (char ch in input)
             {
@@ -2753,8 +2716,6 @@ namespace System.ComponentModel
         /// </summary>
         public bool VerifyChar(char input, int position, out MaskedTextResultHint hint)
         {
-            hint = MaskedTextResultHint.NoEffect;
-
             if (position < 0 || position >= _testString.Length)
             {
                 hint = MaskedTextResultHint.PositionOutOfRange;
@@ -2782,9 +2743,7 @@ namespace System.ComponentModel
         /// </summary>
         public bool VerifyString(string input)
         {
-            int dummyVar;
-            MaskedTextResultHint dummyVar2;
-            return VerifyString(input, out dummyVar, out dummyVar2);
+            return VerifyString(input, out _, out _);
         }
 
         /// <summary>

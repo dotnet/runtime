@@ -17,6 +17,7 @@
 #define CORHLPR_TURNED_FPO_ON 1
 #endif
 
+#include <assert.h>
 #include "cor.h"
 #include "corhdr.h"
 #include "corerror.h"
@@ -82,19 +83,10 @@ do { hr = (EXPR); if(FAILED(hr)) { goto LABEL; } } while (0)
 #endif
 
 
-#ifndef _ASSERTE
-#define _ASSERTE(expr)
-#endif
-
-#ifndef COUNTOF
-#define COUNTOF(a) (sizeof(a) / sizeof(*a))
-#endif
-
 #if !BIGENDIAN
 #define VAL16(x) x
 #define VAL32(x) x
 #endif
-
 
 //*****************************************************************************
 //
@@ -264,7 +256,7 @@ typedef struct tagCOR_ILMETHOD_SECT_EH_CLAUSE_SMALL : public IMAGE_COR_ILMETHOD_
         return VAL16(TryOffset);
     }
     void SetTryOffset(DWORD Offset) {
-        _ASSERTE((Offset & ~0xffff) == 0);
+        assert((Offset & ~0xffff) == 0);
         TryOffset = VAL16(Offset);
     }
 
@@ -272,7 +264,7 @@ typedef struct tagCOR_ILMETHOD_SECT_EH_CLAUSE_SMALL : public IMAGE_COR_ILMETHOD_
         return TryLength;
     }
     void SetTryLength(DWORD Length) {
-        _ASSERTE((Length & ~0xff) == 0);
+        assert((Length & ~0xff) == 0);
         TryLength = Length;
     }
 
@@ -280,7 +272,7 @@ typedef struct tagCOR_ILMETHOD_SECT_EH_CLAUSE_SMALL : public IMAGE_COR_ILMETHOD_
         return VAL16(HandlerOffset);
     }
     void SetHandlerOffset(DWORD Offset) {
-        _ASSERTE((Offset & ~0xffff) == 0);
+        assert((Offset & ~0xffff) == 0);
         HandlerOffset = VAL16(Offset);
     }
 
@@ -288,7 +280,7 @@ typedef struct tagCOR_ILMETHOD_SECT_EH_CLAUSE_SMALL : public IMAGE_COR_ILMETHOD_
         return HandlerLength;
     }
     void SetHandlerLength(DWORD Length) {
-        _ASSERTE((Length & ~0xff) == 0);
+        assert((Length & ~0xff) == 0);
         HandlerLength = Length;
     }
 

@@ -23,15 +23,8 @@ namespace Microsoft.Extensions.Logging
             this ILoggingBuilder builder,
             string switchName)
         {
-            if (builder == null)
-            {
-                throw new ArgumentNullException(nameof(builder));
-            }
-
-            if (switchName == null)
-            {
-                throw new ArgumentNullException(nameof(switchName));
-            }
+            ThrowHelper.ThrowIfNull(builder);
+            ThrowHelper.ThrowIfNull(switchName);
 
             return builder.AddTraceSource(new SourceSwitch(switchName));
         }
@@ -48,20 +41,9 @@ namespace Microsoft.Extensions.Logging
             string switchName,
             TraceListener listener)
         {
-            if (builder == null)
-            {
-                throw new ArgumentNullException(nameof(builder));
-            }
-
-            if (switchName == null)
-            {
-                throw new ArgumentNullException(nameof(switchName));
-            }
-
-            if (listener == null)
-            {
-                throw new ArgumentNullException(nameof(listener));
-            }
+            ThrowHelper.ThrowIfNull(builder);
+            ThrowHelper.ThrowIfNull(switchName);
+            ThrowHelper.ThrowIfNull(listener);
 
             return builder.AddTraceSource(new SourceSwitch(switchName), listener);
         }
@@ -76,15 +58,8 @@ namespace Microsoft.Extensions.Logging
             this ILoggingBuilder builder,
             SourceSwitch sourceSwitch)
         {
-            if (builder == null)
-            {
-                throw new ArgumentNullException(nameof(builder));
-            }
-
-            if (sourceSwitch == null)
-            {
-                throw new ArgumentNullException(nameof(sourceSwitch));
-            }
+            ThrowHelper.ThrowIfNull(builder);
+            ThrowHelper.ThrowIfNull(sourceSwitch);
 
             builder.Services.AddSingleton<ILoggerProvider>(_ => new TraceSourceLoggerProvider(sourceSwitch));
 
@@ -103,20 +78,9 @@ namespace Microsoft.Extensions.Logging
             SourceSwitch sourceSwitch,
             TraceListener listener)
         {
-            if (builder == null)
-            {
-                throw new ArgumentNullException(nameof(builder));
-            }
-
-            if (sourceSwitch == null)
-            {
-                throw new ArgumentNullException(nameof(sourceSwitch));
-            }
-
-            if (listener == null)
-            {
-                throw new ArgumentNullException(nameof(listener));
-            }
+            ThrowHelper.ThrowIfNull(builder);
+            ThrowHelper.ThrowIfNull(sourceSwitch);
+            ThrowHelper.ThrowIfNull(listener);
 
             builder.Services.AddSingleton<ILoggerProvider>(_ => new TraceSourceLoggerProvider(sourceSwitch, listener));
 

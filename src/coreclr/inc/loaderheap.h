@@ -33,9 +33,9 @@ public:
     virtual void RealBackoutMem(void *pMem
                         , size_t dwSize
 #ifdef _DEBUG
-                        , __in __in_z const char *szFile
+                        , _In_ _In_z_ const char *szFile
                         , int lineNum
-                        , __in __in_z const char *szAllocFile
+                        , _In_ _In_z_ const char *szAllocFile
                         , int allocLineNum
 #endif
                         ) = 0;
@@ -191,6 +191,15 @@ class UnlockedLoaderHeap
     friend class ClrDataAccess;
 #endif
 
+public:
+
+    enum class HeapKind
+    {
+        Data,
+        Executable,
+        Interleaved
+    };
+
 private:
     // Linked list of ClrVirtualAlloc'd pages
     PTR_LoaderHeapBlock m_pFirstBlock;
@@ -208,12 +217,16 @@ private:
     // When we need to commit pages from our reserved list, number of bytes to commit at a time
     DWORD               m_dwCommitBlockSize;
 
+    // For interleaved heap (RX pages interleaved with RW ones), this specifies the allocation granularity,
+    // which is the individual code block size
+    DWORD               m_dwGranularity;
+
     // Range list to record memory ranges in
     RangeList *         m_pRangeList;
 
     size_t              m_dwTotalAlloc;
 
-    DWORD                m_Options;
+    HeapKind            m_kind;
 
     LoaderHeapFreeBlock *m_pFirstFreeBlock;
 
@@ -263,6 +276,7 @@ public:
 
 public:
     BOOL                m_fExplicitControl;  // Am I a LoaderHeap or an ExplicitControlLoaderHeap?
+    void                (*m_codePageGenerator)(BYTE* pageBase, BYTE* pageBaseRX);
 
 #ifdef DACCESS_COMPILE
 public:
@@ -283,7 +297,9 @@ protected:
                        const BYTE* dwReservedRegionAddress,
                        SIZE_T dwReservedRegionSize,
                        RangeList *pRangeList = NULL,
-                       BOOL fMakeExecutable = FALSE);
+                       HeapKind kind = HeapKind::Data,
+                       void (*codePageGenerator)(BYTE* pageBase, BYTE* pageBaseRX) = NULL,
+                       DWORD dwGranularity = 1);
 
     ~UnlockedLoaderHeap();
 #endif
@@ -323,13 +339,13 @@ protected:
     // allocations, it is more likely that these errors will be encountered.
     void *UnlockedAllocMem(size_t dwSize
 #ifdef _DEBUG
-                          ,__in __in_z const char *szFile
+                          ,_In_ _In_z_ const char *szFile
                           ,int  lineNum
 #endif
                           );
     void *UnlockedAllocMem_NoThrow(size_t dwSize
 #ifdef _DEBUG
-                                   ,__in __in_z const char *szFile
+                                   ,_In_ _In_z_ const char *szFile
                                    ,int  lineNum
 #endif
                                    );
@@ -363,7 +379,7 @@ protected:
                                  ,size_t  dwAlignment
                                  ,size_t *pdwExtra
 #ifdef _DEBUG
-                                 ,__in __in_z const char *szFile
+                                 ,_In_ _In_z_ const char *szFile
                                  ,int  lineNum
 #endif
                                  );
@@ -372,7 +388,7 @@ protected:
                                          ,size_t  dwAlignment
                                          ,size_t *pdwExtra
 #ifdef _DEBUG
-                                         ,__in __in_z const char *szFile
+                                         ,_In_ _In_z_ const char *szFile
                                          ,int  lineNum
 #endif
                                  );
@@ -384,9 +400,9 @@ protected:
     void UnlockedBackoutMem(void *pMem
                           , size_t dwSize
 #ifdef _DEBUG
-                          , __in __in_z const char *szFile
+                          , _In_ _In_z_ const char *szFile
                           , int lineNum
-                          , __in __in_z const char *szAllocFile
+                          , _In_ _In_z_ const char *szAllocFile
                           , int AllocLineNum
 #endif
                           );
@@ -400,6 +416,7 @@ public:
     }
 
     BOOL IsExecutable();
+    BOOL IsInterleaved();
 
 public:
 #ifdef _DEBUG
@@ -443,14 +460,18 @@ public:
     LoaderHeap(DWORD dwReserveBlockSize,
                DWORD dwCommitBlockSize,
                RangeList *pRangeList = NULL,
-               BOOL fMakeExecutable = FALSE,
-               BOOL fUnlocked = FALSE
+               UnlockedLoaderHeap::HeapKind kind = UnlockedLoaderHeap::HeapKind::Data,
+               BOOL fUnlocked = FALSE,
+               void (*codePageGenerator)(BYTE* pageBase, BYTE* pageBaseRX) = NULL,
+               DWORD dwGranularity = 1
                )
       : UnlockedLoaderHeap(dwReserveBlockSize,
                            dwCommitBlockSize,
                            NULL, 0,
                            pRangeList,
-                           fMakeExecutable),
+                           kind,
+                           codePageGenerator,
+                           dwGranularity),
         m_CriticalSection(fUnlocked ? NULL : CreateLoaderHeapLock())
     {
         WRAPPER_NO_CONTRACT;
@@ -463,15 +484,18 @@ public:
                const BYTE* dwReservedRegionAddress,
                SIZE_T dwReservedRegionSize,
                RangeList *pRangeList = NULL,
-               BOOL fMakeExecutable = FALSE,
-               BOOL fUnlocked = FALSE
+               UnlockedLoaderHeap::HeapKind kind = UnlockedLoaderHeap::HeapKind::Data,
+               BOOL fUnlocked = FALSE,
+               void (*codePageGenerator)(BYTE* pageBase, BYTE* pageBaseRX) = NULL,
+               DWORD dwGranularity = 1
                )
       : UnlockedLoaderHeap(dwReserveBlockSize,
                            dwCommitBlockSize,
                            dwReservedRegionAddress,
                            dwReservedRegionSize,
                            pRangeList,
-                           fMakeExecutable),
+                           kind,
+                           codePageGenerator, dwGranularity),
         m_CriticalSection(fUnlocked ? NULL : CreateLoaderHeapLock())
     {
         WRAPPER_NO_CONTRACT;
@@ -505,7 +529,7 @@ public:
 public:
     FORCEINLINE TaggedMemAllocPtr RealAllocMem(S_SIZE_T dwSize
 #ifdef _DEBUG
-                                  ,__in __in_z const char *szFile
+                                  ,_In_ _In_z_ const char *szFile
                                   ,int  lineNum
 #endif
                   )
@@ -520,7 +544,7 @@ public:
 
     FORCEINLINE TaggedMemAllocPtr RealAllocMem_NoThrow(S_SIZE_T  dwSize
 #ifdef _DEBUG
-                                           ,__in __in_z const char *szFile
+                                           ,_In_ _In_z_ const char *szFile
                                            ,int  lineNum
 #endif
                   )
@@ -547,7 +571,7 @@ private:
 
     TaggedMemAllocPtr RealAllocMemUnsafe(size_t dwSize
 #ifdef _DEBUG
-                                  ,__in __in_z const char *szFile
+                                  ,_In_ _In_z_ const char *szFile
                                   ,int  lineNum
 #endif
                   )
@@ -578,7 +602,7 @@ private:
 
     TaggedMemAllocPtr RealAllocMemUnsafe_NoThrow(size_t  dwSize
 #ifdef _DEBUG
-                                           ,__in __in_z const char *szFile
+                                           ,_In_ _In_z_ const char *szFile
                                            ,int  lineNum
 #endif
                   )
@@ -623,7 +647,7 @@ public:
     TaggedMemAllocPtr RealAllocAlignedMem(size_t  dwRequestedSize
                                          ,size_t  dwAlignment
 #ifdef _DEBUG
-                                         ,__in __in_z const char *szFile
+                                         ,_In_ _In_z_ const char *szFile
                                          ,int  lineNum
 #endif
                                          )
@@ -662,7 +686,7 @@ public:
     TaggedMemAllocPtr RealAllocAlignedMem_NoThrow(size_t  dwRequestedSize
                                                  ,size_t  dwAlignment
 #ifdef _DEBUG
-                                                 ,__in __in_z const char *szFile
+                                                 ,_In_ _In_z_ const char *szFile
                                                  ,int  lineNum
 #endif
                                                  )
@@ -707,9 +731,9 @@ public:
     void RealBackoutMem(void *pMem
                         , size_t dwSize
 #ifdef _DEBUG
-                        , __in __in_z const char *szFile
+                        , _In_ _In_z_ const char *szFile
                         , int lineNum
-                        , __in __in_z const char *szAllocFile
+                        , _In_ _In_z_ const char *szAllocFile
                         , int allocLineNum
 #endif
                         )
@@ -776,7 +800,7 @@ public:
                )
       : UnlockedLoaderHeap(0, 0, NULL, 0,
                            pRangeList,
-                           fMakeExecutable)
+                           fMakeExecutable ? UnlockedLoaderHeap::HeapKind::Executable : UnlockedLoaderHeap::HeapKind::Data)
     {
         WRAPPER_NO_CONTRACT;
         m_fExplicitControl = TRUE;
@@ -786,7 +810,7 @@ public:
 public:
     void *RealAllocMem(size_t dwSize
 #ifdef _DEBUG
-                       ,__in __in_z const char *szFile
+                       ,_In_ _In_z_ const char *szFile
                        ,int  lineNum
 #endif
                        )
@@ -806,7 +830,7 @@ public:
 
     void *RealAllocMem_NoThrow(size_t dwSize
 #ifdef _DEBUG
-                               ,__in __in_z const char *szFile
+                               ,_In_ _In_z_ const char *szFile
                                ,int  lineNum
 #endif
                                )

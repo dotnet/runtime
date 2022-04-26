@@ -225,8 +225,10 @@ namespace System.Formats.Asn1
         /// </exception>
         public bool EncodedValueEquals(AsnWriter other)
         {
-            if (other == null)
+            if (other is null)
+            {
                 throw new ArgumentNullException(nameof(other));
+            }
 
             return EncodeAsSpan().SequenceEqual(other.EncodeAsSpan());
         }
@@ -383,8 +385,10 @@ namespace System.Formats.Asn1
         /// </exception>
         public void CopyTo(AsnWriter destination)
         {
-            if (destination == null)
+            if (destination is null)
+            {
                 throw new ArgumentNullException(nameof(destination));
+            }
 
             try
             {

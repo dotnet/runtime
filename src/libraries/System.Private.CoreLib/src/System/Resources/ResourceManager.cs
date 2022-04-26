@@ -172,10 +172,8 @@ namespace System.Resources
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
             Type? userResourceSet)
         {
-            if (null == baseName)
-                throw new ArgumentNullException(nameof(baseName));
-            if (null == resourceDir)
-                throw new ArgumentNullException(nameof(resourceDir));
+            ArgumentNullException.ThrowIfNull(baseName);
+            ArgumentNullException.ThrowIfNull(resourceDir);
 
             BaseNameField = baseName;
 
@@ -190,10 +188,9 @@ namespace System.Resources
 
         public ResourceManager(string baseName, Assembly assembly)
         {
-            if (null == baseName)
-                throw new ArgumentNullException(nameof(baseName));
-            if (null == assembly)
-                throw new ArgumentNullException(nameof(assembly));
+            ArgumentNullException.ThrowIfNull(baseName);
+            ArgumentNullException.ThrowIfNull(assembly);
+
             if (assembly is not RuntimeAssembly)
                 throw new ArgumentException(SR.Argument_MustBeRuntimeAssembly);
 
@@ -207,10 +204,9 @@ namespace System.Resources
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
         Type? usingResourceSet)
         {
-            if (null == baseName)
-                throw new ArgumentNullException(nameof(baseName));
-            if (null == assembly)
-                throw new ArgumentNullException(nameof(assembly));
+            ArgumentNullException.ThrowIfNull(baseName);
+            ArgumentNullException.ThrowIfNull(assembly);
+
             if (assembly is not RuntimeAssembly)
                 throw new ArgumentException(SR.Argument_MustBeRuntimeAssembly);
 
@@ -226,8 +222,8 @@ namespace System.Resources
 
         public ResourceManager(Type resourceSource)
         {
-            if (null == resourceSource)
-                throw new ArgumentNullException(nameof(resourceSource));
+            ArgumentNullException.ThrowIfNull(resourceSource);
+
             if (resourceSource is not RuntimeType)
                 throw new ArgumentException(SR.Argument_MustBeRuntimeType);
 
@@ -394,8 +390,7 @@ namespace System.Resources
         //
         public virtual ResourceSet? GetResourceSet(CultureInfo culture, bool createIfNotExists, bool tryParents)
         {
-            if (null == culture)
-                throw new ArgumentNullException(nameof(culture));
+            ArgumentNullException.ThrowIfNull(culture);
 
             Dictionary<string, ResourceSet>? localResourceSets = _resourceSets;
             ResourceSet? rs;
@@ -529,11 +524,7 @@ namespace System.Resources
 
         protected static Version? GetSatelliteContractVersion(Assembly a)
         {
-            // Ensure that the assembly reference is not null
-            if (a == null)
-            {
-                throw new ArgumentNullException(nameof(a), SR.ArgumentNull_Assembly);
-            }
+            ArgumentNullException.ThrowIfNull(a);
 
             string? v = a.GetCustomAttribute<SatelliteContractVersionAttribute>()?.Version;
             if (v == null)
@@ -566,7 +557,7 @@ namespace System.Resources
 
             // First, compare type names
             int comma = asmTypeName.IndexOf(',');
-            if (((comma == -1) ? asmTypeName.Length : comma) != typeName.Length)
+            if (((comma < 0) ? asmTypeName.Length : comma) != typeName.Length)
                 return false;
 
             // case sensitive
@@ -601,8 +592,7 @@ namespace System.Resources
         //
         public virtual string? GetString(string name, CultureInfo? culture)
         {
-            if (null == name)
-                throw new ArgumentNullException(nameof(name));
+            ArgumentNullException.ThrowIfNull(name);
 
             culture ??= CultureInfo.CurrentUICulture;
 
@@ -668,8 +658,7 @@ namespace System.Resources
 
         private object? GetObject(string name, CultureInfo? culture, bool wrapUnmanagedMemStream)
         {
-            if (null == name)
-                throw new ArgumentNullException(nameof(name));
+            ArgumentNullException.ThrowIfNull(name);
 
             if (null == culture)
             {
@@ -749,10 +738,8 @@ namespace System.Resources
 
             internal ResourceManagerMediator(ResourceManager rm)
             {
-                if (rm == null)
-                {
-                    throw new ArgumentNullException(nameof(rm));
-                }
+                ArgumentNullException.ThrowIfNull(rm);
+
                 _rm = rm;
             }
 

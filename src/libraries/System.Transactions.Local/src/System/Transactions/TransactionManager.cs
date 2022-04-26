@@ -110,10 +110,7 @@ namespace System.Transactions
             {
                 // Note do not add trace notifications to this method.  It is called
                 // at the startup of SQLCLR and tracing has too much working set overhead.
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
+                ArgumentNullException.ThrowIfNull(value);
 
                 lock (ClassSyncObject)
                 {
@@ -138,15 +135,9 @@ namespace System.Transactions
                 throw new ArgumentException(SR.BadResourceManagerId, nameof(resourceManagerIdentifier));
             }
 
-            if (null == recoveryInformation)
-            {
-                throw new ArgumentNullException(nameof(recoveryInformation));
-            }
+            ArgumentNullException.ThrowIfNull(recoveryInformation);
 
-            if (null == enlistmentNotification)
-            {
-                throw new ArgumentNullException(nameof(enlistmentNotification));
-            }
+            ArgumentNullException.ThrowIfNull(enlistmentNotification);
 
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
@@ -157,8 +148,8 @@ namespace System.Transactions
 
             // Put the recovery information into a stream.
             MemoryStream stream = new MemoryStream(recoveryInformation);
-            int recoveryInformationVersion = 0;
-            string? nodeName = null;
+            int recoveryInformationVersion;
+            string? nodeName;
             byte[]? resourceManagerRecoveryInformation = null;
 
             try
@@ -203,15 +194,13 @@ namespace System.Transactions
                 stream.Dispose();
             }
 
-            DistributedTransactionManager transactionManager = CheckTransactionManager(nodeName);
-
             // Now ask the Transaction Manager to reenlist.
             object syncRoot = new object();
             Enlistment returnValue = new Enlistment(enlistmentNotification, syncRoot);
             EnlistmentState.EnlistmentStatePromoted.EnterState(returnValue.InternalEnlistment);
 
             returnValue.InternalEnlistment.PromotedEnlistment =
-                transactionManager.ReenlistTransaction(
+                DistributedTransactionManager.ReenlistTransaction(
                     resourceManagerIdentifier,
                     resourceManagerRecoveryInformation,
                     (RecoveringInternalEnlistment)returnValue.InternalEnlistment
@@ -325,9 +314,9 @@ namespace System.Transactions
 
                 if (!s_defaultTimeoutValidated)
                 {
-                    s_defaultTimeout = ValidateTimeout(DefaultSettings.Timeout);
+                    s_defaultTimeout = ValidateTimeout(DefaultSettingsSection.Timeout);
                     // If the timeout value got adjusted, it must have been greater than MaximumTimeout.
-                    if (s_defaultTimeout != DefaultSettings.Timeout)
+                    if (s_defaultTimeout != DefaultSettingsSection.Timeout)
                     {
                         if (etwLog.IsEnabled())
                         {
@@ -358,7 +347,7 @@ namespace System.Transactions
                     etwLog.MethodEnter(TraceSourceType.TraceSourceBase, "TransactionManager.get_DefaultMaximumTimeout");
                 }
 
-                LazyInitializer.EnsureInitialized(ref s_maximumTimeout, ref s_cachedMaxTimeout, ref s_classSyncObject, () => MachineSettings.MaxTimeout);
+                LazyInitializer.EnsureInitialized(ref s_maximumTimeout, ref s_cachedMaxTimeout, ref s_classSyncObject, () => DefaultSettingsSection.Timeout);
 
                 if (etwLog.IsEnabled())
                 {
@@ -454,7 +443,6 @@ namespace System.Transactions
                     if (null != tx)
                     {
                         // If we found a transaction then dispose it
-                        dtx.Dispose();
                         return tx.InternalClone();
                     }
                     else

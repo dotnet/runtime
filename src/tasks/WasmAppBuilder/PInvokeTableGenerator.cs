@@ -270,7 +270,7 @@ public class PInvokeTableGenerator : Task
         return FixupSymbolName(sb.ToString());
     }
 
-    private string MapType (Type t)
+    private static string MapType (Type t)
     {
         string name = t.Name;
         if (name == "Void")
@@ -341,7 +341,7 @@ public class PInvokeTableGenerator : Task
         return sb.ToString();
     }
 
-    private void EmitNativeToInterp(StreamWriter w, List<PInvokeCallback> callbacks)
+    private static void EmitNativeToInterp(StreamWriter w, List<PInvokeCallback> callbacks)
     {
         // Generate native->interp entry functions
         // These are called by native code, so they need to obtain
@@ -478,7 +478,9 @@ public class PInvokeTableGenerator : Task
     private static void Error (string msg) => throw new LogAsErrorException(msg);
 }
 
+#pragma warning disable CA1067
 internal sealed class PInvoke : IEquatable<PInvoke>
+#pragma warning restore CA1067
 {
     public PInvoke(string entryPoint, string module, MethodInfo method)
     {

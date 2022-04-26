@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#pragma warning disable CA1852 // some projects have types deriving from this
+
 using System;
 using System.Diagnostics;
 using static Interop.Crypt32;
@@ -19,8 +21,7 @@ namespace Microsoft.Win32.SafeHandles
 
         public SafeCertContextHandle(SafeCertContextHandle parent)
         {
-            if (parent == null)
-                throw new ArgumentNullException(nameof(parent));
+            ArgumentNullException.ThrowIfNull(parent);
 
             Debug.Assert(!parent.IsInvalid);
             Debug.Assert(!parent.IsClosed);

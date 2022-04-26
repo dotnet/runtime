@@ -303,7 +303,7 @@ bool CrawlFrame::IsGcSafe()
     return GetCodeManager()->IsGcSafe(&codeInfo, GetRelOffset());
 }
 
-#if defined(TARGET_ARM) || defined(TARGET_ARM64)
+#if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
 bool CrawlFrame::HasTailCalls()
 {
     CONTRACTL {
@@ -314,7 +314,7 @@ bool CrawlFrame::HasTailCalls()
 
     return GetCodeManager()->HasTailCalls(&codeInfo);
 }
-#endif // TARGET_ARM || TARGET_ARM64
+#endif // TARGET_ARM || TARGET_ARM64 || TARGET_LOONGARCH64
 
 inline void CrawlFrame::GotoNextFrame()
 {
@@ -640,6 +640,9 @@ PCODE Thread::VirtualUnwindLeafCallFrame(T_CONTEXT* pContext)
 
     uControlPc = TADDR(pContext->Lr);
 
+#elif defined(TARGET_LOONGARCH64)
+    uControlPc = TADDR(pContext->Ra);
+
 #else
     PORTABILITY_ASSERT("Thread::VirtualUnwindLeafCallFrame");
     uControlPc = NULL;
@@ -755,7 +758,7 @@ UINT_PTR Thread::VirtualUnwindToFirstManagedCallFrame(T_CONTEXT* pContext)
 #endif // FEATURE_EH_FUNCLETS
 
 #ifdef _DEBUG
-void Thread::DebugLogStackWalkInfo(CrawlFrame* pCF, __in_z LPCSTR pszTag, UINT32 uFramesProcessed)
+void Thread::DebugLogStackWalkInfo(CrawlFrame* pCF, _In_z_ LPCSTR pszTag, UINT32 uFramesProcessed)
 {
     LIMITED_METHOD_CONTRACT;
     SUPPORTS_DAC;

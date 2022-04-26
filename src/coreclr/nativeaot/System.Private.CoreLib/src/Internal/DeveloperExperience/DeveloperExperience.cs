@@ -28,8 +28,7 @@ namespace Internal.DeveloperExperience
         /// </summary>
         private static bool IsMetadataStackTraceResolutionDisabled()
         {
-            bool disableMetadata = false;
-            AppContext.TryGetSwitch("Diagnostics.DisableMetadataStackTraceResolution", out disableMetadata);
+            AppContext.TryGetSwitch("Diagnostics.DisableMetadataStackTraceResolution", out bool disableMetadata);
             return disableMetadata;
         }
 

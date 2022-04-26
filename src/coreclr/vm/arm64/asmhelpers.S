@@ -147,25 +147,6 @@ NESTED_ENTRY NDirectImportThunk, _TEXT, NoHandler
 NESTED_END NDirectImportThunk, _TEXT
 
 // ------------------------------------------------------------------
-// The call in fixup precode initally points to this function.
-// The pupose of this function is to load the MethodDesc and forward the call to prestub.
-NESTED_ENTRY PrecodeFixupThunk, _TEXT, NoHandler
-    // x12 = FixupPrecode *
-    // On Exit
-    // x12 = MethodDesc*
-    // x13, x14 Trashed
-    // Inline computation done by FixupPrecode::GetMethodDesc()
-    ldrb    w13, [x12, #Offset_PrecodeChunkIndex]    //m_PrecodeChunkIndex
-    ldrb    w14, [x12, #Offset_MethodDescChunkIndex] // m_MethodDescChunkIndex
-
-    add     x12, x12, w13, uxtw #FixupPrecode_ALIGNMENT_SHIFT_1
-    add     x13, x12, w13, uxtw #FixupPrecode_ALIGNMENT_SHIFT_2
-    ldr     x13, [x13, #SIZEOF__FixupPrecode]
-    add     x12, x13, w14, uxtw #MethodDesc_ALIGNMENT_SHIFT
-
-    b       C_FUNC(ThePreStub)
-NESTED_END PrecodeFixupThunk, _TEXT
-// ------------------------------------------------------------------
 
 NESTED_ENTRY ThePreStub, _TEXT, NoHandler
 
@@ -500,41 +481,6 @@ LEAF_ENTRY JIT_PatchedCodeLast, _TEXT
     ret  lr
 LEAF_END JIT_PatchedCodeLast, _TEXT
 
-//------------------------------------------------
-// ExternalMethodFixupStub
-//
-// In NGEN images, calls to cross-module external methods initially
-// point to a jump thunk that calls into the following function that will
-// call into a VM helper. The VM helper is responsible for patching up the
-// thunk, upon executing the precode, so that all subsequent calls go directly
-// to the actual method body.
-//
-// This is done lazily for performance reasons.
-//
-// On entry:
-//
-// x12 = Address of thunk
-
-NESTED_ENTRY ExternalMethodFixupStub, _TEXT, NoHandler
-
-    PROLOG_WITH_TRANSITION_BLOCK
-
-    add x0, sp, #__PWTB_TransitionBlock // pTransitionBlock
-    mov x1, x12 // pThunk
-    mov x2, #0  // sectionIndex
-    mov x3, #0  // pModule
-
-    bl C_FUNC(ExternalMethodFixupWorker)
-
-    // mov the address we patched to in x12 so that we can tail call to it
-    mov x12, x0
-
-    EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
-    PATCH_LABEL ExternalMethodFixupPatchLabel
-    EPILOG_BRANCH_REG   x12
-
-NESTED_END ExternalMethodFixupStub, _TEXT
-
 // void SinglecastDelegateInvokeStub(Delegate *pThis)
 LEAF_ENTRY SinglecastDelegateInvokeStub, _TEXT
     cmp x0, #0
@@ -551,152 +497,6 @@ LOCAL_LABEL(LNullThis):
 
 LEAF_END SinglecastDelegateInvokeStub, _TEXT
 
-#ifdef FEATURE_COMINTEROP
-
-#define ComCallPreStub_FrameSize (SIZEOF__GSCookie + SIZEOF__ComMethodFrame)
-#define ComCallPreStub_FirstStackAdjust  (8 + SIZEOF__ArgumentRegisters + 2 * 8) // x8, reg args , fp & lr already pushed
-#define ComCallPreStub_StackAlloc0        (ComCallPreStub_FrameSize - ComCallPreStub_FirstStackAdjust)
-#define ComCallPreStub_StackAlloc1        (ComCallPreStub_StackAlloc0 + SIZEOF__FloatArgumentRegisters + 8)// 8 for ErrorReturn
-#define ComCallPreStub_StackAlloc    (ComCallPreStub_StackAlloc1 + (ComCallPreStub_StackAlloc1 & 8))
-
-#define ComCallPreStub_FrameOffset   (ComCallPreStub_StackAlloc - (SIZEOF__ComMethodFrame - ComCallPreStub_FirstStackAdjust))
-#define ComCallPreStub_ErrorReturnOffset0 SIZEOF__FloatArgumentRegisters
-
-#define ComCallPreStub_FirstStackAdjust (ComCallPreStub_ErrorReturnOffset0 + (ComCallPreStub_ErrorReturnOffset0 & 8))
-
-// ------------------------------------------------------------------
-// COM to CLR stub called the first time a particular method is invoked.//
-//
-// On entry:
-//   x12         : ComCallMethodDesc* provided by prepad thunk
-//   plus user arguments in registers and on the stack
-//
-// On exit:
-//   tail calls to real method
-//
-NESTED_ENTRY ComCallPreStub, _TEXT, NoHandler
-
-    // Save arguments and return address
-    PROLOG_SAVE_REG_PAIR           fp, lr, -ComCallPreStub_FirstStackAdjust!
-    PROLOG_STACK_ALLOC  ComCallPreStub_StackAlloc
-
-    SAVE_ARGUMENT_REGISTERS        sp, (16+ComCallPreStub_StackAlloc)
-
-    SAVE_FLOAT_ARGUMENT_REGISTERS  sp, 0
-
-    str x12, [sp, #(ComCallPreStub_FrameOffset + UnmanagedToManagedFrame__m_pvDatum)]
-    add x0, sp, #(ComCallPreStub_FrameOffset)
-    add x1, sp, #(ComCallPreStub_ErrorReturnOffset)
-    bl C_FUNC(ComPreStubWorker)
-
-    cbz x0, LOCAL_LABEL(ComCallPreStub_ErrorExit)
-
-    mov x12, x0
-
-    // pop the stack and restore original register state
-    RESTORE_FLOAT_ARGUMENT_REGISTERS  sp, 0
-    RESTORE_ARGUMENT_REGISTERS        sp, (16+ComCallPreStub_StackAlloc)
-
-    EPILOG_STACK_FREE ComCallPreStub_StackAlloc
-    EPILOG_RESTORE_REG_PAIR           fp, lr, ComCallPreStub_FirstStackAdjust!
-
-    // and tailcall to the actual method
-    EPILOG_BRANCH_REG x12
-
-ComCallPreStub_ErrorExit
-    ldr x0, [sp, #(ComCallPreStub_ErrorReturnOffset)] // ErrorReturn
-
-    // pop the stack
-    EPILOG_STACK_FREE ComCallPreStub_StackAlloc
-    EPILOG_RESTORE_REG_PAIR           fp, lr, ComCallPreStub_FirstStackAdjust!
-
-    EPILOG_RETURN
-
-NESTED_END ComCallPreStub, _TEXT
-
-// ------------------------------------------------------------------
-// COM to CLR stub which sets up a ComMethodFrame and calls COMToCLRWorker.
-//
-// On entry:
-//   x12         : ComCallMethodDesc*  provided by prepad thunk
-//   plus user arguments in registers and on the stack
-//
-// On exit:
-//   Result in x0/d0 as per the real method being called
-//
-    NESTED_ENTRY GenericComCallStub, _TEXT, NoHandler
-
-    // Save arguments and return address
-    PROLOG_SAVE_REG_PAIR           fp, lr, -GenericComCallStub_FirstStackAdjust!
-    PROLOG_STACK_ALLOC  GenericComCallStub_StackAlloc
-
-    SAVE_ARGUMENT_REGISTERS        sp, (16+GenericComCallStub_StackAlloc)
-    SAVE_FLOAT_ARGUMENT_REGISTERS  sp, 0
-
-    str x12, [sp, #(GenericComCallStub_FrameOffset + UnmanagedToManagedFrame__m_pvDatum)]
-    add x1, sp, #GenericComCallStub_FrameOffset
-    bl C_FUNC(COMToCLRWorker)
-
-    // pop the stack
-    EPILOG_STACK_FREE GenericComCallStub_StackAlloc
-    EPILOG_RESTORE_REG_PAIR           fp, lr, GenericComCallStub_FirstStackAdjust!
-
-    EPILOG_RETURN
-
-    NESTED_END GenericComCallStub, _TEXT
-
-// ------------------------------------------------------------------
-// COM to CLR stub called from COMToCLRWorker that actually dispatches to the real managed method.
-//
-// On entry:
-//   x0          : dwStackSlots, count of argument stack slots to copy
-//   x1          : pFrame, ComMethodFrame pushed by GenericComCallStub above
-//   x2          : pTarget, address of code to call
-//   x3          : pSecretArg, hidden argument passed to target above in x12
-//   x4          : pDangerousThis, managed 'this' reference
-//
-// On exit:
-//   Result in x0/d0 as per the real method being called
-//
-    NESTED_ENTRY COMToCLRDispatchHelper, _TEXT,CallDescrWorkerUnwindFrameChainHandler
-
-    PROLOG_SAVE_REG_PAIR           fp, lr, -16!
-
-    cbz x0, LOCAL_LABEL(COMToCLRDispatchHelper_RegSetup)
-
-    add x9, x1, #SIZEOF__ComMethodFrame
-    add x9, x9, x0, LSL #3
-COMToCLRDispatchHelper_StackLoop
-    ldr x8, [x9, #-8]!
-    str x8, [sp, #-8]!
-    sub x0, x0, #1
-    cbnz x0, LOCAL_LABEL(COMToCLRDispatchHelper_StackLoop)
-
-COMToCLRDispatchHelper_RegSetup
-
-    RESTORE_FLOAT_ARGUMENT_REGISTERS x1, -1 * GenericComCallStub_FrameOffset
-
-    mov lr, x2
-    mov x12, x3
-
-    mov x0, x4
-
-    ldp x2, x3, [x1, #(SIZEOF__ComMethodFrame - SIZEOF__ArgumentRegisters + 16)]
-    ldp x4, x5, [x1, #(SIZEOF__ComMethodFrame - SIZEOF__ArgumentRegisters + 32)]
-    ldp x6, x7, [x1, #(SIZEOF__ComMethodFrame - SIZEOF__ArgumentRegisters + 48)]
-    ldr x8, [x1, #(SIZEOF__ComMethodFrame - SIZEOF__ArgumentRegisters - 8)]
-
-    ldr x1, [x1, #(SIZEOF__ComMethodFrame - SIZEOF__ArgumentRegisters + 8)]
-
-    blr lr
-
-    EPILOG_STACK_RESTORE
-    EPILOG_RESTORE_REG_PAIR           fp, lr, 16!
-    EPILOG_RETURN
-
-    NESTED_END COMToCLRDispatchHelper, _TEXT
-
-#endif // FEATURE_COMINTEROP
 //
 // x12 = UMEntryThunk*
 //
@@ -1004,8 +804,8 @@ C_FUNC(DelayLoad_MethodCall):
     mov x12, x0
 
     EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
-    // Share patch label
-    b C_FUNC(ExternalMethodFixupPatchLabel)
+    PATCH_LABEL ExternalMethodFixupPatchLabel
+    EPILOG_BRANCH_REG   x12
 
 NESTED_END DelayLoad_MethodCall_FakeProlog, _TEXT
 
@@ -1037,39 +837,6 @@ NESTED_END DelayLoad_Helper\suffix\()_FakeProlog, _TEXT
 DynamicHelper DynamicHelperFrameFlags_Default
 DynamicHelper DynamicHelperFrameFlags_ObjectArg, _Obj
 DynamicHelper DynamicHelperFrameFlags_ObjectArg | DynamicHelperFrameFlags_ObjectArg2, _ObjObj
-#endif
-
-#ifdef FEATURE_COMINTEROP
-
-// Function used by COM interop to get floating point return value (since it's not in the same
-// register(s) as non-floating point values).
-//
-// On entry//
-//   x0          : size of the FP result (4 or 8 bytes)
-//   x1          : pointer to 64-bit buffer to receive result
-//
-// On exit:
-//   buffer pointed to by x1 on entry contains the float or double argument as appropriate
-//
-LEAF_ENTRY getFPReturn, _TEXT
-    str d0, [x1]
-LEAF_END getFPReturn, _TEXT
-
-// ------------------------------------------------------------------
-// Function used by COM interop to set floating point return value (since it's not in the same
-// register(s) as non-floating point values).
-//
-// On entry:
-//   x0          : size of the FP result (4 or 8 bytes)
-//   x1          : 32-bit or 64-bit FP result
-//
-// On exit:
-//   s0          : float result if x0 == 4
-//   d0          : double result if x0 == 8
-//
-LEAF_ENTRY setFPReturn, _TEXT
-    fmov d0, x1
-LEAF_END setFPReturn, _TEXT
 #endif
 
 //
@@ -1190,7 +957,7 @@ NESTED_ENTRY OnCallCountThresholdReachedStub, _TEXT, NoHandler
     PROLOG_WITH_TRANSITION_BLOCK
 
     add     x0, sp, #__PWTB_TransitionBlock // TransitionBlock *
-    mov     x1, x10 // stub-identifying token
+    mov     x1, x9 // stub-identifying token
     bl      C_FUNC(OnCallCountThresholdReached)
     mov     x9, x0
 
@@ -1199,3 +966,11 @@ NESTED_ENTRY OnCallCountThresholdReachedStub, _TEXT, NoHandler
 NESTED_END OnCallCountThresholdReachedStub, _TEXT
 
 #endif // FEATURE_TIERED_COMPILATION
+
+LEAF_ENTRY JIT_ValidateIndirectCall, _TEXT
+    ret lr
+LEAF_END JIT_ValidateIndirectCall, _TEXT
+
+LEAF_ENTRY JIT_DispatchIndirectCall, _TEXT
+    br x9
+LEAF_END JIT_DispatchIndirectCall, _TEXT

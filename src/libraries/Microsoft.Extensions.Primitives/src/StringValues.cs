@@ -366,7 +366,7 @@ namespace Microsoft.Extensions.Primitives
             {
                 if (array == null)
                 {
-                    throw new ArgumentNullException(nameof(array));
+                    ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
                 }
                 if (arrayIndex < 0)
                 {
@@ -638,7 +638,7 @@ namespace Microsoft.Extensions.Primitives
         /// <param name="left">The <see cref="string"/> to compare.</param>
         /// <param name="right">The <see cref="StringValues"/> to compare.</param>
         /// <returns><c>true</c> if the value of <paramref name="left"/> is different to the value of <paramref name="right"/>; otherwise, <c>false</c>.</returns>
-        public static bool operator !=(string left, StringValues right) => !Equals(new StringValues(left), right);
+        public static bool operator !=(string? left, StringValues right) => !Equals(new StringValues(left), right);
 
         /// <inheritdoc cref="Equals(StringValues, string[])" />
         public static bool operator ==(StringValues left, string?[]? right) => Equals(left, new StringValues(right));

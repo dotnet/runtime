@@ -20,11 +20,8 @@ namespace System.Runtime
         UnhandledException_ExceptionDispatchNotAllowed = 2,  // "Unhandled exception: no handler found before escaping a finally clause or other fail-fast scope."
         UnhandledException_CallerDidNotHandle = 3,           // "Unhandled exception: no handler found in calling method."
         ClassLibDidNotTranslateExceptionID = 4,              // "Unable to translate failure into a classlib-specific exception object."
-        IllegalUnmanagedCallersOnlyEntry = 5,                      // "Invalid Program: attempted to call a UnmanagedCallersOnly method from runtime-typesafe code."
-
-        PN_UnhandledException = 6,                           // ProjectN: "unhandled exception"
-        PN_UnhandledExceptionFromPInvoke = 7,                // ProjectN: "Unhandled exception: an unmanaged exception was thrown out of a managed-to-native transition."
-        Max
+        UnhandledException = 5,                              // "unhandled exception"
+        UnhandledExceptionFromPInvoke = 6,                   // "Unhandled exception: an unmanaged exception was thrown out of a managed-to-native transition."
     }
 
     internal static unsafe partial class EH
@@ -142,7 +139,7 @@ namespace System.Runtime
         private static void OnFirstChanceExceptionViaClassLib(object exception)
         {
             IntPtr pOnFirstChanceFunction =
-                (IntPtr)InternalCalls.RhpGetClasslibFunctionFromEEType(exception.MethodTable, ClassLibFunctionId.OnFirstChance);
+                (IntPtr)InternalCalls.RhpGetClasslibFunctionFromEEType(exception.GetMethodTable(), ClassLibFunctionId.OnFirstChance);
 
             if (pOnFirstChanceFunction == IntPtr.Zero)
             {
@@ -162,7 +159,7 @@ namespace System.Runtime
         private static void OnUnhandledExceptionViaClassLib(object exception)
         {
             IntPtr pOnUnhandledExceptionFunction =
-                (IntPtr)InternalCalls.RhpGetClasslibFunctionFromEEType(exception.MethodTable, ClassLibFunctionId.OnUnhandledException);
+                (IntPtr)InternalCalls.RhpGetClasslibFunctionFromEEType(exception.GetMethodTable(), ClassLibFunctionId.OnUnhandledException);
 
             if (pOnUnhandledExceptionFunction == IntPtr.Zero)
             {
@@ -649,7 +646,7 @@ namespace System.Runtime
                 OnUnhandledExceptionViaClassLib(exceptionObj);
 
                 UnhandledExceptionFailFastViaClasslib(
-                    RhFailFastReason.PN_UnhandledException,
+                    RhFailFastReason.UnhandledException,
                     exceptionObj,
                     (IntPtr)prevOriginalPC, // IP of the last frame that did not handle the exception
                     ref exInfo);
@@ -927,12 +924,12 @@ namespace System.Runtime
         [UnmanagedCallersOnly(EntryPoint = "RhpFailFastForPInvokeExceptionPreemp", CallConvs = new Type[] { typeof(CallConvCdecl) })]
         public static void RhpFailFastForPInvokeExceptionPreemp(IntPtr PInvokeCallsiteReturnAddr, void* pExceptionRecord, void* pContextRecord)
         {
-            FailFastViaClasslib(RhFailFastReason.PN_UnhandledExceptionFromPInvoke, null, PInvokeCallsiteReturnAddr);
+            FailFastViaClasslib(RhFailFastReason.UnhandledExceptionFromPInvoke, null, PInvokeCallsiteReturnAddr);
         }
         [RuntimeExport("RhpFailFastForPInvokeExceptionCoop")]
         public static void RhpFailFastForPInvokeExceptionCoop(IntPtr classlibBreadcrumb, void* pExceptionRecord, void* pContextRecord)
         {
-            FailFastViaClasslib(RhFailFastReason.PN_UnhandledExceptionFromPInvoke, null, classlibBreadcrumb);
+            FailFastViaClasslib(RhFailFastReason.UnhandledExceptionFromPInvoke, null, classlibBreadcrumb);
         }
     } // static class EH
 }

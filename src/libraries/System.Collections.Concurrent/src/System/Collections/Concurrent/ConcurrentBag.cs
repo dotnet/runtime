@@ -55,10 +55,7 @@ namespace System.Collections.Concurrent
         /// (Nothing in Visual Basic).</exception>
         public ConcurrentBag(IEnumerable<T> collection)
         {
-            if (collection == null)
-            {
-                throw new ArgumentNullException(nameof(collection), SR.ConcurrentBag_Ctor_ArgumentNullException);
-            }
+            ArgumentNullException.ThrowIfNull(collection);
 
             _locals = new ThreadLocal<WorkStealingQueue>();
 
@@ -243,7 +240,7 @@ namespace System.Collections.Concurrent
         /// <summary>
         /// Attempts to steal from each queue starting from <paramref name="startInclusive"/> to <paramref name="endExclusive"/>.
         /// </summary>
-        private bool TryStealFromTo(WorkStealingQueue? startInclusive, WorkStealingQueue? endExclusive, [MaybeNullWhen(false)] out T result, bool take)
+        private static bool TryStealFromTo(WorkStealingQueue? startInclusive, WorkStealingQueue? endExclusive, [MaybeNullWhen(false)] out T result, bool take)
         {
             for (WorkStealingQueue? queue = startInclusive; queue != endExclusive; queue = queue._nextQueue)
             {
@@ -279,10 +276,8 @@ namespace System.Collections.Concurrent
         /// <paramref name="index"/> to the end of the destination <paramref name="array"/>.</exception>
         public void CopyTo(T[] array, int index)
         {
-            if (array == null)
-            {
-                throw new ArgumentNullException(nameof(array), SR.ConcurrentBag_CopyTo_ArgumentNullException);
-            }
+            ArgumentNullException.ThrowIfNull(array);
+
             if (index < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(index), SR.Collection_CopyTo_ArgumentOutOfRangeException);
@@ -375,10 +370,7 @@ namespace System.Collections.Concurrent
 
             // Otherwise, fall back to first storing the contents to an array,
             // and then relying on its CopyTo to copy to the target Array.
-            if (array == null)
-            {
-                throw new ArgumentNullException(nameof(array), SR.ConcurrentBag_CopyTo_ArgumentNullException);
-            }
+            ArgumentNullException.ThrowIfNull(array);
             ToArray().CopyTo(array, index);
         }
 

@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
@@ -148,11 +148,8 @@ namespace System.Collections.Generic
         // subsequently added to the sorted list.
         //
         public SortedList(IDictionary<TKey, TValue> dictionary, IComparer<TKey>? comparer)
-            : this((dictionary != null ? dictionary.Count : 0), comparer)
+            : this(dictionary?.Count ?? throw new ArgumentNullException(nameof(dictionary)), comparer)
         {
-            if (dictionary == null)
-                throw new ArgumentNullException(nameof(dictionary));
-
             int count = dictionary.Count;
             if (count != 0)
             {
@@ -182,7 +179,8 @@ namespace System.Collections.Generic
         //
         public void Add(TKey key, TValue value)
         {
-            if (key == null) throw new ArgumentNullException(nameof(key));
+            ArgumentNullException.ThrowIfNull(key);
+
             int i = Array.BinarySearch<TKey>(keys, 0, _size, key, comparer);
             if (i >= 0)
                 throw new ArgumentException(SR.Format(SR.Argument_AddingDuplicate, key), nameof(key));
@@ -267,8 +265,7 @@ namespace System.Collections.Generic
 
         void IDictionary.Add(object key, object? value)
         {
-            if (key == null)
-                throw new ArgumentNullException(nameof(key));
+            ArgumentNullException.ThrowIfNull(key);
 
             if (value == null && default(TValue) != null)    // null is an invalid value for Value types
                 throw new ArgumentNullException(nameof(value));
@@ -444,14 +441,11 @@ namespace System.Collections.Generic
         // Copies the values in this SortedList to an array.
         void ICollection<KeyValuePair<TKey, TValue>>.CopyTo(KeyValuePair<TKey, TValue>[] array, int arrayIndex)
         {
-            if (array == null)
-            {
-                throw new ArgumentNullException(nameof(array));
-            }
+            ArgumentNullException.ThrowIfNull(array);
 
             if (arrayIndex < 0 || arrayIndex > array.Length)
             {
-                throw new ArgumentOutOfRangeException(nameof(arrayIndex), arrayIndex, SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(arrayIndex), arrayIndex, SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
             }
 
             if (array.Length - arrayIndex < Count)
@@ -468,10 +462,7 @@ namespace System.Collections.Generic
 
         void ICollection.CopyTo(Array array, int index)
         {
-            if (array == null)
-            {
-                throw new ArgumentNullException(nameof(array));
-            }
+            ArgumentNullException.ThrowIfNull(array);
 
             if (array.Rank != 1)
             {
@@ -485,7 +476,7 @@ namespace System.Collections.Generic
 
             if (index < 0 || index > array.Length)
             {
-                throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
             }
 
             if (array.Length - index < Count)
@@ -539,7 +530,7 @@ namespace System.Collections.Generic
         public TValue GetValueAtIndex(int index)
         {
             if (index < 0 || index >= _size)
-                throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_IndexMustBeLess);
             return values[index];
         }
 
@@ -547,7 +538,7 @@ namespace System.Collections.Generic
         public void SetValueAtIndex(int index, TValue value)
         {
             if (index < 0 || index >= _size)
-                throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_IndexMustBeLess);
             values[index] = value;
             version++;
         }
@@ -576,7 +567,7 @@ namespace System.Collections.Generic
         public TKey GetKeyAtIndex(int index)
         {
             if (index < 0 || index >= _size)
-                throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_IndexMustBeLess);
             return keys[index];
         }
 
@@ -651,8 +642,8 @@ namespace System.Collections.Generic
         // key value.
         public int IndexOfKey(TKey key)
         {
-            if (key == null)
-                throw new ArgumentNullException(nameof(key));
+            ArgumentNullException.ThrowIfNull(key);
+
             int ret = Array.BinarySearch<TKey>(keys, 0, _size, key, comparer);
             return ret >= 0 ? ret : -1;
         }
@@ -700,7 +691,7 @@ namespace System.Collections.Generic
         public void RemoveAt(int index)
         {
             if (index < 0 || index >= _size)
-                throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_IndexMustBeLess);
             _size--;
             if (index < _size)
             {
@@ -756,10 +747,7 @@ namespace System.Collections.Generic
 
         private static bool IsCompatibleKey(object key)
         {
-            if (key == null)
-            {
-                throw new ArgumentNullException(nameof(key));
-            }
+            ArgumentNullException.ThrowIfNull(key);
 
             return (key is TKey);
         }
@@ -1111,8 +1099,7 @@ namespace System.Collections.Generic
 
             public int IndexOf(TKey key)
             {
-                if (key == null)
-                    throw new ArgumentNullException(nameof(key));
+                ArgumentNullException.ThrowIfNull(key);
 
                 int i = Array.BinarySearch<TKey>(_dict.keys, 0,
                                           _dict.Count, key, _dict.comparer);

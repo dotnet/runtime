@@ -111,6 +111,10 @@ namespace ILCompiler.DependencyAnalysis
 
                 foreach (MethodDesc slotMethod in slots)
                 {
+                    // Static interface methods don't go in the dispatch map
+                    if (slotMethod.Signature.IsStatic)
+                        continue;
+
                     MethodDesc declMethod = slotMethod;
 
                     Debug.Assert(!declMethod.Signature.IsStatic && declMethod.IsVirtual);
@@ -234,7 +238,7 @@ namespace ILCompiler.DependencyAnalysis
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
             ObjectDataBuilder objData = new ObjectDataBuilder(factory, relocsOnly);
-            objData.RequireInitialAlignment(16);
+            objData.RequireInitialAlignment(2);
             objData.AddSymbol(this);
 
             if (!relocsOnly)

@@ -40,7 +40,7 @@ mono_arch_patch_callsite (guint8 *method_start, guint8 *code_ptr, guint8 *addr)
 
 	/* This is the 'bl' or the 'mov pc' instruction */
 	--code;
-	
+
 	/*
 	 * Note that methods are called also with the bl opcode.
 	 */
@@ -70,10 +70,10 @@ mono_arch_patch_plt_entry (guint8 *code, gpointer *got, host_mgreg_t *regs, guin
 	if (*(guint32*)code == 0xe59fc000) {
 		/* ARM_LDR_IMM (code, ARMREG_IP, ARMREG_PC, 0); */
 		guint32 offset = ((guint32*)code)[2];
-		
+
 		jump_entry = code + offset + 12;
 	} else if (*(guint16*)(code - 4) == 0xf8df) {
-		/* 
+		/*
 		 * Thumb PLT entry, begins with ldr.w ip, [pc, #8], code points to entry + 4, see
 		 * mono_arm_get_thumb_plt_entry ().
 		 */
@@ -178,9 +178,9 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 		mono_add_unwind_op_offset (unwind_ops, code, buf, ARMREG_R4 + i, -regsave_size + ((4 + i) * 4));
 
 	if (aot) {
-		/* 
+		/*
 		 * For page trampolines the data is in r1, so just move it, otherwise use the got slot as below.
-		 * The trampoline contains a pc-relative offset to the got slot 
+		 * The trampoline contains a pc-relative offset to the got slot
 		 * preceeding the got slot where the value is stored. The offset can be
 		 * found at [lr + 0].
 		 */
@@ -209,7 +209,7 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	code = mono_arm_emit_load_imm (code, ARMREG_R2, STACK - MONO_ABI_SIZEOF (MonoLMF));
 	ARM_ADD_REG_REG (code, ARMREG_V1, ARMREG_SP, ARMREG_R2);
 
-	/* ok, now we can continue with the MonoLMF setup, mostly untouched 
+	/* ok, now we can continue with the MonoLMF setup, mostly untouched
 	 * from emit_prolog in mini-arm.c
 	 * This is a synthetized call to mono_get_lmf_addr ()
 	 */
@@ -286,7 +286,7 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	} else {
 		ARM_MOV_REG_REG (code, ARMREG_R1, ARMREG_V3);
 	}
-	
+
 	/* Arg 3: the specific argument, stored in v2
 	 */
 	ARM_MOV_REG_REG (code, ARMREG_R2, ARMREG_V2);
@@ -1146,7 +1146,7 @@ mono_arm_get_thumb_plt_entry (guint8 *code)
 	g_assert (((guint16*)target) [0] == 0xf8df);
 	g_assert (((guint16*)target) [1] == 0xc008);
 
-	/* 
+	/*
 	 * The PLT info offset is at offset 16, but mono_arch_get_plt_entry_offset () returns
 	 * the 3rd word, so compensate by returning a different value.
 	 */
@@ -1176,7 +1176,7 @@ mono_arch_get_gsharedvt_arg_trampoline (gpointer arg, gpointer addr)
 
 	/* Similar to the specialized trampoline code */
 	ARM_PUSH (code, (1 << ARMREG_R0) | (1 << ARMREG_R1) | (1 << ARMREG_R2) | (1 << ARMREG_R3) | (1 << ARMREG_LR));
-	ARM_LDR_IMM (code, ARMREG_IP, ARMREG_PC, 2 * sizeof (target_mgreg_t));
+	ARM_LDR_IMM (code, ARMREG_IP, ARMREG_PC, (guint32)(2 * sizeof (target_mgreg_t)));
 	/* arg is passed in LR */
 	ARM_LDR_IMM (code, ARMREG_LR, ARMREG_PC, 0);
 	code = emit_bx (code, ARMREG_IP);

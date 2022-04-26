@@ -1,18 +1,18 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using Xunit;
+using Xunit.Sdk;
 
 namespace System.IO.Tests
 {
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/34583", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
-    public class Directory_NotifyFilter_Tests : FileSystemWatcherTest
+    public partial class Directory_NotifyFilter_Tests : FileSystemWatcherTest
     {
-        [DllImport("advapi32.dll", EntryPoint = "SetNamedSecurityInfoW",
-            CallingConvention = CallingConvention.Winapi, SetLastError = true, ExactSpelling = true, CharSet = CharSet.Unicode)]
-        private static extern uint SetSecurityInfoByHandle( string name, uint objectType, uint securityInformation,
+        [LibraryImport("advapi32.dll", EntryPoint = "SetNamedSecurityInfoW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
+        private static partial uint SetSecurityInfoByHandle( string name, uint objectType, uint securityInformation,
             IntPtr owner, IntPtr group, IntPtr dacl, IntPtr sacl);
 
         private const uint ERROR_SUCCESS = 0;
@@ -23,27 +23,30 @@ namespace System.IO.Tests
         [MemberData(nameof(FilterTypes))]
         public void FileSystemWatcher_Directory_NotifyFilter_Attributes(NotifyFilters filter)
         {
-            using (var testDirectory = new TempDirectory(GetTestFilePath()))
-            using (var dir = new TempDirectory(Path.Combine(testDirectory.Path, "dir")))
-            using (var watcher = new FileSystemWatcher(testDirectory.Path, Path.GetFileName(dir.Path)))
+            FileSystemWatcherTest.Execute(() =>
             {
-                watcher.NotifyFilter = filter;
-                var attributes = File.GetAttributes(dir.Path);
+                using (var testDirectory = new TempDirectory(GetTestFilePath()))
+                using (var dir = new TempDirectory(Path.Combine(testDirectory.Path, "dir")))
+                using (var watcher = new FileSystemWatcher(testDirectory.Path, Path.GetFileName(dir.Path)))
+                {
+                    watcher.NotifyFilter = filter;
+                    var attributes = File.GetAttributes(dir.Path);
 
-                Action action = () => File.SetAttributes(dir.Path, attributes | FileAttributes.ReadOnly);
-                Action cleanup = () => File.SetAttributes(dir.Path, attributes);
+                    Action action = () => File.SetAttributes(dir.Path, attributes | FileAttributes.ReadOnly);
+                    Action cleanup = () => File.SetAttributes(dir.Path, attributes);
 
-                WatcherChangeTypes expected = 0;
-                if (filter == NotifyFilters.Attributes)
-                    expected |= WatcherChangeTypes.Changed;
-                else if (OperatingSystem.IsLinux() && ((filter & LinuxFiltersForAttribute) > 0))
-                    expected |= WatcherChangeTypes.Changed;
-                else if (OperatingSystem.IsMacOS() && ((filter & OSXFiltersForModify) > 0))
-                    expected |= WatcherChangeTypes.Changed;
-                else if (OperatingSystem.IsMacOS() && ((filter & NotifyFilters.Security) > 0))
-                    expected |= WatcherChangeTypes.Changed; // Attribute change on OSX is a ChangeOwner operation which passes the Security NotifyFilter.
-                ExpectEvent(watcher, expected, action, cleanup, dir.Path);
-            }
+                    WatcherChangeTypes expected = 0;
+                    if (filter == NotifyFilters.Attributes)
+                        expected |= WatcherChangeTypes.Changed;
+                    else if (OperatingSystem.IsLinux() && ((filter & LinuxFiltersForAttribute) > 0))
+                        expected |= WatcherChangeTypes.Changed;
+                    else if (OperatingSystem.IsMacOS() && ((filter & OSXFiltersForModify) > 0))
+                        expected |= WatcherChangeTypes.Changed;
+                    else if (OperatingSystem.IsMacOS() && ((filter & NotifyFilters.Security) > 0))
+                        expected |= WatcherChangeTypes.Changed; // Attribute change on OSX is a ChangeOwner operation which passes the Security NotifyFilter.
+                    ExpectEvent(watcher, expected, action, cleanup, dir.Path);
+                }
+            }, maxAttempts: DefaultAttemptsForExpectedEvent, backoffFunc: (iteration) => RetryDelayMilliseconds, retryWhen: e => e is XunitException);
         }
 
         [Theory]

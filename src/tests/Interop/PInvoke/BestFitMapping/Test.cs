@@ -38,13 +38,13 @@ internal unsafe class Test
         T invalid = data.Invalid;
         if (shouldThrowOnInvalid)
         {
-            Assert.Throws<ArgumentException>(() => funcs.In(invalid));
+            Assert.Throws<ArgumentException>(() => funcs.In(invalid));
 
             invalid = data.Invalid;
-            Assert.Throws<ArgumentException>(() => funcs.InByRef(ref invalid));
+            Assert.Throws<ArgumentException>(() => funcs.InByRef(ref invalid));
 
             invalid = data.Invalid;
-            Assert.Throws<ArgumentException>(() => funcs.InOutByRef(ref invalid));
+            Assert.Throws<ArgumentException>(() => funcs.InOutByRef(ref invalid));
         }
         else
         {

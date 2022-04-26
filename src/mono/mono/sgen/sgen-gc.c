@@ -397,7 +397,7 @@ static SgenPointerQueue fin_ready_queue = SGEN_POINTER_QUEUE_INIT (INTERNAL_MEM_
 static SgenPointerQueue critical_fin_queue = SGEN_POINTER_QUEUE_INIT (INTERNAL_MEM_FINALIZE_READY);
 
 /* registered roots: the key to the hash is the root start address */
-/* 
+/*
  * Different kinds of roots are kept separate to speed up pin_from_roots () for example.
  */
 SgenHashTable sgen_roots_hash [ROOT_TYPE_NUM] = {
@@ -408,7 +408,7 @@ SgenHashTable sgen_roots_hash [ROOT_TYPE_NUM] = {
 static mword roots_size = 0; /* amount of memory in the root set */
 
 /* The size of a TLAB */
-/* The bigger the value, the less often we have to go to the slow path to allocate a new 
+/* The bigger the value, the less often we have to go to the slow path to allocate a new
  * one, but the more space is wasted by threads not allocating much memory.
  * FIXME: Tune this.
  * FIXME: Make this self-tuning for each thread.
@@ -829,7 +829,7 @@ sgen_sort_addresses (void **array, size_t size)
 	}
 }
 
-/* 
+/*
  * Scan the memory between start and end and queue values which could be pointers
  * to the area between start_nursery and end_nursery for later consideration.
  * Typically used for thread stacks.
@@ -1134,7 +1134,7 @@ finish_gray_stack (int generation, ScanCopyContext ctx)
 	 * We need to walk the LO list as well in search of marked big objects
 	 * (use a flag since this is needed only on major collections). We need to loop
 	 * here as well, so keep a counter of marked LO (increasing it in copy_object).
-	 *   To achieve better cache locality and cache usage, we drain the gray stack 
+	 *   To achieve better cache locality and cache usage, we drain the gray stack
 	 * frequently, after each object is copied, and just finish the work here.
 	 */
 	sgen_drain_gray_stack (ctx);
@@ -1231,7 +1231,7 @@ finish_gray_stack (int generation, ScanCopyContext ctx)
 	sgen_client_clear_unreachable_ephemerons (ctx);
 
 	/*
-	 * We clear togglerefs only after all possible chances of revival are done. 
+	 * We clear togglerefs only after all possible chances of revival are done.
 	 * This is semantically more inline with what users expect and it allows for
 	 * user finalizers to correctly interact with TR objects.
 	*/
@@ -1636,7 +1636,7 @@ workers_finish_callback (void)
 		psj->scan_job.gc_thread_gray_queue = NULL;
 		psj->job_index = i;
 		psj->job_split_count = split_count;
-		psj->data = num_major_sections / split_count;
+		psj->data = (int)(num_major_sections / split_count);
 		sgen_workers_enqueue_job (GENERATION_OLD, &psj->scan_job.job, TRUE);
 	}
 
@@ -1678,7 +1678,7 @@ enqueue_scan_remembered_set_jobs (SgenGrayQueue *gc_thread_gray_queue, SgenObjec
 		psj->scan_job.gc_thread_gray_queue = gc_thread_gray_queue;
 		psj->job_index = i;
 		psj->job_split_count = split_count;
-		psj->data = num_major_sections / split_count;
+		psj->data = (int)(num_major_sections / split_count);
 		sgen_workers_enqueue_deferred_job (GENERATION_NURSERY, &psj->scan_job.job, is_parallel);
 
 		psj = (ParallelScanJob*)sgen_thread_pool_job_alloc ("scan LOS remsets", job_scan_los_card_table, sizeof (ParallelScanJob));
@@ -1707,7 +1707,7 @@ sgen_iterate_all_block_ranges (sgen_cardtable_block_callback callback, gboolean 
 		pjob = (ParallelIterateBlockRangesJob*)sgen_thread_pool_job_alloc ("iterate major block ranges", job_major_collector_iterate_block_ranges, sizeof (ParallelIterateBlockRangesJob));
 		pjob->job_index = i;
 		pjob->job_split_count = split_count;
-		pjob->data = num_major_sections / split_count;
+		pjob->data = (int)(num_major_sections / split_count);
 		pjob->callback = callback;
 		sgen_workers_enqueue_deferred_job (GENERATION_NURSERY, &pjob->job, is_parallel);
 
@@ -2207,7 +2207,7 @@ major_copy_or_mark_from_roots (SgenGrayQueue *gc_thread_gray_queue, size_t *old_
 			psj->scan_job.gc_thread_gray_queue = gc_thread_gray_queue;
 			psj->job_index = i;
 			psj->job_split_count = split_count;
-			psj->data = num_major_sections / split_count;
+			psj->data = (int)(num_major_sections / split_count);
 			sgen_workers_enqueue_job (GENERATION_OLD, &psj->scan_job.job, parallel);
 
 			psj = (ParallelScanJob*)sgen_thread_pool_job_alloc ("scan LOS mod union cardtable", job_scan_los_mod_union_card_table, sizeof (ParallelScanJob));
@@ -2606,7 +2606,7 @@ sgen_ensure_free_space (size_t size, int generation)
 			generation_to_collect = GENERATION_OLD;
 		} else {
 			generation_to_collect = GENERATION_NURSERY;
-			reason = "Nursery full";                        
+			reason = "Nursery full";
 		}
 	}
 
@@ -2643,7 +2643,7 @@ sgen_perform_collection_inner (size_t requested_size, int generation_to_collect,
 		sgen_stop_world (generation_to_collect, forced_serial || !sgen_major_collector.is_concurrent);
 	else
 		SGEN_ASSERT (0, sgen_is_world_stopped (), "We can only collect if the world is stopped");
-		
+
 
 	TV_GETTIME (gc_total_start);
 

@@ -8,15 +8,12 @@ trigger:
     include:
     - '*'
     exclude:
+    - /**/*.md
     - eng/Version.Details.xml
     - .github/*
     - docs/*
-    - CODE-OF-CONDUCT.md
-    - CONTRIBUTING.md
     - LICENSE.TXT
     - PATENTS.TXT
-    - README.md
-    - SECURITY.md
     - THIRD-PARTY-NOTICES.TXT
 
 pr: none
@@ -37,7 +34,7 @@ jobs:
       richCodeNavigationEnvironment: "production"
       richCodeNavigationLanguage: "csharp"
       timeoutInMinutes: 240
-      buildArgs: -s libs.ref+libs.src -c debug -allConfigurations
+      buildArgs: -s libs.sfx+libs.oob -allConfigurations
 
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:

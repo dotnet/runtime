@@ -11,6 +11,8 @@
 #include "mini.h"
 #include <mono/metadata/abi-details.h>
 
+MONO_DISABLE_WARNING(4127) /* conditional expression is constant */
+
 #ifdef MONO_ARCH_GSHAREDVT_SUPPORTED
 
 gpointer
@@ -177,7 +179,7 @@ mono_arch_get_gsharedvt_trampoline (MonoTrampInfo **info, gboolean aot)
 	x86_mov_reg_membase (code, X86_ECX, X86_EBP, info_offset, 4);
 
 	/* Branch to the in/out handling code */
-	x86_alu_membase_imm (code, X86_CMP, X86_ECX, MONO_STRUCT_OFFSET (GSharedVtCallInfo, gsharedvt_in), 1);	
+	x86_alu_membase_imm (code, X86_CMP, X86_ECX, MONO_STRUCT_OFFSET (GSharedVtCallInfo, gsharedvt_in), 1);
 	br_out = code;
 	x86_branch32 (code, X86_CC_NE, 0, TRUE);
 

@@ -11,9 +11,9 @@ namespace Internal.IL.Stubs
     // Functionality related to determinstic ordering of types
     partial class DynamicInvokeMethodThunk
     {
-        protected internal override int ClassCode => -1980933220;
+        protected override int ClassCode => -1980933220;
 
-        protected internal override int CompareToImpl(MethodDesc other, TypeSystemComparer comparer)
+        protected override int CompareToImpl(MethodDesc other, TypeSystemComparer comparer)
         {
             return CompareTo((DynamicInvokeMethodThunk)other);
         }
@@ -51,9 +51,9 @@ namespace Internal.IL.Stubs
 
         partial class DynamicInvokeThunkGenericParameter
         {
-            protected internal override int ClassCode => -234393261;
+            protected override int ClassCode => -234393261;
 
-            protected internal override int CompareToImpl(TypeDesc other, TypeSystemComparer comparer)
+            protected override int CompareToImpl(TypeDesc other, TypeSystemComparer comparer)
             {
                 var otherType = (DynamicInvokeThunkGenericParameter)other;
                 int result = Index - otherType.Index;

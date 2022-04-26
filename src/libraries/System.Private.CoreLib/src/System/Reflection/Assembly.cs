@@ -205,14 +205,12 @@ namespace System.Reflection
 
         public static Assembly? GetAssembly(Type type)
         {
-            if (type == null)
-                throw new ArgumentNullException(nameof(type));
+            if (type is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.type);
+            }
 
-            Module m = type.Module;
-            if (m == null)
-                return null;
-            else
-                return m.Assembly;
+            return type.Module?.Assembly;
         }
 
         // internal test hook
@@ -235,8 +233,7 @@ namespace System.Reflection
         [RequiresUnreferencedCode("Types and members the loaded assembly depends on might be removed")]
         public static Assembly Load(byte[] rawAssembly, byte[]? rawSymbolStore)
         {
-            if (rawAssembly == null)
-                throw new ArgumentNullException(nameof(rawAssembly));
+            ArgumentNullException.ThrowIfNull(rawAssembly);
 
             if (rawAssembly.Length == 0)
                 throw new BadImageFormatException(SR.BadImageFormat_BadILFormat);
@@ -251,8 +248,7 @@ namespace System.Reflection
         [RequiresUnreferencedCode("Types and members the loaded assembly depends on might be removed")]
         public static Assembly LoadFile(string path)
         {
-            if (path == null)
-                throw new ArgumentNullException(nameof(path));
+            ArgumentNullException.ThrowIfNull(path);
 
             if (PathInternal.IsPartiallyQualified(path))
             {
@@ -292,9 +288,11 @@ namespace System.Reflection
 
             // Get the path where requesting assembly lives and check if it is in the list
             // of assemblies for which LoadFrom was invoked.
-            string requestorPath = Path.GetFullPath(requestingAssembly.Location);
+            string requestorPath = requestingAssembly.Location;
             if (string.IsNullOrEmpty(requestorPath))
                 return null;
+
+            requestorPath = Path.GetFullPath(requestorPath);
 
             lock (s_loadFromAssemblyList)
             {
@@ -337,8 +335,7 @@ namespace System.Reflection
         [RequiresUnreferencedCode("Types and members the loaded assembly depends on might be removed")]
         public static Assembly LoadFrom(string assemblyFile)
         {
-            if (assemblyFile == null)
-                throw new ArgumentNullException(nameof(assemblyFile));
+            ArgumentNullException.ThrowIfNull(assemblyFile);
 
             string fullPath = Path.GetFullPath(assemblyFile);
 

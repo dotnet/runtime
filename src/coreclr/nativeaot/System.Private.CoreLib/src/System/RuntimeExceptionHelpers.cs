@@ -125,10 +125,8 @@ namespace System
             UnhandledException_ExceptionDispatchNotAllowed = 2,  // "Unhandled exception: no handler found before escaping a finally clause or other fail-fast scope."
             UnhandledException_CallerDidNotHandle = 3,           // "Unhandled exception: no handler found in calling method."
             ClassLibDidNotTranslateExceptionID = 4,              // "Unable to translate failure into a classlib-specific exception object."
-            IllegalUnmanagedCallersOnlyEntry = 5,                      // "Invalid Program: attempted to call a UnmanagedCallersOnly method from runtime-typesafe code."
-            PN_UnhandledException = 6,                           // ProjectN: "Unhandled exception: a managed exception was not handled before reaching unmanaged code"
-            PN_UnhandledExceptionFromPInvoke = 7,                // ProjectN: "Unhandled exception: an unmanaged exception was thrown out of a managed-to-native transition."
-            Max
+            UnhandledException = 5,                              // "Unhandled exception: a managed exception was not handled before reaching unmanaged code"
+            UnhandledExceptionFromPInvoke = 6,                   // "Unhandled exception: an unmanaged exception was thrown out of a managed-to-native transition."
         }
 
         private static string GetStringForFailFastReason(RhFailFastReason reason)
@@ -143,11 +141,9 @@ namespace System
                     return "Unhandled exception: no handler found in calling method.";
                 case RhFailFastReason.ClassLibDidNotTranslateExceptionID:
                     return "Unable to translate failure into a classlib-specific exception object.";
-                case RhFailFastReason.IllegalUnmanagedCallersOnlyEntry:
-                    return "Invalid Program: attempted to call a UnmanagedCallersOnly method from runtime-typesafe code.";
-                case RhFailFastReason.PN_UnhandledException:
+                case RhFailFastReason.UnhandledException:
                     return "Unhandled exception: a managed exception was not handled before reaching unmanaged code.";
-                case RhFailFastReason.PN_UnhandledExceptionFromPInvoke:
+                case RhFailFastReason.UnhandledExceptionFromPInvoke:
                     return "Unhandled exception: an unmanaged exception was thrown out of a managed-to-native transition.";
                 default:
                     return "Unknown reason.";
@@ -182,9 +178,9 @@ namespace System
             // If possible report the exception to GEH, if not fail fast.
             WinRTInteropCallbacks callbacks = WinRTInterop.UnsafeCallbacks;
             if (callbacks == null || !callbacks.ReportUnhandledError(exception))
-                FailFast(GetStringForFailFastReason(RhFailFastReason.PN_UnhandledException), exception);
+                FailFast(GetStringForFailFastReason(RhFailFastReason.UnhandledException), exception);
 #else
-            FailFast(GetStringForFailFastReason(RhFailFastReason.PN_UnhandledException), exception);
+            FailFast(GetStringForFailFastReason(RhFailFastReason.UnhandledException), exception);
 #endif
         }
 
@@ -209,7 +205,7 @@ namespace System
 
                 if (!minimalFailFast)
                 {
-                    if ((reason == RhFailFastReason.PN_UnhandledException) && (exception != null))
+                    if ((reason == RhFailFastReason.UnhandledException) && (exception != null))
                     {
                         Debug.WriteLine("Unhandled Exception: " + exception.ToString());
                     }
@@ -270,8 +266,8 @@ namespace System
             // * RhFailFastReason, if it is one of the known reasons
             if (exception != null)
             {
-                if (reason == RhFailFastReason.PN_UnhandledException)
-                    errorCode = (uint)(exception.EETypePtr.GetHashCode());
+                if (reason == RhFailFastReason.UnhandledException)
+                    errorCode = (uint)(exception.GetEETypePtr().GetHashCode());
                 else if (exception.HResult != 0)
                     errorCode = (uint)exception.HResult;
             }

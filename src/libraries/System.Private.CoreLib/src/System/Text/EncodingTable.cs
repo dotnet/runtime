@@ -30,8 +30,7 @@ namespace System.Text
 
         internal static int GetCodePageFromName(string name)
         {
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
+            ArgumentNullException.ThrowIfNull(name);
 
             object? codePageObj = s_nameToCodePage[name];
 

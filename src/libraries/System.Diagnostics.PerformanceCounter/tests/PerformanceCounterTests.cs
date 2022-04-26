@@ -3,7 +3,9 @@
 
 using System;
 using System.Collections;
+using System.Globalization;
 using System.Collections.Specialized;
+using Microsoft.DotNet.RemoteExecutor;
 using System.Threading;
 using Xunit;
 
@@ -39,7 +41,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60933", typeof(PlatformDetection), nameof(PlatformDetection.IsWindows), nameof(PlatformDetection.Is64BitProcess))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60933", typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
         public static void PerformanceCounter_CreateCounter_ProcessorCounter()
         {
             using (PerformanceCounter counterSample = new PerformanceCounter("Processor", "Interrupts/sec", "0", "."))
@@ -188,7 +190,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60933", typeof(PlatformDetection), nameof(PlatformDetection.IsWindows), nameof(PlatformDetection.Is64BitProcess))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60933", typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
         public static void PerformanceCounter_BeginInitEndInit_ProcessorCounter()
         {
             using (PerformanceCounter counterSample = new PerformanceCounter("Processor", "Interrupts/sec", "0", "."))
@@ -270,7 +272,7 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteAndReadNetPerfCounters))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60933", typeof(PlatformDetection), nameof(PlatformDetection.IsWindows), nameof(PlatformDetection.Is64BitProcess))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60933", typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
         public static void PerformanceCounter_Decrement_DecrementReadOnly()
         {
             string categoryName = nameof(PerformanceCounter_Decrement_DecrementReadOnly) + "_Category";
@@ -316,6 +318,32 @@ namespace System.Diagnostics.Tests
             }
 
             Helpers.DeleteCategory(categoryName);
+        }
+
+        private static bool CanRunInInvariantMode => RemoteExecutor.IsSupported && !PlatformDetection.IsNetFramework;
+
+        [ConditionalTheory(nameof(CanRunInInvariantMode))]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        [InlineData(true)]
+        [InlineData(false)]
+        public static void RunWithGlobalizationInvariantModeTest(bool predefinedCultures)
+        {
+            ProcessStartInfo psi = new ProcessStartInfo() {  UseShellExecute = false };
+            psi.Environment.Add("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT", "1");
+            psi.Environment.Add("DOTNET_SYSTEM_GLOBALIZATION_PREDEFINED_CULTURES_ONLY", predefinedCultures ? "1" : "0");
+            RemoteExecutor.Invoke(() =>
+            {
+                // Ensure we are running inside the Globalization invariant mode.
+                Assert.Equal("", CultureInfo.CurrentCulture.Name);
+
+                // This test ensure creating PerformanceCounter object while we are running with Globalization Invariant Mode.
+                // PerformanceCounter used to create cultures using LCID's which fail in Globalization Invariant Mode.
+                // This test ensure no failure should be encountered in this case.
+                using (PerformanceCounter counterSample = new PerformanceCounter("Processor", "Interrupts/sec", "0", "."))
+                {
+                    Assert.Equal("Processor", counterSample.CategoryName);
+                }
+            }, new RemoteInvokeOptions { StartInfo =  psi}).Dispose();
         }
 
         public static PerformanceCounter CreateCounterWithCategory(string categoryName, bool readOnly, PerformanceCounterCategoryType categoryType)

@@ -17,7 +17,8 @@ namespace System.Runtime.Serialization
 
         public XmlReaderDelegator(XmlReader reader)
         {
-            XmlObjectSerializer.CheckNull(reader, nameof(reader));
+            ArgumentNullException.ThrowIfNull(reader);
+
             this.reader = reader;
             this.dictionaryReader = reader as XmlDictionaryReader;
         }
@@ -54,7 +55,7 @@ namespace System.Runtime.Serialization
             return reader.GetAttribute(i);
         }
 
-        internal bool IsEmptyElement
+        internal static bool IsEmptyElement
         {
             get { return false; }
         }
@@ -203,7 +204,7 @@ namespace System.Runtime.Serialization
                 reader.ReadEndElement();
         }
 
-        private Exception CreateInvalidPrimitiveTypeException(Type type)
+        private static Exception CreateInvalidPrimitiveTypeException(Type type)
         {
             return new InvalidDataContractException(SR.Format(
                 type.IsInterface ? SR.InterfaceTypeCannotBeCreated : SR.InvalidPrimitiveType_Serialization,
@@ -336,7 +337,7 @@ namespace System.Runtime.Serialization
         }
 
         [DoesNotReturn]
-        private void ThrowNotAtElement()
+        private static void ThrowNotAtElement()
         {
             throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new XmlException(SR.Format(SR.XmlStartElementExpected, "EndElement")));
         }
@@ -468,7 +469,7 @@ namespace System.Runtime.Serialization
         }
 
         [return: NotNullIfNotNull("str")]
-        internal byte[]? ReadContentAsBase64(string? str)
+        internal static byte[]? ReadContentAsBase64(string? str)
         {
             if (str == null)
                 return null;
@@ -768,26 +769,26 @@ namespace System.Runtime.Serialization
 
         private XmlQualifiedName ParseQualifiedName(string str)
         {
-            string name, prefix;
+            string name;
             string? ns;
             if (str == null || str.Length == 0)
                 name = ns = string.Empty;
             else
-                XmlObjectSerializerReadContext.ParseQualifiedName(str, this, out name, out ns, out prefix);
+                XmlObjectSerializerReadContext.ParseQualifiedName(str, this, out name, out ns, out _);
             return new XmlQualifiedName(name, ns);
         }
 
-        private void CheckExpectedArrayLength(XmlObjectSerializerReadContext context, int arrayLength)
+        private static void CheckExpectedArrayLength(XmlObjectSerializerReadContext context, int arrayLength)
         {
             context.IncrementItemCount(arrayLength);
         }
 
-        protected int GetArrayLengthQuota(XmlObjectSerializerReadContext context)
+        protected static int GetArrayLengthQuota(XmlObjectSerializerReadContext context)
         {
             return Math.Min(context.RemainingItemCount, int.MaxValue);
         }
 
-        private void CheckActualArrayLength(int expectedLength, int actualLength, XmlDictionaryString itemName, XmlDictionaryString itemNamespace)
+        private static void CheckActualArrayLength(int expectedLength, int actualLength, XmlDictionaryString itemName, XmlDictionaryString itemNamespace)
         {
             if (expectedLength != actualLength)
                 throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.Format(SR.ArrayExceededSizeAttribute, expectedLength, itemName.Value, itemNamespace.Value)));
@@ -807,7 +808,7 @@ namespace System.Runtime.Serialization
             {
                 CheckExpectedArrayLength(context, arrayLength);
                 array = new bool[arrayLength];
-                int read = 0, offset = 0;
+                int read, offset = 0;
                 while ((read = dictionaryReader.ReadArray(itemName, itemNamespace, array, offset, arrayLength - offset)) > 0)
                 {
                     offset += read;
@@ -837,7 +838,7 @@ namespace System.Runtime.Serialization
             {
                 CheckExpectedArrayLength(context, arrayLength);
                 array = new DateTime[arrayLength];
-                int read = 0, offset = 0;
+                int read, offset = 0;
                 while ((read = dictionaryReader.ReadArray(itemName, itemNamespace, array, offset, arrayLength - offset)) > 0)
                 {
                     offset += read;
@@ -867,7 +868,7 @@ namespace System.Runtime.Serialization
             {
                 CheckExpectedArrayLength(context, arrayLength);
                 array = new decimal[arrayLength];
-                int read = 0, offset = 0;
+                int read, offset = 0;
                 while ((read = dictionaryReader.ReadArray(itemName, itemNamespace, array, offset, arrayLength - offset)) > 0)
                 {
                     offset += read;
@@ -897,7 +898,7 @@ namespace System.Runtime.Serialization
             {
                 CheckExpectedArrayLength(context, arrayLength);
                 array = new int[arrayLength];
-                int read = 0, offset = 0;
+                int read, offset = 0;
                 while ((read = dictionaryReader.ReadArray(itemName, itemNamespace, array, offset, arrayLength - offset)) > 0)
                 {
                     offset += read;
@@ -927,7 +928,7 @@ namespace System.Runtime.Serialization
             {
                 CheckExpectedArrayLength(context, arrayLength);
                 array = new long[arrayLength];
-                int read = 0, offset = 0;
+                int read, offset = 0;
                 while ((read = dictionaryReader.ReadArray(itemName, itemNamespace, array, offset, arrayLength - offset)) > 0)
                 {
                     offset += read;
@@ -957,7 +958,7 @@ namespace System.Runtime.Serialization
             {
                 CheckExpectedArrayLength(context, arrayLength);
                 array = new float[arrayLength];
-                int read = 0, offset = 0;
+                int read, offset = 0;
                 while ((read = dictionaryReader.ReadArray(itemName, itemNamespace, array, offset, arrayLength - offset)) > 0)
                 {
                     offset += read;
@@ -987,7 +988,7 @@ namespace System.Runtime.Serialization
             {
                 CheckExpectedArrayLength(context, arrayLength);
                 array = new double[arrayLength];
-                int read = 0, offset = 0;
+                int read, offset = 0;
                 while ((read = dictionaryReader.ReadArray(itemName, itemNamespace, array, offset, arrayLength - offset)) > 0)
                 {
                     offset += read;

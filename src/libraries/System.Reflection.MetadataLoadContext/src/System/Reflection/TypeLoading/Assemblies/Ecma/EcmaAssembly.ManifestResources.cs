@@ -14,10 +14,10 @@ namespace System.Reflection.TypeLoading.Ecma
     {
         public sealed override ManifestResourceInfo? GetManifestResourceInfo(string resourceName)
         {
-            if (resourceName == null)
+            if (resourceName is null)
                 throw new ArgumentNullException(nameof(resourceName));
             if (resourceName.Length == 0)
-                throw new ArgumentException(nameof(resourceName));
+                throw new ArgumentException(null, nameof(resourceName));
 
             InternalManifestResourceInfo internalManifestResourceInfo = GetEcmaManifestModule().GetInternalManifestResourceInfo(resourceName);
 
@@ -61,10 +61,10 @@ namespace System.Reflection.TypeLoading.Ecma
             Justification = "ResourceLocation should never be ContainedInAnotherAssembly if embedded in a single-file")]
         public sealed override Stream? GetManifestResourceStream(string name)
         {
-            if (name == null)
+            if (name is null)
                 throw new ArgumentNullException(nameof(name));
             if (name.Length == 0)
-                throw new ArgumentException(nameof(name));
+                throw new ArgumentException(null, nameof(name));
 
             InternalManifestResourceInfo internalManifestResourceInfo = GetEcmaManifestModule().GetInternalManifestResourceInfo(name);
 

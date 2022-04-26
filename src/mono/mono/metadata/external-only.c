@@ -17,12 +17,13 @@
 #include "mono-config-internals.h"
 #include "object-internals.h"
 #include "class-init.h"
-#include "assembly.h"
+#include <mono/metadata/assembly.h>
 #include "marshal.h"
-#include "object.h"
+#include <mono/metadata/object.h>
 #include "assembly-internals.h"
 #include "external-only.h"
-#include "threads.h"
+#include <mono/metadata/threads.h>
+#include <mono/metadata/mono-private-unstable.h>
 #include "threads-types.h"
 #include "jit-info.h"
 
@@ -273,14 +274,6 @@ mono_g_hash_table_new_type (GHashFunc hash_func, GEqualFunc key_equal_func, Mono
 }
 
 /**
- * mono_config_for_assembly:
- */
-void 
-mono_config_for_assembly (MonoImage *assembly)
-{
-}
-
-/**
  * mono_class_get_property_from_name:
  * \param klass a class
  * \param name name of the property to lookup in the specified class
@@ -318,6 +311,22 @@ gboolean
 mono_class_is_subclass_of (MonoClass *klass, MonoClass *klassc, gboolean check_interfaces)
 {
 	MONO_EXTERNAL_ONLY_GC_UNSAFE (gboolean, mono_class_is_subclass_of_internal (klass, klassc, check_interfaces));
+}
+
+MonoDomain *
+mono_domain_create_appdomain (char *friendly_name, char *configuration_file)
+{
+	return NULL;
+}
+
+void
+mono_domain_try_unload (MonoDomain *domain, MonoObject **exc)
+{
+}
+
+void
+mono_domain_unload (MonoDomain *domain)
+{
 }
 
 /**
@@ -372,11 +381,6 @@ void
 mono_thread_manage (void)
 {
 	MONO_EXTERNAL_ONLY_GC_UNSAFE_VOID (mono_thread_manage_internal ());
-}
-
-void
-mono_register_config_for_assembly (const char* assembly_name, const char* config_xml)
-{
 }
 
 /**
@@ -610,6 +614,26 @@ mono_context_init (MonoDomain *domain)
 {
 }
 
+void *
+mono_load_remote_field (MonoObject *this_obj, MonoClass *klass, MonoClassField *field, void **res)
+{
+	return NULL;
+}
+
+MonoObject *
+mono_load_remote_field_new (MonoObject *this_obj, MonoClass *klass, MonoClassField *field)
+{
+	return NULL;
+}
+
+void mono_store_remote_field (MonoObject *this_obj, MonoClass *klass, MonoClassField *field, void* val)
+{
+}
+
+void mono_store_remote_field_new (MonoObject *this_obj, MonoClass *klass, MonoClassField *field, MonoObject *arg)
+{
+}
+
 /**
  * mono_domain_set_config:
  * \param domain \c MonoDomain initialized with the appdomain we want to change
@@ -618,8 +642,8 @@ mono_context_init (MonoDomain *domain)
  *
  * Used to set the system configuration for an appdomain
  *
- * Without using this, embedded builds will get 'System.Configuration.ConfigurationErrorsException: 
- * Error Initializing the configuration system. ---> System.ArgumentException: 
+ * Without using this, embedded builds will get 'System.Configuration.ConfigurationErrorsException:
+ * Error Initializing the configuration system. ---> System.ArgumentException:
  * The 'ExeConfigFilename' argument cannot be null.' for some managed calls.
  */
 void
@@ -695,4 +719,26 @@ gboolean
 mono_domain_owns_vtable_slot (MonoDomain *domain, gpointer vtable_slot)
 {
 	return mono_mem_manager_mp_contains_addr (mono_mem_manager_get_ambient (), vtable_slot);
+}
+
+/**
+ * mono_method_get_unmanaged_callers_only_ftnptr:
+ * \param method method to generate a thunk for.
+ * \param error set on error
+ *
+ * Returns a function pointer for calling the given UnmanagedCallersOnly method from native code.
+ * The function pointer will use the calling convention specified on the UnmanagedCallersOnly
+ * attribute (or the default platform calling convention if omitted).
+ *
+ * Unlike \c mono_method_get_unmanaged_thunk, minimal marshaling is done to the method parameters in
+ * the wrapper. See
+ * https://docs.microsoft.com/en-us/dotnet/api/system.runtime.interopservices.unmanagedcallersonlyattribute?view=net-6.0
+ * The method must be static and only use blittable argument types.  There is no exception out-argument.
+ *
+ *
+ */
+void*
+mono_method_get_unmanaged_callers_only_ftnptr (MonoMethod *method, MonoError *error)
+{
+ 	MONO_EXTERNAL_ONLY_GC_UNSAFE (gpointer, mono_method_get_unmanaged_wrapper_ftnptr_internal (method, TRUE, error));
 }

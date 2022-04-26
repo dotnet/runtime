@@ -22,31 +22,18 @@ namespace Microsoft.Interop
 
         public bool IsSupported(TargetFramework target, Version version) => true;
 
-        public ArgumentSyntax AsArgument(TypePositionInfo info, StubCodeContext context)
+        public ValueBoundaryBehavior GetValueBoundaryBehavior(TypePositionInfo info, StubCodeContext context)
         {
-            (string managedIdentifier, string nativeIdentifier) = context.GetIdentifiers(info);
             if (!info.IsByRef)
             {
-                // (ushort)<managedIdentifier>
-                return Argument(
-                    CastExpression(
-                        AsNativeType(info),
-                        IdentifierName(managedIdentifier)));
+                return ValueBoundaryBehavior.ManagedIdentifier;
             }
             else if (IsPinningPathSupported(info, context))
             {
-                // (ushort*)<pinned>
-                return Argument(
-                    CastExpression(
-                        PointerType(AsNativeType(info)),
-                        IdentifierName(PinnedIdentifier(info.InstanceIdentifier))));
+                return ValueBoundaryBehavior.NativeIdentifier;
             }
 
-            // &<nativeIdentifier>
-            return Argument(
-                PrefixUnaryExpression(
-                    SyntaxKind.AddressOfExpression,
-                    IdentifierName(nativeIdentifier)));
+            return ValueBoundaryBehavior.AddressOfNativeIdentifier;
         }
 
         public TypeSyntax AsNativeType(TypePositionInfo info)
@@ -55,13 +42,9 @@ namespace Microsoft.Interop
             return s_nativeType;
         }
 
-        public ParameterSyntax AsParameter(TypePositionInfo info)
+        public SignatureBehavior GetNativeSignatureBehavior(TypePositionInfo info)
         {
-            TypeSyntax type = info.IsByRef
-                ? PointerType(AsNativeType(info))
-                : AsNativeType(info);
-            return Parameter(Identifier(info.InstanceIdentifier))
-                .WithType(type);
+            return info.IsByRef ? SignatureBehavior.PointerToNativeType : SignatureBehavior.NativeType;
         }
 
         public IEnumerable<StatementSyntax> Generate(TypePositionInfo info, StubCodeContext context)
@@ -85,7 +68,15 @@ namespace Microsoft.Interop
                                     ))
                             )
                         ),
-                        EmptyStatement()
+                        // ushort* <native> = (ushort*)<pinned>;
+                        LocalDeclarationStatement(
+                            VariableDeclaration(PointerType(AsNativeType(info)),
+                                SingletonSeparatedList(
+                                    VariableDeclarator(nativeIdentifier)
+                                        .WithInitializer(EqualsValueClause(
+                                            CastExpression(
+                                                PointerType(AsNativeType(info)),
+                                                IdentifierName(PinnedIdentifier(info.InstanceIdentifier))))))))
                     );
                 }
                 yield break;
@@ -132,7 +123,7 @@ namespace Microsoft.Interop
 
         public bool SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, StubCodeContext context) => false;
 
-        private bool IsPinningPathSupported(TypePositionInfo info, StubCodeContext context)
+        private static bool IsPinningPathSupported(TypePositionInfo info, StubCodeContext context)
         {
             return context.SingleFrameSpansNativeContext
                 && !info.IsManagedReturnPosition

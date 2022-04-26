@@ -71,17 +71,6 @@ using std::nullptr_t;
 
 #define PalRaiseFailFastException RaiseFailFastException
 
-#define FATAL_ASSERT(e, msg) \
-    do \
-    { \
-        if (!(e)) \
-        { \
-            fprintf(stderr, "FATAL ERROR: " msg); \
-            RhFailFast(); \
-        } \
-    } \
-    while(0)
-
 #define INVALID_HANDLE_VALUE    ((HANDLE)(intptr_t)-1)
 
 #define PAGE_NOACCESS           0x01
@@ -244,7 +233,7 @@ public:
             TimeSpecAdd(&endTime, milliseconds);
         }
 #else
-#error Don't know how to perform timed wait on this platform
+#error "Don't know how to perform timed wait on this platform"
 #endif
 
         int st = 0;
@@ -724,7 +713,7 @@ REDHAWK_PALEXPORT void PalPrintFatalError(const char* message)
 {
     // Write the message using lowest-level OS API available. This is used to print the stack overflow
     // message, so there is not much that can be done here.
-    write(STDERR_FILENO, message, sizeof(message));
+    write(STDERR_FILENO, message, strlen(message));
 }
 
 static int W32toUnixAccessControl(uint32_t flProtect)
@@ -1176,6 +1165,10 @@ REDHAWK_PALEXPORT uint32_t REDHAWK_PALAPI xmmYmmStateSupport()
 #include <asm/hwcap.h>
 #endif
 
+#if HAVE_SYSCTLBYNAME
+#include <sys/sysctl.h>
+#endif
+
 // Based on PAL_GetJitCpuCapabilityFlags from CoreCLR (jitsupport.cpp)
 REDHAWK_PALEXPORT void REDHAWK_PALAPI PAL_GetCpuCapabilityFlags(int* flags)
 {
@@ -1190,8 +1183,6 @@ REDHAWK_PALEXPORT void REDHAWK_PALAPI PAL_GetCpuCapabilityFlags(int* flags)
     // From a single binary distribution perspective, compiling with latest kernel asm/hwcap.h should
     // include all published flags.  Given flags are merged to kernel and published before silicon is
     // available, using the latest kernel for release should be sufficient.
-    *flags |= ARM64IntrinsicConstants_ArmBase;
-    *flags |= ARM64IntrinsicConstants_ArmBase_Arm64;
 
 #ifdef HWCAP_AES
     if (hwCap & HWCAP_AES)
@@ -1210,8 +1201,8 @@ REDHAWK_PALEXPORT void REDHAWK_PALAPI PAL_GetCpuCapabilityFlags(int* flags)
 //        *flags |= ARM64IntrinsicConstants_???;
 #endif
 #ifdef HWCAP_ASIMDDP
-//    if (hwCap & HWCAP_ASIMDDP)
-//        *flags |= ARM64IntrinsicConstants_???;
+    if (hwCap & HWCAP_ASIMDDP)
+        *flags |= ARM64IntrinsicConstants_Dp;
 #endif
 #ifdef HWCAP_FCMA
 //    if (hwCap & HWCAP_FCMA)
@@ -1230,8 +1221,8 @@ REDHAWK_PALEXPORT void REDHAWK_PALAPI PAL_GetCpuCapabilityFlags(int* flags)
 //        *flags |= ARM64IntrinsicConstants_???;
 #endif
 #ifdef HWCAP_LRCPC
-//    if (hwCap & HWCAP_LRCPC)
-//        *flags |= ARM64IntrinsicConstants_???;
+      if (hwCap & HWCAP_LRCPC)
+          *flags |= ARM64IntrinsicConstants_Rcpc;
 #endif
 #ifdef HWCAP_PMULL
 //    if (hwCap & HWCAP_PMULL)
@@ -1255,14 +1246,11 @@ REDHAWK_PALEXPORT void REDHAWK_PALAPI PAL_GetCpuCapabilityFlags(int* flags)
 #endif
 #ifdef HWCAP_ASIMD
     if (hwCap & HWCAP_ASIMD)
-    {
         *flags |= ARM64IntrinsicConstants_AdvSimd;
-        *flags |= ARM64IntrinsicConstants_AdvSimd_Arm64;
-    }
 #endif
 #ifdef HWCAP_ASIMDRDM
-//    if (hwCap & HWCAP_ASIMDRDM)
-//        *flags |= ARM64IntrinsicConstants_???;
+    if (hwCap & HWCAP_ASIMDRDM)
+        *flags |= ARM64IntrinsicConstants_Rdm;
 #endif
 #ifdef HWCAP_ASIMDHP
 //    if (hwCap & HWCAP_ASIMDHP)
@@ -1324,13 +1312,40 @@ REDHAWK_PALEXPORT void REDHAWK_PALAPI PAL_GetCpuCapabilityFlags(int* flags)
 #endif // AT_HWCAP2
 
 #else // !HAVE_AUXV_HWCAP_H
+
+#if HAVE_SYSCTLBYNAME
+    int64_t valueFromSysctl = 0;
+    size_t sz = sizeof(valueFromSysctl);
+
+    if ((sysctlbyname("hw.optional.arm.FEAT_AES", &valueFromSysctl, &sz, nullptr, 0) == 0) && (valueFromSysctl != 0))
+        *flags |= ARM64IntrinsicConstants_Aes;
+
+    if ((sysctlbyname("hw.optional.armv8_crc32", &valueFromSysctl, &sz, nullptr, 0) == 0) && (valueFromSysctl != 0))
+        *flags |= ARM64IntrinsicConstants_Crc32;
+
+    if ((sysctlbyname("hw.optional.arm.FEAT_DotProd", &valueFromSysctl, &sz, nullptr, 0) == 0) && (valueFromSysctl != 0))
+        *flags |= ARM64IntrinsicConstants_Dp;
+
+    if ((sysctlbyname("hw.optional.arm.FEAT_RDM", &valueFromSysctl, &sz, nullptr, 0) == 0) && (valueFromSysctl != 0))
+        *flags |= ARM64IntrinsicConstants_Rdm;
+
+    if ((sysctlbyname("hw.optional.arm.FEAT_SHA1", &valueFromSysctl, &sz, nullptr, 0) == 0) && (valueFromSysctl != 0))
+        *flags |= ARM64IntrinsicConstants_Sha1;
+
+    if ((sysctlbyname("hw.optional.arm.FEAT_SHA256", &valueFromSysctl, &sz, nullptr, 0) == 0) && (valueFromSysctl != 0))
+        *flags |= ARM64IntrinsicConstants_Sha256;
+
+    if ((sysctlbyname("hw.optional.armv8_1_atomics", &valueFromSysctl, &sz, nullptr, 0) == 0) && (valueFromSysctl != 0))
+        *flags |= ARM64IntrinsicConstants_Atomics;
+
+    if ((sysctlbyname("hw.optional.arm.FEAT_LRCPC", &valueFromSysctl, &sz, nullptr, 0) == 0) && (valueFromSysctl != 0))
+        *flags |= ARM64IntrinsicConstants_Rcpc;
+#endif // HAVE_SYSCTLBYNAME
+
     // Every ARM64 CPU should support SIMD and FP
     // If the OS have no function to query for CPU capabilities we set just these
 
-    *flags |= ARM64IntrinsicConstants_ArmBase;
-    *flags |= ARM64IntrinsicConstants_ArmBase_Arm64;
     *flags |= ARM64IntrinsicConstants_AdvSimd;
-    *flags |= ARM64IntrinsicConstants_AdvSimd_Arm64;
 #endif // HAVE_AUXV_HWCAP_H
 }
 #endif

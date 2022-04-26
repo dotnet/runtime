@@ -105,8 +105,10 @@ namespace System.Security.Cryptography.Xml
 
         public virtual void LoadXml(XmlElement value)
         {
-            if (value == null)
+            if (value is null)
+            {
                 throw new ArgumentNullException(nameof(value));
+            }
 
             ReferenceType = value.LocalName;
 

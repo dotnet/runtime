@@ -4,17 +4,14 @@ FROM $SDK_BASE_IMAGE
 WORKDIR /app
 COPY . .
 
-# Pulling the msquic Debian package from msquic-ci public pipeline and from a hardcoded build.
-# Note that this is a temporary solution until we have properly published Linux packages.
-# Also note that in order to update to a newer msquic build, you have update this link.
-ARG MSQUIC_PACKAGE=libmsquic_1.9.0_amd64.deb
-ARG PACKAGES_DIR=UnsignedUnixPackages
-RUN wget 'https://dev.azure.com/dnceng/9ee6d478-d288-47f7-aacc-f6e6d082ae6d/_apis/build/builds/1426627/artifacts?artifactName=UnsignedUnixPackages&api-version=6.0&%24format=zip' -O "$PACKAGES_DIR".zip
-RUN apt-get update
-RUN apt-get install unzip
-RUN unzip $PACKAGES_DIR.zip
-RUN dpkg -i $PACKAGES_DIR/$MSQUIC_PACKAGE
-RUN rm -rf $PACKAGES_DIR*
+# Pulling the msquic Debian package from packages.microsoft.com
+RUN apt-get update -y
+RUN apt-get install -y gnupg2 software-properties-common
+RUN curl -sSL https://packages.microsoft.com/keys/microsoft.asc | apt-key add -
+RUN apt-add-repository https://packages.microsoft.com/debian/11/prod
+RUN apt-get update -y
+RUN apt-get install -y libmsquic
+RUN apt-get upgrade -y
 
 ARG VERSION=7.0
 ARG CONFIGURATION=Release
@@ -27,7 +24,7 @@ RUN dotnet build -c $CONFIGURATION \
 # Enable dump collection
 ENV COMPlus_DbgEnableMiniDump=1
 ENV COMPlus_DbgMiniDumpType=MiniDumpWithFullMemory
-ENV COMPlus_DbgMiniDumpName="/share/coredump.%p"
+ENV COMPlus_DbgMiniDumpName="/dumps-share/coredump.%p"
 
 EXPOSE 5001
 

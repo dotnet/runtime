@@ -13,8 +13,8 @@ namespace System.Security.Cryptography
 
             internal ECDiffieHellmanAndroidPublicKey(SafeEcKeyHandle ecKeyHandle)
             {
-                if (ecKeyHandle == null)
-                    throw new ArgumentNullException(nameof(ecKeyHandle));
+                ArgumentNullException.ThrowIfNull(ecKeyHandle);
+
                 if (ecKeyHandle.IsInvalid)
                     throw new ArgumentException(SR.Cryptography_OpenInvalidHandle, nameof(ecKeyHandle));
 
@@ -26,12 +26,16 @@ namespace System.Security.Cryptography
                 _key = new ECAndroid(parameters);
             }
 
+#pragma warning disable 0672 // Member overrides an obsolete member.
             public override string ToXmlString()
+#pragma warning restore 0672
             {
                 throw new PlatformNotSupportedException();
             }
 
+#pragma warning disable 0672 // Member overrides an obsolete member.
             public override byte[] ToByteArray()
+#pragma warning restore 0672
             {
                 throw new PlatformNotSupportedException();
             }

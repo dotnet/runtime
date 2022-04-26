@@ -12,7 +12,7 @@
 .assembly extern mscorlib
 {
 }
-.assembly extern common{}
+.assembly extern eh_common{}
 .assembly 'labelbeginningfinally'
 {
   .hash algorithm 0x00008004
@@ -32,12 +32,12 @@
 
 
 
-.namespace Test
+.namespace Test_labelbeginningfinally_il
 {
-  .class private auto ansi beforefieldinit App
+  .class public auto ansi beforefieldinit App
          extends [mscorlib]System.Object
   {
-    .method private hidebysig static int32 
+    .method public hidebysig static int32 
             Main() cil managed
     {
       .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
@@ -47,7 +47,7 @@
       .maxstack  2
       .locals init (bool V_0,
 					class [mscorlib]System.IO.StringWriter expectedOut,
-					class [common]TestUtil.TestLog testLog
+					class [eh_common]TestUtil.TestLog testLog
 					)
 
     newobj     instance void [mscorlib]System.IO.StringWriter::.ctor()
@@ -65,11 +65,11 @@
     ldstr      "done"
     callvirt   instance void [mscorlib]System.IO.TextWriter::WriteLine(string)
     ldloc.s    expectedOut
-    newobj     instance void [common]TestUtil.TestLog::.ctor(object)
+    newobj     instance void [eh_common]TestUtil.TestLog::.ctor(object)
     stloc.s    testLog
 
     ldloc.s    testLog
-    callvirt   instance void [common]TestUtil.TestLog::StartRecording()
+    callvirt   instance void [eh_common]TestUtil.TestLog::StartRecording()
       ldc.i4.0
       stloc.0
       .try
@@ -94,9 +94,9 @@
 		ldstr      "done"
 		call       void [System.Console]System.Console::WriteLine(string)            
 		ldloc.s    testLog
-		callvirt   instance void [common]TestUtil.TestLog::StopRecording()
+		callvirt   instance void [eh_common]TestUtil.TestLog::StopRecording()
 		ldloc.s    testLog
-		callvirt   instance int32 [common]TestUtil.TestLog::VerifyOutput()
+		callvirt   instance int32 [eh_common]TestUtil.TestLog::VerifyOutput()
 	    ret
     } 
 

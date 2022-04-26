@@ -32,7 +32,7 @@ namespace System.DirectoryServices.Protocols
             // available during init.
             Debug.Assert(!_ldapHandle.IsInvalid);
 
-            string scheme = null;
+            string scheme;
             LdapDirectoryIdentifier directoryIdentifier = (LdapDirectoryIdentifier)_directoryIdentifier;
             if (directoryIdentifier.Connectionless)
             {

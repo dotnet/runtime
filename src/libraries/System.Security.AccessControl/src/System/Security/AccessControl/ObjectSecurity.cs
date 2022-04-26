@@ -74,10 +74,7 @@ namespace System.Security.AccessControl
         protected ObjectSecurity(CommonSecurityDescriptor securityDescriptor)
             : this()
         {
-            if (securityDescriptor == null)
-            {
-                throw new ArgumentNullException(nameof(securityDescriptor));
-            }
+            ArgumentNullException.ThrowIfNull(securityDescriptor);
 
             _securityDescriptor = securityDescriptor;
         }
@@ -363,10 +360,7 @@ namespace System.Security.AccessControl
 
         public void SetOwner(IdentityReference identity)
         {
-            if (identity == null)
-            {
-                throw new ArgumentNullException(nameof(identity));
-            }
+            ArgumentNullException.ThrowIfNull(identity);
 
             WriteLock();
 
@@ -406,10 +400,7 @@ namespace System.Security.AccessControl
 
         public void SetGroup(IdentityReference identity)
         {
-            if (identity == null)
-            {
-                throw new ArgumentNullException(nameof(identity));
-            }
+            ArgumentNullException.ThrowIfNull(identity);
 
             WriteLock();
 
@@ -426,10 +417,7 @@ namespace System.Security.AccessControl
 
         public virtual void PurgeAccessRules(IdentityReference identity)
         {
-            if (identity == null)
-            {
-                throw new ArgumentNullException(nameof(identity));
-            }
+            ArgumentNullException.ThrowIfNull(identity);
 
             WriteLock();
 
@@ -446,10 +434,7 @@ namespace System.Security.AccessControl
 
         public virtual void PurgeAuditRules(IdentityReference identity)
         {
-            if (identity == null)
-            {
-                throw new ArgumentNullException(nameof(identity));
-            }
+            ArgumentNullException.ThrowIfNull(identity);
 
             WriteLock();
 
@@ -588,10 +573,7 @@ namespace System.Security.AccessControl
 
         public void SetSecurityDescriptorSddlForm(string sddlForm, AccessControlSections includeSections)
         {
-            if (sddlForm == null)
-            {
-                throw new ArgumentNullException(nameof(sddlForm));
-            }
+            ArgumentNullException.ThrowIfNull(sddlForm);
 
             if ((includeSections & AccessControlSections.All) == 0)
             {
@@ -637,10 +619,7 @@ namespace System.Security.AccessControl
 
         public void SetSecurityDescriptorBinaryForm(byte[] binaryForm, AccessControlSections includeSections)
         {
-            if (binaryForm == null)
-            {
-                throw new ArgumentNullException(nameof(binaryForm));
-            }
+            ArgumentNullException.ThrowIfNull(binaryForm);
 
             if ((includeSections & AccessControlSections.All) == 0)
             {
@@ -670,10 +649,7 @@ namespace System.Security.AccessControl
 
         public virtual bool ModifyAccessRule(AccessControlModification modification, AccessRule rule, out bool modified)
         {
-            if (rule == null)
-            {
-                throw new ArgumentNullException(nameof(rule));
-            }
+            ArgumentNullException.ThrowIfNull(rule);
 
             if (!this.AccessRuleType.IsAssignableFrom(rule.GetType()))
             {
@@ -696,10 +672,7 @@ namespace System.Security.AccessControl
 
         public virtual bool ModifyAuditRule(AccessControlModification modification, AuditRule rule, out bool modified)
         {
-            if (rule == null)
-            {
-                throw new ArgumentNullException(nameof(rule));
-            }
+            ArgumentNullException.ThrowIfNull(rule);
 
             if (!this.AuditRuleType.IsAssignableFrom(rule.GetType()))
             {

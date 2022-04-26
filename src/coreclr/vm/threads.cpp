@@ -376,6 +376,10 @@ void SetThread(Thread* t)
     LIMITED_METHOD_CONTRACT
 
     gCurrentThreadInfo.m_pThread = t;
+    if (t != NULL)
+    {
+        EnsureTlsDestructionMonitor();
+    }
 }
 
 void SetAppDomain(AppDomain* ad)
@@ -1118,19 +1122,18 @@ PCODE AdjustWriteBarrierIP(PCODE controlPc)
 
 #ifdef TARGET_X86
 extern "C" void *JIT_WriteBarrierEAX_Loc;
+#elif TARGET_AMD64
+extern "C" void *JIT_WriteBarrier_Loc;
 #else
 extern "C" void *JIT_WriteBarrier_Loc;
+void *JIT_WriteBarrier_Loc = 0;
 #endif
 
 #ifdef TARGET_ARM64
 extern "C" void (*JIT_WriteBarrier_Table)();
-extern "C" void *JIT_WriteBarrier_Loc = 0;
-extern "C" void *JIT_WriteBarrier_Table_Loc = 0;
+extern "C" void *JIT_WriteBarrier_Table_Loc;
+void *JIT_WriteBarrier_Table_Loc = 0;
 #endif // TARGET_ARM64
-
-#ifdef TARGET_ARM
-extern "C" void *JIT_WriteBarrier_Loc = 0;
-#endif // TARGET_ARM
 
 #ifndef TARGET_UNIX
 // g_TlsIndex is only used by the DAC. Disable optimizations around it to prevent it from getting optimized out.
@@ -2187,7 +2190,7 @@ HANDLE Thread::CreateUtilityThread(Thread::StackSizeBucket stackSizeBucket, LPTH
 
     default:
         _ASSERTE(!"Bad stack size bucket");
-        break;
+        FALLTHROUGH;
     case StackSize_Large:
         stackSize = 1024 * 1024;
         break;
@@ -2199,7 +2202,6 @@ HANDLE Thread::CreateUtilityThread(Thread::StackSizeBucket stackSizeBucket, LPTH
     HANDLE hThread = CreateThread(NULL, stackSize, start, args, flags, &threadId);
 
     SetThreadName(hThread, pName);
-
 
     if (pThreadId)
         *pThreadId = threadId;
@@ -7931,6 +7933,8 @@ UINT64 Thread::GetTotalThreadPoolCompletionCount()
     }
     CONTRACTL_END;
 
+    _ASSERTE(!ThreadpoolMgr::UsePortableThreadPoolForIO());
+
     bool usePortableThreadPool = ThreadpoolMgr::UsePortableThreadPool();
 
     // enumerate all threads, summing their local counts.
@@ -8526,8 +8530,8 @@ Thread::EnumMemoryRegionsWorker(CLRDataEnumMemoryFlags flags)
         DacEnumCodeForStackwalk(callEnd);
 
         // To stackwalk through funceval frames, we need to be sure to preserve the
-        // DebuggerModule's m_pRuntimeDomainFile.  This is the only case that doesn't use the current
-        // vmDomainFile in code:DacDbiInterfaceImpl::EnumerateInternalFrames.  The following
+        // DebuggerModule's m_pRuntimeDomainAssembly.  This is the only case that doesn't use the current
+        // vmDomainAssembly in code:DacDbiInterfaceImpl::EnumerateInternalFrames.  The following
         // code mimics that function.
         // Allow failure, since we want to continue attempting to walk the stack regardless of the outcome.
         EX_TRY

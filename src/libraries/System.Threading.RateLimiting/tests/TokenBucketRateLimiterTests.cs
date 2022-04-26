@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -28,10 +29,12 @@ namespace System.Threading.RateLimiting.Test
         [Fact]
         public override void InvalidOptionsThrows()
         {
-            Assert.Throws<ArgumentOutOfRangeException>(() => new TokenBucketRateLimiterOptions(-1, QueueProcessingOrder.NewestFirst, 1, TimeSpan.FromMinutes(2), 1, autoReplenishment: false));
-            Assert.Throws<ArgumentOutOfRangeException>(() => new TokenBucketRateLimiterOptions(1, QueueProcessingOrder.NewestFirst, -1, TimeSpan.FromMinutes(2), 1, autoReplenishment: false));
-            Assert.Throws<ArgumentOutOfRangeException>(() => new TokenBucketRateLimiterOptions(1, QueueProcessingOrder.NewestFirst, 1, TimeSpan.FromMinutes(2), -1, autoReplenishment: false));
-            Assert.Throws<ArgumentOutOfRangeException>(() => new TokenBucketRateLimiterOptions(1, QueueProcessingOrder.NewestFirst, 1, TimeSpan.FromDays(49).Add(TimeSpan.FromMilliseconds(1)), 1, autoReplenishment: false));
+            Assert.Throws<ArgumentOutOfRangeException>(
+                () => new TokenBucketRateLimiterOptions(-1, QueueProcessingOrder.NewestFirst, 1, TimeSpan.FromMinutes(2), 1, autoReplenishment: false));
+            Assert.Throws<ArgumentOutOfRangeException>(
+                () => new TokenBucketRateLimiterOptions(1, QueueProcessingOrder.NewestFirst, -1, TimeSpan.FromMinutes(2), 1, autoReplenishment: false));
+            Assert.Throws<ArgumentOutOfRangeException>(
+                () => new TokenBucketRateLimiterOptions(1, QueueProcessingOrder.NewestFirst, 1, TimeSpan.FromMinutes(2), -1, autoReplenishment: false));
         }
 
         [Fact]
@@ -111,9 +114,9 @@ namespace System.Threading.RateLimiting.Test
         }
 
         [Fact]
-        public override async Task FailsWhenQueuingMoreThanLimit()
+        public override async Task FailsWhenQueuingMoreThanLimit_OldestFirst()
         {
-            var limiter = new TokenBucketRateLimiter(new TokenBucketRateLimiterOptions(1, QueueProcessingOrder.NewestFirst, 1,
+            var limiter = new TokenBucketRateLimiter(new TokenBucketRateLimiterOptions(1, QueueProcessingOrder.OldestFirst, 1,
                 TimeSpan.Zero, 1, autoReplenishment: false));
             using var lease = limiter.Acquire(1);
             var wait = limiter.WaitAsync(1);
@@ -125,9 +128,77 @@ namespace System.Threading.RateLimiting.Test
         }
 
         [Fact]
-        public override async Task QueueAvailableAfterQueueLimitHitAndResources_BecomeAvailable()
+        public override async Task DropsOldestWhenQueuingMoreThanLimit_NewestFirst()
         {
             var limiter = new TokenBucketRateLimiter(new TokenBucketRateLimiterOptions(1, QueueProcessingOrder.NewestFirst, 1,
+                   TimeSpan.Zero, 1, autoReplenishment: false));
+            var lease = limiter.Acquire(1);
+            var wait = limiter.WaitAsync(1);
+            Assert.False(wait.IsCompleted);
+
+            var wait2 = limiter.WaitAsync(1);
+            var lease1 = await wait;
+            Assert.False(lease1.IsAcquired);
+            Assert.False(wait2.IsCompleted);
+
+            limiter.TryReplenish();
+
+            lease = await wait2;
+            Assert.True(lease.IsAcquired);
+        }
+
+        [Fact]
+        public override async Task DropsMultipleOldestWhenQueuingMoreThanLimit_NewestFirst()
+        {
+            var limiter = new TokenBucketRateLimiter(new TokenBucketRateLimiterOptions(2, QueueProcessingOrder.NewestFirst, 2,
+                   TimeSpan.Zero, 1, autoReplenishment: false));
+            var lease = limiter.Acquire(2);
+            Assert.True(lease.IsAcquired);
+            var wait = limiter.WaitAsync(1);
+            Assert.False(wait.IsCompleted);
+
+            var wait2 = limiter.WaitAsync(1);
+            Assert.False(wait2.IsCompleted);
+
+            var wait3 = limiter.WaitAsync(2);
+            var lease1 = await wait;
+            var lease2 = await wait2;
+            Assert.False(lease1.IsAcquired);
+            Assert.False(lease2.IsAcquired);
+            Assert.False(wait3.IsCompleted);
+
+            limiter.TryReplenish();
+            limiter.TryReplenish();
+
+            lease = await wait3;
+            Assert.True(lease.IsAcquired);
+        }
+
+        [Fact]
+        public override async Task DropsRequestedLeaseIfPermitCountGreaterThanQueueLimitAndNoAvailability_NewestFirst()
+        {
+            var limiter = new TokenBucketRateLimiter(new TokenBucketRateLimiterOptions(2, QueueProcessingOrder.NewestFirst, 1,
+                   TimeSpan.Zero, 1, autoReplenishment: false));
+            var lease = limiter.Acquire(2);
+            Assert.True(lease.IsAcquired);
+
+            // Fill queue
+            var wait = limiter.WaitAsync(1);
+            Assert.False(wait.IsCompleted);
+
+            var lease1 = await limiter.WaitAsync(2);
+            Assert.False(lease1.IsAcquired);
+
+            limiter.TryReplenish();
+
+            lease = await wait;
+            Assert.True(lease.IsAcquired);
+        }
+
+        [Fact]
+        public override async Task QueueAvailableAfterQueueLimitHitAndResources_BecomeAvailable()
+        {
+            var limiter = new TokenBucketRateLimiter(new TokenBucketRateLimiterOptions(1, QueueProcessingOrder.OldestFirst, 1,
                 TimeSpan.Zero, 1, autoReplenishment: false));
             var lease = limiter.Acquire(1);
             var wait = limiter.WaitAsync(1);
@@ -145,6 +216,29 @@ namespace System.Threading.RateLimiting.Test
             limiter.TryReplenish();
             lease = await wait;
             Assert.True(lease.IsAcquired);
+        }
+
+        [Fact]
+        public override async Task LargeAcquiresAndQueuesDoNotIntegerOverflow()
+        {
+            var limiter = new TokenBucketRateLimiter(new TokenBucketRateLimiterOptions(int.MaxValue, QueueProcessingOrder.NewestFirst, int.MaxValue,
+                TimeSpan.Zero, int.MaxValue, autoReplenishment: false));
+            var lease = limiter.Acquire(int.MaxValue);
+            Assert.True(lease.IsAcquired);
+
+            // Fill queue
+            var wait = limiter.WaitAsync(3);
+            Assert.False(wait.IsCompleted);
+
+            var wait2 = limiter.WaitAsync(int.MaxValue);
+            Assert.False(wait2.IsCompleted);
+
+            var lease1 = await wait;
+            Assert.False(lease1.IsAcquired);
+
+            limiter.TryReplenish();
+            var lease2 = await wait2;
+            Assert.True(lease2.IsAcquired);
         }
 
         [Fact]
@@ -263,7 +357,8 @@ namespace System.Threading.RateLimiting.Test
             var wait = limiter.WaitAsync(1, cts.Token);
 
             cts.Cancel();
-            await Assert.ThrowsAsync<OperationCanceledException>(() => wait.AsTask());
+            var ex = await Assert.ThrowsAsync<TaskCanceledException>(() => wait.AsTask());
+            Assert.Equal(cts.Token, ex.CancellationToken);
 
             lease.Dispose();
             Assert.True(limiter.TryReplenish());
@@ -282,12 +377,36 @@ namespace System.Threading.RateLimiting.Test
             var cts = new CancellationTokenSource();
             cts.Cancel();
 
-            await Assert.ThrowsAsync<TaskCanceledException>(() => limiter.WaitAsync(1, cts.Token).AsTask());
+            var ex = await Assert.ThrowsAsync<TaskCanceledException>(() => limiter.WaitAsync(1, cts.Token).AsTask());
+            Assert.Equal(cts.Token, ex.CancellationToken);
 
             lease.Dispose();
             Assert.True(limiter.TryReplenish());
 
             Assert.Equal(1, limiter.GetAvailablePermits());
+        }
+
+        [Fact]
+        public override async Task CancelUpdatesQueueLimit()
+        {
+            var limiter = new TokenBucketRateLimiter(new TokenBucketRateLimiterOptions(1, QueueProcessingOrder.OldestFirst, 1,
+                TimeSpan.Zero, 1, autoReplenishment: false));
+            var lease = limiter.Acquire(1);
+            Assert.True(lease.IsAcquired);
+
+            var cts = new CancellationTokenSource();
+            var wait = limiter.WaitAsync(1, cts.Token);
+
+            cts.Cancel();
+            var ex = await Assert.ThrowsAsync<TaskCanceledException>(() => wait.AsTask());
+            Assert.Equal(cts.Token, ex.CancellationToken);
+
+            wait = limiter.WaitAsync(1);
+            Assert.False(wait.IsCompleted);
+
+            limiter.TryReplenish();
+            lease = await wait;
+            Assert.True(lease.IsAcquired);
         }
 
         [Fact]
@@ -591,10 +710,12 @@ namespace System.Threading.RateLimiting.Test
             Assert.True(lease.IsAcquired);
         }
 
+        private static readonly double TickFrequency = (double)TimeSpan.TicksPerSecond / Stopwatch.Frequency;
+
         [Fact]
-        public async Task ReplenishWorksWhenTicksWrap()
+        public async Task ReplenishWorksWithTicksOverInt32Max()
         {
-            var limiter = new TokenBucketRateLimiter(new TokenBucketRateLimiterOptions(10, QueueProcessingOrder.OldestFirst, 2,
+            using var limiter = new TokenBucketRateLimiter(new TokenBucketRateLimiterOptions(10, QueueProcessingOrder.OldestFirst, 2,
                 TimeSpan.FromMilliseconds(2), 1, autoReplenishment: false));
 
             var lease = limiter.Acquire(10);
@@ -604,8 +725,9 @@ namespace System.Threading.RateLimiting.Test
             Assert.False(wait.IsCompleted);
 
             var replenishInternalMethod = typeof(TokenBucketRateLimiter).GetMethod("ReplenishInternal", Reflection.BindingFlags.NonPublic | Reflection.BindingFlags.Instance)!;
-            // This will set the last tick to the max value
-            replenishInternalMethod.Invoke(limiter, new object[] { uint.MaxValue });
+            // Ensure next tick is over uint.MaxValue
+            var tick = Stopwatch.GetTimestamp() + uint.MaxValue;
+            replenishInternalMethod.Invoke(limiter, new object[] { tick });
 
             lease = await wait;
             Assert.True(lease.IsAcquired);
@@ -613,20 +735,60 @@ namespace System.Threading.RateLimiting.Test
             wait = limiter.WaitAsync(1);
             Assert.False(wait.IsCompleted);
 
-            // ticks wrapped, should replenish
-            replenishInternalMethod.Invoke(limiter, new object[] { 2U });
+            // Tick 1 millisecond too soon and verify that the queued item wasn't completed
+            replenishInternalMethod.Invoke(limiter, new object[] { tick + 1L * (long)(TimeSpan.TicksPerMillisecond / TickFrequency) });
+            Assert.False(wait.IsCompleted);
+
+            // ticks would wrap if using uint
+            replenishInternalMethod.Invoke(limiter, new object[] { tick + 2L * (long)(TimeSpan.TicksPerMillisecond / TickFrequency) });
             lease = await wait;
             Assert.True(lease.IsAcquired);
+        }
 
-            replenishInternalMethod.Invoke(limiter, new object[] { uint.MaxValue });
+        [Fact]
+        public override void NullIdleDurationWhenActive()
+        {
+            var limiter = new TokenBucketRateLimiter(new TokenBucketRateLimiterOptions(1, QueueProcessingOrder.OldestFirst, 2,
+                   TimeSpan.FromMilliseconds(2), 1, autoReplenishment: false));
+            limiter.Acquire(1);
+            Assert.Null(limiter.IdleDuration);
+        }
 
-            wait = limiter.WaitAsync(2);
-            Assert.False(wait.IsCompleted);
+        [Fact]
+        public override async Task IdleDurationUpdatesWhenIdle()
+        {
+            var limiter = new TokenBucketRateLimiter(new TokenBucketRateLimiterOptions(1, QueueProcessingOrder.OldestFirst, 2,
+                TimeSpan.FromMilliseconds(2), 1, autoReplenishment: false));
+            Assert.NotNull(limiter.IdleDuration);
+            var previousDuration = limiter.IdleDuration;
+            await Task.Delay(15);
+            Assert.True(previousDuration < limiter.IdleDuration);
+        }
 
-            // ticks wrapped, but only 1 millisecond passed, make sure the wrapping behaves correctly and replenish doesn't happen
-            replenishInternalMethod.Invoke(limiter, new object[] { 1U });
-            Assert.False(wait.IsCompleted);
-            Assert.Equal(1, limiter.GetAvailablePermits());
+        [Fact]
+        public override void IdleDurationUpdatesWhenChangingFromActive()
+        {
+            var limiter = new TokenBucketRateLimiter(new TokenBucketRateLimiterOptions(1, QueueProcessingOrder.OldestFirst, 2,
+                TimeSpan.Zero, 1, autoReplenishment: false));
+            limiter.Acquire(1);
+            limiter.TryReplenish();
+            Assert.NotNull(limiter.IdleDuration);
+        }
+
+        [Fact]
+        public void ReplenishingRateLimiterPropertiesHaveCorrectValues()
+        {
+            var replenishPeriod = TimeSpan.FromMinutes(1);
+            using ReplenishingRateLimiter limiter = new TokenBucketRateLimiter(new TokenBucketRateLimiterOptions(1, QueueProcessingOrder.OldestFirst, 2,
+                replenishPeriod, 1, autoReplenishment: true));
+            Assert.True(limiter.IsAutoReplenishing);
+            Assert.Equal(replenishPeriod, limiter.ReplenishmentPeriod);
+
+            replenishPeriod = TimeSpan.FromSeconds(2);
+            using ReplenishingRateLimiter limiter2 = new TokenBucketRateLimiter(new TokenBucketRateLimiterOptions(1, QueueProcessingOrder.OldestFirst, 2,
+                replenishPeriod, 1, autoReplenishment: false));
+            Assert.False(limiter2.IsAutoReplenishing);
+            Assert.Equal(replenishPeriod, limiter2.ReplenishmentPeriod);
         }
     }
 }

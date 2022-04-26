@@ -1,9 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <WasmCopyAppZipToHelixTestDir Condition="'$(ArchiveTests)' == 'true'">true</WasmCopyAppZipToHelixTestDir>
-    <WasmMainJSPath>main.js</WasmMainJSPath>
+    <WasmMainJSPath>main.cjs</WasmMainJSPath>
     <WasmGenerateRunV8Script>true</WasmGenerateRunV8Script>
     <WasmEnableES6>false</WasmEnableES6>
+
+    <GenerateRunScriptForSample Condition="'$(ArchiveTests)' == 'true'">true</GenerateRunScriptForSample>
+    <RunScriptCommand>$(ExecXHarnessCmd) wasm test --app=. --engine=V8 --engine-arg=--stack-trace-limit=1000 --js-file=main.cjs --output-directory=$(XHarnessOutput) -- --run $(MSBuildProjectName).dll</RunScriptCommand>
   </PropertyGroup>
 
   <PropertyGroup>

@@ -18,10 +18,7 @@ namespace Microsoft.Extensions.Hosting
         /// <returns>True if the environment name is <see cref="EnvironmentName.Development"/>, otherwise false.</returns>
         public static bool IsDevelopment(this IHostingEnvironment hostingEnvironment)
         {
-            if (hostingEnvironment == null)
-            {
-                throw new ArgumentNullException(nameof(hostingEnvironment));
-            }
+            ThrowHelper.ThrowIfNull(hostingEnvironment);
 
             return hostingEnvironment.IsEnvironment(EnvironmentName.Development);
         }
@@ -33,10 +30,7 @@ namespace Microsoft.Extensions.Hosting
         /// <returns>True if the environment name is <see cref="EnvironmentName.Staging"/>, otherwise false.</returns>
         public static bool IsStaging(this IHostingEnvironment hostingEnvironment)
         {
-            if (hostingEnvironment == null)
-            {
-                throw new ArgumentNullException(nameof(hostingEnvironment));
-            }
+            ThrowHelper.ThrowIfNull(hostingEnvironment);
 
             return hostingEnvironment.IsEnvironment(EnvironmentName.Staging);
         }
@@ -48,10 +42,7 @@ namespace Microsoft.Extensions.Hosting
         /// <returns>True if the environment name is <see cref="EnvironmentName.Production"/>, otherwise false.</returns>
         public static bool IsProduction(this IHostingEnvironment hostingEnvironment)
         {
-            if (hostingEnvironment == null)
-            {
-                throw new ArgumentNullException(nameof(hostingEnvironment));
-            }
+            ThrowHelper.ThrowIfNull(hostingEnvironment);
 
             return hostingEnvironment.IsEnvironment(EnvironmentName.Production);
         }
@@ -66,10 +57,7 @@ namespace Microsoft.Extensions.Hosting
             this IHostingEnvironment hostingEnvironment,
             string environmentName)
         {
-            if (hostingEnvironment == null)
-            {
-                throw new ArgumentNullException(nameof(hostingEnvironment));
-            }
+            ThrowHelper.ThrowIfNull(hostingEnvironment);
 
             return string.Equals(
                 hostingEnvironment.EnvironmentName,

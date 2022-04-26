@@ -75,11 +75,11 @@ void SplitPath(
 // A much more sensible version that just points to each section of the string.
 //*******************************************************************************
 void    SplitPathInterior(
-    __in      LPCWSTR wszPath,
-    __out_opt LPCWSTR *pwszDrive,    __out_opt size_t *pcchDrive,
-    __out_opt LPCWSTR *pwszDir,      __out_opt size_t *pcchDir,
-    __out_opt LPCWSTR *pwszFileName, __out_opt size_t *pcchFileName,
-    __out_opt LPCWSTR *pwszExt,      __out_opt size_t *pcchExt)
+    _In_      LPCWSTR wszPath,
+    _Out_opt_ LPCWSTR *pwszDrive,    _Out_opt_ size_t *pcchDrive,
+    _Out_opt_ LPCWSTR *pwszDir,      _Out_opt_ size_t *pcchDir,
+    _Out_opt_ LPCWSTR *pwszFileName, _Out_opt_ size_t *pcchFileName,
+    _Out_opt_ LPCWSTR *pwszExt,      _Out_opt_ size_t *pcchExt)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -228,7 +228,7 @@ void    SplitPathInterior(
 *
 *******************************************************************************/
 
-void    SplitPath(__in SString const &path,
+void    SplitPath(_In_ SString const &path,
                   __inout_opt SString *drive,
                   __inout_opt SString *dir,
                   __inout_opt SString *fname,

@@ -167,7 +167,6 @@
 #define WszGetMessage GetMessageW
 #define WszSendMessage SendMessageW
 #define WszCharLower CharLowerW
-#define WszMessageBox LateboundMessageBoxW
 #define WszGetClassName GetClassNameW
 #define WszLoadString LoadStringW
 #define WszRegOpenKeyEx ClrRegOpenKeyEx
@@ -188,15 +187,10 @@
 #define WszWideCharToMultiByte WideCharToMultiByte
 #define WszCreateSemaphore(_secattr, _count, _maxcount, _name) CreateSemaphoreExW((_secattr), (_count), (_maxcount), (_name), 0, MAXIMUM_ALLOWED | SYNCHRONIZE | SEMAPHORE_MODIFY_STATE)
 
-#ifdef FEATURE_CORESYSTEM
-
-// CoreSystem has GetFileVersionInfo{Size}Ex but not GetFileVersionInfoSize{Size}
 #undef GetFileVersionInfo
 #define GetFileVersionInfo(_filename, _handle, _len, _data) GetFileVersionInfoEx(0, (_filename), (_handle), (_len), (_data))
 #undef GetFileVersionInfoSize
 #define GetFileVersionInfoSize(_filename, _handle) GetFileVersionInfoSizeEx(0, (_filename), (_handle))
-
-#endif // FEATURE_CORESYSTEM
 
 #ifndef _T
 #define _T(str) W(str)
@@ -259,12 +253,6 @@ inline DWORD GetMaxDBCSCharByteSize()
 #endif // HOST_UNIX
 }
 
-#ifndef HOST_UNIX
-BOOL RunningInteractive();
-#else // !HOST_UNIX
-#define RunningInteractive() FALSE
-#endif // !HOST_UNIX
-
 #ifndef Wsz_mbstowcs
 #define Wsz_mbstowcs(szOut, szIn, iSize) WszMultiByteToWideChar(CP_ACP, 0, szIn, -1, szOut, iSize)
 #endif
@@ -320,8 +308,8 @@ FORCEINLINE
 PVOID
 InterlockedCompareExchangePointer (
     __inout  PVOID volatile *Destination,
-    __in_opt PVOID ExChange,
-    __in_opt PVOID Comperand
+    _In_opt_ PVOID ExChange,
+    _In_opt_ PVOID Comperand
     )
 {
     return((PVOID)(LONG_PTR)_InterlockedCompareExchange((LONG volatile *)Destination, (LONG)(LONG_PTR)ExChange, (LONG)(LONG_PTR)Comperand));
@@ -396,96 +384,5 @@ __forceinline LONGLONG __InterlockedExchangeAdd64(LONGLONG volatile * Addend, LO
 }
 
 #endif // HOST_X86
-
-// Output printf-style formatted text to the debugger if it's present or stdout otherwise.
-inline void DbgWPrintf(const LPCWSTR wszFormat, ...)
-{
-    WCHAR wszBuffer[4096];
-
-    va_list args;
-    va_start(args, wszFormat);
-
-    _vsnwprintf_s(wszBuffer, sizeof(wszBuffer) / sizeof(WCHAR), _TRUNCATE, wszFormat, args);
-
-    va_end(args);
-
-    if (IsDebuggerPresent())
-    {
-        OutputDebugStringW(wszBuffer);
-    }
-    else
-    {
-        fwprintf(stdout, W("%s"), wszBuffer);
-        fflush(stdout);
-    }
-}
-
-typedef int (*MessageBoxWFnPtr)(HWND hWnd,
-                                LPCWSTR lpText,
-                                LPCWSTR lpCaption,
-                                UINT uType);
-
-inline int LateboundMessageBoxW(HWND hWnd,
-                                LPCWSTR lpText,
-                                LPCWSTR lpCaption,
-                                UINT uType)
-{
-#ifndef HOST_UNIX
-    // User32 should exist on all systems where displaying a message box makes sense.
-    HMODULE hGuiExtModule = WszLoadLibrary(W("user32"));
-    if (hGuiExtModule)
-    {
-        int result = IDCANCEL;
-        MessageBoxWFnPtr fnptr = (MessageBoxWFnPtr)GetProcAddress(hGuiExtModule, "MessageBoxW");
-        if (fnptr)
-            result = fnptr(hWnd, lpText, lpCaption, uType);
-
-        FreeLibrary(hGuiExtModule);
-        return result;
-    }
-#endif // !HOST_UNIX
-
-    // No luck. Output the caption and text to the debugger if present or stdout otherwise.
-    if (lpText == NULL)
-        lpText = W("<null>");
-    if (lpCaption == NULL)
-        lpCaption = W("<null>");
-    DbgWPrintf(W("**** MessageBox invoked, title '%s' ****\n"), lpCaption);
-    DbgWPrintf(W("  %s\n"), lpText);
-    DbgWPrintf(W("********\n"));
-    DbgWPrintf(W("\n"));
-
-    // Indicate to the caller that message box was not actually displayed
-    SetLastError(ERROR_NOT_SUPPORTED);
-    return 0;
-}
-
-inline int LateboundMessageBoxA(HWND hWnd,
-                                LPCSTR lpText,
-                                LPCSTR lpCaption,
-                                UINT uType)
-{
-    if (lpText == NULL)
-        lpText = "<null>";
-    if (lpCaption == NULL)
-        lpCaption = "<null>";
-
-    SIZE_T cchText = strlen(lpText) + 1;
-    LPWSTR wszText = (LPWSTR)_alloca(cchText * sizeof(WCHAR));
-    swprintf_s(wszText, cchText, W("%S"), lpText);
-
-    SIZE_T cchCaption = strlen(lpCaption) + 1;
-    LPWSTR wszCaption = (LPWSTR)_alloca(cchCaption * sizeof(WCHAR));
-    swprintf_s(wszCaption, cchCaption, W("%S"), lpCaption);
-
-    return LateboundMessageBoxW(hWnd, wszText, wszCaption, uType);
-}
-
-#if defined(FEATURE_CORESYSTEM)
-
-#define MessageBoxW LateboundMessageBoxW
-#define MessageBoxA LateboundMessageBoxA
-
-#endif // FEATURE_CORESYSTEM
 
 #endif  // __WIN_WRAP_H__

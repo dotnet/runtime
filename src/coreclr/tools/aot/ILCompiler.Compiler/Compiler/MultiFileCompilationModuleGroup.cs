@@ -15,7 +15,7 @@ namespace ILCompiler
     {
         private HashSet<ModuleDesc> _compilationModuleSet;
 
-        public MultiFileCompilationModuleGroup(TypeSystemContext context, IEnumerable<ModuleDesc> compilationModuleSet)
+        public MultiFileCompilationModuleGroup(CompilerTypeSystemContext context, IEnumerable<ModuleDesc> compilationModuleSet)
         {
             _compilationModuleSet = new HashSet<ModuleDesc>(compilationModuleSet);
 
@@ -94,7 +94,7 @@ namespace ILCompiler
     /// </summary>
     public class MultiFileSharedCompilationModuleGroup : MultiFileCompilationModuleGroup
     {
-        public MultiFileSharedCompilationModuleGroup(TypeSystemContext context, IEnumerable<ModuleDesc> compilationModuleSet)
+        public MultiFileSharedCompilationModuleGroup(CompilerTypeSystemContext context, IEnumerable<ModuleDesc> compilationModuleSet)
             : base(context, compilationModuleSet)
         {
         }
@@ -123,14 +123,6 @@ namespace ILCompiler
             Debug.Assert(ContainsMethodBody(method, unboxingStub: false));
             TypeDesc owningType = method.OwningType;
             return owningType.IsDefType && !owningType.HasInstantiation && !method.HasInstantiation;
-        }
-
-        public override bool AllowVirtualMethodOnAbstractTypeOptimization(MethodDesc method)
-        {
-            // Not really safe to do this since we need to assume IgnoreAccessChecks
-            // and we wouldn't know all derived types when compiling methods on the type
-            // that introduces this method.
-            return false;
         }
     }
 }

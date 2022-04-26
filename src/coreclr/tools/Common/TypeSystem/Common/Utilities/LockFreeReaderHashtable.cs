@@ -363,8 +363,7 @@ namespace Internal.TypeSystem
         /// <returns>Newly added value, or a value which was already present in the hashtable which is equal to it.</returns>
         public TValue AddOrGetExisting(TValue value)
         {
-            bool unused;
-            return AddOrGetExistingInner(value, out unused);
+            return AddOrGetExistingInner(value, out _);
         }
 
         private TValue AddOrGetExistingInner(TValue value, out bool addedValue)
@@ -524,7 +523,7 @@ namespace Internal.TypeSystem
         /// Attempts to write a value into the table. Should never fail as the sentinel should be the only
         /// entry that can be in the table at this point
         /// </summary>
-        private void WriteValueToLocation(TValue value, TValue[] hashTableLocal, int tableIndex)
+        private static void WriteValueToLocation(TValue value, TValue[] hashTableLocal, int tableIndex)
         {
             // Add to hash, use a volatile write to ensure that
             // the contents of the value are fully published to all
@@ -536,12 +535,12 @@ namespace Internal.TypeSystem
         /// Attempts to abort write a value into the table. Should never fail as the sentinel should be the only
         /// entry that can be in the table at this point
         /// </summary>
-        private void WriteAbortNullToLocation(TValue[] hashTableLocal, int tableIndex)
+        private static void WriteAbortNullToLocation(TValue[] hashTableLocal, int tableIndex)
         {
             // Add to hash, use a volatile write to ensure that
             // the contents of the value are fully published to all
             // threads before adding to the hashtable
-            Volatile.Write(ref hashTableLocal[tableIndex], null);
+            Volatile.Write(ref hashTableLocal[tableIndex], default(TValue)!);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -584,8 +583,7 @@ namespace Internal.TypeSystem
         /// </summary>
         public bool Contains(TKey key)
         {
-            TValue dummyExistingValue;
-            return TryGetValue(key, out dummyExistingValue);
+            return TryGetValue(key, out _);
         }
 
         /// <summary>

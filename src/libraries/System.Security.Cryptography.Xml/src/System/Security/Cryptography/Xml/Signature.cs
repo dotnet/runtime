@@ -135,9 +135,10 @@ namespace System.Security.Cryptography.Xml
 
         public void LoadXml(XmlElement value)
         {
-            // Make sure we don't get passed null
-            if (value == null)
+            if (value is null)
+            {
                 throw new ArgumentNullException(nameof(value));
+            }
 
             // Signature
             XmlElement signatureElement = value;

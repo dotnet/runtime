@@ -13,6 +13,12 @@ namespace System.Text.Json
         public const string ExceptionSourceValueToRethrowAsJsonException = "System.Text.Json.Rethrowable";
 
         [DoesNotReturn]
+        public static void ThrowArgumentNullException(string parameterName)
+        {
+            throw new ArgumentNullException(parameterName);
+        }
+
+        [DoesNotReturn]
         public static void ThrowArgumentOutOfRangeException_MaxDepthMustBePositive(string parameterName)
         {
             throw GetArgumentOutOfRangeException(parameterName, SR.MaxDepthMustBePositive);
@@ -645,6 +651,12 @@ namespace System.Text.Json
         public static void ThrowInvalidOperationException_ExpectedChar(JsonTokenType tokenType)
         {
             throw GetInvalidOperationException("char", tokenType);
+        }
+
+        [DoesNotReturn]
+        public static void ThrowObjectDisposedException_Utf8JsonWriter()
+        {
+            throw new ObjectDisposedException(nameof(Utf8JsonWriter));
         }
     }
 

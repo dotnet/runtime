@@ -213,8 +213,6 @@ namespace System.Runtime.InteropServices
                     {
                         return (IntPtr)(Dispatches + i);
                     }
-
-                    i++;
                 }
 
                 return IntPtr.Zero;
@@ -332,7 +330,7 @@ namespace System.Runtime.InteropServices
             if (instance == null)
                 throw new ArgumentNullException(nameof(instance));
 
-            ManagedObjectWrapperHolder ccwValue;
+            ManagedObjectWrapperHolder? ccwValue;
             if (_ccwTable.TryGetValue(instance, out ccwValue))
             {
                 return ccwValue.ComIp;
@@ -506,7 +504,7 @@ namespace System.Runtime.InteropServices
                     if (_rcwCache.TryGetValue(externalComObject, out GCHandle handle))
                     {
                         retValue = handle.Target;
-                        return false;
+                        return true;
                     }
                 }
             }

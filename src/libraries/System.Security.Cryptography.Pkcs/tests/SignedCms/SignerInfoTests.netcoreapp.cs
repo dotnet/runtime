@@ -547,7 +547,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
 
             Assert.Equal(expectedToken.GetSerialNumber().ByteArrayToHex(), actualToken.GetSerialNumber().ByteArrayToHex());
             Assert.Equal(expectedToken.Timestamp, actualToken.Timestamp);
-            Assert.Equal(expectedToken.HashAlgorithmId.Value, Oids.Sha256);
+            Assert.Equal(Oids.Sha256, expectedToken.HashAlgorithmId.Value);
             Assert.Equal(expectedToken.HashAlgorithmId.Value, actualToken.HashAlgorithmId.Value);
         }
 

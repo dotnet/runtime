@@ -2,8 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Globalization;
-using System.Runtime.InteropServices;
-using Internal.Runtime.CompilerServices;
+using System.Runtime.CompilerServices;
 
 namespace System
 {
@@ -42,7 +41,7 @@ namespace System
 
         public int IndexOf(char value, int startIndex)
         {
-            return IndexOf(value, startIndex, this.Length - startIndex);
+            return IndexOf(value, startIndex, Length - startIndex);
         }
 
         public int IndexOf(char value, StringComparison comparisonType)
@@ -71,14 +70,18 @@ namespace System
         public unsafe int IndexOf(char value, int startIndex, int count)
         {
             if ((uint)startIndex > (uint)Length)
-                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_Index);
+            {
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.startIndex, ExceptionResource.ArgumentOutOfRange_IndexMustBeLessOrEqual);
+            }
 
             if ((uint)count > (uint)(Length - startIndex))
-                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_Count);
+            {
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.count, ExceptionResource.ArgumentOutOfRange_Count);
+            }
 
             int result = SpanHelpers.IndexOf(ref Unsafe.Add(ref _firstChar, startIndex), value, count);
 
-            return result == -1 ? result : result + startIndex;
+            return result < 0 ? result : result + startIndex;
         }
 
         // Returns the index of the first occurrence of any specified character in the current instance.
@@ -86,138 +89,39 @@ namespace System
         //
         public int IndexOfAny(char[] anyOf)
         {
-            return IndexOfAny(anyOf, 0, this.Length);
+            if (anyOf is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.anyOf);
+            }
+
+            return new ReadOnlySpan<char>(ref _firstChar, Length).IndexOfAny(anyOf);
         }
 
         public int IndexOfAny(char[] anyOf, int startIndex)
         {
-            return IndexOfAny(anyOf, startIndex, this.Length - startIndex);
+            return IndexOfAny(anyOf, startIndex, Length - startIndex);
         }
 
         public int IndexOfAny(char[] anyOf, int startIndex, int count)
         {
-            if (anyOf == null)
-                throw new ArgumentNullException(nameof(anyOf));
+            if (anyOf is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.anyOf);
+            }
 
             if ((uint)startIndex > (uint)Length)
-                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_Index);
+            {
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.startIndex, ExceptionResource.ArgumentOutOfRange_IndexMustBeLessOrEqual);
+            }
 
             if ((uint)count > (uint)(Length - startIndex))
-                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_Count);
-
-            if (anyOf.Length > 0 && anyOf.Length <= 5)
             {
-                // The ReadOnlySpan.IndexOfAny extension is vectorized for values of 1 - 5 in length
-                int result = new ReadOnlySpan<char>(ref Unsafe.Add(ref _firstChar, startIndex), count).IndexOfAny(anyOf);
-                return result == -1 ? result : result + startIndex;
-            }
-            else if (anyOf.Length > 5)
-            {
-                // Use Probabilistic Map
-                return IndexOfCharArray(anyOf, startIndex, count);
-            }
-            else // anyOf.Length == 0
-            {
-                return -1;
-            }
-        }
-
-        private unsafe int IndexOfCharArray(char[] anyOf, int startIndex, int count)
-        {
-            // use probabilistic map, see InitializeProbabilisticMap
-            ProbabilisticMap map = default;
-            uint* charMap = (uint*)&map;
-
-            InitializeProbabilisticMap(charMap, anyOf);
-
-            fixed (char* pChars = &_firstChar)
-            {
-                char* pCh = pChars + startIndex;
-
-                while (count > 0)
-                {
-                    int thisChar = *pCh;
-
-                    if (IsCharBitSet(charMap, (byte)thisChar) &&
-                        IsCharBitSet(charMap, (byte)(thisChar >> 8)) &&
-                        ArrayContains((char)thisChar, anyOf))
-                    {
-                        return (int)(pCh - pChars);
-                    }
-
-                    count--;
-                    pCh++;
-                }
-
-                return -1;
-            }
-        }
-
-        private const int PROBABILISTICMAP_BLOCK_INDEX_MASK = 0x7;
-        private const int PROBABILISTICMAP_BLOCK_INDEX_SHIFT = 0x3;
-        private const int PROBABILISTICMAP_SIZE = 0x8;
-
-        // A probabilistic map is an optimization that is used in IndexOfAny/
-        // LastIndexOfAny methods. The idea is to create a bit map of the characters we
-        // are searching for and use this map as a "cheap" check to decide if the
-        // current character in the string exists in the array of input characters.
-        // There are 256 bits in the map, with each character mapped to 2 bits. Every
-        // character is divided into 2 bytes, and then every byte is mapped to 1 bit.
-        // The character map is an array of 8 integers acting as map blocks. The 3 lsb
-        // in each byte in the character is used to index into this map to get the
-        // right block, the value of the remaining 5 msb are used as the bit position
-        // inside this block.
-        private static unsafe void InitializeProbabilisticMap(uint* charMap, ReadOnlySpan<char> anyOf)
-        {
-            bool hasAscii = false;
-            uint* charMapLocal = charMap; // https://github.com/dotnet/runtime/issues/9040
-
-            for (int i = 0; i < anyOf.Length; ++i)
-            {
-                int c = anyOf[i];
-
-                // Map low bit
-                SetCharBit(charMapLocal, (byte)c);
-
-                // Map high bit
-                c >>= 8;
-
-                if (c == 0)
-                {
-                    hasAscii = true;
-                }
-                else
-                {
-                    SetCharBit(charMapLocal, (byte)c);
-                }
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.count, ExceptionResource.ArgumentOutOfRange_Count);
             }
 
-            if (hasAscii)
-            {
-                // Common to search for ASCII symbols. Just set the high value once.
-                charMapLocal[0] |= 1u;
-            }
-        }
+            int result = new ReadOnlySpan<char>(ref Unsafe.Add(ref _firstChar, startIndex), count).IndexOfAny(anyOf);
 
-        private static bool ArrayContains(char searchChar, char[] anyOf)
-        {
-            for (int i = 0; i < anyOf.Length; i++)
-            {
-                if (anyOf[i] == searchChar)
-                    return true;
-            }
-
-            return false;
-        }
-
-        private static unsafe bool IsCharBitSet(uint* charMap, byte value)
-        {
-            return (charMap[(uint)value & PROBABILISTICMAP_BLOCK_INDEX_MASK] & (1u << (value >> PROBABILISTICMAP_BLOCK_INDEX_SHIFT))) != 0;
-        }
-
-        private static unsafe void SetCharBit(uint* charMap, byte value)
-        {
-            charMap[(uint)value & PROBABILISTICMAP_BLOCK_INDEX_MASK] |= 1u << (value >> PROBABILISTICMAP_BLOCK_INDEX_SHIFT);
+            return result < 0 ? result : result + startIndex;
         }
 
        /*
@@ -322,12 +226,12 @@ namespace System
 
         public int IndexOf(string value, StringComparison comparisonType)
         {
-            return IndexOf(value, 0, this.Length, comparisonType);
+            return IndexOf(value, 0, Length, comparisonType);
         }
 
         public int IndexOf(string value, int startIndex, StringComparison comparisonType)
         {
-            return IndexOf(value, startIndex, this.Length - startIndex, comparisonType);
+            return IndexOf(value, startIndex, Length - startIndex, comparisonType);
         }
 
         public int IndexOf(string value, int startIndex, int count, StringComparison comparisonType)
@@ -370,18 +274,24 @@ namespace System
         public unsafe int LastIndexOf(char value, int startIndex, int count)
         {
             if (Length == 0)
+            {
                 return -1;
+            }
 
             if ((uint)startIndex >= (uint)Length)
-                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_Index);
+            {
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.startIndex, ExceptionResource.ArgumentOutOfRange_IndexMustBeLess);
+            }
 
             if ((uint)count > (uint)startIndex + 1)
-                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_Count);
+            {
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.count, ExceptionResource.ArgumentOutOfRange_Count);
+            }
 
             int startSearchAt = startIndex + 1 - count;
             int result = SpanHelpers.LastIndexOf(ref Unsafe.Add(ref _firstChar, startSearchAt), value, count);
 
-            return result == -1 ? result : result + startSearchAt;
+            return result < 0 ? result : result + startSearchAt;
         }
 
         // Returns the index of the last occurrence of any specified character in the current instance.
@@ -391,7 +301,12 @@ namespace System
         //
         public int LastIndexOfAny(char[] anyOf)
         {
-            return LastIndexOfAny(anyOf, this.Length - 1, this.Length);
+            if (anyOf is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.anyOf);
+            }
+
+            return new ReadOnlySpan<char>(ref _firstChar, Length).LastIndexOfAny(anyOf);
         }
 
         public int LastIndexOfAny(char[] anyOf, int startIndex)
@@ -401,65 +316,30 @@ namespace System
 
         public unsafe int LastIndexOfAny(char[] anyOf, int startIndex, int count)
         {
-            if (anyOf == null)
-                throw new ArgumentNullException(nameof(anyOf));
+            if (anyOf is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.anyOf);
+            }
 
             if (Length == 0)
+            {
                 return -1;
+            }
 
             if ((uint)startIndex >= (uint)Length)
             {
-                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_Index);
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.startIndex, ExceptionResource.ArgumentOutOfRange_IndexMustBeLess);
             }
 
             if ((count < 0) || ((count - 1) > startIndex))
             {
-                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_Count);
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.count, ExceptionResource.ArgumentOutOfRange_Count);
             }
 
-            if (anyOf.Length > 1)
-            {
-                return LastIndexOfCharArray(anyOf, startIndex, count);
-            }
-            else if (anyOf.Length == 1)
-            {
-                return LastIndexOf(anyOf[0], startIndex, count);
-            }
-            else // anyOf.Length == 0
-            {
-                return -1;
-            }
-        }
+            int startSearchAt = startIndex + 1 - count;
+            int result = new ReadOnlySpan<char>(ref Unsafe.Add(ref _firstChar, startSearchAt), count).LastIndexOfAny(anyOf);
 
-        private unsafe int LastIndexOfCharArray(char[] anyOf, int startIndex, int count)
-        {
-            // use probabilistic map, see InitializeProbabilisticMap
-            ProbabilisticMap map = default;
-            uint* charMap = (uint*)&map;
-
-            InitializeProbabilisticMap(charMap, anyOf);
-
-            fixed (char* pChars = &_firstChar)
-            {
-                char* pCh = pChars + startIndex;
-
-                while (count > 0)
-                {
-                    int thisChar = *pCh;
-
-                    if (IsCharBitSet(charMap, (byte)thisChar) &&
-                        IsCharBitSet(charMap, (byte)(thisChar >> 8)) &&
-                        ArrayContains((char)thisChar, anyOf))
-                    {
-                        return (int)(pCh - pChars);
-                    }
-
-                    count--;
-                    pCh--;
-                }
-
-                return -1;
-            }
+            return result < 0 ? result : result + startSearchAt;
         }
 
         // Returns the index of the last occurrence of any character in value in the current instance.
@@ -469,7 +349,7 @@ namespace System
         //
         public int LastIndexOf(string value)
         {
-            return LastIndexOf(value, this.Length - 1, this.Length, StringComparison.CurrentCulture);
+            return LastIndexOf(value, Length - 1, Length, StringComparison.CurrentCulture);
         }
 
         public int LastIndexOf(string value, int startIndex)
@@ -484,7 +364,7 @@ namespace System
 
         public int LastIndexOf(string value, StringComparison comparisonType)
         {
-            return LastIndexOf(value, this.Length - 1, this.Length, comparisonType);
+            return LastIndexOf(value, Length - 1, Length, comparisonType);
         }
 
         public int LastIndexOf(string value, int startIndex, StringComparison comparisonType)
@@ -516,8 +396,5 @@ namespace System
                         : new ArgumentException(SR.NotSupported_StringComparison, nameof(comparisonType));
             }
         }
-
-        [StructLayout(LayoutKind.Explicit, Size = PROBABILISTICMAP_SIZE * sizeof(uint))]
-        private struct ProbabilisticMap { }
     }
 }

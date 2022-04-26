@@ -11,7 +11,7 @@ using Internal.Runtime.Augments;
 namespace System
 {
     [StructLayoutAttribute(LayoutKind.Sequential)]
-    public struct RuntimeFieldHandle : ISerializable
+    public struct RuntimeFieldHandle : IEquatable<RuntimeFieldHandle>, ISerializable
     {
         private IntPtr _value;
 
@@ -43,7 +43,7 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private int _rotl(int value, int shift)
+        private static int _rotl(int value, int shift)
         {
             return (int)(((uint)value << shift) | ((uint)value >> (32 - shift)));
         }

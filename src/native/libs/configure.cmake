@@ -7,47 +7,24 @@ include(CheckStructHasMember)
 include(CheckSymbolExists)
 include(CheckTypeSize)
 include(CheckLibraryExists)
+include(CheckFunctionExists)
 
 # CMP0075 Include file check macros honor CMAKE_REQUIRED_LIBRARIES.
 if(POLICY CMP0075)
     cmake_policy(SET CMP0075 NEW)
 endif()
 
-if (CLR_CMAKE_TARGET_ANDROID)
-    set(PAL_UNIX_NAME \"ANDROID\")
-elseif (CLR_CMAKE_TARGET_BROWSER)
-    set(PAL_UNIX_NAME \"BROWSER\")
-elseif (CLR_CMAKE_TARGET_LINUX)
-    set(PAL_UNIX_NAME \"LINUX\")
-elseif (CLR_CMAKE_TARGET_OSX)
-    set(PAL_UNIX_NAME \"OSX\")
-
+if (CLR_CMAKE_TARGET_OSX)
     # Xcode's clang does not include /usr/local/include by default, but brew's does.
     # This ensures an even playing field.
     include_directories(SYSTEM /usr/local/include)
-elseif (CLR_CMAKE_TARGET_MACCATALYST)
-    set(PAL_UNIX_NAME \"MACCATALYST\")
-elseif (CLR_CMAKE_TARGET_IOS)
-    set(PAL_UNIX_NAME \"IOS\")
-elseif (CLR_CMAKE_TARGET_TVOS)
-    set(PAL_UNIX_NAME \"TVOS\")
 elseif (CLR_CMAKE_TARGET_FREEBSD)
-    set(PAL_UNIX_NAME \"FREEBSD\")
     include_directories(SYSTEM ${CROSS_ROOTFS}/usr/local/include)
     set(CMAKE_REQUIRED_INCLUDES ${CROSS_ROOTFS}/usr/local/include)
-elseif (CLR_CMAKE_TARGET_NETBSD)
-    set(PAL_UNIX_NAME \"NETBSD\")
 elseif (CLR_CMAKE_TARGET_SUNOS)
-    if (CLR_CMAKE_TARGET_ILLUMOS)
-        set(PAL_UNIX_NAME \"ILLUMOS\")
-    else ()
-        set(PAL_UNIX_NAME \"SOLARIS\")
-    endif ()
     # requires /opt/tools when building in Global Zone (GZ)
     include_directories(SYSTEM /opt/local/include /opt/tools/include)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fstack-protector")
-else ()
-    message(FATAL_ERROR "Unknown platform. Cannot define PAL_UNIX_NAME, used by RuntimeInformation.")
 endif ()
 
 if(CLR_CMAKE_USE_SYSTEM_LIBUNWIND)
@@ -61,6 +38,9 @@ endif()
 # which are not distinguished from the test failing. So no error for that one.
 # For clang-5.0 avoid errors like "unused variable 'err' [-Werror,-Wunused-variable]".
 set(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS} -Werror -Wno-error=unused-value -Wno-error=unused-variable")
+if (CMAKE_C_COMPILER_ID STREQUAL "Clang")
+    set(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS} -Wno-error=builtin-requires-header")
+endif()
 
 # Apple platforms like macOS/iOS allow targeting older operating system versions with a single SDK,
 # the mere presence of a symbol in the SDK doesn't tell us whether the deployment target really supports it.
@@ -141,6 +121,18 @@ check_c_source_compiles(
     "
     HAVE_FLOCK64)
 
+check_c_source_compiles(
+    "
+    #include <sys/types.h>
+    #include <ifaddrs.h>
+    int main(void)
+    {
+        struct ifaddrs ia;
+        return 0;
+    }
+    "
+    HAVE_IFADDRS)
+
 check_symbol_exists(
     O_CLOEXEC
     fcntl.h
@@ -156,9 +148,8 @@ check_symbol_exists(
     fcntl.h
     HAVE_F_FULLFSYNC)
 
-check_symbol_exists(
+check_function_exists(
     getifaddrs
-    ifaddrs.h
     HAVE_GETIFADDRS)
 
 check_symbol_exists(
@@ -210,16 +201,6 @@ check_symbol_exists(
     strcpy_s
     string.h
     HAVE_STRCPY_S)
-
-check_symbol_exists(
-    strlcpy
-    string.h
-    HAVE_STRLCPY)
-
-check_symbol_exists(
-    strcat_s
-    string.h
-    HAVE_STRCAT_S)
 
 check_symbol_exists(
     strlcat
@@ -675,7 +656,16 @@ check_symbol_exists(
     time.h
     HAVE_CLOCK_GETTIME_NSEC_NP)
 
-check_library_exists(pthread pthread_condattr_setclock "" HAVE_PTHREAD_CONDATTR_SETCLOCK)
+check_library_exists(pthread pthread_create "" HAVE_LIBPTHREAD)
+check_library_exists(c pthread_create "" HAVE_PTHREAD_IN_LIBC)
+
+if (HAVE_LIBPTHREAD)
+  set(PTHREAD_LIBRARY pthread)
+elseif (HAVE_PTHREAD_IN_LIBC)
+  set(PTHREAD_LIBRARY c)
+endif()
+
+check_library_exists(${PTHREAD_LIBRARY} pthread_condattr_setclock "" HAVE_PTHREAD_CONDATTR_SETCLOCK)
 
 check_symbol_exists(
     futimes
@@ -893,8 +883,8 @@ if(CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS
     set(HAVE_IOS_NETINET_IP_VAR_H 1)
     set(HAVE_IOS_NETINET_ICMP_VAR_H 1)
     set(HAVE_IOS_NETINET_UDP_VAR_H 1)
-    set(CMAKE_EXTRA_INCLUDE_FILES 
-        sys/types.h 
+    set(CMAKE_EXTRA_INCLUDE_FILES
+        sys/types.h
         "${CMAKE_CURRENT_SOURCE_DIR}/System.Native/ios/net/route.h"
     )
 else()
@@ -1107,6 +1097,20 @@ check_c_source_compiles(
     }
     "
     HAVE_BUILTIN_MUL_OVERFLOW)
+
+check_symbol_exists(
+    makedev
+    sys/file.h
+    HAVE_MAKEDEV_FILEH)
+
+check_symbol_exists(
+    makedev
+    sys/sysmacros.h
+    HAVE_MAKEDEV_SYSMACROSH)
+
+if (NOT HAVE_MAKEDEV_FILEH AND NOT HAVE_MAKEDEV_SYSMACROSH)
+  message(FATAL_ERROR "Cannot find the makedev function on this platform.")
+endif()
 
 configure_file(
     ${CMAKE_CURRENT_SOURCE_DIR}/Common/pal_config.h.in

@@ -43,54 +43,8 @@ BOOL GetAllProcessesInSystem(DWORD *ProcessId,
 {
     HandleHolder hSnapshotHolder;
 
-#if !defined(FEATURE_CORESYSTEM)
-    // Load the dll "kernel32.dll".
-    HModuleHolder hDll = WszLoadLibrary(W("kernel32"));
-    _ASSERTE(hDll != NULL);
-
-    if (hDll == NULL)
-    {
-        LOG((LF_CORDB, LL_INFO1000,
-                "Unable to load the dll for enumerating processes. "
-                "LoadLibrary (kernel32.dll) failed.\n"));
-        return FALSE;
-    }
-#else
-	// Load the dll "api-ms-win-obsolete-kernel32-l1-1-0.dll".
-    HModuleHolder hDll = WszLoadLibrary(W("api-ms-win-obsolete-kernel32-l1-1-0.dll"));
-    _ASSERTE(hDll != NULL);
-
-    if (hDll == NULL)
-    {
-        LOG((LF_CORDB, LL_INFO1000,
-                "Unable to load the dll for enumerating processes. "
-                "LoadLibrary (api-ms-win-obsolete-kernel32-l1-1-0.dll) failed.\n"));
-        return FALSE;
-    }
-#endif
-
-
     // Create the Process' Snapshot
-    // Get the pointer to the requested function
-    FARPROC pProcAddr = GetProcAddress(hDll, "CreateToolhelp32Snapshot");
-
-    // If the proc address was not found, return error
-    if (pProcAddr == NULL)
-    {
-        LOG((LF_CORDB, LL_INFO1000,
-                "Unable to enumerate processes in the system. "
-                "GetProcAddr (CreateToolhelp32Snapshot) failed.\n"));
-        return FALSE;
-    }
-
-
-
-    // Handle from CreateToolHelp32Snapshot must be freed via CloseHandle().
-    typedef HANDLE CREATETOOLHELP32SNAPSHOT(DWORD, DWORD);
-
-    HANDLE hSnapshot =
-            ((CREATETOOLHELP32SNAPSHOT *)pProcAddr)(TH32CS_SNAPPROCESS, NULL);
-
+    HANDLE hSnapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, NULL);
     if (hSnapshot == INVALID_HANDLE_VALUE)
     {
         LOG((LF_CORDB, LL_INFO1000,
@@ -101,29 +55,13 @@ BOOL GetAllProcessesInSystem(DWORD *ProcessId,
     // HandleHolder doesn't deal with INVALID_HANDLE_VALUE, so we only assign if we have a legal value.
     hSnapshotHolder.Assign(hSnapshot);
 
-    // Get the first process in the process list
-    // Get the pointer to the requested function
-    pProcAddr = GetProcAddress(hDll, "Process32First");
-
-    // If the proc address was not found, return error
-    if (pProcAddr == NULL)
-    {
-        LOG((LF_CORDB, LL_INFO1000,
-                "Unable to enumerate processes in the system. "
-                "GetProcAddr (Process32First) failed.\n"));
-        return FALSE;
-    }
-
     PROCESSENTRY32  PE32;
 
     // need to initialize the dwSize field before calling Process32First
     PE32.dwSize = sizeof (PROCESSENTRY32);
 
-    typedef BOOL PROCESS32FIRST(HANDLE, LPPROCESSENTRY32);
-
-    BOOL succ =
-            ((PROCESS32FIRST *)pProcAddr)(hSnapshot, &PE32);
-
+    // Get the first process in the process list
+    BOOL succ = Process32First(hSnapshot, &PE32);
     if (succ != TRUE)
     {
         LOG((LF_CORDB, LL_INFO1000,
@@ -132,33 +70,17 @@ BOOL GetAllProcessesInSystem(DWORD *ProcessId,
         return FALSE;
     }
 
-
     // Loop over and get all the remaining processes
-    // Get the pointer to the requested function
-    pProcAddr = GetProcAddress(hDll, "Process32Next");
-
-    // If the proc address was not found, return error
-    if (pProcAddr == NULL)
-    {
-        LOG((LF_CORDB, LL_INFO1000,
-                "Unable to enumerate processes in the system. "
-                "GetProcAddr (Process32Next) failed.\n"));
-        return FALSE;
-    }
-
-    typedef BOOL PROCESS32NEXT(HANDLE, LPPROCESSENTRY32);
-
     int iIndex = 0;
 
     do
     {
         ProcessId [iIndex++] = PE32.th32ProcessID;
 
-        succ = ((PROCESS32NEXT *)pProcAddr)(hSnapshot, &PE32);
+        succ = Process32Next(hSnapshot, &PE32);
 
     } while ((succ == TRUE) && (iIndex < (int)dwArraySize));
 
-    // I would like to know if we're running more than 512 processes on Win95!!
     _ASSERTE (iIndex < (int)dwArraySize);
 
     *pdwNumEntries = iIndex;
@@ -177,16 +99,12 @@ const DWORD SAFETY_TIMEOUT = 2000;
 // ******************************************
 
 CorpubPublish::CorpubPublish()
-    : CordbCommonBase(0),
-    m_fpGetModuleFileNameEx(NULL)
+    : CordbCommonBase(0)
+    , m_fpGetModuleFileNameEx(NULL)
 {
     // Try to get psapi!GetModuleFileNameExW once, and then every process object can use it.
     // If we can't get it, then we'll fallback to getting information from the IPC block.
-#if !defined(FEATURE_CORESYSTEM)
-    m_hPSAPIdll = WszLoadLibrary(W("psapi.dll"));
-#else
 	m_hPSAPIdll = WszLoadLibrary(W("api-ms-win-obsolete-psapi-l1-1-0.dll"));
-#endif
 
     if (m_hPSAPIdll != NULL)
     {
@@ -658,7 +576,7 @@ HRESULT AllocateAndReadRemoteString(
     HANDLE hProcess,
     void * pRemotePtr,
     SIZE_T cbSize, // size of buffer to allocate + copy.
-    __deref_out_bcount(cbSize) WCHAR * * ppNewLocalBuffer
+    _Outptr_result_bytebuffer_(cbSize) WCHAR * * ppNewLocalBuffer
     )
 {
     // Make sure buffer has right geometry.
@@ -902,7 +820,7 @@ HRESULT CorpubProcess::GetProcessID(unsigned *pid)
  */
 HRESULT CorpubProcess::GetDisplayName(ULONG32 cchName,
                                       ULONG32 *pcchName,
-                                      __out_ecount_part_opt(cchName, *pcchName) WCHAR szName[])
+                                      _Out_writes_to_opt_(cchName, *pcchName) WCHAR szName[])
 {
     VALIDATE_POINTER_TO_OBJECT_ARRAY_OR_NULL(szName, WCHAR, cchName, true, true);
     VALIDATE_POINTER_TO_OBJECT_OR_NULL(pcchName, ULONG32 *);
@@ -928,7 +846,7 @@ HRESULT CorpubProcess::GetDisplayName(ULONG32 cchName,
 // CorpubAppDomain
 // ******************************************
 
-CorpubAppDomain::CorpubAppDomain (__in LPWSTR szAppDomainName, ULONG Id)
+CorpubAppDomain::CorpubAppDomain (_In_ LPWSTR szAppDomainName, ULONG Id)
     : CordbCommonBase (0, enumCorpubAppDomain),
     m_pNext (NULL),
     m_szAppDomainName (szAppDomainName),
@@ -976,7 +894,7 @@ HRESULT CorpubAppDomain::GetID (ULONG32 *pId)
  */
 HRESULT CorpubAppDomain::GetName(ULONG32 cchName,
                                 ULONG32 *pcchName,
-                                __out_ecount_part_opt(cchName, *pcchName) WCHAR szName[])
+                                _Out_writes_to_opt_(cchName, *pcchName) WCHAR szName[])
 {
     VALIDATE_POINTER_TO_OBJECT_ARRAY_OR_NULL(szName, WCHAR, cchName, true, true);
     VALIDATE_POINTER_TO_OBJECT_OR_NULL(pcchName, ULONG32 *);

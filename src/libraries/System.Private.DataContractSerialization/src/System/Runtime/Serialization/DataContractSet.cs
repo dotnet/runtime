@@ -34,8 +34,7 @@ namespace System.Runtime.Serialization
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal DataContractSet(DataContractSet dataContractSet)
         {
-            if (dataContractSet == null)
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentNullException(nameof(dataContractSet)));
+            ArgumentNullException.ThrowIfNull(dataContractSet);
 
             //this.dataContractSurrogate = dataContractSet.dataContractSurrogate;
             _referencedTypes = dataContractSet._referencedTypes;
@@ -121,7 +120,7 @@ namespace System.Runtime.Serialization
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal void InternalAdd(XmlQualifiedName name, DataContract dataContract)
         {
-            DataContract? dataContractInSet = null;
+            DataContract? dataContractInSet;
             if (Contracts.TryGetValue(name, out dataContractInSet))
             {
                 if (!dataContractInSet.Equals(dataContract))
@@ -223,7 +222,7 @@ namespace System.Runtime.Serialization
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        internal DataContract GetDataContract(Type clrType)
+        internal static DataContract GetDataContract(Type clrType)
         {
 #if SUPPORT_SURROGATE
             if (_dataContractSurrogate == null)
@@ -253,7 +252,7 @@ namespace System.Runtime.Serialization
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        internal DataContract GetMemberTypeDataContract(DataMember dataMember)
+        internal static DataContract GetMemberTypeDataContract(DataMember dataMember)
         {
             Type dataMemberType = dataMember.MemberType;
             if (dataMember.IsGetOnlyCollection)
@@ -278,7 +277,7 @@ namespace System.Runtime.Serialization
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        internal DataContract GetItemTypeDataContract(CollectionDataContract collectionContract)
+        internal static DataContract GetItemTypeDataContract(CollectionDataContract collectionContract)
         {
             if (collectionContract.ItemType != null)
                 return GetDataContract(collectionContract.ItemType);

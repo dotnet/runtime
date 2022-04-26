@@ -14,14 +14,11 @@
 #define __DACIMPL_H__
 
 #include "gcinterface.dac.h"
-
-#if defined(TARGET_ARM) || defined(FEATURE_CORESYSTEM) // @ARMTODO: STL breaks the build with current VC headers
 //---------------------------------------------------------------------------------------
 // Setting DAC_HASHTABLE tells the DAC to use the hand rolled hashtable for
 // storing code:DAC_INSTANCE .  Otherwise, the DAC uses the STL unordered_map to.
 
 #define DAC_HASHTABLE
-#endif // TARGET_ARM|| FEATURE_CORESYSTEM
 
 #ifndef DAC_HASHTABLE
 #pragma push_macro("return")
@@ -222,22 +219,22 @@ struct METH_EXTENTS
     CLRDATA_ADDRESS_RANGE extents[1];
 };
 
-HRESULT ConvertUtf8(__in LPCUTF8 utf8,
+HRESULT ConvertUtf8(_In_ LPCUTF8 utf8,
                     ULONG32 bufLen,
                     ULONG32* nameLen,
-                    __out_ecount_part_opt(bufLen, *nameLen) PWSTR buffer);
-HRESULT AllocUtf8(__in_opt LPCWSTR wstr,
+                    _Out_writes_to_opt_(bufLen, *nameLen) PWSTR buffer);
+HRESULT AllocUtf8(_In_opt_ LPCWSTR wstr,
                   ULONG32 srcChars,
-                  __deref_out LPUTF8* utf8);
+                  _Outptr_ LPUTF8* utf8);
 
 HRESULT GetFullClassNameFromMetadata(IMDInternalImport* mdImport,
                                      mdTypeDef classToken,
                                      ULONG32 bufferChars,
-                                     __inout_ecount(bufferChars) LPUTF8 buffer);
+                                     _Inout_updates_(bufferChars) LPUTF8 buffer);
 HRESULT GetFullMethodNameFromMetadata(IMDInternalImport* mdImport,
                                       mdMethodDef methodToken,
                                       ULONG32 bufferChars,
-                                      __inout_ecount(bufferChars) LPUTF8 buffer);
+                                      _Inout_updates_(bufferChars) LPUTF8 buffer);
 
 enum SplitSyntax
 {
@@ -247,15 +244,15 @@ enum SplitSyntax
     SPLIT_NO_NAME,
 };
 
-HRESULT SplitFullName(__in_z __in PCWSTR fullName,
+HRESULT SplitFullName(_In_z_ PCWSTR fullName,
                       SplitSyntax syntax,
                       ULONG32 memberDots,
-                      __deref_out_opt LPUTF8* namespaceName,
-                      __deref_out_opt LPUTF8* typeName,
-                      __deref_out_opt LPUTF8* memberName,
-                      __deref_out_opt LPUTF8* params);
+                      _Outptr_opt_ LPUTF8* namespaceName,
+                      _Outptr_opt_ LPUTF8* typeName,
+                      _Outptr_opt_ LPUTF8* memberName,
+                      _Outptr_opt_ LPUTF8* params);
 
-int CompareUtf8(__in LPCUTF8 str1, __in LPCUTF8 str2, __in ULONG32 nameFlags);
+int CompareUtf8(_In_ LPCUTF8 str1, _In_ LPCUTF8 str2, _In_ ULONG32 nameFlags);
 
 #define INH_STATIC \
     (CLRDATA_VALUE_ALL_KINDS | \
@@ -304,16 +301,16 @@ public:
     void End(void);
 
     HRESULT NextToken(mdToken* token,
-                      __deref_opt_out_opt LPCUTF8* namespaceName,
-                      __deref_opt_out_opt LPCUTF8* name);
+                      _Outptr_opt_result_maybenull_ LPCUTF8* namespaceName,
+                      _Outptr_opt_result_maybenull_ LPCUTF8* name);
     HRESULT NextDomainToken(AppDomain** appDomain,
                             mdToken* token);
-    HRESULT NextTokenByName(__in_opt LPCUTF8 namespaceName,
-                            __in_opt LPCUTF8 name,
+    HRESULT NextTokenByName(_In_opt_ LPCUTF8 namespaceName,
+                            _In_opt_ LPCUTF8 name,
                             ULONG32 nameFlags,
                             mdToken* token);
-    HRESULT NextDomainTokenByName(__in_opt LPCUTF8 namespaceName,
-                                  __in_opt LPCUTF8 name,
+    HRESULT NextDomainTokenByName(_In_opt_ LPCUTF8 namespaceName,
+                                  _In_opt_ LPCUTF8 name,
                                   ULONG32 nameFlags,
                                   AppDomain** appDomain, mdToken* token);
 
@@ -410,7 +407,7 @@ public:
     void Delete(void);
     void Clear(void);
 
-    HRESULT SplitString(__in_opt PCWSTR fullName);
+    HRESULT SplitString(_In_opt_ PCWSTR fullName);
 
     bool FindType(IMDInternalImport* mdInternal);
     bool FindMethod(IMDInternalImport* mdInternal);
@@ -421,13 +418,13 @@ public:
         return CompareUtf8(str1, str2, m_nameFlags);
     }
 
-    static HRESULT AllocAndSplitString(__in_opt PCWSTR fullName,
+    static HRESULT AllocAndSplitString(_In_opt_ PCWSTR fullName,
                                        SplitSyntax syntax,
                                        ULONG32 nameFlags,
                                        ULONG32 memberDots,
                                        SplitName** split);
 
-    static HRESULT CdStartMethod(__in_opt PCWSTR fullName,
+    static HRESULT CdStartMethod(_In_opt_ PCWSTR fullName,
                                  ULONG32 nameFlags,
                                  Module* mod,
                                  mdTypeDef typeToken,
@@ -441,7 +438,7 @@ public:
                                       AppDomain** appDomain,
                                       mdMethodDef* token);
 
-    static HRESULT CdStartField(__in_opt PCWSTR fullName,
+    static HRESULT CdStartField(_In_opt_ PCWSTR fullName,
                                 ULONG32 nameFlags,
                                 ULONG32 fieldFlags,
                                 IXCLRDataTypeInstance* fromTypeInst,
@@ -462,14 +459,14 @@ public:
                                IXCLRDataValue** value,
                                ULONG32 nameBufRetLen,
                                ULONG32* nameLenRet,
-                               __out_ecount_part_opt(nameBufRetLen, *nameLenRet) WCHAR nameBufRet[  ],
+                               _Out_writes_to_opt_(nameBufRetLen, *nameLenRet) WCHAR nameBufRet[  ],
                                IXCLRDataModule** tokenScopeRet,
                                mdFieldDef* tokenRet);
     static HRESULT CdNextDomainField(ClrDataAccess* dac,
                                      CLRDATA_ENUM* handle,
                                      IXCLRDataValue** value);
 
-    static HRESULT CdStartType(__in_opt PCWSTR fullName,
+    static HRESULT CdStartType(_In_opt_ PCWSTR fullName,
                                ULONG32 nameFlags,
                                Module* mod,
                                AppDomain* appDomain,
@@ -509,7 +506,6 @@ struct ProcessModIter
     bool m_nextDomain;
     AppDomain::AssemblyIterator m_assemIter;
     Assembly* m_curAssem;
-    Assembly::ModuleIterator m_modIter;
 
     ProcessModIter(void)
         : m_domainIter(FALSE)
@@ -545,7 +541,7 @@ struct ProcessModIter
             }
 
             // Note: DAC doesn't need to keep the assembly alive - see code:CollectibleAssemblyHolder#CAH_DAC
-            CollectibleAssemblyHolder<Assembly *> pAssembly = pDomainAssembly->GetLoadedAssembly();
+            CollectibleAssemblyHolder<Assembly *> pAssembly = pDomainAssembly->GetAssembly();
             return pAssembly;
         }
         return NULL;
@@ -554,27 +550,13 @@ struct ProcessModIter
     Module* NextModule(void)
     {
         SUPPORTS_DAC;
-        for (;;)
+        m_curAssem = NextAssem();
+        if (!m_curAssem)
         {
-            if (!m_curAssem)
-            {
-                m_curAssem = NextAssem();
-                if (!m_curAssem)
-                {
-                    return NULL;
-                }
-
-                m_modIter = m_curAssem->IterateModules();
-            }
-
-            if (!m_modIter.Next())
-            {
-                m_curAssem = NULL;
-                continue;
-            }
-
-            return m_modIter.GetModule();
+            return NULL;
         }
+
+        return m_curAssem->GetModule();
     }
 };
 
@@ -840,7 +822,8 @@ class ClrDataAccess
       public ISOSDacInterface8,
       public ISOSDacInterface9,
       public ISOSDacInterface10,
-      public ISOSDacInterface11
+      public ISOSDacInterface11,
+      public ISOSDacInterface12
 {
 public:
     ClrDataAccess(ICorDebugDataTarget * pTarget, ICLRDataTarget * pLegacyTarget=0);
@@ -901,7 +884,7 @@ public:
         /* [in] */ ULONG32 flags,
         /* [in] */ ULONG32 bufLen,
         /* [out] */ ULONG32 *nameLen,
-        /* [size_is][out] */ __out_ecount_opt(bufLen) WCHAR nameBuf[  ],
+        /* [size_is][out] */ _Out_writes_bytes_opt_(bufLen) WCHAR nameBuf[  ],
         /* [out] */ CLRDATA_ADDRESS* displacement);
 
     virtual HRESULT STDMETHODCALLTYPE StartEnumAppDomains(
@@ -972,7 +955,7 @@ public:
         /* [in] */ IXCLRDataTask* tlsTask,
         /* [in] */ ULONG32 bufLen,
         /* [out] */ ULONG32 *nameLen,
-        /* [size_is][out] */ __out_ecount_part_opt(bufLen, *nameLen) WCHAR nameBuf[  ],
+        /* [size_is][out] */ _Out_writes_to_opt_(bufLen, *nameLen) WCHAR nameBuf[  ],
         /* [out] */ IXCLRDataValue **value,
         /* [out] */ CLRDATA_ADDRESS *displacement);
 
@@ -1080,10 +1063,10 @@ public:
     virtual HRESULT STDMETHODCALLTYPE GetAppDomainStoreData(struct DacpAppDomainStoreData *data);
     virtual HRESULT STDMETHODCALLTYPE GetAppDomainList(unsigned int count, CLRDATA_ADDRESS values[], unsigned int *pNeeded);
     virtual HRESULT STDMETHODCALLTYPE GetAppDomainData(CLRDATA_ADDRESS addr, struct DacpAppDomainData *data);
-    virtual HRESULT STDMETHODCALLTYPE GetAppDomainName(CLRDATA_ADDRESS addr, unsigned int count, __out_z __inout_ecount(count) WCHAR *name, unsigned int *pNeeded);
+    virtual HRESULT STDMETHODCALLTYPE GetAppDomainName(CLRDATA_ADDRESS addr, unsigned int count, _Inout_updates_z_(count) WCHAR *name, unsigned int *pNeeded);
     virtual HRESULT STDMETHODCALLTYPE GetAssemblyList(CLRDATA_ADDRESS appDomain, int count, CLRDATA_ADDRESS values[], int *fetched);
     virtual HRESULT STDMETHODCALLTYPE GetAssemblyData(CLRDATA_ADDRESS baseDomainPtr, CLRDATA_ADDRESS assembly, struct DacpAssemblyData *data);
-    virtual HRESULT STDMETHODCALLTYPE GetAssemblyName(CLRDATA_ADDRESS assembly, unsigned int count, __out_z __inout_ecount(count) WCHAR *name, unsigned int *pNeeded);
+    virtual HRESULT STDMETHODCALLTYPE GetAssemblyName(CLRDATA_ADDRESS assembly, unsigned int count, _Inout_updates_z_(count) WCHAR *name, unsigned int *pNeeded);
     virtual HRESULT STDMETHODCALLTYPE GetThreadData(CLRDATA_ADDRESS thread, struct DacpThreadData *data);
     virtual HRESULT STDMETHODCALLTYPE GetThreadFromThinlockID(UINT thinLockId, CLRDATA_ADDRESS *pThread);
     virtual HRESULT STDMETHODCALLTYPE GetStackLimits(CLRDATA_ADDRESS threadPtr, CLRDATA_ADDRESS *lower, CLRDATA_ADDRESS *upper, CLRDATA_ADDRESS *fp);
@@ -1091,27 +1074,27 @@ public:
 
     virtual HRESULT STDMETHODCALLTYPE GetMethodDescData(CLRDATA_ADDRESS methodDesc, CLRDATA_ADDRESS ip, struct DacpMethodDescData *data, ULONG cRevertedRejitVersions, DacpReJitData * rgRevertedRejitData, ULONG * pcNeededRevertedRejitData);
     virtual HRESULT STDMETHODCALLTYPE GetMethodDescPtrFromIP(CLRDATA_ADDRESS ip, CLRDATA_ADDRESS * ppMD);
-    virtual HRESULT STDMETHODCALLTYPE GetMethodDescName(CLRDATA_ADDRESS methodDesc, unsigned int count, __out_z __inout_ecount(count) WCHAR *name, unsigned int *pNeeded);
+    virtual HRESULT STDMETHODCALLTYPE GetMethodDescName(CLRDATA_ADDRESS methodDesc, unsigned int count, _Inout_updates_z_(count) WCHAR *name, unsigned int *pNeeded);
     virtual HRESULT STDMETHODCALLTYPE GetMethodDescPtrFromFrame(CLRDATA_ADDRESS frameAddr, CLRDATA_ADDRESS * ppMD);
     virtual HRESULT STDMETHODCALLTYPE GetCodeHeaderData(CLRDATA_ADDRESS ip, struct DacpCodeHeaderData *data);
     virtual HRESULT STDMETHODCALLTYPE GetThreadpoolData(struct DacpThreadpoolData *data);
     virtual HRESULT STDMETHODCALLTYPE GetWorkRequestData(CLRDATA_ADDRESS addrWorkRequest, struct DacpWorkRequestData *data);
     virtual HRESULT STDMETHODCALLTYPE GetObjectData(CLRDATA_ADDRESS objAddr, struct DacpObjectData *data);
-    virtual HRESULT STDMETHODCALLTYPE GetObjectStringData(CLRDATA_ADDRESS obj, unsigned int count, __out_z __inout_ecount(count) WCHAR *stringData, unsigned int *pNeeded);
-    virtual HRESULT STDMETHODCALLTYPE GetObjectClassName(CLRDATA_ADDRESS obj, unsigned int count, __out_z __inout_ecount(count) WCHAR *className, unsigned int *pNeeded);
-    virtual HRESULT STDMETHODCALLTYPE GetMethodTableName(CLRDATA_ADDRESS mt, unsigned int count, __out_z __inout_ecount(count) WCHAR *mtName, unsigned int *pNeeded);
+    virtual HRESULT STDMETHODCALLTYPE GetObjectStringData(CLRDATA_ADDRESS obj, unsigned int count, _Inout_updates_z_(count) WCHAR *stringData, unsigned int *pNeeded);
+    virtual HRESULT STDMETHODCALLTYPE GetObjectClassName(CLRDATA_ADDRESS obj, unsigned int count, _Inout_updates_z_(count) WCHAR *className, unsigned int *pNeeded);
+    virtual HRESULT STDMETHODCALLTYPE GetMethodTableName(CLRDATA_ADDRESS mt, unsigned int count, _Inout_updates_z_(count) WCHAR *mtName, unsigned int *pNeeded);
     virtual HRESULT STDMETHODCALLTYPE GetMethodTableData(CLRDATA_ADDRESS mt, struct DacpMethodTableData *data);
     virtual HRESULT STDMETHODCALLTYPE GetMethodTableFieldData(CLRDATA_ADDRESS mt, struct DacpMethodTableFieldData *data);
     virtual HRESULT STDMETHODCALLTYPE GetMethodTableTransparencyData(CLRDATA_ADDRESS mt, struct DacpMethodTableTransparencyData *data);
     virtual HRESULT STDMETHODCALLTYPE GetMethodTableForEEClass(CLRDATA_ADDRESS eeClass, CLRDATA_ADDRESS *value);
     virtual HRESULT STDMETHODCALLTYPE GetFieldDescData(CLRDATA_ADDRESS fieldDesc, struct DacpFieldDescData *data);
-    virtual HRESULT STDMETHODCALLTYPE GetFrameName(CLRDATA_ADDRESS vtable, unsigned int count, __out_z __inout_ecount(count) WCHAR *frameName, unsigned int *pNeeded);
+    virtual HRESULT STDMETHODCALLTYPE GetFrameName(CLRDATA_ADDRESS vtable, unsigned int count, _Inout_updates_z_(count) WCHAR *frameName, unsigned int *pNeeded);
     virtual HRESULT STDMETHODCALLTYPE GetModule(CLRDATA_ADDRESS addr, IXCLRDataModule **mod);
     virtual HRESULT STDMETHODCALLTYPE GetModuleData(CLRDATA_ADDRESS moduleAddr, struct DacpModuleData *data);
     virtual HRESULT STDMETHODCALLTYPE TraverseModuleMap(ModuleMapType mmt, CLRDATA_ADDRESS moduleAddr, MODULEMAPTRAVERSE pCallback, LPVOID token);
     virtual HRESULT STDMETHODCALLTYPE GetMethodDescFromToken(CLRDATA_ADDRESS moduleAddr, mdToken token, CLRDATA_ADDRESS *methodDesc);
     virtual HRESULT STDMETHODCALLTYPE GetPEFileBase(CLRDATA_ADDRESS addr, CLRDATA_ADDRESS *base);
-    virtual HRESULT STDMETHODCALLTYPE GetPEFileName(CLRDATA_ADDRESS addr, unsigned int count, __out_z __inout_ecount(count) WCHAR *fileName, unsigned int *pNeeded);
+    virtual HRESULT STDMETHODCALLTYPE GetPEFileName(CLRDATA_ADDRESS addr, unsigned int count, _Inout_updates_z_(count) WCHAR *fileName, unsigned int *pNeeded);
     virtual HRESULT STDMETHODCALLTYPE GetAssemblyModuleList(CLRDATA_ADDRESS assembly, unsigned int count, CLRDATA_ADDRESS modules[], unsigned int *pNeeded);
     virtual HRESULT STDMETHODCALLTYPE GetGCHeapData(struct DacpGcHeapData *data);
     virtual HRESULT STDMETHODCALLTYPE GetGCHeapList(unsigned int count, CLRDATA_ADDRESS heaps[], unsigned int *pNeeded);
@@ -1127,7 +1110,7 @@ public:
     virtual HRESULT STDMETHODCALLTYPE TraverseEHInfo(CLRDATA_ADDRESS ip, DUMPEHINFO pCallback, LPVOID token);
     virtual HRESULT STDMETHODCALLTYPE GetStressLogAddress(CLRDATA_ADDRESS *stressLog);
     virtual HRESULT STDMETHODCALLTYPE GetJitManagerList(unsigned int count, struct DacpJitManagerInfo managers[], unsigned int *pNeeded);
-    virtual HRESULT STDMETHODCALLTYPE GetJitHelperFunctionName(CLRDATA_ADDRESS ip, unsigned int count, __out_z __inout_ecount(count) char *name, unsigned int *pNeeded);
+    virtual HRESULT STDMETHODCALLTYPE GetJitHelperFunctionName(CLRDATA_ADDRESS ip, unsigned int count, _Inout_updates_z_(count) char *name, unsigned int *pNeeded);
     virtual HRESULT STDMETHODCALLTYPE GetJumpThunkTarget(T_CONTEXT *ctx, CLRDATA_ADDRESS *targetIP, CLRDATA_ADDRESS *targetMD);
     virtual HRESULT STDMETHODCALLTYPE TraverseLoaderHeap(CLRDATA_ADDRESS loaderHeapAddr, VISITHEAP pCallback);
     virtual HRESULT STDMETHODCALLTYPE GetCodeHeapList(CLRDATA_ADDRESS jitManager, unsigned int count, struct DacpJitCodeHeapInfo codeHeaps[], unsigned int *pNeeded);
@@ -1152,17 +1135,17 @@ public:
     virtual HRESULT STDMETHODCALLTYPE GetDacModuleHandle(HMODULE *phModule);
 
     virtual HRESULT STDMETHODCALLTYPE GetFailedAssemblyList(CLRDATA_ADDRESS appDomain, int count, CLRDATA_ADDRESS values[], unsigned int *pNeeded);
-    virtual HRESULT STDMETHODCALLTYPE GetPrivateBinPaths(CLRDATA_ADDRESS appDomain, int count, __out_z __inout_ecount(count) WCHAR *paths, unsigned int *pNeeded);
-    virtual HRESULT STDMETHODCALLTYPE GetAssemblyLocation(CLRDATA_ADDRESS assembly, int count, __out_z __inout_ecount(count) WCHAR *location, unsigned int *pNeeded);
-    virtual HRESULT STDMETHODCALLTYPE GetAppDomainConfigFile(CLRDATA_ADDRESS appDomain, int count, __out_z __inout_ecount(count) WCHAR *configFile, unsigned int *pNeeded);
-    virtual HRESULT STDMETHODCALLTYPE GetApplicationBase(CLRDATA_ADDRESS appDomain, int count, __out_z __inout_ecount(count) WCHAR *base, unsigned int *pNeeded);
+    virtual HRESULT STDMETHODCALLTYPE GetPrivateBinPaths(CLRDATA_ADDRESS appDomain, int count, _Inout_updates_z_(count) WCHAR *paths, unsigned int *pNeeded);
+    virtual HRESULT STDMETHODCALLTYPE GetAssemblyLocation(CLRDATA_ADDRESS assembly, int count, _Inout_updates_z_(count) WCHAR *location, unsigned int *pNeeded);
+    virtual HRESULT STDMETHODCALLTYPE GetAppDomainConfigFile(CLRDATA_ADDRESS appDomain, int count, _Inout_updates_z_(count) WCHAR *configFile, unsigned int *pNeeded);
+    virtual HRESULT STDMETHODCALLTYPE GetApplicationBase(CLRDATA_ADDRESS appDomain, int count, _Inout_updates_z_(count) WCHAR *base, unsigned int *pNeeded);
 
     virtual HRESULT STDMETHODCALLTYPE GetFailedAssemblyData(CLRDATA_ADDRESS assembly, unsigned int *pContext, HRESULT *pResult);
-    virtual HRESULT STDMETHODCALLTYPE GetFailedAssemblyLocation(CLRDATA_ADDRESS assembly, unsigned int count, __out_z __inout_ecount(count) WCHAR *location, unsigned int *pNeeded);
-    virtual HRESULT STDMETHODCALLTYPE GetFailedAssemblyDisplayName(CLRDATA_ADDRESS assembly, unsigned int count, __out_z __inout_ecount(count) WCHAR *name, unsigned int *pNeeded);
+    virtual HRESULT STDMETHODCALLTYPE GetFailedAssemblyLocation(CLRDATA_ADDRESS assembly, unsigned int count, _Inout_updates_z_(count) WCHAR *location, unsigned int *pNeeded);
+    virtual HRESULT STDMETHODCALLTYPE GetFailedAssemblyDisplayName(CLRDATA_ADDRESS assembly, unsigned int count, _Inout_updates_z_(count) WCHAR *name, unsigned int *pNeeded);
 
     virtual HRESULT STDMETHODCALLTYPE GetStackReferences(DWORD osThreadID, ISOSStackRefEnum **ppEnum);
-    virtual HRESULT STDMETHODCALLTYPE GetRegisterName(int regNum, unsigned int count, __out_z __inout_ecount(count) WCHAR *buffer, unsigned int *pNeeded);
+    virtual HRESULT STDMETHODCALLTYPE GetRegisterName(int regNum, unsigned int count, _Inout_updates_z_(count) WCHAR *buffer, unsigned int *pNeeded);
 
     virtual HRESULT STDMETHODCALLTYPE GetHandleEnum(ISOSHandleEnum **ppHandleEnum);
     virtual HRESULT STDMETHODCALLTYPE GetHandleEnumForTypes(unsigned int types[], unsigned int count, ISOSHandleEnum **ppHandleEnum);
@@ -1224,6 +1207,12 @@ public:
         CLRDATA_ADDRESS objAddr,
         CLRDATA_ADDRESS *taggedMemory,
         size_t *taggedMemorySizeInBytes);
+
+    // ISOSDacInterface12
+    virtual HRESULT STDMETHODCALLTYPE GetGlobalAllocationContext( 
+        CLRDATA_ADDRESS *allocPtr,
+        CLRDATA_ADDRESS *allocLimit);
+
     //
     // ClrDataAccess.
     //
@@ -1244,12 +1233,12 @@ public:
     HRESULT GetFullMethodName(IN MethodDesc* methodDesc,
                               IN ULONG32 symbolChars,
                               IN ULONG32* symbolLen,
-                              __out_ecount_part_opt(symbolChars, *symbolLen) LPWSTR symbol);
+                              _Out_writes_to_opt_(symbolChars, *symbolLen) LPWSTR symbol);
     HRESULT RawGetMethodName(/* [in] */ CLRDATA_ADDRESS address,
                              /* [in] */ ULONG32 flags,
                              /* [in] */ ULONG32 bufLen,
                              /* [out] */ ULONG32 *nameLen,
-                             /* [size_is][out] */ __out_ecount_opt(bufLen) WCHAR nameBuf[  ],
+                             /* [size_is][out] */ _Out_writes_bytes_opt_(bufLen) WCHAR nameBuf[  ],
                              /* [out] */ CLRDATA_ADDRESS* displacement);
 
     HRESULT FollowStubStep(
@@ -1512,19 +1501,14 @@ public:
                                               DWORD &dwDataSize,
                                               DWORD &dwRvaHint,
                                               bool  &isNGEN,
-                                              __out_ecount(cchFilePath) LPWSTR wszFilePath,
+                                              _Out_writes_(cchFilePath) LPWSTR wszFilePath,
                                               DWORD cchFilePath);
 
     static bool GetILImageInfoFromNgenPEFile(PEAssembly *pPEAssembly,
                                              DWORD &dwTimeStamp,
                                              DWORD &dwSize,
-                                             __out_ecount(cchPath) LPWSTR wszPath,
+                                             _Out_writes_(cchPath) LPWSTR wszPath,
                                              const DWORD cchPath);
-#if defined(FEATURE_CORESYSTEM)
-    static bool GetILImageNameFromNgenImage(LPCWSTR ilExtension,
-                                            __out_ecount(cchFilePath) LPWSTR wszFilePath,
-                                            const DWORD cchFilePath);
-#endif // FEATURE_CORESYSTEM
 };
 
 extern ClrDataAccess* g_dacImpl;
@@ -1829,11 +1813,8 @@ private:
         int count = 0;
         while (seg_start)
         {
-            // If we find this many segments, something is seriously wrong.
-            if (count++ > 4096)
-                break;
-
             seg_start = seg_start->next;
+            count++;
         }
 
         return count;
@@ -2348,7 +2329,7 @@ public:
     virtual HRESULT STDMETHODCALLTYPE GetName(
         /* [in] */ ULONG32 bufLen,
         /* [out] */ ULONG32 *nameLen,
-        /* [size_is][out] */ __out_ecount_part_opt(bufLen, *nameLen) WCHAR name[  ]);
+        /* [size_is][out] */ _Out_writes_to_opt_(bufLen, *nameLen) WCHAR name[  ]);
 
     virtual HRESULT STDMETHODCALLTYPE GetUniqueID(
         /* [out] */ ULONG64 *id);
@@ -2429,17 +2410,17 @@ public:
     virtual HRESULT STDMETHODCALLTYPE GetName(
         /* [in] */ ULONG32 bufLen,
         /* [out] */ ULONG32 *nameLen,
-        /* [size_is][out] */ __out_ecount_part_opt(bufLen, *nameLen) WCHAR name[  ]);
+        /* [size_is][out] */ _Out_writes_to_opt_(bufLen, *nameLen) WCHAR name[  ]);
 
     virtual HRESULT STDMETHODCALLTYPE GetFileName(
         /* [in] */ ULONG32 bufLen,
         /* [out] */ ULONG32 *nameLen,
-        /* [size_is][out] */ __out_ecount_part_opt(bufLen, *nameLen) WCHAR name[  ]);
+        /* [size_is][out] */ _Out_writes_to_opt_(bufLen, *nameLen) WCHAR name[  ]);
 
     virtual HRESULT STDMETHODCALLTYPE GetDisplayName(
         /* [in] */ ULONG32 bufLen,
         /* [out] */ ULONG32 *nameLen,
-        /* [size_is][out] */ __out_ecount_part_opt(bufLen, *nameLen) WCHAR name[  ]);
+        /* [size_is][out] */ _Out_writes_to_opt_(bufLen, *nameLen) WCHAR name[  ]);
 
     virtual HRESULT STDMETHODCALLTYPE GetFlags(
         /* [out] */ ULONG32 *flags);
@@ -2601,12 +2582,12 @@ public:
     virtual HRESULT STDMETHODCALLTYPE GetName(
         /* [in] */ ULONG32 bufLen,
         /* [out] */ ULONG32 *nameLen,
-        /* [size_is][out] */ __out_ecount_part_opt(bufLen, *nameLen) WCHAR name[  ]);
+        /* [size_is][out] */ _Out_writes_to_opt_(bufLen, *nameLen) WCHAR name[  ]);
 
     virtual HRESULT STDMETHODCALLTYPE GetFileName(
         /* [in] */ ULONG32 bufLen,
         /* [out] */ ULONG32 *nameLen,
-        /* [size_is][out] */ __out_ecount_part(bufLen, *nameLen) WCHAR name[  ]);
+        /* [size_is][out] */ _Out_writes_to_opt_(bufLen, *nameLen) WCHAR name[  ]);
 
     virtual HRESULT STDMETHODCALLTYPE GetVersionId(
         /* [out] */ GUID* vid);
@@ -2747,7 +2728,7 @@ public:
         /* [out][in] */ CLRDATA_ENUM *handle,
         /* [in] */ ULONG32 nameBufLen,
         /* [out] */ ULONG32 *nameLen,
-        /* [size_is][out] */ __out_ecount_part_opt(nameBufLen, *nameLen) WCHAR nameBuf[  ],
+        /* [size_is][out] */ _Out_writes_to_opt_(nameBufLen, *nameLen) WCHAR nameBuf[  ],
         /* [out] */ IXCLRDataTypeDefinition **type,
         /* [out] */ ULONG32 *flags,
         /* [out] */ mdFieldDef *token);
@@ -2756,7 +2737,7 @@ public:
         /* [out][in] */ CLRDATA_ENUM *handle,
         /* [in] */ ULONG32 nameBufLen,
         /* [out] */ ULONG32 *nameLen,
-        /* [size_is][out] */ __out_ecount_part_opt(nameBufLen, *nameLen) WCHAR nameBuf[  ],
+        /* [size_is][out] */ _Out_writes_to_opt_(nameBufLen, *nameLen) WCHAR nameBuf[  ],
         /* [out] */ IXCLRDataTypeDefinition **type,
         /* [out] */ ULONG32 *flags,
         /* [out] */ IXCLRDataModule** tokenScope,
@@ -2791,7 +2772,7 @@ public:
         /* [in] */ mdFieldDef token,
         /* [in] */ ULONG32 nameBufLen,
         /* [out] */ ULONG32 *nameLen,
-        /* [size_is][out] */ __out_ecount_part_opt(nameBufLen, *nameLen) WCHAR nameBuf[  ],
+        /* [size_is][out] */ _Out_writes_to_opt_(nameBufLen, *nameLen) WCHAR nameBuf[  ],
         /* [out] */ IXCLRDataTypeDefinition **type,
         /* [out] */ ULONG32* flags);
 
@@ -2800,7 +2781,7 @@ public:
         /* [in] */ mdFieldDef token,
         /* [in] */ ULONG32 nameBufLen,
         /* [out] */ ULONG32 *nameLen,
-        /* [size_is][out] */ __out_ecount_part_opt(nameBufLen, *nameLen) WCHAR nameBuf[  ],
+        /* [size_is][out] */ _Out_writes_to_opt_(nameBufLen, *nameLen) WCHAR nameBuf[  ],
         /* [out] */ IXCLRDataTypeDefinition **type,
         /* [out] */ ULONG32* flags);
 
@@ -2808,7 +2789,7 @@ public:
         /* [in] */ ULONG32 flags,
         /* [in] */ ULONG32 bufLen,
         /* [out] */ ULONG32 *nameLen,
-        /* [size_is][out] */ __out_ecount_part_opt(bufLen, *nameLen) WCHAR nameBuf[  ]);
+        /* [size_is][out] */ _Out_writes_to_opt_(bufLen, *nameLen) WCHAR nameBuf[  ]);
 
     virtual HRESULT STDMETHODCALLTYPE GetTokenAndScope(
         /* [out] */ mdTypeDef *token,
@@ -2918,7 +2899,7 @@ public:
         /* [out] */ IXCLRDataValue **field,
         /* [in] */ ULONG32 bufLen,
         /* [out] */ ULONG32 *nameLen,
-        /* [size_is][out] */ __out_ecount_part_opt(bufLen, *nameLen) WCHAR nameBuf[  ],
+        /* [size_is][out] */ _Out_writes_to_opt_(bufLen, *nameLen) WCHAR nameBuf[  ],
         /* [out] */ mdFieldDef *token);
 
     virtual HRESULT STDMETHODCALLTYPE StartEnumStaticFieldsByName(
@@ -2952,7 +2933,7 @@ public:
         /* [out] */ IXCLRDataValue **value,
         /* [in] */ ULONG32 bufLen,
         /* [out] */ ULONG32 *nameLen,
-        /* [size_is][out] */ __out_ecount_part_opt(bufLen, *nameLen) WCHAR nameBuf[  ],
+        /* [size_is][out] */ _Out_writes_to_opt_(bufLen, *nameLen) WCHAR nameBuf[  ],
         /* [out] */ IXCLRDataModule** tokenScope,
         /* [out] */ mdFieldDef *token);
 
@@ -2985,7 +2966,7 @@ public:
         /* [out] */ IXCLRDataValue **field,
         /* [in] */ ULONG32 bufLen,
         /* [out] */ ULONG32 *nameLen,
-        /* [size_is][out] */ __out_ecount_part_opt(bufLen, *nameLen) WCHAR nameBuf[  ]);
+        /* [size_is][out] */ _Out_writes_to_opt_(bufLen, *nameLen) WCHAR nameBuf[  ]);
 
     virtual HRESULT STDMETHODCALLTYPE GetStaticFieldByToken2(
         /* [in] */ IXCLRDataModule* tokenScope,
@@ -2994,13 +2975,13 @@ public:
         /* [out] */ IXCLRDataValue **field,
         /* [in] */ ULONG32 bufLen,
         /* [out] */ ULONG32 *nameLen,
-        /* [size_is][out] */ __out_ecount_part_opt(bufLen, *nameLen) WCHAR nameBuf[  ]);
+        /* [size_is][out] */ _Out_writes_to_opt_(bufLen, *nameLen) WCHAR nameBuf[  ]);
 
     virtual HRESULT STDMETHODCALLTYPE GetName(
         /* [in] */ ULONG32 flags,
         /* [in] */ ULONG32 bufLen,
         /* [out] */ ULONG32 *nameLen,
-        /* [size_is][out] */ __out_ecount_part_opt(bufLen, *nameLen) WCHAR nameBuf[  ]);
+        /* [size_is][out] */ _Out_writes_to_opt_(bufLen, *nameLen) WCHAR nameBuf[  ]);
 
     virtual HRESULT STDMETHODCALLTYPE GetModule(
         /* [out] */ IXCLRDataModule **mod);
@@ -3095,7 +3076,7 @@ public:
         /* [in] */ ULONG32 flags,
         /* [in] */ ULONG32 bufLen,
         /* [out] */ ULONG32 *nameLen,
-        /* [size_is][out] */ __out_ecount_part_opt(bufLen, *nameLen) WCHAR name[  ]);
+        /* [size_is][out] */ _Out_writes_to_opt_(bufLen, *nameLen) WCHAR name[  ]);
 
     virtual HRESULT STDMETHODCALLTYPE GetTokenAndScope(
         /* [out] */ mdMethodDef *token,
@@ -3200,7 +3181,7 @@ public:
         /* [in] */ ULONG32 flags,
         /* [in] */ ULONG32 bufLen,
         /* [out] */ ULONG32 *nameLen,
-        /* [size_is][out] */ __out_ecount_part(bufLen, *nameLen) WCHAR name[  ]);
+        /* [size_is][out] */ _Out_writes_to_opt_(bufLen, *nameLen) WCHAR name[  ]);
 
     virtual HRESULT STDMETHODCALLTYPE GetFlags(
         /* [out] */ ULONG32 *flags);
@@ -3304,7 +3285,7 @@ public:
     virtual HRESULT STDMETHODCALLTYPE GetName(
         /* [in] */ ULONG32 bufLen,
         /* [out] */ ULONG32 *nameLen,
-        /* [size_is][out] */ __out_ecount_part_opt(bufLen, *nameLen) WCHAR name[  ]);
+        /* [size_is][out] */ _Out_writes_to_opt_(bufLen, *nameLen) WCHAR name[  ]);
 
     virtual HRESULT STDMETHODCALLTYPE GetUniqueID(
         /* [out] */ ULONG64 *id);
@@ -3500,7 +3481,7 @@ public:
         /* [out] */ IXCLRDataValue **arg,
         /* [in] */ ULONG32 bufLen,
         /* [out] */ ULONG32 *nameLen,
-        /* [size_is][out] */ __out_ecount_part(bufLen, *nameLen) WCHAR name[  ]);
+        /* [size_is][out] */ _Out_writes_to_opt_(bufLen, *nameLen) WCHAR name[  ]);
 
     virtual HRESULT STDMETHODCALLTYPE GetNumLocalVariables(
         /* [out] */ ULONG32 *numLocals);
@@ -3510,7 +3491,7 @@ public:
         /* [out] */ IXCLRDataValue **localVariable,
         /* [in] */ ULONG32 bufLen,
         /* [out] */ ULONG32 *nameLen,
-        /* [size_is][out] */ __out_ecount_part(bufLen, *nameLen) WCHAR name[  ]);
+        /* [size_is][out] */ _Out_writes_to_opt_(bufLen, *nameLen) WCHAR name[  ]);
 
     virtual HRESULT STDMETHODCALLTYPE GetNumTypeArguments(
         /* [out] */ ULONG32 *numTypeArgs);
@@ -3523,7 +3504,7 @@ public:
         /* [in] */ ULONG32 flags,
         /* [in] */ ULONG32 bufLen,
         /* [out] */ ULONG32 *nameLen,
-        /* [size_is][out] */ __out_ecount_opt(bufLen) WCHAR nameBuf[  ]);
+        /* [size_is][out] */ _Out_writes_bytes_opt_(bufLen) WCHAR nameBuf[  ]);
 
     virtual HRESULT STDMETHODCALLTYPE GetMethodInstance(
         /* [out] */ IXCLRDataMethodInstance **method);
@@ -3620,7 +3601,7 @@ public:
     virtual HRESULT STDMETHODCALLTYPE GetString(
         /* [in] */ ULONG32 bufLen,
         /* [out] */ ULONG32 *strLen,
-        /* [size_is][out] */ __out_ecount_part(bufLen, *strLen) WCHAR str[  ]);
+        /* [size_is][out] */ _Out_writes_to_opt_(bufLen, *strLen) WCHAR str[  ]);
 
     virtual HRESULT STDMETHODCALLTYPE IsSameState(
         /* [in] */ EXCEPTION_RECORD64 *exRecord,
@@ -3724,7 +3705,7 @@ public:
         /* [out] */ IXCLRDataValue **field,
         /* [in] */ ULONG32 bufLen,
         /* [out] */ ULONG32 *nameLen,
-        /* [size_is][out] */ __out_ecount_part_opt(bufLen, *nameLen) WCHAR nameBuf[  ],
+        /* [size_is][out] */ _Out_writes_to_opt_(bufLen, *nameLen) WCHAR nameBuf[  ],
         /* [out] */ mdFieldDef *token);
 
     virtual HRESULT STDMETHODCALLTYPE GetNumFields2(
@@ -3742,7 +3723,7 @@ public:
         /* [out] */ IXCLRDataValue **field,
         /* [in] */ ULONG32 nameBufLen,
         /* [out] */ ULONG32 *nameLen,
-        /* [size_is][out] */ __out_ecount_part_opt(nameBufLen, *nameLen) WCHAR nameBuf[  ],
+        /* [size_is][out] */ _Out_writes_to_opt_(nameBufLen, *nameLen) WCHAR nameBuf[  ],
         /* [out] */ mdFieldDef *token);
 
     virtual HRESULT STDMETHODCALLTYPE EnumField2(
@@ -3750,7 +3731,7 @@ public:
         /* [out] */ IXCLRDataValue **field,
         /* [in] */ ULONG32 nameBufLen,
         /* [out] */ ULONG32 *nameLen,
-        /* [size_is][out] */ __out_ecount_part_opt(nameBufLen, *nameLen) WCHAR nameBuf[  ],
+        /* [size_is][out] */ _Out_writes_to_opt_(nameBufLen, *nameLen) WCHAR nameBuf[  ],
         /* [out] */ IXCLRDataModule** tokenScope,
         /* [out] */ mdFieldDef *token);
 
@@ -3783,7 +3764,7 @@ public:
         /* [out] */ IXCLRDataValue **field,
         /* [in] */ ULONG32 bufLen,
         /* [out] */ ULONG32 *nameLen,
-        /* [size_is][out] */ __out_ecount_part_opt(bufLen, *nameLen) WCHAR nameBuf[  ]);
+        /* [size_is][out] */ _Out_writes_to_opt_(bufLen, *nameLen) WCHAR nameBuf[  ]);
 
     virtual HRESULT STDMETHODCALLTYPE GetFieldByToken2(
         /* [in] */ IXCLRDataModule* tokenScope,
@@ -3791,7 +3772,7 @@ public:
         /* [out] */ IXCLRDataValue **field,
         /* [in] */ ULONG32 bufLen,
         /* [out] */ ULONG32 *nameLen,
-        /* [size_is][out] */ __out_ecount_part_opt(bufLen, *nameLen) WCHAR nameBuf[  ]);
+        /* [size_is][out] */ _Out_writes_to_opt_(bufLen, *nameLen) WCHAR nameBuf[  ]);
 
     virtual HRESULT STDMETHODCALLTYPE GetAssociatedValue(
         /* [out] */ IXCLRDataValue **assocValue);
@@ -3802,7 +3783,7 @@ public:
     virtual HRESULT STDMETHODCALLTYPE GetString(
         /* [in] */ ULONG32 bufLen,
         /* [out] */ ULONG32 *strLen,
-        /* [size_is][out] */ __out_ecount_part(bufLen, *strLen) WCHAR str[  ]);
+        /* [size_is][out] */ _Out_writes_to_opt_(bufLen, *strLen) WCHAR str[  ]);
 
     virtual HRESULT STDMETHODCALLTYPE GetArrayProperties(
         /* [out] */ ULONG32 *rank,
@@ -3844,7 +3825,7 @@ public:
                                     IXCLRDataValue** pubValue,
                                     ULONG32 nameBufRetLen,
                                     ULONG32* nameLenRet,
-                                    __out_ecount_part_opt(nameBufRetLen, *nameLenRet) WCHAR nameBufRet[  ],
+                                    _Out_writes_to_opt_(nameBufRetLen, *nameLenRet) WCHAR nameBufRet[  ],
                                     IXCLRDataModule** tokenScopeRet,
                                     mdFieldDef* tokenRet);
 
@@ -3854,7 +3835,7 @@ public:
                             IXCLRDataValue** pubValue,
                             ULONG32 nameBufRetLen,
                             ULONG32* nameLenRet,
-                            __out_ecount_part_opt(nameBufRetLen, *nameLenRet) WCHAR nameBufRet[  ],
+                            _Out_writes_to_opt_(nameBufRetLen, *nameLenRet) WCHAR nameBufRet[  ],
                             IXCLRDataModule** tokenScopeRet,
                             mdFieldDef* tokenRet)
     {

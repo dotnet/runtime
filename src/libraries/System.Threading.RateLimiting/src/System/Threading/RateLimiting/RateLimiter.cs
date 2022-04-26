@@ -17,6 +17,15 @@ namespace System.Threading.RateLimiting
         public abstract int GetAvailablePermits();
 
         /// <summary>
+        /// Specifies how long the <see cref="RateLimiter"/> has had all permits available. Used by RateLimiter managers that may want to
+        /// clean up unused RateLimiters.
+        /// </summary>
+        /// <remarks>
+        /// Returns <see langword="null"/> when the <see cref="RateLimiter"/> is in use or is not ready to be idle.
+        /// </remarks>
+        public abstract TimeSpan? IdleDuration { get; }
+
+        /// <summary>
         /// Fast synchronous attempt to acquire permits.
         /// </summary>
         /// <remarks>
@@ -102,7 +111,7 @@ namespace System.Threading.RateLimiting
         /// <summary>
         /// Disposes the RateLimiter asynchronously.
         /// </summary>
-        /// <returns>ValueTask representin the completion of the disposal.</returns>
+        /// <returns>ValueTask representing the completion of the disposal.</returns>
         public async ValueTask DisposeAsync()
         {
             // Perform async cleanup.

@@ -55,10 +55,14 @@ namespace System.Resources.Extensions
         public bool Equals(string assemblyQualifiedTypeName1, string assemblyQualifiedTypeName2)
 #pragma warning restore CS8767
         {
-            if (assemblyQualifiedTypeName1 == null)
+            if (assemblyQualifiedTypeName1 is null)
+            {
                 throw new ArgumentNullException(nameof(assemblyQualifiedTypeName1));
-            if (assemblyQualifiedTypeName2 == null)
+            }
+            if (assemblyQualifiedTypeName2 is null)
+            {
                 throw new ArgumentNullException(nameof(assemblyQualifiedTypeName2));
+            }
 
             if (ReferenceEquals(assemblyQualifiedTypeName1, assemblyQualifiedTypeName2))
                 return true;

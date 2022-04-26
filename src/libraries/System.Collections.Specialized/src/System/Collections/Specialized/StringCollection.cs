@@ -71,10 +71,8 @@ namespace System.Collections.Specialized
         /// </devdoc>
         public void AddRange(string[] value)
         {
-            if (value == null)
-            {
-                throw new ArgumentNullException(nameof(value));
-            }
+            ArgumentNullException.ThrowIfNull(value);
+
             data.AddRange(value);
         }
 

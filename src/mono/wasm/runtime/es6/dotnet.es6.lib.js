@@ -7,22 +7,23 @@
 const DotnetSupportLib = {
     $DOTNET: {},
     // this line will be placed early on emscripten runtime creation, passing import and export objects into __dotnet_runtime IFFE
+    // Emscripten uses require function for nodeJS even in ES6 module. We need https://nodejs.org/api/module.html#modulecreaterequirefilename
+    // We use dynamic import because there is no "module" module in the browser.
+    // This is async init of it, note it would become available only after first tick.
+    // Also fix of scriptDirectory would be delayed
+    // Emscripten's getBinaryPromise is not async for NodeJs, but we would like to have it async, so we replace it.
+    // We also replace implementation of readAsync and fetch
     $DOTNET__postset: `
-let __dotnet_replacements = {scriptDirectory, readAsync, fetch: globalThis.fetch, require};
-let __dotnet_exportedAPI = __dotnet_runtime.__initializeImportsAndExports(
-    { isES6:true, isGlobal:false, isNode:ENVIRONMENT_IS_NODE, isShell:ENVIRONMENT_IS_SHELL, isWeb:ENVIRONMENT_IS_WEB, locateFile, quit_ }, 
-    { mono:MONO, binding:BINDING, internal:INTERNAL, module:Module },
-    __dotnet_replacements);
-
-// here we replace things which are not exposed in another way
-scriptDirectory = __dotnet_replacements.scriptDirectory;
-readAsync = __dotnet_replacements.readAsync;
-var fetch = __dotnet_replacements.fetch;
-
-// here we replace things which are broken on NodeJS for ES6
+let __dotnet_replacements = {readAsync, fetch: globalThis.fetch, require};
 if (ENVIRONMENT_IS_NODE) {
-    __dirname = __dotnet_replacements.scriptDirectory;
-    require = __dotnet_replacements.require;
+    __dotnet_replacements.requirePromise = import('module').then(mod => {
+        const require = mod.createRequire(import.meta.url);
+        const path = require('path');
+        const url = require('url');
+        __dotnet_replacements.require = require;
+        __dirname = scriptDirectory = path.dirname(url.fileURLToPath(import.meta.url)) + '/';
+        return require;
+    });
     getBinaryPromise = async () => {
         if (!wasmBinary) {
             try {
@@ -38,7 +39,7 @@ if (ENVIRONMENT_IS_NODE) {
                         readAsync(wasmBinaryFile, function (response) { resolve(new Uint8Array(/** @type{!ArrayBuffer} */(response))) }, reject)
                     });
                 }
-    
+
             }
             catch (err) {
                 return getBinary(wasmBinaryFile);
@@ -46,7 +47,16 @@ if (ENVIRONMENT_IS_NODE) {
         }
         return getBinary(wasmBinaryFile);
     }
-}`,
+}
+let __dotnet_exportedAPI = __dotnet_runtime.__initializeImportsAndExports(
+    { isESM:true, isGlobal:false, isNode:ENVIRONMENT_IS_NODE, isShell:ENVIRONMENT_IS_SHELL, isWeb:ENVIRONMENT_IS_WEB, locateFile, quit_, ExitStatus, requirePromise:__dotnet_replacements.requirePromise },
+    { mono:MONO, binding:BINDING, internal:INTERNAL, module:Module },
+    __dotnet_replacements);
+readAsync = __dotnet_replacements.readAsync;
+var fetch = __dotnet_replacements.fetch;
+require = __dotnet_replacements.requireOut;
+var noExitRuntime = __dotnet_replacements.noExitRuntime;
+`,
 };
 
 // the methods would be visible to EMCC linker
@@ -71,24 +81,22 @@ const linked_functions = [
 
     // corebindings.c
     "mono_wasm_invoke_js_with_args",
-    "mono_wasm_get_object_property",
-    "mono_wasm_set_object_property",
-    "mono_wasm_get_by_index",
-    "mono_wasm_set_by_index",
-    "mono_wasm_get_global_object",
-    "mono_wasm_create_cs_owned_object",
+    "mono_wasm_get_object_property_ref",
+    "mono_wasm_set_object_property_ref",
+    "mono_wasm_get_by_index_ref",
+    "mono_wasm_set_by_index_ref",
+    "mono_wasm_get_global_object_ref",
+    "mono_wasm_create_cs_owned_object_ref",
     "mono_wasm_release_cs_owned_object",
-    "mono_wasm_typed_array_to_array",
-    "mono_wasm_typed_array_copy_to",
-    "mono_wasm_typed_array_from",
-    "mono_wasm_typed_array_copy_from",
-    "mono_wasm_add_event_listener",
-    "mono_wasm_remove_event_listener",
+    "mono_wasm_typed_array_to_array_ref",
+    "mono_wasm_typed_array_copy_to_ref",
+    "mono_wasm_typed_array_from_ref",
+    "mono_wasm_typed_array_copy_from_ref",
     "mono_wasm_cancel_promise",
-    "mono_wasm_web_socket_open",
+    "mono_wasm_web_socket_open_ref",
     "mono_wasm_web_socket_send",
     "mono_wasm_web_socket_receive",
-    "mono_wasm_web_socket_close",
+    "mono_wasm_web_socket_close_ref",
     "mono_wasm_web_socket_abort",
     "mono_wasm_compile_function",
 

@@ -61,7 +61,7 @@ extern LONG __JITfilter(PEXCEPTION_POINTERS pExceptionPointers, LPVOID lpvParam)
 
 extern void debugError(const char* msg, const char* file, unsigned line);
 extern void DECLSPEC_NORETURN badCode();
-extern void DECLSPEC_NORETURN badCode3(const char* msg, const char* msg2, int arg, __in_z const char* file, unsigned line);
+extern void DECLSPEC_NORETURN badCode3(const char* msg, const char* msg2, int arg, _In_z_ const char* file, unsigned line);
 extern void DECLSPEC_NORETURN noWay();
 extern void DECLSPEC_NORETURN implLimitation();
 extern void DECLSPEC_NORETURN NOMEM();
@@ -174,6 +174,7 @@ extern void notYetImplemented(const char* msg, const char* file, unsigned line);
 #define NYI_X86(msg)    do { } while (0)
 #define NYI_ARM(msg)    do { } while (0)
 #define NYI_ARM64(msg)  do { } while (0)
+#define NYI_LOONGARCH64(msg) do { } while (0)
 
 #elif defined(TARGET_X86)
 
@@ -181,6 +182,7 @@ extern void notYetImplemented(const char* msg, const char* file, unsigned line);
 #define NYI_X86(msg)    NYIRAW("NYI_X86: " msg)
 #define NYI_ARM(msg)    do { } while (0)
 #define NYI_ARM64(msg)  do { } while (0)
+#define NYI_LOONGARCH64(msg) do { } while (0)
 
 #elif defined(TARGET_ARM)
 
@@ -188,6 +190,7 @@ extern void notYetImplemented(const char* msg, const char* file, unsigned line);
 #define NYI_X86(msg)    do { } while (0)
 #define NYI_ARM(msg)    NYIRAW("NYI_ARM: " msg)
 #define NYI_ARM64(msg)  do { } while (0)
+#define NYI_LOONGARCH64(msg) do { } while (0)
 
 #elif defined(TARGET_ARM64)
 
@@ -195,10 +198,18 @@ extern void notYetImplemented(const char* msg, const char* file, unsigned line);
 #define NYI_X86(msg)    do { } while (0)
 #define NYI_ARM(msg)    do { } while (0)
 #define NYI_ARM64(msg)  NYIRAW("NYI_ARM64: " msg)
+#define NYI_LOONGARCH64(msg) do { } while (0)
+
+#elif defined(TARGET_LOONGARCH64)
+#define NYI_AMD64(msg)  do { } while (0)
+#define NYI_X86(msg)    do { } while (0)
+#define NYI_ARM(msg)    do { } while (0)
+#define NYI_ARM64(msg)  do { } while (0)
+#define NYI_LOONGARCH64(msg) NYIRAW("NYI_LOONGARCH64: " msg)
 
 #else
 
-#error "Unknown platform, not x86, ARM, or AMD64?"
+#error "Unknown platform, not x86, ARM, LOONGARCH64 or AMD64?"
 
 #endif
 

@@ -26,10 +26,7 @@ namespace System.Diagnostics
             [MemberNotNull(nameof(_name))]
             set
             {
-                if (value == null)
-                    throw new ArgumentNullException(nameof(value));
-                if (value.Length == 0)
-                    throw new ArgumentException(SR.Format(SR.InvalidNullEmptyArgument, nameof(value)), nameof(value));
+                ArgumentException.ThrowIfNullOrEmpty(value);
 
                 _name = value;
             }

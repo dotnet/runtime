@@ -168,9 +168,11 @@ namespace System.Diagnostics
         public override string ToString() { throw null; }
         public void WaitForExit() { }
         public bool WaitForExit(int milliseconds) { throw null; }
+        public bool WaitForExit(System.TimeSpan timeout) { throw null; }
         public System.Threading.Tasks.Task WaitForExitAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public bool WaitForInputIdle() { throw null; }
         public bool WaitForInputIdle(int milliseconds) { throw null; }
+        public bool WaitForInputIdle(System.TimeSpan timeout) { throw null; }
     }
     [System.ComponentModel.DesignerAttribute("System.Diagnostics.Design.ProcessModuleDesigner, System.Design, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     public partial class ProcessModule : System.ComponentModel.Component
@@ -178,10 +180,10 @@ namespace System.Diagnostics
         internal ProcessModule() { }
         public System.IntPtr BaseAddress { get { throw null; } }
         public System.IntPtr EntryPointAddress { get { throw null; } }
-        public string? FileName { get { throw null; } }
+        public string FileName { get { throw null; } }
         public System.Diagnostics.FileVersionInfo FileVersionInfo { get { throw null; } }
         public int ModuleMemorySize { get { throw null; } }
-        public string? ModuleName { get { throw null; } }
+        public string ModuleName { get { throw null; } }
         public override string ToString() { throw null; }
     }
     public partial class ProcessModuleCollection : System.Collections.ReadOnlyCollectionBase

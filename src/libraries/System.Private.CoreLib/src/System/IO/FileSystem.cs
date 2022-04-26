@@ -7,18 +7,31 @@ namespace System.IO
     {
         internal static void VerifyValidPath(string path, string argName)
         {
-            if (path == null)
-            {
-                throw new ArgumentNullException(argName);
-            }
-            else if (path.Length == 0)
-            {
-                throw new ArgumentException(SR.Arg_PathEmpty, argName);
-            }
-            else if (path.Contains('\0'))
+            ArgumentException.ThrowIfNullOrEmpty(path, argName);
+            if (path.Contains('\0'))
             {
                 throw new ArgumentException(SR.Argument_InvalidPathChars, argName);
             }
+        }
+
+        internal static void MoveDirectory(string sourceFullPath, string destFullPath)
+        {
+            ReadOnlySpan<char> srcNoDirectorySeparator = Path.TrimEndingDirectorySeparator(sourceFullPath.AsSpan());
+            ReadOnlySpan<char> destNoDirectorySeparator = Path.TrimEndingDirectorySeparator(destFullPath.AsSpan());
+
+            // Don't allow the same path, except for changing the casing of the filename.
+            bool isCaseSensitiveRename = false;
+            if (srcNoDirectorySeparator.Equals(destNoDirectorySeparator, PathInternal.StringComparison))
+            {
+                if (PathInternal.IsCaseSensitive || // FileNames will be equal because paths are equal.
+                    Path.GetFileName(srcNoDirectorySeparator).SequenceEqual(Path.GetFileName(destNoDirectorySeparator)))
+                {
+                    throw new IOException(SR.IO_SourceDestMustBeDifferent);
+                }
+                isCaseSensitiveRename = true;
+            }
+
+            MoveDirectory(sourceFullPath, destFullPath, isCaseSensitiveRename);
         }
     }
 }

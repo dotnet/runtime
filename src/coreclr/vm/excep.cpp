@@ -190,7 +190,7 @@ BOOL ExceptionIsOfRightType(TypeHandle clauseType, TypeHandle thrownType)
 // Gets the message text from an exception
 //===========================================================================
 ULONG GetExceptionMessage(OBJECTREF throwable,
-                          __inout_ecount(bufferLength) LPWSTR buffer,
+                          _Inout_updates_(bufferLength) LPWSTR buffer,
                           ULONG bufferLength)
 {
     CONTRACTL
@@ -500,7 +500,7 @@ OBJECTREF PossiblyUnwrapThrowable(OBJECTREF throwable, Assembly *pAssembly)
     // Check if we are required to compute the RuntimeWrapExceptions status.
     BOOL fIsRuntimeWrappedException = ((throwable != NULL) && (throwable->GetMethodTable() == pMT_RuntimeWrappedException));
     BOOL fRequiresComputingRuntimeWrapExceptionsStatus = (fIsRuntimeWrappedException &&
-                                                          (!(pAssembly->GetManifestModule()->IsRuntimeWrapExceptionsStatusComputed())));
+                                                          (!(pAssembly->GetModule()->IsRuntimeWrapExceptionsStatusComputed())));
 
     CONTRACTL
     {
@@ -513,7 +513,7 @@ OBJECTREF PossiblyUnwrapThrowable(OBJECTREF throwable, Assembly *pAssembly)
     }
     CONTRACTL_END;
 
-    if (fIsRuntimeWrappedException && (!pAssembly->GetManifestModule()->IsRuntimeWrapExceptions()))
+    if (fIsRuntimeWrappedException && (!pAssembly->GetModule()->IsRuntimeWrapExceptions()))
     {
         // We already created the instance, fetched the field.  We know it is
         // not marshal by ref, or any of the other cases that might trigger GC.
@@ -5162,7 +5162,7 @@ static SString GetExceptionMessageWrapper(Thread* pThread, OBJECTREF throwable)
 void STDMETHODCALLTYPE
 DefaultCatchHandlerExceptionMessageWorker(Thread* pThread,
                                           OBJECTREF throwable,
-                                          __inout_ecount(buf_size) WCHAR *buf,
+                                          _Inout_updates_(buf_size) WCHAR *buf,
                                           const int buf_size,
                                           BOOL sendWindowsEventLog)
 {
@@ -6601,7 +6601,7 @@ IsDebuggerFault(EXCEPTION_RECORD *pExceptionRecord,
 
 #endif // TARGET_UNIX
 
-#ifndef TARGET_ARM64
+#if !defined(TARGET_ARM64) && !defined(TARGET_LOONGARCH64)
 EXTERN_C void JIT_StackProbe_End();
 #endif // TARGET_ARM64
 
@@ -6668,7 +6668,7 @@ bool IsIPInMarkedJitHelper(UINT_PTR uControlPc)
     CHECK_RANGE(JIT_WriteBarrier)
     CHECK_RANGE(JIT_CheckedWriteBarrier)
     CHECK_RANGE(JIT_ByRefWriteBarrier)
-#if !defined(TARGET_ARM64)
+#if !defined(TARGET_ARM64) && !defined(TARGET_LOONGARCH64)
     CHECK_RANGE(JIT_StackProbe)
 #endif // !TARGET_ARM64
 #else
@@ -6792,7 +6792,7 @@ AdjustContextForJITHelpers(
 
         Thread::VirtualUnwindToFirstManagedCallFrame(pContext);
 
-#if defined(TARGET_ARM) || defined(TARGET_ARM64)
+#if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
         // We had an AV in the writebarrier that needs to be treated
         // as originating in managed code. At this point, the stack (growing
         // from left->right) looks like this:
@@ -6816,7 +6816,7 @@ AdjustContextForJITHelpers(
        // Now we save the address back into the context so that it gets used
        // as the faulting address.
        SetIP(pContext, ControlPCPostAdjustment);
-#endif // TARGET_ARM || TARGET_ARM64
+#endif // TARGET_ARM || TARGET_ARM64 || TARGET_LOONGARCH64
 
         // Unwind the frame chain - On Win64, this is required since we may handle the managed fault and to do so,
         // we will replace the exception context with the managed context and "continue execution" there. Thus, we do not
@@ -11476,7 +11476,7 @@ void ResetThreadAbortState(PTR_Thread pThread, CrawlFrame *pCf, StackFrame sfCur
 // Note: The "cond" argument is there to tide us over during the transition from
 //  BAD_FORMAT_ASSERT to THROW_BAD_FORMAT. It will go away soon.
 //---------------------------------------------------------------------------------
-VOID ThrowBadFormatWorker(UINT resID, LPCWSTR imageName DEBUGARG(__in_z const char *cond))
+VOID ThrowBadFormatWorker(UINT resID, LPCWSTR imageName DEBUGARG(_In_z_ const char *cond))
 {
     CONTRACTL
     {
@@ -11906,8 +11906,8 @@ VOID DECLSPEC_NORETURN ThrowFieldLayoutError(mdTypeDef cl,                // cl 
     }
 
     CHAR offsetBuf[16];
-    sprintf_s(offsetBuf, COUNTOF(offsetBuf), "%d", dwOffset);
-    offsetBuf[COUNTOF(offsetBuf) - 1] = '\0';
+    sprintf_s(offsetBuf, ARRAY_SIZE(offsetBuf), "%d", dwOffset);
+    offsetBuf[ARRAY_SIZE(offsetBuf) - 1] = '\0';
 
     pModule->GetAssembly()->ThrowTypeLoadException(pszNamespace,
                                                    pszName,
@@ -12136,8 +12136,8 @@ VOID CheckAndThrowSameTypeAndAssemblyInvalidCastException(TypeHandle thCastFrom,
          _ASSERTE(pAssemblyTypeFrom != NULL);
          _ASSERTE(pAssemblyTypeTo != NULL);
 
-         PEAssembly *pPEAssemblyTypeFrom = pAssemblyTypeFrom->GetManifestFile();
-         PEAssembly *pPEAssemblyTypeTo = pAssemblyTypeTo->GetManifestFile();
+         PEAssembly *pPEAssemblyTypeFrom = pAssemblyTypeFrom->GetPEAssembly();
+         PEAssembly *pPEAssemblyTypeTo = pAssemblyTypeTo->GetPEAssembly();
 
          _ASSERTE(pPEAssemblyTypeFrom != NULL);
          _ASSERTE(pPEAssemblyTypeTo != NULL);

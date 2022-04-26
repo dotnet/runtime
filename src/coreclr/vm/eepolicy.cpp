@@ -12,7 +12,6 @@
 #include "eepolicy.h"
 #include "corhost.h"
 #include "dbginterface.h"
-#include "eemessagebox.h"
 
 #include "eventreporter.h"
 #include "finalizerthread.h"
@@ -49,36 +48,16 @@ void SafeExitProcess(UINT exitCode, ShutdownCompleteAction sca = SCA_ExitProcess
     {
         if (CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_BreakOnBadExit))
         {
-            // Workaround for aspnet
-            PathString  wszFilename;
-            bool bShouldAssert = true;
-            if (WszGetModuleFileName(NULL, wszFilename))
-            {
-                wszFilename.LowerCase();
-
-                if (wcsstr(wszFilename, W("aspnet_compiler")))
-                {
-                    bShouldAssert = false;
-                }
-            }
-
             unsigned goodExit = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_SuccessExit);
-            if (bShouldAssert && exitCode != goodExit)
+            if (exitCode != goodExit)
             {
                 _ASSERTE(!"Bad Exit value");
                 FAULT_NOT_FATAL();      // if we OOM we can simply give up
-                SetErrorMode(0);        // Insure that we actually cause the messsage box to pop.
-                EEMessageBoxCatastrophic(IDS_EE_ERRORMESSAGETEMPLATE, IDS_EE_ERRORTITLE, exitCode, W("BreakOnBadExit: returning bad exit code"));
+                fprintf(stderr, "Error 0x%08x.\n\nBreakOnBadExit: returning bad exit code.", exitCode);
+                DebugBreak();
             }
         }
     }
-
-    // If we call ExitProcess, other threads will be torn down
-    // so we don't get to debug their state.  Stop this!
-#ifdef _DEBUG
-    if (_DbgBreakCount)
-        _ASSERTE(!"In SafeExitProcess: An assert was hit on some other thread");
-#endif
 
     // Turn off exception processing, because if some other random DLL has a
     //  fault in DLL_PROCESS_DETACH, we could get called for exception handling.
@@ -185,8 +164,8 @@ void EEPolicy::HandleExitProcess(ShutdownCompleteAction sca)
 //---------------------------------------------------------------------------------------
 // This class is responsible for displaying a stack trace. It uses a condensed way for
 // stack overflow stack traces where there are possibly many repeated frames.
-// It displays a count and a repeated sequence of frames at the top of the stack in 
-// such a case, instead of displaying possibly thousands of lines with the same 
+// It displays a count and a repeated sequence of frames at the top of the stack in
+// such a case, instead of displaying possibly thousands of lines with the same
 // method.
 //---------------------------------------------------------------------------------------
 class CallStackLogger
@@ -291,7 +270,7 @@ public:
         for (int i = m_largestCommonStartLength * m_largestCommonStartRepeat; i < m_frames.Count(); i++)
         {
             PrintFrame(i, pWordAt);
-        }    
+        }
     }
 };
 
@@ -412,7 +391,7 @@ void LogInfoForFatalError(UINT exitCode, LPCWSTR pszMessage, LPCWSTR errorSource
     {
     }
     EX_END_CATCH(SwallowAllExceptions)
-    
+
     InterlockedCompareExchangeT<Thread *>(&s_pCrashingThread, FatalErrorLoggingFinished, pThread);
 }
 
@@ -484,9 +463,9 @@ void EEPolicy::LogFatalError(UINT exitCode, UINT_PTR address, LPCWSTR pszMessage
                 InlineSString<80> ssMessage;
                 InlineSString<80> ssErrorFormat;
                 if(!ssErrorFormat.LoadResource(CCompRC::Optional, IDS_ER_UNMANAGEDFAILFASTMSG ))
-                    ssErrorFormat.Set(W("at IP %1 (%2) with exit code %3."));
+                    ssErrorFormat.Set(W("at IP 0x%x (0x%x) with exit code 0x%x."));
                 SmallStackSString addressString;
-                addressString.Printf(W("%p"), pExceptionInfo? (UINT_PTR)pExceptionInfo->ExceptionRecord->ExceptionAddress : address);
+                addressString.Printf(W("%p"), pExceptionInfo? (PVOID)pExceptionInfo->ExceptionRecord->ExceptionAddress : (PVOID)address);
 
                 // We should always have the reference to the runtime's instance
                 _ASSERTE(GetClrModuleBase() != NULL);

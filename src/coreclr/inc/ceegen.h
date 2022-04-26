@@ -111,8 +111,8 @@ class CeeSectionImpl {
     virtual HRESULT directoryEntry(unsigned num) = 0;
     virtual unsigned char * name() = 0;
     virtual char * computePointer(unsigned offset) const = 0;
-    virtual BOOL containsPointer(__in char * ptr) const = 0;
-    virtual unsigned computeOffset(__in char * ptr) const = 0;
+    virtual BOOL containsPointer(_In_ char * ptr) const = 0;
+    virtual unsigned computeOffset(_In_ char * ptr) const = 0;
     virtual unsigned getBaseRVA() = 0;
     virtual void SetInitialGrowth(unsigned growth) = 0;
 };
@@ -162,8 +162,8 @@ class CeeSection {
 
     // simulate the base + offset with a more complex data storage
     char * computePointer(unsigned offset) const;
-    BOOL containsPointer(__in char *ptr) const;
-    unsigned computeOffset(__in char *ptr) const;
+    BOOL containsPointer(_In_ char *ptr) const;
+    unsigned computeOffset(_In_ char *ptr) const;
 
     CeeSectionImpl &getImpl();
     CCeeGen &ceeFile();
@@ -222,7 +222,7 @@ class CCeeGen : public ICeeGenInternal {
         void **ppInterface);
 
     STDMETHODIMP EmitString (
-        __in LPWSTR lpString,               // [IN] String to emit
+        _In_ LPWSTR lpString,               // [IN] String to emit
         ULONG *RVA);
 
     STDMETHODIMP GetString (
@@ -369,13 +369,13 @@ inline char * CeeSection::computePointer(unsigned offset) const
     return m_impl.computePointer(offset);
 }
 
-inline BOOL CeeSection::containsPointer(__in char *ptr) const
+inline BOOL CeeSection::containsPointer(_In_ char *ptr) const
 {
     WRAPPER_NO_CONTRACT;
     return m_impl.containsPointer(ptr);
 }
 
-inline unsigned CeeSection::computeOffset(__in char *ptr) const
+inline unsigned CeeSection::computeOffset(_In_ char *ptr) const
 {
     WRAPPER_NO_CONTRACT;
     return m_impl.computeOffset(ptr);

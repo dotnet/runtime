@@ -61,8 +61,8 @@ namespace System.Security.Cryptography
                     {
                         RSAKeyFormatHelper.ReadEncryptedPkcs8(
                             keyBlob,
-                            ExportPassword,
-                            out int localRead,
+                            (ReadOnlySpan<char>)ExportPassword,
+                            out _,
                             out RSAParameters key);
                         return key;
                     }

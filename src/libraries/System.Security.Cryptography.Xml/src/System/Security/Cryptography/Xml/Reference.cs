@@ -207,8 +207,10 @@ namespace System.Security.Cryptography.Xml
 
         public void LoadXml(XmlElement value)
         {
-            if (value == null)
+            if (value is null)
+            {
                 throw new ArgumentNullException(nameof(value));
+            }
 
             _id = Utils.GetAttribute(value, "Id", SignedXml.XmlDsigNamespaceUrl);
             _uri = Utils.GetAttribute(value, "URI", SignedXml.XmlDsigNamespaceUrl);
@@ -263,12 +265,20 @@ namespace System.Security.Cryptography.Xml
                         // let the transform read the children of the transformElement for data
                         transform.LoadInnerXml(transformElement.ChildNodes);
                         // Hack! this is done to get around the lack of here() function support in XPath
-                        if (transform is XmlDsigEnvelopedSignatureTransform)
+                        if (transform is XmlDsigEnvelopedSignatureTransform
+                            && _uri != null && (_uri.Length == 0 || _uri[0] == '#'))
                         {
                             // Walk back to the Signature tag. Find the nearest signature ancestor
                             // Signature-->SignedInfo-->Reference-->Transforms-->Transform
                             XmlNode signatureTag = transformElement.SelectSingleNode("ancestor::ds:Signature[1]", nsm);
-                            XmlNodeList signatureList = transformElement.SelectNodes("//ds:Signature", nsm);
+
+                            // Resolve the reference to get starting point for position calculation.
+                            XmlNode referenceTarget =
+                                _uri.Length == 0
+                                ? transformElement.OwnerDocument
+                                : SignedXml.GetIdElement(transformElement.OwnerDocument, Utils.GetIdFromLocalUri(_uri, out bool _));
+
+                            XmlNodeList signatureList = referenceTarget?.SelectNodes(".//ds:Signature", nsm);
                             if (signatureList != null)
                             {
                                 int position = 0;
@@ -316,8 +326,10 @@ namespace System.Security.Cryptography.Xml
 
         public void AddTransform(Transform transform)
         {
-            if (transform == null)
+            if (transform is null)
+            {
                 throw new ArgumentNullException(nameof(transform));
+            }
 
             transform.Reference = this;
             TransformChain.Add(transform);

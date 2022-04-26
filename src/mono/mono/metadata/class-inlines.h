@@ -253,4 +253,17 @@ m_method_is_wrapper (MonoMethod *method)
 	return method->wrapper_type != 0;
 }
 
+static inline void
+m_field_set_parent (MonoClassField *field, MonoClass *klass)
+{
+	uintptr_t old_flags = m_field_get_meta_flags (field);
+	field->parent_and_flags = ((uintptr_t)klass) | old_flags;
+}
+
+static inline void
+m_field_set_meta_flags (MonoClassField *field, unsigned int flags)
+{
+	field->parent_and_flags |= (field->parent_and_flags & ~MONO_CLASS_FIELD_META_FLAG_MASK) | flags;
+}
+
 #endif

@@ -64,8 +64,7 @@ namespace System.Diagnostics.Eventing.Reader
 
         public EventLogReader(EventLogQuery eventQuery, EventBookmark bookmark)
         {
-            if (eventQuery == null)
-                throw new ArgumentNullException(nameof(eventQuery));
+            ArgumentNullException.ThrowIfNull(eventQuery);
 
             string logfile = null;
             if (eventQuery.ThePathType == PathType.FilePath)
@@ -233,8 +232,7 @@ namespace System.Diagnostics.Eventing.Reader
 
         public void Seek(EventBookmark bookmark, long offset)
         {
-            if (bookmark == null)
-                throw new ArgumentNullException(nameof(bookmark));
+            ArgumentNullException.ThrowIfNull(bookmark);
 
             SeekReset();
             using (EventLogHandle bookmarkHandle = EventLogRecord.GetBookmarkHandleFromBookmark(bookmark))
@@ -303,21 +301,18 @@ namespace System.Diagnostics.Eventing.Reader
         {
             get
             {
-                List<EventLogStatus> list = null;
-                string[] channelNames = null;
-                int[] errorStatuses = null;
                 EventLogHandle queryHandle = _handle;
 
                 if (queryHandle.IsInvalid)
                     throw new InvalidOperationException();
 
-                channelNames = (string[])NativeWrapper.EvtGetQueryInfo(queryHandle, UnsafeNativeMethods.EvtQueryPropertyId.EvtQueryNames);
-                errorStatuses = (int[])NativeWrapper.EvtGetQueryInfo(queryHandle, UnsafeNativeMethods.EvtQueryPropertyId.EvtQueryStatuses);
+                string[] channelNames = (string[])NativeWrapper.EvtGetQueryInfo(queryHandle, UnsafeNativeMethods.EvtQueryPropertyId.EvtQueryNames);
+                int[] errorStatuses = (int[])NativeWrapper.EvtGetQueryInfo(queryHandle, UnsafeNativeMethods.EvtQueryPropertyId.EvtQueryStatuses);
 
                 if (channelNames.Length != errorStatuses.Length)
                     throw new InvalidOperationException();
 
-                list = new List<EventLogStatus>(channelNames.Length);
+                var list = new List<EventLogStatus>(channelNames.Length);
                 for (int i = 0; i < channelNames.Length; i++)
                 {
                     EventLogStatus cs = new EventLogStatus(channelNames[i], errorStatuses[i]);

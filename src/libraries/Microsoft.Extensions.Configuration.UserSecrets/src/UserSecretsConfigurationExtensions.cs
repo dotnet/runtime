@@ -118,17 +118,10 @@ namespace Microsoft.Extensions.Configuration
         /// <returns>The configuration builder.</returns>
         public static IConfigurationBuilder AddUserSecrets(this IConfigurationBuilder configuration, Assembly assembly, bool optional, bool reloadOnChange)
         {
-            if (configuration == null)
-            {
-                throw new ArgumentNullException(nameof(configuration));
-            }
+            ThrowHelper.ThrowIfNull(configuration);
+            ThrowHelper.ThrowIfNull(assembly);
 
-            if (assembly == null)
-            {
-                throw new ArgumentNullException(nameof(assembly));
-            }
-
-            UserSecretsIdAttribute attribute = assembly.GetCustomAttribute<UserSecretsIdAttribute>();
+            UserSecretsIdAttribute? attribute = assembly.GetCustomAttribute<UserSecretsIdAttribute>();
             if (attribute != null)
             {
                 return AddUserSecretsInternal(configuration, attribute.UserSecretsId, optional, reloadOnChange);
@@ -173,23 +166,21 @@ namespace Microsoft.Extensions.Configuration
 
         private static IConfigurationBuilder AddUserSecretsInternal(IConfigurationBuilder configuration, string userSecretsId, bool optional, bool reloadOnChange)
         {
-            if (configuration == null)
-            {
-                throw new ArgumentNullException(nameof(configuration));
-            }
+            ThrowHelper.ThrowIfNull(configuration);
+            ThrowHelper.ThrowIfNull(userSecretsId);
 
-            if (userSecretsId == null)
-            {
-                throw new ArgumentNullException(nameof(userSecretsId));
-            }
-
-            return AddSecretsFile(configuration, PathHelper.GetSecretsPathFromSecretsId(userSecretsId), optional, reloadOnChange);
+            return AddSecretsFile(configuration, PathHelper.InternalGetSecretsPathFromSecretsId(userSecretsId, throwIfNoRoot: !optional), optional, reloadOnChange);
         }
 
         private static IConfigurationBuilder AddSecretsFile(IConfigurationBuilder configuration, string secretPath, bool optional, bool reloadOnChange)
         {
-            string directoryPath = Path.GetDirectoryName(secretPath);
-            PhysicalFileProvider fileProvider = Directory.Exists(directoryPath)
+            if (string.IsNullOrEmpty(secretPath))
+            {
+                return configuration;
+            }
+
+            string? directoryPath = Path.GetDirectoryName(secretPath);
+            PhysicalFileProvider? fileProvider = Directory.Exists(directoryPath)
                 ? new PhysicalFileProvider(directoryPath)
                 : null;
             return configuration.AddJsonFile(fileProvider, PathHelper.SecretsFileName, optional, reloadOnChange);

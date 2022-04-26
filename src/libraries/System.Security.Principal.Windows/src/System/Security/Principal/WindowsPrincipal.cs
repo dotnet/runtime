@@ -32,7 +32,9 @@ namespace System.Security.Principal
         public WindowsPrincipal(WindowsIdentity ntIdentity)
             : base(ntIdentity)
         {
-            _identity = ntIdentity ?? throw new ArgumentNullException(nameof(ntIdentity));
+            ArgumentNullException.ThrowIfNull(ntIdentity);
+
+            _identity = ntIdentity;
         }
 
         //
@@ -134,8 +136,7 @@ namespace System.Security.Principal
 
         public virtual bool IsInRole(SecurityIdentifier sid)
         {
-            if (sid == null)
-                throw new ArgumentNullException(nameof(sid));
+            ArgumentNullException.ThrowIfNull(sid);
 
             // special case the anonymous identity.
             if (_identity.AccessToken.IsInvalid)

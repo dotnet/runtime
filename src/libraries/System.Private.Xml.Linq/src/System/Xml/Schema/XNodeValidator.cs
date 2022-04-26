@@ -443,7 +443,8 @@ namespace System.Xml.Schema
         /// <param name="source">Extension point</param>
         public static IXmlSchemaInfo? GetSchemaInfo(this XElement source)
         {
-            if (source == null) throw new ArgumentNullException(nameof(source));
+            ArgumentNullException.ThrowIfNull(source);
+
             return source.Annotation<IXmlSchemaInfo>();
         }
 
@@ -453,7 +454,8 @@ namespace System.Xml.Schema
         /// <param name="source">Extension point</param>
         public static IXmlSchemaInfo? GetSchemaInfo(this XAttribute source)
         {
-            if (source == null) throw new ArgumentNullException(nameof(source));
+            ArgumentNullException.ThrowIfNull(source);
+
             return source.Annotation<IXmlSchemaInfo>();
         }
 
@@ -483,8 +485,9 @@ namespace System.Xml.Schema
         /// default attributes and default element values</param>
         public static void Validate(this XDocument source, XmlSchemaSet schemas, ValidationEventHandler? validationEventHandler, bool addSchemaInfo)
         {
-            if (source == null) throw new ArgumentNullException(nameof(source));
-            if (schemas == null) throw new ArgumentNullException(nameof(schemas));
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(schemas);
+
             new XNodeValidator(schemas, validationEventHandler).Validate(source, null, addSchemaInfo);
         }
 
@@ -520,9 +523,10 @@ namespace System.Xml.Schema
         /// default attributes and default element values</param>
         public static void Validate(this XElement source, XmlSchemaObject partialValidationType, XmlSchemaSet schemas, ValidationEventHandler? validationEventHandler, bool addSchemaInfo)
         {
-            if (source == null) throw new ArgumentNullException(nameof(source));
-            if (partialValidationType == null) throw new ArgumentNullException(nameof(partialValidationType));
-            if (schemas == null) throw new ArgumentNullException(nameof(schemas));
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(partialValidationType);
+            ArgumentNullException.ThrowIfNull(schemas);
+
             new XNodeValidator(schemas, validationEventHandler).Validate(source, partialValidationType, addSchemaInfo);
         }
 
@@ -558,9 +562,10 @@ namespace System.Xml.Schema
         /// default element values</param>
         public static void Validate(this XAttribute source, XmlSchemaObject partialValidationType, XmlSchemaSet schemas, ValidationEventHandler? validationEventHandler, bool addSchemaInfo)
         {
-            if (source == null) throw new ArgumentNullException(nameof(source));
-            if (partialValidationType == null) throw new ArgumentNullException(nameof(partialValidationType));
-            if (schemas == null) throw new ArgumentNullException(nameof(schemas));
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(partialValidationType);
+            ArgumentNullException.ThrowIfNull(schemas);
+
             new XNodeValidator(schemas, validationEventHandler).Validate(source, partialValidationType, addSchemaInfo);
         }
     }

@@ -46,11 +46,15 @@ namespace System.IO
 
         internal void AppendExtraBuffer(ReadOnlySpan<byte> buffer)
         {
-            // Ensure a reasonable upper bound applies to the stackalloc
-            Debug.Assert(buffer.Length <= 1024);
-
-            // Then convert the bytes to chars
-            Span<char> chars = stackalloc char[_encoding.GetMaxCharCount(buffer.Length)];
+            // Most inputs to this will have a buffer length of one.
+            // The cases where it is larger than one only occur in ReadKey
+            // when the input is not redirected, so those cases should be
+            // rare, so just allocate.
+            const int MaxStackAllocation = 256;
+            int maxCharsCount = _encoding.GetMaxCharCount(buffer.Length);
+            Span<char> chars = (uint)maxCharsCount <= MaxStackAllocation ?
+                stackalloc char[MaxStackAllocation] :
+                new char[maxCharsCount];
             int charLen = _encoding.GetChars(buffer, chars);
             chars = chars.Slice(0, charLen);
 
@@ -74,7 +78,7 @@ namespace System.IO
             _endIndex += charLen;
         }
 
-        internal unsafe int ReadStdin(byte* buffer, int bufferSize)
+        internal static unsafe int ReadStdin(byte* buffer, int bufferSize)
         {
             int result = Interop.CheckIo(Interop.Sys.ReadStdin(buffer, bufferSize));
             Debug.Assert(result >= 0 && result <= bufferSize); // may be 0 if hits EOL
@@ -300,7 +304,7 @@ namespace System.IO
                 (c == ConsolePal.s_veolCharacter || c == ConsolePal.s_veol2Character || c == ConsolePal.s_veofCharacter);
         }
 
-        internal ConsoleKey GetKeyFromCharValue(char x, out bool isShift, out bool isCtrl)
+        internal static ConsoleKey GetKeyFromCharValue(char x, out bool isShift, out bool isCtrl)
         {
             isShift = false;
             isCtrl = false;
@@ -391,12 +395,11 @@ namespace System.IO
             }
 
             // Check if we can match Esc + combination and guess if alt was pressed.
-            isAlt = isCtrl = isShift = false;
             if (_unprocessedBufferToBeRead[_startIndex] == (char)0x1B && // Alt is send as an escape character
                 _endIndex - _startIndex >= 2) // We have at least two characters to read
             {
                 _startIndex++;
-                if (MapBufferToConsoleKey(out key, out ch, out isShift, out isAlt, out isCtrl))
+                if (MapBufferToConsoleKey(out key, out ch, out isShift, out _, out isCtrl))
                 {
                     isAlt = true;
                     return true;
@@ -416,7 +419,7 @@ namespace System.IO
             // Try reading the first char in the buffer and interpret it as a key.
             ch = _unprocessedBufferToBeRead[_startIndex++];
             key = GetKeyFromCharValue(ch, out isShift, out isCtrl);
-
+            isAlt = false;
             return key != default(ConsoleKey);
         }
 
@@ -493,6 +496,6 @@ namespace System.IO
         }
 
         /// <summary>Gets whether there's input waiting on stdin.</summary>
-        internal bool StdinReady { get { return Interop.Sys.StdinReady(); } }
+        internal static bool StdinReady => Interop.Sys.StdinReady();
     }
 }

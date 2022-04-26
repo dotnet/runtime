@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 {
@@ -12,7 +13,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         /// <summary>
         /// Type of service being cached
         /// </summary>
-        public Type Type { get; }
+        public Type? Type { get; }
 
         /// <summary>
         /// Reverse index of the service when resolved in <c>IEnumerable&lt;Type&gt;</c> where default instance gets slot 0.
@@ -27,16 +28,20 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         /// </summary>
         public int Slot { get; }
 
-        public ServiceCacheKey(Type type, int slot)
+        public ServiceCacheKey(Type? type, int slot)
         {
             Type = type;
             Slot = slot;
         }
 
-        public bool Equals(ServiceCacheKey other)
-        {
-            return Type == other.Type && Slot == other.Slot;
-        }
+        /// <summary>Indicates whether the current instance is equal to another instance of the same type.</summary>
+        /// <param name="other">An instance to compare with this instance.</param>
+        /// <returns>true if the current instance is equal to the other instance; otherwise, false.</returns>
+        public bool Equals(ServiceCacheKey other) =>
+            Type == other.Type && Slot == other.Slot;
+
+        public override bool Equals([NotNullWhen(true)] object? obj) =>
+            obj is ServiceCacheKey other && Equals(other);
 
         public override int GetHashCode()
         {

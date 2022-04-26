@@ -5,6 +5,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Text;
 using System.Xml.Schema;
@@ -12,7 +13,6 @@ using System.Xml.XPath;
 using System.Security;
 using System.Globalization;
 using System.Runtime.Versioning;
-using System.Diagnostics.CodeAnalysis;
 
 namespace System.Xml
 {
@@ -284,7 +284,7 @@ namespace System.Xml
                 return GetIDInfoByElement_(eleName);
         }
 
-        private WeakReference<XmlElement>? GetElement(ArrayList elementList, XmlElement elem)
+        private static WeakReference<XmlElement>? GetElement(ArrayList elementList, XmlElement elem)
         {
             ArrayList gcElemRefs = new ArrayList();
             foreach (WeakReference<XmlElement> elemRef in elementList)
@@ -503,7 +503,7 @@ namespace System.Xml
         }
         // the function examines all the siblings before the refNode
         //  if any of the nodes has type equals to "nt", return true; otherwise, return false;
-        private bool HasNodeTypeInPrevSiblings(XmlNodeType nt, XmlNode? refNode)
+        private static bool HasNodeTypeInPrevSiblings(XmlNodeType nt, XmlNode? refNode)
         {
             if (refNode == null)
                 return false;
@@ -524,7 +524,7 @@ namespace System.Xml
 
         // the function examines all the siblings after the refNode
         //  if any of the nodes has the type equals to "nt", return true; otherwise, return false;
-        private bool HasNodeTypeInNextSiblings(XmlNodeType nt, XmlNode? refNode)
+        private static bool HasNodeTypeInNextSiblings(XmlNodeType nt, XmlNode? refNode)
         {
             XmlNode? node = refNode;
             while (node != null)
@@ -614,8 +614,8 @@ namespace System.Xml
         // Creates an XmlAttribute with the specified name.
         public XmlAttribute CreateAttribute(string name)
         {
-            string prefix = string.Empty;
-            string localName = string.Empty;
+            string prefix;
+            string localName;
             string namespaceURI = string.Empty;
 
             SplitName(name, out prefix, out localName);
@@ -665,8 +665,8 @@ namespace System.Xml
         // Creates an element with the specified name.
         public XmlElement CreateElement(string name)
         {
-            string prefix = string.Empty;
-            string localName = string.Empty;
+            string prefix;
+            string localName;
             SplitName(name, out prefix, out localName);
             return CreateElement(prefix, localName, string.Empty);
         }
@@ -858,7 +858,7 @@ namespace System.Xml
             }
         }
 
-        private XmlNode? NormalizeText(XmlNode node)
+        private static XmlNode? NormalizeText(XmlNode node)
         {
             XmlNode? retnode = null;
             XmlNode? n = node;
@@ -923,8 +923,8 @@ namespace System.Xml
         // and NamespaceURI.
         public XmlAttribute CreateAttribute(string qualifiedName, string? namespaceURI)
         {
-            string prefix = string.Empty;
-            string localName = string.Empty;
+            string prefix;
+            string localName;
 
             SplitName(qualifiedName, out prefix, out localName);
             return CreateAttribute(prefix, localName, namespaceURI);
@@ -934,8 +934,8 @@ namespace System.Xml
         // NamespaceURI.
         public XmlElement CreateElement(string qualifiedName, string? namespaceURI)
         {
-            string prefix = string.Empty;
-            string localName = string.Empty;
+            string prefix;
+            string localName;
             SplitName(qualifiedName, out prefix, out localName);
             return CreateElement(prefix, localName, namespaceURI);
         }
@@ -1217,7 +1217,7 @@ namespace System.Xml
             return node;
         }
 
-        internal XmlNodeType ConvertToNodeType(string nodeTypeString)
+        internal static XmlNodeType ConvertToNodeType(string nodeTypeString)
         {
             if (nodeTypeString == "element")
             {
@@ -1355,7 +1355,7 @@ namespace System.Xml
         }
 
         // Loads the XML document from the specified string.
-        public virtual void LoadXml(string xml)
+        public virtual void LoadXml([StringSyntax(StringSyntaxAttribute.Xml)] string xml)
         {
             XmlTextReader reader = SetupReader(new XmlTextReader(new StringReader(xml), NameTable));
             try

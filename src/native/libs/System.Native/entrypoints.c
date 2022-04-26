@@ -21,7 +21,6 @@
 #include "pal_networkstatistics.h"
 #include "pal_process.h"
 #include "pal_random.h"
-#include "pal_runtimeextensions.h"
 #include "pal_runtimeinformation.h"
 #include "pal_searchpath.h"
 #include "pal_signal.h"
@@ -84,6 +83,9 @@ static const Entry s_sysNative[] =
     DllImportEntry(SystemNative_LSeek)
     DllImportEntry(SystemNative_Link)
     DllImportEntry(SystemNative_SymLink)
+    DllImportEntry(SystemNative_MkNod)
+    DllImportEntry(SystemNative_GetDeviceIdentifiers)
+    DllImportEntry(SystemNative_MkFifo)
     DllImportEntry(SystemNative_MksTemps)
     DllImportEntry(SystemNative_MMap)
     DllImportEntry(SystemNative_MUnmap)
@@ -110,6 +112,7 @@ static const Entry s_sysNative[] =
     DllImportEntry(SystemNative_LockFileRegion)
     DllImportEntry(SystemNative_LChflags)
     DllImportEntry(SystemNative_LChflagsCanSetHiddenFlag)
+    DllImportEntry(SystemNative_CanGetHiddenFlag)
     DllImportEntry(SystemNative_ReadProcessStatusInfo)
     DllImportEntry(SystemNative_Log)
     DllImportEntry(SystemNative_LogError)
@@ -118,7 +121,6 @@ static const Entry s_sysNative[] =
     DllImportEntry(SystemNative_AlignedRealloc)
     DllImportEntry(SystemNative_Calloc)
     DllImportEntry(SystemNative_Free)
-    DllImportEntry(SystemNative_GetUsableSize)
     DllImportEntry(SystemNative_Malloc)
     DllImportEntry(SystemNative_MemSet)
     DllImportEntry(SystemNative_Realloc)
@@ -127,7 +129,6 @@ static const Entry s_sysNative[] =
     DllImportEntry(SystemNative_GetAllMountPoints)
     DllImportEntry(SystemNative_ReadEvents)
     DllImportEntry(SystemNative_CreateNetworkChangeListenerSocket)
-    DllImportEntry(SystemNative_CloseNetworkChangeListenerSocket)
     DllImportEntry(SystemNative_GetHostEntryForName)
     DllImportEntry(SystemNative_FreeHostEntry)
     DllImportEntry(SystemNative_GetNameInfo)
@@ -214,18 +215,14 @@ static const Entry s_sysNative[] =
     DllImportEntry(SystemNative_GetProcessPath)
     DllImportEntry(SystemNative_GetNonCryptographicallySecureRandomBytes)
     DllImportEntry(SystemNative_GetCryptographicallySecureRandomBytes)
-    DllImportEntry(SystemNative_GetNodeName)
-    DllImportEntry(SystemNative_GetUnixName)
     DllImportEntry(SystemNative_GetUnixRelease)
     DllImportEntry(SystemNative_GetUnixVersion)
     DllImportEntry(SystemNative_GetOSArchitecture)
-    DllImportEntry(SystemNative_GetProcessArchitecture)
     DllImportEntry(SystemNative_SearchPath)
     DllImportEntry(SystemNative_SearchPath_TempDirectory)
     DllImportEntry(SystemNative_RegisterForSigChld)
     DllImportEntry(SystemNative_SetDelayedSigChildConsoleConfigurationHandler)
     DllImportEntry(SystemNative_SetTerminalInvalidationHandler)
-    DllImportEntry(SystemNative_InitializeTerminalAndSignalHandling)
     DllImportEntry(SystemNative_SNPrintF)
     DllImportEntry(SystemNative_Sysctl)
     DllImportEntry(SystemNative_MapTcpState)
@@ -239,6 +236,7 @@ static const Entry s_sysNative[] =
     DllImportEntry(SystemNative_LoadLibrary)
     DllImportEntry(SystemNative_GetProcAddress)
     DllImportEntry(SystemNative_FreeLibrary)
+    DllImportEntry(SystemNative_GetDefaultSearchOrderPseudoHandle)
     DllImportEntry(SystemNative_SchedGetCpu)
     DllImportEntry(SystemNative_Exit)
     DllImportEntry(SystemNative_Abort)

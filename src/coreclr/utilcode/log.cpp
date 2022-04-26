@@ -76,7 +76,7 @@ VOID InitLogging()
     if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_LogWithPid))
     {
         WCHAR szPid[20];
-        swprintf_s(szPid, COUNTOF(szPid), W(".%d"), GetCurrentProcessId());
+        swprintf_s(szPid, ARRAY_SIZE(szPid), W(".%d"), GetCurrentProcessId());
         wcscat_s(szLogFileName.Ptr(), szLogFileName.Size(), szPid);
     }
 
@@ -136,8 +136,6 @@ VOID InitLogging()
                 WriteFile(GetStdHandle(STD_OUTPUT_HANDLE), msg, (DWORD)strlen(msg), &written, 0);
             }
         }
-        if (LogFileHandle == INVALID_HANDLE_VALUE)
-            UtilMessageBoxNonLocalized(NULL, W("Could not open log file"), W("CLR logging"), MB_OK | MB_ICONINFORMATION, FALSE, TRUE);
         if (LogFileHandle != INVALID_HANDLE_VALUE)
         {
             if (LogFlags & LOG_ENABLE_APPEND_FILE)
@@ -323,7 +321,7 @@ VOID LogSpewAlwaysValist(const char *fmt, va_list args)
     static bool needsPrefix = true;
 
     if (needsPrefix)
-        buflen = sprintf_s(pBuffer, COUNTOF(rgchBuffer), "TID %04x: ", GetCurrentThreadId());
+        buflen = sprintf_s(pBuffer, ARRAY_SIZE(rgchBuffer), "TID %04x: ", GetCurrentThreadId());
 
     needsPrefix = (fmt[strlen(fmt)-1] == '\n');
 

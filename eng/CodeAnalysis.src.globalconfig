@@ -152,10 +152,10 @@ dotnet_diagnostic.CA1064.severity = none
 dotnet_diagnostic.CA1065.severity = none
 
 # CA1066: Implement IEquatable when overriding Object.Equals
-dotnet_diagnostic.CA1066.severity = none
+dotnet_diagnostic.CA1066.severity = warning
 
 # CA1067: Override Object.Equals(object) when implementing IEquatable<T>
-dotnet_diagnostic.CA1067.severity = none
+dotnet_diagnostic.CA1067.severity = warning
 
 # CA1068: CancellationToken parameters must come last
 dotnet_diagnostic.CA1068.severity = none
@@ -190,6 +190,9 @@ dotnet_diagnostic.CA1309.severity = none
 # CA1310: Specify StringComparison for correctness
 dotnet_diagnostic.CA1310.severity = suggestion
 
+# CA1311: Specify a culture or use an invariant version
+dotnet_diagnostic.CA1311.severity = warning
+
 # CA1401: P/Invokes should not be visible
 dotnet_diagnostic.CA1401.severity = warning
 
@@ -204,6 +207,12 @@ dotnet_diagnostic.CA1418.severity = warning
 
 # CA1419: Provide a parameterless constructor that is as visible as the containing type for concrete types derived from 'System.Runtime.InteropServices.SafeHandle'
 dotnet_diagnostic.CA1419.severity = warning
+
+# CA1420: Property, type, or attribute requires runtime marshalling
+dotnet_diagnostic.CA1420.severity = warning
+
+# CA1421: This method uses runtime marshalling even when the 'DisableRuntimeMarshallingAttribute' is applied
+dotnet_diagnostic.CA1421.severity = suggestion
 
 # CA1501: Avoid excessive inheritance
 dotnet_diagnostic.CA1501.severity = none
@@ -306,7 +315,8 @@ dotnet_diagnostic.CA1820.severity = none
 dotnet_diagnostic.CA1821.severity = warning
 
 # CA1822: Mark members as static
-dotnet_diagnostic.CA1822.severity = none
+dotnet_diagnostic.CA1822.severity = warning
+dotnet_code_quality.CA1822.api_surface = private, internal
 
 # CA1823: Avoid unused private fields
 dotnet_diagnostic.CA1823.severity = warning
@@ -392,6 +402,12 @@ dotnet_diagnostic.CA1849.severity = suggestion
 # CA1850: Prefer static 'HashData' method over 'ComputeHash'
 dotnet_diagnostic.CA1850.severity = warning
 
+# CA1851: Possible multiple enumerations of 'IEnumerable' collection
+dotnet_diagnostic.CA1851.severity = suggestion
+
+# CA1852: Seal internal types
+dotnet_diagnostic.CA1852.severity = warning
+
 # CA2000: Dispose objects before losing scope
 dotnet_diagnostic.CA2000.severity = none
 
@@ -430,6 +446,9 @@ dotnet_diagnostic.CA2017.severity = warning
 
 # CA2018: 'Buffer.BlockCopy' expects the number of bytes to be copied for the 'count' argument
 dotnet_diagnostic.CA2018.severity = warning
+
+# CA2019: Improper 'ThreadStatic' field initialization
+dotnet_diagnostic.CA2019.severity = warning
 
 # CA2100: Review SQL queries for security vulnerabilities
 dotnet_diagnostic.CA2100.severity = none
@@ -563,6 +582,9 @@ dotnet_diagnostic.CA2257.severity = warning
 
 # CA2258: Providing a 'DynamicInterfaceCastableImplementation' interface in Visual Basic is unsupported
 dotnet_diagnostic.CA2258.severity = warning
+
+# CA2259: 'ThreadStatic' only affects static fields
+dotnet_diagnostic.CA2259.severity = warning
 
 # CA2300: Do not use insecure deserializer BinaryFormatter
 dotnet_diagnostic.CA2300.severity = none
@@ -774,7 +796,7 @@ dotnet_diagnostic.CA5383.severity = none
 # CA5384: Do Not Use Digital Signature Algorithm (DSA)
 dotnet_diagnostic.CA5384.severity = warning
 
-# CA5385: Use Rivest–Shamir–Adleman (RSA) Algorithm With Sufficient Key Size
+# CA5385: Use Rivest-Shamir-Adleman (RSA) Algorithm With Sufficient Key Size
 dotnet_diagnostic.CA5385.severity = warning
 
 # CA5386: Avoid hardcoding SecurityProtocolType value
@@ -825,7 +847,7 @@ dotnet_diagnostic.CA5400.severity = none
 # CA5401: Do not use CreateEncryptor with non-default IV
 dotnet_diagnostic.CA5401.severity = none
 
-# CA5402: Use CreateEncryptor with the default IV 
+# CA5402: Use CreateEncryptor with the default IV
 dotnet_diagnostic.CA5402.severity = none
 
 # CA5403: Do not hard-code certificate
@@ -850,7 +872,8 @@ dotnet_diagnostic.IL3002.severity = warning
 dotnet_diagnostic.SA0001.severity = none
 
 # SA1000: Spacing around keywords
-dotnet_diagnostic.SA1000.severity = warning
+# suggestion until https://github.com/DotNetAnalyzers/StyleCopAnalyzers/issues/3478 is resolved
+dotnet_diagnostic.SA1000.severity = suggestion
 
 # SA1001: Commas should not be preceded by whitespace
 dotnet_diagnostic.SA1001.severity = warning
@@ -1444,10 +1467,11 @@ dotnet_diagnostic.IDE0057.severity = suggestion
 dotnet_diagnostic.IDE0058.severity = silent
 
 # IDE0059: Unnecessary assignment of a value
-dotnet_diagnostic.IDE0059.severity = suggestion
+dotnet_diagnostic.IDE0059.severity = warning
 
 # IDE0060: Remove unused parameter
 dotnet_diagnostic.IDE0060.severity = silent
+dotnet_code_quality_unused_parameters = non_public
 
 # IDE0061: Use expression body for local functions
 dotnet_diagnostic.IDE0061.severity = silent

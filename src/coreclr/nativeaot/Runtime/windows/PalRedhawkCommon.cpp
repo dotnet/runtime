@@ -172,7 +172,7 @@ REDHAWK_PALEXPORT int32_t PalGetModuleFileName(_Out_ const TCHAR** pModuleNameOu
     return 0;
 }
 
-REDHAWK_PALEXPORT uint64_t __cdecl PalGetTickCount64()
+REDHAWK_PALEXPORT uint64_t REDHAWK_PALAPI PalGetTickCount64()
 {
     return GetTickCount64();
 }

@@ -24,7 +24,6 @@ namespace ILCompiler
         private readonly IEnumerable<string> _inputFiles;
         private readonly string _compositeRootPath;
         private bool _ibcTuning;
-        private bool _resilient;
         private bool _generateMapFile;
         private bool _generateMapCsvFile;
         private bool _generatePdbFile;
@@ -33,7 +32,6 @@ namespace ILCompiler
         private string _perfMapPath;
         private int _perfMapFormatVersion;
         private bool _generateProfileFile;
-        private int _parallelism;
         Func<MethodDesc, string> _printReproInstructions;
         private InstructionSetSupport _instructionSetSupport;
         private ProfileDataManager _profileData;
@@ -118,12 +116,6 @@ namespace ILCompiler
             return this;
         }
 
-        public ReadyToRunCodegenCompilationBuilder UseResilience(bool resilient)
-        {
-            _resilient = resilient;
-            return this;
-        }
-
         public ReadyToRunCodegenCompilationBuilder UseProfileData(ProfileDataManager profileData)
         {
             _profileData = profileData;
@@ -167,12 +159,6 @@ namespace ILCompiler
         public ReadyToRunCodegenCompilationBuilder UseProfileFile(bool generateProfileFile)
         {
             _generateProfileFile = generateProfileFile;
-            return this;
-        }
-
-        public ReadyToRunCodegenCompilationBuilder UseParallelism(int parallelism)
-        {
-            _parallelism = parallelism;
             return this;
         }
 
@@ -258,7 +244,7 @@ namespace ILCompiler
 
             factory.CompositeImageSettings = _compositeImageSettings;
 
-            IComparer<DependencyNodeCore<NodeFactory>> comparer = new SortableDependencyNode.ObjectNodeComparer(new CompilerComparer());
+            IComparer<DependencyNodeCore<NodeFactory>> comparer = new SortableDependencyNode.ObjectNodeComparer(CompilerComparer.Instance);
             DependencyAnalyzerBase<NodeFactory> graph = CreateDependencyGraph(factory, comparer);
 
             List<CorJitFlag> corJitFlags = new List<CorJitFlag> { CorJitFlag.CORJIT_FLAG_DEBUG_INFO };

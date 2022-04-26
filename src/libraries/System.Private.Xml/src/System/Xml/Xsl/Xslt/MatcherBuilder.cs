@@ -186,7 +186,6 @@ namespace System.Xml.Xsl.Xslt
             }
 
             // Recognized pattern A, check for B
-            QilNode x = isType;
             _nodeKind = nodeKinds;
             QilBinary lastAnd = leftPath[idx & 3];
 
@@ -200,7 +199,6 @@ namespace System.Xml.Xsl.Xslt
                 )
                 {
                     // Recognized pattern B
-                    x = lastAnd;
                     _qname = (QilName?)((QilLiteral)eq.Right).Value;
                     idx--;
                 }
@@ -418,7 +416,7 @@ namespace System.Xml.Xsl.Xslt
             return _f.Conditional(_f.IsType(it, xt), MatchPatterns(it, patternList), otherwise);
         }
 
-        private bool IsNoMatch(QilNode matcher)
+        private static bool IsNoMatch(QilNode matcher)
         {
             if (matcher.NodeType == QilNodeType.LiteralInt32)
             {

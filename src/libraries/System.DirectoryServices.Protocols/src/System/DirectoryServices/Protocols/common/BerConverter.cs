@@ -12,8 +12,7 @@ namespace System.DirectoryServices.Protocols
     {
         public static byte[] Encode(string format, params object[] value)
         {
-            if (format == null)
-                throw new ArgumentNullException(nameof(format));
+            ArgumentNullException.ThrowIfNull(format);
 
             // no need to turn on invalid encoding detection as we just do string->byte[] conversion.
             UTF8Encoding utf8Encoder = new UTF8Encoding();
@@ -166,7 +165,7 @@ namespace System.DirectoryServices.Protocols
                     }
 
                     string[] stringValues = (string[])value[valueCount];
-                    byte[][] tempValues = null;
+                    byte[][] tempValues;
                     if (stringValues != null)
                     {
                         tempValues = new byte[stringValues.Length][];
@@ -303,8 +302,7 @@ namespace System.DirectoryServices.Protocols
 
         internal static object[] TryDecode(string format, byte[] value, out bool decodeSucceeded)
         {
-            if (format == null)
-                throw new ArgumentNullException(nameof(format));
+            ArgumentNullException.ThrowIfNull(format);
 
             Debug.WriteLine("Begin decoding");
 
@@ -338,7 +336,7 @@ namespace System.DirectoryServices.Protocols
                     Marshal.FreeHGlobal(berValue.bv_val);
             }
 
-            int error = 0;
+            int error;
 
             for (int formatCount = 0; formatCount < format.Length; formatCount++)
             {
@@ -360,7 +358,7 @@ namespace System.DirectoryServices.Protocols
                         if (fmt == 'b')
                         {
                             // should return a bool
-                            bool boolResult = false;
+                            bool boolResult;
                             if (result == 0)
                                 boolResult = false;
                             else
@@ -378,7 +376,7 @@ namespace System.DirectoryServices.Protocols
                 else if (fmt == 'a')
                 {
                     // return a string
-                    byte[] byteArray = DecodingByteArrayHelper(berElement, 'O', ref error);
+                    byte[] byteArray = DecodingByteArrayHelper(berElement, 'O', out error);
                     if (!BerPal.IsBerDecodeError(error))
                     {
                         string s = null;
@@ -391,7 +389,7 @@ namespace System.DirectoryServices.Protocols
                 else if (fmt == 'O')
                 {
                     // return BerVal
-                    byte[] byteArray = DecodingByteArrayHelper(berElement, fmt, ref error);
+                    byte[] byteArray = DecodingByteArrayHelper(berElement, fmt, out error);
                     if (!BerPal.IsBerDecodeError(error))
                     {
                         // add result to the list
@@ -405,10 +403,10 @@ namespace System.DirectoryServices.Protocols
                 else if (fmt == 'v')
                 {
                     //null terminate strings
-                    byte[][] byteArrayresult = null;
+                    byte[][] byteArrayresult;
                     string[] stringArray = null;
 
-                    byteArrayresult = DecodingMultiByteArrayHelper(berElement, 'V', ref error);
+                    byteArrayresult = DecodingMultiByteArrayHelper(berElement, 'V', out error);
                     if (!BerPal.IsBerDecodeError(error))
                     {
                         if (byteArrayresult != null)
@@ -432,9 +430,9 @@ namespace System.DirectoryServices.Protocols
                 }
                 else if (fmt == 'V')
                 {
-                    byte[][] result = null;
+                    byte[][] result;
 
-                    result = DecodingMultiByteArrayHelper(berElement, fmt, ref error);
+                    result = DecodingMultiByteArrayHelper(berElement, fmt, out error);
                     if (!BerPal.IsBerDecodeError(error))
                     {
                         resultList.Add(result);
@@ -465,7 +463,7 @@ namespace System.DirectoryServices.Protocols
 
         private static int EncodingByteArrayHelper(SafeBerHandle berElement, byte[] tempValue, char fmt, nuint tag)
         {
-            int error = 0;
+            int error;
 
             // one byte array, one int arguments
             if (tempValue != null)
@@ -484,9 +482,8 @@ namespace System.DirectoryServices.Protocols
             return error;
         }
 
-        private static byte[] DecodingByteArrayHelper(SafeBerHandle berElement, char fmt, ref int error)
+        private static byte[] DecodingByteArrayHelper(SafeBerHandle berElement, char fmt, out int error)
         {
-            error = 0;
             IntPtr result = IntPtr.Zero;
             BerVal binaryValue = new BerVal();
             byte[] byteArray = null;
@@ -522,7 +519,7 @@ namespace System.DirectoryServices.Protocols
         private static int EncodingMultiByteArrayHelper(SafeBerHandle berElement, byte[][] tempValue, char fmt, nuint tag)
         {
             IntPtr berValArray = IntPtr.Zero;
-            IntPtr tempPtr = IntPtr.Zero;
+            IntPtr tempPtr;
             BerVal[] managedBervalArray = null;
             int error = 0;
 
@@ -590,14 +587,13 @@ namespace System.DirectoryServices.Protocols
             return error;
         }
 
-        private static byte[][] DecodingMultiByteArrayHelper(SafeBerHandle berElement, char fmt, ref int error)
+        private static byte[][] DecodingMultiByteArrayHelper(SafeBerHandle berElement, char fmt, out int error)
         {
-            error = 0;
             // several BerVal
             IntPtr ptrResult = IntPtr.Zero;
             int i = 0;
             ArrayList binaryList = new ArrayList();
-            IntPtr tempPtr = IntPtr.Zero;
+            IntPtr tempPtr;
             byte[][] result = null;
 
             try

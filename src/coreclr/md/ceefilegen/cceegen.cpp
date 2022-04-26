@@ -98,7 +98,7 @@ STDMETHODIMP CCeeGen::SetInitialGrowth(DWORD growth)
     return S_OK;
 }
 
-STDMETHODIMP CCeeGen::EmitString (__in LPWSTR lpString, ULONG *RVA)
+STDMETHODIMP CCeeGen::EmitString (_In_ LPWSTR lpString, ULONG *RVA)
 {
     HRESULT hr = S_OK;
     BEGIN_ENTRYPOINT_NOTHROW;

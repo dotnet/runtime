@@ -19,10 +19,8 @@ namespace System.ComponentModel.Composition.ReflectionModel
             : base(importingLazyMember, CompositionConstants.PartCreatorContractName, CompositionConstants.PartCreatorTypeIdentity,
                 productImportDefinition.RequiredMetadata, productImportDefinition.Cardinality, productImportDefinition.IsRecomposable, false, productImportDefinition.RequiredCreationPolicy, MetadataServices.EmptyMetadata, origin)
         {
-            if (productImportDefinition == null)
-            {
-                throw new ArgumentNullException(nameof(productImportDefinition));
-            }
+            ArgumentNullException.ThrowIfNull(productImportDefinition);
+
             _productImportDefinition = productImportDefinition;
         }
 

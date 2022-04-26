@@ -2,7 +2,7 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;net48</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;net48</TargetFrameworks>
     <IgnoreForCI Condition="'$(TargetsMobile)' == 'true'">true</IgnoreForCI>
   </PropertyGroup>
   <ItemGroup>
@@ -24,7 +24,6 @@
     <Compile Include="FontTests.cs" />
     <Compile Include="FontFamilyTests.cs" />
     <Compile Include="GdiPlusHandlesTests.cs" />
-    <Compile Include="GdiplusTests.cs" />
     <Compile Include="GraphicsTests.cs" />
     <Compile Include="Graphics_DrawBezierTests.cs" />
     <Compile Include="Graphics_DrawLineTests.cs" />

@@ -13,8 +13,7 @@ namespace System.Net
 
         protected DelegatedStream(Stream stream)
         {
-            if (stream == null)
-                throw new ArgumentNullException(nameof(stream));
+            ArgumentNullException.ThrowIfNull(stream);
 
             _stream = stream;
         }

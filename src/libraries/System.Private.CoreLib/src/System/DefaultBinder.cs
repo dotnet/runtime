@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#pragma warning disable CA1852 // DefaultBinder is derived from in some targets
+
 using System.Reflection;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -107,7 +109,6 @@ namespace System
                 if (candidates[i] == null)
                     continue;
 
-                // Validate the parameters.
                 ParameterInfo[] par = candidates[i]!.GetParametersNoCopy();
 
 #region Match method by parameter count
@@ -369,7 +370,7 @@ namespace System
             }
 
             if (ambig)
-                throw new AmbiguousMatchException(SR.Arg_AmbiguousMatchException);
+                throw new AmbiguousMatchException();
 
             // Reorder (if needed)
             if (names != null)
@@ -434,10 +435,7 @@ namespace System
         // if value is null then we have no way to select a field
         public sealed override FieldInfo BindToField(BindingFlags bindingAttr, FieldInfo[] match, object value, CultureInfo? cultureInfo)
         {
-            if (match == null)
-            {
-                throw new ArgumentNullException(nameof(match));
-            }
+            ArgumentNullException.ThrowIfNull(match);
 
             int i;
             // Find the method that match...
@@ -515,7 +513,7 @@ namespace System
                 }
             }
             if (ambig)
-                throw new AmbiguousMatchException(SR.Arg_AmbiguousMatchException);
+                throw new AmbiguousMatchException();
             return candidates[currentMin];
         }
 
@@ -609,7 +607,7 @@ namespace System
                 }
             }
             if (ambig)
-                throw new AmbiguousMatchException(SR.Arg_AmbiguousMatchException);
+                throw new AmbiguousMatchException();
             return candidates[currentMin];
         }
 
@@ -622,8 +620,7 @@ namespace System
             {
                 foreach (Type index in indexes)
                 {
-                    if (index == null)
-                        throw new ArgumentNullException(nameof(indexes));
+                    ArgumentNullException.ThrowIfNull(index, nameof(indexes));
                 }
             }
 
@@ -725,7 +722,7 @@ namespace System
             }
 
             if (ambig)
-                throw new AmbiguousMatchException(SR.Arg_AmbiguousMatchException);
+                throw new AmbiguousMatchException();
             return candidates[currentMin];
         }
 
@@ -773,10 +770,9 @@ namespace System
 
         // Return any exact bindings that may exist. (This method is not defined on the
         //  Binder and is used by RuntimeType.)
-        public static MethodBase? ExactBinding(MethodBase[] match, Type[] types, ParameterModifier[]? modifiers)
+        public static MethodBase? ExactBinding(MethodBase[] match, Type[] types)
         {
-            if (match == null)
-                throw new ArgumentNullException(nameof(match));
+            ArgumentNullException.ThrowIfNull(match);
 
             MethodBase[] aExactMatches = new MethodBase[match.Length];
             int cExactMatches = 0;
@@ -816,10 +812,9 @@ namespace System
 
         // Return any exact bindings that may exist. (This method is not defined on the
         //  Binder and is used by RuntimeType.)
-        public static PropertyInfo? ExactPropertyBinding(PropertyInfo[] match, Type? returnType, Type[]? types, ParameterModifier[]? modifiers)
+        public static PropertyInfo? ExactPropertyBinding(PropertyInfo[] match, Type? returnType, Type[]? types)
         {
-            if (match == null)
-                throw new ArgumentNullException(nameof(match));
+            ArgumentNullException.ThrowIfNull(match);
 
             PropertyInfo? bestMatch = null;
             int typesLength = (types != null) ? types.Length : 0;
@@ -841,7 +836,7 @@ namespace System
                     continue;
 
                 if (bestMatch != null)
-                    throw new AmbiguousMatchException(SR.Arg_AmbiguousMatchException);
+                    throw new AmbiguousMatchException();
 
                 bestMatch = match[i];
             }
@@ -1128,7 +1123,7 @@ namespace System
                 // This can only happen if at least one is vararg or generic.
                 if (currentHierarchyDepth == deepestHierarchy)
                 {
-                    throw new AmbiguousMatchException(SR.Arg_AmbiguousMatchException);
+                    throw new AmbiguousMatchException();
                 }
 
                 // Check to see if this method is on the most derived class.

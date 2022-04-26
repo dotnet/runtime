@@ -325,10 +325,7 @@ namespace System.Net
                 {
                     throw new InvalidOperationException(SR.net_reqsubmitted);
                 }
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
+                ArgumentNullException.ThrowIfNull(value);
                 if (value == CredentialCache.DefaultNetworkCredentials)
                 {
                     throw new ArgumentException(SR.net_ftp_no_defaultcreds, nameof(value));
@@ -688,13 +685,10 @@ namespace System.Net
         /// </summary>
         public override WebResponse EndGetResponse(IAsyncResult asyncResult)
         {
+            ArgumentNullException.ThrowIfNull(asyncResult);
+
             try
             {
-                // parameter validation
-                if (asyncResult == null)
-                {
-                    throw new ArgumentNullException(nameof(asyncResult));
-                }
                 LazyAsyncResult? castedAsyncResult = asyncResult as LazyAsyncResult;
                 if (castedAsyncResult == null)
                 {
@@ -812,14 +806,11 @@ namespace System.Net
 
         public override Stream EndGetRequestStream(IAsyncResult asyncResult)
         {
-            Stream? requestStream = null;
+            ArgumentNullException.ThrowIfNull(asyncResult);
+
+            Stream? requestStream;
             try
             {
-                if (asyncResult == null)
-                {
-                    throw new ArgumentNullException(nameof(asyncResult));
-                }
-
                 LazyAsyncResult? castedAsyncResult = asyncResult as LazyAsyncResult;
 
                 if (castedAsyncResult == null)
@@ -947,7 +938,7 @@ namespace System.Net
             }
         }
 
-        private Exception TranslateConnectException(Exception e)
+        private static Exception TranslateConnectException(Exception e)
         {
             if (e is SocketException se)
             {
@@ -970,9 +961,9 @@ namespace System.Net
             object result;
             try
             {
-                var client = new TcpClient();
+                var client = new Socket(SocketType.Stream, ProtocolType.Tcp);
                 await client.ConnectAsync(_uri.Host, _uri.Port).ConfigureAwait(false);
-                result = new FtpControlStream(client);
+                result = new FtpControlStream(new NetworkStream(client, ownsSocket: true));
             }
             catch (Exception e)
             {
@@ -987,7 +978,7 @@ namespace System.Net
             string hostname = _uri.Host;
             int port = _uri.Port;
 
-            TcpClient client = new TcpClient();
+            var client = new Socket(SocketType.Stream, ProtocolType.Tcp);
 
             try
             {
@@ -998,7 +989,7 @@ namespace System.Net
                 throw TranslateConnectException(e);
             }
 
-            return new FtpControlStream(client);
+            return new FtpControlStream(new NetworkStream(client, ownsSocket: true));
         }
 
         private Stream? TimedSubmitRequestHelper(bool isAsync)
@@ -1561,10 +1552,7 @@ namespace System.Net
             }
             set
             {
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
+                ArgumentNullException.ThrowIfNull(value);
                 _clientCertificates = value;
             }
         }

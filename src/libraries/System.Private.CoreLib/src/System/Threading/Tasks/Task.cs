@@ -10,13 +10,11 @@
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Diagnostics.Tracing;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 using System.Runtime.Versioning;
-using Internal.Runtime.CompilerServices;
 
 namespace System.Threading.Tasks
 {
@@ -260,7 +258,21 @@ namespace System.Threading.Tasks
             internal void SetCompleted()
             {
                 ManualResetEventSlim? mres = m_completionEvent;
-                if (mres != null) mres.Set();
+                if (mres != null) SetEvent(mres);
+            }
+
+            internal static void SetEvent(ManualResetEventSlim mres)
+            {
+                try
+                {
+                    mres.Set();
+                }
+                catch (ObjectDisposedException)
+                {
+                    // The event may have been exposed to external code, in which case it could have been disposed
+                    // prematurely / erroneously.  To avoid that causing problems for the unrelated stack trying to
+                    // set the event, eat any disposed exceptions.
+                }
             }
 
             /// <summary>
@@ -1483,7 +1495,7 @@ namespace System.Threading.Tasks
                     {
                         // We published the event as unset, but the task has subsequently completed.
                         // Set the event's state properly so that callers don't deadlock.
-                        newMre.Set();
+                        ContingentProperties.SetEvent(newMre);
                     }
                 }
 
@@ -1619,7 +1631,7 @@ namespace System.Threading.Tasks
                         // will deadlock; an ensuing Set() will not wake them up.  In the event of an AppDomainUnload,
                         // there is no guarantee that anyone else is going to signal the event, and it does no harm to
                         // call Set() twice on m_completionEvent.
-                        if (!ev.IsSet) ev.Set();
+                        ContingentProperties.SetEvent(ev);
 
                         // Finally, dispose of the event
                         ev.Dispose();
@@ -2428,7 +2440,7 @@ namespace System.Threading.Tasks
         #region Await Support
         /// <summary>Gets an awaiter used to await this <see cref="System.Threading.Tasks.Task"/>.</summary>
         /// <returns>An awaiter instance.</returns>
-        /// <remarks>This method is intended for compiler user rather than use directly in code.</remarks>
+        /// <remarks>This method is intended for compiler use rather than use directly in code.</remarks>
         public TaskAwaiter GetAwaiter()
         {
             return new TaskAwaiter(this);
@@ -2625,15 +2637,40 @@ namespace System.Threading.Tasks
         /// infinite time-out -or- timeout is greater than
         /// <see cref="int.MaxValue"/>.
         /// </exception>
-        public bool Wait(TimeSpan timeout)
+        public bool Wait(TimeSpan timeout) => Wait(timeout, default);
+
+        /// <summary>
+        /// Waits for the <see cref="Task"/> to complete execution.
+        /// </summary>
+        /// <param name="timeout">The time to wait, or <see cref="Timeout.InfiniteTimeSpan"/> to wait indefinitely</param>
+        /// <param name="cancellationToken">
+        /// A <see cref="CancellationToken"/> to observe while waiting for the task to complete.
+        /// </param>
+        /// <returns>
+        /// true if the <see cref="Task"/> completed execution within the allotted time; otherwise, false.
+        /// </returns>
+        /// <exception cref="AggregateException">
+        /// The <see cref="Task"/> was canceled -or- an exception was thrown during the execution of the <see
+        /// cref="Task"/>.
+        /// </exception>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <paramref name="timeout"/> is a negative number other than -1 milliseconds, which represents an
+        /// infinite time-out -or- timeout is greater than
+        /// <see cref="int.MaxValue"/>.
+        /// </exception>
+        /// <exception cref="OperationCanceledException">
+        /// The <paramref name="cancellationToken"/> was canceled.
+        /// </exception>
+        public bool Wait(TimeSpan timeout, CancellationToken cancellationToken)
         {
             long totalMilliseconds = (long)timeout.TotalMilliseconds;
             if (totalMilliseconds < -1 || totalMilliseconds > int.MaxValue)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.timeout);
             }
+            cancellationToken.ThrowIfCancellationRequested();
 
-            return Wait((int)totalMilliseconds, default);
+            return Wait((int)totalMilliseconds, cancellationToken);
         }
 
         /// <summary>
@@ -4552,7 +4589,7 @@ namespace System.Threading.Tasks
                     // Find continuationObject in the continuation list
                     int index = continuationsLocalListRef.IndexOf(continuationObject);
 
-                    if (index != -1)
+                    if (index >= 0)
                     {
                         // null out that TaskContinuation entry, which will be interpreted as "to be cleaned up"
                         continuationsLocalListRef[index] = null;
@@ -5407,7 +5444,6 @@ namespace System.Threading.Tasks
         /// </exception>
         public static Task Run(Func<Task?> function, CancellationToken cancellationToken)
         {
-            // Check arguments
             if (function == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.function);
 
             // Short-circuit if we are given a pre-canceled token
@@ -5452,7 +5488,6 @@ namespace System.Threading.Tasks
         /// </exception>
         public static Task<TResult> Run<TResult>(Func<Task<TResult>?> function, CancellationToken cancellationToken)
         {
-            // Check arguments
             if (function == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.function);
 
             // Short-circuit if we are given a pre-canceled token
@@ -5627,6 +5662,20 @@ namespace System.Threading.Tasks
                 _registration = token.UnsafeRegister(static (state, cancellationToken) =>
                 {
                     var thisRef = (DelayPromiseWithCancellation)state!;
+
+                    // Normally RunContinuationsAsynchronously is set at construction time.  We don't want to
+                    // set it at construction because we want the timer firing (already on a thread pool thread with
+                    // a stack in which it's fine to execute arbitrary code) to synchronously invoke any continuations
+                    // from this task.  However, a cancellation request will come synchronously from a call to
+                    // CancellationTokenSource.Cancel, and we don't want to invoke arbitrary continuations from
+                    // this delay task as part of that Cancel call.  As such, we set RunContinuationsAsynchronously
+                    // after the fact, only when the task is being completed due to cancellation.  There is a race
+                    // condition here, such that if the timer also fired concurrently, it might win, in which case
+                    // it might also observe this RunContinuationsAsynchronously, but that's benign.  An alternative
+                    // is to make the whole cancellation registration queue, but that's visible in that the Task's
+                    // IsCompleted wouldn't be set synchronously as part of IsCompleted.
+                    thisRef.AtomicStateUpdate((int)TaskCreationOptions.RunContinuationsAsynchronously, 0);
+
                     if (thisRef.TrySetCanceled(cancellationToken))
                     {
                         thisRef.Cleanup();
@@ -6187,11 +6236,16 @@ namespace System.Threading.Tasks
         /// <exception cref="System.ArgumentNullException">
         /// The <paramref name="task1"/> or <paramref name="task2"/> argument was null.
         /// </exception>
-        public static Task<Task> WhenAny(Task task1, Task task2) =>
-            (task1 is null) || (task2 is null) ? throw new ArgumentNullException(task1 is null ? nameof(task1) : nameof(task2)) :
-            task1.IsCompleted ? FromResult(task1) :
-            task2.IsCompleted ? FromResult(task2) :
-            new TwoTaskWhenAnyPromise<Task>(task1, task2);
+        public static Task<Task> WhenAny(Task task1, Task task2)
+        {
+            ArgumentNullException.ThrowIfNull(task1);
+            ArgumentNullException.ThrowIfNull(task2);
+
+            return
+                task1.IsCompleted ? FromResult(task1) :
+                task2.IsCompleted ? FromResult(task2) :
+                new TwoTaskWhenAnyPromise<Task>(task1, task2);
+        }
 
         /// <summary>A promise type used by WhenAny to wait on exactly two tasks.</summary>
         /// <typeparam name="TTask">Specifies the type of the task.</typeparam>
@@ -6380,11 +6434,16 @@ namespace System.Threading.Tasks
         /// <exception cref="System.ArgumentNullException">
         /// The <paramref name="task1"/> or <paramref name="task2"/> argument was null.
         /// </exception>
-        public static Task<Task<TResult>> WhenAny<TResult>(Task<TResult> task1, Task<TResult> task2) =>
-            (task1 is null) || (task2 is null) ? throw new ArgumentNullException(task1 is null ? nameof(task1) : nameof(task2)) :
-            task1.IsCompleted ? FromResult(task1) :
-            task2.IsCompleted ? FromResult(task2) :
-            new TwoTaskWhenAnyPromise<Task<TResult>>(task1, task2);
+        public static Task<Task<TResult>> WhenAny<TResult>(Task<TResult> task1, Task<TResult> task2)
+        {
+            ArgumentNullException.ThrowIfNull(task1);
+            ArgumentNullException.ThrowIfNull(task2);
+
+            return
+                task1.IsCompleted ? FromResult(task1) :
+                task2.IsCompleted ? FromResult(task2) :
+                new TwoTaskWhenAnyPromise<Task<TResult>>(task1, task2);
+        }
 
         /// <summary>
         /// Creates a task that will complete when any of the supplied tasks have completed.

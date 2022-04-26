@@ -142,7 +142,7 @@ namespace System.Reflection.Metadata
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="byteCount"/> is negative.</exception>
         public unsafe void WriteBytes(byte* buffer, int byteCount)
         {
-            if (buffer == null)
+            if (buffer is null)
             {
                 Throw.ArgumentNull(nameof(buffer));
             }
@@ -164,7 +164,7 @@ namespace System.Reflection.Metadata
         /// <exception cref="ArgumentNullException"><paramref name="source"/> is null.</exception>
         public void WriteBytes(BlobBuilder source)
         {
-            if (source == null)
+            if (source is null)
             {
                 Throw.ArgumentNull(nameof(source));
             }
@@ -176,7 +176,7 @@ namespace System.Reflection.Metadata
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="byteCount"/> is negative.</exception>
         public int WriteBytes(Stream source, int byteCount)
         {
-            if (source == null)
+            if (source is null)
             {
                 Throw.ArgumentNull(nameof(source));
             }
@@ -215,7 +215,7 @@ namespace System.Reflection.Metadata
         /// <exception cref="ArgumentOutOfRangeException">Range specified by <paramref name="start"/> and <paramref name="byteCount"/> falls outside of the bounds of the <paramref name="buffer"/>.</exception>
         public unsafe void WriteBytes(byte[] buffer, int start, int byteCount)
         {
-            if (buffer == null)
+            if (buffer is null)
             {
                 Throw.ArgumentNull(nameof(buffer));
             }
@@ -371,7 +371,7 @@ namespace System.Reflection.Metadata
         /// <exception cref="ArgumentNullException"><paramref name="value"/> is null.</exception>
         public void WriteUTF16(char[] value)
         {
-            if (value == null)
+            if (value is null)
             {
                 Throw.ArgumentNull(nameof(value));
             }
@@ -403,7 +403,7 @@ namespace System.Reflection.Metadata
         /// <exception cref="ArgumentNullException"><paramref name="value"/> is null.</exception>
         public void WriteUTF16(string value)
         {
-            if (value == null)
+            if (value is null)
             {
                 Throw.ArgumentNull(nameof(value));
             }
@@ -456,9 +456,9 @@ namespace System.Reflection.Metadata
         /// <exception cref="InvalidOperationException">Builder is not writable, it has been linked with another one.</exception>
         public void WriteUserString(string value)
         {
-            if (value == null)
+            if (value is null)
             {
-                throw new ArgumentNullException(nameof(value));
+                Throw.ArgumentNull(nameof(value));
             }
 
             WriteCompressedInteger(BlobUtilities.GetUserStringByteLength(value.Length));
@@ -472,7 +472,7 @@ namespace System.Reflection.Metadata
         /// <exception cref="ArgumentNullException"><paramref name="value"/> is null.</exception>
         public void WriteUTF8(string value, bool allowUnpairedSurrogates)
         {
-            if (value == null)
+            if (value is null)
             {
                 Throw.ArgumentNull(nameof(value));
             }

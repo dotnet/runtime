@@ -36,10 +36,7 @@ namespace System.Net.Http
         protected override void SerializeToStream(Stream stream, TransportContext? context,
             CancellationToken cancellationToken)
         {
-            if (stream == null)
-            {
-                throw new ArgumentNullException(nameof(stream));
-            }
+            ArgumentNullException.ThrowIfNull(stream);
 
             using (Stream contentStream = ConsumeStream())
             {
@@ -51,17 +48,18 @@ namespace System.Net.Http
         protected sealed override Task SerializeToStreamAsync(Stream stream, TransportContext? context) =>
             SerializeToStreamAsync(stream, context, CancellationToken.None);
 
-        protected sealed override async Task SerializeToStreamAsync(Stream stream, TransportContext? context, CancellationToken cancellationToken)
+        protected sealed override Task SerializeToStreamAsync(Stream stream, TransportContext? context, CancellationToken cancellationToken)
         {
-            if (stream == null)
-            {
-                throw new ArgumentNullException(nameof(stream));
-            }
+            ArgumentNullException.ThrowIfNull(stream);
+            return Impl(stream, context, cancellationToken);
 
-            using (Stream contentStream = ConsumeStream())
+            async Task Impl(Stream stream, TransportContext? context, CancellationToken cancellationToken)
             {
-                const int BufferSize = 8192;
-                await contentStream.CopyToAsync(stream, BufferSize, cancellationToken).ConfigureAwait(false);
+                using (Stream contentStream = ConsumeStream())
+                {
+                    const int BufferSize = 8192;
+                    await contentStream.CopyToAsync(stream, BufferSize, cancellationToken).ConfigureAwait(false);
+                }
             }
         }
 

@@ -82,7 +82,6 @@ namespace System.Reflection.Runtime.Assemblies
 
         [RequiresUnreferencedCode("Assembly references might be removed")]
         public sealed override AssemblyName[] GetReferencedAssemblies() { throw new PlatformNotSupportedException(); }
-        public sealed override Module GetModule(string name) { throw new PlatformNotSupportedException(); }
     }
 }
 
@@ -201,7 +200,7 @@ namespace System.Reflection.Runtime.TypeInfos
                 if (ns != null && !ns.Equals(ifc.Namespace))
                     continue;
                 if (match != null)
-                    throw new AmbiguousMatchException(SR.Arg_AmbiguousMatchException);
+                    throw new AmbiguousMatchException();
                 match = ifc;
             }
             return match;

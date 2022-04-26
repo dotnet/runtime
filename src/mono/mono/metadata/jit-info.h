@@ -20,7 +20,7 @@
 #include <mono/metadata/loader-internals.h>
 #include <mono/metadata/mempool-internals.h>
 #include <mono/metadata/handle-decl.h>
-#include <mono/mini/mono-private-unstable.h>
+#include <mono/jit/mono-private-unstable.h>
 
 G_BEGIN_DECLS
 
@@ -222,7 +222,7 @@ struct _MonoJitInfo {
 	gpointer    gc_info; /* Currently only used by SGen */
 
 	gpointer    seq_points;
-	
+
 	MonoJitExceptionInfo clauses [MONO_ZERO_LEN_ARRAY];
 	/* There is an optional MonoGenericJitInfo after the clauses */
 	/* There is an optional MonoTryBlockHoleTableJitInfo after MonoGenericJitInfo clauses*/
@@ -278,7 +278,7 @@ mono_jit_info_get_thunk_info (MonoJitInfo *ji);
 MonoUnwindJitInfo*
 mono_jit_info_get_unwind_info (MonoJitInfo *ji);
 
-/* 
+/*
  * Installs a new function which is used to return a MonoJitInfo for a method inside
  * an AOT module.
  */

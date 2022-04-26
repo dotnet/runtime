@@ -25,10 +25,7 @@ namespace System.Net.Http
             }
             set
             {
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
+                ArgumentNullException.ThrowIfNull(value);
                 CheckDisposedOrStarted();
 
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Associate(this, value);
@@ -47,20 +44,16 @@ namespace System.Net.Http
 
         protected internal override HttpResponseMessage Send(HttpRequestMessage request, CancellationToken cancellationToken)
         {
-            if (request == null)
-            {
-                throw new ArgumentNullException(nameof(request), SR.net_http_handler_norequest);
-            }
+            ArgumentNullException.ThrowIfNull(request);
+
             SetOperationStarted();
             return _innerHandler!.Send(request, cancellationToken);
         }
 
         protected internal override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
-            if (request == null)
-            {
-                throw new ArgumentNullException(nameof(request), SR.net_http_handler_norequest);
-            }
+            ArgumentNullException.ThrowIfNull(request);
+
             SetOperationStarted();
             return _innerHandler!.SendAsync(request, cancellationToken);
         }

@@ -16,10 +16,9 @@ namespace System.Data.OleDb
 
     // wraps the OLEDB IDBInitialize interface which represents a connection
     // Notes about connection pooling
-    // 1. Connection pooling isn't supported on Win95
-    // 2. Only happens if we use the IDataInitialize or IDBPromptInitialize interfaces
+    // 1. Only happens if we use the IDataInitialize or IDBPromptInitialize interfaces
     //    it won't happen if you directly create the provider and set its properties
-    // 3. First call on IDBInitialize must be Initialize, can't QI for any other interfaces before that
+    // 2. First call on IDBInitialize must be Initialize, can't QI for any other interfaces before that
     [DefaultEvent("InfoMessage")]
     public sealed partial class OleDbConnection : DbConnection, ICloneable, IDbConnection
     {
@@ -70,7 +69,7 @@ namespace System.Data.OleDb
         {
             get
             {
-                object? value = null;
+                object? value;
                 if (IsOpen)
                 {
                     value = GetDataSourceValue(OleDbPropertySetGuid.DBInit, ODB.DBPROP_INIT_TIMEOUT);
@@ -306,8 +305,6 @@ namespace System.Data.OleDb
             }
             return quotedIdentifierCase;
         }
-
-        internal bool ForceNewConnection { get { return false; } set {; } }
 
         public new OleDbTransaction BeginTransaction()
         {
@@ -583,8 +580,7 @@ namespace System.Data.OleDb
 
             // ErrorInfo object is to be checked regardless the hresult returned by the function called
             Exception? e = null;
-            UnsafeNativeMethods.IErrorInfo? errorInfo = null;
-            OleDbHResult hr = UnsafeNativeMethods.GetErrorInfo(0, out errorInfo);  // 0 - IErrorInfo exists, 1 - no IErrorInfo
+            OleDbHResult hr = UnsafeNativeMethods.GetErrorInfo(0, out UnsafeNativeMethods.IErrorInfo? errorInfo);  // 0 - IErrorInfo exists, 1 - no IErrorInfo
             if ((OleDbHResult.S_OK == hr) && (null != errorInfo))
             {
                 try

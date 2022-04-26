@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections;
 using System.Collections.Generic;
 
@@ -12,12 +13,13 @@ namespace Microsoft.Extensions.DependencyInjection
     public class ServiceCollection : IServiceCollection
     {
         private readonly List<ServiceDescriptor> _descriptors = new List<ServiceDescriptor>();
+        private bool _isReadOnly;
 
         /// <inheritdoc />
         public int Count => _descriptors.Count;
 
         /// <inheritdoc />
-        public bool IsReadOnly => false;
+        public bool IsReadOnly => _isReadOnly;
 
         /// <inheritdoc />
         public ServiceDescriptor this[int index]
@@ -28,6 +30,7 @@ namespace Microsoft.Extensions.DependencyInjection
             }
             set
             {
+                CheckReadOnly();
                 _descriptors[index] = value;
             }
         }
@@ -35,6 +38,7 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <inheritdoc />
         public void Clear()
         {
+            CheckReadOnly();
             _descriptors.Clear();
         }
 
@@ -53,6 +57,7 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <inheritdoc />
         public bool Remove(ServiceDescriptor item)
         {
+            CheckReadOnly();
             return _descriptors.Remove(item);
         }
 
@@ -64,6 +69,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
         void ICollection<ServiceDescriptor>.Add(ServiceDescriptor item)
         {
+            CheckReadOnly();
             _descriptors.Add(item);
         }
 
@@ -81,13 +87,37 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <inheritdoc />
         public void Insert(int index, ServiceDescriptor item)
         {
+            CheckReadOnly();
             _descriptors.Insert(index, item);
         }
 
         /// <inheritdoc />
         public void RemoveAt(int index)
         {
+            CheckReadOnly();
             _descriptors.RemoveAt(index);
         }
+
+        /// <summary>
+        /// Makes this collection read-only.
+        /// </summary>
+        /// <remarks>
+        /// After the collection is marked as read-only, any further attempt to modify it throws an <see cref="InvalidOperationException" />.
+        /// </remarks>
+        public void MakeReadOnly()
+        {
+            _isReadOnly = true;
+        }
+
+        private void CheckReadOnly()
+        {
+            if (_isReadOnly)
+            {
+                ThrowReadOnlyException();
+            }
+        }
+
+        private static void ThrowReadOnlyException() =>
+            throw new InvalidOperationException(SR.ServiceCollectionReadOnly);
     }
 }

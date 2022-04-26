@@ -14,7 +14,7 @@ namespace System.Text.Json.Serialization.Converters
 
             return
                 // There's no safe way to construct a Type from untrusted user input.
-                type == typeof(Type) ||
+                typeof(Type).IsAssignableFrom(type) ||
                 // (De)serialization of SerializationInfo is already disallowed due to Type being disallowed
                 // (the two ctors on SerializationInfo take a Type, and a Type member is present when serializing).
                 // Explicitly disallowing this type provides a clear exception when ctors with
@@ -23,6 +23,8 @@ namespace System.Text.Json.Serialization.Converters
                 type == typeof(SerializationInfo) ||
                 type == typeof(IntPtr) ||
                 type == typeof(UIntPtr) ||
+                // Exlude delegates.
+                typeof(Delegate).IsAssignableFrom(type) ||
                 // DateOnly/TimeOnly support to be added in future releases;
                 // guard against invalid object-based serializations for now.
                 // cf. https://github.com/dotnet/runtime/issues/53539
@@ -30,7 +32,7 @@ namespace System.Text.Json.Serialization.Converters
                 // For simplicity we elide equivalent checks for targets
                 // that are older than net6.0, since they do not include
                 // DateOnly or TimeOnly.
-#if NET6_0_OR_GREATER
+#if NETCOREAPP
                 type == typeof(DateOnly) ||
                 type == typeof(TimeOnly);
 #else

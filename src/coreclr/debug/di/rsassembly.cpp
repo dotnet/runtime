@@ -202,7 +202,7 @@ HRESULT CordbAssembly::EnumerateModules(ICorDebugModuleEnum **ppModules)
  */
 HRESULT CordbAssembly::GetCodeBase(ULONG32 cchName,
                     ULONG32 *pcchName,
-                    __out_ecount_part_opt(cchName, *pcchName) WCHAR szName[])
+                    _Out_writes_to_opt_(cchName, *pcchName) WCHAR szName[])
 {
     PUBLIC_API_ENTRY(this);
     FAIL_IF_NEUTERED(this);
@@ -232,7 +232,7 @@ HRESULT CordbAssembly::GetCodeBase(ULONG32 cchName,
 //
 HRESULT CordbAssembly::GetName(ULONG32 cchName,
                                ULONG32 *pcchName,
-                               __out_ecount_part_opt(cchName, *pcchName) WCHAR szName[])
+                               _Out_writes_to_opt_(cchName, *pcchName) WCHAR szName[])
 {
     PUBLIC_API_ENTRY(this);
     FAIL_IF_NEUTERED(this);

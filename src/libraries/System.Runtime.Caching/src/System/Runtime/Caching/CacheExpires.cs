@@ -13,7 +13,7 @@ using System.Threading;
 
 namespace System.Runtime.Caching
 {
-    internal struct ExpiresEntryRef
+    internal readonly struct ExpiresEntryRef : IEquatable<ExpiresEntryRef>
     {
         internal static readonly ExpiresEntryRef INVALID = new ExpiresEntryRef(0, 0);
 
@@ -31,55 +31,18 @@ namespace System.Runtime.Caching
             _ref = ((((uint)pageIndex) << PAGE_SHIFT) | (((uint)(entryIndex)) & ENTRY_MASK));
         }
 
-        public override bool Equals(object value)
-        {
-            if (value is ExpiresEntryRef)
-            {
-                return _ref == ((ExpiresEntryRef)value)._ref;
-            }
+        public override bool Equals(object value) => value is ExpiresEntryRef other && Equals(other);
 
-            return false;
-        }
+        public bool Equals(ExpiresEntryRef other) => _ref == other._ref;
 
-        public static bool operator !=(ExpiresEntryRef r1, ExpiresEntryRef r2)
-        {
-            return r1._ref != r2._ref;
-        }
-        public static bool operator ==(ExpiresEntryRef r1, ExpiresEntryRef r2)
-        {
-            return r1._ref == r2._ref;
-        }
+        public static bool operator ==(ExpiresEntryRef r1, ExpiresEntryRef r2) => r1.Equals(r2);
+        public static bool operator !=(ExpiresEntryRef r1, ExpiresEntryRef r2) => !r1.Equals(r2);
 
-        public override int GetHashCode()
-        {
-            return (int)_ref;
-        }
+        public override int GetHashCode() => (int)_ref;
 
-        internal int PageIndex
-        {
-            get
-            {
-                int result = (int)(_ref >> PAGE_SHIFT);
-                return result;
-            }
-        }
-
-        internal int Index
-        {
-            get
-            {
-                int result = (int)(_ref & ENTRY_MASK);
-                return result;
-            }
-        }
-
-        internal bool IsInvalid
-        {
-            get
-            {
-                return _ref == 0;
-            }
-        }
+        internal int PageIndex => (int)(_ref >> PAGE_SHIFT);
+        internal int Index => (int)(_ref & ENTRY_MASK);
+        internal bool IsInvalid => _ref == 0;
     }
 
     [StructLayout(LayoutKind.Explicit)]
@@ -821,7 +784,7 @@ namespace System.Runtime.Caching
             }
         }
 
-        private int UtcCalcExpiresBucket(DateTime utcDate)
+        private static int UtcCalcExpiresBucket(DateTime utcDate)
         {
             long ticksFromCycleStart = utcDate.Ticks % s_tsPerCycle.Ticks;
             int bucket = (int)(((ticksFromCycleStart / _tsPerBucket.Ticks) + 1) % NUMBUCKETS);

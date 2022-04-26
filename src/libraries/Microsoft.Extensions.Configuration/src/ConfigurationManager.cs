@@ -14,15 +14,20 @@ namespace Microsoft.Extensions.Configuration
 {
     /// <summary>
     /// ConfigurationManager is a mutable configuration object. It is both an <see cref="IConfigurationBuilder"/> and an <see cref="IConfigurationRoot"/>.
-    /// As sources are added, it updates its current view of configuration. Once Build is called, configuration is frozen.
+    /// As sources are added, it updates its current view of configuration.
     /// </summary>
     public sealed class ConfigurationManager : IConfigurationBuilder, IConfigurationRoot, IDisposable
     {
+        // Concurrently modifying config sources or properties is not thread-safe. However, it is thread-safe to read config while modifying sources or properties.
         private readonly ConfigurationSources _sources;
         private readonly ConfigurationBuilderProperties _properties;
 
-        private readonly object _providerLock = new();
-        private readonly List<IConfigurationProvider> _providers = new();
+        // ReferenceCountedProviderManager manages copy-on-write references to support concurrently reading config while modifying sources.
+        // It waits for readers to unreference the providers before disposing them without blocking on any concurrent operations.
+        private readonly ReferenceCountedProviderManager _providerManager = new();
+
+        // _changeTokenRegistrations is only modified when config sources are modified. It is not referenced by any read operations.
+        // Because modify config sources is not thread-safe, modifying _changeTokenRegistrations does not need to be thread-safe either.
         private readonly List<IDisposable> _changeTokenRegistrations = new();
         private ConfigurationReloadToken _changeToken = new();
 
@@ -43,17 +48,13 @@ namespace Microsoft.Extensions.Configuration
         {
             get
             {
-                lock (_providerLock)
-                {
-                    return ConfigurationRoot.GetConfiguration(_providers, key);
-                }
+                using ReferenceCountedProviders reference = _providerManager.GetReference();
+                return ConfigurationRoot.GetConfiguration(reference.Providers, key);
             }
             set
             {
-                lock (_providerLock)
-                {
-                    ConfigurationRoot.SetConfiguration(_providers, key, value);
-                }
+                using ReferenceCountedProviders reference = _providerManager.GetReference();
+                ConfigurationRoot.SetConfiguration(reference.Providers, key, value);
             }
         }
 
@@ -61,42 +62,30 @@ namespace Microsoft.Extensions.Configuration
         public IConfigurationSection GetSection(string key) => new ConfigurationSection(this, key);
 
         /// <inheritdoc/>
-        public IEnumerable<IConfigurationSection> GetChildren()
-        {
-            lock (_providerLock)
-            {
-                // ToList() to eagerly evaluate inside lock.
-                return this.GetChildrenImplementation(null).ToList();
-            }
-        }
+        public IEnumerable<IConfigurationSection> GetChildren() => this.GetChildrenImplementation(null);
 
         IDictionary<string, object> IConfigurationBuilder.Properties => _properties;
 
-        IList<IConfigurationSource> IConfigurationBuilder.Sources => _sources;
+        /// <inheritdoc />
+        public IList<IConfigurationSource> Sources => _sources;
 
-        IEnumerable<IConfigurationProvider> IConfigurationRoot.Providers
-        {
-            get
-            {
-                lock (_providerLock)
-                {
-                    return new List<IConfigurationProvider>(_providers);
-                }
-            }
-        }
+        // We cannot track the duration of the reference to the providers if this property is used.
+        // If a configuration source is removed after this is accessed but before it's completely enumerated,
+        // this may allow access to a disposed provider.
+        IEnumerable<IConfigurationProvider> IConfigurationRoot.Providers => _providerManager.NonReferenceCountedProviders;
 
         /// <inheritdoc/>
         public void Dispose()
         {
-            lock (_providerLock)
-            {
-                DisposeRegistrationsAndProvidersUnsynchronized();
-            }
+            DisposeRegistrations();
+            _providerManager.Dispose();
         }
 
         IConfigurationBuilder IConfigurationBuilder.Add(IConfigurationSource source)
         {
-            _sources.Add(source ?? throw new ArgumentNullException(nameof(source)));
+            ThrowHelper.ThrowIfNull(source);
+
+            _sources.Add(source);
             return this;
         }
 
@@ -106,9 +95,9 @@ namespace Microsoft.Extensions.Configuration
 
         void IConfigurationRoot.Reload()
         {
-            lock (_providerLock)
+            using (ReferenceCountedProviders reference = _providerManager.GetReference())
             {
-                foreach (var provider in _providers)
+                foreach (IConfigurationProvider provider in reference.Providers)
                 {
                     provider.Load();
                 }
@@ -116,6 +105,8 @@ namespace Microsoft.Extensions.Configuration
 
             RaiseChanged();
         }
+
+        internal ReferenceCountedProviders GetProvidersReference() => _providerManager.GetReference();
 
         private void RaiseChanged()
         {
@@ -126,59 +117,49 @@ namespace Microsoft.Extensions.Configuration
         // Don't rebuild and reload all providers in the common case when a source is simply added to the IList.
         private void AddSource(IConfigurationSource source)
         {
-            lock (_providerLock)
-            {
-                var provider = source.Build(this);
-                _providers.Add(provider);
+            IConfigurationProvider provider = source.Build(this);
 
-                provider.Load();
-                _changeTokenRegistrations.Add(ChangeToken.OnChange(() => provider.GetReloadToken(), () => RaiseChanged()));
-            }
+            provider.Load();
+            _changeTokenRegistrations.Add(ChangeToken.OnChange(() => provider.GetReloadToken(), () => RaiseChanged()));
 
+            _providerManager.AddProvider(provider);
             RaiseChanged();
         }
 
         // Something other than Add was called on IConfigurationBuilder.Sources or IConfigurationBuilder.Properties has changed.
         private void ReloadSources()
         {
-            lock (_providerLock)
+            DisposeRegistrations();
+
+            _changeTokenRegistrations.Clear();
+
+            var newProvidersList = new List<IConfigurationProvider>();
+
+            foreach (IConfigurationSource source in _sources)
             {
-                DisposeRegistrationsAndProvidersUnsynchronized();
-
-                _changeTokenRegistrations.Clear();
-                _providers.Clear();
-
-                foreach (var source in _sources)
-                {
-                    _providers.Add(source.Build(this));
-                }
-
-                foreach (var p in _providers)
-                {
-                    p.Load();
-                    _changeTokenRegistrations.Add(ChangeToken.OnChange(() => p.GetReloadToken(), () => RaiseChanged()));
-                }
+                newProvidersList.Add(source.Build(this));
             }
 
+            foreach (IConfigurationProvider p in newProvidersList)
+            {
+                p.Load();
+                _changeTokenRegistrations.Add(ChangeToken.OnChange(() => p.GetReloadToken(), () => RaiseChanged()));
+            }
+
+            _providerManager.ReplaceProviders(newProvidersList);
             RaiseChanged();
         }
 
-        private void DisposeRegistrationsAndProvidersUnsynchronized()
+        private void DisposeRegistrations()
         {
             // dispose change token registrations
-            foreach (var registration in _changeTokenRegistrations)
+            foreach (IDisposable registration in _changeTokenRegistrations)
             {
                 registration.Dispose();
             }
-
-            // dispose providers
-            foreach (var provider in _providers)
-            {
-                (provider as IDisposable)?.Dispose();
-            }
         }
 
-        private class ConfigurationSources : IList<IConfigurationSource>
+        private sealed class ConfigurationSources : IList<IConfigurationSource>
         {
             private readonly List<IConfigurationSource> _sources = new();
             private readonly ConfigurationManager _config;
@@ -259,7 +240,7 @@ namespace Microsoft.Extensions.Configuration
             }
         }
 
-        private class ConfigurationBuilderProperties : IDictionary<string, object>
+        private sealed class ConfigurationBuilderProperties : IDictionary<string, object>
         {
             private readonly Dictionary<string, object> _properties = new();
             private readonly ConfigurationManager _config;

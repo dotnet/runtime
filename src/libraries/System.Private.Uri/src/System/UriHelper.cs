@@ -4,15 +4,11 @@
 using System.Text;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
-using System.Buffers;
 
 namespace System
 {
     internal static class UriHelper
     {
-        internal static readonly Encoding s_noFallbackCharUTF8 = Encoding.GetEncoding(
-            Encoding.UTF8.CodePage, new EncoderReplacementFallback(""), new DecoderReplacementFallback(""));
-
         // http://host/Path/Path/File?Query is the base of
         //      - http://host/Path/Path/File/ ...    (those "File" words may be different in semantic but anyway)
         //      - http://host/Path/Path/#Fragment
@@ -114,10 +110,8 @@ namespace System
             string stringToEscape, // same name as public API
             bool checkExistingEscaped, ReadOnlySpan<bool> unreserved, char forceEscape1 = '\0', char forceEscape2 = '\0')
         {
-            if (stringToEscape is null)
-            {
-                throw new ArgumentNullException(nameof(stringToEscape));
-            }
+            ArgumentNullException.ThrowIfNull(stringToEscape);
+
             if (stringToEscape.Length == 0)
             {
                 return string.Empty;

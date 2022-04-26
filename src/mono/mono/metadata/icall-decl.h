@@ -7,22 +7,20 @@
 #define __MONO_METADATA_ICALL_DECL_H__
 
 #include "appdomain-icalls.h"
-#include "class.h"
-#include "environment.h"
+#include <mono/metadata/class.h>
+#include <mono/metadata/environment.h>
 #include "gc-internals.h"
 #include "handle-decl.h"
 #include "handle.h"
 #include "marshal.h"
 #include "monitor.h"
-#include "mono-perfcounters.h"
-#include "object-forward.h"
+#include <mono/metadata/object-forward.h>
 #include "object-internals.h"
-#include "reflection.h"
+#include <mono/metadata/reflection.h>
 #include "string-icalls.h"
 #include "mono/utils/mono-digest.h"
 #include "mono/utils/mono-forward-internal.h"
 #include "w32event.h"
-#include "w32file.h"
 #include "mono/utils/mono-proclib.h"
 
 /* From MonoProperty.cs */
@@ -60,8 +58,6 @@ typedef enum {
 // This is sorted.
 // grep ICALL_EXPORT | sort | uniq
 ICALL_EXPORT MonoAssemblyName* ves_icall_System_Reflection_AssemblyName_GetNativeName (MonoAssembly*);
-ICALL_EXPORT MonoBoolean ves_icall_RuntimeTypeHandle_is_subclass_of (MonoType*, MonoType*);
-ICALL_EXPORT MonoBoolean ves_icall_System_Reflection_AssemblyName_ParseAssemblyName (const char*, MonoAssemblyName*, MonoBoolean*, MonoBoolean* is_token_defined_arg);
 ICALL_EXPORT MonoBoolean ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_SufficientExecutionStack (void);
 ICALL_EXPORT MonoBoolean ves_icall_System_Threading_Thread_YieldInternal (void);
 ICALL_EXPORT MonoThread *ves_icall_System_Threading_Thread_GetCurrentThread (void);
@@ -69,7 +65,6 @@ ICALL_EXPORT void ves_icall_System_ArgIterator_Setup (MonoArgIterator*, char*, c
 ICALL_EXPORT MonoType* ves_icall_System_ArgIterator_IntGetNextArgType (MonoArgIterator*);
 ICALL_EXPORT void ves_icall_System_ArgIterator_IntGetNextArg (MonoArgIterator*, MonoTypedRef*);
 ICALL_EXPORT void ves_icall_System_ArgIterator_IntGetNextArgWithType (MonoArgIterator*, MonoTypedRef*, MonoType*);
-ICALL_EXPORT double ves_icall_System_Math_Abs_double (double);
 ICALL_EXPORT double ves_icall_System_Math_Acos (double);
 ICALL_EXPORT double ves_icall_System_Math_Acosh (double);
 ICALL_EXPORT double ves_icall_System_Math_Asin (double);
@@ -117,7 +112,6 @@ ICALL_EXPORT float ves_icall_System_MathF_Sinh (float);
 ICALL_EXPORT float ves_icall_System_MathF_Sqrt (float);
 ICALL_EXPORT float ves_icall_System_MathF_Tan (float);
 ICALL_EXPORT float ves_icall_System_MathF_Tanh (float);
-ICALL_EXPORT float ves_icall_System_Math_Abs_single (float);
 ICALL_EXPORT double ves_icall_System_Math_Log2 (double);
 ICALL_EXPORT double ves_icall_System_Math_FusedMultiplyAdd (double, double, double);
 ICALL_EXPORT float ves_icall_System_MathF_Log2 (float);
@@ -189,5 +183,19 @@ ICALL_EXPORT void ves_icall_System_Runtime_Intrinsics_X86_X86Base___cpuidex (int
 
 ICALL_EXPORT void ves_icall_AssemblyExtensions_ApplyUpdate (MonoAssembly *assm, gconstpointer dmeta_bytes, int32_t dmeta_len, gconstpointer dil_bytes, int32_t dil_len, gconstpointer dpdb_bytes, int32_t dpdb_len);
 ICALL_EXPORT gint32 ves_icall_AssemblyExtensions_ApplyUpdateEnabled (gint32 just_component_check);
+
+ICALL_EXPORT guint32 ves_icall_RuntimeTypeHandle_GetCorElementType (MonoQCallTypeHandle type_handle);
+
+ICALL_EXPORT MonoBoolean ves_icall_RuntimeTypeHandle_HasInstantiation (MonoQCallTypeHandle type_handle);
+
+ICALL_EXPORT guint32 ves_icall_RuntimeTypeHandle_GetAttributes (MonoQCallTypeHandle type_handle);
+
+ICALL_EXPORT MonoBoolean ves_icall_RuntimeTypeHandle_IsGenericTypeDefinition (MonoQCallTypeHandle type_handle);
+
+ICALL_EXPORT gint32 ves_icall_RuntimeType_GetGenericParameterPosition (MonoQCallTypeHandle type_handle);
+
+ICALL_EXPORT int ves_icall_System_Enum_InternalGetCorElementType (MonoQCallTypeHandle type_handle);
+
+ICALL_EXPORT MonoBoolean ves_icall_System_Runtime_InteropServices_Marshal_IsPinnableType (MonoQCallTypeHandle type_handle);
 
 #endif // __MONO_METADATA_ICALL_DECL_H__

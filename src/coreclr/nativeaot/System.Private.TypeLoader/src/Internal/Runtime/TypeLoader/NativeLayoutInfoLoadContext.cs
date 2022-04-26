@@ -56,7 +56,7 @@ namespace Internal.Runtime.TypeLoader
                     return _typeSystemContext.GetPointerType(typeParameter);
 
                 default:
-                    parser.ThrowBadImageFormatException();
+                    NativeParser.ThrowBadImageFormatException();
                     return null;
             }
         }
@@ -151,11 +151,11 @@ namespace Internal.Runtime.TypeLoader
 
                 case TypeSignatureKind.FunctionPointer:
                     Debug.Fail("NYI!");
-                    parser.ThrowBadImageFormatException();
+                    NativeParser.ThrowBadImageFormatException();
                     return null;
 
                 default:
-                    parser.ThrowBadImageFormatException();
+                    NativeParser.ThrowBadImageFormatException();
                     return null;
             }
         }
@@ -169,11 +169,11 @@ namespace Internal.Runtime.TypeLoader
                 functionPointer = GetExternalReferencePointer(parser.GetUnsigned());
 
             DefType containingType = (DefType)GetType(ref parser);
-            MethodNameAndSignature nameAndSignature = TypeLoaderEnvironment.Instance.GetMethodNameAndSignature(ref parser, _module.Handle, out methodNameSig, out methodSig);
+            MethodNameAndSignature nameAndSignature = TypeLoaderEnvironment.GetMethodNameAndSignature(ref parser, _module.Handle, out methodNameSig, out methodSig);
 
             bool unboxingStub = (flags & MethodFlags.IsUnboxingStub) != 0;
 
-            MethodDesc retVal = null;
+            MethodDesc retVal;
             if ((flags & MethodFlags.HasInstantiation) != 0)
             {
                 TypeDesc[] typeArguments = GetTypeSequence(ref parser);
@@ -197,9 +197,7 @@ namespace Internal.Runtime.TypeLoader
 
         internal MethodDesc GetMethod(ref NativeParser parser)
         {
-            RuntimeSignature methodSig;
-            RuntimeSignature methodNameSig;
-            return GetMethod(ref parser, out methodNameSig, out methodSig);
+            return GetMethod(ref parser, out _, out _);
         }
 
         internal TypeDesc[] GetTypeSequence(ref NativeParser parser)

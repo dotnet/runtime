@@ -20,7 +20,7 @@ namespace System.Net.Security
     {
         internal static IIdentity GetIdentity(NTAuthentication context)
         {
-            IIdentity? result = null;
+            IIdentity? result;
             string name = context.IsServer ? context.AssociatedName! : context.Spn!;
             string protocol = context.ProtocolName;
 

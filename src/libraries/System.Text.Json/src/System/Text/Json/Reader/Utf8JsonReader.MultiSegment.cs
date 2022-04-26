@@ -296,7 +296,7 @@ namespace System.Text.Json
 
         private bool GetNextSpan()
         {
-            ReadOnlyMemory<byte> memory = default;
+            ReadOnlyMemory<byte> memory;
             while (true)
             {
                 Debug.Assert(!_isMultiSegment || _currentPosition.GetObject() != null);
@@ -626,23 +626,24 @@ namespace System.Text.Json
             throw GetInvalidLiteralMultiSegment(readSoFar.Slice(0, written).ToArray());
         }
 
-        private int FindMismatch(ReadOnlySpan<byte> span, ReadOnlySpan<byte> literal)
+        private static int FindMismatch(ReadOnlySpan<byte> span, ReadOnlySpan<byte> literal)
         {
             Debug.Assert(span.Length > 0);
 
-            int indexOfFirstMismatch = 0;
+            int indexOfFirstMismatch;
 
+#if NET7_0_OR_GREATER
+            indexOfFirstMismatch = span.CommonPrefixLength(literal);
+#else
             int minLength = Math.Min(span.Length, literal.Length);
-
-            int i = 0;
-            for (; i < minLength; i++)
+            for (indexOfFirstMismatch = 0; indexOfFirstMismatch < minLength; indexOfFirstMismatch++)
             {
-                if (span[i] != literal[i])
+                if (span[indexOfFirstMismatch] != literal[indexOfFirstMismatch])
                 {
                     break;
                 }
             }
-            indexOfFirstMismatch = i;
+#endif
 
             Debug.Assert(indexOfFirstMismatch >= 0 && indexOfFirstMismatch < literal.Length);
 

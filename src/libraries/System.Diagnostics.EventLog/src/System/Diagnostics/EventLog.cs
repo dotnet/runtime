@@ -245,8 +245,7 @@ namespace System.Diagnostics
 
         public static void CreateEventSource(EventSourceCreationData sourceData)
         {
-            if (sourceData == null)
-                throw new ArgumentNullException(nameof(sourceData));
+            ArgumentNullException.ThrowIfNull(sourceData);
 
             string logName = sourceData.LogName;
             string source = sourceData.Source;
@@ -849,7 +848,7 @@ namespace System.Diagnostics
 
                         if (sb.Length > 0)
                         {
-                            int num = -1;
+                            int num;
                             if (int.TryParse(sb.ToString(), NumberStyles.None, CultureInfo.InvariantCulture, out num))
                             {
                                 largestNumber = Math.Max(largestNumber, num);

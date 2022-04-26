@@ -68,7 +68,7 @@ namespace System.Security.Cryptography.Xml
                 bytesRead = inputStream.Read(buffer, 0, 1024);
                 if (bytesRead > 0)
                 {
-                    int i = 0;
+                    int i;
                     int j = 0;
                     while ((j < bytesRead) && (!char.IsWhiteSpace((char)buffer[j]))) j++;
                     i = j; j++;
@@ -99,7 +99,7 @@ namespace System.Security.Cryptography.Xml
             }
             UTF8Encoding utf8 = new UTF8Encoding(false);
             byte[] buffer = utf8.GetBytes(sb.ToString());
-            int i = 0;
+            int i;
             int j = 0;
             while ((j < buffer.Length) && (!char.IsWhiteSpace((char)buffer[j]))) j++;
             i = j; j++;

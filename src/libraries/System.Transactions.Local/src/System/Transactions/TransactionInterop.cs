@@ -22,10 +22,7 @@ namespace System.Transactions
     {
         internal static DistributedTransaction ConvertToDistributedTransaction(Transaction transaction)
         {
-            if (null == transaction)
-            {
-                throw new ArgumentNullException(nameof(transaction));
-            }
+            ArgumentNullException.ThrowIfNull(transaction);
 
             if (transaction.Disposed)
             {
@@ -62,15 +59,8 @@ namespace System.Transactions
 
         public static byte[] GetExportCookie(Transaction transaction, byte[] whereabouts)
         {
-            if (null == transaction)
-            {
-                throw new ArgumentNullException(nameof(transaction));
-            }
-
-            if (null == whereabouts)
-            {
-                throw new ArgumentNullException(nameof(whereabouts));
-            }
+            ArgumentNullException.ThrowIfNull(transaction);
+            ArgumentNullException.ThrowIfNull(whereabouts);
 
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
@@ -82,8 +72,8 @@ namespace System.Transactions
             var whereaboutsCopy = new byte[whereabouts.Length];
             Buffer.BlockCopy(whereabouts, 0, whereaboutsCopy, 0, whereabouts.Length);
 
-            DistributedTransaction dTx = ConvertToDistributedTransaction(transaction);
-            byte[] cookie = dTx.GetExportCookie(whereaboutsCopy);
+            ConvertToDistributedTransaction(transaction);
+            byte[] cookie = DistributedTransaction.GetExportCookie(whereaboutsCopy);
 
             if (etwLog.IsEnabled())
             {
@@ -95,10 +85,7 @@ namespace System.Transactions
 
         public static Transaction GetTransactionFromExportCookie(byte[] cookie)
         {
-            if (null == cookie)
-            {
-                throw new ArgumentNullException(nameof(cookie));
-            }
+            ArgumentNullException.ThrowIfNull(cookie);
 
             if (cookie.Length < 32)
             {
@@ -147,10 +134,7 @@ namespace System.Transactions
 
         public static byte[] GetTransmitterPropagationToken(Transaction transaction)
         {
-            if (null == transaction)
-            {
-                throw new ArgumentNullException(nameof(transaction));
-            }
+            ArgumentNullException.ThrowIfNull(transaction);
 
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
@@ -158,8 +142,8 @@ namespace System.Transactions
                 etwLog.MethodEnter(TraceSourceType.TraceSourceDistributed, "TransactionInterop.GetTransmitterPropagationToken");
             }
 
-            DistributedTransaction dTx = ConvertToDistributedTransaction(transaction);
-            byte[] token = dTx.GetTransmitterPropagationToken();
+            ConvertToDistributedTransaction(transaction);
+            byte[] token = DistributedTransaction.GetTransmitterPropagationToken();
 
             if (etwLog.IsEnabled())
             {
@@ -171,10 +155,7 @@ namespace System.Transactions
 
         public static Transaction GetTransactionFromTransmitterPropagationToken(byte[] propagationToken)
         {
-            if (null == propagationToken)
-            {
-                throw new ArgumentNullException(nameof(propagationToken));
-            }
+            ArgumentNullException.ThrowIfNull(propagationToken);
 
             if (propagationToken.Length < 24)
             {
@@ -218,10 +199,7 @@ namespace System.Transactions
 
         public static IDtcTransaction GetDtcTransaction(Transaction transaction)
         {
-            if (null == transaction)
-            {
-                throw new ArgumentNullException(nameof(transaction));
-            }
+            ArgumentNullException.ThrowIfNull(transaction);
 
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
@@ -229,8 +207,8 @@ namespace System.Transactions
                 etwLog.MethodEnter(TraceSourceType.TraceSourceDistributed, "TransactionInterop.GetDtcTransaction");
             }
 
-            DistributedTransaction dTx = ConvertToDistributedTransaction(transaction);
-            IDtcTransaction transactionNative = dTx.GetDtcTransaction();
+            ConvertToDistributedTransaction(transaction);
+            IDtcTransaction transactionNative = DistributedTransaction.GetDtcTransaction();
 
             if (etwLog.IsEnabled())
             {
@@ -242,10 +220,7 @@ namespace System.Transactions
 
         public static Transaction GetTransactionFromDtcTransaction(IDtcTransaction transactionNative)
         {
-            if (null == transactionNative)
-            {
-                throw new ArgumentNullException(nameof(transactionNative));
-            }
+            ArgumentNullException.ThrowIfNull(transactionNative);
 
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
@@ -270,8 +245,7 @@ namespace System.Transactions
                 etwLog.MethodEnter(TraceSourceType.TraceSourceDistributed, "TransactionInterop.GetWhereabouts");
             }
 
-            DistributedTransactionManager dTm = TransactionManager.DistributedTransactionManager;
-            byte[] returnValue = dTm.GetWhereabouts();
+            byte[] returnValue = DistributedTransactionManager.GetWhereabouts();
 
             if (etwLog.IsEnabled())
             {
@@ -282,10 +256,7 @@ namespace System.Transactions
 
         internal static DistributedTransaction GetDistributedTransactionFromTransmitterPropagationToken(byte[] propagationToken)
         {
-            if (null == propagationToken)
-            {
-                throw new ArgumentNullException(nameof(propagationToken));
-            }
+            ArgumentNullException.ThrowIfNull(propagationToken);
 
             if (propagationToken.Length < 24)
             {

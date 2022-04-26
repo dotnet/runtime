@@ -14,12 +14,6 @@ namespace System.Net.Security
 {
     internal sealed class CipherSuitesPolicyPal
     {
-        private static readonly byte[] AllowNoEncryptionDefault =
-            Encoding.ASCII.GetBytes("ALL:eNULL\0");
-
-        private static readonly byte[] NoEncryptionDefault =
-            Encoding.ASCII.GetBytes("eNULL\0");
-
         private byte[] _cipherSuites;
         private byte[] _tls13CipherSuites;
         private List<TlsCipherSuite> _tlsCipherSuites = new List<TlsCipherSuite>();
@@ -28,7 +22,7 @@ namespace System.Net.Security
 
         internal CipherSuitesPolicyPal(IEnumerable<TlsCipherSuite> allowedCipherSuites)
         {
-            if (!Interop.Ssl.Tls13Supported)
+            if (!Interop.Ssl.Capabilities.Tls13Supported)
             {
                 throw new PlatformNotSupportedException(SR.net_ssl_ciphersuites_policy_not_supported);
             }
@@ -80,12 +74,14 @@ namespace System.Net.Security
             // if TLS 1.3 was explicitly requested the underlying code will throw
             // if default option (SslProtocols.None) is used we will opt-out of TLS 1.3
 
+#pragma warning disable SYSLIB0040 // NoEncryption and AllowNoEncryption are obsolete
             if (encryptionPolicy == EncryptionPolicy.NoEncryption)
             {
                 // TLS 1.3 uses different ciphersuite restrictions than previous versions.
                 // It has no equivalent to a NoEncryption option.
                 return true;
             }
+#pragma warning restore SYSLIB0040
 
             if (policy == null)
             {
@@ -125,7 +121,7 @@ namespace System.Net.Security
         internal static bool WantsTls13(SslProtocols protocols)
             => protocols == SslProtocols.None || (protocols & SslProtocols.Tls13) != 0;
 
-        internal static byte[]? GetOpenSslCipherList(
+        internal static ReadOnlySpan<byte> GetOpenSslCipherList(
             CipherSuitesPolicy? policy,
             SslProtocols protocols,
             EncryptionPolicy encryptionPolicy)
@@ -133,7 +129,7 @@ namespace System.Net.Security
             if (IsOnlyTls13(protocols))
             {
                 // older cipher suites will be disabled through protocols
-                return null;
+                return default;
             }
 
             if (policy == null)
@@ -141,10 +137,12 @@ namespace System.Net.Security
                 return CipherListFromEncryptionPolicy(encryptionPolicy);
             }
 
+#pragma warning disable SYSLIB0040 // NoEncryption and AllowNoEncryption are obsolete
             if (encryptionPolicy == EncryptionPolicy.NoEncryption)
             {
                 throw new PlatformNotSupportedException(SR.net_ssl_ciphersuites_policy_not_supported);
             }
+#pragma warning restore SYSLIB0040
 
             return policy.Pal._cipherSuites;
         }
@@ -160,27 +158,31 @@ namespace System.Net.Security
                 return null;
             }
 
+#pragma warning disable SYSLIB0040 // NoEncryption and AllowNoEncryption are obsolete
             if (encryptionPolicy == EncryptionPolicy.NoEncryption)
             {
                 throw new PlatformNotSupportedException(SR.net_ssl_ciphersuites_policy_not_supported);
             }
+#pragma warning restore SYSLIB0040
 
             return policy.Pal._tls13CipherSuites;
         }
 
-        private static byte[]? CipherListFromEncryptionPolicy(EncryptionPolicy policy)
+        private static ReadOnlySpan<byte> CipherListFromEncryptionPolicy(EncryptionPolicy policy)
         {
             switch (policy)
             {
                 case EncryptionPolicy.RequireEncryption:
-                    return null;
+                    return default;
+#pragma warning disable SYSLIB0040 // NoEncryption and AllowNoEncryption are obsolete
                 case EncryptionPolicy.AllowNoEncryption:
-                    return AllowNoEncryptionDefault;
+                    return "ALL:eNULL\0"u8;
                 case EncryptionPolicy.NoEncryption:
-                    return NoEncryptionDefault;
+                    return "eNULL\0"u8;
+#pragma warning restore SYSLIB0040
                 default:
                     Debug.Fail($"Unknown EncryptionPolicy value ({policy})");
-                    return null;
+                    return default;
             }
         }
 

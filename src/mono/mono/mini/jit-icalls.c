@@ -57,10 +57,13 @@ mono_ldftn (MonoMethod *method)
 
 	/* if we need the address of a native-to-managed wrapper, just compile it now, trampoline needs thread local
 	 * variables that won't be there if we run on a thread that's not attached yet. */
-	if (method->wrapper_type == MONO_WRAPPER_NATIVE_TO_MANAGED)
+	if (method->wrapper_type == MONO_WRAPPER_NATIVE_TO_MANAGED) {
 		addr = mono_compile_method_checked (method, error);
-	else
+	} else {
 		addr = mono_create_jump_trampoline (method, FALSE, error);
+		if (mono_method_needs_static_rgctx_invoke (method, FALSE))
+                        addr = mono_create_static_rgctx_trampoline (method, addr);
+	}
 	if (!is_ok (error)) {
 		mono_error_set_pending_exception (error);
 		return NULL;
@@ -190,6 +193,40 @@ mono_llmult_ovf_un (guint64 a, guint64 b)
 	{
 		ERROR_DECL (error);
 		mono_error_set_overflow (error);
+		mono_error_set_pending_exception (error);
+	}
+	return 0;
+}
+
+guint64
+mono_llmult_ovf_un_oom (guint64 a, guint64 b)
+{
+	guint32 al = a;
+	guint32 ah = a >> 32;
+	guint32 bl = b;
+	guint32 bh = b >> 32;
+	guint64 res, t1;
+
+	// fixme: this is incredible slow
+
+	if (ah && bh)
+		goto raise_exception;
+
+	res = (guint64)al * (guint64)bl;
+
+	t1 = (guint64)ah * (guint64)bl + (guint64)al * (guint64)bh;
+
+	if (t1 > 0xffffffff)
+		goto raise_exception;
+
+	res += ((guint64)t1) << 32;
+
+	return res;
+
+ raise_exception:
+	{
+		ERROR_DECL (error);
+		mono_error_set_out_of_memory (error, "");
 		mono_error_set_pending_exception (error);
 	}
 	return 0;
@@ -521,6 +558,21 @@ mono_imul_ovf_un (guint32 a, guint32 b)
 
 	return res;
 }
+
+gint32
+mono_imul_ovf_un_oom (guint32 a, guint32 b)
+{
+	const guint64 res = (guint64)a * (guint64)b;
+
+	if (res >> 32) {
+		ERROR_DECL (error);
+		mono_error_set_out_of_memory (error, "");
+		mono_error_set_pending_exception (error);
+		return 0;
+	}
+
+	return res;
+}
 #endif
 
 #if defined(MONO_ARCH_EMULATE_MUL_DIV) || defined(MONO_ARCH_SOFT_FLOAT_FALLBACK)
@@ -816,9 +868,9 @@ mono_class_static_field_address (MonoClassField *field)
 
 	//printf ("SFLDA0 %s.%s::%s %d\n", field->parent->name_space, field->parent->name, field->name, field->offset, field->parent->inited);
 
-	mono_class_init_internal (field->parent);
+	mono_class_init_internal (m_field_get_parent (field));
 
-	vtable = mono_class_vtable_checked (field->parent, error);
+	vtable = mono_class_vtable_checked (m_field_get_parent (field), error);
 	if (!is_ok (error)) {
 		mono_error_set_pending_exception (error);
 		return NULL;
@@ -869,6 +921,7 @@ mono_ldtoken_wrapper_generic_shared (MonoImage *image, int token, MonoMethod *me
 	return mono_ldtoken_wrapper (image, token, generic_context);
 }
 
+#ifdef MONO_ARCH_EMULATE_FCONV_TO_U8
 guint64
 mono_fconv_u8 (double v)
 {
@@ -884,18 +937,6 @@ mono_fconv_u8 (double v)
 		return 0;
 	return (guint64)v;
 #endif
-}
-
-#ifdef MONO_ARCH_EMULATE_FCONV_TO_U8
-guint64
-mono_fconv_u8_2 (double v)
-{
-	// Separate from mono_fconv_u8 to avoid duplicate JIT icall.
-	//
-	// When there are duplicates, there is single instancing
-	// against function address that breaks stuff. For example,
-	// wrappers are only produced for one of them, breaking FullAOT.
-	return mono_fconv_u8 (v);
 }
 
 guint64
@@ -924,6 +965,7 @@ mono_fconv_i8 (double v)
 }
 #endif
 
+#ifdef MONO_ARCH_EMULATE_FCONV_TO_U4
 guint32
 mono_fconv_u4 (double v)
 {
@@ -931,18 +973,6 @@ mono_fconv_u4 (double v)
 	if (mono_isinf (v) || mono_isnan (v))
 		return 0;
 	return (guint32)v;
-}
-
-#ifdef MONO_ARCH_EMULATE_FCONV_TO_U4
-guint32
-mono_fconv_u4_2 (double v)
-{
-	// Separate from mono_fconv_u4 to avoid duplicate JIT icall.
-	//
-	// When there are duplicates, there is single instancing
-	// against function address that breaks stuff. For example,
-	// wrappers are only produced for one of them, breaking FullAOT.
-	return mono_fconv_u4 (v);
 }
 
 guint32
@@ -1394,6 +1424,7 @@ constrained_gsharedvt_call_setup (gpointer mp, MonoMethod *cmethod, MonoClass *k
  *
  *   Make a call to CMETHOD using the receiver MP, which is assumed to be of type KLASS. ARGS contains
  * the arguments to the method in the format used by mono_runtime_invoke_checked ().
+ * MP is NULL if CMETHOD is a static virtual method.
  */
 MonoObject*
 mono_gsharedvt_constrained_call (gpointer mp, MonoMethod *cmethod, MonoClass *klass, guint8 *deref_args, gpointer *args)
@@ -1621,4 +1652,36 @@ mono_throw_invalid_program (const char *msg)
 void
 mono_dummy_jit_icall (void)
 {
+}
+
+void
+mono_dummy_jit_icall_val (gpointer val)
+{
+}
+
+void
+mini_init_method_rgctx (MonoMethodRuntimeGenericContext *mrgctx, MonoGSharedMethodInfo *info)
+{
+	if (G_LIKELY (mrgctx->entries))
+		return;
+
+	MonoMethod *m = mrgctx->method;
+	int ninline = mono_class_rgctx_get_array_size (0, TRUE);
+
+	// The +1 is for the NULL check at the beginning
+	// FIXME: memory management
+	gpointer *entries = mono_mem_manager_alloc0 (get_default_mem_manager (), (sizeof (gpointer) * (info->num_entries + 1)));
+	for (int i = 0; i < info->num_entries; ++i) {
+		gpointer data = mini_instantiate_gshared_info (&info->entries [i],
+													   mono_method_get_context (m), m->klass);
+		g_assert (data);
+
+		/* The first few entries are stored inline, the rest are stored in mrgctx->entries */
+		if (i < ninline)
+			mrgctx->infos [i] = data;
+		else
+			entries [i - ninline] = data;
+	}
+	mono_memory_barrier ();
+	mrgctx->entries = entries;
 }

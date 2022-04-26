@@ -27,11 +27,8 @@ namespace System.Net.Sockets
 
         public SendPacketsElement(string filepath, long offset, int count, bool endOfPacket)
         {
-            // We will validate if the file exists on send.
-            if (filepath == null)
-            {
-                throw new ArgumentNullException(nameof(filepath));
-            }
+            ArgumentNullException.ThrowIfNull(filepath);
+
             // The native API will validate the file length on send.
             if (offset < 0)
             {
@@ -56,11 +53,8 @@ namespace System.Net.Sockets
 
         public SendPacketsElement(FileStream fileStream, long offset, int count, bool endOfPacket)
         {
-            // We will validate if the fileStream exists on send.
-            if (fileStream == null)
-            {
-                throw new ArgumentNullException(nameof(fileStream));
-            }
+            ArgumentNullException.ThrowIfNull(fileStream);
+
             if (!fileStream.IsAsync)
             {
                 throw new ArgumentException(SR.net_sockets_sendpackelement_FileStreamMustBeAsync, nameof(fileStream));
@@ -89,10 +83,8 @@ namespace System.Net.Sockets
 
         public SendPacketsElement(byte[] buffer, int offset, int count, bool endOfPacket)
         {
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer));
-            }
+            ArgumentNullException.ThrowIfNull(buffer);
+
             if ((uint)offset > (uint)buffer.Length)
             {
                 throw new ArgumentOutOfRangeException(nameof(offset));

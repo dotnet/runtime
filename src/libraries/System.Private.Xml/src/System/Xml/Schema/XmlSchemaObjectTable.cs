@@ -25,7 +25,7 @@ namespace System.Xml.Schema
 
         internal void Insert(XmlQualifiedName name, XmlSchemaObject value)
         {
-            XmlSchemaObject? oldValue = null;
+            XmlSchemaObject? oldValue;
             if (_table.TryGetValue(name, out oldValue))
             {
                 _table[name] = value; //set new value
@@ -188,8 +188,7 @@ namespace System.Xml.Schema
 
             public void CopyTo(Array array, int arrayIndex)
             {
-                if (array == null)
-                    throw new ArgumentNullException(nameof(array));
+                ArgumentNullException.ThrowIfNull(array);
 
                 if (arrayIndex < 0)
                     throw new ArgumentOutOfRangeException(nameof(arrayIndex));
@@ -243,8 +242,7 @@ namespace System.Xml.Schema
 
             public void CopyTo(Array array, int arrayIndex)
             {
-                if (array == null)
-                    throw new ArgumentNullException(nameof(array));
+                ArgumentNullException.ThrowIfNull(array);
 
                 if (arrayIndex < 0)
                     throw new ArgumentOutOfRangeException(nameof(arrayIndex));

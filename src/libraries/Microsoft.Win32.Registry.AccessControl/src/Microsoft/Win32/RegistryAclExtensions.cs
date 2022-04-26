@@ -10,24 +10,30 @@ namespace Microsoft.Win32
     {
         public static RegistrySecurity GetAccessControl(this RegistryKey key)
         {
-            if (key == null)
+            if (key is null)
+            {
                 throw new ArgumentNullException(nameof(key));
+            }
 
             return key.GetAccessControl();
         }
 
         public static RegistrySecurity GetAccessControl(this RegistryKey key, AccessControlSections includeSections)
         {
-            if (key == null)
+            if (key is null)
+            {
                 throw new ArgumentNullException(nameof(key));
+            }
 
             return key.GetAccessControl(includeSections);
         }
 
         public static void SetAccessControl(this RegistryKey key, RegistrySecurity registrySecurity)
         {
-            if (key == null)
+            if (key is null)
+            {
                 throw new ArgumentNullException(nameof(key));
+            }
 
             key.SetAccessControl(registrySecurity);
         }

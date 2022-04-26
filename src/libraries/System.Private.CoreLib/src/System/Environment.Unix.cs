@@ -20,7 +20,7 @@ namespace System
             {
                 string hostName = Interop.Sys.GetHostName();
                 int dotPos = hostName.IndexOf('.');
-                return dotPos == -1 ? hostName : hostName.Substring(0, dotPos);
+                return dotPos < 0 ? hostName : hostName.Substring(0, dotPos);
             }
         }
 

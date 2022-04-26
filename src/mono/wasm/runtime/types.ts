@@ -16,6 +16,9 @@ export interface MonoObject extends ManagedPointer {
 export interface MonoString extends MonoObject {
     __brand: "MonoString"
 }
+export interface MonoInternedString extends MonoString {
+    __brandString: "MonoInternedString"
+}
 export interface MonoClass extends MonoObject {
     __brand: "MonoClass"
 }
@@ -31,6 +34,15 @@ export interface MonoArray extends MonoObject {
 export interface MonoAssembly extends MonoObject {
     __brand: "MonoAssembly"
 }
+// Pointer to a MonoObject* (i.e. the address of a root)
+export interface MonoObjectRef extends ManagedPointer {
+    __brandMonoObjectRef: "MonoObjectRef"
+}
+// This exists for signature clarity, we need it to be structurally equivalent
+//  so that anything requiring MonoObjectRef will work
+// eslint-disable-next-line @typescript-eslint/no-empty-interface
+export interface MonoStringRef extends MonoObjectRef {
+}
 export const MonoMethodNull: MonoMethod = <MonoMethod><any>0;
 export const MonoObjectNull: MonoObject = <MonoObject><any>0;
 export const MonoArrayNull: MonoArray = <MonoArray><any>0;
@@ -38,10 +50,14 @@ export const MonoAssemblyNull: MonoAssembly = <MonoAssembly><any>0;
 export const MonoClassNull: MonoClass = <MonoClass><any>0;
 export const MonoTypeNull: MonoType = <MonoType><any>0;
 export const MonoStringNull: MonoString = <MonoString><any>0;
+export const MonoObjectRefNull: MonoObjectRef = <MonoObjectRef><any>0;
+export const MonoStringRefNull: MonoStringRef = <MonoStringRef><any>0;
 export const JSHandleDisposed: JSHandle = <JSHandle><any>-1;
 export const JSHandleNull: JSHandle = <JSHandle><any>0;
+export const GCHandleNull: GCHandle = <GCHandle><any>0;
 export const VoidPtrNull: VoidPtr = <VoidPtr><any>0;
 export const CharPtrNull: CharPtr = <CharPtr><any>0;
+export const NativePointerNull: NativePointer = <NativePointer><any>0;
 
 export function coerceNull<T extends ManagedPointer | NativePointer>(ptr: T | null | undefined): T {
     return (<any>ptr | <any>0) as any;
@@ -81,6 +97,7 @@ export type AssetEntry = {
     culture?: string,
     load_remote?: boolean, // if true, an attempt will be made to load the asset from each location in @args.remote_sources.
     is_optional?: boolean // if true, any failure to load this asset will be ignored.
+    buffer?: ArrayBuffer // if provided, we don't have to fetch it
 }
 
 export interface AssemblyEntry extends AssetEntry {
@@ -112,7 +129,7 @@ export const enum AssetBehaviours {
 }
 
 export type RuntimeHelpers = {
-    get_call_sig: MonoMethod;
+    get_call_sig_ref: MonoMethod;
     runtime_namespace: string;
     runtime_classname: string;
     wasm_runtime_class: MonoClass;
@@ -123,6 +140,9 @@ export type RuntimeHelpers = {
 
     _box_buffer: VoidPtr;
     _unbox_buffer: VoidPtr;
+    _box_root: any;
+    // A WasmRoot that is guaranteed to contain 0
+    _null_root: any;
     _class_int32: MonoClass;
     _class_uint32: MonoClass;
     _class_double: MonoClass;
@@ -161,12 +181,12 @@ export type DotnetModuleConfig = {
 
     config?: MonoConfig | MonoConfigError,
     configSrc?: string,
-    scriptDirectory?: string,
-    onConfigLoaded?: () => void;
+    onConfigLoaded?: (config: MonoConfig) => Promise<void>;
     onDotnetReady?: () => void;
 
     imports?: DotnetModuleConfigImports;
-} & EmscriptenModule
+    exports?: string[];
+} & Partial<EmscriptenModule>
 
 export type DotnetModuleConfigImports = {
     require?: (name: string) => any;
@@ -186,4 +206,58 @@ export type DotnetModuleConfigImports = {
         dirname?: (path: string) => string,
     };
     url?: any;
+}
+
+export function assert(condition: unknown, messageFactory: string | (() => string)): asserts condition {
+    if (!condition) {
+        const message = typeof messageFactory === "string"
+            ? messageFactory
+            : messageFactory();
+        console.error(`Assert failed: ${message}`);
+        throw new Error(`Assert failed: ${message}`);
+    }
+}
+
+// see src/mono/wasm/driver.c MARSHAL_TYPE_xxx and Runtime.cs MarshalType
+export const enum MarshalType {
+    NULL = 0,
+    INT = 1,
+    FP64 = 2,
+    STRING = 3,
+    VT = 4,
+    DELEGATE = 5,
+    TASK = 6,
+    OBJECT = 7,
+    BOOL = 8,
+    ENUM = 9,
+    URI = 22,
+    SAFEHANDLE = 23,
+    ARRAY_BYTE = 10,
+    ARRAY_UBYTE = 11,
+    ARRAY_UBYTE_C = 12,
+    ARRAY_SHORT = 13,
+    ARRAY_USHORT = 14,
+    ARRAY_INT = 15,
+    ARRAY_UINT = 16,
+    ARRAY_FLOAT = 17,
+    ARRAY_DOUBLE = 18,
+    FP32 = 24,
+    UINT32 = 25,
+    INT64 = 26,
+    UINT64 = 27,
+    CHAR = 28,
+    STRING_INTERNED = 29,
+    VOID = 30,
+    ENUM64 = 31,
+    POINTER = 32,
+    SPAN_BYTE = 33,
+}
+
+// see src/mono/wasm/driver.c MARSHAL_ERROR_xxx and Runtime.cs
+export const enum MarshalError {
+    BUFFER_TOO_SMALL = 512,
+    NULL_CLASS_POINTER = 513,
+    NULL_TYPE_POINTER = 514,
+    UNSUPPORTED_TYPE = 515,
+    FIRST = BUFFER_TOO_SMALL
 }

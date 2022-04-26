@@ -28,10 +28,7 @@ namespace System.Net.Http.Headers
 
         public RangeConditionHeaderValue(EntityTagHeaderValue entityTag)
         {
-            if (entityTag == null)
-            {
-                throw new ArgumentNullException(nameof(entityTag));
-            }
+            ArgumentNullException.ThrowIfNull(entityTag);
 
             _entityTag = entityTag;
         }

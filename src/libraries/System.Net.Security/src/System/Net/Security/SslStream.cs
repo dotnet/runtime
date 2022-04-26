@@ -19,9 +19,11 @@ namespace System.Net.Security
         RequireEncryption = 0,
 
         // Add null ciphers to current system defaults
+        [System.ObsoleteAttribute(Obsoletions.EncryptionPolicyMessage, DiagnosticId = Obsoletions.EncryptionPolicyDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         AllowNoEncryption,
 
         // Request null ciphers only
+        [System.ObsoleteAttribute(Obsoletions.EncryptionPolicyMessage, DiagnosticId = Obsoletions.EncryptionPolicyDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         NoEncryption
     }
 
@@ -50,19 +52,138 @@ namespace System.Net.Security
         internal LocalCertSelectionCallback? _certSelectionDelegate;
         internal EncryptionPolicy _encryptionPolicy;
 
-        private readonly Stream _innerStream;
         private SecureChannel? _context;
 
         private ExceptionDispatchInfo? _exception;
         private bool _shutdown;
         private bool _handshakeCompleted;
 
-        // Never updated directly, special properties are used.  This is the read buffer.
-        internal byte[]? _internalBuffer;
-        internal int _internalOffset;
-        internal int _internalBufferCount;
-        internal int _decryptedBytesOffset;
-        internal int _decryptedBytesCount;
+        // FrameOverhead = 5 byte header + HMAC trailer + padding (if block cipher)
+        // HMAC: 32 bytes for SHA-256 or 20 bytes for SHA-1 or 16 bytes for the MD5
+        private const int FrameOverhead = 64;
+        private const int InitialHandshakeBufferSize = 4096 + FrameOverhead; // try to fit at least 4K ServerCertificate
+        private const int ReadBufferSize = 4096 * 4 + FrameOverhead;         // We read in 16K chunks + headers.
+
+        private SslBuffer _buffer;
+
+        // internal buffer for storing incoming data. Wrapper around ArrayBuffer which adds
+        // separation between decrypted and still encrypted part of the active region.
+        //   - Encrypted: Contains incoming TLS frames, the last such frame may be incomplete
+        //   - Decrypted: Contains decrypted data from *one* TLS frame which have not been read by the user yet.
+        private struct SslBuffer
+        {
+            private ArrayBuffer _buffer;
+            private int _decryptedLength;
+
+            // padding between decrypted part of the active memory and following undecrypted TLS frame.
+            private int _decryptedPadding;
+
+            private bool _isValid;
+
+            public SslBuffer(int initialSize)
+            {
+                _buffer = new ArrayBuffer(initialSize, true);
+                _decryptedLength = 0;
+                _decryptedPadding = 0;
+                _isValid = true;
+            }
+
+            public bool IsValid => _isValid;
+
+            public Span<byte> DecryptedSpan => _buffer.ActiveSpan.Slice(0, _decryptedLength);
+
+            public ReadOnlySpan<byte> DecryptedReadOnlySpanSliced(int length)
+            {
+                Debug.Assert(length <= DecryptedLength, "length <= DecryptedLength");
+                return _buffer.ActiveSpan.Slice(0, length);
+            }
+
+            public int DecryptedLength => _decryptedLength;
+
+            public int ActiveLength => _buffer.ActiveLength;
+
+            public Span<byte> EncryptedSpanSliced(int length) => _buffer.ActiveSpan.Slice(_decryptedLength + _decryptedPadding, length);
+
+            public ReadOnlySpan<byte> EncryptedReadOnlySpan => _buffer.ActiveSpan.Slice(_decryptedLength + _decryptedPadding);
+
+            public int EncryptedLength => _buffer.ActiveLength - _decryptedPadding - _decryptedLength;
+
+            public Memory<byte> AvailableMemory => _buffer.AvailableMemory;
+
+            public int AvailableLength => _buffer.AvailableLength;
+
+            public int Capacity => _buffer.Capacity;
+
+            public void Commit(int byteCount) => _buffer.Commit(byteCount);
+
+            public void EnsureAvailableSpace(int byteCount)
+            {
+                if (_isValid)
+                {
+                    _buffer.EnsureAvailableSpace(byteCount);
+                }
+                else
+                {
+                    _isValid = true;
+                    _buffer = new ArrayBuffer(byteCount, true);
+                }
+            }
+
+            public void Discard(int byteCount)
+            {
+                Debug.Assert(byteCount <= _decryptedLength, "byteCount <= _decryptedBytes");
+
+                _buffer.Discard(byteCount);
+                _decryptedLength -= byteCount;
+
+                // if drained all decrypted data, discard also the tail of the frame so that only
+                // encrypted part of the active memory of the _buffer remains
+                if (_decryptedLength == 0)
+                {
+                    _buffer.Discard(_decryptedPadding);
+                    _decryptedPadding = 0;
+                }
+            }
+
+            public void DiscardEncrypted(int byteCount)
+            {
+                // should be called only during handshake -> no pending decrypted data
+                Debug.Assert(_decryptedLength == 0, "_decryptedBytes == 0");
+                Debug.Assert(_decryptedPadding == 0, "_encryptedOffset == 0");
+
+                _buffer.Discard(byteCount);
+            }
+
+            public void OnDecrypted(int decryptedOffset, int decryptedCount, int frameSize)
+            {
+                Debug.Assert(_decryptedLength == 0, "_decryptedBytes == 0");
+                Debug.Assert(_decryptedPadding == 0, "_encryptedOffset == 0");
+
+                if (decryptedCount > 0)
+                {
+                    // discard padding before decrypted contents
+                    _buffer.Discard(decryptedOffset);
+
+                    _decryptedPadding = frameSize - decryptedOffset - decryptedCount;
+                    _decryptedLength = decryptedCount;
+                }
+                else
+                {
+                    // No user data available, discard entire frame
+                    _buffer.Discard(frameSize);
+                }
+            }
+
+            public void ReturnBuffer()
+            {
+                _buffer.Dispose();
+                _decryptedLength = 0;
+                _decryptedPadding = 0;
+                _isValid = false;
+            }
+        }
+
+
 
         private int _nestedWrite;
         private int _nestedRead;
@@ -92,17 +213,17 @@ namespace System.Net.Security
             LocalCertificateSelectionCallback? userCertificateSelectionCallback, EncryptionPolicy encryptionPolicy)
             : base(innerStream, leaveInnerStreamOpen)
         {
+#pragma warning disable SYSLIB0040 // NoEncryption and AllowNoEncryption are obsolete
             if (encryptionPolicy != EncryptionPolicy.RequireEncryption && encryptionPolicy != EncryptionPolicy.AllowNoEncryption && encryptionPolicy != EncryptionPolicy.NoEncryption)
             {
                 throw new ArgumentException(SR.Format(SR.net_invalid_enum, "EncryptionPolicy"), nameof(encryptionPolicy));
             }
+#pragma warning restore SYSLIB0040
 
             _userCertificateValidationCallback = userCertificateValidationCallback;
             _userCertificateSelectionCallback = userCertificateSelectionCallback;
             _encryptionPolicy = encryptionPolicy;
             _certSelectionDelegate = userCertificateSelectionCallback == null ? null : new LocalCertSelectionCallback(UserCertSelectionCallbackWrapper);
-
-            _innerStream = innerStream;
 
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Log.SslStreamCtor(this, innerStream);
         }
@@ -152,13 +273,18 @@ namespace System.Net.Security
 
         private SslAuthenticationOptions CreateAuthenticationOptions(SslServerAuthenticationOptions sslServerAuthenticationOptions)
         {
-            if (sslServerAuthenticationOptions.ServerCertificate == null && sslServerAuthenticationOptions.ServerCertificateContext == null &&
-                    sslServerAuthenticationOptions.ServerCertificateSelectionCallback == null && _certSelectionDelegate == null)
+            if (sslServerAuthenticationOptions.ServerCertificate == null &&
+                sslServerAuthenticationOptions.ServerCertificateContext == null &&
+                sslServerAuthenticationOptions.ServerCertificateSelectionCallback == null &&
+                _certSelectionDelegate == null)
             {
                 throw new ArgumentNullException(nameof(sslServerAuthenticationOptions.ServerCertificate));
             }
 
-            if ((sslServerAuthenticationOptions.ServerCertificate != null || sslServerAuthenticationOptions.ServerCertificateContext != null || _certSelectionDelegate != null) && sslServerAuthenticationOptions.ServerCertificateSelectionCallback != null)
+            if ((sslServerAuthenticationOptions.ServerCertificate != null ||
+                 sslServerAuthenticationOptions.ServerCertificateContext != null ||
+                 _certSelectionDelegate != null) &&
+                sslServerAuthenticationOptions.ServerCertificateSelectionCallback != null)
             {
                 throw new InvalidOperationException(SR.Format(SR.net_conflicting_options, nameof(ServerCertificateSelectionCallback)));
             }
@@ -251,7 +377,7 @@ namespace System.Net.Security
 
         internal IAsyncResult BeginShutdown(AsyncCallback? asyncCallback, object? asyncState) => TaskToApm.Begin(ShutdownAsync(), asyncCallback, asyncState);
 
-        internal void EndShutdown(IAsyncResult asyncResult) => TaskToApm.End(asyncResult);
+        internal static void EndShutdown(IAsyncResult asyncResult) => TaskToApm.End(asyncResult);
 
         public TransportContext TransportContext => new SslStreamContext(this);
 
@@ -284,10 +410,7 @@ namespace System.Net.Security
 
         public void AuthenticateAsClient(SslClientAuthenticationOptions sslClientAuthenticationOptions)
         {
-            if (sslClientAuthenticationOptions == null)
-            {
-                throw new ArgumentNullException(nameof(sslClientAuthenticationOptions));
-            }
+            ArgumentNullException.ThrowIfNull(sslClientAuthenticationOptions);
 
             SetAndVerifyValidationCallback(sslClientAuthenticationOptions.RemoteCertificateValidationCallback);
             SetAndVerifySelectionCallback(sslClientAuthenticationOptions.LocalCertificateSelectionCallback);
@@ -322,10 +445,7 @@ namespace System.Net.Security
 
         public void AuthenticateAsServer(SslServerAuthenticationOptions sslServerAuthenticationOptions)
         {
-            if (sslServerAuthenticationOptions == null)
-            {
-                throw new ArgumentNullException(nameof(sslServerAuthenticationOptions));
-            }
+            ArgumentNullException.ThrowIfNull(sslServerAuthenticationOptions);
 
             SetAndVerifyValidationCallback(sslServerAuthenticationOptions.RemoteCertificateValidationCallback);
 
@@ -343,8 +463,8 @@ namespace System.Net.Security
         {
             SslClientAuthenticationOptions options = new SslClientAuthenticationOptions()
             {
-                TargetHost =  targetHost,
-                ClientCertificates =  clientCertificates,
+                TargetHost = targetHost,
+                ClientCertificates = clientCertificates,
                 EnabledSslProtocols = enabledSslProtocols,
                 CertificateRevocationCheckMode = checkCertificateRevocation ? X509RevocationMode.Online : X509RevocationMode.NoCheck,
                 EncryptionPolicy = _encryptionPolicy,
@@ -355,17 +475,14 @@ namespace System.Net.Security
 
         public Task AuthenticateAsClientAsync(SslClientAuthenticationOptions sslClientAuthenticationOptions, CancellationToken cancellationToken = default)
         {
-            if (sslClientAuthenticationOptions == null)
-            {
-                throw new ArgumentNullException(nameof(sslClientAuthenticationOptions));
-            }
+            ArgumentNullException.ThrowIfNull(sslClientAuthenticationOptions);
 
             SetAndVerifyValidationCallback(sslClientAuthenticationOptions.RemoteCertificateValidationCallback);
             SetAndVerifySelectionCallback(sslClientAuthenticationOptions.LocalCertificateSelectionCallback);
 
             ValidateCreateContext(sslClientAuthenticationOptions, _userCertificateValidationCallback, _certSelectionDelegate);
 
-            return ProcessAuthenticationAsync(isAsync: true, isApm: false, cancellationToken);
+            return ProcessAuthenticationAsync(isAsync: true, cancellationToken);
         }
 
         private Task AuthenticateAsClientApm(SslClientAuthenticationOptions sslClientAuthenticationOptions, CancellationToken cancellationToken = default)
@@ -375,7 +492,7 @@ namespace System.Net.Security
 
             ValidateCreateContext(sslClientAuthenticationOptions, _userCertificateValidationCallback, _certSelectionDelegate);
 
-            return ProcessAuthenticationAsync(isAsync: true, isApm: true, cancellationToken);
+            return ProcessAuthenticationAsync(isAsync: true, cancellationToken);
         }
 
         public virtual Task AuthenticateAsServerAsync(X509Certificate serverCertificate) =>
@@ -410,15 +527,12 @@ namespace System.Net.Security
 
         public Task AuthenticateAsServerAsync(SslServerAuthenticationOptions sslServerAuthenticationOptions, CancellationToken cancellationToken = default)
         {
-            if (sslServerAuthenticationOptions == null)
-            {
-                throw new ArgumentNullException(nameof(sslServerAuthenticationOptions));
-            }
+            ArgumentNullException.ThrowIfNull(sslServerAuthenticationOptions);
 
             SetAndVerifyValidationCallback(sslServerAuthenticationOptions.RemoteCertificateValidationCallback);
             ValidateCreateContext(CreateAuthenticationOptions(sslServerAuthenticationOptions));
 
-            return ProcessAuthenticationAsync(isAsync: true, isApm: false, cancellationToken);
+            return ProcessAuthenticationAsync(isAsync: true, cancellationToken);
         }
 
         private Task AuthenticateAsServerApm(SslServerAuthenticationOptions sslServerAuthenticationOptions, CancellationToken cancellationToken = default)
@@ -426,13 +540,13 @@ namespace System.Net.Security
             SetAndVerifyValidationCallback(sslServerAuthenticationOptions.RemoteCertificateValidationCallback);
             ValidateCreateContext(CreateAuthenticationOptions(sslServerAuthenticationOptions));
 
-            return ProcessAuthenticationAsync(isAsync: true, isApm: true, cancellationToken);
+            return ProcessAuthenticationAsync(isAsync: true, cancellationToken);
         }
 
         public Task AuthenticateAsServerAsync(ServerOptionsSelectionCallback optionsCallback, object? state, CancellationToken cancellationToken = default)
         {
             ValidateCreateContext(new SslAuthenticationOptions(optionsCallback, state, _userCertificateValidationCallback));
-            return ProcessAuthenticationAsync(isAsync: true, isApm: false, cancellationToken);
+            return ProcessAuthenticationAsync(isAsync: true, cancellationToken);
         }
 
         public virtual Task ShutdownAsync()
@@ -498,6 +612,7 @@ namespace System.Net.Security
             }
 #pragma warning restore
 
+#pragma warning disable SYSLIB0039 // TLS 1.0 and 1.1 are obsolete
             if ((proto & SslProtocols.Tls) != 0)
             {
                 ret |= SslProtocols.Tls;
@@ -507,6 +622,7 @@ namespace System.Net.Security
             {
                 ret |= SslProtocols.Tls11;
             }
+#pragma warning restore SYSLIB0039
 
             if ((proto & SslProtocols.Tls12) != 0)
             {
@@ -697,7 +813,7 @@ namespace System.Net.Security
                 throw new InvalidOperationException(SR.net_ssl_certificate_exist);
             }
 
-            return RenegotiateAsync(new AsyncReadWriteAdapter(InnerStream, cancellationToken));
+            return RenegotiateAsync<AsyncReadWriteAdapter>(cancellationToken);
         }
 
         protected override void Dispose(bool disposing)
@@ -729,16 +845,16 @@ namespace System.Net.Security
             ThrowIfExceptionalOrNotAuthenticated();
             if (Interlocked.Exchange(ref _nestedRead, 1) == 1)
             {
-                throw new NotSupportedException(SR.Format(SR.net_io_invalidnestedcall, "ReadByte", "read"));
+                throw new NotSupportedException(SR.Format(SR.net_io_invalidnestedcall, "read"));
             }
 
             // If there's any data in the buffer, take one byte, and we're done.
             try
             {
-                if (_decryptedBytesCount > 0)
+                if (_buffer.DecryptedLength > 0)
                 {
-                    int b = _internalBuffer![_decryptedBytesOffset++];
-                    _decryptedBytesCount--;
+                    int b = _buffer.DecryptedSpan[0];
+                    _buffer.Discard(1);
                     ReturnReadBufferIfEmpty();
                     return b;
                 }
@@ -764,7 +880,7 @@ namespace System.Net.Security
         {
             ThrowIfExceptionalOrNotAuthenticated();
             ValidateBufferArguments(buffer, offset, count);
-            ValueTask<int> vt = ReadAsyncInternal(new SyncReadWriteAdapter(InnerStream), new Memory<byte>(buffer, offset, count));
+            ValueTask<int> vt = ReadAsyncInternal<SyncReadWriteAdapter>(new Memory<byte>(buffer, offset, count), default(CancellationToken));
             Debug.Assert(vt.IsCompleted, "Sync operation must have completed synchronously");
             return vt.GetAwaiter().GetResult();
         }
@@ -776,7 +892,7 @@ namespace System.Net.Security
             ThrowIfExceptionalOrNotAuthenticated();
             ValidateBufferArguments(buffer, offset, count);
 
-            ValueTask vt = WriteAsyncInternal(new SyncReadWriteAdapter(InnerStream), new ReadOnlyMemory<byte>(buffer, offset, count));
+            ValueTask vt = WriteAsyncInternal<SyncReadWriteAdapter>(new ReadOnlyMemory<byte>(buffer, offset, count), default(CancellationToken));
             Debug.Assert(vt.IsCompleted, "Sync operation must have completed synchronously");
             vt.GetAwaiter().GetResult();
         }
@@ -809,26 +925,26 @@ namespace System.Net.Security
         {
             ThrowIfExceptionalOrNotAuthenticated();
             ValidateBufferArguments(buffer, offset, count);
-            return WriteAsync(new ReadOnlyMemory<byte>(buffer, offset, count), cancellationToken).AsTask();
+            return WriteAsyncInternal<AsyncReadWriteAdapter>(new ReadOnlyMemory<byte>(buffer, offset, count), cancellationToken).AsTask();
         }
 
         public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
         {
             ThrowIfExceptionalOrNotAuthenticated();
-            return WriteAsyncInternal(new AsyncReadWriteAdapter(InnerStream, cancellationToken), buffer);
+            return WriteAsyncInternal<AsyncReadWriteAdapter>(buffer, cancellationToken);
         }
 
         public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             ThrowIfExceptionalOrNotAuthenticated();
             ValidateBufferArguments(buffer, offset, count);
-            return ReadAsyncInternal(new AsyncReadWriteAdapter(InnerStream, cancellationToken), new Memory<byte>(buffer, offset, count)).AsTask();
+            return ReadAsyncInternal<AsyncReadWriteAdapter>(new Memory<byte>(buffer, offset, count), cancellationToken).AsTask();
         }
 
         public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
         {
             ThrowIfExceptionalOrNotAuthenticated();
-            return ReadAsyncInternal(new AsyncReadWriteAdapter(InnerStream, cancellationToken), buffer);
+            return ReadAsyncInternal<AsyncReadWriteAdapter>(buffer, cancellationToken);
         }
 
         private void ThrowIfExceptional()

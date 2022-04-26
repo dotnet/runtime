@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 
@@ -35,8 +34,6 @@ namespace System.Net.Http.Headers
     {
         private readonly HeaderDescriptor _descriptor;
         private readonly HttpHeaders _store;
-        private readonly T? _specialValue;
-        private readonly Action<HttpHeaderValueCollection<T>, T>? _validator;
 
         public int Count
         {
@@ -48,45 +45,10 @@ namespace System.Net.Http.Headers
             get { return false; }
         }
 
-        internal bool IsSpecialValueSet
-        {
-            get
-            {
-                // If this collection instance has a "special value", then check whether that value was already set.
-                if (_specialValue == null)
-                {
-                    return false;
-                }
-                return _store.ContainsParsedValue(_descriptor, _specialValue);
-            }
-        }
-
         internal HttpHeaderValueCollection(HeaderDescriptor descriptor, HttpHeaders store)
-            : this(descriptor, store, null, null)
         {
-        }
-
-        internal HttpHeaderValueCollection(HeaderDescriptor descriptor, HttpHeaders store,
-            Action<HttpHeaderValueCollection<T>, T> validator)
-            : this(descriptor, store, null, validator)
-        {
-        }
-
-        internal HttpHeaderValueCollection(HeaderDescriptor descriptor, HttpHeaders store, T specialValue)
-            : this(descriptor, store, specialValue, null)
-        {
-        }
-
-        internal HttpHeaderValueCollection(HeaderDescriptor descriptor, HttpHeaders store, T? specialValue,
-            Action<HttpHeaderValueCollection<T>, T>? validator)
-        {
-            Debug.Assert(descriptor.Name != null);
-            Debug.Assert(store != null);
-
             _store = store;
             _descriptor = descriptor;
-            _specialValue = specialValue;
-            _validator = validator;
         }
 
         public void Add(T item)
@@ -118,17 +80,15 @@ namespace System.Net.Http.Headers
 
         public void CopyTo(T[] array, int arrayIndex)
         {
-            if (array == null)
-            {
-                throw new ArgumentNullException(nameof(array));
-            }
+            ArgumentNullException.ThrowIfNull(array);
+
             // Allow arrayIndex == array.Length in case our own collection is empty
             if ((arrayIndex < 0) || (arrayIndex > array.Length))
             {
                 throw new ArgumentOutOfRangeException(nameof(arrayIndex));
             }
 
-            object? storeValue = _store.GetParsedValues(_descriptor);
+            object? storeValue = _store.GetParsedAndInvalidValues(_descriptor);
 
             if (storeValue == null)
             {
@@ -139,18 +99,30 @@ namespace System.Net.Http.Headers
 
             if (storeValues == null)
             {
-                // We only have 1 value: If it is the "special value" just return, otherwise add the value to the
-                // array and return.
-                Debug.Assert(storeValue is T);
-                if (arrayIndex == array.Length)
+                if (storeValue is not HttpHeaders.InvalidValue)
                 {
-                    throw new ArgumentException(SR.net_http_copyto_array_too_small);
+                    Debug.Assert(storeValue is T);
+                    if (arrayIndex == array.Length)
+                    {
+                        throw new ArgumentException(SR.net_http_copyto_array_too_small);
+                    }
+                    array[arrayIndex] = (T)storeValue;
                 }
-                array[arrayIndex] = (T)storeValue;
             }
             else
             {
-                storeValues.CopyTo(array, arrayIndex);
+                foreach (object item in storeValues)
+                {
+                    if (item is not HttpHeaders.InvalidValue)
+                    {
+                        Debug.Assert(item is T);
+                        if (arrayIndex == array.Length)
+                        {
+                            throw new ArgumentException(SR.net_http_copyto_array_too_small);
+                        }
+                        array[arrayIndex++] = (T)item;
+                    }
+                }
             }
         }
 
@@ -164,8 +136,8 @@ namespace System.Net.Http.Headers
 
         public IEnumerator<T> GetEnumerator()
         {
-            object? storeValue = _store.GetParsedValues(_descriptor);
-            return storeValue is null ?
+            object? storeValue = _store.GetParsedAndInvalidValues(_descriptor);
+            return storeValue is null || storeValue is HttpHeaders.InvalidValue ?
                 ((IEnumerable<T>)Array.Empty<T>()).GetEnumerator() : // use singleton empty array enumerator
                 Iterate(storeValue);
 
@@ -176,6 +148,10 @@ namespace System.Net.Http.Headers
                     // We have multiple values. Iterate through the values and return them.
                     foreach (object item in storeValues)
                     {
+                        if (item is HttpHeaders.InvalidValue)
+                        {
+                            continue;
+                        }
                         Debug.Assert(item is T);
                         yield return (T)item;
                     }
@@ -204,38 +180,17 @@ namespace System.Net.Http.Headers
             return _store.GetHeaderString(_descriptor);
         }
 
-        internal void SetSpecialValue()
-        {
-            Debug.Assert(_specialValue != null,
-                "This method can only be used if the collection has a 'special value' set.");
-
-            if (!_store.ContainsParsedValue(_descriptor, _specialValue))
-            {
-                _store.AddParsedValue(_descriptor, _specialValue);
-            }
-        }
-
-        internal void RemoveSpecialValue()
-        {
-            Debug.Assert(_specialValue != null,
-                "This method can only be used if the collection has a 'special value' set.");
-
-            // We're not interested in the return value. It's OK if the "special value" wasn't in the store
-            // before calling RemoveParsedValue().
-            _store.RemoveParsedValue(_descriptor, _specialValue);
-        }
-
         private void CheckValue(T item)
         {
-            if (item == null)
-            {
-                throw new ArgumentNullException(nameof(item));
-            }
+            ArgumentNullException.ThrowIfNull(item);
 
-            // If this instance has a custom validator for validating arguments, call it now.
-            if (_validator != null)
+            if (_descriptor.Parser == GenericHeaderParser.TokenListParser)
             {
-                _validator(this, item);
+                // The collection expects valid HTTP tokens, which are typed as string.
+                // Unlike other parsed values (which are always valid by construction),
+                // we can't assume the provided string is a valid token. So validate it before we use it.
+                Debug.Assert(typeof(T) == typeof(string));
+                HeaderUtilities.CheckValidToken((string)(object)item, nameof(item));
             }
         }
 
@@ -243,7 +198,7 @@ namespace System.Net.Http.Headers
         {
             // This is an O(n) operation.
 
-            object? storeValue = _store.GetParsedValues(_descriptor);
+            object? storeValue = _store.GetParsedAndInvalidValues(_descriptor);
 
             if (storeValue == null)
             {
@@ -254,11 +209,23 @@ namespace System.Net.Http.Headers
 
             if (storeValues == null)
             {
-                return 1;
+                if (storeValue is not HttpHeaders.InvalidValue)
+                {
+                    return 1;
+                }
+                return 0;
             }
             else
             {
-                return storeValues.Count;
+                int count = 0;
+                foreach (object item in storeValues)
+                {
+                    if (item is not HttpHeaders.InvalidValue)
+                    {
+                        count++;
+                    }
+                }
+                return count;
             }
         }
     }

@@ -203,14 +203,15 @@ namespace System.Text.Encodings.Web
         /// <param name="characterCount">Number of characters in the substring.</param>
         public virtual void Encode(TextWriter output, string value, int startIndex, int characterCount)
         {
-            if (value == null)
+            if (output is null)
             {
-                throw new ArgumentNullException(nameof(value));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.output);
             }
-            if (output == null)
+            if (value is null)
             {
-                throw new ArgumentNullException(nameof(output));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.value);
             }
+
             ValidateRanges(startIndex, characterCount, actualInputLength: value.Length);
 
             int indexOfFirstCharToEncode = FindFirstCharacterToEncode(value.AsSpan(startIndex, characterCount));
@@ -237,14 +238,15 @@ namespace System.Text.Encodings.Web
         /// <param name="characterCount">Number of characters in the substring.</param>
         public virtual void Encode(TextWriter output, char[] value, int startIndex, int characterCount)
         {
-            if (value == null)
+            if (output is null)
             {
-                throw new ArgumentNullException(nameof(value));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.output);
             }
-            if (output == null)
+            if (value is null)
             {
-                throw new ArgumentNullException(nameof(output));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.value);
             }
+
             ValidateRanges(startIndex, characterCount, actualInputLength: value.Length);
 
             int indexOfFirstCharToEncode = FindFirstCharacterToEncode(value.AsSpan(startIndex, characterCount));

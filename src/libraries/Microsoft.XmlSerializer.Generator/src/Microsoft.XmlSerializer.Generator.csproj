@@ -5,7 +5,8 @@
     <StringResourcesPath>..\..\System.Private.Xml\src\Resources\Strings.resx</StringResourcesPath>
     <StringResourcesName>FxResources.$(AssemblyName.Replace('-', '_')).SR</StringResourcesName>
     <OutputType>Exe</OutputType>
-    <TargetFrameworks>netstandard2.0</TargetFrameworks>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <Nullable>disable</Nullable>
     <EnableSingleFileAnalyzer>false</EnableSingleFileAnalyzer>
     <IsPackable>true</IsPackable>
     <PackageId>$(MSBuildProjectName)</PackageId>
@@ -13,6 +14,9 @@
     <PackageProjectUrl>https://go.microsoft.com/fwlink/?linkid=858594</PackageProjectUrl>
     <PackageDescription>Creates an Xml serialization assembly for types contained in an assembly in order to improve the startup performance of Xml serialization when serializing or de-serializing objects of those types using XmlSerializer.</PackageDescription>
     <DisablePackageBaselineValidation>true</DisablePackageBaselineValidation>
+    <!-- this assembly doesn't need to be binplaced -->
+    <EnableBinPlacing>false</EnableBinPlacing>
+    <IsTrimmable>false</IsTrimmable>
   </PropertyGroup>
 
   <ItemGroup>
@@ -20,8 +24,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- Set an empty PackagePath to place this file in the root of the package -->
     <None Include="build\prefercliruntime"
-          PackagePath="/"
+          PackagePath=""
           Pack="true" />
     <None Include="build\Microsoft.XmlSerializer.Generator.targets"
           PackagePath="build"

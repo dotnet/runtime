@@ -907,7 +907,6 @@ static const UINT64 SBUFFER_CANARY_VALUE = UI64(0xD00BED00BED00BAA);
 #ifdef ALIGN_ACCESS
 static const int SBUFFER_ALIGNMENT = ALIGN_ACCESS;
 #else
-// This is only 4 bytes on win98 and below
 static const int SBUFFER_ALIGNMENT = 4;
 #endif
 
@@ -1386,7 +1385,7 @@ inline void SBuffer::ClearOpened()
 }
 #endif
 
-inline void SBuffer::DebugMoveBuffer(__out_bcount(size) BYTE *to, BYTE *from, COUNT_T size)
+inline void SBuffer::DebugMoveBuffer(_Out_writes_bytes_(size) BYTE *to, BYTE *from, COUNT_T size)
 {
     CONTRACT_VOID
     {
@@ -1424,7 +1423,7 @@ inline void SBuffer::DebugMoveBuffer(__out_bcount(size) BYTE *to, BYTE *from, CO
     RETURN;
 }
 
-inline void SBuffer::DebugCopyConstructBuffer(__out_bcount(size) BYTE *to, const BYTE *from, COUNT_T size)
+inline void SBuffer::DebugCopyConstructBuffer(_Out_writes_bytes_(size) BYTE *to, const BYTE *from, COUNT_T size)
 {
     CONTRACT_VOID
     {

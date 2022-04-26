@@ -28,6 +28,7 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Data.SqlTypes;
 using System.Diagnostics;
 using System.Globalization;
@@ -376,23 +377,38 @@ namespace System.Data.Tests
 
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBinaryFormatterSupported), nameof(PlatformDetection.IsNotInvariantGlobalization))]
-        public void DataColumnTypeSerialization()
+        [Fact]
+        public void SerializationFormat_Binary_does_not_work_by_default()
         {
             DataTable dt = new DataTable("MyTable");
-            DataColumn dc = new DataColumn("dc", typeof(int));
-            dt.Columns.Add(dc);
-            dt.RemotingFormat = SerializationFormat.Binary;
+            Assert.Throws<InvalidEnumArgumentException>(() => dt.RemotingFormat = SerializationFormat.Binary);
+        }
 
-            DataTable dtDeserialized;
-            using (MemoryStream ms = new MemoryStream())
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void SerializationFormat_Binary_works_with_appconfig_switch()
+        {
+            RemoteExecutor.Invoke(RunTest).Dispose();
+
+            static void RunTest()
             {
-                BinaryFormatter bf = new BinaryFormatter();
-                bf.Serialize(ms, dt);
-                ms.Seek(0, SeekOrigin.Begin);
-                dtDeserialized = (DataTable)bf.Deserialize(ms);
+                AppContext.SetSwitch("Switch.System.Data.AllowUnsafeSerializationFormatBinary", true);
+
+                DataTable dt = new DataTable("MyTable");
+                DataColumn dc = new DataColumn("dc", typeof(int));
+                dt.Columns.Add(dc);
+                dt.RemotingFormat = SerializationFormat.Binary;
+
+                DataTable dtDeserialized;
+                using (MemoryStream ms = new MemoryStream())
+                {
+                    BinaryFormatter bf = new BinaryFormatter();
+                    bf.Serialize(ms, dt);
+                    ms.Seek(0, SeekOrigin.Begin);
+                    dtDeserialized = (DataTable)bf.Deserialize(ms);
+                }
+
+                Assert.Equal(dc.DataType, dtDeserialized.Columns[0].DataType);
             }
-            Assert.Equal(dc.DataType, dtDeserialized.Columns[0].DataType);
         }
 
         [Fact]
@@ -3572,27 +3588,32 @@ Assert.False(true);
             dt.Columns.Add("StartDate", typeof(DateTime));
 
             DataRow dr;
-            DateTime date = DateTime.Now;
+            DateTime now = DateTime.Now;
+
+            // In RowFilter we have a string containing only seconds,
+            // but in rows we have a DateTime which also contains milliseconds.
+            // The test would fail without this extra minute, when now.Millisecond is 0.
+            DateTime rowDate = now.AddMinutes(1);
 
             for (int i = 0; i < 10; i++)
             {
                 dr = dt.NewRow();
-                dr["StartDate"] = date.AddDays(i);
+                dr["StartDate"] = rowDate.AddDays(i);
                 dt.Rows.Add(dr);
             }
 
             DataView dv = dt.DefaultView;
             dv.RowFilter = string.Format(CultureInfo.InvariantCulture,
                                 "StartDate >= #{0}# and StartDate <= #{1}#",
-                                DateTime.Now.AddDays(2),
-                                DateTime.Now.AddDays(4));
+                                now.AddDays(2),
+                                now.AddDays(4));
             Assert.Equal(10, dt.Rows.Count);
 
             int expectedRowCount = 2;
             if (dv.Count != expectedRowCount)
             {
                 StringBuilder sb = new();
-                sb.AppendLine($"DataView.Rows.Count: Expected: {expectedRowCount}, Actual: {dv.Count}. Debug data: RowFilter: {dv.RowFilter}, date: {date}");
+                sb.AppendLine($"DataView.Rows.Count: Expected: {expectedRowCount}, Actual: {dv.Count}. Debug data: RowFilter: {dv.RowFilter}, date: {now}");
                 for (int i = 0; i < dv.Count; i++)
                 {
                     sb.Append($"row#{i}: ");

@@ -372,7 +372,7 @@ namespace Internal.Runtime.TypeLoader
                                 return false;
                         }
 
-                        RuntimeTypeHandle type1 = default(RuntimeTypeHandle);
+                        RuntimeTypeHandle type1;
                         if (typeSignatureKind == TypeSignatureKind.External)
                         {
                             type1 = SigParsing.GetTypeFromNativeLayoutSignature(ref parser, moduleHandle, startOffset);

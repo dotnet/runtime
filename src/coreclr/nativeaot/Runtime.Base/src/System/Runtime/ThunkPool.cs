@@ -25,8 +25,8 @@
 //
 // With FEATURE_RX_THUNKS, thunks are created by allocating new virtual memory space, where the first half of
 // that space is filled with thunk stubs, and gets RX permissions, and the second half is for the thunks data,
-// and gets RW permissions. The thunk stubs and data blocks are not in groupped in pairs like in ProjectN: all
-// the thunk stubs blocks are groupped at the begining of the allocated virtual memory space, and all the
+// and gets RW permissions. The thunk stubs and data blocks are not in groupped in pairs:
+// all the thunk stubs blocks are groupped at the begining of the allocated virtual memory space, and all the
 // thunk data blocks are groupped in the second half of the virtual space.
 //
 // Available thunks are tracked using a linked list. The first cell in the data block of each thunk is
@@ -269,7 +269,7 @@ namespace System.Runtime
             return false;
         }
 
-        private IntPtr TryGetThunkDataAddress(IntPtr thunkAddress)
+        private static IntPtr TryGetThunkDataAddress(IntPtr thunkAddress)
         {
             nuint thunkAddressValue = (nuint)(nint)ClearThumbBit(thunkAddress);
 

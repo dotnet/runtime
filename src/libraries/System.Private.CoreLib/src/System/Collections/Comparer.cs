@@ -23,24 +23,21 @@ namespace System.Collections
 
         public Comparer(CultureInfo culture)
         {
-            if (culture == null)
-                throw new ArgumentNullException(nameof(culture));
+            ArgumentNullException.ThrowIfNull(culture);
 
             _compareInfo = culture.CompareInfo;
         }
 
         private Comparer(SerializationInfo info, StreamingContext context)
         {
-            if (info == null)
-                throw new ArgumentNullException(nameof(info));
+            ArgumentNullException.ThrowIfNull(info);
 
             _compareInfo = (CompareInfo)info.GetValue("CompareInfo", typeof(CompareInfo))!;
         }
 
         public void GetObjectData(SerializationInfo info, StreamingContext context)
         {
-            if (info == null)
-                throw new ArgumentNullException(nameof(info));
+            ArgumentNullException.ThrowIfNull(info);
 
             info.AddValue("CompareInfo", _compareInfo);
         }

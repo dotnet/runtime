@@ -211,7 +211,7 @@ namespace Internal.TypeSystem
         /// <param name="hashtable"></param>
         /// <param name="tableIndex"></param>
         /// <returns>The value that replaced the sentinel, or null</returns>
-        IntPtr WaitForSentinelInHashtableToDisappear(IntPtr[] hashtable, int tableIndex)
+        private static IntPtr WaitForSentinelInHashtableToDisappear(IntPtr[] hashtable, int tableIndex)
         {
             var sw = new SpinWait();
             while (true)
@@ -326,8 +326,7 @@ namespace Internal.TypeSystem
         /// <returns>Newly added value, or a value which was already present in the hashtable which is equal to it.</returns>
         public TValue AddOrGetExisting(TValue value)
         {
-            bool unused;
-            return AddOrGetExistingInner(value, out unused);
+            return AddOrGetExistingInner(value, out _);
         }
 
         private TValue AddOrGetExistingInner(TValue value, out bool addedValue)
@@ -354,7 +353,7 @@ namespace Internal.TypeSystem
             return result;
         }
 
-        IntPtr VolatileReadNonSentinelFromHashtable(IntPtr[] hashTable, int tableIndex)
+        private static IntPtr VolatileReadNonSentinelFromHashtable(IntPtr[] hashTable, int tableIndex)
         {
             IntPtr examineEntry = Volatile.Read(ref hashTable[tableIndex]);
 
@@ -459,7 +458,7 @@ namespace Internal.TypeSystem
         /// Attampts to write the Sentinel into the table. May fail if another value has been added.
         /// </summary>
         /// <returns>True if the value was successfully written</returns>
-        private bool TryWriteSentinelToLocation(IntPtr[] hashTableLocal, int tableIndex)
+        private static bool TryWriteSentinelToLocation(IntPtr[] hashTableLocal, int tableIndex)
         {
             // Add to hash, use a CompareExchange to ensure that
             // the sentinel is are fully communicated to all threads
@@ -474,7 +473,7 @@ namespace Internal.TypeSystem
         /// <summary>
         /// Writes the value into the table. Must only be used to overwrite a sentinel.
         /// </summary>
-        private void WriteValueToLocation(IntPtr value, IntPtr[] hashTableLocal, int tableIndex)
+        private static void WriteValueToLocation(IntPtr value, IntPtr[] hashTableLocal, int tableIndex)
         {
             // Add to hash, use a volatile write to ensure that
             // the contents of the value are fully published to all
@@ -485,7 +484,7 @@ namespace Internal.TypeSystem
         /// <summary>
         /// Abandons the sentinel. Must only be used to overwrite a sentinel.
         /// </summary>
-        private void WriteAbortNullToLocation(IntPtr[] hashTableLocal, int tableIndex)
+        private static void WriteAbortNullToLocation(IntPtr[] hashTableLocal, int tableIndex)
         {
             // Abandon sentinel, use a volatile write to ensure that
             // the contents of the value are fully published to all
@@ -525,8 +524,7 @@ namespace Internal.TypeSystem
         /// </summary>
         public bool Contains(TKey key)
         {
-            TValue dummyExistingValue;
-            return TryGetValue(key, out dummyExistingValue);
+            return TryGetValue(key, out _);
         }
 
         /// <summary>

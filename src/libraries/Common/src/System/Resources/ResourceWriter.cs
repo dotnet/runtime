@@ -48,8 +48,10 @@ namespace System.Resources
         ResourceWriter(string fileName)
 #endif
         {
-            if (fileName == null)
+            if (fileName is null)
+            {
                 throw new ArgumentNullException(nameof(fileName));
+            }
 
             _output = new FileStream(fileName, FileMode.Create, FileAccess.Write, FileShare.None);
             _resourceList = new SortedDictionary<string, object?>(FastResourceComparer.Default);
@@ -63,10 +65,15 @@ namespace System.Resources
         ResourceWriter(Stream stream)
 #endif
         {
-            if (stream == null)
+            if (stream is null)
+            {
                 throw new ArgumentNullException(nameof(stream));
+            }
+
             if (!stream.CanWrite)
+            {
                 throw new ArgumentException(SR.Argument_StreamNotWritable);
+            }
 
             _output = stream;
             _resourceList = new SortedDictionary<string, object?>(FastResourceComparer.Default);
@@ -78,11 +85,15 @@ namespace System.Resources
         //
         public void AddResource(string name, string? value)
         {
-            if (name == null)
+            if (name is null)
+            {
                 throw new ArgumentNullException(nameof(name));
+            }
 
             if (_resourceList == null)
+            {
                 throw new InvalidOperationException(SR.InvalidOperation_ResourceWriterSaved);
+            }
 
             // Check for duplicate resources whose names vary only by case.
             _caseInsensitiveDups.Add(name, null);
@@ -94,11 +105,15 @@ namespace System.Resources
         //
         public void AddResource(string name, object? value)
         {
-            if (name == null)
+            if (name is null)
+            {
                 throw new ArgumentNullException(nameof(name));
+            }
 
             if (_resourceList == null)
+            {
                 throw new InvalidOperationException(SR.InvalidOperation_ResourceWriterSaved);
+            }
 
             // needed for binary compat
             if (value != null && value is Stream)
@@ -119,11 +134,15 @@ namespace System.Resources
         //
         public void AddResource(string name, Stream? value, bool closeAfterWrite = false)
         {
-            if (name == null)
+            if (name is null)
+            {
                 throw new ArgumentNullException(nameof(name));
+            }
 
             if (_resourceList == null)
+            {
                 throw new InvalidOperationException(SR.InvalidOperation_ResourceWriterSaved);
+            }
 
             AddResourceInternal(name, value, closeAfterWrite);
         }
@@ -155,11 +174,15 @@ namespace System.Resources
         //
         public void AddResource(string name, byte[]? value)
         {
-            if (name == null)
+            if (name is null)
+            {
                 throw new ArgumentNullException(nameof(name));
+            }
 
             if (_resourceList == null)
+            {
                 throw new InvalidOperationException(SR.InvalidOperation_ResourceWriterSaved);
+            }
 
             // Check for duplicate resources whose names vary only by case.
             _caseInsensitiveDups.Add(name, null);
@@ -416,7 +439,7 @@ namespace System.Resources
 
         // Finds the ResourceTypeCode for a type, or adds this type to the
         // types list.
-        private ResourceTypeCode FindTypeCode(object? value, List<string> types)
+        private static ResourceTypeCode FindTypeCode(object? value, List<string> types)
         {
             if (value == null)
                 return ResourceTypeCode.Null;
@@ -489,7 +512,7 @@ namespace System.Resources
             return (ResourceTypeCode)(typeIndex + ResourceTypeCode.StartOfUserTypes);
         }
 
-        private void WriteValue(ResourceTypeCode typeCode, object? value, BinaryWriter writer)
+        private static void WriteValue(ResourceTypeCode typeCode, object? value, BinaryWriter writer)
         {
             Debug.Assert(writer != null);
 
@@ -595,7 +618,7 @@ namespace System.Resources
                             s.Position = 0;
                             writer.Write((int)s.Length);
                             byte[] buffer = new byte[4096];
-                            int read = 0;
+                            int read;
                             while ((read = s.Read(buffer, 0, buffer.Length)) != 0)
                             {
                                 writer.Write(buffer, 0, read);

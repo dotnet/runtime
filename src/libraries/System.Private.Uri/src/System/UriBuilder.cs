@@ -25,7 +25,7 @@ namespace System
         {
         }
 
-        public UriBuilder(string uri)
+        public UriBuilder([StringSyntax(StringSyntaxAttribute.Uri)] string uri)
         {
             // setting allowRelative=true for a string like www.acme.org
             _uri = new Uri(uri, UriKind.RelativeOrAbsolute);
@@ -40,7 +40,9 @@ namespace System
 
         public UriBuilder(Uri uri)
         {
-            _uri = uri ?? throw new ArgumentNullException(nameof(uri));
+            ArgumentNullException.ThrowIfNull(uri);
+
+            _uri = uri;
             SetFieldsFromUri();
         }
 

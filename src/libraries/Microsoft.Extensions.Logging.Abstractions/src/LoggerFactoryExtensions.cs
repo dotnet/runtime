@@ -19,10 +19,8 @@ namespace Microsoft.Extensions.Logging
         /// <returns>The <see cref="ILogger"/> that was created.</returns>
         public static ILogger<T> CreateLogger<T>(this ILoggerFactory factory)
         {
-            if (factory == null)
-            {
-                throw new ArgumentNullException(nameof(factory));
-            }
+            ThrowHelper.ThrowIfNull(factory);
+
             return new Logger<T>(factory);
         }
         /// <summary>
@@ -33,15 +31,8 @@ namespace Microsoft.Extensions.Logging
         /// <return>The <see cref="ILogger"/> that was created.</return>
         public static ILogger CreateLogger(this ILoggerFactory factory, Type type)
         {
-            if (factory == null)
-            {
-                throw new ArgumentNullException(nameof(factory));
-            }
-
-            if (type == null)
-            {
-                throw new ArgumentNullException(nameof(type));
-            }
+            ThrowHelper.ThrowIfNull(factory);
+            ThrowHelper.ThrowIfNull(type);
 
             return factory.CreateLogger(TypeNameHelper.GetTypeDisplayName(type, includeGenericParameters: false, nestedTypeDelimiter: '.'));
         }

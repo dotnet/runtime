@@ -112,7 +112,8 @@ namespace System.Runtime.Serialization
             DataContractResolver? dataContractResolver,
             bool serializeReadOnlyTypes)
         {
-            CheckNull(type, nameof(type));
+            ArgumentNullException.ThrowIfNull(type);
+
             _rootType = type;
 
             if (knownTypes != null)
@@ -382,7 +383,7 @@ namespace System.Runtime.Serialization
                 }
                 else
                 {
-                    XmlObjectSerializerWriteContext? context = null;
+                    XmlObjectSerializerWriteContext? context;
                     if (IsRootXmlAny(_rootName, contract))
                         throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.Format(SR.IsAnyCannotBeSerializedAsDerivedType, graphType, contract.UnderlyingType)));
 

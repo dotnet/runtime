@@ -408,10 +408,7 @@ namespace System.ComponentModel.DataAnnotations
         /// </exception>
         public ValidationResult? GetValidationResult(object? value, ValidationContext validationContext)
         {
-            if (validationContext == null)
-            {
-                throw new ArgumentNullException(nameof(validationContext));
-            }
+            ArgumentNullException.ThrowIfNull(validationContext);
 
             var result = IsValid(value, validationContext);
 
@@ -478,10 +475,7 @@ namespace System.ComponentModel.DataAnnotations
         /// </exception>
         public void Validate(object? value, ValidationContext validationContext)
         {
-            if (validationContext == null)
-            {
-                throw new ArgumentNullException(nameof(validationContext));
-            }
+            ArgumentNullException.ThrowIfNull(validationContext);
 
             ValidationResult? result = GetValidationResult(value, validationContext);
 

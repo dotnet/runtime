@@ -154,8 +154,16 @@ namespace System.IO
             return data.ftLastWriteTime.ToDateTimeOffset();
         }
 
-        public static void MoveDirectory(string sourceFullPath, string destFullPath)
+        private static void MoveDirectory(string sourceFullPath, string destFullPath, bool isCaseSensitiveRename)
         {
+            // Source and destination must have the same root.
+            ReadOnlySpan<char> sourceRoot = Path.GetPathRoot(sourceFullPath);
+            ReadOnlySpan<char> destinationRoot = Path.GetPathRoot(destFullPath);
+            if (!sourceRoot.Equals(destinationRoot, StringComparison.OrdinalIgnoreCase))
+            {
+                throw new IOException(SR.IO_SourceDestMustHaveSameRoot);
+            }
+
             if (!Interop.Kernel32.MoveFile(sourceFullPath, destFullPath, overwrite: false))
             {
                 int errorCode = Marshal.GetLastWin32Error();
@@ -456,7 +464,6 @@ namespace System.IO
 
         internal static void CreateSymbolicLink(string path, string pathToTarget, bool isDirectory)
         {
-            string pathToTargetFullPath = PathInternal.GetLinkTargetFullPath(path, pathToTarget);
             Interop.Kernel32.CreateSymbolicLink(path, pathToTarget, isDirectory);
         }
 

@@ -34,15 +34,8 @@ namespace System.ComponentModel.Design
         /// </summary>
         protected DesignerOptionCollection CreateOptionCollection(DesignerOptionCollection parent, string name, object value)
         {
-            if (parent == null)
-            {
-                throw new ArgumentNullException(nameof(parent));
-            }
-
-            if (name == null)
-            {
-                throw new ArgumentNullException(nameof(name));
-            }
+            ArgumentNullException.ThrowIfNull(parent);
+            ArgumentNullException.ThrowIfNull(name);
 
             if (name.Length == 0)
             {
@@ -59,15 +52,8 @@ namespace System.ComponentModel.Design
         [RequiresUnreferencedCode("The Type of DesignerOptionCollection's value cannot be statically discovered.")]
         private PropertyDescriptor? GetOptionProperty(string pageName, string valueName)
         {
-            if (pageName == null)
-            {
-                throw new ArgumentNullException(nameof(pageName));
-            }
-
-            if (valueName == null)
-            {
-                throw new ArgumentNullException(nameof(valueName));
-            }
+            ArgumentNullException.ThrowIfNull(pageName);
+            ArgumentNullException.ThrowIfNull(valueName);
 
             string[] optionNames = pageName.Split('\\');
 

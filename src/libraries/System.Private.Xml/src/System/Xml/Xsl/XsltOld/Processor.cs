@@ -160,7 +160,7 @@ namespace System.Xml.Xsl.XsltOld
 
         internal XPathNavigator GetNavigator(Uri ruri)
         {
-            XPathNavigator? result = null;
+            XPathNavigator? result;
             if (_documentCache != null)
             {
                 result = _documentCache[ruri] as XPathNavigator;
@@ -293,6 +293,7 @@ namespace System.Xml.Xsl.XsltOld
             return _sharedStringBuilder;
         }
 
+#pragma warning disable CA1822
         internal void ReleaseSharedStringBuilder()
         {
             // don't clean stringBuilderLocked here. ToString() will happen after this call
@@ -300,6 +301,7 @@ namespace System.Xml.Xsl.XsltOld
             _stringBuilderLocked = false;
 #endif
         }
+#pragma warning restore CA1822
 
         internal ArrayList NumberList
         {

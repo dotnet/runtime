@@ -15,59 +15,59 @@
 .class public auto ansi beforefieldinit InvalidCSharp.GenericClass`1<T>
     extends [System.Runtime]System.Object
 {
-    .method public hidebysig static 
+    .method public hidebysig static
         int32 CallbackMethod (
             int32 n
-        ) cil managed preservesig 
+        ) cil managed preservesig
     {
         .custom instance void [System.Runtime.InteropServices]System.Runtime.InteropServices.UnmanagedCallersOnlyAttribute::.ctor() = (
             01 00 00 00
         )
         .maxstack 8
-        IL_0000: ldstr "Functions with attribute UnmanagedCallersOnlyAttribute within a generic type are invalid"
-        IL_0005: newobj instance void [System.Runtime]System.Exception::.ctor(string)
-        IL_000a: throw
+        ldstr "Functions with attribute UnmanagedCallersOnlyAttribute within a generic type are invalid"
+        newobj instance void [System.Runtime]System.Exception::.ctor(string)
+        throw
     }
 
-    .method public hidebysig specialname rtspecialname 
-        instance void .ctor () cil managed 
+    .method public hidebysig specialname rtspecialname
+        instance void .ctor () cil managed
     {
         .maxstack 8
-        IL_0000: ldarg.0
-        IL_0001: call instance void [System.Runtime]System.Object::.ctor()
-        IL_0006: ret
+        ldarg.0
+        call instance void [System.Runtime]System.Object::.ctor()
+        ret
     }
 }
 
 .class public auto ansi beforefieldinit InvalidCSharp.Callbacks
     extends [System.Runtime]System.Object
 {
-    .method public hidebysig static 
+    .method public hidebysig static
         int32 CallbackMethodGeneric<T> (
             !!T arg
-        ) cil managed preservesig 
+        ) cil managed preservesig
     {
         .custom instance void [System.Runtime.InteropServices]System.Runtime.InteropServices.UnmanagedCallersOnlyAttribute::.ctor() = (
             01 00 00 00
         )
         .maxstack 8
-        IL_0000: ldstr "Functions with attribute UnmanagedCallersOnlyAttribute cannot have generic arguments"
-        IL_0005: newobj instance void [System.Runtime]System.Exception::.ctor(string)
-        IL_000a: throw
+        ldstr "Functions with attribute UnmanagedCallersOnlyAttribute cannot have generic arguments"
+        newobj instance void [System.Runtime]System.Exception::.ctor(string)
+        throw
     }
 
-    .method public hidebysig 
+    .method public hidebysig
         instance int32 CallbackNonStatic (
             int32 val
-        ) cil managed preservesig 
+        ) cil managed preservesig
     {
         .custom instance void [System.Runtime.InteropServices]System.Runtime.InteropServices.UnmanagedCallersOnlyAttribute::.ctor() = (
             01 00 00 00
         )
         .maxstack 8
-        IL_0000: ldstr "Instance functions with attribute UnmanagedCallersOnlyAttribute are invalid"
-        IL_0005: newobj instance void [System.Runtime]System.Exception::.ctor(string)
-        IL_000a: throw
+        ldstr "Instance functions with attribute UnmanagedCallersOnlyAttribute are invalid"
+        newobj instance void [System.Runtime]System.Exception::.ctor(string)
+        throw
     }
 
     .method public hidebysig static
@@ -79,87 +79,73 @@
         ret
     }
 
-    .method public hidebysig specialname rtspecialname 
-        instance void .ctor () cil managed 
+    .method public hidebysig specialname rtspecialname
+        instance void .ctor () cil managed
     {
         .maxstack 8
-        IL_0000: ldarg.0
-        IL_0001: call instance void [System.Runtime]System.Object::.ctor()
-        IL_0006: ret
+        ldarg.0
+        call instance void [System.Runtime]System.Object::.ctor()
+        ret
     }
 }
 
 .class public auto ansi beforefieldinit InvalidCSharp.CallingUnmanagedCallersOnlyDirectly
     extends [System.Runtime]System.Object
 {
-    .method public hidebysig specialname rtspecialname 
-        instance void .ctor () cil managed 
+    .method public hidebysig specialname rtspecialname
+        instance void .ctor () cil managed
     {
         .maxstack 8
-        IL_0000: ldarg.0
-        IL_0001: call instance void [System.Runtime]System.Object::.ctor()
-        IL_0006: ret
+        ldarg.0
+        call instance void [System.Runtime]System.Object::.ctor()
+        ret
     }
-    
-    .method public hidebysig static 
-	int32 ManagedDoubleCallback (
-		int32 n
-	) cil managed 
+
+    .method public hidebysig static
+    int32 ManagedDoubleCallback (
+        int32 n
+    ) cil managed
     {
         .custom instance void [System.Runtime.InteropServices]System.Runtime.InteropServices.UnmanagedCallersOnlyAttribute::.ctor() = (
             01 00 00 00
         )
         .maxstack 1
-        .locals init (
-            [0] int32
-        )
 
-        IL_0000: nop
-        IL_0001: ldarg.0
-        IL_0002: call int32 InvalidCSharp.CallingUnmanagedCallersOnlyDirectly::DoubleImpl(int32)
-        IL_0007: stloc.0
-        IL_0008: br.s IL_000a
-
-        IL_000a: ldloc.0
-        IL_000b: ret
+        nop
+        ldarg.0
+        call int32 InvalidCSharp.CallingUnmanagedCallersOnlyDirectly::DoubleImpl(int32)
+        ret
     }
-    
-    .method private hidebysig static 
+
+    .method private hidebysig static
         int32 DoubleImpl (
             int32 n
-        ) cil managed 
+        ) cil managed
     {
         .maxstack 2
-        .locals init (
-            [0] int32
-        )
 
-        IL_0000: nop
-        IL_0001: ldc.i4.2
-        IL_0002: ldarg.0
-        IL_0003: mul
-        IL_0004: stloc.0
-        IL_0005: br.s IL_0007
-
-        IL_0007: ldloc.0
-        IL_0008: ret
+        nop
+        ldc.i4.2
+        ldarg.0
+        mul
+        ret
     }
 
-    .method public hidebysig static 
-    class [System.Runtime]System.Func`2<int32, int32> GetDoubleDelegate () cil managed 
+    .method public hidebysig static
+    class [System.Runtime]System.Func`2<int32, int32> GetDoubleDelegate () cil managed
     {
         .maxstack 8
 
-        IL_0000: ldnull
-        IL_0001: ldftn int32 InvalidCSharp.CallingUnmanagedCallersOnlyDirectly::ManagedDoubleCallback(int32)
-        IL_0007: newobj instance void class [System.Runtime]System.Func`2<int32, int32>::.ctor(object, native int)
-        IL_000c: ret
+        ldnull
+        ldftn int32 InvalidCSharp.CallingUnmanagedCallersOnlyDirectly::ManagedDoubleCallback(int32)
+        newobj instance void class [System.Runtime]System.Func`2<int32, int32>::.ctor(object, native int)
+        ret
     }
 
-    .method public hidebysig static pinvokeimpl("UnmanagedCallersOnlyDll" as "DoesntExist" winapi) 
-	int32 PInvokeMarkedWithUnmanagedCallersOnly (
-		int32 n
-	) cil managed preservesig 
+    .method public hidebysig static pinvokeimpl("UnmanagedCallersOnlyDll" as "DoesntExist" winapi)
+    int32 PInvokeMarkedWithUnmanagedCallersOnly (
+        int32 n
+    ) cil managed preservesig
     {
         .custom instance void [System.Runtime.InteropServices]System.Runtime.InteropServices.UnmanagedCallersOnlyAttribute::.ctor() = (
             01 00 00 00
@@ -175,6 +161,83 @@
 
         ldarg.0
         call int32 InvalidCSharp.CallingUnmanagedCallersOnlyDirectly::PInvokeMarkedWithUnmanagedCallersOnly(int32)
+        ret
+    }
+}
+
+.class public auto ansi beforefieldinit InvalidCSharp.UnmanagedCallersOnlyWithByRefs
+    extends [System.Runtime]System.Object
+{
+    .method private hidebysig static
+        int32 WithByRef (
+            int32& val
+        ) cil managed
+    {
+        .custom instance void [System.Runtime.InteropServices]System.Runtime.InteropServices.UnmanagedCallersOnlyAttribute::.ctor() = (
+            01 00 00 00
+        )
+        .maxstack 8
+        ldstr "Functions with by-ref and attribute UnmanagedCallersOnlyAttribute are invalid"
+        newobj instance void [System.Runtime]System.Exception::.ctor(string)
+        throw
+    }
+    .method public hidebysig static
+        native int GetWithByRefFunctionPointer (
+        ) cil managed preservesig
+    {
+        .maxstack 8
+        ldftn int32 InvalidCSharp.UnmanagedCallersOnlyWithByRefs::WithByRef(int32&)
+        ret
+    }
+    .method private hidebysig static
+        int32 WithByRefIn (
+            [in] int32& val
+        ) cil managed
+    {
+        .custom instance void [System.Runtime.InteropServices]System.Runtime.InteropServices.UnmanagedCallersOnlyAttribute::.ctor() = (
+            01 00 00 00
+        )
+        .maxstack 8
+        ldstr "Functions with 'in' by-ref and attribute UnmanagedCallersOnlyAttribute are invalid"
+        newobj instance void [System.Runtime]System.Exception::.ctor(string)
+        throw
+    }
+    .method public hidebysig static
+        native int GetWithByRefInFunctionPointer (
+        ) cil managed preservesig
+    {
+        .maxstack 8
+        ldftn int32 InvalidCSharp.UnmanagedCallersOnlyWithByRefs::WithByRefIn([in] int32&)
+        ret
+    }
+    .method private hidebysig static
+        int32 WithByRefOut (
+            [out] int32& val
+        ) cil managed
+    {
+        .custom instance void [System.Runtime.InteropServices]System.Runtime.InteropServices.UnmanagedCallersOnlyAttribute::.ctor() = (
+            01 00 00 00
+        )
+        .maxstack 8
+        ldstr "Functions with 'out' by-ref and attribute UnmanagedCallersOnlyAttribute are invalid"
+        newobj instance void [System.Runtime]System.Exception::.ctor(string)
+        throw
+    }
+    .method public hidebysig static
+        native int GetWithByRefOutFunctionPointer (
+        ) cil managed preservesig
+    {
+        .maxstack 8
+        ldftn int32 InvalidCSharp.UnmanagedCallersOnlyWithByRefs::WithByRefOut([out] int32&)
+        ret
+    }
+
+    .method public hidebysig specialname rtspecialname
+        instance void .ctor () cil managed
+    {
+        .maxstack 8
+        ldarg.0
+        call instance void [System.Runtime]System.Object::.ctor()
         ret
     }
 }

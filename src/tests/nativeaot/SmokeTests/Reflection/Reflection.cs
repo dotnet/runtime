@@ -27,6 +27,7 @@ internal class ReflectionTest
         //
         // Tests for dependency graph in the compiler
         //
+        TestRunClassConstructor.Run();
 #if !OPTIMIZED_MODE_WITHOUT_SCANNER
         TestContainment.Run();
         TestInterfaceMethod.Run();
@@ -1651,6 +1652,26 @@ internal class ReflectionTest
                 throw new Exception();
 
             if (typeof(TypeWithCodelessMethods).GetMethods(BindingFlags.Public | BindingFlags.Static).Length != 1)
+                throw new Exception();
+        }
+    }
+
+    class TestRunClassConstructor
+    {
+        static class TypeWithNoStaticFieldsButACCtor
+        {
+            static TypeWithNoStaticFieldsButACCtor()
+            {
+                s_cctorRan = true;
+            }
+        }
+
+        private static bool s_cctorRan;
+
+        public static void Run()
+        {
+            RuntimeHelpers.RunClassConstructor(typeof(TypeWithNoStaticFieldsButACCtor).TypeHandle);
+            if (!s_cctorRan)
                 throw new Exception();
         }
     }

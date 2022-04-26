@@ -25,7 +25,7 @@ namespace System.Xml.Xsl.XsltOld
             Debug.Assert(processor != null && frame != null);
             Debug.Assert(frame.State == Initialized);
 
-            Action? action = null;
+            Action? action;
 
             if (this.mode != null)
             {
@@ -102,7 +102,7 @@ namespace System.Xml.Xsl.XsltOld
             Debug.Assert(frame.State == Initialized);
             Debug.Assert(processor.Debugger != null);
 
-            Action? action = null;
+            Action? action;
 
             if (this.mode == Compiler.BuiltInMode)
             {
@@ -126,10 +126,6 @@ namespace System.Xml.Xsl.XsltOld
             }
 
             // Built-int template rules
-            if (action == null && processor.RootAction!.builtInSheet != null)
-            {
-                action = processor.RootAction.builtInSheet.FindTemplate(processor, frame.Node!, Compiler.BuiltInMode);
-            }
             if (action == null)
             {
                 action = BuiltInTemplate(frame.Node!);

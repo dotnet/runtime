@@ -88,20 +88,20 @@ mono_inst_name (int op) {
 }
 
 void
-mono_blockset_print (MonoCompile *cfg, MonoBitSet *set, const char *name, guint idom) 
+mono_blockset_print (MonoCompile *cfg, MonoBitSet *set, const char *name, guint idom)
 {
 #ifndef DISABLE_LOGGING
 	int i;
 
 	if (name)
 		g_print ("%s:", name);
-	
+
 	mono_bitset_foreach_bit (set, i, cfg->num_bblocks) {
 		if (idom == i)
 			g_print (" [BB%d]", cfg->bblocks [i]->block_num);
 		else
 			g_print (" BB%d", cfg->bblocks [i]->block_num);
-		
+
 	}
 	g_print ("\n");
 #endif
@@ -129,11 +129,11 @@ mono_disassemble_code (MonoCompile *cfg, guint8 *code, int size, char *id)
 	int unused G_GNUC_UNUSED;
 
 #ifdef HOST_WIN32
-	as_file = g_strdup_printf ("%s/test.s", tmp);    
+	as_file = g_strdup_printf ("%s/test.s", tmp);
 
 	if (!(ofd = fopen (as_file, "w")))
 		g_assert_not_reached ();
-#else	
+#else
 	i = g_file_open_tmp (NULL, &as_file, NULL);
 	ofd = fdopen (i, "w");
 	g_assert (ofd);
@@ -148,6 +148,8 @@ mono_disassemble_code (MonoCompile *cfg, guint8 *code, int size, char *id)
 			fprintf (ofd, "%c", id [i]);
 	}
 	fprintf (ofd, ":\n");
+
+MONO_DISABLE_WARNING(4127) /* conditional expression is constant */
 
 	if (emit_debug_info && cfg != NULL) {
 		MonoBasicBlock *bb;
@@ -183,6 +185,8 @@ mono_disassemble_code (MonoCompile *cfg, guint8 *code, int size, char *id)
 	fprintf (ofd, "\n");
 	fclose (ofd);
 
+MONO_RESTORE_WARNING
+
 #ifdef __APPLE__
 #ifdef __ppc64__
 #define DIS_CMD "otool64 -v -t"
@@ -190,9 +194,7 @@ mono_disassemble_code (MonoCompile *cfg, guint8 *code, int size, char *id)
 #define DIS_CMD "otool -v -t"
 #endif
 #else
-#if defined(sparc) && !defined(__GNUC__)
-#define DIS_CMD "dis"
-#elif defined(TARGET_X86)
+#if defined(TARGET_X86)
 #define DIS_CMD "objdump -l -d"
 #elif defined(TARGET_AMD64)
   #if defined(HOST_WIN32)
@@ -205,9 +207,7 @@ mono_disassemble_code (MonoCompile *cfg, guint8 *code, int size, char *id)
 #endif
 #endif
 
-#if defined(sparc)
-#define AS_CMD "as -xarch=v9"
-#elif defined (TARGET_X86)
+#if defined (TARGET_X86)
 #  if defined(__APPLE__)
 #    define AS_CMD "as -arch i386"
 #  else
@@ -231,8 +231,6 @@ mono_disassemble_code (MonoCompile *cfg, guint8 *code, int size, char *id)
 #  else
 #    define AS_CMD "as -gstabs"
 #  endif
-#elif defined(__mips__) && (_MIPS_SIM == _ABIO32)
-#define AS_CMD "as -mips32"
 #elif defined(__ppc64__)
 #define AS_CMD "as -arch ppc64"
 #elif defined(__powerpc64__)
@@ -247,14 +245,14 @@ mono_disassemble_code (MonoCompile *cfg, guint8 *code, int size, char *id)
 
 #ifdef HOST_WIN32
 	o_file = g_strdup_printf ("%s/test.o", tmp);
-#else	
+#else
 	i = g_file_open_tmp (NULL, &o_file, NULL);
 	close (i);
 #endif
 
 #ifdef HAVE_SYSTEM
 	char *cmd = g_strdup_printf (ARCH_PREFIX AS_CMD " %s -o %s", as_file, o_file);
-	unused = system (cmd); 
+	unused = system (cmd);
 	g_free (cmd);
 	char *objdump_args = g_getenv ("MONO_OBJDUMP_ARGS");
 	if (!objdump_args)
@@ -263,8 +261,8 @@ mono_disassemble_code (MonoCompile *cfg, guint8 *code, int size, char *id)
 	fflush (stdout);
 
 #if (defined(__arm__) || defined(__aarch64__)) && !defined(TARGET_OSX)
-	/* 
-	 * The arm assembler inserts ELF directives instructing objdump to display 
+	/*
+	 * The arm assembler inserts ELF directives instructing objdump to display
 	 * everything as data.
 	 */
 	cmd = g_strdup_printf (ARCH_PREFIX "strip -s %s", o_file);

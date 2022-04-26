@@ -65,10 +65,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
 
         internal ObjectReader(Stream stream, ISurrogateSelector? selector, StreamingContext context, InternalFE formatterEnums, SerializationBinder? binder)
         {
-            if (stream == null)
-            {
-                throw new ArgumentNullException(nameof(stream));
-            }
+            ArgumentNullException.ThrowIfNull(stream);
 
             _stream = stream;
             _surrogates = selector;
@@ -80,10 +77,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
         [RequiresUnreferencedCode("Types might be removed")]
         internal object Deserialize(BinaryParser serParser)
         {
-            if (serParser == null)
-            {
-                throw new ArgumentNullException(nameof(serParser));
-            }
+            ArgumentNullException.ThrowIfNull(serParser);
 
             _fullDeserialization = false;
             TopObject = null;
@@ -136,8 +130,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
         }
         private bool HasSurrogate(Type t)
         {
-            ISurrogateSelector ignored;
-            return _surrogates != null && _surrogates.GetSurrogate(t, _context, out ignored) != null;
+            return _surrogates != null && _surrogates.GetSurrogate(t, _context, out _) != null;
         }
 
         private void CheckSerializable(Type t)
@@ -653,7 +646,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                         throw new SerializationException(SR.Serialization_ArrayTypeObject);
                     }
 
-                    object? var = null;
+                    object? var;
 
                     if (ReferenceEquals(pr._dtType, Converter.s_typeofString))
                     {
@@ -887,7 +880,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
             {
                 pr._isRegistered = true;
 
-                SerializationInfo? si = null;
+                SerializationInfo? si;
                 long parentId = 0;
                 MemberInfo? memberInfo = null;
                 int[]? indexMap = null;
@@ -944,7 +937,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                     _valTypeObjectIdTable = new IntSizedArray();
                 }
 
-                long tempObjId = 0;
+                long tempObjId;
                 if ((tempObjId = _valTypeObjectIdTable[(int)objectId]) == 0)
                 {
                     tempObjId = ThresholdForValueTypeIds + objectId;
@@ -993,7 +986,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                 }
 
                 Assembly? assm = null;
-                AssemblyName? assmName = null;
+                AssemblyName? assmName;
 
                 try
                 {

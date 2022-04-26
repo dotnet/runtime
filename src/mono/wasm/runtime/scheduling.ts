@@ -38,7 +38,7 @@ export function prevent_timer_throttling(): void {
     for (let schedule = next_reach_time; schedule < desired_reach_time; schedule += light_throttling_frequency) {
         const delay = schedule - now;
         setTimeout(() => {
-            cwraps.mono_set_timeout_exec(0);
+            cwraps.mono_set_timeout_exec();
             pump_count++;
             pump_message();
         }, delay);
@@ -52,9 +52,9 @@ export function schedule_background_exec(): void {
 }
 
 let lastScheduledTimeoutId: any = undefined;
-export function mono_set_timeout(timeout: number, id: number): void {
+export function mono_set_timeout(timeout: number): void {
     function mono_wasm_set_timeout_exec() {
-        cwraps.mono_set_timeout_exec(id);
+        cwraps.mono_set_timeout_exec();
     }
     if (lastScheduledTimeoutId) {
         clearTimeout(lastScheduledTimeoutId);

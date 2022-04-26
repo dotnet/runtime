@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Text.RegularExpressions
 {
@@ -11,16 +12,16 @@ namespace System.Text.RegularExpressions
         /// Splits the <paramref name="input "/>string at the position defined
         /// by <paramref name="pattern"/>.
         /// </summary>
-        public static string[] Split(string input, string pattern) =>
+        public static string[] Split(string input, [StringSyntax(StringSyntaxAttribute.Regex)] string pattern) =>
             RegexCache.GetOrAdd(pattern).Split(input);
 
         /// <summary>
         /// Splits the <paramref name="input "/>string at the position defined by <paramref name="pattern"/>.
         /// </summary>
-        public static string[] Split(string input, string pattern, RegexOptions options) =>
+        public static string[] Split(string input, [StringSyntax(StringSyntaxAttribute.Regex, "options")] string pattern, RegexOptions options) =>
             RegexCache.GetOrAdd(pattern, options, s_defaultMatchTimeout).Split(input);
 
-        public static string[] Split(string input, string pattern, RegexOptions options, TimeSpan matchTimeout) =>
+        public static string[] Split(string input, [StringSyntax(StringSyntaxAttribute.Regex, "options")] string pattern, RegexOptions options, TimeSpan matchTimeout) =>
             RegexCache.GetOrAdd(pattern, options, matchTimeout).Split(input);
 
         /// <summary>
@@ -34,7 +35,7 @@ namespace System.Text.RegularExpressions
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.input);
             }
 
-            return Split(this, input, 0, UseOptionR() ? input.Length : 0);
+            return Split(this, input, 0, RightToLeft ? input.Length : 0);
         }
 
         /// <summary>
@@ -48,7 +49,7 @@ namespace System.Text.RegularExpressions
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.input);
             }
 
-            return Split(this, input, count, UseOptionR() ? input.Length : 0);
+            return Split(this, input, count, RightToLeft ? input.Length : 0);
         }
 
         /// <summary>
@@ -89,7 +90,7 @@ namespace System.Text.RegularExpressions
 
             if (!regex.RightToLeft)
             {
-                regex.Run(input, startat, ref state, static (ref (List<string> results, int prevat, string input, int count) state, Match match) =>
+                regex.RunAllMatchesWithCallback(input, startat, ref state, static (ref (List<string> results, int prevat, string input, int count) state, Match match) =>
                 {
                     state.results.Add(state.input.Substring(state.prevat, match.Index - state.prevat));
                     state.prevat = match.Index + match.Length;
@@ -99,12 +100,12 @@ namespace System.Text.RegularExpressions
                     {
                         if (match.IsMatched(i))
                         {
-                            state.results.Add(match.Groups[i].ToString());
+                            state.results.Add(match.Groups[i].Value);
                         }
                     }
 
                     return --state.count != 0;
-                }, reuseMatchObject: true);
+                }, RegexRunnerMode.FullMatchRequired, reuseMatchObject: true);
 
                 if (state.results.Count == 0)
                 {
@@ -117,7 +118,7 @@ namespace System.Text.RegularExpressions
             {
                 state.prevat = input.Length;
 
-                regex.Run(input, startat, ref state, static (ref (List<string> results, int prevat, string input, int count) state, Match match) =>
+                regex.RunAllMatchesWithCallback(input, startat, ref state, static (ref (List<string> results, int prevat, string input, int count) state, Match match) =>
                 {
                     state.results.Add(state.input.Substring(match.Index + match.Length, state.prevat - match.Index - match.Length));
                     state.prevat = match.Index;
@@ -127,12 +128,12 @@ namespace System.Text.RegularExpressions
                     {
                         if (match.IsMatched(i))
                         {
-                            state.results.Add(match.Groups[i].ToString());
+                            state.results.Add(match.Groups[i].Value);
                         }
                     }
 
                     return --state.count != 0;
-                }, reuseMatchObject: true);
+                }, RegexRunnerMode.FullMatchRequired, reuseMatchObject: true);
 
                 if (state.results.Count == 0)
                 {

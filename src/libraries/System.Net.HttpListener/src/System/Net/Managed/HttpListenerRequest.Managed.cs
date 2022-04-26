@@ -394,8 +394,7 @@ namespace System.Net
 
         public X509Certificate2? EndGetClientCertificate(IAsyncResult asyncResult)
         {
-            if (asyncResult == null)
-                throw new ArgumentNullException(nameof(asyncResult));
+            ArgumentNullException.ThrowIfNull(asyncResult);
 
             GetClientCertificateAsyncResult? clientCertAsyncResult = asyncResult as GetClientCertificateAsyncResult;
             if (clientCertAsyncResult == null || clientCertAsyncResult.AsyncObject != this)
@@ -416,7 +415,7 @@ namespace System.Net
         public TransportContext TransportContext => new Context();
 
         private Uri? RequestUri => _requestUri;
-        private bool SupportsWebSockets => true;
+        private static bool SupportsWebSockets => true;
 
         private sealed class GetClientCertificateAsyncResult : LazyAsyncResult
         {

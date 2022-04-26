@@ -584,10 +584,7 @@ namespace System
         /// </summary>
         public static DateTimeOffset ConvertTime(DateTimeOffset dateTimeOffset, TimeZoneInfo destinationTimeZone)
         {
-            if (destinationTimeZone == null)
-            {
-                throw new ArgumentNullException(nameof(destinationTimeZone));
-            }
+            ArgumentNullException.ThrowIfNull(destinationTimeZone);
 
             // calculate the destination time zone offset
             DateTime utcDateTime = dateTimeOffset.UtcDateTime;
@@ -607,10 +604,7 @@ namespace System
         /// </summary>
         public static DateTime ConvertTime(DateTime dateTime, TimeZoneInfo destinationTimeZone)
         {
-            if (destinationTimeZone == null)
-            {
-                throw new ArgumentNullException(nameof(destinationTimeZone));
-            }
+            ArgumentNullException.ThrowIfNull(destinationTimeZone);
 
             // Special case to give a way clearing the cache without exposing ClearCachedData()
             if (dateTime.Ticks == 0)
@@ -636,15 +630,8 @@ namespace System
 
         private static DateTime ConvertTime(DateTime dateTime, TimeZoneInfo sourceTimeZone, TimeZoneInfo destinationTimeZone, TimeZoneInfoOptions flags, CachedData cachedData)
         {
-            if (sourceTimeZone == null)
-            {
-                throw new ArgumentNullException(nameof(sourceTimeZone));
-            }
-
-            if (destinationTimeZone == null)
-            {
-                throw new ArgumentNullException(nameof(destinationTimeZone));
-            }
+            ArgumentNullException.ThrowIfNull(sourceTimeZone);
+            ArgumentNullException.ThrowIfNull(destinationTimeZone);
 
             DateTimeKind sourceKind = cachedData.GetCorrespondingKind(sourceTimeZone);
             if (((flags & TimeZoneInfoOptions.NoThrowOnInvalidTime) == 0) && (dateTime.Kind != DateTimeKind.Unspecified) && (dateTime.Kind != sourceKind))
@@ -668,7 +655,6 @@ namespace System
                 sourceOffset += sourceRule.BaseUtcOffsetDelta;
                 if (sourceRule.HasDaylightSaving)
                 {
-                    bool sourceIsDaylightSavings = false;
                     DaylightTimeStruct sourceDaylightTime = sourceTimeZone.GetDaylightTime(dateTime.Year, sourceRule, sourceRuleIndex);
 
                     // 'dateTime' might be in an invalid time range since it is in an AdjustmentRule
@@ -677,7 +663,7 @@ namespace System
                     {
                         throw new ArgumentException(SR.Argument_DateTimeIsInvalid, nameof(dateTime));
                     }
-                    sourceIsDaylightSavings = GetIsDaylightSavings(dateTime, sourceRule, sourceDaylightTime);
+                    bool sourceIsDaylightSavings = GetIsDaylightSavings(dateTime, sourceRule, sourceDaylightTime);
 
                     // adjust the sourceOffset according to the Adjustment Rule / Daylight Saving Rule
                     sourceOffset += (sourceIsDaylightSavings ? sourceRule.DaylightDelta : TimeSpan.Zero /*FUTURE: sourceRule.StandardDelta*/);
@@ -760,10 +746,8 @@ namespace System
 
         public static TimeZoneInfo FromSerializedString(string source)
         {
-            if (source == null)
-            {
-                throw new ArgumentNullException(nameof(source));
-            }
+            ArgumentNullException.ThrowIfNull(source);
+
             if (source.Length == 0)
             {
                 throw new ArgumentException(SR.Format(SR.Argument_InvalidSerializedString, source), nameof(source));
@@ -822,10 +806,7 @@ namespace System
         /// </summary>
         public bool HasSameRules(TimeZoneInfo other)
         {
-            if (other == null)
-            {
-                throw new ArgumentNullException(nameof(other));
-            }
+            ArgumentNullException.ThrowIfNull(other);
 
             // check the utcOffset and supportsDaylightSavingTime members
             if (_baseUtcOffset != other._baseUtcOffset ||
@@ -1022,10 +1003,7 @@ namespace System
 
         void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
         {
-            if (info == null)
-            {
-                throw new ArgumentNullException(nameof(info));
-            }
+            ArgumentNullException.ThrowIfNull(info);
 
             info.AddValue("Id", _id); // Do not rename (binary serialization)
             info.AddValue("DisplayName", _displayName); // Do not rename (binary serialization)
@@ -1038,10 +1016,7 @@ namespace System
 
         private TimeZoneInfo(SerializationInfo info, StreamingContext context)
         {
-            if (info == null)
-            {
-                throw new ArgumentNullException(nameof(info));
-            }
+            ArgumentNullException.ThrowIfNull(info);
 
             _id = (string)info.GetValue("Id", typeof(string))!; // Do not rename (binary serialization)
             _displayName = (string?)info.GetValue("DisplayName", typeof(string)); // Do not rename (binary serialization)
@@ -1371,16 +1346,8 @@ namespace System
             DateTime startTime;
             if (rule.IsStartDateMarkerForBeginningOfYear() && daylightTime.Start.Year > DateTime.MinValue.Year)
             {
-                AdjustmentRule? previousYearRule = zone.GetAdjustmentRuleForTime(
-                    new DateTime(daylightTime.Start.Year - 1, 12, 31),
-                    out int? previousYearRuleIndex);
-                if (previousYearRule != null && previousYearRule.IsEndDateMarkerForEndOfYear())
+                if (TryGetStartOfDstIfYearEndWithDst(daylightTime.Start.Year - 1, utc, zone, out startTime))
                 {
-                    DaylightTimeStruct previousDaylightTime = zone.GetDaylightTime(
-                        daylightTime.Start.Year - 1,
-                        previousYearRule,
-                        previousYearRuleIndex);
-                    startTime = previousDaylightTime.Start - utc - previousYearRule.BaseUtcOffsetDelta;
                     ignoreYearAdjustment = true;
                 }
                 else
@@ -1397,24 +1364,8 @@ namespace System
             DateTime endTime;
             if (rule.IsEndDateMarkerForEndOfYear() && daylightTime.End.Year < DateTime.MaxValue.Year)
             {
-                AdjustmentRule? nextYearRule = zone.GetAdjustmentRuleForTime(
-                    new DateTime(daylightTime.End.Year + 1, 1, 1),
-                    out int? nextYearRuleIndex);
-                if (nextYearRule != null && nextYearRule.IsStartDateMarkerForBeginningOfYear())
+                if (TryGetEndOfDstIfYearStartWithDst(daylightTime.End.Year + 1, utc, zone, out endTime))
                 {
-                    if (nextYearRule.IsEndDateMarkerForEndOfYear())
-                    {
-                        // next year end with daylight saving on too
-                        endTime = new DateTime(daylightTime.End.Year + 1, 12, 31) - utc - nextYearRule.BaseUtcOffsetDelta - nextYearRule.DaylightDelta;
-                    }
-                    else
-                    {
-                        DaylightTimeStruct nextdaylightTime = zone.GetDaylightTime(
-                            daylightTime.End.Year + 1,
-                            nextYearRule,
-                            nextYearRuleIndex);
-                        endTime = nextdaylightTime.End - utc - nextYearRule.BaseUtcOffsetDelta - nextYearRule.DaylightDelta;
-                    }
                     ignoreYearAdjustment = true;
                 }
                 else
@@ -1477,6 +1428,82 @@ namespace System
             }
 
             return isDst;
+        }
+
+        // This method checks if a specific year start with DST, if so, will get when the DST ends that year and return true.
+        // Otherwise will return false.
+        private static bool TryGetEndOfDstIfYearStartWithDst(int nextYear, TimeSpan utc, TimeZoneInfo zone, out DateTime dstEnd)
+        {
+            AdjustmentRule? nextYearRule = zone.GetAdjustmentRuleForTime(new DateTime(nextYear, 1, 1), out int? nextYearRuleIndex);
+
+            // DST is not supported if the year doesn't have a rule.
+            if (nextYearRule is null)
+            {
+                dstEnd = default;
+                return false;
+            }
+
+            DaylightTimeStruct nextdaylightTime;
+
+            // If the year starts with DST on, calculate where it ends.
+            if (nextYearRule.IsStartDateMarkerForBeginningOfYear())
+            {
+                // Check if DST ends specified as Jan 1st, 12:00 AM which means the year will end with DST on.
+                if (nextYearRule.IsEndDateMarkerForEndOfYear())
+                {
+                    dstEnd = new DateTime(nextYear, 12, 31) - utc - nextYearRule.BaseUtcOffsetDelta - nextYearRule.DaylightDelta;
+                }
+                else
+                {
+                    // The year doesn't end with DST. Calculate the DST end date regularly as specified in the rule.
+                    nextdaylightTime = zone.GetDaylightTime(nextYear, nextYearRule, nextYearRuleIndex);
+                    dstEnd = nextdaylightTime.End - utc - nextYearRule.BaseUtcOffsetDelta - nextYearRule.DaylightDelta;
+                }
+
+                return true;
+            }
+
+            nextdaylightTime = zone.GetDaylightTime(nextYear, nextYearRule, nextYearRuleIndex);
+
+            // Check if we are dealing with a southern sphere time zone.
+            // If the rule specifies the DST end as of Jan 1st, 12:00 AM that means the year will end with DST on
+            // but also means the year not started with DST as we already checked that before.
+            if (nextdaylightTime.End < nextdaylightTime.Start && !nextYearRule.IsEndDateMarkerForEndOfYear())
+            {
+                // It is the Southern sphere time zone. The year is started with DST on. Use the DST end to get the when DST ends that year.
+                dstEnd =  nextdaylightTime.End - utc - nextYearRule.BaseUtcOffsetDelta - nextYearRule.DaylightDelta;
+                return true;
+            }
+
+            // The year is not starting with DST.
+            dstEnd = default;
+            return false;
+        }
+
+        // This method checks if a specific year end with DST, if so, will get when the DST starts that year and return true.
+        // Otherwise will return false.
+        private static bool TryGetStartOfDstIfYearEndWithDst(int previousYear, TimeSpan utc, TimeZoneInfo zone, out DateTime dstStart)
+        {
+            AdjustmentRule? previousYearRule = zone.GetAdjustmentRuleForTime(new DateTime(previousYear, 12, 31), out int? previousYearRuleIndex);
+
+            // DST is not supported if the year doesn't have a rule.
+            if (previousYearRule is null)
+            {
+                dstStart = default;
+                return false;
+            }
+
+            DaylightTimeStruct previousDaylightTime = zone.GetDaylightTime(previousYear, previousYearRule, previousYearRuleIndex);
+
+            // If the rule is specifying that the year ends with DST on or DST starts after it ends for the year (i.e. it is in the Southern hemisphere), calculate the time DST started
+            if (previousYearRule.IsEndDateMarkerForEndOfYear() || previousDaylightTime.Start > previousDaylightTime.End)
+            {
+                dstStart = previousDaylightTime.Start - utc - previousYearRule.BaseUtcOffsetDelta;
+                return true;
+            }
+
+            dstStart = default;
+            return false;
         }
 
         private static bool CheckIsDst(DateTime startTime, DateTime time, DateTime endTime, bool ignoreYearAdjustment, AdjustmentRule rule)
@@ -1972,15 +1999,7 @@ namespace System
         /// </summary>
         private static void ValidateTimeZoneInfo(string id, TimeSpan baseUtcOffset, AdjustmentRule[]? adjustmentRules, out bool adjustmentRulesSupportDst)
         {
-            if (id == null)
-            {
-                throw new ArgumentNullException(nameof(id));
-            }
-
-            if (id.Length == 0)
-            {
-                throw new ArgumentException(SR.Format(SR.Argument_InvalidId, id), nameof(id));
-            }
+            ArgumentException.ThrowIfNullOrEmpty(id);
 
             if (UtcOffsetOutOfRange(baseUtcOffset))
             {
@@ -2003,11 +2022,10 @@ namespace System
             if (adjustmentRules != null && adjustmentRules.Length != 0)
             {
                 adjustmentRulesSupportDst = true;
-                AdjustmentRule? prev = null;
                 AdjustmentRule? current = null;
                 for (int i = 0; i < adjustmentRules.Length; i++)
                 {
-                    prev = current;
+                    AdjustmentRule? prev = current;
                     current = adjustmentRules[i];
 
                     if (current == null)

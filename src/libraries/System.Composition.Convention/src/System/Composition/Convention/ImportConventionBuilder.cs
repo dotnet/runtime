@@ -30,10 +30,11 @@ namespace System.Composition.Convention
         /// <returns>An import builder allowing further configuration.</returns>
         public ImportConventionBuilder AsContractName(string contractName)
         {
-            if (contractName == null)
+            if (contractName is null)
             {
                 throw new ArgumentNullException(nameof(contractName));
             }
+
             if (contractName.Length == 0)
             {
                 throw new ArgumentException(SR.Format(SR.ArgumentException_EmptyString, nameof(contractName)), nameof(contractName));
@@ -49,7 +50,12 @@ namespace System.Composition.Convention
         /// <returns>An export builder allowing further configuration.</returns>
         public ImportConventionBuilder AsContractName(Func<Type, string> getContractNameFromPartType)
         {
-            _getContractNameFromPartType = getContractNameFromPartType ?? throw new ArgumentNullException(nameof(getContractNameFromPartType));
+            if (getContractNameFromPartType is null)
+            {
+                throw new ArgumentNullException(nameof(getContractNameFromPartType));
+            }
+
+            _getContractNameFromPartType = getContractNameFromPartType;
             return this;
         }
 
@@ -92,10 +98,11 @@ namespace System.Composition.Convention
         /// <returns>An import builder allowing further configuration.</returns>
         public ImportConventionBuilder AddMetadataConstraint(string name, object value)
         {
-            if (name == null)
+            if (name is null)
             {
                 throw new ArgumentNullException(nameof(name));
             }
+
             if (name.Length == 0)
             {
                 throw new ArgumentException(SR.Format(SR.ArgumentException_EmptyString, nameof(name)), nameof(name));
@@ -116,18 +123,18 @@ namespace System.Composition.Convention
         /// <returns>An export builder allowing further configuration.</returns>
         public ImportConventionBuilder AddMetadataConstraint(string name, Func<Type, object> getConstraintValueFromPartType)
         {
-            if (name == null)
+            if (name is null)
             {
                 throw new ArgumentNullException(nameof(name));
             }
+            if (getConstraintValueFromPartType is null)
+            {
+                throw new ArgumentNullException(nameof(getConstraintValueFromPartType));
+            }
+
             if (name.Length == 0)
             {
                 throw new ArgumentException(SR.Format(SR.ArgumentException_EmptyString, nameof(name)), nameof(name));
-            }
-
-            if (getConstraintValueFromPartType == null)
-            {
-                throw new ArgumentNullException(nameof(getConstraintValueFromPartType));
             }
 
             if (_metadataConstraintItemFuncs == null)
@@ -186,7 +193,7 @@ namespace System.Composition.Convention
             return;
         }
 
-        private bool IsSupportedImportManyType(TypeInfo typeInfo)
+        private static bool IsSupportedImportManyType(TypeInfo typeInfo)
         {
             return typeInfo.IsArray ||
                 (typeInfo.IsGenericTypeDefinition && s_supportedImportManyTypes.Contains(typeInfo.AsType())) ||

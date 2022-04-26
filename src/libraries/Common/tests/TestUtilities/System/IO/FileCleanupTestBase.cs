@@ -7,6 +7,7 @@ using System.Buffers;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Threading;
+using System.Text;
 
 namespace System.IO
 {
@@ -83,11 +84,12 @@ namespace System.IO
         protected string GetRandomLinkName() => GetTestFileName() + ".link";
         protected string GetRandomDirName()  => GetTestFileName() + "_dir";
 
-        protected string GetRandomFilePath() => Path.Combine(ActualTestDirectory.Value, GetRandomFileName());
-        protected string GetRandomLinkPath() => Path.Combine(ActualTestDirectory.Value, GetRandomLinkName());
-        protected string GetRandomDirPath()  => Path.Combine(ActualTestDirectory.Value, GetRandomDirName());
+        protected string GetRandomFilePath() => Path.Combine(TestDirectoryActualCasing, GetRandomFileName());
+        protected string GetRandomLinkPath() => Path.Combine(TestDirectoryActualCasing, GetRandomLinkName());
+        protected string GetRandomDirPath()  => Path.Combine(TestDirectoryActualCasing, GetRandomDirName());
 
-        private Lazy<string> ActualTestDirectory => new Lazy<string>(() => GetTestDirectoryActualCasing());
+        private string _testDirectoryActualCasing;
+        private string TestDirectoryActualCasing => _testDirectoryActualCasing ??= GetTestDirectoryActualCasing();
 
         /// <summary>Gets a test file full path that is associated with the call site.</summary>
         /// <param name="index">An optional index value to use as a suffix on the file name.  Typically a loop index.</param>
@@ -102,7 +104,7 @@ namespace System.IO
         /// <param name="lineNumber">The line number of the function calling this method.</param>
         protected string GetTestFileName(int? index = null, [CallerMemberName] string memberName = null, [CallerLineNumber] int lineNumber = 0)
         {
-            string testFileName = GenerateTestFileName(index, memberName, lineNumber);
+            string testFileName = PathGenerator.GenerateTestFileName(index, memberName, lineNumber);
             string testFilePath = Path.Combine(TestDirectory, testFileName);
 
             const int maxLength = 260 - 5; // Windows MAX_PATH minus a bit
@@ -120,7 +122,7 @@ namespace System.IO
                     int halfExcessLength = (int)Math.Ceiling((double)excessLength / 2);
                     memberName = memberName.Substring(0, halfMemberNameLength - halfExcessLength) + "..." + memberName.Substring(halfMemberNameLength + halfExcessLength);
 
-                    testFileName = GenerateTestFileName(index, memberName, lineNumber);
+                    testFileName = PathGenerator.GenerateTestFileName(index, memberName, lineNumber);
                     testFilePath = Path.Combine(TestDirectory, testFileName);
                 }
                 else
@@ -134,13 +136,37 @@ namespace System.IO
             return testFileName;
         }
 
-        private string GenerateTestFileName(int? index, string memberName, int lineNumber) =>
-            string.Format(
-                index.HasValue ? "{0}_{1}_{2}_{3}" : "{0}_{1}_{3}",
-                memberName ?? "TestBase",
-                lineNumber,
-                index.GetValueOrDefault(),
-                Guid.NewGuid().ToString("N").Substring(0, 8)); // randomness to avoid collisions between derived test classes using same base method concurrently
+        protected static string GetNamedPipeServerStreamName()
+        {
+            if (PlatformDetection.IsInAppContainer)
+            {
+                return @"LOCAL\" + Guid.NewGuid().ToString("N");
+            }
+
+            if (PlatformDetection.IsWindows)
+            {
+                return Guid.NewGuid().ToString("N");
+            }
+
+            if (!PlatformDetection.IsCaseSensitiveOS)
+            {
+                return $"/tmp/{Guid.NewGuid().ToString("N")}";
+            }
+
+            const int MinUdsPathLength = 104; // required min is 92, but every platform we currently target is at least 104
+            const int MinAvailableForSufficientRandomness = 5; // we want enough randomness in the name to avoid conflicts between concurrent tests
+            string prefix = Path.Combine(Path.GetTempPath(), "CoreFxPipe_");
+            int availableLength = MinUdsPathLength - prefix.Length - 1; // 1 - for possible null terminator
+            Assert.True(availableLength >= MinAvailableForSufficientRandomness, $"UDS prefix {prefix} length {prefix.Length} is too long");
+
+            StringBuilder sb = new(availableLength);
+            Random random = new Random();
+            for (int i = 0; i < availableLength; i++)
+            {
+                sb.Append((char)('a' + random.Next(0, 26)));
+            }
+            return sb.ToString();
+        }
 
         // Some Windows versions like Windows Nano Server have the %TEMP% environment variable set to "C:\TEMP" but the
         // actual folder name is "C:\Temp", which prevents asserting path values using Assert.Equal due to case sensitiveness.

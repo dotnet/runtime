@@ -9,9 +9,10 @@ using Xunit;
 
 namespace System.IO.Compression.Tests
 {
-    public class ZipFile_Unix : ZipFileTestBase
+    public partial class ZipFile_Unix : ZipFileTestBase
     {
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/68293", TestPlatforms.OSX)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/60581", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public void UnixCreateSetsPermissionsInExternalAttributes()
         {
@@ -196,7 +197,7 @@ namespace System.IO.Compression.Tests
             return expectedPermissions;
         }
 
-        [DllImport("libc", SetLastError = true)]
-        private static extern int mkfifo(string path, int mode);
+        [LibraryImport("libc", StringMarshalling = StringMarshalling.Utf8, SetLastError = true)]
+        private static partial int mkfifo(string path, int mode);
     }
 }

@@ -77,10 +77,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public int Add(ActiveDirectorySchemaProperty schemaProperty)
         {
-            if (schemaProperty == null)
-            {
-                throw new ArgumentNullException(nameof(schemaProperty));
-            }
+            ArgumentNullException.ThrowIfNull(schemaProperty);
 
             if (!schemaProperty.isBound)
             {
@@ -99,10 +96,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public void AddRange(ActiveDirectorySchemaProperty[] properties)
         {
-            if (properties == null)
-            {
-                throw new ArgumentNullException(nameof(properties));
-            }
+            ArgumentNullException.ThrowIfNull(properties);
 
             foreach (ActiveDirectorySchemaProperty property in properties)
             {
@@ -120,10 +114,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public void AddRange(ActiveDirectorySchemaPropertyCollection properties)
         {
-            if (properties == null)
-            {
-                throw new ArgumentNullException(nameof(properties));
-            }
+            ArgumentNullException.ThrowIfNull(properties);
 
             foreach (ActiveDirectorySchemaProperty property in properties)
             {
@@ -143,10 +134,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public void AddRange(ReadOnlyActiveDirectorySchemaPropertyCollection properties)
         {
-            if (properties == null)
-            {
-                throw new ArgumentNullException(nameof(properties));
-            }
+            ArgumentNullException.ThrowIfNull(properties);
 
             foreach (ActiveDirectorySchemaProperty property in properties)
             {
@@ -166,10 +154,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public void Remove(ActiveDirectorySchemaProperty schemaProperty)
         {
-            if (schemaProperty == null)
-            {
-                throw new ArgumentNullException(nameof(schemaProperty));
-            }
+            ArgumentNullException.ThrowIfNull(schemaProperty);
 
             if (!schemaProperty.isBound)
             {
@@ -190,10 +175,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public void Insert(int index, ActiveDirectorySchemaProperty schemaProperty)
         {
-            if (schemaProperty == null)
-            {
-                throw new ArgumentNullException(nameof(schemaProperty));
-            }
+            ArgumentNullException.ThrowIfNull(schemaProperty);
 
             if (!schemaProperty.isBound)
             {
@@ -212,10 +194,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public bool Contains(ActiveDirectorySchemaProperty schemaProperty)
         {
-            if (schemaProperty == null)
-            {
-                throw new ArgumentNullException(nameof(schemaProperty));
-            }
+            ArgumentNullException.ThrowIfNull(schemaProperty);
 
             if (!schemaProperty.isBound)
             {
@@ -255,10 +234,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public int IndexOf(ActiveDirectorySchemaProperty schemaProperty)
         {
-            if (schemaProperty == null)
-            {
-                throw new ArgumentNullException(nameof(schemaProperty));
-            }
+            ArgumentNullException.ThrowIfNull(schemaProperty);
 
             if (!schemaProperty.isBound)
             {
@@ -372,7 +348,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         protected override void OnValidate(object value)
         {
-            if (value == null) throw new ArgumentNullException(nameof(value));
+            ArgumentNullException.ThrowIfNull(value);
 
             if (!(value is ActiveDirectorySchemaProperty))
                 throw new ArgumentException(null, nameof(value));

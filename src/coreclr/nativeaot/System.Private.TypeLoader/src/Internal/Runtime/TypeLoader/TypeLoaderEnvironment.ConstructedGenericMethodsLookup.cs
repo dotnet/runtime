@@ -291,8 +291,6 @@ namespace Internal.Runtime.TypeLoader
 
         public bool TryGetGenericMethodComponents(IntPtr methodDictionary, out RuntimeTypeHandle declaringType, out MethodNameAndSignature nameAndSignature, out RuntimeTypeHandle[] genericMethodArgumentHandles)
         {
-            nameAndSignature = null;
-
             if (!TryGetDynamicGenericMethodComponents(methodDictionary, out declaringType, out nameAndSignature, out genericMethodArgumentHandles))
                 if (!TryGetStaticGenericMethodComponents(methodDictionary, out declaringType, out nameAndSignature, out genericMethodArgumentHandles))
                     return false;
@@ -363,9 +361,8 @@ namespace Internal.Runtime.TypeLoader
             }
 
             // If we cannot find an exact method entry point, look for an equivalent template and compute the generic dictinoary
-            TemplateLocator templateLocator = new TemplateLocator();
             NativeLayoutInfo nativeLayoutInfo = new NativeLayoutInfo();
-            InstantiatedMethod templateMethod = templateLocator.TryGetGenericMethodTemplate(method, out nativeLayoutInfo.Module, out nativeLayoutInfo.Offset);
+            InstantiatedMethod templateMethod = TemplateLocator.TryGetGenericMethodTemplate(method, out nativeLayoutInfo.Module, out nativeLayoutInfo.Offset);
             if (templateMethod == null)
                 return false;
 
@@ -446,7 +443,7 @@ namespace Internal.Runtime.TypeLoader
                 return true;
             }
         }
-        private bool TryGetStaticGenericMethodDictionaryForComponents(GenericMethodLookupData lookupData, out IntPtr result)
+        private static bool TryGetStaticGenericMethodDictionaryForComponents(GenericMethodLookupData lookupData, out IntPtr result)
         {
             // Search the hashtable for a generic instantiation match
 

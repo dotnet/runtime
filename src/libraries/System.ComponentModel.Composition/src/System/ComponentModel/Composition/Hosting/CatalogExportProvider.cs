@@ -24,10 +24,8 @@ namespace System.ComponentModel.Composition.Hosting
 
             public InnerCatalogExportProvider(CatalogExportProvider outerExportProvider)
             {
-                if (outerExportProvider == null)
-                {
-                    throw new ArgumentNullException(nameof(outerExportProvider));
-                }
+                ArgumentNullException.ThrowIfNull(outerExportProvider);
+
                 _outerExportProvider = outerExportProvider;
             }
 
@@ -568,10 +566,7 @@ namespace System.ComponentModel.Composition.Hosting
 
         private void DisposePart(object? exportedValue, CatalogPart catalogPart, AtomicComposition? atomicComposition)
         {
-            if (catalogPart == null)
-            {
-                throw new ArgumentNullException(nameof(catalogPart));
-            }
+            ArgumentNullException.ThrowIfNull(catalogPart);
 
             if (_isDisposed)
                 return;
@@ -622,15 +617,8 @@ namespace System.ComponentModel.Composition.Hosting
 
         private void PreventPartCollection(object exportedValue, ComposablePart part)
         {
-            if (exportedValue == null)
-            {
-                throw new ArgumentNullException(nameof(exportedValue));
-            }
-
-            if (part == null)
-            {
-                throw new ArgumentNullException(nameof(part));
-            }
+            ArgumentNullException.ThrowIfNull(exportedValue);
+            ArgumentNullException.ThrowIfNull(part);
 
             using (_lock.LockStateForWrite())
             {
@@ -833,7 +821,7 @@ namespace System.ComponentModel.Composition.Hosting
 
                     foreach (var import in definition.ImportDefinitions.Where(ImportEngine.IsRequiredImportForPreview))
                     {
-                        if (changedExports.Any(export => import.IsConstraintSatisfiedBy(export)))
+                        if (changedExports.Any(import.IsConstraintSatisfiedBy))
                         {
                             affectedRejections.Add(definition);
                             break;

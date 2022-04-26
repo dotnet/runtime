@@ -14,9 +14,6 @@
 #include <unistd.h>
 #include <minipal/utils.h>
 
-#undef PAGE_SIZE
-#define PAGE_SIZE (4096)
-
 auto test_strcpy = strcpy;
 auto test_strcmp = strcmp;
 auto test_strlen = strlen;
@@ -50,7 +47,7 @@ bool WriteHeaderInfo(const char *path, char sharedMemoryType, char version, int 
     if (fd == -1)
         return false;
     *fdRef = fd;
-    if (ftruncate(fd, PAGE_SIZE) != 0)
+    if (ftruncate(fd, getpagesize()) != 0)
         return false;
     if (lseek(fd, 0, SEEK_SET) != 0)
         return false;

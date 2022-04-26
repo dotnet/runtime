@@ -256,8 +256,7 @@ namespace System
         internal static TypeSpec Parse(string typeName)
         {
             int pos = 0;
-            if (typeName == null)
-                throw new ArgumentNullException(nameof(typeName));
+            ArgumentNullException.ThrowIfNull(typeName);
 
             TypeSpec res = Parse(typeName, ref pos, false, true);
             if (pos < typeName.Length)
@@ -303,104 +302,6 @@ namespace System
                 res.Append(c);
             }
             return res.ToString();
-        }
-
-        internal static bool NeedsEscaping(string internalName)
-        {
-            foreach (char c in internalName)
-            {
-                switch (c)
-                {
-                    case ',':
-                    case '+':
-                    case '*':
-                    case '&':
-                    case '[':
-                    case ']':
-                    case '\\':
-                        return true;
-                    default:
-                        break;
-                }
-            }
-            return false;
-        }
-
-        internal Type? Resolve(Func<AssemblyName, Assembly> assemblyResolver, Func<Assembly, string, bool, Type> typeResolver, bool throwOnError, bool ignoreCase, ref StackCrawlMark stackMark)
-        {
-            Assembly? asm = null;
-            if (assemblyResolver == null && typeResolver == null)
-                return RuntimeType.GetType(DisplayFullName, throwOnError, ignoreCase, ref stackMark);
-
-            if (assembly_name != null)
-            {
-                if (assemblyResolver != null)
-                    asm = assemblyResolver(new AssemblyName(assembly_name));
-                else
-                    asm = Assembly.Load(assembly_name);
-
-                if (asm == null)
-                {
-                    if (throwOnError)
-                        throw new FileNotFoundException("Could not resolve assembly '" + assembly_name + "'");
-                    return null;
-                }
-            }
-
-            Type? type = null;
-            if (typeResolver != null)
-                type = typeResolver(asm!, name!.DisplayName, ignoreCase);
-            else
-                type = asm!.GetType(name!.DisplayName, false, ignoreCase);
-            if (type == null)
-            {
-                if (throwOnError)
-                    throw new TypeLoadException("Could not resolve type '" + name + "'");
-                return null;
-            }
-
-            if (nested != null)
-            {
-                foreach (ITypeIdentifier? n in nested)
-                {
-                    Type? tmp = type.GetNestedType(n.DisplayName, BindingFlags.Public | BindingFlags.NonPublic);
-                    if (tmp == null)
-                    {
-                        if (throwOnError)
-                            throw new TypeLoadException("Could not resolve type '" + n + "'");
-                        return null;
-                    }
-                    type = tmp;
-                }
-            }
-
-            if (generic_params != null)
-            {
-                Type[] args = new Type[generic_params.Count];
-                for (int i = 0; i < args.Length; ++i)
-                {
-                    Type? tmp = generic_params[i].Resolve(assemblyResolver!, typeResolver!, throwOnError, ignoreCase, ref stackMark);
-                    if (tmp == null)
-                    {
-                        if (throwOnError)
-                            throw new TypeLoadException("Could not resolve type '" + generic_params[i].name + "'");
-                        return null;
-                    }
-                    args[i] = tmp;
-                }
-                type = type.MakeGenericType(args);
-            }
-
-            if (modifier_spec != null)
-            {
-                foreach (IModifierSpec? md in modifier_spec)
-                    type = md.Resolve(type);
-            }
-
-            if (is_byref)
-                type = type.MakeByRefType();
-
-            return type;
         }
 
         private void AddName(string type_name)

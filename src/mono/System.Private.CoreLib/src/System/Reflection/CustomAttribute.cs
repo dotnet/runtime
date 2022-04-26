@@ -138,10 +138,8 @@ namespace System.Reflection
 
         internal static object[] GetCustomAttributes(ICustomAttributeProvider obj, Type attributeType, bool inherit)
         {
-            if (obj == null)
-                throw new ArgumentNullException(nameof(obj));
-            if (attributeType == null)
-                throw new ArgumentNullException(nameof(attributeType));
+            ArgumentNullException.ThrowIfNull(obj);
+            ArgumentNullException.ThrowIfNull(attributeType);
             if (!attributeType.IsSubclassOf(typeof(Attribute)) && !attributeType.IsInterface
                 && attributeType != typeof(Attribute) && attributeType != typeof(CustomAttribute) && attributeType != typeof(object))
                 throw new ArgumentException(SR.Argument_MustHaveAttributeBaseClass + " " + attributeType.FullName);
@@ -196,7 +194,7 @@ namespace System.Reflection
             }
 
             int initialSize = Math.Max(res.Length, 16);
-            List<object>? a = null;
+            List<object>? a;
             ICustomAttributeProvider? btype = obj;
             object[] array;
 
@@ -299,8 +297,7 @@ namespace System.Reflection
 
         internal static object[] GetCustomAttributes(ICustomAttributeProvider obj, bool inherit)
         {
-            if (obj == null)
-                throw new ArgumentNullException(nameof(obj));
+            ArgumentNullException.ThrowIfNull(obj);
 
             if (!inherit)
                 return (object[])GetCustomAttributesBase(obj, null, false).Clone();
@@ -316,8 +313,7 @@ namespace System.Reflection
 
         internal static IList<CustomAttributeData> GetCustomAttributesData(ICustomAttributeProvider obj, bool inherit = false)
         {
-            if (obj == null)
-                throw new ArgumentNullException(nameof(obj));
+            ArgumentNullException.ThrowIfNull(obj);
 
             if (!inherit)
                 return GetCustomAttributesDataBase(obj, null, false);
@@ -327,10 +323,8 @@ namespace System.Reflection
 
         internal static IList<CustomAttributeData> GetCustomAttributesData(ICustomAttributeProvider obj, Type? attributeType, bool inherit)
         {
-            if (obj == null)
-                throw new ArgumentNullException(nameof(obj));
-            if (attributeType == null)
-                throw new ArgumentNullException(nameof(attributeType));
+            ArgumentNullException.ThrowIfNull(obj);
+            ArgumentNullException.ThrowIfNull(attributeType);
 
             if (attributeType == typeof(CustomAttribute))
                 attributeType = null;
@@ -371,7 +365,7 @@ namespace System.Reflection
             }
 
             int initialSize = Math.Max(res.Count, 16);
-            List<CustomAttributeData>? a = null;
+            List<CustomAttributeData>? a;
             ICustomAttributeProvider? btype = obj;
 
             /* Non-inherit case */
@@ -553,8 +547,7 @@ namespace System.Reflection
 
         internal static bool IsDefined(ICustomAttributeProvider obj, Type attributeType, bool inherit)
         {
-            if (attributeType == null)
-                throw new ArgumentNullException(nameof(attributeType));
+            ArgumentNullException.ThrowIfNull(attributeType);
             if (!attributeType.IsSubclassOf(typeof(Attribute)) && !attributeType.IsInterface && attributeType != typeof(Attribute))
                 throw new ArgumentException(SR.Argument_MustHaveAttributeBaseClass + " " + attributeType.FullName);
 
@@ -738,7 +731,7 @@ namespace System.Reflection
 
         private static AttributeUsageAttribute RetrieveAttributeUsage(Type attributeType)
         {
-            AttributeUsageAttribute? usageAttribute = null;
+            AttributeUsageAttribute? usageAttribute;
             /* Usage a thread-local cache to speed this up, since it is called a lot from GetCustomAttributes () */
             if (usage_cache == null)
                 usage_cache = new Dictionary<Type, AttributeUsageAttribute>();

@@ -52,7 +52,7 @@ void Assert(const char * expr, const char * file, uint32_t line_num, const char 
 
     char buffer[4096];
 
-    sprintf_s(buffer, COUNTOF(buffer),
+    sprintf_s(buffer, ARRAY_SIZE(buffer),
            "--------------------------------------------------\n"
            "Debug Assertion Violation\n\n"
            "%s%s%s"

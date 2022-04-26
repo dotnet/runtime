@@ -22,6 +22,7 @@ namespace ILCompiler
     public sealed class AnalysisBasedMetadataManager : GeneratingMetadataManager, ICompilationRootProvider
     {
         private readonly List<ModuleDesc> _modulesWithMetadata;
+        private readonly List<MetadataType> _typesWithRootedCctorContext;
 
         private readonly Dictionary<TypeDesc, MetadataCategory> _reflectableTypes = new Dictionary<TypeDesc, MetadataCategory>();
         private readonly Dictionary<MethodDesc, MetadataCategory> _reflectableMethods = new Dictionary<MethodDesc, MetadataCategory>();
@@ -33,7 +34,8 @@ namespace ILCompiler
                 new FullyBlockedManifestResourceBlockingPolicy(), null, new NoStackTraceEmissionPolicy(),
                 new NoDynamicInvokeThunkGenerationPolicy(), Array.Empty<ModuleDesc>(),
                 Array.Empty<ReflectableEntity<TypeDesc>>(), Array.Empty<ReflectableEntity<MethodDesc>>(),
-                Array.Empty<ReflectableEntity<FieldDesc>>(), Array.Empty<ReflectableCustomAttribute>())
+                Array.Empty<ReflectableEntity<FieldDesc>>(), Array.Empty<ReflectableCustomAttribute>(),
+                Array.Empty<MetadataType>())
         {
         }
 
@@ -48,10 +50,12 @@ namespace ILCompiler
             IEnumerable<ReflectableEntity<TypeDesc>> reflectableTypes,
             IEnumerable<ReflectableEntity<MethodDesc>> reflectableMethods,
             IEnumerable<ReflectableEntity<FieldDesc>> reflectableFields,
-            IEnumerable<ReflectableCustomAttribute> reflectableAttributes)
+            IEnumerable<ReflectableCustomAttribute> reflectableAttributes,
+            IEnumerable<MetadataType> rootedCctorContexts)
             : base(typeSystemContext, blockingPolicy, resourceBlockingPolicy, logFile, stackTracePolicy, invokeThunkGenerationPolicy)
         {
             _modulesWithMetadata = new List<ModuleDesc>(modulesWithMetadata);
+            _typesWithRootedCctorContext = new List<MetadataType>(rootedCctorContexts);
             
             foreach (var refType in reflectableTypes)
             {
@@ -208,6 +212,11 @@ namespace ILCompiler
                             rootProvider.RootNonGCStaticBaseForType(field.OwningType, reason);
                     }
                 }
+            }
+
+            foreach (var type in _typesWithRootedCctorContext)
+            {
+                rootProvider.RootNonGCStaticBaseForType(type, reason);
             }
         }
 

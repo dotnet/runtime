@@ -22,10 +22,8 @@ namespace System.IO.Compression
         // A specific constructor to allow decompression of Deflate64
         internal DeflateManagedStream(Stream stream, ZipArchiveEntry.CompressionMethodValues method, long uncompressedSize = -1)
         {
-            if (stream == null)
-                throw new ArgumentNullException(nameof(stream));
-            if (!stream.CanRead)
-                throw new ArgumentException(SR.NotSupported_UnreadableStream, nameof(stream));
+            ArgumentNullException.ThrowIfNull(stream);
+
             if (!stream.CanRead)
                 throw new ArgumentException(SR.NotSupported_UnreadableStream, nameof(stream));
 
@@ -312,16 +310,8 @@ namespace System.IO.Compression
                 finally
                 {
                     _stream = null!;
-
-                    try
-                    {
-                        _inflater?.Dispose();
-                    }
-                    finally
-                    {
-                        _inflater = null!;
-                        base.Dispose(disposing);
-                    }
+                    _inflater = null!;
+                    base.Dispose(disposing);
                 }
             }
         }

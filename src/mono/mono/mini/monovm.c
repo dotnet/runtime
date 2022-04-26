@@ -61,7 +61,7 @@ parse_trusted_platform_assemblies (const char *assemblies_paths)
 	a->basename_lens = g_new0 (uint32_t, asm_count + 1);
 	for (int i = 0; i < asm_count; ++i) {
 		a->basenames [i] = g_path_get_basename (a->assembly_filepaths [i]);
-		a->basename_lens [i] = strlen (a->basenames [i]);
+		a->basename_lens [i] = (uint32_t)strlen (a->basenames [i]);
 	}
 	a->basenames [asm_count] = NULL;
 	a->basename_lens [asm_count] = 0;
@@ -250,7 +250,7 @@ monovm_execute_assembly (int argc, const char **argv, const char *managedAssembl
 
 	char **mono_argv = (char **) malloc (sizeof (char *) * (mono_argc + 1 /* null terminated */));
 	const char **ptr = (const char **) mono_argv;
-	
+
 	*ptr++ = NULL;
 
 	// executable assembly
@@ -280,7 +280,7 @@ monovm_shutdown (int *latchedExitCode)
 
 static int
 monovm_create_delegate_impl (const char* assemblyName, const char* typeName, const char *methodName, void **delegate);
-	
+
 
 int
 monovm_create_delegate (const char *assemblyName, const char *typeName, const char *methodName, void **delegate)
@@ -289,7 +289,7 @@ monovm_create_delegate (const char *assemblyName, const char *typeName, const ch
 	/* monovm_create_delegate may be called instead of monovm_execute_assembly.  Initialize the
 	 * runtime if it isn't already. */
 	if (!mono_get_root_domain())
-		mini_init (assemblyName, "v4.0.30319");
+		mini_init (assemblyName);
 	MONO_ENTER_GC_UNSAFE;
 	result = monovm_create_delegate_impl (assemblyName, typeName, methodName, delegate);
 	MONO_EXIT_GC_UNSAFE;
@@ -337,7 +337,7 @@ monovm_create_delegate_impl (const char* assemblyName, const char* typeName, con
 
 	g_assert (t);
 	MonoClass *klass = mono_class_from_mono_type_internal (t);
-	
+
 
 	MonoMethod *method = mono_class_get_method_from_name_checked (klass, methodName, -1, 0, error);
 	goto_if_nok (error, fail);
@@ -346,7 +346,7 @@ monovm_create_delegate_impl (const char* assemblyName, const char* typeName, con
 		mono_error_set_not_supported (error, "MonoVM only supports UnmanagedCallersOnly implementations of hostfxr_get_runtime_delegate delegate types");
 		goto fail;
 	}
-	
+
 	MonoClass *delegate_klass = NULL;
 	MonoGCHandle target_handle = 0;
 	MonoMethod *wrapper = mono_marshal_get_managed_wrapper (method, delegate_klass, target_handle, error);

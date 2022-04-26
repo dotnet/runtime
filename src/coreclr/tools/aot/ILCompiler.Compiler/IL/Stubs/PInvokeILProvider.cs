@@ -30,9 +30,9 @@ namespace Internal.IL
             return PInvokeILEmitter.EmitIL(method, _pInvokeILEmitterConfiguration, _interopStateManager);
         }
 
-        public MethodDesc GetCalliStub(MethodSignature signature)
+        public MethodDesc GetCalliStub(MethodSignature signature, ModuleDesc moduleContext)
         {
-            return _interopStateManager.GetPInvokeCalliStub(signature);
+            return _interopStateManager.GetPInvokeCalliStub(signature, moduleContext);
         }
 
         public string GetDirectCallExternName(MethodDesc method)

@@ -217,9 +217,11 @@ struct escapeMapping_t
 // clang-format off
 static escapeMapping_t s_EscapeFileMapping[] =
 {
-    {':', "="},
-    {'<', "["},
-    {'>', "]"},
+    {' ', "_"},
+    {':', "_"},
+    {',', "_"},
+    {'<', "~lt~"},
+    {'>', "~gt~"},
     {';', "~semi~"},
     {'|', "~bar~"},
     {'&', "~amp~"},
@@ -431,7 +433,7 @@ void Compiler::fgDumpTree(FILE* fgxFile, GenTree* const tree)
 // Return Value:
 //    Opens a file to which a flowgraph can be dumped, whose name is based on the current
 //    config vales.
-
+//
 FILE* Compiler::fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, PhasePosition pos, LPCWSTR type)
 {
     FILE*       fgxFile;
@@ -441,7 +443,6 @@ FILE* Compiler::fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, PhasePositi
     LPCWSTR     filename         = nullptr;
     LPCWSTR     pathname         = nullptr;
     const char* escapedString;
-    bool        createDuplicateFgxFiles = true;
 
     if (fgBBcount <= 1)
     {
@@ -525,7 +526,6 @@ FILE* Compiler::fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, PhasePositi
     {
         if (fgFirstBB->hasProfileWeight())
         {
-            createDuplicateFgxFiles = true;
             goto ONE_FILE_PER_METHOD;
         }
         else
@@ -536,9 +536,7 @@ FILE* Compiler::fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, PhasePositi
     if (wcscmp(filename, W("hot")) == 0)
     {
         if (info.compMethodInfo->regionKind == CORINFO_REGION_HOT)
-
         {
-            createDuplicateFgxFiles = true;
             goto ONE_FILE_PER_METHOD;
         }
         else
@@ -550,7 +548,6 @@ FILE* Compiler::fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, PhasePositi
     {
         if (info.compMethodInfo->regionKind == CORINFO_REGION_COLD)
         {
-            createDuplicateFgxFiles = true;
             goto ONE_FILE_PER_METHOD;
         }
         else
@@ -562,7 +559,6 @@ FILE* Compiler::fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, PhasePositi
     {
         if (info.compMethodInfo->regionKind == CORINFO_REGION_JIT)
         {
-            createDuplicateFgxFiles = true;
             goto ONE_FILE_PER_METHOD;
         }
         else
@@ -572,15 +568,38 @@ FILE* Compiler::fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, PhasePositi
     }
     else if (wcscmp(filename, W("all")) == 0)
     {
-        createDuplicateFgxFiles = true;
 
     ONE_FILE_PER_METHOD:;
 
-        escapedString = fgProcessEscapes(info.compFullName, s_EscapeFileMapping);
+#define FILENAME_PATTERN W("%S-%S-%s-%S.%s")
+#define FILENAME_PATTERN_WITH_NUMBER W("%S-%S-%s-%S~%d.%s")
 
-        const char* tierName = compGetTieringName(true);
-        size_t      wCharCount =
-            strlen(escapedString) + wcslen(phaseName) + 1 + strlen("~999") + wcslen(type) + strlen(tierName) + 1;
+        const size_t MaxFileNameLength = MAX_PATH_FNAME - 20 /* give us some extra buffer */;
+
+        escapedString           = fgProcessEscapes(info.compFullName, s_EscapeFileMapping);
+        size_t escapedStringLen = strlen(escapedString);
+
+        static const char* phasePositionStrings[] = {"pre", "post"};
+        assert((unsigned)pos < ArrLen(phasePositionStrings));
+        const char*  phasePositionString    = phasePositionStrings[(unsigned)pos];
+        const size_t phasePositionStringLen = strlen(phasePositionString);
+        const char*  tierName               = compGetTieringName(true);
+        size_t       wCharCount = escapedStringLen + 1 + strlen(phasePositionString) + 1 + wcslen(phaseName) + 1 +
+                            strlen(tierName) + strlen("~999") + 1 + wcslen(type) + 1;
+
+        if (wCharCount > MaxFileNameLength)
+        {
+            // Crop the escapedString.
+            wCharCount -= escapedStringLen;
+            size_t newEscapedStringLen = MaxFileNameLength - wCharCount;
+            char*  newEscapedString    = getAllocator(CMK_DebugOnly).allocate<char>(newEscapedStringLen + 1);
+            strncpy_s(newEscapedString, newEscapedStringLen + 1, escapedString, newEscapedStringLen);
+            newEscapedString[newEscapedStringLen] = '\0';
+            escapedString                         = newEscapedString;
+            escapedStringLen                      = newEscapedStringLen;
+            wCharCount += escapedStringLen;
+        }
+
         if (pathname != nullptr)
         {
             wCharCount += wcslen(pathname) + 1;
@@ -589,48 +608,42 @@ FILE* Compiler::fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, PhasePositi
 
         if (pathname != nullptr)
         {
-            swprintf_s((LPWSTR)filename, wCharCount, W("%s\\%S-%s-%S.%s"), pathname, escapedString, phaseName, tierName,
-                       type);
+            swprintf_s((LPWSTR)filename, wCharCount, W("%s\\") FILENAME_PATTERN, pathname, escapedString,
+                       phasePositionString, phaseName, tierName, type);
         }
         else
         {
-            swprintf_s((LPWSTR)filename, wCharCount, W("%S.%s"), escapedString, type);
+            swprintf_s((LPWSTR)filename, wCharCount, FILENAME_PATTERN, escapedString, phasePositionString, phaseName,
+                       tierName, type);
         }
-        fgxFile = _wfopen(filename, W("r")); // Check if this file already exists
-        if (fgxFile != nullptr)
+        fgxFile = _wfopen(filename, W("wx")); // Open the file for writing only only if it doesn't already exist
+        if (fgxFile == nullptr)
         {
-            // For Generic methods we will have both hot and cold versions
-            if (createDuplicateFgxFiles == false)
-            {
-                fclose(fgxFile);
-                return nullptr;
-            }
-            // Yes, this filename already exists, so create a different one by appending ~2, ~3, etc...
+            // This filename already exists, so create a different one by appending ~2, ~3, etc...
             for (int i = 2; i < 1000; i++)
             {
-                fclose(fgxFile);
                 if (pathname != nullptr)
                 {
-                    swprintf_s((LPWSTR)filename, wCharCount, W("%s\\%S~%d.%s"), pathname, escapedString, i, type);
+                    swprintf_s((LPWSTR)filename, wCharCount, W("%s\\") FILENAME_PATTERN_WITH_NUMBER, pathname,
+                               escapedString, phasePositionString, phaseName, tierName, i, type);
                 }
                 else
                 {
-                    swprintf_s((LPWSTR)filename, wCharCount, W("%S~%d.%s"), escapedString, i, type);
+                    swprintf_s((LPWSTR)filename, wCharCount, FILENAME_PATTERN_WITH_NUMBER, escapedString,
+                               phasePositionString, phaseName, tierName, i, type);
                 }
-                fgxFile = _wfopen(filename, W("r")); // Check if this file exists
-                if (fgxFile == nullptr)
+                fgxFile = _wfopen(filename, W("wx")); // Open the file for writing only only if it doesn't already exist
+                if (fgxFile != nullptr)
                 {
                     break;
                 }
             }
             // If we have already created 1000 files with this name then just fail
-            if (fgxFile != nullptr)
+            if (fgxFile == nullptr)
             {
-                fclose(fgxFile);
                 return nullptr;
             }
         }
-        fgxFile      = _wfopen(filename, W("a+"));
         *wbDontClose = false;
     }
     else if (wcscmp(filename, W("stdout")) == 0)
@@ -2145,6 +2158,20 @@ void Compiler::fgTableDispBasicBlock(BasicBlock* block, int ibcColWidth /* = 0 *
 
     block->dspFlags();
 
+    // Display OSR info
+    //
+    if (opts.IsOSR())
+    {
+        if (block == fgEntryBB)
+        {
+            printf(" original-entry");
+        }
+        if (block == fgOSREntryBB)
+        {
+            printf(" osr-entry");
+        }
+    }
+
     printf("\n");
 }
 
@@ -2489,7 +2516,7 @@ bool BBPredsChecker::CheckEhTryDsc(BasicBlock* block, BasicBlock* blockPred, EHb
 bool BBPredsChecker::CheckEhHndDsc(BasicBlock* block, BasicBlock* blockPred, EHblkDsc* ehHndlDsc)
 {
     // You can do a BBJ_EHFINALLYRET or BBJ_EHFILTERRET into a handler region
-    if ((blockPred->bbJumpKind == BBJ_EHFINALLYRET) || (blockPred->bbJumpKind == BBJ_EHFILTERRET))
+    if (blockPred->KindIs(BBJ_EHFINALLYRET, BBJ_EHFILTERRET))
     {
         return true;
     }
@@ -2910,443 +2937,165 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
     }
 }
 
-/*****************************************************************************
- *
- * A DEBUG routine to check the that the exception flags are correctly set.
- *
- ****************************************************************************/
-
+//------------------------------------------------------------------------
+// fgDebugCheckFlags: Validate various invariants related to the propagation
+//                    and setting of tree flags ("gtFlags").
+//
+// Arguments:
+//    tree - the tree to (recursively) check the flags for
+//
 void Compiler::fgDebugCheckFlags(GenTree* tree)
 {
-    const genTreeOps oper      = tree->OperGet();
-    const unsigned   kind      = tree->OperKind();
-    GenTreeFlags     treeFlags = tree->gtFlags & GTF_ALL_EFFECT;
-    GenTreeFlags     chkFlags  = GTF_EMPTY;
+    GenTreeFlags actualFlags   = tree->gtFlags & GTF_ALL_EFFECT;
+    GenTreeFlags expectedFlags = GTF_EMPTY;
 
     if (tree->OperMayThrow(this))
     {
-        chkFlags |= GTF_EXCEPT;
+        expectedFlags |= GTF_EXCEPT;
     }
 
     if (tree->OperRequiresAsgFlag())
     {
-        chkFlags |= GTF_ASG;
+        expectedFlags |= GTF_ASG;
     }
 
     if (tree->OperRequiresCallFlag(this))
     {
-        chkFlags |= GTF_CALL;
+        expectedFlags |= GTF_CALL;
     }
 
-    /* Is this a leaf node? */
-
-    if (kind & GTK_LEAF)
+    if ((tree->gtFlags & GTF_REVERSE_OPS) != 0)
     {
-        switch (oper)
-        {
-            case GT_CLS_VAR:
-                chkFlags |= GTF_GLOB_REF;
-                break;
-
-            case GT_CATCH_ARG:
-                chkFlags |= GTF_ORDER_SIDEEFF;
-                break;
-
-            case GT_MEMORYBARRIER:
-                chkFlags |= GTF_GLOB_REF | GTF_ASG;
-                break;
-
-            case GT_LCL_VAR:
-                assert((tree->gtFlags & GTF_VAR_FOLDED_IND) == 0);
-                break;
-
-            default:
-                break;
-        }
+        assert(tree->OperSupportsReverseOpEvalOrder(this));
     }
 
-    /* Is it a 'simple' unary/binary operator? */
+    GenTree* op1 = tree->OperIsSimple() ? tree->gtGetOp1() : nullptr;
 
-    else if (kind & GTK_SMPOP)
+    switch (tree->OperGet())
     {
-        GenTree* op1 = tree->AsOp()->gtOp1;
-        GenTree* op2 = tree->gtGetOp2IfPresent();
+        case GT_CLS_VAR:
+            expectedFlags |= GTF_GLOB_REF;
+            break;
 
-        // During GS work, we make shadow copies for params.
-        // In gsParamsToShadows(), we create a shadow var of TYP_INT for every small type param.
-        // Then in gsReplaceShadowParams(), we change the gtLclNum to the shadow var.
-        // We also change the types of the local var tree and the assignment tree to TYP_INT if necessary.
-        // However, since we don't morph the tree at this late stage. Manually propagating
-        // TYP_INT up to the GT_ASG tree is only correct if we don't need to propagate the TYP_INT back up.
-        // The following checks will ensure this.
+        case GT_CATCH_ARG:
+            expectedFlags |= GTF_ORDER_SIDEEFF;
+            break;
 
-        // Is the left child of "tree" a GT_ASG?
+        case GT_MEMORYBARRIER:
+            expectedFlags |= (GTF_GLOB_REF | GTF_ASG);
+            break;
+
+        case GT_LCL_VAR:
+            assert((tree->gtFlags & GTF_VAR_FOLDED_IND) == 0);
+            break;
+
+        case GT_QMARK:
+            assert(!op1->CanCSE());
+            assert(op1->OperIsCompare() || op1->IsIntegralConst(0) || op1->IsIntegralConst(1));
+            break;
+
+        case GT_ASG:
+        case GT_ADDR:
+            // Note that this is a weak check - the "op1" location node can be a COMMA.
+            assert(!op1->CanCSE());
+            break;
+
+        case GT_IND:
+            // Do we have a constant integer address as op1 that is also a handle?
+            if (op1->IsCnsIntOrI() && op1->IsIconHandle())
+            {
+                if ((tree->gtFlags & GTF_IND_INVARIANT) != 0)
+                {
+                    actualFlags |= GTF_IND_INVARIANT;
+                }
+                if ((tree->gtFlags & GTF_IND_NONFAULTING) != 0)
+                {
+                    actualFlags |= GTF_IND_NONFAULTING;
+                }
+
+                GenTreeFlags handleKind = op1->GetIconHandleFlag();
+
+                // Some of these aren't handles to invariant data...
+                if ((handleKind == GTF_ICON_STATIC_HDL) || // Pointer to a mutable class Static variable
+                    (handleKind == GTF_ICON_BBC_PTR) ||    // Pointer to a mutable basic block count value
+                    (handleKind == GTF_ICON_GLOBAL_PTR))   // Pointer to mutable data from the VM state
+                {
+                    // For statics, we expect the GTF_GLOB_REF to be set. However, we currently
+                    // fail to set it in a number of situations, and so this check is disabled.
+                    // TODO: enable checking of GTF_GLOB_REF.
+                    // expectedFlags |= GTF_GLOB_REF;
+                }
+                else // All the other handle indirections are considered invariant
+                {
+                    expectedFlags |= GTF_IND_INVARIANT;
+                }
+
+                // Currently we expect all indirections with constant addresses to be nonfaulting.
+                expectedFlags |= GTF_IND_NONFAULTING;
+            }
+
+            assert(((tree->gtFlags & GTF_IND_TGT_NOT_HEAP) == 0) || ((tree->gtFlags & GTF_IND_TGT_HEAP) == 0));
+            break;
+
+        case GT_CALL:
+
+            GenTreeCall* call;
+
+            call = tree->AsCall();
+
+            for (CallArg& arg : call->gtArgs.Args())
+            {
+                // TODO-Cleanup: this is a patch for a violation in our GT_ASG propagation.
+                // see https://github.com/dotnet/runtime/issues/13758
+                if (arg.GetEarlyNode() != nullptr)
+                {
+                    actualFlags |= arg.GetEarlyNode()->gtFlags & GTF_ASG;
+                }
+
+                if (arg.GetLateNode() != nullptr)
+                {
+                    actualFlags |= arg.GetLateNode()->gtFlags & GTF_ASG;
+                }
+            }
+
+            break;
+
+        case GT_CMPXCHG:
+            expectedFlags |= (GTF_GLOB_REF | GTF_ASG);
+            break;
+
+        default:
+            break;
+    }
+
+    tree->VisitOperands([&](GenTree* operand) -> GenTree::VisitResult {
+
+        // ASGs are nodes that produce no value, but have a type (essentially, the type of the location).
+        // Validate that nodes that parent ASGs do not consume values. This check also ensures that code
+        // which updates location types ("gsParamsToShadows" replaces small LCL_VARs with TYP_INT ones)
+        // does not have to worry about propagating the new type "up the tree".
         //
-        // If parent is a TYP_VOID, we don't no need to propagate TYP_INT up. We are fine.
-        // (or) If GT_ASG is the left child of a GT_COMMA, the type of the GT_COMMA node will
-        // be determined by its right child. So we don't need to propagate TYP_INT up either. We are fine.
-        if (op1 && op1->gtOper == GT_ASG)
-        {
-            assert(tree->gtType == TYP_VOID || tree->gtOper == GT_COMMA);
-        }
-
-        // Is the right child of "tree" a GT_ASG?
+        // Uncoditionally allowing COMMA here weakens the assert, but is necessary because the compiler
+        // ("gtExtractSideEffList") can create "typed" "comma lists" with ASGs as second operands.
         //
-        // If parent is a TYP_VOID, we don't no need to propagate TYP_INT up. We are fine.
-        if (op2 && op2->gtOper == GT_ASG)
+        if (operand->OperIs(GT_ASG))
         {
-            // We can have ASGs on the RHS of COMMAs in setup arguments to a call.
-            assert(tree->gtType == TYP_VOID || tree->gtOper == GT_COMMA);
+            assert(tree->IsCall() || tree->OperIs(GT_COMMA));
         }
 
-        switch (oper)
-        {
-            case GT_QMARK:
-                if (op1->OperIsCompare())
-                {
-                    noway_assert(op1->gtFlags & GTF_DONT_CSE);
-                }
-                else
-                {
-                    noway_assert((op1->gtOper == GT_CNS_INT) &&
-                                 ((op1->AsIntCon()->gtIconVal == 0) || (op1->AsIntCon()->gtIconVal == 1)));
-                }
-                break;
+        fgDebugCheckFlags(operand);
+        expectedFlags |= (operand->gtFlags & GTF_ALL_EFFECT);
 
-            case GT_ADDR:
-                assert(!op1->CanCSE());
-                break;
+        return GenTree::VisitResult::Continue;
+    });
 
-            case GT_IND:
-                // Do we have a constant integer address as op1?
-                //
-                if (op1->OperGet() == GT_CNS_INT)
-                {
-                    // Is this constant a handle of some kind?
-                    //
-                    GenTreeFlags handleKind = (op1->gtFlags & GTF_ICON_HDL_MASK);
-                    if (handleKind != 0)
-                    {
-                        // Is the GTF_IND_INVARIANT flag set or unset?
-                        //
-                        bool invariantFlag = (tree->gtFlags & GTF_IND_INVARIANT) != 0;
-                        if (invariantFlag)
-                        {
-                            // Record the state of the GTF_IND_INVARIANT flags into 'chkFlags'
-                            chkFlags |= GTF_IND_INVARIANT;
-                        }
-
-                        // Is the GTF_IND_NONFAULTING flag set or unset?
-                        //
-                        bool nonFaultingFlag = (tree->gtFlags & GTF_IND_NONFAULTING) != 0;
-                        if (nonFaultingFlag)
-                        {
-                            // Record the state of the GTF_IND_NONFAULTING flags into 'chkFlags'
-                            chkFlags |= GTF_IND_NONFAULTING;
-                        }
-                        assert(nonFaultingFlag); // Currently this should always be set for all handle kinds
-
-                        // Some of these aren't handles to invariant data...
-                        //
-                        if ((handleKind == GTF_ICON_STATIC_HDL) || // Pointer to a mutable class Static variable
-                            (handleKind == GTF_ICON_BBC_PTR) ||    // Pointer to a mutable basic block count value
-                            (handleKind == GTF_ICON_GLOBAL_PTR))   // Pointer to mutable data from the VM state
-
-                        {
-                            // We expect the Invariant flag to be unset for this handleKind
-                            // If it is set then we will assert with "unexpected GTF_IND_INVARIANT flag set ...
-                            //
-                            if (handleKind == GTF_ICON_STATIC_HDL)
-                            {
-                                // We expect the GTF_GLOB_REF flag to be set for this handleKind
-                                // If it is not set then we will assert with "Missing flags on tree"
-                                //
-                                treeFlags |= GTF_GLOB_REF;
-                            }
-                        }
-                        else // All the other handle indirections are considered invariant
-                        {
-                            // We expect the Invariant flag to be set for this handleKind
-                            // If it is not set then we will assert with "Missing flags on tree"
-                            //
-                            treeFlags |= GTF_IND_INVARIANT;
-                        }
-
-                        // We currently expect all handle kinds to be nonFaulting
-                        //
-                        treeFlags |= GTF_IND_NONFAULTING;
-
-                        // Matrix for GTF_IND_INVARIANT (treeFlags and chkFlags)
-                        //
-                        //                    chkFlags INVARIANT value
-                        //                       0                 1
-                        //                 +--------------+----------------+
-                        //  treeFlags   0  |    OK        |  Missing Flag  |
-                        //  INVARIANT      +--------------+----------------+
-                        //  value:      1  |  Extra Flag  |       OK       |
-                        //                 +--------------+----------------+
-                    }
-                }
-                break;
-
-            case GT_ASG:
-            {
-                // Can't CSE dst.
-                assert((tree->gtGetOp1()->gtFlags & GTF_DONT_CSE) != 0);
-                break;
-            }
-            default:
-                break;
-        }
-
-        /* Recursively check the subtrees */
-
-        if (op1)
-        {
-            fgDebugCheckFlags(op1);
-        }
-        if (op2)
-        {
-            fgDebugCheckFlags(op2);
-        }
-
-        if (op1)
-        {
-            chkFlags |= (op1->gtFlags & GTF_ALL_EFFECT);
-        }
-        if (op2)
-        {
-            chkFlags |= (op2->gtFlags & GTF_ALL_EFFECT);
-        }
-
-        // We reuse the value of GTF_REVERSE_OPS for a GT_IND-specific flag,
-        // so exempt that (unary) operator.
-        if (tree->OperGet() != GT_IND && tree->gtFlags & GTF_REVERSE_OPS)
-        {
-            /* Must have two operands if GTF_REVERSE is set */
-            noway_assert(op1 && op2);
-
-            /* Make sure that the order of side effects has not been swapped. */
-
-            /* However CSE may introduce an assignment after the reverse flag
-               was set and thus GTF_ASG cannot be considered here. */
-
-            /* For a GT_ASG(GT_IND(x), y) we are interested in the side effects of x */
-            GenTree* op1p;
-            if ((oper == GT_ASG) && (op1->gtOper == GT_IND))
-            {
-                op1p = op1->AsOp()->gtOp1;
-            }
-            else
-            {
-                op1p = op1;
-            }
-
-            /* This isn't true any more with the sticky GTF_REVERSE */
-            /*
-            // if op1p has side effects, then op2 cannot have side effects
-            if (op1p->gtFlags & (GTF_SIDE_EFFECT & ~GTF_ASG))
-            {
-                if (op2->gtFlags & (GTF_SIDE_EFFECT & ~GTF_ASG))
-                    gtDispTree(tree);
-                noway_assert(!(op2->gtFlags & (GTF_SIDE_EFFECT & ~GTF_ASG)));
-            }
-            */
-        }
-
-        if (oper == GT_ADDR && (op1->OperIsLocal() || op1->gtOper == GT_CLS_VAR ||
-                                (op1->gtOper == GT_IND && op1->AsOp()->gtOp1->gtOper == GT_CLS_VAR_ADDR)))
-        {
-            /* &aliasedVar doesn't need GTF_GLOB_REF, though alisasedVar does.
-               Similarly for clsVar */
-            treeFlags |= GTF_GLOB_REF;
-        }
-    }
-
-    /* See what kind of a special operator we have here */
-
-    else
+    // ADDR nodes break the "parent flags >= operands flags" invariant for GTF_GLOB_REF.
+    if (tree->OperIs(GT_ADDR) && op1->OperIs(GT_LCL_VAR, GT_LCL_FLD, GT_CLS_VAR))
     {
-        switch (tree->OperGet())
-        {
-            case GT_CALL:
-
-                GenTreeCall* call;
-
-                call = tree->AsCall();
-
-                if (call->gtCallThisArg != nullptr)
-                {
-                    fgDebugCheckFlags(call->gtCallThisArg->GetNode());
-                    chkFlags |= (call->gtCallThisArg->GetNode()->gtFlags & GTF_SIDE_EFFECT);
-
-                    if ((call->gtCallThisArg->GetNode()->gtFlags & GTF_ASG) != 0)
-                    {
-                        // TODO-Cleanup: this is a patch for a violation in our GT_ASG propagation
-                        // see https://github.com/dotnet/runtime/issues/13758
-                        treeFlags |= GTF_ASG;
-                    }
-                }
-
-                for (GenTreeCall::Use& use : call->Args())
-                {
-                    fgDebugCheckFlags(use.GetNode());
-
-                    chkFlags |= (use.GetNode()->gtFlags & GTF_SIDE_EFFECT);
-
-                    if ((use.GetNode()->gtFlags & GTF_ASG) != 0)
-                    {
-                        // TODO-Cleanup: this is a patch for a violation in our GT_ASG propagation
-                        // see https://github.com/dotnet/runtime/issues/13758
-                        treeFlags |= GTF_ASG;
-                    }
-                }
-
-                for (GenTreeCall::Use& use : call->LateArgs())
-                {
-                    fgDebugCheckFlags(use.GetNode());
-
-                    chkFlags |= (use.GetNode()->gtFlags & GTF_SIDE_EFFECT);
-
-                    if ((use.GetNode()->gtFlags & GTF_ASG) != 0)
-                    {
-                        treeFlags |= GTF_ASG;
-                    }
-                }
-
-                if ((call->gtCallType == CT_INDIRECT) && (call->gtCallCookie != nullptr))
-                {
-                    fgDebugCheckFlags(call->gtCallCookie);
-                    chkFlags |= (call->gtCallCookie->gtFlags & GTF_SIDE_EFFECT);
-                }
-
-                if (call->gtCallType == CT_INDIRECT)
-                {
-                    fgDebugCheckFlags(call->gtCallAddr);
-                    chkFlags |= (call->gtCallAddr->gtFlags & GTF_SIDE_EFFECT);
-                }
-
-                if ((call->gtControlExpr != nullptr) && call->IsExpandedEarly() && call->IsVirtualVtable())
-                {
-                    fgDebugCheckFlags(call->gtControlExpr);
-                    chkFlags |= (call->gtControlExpr->gtFlags & GTF_SIDE_EFFECT);
-                }
-
-                if (call->IsUnmanaged() && (call->gtCallMoreFlags & GTF_CALL_M_UNMGD_THISCALL))
-                {
-                    if (call->gtCallArgs->GetNode()->OperGet() == GT_NOP)
-                    {
-                        noway_assert(call->gtCallLateArgs->GetNode()->TypeGet() == TYP_I_IMPL ||
-                                     call->gtCallLateArgs->GetNode()->TypeGet() == TYP_BYREF);
-                    }
-                    else
-                    {
-                        noway_assert(call->gtCallArgs->GetNode()->TypeGet() == TYP_I_IMPL ||
-                                     call->gtCallArgs->GetNode()->TypeGet() == TYP_BYREF);
-                    }
-                }
-                break;
-
-#if defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
-#if defined(FEATURE_SIMD)
-            case GT_SIMD:
-#endif
-#if defined(FEATURE_HW_INTRINSICS)
-            case GT_HWINTRINSIC:
-#endif
-                // TODO-List-Cleanup: consider using the general Operands() iterator
-                // here for the "special" nodes to reduce code duplication.
-                for (GenTree* operand : tree->AsMultiOp()->Operands())
-                {
-                    fgDebugCheckFlags(operand);
-                    chkFlags |= (operand->gtFlags & GTF_ALL_EFFECT);
-                }
-                break;
-#endif // defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
-
-            case GT_ARR_ELEM:
-
-                GenTree* arrObj;
-                unsigned dim;
-
-                arrObj = tree->AsArrElem()->gtArrObj;
-                fgDebugCheckFlags(arrObj);
-                chkFlags |= (arrObj->gtFlags & GTF_ALL_EFFECT);
-
-                for (dim = 0; dim < tree->AsArrElem()->gtArrRank; dim++)
-                {
-                    fgDebugCheckFlags(tree->AsArrElem()->gtArrInds[dim]);
-                    chkFlags |= tree->AsArrElem()->gtArrInds[dim]->gtFlags & GTF_ALL_EFFECT;
-                }
-                break;
-
-            case GT_ARR_OFFSET:
-
-                fgDebugCheckFlags(tree->AsArrOffs()->gtOffset);
-                chkFlags |= (tree->AsArrOffs()->gtOffset->gtFlags & GTF_ALL_EFFECT);
-                fgDebugCheckFlags(tree->AsArrOffs()->gtIndex);
-                chkFlags |= (tree->AsArrOffs()->gtIndex->gtFlags & GTF_ALL_EFFECT);
-                fgDebugCheckFlags(tree->AsArrOffs()->gtArrObj);
-                chkFlags |= (tree->AsArrOffs()->gtArrObj->gtFlags & GTF_ALL_EFFECT);
-                break;
-
-            case GT_PHI:
-                for (GenTreePhi::Use& use : tree->AsPhi()->Uses())
-                {
-                    fgDebugCheckFlags(use.GetNode());
-                    chkFlags |= (use.GetNode()->gtFlags & GTF_ALL_EFFECT);
-                }
-                break;
-
-            case GT_FIELD_LIST:
-                for (GenTreeFieldList::Use& use : tree->AsFieldList()->Uses())
-                {
-                    fgDebugCheckFlags(use.GetNode());
-                    chkFlags |= (use.GetNode()->gtFlags & GTF_ALL_EFFECT);
-                }
-                break;
-
-            case GT_CMPXCHG:
-
-                chkFlags |= (GTF_GLOB_REF | GTF_ASG);
-                GenTreeCmpXchg* cmpXchg;
-                cmpXchg = tree->AsCmpXchg();
-                fgDebugCheckFlags(cmpXchg->gtOpLocation);
-                chkFlags |= (cmpXchg->gtOpLocation->gtFlags & GTF_ALL_EFFECT);
-                fgDebugCheckFlags(cmpXchg->gtOpValue);
-                chkFlags |= (cmpXchg->gtOpValue->gtFlags & GTF_ALL_EFFECT);
-                fgDebugCheckFlags(cmpXchg->gtOpComparand);
-                chkFlags |= (cmpXchg->gtOpComparand->gtFlags & GTF_ALL_EFFECT);
-                break;
-
-            case GT_STORE_DYN_BLK:
-            case GT_DYN_BLK:
-
-                GenTreeDynBlk* dynBlk;
-                dynBlk = tree->AsDynBlk();
-                fgDebugCheckFlags(dynBlk->gtDynamicSize);
-                chkFlags |= (dynBlk->gtDynamicSize->gtFlags & GTF_ALL_EFFECT);
-                fgDebugCheckFlags(dynBlk->Addr());
-                chkFlags |= (dynBlk->Addr()->gtFlags & GTF_ALL_EFFECT);
-                if (tree->OperGet() == GT_STORE_DYN_BLK)
-                {
-                    fgDebugCheckFlags(dynBlk->Data());
-                    chkFlags |= (dynBlk->Data()->gtFlags & GTF_ALL_EFFECT);
-                }
-                break;
-
-            default:
-
-#ifdef DEBUG
-                gtDispTree(tree);
-#endif
-
-                assert(!"Unknown operator for fgDebugCheckFlags");
-                break;
-        }
+        expectedFlags &= ~GTF_GLOB_REF;
     }
 
-    fgDebugCheckFlagsHelper(tree, treeFlags, chkFlags);
+    fgDebugCheckFlagsHelper(tree, actualFlags, expectedFlags);
 }
 
 //------------------------------------------------------------------------------
@@ -3374,20 +3123,17 @@ void Compiler::fgDebugCheckDispFlags(GenTree* tree, GenTreeFlags dispFlags, GenT
 // fgDebugCheckFlagsHelper : Check if all bits that are set in chkFlags are also set in treeFlags.
 //
 // Arguments:
-//    tree      - Tree whose flags are being checked
-//    treeFlags - Actual flags on the tree
-//    chkFlags  - Expected flags
+//    tree          - Tree whose flags are being checked
+//    actualFlags   - Actual flags on the tree
+//    expectedFlags - Expected flags
 //
-// Note:
-//    Checking that all bits that are set in treeFlags are also set in chkFlags is currently disabled.
-//
-void Compiler::fgDebugCheckFlagsHelper(GenTree* tree, GenTreeFlags treeFlags, GenTreeFlags chkFlags)
+void Compiler::fgDebugCheckFlagsHelper(GenTree* tree, GenTreeFlags actualFlags, GenTreeFlags expectedFlags)
 {
-    if (chkFlags & ~treeFlags)
+    if (expectedFlags & ~actualFlags)
     {
         // Print the tree so we can see it in the log.
         printf("Missing flags on tree [%06d]: ", dspTreeID(tree));
-        Compiler::fgDebugCheckDispFlags(tree, chkFlags & ~treeFlags, GTF_DEBUG_NONE);
+        Compiler::fgDebugCheckDispFlags(tree, expectedFlags & ~actualFlags, GTF_DEBUG_NONE);
         printf("\n");
         gtDispTree(tree);
 
@@ -3395,21 +3141,21 @@ void Compiler::fgDebugCheckFlagsHelper(GenTree* tree, GenTreeFlags treeFlags, Ge
 
         // Print the tree again so we can see it right after we hook up the debugger.
         printf("Missing flags on tree [%06d]: ", dspTreeID(tree));
-        Compiler::fgDebugCheckDispFlags(tree, chkFlags & ~treeFlags, GTF_DEBUG_NONE);
+        Compiler::fgDebugCheckDispFlags(tree, expectedFlags & ~actualFlags, GTF_DEBUG_NONE);
         printf("\n");
         gtDispTree(tree);
     }
-    else if (treeFlags & ~chkFlags)
+    else if (actualFlags & ~expectedFlags)
     {
         // We can't/don't consider these flags (GTF_GLOB_REF or GTF_ORDER_SIDEEFF) as being "extra" flags
         //
         GenTreeFlags flagsToCheck = ~GTF_GLOB_REF & ~GTF_ORDER_SIDEEFF;
 
-        if ((treeFlags & ~chkFlags & flagsToCheck) != 0)
+        if ((actualFlags & ~expectedFlags & flagsToCheck) != 0)
         {
             // Print the tree so we can see it in the log.
             printf("Extra flags on tree [%06d]: ", dspTreeID(tree));
-            Compiler::fgDebugCheckDispFlags(tree, treeFlags & ~chkFlags, GTF_DEBUG_NONE);
+            Compiler::fgDebugCheckDispFlags(tree, actualFlags & ~expectedFlags, GTF_DEBUG_NONE);
             printf("\n");
             gtDispTree(tree);
 
@@ -3417,7 +3163,7 @@ void Compiler::fgDebugCheckFlagsHelper(GenTree* tree, GenTreeFlags treeFlags, Ge
 
             // Print the tree again so we can see it right after we hook up the debugger.
             printf("Extra flags on tree [%06d]: ", dspTreeID(tree));
-            Compiler::fgDebugCheckDispFlags(tree, treeFlags & ~chkFlags, GTF_DEBUG_NONE);
+            Compiler::fgDebugCheckDispFlags(tree, actualFlags & ~expectedFlags, GTF_DEBUG_NONE);
             printf("\n");
             gtDispTree(tree);
         }
@@ -3779,12 +3525,22 @@ void Compiler::fgDebugCheckNodesUniqueness()
 //    - If the method has natural loops, the loop table is not null
 //    - Loop `top` must come before `bottom`.
 //    - Loop `entry` must be between `top` and `bottom`.
+//    - Children loops of a loop are disjoint.
 //    - All basic blocks with loop numbers set have a corresponding loop in the table
 //    - All basic blocks without a loop number are not in a loop
 //    - All parents of the loop with the block contain that block
+//    - If the loop has a pre-header, it is valid
+//    - The loop flags are valid
 //
 void Compiler::fgDebugCheckLoopTable()
 {
+#ifdef DEBUG
+    if (verbose)
+    {
+        printf("*************** In fgDebugCheckLoopTable\n");
+    }
+#endif // DEBUG
+
     if (optLoopCount > 0)
     {
         assert(optLoopTable != nullptr);
@@ -3900,8 +3656,38 @@ void Compiler::fgDebugCheckLoopTable()
             assert(loop.lpExit == nullptr);
         }
 
-        if (loop.lpParent != BasicBlock::NOT_IN_LOOP)
+        if (loop.lpParent == BasicBlock::NOT_IN_LOOP)
         {
+            // This is a top-level loop.
+
+            // Verify all top-level loops are disjoint. We don't have a list of just these (such as a
+            // top-level pseudo-loop entry with a list of all top-level lists), so we have to iterate
+            // over the entire loop table.
+            for (unsigned j = 0; j < optLoopCount; j++)
+            {
+                if (i == j)
+                {
+                    // Don't compare against ourselves.
+                    continue;
+                }
+                const LoopDsc& otherLoop = optLoopTable[j];
+                if (otherLoop.lpFlags & LPFLG_REMOVED)
+                {
+                    continue;
+                }
+                if (otherLoop.lpParent != BasicBlock::NOT_IN_LOOP)
+                {
+                    // Only consider top-level loops
+                    continue;
+                }
+                assert(MappedChecks::lpDisjoint(blockNumMap, &loop, otherLoop));
+            }
+        }
+        else
+        {
+            // This is not a top-level loop
+
+            assert(loop.lpParent != BasicBlock::NOT_IN_LOOP);
             assert(loop.lpParent < optLoopCount);
             assert(loop.lpParent < i); // outer loops come before inner loops in the table
             const LoopDsc& parentLoop = optLoopTable[loop.lpParent];
@@ -3919,10 +3705,12 @@ void Compiler::fgDebugCheckLoopTable()
                 assert(child < optLoopCount);
                 assert(i < child); // outer loops come before inner loops in the table
                 const LoopDsc& childLoop = optLoopTable[child];
-                if ((childLoop.lpFlags & LPFLG_REMOVED) == 0) // removed child loop might still be in table
+                if (childLoop.lpFlags & LPFLG_REMOVED) // removed child loop might still be in table
                 {
-                    assert(MappedChecks::lpContains(blockNumMap, &loop, childLoop));
+                    continue;
                 }
+                assert(MappedChecks::lpContains(blockNumMap, &loop, childLoop));
+                assert(childLoop.lpParent == i);
             }
 
             // Verify all child loops are disjoint.
@@ -3979,6 +3767,35 @@ void Compiler::fgDebugCheckLoopTable()
                     assert(MappedChecks::lpContains(blockNumMap, &loop, predBlock));
                 }
             }
+
+            loop.lpValidatePreHeader();
+        }
+
+        // Check the flags.
+        // Note that the various limit flags are only used when LPFLG_ITER is set, but they are set first,
+        // separately, and only if everything works out is LPFLG_ITER set. If LPFLG_ITER is NOT set, the
+        // individual flags are not un-set (arguably, they should be).
+
+        // Only one of the `limit` flags can be set. (Note that LPFLG_SIMD_LIMIT is a "sub-flag" that can be
+        // set when LPFLG_CONST_LIMIT is set.)
+        assert(genCountBits((unsigned)(loop.lpFlags & (LPFLG_VAR_LIMIT | LPFLG_CONST_LIMIT | LPFLG_ARRLEN_LIMIT))) <=
+               1);
+
+        // LPFLG_SIMD_LIMIT can only be set if LPFLG_CONST_LIMIT is set.
+        if (loop.lpFlags & LPFLG_SIMD_LIMIT)
+        {
+            assert(loop.lpFlags & LPFLG_CONST_LIMIT);
+        }
+
+        if (loop.lpFlags & LPFLG_CONST_INIT)
+        {
+            assert(loop.lpInitBlock != nullptr);
+        }
+
+        if (loop.lpFlags & LPFLG_ITER)
+        {
+            loop.VERIFY_lpIterTree();
+            loop.VERIFY_lpTestTree();
         }
     }
 

@@ -67,8 +67,7 @@ namespace Internal.Runtime.CallConverter
             CorElementType typeReturnType = thReturnType.GetCorElementType();
 
             bool usesReturnBuffer;
-            uint fpReturnSizeIgnored;
-            ArgIterator.ComputeReturnValueTreatment(typeReturnType, thReturnType, methodWithReturnTypeIsVarArg, out usesReturnBuffer, out fpReturnSizeIgnored);
+            ArgIterator.ComputeReturnValueTreatment(typeReturnType, thReturnType, methodWithReturnTypeIsVarArg, out usesReturnBuffer, out _);
 
             return usesReturnBuffer;
         }
@@ -111,6 +110,7 @@ namespace Internal.Runtime.CallConverter
                 return (uint)IntPtr.Size;
         }
 
+#pragma warning disable CA1822
         public bool RequiresAlign8()
         {
 #if !TARGET_ARM
@@ -152,6 +152,7 @@ namespace Internal.Runtime.CallConverter
 #endif
             return CorElementType.ELEMENT_TYPE_R4;
         }
+#pragma warning restore CA1822
 
         public CorElementType GetCorElementType()
         {
@@ -617,7 +618,7 @@ namespace Internal.Runtime.CallConverter
 
                     case CorElementType.ELEMENT_TYPE_VALUETYPE:
                         {
-                            // On ProjectN valuetypes of integral size are passed enregistered
+                            // Valuetypes of integral size are passed enregistered
                             int structSize = TypeHandle.GetElemSize(typ, thArgType);
                             switch (structSize)
                             {
@@ -1356,7 +1357,7 @@ namespace Internal.Runtime.CallConverter
             if (this.HasRetBuffArg() && IsRetBuffPassedAsFirstArg())
             {
                 // DESKTOP BEHAVIOR                numRegistersUsed++;
-                // On ProjectN ret buff arg is passed on the call stack as the top stack arg
+                // ret buff arg is passed on the call stack as the top stack arg
                 nSizeOfArgStack += IntPtr.Size;
             }
 

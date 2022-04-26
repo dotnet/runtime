@@ -45,6 +45,8 @@ extern PGET_GCMARKER_EXCEPTION_CODE g_getGcMarkerExceptionCode;
 #define CONTEXT_ALL_FLOATING CONTEXT_FLOATING_POINT
 #elif defined(HOST_ARM64)
 #define CONTEXT_ALL_FLOATING CONTEXT_FLOATING_POINT
+#elif defined(HOST_LOONGARCH64)
+#define CONTEXT_ALL_FLOATING CONTEXT_FLOATING_POINT
 #elif defined(HOST_S390X)
 #define CONTEXT_ALL_FLOATING CONTEXT_FLOATING_POINT
 #else
@@ -170,6 +172,45 @@ typedef int __ptrace_request;
 	ASSIGN_REG(X26)     \
 	ASSIGN_REG(X27)     \
 	ASSIGN_REG(X28)
+
+#elif defined(HOST_LOONGARCH64)
+#define ASSIGN_CONTROL_REGS  \
+        ASSIGN_REG(Fp)      \
+        ASSIGN_REG(Sp)      \
+        ASSIGN_REG(Ra)      \
+        ASSIGN_REG(Pc)
+
+
+#define ASSIGN_INTEGER_REGS \
+	ASSIGN_REG(R0)     \
+	ASSIGN_REG(Tp)     \
+	ASSIGN_REG(A0)     \
+	ASSIGN_REG(A1)     \
+	ASSIGN_REG(A2)     \
+	ASSIGN_REG(A3)     \
+	ASSIGN_REG(A4)     \
+	ASSIGN_REG(A5)     \
+	ASSIGN_REG(A6)     \
+	ASSIGN_REG(A7)     \
+	ASSIGN_REG(T0)     \
+	ASSIGN_REG(T1)     \
+	ASSIGN_REG(T2)     \
+	ASSIGN_REG(T3)     \
+	ASSIGN_REG(T4)     \
+	ASSIGN_REG(T5)     \
+	ASSIGN_REG(T6)     \
+	ASSIGN_REG(T7)     \
+	ASSIGN_REG(T8)     \
+	ASSIGN_REG(S0)     \
+	ASSIGN_REG(S1)     \
+	ASSIGN_REG(S2)     \
+	ASSIGN_REG(S3)     \
+	ASSIGN_REG(S4)     \
+	ASSIGN_REG(S5)     \
+	ASSIGN_REG(S6)     \
+	ASSIGN_REG(S7)     \
+	ASSIGN_REG(S8)     \
+	ASSIGN_REG(X0)
 
 #elif defined(HOST_S390X)
 #define ASSIGN_CONTROL_REGS \
@@ -462,7 +503,7 @@ void CONTEXTToNativeContext(CONST CONTEXT *lpContext, native_context_t *native)
 #undef ASSIGN_REG
 
 #if !HAVE_FPREGS_WITH_CW
-#if (HAVE_GREGSET_T || HAVE___GREGSET_T) && !defined(HOST_S390X)
+#if (HAVE_GREGSET_T || HAVE___GREGSET_T) && !defined(HOST_S390X) && !defined(HOST_LOONGARCH64)
 #if HAVE_GREGSET_T
     if (native->uc_mcontext.fpregs == nullptr)
 #elif HAVE___GREGSET_T
@@ -474,7 +515,7 @@ void CONTEXTToNativeContext(CONST CONTEXT *lpContext, native_context_t *native)
         // whether CONTEXT_FLOATING_POINT is set in the CONTEXT's flags.
         return;
     }
-#endif // (HAVE_GREGSET_T || HAVE___GREGSET_T) && !HOST_S390X
+#endif // (HAVE_GREGSET_T || HAVE___GREGSET_T) && !HOST_S390X && !HOST_LOONGARCH64
 #endif // !HAVE_FPREGS_WITH_CW
 
     if ((lpContext->ContextFlags & CONTEXT_FLOATING_POINT) == CONTEXT_FLOATING_POINT)
@@ -539,6 +580,11 @@ void CONTEXTToNativeContext(CONST CONTEXT *lpContext, native_context_t *native)
         fpregset_t *fp = &native->uc_mcontext.fpregs;
         static_assert_no_msg(sizeof(fp->fprs) == sizeof(lpContext->Fpr));
         memcpy(fp->fprs, lpContext->Fpr, sizeof(lpContext->Fpr));
+#elif defined(HOST_LOONGARCH64)
+        for (int i = 0; i < 32; i++)
+        {
+            native->uc_mcontext.__fpregs[i].__val64[0] = lpContext->F[i];
+        }
 #endif
     }
 
@@ -592,7 +638,7 @@ void CONTEXTFromNativeContext(const native_context_t *native, LPCONTEXT lpContex
 #undef ASSIGN_REG
 
 #if !HAVE_FPREGS_WITH_CW
-#if (HAVE_GREGSET_T || HAVE___GREGSET_T) && !defined(HOST_S390X)
+#if (HAVE_GREGSET_T || HAVE___GREGSET_T) && !defined(HOST_S390X) && !defined(HOST_LOONGARCH64)
 #if HAVE_GREGSET_T
     if (native->uc_mcontext.fpregs == nullptr)
 #elif HAVE___GREGSET_T
@@ -684,6 +730,12 @@ void CONTEXTFromNativeContext(const native_context_t *native, LPCONTEXT lpContex
         const fpregset_t *fp = &native->uc_mcontext.fpregs;
         static_assert_no_msg(sizeof(fp->fprs) == sizeof(lpContext->Fpr));
         memcpy(lpContext->Fpr, fp->fprs, sizeof(lpContext->Fpr));
+#elif defined(HOST_LOONGARCH64)
+        lpContext->Fcsr = native->uc_mcontext.__fcsr;
+        for (int i = 0; i < 32; i++)
+        {
+            lpContext->F[i] = native->uc_mcontext.__fpregs[i].__val64[0];
+        }
 #endif
     }
 
@@ -733,6 +785,8 @@ LPVOID GetNativeContextPC(const native_context_t *context)
     return (LPVOID) MCREG_Pc(context->uc_mcontext);
 #elif defined(HOST_ARM64)
     return (LPVOID) MCREG_Pc(context->uc_mcontext);
+#elif defined(HOST_LOONGARCH64)
+    return (LPVOID) MCREG_Pc(context->uc_mcontext);
 #elif defined(HOST_S390X)
     return (LPVOID) MCREG_PSWAddr(context->uc_mcontext);
 #else
@@ -762,6 +816,8 @@ LPVOID GetNativeContextSP(const native_context_t *context)
 #elif defined(HOST_ARM)
     return (LPVOID) MCREG_Sp(context->uc_mcontext);
 #elif defined(HOST_ARM64)
+    return (LPVOID) MCREG_Sp(context->uc_mcontext);
+#elif defined(HOST_LOONGARCH64)
     return (LPVOID) MCREG_Sp(context->uc_mcontext);
 #elif defined(HOST_S390X)
     return (LPVOID) MCREG_R15(context->uc_mcontext);

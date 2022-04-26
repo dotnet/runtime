@@ -152,7 +152,7 @@ namespace System.Xml.Schema
                     schemaIndex--;
                 }
 
-                for (int i = schemaIndex; schemaIndex >= 0; schemaIndex--)
+                for (; schemaIndex >= 0; schemaIndex--)
                 {
                     listSchema = (XmlSchema)_lockList.GetByIndex(schemaIndex)!;
                     listSchema.IsProcessing = false; //Reset processing flag from Preprocess
@@ -170,7 +170,7 @@ namespace System.Xml.Schema
             return !HasErrors;
         }
 
-        private void Cleanup(XmlSchema schema)
+        private static void Cleanup(XmlSchema schema)
         {
             if (schema == Preprocessor.GetBuildInSchema())
             {
@@ -188,7 +188,7 @@ namespace System.Xml.Schema
             schema.IsCompiledBySet = false;
         }
 
-        private void CleanupRedefine(XmlSchemaExternal include)
+        private static void CleanupRedefine(XmlSchemaExternal include)
         {
             XmlSchemaRedefine rdef = (include as XmlSchemaRedefine)!;
             rdef.AttributeGroups.Clear();
@@ -344,7 +344,7 @@ namespace System.Xml.Schema
 
                 if (_schemaLocations![ruri] == null)
                 { // Only if location already not processed
-                    object? obj = null;
+                    object? obj;
                     try
                     {
                         obj = GetSchemaEntity(ruri);
@@ -534,7 +534,7 @@ namespace System.Xml.Schema
 
         private void Preprocess(XmlSchema schema, string? targetNamespace, ArrayList imports)
         {
-            XmlSchema? prevRootSchemaForRedefine = null;
+            XmlSchema? prevRootSchemaForRedefine;
             if (schema.IsProcessing)
             {
                 return;
@@ -2184,7 +2184,7 @@ namespace System.Xml.Schema
             return chameleonSchema;
         }
 
-        private void SetParent(XmlSchemaObject child, XmlSchemaObject parent)
+        private static void SetParent(XmlSchemaObject child, XmlSchemaObject parent)
         {
             child.Parent = parent;
         }

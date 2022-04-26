@@ -54,7 +54,7 @@ namespace System.Formats.Cbor.Tests
         public static void WriteTextString_NullValue_ShouldThrowArgumentNullException()
         {
             var writer = new CborWriter();
-            Assert.Throws<ArgumentNullException>(() => writer.WriteTextString(null!));
+            Assert.Throws<ArgumentNullException>(() => writer.WriteTextString((string)null!));
         }
 
         [Theory]

@@ -8,28 +8,32 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
+.assembly extern xunit.core {}
 .assembly extern mscorlib
 {
   .ver 0:0:0:0
 }
-.assembly extern common {}
-.assembly test
+.assembly extern eh_common {}
+.assembly 'catchtryintryfinally'
 {
   .ver 0:0:0:0
 }
-.module test.exe
 .imagebase 0x00400000
 .subsystem 0x00000003
 .file alignment 512
 .corflags 0x00000001
+.class public auto ansi Test_catchtryintryfinally extends [mscorlib] System.Object {
 .method public static int32  main() cil managed
 {
+  .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+      01 00 00 00
+  )
   .entrypoint
   .maxstack  400
   .locals init (int32 V_0,
            int32 V_1,
 			class [mscorlib]System.IO.StringWriter expectedOut,
-			class [common]TestUtil.TestLog testLog
+			class [eh_common]TestUtil.TestLog testLog
 	)
     newobj     instance void [mscorlib]System.IO.StringWriter::.ctor()
     stloc.s    expectedOut
@@ -46,11 +50,11 @@
     ldstr      "In finally"
     callvirt   instance void [mscorlib]System.IO.TextWriter::WriteLine(string)
     ldloc.s    expectedOut
-    newobj     instance void [common]TestUtil.TestLog::.ctor(object)
+    newobj     instance void [eh_common]TestUtil.TestLog::.ctor(object)
     stloc.s    testLog
 
     ldloc.s    testLog
-    callvirt   instance void [common]TestUtil.TestLog::StartRecording()    
+    callvirt   instance void [eh_common]TestUtil.TestLog::StartRecording()    
   IL_0000:  ldc.i4     0xffff63c0
   IL_0005:  stloc.0
 
@@ -81,9 +85,10 @@
   }  
   IL_0031:  
     ldloc.s    testLog
-    callvirt   instance void [common]TestUtil.TestLog::StopRecording()
+    callvirt   instance void [eh_common]TestUtil.TestLog::StopRecording()
   
     ldloc.s    testLog
-    callvirt   instance int32 [common]TestUtil.TestLog::VerifyOutput()
+    callvirt   instance int32 [eh_common]TestUtil.TestLog::VerifyOutput()
     ret
 } 
+}

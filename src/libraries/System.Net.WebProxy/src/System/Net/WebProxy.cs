@@ -20,9 +20,9 @@ namespace System.Net
 
         public WebProxy(Uri? Address, bool BypassOnLocal) : this(Address, BypassOnLocal, null, null) { }
 
-        public WebProxy(Uri? Address, bool BypassOnLocal, string[]? BypassList) : this(Address, BypassOnLocal, BypassList, null) { }
+        public WebProxy(Uri? Address, bool BypassOnLocal, [StringSyntax(StringSyntaxAttribute.Regex, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)] string[]? BypassList) : this(Address, BypassOnLocal, BypassList, null) { }
 
-        public WebProxy(Uri? Address, bool BypassOnLocal, string[]? BypassList, ICredentials? Credentials)
+        public WebProxy(Uri? Address, bool BypassOnLocal, [StringSyntax(StringSyntaxAttribute.Regex, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)] string[]? BypassList, ICredentials? Credentials)
         {
             this.Address = Address;
             this.Credentials = Credentials;
@@ -49,12 +49,12 @@ namespace System.Net
         {
         }
 
-        public WebProxy(string? Address, bool BypassOnLocal, string[]? BypassList)
+        public WebProxy(string? Address, bool BypassOnLocal, [StringSyntax(StringSyntaxAttribute.Regex, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)] string[]? BypassList)
             : this(CreateProxyUri(Address), BypassOnLocal, BypassList, null)
         {
         }
 
-        public WebProxy(string? Address, bool BypassOnLocal, string[]? BypassList, ICredentials? Credentials)
+        public WebProxy(string? Address, bool BypassOnLocal, [StringSyntax(StringSyntaxAttribute.Regex, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)] string[]? BypassList, ICredentials? Credentials)
             : this(CreateProxyUri(Address), BypassOnLocal, BypassList, Credentials)
         {
         }
@@ -94,10 +94,7 @@ namespace System.Net
 
         public Uri? GetProxy(Uri destination)
         {
-            if (destination == null)
-            {
-                throw new ArgumentNullException(nameof(destination));
-            }
+            ArgumentNullException.ThrowIfNull(destination);
 
             return IsBypassed(destination) ? destination : Address;
         }
@@ -178,10 +175,7 @@ namespace System.Net
 
         public bool IsBypassed(Uri host)
         {
-            if (host == null)
-            {
-                throw new ArgumentNullException(nameof(host));
-            }
+            ArgumentNullException.ThrowIfNull(host);
 
             return
                 Address == null ||

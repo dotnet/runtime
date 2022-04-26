@@ -20,13 +20,14 @@ namespace System.IO.MemoryMappedFiles.Tests
             return pageSize;
         });
 
-        [DllImport("kernel32.dll")]
-        private static extern bool GetHandleInformation(IntPtr hObject, out uint lpdwFlags);
+        [LibraryImport("kernel32.dll")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static partial bool GetHandleInformation(IntPtr hObject, out uint lpdwFlags);
 
         private const uint HANDLE_FLAG_INHERIT = 0x00000001;
 
-        [DllImport("kernel32.dll")]
-        private static extern void GetSystemInfo(out SYSTEM_INFO input);
+        [LibraryImport("kernel32.dll")]
+        private static partial void GetSystemInfo(out SYSTEM_INFO input);
 
         [StructLayout(LayoutKind.Sequential)]
         private struct SYSTEM_INFO
@@ -43,10 +44,9 @@ namespace System.IO.MemoryMappedFiles.Tests
             internal short wProcessorRevision;
         }
 
-        protected static int geteuid()
-        {
-            throw new PlatformNotSupportedException();
-        }
+        protected static int geteuid() => throw new PlatformNotSupportedException();
+
+        protected static int mkfifo(string path, int mode) => throw new PlatformNotSupportedException();
 
         /// <summary>Asserts that the handle's inheritability matches the specified value.</summary>
         protected static void AssertInheritability(SafeHandle handle, HandleInheritability inheritability)

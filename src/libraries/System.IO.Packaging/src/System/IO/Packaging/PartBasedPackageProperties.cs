@@ -438,7 +438,7 @@ namespace System.IO.Packaging
             if (corePropertiesRelationship.TargetMode != TargetMode.Internal)
                 throw new FileFormatException(SR.NoExternalTargetForMetadataRelationship);
 
-            PackagePart? propertiesPart = null;
+            PackagePart? propertiesPart;
             Uri propertiesPartUri = PackUriHelper.ResolvePartUri(
                 PackUriHelper.PackageRootUri,
                 corePropertiesRelationship.TargetUri);
@@ -631,7 +631,7 @@ namespace System.IO.Packaging
         }
 
         // Expect to find text data and return its value.
-        private string GetStringData(XmlReader reader)
+        private static string GetStringData(XmlReader reader)
         {
             if (reader.IsEmptyElement)
                 return string.Empty;
@@ -651,7 +651,7 @@ namespace System.IO.Packaging
         }
 
         // Expect to find text data and return its value as DateTime.
-        private Nullable<DateTime> GetDateData(XmlReader reader)
+        private static DateTime GetDateData(XmlReader reader)
         {
             string data = GetStringData(reader);
             DateTime dateTime;
@@ -723,7 +723,7 @@ namespace System.IO.Packaging
                 CoreDocumentPropertiesRelationshipType);
         }
 
-        private Uri GeneratePropertyPartUri()
+        private static Uri GeneratePropertyPartUri()
         {
             string propertyPartName = DefaultPropertyPartNamePrefix
                 + Guid.NewGuid().ToString(GuidStorageFormatString)

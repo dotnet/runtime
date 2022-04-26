@@ -259,7 +259,8 @@ namespace ILCompiler
             public override string Name => "Boxed_" + ValueTypeRepresented.Name;
 
             public override string Namespace => ValueTypeRepresented.Namespace;
-
+            public override string DiagnosticName => "Boxed_" + ValueTypeRepresented.DiagnosticName;
+            public override string DiagnosticNamespace => ValueTypeRepresented.DiagnosticNamespace;
             public override Instantiation Instantiation => ValueTypeRepresented.Instantiation;
             public override PInvokeStringFormat PInvokeStringFormat => PInvokeStringFormat.AutoClass;
             public override bool IsExplicitLayout => false;
@@ -277,7 +278,7 @@ namespace ILCompiler
             {
                 // BoxedValueType has the same genericness as the valuetype it's wrapping.
                 // Making BoxedValueType wrap the genericness (and be itself nongeneric) would
-                // require a crazy name mangling scheme to allow generating stable and unique names
+                // require a name mangling scheme to allow generating stable and unique names
                 // for the wrappers.
                 Debug.Assert(valuetype.IsTypeDefinition);
 
@@ -389,7 +390,7 @@ namespace ILCompiler
             {
                 Debug.Assert(targetMethod.OwningType.IsValueType);
                 Debug.Assert(!targetMethod.Signature.IsStatic);
-                
+
                 _owningType = owningType;
                 _targetMethod = targetMethod;
                 _nakedTargetMethod = new ValueTypeInstanceMethodWithHiddenParameter(targetMethod);
@@ -408,6 +409,14 @@ namespace ILCompiler
                 get
                 {
                     return _targetMethod.Name + "_Unbox";
+                }
+            }
+
+            public override string DiagnosticName
+            {
+                get
+                {
+                    return _targetMethod.DiagnosticName + "_Unbox";
                 }
             }
 
@@ -487,6 +496,14 @@ namespace ILCompiler
                 }
             }
 
+            public override string DiagnosticName
+            {
+                get
+                {
+                    return _targetMethod.DiagnosticName + "_Unbox";
+                }
+            }
+
             public override MethodIL EmitIL()
             {
                 if (_owningType.ValueTypeRepresented.IsByRefLike)
@@ -557,7 +574,7 @@ namespace ILCompiler
             {
                 Debug.Assert(methodRepresented.OwningType.IsValueType);
                 Debug.Assert(!methodRepresented.Signature.IsStatic);
-                
+
                 _methodRepresented = methodRepresented;
             }
 
@@ -574,6 +591,7 @@ namespace ILCompiler
             public override TypeDesc OwningType => _methodRepresented.OwningType;
 
             public override string Name => _methodRepresented.Name;
+            public override string DiagnosticName => _methodRepresented.DiagnosticName;
 
             public override MethodSignature Signature
             {

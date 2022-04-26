@@ -37,7 +37,7 @@ namespace System.ServiceModel.Syndication
 
         protected SyndicationLink(SyndicationLink source)
         {
-            if (source == null)
+            if (source is null)
             {
                 throw new ArgumentNullException(nameof(source));
             }

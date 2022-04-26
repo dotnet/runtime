@@ -22,6 +22,7 @@
 #include "strongnameinternal.h"
 #include "strongnameholders.h"
 #include "eventtrace.h"
+#include "assemblynative.hpp"
 
 #include "../binder/inc/bindertracing.h"
 
@@ -146,38 +147,6 @@ AssemblySpecHash::~AssemblySpecHash()
     }
 }
 
-// Check assembly name for invalid characters
-// Return value:
-//      TRUE: If no invalid characters were found, or if the assembly name isn't set
-//      FALSE: If invalid characters were found
-// This is needed to prevent security loopholes with ':', '/' and '\' in the assembly name
-BOOL AssemblySpec::IsValidAssemblyName()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END;
-
-    if (GetName())
-    {
-        SString ssAssemblyName(SString::Utf8, GetName());
-        for (SString::Iterator i = ssAssemblyName.Begin(); i[0] != W('\0'); i++) {
-            switch (i[0]) {
-                case W(':'):
-                case W('\\'):
-                case W('/'):
-                    return FALSE;
-
-                default:
-                    break;
-            }
-        }
-    }
-    return TRUE;
-}
-
 HRESULT AssemblySpec::InitializeSpecInternal(mdToken kAssemblyToken,
                                   IMDInternalImport *pImport,
                                   DomainAssembly *pStaticParent,
@@ -250,8 +219,7 @@ void AssemblySpec::InitializeSpec(PEAssembly * pFile)
 
 
 // This uses thread storage to allocate space. Please use Checkpoint and release it.
-HRESULT AssemblySpec::InitializeSpec(StackingAllocator* alloc, ASSEMBLYNAMEREF* pName,
-                                  BOOL fParse /*=TRUE*/)
+void AssemblySpec::InitializeSpec(StackingAllocator* alloc, ASSEMBLYNAMEREF* pName)
 {
     CONTRACTL
     {
@@ -290,110 +258,89 @@ HRESULT AssemblySpec::InitializeSpec(StackingAllocator* alloc, ASSEMBLYNAMEREF* 
         SetName(lpName);
     }
 
-    if (fParse) {
-        HRESULT hr = ParseName();
-        // Sometimes Fusion flags invalid characters in the name, sometimes it doesn't
-        // depending on where the invalid characters are
-        // We want to Raise the assembly resolve event on all invalid characters
-        // but calling ParseName before checking for invalid characters gives Fusion a chance to
-        // parse the rest of the name (to get a public key token, etc.)
-        if ((hr == FUSION_E_INVALID_NAME) || (!IsValidAssemblyName())) {
-            // This is the only case where we do not throw on an error
-            // We don't want to throw so as to give the caller a chance to call RaiseAssemblyResolveEvent
-            // The only caller that cares is System.Reflection.Assembly.InternalLoad which calls us through
-            // AssemblyNameNative::Init
-            return FUSION_E_INVALID_NAME;
-        }
-        else
-            IfFailThrow(hr);
+    AssemblyMetaDataInternal asmInfo;
+    // Flags
+    DWORD dwFlags = (*pName)->GetFlags();
+
+    // Version
+    VERSIONREF version = (VERSIONREF) (*pName)->GetVersion();
+    if(version == NULL) {
+        asmInfo.usMajorVersion = (USHORT)-1;
+        asmInfo.usMinorVersion = (USHORT)-1;
+        asmInfo.usBuildNumber = (USHORT)-1;
+        asmInfo.usRevisionNumber = (USHORT)-1;
     }
     else {
-        AssemblyMetaDataInternal asmInfo;
-        // Flags
-        DWORD dwFlags = (*pName)->GetFlags();
-
-        // Version
-        VERSIONREF version = (VERSIONREF) (*pName)->GetVersion();
-        if(version == NULL) {
-            asmInfo.usMajorVersion = (USHORT)-1;
-            asmInfo.usMinorVersion = (USHORT)-1;
-            asmInfo.usBuildNumber = (USHORT)-1;
-            asmInfo.usRevisionNumber = (USHORT)-1;
-        }
-        else {
-            asmInfo.usMajorVersion = (USHORT)version->GetMajor();
-            asmInfo.usMinorVersion = (USHORT)version->GetMinor();
-            asmInfo.usBuildNumber = (USHORT)version->GetBuild();
-            asmInfo.usRevisionNumber = (USHORT)version->GetRevision();
-        }
-
-        asmInfo.szLocale = 0;
-
-        if ((*pName)->GetCultureInfo() != NULL)
-        {
-            struct _gc {
-                OBJECTREF   cultureinfo;
-                STRINGREF   pString;
-            } gc;
-
-            gc.cultureinfo = (*pName)->GetCultureInfo();
-            gc.pString = NULL;
-
-            GCPROTECT_BEGIN(gc);
-
-            MethodDescCallSite getName(METHOD__CULTURE_INFO__GET_NAME, &gc.cultureinfo);
-
-            ARG_SLOT args[] = {
-                ObjToArgSlot(gc.cultureinfo)
-            };
-            gc.pString = getName.Call_RetSTRINGREF(args);
-            if (gc.pString != NULL) {
-                WCHAR* pString;
-                int    iString;
-                gc.pString->RefInterpretGetStringValuesDangerousForGC(&pString, &iString);
-                DWORD lgth = WszWideCharToMultiByte(CP_UTF8, 0, pString, iString, NULL, 0, NULL, NULL);
-                S_UINT32 lengthWillNull = S_UINT32(lgth) + S_UINT32(1);
-                LPSTR lpLocale = (LPSTR) alloc->Alloc(lengthWillNull);
-                if (lengthWillNull.IsOverflow())
-                {
-                    COMPlusThrowHR(COR_E_OVERFLOW);
-                }
-                WszWideCharToMultiByte(CP_UTF8, 0, pString, iString,
-                                       lpLocale, lengthWillNull.Value(), NULL, NULL);
-                lpLocale[lgth] = '\0';
-                asmInfo.szLocale = lpLocale;
-            }
-            GCPROTECT_END();
-        }
-
-        // Strong name
-        DWORD cbPublicKeyOrToken=0;
-        BYTE* pbPublicKeyOrToken=NULL;
-        // Note that we prefer to take a public key token if present,
-        // even if flags indicate a full public key
-        if ((*pName)->GetPublicKeyToken() != NULL) {
-            dwFlags &= ~afPublicKey;
-            PBYTE  pArray = NULL;
-            pArray = (*pName)->GetPublicKeyToken()->GetDirectPointerToNonObjectElements();
-            cbPublicKeyOrToken = (*pName)->GetPublicKeyToken()->GetNumComponents();
-            pbPublicKeyOrToken = pArray;
-        }
-        else if ((*pName)->GetPublicKey() != NULL) {
-            dwFlags |= afPublicKey;
-            PBYTE  pArray = NULL;
-            pArray = (*pName)->GetPublicKey()->GetDirectPointerToNonObjectElements();
-            cbPublicKeyOrToken = (*pName)->GetPublicKey()->GetNumComponents();
-            pbPublicKeyOrToken = pArray;
-        }
-        BaseAssemblySpec::Init(GetName(),&asmInfo,pbPublicKeyOrToken,cbPublicKeyOrToken,dwFlags);
+        asmInfo.usMajorVersion = (USHORT)version->GetMajor();
+        asmInfo.usMinorVersion = (USHORT)version->GetMinor();
+        asmInfo.usBuildNumber = (USHORT)version->GetBuild();
+        asmInfo.usRevisionNumber = (USHORT)version->GetRevision();
     }
 
-    CloneFieldsToStackingAllocator(alloc);
+    asmInfo.szLocale = 0;
 
-    return S_OK;
+    if ((*pName)->GetCultureInfo() != NULL)
+    {
+        struct _gc {
+            OBJECTREF   cultureinfo;
+            STRINGREF   pString;
+        } gc;
+
+        gc.cultureinfo = (*pName)->GetCultureInfo();
+        gc.pString = NULL;
+
+        GCPROTECT_BEGIN(gc);
+
+        MethodDescCallSite getName(METHOD__CULTURE_INFO__GET_NAME, &gc.cultureinfo);
+
+        ARG_SLOT args[] = {
+            ObjToArgSlot(gc.cultureinfo)
+        };
+        gc.pString = getName.Call_RetSTRINGREF(args);
+        if (gc.pString != NULL) {
+            WCHAR* pString;
+            int    iString;
+            gc.pString->RefInterpretGetStringValuesDangerousForGC(&pString, &iString);
+            DWORD lgth = WszWideCharToMultiByte(CP_UTF8, 0, pString, iString, NULL, 0, NULL, NULL);
+            S_UINT32 lengthWillNull = S_UINT32(lgth) + S_UINT32(1);
+            LPSTR lpLocale = (LPSTR) alloc->Alloc(lengthWillNull);
+            if (lengthWillNull.IsOverflow())
+            {
+                COMPlusThrowHR(COR_E_OVERFLOW);
+            }
+            WszWideCharToMultiByte(CP_UTF8, 0, pString, iString,
+                                   lpLocale, lengthWillNull.Value(), NULL, NULL);
+            lpLocale[lgth] = '\0';
+            asmInfo.szLocale = lpLocale;
+        }
+        GCPROTECT_END();
+    }
+
+    // Strong name
+    DWORD cbPublicKeyOrToken=0;
+    BYTE* pbPublicKeyOrToken=NULL;
+    // Note that we prefer to take a public key token if present,
+    // even if flags indicate a full public key
+    if ((*pName)->GetPublicKeyToken() != NULL) {
+        dwFlags &= ~afPublicKey;
+        PBYTE  pArray = NULL;
+        pArray = (*pName)->GetPublicKeyToken()->GetDirectPointerToNonObjectElements();
+        cbPublicKeyOrToken = (*pName)->GetPublicKeyToken()->GetNumComponents();
+        pbPublicKeyOrToken = pArray;
+    }
+    else if ((*pName)->GetPublicKey() != NULL) {
+        dwFlags |= afPublicKey;
+        PBYTE  pArray = NULL;
+        pArray = (*pName)->GetPublicKey()->GetDirectPointerToNonObjectElements();
+        cbPublicKeyOrToken = (*pName)->GetPublicKey()->GetNumComponents();
+        pbPublicKeyOrToken = pArray;
+    }
+    BaseAssemblySpec::Init(GetName(),&asmInfo,pbPublicKeyOrToken,cbPublicKeyOrToken,dwFlags);
+
+    CloneFieldsToStackingAllocator(alloc);
 }
 
-void AssemblySpec::AssemblyNameInit(ASSEMBLYNAMEREF* pAsmName, PEImage* pImageInfo)
+void AssemblySpec::AssemblyNameInit(ASSEMBLYNAMEREF* pAsmName)
 {
     CONTRACTL
     {
@@ -518,20 +465,7 @@ void AssemblySpec::AssemblyNameInit(ASSEMBLYNAMEREF* pAsmName, PEImage* pImageIn
     if(GetName())
         gc.Name = StringObject::NewString(GetName());
 
-    if (GetCodeBase())
-        gc.CodeBase = StringObject::NewString(GetCodeBase());
-
     BOOL fPublicKey = m_dwFlags & afPublicKey;
-
-    ULONG hashAlgId=0;
-    if (pImageInfo != NULL)
-    {
-        if(!pImageInfo->GetMDImport()->IsValidToken(TokenFromRid(1, mdtAssembly)))
-        {
-            ThrowHR(COR_E_BADIMAGEFORMAT);
-        }
-        IfFailThrow(pImageInfo->GetMDImport()->GetAssemblyProps(TokenFromRid(1, mdtAssembly), NULL, NULL, &hashAlgId, NULL, NULL, NULL));
-    }
 
     MethodDescCallSite init(METHOD__ASSEMBLY_NAME__CTOR);
 
@@ -545,32 +479,10 @@ void AssemblySpec::AssemblyNameInit(ASSEMBLYNAMEREF* pAsmName, PEImage* pImageIn
         ObjToArgSlot(gc.PublicKeyOrToken), // public key token
         ObjToArgSlot(gc.Version),
         ObjToArgSlot(gc.CultureInfo),
-        (ARG_SLOT) hashAlgId,
-        (ARG_SLOT) 1, // AssemblyVersionCompatibility.SameMachine
-        ObjToArgSlot(gc.CodeBase),
         (ARG_SLOT) m_dwFlags,
     };
 
     init.Call(MethodArgs);
-
-    // Only set the processor architecture if we're looking at a newer binary that has
-    // that information in the PE, and we're not looking at a reference assembly.
-    if(pImageInfo && !pImageInfo->HasV1Metadata() && !pImageInfo->IsReferenceAssembly())
-    {
-        DWORD dwMachine, dwKind;
-
-        pImageInfo->GetPEKindAndMachine(&dwMachine,&dwKind);
-
-        MethodDescCallSite setPA(METHOD__ASSEMBLY_NAME__SET_PROC_ARCH_INDEX);
-
-        ARG_SLOT PAMethodArgs[] = {
-            ObjToArgSlot(*pAsmName),
-            (ARG_SLOT)dwMachine,
-            (ARG_SLOT)dwKind
-        };
-
-        setPA.Call(PAMethodArgs);
-    }
 
     GCPROTECT_END();
 }
@@ -601,7 +513,7 @@ void AssemblySpec::InitializeAssemblyNameRef(_In_ BINDER_SPACE::AssemblyName* as
         spec.SetCulture(culture);
     }
 
-    spec.AssemblyNameInit(assemblyNameRef, NULL);
+    spec.AssemblyNameInit(assemblyNameRef);
 }
 
 
@@ -756,7 +668,7 @@ DomainAssembly *AssemblySpec::LoadDomainAssembly(FileLoadLevel targetLevel,
         BinderTracing::AssemblyBindOperation bindOperation(this);
         bindOperation.SetResult(pAssembly->GetPEAssembly(), true /*cached*/);
 
-        pDomain->LoadDomainFile(pAssembly, targetLevel);
+        pDomain->LoadDomainAssembly(pAssembly, targetLevel);
         RETURN pAssembly;
     }
 
@@ -808,9 +720,19 @@ Assembly *AssemblySpec::LoadAssembly(LPCWSTR pFilePath)
     }
     CONTRACT_END;
 
-    AssemblySpec spec;
-    spec.SetCodeBase(pFilePath);
-    RETURN spec.LoadAssembly(FILE_LOADED);
+    GCX_PREEMP();
+
+    PEImageHolder pILImage;
+
+    pILImage = PEImage::OpenImage(pFilePath,
+        MDInternalImport_Default,
+        Bundle::ProbeAppBundle(pFilePath));
+
+    // Need to verify that this is a valid CLR assembly.
+    if (!pILImage->CheckILFormat())
+        THROW_BAD_FORMAT(BFA_BAD_IL, pILImage.GetValue());
+
+    RETURN AssemblyNative::LoadFromPEImage(AppDomain::GetCurrentDomain()->GetDefaultBinder(), pILImage);
 }
 
 HRESULT AssemblySpec::CheckFriendAssemblyName()

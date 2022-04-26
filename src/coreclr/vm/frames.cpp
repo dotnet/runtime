@@ -63,24 +63,15 @@ void Frame::Log() {
 
     MethodDesc* method = GetFunction();
 
-#ifdef TARGET_X86
-    if (GetVTablePtr() == UMThkCallFrame::GetMethodFrameVPtr())
-        method = ((UMThkCallFrame*) this)->GetUMEntryThunk()->GetMethod();
-#endif
-
     STRESS_LOG3(LF_STUBS, LL_INFO1000000, "STUBS: In Stub with Frame %p assoc Method %pM FrameType = %pV\n", this, method, *((void**) this));
 
     char buff[64];
     const char* frameType;
     if (GetVTablePtr() == PrestubMethodFrame::GetMethodFrameVPtr())
         frameType = "PreStub";
-#ifdef TARGET_X86
-    else if (GetVTablePtr() == UMThkCallFrame::GetMethodFrameVPtr())
-        frameType = "UMThkCallFrame";
-#endif
     else if (GetVTablePtr() == PInvokeCalliFrame::GetMethodFrameVPtr())
     {
-        sprintf_s(buff, COUNTOF(buff), "PInvoke CALLI target" FMT_ADDR,
+        sprintf_s(buff, ARRAY_SIZE(buff), "PInvoke CALLI target" FMT_ADDR,
                   DBG_ADDR(((PInvokeCalliFrame*)this)->GetPInvokeCalliTarget()));
         frameType = buff;
     }
@@ -257,7 +248,7 @@ void Frame::LogFrame(
     {
         _ASSERTE(!"New Frame type needs to be added to FrameTypeName()");
         // Pointer is up to 17chars + vtbl@ = 22 chars
-        sprintf_s(buf, COUNTOF(buf), "vtbl@%p", (VOID *)GetVTablePtr());
+        sprintf_s(buf, ARRAY_SIZE(buf), "vtbl@%p", (VOID *)GetVTablePtr());
         pFrameType = buf;
     }
 
@@ -400,7 +391,7 @@ VOID Frame::Push(Thread *pThread)
     // declared in the same source function. We cannot predict the order
     // in which the C compiler will lay them out in the stack frame.
     // So GetOsPageSize() is a guess of the maximum stack frame size of any method
-    // with multiple Frames in mscorwks.dll
+    // with multiple Frames in coreclr.dll
     _ASSERTE((pThread->IsExecutingOnAltStack() ||
              (m_Next == FRAME_TOP) ||
              (PBYTE(m_Next) + (2 * GetOsPageSize())) > PBYTE(this)) &&
@@ -912,6 +903,7 @@ GCFrame::GCFrame(Thread *pThread, OBJECTREF *pObjRefs, UINT numObjRefs, BOOL may
         NOTHROW;
         GC_NOTRIGGER;
         MODE_COOPERATIVE;
+        PRECONDITION(pThread != NULL);
     }
     CONTRACTL_END;
 
@@ -938,24 +930,16 @@ GCFrame::GCFrame(Thread *pThread, OBJECTREF *pObjRefs, UINT numObjRefs, BOOL may
 
 #endif // USE_CHECKED_OBJECTREFS
 
+#ifdef _DEBUG
+    m_Next          = NULL;
+    m_pCurThread    = NULL;
+#endif // _DEBUG
+
     m_pObjRefs      = pObjRefs;
     m_numObjRefs    = numObjRefs;
-    m_pCurThread    = pThread;
     m_MaybeInterior = maybeInterior;
 
-    // Push the GC frame to the per-thread list
-    m_Next = pThread->GetGCFrame();
-
-    // GetOsPageSize() is used to relax the assert for cases where two Frames are
-    // declared in the same source function. We cannot predict the order
-    // in which the C compiler will lay them out in the stack frame.
-    // So GetOsPageSize() is a guess of the maximum stack frame size of any method
-    // with multiple Frames in mscorwks.dll
-    _ASSERTE(((m_Next == NULL) ||
-              (PBYTE(m_Next) + (2 * GetOsPageSize())) > PBYTE(this)) &&
-             "Pushing a GCFrame out of order ?");
-
-    pThread->SetGCFrame(this);
+    Push(pThread);
 }
 
 GCFrame::~GCFrame()
@@ -965,6 +949,7 @@ GCFrame::~GCFrame()
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
+        PRECONDITION(m_pCurThread != NULL);
     }
     CONTRACTL_END;
 
@@ -975,6 +960,54 @@ GCFrame::~GCFrame()
     {
         m_pCurThread->DisablePreemptiveGC();
     }
+
+    Pop();
+
+    if (!wasCoop)
+    {
+        m_pCurThread->EnablePreemptiveGC();
+    }
+}
+
+void GCFrame::Push(Thread* pThread)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_COOPERATIVE;
+        PRECONDITION(pThread != NULL);
+        PRECONDITION(m_Next == NULL);
+        PRECONDITION(m_pCurThread == NULL);
+    }
+    CONTRACTL_END;
+
+    // Push the GC frame to the per-thread list
+    m_Next = pThread->GetGCFrame();
+    m_pCurThread = pThread;
+
+    // GetOsPageSize() is used to relax the assert for cases where two Frames are
+    // declared in the same source function. We cannot predict the order
+    // in which the compiler will lay them out in the stack frame.
+    // So GetOsPageSize() is a guess of the maximum stack frame size of any method
+    // with multiple GCFrames in coreclr.dll
+    _ASSERTE(((m_Next == NULL) ||
+              (PBYTE(m_Next) + (2 * GetOsPageSize())) > PBYTE(this)) &&
+             "Pushing a GCFrame out of order ?");
+
+    pThread->SetGCFrame(this);
+}
+
+void GCFrame::Pop()
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_COOPERATIVE;
+        PRECONDITION(m_pCurThread != NULL);
+    }
+    CONTRACTL_END;
 
     // When the frame is destroyed, make sure it is no longer in the
     // frame chain managed by the Thread.
@@ -990,12 +1023,8 @@ GCFrame::~GCFrame()
     for(UINT i = 0; i < m_numObjRefs; i++)
         Thread::ObjectRefNew(&m_pObjRefs[i]);       // Unprotect them
 #endif
-
-    if (!wasCoop)
-    {
-        m_pCurThread->EnablePreemptiveGC();
-    }
 }
+#endif // !DACCESS_COMPILE
 
 //
 // GCFrame Object Scanning
@@ -1004,9 +1033,6 @@ GCFrame::~GCFrame()
 // protected by the programmer explicitly protecting it in a GC Frame
 // via the GCPROTECTBEGIN / GCPROTECTEND facility...
 //
-
-#endif // !DACCESS_COMPILE
-
 void GCFrame::GcScanRoots(promote_func *fn, ScanContext* sc)
 {
     WRAPPER_NO_CONTRACT;
@@ -1268,6 +1294,10 @@ void TransitionFrame::PromoteCallerStack(promote_func* fn, ScanContext* sc)
         pFunction->GetSig(&pSig, &cbSigSize);
 
         MetaSig msig(pSig, cbSigSize, pFunction->GetModule(), &typeContext);
+
+        bool fCtorOfVariableSizedObject = msig.HasThis() && (pFunction->GetMethodTable() == g_pStringClass) && pFunction->IsCtor();
+        if (fCtorOfVariableSizedObject)
+            msig.ClearHasThis();
 
         if (pFunction->RequiresInstArg() && !SuppressParamTypeArg())
             msig.SetHasParamTypeArg();
@@ -1599,32 +1629,6 @@ void ComMethodFrame::DoSecondPassHandlerCleanup(Frame * pCurFrame)
 
 #endif // FEATURE_COMINTEROP
 
-
-#ifdef TARGET_X86
-
-PTR_UMEntryThunk UMThkCallFrame::GetUMEntryThunk()
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-    return dac_cast<PTR_UMEntryThunk>(GetDatum());
-}
-
-#ifdef DACCESS_COMPILE
-void UMThkCallFrame::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
-{
-    WRAPPER_NO_CONTRACT;
-    UnmanagedToManagedFrame::EnumMemoryRegions(flags);
-
-    // Pieces of the UMEntryThunk need to be saved.
-    UMEntryThunk *pThunk = GetUMEntryThunk();
-    DacEnumMemoryRegion(dac_cast<TADDR>(pThunk), sizeof(UMEntryThunk));
-
-    UMThunkMarshInfo *pMarshInfo = pThunk->GetUMThunkMarshInfo();
-    DacEnumMemoryRegion(dac_cast<TADDR>(pMarshInfo), sizeof(UMThunkMarshInfo));
-}
-#endif
-
-#endif // TARGET_X86
-
 #ifndef DACCESS_COMPILE
 
 #if defined(_MSC_VER) && defined(TARGET_X86)
@@ -1948,16 +1952,18 @@ VOID InlinedCallFrame::Init()
 }
 
 
-
+#ifdef FEATURE_COMINTEROP
 void UnmanagedToManagedFrame::ExceptionUnwind()
 {
     WRAPPER_NO_CONTRACT;
 
     AppDomain::ExceptionUnwind(this);
 }
+#endif // FEATURE_COMINTEROP
 
 #endif // !DACCESS_COMPILE
 
+#ifdef FEATURE_COMINTEROP
 PCODE UnmanagedToManagedFrame::GetReturnAddress()
 {
     WRAPPER_NO_CONTRACT;
@@ -1976,6 +1982,7 @@ PCODE UnmanagedToManagedFrame::GetReturnAddress()
         return pRetAddr;
     }
 }
+#endif // FEATURE_COMINTEROP
 
 #ifndef DACCESS_COMPILE
 //=================================================================================
@@ -2100,6 +2107,12 @@ void ComputeCallRefMap(MethodDesc* pMD,
     DWORD cbSigSize;
     pMD->GetSig(&pSig, &cbSigSize);
     MetaSig msig(pSig, cbSigSize, pMD->GetModule(), &typeContext);
+
+    bool fCtorOfVariableSizedObject = msig.HasThis() && (pMD->GetMethodTable() == g_pStringClass) && pMD->IsCtor();
+    if (fCtorOfVariableSizedObject)
+    {
+        msig.ClearHasThis();
+    }
 
     //
     // Shared default interface methods (i.e. virtual interface methods with an implementation) require

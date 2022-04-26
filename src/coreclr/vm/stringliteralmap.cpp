@@ -428,7 +428,7 @@ StringLiteralEntry *GlobalStringLiteralMap::GetInternedString(STRINGREF *pString
 }
 
 #ifdef LOGGING
-static void LogStringLiteral(__in_z const char* action, EEStringData *pStringData)
+static void LogStringLiteral(_In_z_ const char* action, EEStringData *pStringData)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;

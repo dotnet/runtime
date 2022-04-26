@@ -8,7 +8,7 @@ internal static partial class Interop
 {
     internal static partial class Crypt32
     {
-        [GeneratedDllImport(Libraries.Crypt32)]
+        [LibraryImport(Libraries.Crypt32)]
         internal static partial void CertFreeCertificateChainEngine(IntPtr hChainEngine);
     }
 }

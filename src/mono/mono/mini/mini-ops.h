@@ -290,6 +290,7 @@ MINI_OP(OP_LCONV_TO_I,    "long_conv_to_i", LREG, LREG, NONE)
 MINI_OP(OP_LCONV_TO_OVF_I,"long_conv_to_ovf_i", LREG, LREG, NONE)
 MINI_OP(OP_LCONV_TO_OVF_U,"long_conv_to_ovf_u", LREG, LREG, NONE)
 
+/* inst_exc_name contains the exception name to throw */
 MINI_OP(OP_LADD_OVF,      "long_add_ovf", LREG, LREG, LREG)
 MINI_OP(OP_LADD_OVF_UN,   "long_add_ovf_un", LREG, LREG, LREG)
 MINI_OP(OP_LMUL_OVF,      "long_mul_ovf", LREG, LREG, LREG)
@@ -395,6 +396,8 @@ MINI_OP(OP_ICONV_TO_U1,   "int_conv_to_u1", IREG, IREG, NONE)
 MINI_OP(OP_ICONV_TO_I,    "int_conv_to_i", IREG, IREG, NONE)
 MINI_OP(OP_ICONV_TO_OVF_I,"int_conv_to_ovf_i", IREG, IREG, NONE)
 MINI_OP(OP_ICONV_TO_OVF_U,"int_conv_to_ovf_u", IREG, IREG, NONE)
+
+/* inst_exc_name contains the exception name to throw */
 MINI_OP(OP_IADD_OVF,      "int_add_ovf", IREG, IREG, IREG)
 MINI_OP(OP_IADD_OVF_UN,   "int_add_ovf_un", IREG, IREG, IREG)
 MINI_OP(OP_IMUL_OVF,      "int_mul_ovf", IREG, IREG, IREG)
@@ -583,7 +586,6 @@ MINI_OP(OP_FCGT_UN_MEMBASE,"float_cgt_un_membase", IREG, FREG, IREG)
 MINI_OP(OP_FCLT_MEMBASE,   "float_clt_membase", IREG, FREG, IREG)
 MINI_OP(OP_FCLT_UN_MEMBASE,"float_clt_un_membase", IREG, FREG, IREG)
 
-MINI_OP(OP_FCONV_TO_U,	"float_conv_to_u", IREG, FREG, NONE)
 MINI_OP(OP_CKFINITE, "ckfinite", FREG, FREG, NONE)
 
 /* r4 opcodes: must be in the same order as the matching CEE_ opcodes: ovfops_op_map */
@@ -638,6 +640,11 @@ MINI_OP(OP_FGETLOW32, "float_getlow32", IREG, FREG, NONE)
 MINI_OP(OP_FGETHIGH32, "float_gethigh32", IREG, FREG, NONE)
 
 MINI_OP(OP_JUMP_TABLE, "jump_table", IREG, NONE, NONE)
+
+/* Same as OP_IMUL_OVF_UN, but throws an OutOfMemoryException */
+/* Emulated */
+MINI_OP(OP_IMUL_OVF_UN_OOM,   "int_mul_ovf_un_oom", IREG, IREG, IREG)
+MINI_OP(OP_LMUL_OVF_UN_OOM,   "long_mul_ovf_un_oom", LREG, LREG, LREG)
 
 /* aot compiler */
 MINI_OP(OP_AOTCONST, "aotconst", IREG, NONE, NONE)
@@ -974,7 +981,7 @@ MINI_OP(OP_PMULQ, "pmulq", XREG, XREG, XREG)
 MINI_OP(OP_PMULW_HIGH_UN, "pmulw_high_un", XREG, XREG, XREG)
 MINI_OP(OP_PMULW_HIGH, "pmulw_high", XREG, XREG, XREG)
 
-/*SSE2 Shift ops must have the _reg version right after as code depends on this ordering.*/ 
+/*SSE2 Shift ops must have the _reg version right after as code depends on this ordering.*/
 MINI_OP(OP_PSHRW, "pshrw", XREG, XREG, NONE)
 MINI_OP(OP_PSHRW_REG, "pshrw_reg", XREG, XREG, XREG)
 
@@ -1246,12 +1253,12 @@ MINI_OP(OP_CMOV_LLE_UN, "cmov_lle_un", IREG, IREG, IREG)
 MINI_OP(OP_CMOV_LLT_UN, "cmov_llt_un", IREG, IREG, IREG)
 
 /* Debugging support */
-/* 
+/*
  * Marks the start of the live range of the variable in inst_c0, that is the
  * first instruction where the variable has a value.
  */
 MINI_OP(OP_LIVERANGE_START, "liverange_start", NONE, NONE, NONE)
-/* 
+/*
  * Marks the end of the live range of the variable in inst_c0, that is the
  * first instruction where the variable no longer has a value.
  */
@@ -1391,21 +1398,6 @@ MINI_OP(OP_ARM_RSC_IMM,             "arm_rsc_imm", IREG, IREG, NONE)
 MINI_OP(OP_ARM_SETFREG_R4,             "arm_setfreg_r4", FREG, FREG, NONE)
 #endif
 
-#if defined(TARGET_SPARC)
-MINI_OP(OP_SPARC_BRZ,              "sparc_brz", NONE, NONE, NONE)
-MINI_OP(OP_SPARC_BRLEZ,            "sparc_brlez", NONE, NONE, NONE)
-MINI_OP(OP_SPARC_BRLZ,             "sparc_brlz", NONE, NONE, NONE)
-MINI_OP(OP_SPARC_BRNZ,             "sparc_brnz", NONE, NONE, NONE)
-MINI_OP(OP_SPARC_BRGZ,             "sparc_brgz", NONE, NONE, NONE)
-MINI_OP(OP_SPARC_BRGEZ,            "sparc_brgez", NONE, NONE, NONE)
-MINI_OP(OP_SPARC_COND_EXC_EQZ,     "sparc_cond_exc_eqz", NONE, NONE, NONE)
-MINI_OP(OP_SPARC_COND_EXC_GEZ,     "sparc_cond_exc_gez", NONE, NONE, NONE)
-MINI_OP(OP_SPARC_COND_EXC_GTZ,     "sparc_cond_exc_gtz", NONE, NONE, NONE)
-MINI_OP(OP_SPARC_COND_EXC_LEZ,     "sparc_cond_exc_lez", NONE, NONE, NONE)
-MINI_OP(OP_SPARC_COND_EXC_LTZ,     "sparc_cond_exc_ltz", NONE, NONE, NONE)
-MINI_OP(OP_SPARC_COND_EXC_NEZ,     "sparc_cond_exc_nez", NONE, NONE, NONE)
-#endif
-
 #if defined(TARGET_S390X)
 MINI_OP(OP_S390_LOADARG,	   "s390_loadarg", NONE, NONE, NONE)
 MINI_OP(OP_S390_ARGREG, 	   "s390_argreg", NONE, NONE, NONE)
@@ -1433,72 +1425,6 @@ MINI_OP(OP_S390_CIJ,            "s390_cij", IREG, NONE, NONE)
 MINI_OP(OP_S390_CLIJ,           "s390_cij_un", IREG, IREG, NONE)
 MINI_OP(OP_S390_CGIJ,           "s390_cgij", LREG, NONE, NONE)
 MINI_OP(OP_S390_CLGIJ,          "s390_cgij_un", LREG, NONE, NONE)
-#endif
-
-#if defined(TARGET_MIPS)
-MINI_OP(OP_MIPS_BEQ,   "mips_beq", NONE, IREG, IREG)
-MINI_OP(OP_MIPS_BGEZ,  "mips_bgez", NONE, IREG, NONE)
-MINI_OP(OP_MIPS_BGTZ,  "mips_bgtz", NONE, IREG, NONE)
-MINI_OP(OP_MIPS_BLEZ,  "mips_blez", NONE, IREG, NONE)
-MINI_OP(OP_MIPS_BLTZ,  "mips_bltz", NONE, IREG, NONE)
-MINI_OP(OP_MIPS_BNE,   "mips_bne", NONE, IREG, IREG)
-MINI_OP(OP_MIPS_CVTSD, "mips_cvtsd", FREG, FREG, NONE)
-MINI_OP(OP_MIPS_FBEQ,  "mips_fbeq", NONE, FREG, FREG)
-MINI_OP(OP_MIPS_FBGE,  "mips_fbge", NONE, FREG, FREG)
-MINI_OP(OP_MIPS_FBGE_UN,  "mips_fbge_un", NONE, FREG, FREG)
-MINI_OP(OP_MIPS_FBGT,  "mips_fbgt", NONE, FREG, FREG)
-MINI_OP(OP_MIPS_FBGT_UN,  "mips_fbgt_un", NONE, FREG, FREG)
-MINI_OP(OP_MIPS_FBLE,  "mips_fble", NONE, FREG, FREG)
-MINI_OP(OP_MIPS_FBLE_UN,  "mips_fble_un", NONE, FREG, FREG)
-MINI_OP(OP_MIPS_FBLT,  "mips_fblt", NONE, FREG, FREG)
-MINI_OP(OP_MIPS_FBLT_UN,  "mips_fblt_un", NONE, FREG, FREG)
-MINI_OP(OP_MIPS_FBNE,  "mips_fbne", NONE, FREG, FREG)
-MINI_OP(OP_MIPS_FBFALSE, "mips_fbfalse", NONE, NONE, NONE)
-MINI_OP(OP_MIPS_FBTRUE, "mips_fbtrue", NONE, NONE, NONE)
-MINI_OP(OP_MIPS_LWC1,  "mips_lwc1", NONE, NONE, NONE)
-MINI_OP(OP_MIPS_MTC1S, "mips_mtc1_s", FREG, IREG, NONE)
-MINI_OP(OP_MIPS_MTC1S_2, "mips_mtc1_s2", FREG, IREG, IREG)
-MINI_OP(OP_MIPS_MFC1S, "mips_mfc1_s", IREG, FREG, NONE)
-MINI_OP(OP_MIPS_MTC1D, "mips_mtc1_d", FREG, IREG, NONE)
-MINI_OP(OP_MIPS_MFC1D, "mips_mfc1_d", IREG, FREG, NONE)
-MINI_OP(OP_MIPS_NOP,   "mips_nop", NONE, NONE, NONE)
-MINI_OP(OP_MIPS_SLTI,  "mips_slti", IREG, IREG, NONE)
-MINI_OP(OP_MIPS_SLT,   "mips_slt", IREG, IREG, IREG)
-MINI_OP(OP_MIPS_SLTIU, "mips_sltiu", IREG, IREG, NONE)
-MINI_OP(OP_MIPS_SLTU,  "mips_sltu", IREG, IREG, IREG)
-
-MINI_OP(OP_MIPS_COND_EXC_EQ, "mips_cond_exc_eq", NONE, IREG, IREG)
-MINI_OP(OP_MIPS_COND_EXC_GE, "mips_cond_exc_ge", NONE, IREG, IREG)
-MINI_OP(OP_MIPS_COND_EXC_GT, "mips_cond_exc_gt", NONE, IREG, IREG)
-MINI_OP(OP_MIPS_COND_EXC_LE, "mips_cond_exc_le", NONE, IREG, IREG)
-MINI_OP(OP_MIPS_COND_EXC_LT, "mips_cond_exc_lt", NONE, IREG, IREG)
-MINI_OP(OP_MIPS_COND_EXC_NE_UN, "mips_cond_exc_ne_un", NONE, IREG, IREG)
-MINI_OP(OP_MIPS_COND_EXC_GE_UN, "mips_cond_exc_ge_un", NONE, IREG, IREG)
-MINI_OP(OP_MIPS_COND_EXC_GT_UN, "mips_cond_exc_gt_un", NONE, IREG, IREG)
-MINI_OP(OP_MIPS_COND_EXC_LE_UN, "mips_cond_exc_le_un", NONE, IREG, IREG)
-MINI_OP(OP_MIPS_COND_EXC_LT_UN, "mips_cond_exc_lt_un", NONE, IREG, IREG)
-
-MINI_OP(OP_MIPS_COND_EXC_OV, "mips_cond_exc_ov", NONE, IREG, IREG)
-MINI_OP(OP_MIPS_COND_EXC_NO, "mips_cond_exc_no", NONE, IREG, IREG)
-MINI_OP(OP_MIPS_COND_EXC_C, "mips_cond_exc_c", NONE, IREG, IREG)
-MINI_OP(OP_MIPS_COND_EXC_NC, "mips_cond_exc_nc", NONE, IREG, IREG)
-
-MINI_OP(OP_MIPS_COND_EXC_IEQ, "mips_cond_exc_ieq", NONE, IREG, IREG)
-MINI_OP(OP_MIPS_COND_EXC_IGE, "mips_cond_exc_ige", NONE, IREG, IREG)
-MINI_OP(OP_MIPS_COND_EXC_IGT, "mips_cond_exc_igt", NONE, IREG, IREG)
-MINI_OP(OP_MIPS_COND_EXC_ILE, "mips_cond_exc_ile", NONE, IREG, IREG)
-MINI_OP(OP_MIPS_COND_EXC_ILT, "mips_cond_exc_ilt", NONE, IREG, IREG)
-MINI_OP(OP_MIPS_COND_EXC_INE_UN, "mips_cond_exc_ine_un", NONE, IREG, IREG)
-MINI_OP(OP_MIPS_COND_EXC_IGE_UN, "mips_cond_exc_ige_un", NONE, IREG, IREG)
-MINI_OP(OP_MIPS_COND_EXC_IGT_UN, "mips_cond_exc_igt_un", NONE, IREG, IREG)
-MINI_OP(OP_MIPS_COND_EXC_ILE_UN, "mips_cond_exc_ile_un", NONE, IREG, IREG)
-MINI_OP(OP_MIPS_COND_EXC_ILT_UN, "mips_cond_exc_ilt_un", NONE, IREG, IREG)
-
-MINI_OP(OP_MIPS_COND_EXC_IOV, "mips_cond_exc_iov", NONE, IREG, IREG)
-MINI_OP(OP_MIPS_COND_EXC_INO, "mips_cond_exc_ino", NONE, IREG, IREG)
-MINI_OP(OP_MIPS_COND_EXC_IC, "mips_cond_exc_ic", NONE, IREG, IREG)
-MINI_OP(OP_MIPS_COND_EXC_INC, "mips_cond_exc_inc", NONE, IREG, IREG)
-
 #endif
 
 #if defined(TARGET_ARM64)
@@ -1615,6 +1541,15 @@ MINI_OP(OP_ARM64_CLZ, "arm64_clz", XREG, XREG, NONE)
 MINI_OP3(OP_ARM64_LD1_INSERT, "arm64_ld1_insert", XREG, IREG, XREG, IREG)
 MINI_OP(OP_ARM64_LD1, "arm64_ld1", XREG, IREG, NONE)
 MINI_OP(OP_ARM64_LD1R, "arm64_ld1r", XREG, IREG, NONE)
+
+/* Loads two consecutive vector (or scalar) values into a pair of
+ * vector registers. Returns a ValueTuple in a vreg. klass must be set to the
+ * MonoClass representing the ValueTuple return type of the op.
+ */
+MINI_OP(OP_ARM64_LDNP, "arm64_ldnp", VREG, IREG, NONE)
+MINI_OP(OP_ARM64_LDNP_SCALAR, "arm64_ldnp_scalar", VREG, IREG, NONE)
+MINI_OP(OP_ARM64_LDP, "arm64_ldp", VREG, IREG, NONE)
+MINI_OP(OP_ARM64_LDP_SCALAR, "arm64_ldp_scalar", VREG, IREG, NONE)
 
 MINI_OP(OP_ARM64_ST1, "arm64_st1", NONE, IREG, XREG)
 MINI_OP(OP_ARM64_SXTL, "arm64_sxtl", XREG, XREG, NONE)
@@ -1796,7 +1731,7 @@ MINI_OP(OP_ARM64_UADALP, "arm64_uadalp_scalar", XREG, XREG, XREG)
 
 MINI_OP(OP_ARM64_SADDLV, "arm64_saddlv", XREG, XREG, NONE)
 MINI_OP(OP_ARM64_UADDLV, "arm64_uaddlv", XREG, XREG, NONE)
-
+MINI_OP(OP_ARM64_XADDV, "arm64_xaddv", XREG, XREG, NONE)
 MINI_OP(OP_ARM64_XHORIZ, "arm64_xhoriz", XREG, XREG, NONE)
 
 MINI_OP3(OP_ARM64_SABAL, "arm64_sabal", XREG, XREG, XREG, XREG)

@@ -32,8 +32,6 @@ void Compiler::gsGSChecksInitCookie()
     info.compCompHnd->getGSCookie(&gsGlobalSecurityCookieVal, &gsGlobalSecurityCookieAddr);
 }
 
-const unsigned NO_SHADOW_COPY = UINT_MAX;
-
 /*****************************************************************************
  * gsCopyShadowParams
  * The current function has an unsafe buffer on the stack.  Search for vulnerable
@@ -55,15 +53,25 @@ void Compiler::gsCopyShadowParams()
     }
 
     // Allocate array for shadow param info
+    //
     gsShadowVarInfo = new (this, CMK_Unknown) ShadowParamVarInfo[lvaCount]();
 
     // Find groups of variables assigned to each other, and also
     // tracks variables which are dereferenced and marks them as ptrs.
     // Look for assignments to *p, and ptrs passed to functions
+    //
     if (gsFindVulnerableParams())
     {
         // Replace vulnerable params by shadow copies.
+        //
         gsParamsToShadows();
+    }
+    else
+    {
+        // There are no vulnerable params.
+        // Clear out the info to avoid looking at stale data.
+        //
+        gsShadowVarInfo = nullptr;
     }
 }
 
@@ -191,20 +199,25 @@ Compiler::fgWalkResult Compiler::gsMarkPtrsAndAssignGroups(GenTree** pTree, fgWa
             newState.isUnderIndir = false;
             newState.isAssignSrc  = false;
             {
-                if (tree->AsCall()->gtCallThisArg != nullptr)
+                CallArg* thisArg = tree->AsCall()->gtArgs.GetThisArg();
+                if (thisArg != nullptr)
                 {
+                    // TODO-ARGS: This is a quirk for previous behavior where
+                    // we set this to true for the 'this' arg. The flag can
+                    // then remain set after the recursive call, depending on
+                    // what the child node is, e.g. GT_ARGPLACE did not clear
+                    // the flag, so when processing the second arg we would
+                    // also have isUnderIndir = true.
                     newState.isUnderIndir = true;
-                    comp->fgWalkTreePre(&tree->AsCall()->gtCallThisArg->NodeRef(), gsMarkPtrsAndAssignGroups,
-                                        (void*)&newState);
                 }
 
-                for (GenTreeCall::Use& use : tree->AsCall()->Args())
+                for (CallArg& arg : tree->AsCall()->gtArgs.EarlyArgs())
                 {
-                    comp->fgWalkTreePre(&use.NodeRef(), gsMarkPtrsAndAssignGroups, (void*)&newState);
+                    comp->fgWalkTreePre(&arg.EarlyNodeRef(), gsMarkPtrsAndAssignGroups, (void*)&newState);
                 }
-                for (GenTreeCall::Use& use : tree->AsCall()->LateArgs())
+                for (CallArg& arg : tree->AsCall()->gtArgs.LateArgs())
                 {
-                    comp->fgWalkTreePre(&use.NodeRef(), gsMarkPtrsAndAssignGroups, (void*)&newState);
+                    comp->fgWalkTreePre(&arg.LateNodeRef(), gsMarkPtrsAndAssignGroups, (void*)&newState);
                 }
 
                 if (tree->AsCall()->gtCallType == CT_INDIRECT)
@@ -368,7 +381,7 @@ void Compiler::gsParamsToShadows()
     for (UINT lclNum = 0; lclNum < lvaOldCount; lclNum++)
     {
         LclVarDsc* varDsc                  = lvaGetDesc(lclNum);
-        gsShadowVarInfo[lclNum].shadowCopy = NO_SHADOW_COPY;
+        gsShadowVarInfo[lclNum].shadowCopy = BAD_VAR_NUM;
 
         // Only care about params whose values are on the stack
         if (!ShadowParamVarInfo::mayNeedShadowCopy(varDsc))
@@ -452,7 +465,7 @@ void Compiler::gsParamsToShadows()
             unsigned int lclNum       = tree->AsLclVarCommon()->GetLclNum();
             unsigned int shadowLclNum = m_compiler->gsShadowVarInfo[lclNum].shadowCopy;
 
-            if (shadowLclNum != NO_SHADOW_COPY)
+            if (shadowLclNum != BAD_VAR_NUM)
             {
                 LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclNum);
                 assert(ShadowParamVarInfo::mayNeedShadowCopy(varDsc));
@@ -492,7 +505,7 @@ void Compiler::gsParamsToShadows()
         const LclVarDsc* varDsc = lvaGetDesc(lclNum);
 
         const unsigned shadowVarNum = gsShadowVarInfo[lclNum].shadowCopy;
-        if (shadowVarNum == NO_SHADOW_COPY)
+        if (shadowVarNum == BAD_VAR_NUM)
         {
             continue;
         }
@@ -544,7 +557,7 @@ void Compiler::gsParamsToShadows()
                 const LclVarDsc* varDsc = lvaGetDesc(lclNum);
 
                 const unsigned shadowVarNum = gsShadowVarInfo[lclNum].shadowCopy;
-                if (shadowVarNum == NO_SHADOW_COPY)
+                if (shadowVarNum == BAD_VAR_NUM)
                 {
                     continue;
                 }

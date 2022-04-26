@@ -56,12 +56,11 @@ namespace System.Security.Cryptography
 
         private ICryptoTransform CreateTransform(byte[] rgbKey, byte[]? rgbIV, bool encrypting)
         {
+            ArgumentNullException.ThrowIfNull(rgbKey);
+
             // note: rgbIV is guaranteed to be cloned before this method, so no need to clone it again
 
-            if (rgbKey == null)
-                throw new ArgumentNullException(nameof(rgbKey));
-
-            if (!ValidKeySize(rgbKey.Length, out int keySize))
+            if (!ValidKeySize(rgbKey.Length))
                 throw new ArgumentException(SR.Cryptography_InvalidKeySize, nameof(rgbKey));
 
             if (rgbIV != null)
@@ -86,7 +85,7 @@ namespace System.Security.Cryptography
             PaddingMode paddingMode,
             out int bytesWritten)
         {
-            if (!ValidKeySize(Key.Length, out int keySize))
+            if (!ValidKeySize(Key.Length))
                 throw new InvalidOperationException(SR.Cryptography_InvalidKeySize);
 
             Debug.Assert(EffectiveKeySize == KeySize);
@@ -112,7 +111,7 @@ namespace System.Security.Cryptography
             PaddingMode paddingMode,
             out int bytesWritten)
         {
-            if (!ValidKeySize(Key.Length, out int keySize))
+            if (!ValidKeySize(Key.Length))
                 throw new InvalidOperationException(SR.Cryptography_InvalidKeySize);
 
             Debug.Assert(EffectiveKeySize == KeySize);
@@ -139,7 +138,7 @@ namespace System.Security.Cryptography
             PaddingMode paddingMode,
             out int bytesWritten)
         {
-            if (!ValidKeySize(Key.Length, out int keySize))
+            if (!ValidKeySize(Key.Length))
                 throw new InvalidOperationException(SR.Cryptography_InvalidKeySize);
 
             Debug.Assert(EffectiveKeySize == KeySize);
@@ -166,7 +165,7 @@ namespace System.Security.Cryptography
             PaddingMode paddingMode,
             out int bytesWritten)
         {
-            if (!ValidKeySize(Key.Length, out int keySize))
+            if (!ValidKeySize(Key.Length))
                 throw new InvalidOperationException(SR.Cryptography_InvalidKeySize);
 
             Debug.Assert(EffectiveKeySize == KeySize);
@@ -219,15 +218,14 @@ namespace System.Security.Cryptography
             return BlockSize / BitsPerByte;
         }
 
-        private bool ValidKeySize(int keySizeBytes, out int keySizeBits)
+        private new bool ValidKeySize(int keySizeBytes)
         {
             if (keySizeBytes > (int.MaxValue / BitsPerByte))
             {
-                keySizeBits = 0;
                 return false;
             }
 
-            keySizeBits = keySizeBytes << 3;
+            int keySizeBits = keySizeBytes << 3;
             return keySizeBits.IsLegalSize(LegalKeySizes);
         }
     }

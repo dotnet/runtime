@@ -130,9 +130,8 @@ namespace System.Threading
         public static bool Wait(object obj, int millisecondsTimeout)
         {
             Condition condition = GetCondition(obj);
-            DebugBlockingItem blockingItem;
 
-            using (new DebugBlockingScope(obj, DebugBlockingItemType.MonitorEvent, millisecondsTimeout, out blockingItem))
+            using (new DebugBlockingScope(obj, DebugBlockingItemType.MonitorEvent, millisecondsTimeout, out _))
             {
                 return condition.Wait(millisecondsTimeout);
             }
@@ -164,9 +163,7 @@ namespace System.Threading
 
         internal static bool TryAcquireContended(Lock lck, object obj, int millisecondsTimeout)
         {
-            DebugBlockingItem blockingItem;
-
-            using (new DebugBlockingScope(obj, DebugBlockingItemType.MonitorCriticalSection, millisecondsTimeout, out blockingItem))
+            using (new DebugBlockingScope(obj, DebugBlockingItemType.MonitorCriticalSection, millisecondsTimeout, out _))
             {
                 return lck.TryAcquire(millisecondsTimeout, trackContentions: true);
             }

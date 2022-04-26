@@ -7,17 +7,17 @@
   .ver 4:0:0:0
 }
 .assembly extern mscorlib {}
-.assembly extern common {}
+.assembly extern eh_common {}
 .assembly 'rethrowinfinallyinsidecatch' {}
 .assembly extern xunit.core {}
 
 
-.namespace Test
+.namespace Test_rethrowinfinallyinsidecatch_il
 {
-  .class private auto ansi beforefieldinit Class1
+  .class public auto ansi beforefieldinit Class1
          extends [mscorlib]System.Object
   {
-    .field private static class [common]TestUtil.TestLog testLog
+    .field private static class [eh_common]TestUtil.TestLog testLog
     .method private hidebysig specialname rtspecialname static void  .cctor() cil managed
     {
       .maxstack  2
@@ -48,13 +48,13 @@
       callvirt   instance void [mscorlib]System.IO.TextWriter::WriteLine(string)
 
       ldloc.s    expectedOut
-      newobj     instance void [common]TestUtil.TestLog::.ctor(object)
-      stsfld     class [common]TestUtil.TestLog Test.Class1::testLog
+      newobj     instance void [eh_common]TestUtil.TestLog::.ctor(object)
+      stsfld     class [eh_common]TestUtil.TestLog Test_rethrowinfinallyinsidecatch_il.Class1::testLog
       ret
     } 
 
     .method public hidebysig static int32 
-            Main(string[] args) cil managed
+            Main() cil managed
     {
       .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
           01 00 00 00
@@ -66,8 +66,8 @@
                class [mscorlib]System.Exception e,
                int32 V_3)
 
-      ldsfld     class [common]TestUtil.TestLog Test.Class1::testLog
-      callvirt   instance void [common]TestUtil.TestLog::StartRecording()
+      ldsfld     class [eh_common]TestUtil.TestLog Test_rethrowinfinallyinsidecatch_il.Class1::testLog
+      callvirt   instance void [eh_common]TestUtil.TestLog::StartRecording()
 
       .try
       {
@@ -142,11 +142,11 @@
 
       }  
       L3:  
-      ldsfld     class [common]TestUtil.TestLog Test.Class1::testLog
-      callvirt   instance void [common]TestUtil.TestLog::StopRecording()
+      ldsfld     class [eh_common]TestUtil.TestLog Test_rethrowinfinallyinsidecatch_il.Class1::testLog
+      callvirt   instance void [eh_common]TestUtil.TestLog::StopRecording()
       
-      ldsfld     class [common]TestUtil.TestLog Test.Class1::testLog
-      callvirt   instance int32 [common]TestUtil.TestLog::VerifyOutput()
+      ldsfld     class [eh_common]TestUtil.TestLog Test_rethrowinfinallyinsidecatch_il.Class1::testLog
+      callvirt   instance int32 [eh_common]TestUtil.TestLog::VerifyOutput()
 
       ret
     } 

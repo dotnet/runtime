@@ -285,7 +285,6 @@ namespace System.Data
                         if (null != ndxSearch)
                         {
                             ndxSearch.RemoveRef();
-                            ndxSearch = null;
                         }
                         ndxSearch = new Index(dst, dst._primaryKey!.Key.GetIndexDesc(), DataViewRowState.OriginalRows | DataViewRowState.Added, null);
                         ndxSearch.AddRef(); // need to addref twice, otherwise it will be collected
@@ -314,7 +313,6 @@ namespace System.Data
             if (null != ndxSearch)
             {
                 ndxSearch.RemoveRef();
-                ndxSearch = null;
             }
 
             _dataSet.EnforceConstraints = fEnforce;
@@ -634,7 +632,7 @@ namespace System.Data
             }
         }
 
-        private DataKey GetSrcKey(DataTable src, DataTable dst)
+        private static DataKey GetSrcKey(DataTable src, DataTable dst)
         {
             if (src._primaryKey != null)
             {

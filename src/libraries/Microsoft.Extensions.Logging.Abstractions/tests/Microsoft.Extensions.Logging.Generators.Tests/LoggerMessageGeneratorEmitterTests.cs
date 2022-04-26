@@ -10,7 +10,7 @@ using Xunit;
 
 namespace Microsoft.Extensions.Logging.Generators.Tests
 {
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/32743", TestRuntimes.Mono)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/52062", TestPlatforms.Browser)]
     public class LoggerMessageGeneratorEmitterTests
     {
         [Fact]
@@ -27,7 +27,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
                     new[] { typeof(ILogger).Assembly, typeof(LoggerMessageAttribute).Assembly },
                     new[] { testSourceCode }).ConfigureAwait(false);
 
-                Assert.Empty(d);
+                Assert.True(src.Contains("WithDiagnostics") ? !d.IsEmpty : d.IsEmpty);
                 Assert.Single(r);
             }
         }
@@ -165,7 +165,7 @@ internal static partial class TestWithDefaultValues
 
         private async Task VerifyAgainstBaselineUsingFile(string filename, string testSourceCode)
         {
-            string baseline = await File.ReadAllTextAsync(Path.Combine("Baselines", filename)).ConfigureAwait(false);
+            string baseline = LineEndingsHelper.Normalize(await File.ReadAllTextAsync(Path.Combine("Baselines", filename)).ConfigureAwait(false));
             string[] expectedLines = baseline.Replace("%VERSION%", typeof(LoggerMessageGenerator).Assembly.GetName().Version?.ToString())
                                              .Split(Environment.NewLine);
 

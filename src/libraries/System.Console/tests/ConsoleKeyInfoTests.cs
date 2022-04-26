@@ -33,6 +33,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(SampleConsoleKeyInfos))]
+        [SkipOnCoreClr("https://github.com/dotnet/runtime/issues/60240", RuntimeTestModes.JitStressRegs)]
         public void Equals_SameData(ConsoleKeyInfo cki)
         {
             ConsoleKeyInfo other = cki; // otherwise compiler warns about comparing the instance with itself

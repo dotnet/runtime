@@ -8,19 +8,23 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
+.assembly extern xunit.core {}
 .assembly extern mscorlib {}
-.assembly extern common {}
-.assembly test {}
-.module test.exe
+.assembly extern eh_common {}
+.assembly 'throwinfinallyintryfilter1' {}
 
 
+.class public auto ansi Test_throwinfinallyintryfilter1 extends [mscorlib] System.Object {
 .method public static int32 Main()
 {
+  .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+      01 00 00 00
+  )
   .entrypoint
   .maxstack  2
   .locals init (
     class [mscorlib]System.IO.StringWriter expectedOut,
-    class [common]TestUtil.TestLog testLog
+    class [eh_common]TestUtil.TestLog testLog
   )
 
     
@@ -48,11 +52,11 @@
   ldstr      "caught an exception!"
   callvirt   instance void [mscorlib]System.IO.TextWriter::WriteLine(string)
   ldloc.s    expectedOut
-  newobj     instance void [common]TestUtil.TestLog::.ctor(object)
+  newobj     instance void [eh_common]TestUtil.TestLog::.ctor(object)
   stloc.s    testLog
 
   ldloc.s    testLog
-  callvirt   instance void [common]TestUtil.TestLog::StartRecording()
+  callvirt   instance void [eh_common]TestUtil.TestLog::StartRecording()
 
   .try
   {
@@ -71,14 +75,14 @@
   DONE:
   
   ldloc.s    testLog
-  callvirt   instance void [common]TestUtil.TestLog::StopRecording()
+  callvirt   instance void [eh_common]TestUtil.TestLog::StopRecording()
   
   ldloc.s    testLog
-  callvirt   instance int32 [common]TestUtil.TestLog::VerifyOutput()
+  callvirt   instance int32 [eh_common]TestUtil.TestLog::VerifyOutput()
   
   ret
 }
-
+}
 
 .method public static void  func(int32 i)
 {

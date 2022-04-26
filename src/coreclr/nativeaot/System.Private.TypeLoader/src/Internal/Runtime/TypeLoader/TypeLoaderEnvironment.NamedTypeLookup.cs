@@ -243,7 +243,7 @@ namespace Internal.Runtime.TypeLoader
         ///    metadataReader + typeDefHandle  - a valid metadata reader + typeDefinitionHandle where "metadataReader" is one
         ///                                      of the metadata readers returned by ExecutionEnvironment.MetadataReaders.
         ///
-        /// Note: Although this method has a "bool" return value like the other mapping table accessors, the Project N pay-for-play design
+        /// Note: Although this method has a "bool" return value like the other mapping table accessors, the pay-for-play design
         /// guarantees that any type enabled for metadata also has a RuntimeTypeHandle underneath.
         /// </summary>
         /// <param name="qTypeDefinition">TypeDef handle for the type to look up</param>
@@ -292,8 +292,7 @@ namespace Internal.Runtime.TypeLoader
                 metadataLookupResult.VersionNumber = -1;
             }
 
-            NamedTypeLookupResult runtimeTypeHandleResult;
-            if (_runtimeTypeHandleToMetadataHashtable.TryGetValue(runtimeTypeHandle, out runtimeTypeHandleResult))
+            if (_runtimeTypeHandleToMetadataHashtable.TryGetValue(runtimeTypeHandle, out _))
             {
                 metadataLookupResult.GcStaticFields = IntPtr.Zero;
                 metadataLookupResult.NonGcStaticFields = IntPtr.Zero;

@@ -44,10 +44,9 @@ namespace Internal.Runtime.CompilerHelpers
 
         public override bool TryGetStructFieldOffset(RuntimeTypeHandle structureTypeHandle, string fieldName, out bool structExists, out uint offset)
         {
-            ExternalReferencesTable externalReferences;
             NativeParser entryParser;
             structExists = false;
-            if (TryGetStructData(structureTypeHandle, out externalReferences, out entryParser))
+            if (TryGetStructData(structureTypeHandle, out _, out entryParser))
             {
                 structExists = true;
 
@@ -92,7 +91,7 @@ namespace Internal.Runtime.CompilerHelpers
             return false;
         }
 
-        private unsafe bool GetMarshallersForDelegate(RuntimeTypeHandle delegateTypeHandle, out IntPtr openStub, out IntPtr closedStub, out IntPtr delegateCreationStub)
+        private static unsafe bool GetMarshallersForDelegate(RuntimeTypeHandle delegateTypeHandle, out IntPtr openStub, out IntPtr closedStub, out IntPtr delegateCreationStub)
         {
             int delegateHashcode = delegateTypeHandle.GetHashCode();
             openStub = IntPtr.Zero;
@@ -128,7 +127,7 @@ namespace Internal.Runtime.CompilerHelpers
             return false;
         }
 
-        private unsafe bool TryGetStructData(RuntimeTypeHandle structTypeHandle, out ExternalReferencesTable externalReferences, out NativeParser entryParser)
+        private static unsafe bool TryGetStructData(RuntimeTypeHandle structTypeHandle, out ExternalReferencesTable externalReferences, out NativeParser entryParser)
         {
             int structHashcode = structTypeHandle.GetHashCode();
             externalReferences = default(ExternalReferencesTable);
@@ -157,7 +156,7 @@ namespace Internal.Runtime.CompilerHelpers
             return false;
         }
 
-        private unsafe bool TryGetMarshallersForStruct(RuntimeTypeHandle structTypeHandle, out IntPtr marshalStub, out IntPtr unmarshalStub, out IntPtr destroyStub, out bool hasInvalidLayout, out int size)
+        private static unsafe bool TryGetMarshallersForStruct(RuntimeTypeHandle structTypeHandle, out IntPtr marshalStub, out IntPtr unmarshalStub, out IntPtr destroyStub, out bool hasInvalidLayout, out int size)
         {
             marshalStub = IntPtr.Zero;
             unmarshalStub = IntPtr.Zero;

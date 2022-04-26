@@ -8,7 +8,7 @@ namespace System.Reflection.Metadata
 {
     public static partial class AssemblyExtensions
     {
-        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_InternalTryGetRawMetadata")]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_InternalTryGetRawMetadata")]
         [return: MarshalAs(UnmanagedType.Bool)]
         private static unsafe partial bool InternalTryGetRawMetadata(QCallAssembly assembly, ref byte* blob, ref int length);
 
@@ -30,10 +30,7 @@ namespace System.Reflection.Metadata
         [CLSCompliant(false)] // out byte* blob
         public static unsafe bool TryGetRawMetadata(this Assembly assembly, out byte* blob, out int length)
         {
-            if (assembly == null)
-            {
-                throw new ArgumentNullException(nameof(assembly));
-            }
+            ArgumentNullException.ThrowIfNull(assembly);
 
             blob = null;
             length = 0;

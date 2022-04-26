@@ -2,8 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-
-using Internal.Runtime.CompilerServices;
+using System.Runtime.CompilerServices;
 
 namespace System
 {
@@ -14,7 +13,7 @@ namespace System
             if (byteLength == 0)
                 return;
 
-#if TARGET_AMD64 || TARGET_ARM64
+#if TARGET_AMD64 || TARGET_ARM64 || TARGET_LOONGARCH64
             // The exact matrix on when ZeroMemory is faster than InitBlockUnaligned is very complex. The factors to consider include
             // type of hardware and memory alignment. This threshold was chosen as a good balance across different configurations.
             if (byteLength > 768)

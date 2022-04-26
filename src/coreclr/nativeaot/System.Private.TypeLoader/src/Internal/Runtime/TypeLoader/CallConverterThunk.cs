@@ -259,8 +259,7 @@ namespace Internal.Runtime.TypeLoader
             Debug.Assert(RuntimeAugments.IsGenericType(delegateType));
 
             RuntimeTypeHandle[] typeArgs;
-            RuntimeTypeHandle genericTypeDefHandle;
-            genericTypeDefHandle = RuntimeAugments.GetGenericInstantiation(delegateType, out typeArgs);
+            RuntimeAugments.GetGenericInstantiation(delegateType, out typeArgs);
             Debug.Assert(typeArgs != null && typeArgs.Length > 0);
 
             RuntimeSignature invokeMethodSignature;
@@ -303,9 +302,8 @@ namespace Internal.Runtime.TypeLoader
         public static unsafe bool TryGetNonUnboxingFunctionPointerFromUnboxingAndInstantiatingStub(IntPtr potentialStub, RuntimeTypeHandle exactType, out IntPtr nonUnboxingMethod)
         {
             IntPtr callConversionId;
-            IntPtr commonStubDataPtr;
             object thunkPoolHeap = s_thunkPoolHeap;
-            if (thunkPoolHeap == null || !RuntimeAugments.TryGetThunkData(thunkPoolHeap, potentialStub, out callConversionId, out commonStubDataPtr))
+            if (thunkPoolHeap == null || !RuntimeAugments.TryGetThunkData(thunkPoolHeap, potentialStub, out callConversionId, out _))
             {
                 // This isn't a call conversion stub
                 nonUnboxingMethod = IntPtr.Zero;
@@ -383,9 +381,8 @@ namespace Internal.Runtime.TypeLoader
             methodTarget = instantiatingArg = IntPtr.Zero;
 
             IntPtr callConversionId;
-            IntPtr commonStubDataPtr;
             object thunkPoolHeap = s_thunkPoolHeap;
-            if (thunkPoolHeap == null || !RuntimeAugments.TryGetThunkData(thunkPoolHeap, potentialStub, out callConversionId, out commonStubDataPtr))
+            if (thunkPoolHeap == null || !RuntimeAugments.TryGetThunkData(thunkPoolHeap, potentialStub, out callConversionId, out _))
             {
                 // This isn't a call conversion stub
                 return false;
@@ -515,7 +512,7 @@ namespace Internal.Runtime.TypeLoader
             }
             finally
             {
-                conversionParams.ResetPinnedObjects();
+                CallConversionParameters.ResetPinnedObjects();
             }
         }
 

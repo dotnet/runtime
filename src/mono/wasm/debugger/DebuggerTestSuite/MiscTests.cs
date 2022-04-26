@@ -7,6 +7,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 using Xunit;
+using Xunit.Sdk;
 
 [assembly: CollectionBehavior(CollectionBehavior.CollectionPerAssembly)]
 
@@ -33,7 +34,7 @@ namespace DebuggerTests
             });
 
             var eval_res = await cli.SendCommand("Runtime.evaluate", eval_req, token);
-            Assert.True(eval_res.IsErr);
+            Assert.False(eval_res.IsOk);
             Assert.Equal("Uncaught", eval_res.Error["exceptionDetails"]?["text"]?.Value<string>());
         }
 
@@ -83,8 +84,8 @@ namespace DebuggerTests
                 "window.setTimeout(function() { invoke_static_method ('[debugger-test] Math:PrimitiveTypesTest'); }, 1);",
                 test_fn: async (locals) =>
                 {
-                    CheckSymbol(locals, "c0", "8364 '€'");
-                    CheckSymbol(locals, "c1", "65 'A'");
+                    await CheckSymbol(locals, "c0", '€');
+                    await CheckSymbol(locals, "c1", 'A');
                     await Task.CompletedTask;
                 }
             );
@@ -203,18 +204,18 @@ namespace DebuggerTests
                 use_cfo: use_cfo,
                 test_fn: async (locals) =>
                 {
-                    CheckObject(locals, "list", "System.Collections.Generic.Dictionary<Math[], Math.IsMathNull>", description: "Count = 0");
-                    CheckObject(locals, "list_null", "System.Collections.Generic.Dictionary<Math[], Math.IsMathNull>", is_null: true);
+                    await CheckObject(locals, "list", "System.Collections.Generic.Dictionary<Math[], Math.IsMathNull>", description: "Count = 0");
+                    await CheckObject(locals, "list_null", "System.Collections.Generic.Dictionary<Math[], Math.IsMathNull>", is_null: true);
 
-                    CheckArray(locals, "list_arr", "System.Collections.Generic.Dictionary<Math[], Math.IsMathNull>[]", "System.Collections.Generic.Dictionary<Math[], Math.IsMathNull>[1]");
-                    CheckObject(locals, "list_arr_null", "System.Collections.Generic.Dictionary<Math[], Math.IsMathNull>[]", is_null: true);
+                    await CheckArray(locals, "list_arr", "System.Collections.Generic.Dictionary<Math[], Math.IsMathNull>[]", "System.Collections.Generic.Dictionary<Math[], Math.IsMathNull>[1]");
+                    await CheckObject(locals, "list_arr_null", "System.Collections.Generic.Dictionary<Math[], Math.IsMathNull>[]", is_null: true);
 
                     // Unused locals
-                    CheckObject(locals, "list_unused", "System.Collections.Generic.Dictionary<Math[], Math.IsMathNull>", description: "Count = 0");
-                    CheckObject(locals, "list_null_unused", "System.Collections.Generic.Dictionary<Math[], Math.IsMathNull>", is_null: true);
+                    await CheckObject(locals, "list_unused", "System.Collections.Generic.Dictionary<Math[], Math.IsMathNull>", description: "Count = 0");
+                    await CheckObject(locals, "list_null_unused", "System.Collections.Generic.Dictionary<Math[], Math.IsMathNull>", is_null: true);
 
-                    CheckArray(locals, "list_arr_unused", "System.Collections.Generic.Dictionary<Math[], Math.IsMathNull>[]", "System.Collections.Generic.Dictionary<Math[], Math.IsMathNull>[1]");
-                    CheckObject(locals, "list_arr_null_unused", "System.Collections.Generic.Dictionary<Math[], Math.IsMathNull>[]", is_null: true);
+                    await CheckArray(locals, "list_arr_unused", "System.Collections.Generic.Dictionary<Math[], Math.IsMathNull>[]", "System.Collections.Generic.Dictionary<Math[], Math.IsMathNull>[1]");
+                    await CheckObject(locals, "list_arr_null_unused", "System.Collections.Generic.Dictionary<Math[], Math.IsMathNull>[]", is_null: true);
                     await Task.CompletedTask;
                 }
             );
@@ -244,7 +245,7 @@ namespace DebuggerTests
                    });
 
                    var frame_props = await cli.SendCommand("Runtime.getProperties", get_prop_req, token);
-                   Assert.True(frame_props.IsErr);
+                   Assert.False(frame_props.IsOk);
                }
             );
         }
@@ -275,11 +276,11 @@ namespace DebuggerTests
             var vt_local_props = await GetObjectOnFrame(pause_location["callFrames"][0], "vt_local");
             Assert.Equal(5, vt_local_props.Count());
 
-            CheckString(vt_local_props, "StringField", "string#0");
-            CheckValueType(vt_local_props, "SimpleStructField", "DebuggerTests.ValueTypesTest.SimpleStruct");
-            CheckValueType(vt_local_props, "SimpleStructProperty", "DebuggerTests.ValueTypesTest.SimpleStruct");
+            await CheckString(vt_local_props, "StringField", "string#0");
+            await CheckValueType(vt_local_props, "SimpleStructField", "DebuggerTests.ValueTypesTest.SimpleStruct");
+            await CheckValueType(vt_local_props, "SimpleStructProperty", "DebuggerTests.ValueTypesTest.SimpleStruct");
             await CheckDateTime(vt_local_props, "DT", new DateTime(2020, 1, 2, 3, 4, 5));
-            CheckEnum(vt_local_props, "RGB", "DebuggerTests.RGB", "Blue");
+            await CheckEnum(vt_local_props, "RGB", "DebuggerTests.RGB", "Blue");
 
             // Check ss_local's properties
             var ss_local_props = await GetObjectOnFrame(pause_location["callFrames"][0], "ss_local");
@@ -298,8 +299,8 @@ namespace DebuggerTests
 
                 // Check ss_local.gs
                 var gs_props = await GetObjectOnLocals(ss_local_props, "gs");
-                CheckString(gs_props, "StringField", "set in MethodWithLocalStructs#SimpleStruct#gs#StringField");
-                CheckObject(gs_props, "List", "System.Collections.Generic.List<System.DateTime>", description: "Count = 1");
+                await CheckString(gs_props, "StringField", "set in MethodWithLocalStructs#SimpleStruct#gs#StringField");
+                await CheckObject(gs_props, "List", "System.Collections.Generic.List<System.DateTime>", description: "Count = 1");
             }
 
             // Check gs_local's properties
@@ -562,7 +563,7 @@ namespace DebuggerTests
                     Days = TNumber(3530),
                     Minutes = TNumber(2),
                     Seconds = TNumber(4),
-                }, "ts_props", num_fields: 12);
+                }, "ts_props", skip_num_fields_check: true);
 
             // DateTimeOffset
             await CompareObjectPropertiesFor(frame_locals, "dto",
@@ -571,7 +572,7 @@ namespace DebuggerTests
                     Day = TNumber(2),
                     Year = TNumber(2020),
                     DayOfWeek = TEnum("System.DayOfWeek", "Thursday")
-                }, "dto_props", num_fields: 20);
+                }, "dto_props", skip_num_fields_check: true);
 
             var DT = new DateTime(2004, 10, 15, 1, 2, 3);
             var DTO = new DateTimeOffset(dt0, new TimeSpan(2, 14, 0));
@@ -654,7 +655,6 @@ namespace DebuggerTests
                 var this_props = await GetObjectOnLocals(frame_locals, "this");
                 await CheckProps(this_props, new
                 {
-                    TestEvent = TSymbol("System.EventHandler<string>"),
                     Delegate = TSymbol("System.MulticastDelegate")
                 }, "this_props");
             });
@@ -737,6 +737,7 @@ namespace DebuggerTests
         [Fact]
         public async Task DebugLazyLoadedAssemblyWithPdb()
         {
+            Task<JObject> bpResolved = WaitForBreakpointResolvedEvent();
             int line = 9;
             await SetBreakpoint(".*/lazy-debugger-test.cs$", line, 0, use_regex: true);
             await LoadAssemblyDynamically(
@@ -745,7 +746,9 @@ namespace DebuggerTests
 
             var source_location = "dotnet://lazy-debugger-test.dll/lazy-debugger-test.cs";
             Assert.Contains(source_location, scripts.Values);
-            System.Threading.Thread.Sleep(1000);
+
+            await bpResolved;
+
             var pause_location = await EvaluateAndCheck(
                "window.setTimeout(function () { invoke_static_method('[lazy-debugger-test] LazyMath:IntAdd', 5, 10); }, 1);",
                source_location, line, 8,
@@ -756,9 +759,9 @@ namespace DebuggerTests
         }
 
         [Fact]
-        [Trait("Category", "linux-failing")] // https://github.com/dotnet/runtime/issues/62667
         public async Task DebugLazyLoadedAssemblyWithEmbeddedPdb()
         {
+            Task<JObject> bpResolved = WaitForBreakpointResolvedEvent();
             int line = 9;
             await SetBreakpoint(".*/lazy-debugger-test-embedded.cs$", line, 0, use_regex: true);
             await LoadAssemblyDynamically(
@@ -767,6 +770,8 @@ namespace DebuggerTests
 
             var source_location = "dotnet://lazy-debugger-test-embedded.dll/lazy-debugger-test-embedded.cs";
             Assert.Contains(source_location, scripts.Values);
+
+            await bpResolved;
 
             var pause_location = await EvaluateAndCheck(
                "window.setTimeout(function () { invoke_static_method('[lazy-debugger-test-embedded] LazyMath:IntAdd', 5, 10); }, 1);",
@@ -828,6 +833,26 @@ namespace DebuggerTests
 
             var source = await cli.SendCommand("Debugger.getScriptSource", sourceToGet, token);
             Assert.True(source.IsOk, $"Failed to getScriptSource: {source}");
+        }
+
+        [Fact]
+        public async Task GetSourceEmbeddedSource()
+        {
+            string asm_file = Path.Combine(DebuggerTestAppPath, "ApplyUpdateReferencedAssembly.dll");
+            string pdb_file = Path.Combine(DebuggerTestAppPath, "ApplyUpdateReferencedAssembly.pdb");
+            string asm_file_hot_reload = Path.Combine(DebuggerTestAppPath, "../wasm/ApplyUpdateReferencedAssembly.dll");
+
+            var bp = await SetBreakpoint(".*/MethodBody1.cs$", 48, 12, use_regex: true);
+            var pause_location = await LoadAssemblyAndTestHotReloadUsingSDBWithoutChanges(
+                    asm_file, pdb_file, "MethodBody5", "StaticMethod1");
+
+            var sourceToGet = JObject.FromObject(new
+            {
+                scriptId = pause_location["callFrames"][0]["functionLocation"]["scriptId"].Value<string>()
+            });
+
+            var source = await cli.SendCommand("Debugger.getScriptSource", sourceToGet, token);
+            Assert.False(source.Value["scriptSource"].Value<string>().Contains("// Unable to read document"));
         }
 
         [Fact]
@@ -914,7 +939,7 @@ namespace DebuggerTests
 
             await EvaluateAndCheck(
                 "window.setTimeout(function() {" + expression + "; }, 1);",
-                "dotnet://debugger-test.dll/debugger-test.cs", 860, 8,
+                "dotnet://debugger-test.dll/debugger-test.cs", 965, 8,
                 "CallToEvaluateLocal",
                 wait_for_event_fn: async (pause_location) =>
                 {
@@ -929,5 +954,24 @@ namespace DebuggerTests
             );
         }
         //TODO add tests covering basic stepping behavior as step in/out/over
+
+        [Theory]
+        [InlineData(
+            "DebuggerTests.CheckSpecialCharactersInPath", 
+            "dotnet://debugger-test-special-char-in-path.dll/test#.cs")]
+        [InlineData(
+            "DebuggerTests.CheckSNonAsciiCharactersInPath", 
+            "dotnet://debugger-test-special-char-in-path.dll/non-ascii-test-ął.cs")]
+        public async Task SetBreakpointInProjectWithSpecialCharactersInPath(
+            string classWithNamespace, string expectedFileLocation)
+        {
+            var bp = await SetBreakpointInMethod("debugger-test-special-char-in-path.dll", classWithNamespace, "Evaluate", 1);
+            await EvaluateAndCheck(
+                $"window.setTimeout(function() {{ invoke_static_method ('[debugger-test-special-char-in-path] {classWithNamespace}:Evaluate'); }}, 1);",
+                expectedFileLocation,
+                bp.Value["locations"][0]["lineNumber"].Value<int>(),
+                bp.Value["locations"][0]["columnNumber"].Value<int>(),
+                "Evaluate");
+        }
     }
 }

@@ -150,7 +150,7 @@ namespace System.Reflection.TypeLoading
                     {
                         if (returnType is null)
                             // if we are here we have no args or property type to select over and we have more than one property with that name
-                            throw new AmbiguousMatchException(SR.Arg_AmbiguousMatchException);
+                            throw new AmbiguousMatchException();
                     }
                 }
 
@@ -171,8 +171,11 @@ namespace System.Reflection.TypeLoading
 
         private QueryResult<M> Query<M>(string name, BindingFlags bindingAttr) where M : MemberInfo
         {
-            if (name == null)
+            if (name is null)
+            {
                 throw new ArgumentNullException(nameof(name));
+            }
+
             return Query<M>(name, bindingAttr, null);
         }
 

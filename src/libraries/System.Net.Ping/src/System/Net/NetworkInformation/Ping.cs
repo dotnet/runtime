@@ -42,10 +42,7 @@ namespace System.Net.NetworkInformation
         private void CheckArgs(int timeout, byte[] buffer, PingOptions? options)
         {
             CheckDisposed();
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer));
-            }
+            ArgumentNullException.ThrowIfNull(buffer);
 
             if (buffer.Length > MaxBufferSize)
             {
@@ -62,10 +59,7 @@ namespace System.Net.NetworkInformation
         {
             CheckArgs(timeout, buffer, options);
 
-            if (address == null)
-            {
-                throw new ArgumentNullException(nameof(address));
-            }
+            ArgumentNullException.ThrowIfNull(address);
 
             // Check if address family is installed.
             TestIsIpSupported(address);
@@ -227,7 +221,7 @@ namespace System.Net.NetworkInformation
             {
                 return SendPingCore(addressSnapshot, buffer, timeout, options);
             }
-            catch (Exception e)
+            catch (Exception e) when (e is not PlatformNotSupportedException)
             {
                 throw new PingException(SR.net_ping, e);
             }
@@ -236,6 +230,12 @@ namespace System.Net.NetworkInformation
                 Finish();
             }
         }
+
+        public PingReply Send(IPAddress address, TimeSpan timeout, byte[]? buffer = null, PingOptions? options = null) =>
+            Send(address, ToTimeoutMilliseconds(timeout), buffer ?? DefaultSendBuffer, options);
+
+        public PingReply Send(string hostNameOrAddress, TimeSpan timeout, byte[]? buffer = null,
+            PingOptions? options = null) => Send(hostNameOrAddress, ToTimeoutMilliseconds(timeout), buffer ?? DefaultSendBuffer, options);
 
         public void SendAsync(string hostNameOrAddress, object? userToken)
         {
@@ -336,7 +336,7 @@ namespace System.Net.NetworkInformation
                 Task<PingReply> pingReplyTask = SendPingAsyncCore(addressSnapshot, buffer, timeout, options);
                 return await pingReplyTask.ConfigureAwait(false);
             }
-            catch (Exception e)
+            catch (Exception e) when (e is not PlatformNotSupportedException)
             {
                 throw new PingException(SR.net_ping, e);
             }
@@ -361,6 +361,16 @@ namespace System.Net.NetworkInformation
             CheckArgs(timeout, buffer, options);
 
             return GetAddressAndSendAsync(hostNameOrAddress, timeout, buffer, options);
+        }
+
+        private static int ToTimeoutMilliseconds(TimeSpan timeout)
+        {
+            long totalMilliseconds = (long)timeout.TotalMilliseconds;
+            if (totalMilliseconds < -1 || totalMilliseconds > int.MaxValue)
+            {
+                throw new ArgumentOutOfRangeException(nameof(timeout));
+            }
+            return (int)totalMilliseconds;
         }
 
         public void SendAsyncCancel()
@@ -388,7 +398,7 @@ namespace System.Net.NetworkInformation
                 IPAddress[] addresses = Dns.GetHostAddresses(hostNameOrAddress);
                 return SendPingCore(addresses[0], buffer, timeout, options);
             }
-            catch (Exception e)
+            catch (Exception e) when (e is not PlatformNotSupportedException)
             {
                 throw new PingException(SR.net_ping, e);
             }
@@ -407,7 +417,7 @@ namespace System.Net.NetworkInformation
                 Task<PingReply> pingReplyTask = SendPingAsyncCore(addresses[0], buffer, timeout, options);
                 return await pingReplyTask.ConfigureAwait(false);
             }
-            catch (Exception e)
+            catch (Exception e) when (e is not PlatformNotSupportedException)
             {
                 throw new PingException(SR.net_ping, e);
             }
@@ -418,7 +428,7 @@ namespace System.Net.NetworkInformation
         }
 
         // Tests if the current machine supports the given ip protocol family.
-        private void TestIsIpSupported(IPAddress ip)
+        private static void TestIsIpSupported(IPAddress ip)
         {
             if (ip.AddressFamily == AddressFamily.InterNetwork && !SocketProtocolSupportPal.OSSupportsIPv4)
             {

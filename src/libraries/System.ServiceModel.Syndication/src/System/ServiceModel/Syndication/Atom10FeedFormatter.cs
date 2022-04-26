@@ -37,10 +37,11 @@ namespace System.ServiceModel.Syndication
 
         public Atom10FeedFormatter(Type feedTypeToCreate) : base()
         {
-            if (feedTypeToCreate == null)
+            if (feedTypeToCreate is null)
             {
                 throw new ArgumentNullException(nameof(feedTypeToCreate));
             }
+
             if (!typeof(SyndicationFeed).IsAssignableFrom(feedTypeToCreate))
             {
                 throw new ArgumentException(SR.Format(SR.InvalidObjectTypePassed, nameof(feedTypeToCreate), nameof(SyndicationFeed)), nameof(feedTypeToCreate));
@@ -72,7 +73,7 @@ namespace System.ServiceModel.Syndication
 
         public override bool CanRead(XmlReader reader)
         {
-            if (reader == null)
+            if (reader is null)
             {
                 throw new ArgumentNullException(nameof(reader));
             }
@@ -84,7 +85,7 @@ namespace System.ServiceModel.Syndication
 
         void IXmlSerializable.ReadXml(XmlReader reader)
         {
-            if (reader == null)
+            if (reader is null)
             {
                 throw new ArgumentNullException(nameof(reader));
             }
@@ -94,7 +95,7 @@ namespace System.ServiceModel.Syndication
 
         void IXmlSerializable.WriteXml(XmlWriter writer)
         {
-            if (writer == null)
+            if (writer is null)
             {
                 throw new ArgumentNullException(nameof(writer));
             }
@@ -114,7 +115,7 @@ namespace System.ServiceModel.Syndication
 
         public override void WriteTo(XmlWriter writer)
         {
-            if (writer == null)
+            if (writer is null)
             {
                 throw new ArgumentNullException(nameof(writer));
             }
@@ -378,7 +379,7 @@ namespace System.ServiceModel.Syndication
             return true;
         }
 
-        internal void WriteContentTo(XmlWriter writer, string elementName, SyndicationContent content)
+        internal static void WriteContentTo(XmlWriter writer, string elementName, SyndicationContent content)
         {
             if (content != null)
             {
@@ -386,7 +387,7 @@ namespace System.ServiceModel.Syndication
             }
         }
 
-        internal void WriteElement(XmlWriter writer, string elementName, string value)
+        internal static void WriteElement(XmlWriter writer, string elementName, string value)
         {
             if (value != null)
             {
@@ -412,7 +413,7 @@ namespace System.ServiceModel.Syndication
             }
         }
 
-        internal void WriteFeedLastUpdatedTimeTo(XmlWriter writer, DateTimeOffset lastUpdatedTime, bool isRequired)
+        internal static void WriteFeedLastUpdatedTimeTo(XmlWriter writer, DateTimeOffset lastUpdatedTime, bool isRequired)
         {
             if (lastUpdatedTime == DateTimeOffset.MinValue && isRequired)
             {
@@ -447,7 +448,7 @@ namespace System.ServiceModel.Syndication
             }
         }
 
-        internal void WriteItemLastUpdatedTimeTo(XmlWriter writer, DateTimeOffset lastUpdatedTime)
+        internal static void WriteItemLastUpdatedTimeTo(XmlWriter writer, DateTimeOffset lastUpdatedTime)
         {
             if (lastUpdatedTime == DateTimeOffset.MinValue)
             {
@@ -458,7 +459,7 @@ namespace System.ServiceModel.Syndication
                 AsString(lastUpdatedTime));
         }
 
-        internal void WriteLink(XmlWriter writer, SyndicationLink link, Uri baseUri)
+        internal static void WriteLink(XmlWriter writer, SyndicationLink link, Uri baseUri)
         {
             writer.WriteStartElement(Atom10Constants.LinkTag, Atom10Constants.Atom10Namespace);
             Uri baseUriToWrite = FeedUtils.GetBaseUriToWrite(baseUri, link.BaseUri);
@@ -495,13 +496,13 @@ namespace System.ServiceModel.Syndication
 
         protected virtual SyndicationItem ReadItem(XmlReader reader, SyndicationFeed feed)
         {
-            if (feed == null)
-            {
-                throw new ArgumentNullException(nameof(feed));
-            }
-            if (reader == null)
+            if (reader is null)
             {
                 throw new ArgumentNullException(nameof(reader));
+            }
+            if (feed is null)
+            {
+                throw new ArgumentNullException(nameof(feed));
             }
 
             SyndicationItem item = CreateItem(feed);
@@ -511,13 +512,13 @@ namespace System.ServiceModel.Syndication
 
         protected virtual IEnumerable<SyndicationItem> ReadItems(XmlReader reader, SyndicationFeed feed, out bool areAllItemsRead)
         {
-            if (feed == null)
-            {
-                throw new ArgumentNullException(nameof(feed));
-            }
-            if (reader == null)
+            if (reader is null)
             {
                 throw new ArgumentNullException(nameof(reader));
+            }
+            if (feed is null)
+            {
+                throw new ArgumentNullException(nameof(feed));
             }
 
             NullNotAllowedCollection<SyndicationItem> items = new NullNotAllowedCollection<SyndicationItem>();
@@ -603,7 +604,7 @@ namespace System.ServiceModel.Syndication
             return result;
         }
 
-        private string AsString(DateTimeOffset dateTime)
+        private static string AsString(DateTimeOffset dateTime)
         {
             if (dateTime.Offset == TimeSpan.Zero)
             {

@@ -90,6 +90,7 @@ private:
     
     Crst m_eagerFixupsLock;
     bool m_eagerFixupsHaveRun;
+    bool m_readyToRunCodeDisabled;
 
 private:
     NativeImage(AssemblyBinder *pAssemblyBinder, PEImageLayout *peImageLayout, LPCUTF8 imageFileName);
@@ -124,6 +125,18 @@ public:
     PTR_READYTORUN_CORE_HEADER GetComponentAssemblyHeader(LPCUTF8 assemblySimpleName);
 
     void CheckAssemblyMvid(Assembly *assembly) const;
+
+    void DisableAllR2RCode()
+    {
+        LIMITED_METHOD_CONTRACT;
+        m_readyToRunCodeDisabled = true;
+    }
+
+    bool ReadyToRunCodeDisabled()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_readyToRunCodeDisabled;
+    }
 
 private:
     IMDInternalImport *LoadManifestMetadata();

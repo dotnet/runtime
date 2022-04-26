@@ -35,7 +35,7 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         int ISymbolDefinitionNode.Offset => 0;
-        int ISymbolNode.Offset => Method.Context.Target.FatFunctionPointerOffset;
+        int ISymbolNode.Offset => Method.Context.Target.Architecture == TargetArchitecture.Wasm32 ? 1 << 31 : 2;
 
         public override bool IsShareable => true;
 

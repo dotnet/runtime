@@ -124,10 +124,8 @@ namespace Internal.Runtime.TypeLoader
             ref FieldAccessMetadata fieldAccessMetadata)
         {
             CanonicallyEquivalentEntryLocator canonWrapper = new CanonicallyEquivalentEntryLocator(declaringTypeHandle, canonFormKind);
-            TypeManagerHandle fieldHandleModule = ModuleList.Instance.GetModuleForMetadataReader(metadataReader);
-            bool isDynamicType = RuntimeAugments.IsDynamicType(declaringTypeHandle);
             string fieldName = null;
-            RuntimeTypeHandle declaringTypeHandleDefinition = Instance.GetTypeDefinition(declaringTypeHandle);
+            RuntimeTypeHandle declaringTypeHandleDefinition = TypeLoaderEnvironment.GetTypeDefinition(declaringTypeHandle);
 
             foreach (NativeFormatModuleInfo mappingTableModule in ModuleList.EnumerateModules(RuntimeAugments.GetModuleFromTypeHandle(declaringTypeHandle)))
             {
@@ -190,7 +188,7 @@ namespace Internal.Runtime.TypeLoader
                             continue;
                     }
 
-                    int fieldOffset = -1;
+                    int fieldOffset;
                     IntPtr fieldAddressCookie = IntPtr.Zero;
 
                     if (canonFormKind == CanonicalFormKind.Universal)

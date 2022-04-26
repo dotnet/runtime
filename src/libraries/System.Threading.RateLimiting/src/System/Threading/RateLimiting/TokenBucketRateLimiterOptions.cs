@@ -21,8 +21,7 @@ namespace System.Threading.RateLimiting
         /// <param name="autoReplenishment">
         /// Specifies whether token replenishment will be handled by the <see cref="TokenBucketRateLimiter"/> or by another party via <see cref="TokenBucketRateLimiter.TryReplenish"/>.
         /// </param>
-        /// <exception cref="ArgumentOutOfRangeException">When <paramref name="tokenLimit"/>, <paramref name="queueLimit"/>, or <paramref name="tokensPerPeriod"/> are less than 0
-        /// or when <paramref name="replenishmentPeriod"/> is more than 49 days.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">When <paramref name="tokenLimit"/>, <paramref name="queueLimit"/>, or <paramref name="tokensPerPeriod"/> are less than 0.</exception>
         public TokenBucketRateLimiterOptions(
             int tokenLimit,
             QueueProcessingOrder queueProcessingOrder,
@@ -42,12 +41,6 @@ namespace System.Threading.RateLimiting
             if (tokensPerPeriod <= 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(tokensPerPeriod));
-            }
-            if (replenishmentPeriod.TotalDays > 49)
-            {
-                // Environment.TickCount is an int and represents milliseconds since system started
-                // it has a range of -2B - +2B, we cast it to a uint to get a range of 0 - 4B which is 49.7 days before the value will repeat
-                throw new ArgumentOutOfRangeException(nameof(replenishmentPeriod), replenishmentPeriod, SR.ReplenishmentLimitTooHigh);
             }
 
             TokenLimit = tokenLimit;

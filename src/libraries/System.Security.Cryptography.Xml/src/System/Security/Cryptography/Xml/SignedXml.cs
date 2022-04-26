@@ -92,15 +92,21 @@ namespace System.Security.Cryptography.Xml
 
         public SignedXml(XmlDocument document)
         {
-            if (document == null)
+            if (document is null)
+            {
                 throw new ArgumentNullException(nameof(document));
+            }
+
             Initialize(document.DocumentElement);
         }
 
         public SignedXml(XmlElement elem)
         {
-            if (elem == null)
+            if (elem is null)
+            {
                 throw new ArgumentNullException(nameof(elem));
+            }
+
             Initialize(elem);
         }
 
@@ -213,8 +219,10 @@ namespace System.Security.Cryptography.Xml
 
         public void LoadXml(XmlElement value)
         {
-            if (value == null)
+            if (value is null)
+            {
                 throw new ArgumentNullException(nameof(value));
+            }
 
             m_signature.LoadXml(value);
 
@@ -242,8 +250,7 @@ namespace System.Security.Cryptography.Xml
 
         public bool CheckSignature()
         {
-            AsymmetricAlgorithm signingKey;
-            return CheckSignatureReturningKey(out signingKey);
+            return CheckSignatureReturningKey(out _);
         }
 
         public bool CheckSignatureReturningKey(out AsymmetricAlgorithm signingKey)
@@ -252,7 +259,7 @@ namespace System.Security.Cryptography.Xml
 
             signingKey = null;
             bool bRet = false;
-            AsymmetricAlgorithm key = null;
+            AsymmetricAlgorithm key;
 
             if (!CheckSignatureFormat())
             {
@@ -421,8 +428,10 @@ namespace System.Security.Cryptography.Xml
 
         public void ComputeSignature(KeyedHashAlgorithm macAlg)
         {
-            if (macAlg == null)
+            if (macAlg is null)
+            {
                 throw new ArgumentNullException(nameof(macAlg));
+            }
 
             HMAC hash = macAlg as HMAC;
             if (hash == null)
@@ -643,7 +652,7 @@ namespace System.Security.Cryptography.Xml
             }
 
             // Figure out how many bits the signature is using
-            int actualSignatureSize = 0;
+            int actualSignatureSize;
             if (!int.TryParse(SignedInfo.SignatureLength, out actualSignatureSize))
             {
                 // If the value wasn't a valid integer, then we'll conservatively reject it all together
@@ -917,7 +926,7 @@ namespace System.Security.Cryptography.Xml
                 }
 
                 SignedXmlDebugLog.LogVerifyReference(this, digestedReference);
-                byte[] calculatedHash = null;
+                byte[] calculatedHash;
                 try
                 {
                     calculatedHash = digestedReference.CalculateHashValue(_containingDocument, m_signature.ReferencedItems);
@@ -994,8 +1003,10 @@ namespace System.Security.Cryptography.Xml
 
         private bool CheckSignedInfo(AsymmetricAlgorithm key)
         {
-            if (key == null)
+            if (key is null)
+            {
                 throw new ArgumentNullException(nameof(key));
+            }
 
             SignedXmlDebugLog.LogBeginCheckSignedInfo(this, m_signature.SignedInfo);
 
@@ -1026,8 +1037,10 @@ namespace System.Security.Cryptography.Xml
 
         private bool CheckSignedInfo(KeyedHashAlgorithm macAlg)
         {
-            if (macAlg == null)
+            if (macAlg is null)
+            {
                 throw new ArgumentNullException(nameof(macAlg));
+            }
 
             SignedXmlDebugLog.LogBeginCheckSignedInfo(this, m_signature.SignedInfo);
 

@@ -42,6 +42,14 @@
          PmiAssembliesPayload - Path that will be sent to helix machine to run collection on
          PmiAssembliesDirectory - Path on helix machine itself where superpmi.py will discover the sent assemblies.
     -->
+
+  <ItemGroup>
+    <PmiPathDirectories Include="R2RDump" />
+    <PmiPathDirectories Include="R2RTest" />
+    <PmiPathDirectories Include="crossgen2" />
+    <PmiPathDirectories Include="xunit" />
+  </ItemGroup>
+
   <PropertyGroup Condition="'$(AGENT_OS)' == 'Windows_NT'">
     <Python>%HELIX_PYTHONPATH%</Python>
     <PmiAssembliesPayload>$(WorkItemDirectory)\pmiAssembliesDirectory</PmiAssembliesPayload>
@@ -54,7 +62,7 @@
     <OutputMchPath>%HELIX_WORKITEM_UPLOAD_ROOT%</OutputMchPath>
     <!-- Workaround until https://github.com/dotnet/arcade/pull/6179 is not available -->
     <HelixResultsDestinationDir>$(BUILD_SOURCESDIRECTORY)\artifacts\helixresults</HelixResultsDestinationDir>
-    <WorkItemCommand>$(SuperPMIDirectory)\superpmi.py collect -log_level DEBUG --$(CollectionType) -pmi_location $(SuperPMIDirectory)\pmi.dll </WorkItemCommand>
+    <WorkItemCommand>$(SuperPMIDirectory)\superpmi.py collect -log_level DEBUG --$(CollectionType) -pmi_location $(SuperPMIDirectory)\pmi.dll -pmi_path @(PmiPathDirectories->'$(SuperPMIDirectory)\%(Identity)', ' ')</WorkItemCommand>
   </PropertyGroup>
   <PropertyGroup Condition="'$(AGENT_OS)' != 'Windows_NT'">
     <Python>$HELIX_PYTHONPATH</Python>
@@ -68,21 +76,25 @@
     <OutputMchPath>$HELIX_WORKITEM_UPLOAD_ROOT</OutputMchPath>
     <!-- Workaround until https://github.com/dotnet/arcade/pull/6179 is not available -->
     <HelixResultsDestinationDir>$(BUILD_SOURCESDIRECTORY)/artifacts/helixresults</HelixResultsDestinationDir>
-    <WorkItemCommand>$(SuperPMIDirectory)/superpmi.py collect -log_level DEBUG --$(CollectionType) -pmi_location $(SuperPMIDirectory)/pmi.dll </WorkItemCommand>
+    <WorkItemCommand>$(SuperPMIDirectory)/superpmi.py collect -log_level DEBUG --$(CollectionType) -pmi_location $(SuperPMIDirectory)/pmi.dll -pmi_path @(PmiPathDirectories->'$(SuperPMIDirectory)/%(Identity)', ' ')</WorkItemCommand>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(WorkItemCommand)' != ''">
     <WorkItemCommand>$(Python) $(WorkItemCommand) -assemblies $(PmiAssembliesDirectory) -arch $(Architecture) -build_type $(BuildConfig) -core_root $(SuperPMIDirectory)</WorkItemCommand>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(CollectionName)' != 'benchmarks'">
+    <WorkItemTimeout>2:00</WorkItemTimeout>
+  </PropertyGroup>
+
   <PropertyGroup Condition="'$(CollectionName)' == 'benchmarks'">
     <WorkItemCommand>$(Python) $(SuperPMIDirectory)/superpmi_benchmarks.py -performance_directory $(PerformanceDirectory) -superpmi_directory $(SuperPMIDirectory) -core_root $(SuperPMIDirectory) -arch $(Architecture)</WorkItemCommand>
+    <WorkItemTimeout>3:00</WorkItemTimeout>
   </PropertyGroup>
 
   <PropertyGroup>
     <EnableAzurePipelinesReporter>false</EnableAzurePipelinesReporter>
     <EnableXUnitReporter>false</EnableXUnitReporter>
-    <WorkItemTimeout>5:00</WorkItemTimeout>
   </PropertyGroup>
 
   <ItemGroup Condition=" '$(AGENT_OS)' == 'Windows_NT' ">

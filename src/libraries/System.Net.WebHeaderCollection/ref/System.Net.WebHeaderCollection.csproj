@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
-    <Nullable>enable</Nullable>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
      <!-- Nullability of parameter 'name' doesn't match overridden member -->
     <NoWarn>$(NoWarn);CS8765</NoWarn>
   </PropertyGroup>

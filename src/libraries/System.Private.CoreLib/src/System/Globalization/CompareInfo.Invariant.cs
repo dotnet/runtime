@@ -11,7 +11,7 @@ namespace System.Globalization
     {
         private SortKey InvariantCreateSortKey(string source, CompareOptions options)
         {
-            if (source == null) { throw new ArgumentNullException(nameof(source)); }
+            ArgumentNullException.ThrowIfNull(source);
 
             if ((options & ValidCompareMaskOffFlags) != 0)
             {

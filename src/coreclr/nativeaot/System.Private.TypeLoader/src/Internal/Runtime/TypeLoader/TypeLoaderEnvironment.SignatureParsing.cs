@@ -123,9 +123,7 @@ namespace Internal.Runtime.TypeLoader
             if (parser.IsNull)
                 return false;
 
-            RuntimeSignature methodSig;
-            RuntimeSignature methodNameSig;
-            nameAndSignature = GetMethodNameAndSignature(ref parser, new TypeManagerHandle(signature.ModuleHandle), out methodNameSig, out methodSig);
+            nameAndSignature = GetMethodNameAndSignature(ref parser, new TypeManagerHandle(signature.ModuleHandle), out _, out _);
 
             return true;
         }
@@ -141,7 +139,7 @@ namespace Internal.Runtime.TypeLoader
                 return false;
 
             methodNameSig = RuntimeSignature.CreateFromNativeLayoutSignature(module, parser.Offset);
-            string methodName = parser.GetString();
+            parser.SkipString(); // methodName
 
             // Signatures are indirected to through a relative offset so that we don't have to parse them
             // when not comparing signatures (parsing them requires resolving types and is tremendously
@@ -161,13 +159,11 @@ namespace Internal.Runtime.TypeLoader
             if (parser.IsNull)
                 return false;
 
-            RuntimeSignature methodSig;
-            RuntimeSignature methodNameSig;
-            nameAndSignature = GetMethodNameAndSignature(ref parser, moduleHandle, out methodNameSig, out methodSig);
+            nameAndSignature = GetMethodNameAndSignature(ref parser, moduleHandle, out _, out _);
             return true;
         }
 
-        internal MethodNameAndSignature GetMethodNameAndSignature(ref NativeParser parser, TypeManagerHandle moduleHandle, out RuntimeSignature methodNameSig, out RuntimeSignature methodSig)
+        internal static MethodNameAndSignature GetMethodNameAndSignature(ref NativeParser parser, TypeManagerHandle moduleHandle, out RuntimeSignature methodNameSig, out RuntimeSignature methodSig)
         {
             methodNameSig = RuntimeSignature.CreateFromNativeLayoutSignature(moduleHandle, parser.Offset);
             string methodName = parser.GetString();
@@ -181,7 +177,7 @@ namespace Internal.Runtime.TypeLoader
             return new MethodNameAndSignature(methodName, methodSig);
         }
 
-        internal bool IsStaticMethodSignature(RuntimeSignature methodSig)
+        internal static bool IsStaticMethodSignature(RuntimeSignature methodSig)
         {
             if (methodSig.IsNativeLayoutSignature)
             {
@@ -295,9 +291,6 @@ namespace Internal.Runtime.TypeLoader
             out bool[] parametersWithGenericDependentLayout,
             NativeReader nativeReader)
         {
-            hasThis = false;
-            parameters = null;
-
             NativeLayoutInfoLoadContext nativeLayoutContext = new NativeLayoutInfoLoadContext();
 
             nativeLayoutContext._module = (NativeFormatModuleInfo)methodSig.GetModuleInfo();
@@ -312,7 +305,10 @@ namespace Internal.Runtime.TypeLoader
             MethodCallingConvention callingConvention = (MethodCallingConvention)parser.GetUnsigned();
             hasThis = !callingConvention.HasFlag(MethodCallingConvention.Static);
 
-            uint numGenArgs = callingConvention.HasFlag(MethodCallingConvention.Generic) ? parser.GetUnsigned() : 0;
+            if (callingConvention.HasFlag(MethodCallingConvention.Generic))
+            {
+                parser.SkipInteger(); // numGenArgs
+            }
 
             uint parameterCount = parser.GetUnsigned();
             parameters = new TypeDesc[parameterCount + 1];
@@ -386,7 +382,10 @@ namespace Internal.Runtime.TypeLoader
             NativeFormatModuleInfo module = ModuleList.Instance.GetModuleInfoByHandle(new TypeManagerHandle(methodSig.ModuleHandle));
 
             MethodCallingConvention callingConvention = (MethodCallingConvention)parser.GetUnsigned();
-            uint numGenArgs = callingConvention.HasFlag(MethodCallingConvention.Generic) ? parser.GetUnsigned() : 0;
+            if (callingConvention.HasFlag(MethodCallingConvention.Generic))
+            {
+                parser.SkipInteger(); // numGenArgs
+            }
             uint parameterCount = parser.GetUnsigned();
 
             // Check the return type of the method
@@ -527,7 +526,7 @@ namespace Internal.Runtime.TypeLoader
                     return false;
 
                 default:
-                    parser.ThrowBadImageFormatException();
+                    NativeParser.ThrowBadImageFormatException();
                     return true;
             }
         }
@@ -558,7 +557,7 @@ namespace Internal.Runtime.TypeLoader
             return false;
         }
 
-        private RuntimeTypeHandle GetExternalTypeHandle(NativeFormatModuleInfo moduleHandle, uint typeIndex)
+        private static RuntimeTypeHandle GetExternalTypeHandle(NativeFormatModuleInfo moduleHandle, uint typeIndex)
         {
             Debug.Assert(moduleHandle != null);
 
@@ -579,7 +578,7 @@ namespace Internal.Runtime.TypeLoader
             return result;
         }
 
-        private uint GetGenericArgCountFromSig(NativeParser parser)
+        private static uint GetGenericArgCountFromSig(NativeParser parser)
         {
             MethodCallingConvention callingConvention = (MethodCallingConvention)parser.GetUnsigned();
 
@@ -639,7 +638,6 @@ namespace Internal.Runtime.TypeLoader
             }
 
             uint data2;
-            uint startOffset2 = parser2.Offset;
             var typeSignatureKind2 = parser2.GetTypeSignatureKind(out data2);
 
             // If parser2 is a lookback type, we need to rewind parser1 to its startOffset1

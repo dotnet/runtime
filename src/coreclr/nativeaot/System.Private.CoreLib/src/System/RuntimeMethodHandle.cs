@@ -13,7 +13,7 @@ using Internal.Reflection.Augments;
 namespace System
 {
     [StructLayout(LayoutKind.Sequential)]
-    public struct RuntimeMethodHandle : ISerializable
+    public struct RuntimeMethodHandle : IEquatable<RuntimeMethodHandle>, ISerializable
     {
         private IntPtr _value;
 
@@ -63,7 +63,7 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private int _rotl(int value, int shift)
+        private static int _rotl(int value, int shift)
         {
             return (int)(((uint)value << shift) | ((uint)value >> (32 - shift)));
         }
@@ -105,9 +105,7 @@ namespace System
         public IntPtr GetFunctionPointer()
         {
             RuntimeTypeHandle declaringType;
-            MethodNameAndSignature nameAndSignature;
-            RuntimeTypeHandle[] genericArgs;
-            RuntimeAugments.TypeLoaderCallbacks.GetRuntimeMethodHandleComponents(this, out declaringType, out nameAndSignature, out genericArgs);
+            RuntimeAugments.TypeLoaderCallbacks.GetRuntimeMethodHandleComponents(this, out declaringType, out _, out _);
 
             return ReflectionAugments.ReflectionCoreCallbacks.GetFunctionPointer(this, declaringType);
         }

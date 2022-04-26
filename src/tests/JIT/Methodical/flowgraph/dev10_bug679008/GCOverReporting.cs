@@ -30,13 +30,16 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
-internal struct MB8
+namespace Test_GCOverReporting_cs
+{
+public struct MB8
 {
     public object foo;
 }
 
-internal class Repro
+public class Repro
 {
     private static int s_counter;
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -96,7 +99,8 @@ internal class Repro
         ConsumeStack(3);
     }
 
-    private static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         Method();
         TrashStack();
@@ -104,4 +108,5 @@ internal class Repro
         DoTest();
         return 100;
     }
+}
 }

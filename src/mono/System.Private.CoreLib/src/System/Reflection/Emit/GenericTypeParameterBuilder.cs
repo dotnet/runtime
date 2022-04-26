@@ -66,7 +66,6 @@ namespace System.Reflection.Emit
             this.base_type = baseTypeConstraint ?? typeof(object);
         }
 
-        [ComVisible(true)]
         public void SetInterfaceConstraints(params Type[]? interfaceConstraints)
         {
             this.iface_constraints = interfaceConstraints;
@@ -91,7 +90,6 @@ namespace System.Reflection.Emit
             return tbuilder.RuntimeResolve().GetGenericArguments()[index];
         }
 
-        [ComVisible(true)]
         public override bool IsSubclassOf(Type c)
         {
             throw not_supported();
@@ -112,7 +110,6 @@ namespace System.Reflection.Emit
             throw not_supported();
         }
 
-        [ComVisible(true)]
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
         public override ConstructorInfo[] GetConstructors(BindingFlags bindingAttr)
         {
@@ -341,7 +338,6 @@ namespace System.Reflection.Emit
             throw not_supported();
         }
 
-        [ComVisible(true)]
         public override InterfaceMapping GetInterfaceMap([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)] Type interfaceType)
         {
             throw not_supported();
@@ -432,8 +428,7 @@ namespace System.Reflection.Emit
 
         public void SetCustomAttribute(CustomAttributeBuilder customBuilder)
         {
-            if (customBuilder == null)
-                throw new ArgumentNullException(nameof(customBuilder));
+            ArgumentNullException.ThrowIfNull(customBuilder);
 
             if (cattrs != null)
             {
@@ -477,11 +472,13 @@ namespace System.Reflection.Emit
             return base.GetHashCode();
         }
 
+        [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
         public override Type MakeArrayType()
         {
             return new ArrayType(this, 0);
         }
 
+        [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
         public override Type MakeArrayType(int rank)
         {
             if (rank < 1)
@@ -494,6 +491,7 @@ namespace System.Reflection.Emit
             return new ByRefType(this);
         }
 
+        [RequiresDynamicCode("The native code for this instantiation might not be available at runtime.")]
         [RequiresUnreferencedCode("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]
         public override Type MakeGenericType(params Type[] typeArguments)
         {

@@ -261,8 +261,7 @@ namespace DebuggerTests
                 "dotnet://debugger-test.dll/debugger-test.cs", 8+offset, 8, "IntAdd",
                 locals_fn: async (locals) =>
                 {
-                    CheckBool(locals, variableName, originalValue);
-                    await Task.CompletedTask;
+                    await CheckBool(locals, variableName, originalValue);
                 }
             );
             var callFrameId = pause_location["callFrames"][0]["callFrameId"].Value<string>();
@@ -272,8 +271,7 @@ namespace DebuggerTests
             await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-test.cs", 9+offset, 4, "IntAdd",
                 locals_fn: async (locals) =>
                 {
-                    CheckBool(locals, variableName, newValue);
-                    await Task.CompletedTask;
+                    await CheckBool(locals, variableName, newValue);
                 }
             );
         }
@@ -300,7 +298,7 @@ namespace DebuggerTests
             var obj = GetAndAssertObjectWithName(locals, "complex");
             Assert.Equal(4, props.Count());
             CheckNumber(props, prop_name, prop_value);
-            CheckString(props, "B", "xx");
+            await CheckString(props, "B", "xx");
 
             await SetValueOnObject(obj, prop_name, prop_new_value, expect_ok: expect_ok);
 
@@ -316,7 +314,7 @@ namespace DebuggerTests
             locals = await GetProperties(frame["callFrameId"].Value<string>());
             Assert.Equal(4, props.Count());
             CheckNumber(props, prop_name, expect_ok ? Int32.Parse(prop_new_value) : prop_value);
-            CheckString(props, "B", "xx");
+            await CheckString(props, "B", "xx");
         }
     }
 

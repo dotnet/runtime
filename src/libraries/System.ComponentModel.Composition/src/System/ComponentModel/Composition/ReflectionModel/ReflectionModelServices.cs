@@ -332,10 +332,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
             Lazy<IDictionary<string, object?>>? metadata,
             ICompositionElement? origin)
         {
-            if (partType == null)
-            {
-                throw new ArgumentNullException(nameof(partType));
-            }
+            ArgumentNullException.ThrowIfNull(partType);
 
             _partType = partType;
             _isDisposalRequired = isDisposalRequired;

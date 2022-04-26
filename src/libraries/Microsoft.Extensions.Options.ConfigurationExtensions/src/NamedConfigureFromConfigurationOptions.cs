@@ -21,7 +21,7 @@ namespace Microsoft.Extensions.Options
         /// <param name="name">The name of the options instance.</param>
         /// <param name="config">The <see cref="IConfiguration"/> instance.</param>
         [RequiresUnreferencedCode(OptionsBuilderConfigurationExtensions.TrimmingRequiredUnreferencedCodeMessage)]
-        public NamedConfigureFromConfigurationOptions(string name, IConfiguration config)
+        public NamedConfigureFromConfigurationOptions(string? name, IConfiguration config)
             : this(name, config, _ => { })
         { }
 
@@ -32,17 +32,14 @@ namespace Microsoft.Extensions.Options
         /// <param name="config">The <see cref="IConfiguration"/> instance.</param>
         /// <param name="configureBinder">Used to configure the <see cref="BinderOptions"/>.</param>
         [RequiresUnreferencedCode(OptionsBuilderConfigurationExtensions.TrimmingRequiredUnreferencedCodeMessage)]
-        public NamedConfigureFromConfigurationOptions(string name, IConfiguration config, Action<BinderOptions> configureBinder)
+        public NamedConfigureFromConfigurationOptions(string? name, IConfiguration config, Action<BinderOptions>? configureBinder)
             : base(name, options => BindFromOptions(options, config, configureBinder))
         {
-            if (config == null)
-            {
-                throw new ArgumentNullException(nameof(config));
-            }
+            ThrowHelper.ThrowIfNull(config);
         }
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "The only call to this method is the constructor which is already annotated as RequiresUnreferencedCode.")]
-        private static void BindFromOptions(TOptions options, IConfiguration config, Action<BinderOptions> configureBinder) => config.Bind(options, configureBinder);
+        private static void BindFromOptions(TOptions options, IConfiguration config, Action<BinderOptions>? configureBinder) => config.Bind(options, configureBinder);
     }
 }

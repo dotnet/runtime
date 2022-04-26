@@ -21,7 +21,7 @@ namespace System.ServiceModel.Syndication
 
         public SyndicationElementExtension(XmlReader xmlReader)
         {
-            if (xmlReader == null)
+            if (xmlReader is null)
             {
                 throw new ArgumentNullException(nameof(xmlReader));
             }
@@ -57,10 +57,11 @@ namespace System.ServiceModel.Syndication
 
         public SyndicationElementExtension(string outerName, string outerNamespace, object dataContractExtension, XmlObjectSerializer dataContractSerializer)
         {
-            if (dataContractExtension == null)
+            if (dataContractExtension is null)
             {
                 throw new ArgumentNullException(nameof(dataContractExtension));
             }
+
             if (outerName == string.Empty)
             {
                 throw new ArgumentException(SR.OuterNameOfElementExtensionEmpty, nameof(outerName));
@@ -78,7 +79,7 @@ namespace System.ServiceModel.Syndication
 
         public SyndicationElementExtension(object xmlSerializerExtension, XmlSerializer serializer)
         {
-            if (xmlSerializerExtension == null)
+            if (xmlSerializerExtension is null)
             {
                 throw new ArgumentNullException(nameof(xmlSerializerExtension));
             }
@@ -129,7 +130,7 @@ namespace System.ServiceModel.Syndication
 
         public TExtension GetObject<TExtension>(XmlObjectSerializer serializer)
         {
-            if (serializer == null)
+            if (serializer is null)
             {
                 throw new ArgumentNullException(nameof(serializer));
             }
@@ -146,7 +147,7 @@ namespace System.ServiceModel.Syndication
 
         public TExtension GetObject<TExtension>(XmlSerializer serializer)
         {
-            if (serializer == null)
+            if (serializer is null)
             {
                 throw new ArgumentNullException(nameof(serializer));
             }
@@ -181,7 +182,7 @@ namespace System.ServiceModel.Syndication
 
         public void WriteTo(XmlWriter writer)
         {
-            if (writer == null)
+            if (writer is null)
             {
                 throw new ArgumentNullException(nameof(writer));
             }

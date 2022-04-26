@@ -722,7 +722,7 @@ class InterpreterCEEInfo: public CEEInfo
 {
     CEEJitInfo m_jitInfo;
 public:
-    InterpreterCEEInfo(CORINFO_METHOD_HANDLE meth): CEEInfo((MethodDesc*)meth), m_jitInfo((MethodDesc*)meth, NULL, NULL, CORJIT_FLAGS::CORJIT_FLAG_SPEED_OPT) { m_pOverride = this; }
+    InterpreterCEEInfo(CORINFO_METHOD_HANDLE meth): CEEInfo((MethodDesc*)meth), m_jitInfo((MethodDesc*)meth, NULL, NULL, CORJIT_FLAGS::CORJIT_FLAG_SPEED_OPT) { }
 
     // Certain methods are unimplemented by CEEInfo (they hit an assert).  They are implemented by CEEJitInfo, yet
     // don't seem to require any of the CEEJitInfo state we can't provide.  For those case, delegate to the "partial"
@@ -1002,6 +1002,8 @@ private:
 #else
         static const int MaxNumFPRegArgSlots = 4;
 #endif
+#elif defined(HOST_LOONGARCH64)
+        static const int MaxNumFPRegArgSlots = 8;
 #endif
 
         ~ArgState()
@@ -2061,6 +2063,8 @@ unsigned short Interpreter::NumberOfIntegerRegArgs()
 #elif defined(HOST_ARM)
 unsigned short Interpreter::NumberOfIntegerRegArgs() { return 4; }
 #elif defined(HOST_ARM64)
+unsigned short Interpreter::NumberOfIntegerRegArgs() { return 8; }
+#elif defined(HOST_LOONGARCH64)
 unsigned short Interpreter::NumberOfIntegerRegArgs() { return 8; }
 #else
 #error Unsupported architecture.

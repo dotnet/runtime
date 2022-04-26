@@ -197,19 +197,18 @@ namespace System.Security.Cryptography
                 Debug.Assert(count >= 0 && count <= data.Length);
                 Debug.Assert(!string.IsNullOrEmpty(hashAlgorithm.Name));
 
-                return AsymmetricAlgorithmHelpers.HashData(data, offset, count, hashAlgorithm);
+                return HashOneShotHelpers.HashData(hashAlgorithm, new ReadOnlySpan<byte>(data, offset, count));
             }
 
             protected override byte[] HashData(Stream data, HashAlgorithmName hashAlgorithm) =>
-                AsymmetricAlgorithmHelpers.HashData(data, hashAlgorithm);
+                HashOneShotHelpers.HashData(hashAlgorithm, data);
 
             protected override bool TryHashData(ReadOnlySpan<byte> data, Span<byte> destination, HashAlgorithmName hashAlgorithm, out int bytesWritten) =>
-                AsymmetricAlgorithmHelpers.TryHashData(data, destination, hashAlgorithm, out bytesWritten);
+                HashOneShotHelpers.TryHashData(hashAlgorithm, data, destination, out bytesWritten);
 
             public override byte[] CreateSignature(byte[] rgbHash)
             {
-                if (rgbHash == null)
-                    throw new ArgumentNullException(nameof(rgbHash));
+                ArgumentNullException.ThrowIfNull(rgbHash);
 
                 SafeDsaHandle key = GetKey();
                 int signatureSize = Interop.AndroidCrypto.DsaEncodedSignatureSize(key);
@@ -320,10 +319,8 @@ namespace System.Security.Cryptography
 
             public override bool VerifySignature(byte[] rgbHash, byte[] rgbSignature)
             {
-                if (rgbHash == null)
-                    throw new ArgumentNullException(nameof(rgbHash));
-                if (rgbSignature == null)
-                    throw new ArgumentNullException(nameof(rgbSignature));
+                ArgumentNullException.ThrowIfNull(rgbHash);
+                ArgumentNullException.ThrowIfNull(rgbSignature);
 
                 return VerifySignature((ReadOnlySpan<byte>)rgbHash, (ReadOnlySpan<byte>)rgbSignature);
             }

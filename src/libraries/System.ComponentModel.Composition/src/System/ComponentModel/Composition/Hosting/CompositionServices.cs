@@ -25,10 +25,7 @@ namespace System.ComponentModel.Composition.Hosting
 
         internal static Type GetDefaultTypeFromMember(this MemberInfo member)
         {
-            if (member == null)
-            {
-                throw new ArgumentNullException(nameof(member));
-            }
+            ArgumentNullException.ThrowIfNull(member);
 
             switch (member.MemberType)
             {
@@ -63,10 +60,7 @@ namespace System.ComponentModel.Composition.Hosting
 
         internal static Type AdjustSpecifiedTypeIdentityType(this Type specifiedContractType, Type? memberType)
         {
-            if (specifiedContractType == null)
-            {
-                throw new ArgumentNullException(nameof(specifiedContractType));
-            }
+            ArgumentNullException.ThrowIfNull(specifiedContractType);
 
             if ((memberType != null) && memberType.IsGenericType && specifiedContractType.IsGenericType)
             {
@@ -408,10 +402,7 @@ namespace System.ComponentModel.Composition.Hosting
 
             private void InferArrayType(Type itemType)
             {
-                if (itemType == null)
-                {
-                    throw new ArgumentNullException(nameof(itemType));
-                }
+                ArgumentNullException.ThrowIfNull(itemType);
 
                 if (_arrayType == null)
                 {
@@ -629,10 +620,7 @@ namespace System.ComponentModel.Composition.Hosting
 
         private static bool IsValidAttributeType(Type type, bool arrayAllowed)
         {
-            if (type == null)
-            {
-                throw new ArgumentNullException(nameof(type));
-            }
+            ArgumentNullException.ThrowIfNull(type);
 
             // Definitions of valid attribute type taken from C# 3.0 Specification section 17.1.3.
 

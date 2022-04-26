@@ -35,7 +35,23 @@ namespace Internal.TypeSystem.Interop
             }
         }
 
+        public override string DiagnosticName
+        {
+            get
+            {
+                return "PInvokeDelegateWrapper__" + DelegateType.DiagnosticName;
+            }
+        }
+
         public override string Namespace
+        {
+            get
+            {
+                return "Internal.CompilerGenerated";
+            }
+        }
+
+        public override string DiagnosticNamespace
         {
             get
             {

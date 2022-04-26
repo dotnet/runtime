@@ -19,10 +19,7 @@ namespace System.IO.Pipes
 
         public static void SetAccessControl(this PipeStream stream, PipeSecurity pipeSecurity)
         {
-            if (pipeSecurity == null)
-            {
-                throw new ArgumentNullException(nameof(pipeSecurity));
-            }
+            ArgumentNullException.ThrowIfNull(pipeSecurity);
 
             // Checks that State != WaitingToConnect and State != Closed
             var handle = stream.SafePipeHandle;

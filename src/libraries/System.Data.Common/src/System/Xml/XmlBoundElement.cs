@@ -158,7 +158,7 @@ namespace System.Xml
         internal void RemoveAllChildren()
         {
             XmlNode? child = FirstChild;
-            XmlNode? sibling = null;
+            XmlNode? sibling;
 
             while (child != null)
             {

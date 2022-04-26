@@ -21,44 +21,9 @@
   .ver 0:0:0:0
 }
 .assembly extern xunit.core {}
-// MVID: {623817A9-BEA6-4892-A378-D2135E123200}
-.imagebase 0x00400000
-.subsystem 0x00000003
-.file alignment 512
-.corflags 0x00000001
-// Image base: 0x076c0000
-//
-// ============== CLASS STRUCTURE DECLARATION ==================
-//
-.class private auto ansi beforefieldinit measure
-       extends [mscorlib]System.Object
+
+.namespace Test_prefldinit4_simple_il
 {
-} // end of class measure
-
-.class private auto ansi test
-       extends [mscorlib]System.Object
-{
-} // end of class test
-
-.class private auto ansi beforefieldinit Driver
-       extends [mscorlib]System.Object
-{
-} // end of class Driver
-
-
-// =============================================================
-
-
-// =============== GLOBAL FIELDS AND METHODS ===================
-
-
-// =============================================================
-
-
-// =============== CLASS MEMBERS DECLARATION ===================
-//   note that class flags, 'extends' and 'implements' clauses
-//          are provided here for information only
-
 .class private auto ansi beforefieldinit measure
        extends [mscorlib]System.Object
 {
@@ -69,9 +34,9 @@
     // Code size       11 (0xb)
     .maxstack  1
     IL_0000:  ldc.i4     0xcc
-    IL_0005:  stsfld     int32 measure::a
+    IL_0005:  stsfld     int32 Test_prefldinit4_simple_il.measure::a
     IL_000a:  ret
-  } // end of method measure::.cctor
+  } // end of method Test_prefldinit4_simple_il.measure::.cctor
 
   .method public hidebysig specialname rtspecialname 
           instance void  .ctor() cil managed
@@ -81,11 +46,11 @@
     IL_0000:  ldarg.0
     IL_0001:  call       instance void [mscorlib]System.Object::.ctor()
     IL_0006:  ret
-  } // end of method measure::.ctor
+  } // end of method Test_prefldinit4_simple_il.measure::.ctor
 
-} // end of class measure
+} // end of class Test_prefldinit4_simple_il.measure
 
-.class private auto ansi beforefieldinit test
+.class private auto ansi test
        extends [mscorlib]System.Object
 {
   .field public static unsigned int8 b
@@ -95,13 +60,13 @@
     // Code size       160 (0xa0)
     .maxstack  2
     IL_0000:  ldc.i4.s   12
-    IL_0002:  stsfld     unsigned int8 test::b
-    IL_0007:  ldsfld     int32 measure::a
+    IL_0002:  stsfld     unsigned int8 Test_prefldinit4_simple_il.test::b
+    IL_0007:  ldsfld     int32 Test_prefldinit4_simple_il.measure::a
     IL_000c:  ldc.i4     0xcc
     IL_0011:  beq.s      IL_0037
 
-    IL_0013:  ldstr      "in .cctor(), measure.a is {0}"
-    IL_0018:  ldsfld     int32 measure::a
+    IL_0013:  ldstr      "in .cctor(), Test_prefldinit4_simple_il.measure.a is {0}"
+    IL_0018:  ldsfld     int32 Test_prefldinit4_simple_il.measure::a
     IL_001d:  box        [mscorlib]System.Int32
     IL_0022:  call       void [System.Console]System.Console::WriteLine(string,
                                                                   object)
@@ -110,21 +75,21 @@
     IL_0031:  newobj     instance void [mscorlib]System.Exception::.ctor()
     IL_0036:  throw
 
-    IL_0037:  ldstr      "in .cctor(), measure.a is {0}"
-    IL_003c:  ldsfld     int32 measure::a
+    IL_0037:  ldstr      "in .cctor(), Test_prefldinit4_simple_il.measure.a is {0}"
+    IL_003c:  ldsfld     int32 Test_prefldinit4_simple_il.measure::a
     IL_0041:  box        [mscorlib]System.Int32
     IL_0046:  call       void [System.Console]System.Console::WriteLine(string,
                                                                   object)
-    IL_004b:  ldsfld     int32 measure::a
-    IL_0050:  ldsfld     unsigned int8 test::b
+    IL_004b:  ldsfld     int32 Test_prefldinit4_simple_il.measure::a
+    IL_0050:  ldsfld     unsigned int8 Test_prefldinit4_simple_il.test::b
     IL_0055:  add
-    IL_0056:  stsfld     int32 measure::a
-    IL_005b:  ldsfld     int32 measure::a
+    IL_0056:  stsfld     int32 Test_prefldinit4_simple_il.measure::a
+    IL_005b:  ldsfld     int32 Test_prefldinit4_simple_il.measure::a
     IL_0060:  ldc.i4     0xd8
     IL_0065:  beq.s      IL_008b
 
-    IL_0067:  ldstr      "in .cctor() after measure.a+=b, measure.a is {0}"
-    IL_006c:  ldsfld     int32 measure::a
+    IL_0067:  ldstr      "in .cctor() after Test_prefldinit4_simple_il.measure.a+=b, Test_prefldinit4_simple_il.measure.a is {0}"
+    IL_006c:  ldsfld     int32 Test_prefldinit4_simple_il.measure::a
     IL_0071:  box        [mscorlib]System.Int32
     IL_0076:  call       void [System.Console]System.Console::WriteLine(string,
                                                                   object)
@@ -133,13 +98,13 @@
     IL_0085:  newobj     instance void [mscorlib]System.Exception::.ctor()
     IL_008a:  throw
 
-    IL_008b:  ldstr      "in .cctor() after measure.a=8, measure.a is {0}"
-    IL_0090:  ldsfld     int32 measure::a
+    IL_008b:  ldstr      "in .cctor() after Test_prefldinit4_simple_il.measure.a=8, Test_prefldinit4_simple_il.measure.a is {0}"
+    IL_0090:  ldsfld     int32 Test_prefldinit4_simple_il.measure::a
     IL_0095:  box        [mscorlib]System.Int32
     IL_009a:  call       void [System.Console]System.Console::WriteLine(string,
                                                                   object)
     IL_009f:  ret
-  } // end of method test::.cctor
+  } // end of method Test_prefldinit4_simple_il.test::.cctor
 
   .method public hidebysig specialname rtspecialname 
           instance void  .ctor() cil managed
@@ -149,15 +114,18 @@
     IL_0000:  ldarg.0
     IL_0001:  call       instance void [mscorlib]System.Object::.ctor()
     IL_0006:  ret
-  } // end of method test::.ctor
+  } // end of method Test_prefldinit4_simple_il.test::.ctor
 
-} // end of class test
+} // end of class Test_prefldinit4_simple_il.test
 
-.class private auto ansi beforefieldinit Driver
+.class public auto ansi beforefieldinit Driver
        extends [mscorlib]System.Object
 {
   .method public hidebysig static int32  Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     // Code size       174 (0xae)
     .maxstack  2
@@ -170,12 +138,12 @@
       IL_000a:  call       void [System.Console]System.Console::WriteLine()
       IL_000f:  ldstr      "Before calling static field"
       IL_0014:  call       void [System.Console]System.Console::WriteLine(string)
-      IL_0019:  ldsfld     int32 measure::a
+      IL_0019:  ldsfld     int32 Test_prefldinit4_simple_il.measure::a
       IL_001e:  ldc.i4     0xcc
       IL_0023:  beq.s      IL_0047
 
-      IL_0025:  ldstr      "in Main(), measure.a is {0}"
-      IL_002a:  ldsfld     int32 measure::a
+      IL_0025:  ldstr      "in Main(), Test_prefldinit4_simple_il.measure.a is {0}"
+      IL_002a:  ldsfld     int32 Test_prefldinit4_simple_il.measure::a
       IL_002f:  box        [mscorlib]System.Int32
       IL_0034:  call       void [System.Console]System.Console::WriteLine(string,
                                                                     object)
@@ -186,18 +154,18 @@
       IL_0045:  leave.s    IL_00ac
 
       IL_0047:  ldc.i4.s   15
-      IL_0049:  stsfld     unsigned int8 test::b
+      IL_0049:  stsfld     unsigned int8 Test_prefldinit4_simple_il.test::b
       IL_004e:  ldstr      "After calling static field"
       IL_0053:  call       void [System.Console]System.Console::WriteLine(string)
-      IL_0058:  ldsfld     int32 measure::a
+      IL_0058:  ldsfld     int32 Test_prefldinit4_simple_il.measure::a
       IL_005d:  ldc.i4     0xd8
       IL_0062:  beq.s      IL_0086
 
-      IL_0064:  ldstr      "in Main() after f(ref b), measure.a is {0}"
+      IL_0064:  ldstr      "in Main() after f(ref b), Test_prefldinit4_simple_il.measure.a is {0}"
       .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
           01 00 00 00
       )
-      IL_0069:  ldsfld     int32 measure::a
+      IL_0069:  ldsfld     int32 Test_prefldinit4_simple_il.measure::a
       IL_006e:  box        [mscorlib]System.Int32
       IL_0073:  call       void [System.Console]System.Console::WriteLine(string,
                                                                     object)
@@ -230,7 +198,7 @@
 
     IL_00ac:  ldloc.1
     IL_00ad:  ret
-  } // end of method Driver::Main
+  } // end of method Test_prefldinit4_simple_il.Driver::Main
 
   .method public hidebysig specialname rtspecialname 
           instance void  .ctor() cil managed
@@ -240,12 +208,13 @@
     IL_0000:  ldarg.0
     IL_0001:  call       instance void [mscorlib]System.Object::.ctor()
     IL_0006:  ret
-  } // end of method Driver::.ctor
+  } // end of method Test_prefldinit4_simple_il.Driver::.ctor
 
-} // end of class Driver
+} // end of class Test_prefldinit4_simple_il.Driver
 
 
 // =============================================================
 
 //*********** DISASSEMBLY COMPLETE ***********************
 // WARNING: Created Win32 resource file prefldinit4.res
+}

@@ -691,6 +691,24 @@ namespace System.Threading.Tasks.Tests
             }
         }
 
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        public static void TaskDelay_Cancellation_ContinuationsInvokedAsynchronously()
+        {
+            var cts = new CancellationTokenSource();
+
+            var tl = new ThreadLocal<int>();
+            Task c = Task.Delay(-1, cts.Token).ContinueWith(_ =>
+            {
+                Assert.Equal(0, tl.Value);
+            }, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
+
+            tl.Value = 42;
+            cts.Cancel();
+            tl.Value = 0;
+
+            c.GetAwaiter().GetResult();
+        }
+
         // Test that exceptions are properly wrapped when thrown in various scenarios.
         // Make sure that "indirect" logic does not add superfluous exception wrapping.
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]

@@ -75,11 +75,8 @@ namespace System
         [RequiresUnreferencedCode("The target method might be removed")]
         protected Delegate(object target, string method)
         {
-            if (target is null)
-                throw new ArgumentNullException(nameof(target));
-
-            if (method is null)
-                throw new ArgumentNullException(nameof(method));
+            ArgumentNullException.ThrowIfNull(target);
+            ArgumentNullException.ThrowIfNull(method);
 
             this._target = target;
             this.data = new DelegateData()
@@ -90,14 +87,12 @@ namespace System
 
         protected Delegate([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type target, string method)
         {
-            if (target is null)
-                throw new ArgumentNullException(nameof(target));
+            ArgumentNullException.ThrowIfNull(target);
 
             if (target.ContainsGenericParameters)
                 throw new ArgumentException(SR.Arg_UnboundGenParam, nameof(target));
 
-            if (method is null)
-                throw new ArgumentNullException(nameof(method));
+            ArgumentNullException.ThrowIfNull(method);
 
             if (target is not RuntimeType)
                 throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(target));
@@ -125,10 +120,8 @@ namespace System
 
         private static Delegate? CreateDelegate(Type type, object? firstArgument, MethodInfo method, bool throwOnBindFailure, bool allowClosed)
         {
-            if (type is null)
-                throw new ArgumentNullException(nameof(type));
-            if (method is null)
-                throw new ArgumentNullException(nameof(method));
+            ArgumentNullException.ThrowIfNull(type);
+            ArgumentNullException.ThrowIfNull(method);
 
             if (type is not RuntimeType rtType)
                 throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(type));
@@ -146,7 +139,7 @@ namespace System
                 return null;
             }
 
-            Delegate? d = CreateDelegate_internal(type, firstArgument, method, throwOnBindFailure);
+            Delegate? d = CreateDelegate_internal(new QCallTypeHandle(ref rtType), firstArgument, method, throwOnBindFailure);
             if (d != null)
             {
                 d.original_method_info = method;
@@ -159,12 +152,9 @@ namespace System
         [RequiresUnreferencedCode("The target method might be removed")]
         public static Delegate? CreateDelegate(Type type, object target, string method, bool ignoreCase, bool throwOnBindFailure)
         {
-            if (type is null)
-                throw new ArgumentNullException(nameof(type));
-            if (target is null)
-                throw new ArgumentNullException(nameof(target));
-            if (method is null)
-                throw new ArgumentNullException(nameof(method));
+            ArgumentNullException.ThrowIfNull(type);
+            ArgumentNullException.ThrowIfNull(target);
+            ArgumentNullException.ThrowIfNull(method);
 
             if (type is not RuntimeType rtType)
                 throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(type));
@@ -180,19 +170,16 @@ namespace System
                 return null;
             }
 
-            return CreateDelegate_internal(type, target, info, throwOnBindFailure);
+            return CreateDelegate_internal(new QCallTypeHandle(ref rtType), target, info, throwOnBindFailure);
         }
 
         public static Delegate? CreateDelegate(Type type, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type target, string method, bool ignoreCase, bool throwOnBindFailure)
         {
-            if (type is null)
-                throw new ArgumentNullException(nameof(type));
-            if (target is null)
-                throw new ArgumentNullException(nameof(target));
+            ArgumentNullException.ThrowIfNull(type);
+            ArgumentNullException.ThrowIfNull(target);
             if (target.ContainsGenericParameters)
                 throw new ArgumentException(SR.Arg_UnboundGenParam, nameof(target));
-            if (method is null)
-                throw new ArgumentNullException(nameof(method));
+            ArgumentNullException.ThrowIfNull(method);
 
             if (type is not RuntimeType rtType)
                 throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(type));
@@ -211,7 +198,7 @@ namespace System
                 return null;
             }
 
-            return CreateDelegate_internal(type, null, info, throwOnBindFailure);
+            return CreateDelegate_internal(new QCallTypeHandle(ref rtType), null, info, throwOnBindFailure);
         }
 
         // GetCandidateMethod is annotated as DynamicallyAccessedMemberTypes.All because it will bind to non-public methods
@@ -578,7 +565,7 @@ namespace System
         private protected static extern MulticastDelegate AllocDelegateLike_internal(Delegate d);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern Delegate? CreateDelegate_internal(Type type, object? target, MethodInfo info, bool throwOnBindFailure);
+        private static extern Delegate? CreateDelegate_internal(QCallTypeHandle type, object? target, MethodInfo info, bool throwOnBindFailure);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private extern MethodInfo GetVirtualMethod_internal();

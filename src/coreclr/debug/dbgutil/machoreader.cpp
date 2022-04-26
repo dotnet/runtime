@@ -229,9 +229,8 @@ MachOModule::ReadLoadCommands()
                 m_segments.push_back(segment);
 
                 // Calculate the load bias for the module. This is the value to add to the vmaddr of a
-                // segment to get the actual address. For shared modules, this is 0 since those segments
-                // are absolute address.
-                if (segment->fileoff == 0 && segment->filesize > 0)
+                // segment to get the actual address.
+                if (strcmp(segment->segname, SEG_TEXT) == 0)
                 {
                     m_loadBias = m_baseAddress - segment->vmaddr;
                 }

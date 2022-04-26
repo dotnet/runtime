@@ -81,6 +81,11 @@ namespace ILCompiler.DependencyAnalysis
                     return factory.GenericLookup.DefaultCtorLookupResult((TypeDesc)target);
                 case ReadyToRunHelperId.ObjectAllocator:
                     return factory.GenericLookup.ObjectAllocator((TypeDesc)target);
+                case ReadyToRunHelperId.ConstrainedDirectCall:
+                    return factory.GenericLookup.ConstrainedMethodUse(
+                        ((ConstrainedCallInfo)target).Method,
+                        ((ConstrainedCallInfo)target).ConstrainedType,
+                        directCall: !((ConstrainedCallInfo)target).Method.HasInstantiation);
                 default:
                     throw new NotImplementedException();
             }

@@ -78,8 +78,11 @@ namespace System.Security.Cryptography.Xml
 
         public void AddExceptUri(string uri)
         {
-            if (uri == null)
+            if (uri is null)
+            {
                 throw new ArgumentNullException(nameof(uri));
+            }
+
             ExceptUris.Add(uri);
         }
 
@@ -159,8 +162,11 @@ namespace System.Security.Cryptography.Xml
 
         private void LoadXmlDocumentInput(XmlDocument document)
         {
-            if (document == null)
+            if (document is null)
+            {
                 throw new ArgumentNullException(nameof(document));
+            }
+
             _containingDocument = document;
             _nsm = new XmlNamespaceManager(document.NameTable);
             _nsm.AddNamespace("enc", EncryptedXml.XmlEncNamespaceUrl);

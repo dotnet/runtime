@@ -9,7 +9,7 @@ namespace System.Xml.Xsl.XsltOld
     using System.Xml;
     using System.Xml.XPath;
 
-    internal class SortAction : CompiledAction
+    internal sealed class SortAction : CompiledAction
     {
         private int _selectKey = Compiler.InvalidQueryKey;
         private Avt? _langAvt;
@@ -62,8 +62,8 @@ namespace System.Xml.Xsl.XsltOld
             {
                 return XmlDataType.Number;
             }
-            string prefix, localname;
-            PrefixQName.ParseQualifiedName(value, out prefix, out localname);
+            string prefix;
+            PrefixQName.ParseQualifiedName(value, out prefix, out _);
             manager.ResolveXmlNamespace(prefix);
             if (prefix.Length == 0 && !_forwardCompatibility)
             {

@@ -1,0 +1,143 @@
+<Project>
+  <PropertyGroup>
+    <BuildHelixWorkItemsDependsOn>$(BuildHelixWorkItemsDependsOn);PrepareForBuildHelixWorkItems_Mobile</BuildHelixWorkItemsDependsOn>
+    <EnableDefaultBuildHelixWorkItems>false</EnableDefaultBuildHelixWorkItems>
+    <IncludeHelixCorrelationPayload>false</IncludeHelixCorrelationPayload>
+
+    <NeedsToBuildAppsOnHelix Condition="('$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator') and '$(NeedsToBuildAppsOnHelix)' == '' and '$(Scenario)' == 'BuildiOSApps'">true</NeedsToBuildAppsOnHelix>
+    <NeedsiOSSDK Condition="'$(NeedsToBuildAppsOnHelix)' == 'true' and '$(NeedsWorkload)' != 'true'">true</NeedsiOSSDK>
+  </PropertyGroup>
+
+  <ItemDefinitionGroup Condition="'$(TargetOS)' == 'MacCatalyst'">
+    <XHarnessAppBundleToTest>
+      <Targets>maccatalyst</Targets>
+      <TestTimeout>$(_workItemTimeout)</TestTimeout>
+      <LaunchTimeout>$(_workItemTimeout)</LaunchTimeout>
+    </XHarnessAppBundleToTest>
+  </ItemDefinitionGroup>
+
+  <ItemDefinitionGroup Condition="'$(TargetOS)' == 'Android'">
+    <XHarnessApkToTest>
+        <Targets Condition="'$(TargetArchitecture)' == 'arm'">armeabi-v7a</Targets>
+        <Targets Condition="'$(TargetArchitecture)' == 'arm64'">arm64-v8a</Targets>
+        <Targets Condition="'$(TargetArchitecture)' == 'x64'">x86_64</Targets>
+        <Targets Condition="'$(TargetArchitecture)' == 'x86'">x86</Targets>
+        <AndroidInstrumentationName>net.dot.MonoRunner</AndroidInstrumentationName>
+        <TestTimeout>$(_workItemTimeout)</TestTimeout>
+    </XHarnessApkToTest>
+  </ItemDefinitionGroup>
+
+  <PropertyGroup Condition="'$(NeedsiOSSDK)' == 'true'">
+    <NeedsDotNetSdk>true</NeedsDotNetSdk>
+    <UseDotNetCliVersionFromGlobalJson>true</UseDotNetCliVersionFromGlobalJson>
+    <IncludeXHarnessCli>true</IncludeXHarnessCli>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(TargetsAppleMobile)' == 'true'">
+    <HelixPreCommand Include="export XHARNESS_DISABLE_COLORED_OUTPUT=true" />
+    <HelixPreCommand Include="export XHARNESS_LOG_WITH_TIMESTAMPS=true" />
+  </ItemGroup>
+
+  <Target Name="PrepareForBuildHelixWorkItems_Mobile">
+
+    <PropertyGroup Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOSSimulator' or '$(TargetOS)' == 'MacCatalyst'">
+      <AppleTestTarget Condition="'$(TargetOS)' == 'iOSSimulator'">ios-simulator-64</AppleTestTarget>
+      <AppleTestTarget Condition="'$(TargetOS)' == 'tvOSSimulator'">tvos-simulator</AppleTestTarget>
+      <AppleTestTarget Condition="'$(TargetOS)' == 'iOS'">ios-device</AppleTestTarget>
+      <AppleTestTarget Condition="'$(TargetOS)' == 'tvOS'">tvos-device</AppleTestTarget>
+      <AppleTestTarget Condition="'$(TargetOS)' == 'MacCatalyst'">maccatalyst</AppleTestTarget>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(TargetsAppleMobile)' == 'true'">
+      <iOSLikeBuildTargetsDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'mono', 'msbuild', 'apple', 'build'))</iOSLikeBuildTargetsDir>
+      <WorkItemPrefix Condition="'$(Scenario)' == 'BuildiOSApps' and '$(TestUsingWorkloads)' != 'true'">$(TargetOS)-</WorkItemPrefix>
+
+      <CMakeUrl>https://netcorenativeassets.blob.core.windows.net/resource-packages/external/macos/cmake/cmake-3.16.4-Darwin-x86_64.tar.gz</CMakeUrl>
+
+      <_XHarnessAppleCustomCommand Condition="'$(NeedsiOSSDK)' == 'true'">
+        source build-apple-app.sh
+      </_XHarnessAppleCustomCommand>
+    </PropertyGroup>
+
+    <ItemGroup Condition="'$(NeedsiOSSDK)' == 'true'">
+      <HelixCorrelationPayload Include="cmake" Uri="$(CMakeUrl)"                 Destination="build/cmake" />
+      <HelixCorrelationPayload Include="$(AppleAppBuilderDir)"                   Destination="build/AppleAppBuilder" />
+      <HelixCorrelationPayload Include="$(MonoAOTCompilerDir)"                   Destination="build/MonoAOTCompiler" />
+      <HelixCorrelationPayload Include="$(MicrosoftNetCoreAppRuntimePackDir)"    Destination="build/microsoft.netcore.app.runtime.$(TargetOS.ToLower())-$(TargetArchitecture.ToLower())" />
+      <HelixCorrelationPayload Include="$(iOSLikeBuildTargetsDir)"               Destination="build/apple" />
+      <HelixCorrelationPayload Include="$(MonoAotCrossDir)"                      Destination="build/cross" />
+      <HelixCorrelationPayload Include="$(MonoTargetsTasksDir)"                  Destination="build/MonoTargetsTasks" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(TargetsAppleMobile)' == 'true'">
+      <!-- Create work items for test apps -->
+      <XHarnessAppBundleToTest
+        Include="$([System.IO.Directory]::GetDirectories('$(TestArchiveTestsRoot)', '*.app', System.IO.SearchOption.AllDirectories))">
+        <TestTarget>$(AppleTestTarget)</TestTarget>
+        <TestTimeout>$(_workItemTimeout)</TestTimeout>
+        <CustomCommands>$(_XHarnessAppleCustomCommand)</CustomCommands>
+      </XHarnessAppBundleToTest>
+
+      <!-- To save on overall size, we compress each app after building. -->
+      <XHarnessAppBundleToTest 
+        Include="$([System.IO.Directory]::GetFiles('$(TestArchiveTestsRoot)$(OSPlatformConfig)', '*.zip', System.IO.SearchOption.TopDirectoryOnly))"
+        Exclude="$([System.IO.Directory]::GetFiles('$(TestArchiveRoot)', 'xharness-app-payload*', System.IO.SearchOption.AllDirectories))">
+        <TestTarget>$(AppleTestTarget)</TestTarget>
+        <TestTimeout>$(_workItemTimeout)</TestTimeout>
+        <CustomCommands>$(_XHarnessAppleCustomCommand)</CustomCommands>
+      </XHarnessAppBundleToTest>
+
+      <!--
+        Create work items for run-only apps
+
+        Note: We're excluding iOS and tvOS device runonly as mlaunch does not seem to return and times out.
+      -->
+      <XHarnessAppBundleToTest Condition="Exists('$(TestArchiveRoot)runonly') and '$(TargetOS)' != 'tvOS' and '$(TargetOS)' != 'iOS'" Include="$([System.IO.Directory]::GetDirectories('$(TestArchiveRoot)runonly', '*.app', System.IO.SearchOption.AllDirectories))" >
+        <!-- The sample app doesn't need test runner -->
+        <IncludesTestRunner>false</IncludesTestRunner>
+        <!-- The sample's C# Main method returns 42 so it should be considered by xharness as a success -->
+        <ExpectedExitCode>42</ExpectedExitCode>
+        <TestTarget>$(AppleTestTarget)</TestTarget>
+      </XHarnessAppBundleToTest>
+
+      <!-- To save on overall size, we compress each app after building. -->
+      <XHarnessAppBundleToTest Condition="Exists('$(TestArchiveRoot)runonly/$(OSPlatformConfig)') and '$(TargetOS)' != 'tvOS' and '$(TargetOS)' != 'iOS'" 
+        Include="$([System.IO.Directory]::GetFiles('$(TestArchiveRoot)runonly/$(OSPlatformConfig)', '*.zip', System.IO.SearchOption.TopDirectoryOnly))" 
+        Exclude="$([System.IO.Directory]::GetFiles('$(TestArchiveRoot)runonly', 'xharness-app-payload*', System.IO.SearchOption.AllDirectories))">
+        <!-- The sample app doesn't need test runner -->
+        <IncludesTestRunner>false</IncludesTestRunner>
+        <!-- The sample's C# Main method returns 42 so it should be considered by xharness as a success -->
+        <ExpectedExitCode>42</ExpectedExitCode>
+        <TestTarget>$(AppleTestTarget)</TestTarget>
+      </XHarnessAppBundleToTest>
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(TargetOS)' == 'Android'">
+      <_apks Include="$(TestArchiveTestsRoot)**/*.apk" />
+      <XHarnessApkToTest Include="@(_apks)">
+        <AndroidPackageName>net.dot.%(Filename)</AndroidPackageName>
+      </XHarnessApkToTest>
+      <_runonlyApks Include="$(TestArchiveRoot)runonly/**/*.apk" />
+      <XHarnessApkToTest Include="@(_runonlyApks)">
+        <AndroidPackageName>net.dot.%(Filename)</AndroidPackageName>
+        <!-- The android sample returns 42 so it should be considered by xharness as a success -->
+        <ExpectedExitCode>42</ExpectedExitCode>
+      </XHarnessApkToTest>
+    </ItemGroup>
+  </Target>
+
+  <Target Name="AfterBuildHelixWorkItems_Mobile" AfterTargets="BuildHelixWorkItems">
+    <Message Condition="'$(Scenario)' == ''" Importance="High" Text="Done building Helix work items. Work item count: @(XHarnessAppBundleToTest->Count())" />
+
+    <PropertyGroup>
+      <_TestPath Condition="'%(XHarnessAppBundleToTest.CustomCommands)' != ''">$([System.IO.Path]::GetDirectoryName('%(XHarnessAppBundleToTest.Identity)'))</_TestPath>
+    </PropertyGroup>
+
+    <Exec Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS'"
+          Command="du -sh &quot;$(_TestPath)&quot;"
+          ContinueOnError="true"
+          IgnoreExitCode="true"
+          IgnoreStandardErrorWarningFormat="true" />
+
+  </Target>
+</Project>

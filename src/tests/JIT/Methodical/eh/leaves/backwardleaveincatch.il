@@ -12,7 +12,7 @@
 .assembly extern mscorlib
 {
 }
-.assembly extern common{}
+.assembly extern eh_common{}
 .assembly 'backwardleaveincatch'
 {
   .hash algorithm 0x00008004
@@ -32,9 +32,9 @@
 
 
 
-.namespace hello
+.namespace hello_backwardleaveincatch_leaves_il
 {
-  .class private auto ansi beforefieldinit Class1
+  .class public auto ansi beforefieldinit Class1
          extends [mscorlib]System.Object
   {
     .method public hidebysig static void 
@@ -75,7 +75,7 @@
     } 
 
     .method public hidebysig static int32 
-            Main(string[] args) cil managed
+            Main() cil managed
     {
       .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
           01 00 00 00
@@ -84,7 +84,7 @@
       .maxstack  2
       .locals init (int32 V_0,
         			class [mscorlib]System.IO.StringWriter expectedOut,
-					class [common]TestUtil.TestLog testLog
+					class [eh_common]TestUtil.TestLog testLog
 					)
     newobj     instance void [mscorlib]System.IO.StringWriter::.ctor()
     stloc.s    expectedOut
@@ -110,11 +110,11 @@
     ldstr      "done"
     callvirt   instance void [mscorlib]System.IO.TextWriter::WriteLine(string)
     ldloc.s    expectedOut
-    newobj     instance void [common]TestUtil.TestLog::.ctor(object)
+    newobj     instance void [eh_common]TestUtil.TestLog::.ctor(object)
     stloc.s    testLog
 
     ldloc.s    testLog
-    callvirt   instance void [common]TestUtil.TestLog::StartRecording()
+    callvirt   instance void [eh_common]TestUtil.TestLog::StartRecording()
     ldc.i4.0
     stloc.0
 
@@ -127,10 +127,10 @@
 
       .try
       {
-        call       void hello.Class1::inTry()
+        call       void hello_backwardleaveincatch_leaves_il.Class1::inTry()
         .try
         {
-          call       void hello.Class1::inTry2()
+          call       void hello_backwardleaveincatch_leaves_il.Class1::inTry2()
           ldc.i4.1
           stloc.0
           newobj     instance void [mscorlib]System.Exception::.ctor()
@@ -140,24 +140,24 @@
         }  
         catch [mscorlib]System.Exception
         {
-          call       void hello.Class1::inCatch()
+          call       void hello_backwardleaveincatch_leaves_il.Class1::inCatch()
           leave.s before
         }  
 
       }  
       finally
       {
-        call       void hello.Class1::inFinally()
+        call       void hello_backwardleaveincatch_leaves_il.Class1::inFinally()
         endfinally
       }  
     done: 
 		ldstr      "done"
 		call       void [System.Console]System.Console::WriteLine(string)
 		ldloc.s    testLog
-		callvirt   instance void [common]TestUtil.TestLog::StopRecording()
+		callvirt   instance void [eh_common]TestUtil.TestLog::StopRecording()
   
 		ldloc.s    testLog
-		callvirt   instance int32 [common]TestUtil.TestLog::VerifyOutput()
+		callvirt   instance int32 [eh_common]TestUtil.TestLog::VerifyOutput()
 		ret
     } 
 

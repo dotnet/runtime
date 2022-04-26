@@ -259,7 +259,7 @@ namespace System.Data
         /// </summary>
         internal string AssignName()
         {
-            string? newName = null;
+            string newName;
             while (Contains(newName = MakeName(_defaultNameIndex)))
             {
                 _defaultNameIndex++;
@@ -631,7 +631,7 @@ namespace System.Data
             if ((null != tableName) && (0 < tableName.Length))
             {
                 int count = _list.Count;
-                int result = 0;
+                int result;
                 for (int i = 0; i < count; i++)
                 {
                     DataTable table = (DataTable)_list[i]!;
@@ -668,7 +668,7 @@ namespace System.Data
             if ((null != tableName) && (0 < tableName.Length))
             {
                 int count = _list.Count;
-                int result = 0;
+                int result;
                 for (int i = 0; i < count; i++)
                 {
                     DataTable table = (DataTable)_list[i]!;
@@ -701,7 +701,7 @@ namespace System.Data
         /// <summary>
         /// Makes a default name with the given index.  e.g. Table1, Table2, ... Tablei
         /// </summary>
-        private string MakeName(int index) => 1 == index ?
+        private static string MakeName(int index) => 1 == index ?
             "Table1" :
             "Table" + index.ToString(System.Globalization.CultureInfo.InvariantCulture);
 

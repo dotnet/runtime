@@ -571,9 +571,9 @@ namespace System.Net.Http
             HttpRequestMessage request,
             CancellationToken cancellationToken)
         {
-            if (request == null)
+            if (request is null)
             {
-                throw new ArgumentNullException(nameof(request), SR.net_http_handler_norequest);
+                throw new ArgumentNullException(nameof(request));
             }
 
             Uri? requestUri = request.RequestUri;
@@ -1120,6 +1120,7 @@ namespace System.Net.Http
             SetSessionHandleTimeoutOptions(sessionHandle);
             SetDisableHttp2StreamQueue(sessionHandle);
             SetTcpKeepalive(sessionHandle);
+            SetRequireStreamEnd(sessionHandle);
         }
 
         private unsafe void SetTcpKeepalive(SafeWinHttpHandle sessionHandle)
@@ -1142,6 +1143,27 @@ namespace System.Net.Http
                     Interop.WinHttp.WINHTTP_OPTION_TCP_KEEPALIVE,
                     (IntPtr)(&tcpKeepalive),
                     (uint)sizeof(Interop.WinHttp.tcp_keepalive));
+            }
+        }
+
+        private void SetRequireStreamEnd(SafeWinHttpHandle sessionHandle)
+        {
+            if (WinHttpTrailersHelper.OsSupportsTrailers)
+            {
+                // Setting WINHTTP_OPTION_REQUIRE_STREAM_END to TRUE is needed for WinHttp to read trailing headers
+                // in case the response has Content-Lenght defined.
+                // According to the WinHttp team, the feature-detection logic in WinHttpTrailersHelper.OsSupportsTrailers
+                // should also indicate the support of WINHTTP_OPTION_REQUIRE_STREAM_END.
+                // WINHTTP_OPTION_REQUIRE_STREAM_END doesn't have effect on HTTP 1.1 requests, therefore it's safe to set it on
+                // the session handle so it is inhereted by all request handles.
+                uint optionData = 1;
+                if (!Interop.WinHttp.WinHttpSetOption(sessionHandle, Interop.WinHttp.WINHTTP_OPTION_REQUIRE_STREAM_END, ref optionData))
+                {
+                    if (NetEventSource.Log.IsEnabled())
+                    {
+                        NetEventSource.Info(this, "Failed to enable WINHTTP_OPTION_REQUIRE_STREAM_END error code: " + Marshal.GetLastWin32Error());
+                    }
+                }
             }
         }
 
@@ -1171,6 +1193,7 @@ namespace System.Net.Http
             }
 #pragma warning restore 0618
 
+#pragma warning disable SYSLIB0039 // TLS 1.0 and 1.1 are obsolete
             if ((sslProtocols & SslProtocols.Tls) != 0)
             {
                 optionData |= Interop.WinHttp.WINHTTP_FLAG_SECURE_PROTOCOL_TLS1;
@@ -1180,6 +1203,7 @@ namespace System.Net.Http
             {
                 optionData |= Interop.WinHttp.WINHTTP_FLAG_SECURE_PROTOCOL_TLS1_1;
             }
+#pragma warning restore SYSLIB0039
 
             if ((sslProtocols & SslProtocols.Tls12) != 0)
             {
@@ -1420,7 +1444,7 @@ namespace System.Net.Http
                 return;
             }
 
-            X509Certificate2? clientCertificate = null;
+            X509Certificate2? clientCertificate;
             if (_clientCertificateOption == ClientCertificateOption.Manual)
             {
                 clientCertificate = CertificateHelper.GetEligibleClientCertificate(ClientCertificates);
@@ -1565,7 +1589,7 @@ namespace System.Net.Http
             }
         }
 
-        private void HandleAsyncException(WinHttpRequestState state, Exception ex)
+        private static void HandleAsyncException(WinHttpRequestState state, Exception ex)
         {
             Debug.Assert(state.Tcs != null);
             if (state.CancellationToken.IsCancellationRequested)
@@ -1684,7 +1708,7 @@ namespace System.Net.Http
             return state.LifecycleAwaitable;
         }
 
-        private async Task InternalSendRequestBodyAsync(WinHttpRequestState state, WinHttpChunkMode chunkedModeForSend)
+        private static async Task InternalSendRequestBodyAsync(WinHttpRequestState state, WinHttpChunkMode chunkedModeForSend)
         {
             Debug.Assert(state.RequestMessage != null);
             Debug.Assert(state.RequestMessage.Content != null);

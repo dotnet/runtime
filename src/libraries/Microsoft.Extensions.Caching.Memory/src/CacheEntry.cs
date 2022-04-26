@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -16,18 +17,21 @@ namespace Microsoft.Extensions.Caching.Memory
 
         private readonly MemoryCache _cache;
 
-        private CacheEntryTokens _tokens; // might be null if user is not using the tokens or callbacks
+        private CacheEntryTokens? _tokens; // might be null if user is not using the tokens or callbacks
         private TimeSpan? _absoluteExpirationRelativeToNow;
         private TimeSpan? _slidingExpiration;
         private long? _size;
-        private CacheEntry _previous; // this field is not null only before the entry is added to the cache and tracking is enabled
-        private object _value;
+        private CacheEntry? _previous; // this field is not null only before the entry is added to the cache and tracking is enabled
+        private object? _value;
         private CacheEntryState _state;
 
         internal CacheEntry(object key, MemoryCache memoryCache)
         {
-            Key = key ?? throw new ArgumentNullException(nameof(key));
-            _cache = memoryCache ?? throw new ArgumentNullException(nameof(memoryCache));
+            ThrowHelper.ThrowIfNull(key);
+            ThrowHelper.ThrowIfNull(memoryCache);
+
+            Key = key;
+            _cache = memoryCache;
             _previous = memoryCache.TrackLinkedCacheEntries ? CacheEntryHelper.EnterScope(this) : null;
             _state = new CacheEntryState(CacheItemPriority.Normal);
         }
@@ -84,11 +88,13 @@ namespace Microsoft.Extensions.Caching.Memory
         /// <summary>
         /// Gets the <see cref="IChangeToken"/> instances which cause the cache entry to expire.
         /// </summary>
+        [MemberNotNull(nameof(_tokens))]
         public IList<IChangeToken> ExpirationTokens => GetOrCreateTokens().ExpirationTokens;
 
         /// <summary>
         /// Gets or sets the callbacks will be fired after the cache entry is evicted from the cache.
         /// </summary>
+        [MemberNotNull(nameof(_tokens))]
         public IList<PostEvictionCallbackRegistration> PostEvictionCallbacks => GetOrCreateTokens().PostEvictionCallbacks;
 
         /// <summary>
@@ -116,7 +122,7 @@ namespace Microsoft.Extensions.Caching.Memory
 
         public object Key { get; private set; }
 
-        public object Value
+        public object? Value
         {
             get => _value;
             set
@@ -210,7 +216,7 @@ namespace Microsoft.Extensions.Caching.Memory
             // start a new thread to avoid issues with callbacks called from RegisterChangeCallback
             Task.Factory.StartNew(state =>
             {
-                var entry = (CacheEntry)state;
+                var entry = (CacheEntry)state!;
                 entry.SetExpired(EvictionReason.TokenExpired);
                 entry._cache.EntryExpired(entry);
             }, obj, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
@@ -222,7 +228,7 @@ namespace Microsoft.Extensions.Caching.Memory
         [MethodImpl(MethodImplOptions.AggressiveInlining)] // added based on profiling
         internal bool CanPropagateOptions() => (_tokens != null && _tokens.CanPropagateTokens()) || AbsoluteExpiration.HasValue;
 
-        internal void PropagateOptions(CacheEntry parent)
+        internal void PropagateOptions(CacheEntry? parent)
         {
             if (parent == null)
             {
@@ -242,6 +248,7 @@ namespace Microsoft.Extensions.Caching.Memory
             }
         }
 
+        [MemberNotNull(nameof(_tokens))]
         private CacheEntryTokens GetOrCreateTokens()
         {
             if (_tokens != null)

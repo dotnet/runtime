@@ -9,16 +9,6 @@ extern "C" {
 #endif
 
 PALIMPORT
-int
-PALAPI
-MessageBoxA(
-        IN LPVOID hWnd,  // NOTE: diff from winuser.h
-        IN LPCSTR lpText,
-        IN LPCSTR lpCaption,
-        IN UINT uType);
-
-
-PALIMPORT
 HANDLE
 PALAPI
 CreateFileA(
@@ -202,8 +192,6 @@ PALAPI
 CompareFileTime(
         IN CONST FILETIME *lpFileTime1,
         IN CONST FILETIME *lpFileTime2);
-
-PALIMPORT char * __cdecl _fullpath(char *, const char *, size_t);
 
 /*  These are from the <FCNTL.H> file in windows.
     They are needed for _open_osfhandle.*/

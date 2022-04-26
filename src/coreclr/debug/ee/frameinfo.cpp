@@ -601,13 +601,11 @@ DebuggerJitInfo * FrameInfo::GetJitInfoFromFrame() const
 
     DebuggerJitInfo *ji = NULL;
 
-    // @todo - we shouldn't need both a MD and an IP here.
     EX_TRY
     {
         _ASSERTE(this->md != NULL);
         ji = g_pDebugger->GetJitInfo(this->md, (const BYTE*)GetControlPC(&(this->registers)));
-        _ASSERTE(ji != NULL);
-        _ASSERTE(ji->m_nativeCodeVersion.GetMethodDesc() == this->md);
+        _ASSERTE(ji == NULL || ji->m_nativeCodeVersion.GetMethodDesc() == this->md);
     }
     EX_CATCH
     {
@@ -1568,7 +1566,7 @@ StackWalkAction DebuggerWalkStackProc(CrawlFrame *pCF, void *data)
 #ifdef FEATURE_MULTICASTSTUB_AS_IL
         use |= dMD->IsMulticastStub();
 #endif
-        use |= dMD->GetILStubResolver()->GetStubType() == ILStubResolver::TailCallCallTargetStub;
+        use |= dMD->GetILStubType() == DynamicMethodDesc::StubTailCallCallTarget;
 
         if (use)
         {

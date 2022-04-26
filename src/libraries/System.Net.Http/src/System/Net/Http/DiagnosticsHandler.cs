@@ -15,8 +15,8 @@ namespace System.Net.Http
     /// </summary>
     internal sealed class DiagnosticsHandler : HttpMessageHandlerStage
     {
-        private static readonly DiagnosticListener s_diagnosticListener =
-                new DiagnosticListener(DiagnosticsHandlerLoggingStrings.DiagnosticListenerName);
+        private static readonly DiagnosticListener s_diagnosticListener = new DiagnosticListener(DiagnosticsHandlerLoggingStrings.DiagnosticListenerName);
+        private static readonly ActivitySource s_activitySource = new ActivitySource(DiagnosticsHandlerLoggingStrings.Namespace);
 
         private readonly HttpMessageHandler _innerHandler;
         private readonly DistributedContextPropagator _propagator;
@@ -47,8 +47,29 @@ namespace System.Net.Http
 
         private static bool IsEnabled()
         {
-            // check if there is a parent Activity or if someone listens to HttpHandlerDiagnosticListener
-            return Activity.Current != null || s_diagnosticListener.IsEnabled();
+            // check if there is a parent Activity or if someone listens to "System.Net.Http" ActivitySource or "HttpHandlerDiagnosticListener" DiagnosticListener.
+            return Activity.Current != null ||
+                   s_activitySource.HasListeners() ||
+                   s_diagnosticListener.IsEnabled();
+        }
+
+        private static Activity? CreateActivity(HttpRequestMessage requestMessage)
+        {
+            Activity? activity = null;
+            if (s_activitySource.HasListeners())
+            {
+                activity = s_activitySource.CreateActivity(DiagnosticsHandlerLoggingStrings.ActivityName, ActivityKind.Client);
+            }
+
+            if (activity is null)
+            {
+                if (Activity.Current is not null || s_diagnosticListener.IsEnabled(DiagnosticsHandlerLoggingStrings.ActivityName, requestMessage))
+                {
+                    activity = new Activity(DiagnosticsHandlerLoggingStrings.ActivityName);
+                }
+            }
+
+            return activity;
         }
 
         internal static bool IsGloballyEnabled() => GlobalHttpSettings.DiagnosticsHandler.EnableActivityPropagation;
@@ -57,6 +78,7 @@ namespace System.Net.Http
         {
             if (IsEnabled())
             {
+                ArgumentNullException.ThrowIfNull(request);
                 return SendAsyncCore(request, async, cancellationToken);
             }
             else
@@ -67,19 +89,13 @@ namespace System.Net.Http
             }
         }
 
-        private async ValueTask<HttpResponseMessage> SendAsyncCore(HttpRequestMessage request, bool async,
-            CancellationToken cancellationToken)
+        private async ValueTask<HttpResponseMessage> SendAsyncCore(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
         {
             // HttpClientHandler is responsible to call static DiagnosticsHandler.IsEnabled() before forwarding request here.
             // It will check if propagation is on (because parent Activity exists or there is a listener) or off (forcibly disabled)
             // This code won't be called unless consumer unsubscribes from DiagnosticListener right after the check.
             // So some requests happening right after subscription starts might not be instrumented. Similarly,
             // when consumer unsubscribes, extra requests might be instrumented
-
-            if (request == null)
-            {
-                throw new ArgumentNullException(nameof(request), SR.net_http_handler_norequest);
-            }
 
             // Since we are reusing the request message instance on redirects, clear any existing headers
             // Do so before writing DiagnosticListener events as instrumentations use those to inject headers
@@ -91,60 +107,38 @@ namespace System.Net.Http
                 }
             }
 
-            Activity? activity = null;
             DiagnosticListener diagnosticListener = s_diagnosticListener;
 
-            // if there is no listener, but propagation is enabled (with previous IsEnabled() check)
-            // do not write any events just start/stop Activity and propagate Ids
-            if (!diagnosticListener.IsEnabled())
-            {
-                activity = new Activity(DiagnosticsHandlerLoggingStrings.ActivityName);
-                activity.Start();
-                InjectHeaders(activity, request);
-
-                try
-                {
-                    return async ?
-                        await _innerHandler.SendAsync(request, cancellationToken).ConfigureAwait(false) :
-                        _innerHandler.Send(request, cancellationToken);
-                }
-                finally
-                {
-                    activity.Stop();
-                }
-            }
-
             Guid loggingRequestId = Guid.Empty;
+            Activity? activity = CreateActivity(request);
 
-            // There is a listener. Check if listener wants to be notified about HttpClient Activities
-            if (diagnosticListener.IsEnabled(DiagnosticsHandlerLoggingStrings.ActivityName, request))
+            // Start activity anyway if it was created.
+            if (activity is not null)
             {
-                activity = new Activity(DiagnosticsHandlerLoggingStrings.ActivityName);
+                activity.Start();
 
-                // Only send start event to users who subscribed for it, but start activity anyway
+                // Only send start event to users who subscribed for it.
                 if (diagnosticListener.IsEnabled(DiagnosticsHandlerLoggingStrings.ActivityStartName))
                 {
-                    StartActivity(diagnosticListener, activity, new ActivityStartData(request));
-                }
-                else
-                {
-                    activity.Start();
+                    Write(diagnosticListener, DiagnosticsHandlerLoggingStrings.ActivityStartName, new ActivityStartData(request));
                 }
             }
-            // try to write System.Net.Http.Request event (deprecated)
+
+            // Try to write System.Net.Http.Request event (deprecated)
             if (diagnosticListener.IsEnabled(DiagnosticsHandlerLoggingStrings.RequestWriteNameDeprecated))
             {
                 long timestamp = Stopwatch.GetTimestamp();
                 loggingRequestId = Guid.NewGuid();
                 Write(diagnosticListener, DiagnosticsHandlerLoggingStrings.RequestWriteNameDeprecated,
-                    new RequestData(request, loggingRequestId, timestamp));
+                    new RequestData(
+                        request,
+                        loggingRequestId,
+                        timestamp));
             }
 
-            // If we are on at all, we propagate current activity information
-            Activity? currentActivity = Activity.Current;
-            if (currentActivity != null)
+            if (activity is not null)
             {
-                InjectHeaders(currentActivity, request);
+                InjectHeaders(activity, request);
             }
 
             HttpResponseMessage? response = null;
@@ -178,17 +172,20 @@ namespace System.Net.Http
             }
             finally
             {
-                // always stop activity if it was started
-                if (activity != null)
+                // Always stop activity if it was started.
+                if (activity is not null)
                 {
-                    StopActivity(diagnosticListener, activity, new ActivityStopData(
-                        response,
-                        // If request is failed or cancelled, there is no response, therefore no information about request;
-                        // pass the request in the payload, so consumers can have it in Stop for failed/canceled requests
-                        // and not retain all requests in Start
-                        request,
-                        taskStatus));
+                    activity.SetEndTime(DateTime.UtcNow);
+
+                    // Only send stop event to users who subscribed for it.
+                    if (diagnosticListener.IsEnabled(DiagnosticsHandlerLoggingStrings.ActivityStopName))
+                    {
+                        Write(diagnosticListener, DiagnosticsHandlerLoggingStrings.ActivityStopName, new ActivityStopData(response, request, taskStatus));
+                    }
+
+                    activity.Stop();
                 }
+
                 // Try to write System.Net.Http.Response event (deprecated)
                 if (diagnosticListener.IsEnabled(DiagnosticsHandlerLoggingStrings.ResponseWriteNameDeprecated))
                 {
@@ -335,27 +332,6 @@ namespace System.Net.Http
         {
             diagnosticSource.Write(name, value);
         }
-
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
-            Justification = "The args being passed into StartActivity have the commonly used properties being preserved with DynamicDependency.")]
-        private static Activity StartActivity<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] T>(
-            DiagnosticSource diagnosticSource,
-            Activity activity,
-            T? args)
-        {
-            return diagnosticSource.StartActivity(activity, args);
-        }
-
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
-            Justification = "The args being passed into StopActivity have the commonly used properties being preserved with DynamicDependency.")]
-        private static void StopActivity<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] T>(
-            DiagnosticSource diagnosticSource,
-            Activity activity,
-            T? args)
-        {
-            diagnosticSource.StopActivity(activity, args);
-        }
-
         #endregion
     }
 }

@@ -17,8 +17,11 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
-internal class Test
+namespace Test_twoEndFinallys
+{
+public class Test
 {
     private int _temp;
     private static int s_result = 100;
@@ -28,9 +31,10 @@ internal class Test
         _temp = 101;
     }
 
-    private static int Main(string[] args)
+    [Fact]
+    public static int TestEntryPoint()
     {
-        Test t = TwoEndFinallys(args);
+        Test t = TwoEndFinallys(new string[] {});
         if (t._temp == 101)
             return 100;
         else return 101;
@@ -97,3 +101,4 @@ internal class Test
     }
 }
 
+}
