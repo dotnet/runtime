@@ -63,6 +63,37 @@ namespace System.Threading.RateLimiting.Test
         }
 
         [Fact]
+        public async Task CanAcquireMulitpleRequestsAsync()
+        {
+            var limiter = new SlidingWindowRateLimiter(new SlidingWindowRateLimiterOptions(4, QueueProcessingOrder.NewestFirst, 4,
+                TimeSpan.Zero, 3, autoReplenishment: false));
+
+            using var lease = await limiter.WaitAsync(2);
+
+            Assert.True(lease.IsAcquired);
+            var wait = limiter.WaitAsync(3);
+            Assert.False(wait.IsCompleted);
+
+            Assert.True(limiter.TryReplenish());
+
+            Assert.False(wait.IsCompleted);
+
+            var wait2 = limiter.WaitAsync(2);
+            Assert.True(wait2.IsCompleted);
+
+            Assert.True(limiter.TryReplenish());
+
+            var wait3 = limiter.WaitAsync(2);
+            Assert.False(wait3.IsCompleted);
+
+            Assert.True(limiter.TryReplenish());
+            Assert.True((await wait3).IsAcquired);
+
+            Assert.False((await wait).IsAcquired);
+            Assert.Equal(0, limiter.GetAvailablePermits());
+        }
+
+        [Fact]
         public override async Task CanAcquireResourceAsync_QueuesAndGrabsOldest()
         {
             var limiter = new SlidingWindowRateLimiter(new SlidingWindowRateLimiterOptions(2, QueueProcessingOrder.OldestFirst, 3,

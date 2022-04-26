@@ -266,7 +266,7 @@ namespace System.Threading.RateLimiting
                         _queueCount -= nextPendingRequest.Count;
 
                         _requestCount -= nextPendingRequest.Count;
-                        _requestsPerSegment[_currentSegmentIndex] += _requestCount;
+                        _requestsPerSegment[_currentSegmentIndex] += nextPendingRequest.Count;
                         Debug.Assert(_requestCount >= 0);
 
                         if (!nextPendingRequest.Tcs.TrySetResult(SuccessfulLease))
