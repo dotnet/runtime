@@ -195,6 +195,8 @@ public:
         }
     }
 
+    static constexpr ClassLayout* NO_LAYOUT = nullptr;
+
     static bool AreCompatible(const ClassLayout* layout1, const ClassLayout* layout2);
 
 private:
