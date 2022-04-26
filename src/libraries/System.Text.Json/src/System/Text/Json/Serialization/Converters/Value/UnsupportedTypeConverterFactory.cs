@@ -9,6 +9,11 @@ namespace System.Text.Json.Serialization.Converters
 {
     internal sealed class UnsupportedTypeConverterFactory : JsonConverterFactory
     {
+        [RequiresDynamicCode("JSON serialization and deserialization might require types that cannot be statically analyzed and might need runtime code generation. Use System.Text.Json source generation for native AOT applications.")]
+        public UnsupportedTypeConverterFactory()
+        {
+        }
+
         public override bool CanConvert(Type type)
         {
             // If a type is added, also add to the SourceGeneration project.
@@ -42,7 +47,7 @@ namespace System.Text.Json.Serialization.Converters
         }
 
         [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode", Justification = "The factory constructors are only invoked in the context of reflection serialization code paths " +
-            "and are marked with 'RequiresDynamicCode'")]
+            "and are marked RequiresDynamicCode")]
         public override JsonConverter CreateConverter(Type type, JsonSerializerOptions options)
         {
             JsonConverter converter = (JsonConverter)Activator.CreateInstance(

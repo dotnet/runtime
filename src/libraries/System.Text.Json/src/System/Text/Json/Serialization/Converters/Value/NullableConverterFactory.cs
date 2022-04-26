@@ -10,6 +10,11 @@ namespace System.Text.Json.Serialization.Converters
 {
     internal sealed class NullableConverterFactory : JsonConverterFactory
     {
+        [RequiresDynamicCode("JSON serialization and deserialization might require types that cannot be statically analyzed and might need runtime code generation. Use System.Text.Json source generation for native AOT applications.")]
+        public NullableConverterFactory()
+        {
+        }
+
         public override bool CanConvert(Type typeToConvert)
         {
             return typeToConvert.IsNullableOfT();
@@ -47,7 +52,7 @@ namespace System.Text.Json.Serialization.Converters
             Justification = "'NullableConverter<T> where T : struct' implies 'T : new()', so the trimmer is warning calling MakeGenericType here because valueTypeToConvert's constructors are not annotated. " +
             "But NullableConverter doesn't call new T(), so this is safe.")]
         [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode", Justification = "The factory constructors are only invoked in the context of reflection serialization code paths " +
-            "and are marked with 'RequiresDynamicCode'")]
+            "and are marked RequiresDynamicCode")]
         [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
         private static Type GetNullableConverterType(Type valueTypeToConvert) => typeof(NullableConverter<>).MakeGenericType(valueTypeToConvert);
     }
