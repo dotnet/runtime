@@ -102,6 +102,14 @@ struct MonoCustomAttrInfo_clr
     Assembly *assembly;
 };
 
+template <COUNT_T MEMSIZE>
+static STRINGREF AllocateString(const InlineSString<MEMSIZE>& sstr)
+{
+    STRINGREF strObj = AllocateString(sstr.GetCount());
+    memcpyNoGCRefs(strObj->GetBuffer(), sstr.GetUnicode(), sstr.GetCount() * sizeof(WCHAR));
+    return strObj;
+}
+
 class GCNativeFrame : public Frame
 {
     VPTR_VTABLE_CLASS(GCNativeFrame, Frame)
