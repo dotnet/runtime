@@ -3331,7 +3331,7 @@ namespace System.Tests
 
         public static IEnumerable<object[]> Sort_SZArray_TestData()
         {
-			// Int
+			     // Int
             yield return new object[] { new int[0], 0, 0, new IntegerComparer(), new int[0] };
             yield return new object[] { new int[] { 5 }, 0, 1, new IntegerComparer(), new int[] { 5 } };
             yield return new object[] { new int[] { 5, 2 }, 0, 2, new IntegerComparer(), new int[] { 2, 5 } };
