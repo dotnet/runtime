@@ -2,16 +2,29 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.IO.Compression.Tests;
+using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
+using Xunit.Sdk;
 
 namespace System.IO.Compression
 {
     public abstract class CompressionStreamUnitTestBase : CompressionStreamTestBase
     {
         private const int TaskTimeout = 30 * 1000; // Generous timeout for official test runs
+
+        public enum TestScenario
+        {
+            ReadByte,
+            ReadByteAsync,
+            Read,
+            ReadAsync,
+            Copy,
+            CopyAsync,
+        }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public virtual void FlushAsync_DuringWriteAsync()
@@ -474,6 +487,85 @@ namespace System.IO.Compression
             Assert.True(noCompressionLength >= fastestLength);
             Assert.True(fastestLength >= optimalLength);
             Assert.True(optimalLength >= smallestLength);
+        }
+
+        [Theory]
+        [InlineData(TestScenario.ReadAsync)]
+        [InlineData(TestScenario.Read)]
+        [InlineData(TestScenario.Copy)]
+        [InlineData(TestScenario.CopyAsync)]
+        [InlineData(TestScenario.ReadByte)]
+        [InlineData(TestScenario.ReadByteAsync)]
+        public async Task StreamTruncation_IsDetected(TestScenario scenario)
+        {
+            var buffer = new byte[16];
+            var source = Enumerable.Range(0, 64).Select(i => (byte)i).ToArray();
+            byte[] compressedData;
+            using (var compressed = new MemoryStream())
+            using (var gzip = CreateStream(compressed, CompressionMode.Compress))
+            {
+                foreach (var b in source)
+                {
+                    gzip.WriteByte(b);
+                }
+
+                gzip.Dispose();
+                compressedData = compressed.ToArray();
+            }
+
+            for (var i = 1; i <= compressedData.Length; i += 1)
+            {
+                var expectException = i < compressedData.Length;
+                using (var compressedStream = new MemoryStream(compressedData.Take(i).ToArray()))
+                {
+                    using (var s = CreateStream(compressedStream, CompressionMode.Decompress))
+                    {
+                        var decompressedStream = new MemoryStream();
+
+                        try
+                        {
+                            switch (scenario)
+                            {
+                                case TestScenario.Copy:
+                                    s.CopyTo(decompressedStream);
+                                    break;
+
+                                case TestScenario.CopyAsync:
+                                    await s.CopyToAsync(decompressedStream);
+                                    break;
+
+                                case TestScenario.Read:
+                                    while (ZipFileTestBase.ReadAllBytes(s, buffer, 0, buffer.Length) != 0) { };
+                                    break;
+
+                                case TestScenario.ReadAsync:
+                                    while (await ZipFileTestBase.ReadAllBytesAsync(s, buffer, 0, buffer.Length) != 0) { };
+                                    break;
+
+                                case TestScenario.ReadByte:
+                                    while (s.ReadByte() != -1) { }
+                                    break;
+
+                                case TestScenario.ReadByteAsync:
+                                    while (await s.ReadByteAsync() != -1) { }
+                                    break;
+                            }
+                        }
+                        catch (InvalidDataException e)
+                        {
+                            if (expectException)
+                                continue;
+
+                            throw new XunitException($"An unexpected error occured while decompressing data:{e}");
+                        }
+
+                        if (expectException)
+                        {
+                            throw new XunitException($"Truncated stream was decompressed successfully but exception was expected: length={i}/{compressedData.Length}");
+                        }                        
+                    }
+                }
+            }
         }
     }
 

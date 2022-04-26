@@ -281,7 +281,12 @@ namespace System.IO.Compression
                     int n = _stream.Read(_buffer, 0, _buffer.Length);
                     if (n <= 0)
                     {
-                        if (!_inflater.Finished() && _inflater.NonEmptyInput() && _inflater.AvailableOutput > 0)
+                        // - Inflater didn't return any data although a non-empty output buffer was passed by the caller.
+                        // - More input is needed but there is no more input available.
+                        // - Inflation is not finished yet.
+                        // - Provided input wasn't completely empty
+                        // In such case, we are dealing with a truncated input stream.
+                        if (!buffer.IsEmpty && !_inflater.Finished() && _inflater.NonEmptyInput())
                         {
                             ThrowGenericInvalidData();
                         }
@@ -422,7 +427,12 @@ namespace System.IO.Compression
                             int n = await _stream.ReadAsync(new Memory<byte>(_buffer, 0, _buffer.Length), cancellationToken).ConfigureAwait(false);
                             if (n <= 0)
                             {
-                                if (!_inflater.Finished() && _inflater.NonEmptyInput() && _inflater.AvailableOutput > 0)
+                                // - Inflater didn't return any data although a non-empty output buffer was passed by the caller.
+                                // - More input is needed but there is no more input available.
+                                // - Inflation is not finished yet.
+                                // - Provided input wasn't completely empty
+                                // In such case, we are dealing with a truncated input stream.
+                                if (!_inflater.Finished() && _inflater.NonEmptyInput() && !buffer.IsEmpty)
                                 {
                                     ThrowGenericInvalidData();
                                 }
@@ -446,6 +456,7 @@ namespace System.IO.Compression
                             // decompress into at least one byte of output, but it's a reasonable approximation for the 99% case.  If it's
                             // wrong, it just means that a caller using zero-byte reads as a way to delay getting a buffer to use for a
                             // subsequent call may end up getting one earlier than otherwise preferred.
+                            Debug.Assert(bytesRead == 0);
                             break;
                         }
                     }
