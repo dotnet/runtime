@@ -575,21 +575,16 @@ void CodeGen::genCodeForBswap(GenTree* tree)
         {
             // 16-bit byte swaps use "ror reg.16, 8"
             inst_RV_IV(INS_ror_N, targetReg, 8 /* val */, emitAttr::EA_2BYTE);
-
-            if (!genCanOmitNormalizationForBswap16(tree))
-            {
-                GetEmitter()->emitIns_Mov(INS_movzx, EA_2BYTE, targetReg, targetReg, /* canSkip */ false);
-            }
         }
     }
     else
     {
         GetEmitter()->emitInsBinary(INS_movbe, emitTypeSize(operand), tree, operand);
+    }
 
-        if (tree->OperIs(GT_BSWAP16) && !genCanOmitNormalizationForBswap16(tree))
-        {
-            GetEmitter()->emitIns_Mov(INS_movzx, EA_2BYTE, targetReg, targetReg, /* canSkip */ false);
-        }
+    if (tree->OperIs(GT_BSWAP16) && !genCanOmitNormalizationForBswap16(tree))
+    {
+        GetEmitter()->emitIns_Mov(INS_movzx, EA_2BYTE, targetReg, targetReg, /* canSkip */ false);
     }
 
     genProduceReg(tree);

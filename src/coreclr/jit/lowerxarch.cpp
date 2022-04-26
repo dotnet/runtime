@@ -3966,7 +3966,7 @@ void Lowering::LowerBswapOp(GenTreeOp* node)
 
     GenTree* operand  = node->gtGetOp1();
     unsigned swapSize = node->OperIs(GT_BSWAP16) ? 2 : genTypeSize(node);
-    if (swapSize == genTypeSize(operand) && IsContainableMemoryOp(operand) && IsSafeToContainMem(node, operand))
+    if ((swapSize == genTypeSize(operand)) && IsContainableMemoryOp(operand) && IsSafeToContainMem(node, operand))
     {
         MakeSrcContained(node, operand);
     }
