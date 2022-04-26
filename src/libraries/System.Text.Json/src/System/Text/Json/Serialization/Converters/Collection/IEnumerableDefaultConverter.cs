@@ -49,6 +49,8 @@ namespace System.Text.Json.Serialization.Converters
                     state.Current.CollectionEnumerator = enumerator;
                     return false;
                 }
+
+                state.Current.EndCollectionElement();
             } while (enumerator.MoveNext());
 
             enumerator.Dispose();

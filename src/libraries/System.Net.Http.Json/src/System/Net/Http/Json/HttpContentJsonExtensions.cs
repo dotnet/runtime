@@ -17,16 +17,26 @@ namespace System.Net.Http.Json
         internal const string SerializationUnreferencedCodeMessage = "JSON serialization and deserialization might require types that cannot be statically analyzed. Use the overload that takes a JsonTypeInfo or JsonSerializerContext, or make sure all of the required types are preserved.";
 
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
-        public static Task<object?> ReadFromJsonAsync(this HttpContent content!!, Type type, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
+        public static Task<object?> ReadFromJsonAsync(this HttpContent content, Type type, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
         {
+            if (content is null)
+            {
+                throw new ArgumentNullException(nameof(content));
+            }
+
             Encoding? sourceEncoding = JsonHelpers.GetEncoding(content.Headers.ContentType?.CharSet);
 
             return ReadFromJsonAsyncCore(content, type, sourceEncoding, options, cancellationToken);
         }
 
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
-        public static Task<T?> ReadFromJsonAsync<T>(this HttpContent content!!, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
+        public static Task<T?> ReadFromJsonAsync<T>(this HttpContent content, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
         {
+            if (content is null)
+            {
+                throw new ArgumentNullException(nameof(content));
+            }
+
             Encoding? sourceEncoding = JsonHelpers.GetEncoding(content.Headers.ContentType?.CharSet);
 
             return ReadFromJsonAsyncCore<T>(content, sourceEncoding, options, cancellationToken);
@@ -64,15 +74,25 @@ namespace System.Net.Http.Json
         private static ValueTask<TValue?> DeserializeAsyncHelper<TValue>(Stream contentStream, JsonSerializerOptions? options, CancellationToken cancellationToken)
             => JsonSerializer.DeserializeAsync<TValue>(contentStream, options, cancellationToken);
 
-        public static Task<object?> ReadFromJsonAsync(this HttpContent content!!, Type type, JsonSerializerContext context, CancellationToken cancellationToken = default)
+        public static Task<object?> ReadFromJsonAsync(this HttpContent content, Type type, JsonSerializerContext context, CancellationToken cancellationToken = default)
         {
+            if (content is null)
+            {
+                throw new ArgumentNullException(nameof(content));
+            }
+
             Encoding? sourceEncoding = JsonHelpers.GetEncoding(content.Headers.ContentType?.CharSet);
 
             return ReadFromJsonAsyncCore(content, type, sourceEncoding, context, cancellationToken);
         }
 
-        public static Task<T?> ReadFromJsonAsync<T>(this HttpContent content!!, JsonTypeInfo<T> jsonTypeInfo, CancellationToken cancellationToken = default)
+        public static Task<T?> ReadFromJsonAsync<T>(this HttpContent content, JsonTypeInfo<T> jsonTypeInfo, CancellationToken cancellationToken = default)
         {
+            if (content is null)
+            {
+                throw new ArgumentNullException(nameof(content));
+            }
+
             Encoding? sourceEncoding = JsonHelpers.GetEncoding(content.Headers.ContentType?.CharSet);
 
             return ReadFromJsonAsyncCore<T>(content, sourceEncoding, jsonTypeInfo, cancellationToken);

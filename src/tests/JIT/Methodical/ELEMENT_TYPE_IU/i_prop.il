@@ -12,26 +12,26 @@
 .assembly 'i_prop'// as "qsort"
 { }
 .assembly extern xunit.core {}
-.namespace Test
+.namespace Test_i_prop
 {
-  .class private auto ansi BB extends [mscorlib]System.Object
+  .class public auto ansi BB extends [mscorlib]System.Object
   {
-    .method private hidebysig static int32 Main() il managed
+    .method public hidebysig static int32 Main() il managed
     {
 		.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
 		    01 00 00 00
 		)
 		.entrypoint
 		.maxstack  8
-		.locals (class Test.AA)
+		.locals (class Test_i_prop.AA)
 		
-		newobj instance void Test.AA::.ctor()
+		newobj instance void Test_i_prop.AA::.ctor()
 		stloc.0
 		ldloc.0
 		ldc.i4.0
-		call instance void Test.AA::set_I(native int)
+		call instance void Test_i_prop.AA::set_I(native int)
 		ldloc.0
-		call instance native int Test.AA::get_I()
+		call instance native int Test_i_prop.AA::get_I()
 		ldstr "passed"
 		call void [System.Console]System.Console::WriteLine(class [mscorlib]System.String)
 		ldc.i4 0x64
@@ -56,7 +56,7 @@
 	{
 		.maxstack  8
 		ldarg.0
-		ldfld native int Test.AA::m_i
+		ldfld native int Test_i_prop.AA::m_i
 		ret
 	}
 	
@@ -65,7 +65,7 @@
 		.maxstack  8
 		ldarg.0
 		ldarg.1
-		stfld native int Test.AA::m_i
+		stfld native int Test_i_prop.AA::m_i
 		ret
 	}
 	
@@ -77,12 +77,12 @@
       call       instance void [mscorlib]System.Object::.ctor()
       ldarg.0
       ldc.i4.0
-      stfld		native int Test.AA::m_i
+      stfld		native int Test_i_prop.AA::m_i
       ret
     } // end of method 'AA::.ctor'
 
   } // end of class 'AA'
 
-} // end of namespace 'Test'
+} // end of namespace 'Test_i_prop'
 
 //*********** DISASSEMBLY COMPLETE ***********************

@@ -34,7 +34,7 @@ using ILCompiler.DependencyAnalysis.ReadyToRun;
 
 namespace Internal.JitInterface
 {
-    internal unsafe sealed partial class CorInfoImpl
+    internal sealed unsafe partial class CorInfoImpl
     {
         //
         // Global initialization and state
@@ -437,8 +437,7 @@ namespace Internal.JitInterface
             bool needPerMethodInstructionSetFixup = false;
             foreach (var instructionSet in _actualInstructionSetSupported)
             {
-                if (!baselineSupport.IsInstructionSetSupported(instructionSet) &&
-                    !baselineSupport.NonSpecifiableFlags.HasInstructionSet(instructionSet))
+                if (!baselineSupport.IsInstructionSetSupported(instructionSet))
                 {
                     needPerMethodInstructionSetFixup = true;
                 }
@@ -1875,12 +1874,19 @@ namespace Internal.JitInterface
         private bool isValidStringRef(CORINFO_MODULE_STRUCT_* module, uint metaTOK)
         { throw new NotImplementedException("isValidStringRef"); }
 
-        private char* getStringLiteral(CORINFO_MODULE_STRUCT_* module, uint metaTOK, ref int length)
+        private int getStringLiteral(CORINFO_MODULE_STRUCT_* module, uint metaTOK, char* buffer, int size)
         {
+            Debug.Assert(size >= 0);
+
             MethodILScope methodIL = HandleToObject(module);
-            string s = (string)methodIL.GetObject((int)metaTOK);
-            length = (int)s.Length;
-            return (char*)GetPin(s);
+            string str = (string)methodIL.GetObject((int)metaTOK);
+
+            if (buffer != null)
+            {
+                // Copy str's content to buffer
+                str.AsSpan(0, Math.Min(size, str.Length)).CopyTo(new Span<char>(buffer, size));
+            }
+            return str.Length;
         }
 
         private CorInfoType asCorInfoType(CORINFO_CLASS_STRUCT_* cls)
@@ -2358,8 +2364,6 @@ namespace Internal.JitInterface
         {
             var type = HandleToObject(cls);
 
-            // we shouldn't allow boxing of types that contains stack pointers
-            // csc and vbc already disallow it.
             if (type.IsByRefLike)
                 ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramSpecific, MethodBeingCompiled);
 
@@ -3925,9 +3929,9 @@ namespace Internal.JitInterface
 
         private bool notifyInstructionSetUsage(InstructionSet instructionSet, bool supportEnabled)
         {
-            InstructionSet_ARM64 asArm64 = (InstructionSet_ARM64)instructionSet;
-            InstructionSet_X64 asX64 = (InstructionSet_X64)instructionSet;
-            InstructionSet_X86 asX86 = (InstructionSet_X86)instructionSet;
+            instructionSet = InstructionSetFlags.ConvertToImpliedInstructionSetForVectorInstructionSets(_compilation.TypeSystemContext.Target.Architecture, instructionSet);
+
+            Debug.Assert(!_compilation.InstructionSetSupport.NonSpecifiableFlags.HasInstructionSet(instructionSet));
 
             if (supportEnabled)
             {
@@ -3939,10 +3943,6 @@ namespace Internal.JitInterface
                 // set is not a reason to not support usage of it.
                 if (!isMethodDefinedInCoreLib())
                 {
-                    // If a vector instruction set is marked as attempted to be used, but is also explicitly unsupported
-                    // then we need to mark as explicitly unsupported the implied instruction set associated with the vector set. 
-                    instructionSet = InstructionSetFlags.ConvertToImpliedInstructionSetForVectorInstructionSets(_compilation.TypeSystemContext.Target.Architecture, instructionSet);
-
                     _actualInstructionSetUnsupported.AddInstructionSet(instructionSet);
                 }
             }
@@ -3951,6 +3951,10 @@ namespace Internal.JitInterface
 #else
         private bool notifyInstructionSetUsage(InstructionSet instructionSet, bool supportEnabled)
         {
+            instructionSet = InstructionSetFlags.ConvertToImpliedInstructionSetForVectorInstructionSets(_compilation.TypeSystemContext.Target.Architecture, instructionSet);
+
+            Debug.Assert(!_compilation.InstructionSetSupport.NonSpecifiableFlags.HasInstructionSet(instructionSet));
+
             return supportEnabled ? _compilation.InstructionSetSupport.IsInstructionSetSupported(instructionSet) : false;
         }
 #endif

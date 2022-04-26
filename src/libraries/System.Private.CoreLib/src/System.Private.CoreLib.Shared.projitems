@@ -38,6 +38,9 @@
     <DefineConstants Condition="'$(TargetsAndroid)' == 'true'">$(DefineConstants);TARGET_ANDROID</DefineConstants>
     <DefineConstants Condition="'$(TargetsLinux)' == 'true'">$(DefineConstants);TARGET_LINUX</DefineConstants>
     <DefineConstants Condition="'$(TargetsFreeBSD)' == 'true'">$(DefineConstants);TARGET_FREEBSD</DefineConstants>
+    <DefineConstants Condition="'$(TargetsNetBSD)' == 'true'">$(DefineConstants);TARGET_NETBSD</DefineConstants>
+    <DefineConstants Condition="'$(Targetsillumos)' == 'true'">$(DefineConstants);TARGET_ILLUMOS</DefineConstants>
+    <DefineConstants Condition="'$(TargetsSolaris)' == 'true'">$(DefineConstants);TARGET_SOLARIS</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <ILLinkSubstitutionsXmls Include="$(ILLinkSharedDirectory)ILLink.Substitutions.Shared.xml" />
@@ -593,6 +596,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\EmptyCAHolder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\FlowControl.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\Label.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\ModuleBuilder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\Opcode.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\OpCodes.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\OpCodeType.cs" />
@@ -600,6 +604,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\PackingSize.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\PEFileKinds.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\StackBehaviour.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\TypeBuilder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\TypeNameBuilder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\EventAttributes.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\EventInfo.cs" />
@@ -709,6 +714,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\CallingConventions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\CompilationRelaxations.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\CompilationRelaxationsAttribute.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\CompilerFeatureRequiredAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\CompilerGeneratedAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\CompilerGlobalScopeAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\ConditionalWeakTable.cs" />
@@ -782,11 +788,13 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\ConstrainedExecution\PrePrepareMethodAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\ConstrainedExecution\ReliabilityContractAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\ExceptionServices\ExceptionDispatchInfo.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\ExceptionServices\ExceptionNotification.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\ExceptionServices\FirstChanceExceptionEventArgs.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\ExceptionServices\HandleProcessCorruptedStateExceptionsAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\GCSettings.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\AllowReversePInvokeCallsAttribute.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\AnsiStringMarshaller.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\Architecture.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ArrayMarshaller.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ArrayWithOffset.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\BestFitMappingAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\BStrWrapper.cs" />
@@ -870,13 +878,13 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\OptionalAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\OSPlatform.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\OutAttribute.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\PointerArrayMarshaller.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\PosixSignal.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\PosixSignalContext.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\PosixSignalRegistration.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\PreserveSigAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ProgIdAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\RuntimeInformation.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\RuntimeInformation.ProcessArchitecture.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\SafeArrayRankMismatchException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\SafeArrayTypeMismatchException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\SafeBuffer.cs" />
@@ -891,6 +899,8 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\UnmanagedCallersOnlyAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\UnmanagedFunctionPointerAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\UnmanagedType.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\Utf16StringMarshaller.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\Utf8StringMarshaller.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\VarEnum.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\VariantWrapper.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\Scalar.cs" />
@@ -2027,9 +2037,6 @@
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetTimestamp.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.GetTimestamp.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetUnixName.cs">
-      <Link>Common\Interop\Unix\System.Native\Interop.GetUnixName.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetUnixVersion.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.GetUnixVersion.cs</Link>

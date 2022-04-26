@@ -49,6 +49,7 @@ if ($Internal) {
         "perfowl" { $Queue = "Windows.10.Amd64.20H2.Owl.Perf"  }
         "perfsurf" { $Queue = "Windows.10.Arm64.Perf.Surf"  }
         "perfpixel4a" { $Queue = "Windows.10.Amd64.Pixel.Perf" }
+        "perfampere" { $Queue = "Windows.Server.Arm64.Perf" }
         Default { $Queue = "Windows.10.Amd64.19H1.Tiger.Perf" }
     }
     $PerfLabArguments = "--upload-to-perflab-container"

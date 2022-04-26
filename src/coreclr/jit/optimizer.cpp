@@ -9492,7 +9492,7 @@ void Compiler::optRemoveRedundantZeroInits()
                                 // the prolog and this explicit intialization. Therefore, it doesn't
                                 // require zero initialization in the prolog.
                                 lclDsc->lvHasExplicitInit = 1;
-                                JITDUMP("Marking " FMT_LP " as having an explicit init\n", lclNum);
+                                JITDUMP("Marking V%02u as having an explicit init\n", lclNum);
                             }
                         }
                         break;

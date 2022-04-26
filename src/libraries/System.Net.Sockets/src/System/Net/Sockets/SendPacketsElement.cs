@@ -25,8 +25,10 @@ namespace System.Net.Sockets
             this(filepath, offset, count, false)
         { }
 
-        public SendPacketsElement(string filepath!!, long offset, int count, bool endOfPacket)
+        public SendPacketsElement(string filepath, long offset, int count, bool endOfPacket)
         {
+            ArgumentNullException.ThrowIfNull(filepath);
+
             // The native API will validate the file length on send.
             if (offset < 0)
             {
@@ -49,8 +51,10 @@ namespace System.Net.Sockets
             this(fileStream, offset, count, false)
         { }
 
-        public SendPacketsElement(FileStream fileStream!!, long offset, int count, bool endOfPacket)
+        public SendPacketsElement(FileStream fileStream, long offset, int count, bool endOfPacket)
         {
+            ArgumentNullException.ThrowIfNull(fileStream);
+
             if (!fileStream.IsAsync)
             {
                 throw new ArgumentException(SR.net_sockets_sendpackelement_FileStreamMustBeAsync, nameof(fileStream));
@@ -77,8 +81,10 @@ namespace System.Net.Sockets
             this(buffer, offset, count, false)
         { }
 
-        public SendPacketsElement(byte[] buffer!!, int offset, int count, bool endOfPacket)
+        public SendPacketsElement(byte[] buffer, int offset, int count, bool endOfPacket)
         {
+            ArgumentNullException.ThrowIfNull(buffer);
+
             if ((uint)offset > (uint)buffer.Length)
             {
                 throw new ArgumentOutOfRangeException(nameof(offset));

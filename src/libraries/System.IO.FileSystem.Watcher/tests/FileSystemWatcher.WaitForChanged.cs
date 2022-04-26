@@ -6,7 +6,6 @@ using Xunit;
 
 namespace System.IO.Tests
 {
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/34583", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
     public partial class WaitForChangedTests : FileSystemWatcherTest
     {
         private const int BetweenOperationsDelayMilliseconds = 100;

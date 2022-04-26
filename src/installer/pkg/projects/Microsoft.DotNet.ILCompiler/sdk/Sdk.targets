@@ -1,6 +1,6 @@
 <!--
 ***********************************************************************************************
-Sdk.props
+Sdk.targets
 
 WARNING:  DO NOT MODIFY this file unless you are knowledgeable about MSBuild and have
           created a backup copy.  Incorrect changes to this file will make it
@@ -11,7 +11,7 @@ Copyright (c) .NET Foundation. All rights reserved.
 -->
 <Project>
 
-  <!-- Only import the build props if the ILLink.Tasks package isn't referenced via NuGet. -->
+  <!-- Only import the build props if the NativeAot package isn't referenced via NuGet. -->
   <Import Project="$(MSBuildThisFileDirectory)..\build\Microsoft.DotNet.ILCompiler.targets" Condition="'$(PublishAot)' == 'true'"/>
 
 </Project>

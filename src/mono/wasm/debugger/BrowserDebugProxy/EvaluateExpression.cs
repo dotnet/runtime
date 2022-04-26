@@ -32,7 +32,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 typeof(Enumerable).Assembly,
                 typeof(JObject).Assembly
                 ));
-        private class FindVariableNMethodCall : CSharpSyntaxWalker
+        private sealed class FindVariableNMethodCall : CSharpSyntaxWalker
         {
             private static Regex regexForReplaceVarName = new Regex(@"[^A-Za-z0-9_]", RegexOptions.Singleline);
             public List<IdentifierNameSyntax> identifiers = new List<IdentifierNameSyntax>();
@@ -243,7 +243,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         typeRet = "double";
                         break;
                     case "boolean":
-                        valueRet = value?.Value<string>().ToLower();
+                        valueRet = value?.Value<string>().ToLowerInvariant();
                         typeRet = "bool";
                         break;
                     case "object":
@@ -441,7 +441,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
     }
 
-    internal class ReturnAsErrorException : Exception
+    internal sealed class ReturnAsErrorException : Exception
     {
         private Result _error;
         public Result Error

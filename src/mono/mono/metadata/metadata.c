@@ -5670,6 +5670,12 @@ mono_metadata_class_equal (MonoClass *c1, MonoClass *c2, gboolean signature_only
 	if (signature_only &&
 	    (c1_type->type == MONO_TYPE_ARRAY) && (c2_type->type == MONO_TYPE_ARRAY))
 		return do_mono_metadata_type_equal (c1_type, c2_type, signature_only);
+	if (signature_only &&
+		(c1_type->type == MONO_TYPE_PTR) && (c2_type->type == MONO_TYPE_PTR))
+		return do_mono_metadata_type_equal (c1_type->data.type, c2_type->data.type, signature_only);
+	if (signature_only &&
+		(c1_type->type == MONO_TYPE_FNPTR) && (c2_type->type == MONO_TYPE_FNPTR))
+		return mono_metadata_fnptr_equal (c1_type->data.method, c2_type->data.method, signature_only);
 	return FALSE;
 }
 

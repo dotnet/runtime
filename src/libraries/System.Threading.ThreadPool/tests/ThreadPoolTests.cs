@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
@@ -1017,6 +1018,65 @@ namespace System.Threading.ThreadPools.Tests
 
                     done.CheckedWait();
                 }).Dispose();
+            }).Dispose();
+        }
+
+        [ConditionalFact(nameof(IsThreadingAndRemoteExecutorSupported))]
+        public void FileStreamFlushAsyncThreadPoolDeadlockTest()
+        {
+            // This test was occasionally causing the deadlock described in https://github.com/dotnet/runtime/pull/68171. Run it
+            // in a remote process to test it with a dedicated thread pool.
+            RemoteExecutor.Invoke(async () =>
+            {
+                const int OneKibibyte = 1 << 10;
+                const int FourKibibytes = OneKibibyte << 2;
+                const int FileSize = 1024;
+
+                string destinationFilePath = null;
+                try
+                {
+                    destinationFilePath = CreateFileWithRandomContent(FileSize);
+
+                    static string CreateFileWithRandomContent(int fileSize)
+                    {
+                        string filePath = Path.GetTempFileName();
+                        File.WriteAllBytes(filePath, CreateArray(fileSize));
+                        return filePath;
+                    }
+
+                    static byte[] CreateArray(int count)
+                    {
+                        var result = new byte[count];
+                        const int Seed = 12345;
+                        var random = new Random(Seed);
+                        random.NextBytes(result);
+                        return result;
+                    }
+
+                    for (int j = 0; j < 100; j++)
+                    {
+                        using var fileStream =
+                            new FileStream(
+                                destinationFilePath,
+                                FileMode.Create,
+                                FileAccess.Write,
+                                FileShare.Read,
+                                FourKibibytes,
+                                FileOptions.None);
+                        for (int i = 0; i < FileSize; i++)
+                        {
+                            fileStream.WriteByte(default);
+                            await fileStream.FlushAsync();
+                        }
+                    }
+                }
+                finally
+                {
+                    if (!string.IsNullOrEmpty(destinationFilePath) && File.Exists(destinationFilePath))
+                    {
+                        File.Delete(destinationFilePath);
+                    }
+                }
             }).Dispose();
         }
 

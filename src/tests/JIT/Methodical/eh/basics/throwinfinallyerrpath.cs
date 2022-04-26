@@ -3,11 +3,12 @@
 
 // Try/finally error case, one function
 using System;
+using Xunit;
 
-namespace hello
+namespace hello_throwinfinallyerrpath_basics_cs
 {
 
-    class Class1
+    public class Class1
     {
         private static TestUtil.TestLog testLog;
 
@@ -44,7 +45,8 @@ namespace hello
         {
             Console.WriteLine("in Finally");
         }
-        static public int Main()
+        [Fact]
+        static public int TestEntryPoint()
         {
             //Start recording
             testLog.StartRecording();

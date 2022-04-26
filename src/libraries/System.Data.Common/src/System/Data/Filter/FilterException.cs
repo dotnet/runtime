@@ -52,10 +52,8 @@ namespace System.Data
         public SyntaxErrorException(string? message, Exception? innerException) : base(message, innerException) { }
     }
 
-    internal sealed class ExprException
+    internal static class ExprException
     {
-        private ExprException() { /* prevent utility class from being insantiated*/ }
-
         private static OverflowException _Overflow(string error)
         {
             OverflowException e = new OverflowException(error);

@@ -30,8 +30,6 @@ namespace System
 
         private static string? SerializationWatsonBuckets => null;
 
-        private string? CreateSourceName() => HasBeenThrown ? "<unknown>" : null;
-
         // WARNING: We allow diagnostic tools to directly inspect these three members (_message, _innerException and _HResult)
         // See https://github.com/dotnet/corert/blob/master/Documentation/design-docs/diagnostics/diagnostics-tools-contract.md for more details.
         // Please do not change the type, the name, or the semantic usage of this member without understanding the implication for tools.

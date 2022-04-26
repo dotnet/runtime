@@ -4,7 +4,6 @@
     <DefineConstants>$(DefineConstants);REGISTRY_ASSEMBLY</DefineConstants>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)</TargetFrameworks>
     <NoWarn>$(NoWarn);CA2249</NoWarn>
-    <Nullable>enable</Nullable>
   </PropertyGroup>
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>

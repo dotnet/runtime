@@ -8,7 +8,7 @@ namespace System.Xml.Xsl.XsltOld
     using System.Xml;
     using System.Xml.XPath;
 
-    internal class ValueOfAction : CompiledAction
+    internal sealed class ValueOfAction : CompiledAction
     {
         private const int ResultStored = 2;
 

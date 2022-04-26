@@ -126,8 +126,13 @@ namespace System.Text.Encodings.Web
         /// </summary>
         /// <param name="value">String to encode.</param>
         /// <returns>Encoded string.</returns>
-        public virtual string Encode(string value!!)
+        public virtual string Encode(string value)
         {
+            if (value is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.value);
+            }
+
             int indexOfFirstCharToEncode = FindFirstCharacterToEncode(value.AsSpan());
             if (indexOfFirstCharToEncode < 0)
             {
@@ -196,8 +201,17 @@ namespace System.Text.Encodings.Web
         /// <param name="value">String whose substring is to be encoded.</param>
         /// <param name="startIndex">The index where the substring starts.</param>
         /// <param name="characterCount">Number of characters in the substring.</param>
-        public virtual void Encode(TextWriter output!!, string value!!, int startIndex, int characterCount)
+        public virtual void Encode(TextWriter output, string value, int startIndex, int characterCount)
         {
+            if (output is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.output);
+            }
+            if (value is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.value);
+            }
+
             ValidateRanges(startIndex, characterCount, actualInputLength: value.Length);
 
             int indexOfFirstCharToEncode = FindFirstCharacterToEncode(value.AsSpan(startIndex, characterCount));
@@ -222,8 +236,17 @@ namespace System.Text.Encodings.Web
         /// <param name="value">Array of characters to be encoded.</param>
         /// <param name="startIndex">The index where the substring starts.</param>
         /// <param name="characterCount">Number of characters in the substring.</param>
-        public virtual void Encode(TextWriter output!!, char[] value!!, int startIndex, int characterCount)
+        public virtual void Encode(TextWriter output, char[] value, int startIndex, int characterCount)
         {
+            if (output is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.output);
+            }
+            if (value is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.value);
+            }
+
             ValidateRanges(startIndex, characterCount, actualInputLength: value.Length);
 
             int indexOfFirstCharToEncode = FindFirstCharacterToEncode(value.AsSpan(startIndex, characterCount));

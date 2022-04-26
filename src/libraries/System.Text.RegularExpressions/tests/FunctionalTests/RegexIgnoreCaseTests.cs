@@ -13,8 +13,6 @@ namespace System.Text.RegularExpressions.Tests
 {
     public class RegexIgnoreCaseTests
     {
-        public static bool IsIcuGlobalization = PlatformDetection.IsIcuGlobalization;
-
         public static IEnumerable<(string, string)> CharactersWithSameLowercase()
         {
             return new (string, string)[]
@@ -57,11 +55,6 @@ namespace System.Text.RegularExpressions.Tests
             {
                 // Browser runs in Invariant mode, so only test Invariant in that case.
                 if (PlatformDetection.IsBrowser && culture != "")
-                    continue;
-
-                // NLS globalization uses different mappings for invariant culture for some characters so we skip that for now.
-                // https://github.com/dotnet/runtime/issues/67624
-                if (PlatformDetection.IsNlsGlobalization && culture == "")
                     continue;
 
                 foreach ((string firstChar, string secondChar) in CharactersWithSameLowercase())
@@ -160,8 +153,7 @@ namespace System.Text.RegularExpressions.Tests
         // This test takes a long time to run since it needs to compute all possible lowercase mappings across
         // 3 different cultures and then creates Regex matches for all of our engines for each mapping.
         [OuterLoop]
-        // Disabling test in NLS-globalization systems due to https://github.com/dotnet/runtime/issues/67624
-        [ConditionalTheory(nameof(IsIcuGlobalization))]
+        [Theory]
         [MemberData(nameof(Unicode_IgnoreCase_TestData))]
         public async Task Unicode_IgnoreCase_Tests(RegexEngine engine, string culture, RegexOptions options)
         {

@@ -1,0 +1,60 @@
+parameters:
+  buildConfig: ''                 # required -- build configuration
+  archType: ''                    # required -- targeting CPU architecture
+  osGroup: ''                     # required -- operating system for the job
+  osSubgroup: ''                  # optional -- operating system subgroup
+  pool: ''
+  timeoutInMinutes: 180           # build timeout
+  variables: {}
+  helixQueues: ''
+  dependOnEvaluatePaths: false
+  runJobTemplate: '/eng/pipelines/coreclr/templates/run-superpmi-diffs-job.yml'
+
+jobs:
+- template: ${{ parameters.runJobTemplate }}
+  parameters:
+    jobName: ${{ format('superpmi_diffs_{0}{1}_{2}', parameters.osGroup, parameters.osSubgroup, parameters.archType) }}
+    displayName: ${{ format('SuperPMI diffs {0}{1} {2}', parameters.osGroup, parameters.osSubgroup, parameters.archType) }}
+    pool: ${{ parameters.pool }}
+    buildConfig: ${{ parameters.buildConfig }}
+    archType: ${{ parameters.archType }}
+    osGroup: ${{ parameters.osGroup }}
+    osSubgroup: ${{ parameters.osSubgroup }}
+    dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths }}
+    timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
+    helixQueues: ${{ parameters.helixQueues }}
+    dependsOn:
+     - ${{ format('coreclr_jit_build_{0}{1}_{2}_checked', parameters.osGroup, parameters.osSubgroup, parameters.archType) }}
+     - ${{ format('coreclr_jit_build_{0}{1}_{2}_release', parameters.osGroup, parameters.osSubgroup, parameters.archType) }}
+
+    variables:
+
+    - ${{ each variable in parameters.variables }}:
+      - ${{ if ne(variable.name, '') }}:
+        - name: ${{ variable.name }}
+          value: ${{ variable.value }}
+      - ${{ if ne(variable.group, '') }}:
+        - group: ${{ variable.group }}
+
+    - name: releaseProductRootFolderPath
+      value: '$(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).$(archType).Release'
+    - name: releaseProductArtifactName
+      value: 'CoreCLRProduct_${{ parameters.pgoType }}_${{ parameters.runtimeVariant }}_$(osGroup)$(osSubgroup)_$(archType)_release'
+
+    steps:
+
+    # Download jit checked builds
+    - template: /eng/pipelines/common/download-artifact-step.yml
+      parameters:
+        unpackFolder: $(buildProductRootFolderPath)
+        artifactFileName: '$(buildProductArtifactName)$(archiveExtension)'
+        artifactName: '$(buildProductArtifactName)'
+        displayName: 'JIT checked build'
+
+    #Download jit release builds
+    - template: /eng/pipelines/common/download-artifact-step.yml
+      parameters:
+        unpackFolder: $(releaseProductRootFolderPath)
+        artifactFileName: '$(releaseProductArtifactName)$(archiveExtension)'
+        artifactName: '$(releaseProductArtifactName)'
+        displayName: 'JIT release build'

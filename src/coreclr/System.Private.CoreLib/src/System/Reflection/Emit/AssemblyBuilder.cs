@@ -18,9 +18,6 @@ namespace System.Reflection.Emit
 {
     public sealed partial class AssemblyBuilder : Assembly
     {
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern RuntimeModule GetInMemoryAssemblyModule(RuntimeAssembly assembly);
-
         #region Internal Data Members
 
         internal readonly AssemblyBuilderAccess _access;
@@ -39,12 +36,14 @@ namespace System.Reflection.Emit
 
         #region Constructor
 
-        internal AssemblyBuilder(AssemblyName name!!,
+        internal AssemblyBuilder(AssemblyName name,
                                  AssemblyBuilderAccess access,
                                  Assembly? callingAssembly,
                                  AssemblyLoadContext? assemblyLoadContext,
-                                 IEnumerable<CustomAttributeBuilder>? unsafeAssemblyAttributes)
+                                 IEnumerable<CustomAttributeBuilder>? assemblyAttributes)
         {
+            ArgumentNullException.ThrowIfNull(name);
+
             if (access != AssemblyBuilderAccess.Run && access != AssemblyBuilderAccess.RunAndCollect)
             {
                 throw new ArgumentException(SR.Format(SR.Arg_EnumIllegalVal, (int)access), nameof(access));
@@ -63,17 +62,6 @@ namespace System.Reflection.Emit
             // Clone the name in case the caller modifies it underneath us.
             name = (AssemblyName)name.Clone();
 
-            // Scan the assembly level attributes for any attributes which modify how we create the
-            // assembly. Currently, we look for any attribute which modifies the security transparency
-            // of the assembly.
-            List<CustomAttributeBuilder>? assemblyAttributes = null;
-            if (unsafeAssemblyAttributes != null)
-            {
-                // Create a copy to ensure that it cannot be modified from another thread
-                // as it is used further below.
-                assemblyAttributes = new List<CustomAttributeBuilder>(unsafeAssemblyAttributes);
-            }
-
             RuntimeAssembly? retAssembly = null;
             CreateDynamicAssembly(ObjectHandleOnStack.Create(ref name),
                                   (int)access,
@@ -85,12 +73,10 @@ namespace System.Reflection.Emit
 
             // Make sure that ManifestModule is properly initialized
             // We need to do this before setting any CustomAttribute
-            RuntimeModule internalModule = (RuntimeModule)GetInMemoryAssemblyModule(InternalAssembly);
-
             // Note that this ModuleBuilder cannot be used for RefEmit yet
             // because it hasn't been initialized.
             // However, it can be used to set the custom attribute on the Assembly
-            _manifestModuleBuilder = new ModuleBuilder(this, internalModule);
+            _manifestModuleBuilder = new ModuleBuilder(this, (RuntimeModule)InternalAssembly.ManifestModule);
 
             if (assemblyAttributes != null)
             {
@@ -143,7 +129,7 @@ namespace System.Reflection.Emit
             AssemblyBuilderAccess access,
             Assembly? callingAssembly,
             AssemblyLoadContext? assemblyLoadContext,
-            IEnumerable<CustomAttributeBuilder>? unsafeAssemblyAttributes)
+            IEnumerable<CustomAttributeBuilder>? assemblyAttributes)
         {
             lock (s_assemblyBuilderLock)
             {
@@ -152,7 +138,7 @@ namespace System.Reflection.Emit
                                            access,
                                            callingAssembly,
                                            assemblyLoadContext,
-                                           unsafeAssemblyAttributes);
+                                           assemblyAttributes);
             }
         }
         #endregion
@@ -200,48 +186,6 @@ namespace System.Reflection.Emit
         internal void CheckTypeNameConflict(string strTypeName, TypeBuilder? enclosingType)
         {
             _manifestModuleBuilder.CheckTypeNameConflict(strTypeName, enclosingType);
-        }
-
-        internal static void CheckContext(params Type[]?[]? typess)
-        {
-            if (typess == null)
-            {
-                return;
-            }
-
-            foreach (Type[]? types in typess)
-            {
-                if (types != null)
-                {
-                    CheckContext(types);
-                }
-            }
-        }
-
-        internal static void CheckContext(params Type?[]? types)
-        {
-            if (types == null)
-            {
-                return;
-            }
-
-            foreach (Type? type in types)
-            {
-                if (type == null)
-                {
-                    continue;
-                }
-
-                if (type.Module == null || type.Module.Assembly == null)
-                {
-                    throw new ArgumentException(SR.Argument_TypeNotValid);
-                }
-
-                if (type.Module.Assembly == typeof(object).Module.Assembly)
-                {
-                    continue;
-                }
-            }
         }
 
         public override bool Equals(object? obj) => base.Equals(obj);
@@ -332,8 +276,11 @@ namespace System.Reflection.Emit
         /// <summary>
         /// Use this function if client decides to form the custom attribute blob themselves.
         /// </summary>
-        public void SetCustomAttribute(ConstructorInfo con!!, byte[] binaryAttribute!!)
+        public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
         {
+            ArgumentNullException.ThrowIfNull(con);
+            ArgumentNullException.ThrowIfNull(binaryAttribute);
+
             lock (SyncRoot)
             {
                 TypeBuilder.DefineCustomAttribute(
@@ -347,8 +294,10 @@ namespace System.Reflection.Emit
         /// <summary>
         /// Use this function if client wishes to build CustomAttribute using CustomAttributeBuilder.
         /// </summary>
-        public void SetCustomAttribute(CustomAttributeBuilder customBuilder!!)
+        public void SetCustomAttribute(CustomAttributeBuilder customBuilder)
         {
+            ArgumentNullException.ThrowIfNull(customBuilder);
+
             lock (SyncRoot)
             {
                 customBuilder.CreateCustomAttribute(_manifestModuleBuilder, AssemblyDefToken);

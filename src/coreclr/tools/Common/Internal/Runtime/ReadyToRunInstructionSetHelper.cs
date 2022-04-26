@@ -43,7 +43,7 @@ namespace Internal.ReadyToRunConstants
                             case InstructionSet.ARM64_Vector64: return null;
                             case InstructionSet.ARM64_Vector128: return null;
                             case InstructionSet.ARM64_Dczva: return null;
-                            case InstructionSet.ARM64_Rcpc: return null;
+                            case InstructionSet.ARM64_Rcpc: return ReadyToRunInstructionSet.Rcpc;
 
                             default: throw new Exception("Unknown instruction set");
                         }
