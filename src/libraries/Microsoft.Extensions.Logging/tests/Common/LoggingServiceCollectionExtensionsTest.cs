@@ -26,21 +26,6 @@ namespace Microsoft.Extensions.Logging.Test
         }
 
         [Fact]
-        public void AddLogging_InjectScopeProvider()
-        {
-            var services = new ServiceCollection();
-            services.AddSingleton(typeof(IExternalScopeProvider), Mock.Of<IExternalScopeProvider>());
-
-            var callbackCalled = false;
-            var loggerBuilder = services.AddLogging(builder =>
-            {
-                callbackCalled = true;
-            });
-
-            Assert.True(callbackCalled);
-        }
-
-        [Fact]
         public void AddLogging_TestInjectedScopeProvider()
         {
             bool callbackCalled = false;
