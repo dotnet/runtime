@@ -2,13 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Runtime.CompilerServices;
-using System.Security.Cryptography;
 using System.Text;
 
 namespace System.IO
 {
     public static class PathGenerator
     {
+        private static Random _rand = new Random();
+
         public static string GenerateTestFileName([CallerMemberName] string memberName = null, [CallerLineNumber] int lineNumber = 0)
             => GenerateTestFileName(null, memberName, lineNumber);
 
@@ -25,12 +26,17 @@ namespace System.IO
             // A little more entropy than Guid.NewGuid().ToString("N").Substring(0, length))
             const string alphanum = "abcdefghijklmnopqrstuvwxyz0123456789";
 
-            byte[] rand = RandomNumberGenerator.GetBytes(length);
+            byte[] bytes = new byte[length];
+            lock (_rand)
+            {
+                _rand.NextBytes(bytes);
+            }
+
             char[] chars = new char[length];
 
             for (int i = 0; i < length; i++)
             {
-                chars[i] = alphanum[rand[i] % alphanum.Length];
+                chars[i] = alphanum[bytes[i] % alphanum.Length];
             }
 
             return new String(chars);
