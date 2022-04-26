@@ -5,7 +5,6 @@ parameters:
   creator: ''
   helixQueues: ''
   osGroup: ''
-  hostedOs: ''
   targetRid: ''
   testRunNamePrefixSuffix: ''
   testScope: 'innerloop' # innerloop | outerloop | all
@@ -24,7 +23,6 @@ steps:
             /p:Configuration=${{ parameters.buildConfig }}
             /p:TargetOS=${{ parameters.osGroup }}
             /p:MonoForceInterpreter=${{ parameters.interpreter }}
-            /p:BrowserHost=${{ parameters.hostedOs }}
             /p:TestScope=${{ parameters.testScope }}
             /p:TestRunNamePrefixSuffix=${{ parameters.testRunNamePrefixSuffix }}
             /p:HelixBuild=$(Build.BuildNumber)
