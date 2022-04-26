@@ -17866,7 +17866,7 @@ bool Compiler::gtIsStaticGCBaseHelperCall(GenTree* tree)
 
 //------------------------------------------------------------------------
 // gtCallGetDefinedRetBufLclAddr:
-//   Get the tree corresponding to the address of the retbuf taht this call defines.
+//   Get the tree corresponding to the address of the retbuf that this call defines.
 //
 // Parameters:
 //   call - The call node
