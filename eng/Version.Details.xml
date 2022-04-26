@@ -8,9 +8,9 @@
       <Uri>https://github.com/dotnet/msquic</Uri>
       <Sha>417bdeac3988ec59ee7f6c045ae03d2193bcdab0</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NET.Workload.Emscripten.Manifest-7.0.100" Version="7.0.0-preview.5.22219.2">
+    <Dependency Name="Microsoft.NET.Workload.Emscripten.Manifest-7.0.100" Version="7.0.0-preview.5.22225.1">
       <Uri>https://github.com/dotnet/emsdk</Uri>
-      <Sha>ab48663f2cca2aee15fa1c362c34dd6210f5c398</Sha>
+      <Sha>5910885065fc29cafc94c35a4bb0952dc5f7b5df</Sha>
     </Dependency>
     <Dependency Name="System.ServiceModel.Primitives" Version="4.9.0-rc2.21473.1">
       <Uri>https://github.com/dotnet/wcf</Uri>
