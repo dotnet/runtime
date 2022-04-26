@@ -12,7 +12,7 @@ using System.Threading;
 
 namespace DebuggerTests
 {
-    public class HotReloadTests : DebuggerTestBase
+    public class HotReloadTests : DebuggerTests
     {
         [ConditionalFact(nameof(RunningOnChrome))]
         public async Task DebugHotReloadMethodChangedUserBreak()
