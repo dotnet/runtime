@@ -12,38 +12,32 @@ namespace ILLink.Shared.TrimAnalysis
 	partial struct RequireDynamicallyAccessedMembersAction
 	{
 		readonly LinkContext _context;
-		readonly ReflectionMethodBodyScanner _reflectionMethodBodyScanner;
-		readonly MessageOrigin _origin;
+		readonly ReflectionMarker _reflectionMarker;
 
 		public RequireDynamicallyAccessedMembersAction (
 			LinkContext context,
-			ReflectionMethodBodyScanner reflectionMethodBodyScanner,
-			in MessageOrigin origin,
-			bool diagnosticsEnabled)
+			ReflectionMarker reflectionMarker,
+			in DiagnosticContext diagnosticContext)
 		{
-			_diagnosticContext = new DiagnosticContext (origin, diagnosticsEnabled, context);
 			_context = context;
-			_origin = origin;
-			_reflectionMethodBodyScanner = reflectionMethodBodyScanner;
+			_reflectionMarker = reflectionMarker;
+			_diagnosticContext = diagnosticContext;
 		}
 
 		private partial bool TryResolveTypeNameAndMark (string typeName, out TypeProxy type)
 		{
-			if (!_context.TypeNameResolver.TryResolveTypeName (typeName, _origin.Provider, out TypeReference? typeRef, out AssemblyDefinition? typeAssembly)
-				|| typeRef.ResolveToTypeDefinition (_context) is not TypeDefinition foundType) {
+			if (_reflectionMarker.TryResolveTypeNameAndMark (typeName, _diagnosticContext.Origin, out TypeDefinition? foundType)) {
+				type = new (foundType);
+				return true;
+			} else {
 				type = default;
 				return false;
-			} else {
-				_reflectionMethodBodyScanner.MarkType (_origin, typeRef);
-				_context.MarkingHelpers.MarkMatchingExportedType (foundType, typeAssembly, new DependencyInfo (DependencyKind.DynamicallyAccessedMember, foundType), _origin);
-				type = new TypeProxy (foundType);
-				return true;
 			}
 		}
 
 		private partial void MarkTypeForDynamicallyAccessedMembers (in TypeProxy type, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
 		{
-			_reflectionMethodBodyScanner.MarkTypeForDynamicallyAccessedMembers (_origin, type.Type, dynamicallyAccessedMemberTypes, DependencyKind.DynamicallyAccessedMember);
+			_reflectionMarker.MarkTypeForDynamicallyAccessedMembers (_diagnosticContext.Origin, type.Type, dynamicallyAccessedMemberTypes, DependencyKind.DynamicallyAccessedMember);
 		}
 	}
 }

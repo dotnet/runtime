@@ -15,24 +15,21 @@ namespace ILLink.Shared.TrimAnalysis
 #pragma warning disable CA1822 // Mark members as static - the other partial implementations might need to be instance methods
 
 		readonly LinkContext _context;
-		readonly ReflectionMethodBodyScanner _reflectionMethodBodyScanner;
-		readonly MessageOrigin _origin;
+		readonly ReflectionMarker _reflectionMarker;
 		readonly MethodDefinition _callingMethodDefinition;
 
 		public HandleCallAction (
 			LinkContext context,
-			ReflectionMethodBodyScanner reflectionMethodBodyScanner,
-			in MessageOrigin origin,
-			bool diagnosticsEnabled,
+			ReflectionMarker reflectionMarker,
+			in DiagnosticContext diagnosticContext,
 			MethodDefinition callingMethodDefinition)
 		{
 			_context = context;
-			_reflectionMethodBodyScanner = reflectionMethodBodyScanner;
-			_origin = origin;
+			_reflectionMarker = reflectionMarker;
+			_diagnosticContext = diagnosticContext;
 			_callingMethodDefinition = callingMethodDefinition;
-			_diagnosticContext = new DiagnosticContext (origin, diagnosticsEnabled, context);
 			_annotations = context.Annotations.FlowAnnotations;
-			_requireDynamicallyAccessedMembersAction = new (context, reflectionMethodBodyScanner, origin, diagnosticsEnabled);
+			_requireDynamicallyAccessedMembersAction = new (context, reflectionMarker, diagnosticContext);
 		}
 
 		private partial bool MethodIsTypeConstructor (MethodProxy method)
@@ -72,33 +69,33 @@ namespace ILLink.Shared.TrimAnalysis
 		}
 
 		private partial void MarkStaticConstructor (TypeProxy type)
-			=> _reflectionMethodBodyScanner.MarkStaticConstructor (_origin, type.Type);
+			=> _reflectionMarker.MarkStaticConstructor (_diagnosticContext.Origin, type.Type);
 
 		private partial void MarkEventsOnTypeHierarchy (TypeProxy type, string name, BindingFlags? bindingFlags)
-			=> _reflectionMethodBodyScanner.MarkEventsOnTypeHierarchy (_origin, type.Type, e => e.Name == name, bindingFlags);
+			=> _reflectionMarker.MarkEventsOnTypeHierarchy (_diagnosticContext.Origin, type.Type, e => e.Name == name, bindingFlags);
 
 		private partial void MarkFieldsOnTypeHierarchy (TypeProxy type, string name, BindingFlags? bindingFlags)
-			=> _reflectionMethodBodyScanner.MarkFieldsOnTypeHierarchy (_origin, type.Type, f => f.Name == name, bindingFlags);
+			=> _reflectionMarker.MarkFieldsOnTypeHierarchy (_diagnosticContext.Origin, type.Type, f => f.Name == name, bindingFlags);
 
 		private partial void MarkPropertiesOnTypeHierarchy (TypeProxy type, string name, BindingFlags? bindingFlags)
-			=> _reflectionMethodBodyScanner.MarkPropertiesOnTypeHierarchy (_origin, type.Type, p => p.Name == name, bindingFlags);
+			=> _reflectionMarker.MarkPropertiesOnTypeHierarchy (_diagnosticContext.Origin, type.Type, p => p.Name == name, bindingFlags);
 
 		private partial void MarkPublicParameterlessConstructorOnType (TypeProxy type)
-			=> _reflectionMethodBodyScanner.MarkConstructorsOnType (_origin, type.Type, m => m.IsPublic && m.Parameters.Count == 0);
+			=> _reflectionMarker.MarkConstructorsOnType (_diagnosticContext.Origin, type.Type, m => m.IsPublic && m.Parameters.Count == 0);
 
 		private partial void MarkConstructorsOnType (TypeProxy type, BindingFlags? bindingFlags)
-			=> _reflectionMethodBodyScanner.MarkConstructorsOnType (_origin, type.Type, null, bindingFlags);
+			=> _reflectionMarker.MarkConstructorsOnType (_diagnosticContext.Origin, type.Type, null, bindingFlags);
 
 		private partial void MarkMethod (MethodProxy method)
-			=> _reflectionMethodBodyScanner.MarkMethod (_origin, method.Method);
+			=> _reflectionMarker.MarkMethod (_diagnosticContext.Origin, method.Method);
 
 		private partial void MarkType (TypeProxy type)
-			=> _reflectionMethodBodyScanner.MarkType (_origin, type.Type);
+			=> _reflectionMarker.MarkType (_diagnosticContext.Origin, type.Type);
 
 		private partial bool MarkAssociatedProperty (MethodProxy method)
 		{
 			if (method.Method.TryGetProperty (out PropertyDefinition? propertyDefinition)) {
-				_reflectionMethodBodyScanner.MarkProperty (_origin, propertyDefinition);
+				_reflectionMarker.MarkProperty (_diagnosticContext.Origin, propertyDefinition);
 				return true;
 			}
 

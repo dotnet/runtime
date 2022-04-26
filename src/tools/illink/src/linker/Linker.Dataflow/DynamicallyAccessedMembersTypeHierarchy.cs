@@ -115,16 +115,16 @@ namespace Mono.Linker.Dataflow
 				// One of the base/interface types is already marked as having the annotation applied
 				// so we need to apply the annotation to this type as well
 				var origin = new MessageOrigin (type);
-				var reflectionMethodBodyScanner = new ReflectionMethodBodyScanner (_context, _markStep, origin);
+				var reflectionMarker = new ReflectionMarker (_context, _markStep);
 				// Report warnings on access to annotated members, with the annotated type as the origin.
-				ApplyDynamicallyAccessedMembersToType (ref reflectionMethodBodyScanner, origin, type, annotation);
+				ApplyDynamicallyAccessedMembersToType (ref reflectionMarker, origin, type, annotation);
 			}
 
 			return (annotation, apply);
 		}
 
 		public DynamicallyAccessedMemberTypes ApplyDynamicallyAccessedMembersToTypeHierarchy (
-			ReflectionMethodBodyScanner reflectionMethodBodyScanner,
+			ReflectionMarker reflectionMarker,
 			TypeDefinition type)
 		{
 			Debug.Assert (_context.Annotations.IsMarked (type));
@@ -140,7 +140,7 @@ namespace Mono.Linker.Dataflow
 			// Apply the effective annotation for the type
 			var origin = new MessageOrigin (type);
 			// Report warnings on access to annotated members, with the annotated type as the origin.
-			ApplyDynamicallyAccessedMembersToType (ref reflectionMethodBodyScanner, origin, type, annotation);
+			ApplyDynamicallyAccessedMembersToType (ref reflectionMarker, origin, type, annotation);
 
 			// Mark it as applied in the cache
 			_typesInDynamicallyAccessedMembersHierarchy[type] = (annotation, true);
@@ -172,7 +172,7 @@ namespace Mono.Linker.Dataflow
 					break;
 
 				foreach (var candidateType in candidateTypes) {
-					ApplyDynamicallyAccessedMembersToTypeHierarchyInner (reflectionMethodBodyScanner, candidateType);
+					ApplyDynamicallyAccessedMembersToTypeHierarchyInner (reflectionMarker, candidateType);
 				}
 			}
 
@@ -180,7 +180,7 @@ namespace Mono.Linker.Dataflow
 		}
 
 		bool ApplyDynamicallyAccessedMembersToTypeHierarchyInner (
-			ReflectionMethodBodyScanner reflectionMethodBodyScanner,
+			ReflectionMarker reflectionMarker,
 			TypeDefinition type)
 		{
 			(var annotation, var applied) = GetCachedInfoForTypeInHierarchy (type);
@@ -193,13 +193,13 @@ namespace Mono.Linker.Dataflow
 
 			TypeDefinition? baseType = _context.TryResolve (type.BaseType);
 			if (baseType != null)
-				applied = ApplyDynamicallyAccessedMembersToTypeHierarchyInner (reflectionMethodBodyScanner, baseType);
+				applied = ApplyDynamicallyAccessedMembersToTypeHierarchyInner (reflectionMarker, baseType);
 
 			if (!applied && type.HasInterfaces) {
 				foreach (InterfaceImplementation iface in type.Interfaces) {
 					var interfaceType = _context.TryResolve (iface.InterfaceType);
 					if (interfaceType != null) {
-						if (ApplyDynamicallyAccessedMembersToTypeHierarchyInner (reflectionMethodBodyScanner, interfaceType)) {
+						if (ApplyDynamicallyAccessedMembersToTypeHierarchyInner (reflectionMarker, interfaceType)) {
 							applied = true;
 							break;
 						}
@@ -210,14 +210,14 @@ namespace Mono.Linker.Dataflow
 			if (applied) {
 				var origin = new MessageOrigin (type);
 				// Report warnings on access to annotated members, with the annotated type as the origin.
-				ApplyDynamicallyAccessedMembersToType (ref reflectionMethodBodyScanner, origin, type, annotation);
+				ApplyDynamicallyAccessedMembersToType (ref reflectionMarker, origin, type, annotation);
 				_typesInDynamicallyAccessedMembersHierarchy[type] = (annotation, true);
 			}
 
 			return applied;
 		}
 
-		void ApplyDynamicallyAccessedMembersToType (ref ReflectionMethodBodyScanner reflectionMethodBodyScanner, in MessageOrigin origin, TypeDefinition type, DynamicallyAccessedMemberTypes annotation)
+		void ApplyDynamicallyAccessedMembersToType (ref ReflectionMarker reflectionMarker, in MessageOrigin origin, TypeDefinition type, DynamicallyAccessedMemberTypes annotation)
 		{
 			Debug.Assert (annotation != DynamicallyAccessedMemberTypes.None);
 
@@ -232,7 +232,7 @@ namespace Mono.Linker.Dataflow
 				// Apply any annotations that didn't exist on the base type to the base type.
 				// This may produce redundant warnings when the annotation is DAMT.All or DAMT.PublicConstructors and the base already has a
 				// subset of those annotations.
-				reflectionMethodBodyScanner.MarkTypeForDynamicallyAccessedMembers (origin, baseType, annotationToApplyToBase, DependencyKind.DynamicallyAccessedMemberOnType, declaredOnly: false);
+				reflectionMarker.MarkTypeForDynamicallyAccessedMembers (origin, baseType, annotationToApplyToBase, DependencyKind.DynamicallyAccessedMemberOnType, declaredOnly: false);
 			}
 
 			// Most of the DynamicallyAccessedMemberTypes don't select members on interfaces. We only need to apply
@@ -250,14 +250,14 @@ namespace Mono.Linker.Dataflow
 
 					// Apply All or Interfaces to the interface type.
 					// DAMT.All may produce redundant warnings from implementing types, when the interface type already had some annotations.
-					reflectionMethodBodyScanner.MarkTypeForDynamicallyAccessedMembers (origin, interfaceType, annotationToApplyToInterfaces, DependencyKind.DynamicallyAccessedMemberOnType, declaredOnly: false);
+					reflectionMarker.MarkTypeForDynamicallyAccessedMembers (origin, interfaceType, annotationToApplyToInterfaces, DependencyKind.DynamicallyAccessedMemberOnType, declaredOnly: false);
 				}
 			}
 
 			// The annotations this type inherited from its base types or interfaces should not produce
 			// warnings on the respective base/interface members, since those are already covered by applying
 			// the annotations to those types. So we only need to handle the members directly declared on this type.
-			reflectionMethodBodyScanner.MarkTypeForDynamicallyAccessedMembers (origin, type, annotation, DependencyKind.DynamicallyAccessedMemberOnType, declaredOnly: true);
+			reflectionMarker.MarkTypeForDynamicallyAccessedMembers (origin, type, annotation, DependencyKind.DynamicallyAccessedMemberOnType, declaredOnly: true);
 		}
 
 		(DynamicallyAccessedMemberTypes annotation, bool applied) GetCachedInfoForTypeInHierarchy (TypeDefinition type)
