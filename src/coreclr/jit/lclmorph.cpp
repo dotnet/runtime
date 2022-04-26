@@ -1220,7 +1220,7 @@ private:
         // |------------|------|---------|--------|
         // | Exact      | None | LCL_VAR | None   |
         // | Compatible | None | LCL_VAR | None   |
-        // | Partial    | None | None    | None   |
+        // | Partial    | None | OBJ     | None   |
         // |------------|------|---------|--------|
         //
         // |------------|------|---------|--------|----------|
@@ -1243,7 +1243,7 @@ private:
             return IndirTransform::LclVar;
         }
 
-        return IndirTransform::None;
+        return IndirTransform::ObjAddrLclFld;
     }
 
     //------------------------------------------------------------------------
