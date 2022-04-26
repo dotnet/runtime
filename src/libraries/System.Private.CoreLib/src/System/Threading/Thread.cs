@@ -163,7 +163,8 @@ namespace System.Threading
 #endif
 #endif
 
-        internal static void ThrowIfNoThreadStart() {
+        internal static void ThrowIfNoThreadStart()
+        {
             if (!IsThreadStartSupported)
                 throw new PlatformNotSupportedException();
         }
