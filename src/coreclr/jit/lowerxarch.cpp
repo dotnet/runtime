@@ -3964,8 +3964,9 @@ void Lowering::LowerBswapOp(GenTreeOp* node)
         return;
     }
 
-    GenTree* operand = node->gtGetOp1();
-    if (node->TypeGet() == operand->TypeGet() && IsContainableMemoryOp(operand) && IsSafeToContainMem(node, operand))
+    GenTree* operand  = node->gtGetOp1();
+    unsigned swapSize = node->OperIs(GT_BSWAP16) ? 2 : genTypeSize(node);
+    if (swapSize == genTypeSize(operand) && IsContainableMemoryOp(operand) && IsSafeToContainMem(node, operand))
     {
         MakeSrcContained(node, operand);
     }
@@ -4602,10 +4603,12 @@ void Lowering::ContainCheckStoreIndir(GenTreeStoreInd* node)
     }
 
     // If the source is a BSWAP, contain it on supported hardware to generate a MOVBE.
-    // Ensure that we are not double containing when the load has been contained.
-    if (comp->opts.OptimizationEnabled() && src->OperIs(GT_BSWAP, GT_BSWAP16) && !src->gtGetOp1()->isContained() &&
+    if (comp->opts.OptimizationEnabled() && src->OperIs(GT_BSWAP, GT_BSWAP16) &&
         comp->compOpportunisticallyDependsOn(InstructionSet_MOVBE) && IsSafeToContainMem(node, src))
     {
+        // Prefer containing in the store in case the load has been contained.
+        src->gtGetOp1()->ClearContained();
+
         MakeSrcContained(node, src);
     }
 

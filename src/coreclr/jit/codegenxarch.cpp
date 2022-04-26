@@ -585,6 +585,11 @@ void CodeGen::genCodeForBswap(GenTree* tree)
     else
     {
         GetEmitter()->emitInsBinary(INS_movbe, emitTypeSize(operand), tree, operand);
+
+        if (tree->OperIs(GT_BSWAP16) && !genCanOmitNormalizationForBswap16(tree))
+        {
+            GetEmitter()->emitIns_Mov(INS_movzx, EA_2BYTE, targetReg, targetReg, /* canSkip */ false);
+        }
     }
 
     genProduceReg(tree);
