@@ -3,9 +3,7 @@
 
 using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Net.WebSockets;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -18,11 +16,13 @@ namespace Microsoft.WebAssembly.Diagnostics
         private Task? current_send;
         private ConcurrentQueue<byte[]> pending;
 
-        public WebSocket Ws { get; private set; }
         public Task? CurrentSend { get { return current_send; } }
-        public DevToolsQueue(WebSocket sock)
+
+        public WasmDebuggerConnection Connection { get; init; }
+
+        public DevToolsQueue(WasmDebuggerConnection conn)
         {
-            this.Ws = sock;
+            Connection = conn;
             pending = new ConcurrentQueue<byte[]>();
         }
 
@@ -46,7 +46,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             current_send = null;
             if (pending.TryDequeue(out byte[]? bytes))
             {
-                current_send = Ws.SendAsync(new ArraySegment<byte>(bytes), WebSocketMessageType.Text, true, token);
+                current_send = Connection.SendAsync(bytes, token);
                 sendTask = current_send;
             }
 

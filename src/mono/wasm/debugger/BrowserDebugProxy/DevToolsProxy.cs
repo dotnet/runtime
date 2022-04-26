@@ -3,7 +3,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Net.WebSockets;
 using System.Text;
@@ -16,138 +15,106 @@ using Newtonsoft.Json.Linq;
 
 namespace Microsoft.WebAssembly.Diagnostics
 {
-
     internal class DevToolsProxy
     {
-        private TaskCompletionSource<bool> side_exception = new TaskCompletionSource<bool>();
-        private TaskCompletionSource client_initiated_close = new TaskCompletionSource();
-        private Dictionary<MessageId, TaskCompletionSource<Result>> pending_cmds = new Dictionary<MessageId, TaskCompletionSource<Result>>();
-        private ClientWebSocket browser;
-        private WebSocket ide;
+        protected TaskCompletionSource<Exception> side_exception = new();
+        protected TaskCompletionSource shutdown_requested = new();
+        protected Dictionary<MessageId, TaskCompletionSource<Result>> pending_cmds = new Dictionary<MessageId, TaskCompletionSource<Result>>();
+        protected WasmDebuggerConnection browser;
+        protected WasmDebuggerConnection ide;
         private int next_cmd_id;
         private readonly ChannelWriter<Task> _channelWriter;
         private readonly ChannelReader<Task> _channelReader;
-        private List<DevToolsQueue> queues = new List<DevToolsQueue>();
+        protected List<DevToolsQueue> queues = new List<DevToolsQueue>();
 
         protected readonly ILogger logger;
+        private readonly string _loggerId;
+
+        public event EventHandler<RunLoopExitState> RunLoopStopped;
+        public bool IsRunning => Stopped is null;
+        public RunLoopExitState Stopped { get; private set; }
 
         public DevToolsProxy(ILoggerFactory loggerFactory, string loggerId)
         {
+            _loggerId = loggerId;
             string loggerSuffix = string.IsNullOrEmpty(loggerId) ? string.Empty : $"-{loggerId}";
-            logger = loggerFactory.CreateLogger($"{nameof(DevToolsProxy)}{loggerSuffix}");
+            logger = loggerFactory.CreateLogger($"DevToolsProxy{loggerSuffix}");
 
             var channel = Channel.CreateUnbounded<Task>(new UnboundedChannelOptions { SingleReader = true });
             _channelWriter = channel.Writer;
             _channelReader = channel.Reader;
         }
 
-        protected virtual Task<bool> AcceptEvent(SessionId sessionId, string method, JObject args, CancellationToken token)
+        protected int GetNewCmdId() => Interlocked.Increment(ref next_cmd_id);
+        protected int ResetCmdId() => next_cmd_id = 0;
+        protected virtual Task<bool> AcceptEvent(SessionId sessionId, JObject args, CancellationToken token)
         {
             return Task.FromResult(false);
         }
 
-        protected virtual Task<bool> AcceptCommand(MessageId id, string method, JObject args, CancellationToken token)
+        protected virtual Task<bool> AcceptCommand(MessageId id, JObject args, CancellationToken token)
         {
             return Task.FromResult(false);
         }
 
-        private async Task<string> ReadOne(WebSocket socket, CancellationToken token)
-        {
-            byte[] buff = new byte[4000];
-            var mem = new MemoryStream();
-            try
-            {
-                while (true)
-                {
-                    if (socket.State != WebSocketState.Open)
-                    {
-                        Log("error", $"DevToolsProxy: Socket is no longer open.");
-                        client_initiated_close.TrySetResult();
-                        return null;
-                    }
+        private DevToolsQueue GetQueueForConnection(WasmDebuggerConnection conn)
+            => queues.FirstOrDefault(q => q.Connection == conn);
 
-                    WebSocketReceiveResult result = await socket.ReceiveAsync(new ArraySegment<byte>(buff), token);
-                    if (result.MessageType == WebSocketMessageType.Close)
-                    {
-                        client_initiated_close.TrySetResult();
-                        return null;
-                    }
-
-                    mem.Write(buff, 0, result.Count);
-
-                    if (result.EndOfMessage)
-                        return Encoding.UTF8.GetString(mem.GetBuffer(), 0, (int)mem.Length);
-                }
-            }
-            catch (WebSocketException e)
-            {
-                if (e.WebSocketErrorCode == WebSocketError.ConnectionClosedPrematurely)
-                {
-                    client_initiated_close.TrySetResult();
-                    return null;
-                }
-            }
-            return null;
-        }
-
-        private DevToolsQueue GetQueueForSocket(WebSocket ws)
-        {
-            return queues.FirstOrDefault(q => q.Ws == ws);
-        }
-
-        private DevToolsQueue GetQueueForTask(Task task)
+        protected DevToolsQueue GetQueueForTask(Task task)
         {
             return queues.FirstOrDefault(q => q.CurrentSend == task);
         }
 
-        private async Task Send(WebSocket to, JObject o, CancellationToken token)
+        protected async Task Send(WasmDebuggerConnection conn, JObject o, CancellationToken token)
         {
-            string sender = browser == to ? "Send-browser" : "Send-ide";
+            logger.LogTrace($"to-{conn.Id}: {GetFromOrTo(o)} {o}");
+            var msg = o.ToString(Formatting.None);
+            var bytes = Encoding.UTF8.GetBytes(msg);
 
-            //if (method != "Debugger.scriptParsed" && method != "Runtime.consoleAPICalled")
-            Log("protocol", $"{sender}: " + JsonConvert.SerializeObject(o));
-            byte[] bytes = Encoding.UTF8.GetBytes(o.ToString());
-
-            DevToolsQueue queue = GetQueueForSocket(to);
+            DevToolsQueue queue = GetQueueForConnection(conn);
 
             Task task = queue.Send(bytes, token);
             if (task != null)
                 await _channelWriter.WriteAsync(task, token);
         }
 
-        private async Task OnEvent(SessionId sessionId, string method, JObject args, CancellationToken token)
+        protected virtual async Task OnEvent(SessionId sessionId, JObject parms, CancellationToken token)
         {
             try
             {
-                if (!await AcceptEvent(sessionId, method, args, token))
+                if (!await AcceptEvent(sessionId, parms, token))
                 {
+                    var method = parms["method"].Value<string>();
+                    var args = parms["params"] as JObject;
                     //logger.LogDebug ("proxy browser: {0}::{1}",method, args);
                     await SendEventInternal(sessionId, method, args, token);
                 }
             }
             catch (Exception e)
             {
-                side_exception.TrySetException(e);
+                side_exception.TrySetResult(e);
             }
         }
 
-        private async Task OnCommand(MessageId id, string method, JObject args, CancellationToken token)
+        protected virtual async Task OnCommand(MessageId id, JObject parms, CancellationToken token)
         {
             try
             {
-                if (!await AcceptCommand(id, method, args, token))
+                if (!await AcceptCommand(id, parms, token))
                 {
+                    var method = parms["method"].Value<string>();
+                    var args = parms["params"] as JObject;
                     Result res = await SendCommandInternal(id, method, args, token);
                     await SendResponseInternal(id, res, token);
                 }
             }
             catch (Exception e)
             {
-                side_exception.TrySetException(e);
+                side_exception.TrySetResult(e);
             }
         }
 
-        private void OnResponse(MessageId id, Result result)
+        protected virtual void OnResponse(MessageId id, Result result)
         {
             //logger.LogTrace ("got id {0} res {1}", id, result);
             // Fixme
@@ -156,52 +123,68 @@ namespace Microsoft.WebAssembly.Diagnostics
                 task.SetResult(result);
                 return;
             }
-            logger.LogError("Cannot respond to command: {id} with result: {result} - command is not pending", id, result);
+            logger.LogError($"Cannot respond to command: {id} with result: {result} - command is not pending");
         }
 
-        private Task ProcessBrowserMessage(string msg, CancellationToken token)
+        protected virtual Task ProcessBrowserMessage(string msg, CancellationToken token)
         {
-            var res = JObject.Parse(msg);
-
-            //if (method != "Debugger.scriptParsed" && method != "Runtime.consoleAPICalled")
-            Log("protocol", $"browser: {msg}");
-
-            if (res["id"] == null)
-            {
-                return OnEvent(res.ToObject<SessionId>(), res["method"].Value<string>(), res["params"] as JObject, token);
-            }
-            else
-            {
-                OnResponse(res.ToObject<MessageId>(), Result.FromJson(res));
-                return null;
-            }
-        }
-
-        private Task ProcessIdeMessage(string msg, CancellationToken token)
-        {
-            Log("protocol", $"ide: {msg}");
-            if (!string.IsNullOrEmpty(msg))
+            try
             {
                 var res = JObject.Parse(msg);
-                var id = res.ToObject<MessageId>();
-                return OnCommand(
-                    id,
-                    res["method"].Value<string>(),
-                    res["params"] as JObject, token);
-            }
 
-            return null;
+                //if (method != "Debugger.scriptParsed" && method != "Runtime.consoleAPICalled")
+                Log("protocol", $"browser: {msg}");
+
+                if (res["id"] == null)
+                {
+                    return OnEvent(res.ToObject<SessionId>(), res, token);
+                }
+                else
+                {
+                    OnResponse(res.ToObject<MessageId>(), Result.FromJson(res));
+                    return null;
+                }
+            }
+            catch (Exception ex)
+            {
+                side_exception.TrySetResult(ex);
+                throw;
+            }
         }
 
-        internal async Task<Result> SendCommand(SessionId id, string method, JObject args, CancellationToken token)
+        protected virtual Task ProcessIdeMessage(string msg, CancellationToken token)
         {
-            //Log ("verbose", $"sending command {method}: {args}");
+            try
+            {
+                Log("protocol", $"ide: {msg}");
+                if (!string.IsNullOrEmpty(msg))
+                {
+                    var res = JObject.Parse(msg);
+                    var id = res.ToObject<MessageId>();
+                    return OnCommand(
+                        id,
+                        res,
+                        token);
+                }
+
+                return null;
+            }
+            catch (Exception ex)
+            {
+                side_exception.TrySetResult(ex);
+                throw;
+            }
+        }
+
+        public virtual async Task<Result> SendCommand(SessionId id, string method, JObject args, CancellationToken token)
+        {
+            // Log ("protocol", $"sending command {method}: {args}");
             return await SendCommandInternal(id, method, args, token);
         }
 
-        private async Task<Result> SendCommandInternal(SessionId sessionId, string method, JObject args, CancellationToken token)
+        protected virtual async Task<Result> SendCommandInternal(SessionId sessionId, string method, JObject args, CancellationToken token)
         {
-            int id = Interlocked.Increment(ref next_cmd_id);
+            int id = GetNewCmdId();
 
             var o = JObject.FromObject(new
             {
@@ -214,20 +197,19 @@ namespace Microsoft.WebAssembly.Diagnostics
             var tcs = new TaskCompletionSource<Result>();
 
             var msgId = new MessageId(sessionId.sessionId, id);
-            //Log ("verbose", $"add cmd id {sessionId}-{id}");
             pending_cmds[msgId] = tcs;
 
             await Send(browser, o, token);
             return await tcs.Task;
         }
 
-        public Task SendEvent(SessionId sessionId, string method, JObject args, CancellationToken token)
+        public virtual Task SendEvent(SessionId sessionId, string method, JObject args, CancellationToken token)
         {
-            //Log ("verbose", $"sending event {method}: {args}");
+            // logger.LogTrace($"sending event {method}: {args}");
             return SendEventInternal(sessionId, method, args, token);
         }
 
-        private Task SendEventInternal(SessionId sessionId, string method, JObject args, CancellationToken token)
+        protected virtual Task SendEventInternal(SessionId sessionId, string method, JObject args, CancellationToken token)
         {
             var o = JObject.FromObject(new
             {
@@ -240,12 +222,12 @@ namespace Microsoft.WebAssembly.Diagnostics
             return Send(ide, o, token);
         }
 
-        internal void SendResponse(MessageId id, Result result, CancellationToken token)
+        public virtual void SendResponse(MessageId id, Result result, CancellationToken token)
         {
             SendResponseInternal(id, result, token);
         }
 
-        private Task SendResponseInternal(MessageId id, Result result, CancellationToken token)
+        protected virtual Task SendResponseInternal(MessageId id, Result result, CancellationToken token)
         {
             JObject o = result.ToJObject(id);
             if (!result.IsOk)
@@ -254,29 +236,97 @@ namespace Microsoft.WebAssembly.Diagnostics
             return Send(this.ide, o, token);
         }
 
-        // , HttpContext context)
-        public async Task Run(Uri browserUri, WebSocket ideSocket)
+        public virtual Task ForwardMessageToIde(JObject msg, CancellationToken token)
         {
-            Log("debug", $"DevToolsProxy: Starting on {browserUri}");
-            using (this.ide = ideSocket)
-            {
-                Log("verbose", $"DevToolsProxy: IDE waiting for connection on {browserUri}");
-                queues.Add(new DevToolsQueue(this.ide));
-                using (this.browser = new ClientWebSocket())
-                {
-                    this.browser.Options.KeepAliveInterval = Timeout.InfiniteTimeSpan;
-                    await this.browser.ConnectAsync(browserUri, CancellationToken.None);
-                    queues.Add(new DevToolsQueue(this.browser));
+            // logger.LogTrace($"to-ide: forwarding {GetFromOrTo(msg)} {msg}");
+            return Send(ide, msg, token);
+        }
 
-                    Log("verbose", $"DevToolsProxy: Client connected on {browserUri}");
-                    var x = new CancellationTokenSource();
+        public virtual Task ForwardMessageToBrowser(JObject msg, CancellationToken token)
+        {
+            // logger.LogTrace($"to-browser: forwarding {GetFromOrTo(msg)} {msg}");
+            return Send(this.browser, msg, token);
+        }
+
+        public async Task RunForDevTools(Uri browserUri, WebSocket ideSocket, CancellationTokenSource cts)
+        {
+            try
+            {
+                logger.LogDebug($"DevToolsProxy: Starting for browser at {browserUri}");
+                logger.LogDebug($"DevToolsProxy: Proxy waiting for connection to the browser at {browserUri}");
+
+                ClientWebSocket browserSocket = new();
+                browserSocket.Options.KeepAliveInterval = Timeout.InfiniteTimeSpan;
+                await browserSocket.ConnectAsync(browserUri, cts.Token);
+
+                using var ideConn = new DevToolsDebuggerConnection(ideSocket, "ide", logger);
+                using var browserConn = new DevToolsDebuggerConnection(browserSocket, "browser", logger);
+
+                await StartRunLoop(ideConn: ideConn, browserConn: browserConn, cts);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError($"DevToolsProxy.Run: {ex}");
+                throw;
+            }
+        }
+
+        protected Task StartRunLoop(WasmDebuggerConnection ideConn, WasmDebuggerConnection browserConn, CancellationTokenSource cts)
+            => Task.Run(async () =>
+            {
+                try
+                {
+                    RunLoopExitState exitState;
+
+                    try
+                    {
+                        Stopped = await RunLoopActual(ideConn, browserConn, cts);
+                        exitState = Stopped;
+                    }
+                    catch (Exception ex)
+                    {
+                        logger.LogDebug($"RunLoop threw an exception: {ex}");
+                        Stopped = new(RunLoopStopReason.Exception, ex);
+                        RunLoopStopped?.Invoke(this, Stopped);
+                        return;
+                    }
+
+                    try
+                    {
+                        logger.LogDebug($"RunLoop stopped, reason: {exitState}");
+                        RunLoopStopped?.Invoke(this, Stopped);
+                    }
+                    catch (Exception ex)
+                    {
+                        logger.LogError(ex, $"Invoking RunLoopStopped event ({exitState}) failed with {ex}");
+                    }
+                }
+                finally
+                {
+                    ideConn?.Dispose();
+                    browserConn?.Dispose();
+                }
+            });
+
+
+        private async Task<RunLoopExitState> RunLoopActual(WasmDebuggerConnection ideConn,
+                                                           WasmDebuggerConnection browserConn,
+                                                           CancellationTokenSource cts)
+        {
+            using (ide = ideConn)
+            {
+                queues.Add(new DevToolsQueue(ide));
+                using (browser = browserConn)
+                {
+                    queues.Add(new DevToolsQueue(browser));
+                    var x = cts;
 
                     List<Task> pending_ops = new();
 
-                    pending_ops.Add(ReadOne(browser, x.Token));
-                    pending_ops.Add(ReadOne(ide, x.Token));
+                    pending_ops.Add(browser.ReadOneAsync(x.Token));
+                    pending_ops.Add(ide.ReadOneAsync(x.Token));
                     pending_ops.Add(side_exception.Task);
-                    pending_ops.Add(client_initiated_close.Task);
+                    pending_ops.Add(shutdown_requested.Task);
                     Task<bool> readerTask = _channelReader.WaitToReadAsync(x.Token).AsTask();
                     pending_ops.Add(readerTask);
 
@@ -284,16 +334,34 @@ namespace Microsoft.WebAssembly.Diagnostics
                     {
                         while (!x.IsCancellationRequested)
                         {
-                            Task completedTask = await Task.WhenAny(pending_ops.ToArray());
+                            Task completedTask = await Task.WhenAny(pending_ops.ToArray()).ConfigureAwait(false);
 
-                            if (client_initiated_close.Task.IsCompleted)
+                            if (shutdown_requested.Task.IsCompleted)
                             {
-                                await client_initiated_close.Task.ConfigureAwait(false);
-                                Log("verbose", $"DevToolsProxy: Client initiated close from {browserUri}");
                                 x.Cancel();
-
-                                break;
+                                return new(RunLoopStopReason.Shutdown, null);
                             }
+
+                            if (side_exception.Task.IsCompleted)
+                                return new(RunLoopStopReason.Exception, await side_exception.Task);
+
+                            if (completedTask.IsFaulted)
+                            {
+                                if (completedTask == pending_ops[0] && !browser.IsConnected)
+                                    return new(RunLoopStopReason.HostConnectionClosed, completedTask.Exception);
+                                else if (completedTask == pending_ops[1] && !ide.IsConnected)
+                                    return new(RunLoopStopReason.IDEConnectionClosed, completedTask.Exception);
+
+                                return new(RunLoopStopReason.Exception, completedTask.Exception);
+                            }
+
+                            if (x.IsCancellationRequested)
+                                return new(RunLoopStopReason.Cancelled, null);
+
+                            // FIXME: instead of this, iterate through pending_ops, and clear it
+                            // out every time we wake up
+                            if (pending_ops.Where(t => t.IsFaulted).FirstOrDefault() is Task faultedTask)
+                                return new(RunLoopStopReason.Exception, faultedTask.Exception);
 
                             if (readerTask.IsCompleted)
                             {
@@ -305,13 +373,13 @@ namespace Microsoft.WebAssembly.Diagnostics
                                 pending_ops[4] = _channelReader.WaitToReadAsync(x.Token).AsTask();
                             }
 
-                            //logger.LogTrace ("pump {0} {1}", task, pending_ops.IndexOf (task));
+                            // logger.LogDebug("pump {0} {1}", completedTask, pending_ops.IndexOf (completedTask));
                             if (completedTask == pending_ops[0])
                             {
-                                string msg = ((Task<string>)completedTask).Result;
+                                string msg = await (Task<string>)completedTask;
                                 if (msg != null)
                                 {
-                                    pending_ops[0] = ReadOne(browser, x.Token); //queue next read
+                                    pending_ops[0] = browser.ReadOneAsync(x.Token);
                                     Task newTask = ProcessBrowserMessage(msg, x.Token);
                                     if (newTask != null)
                                         pending_ops.Add(newTask);
@@ -319,10 +387,10 @@ namespace Microsoft.WebAssembly.Diagnostics
                             }
                             else if (completedTask == pending_ops[1])
                             {
-                                string msg = ((Task<string>)completedTask).Result;
+                                string msg = await (Task<string>)completedTask;
                                 if (msg != null)
                                 {
-                                    pending_ops[1] = ReadOne(ide, x.Token); //queue next read
+                                    pending_ops[1] = ide.ReadOneAsync(x.Token);
                                     Task newTask = ProcessIdeMessage(msg, x.Token);
                                     if (newTask != null)
                                         pending_ops.Add(newTask);
@@ -330,8 +398,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                             }
                             else if (completedTask == pending_ops[2])
                             {
-                                bool res = ((Task<bool>)completedTask).Result;
-                                throw new Exception("side task must always complete with an exception, what's going on???");
+                                throw await (Task<Exception>)completedTask;
                             }
                             else
                             {
@@ -347,21 +414,47 @@ namespace Microsoft.WebAssembly.Diagnostics
                         }
 
                         _channelWriter.Complete();
+                        if (shutdown_requested.Task.IsCompleted)
+                            return new(RunLoopStopReason.Shutdown, null);
+                        if (x.IsCancellationRequested)
+                            return new(RunLoopStopReason.Cancelled, null);
+
+                        return new(RunLoopStopReason.Exception, new InvalidOperationException($"This shouldn't ever get thrown. Unsure why the loop stopped"));
                     }
                     catch (Exception e)
                     {
-                        Log("error", $"DevToolsProxy::Run: Exception {e}");
                         _channelWriter.Complete(e);
-                        //throw;
+                        throw;
                     }
                     finally
                     {
                         if (!x.IsCancellationRequested)
                             x.Cancel();
+                        foreach (Task t in pending_ops)
+                            logger.LogDebug($"\t{t}: {t.Status}");
+                        logger.LogDebug($"browser: {browser.IsConnected}, ide: {ide.IsConnected}");
+
+                        queues?.Clear();
                     }
                 }
             }
         }
+
+        public virtual void Shutdown()
+        {
+            logger.LogDebug($"Proxy.Shutdown, browser: {browser.IsConnected}, ide: {ide.IsConnected}");
+            shutdown_requested.TrySetResult();
+        }
+
+        public void Fail(Exception exception)
+        {
+            if (side_exception.Task.IsCompleted)
+                logger.LogError($"Fail requested again with {exception}");
+            else
+                side_exception.TrySetResult(exception);
+        }
+
+        protected virtual string GetFromOrTo(JObject o) => string.Empty;
 
         protected void Log(string priority, string msg)
         {

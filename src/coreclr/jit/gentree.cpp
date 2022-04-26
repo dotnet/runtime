@@ -6273,7 +6273,7 @@ bool GenTree::OperRequiresAsgFlag()
     {
         // If the call has return buffer argument, it produced a definition and hence
         // should be marked with assignment.
-        return AsCall()->GetLclRetBufArgNode() != nullptr;
+        return AsCall()->IsOptimizingRetBufAsLocal();
     }
     return false;
 }
@@ -16138,7 +16138,7 @@ bool GenTree::DefinesLocal(Compiler* comp, GenTreeLclVarCommon** pLclVarTree, bo
     }
     else if (OperIs(GT_CALL))
     {
-        GenTree* retBufArg = AsCall()->GetLclRetBufArgNode();
+        GenTree* retBufArg = comp->gtCallGetDefinedRetBufLclAddr(AsCall());
         if (retBufArg == nullptr)
         {
             return false;
@@ -16180,7 +16180,7 @@ bool GenTree::DefinesLocal(Compiler* comp, GenTreeLclVarCommon** pLclVarTree, bo
 // Returns true if this GenTree defines a result which is based on the address of a local.
 bool GenTree::DefinesLocalAddr(Compiler* comp, unsigned width, GenTreeLclVarCommon** pLclVarTree, bool* pIsEntire)
 {
-    if (OperGet() == GT_ADDR || OperGet() == GT_LCL_VAR_ADDR)
+    if (OperIs(GT_ADDR, GT_LCL_VAR_ADDR, GT_LCL_FLD_ADDR))
     {
         GenTree* addrArg = this;
         if (OperGet() == GT_ADDR)
@@ -17862,6 +17862,57 @@ bool Compiler::gtIsStaticGCBaseHelperCall(GenTree* tree)
     }
 
     return false;
+}
+
+//------------------------------------------------------------------------
+// gtCallGetDefinedRetBufLclAddr:
+//   Get the tree corresponding to the address of the retbuf taht this call defines.
+//
+// Parameters:
+//   call - The call node
+//
+// Returns:
+//   A tree representing the address of a local.
+//
+// Remarks:
+//   This function should not be used until after morph when local address
+//   nodes have been normalized. However, before that IsOptimizingRetBufAsLocal
+//   can be used to at least check if the call has a retbuf that we are
+//   optimizing.
+//
+GenTree* Compiler::gtCallGetDefinedRetBufLclAddr(GenTreeCall* call)
+{
+    if (!call->IsOptimizingRetBufAsLocal())
+    {
+        return nullptr;
+    }
+
+    CallArg* retBufArg = call->gtArgs.GetRetBufferArg();
+    assert(retBufArg != nullptr);
+
+    GenTree* node = retBufArg->GetNode();
+    switch (node->OperGet())
+    {
+        // Get the value from putarg wrapper nodes
+        case GT_PUTARG_REG:
+        case GT_PUTARG_STK:
+            node = node->AsOp()->gtGetOp1();
+            break;
+
+        default:
+            break;
+    }
+
+    // This may be called very late to check validity of LIR.
+    node = node->gtSkipReloadOrCopy();
+
+#ifdef DEBUG
+    unsigned             size = typGetObjLayout(call->gtRetClsHnd)->GetSize();
+    GenTreeLclVarCommon* lcl;
+    assert(node->DefinesLocalAddr(this, size, &lcl, nullptr) && lvaGetDesc(lcl)->lvHiddenBufferStructArg);
+#endif
+
+    return node;
 }
 
 //------------------------------------------------------------------------
