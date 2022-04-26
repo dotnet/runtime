@@ -5533,7 +5533,7 @@ Compiler::fgWalkResult Compiler::optIsVarAssgCB(GenTree** pTree, fgWalkData* dat
         {
             desc->ivaMaskCall = optCallInterf(tree->AsCall());
 
-            dest = tree->AsCall()->GetLclRetBufArgNode();
+            dest = data->compiler->gtCallGetDefinedRetBufLclAddr(tree->AsCall());
             if (dest == nullptr)
             {
                 return WALK_CONTINUE;
