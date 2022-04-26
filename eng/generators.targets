@@ -1,10 +1,10 @@
 <Project>
-
   <PropertyGroup>
-    <EnableLibraryImportGenerator Condition="'$(EnableLibraryImportGenerator)' == ''
-                        and '$(MSBuildProjectName)' == 'System.Private.CoreLib'">true</EnableLibraryImportGenerator>
+    <EnableLibraryImportGenerator Condition="'$(EnableLibraryImportGenerator)' == '' and
+                                             '$(MSBuildProjectName)' == 'System.Private.CoreLib'">true</EnableLibraryImportGenerator>
     <IncludeLibraryImportGeneratorSources Condition="'$(IncludeLibraryImportGeneratorSources)' == ''">true</IncludeLibraryImportGeneratorSources>
   </PropertyGroup>
+
   <ItemGroup>
     <EnabledGenerators Include="LibraryImportGenerator" Condition="'$(EnableLibraryImportGenerator)' == 'true'" />
     <!-- If the current project is not System.Private.CoreLib, we enable the LibraryImportGenerator source generator
@@ -16,17 +16,12 @@
                         and '$(IsSourceProject)' == 'true'
                         and '$(MSBuildProjectExtension)' == '.csproj'
                         and (
-                          ('@(Reference)' != ''
+                          '$(TargetFrameworkMoniker)' != '$(NetCoreAppCurrentTargetFrameworkMoniker)'
+                          or '$(DisableImplicitFrameworkReferences)' != 'true'
+                          or ('@(Reference)' != ''
                             and @(Reference->AnyHaveMetadataValue('Identity', 'System.Runtime.InteropServices')))
                           or ('@(ProjectReference)' != ''
-                            and @(ProjectReference->AnyHaveMetadataValue('Identity', '$(CoreLibProject)')))
-                          or ('$(NetCoreAppCurrentTargetFrameworkMoniker)' == '$(TargetFrameworkMoniker)'
-                            and '$(DisableImplicitAssemblyReferences)' != 'true'))" />
-    <EnabledGenerators Include="LibraryImportGenerator"
-                       Condition="'$(EnableLibraryImportGenerator)' == ''
-                        and '$(IsSourceProject)' == 'true'
-                        and '$(MSBuildProjectExtension)' == '.csproj'
-                        and ('$(TargetFrameworkIdentifier)' == '.NETStandard' or '$(TargetFrameworkIdentifier)' == '.NETFramework' or ('$(TargetFrameworkIdentifier)' == '.NETCoreApp' and $([MSBuild]::VersionLessThan($(TargetFrameworkVersion), '$(NetCoreAppCurrentVersion)'))))" />
+                            and @(ProjectReference->AnyHaveMetadataValue('Identity', '$(CoreLibProject)'))))" />
   </ItemGroup>
 
   <!-- Use this complex ItemGroup-based filtering to add the ProjectReference to make sure dotnet/runtime stays compatible with NuGet Static Graph Restore. -->
@@ -41,15 +36,14 @@
       OutputItemType="Analyzer"
       ReferenceOutputAssembly="false" />
   </ItemGroup>
+
+  <!-- Only add the following files if we are not on the latest TFM. -->
   <ItemGroup Condition="'@(EnabledGenerators)' != ''
                         and @(EnabledGenerators->AnyHaveMetadataValue('Identity', 'LibraryImportGenerator'))
-                        and '$(IncludeLibraryImportGeneratorSources)' == 'true'">
-
-    <!-- Only add the following files if we are not on the latest TFM. -->
-    <Compile Condition="'$(NetCoreAppCurrentTargetFrameworkMoniker)' != '$(TargetFrameworkMoniker)'"
-             Include="$(CoreLibSharedDir)System\Runtime\InteropServices\LibraryImportAttribute.cs" />
-    <Compile Condition="'$(NetCoreAppCurrentTargetFrameworkMoniker)' != '$(TargetFrameworkMoniker)'"
-             Include="$(CoreLibSharedDir)System\Runtime\InteropServices\StringMarshalling.cs" />
+                        and '$(IncludeLibraryImportGeneratorSources)' == 'true'
+                        and '$(TargetFrameworkMoniker)' != '$(NetCoreAppCurrentTargetFrameworkMoniker)'">
+    <Compile Include="$(CoreLibSharedDir)System\Runtime\InteropServices\LibraryImportAttribute.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Runtime\InteropServices\StringMarshalling.cs" />
   </ItemGroup>
 
   <ItemGroup>
