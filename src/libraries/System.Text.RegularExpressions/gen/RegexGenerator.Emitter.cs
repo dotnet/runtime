@@ -1453,7 +1453,7 @@ namespace System.Text.RegularExpressions.Generator
                         startingCapturePos = ReserveName("alternation_starting_capturepos");
                         if (canUseLocalsForAllState)
                         {
-                            additionalDeclarations.Add($"int {startingCapturePos} = base.Crawlpos();");
+                            additionalDeclarations.Add($"int {startingCapturePos} = 0;");
                             writer.WriteLine($"{startingCapturePos} = base.Crawlpos();");
                         }
                         else
