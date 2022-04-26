@@ -562,23 +562,22 @@ namespace Microsoft.WebAssembly.Diagnostics
                     (StartLocation.Line == containerMethod.StartLocation.Line && StartLocation.Column > containerMethod.StartLocation.Column)) &&
                 (EndLocation.Line < containerMethod.EndLocation.Line ||
                     (EndLocation.Line == containerMethod.EndLocation.Line && EndLocation.Column < containerMethod.EndLocation.Column));
-    }
-    
-    internal class SourceComparer : EqualityComparer<MethodInfo>
-    {
-        public override bool Equals(MethodInfo l1, MethodInfo l2)
-        {
-            if (l1.Source.Id == l2.Source.Id)
-                return true;
-            return false;
-        }
 
-        public override int GetHashCode(MethodInfo loc)
+        internal sealed class SourceComparer : EqualityComparer<MethodInfo>
         {
-            return loc.Source.Id;
+            public override bool Equals(MethodInfo l1, MethodInfo l2)
+            {
+                if (l1.Source.Id == l2.Source.Id)
+                    return true;
+                return false;
+            }
+
+            public override int GetHashCode(MethodInfo loc)
+            {
+                return loc.Source.Id;
+            }
         }
     }
-
 
     internal sealed class ParameterInfo
     {

@@ -380,7 +380,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                             DebugStore store = await RuntimeReady(id, token);
 
                             Log("verbose", $"BP req {args}");
-                            await SetBreakpoint(id, store, request, !loaded, token);
+                            await SetBreakpoint(id, store, request, !loaded, false, token);
                         }
 
                         if (loaded)
@@ -862,17 +862,17 @@ namespace Microsoft.WebAssembly.Diagnostics
             var assemblyName = await context.SdbAgent.GetAssemblyNameFromModule(moduleId, token);
             DebugStore store = await LoadStore(sessionId, token);
             AssemblyInfo asm = store.GetAssemblyByName(assemblyName);
-            var methods = store.EnC(asm, meta_buf, pdb_buf);
+            var methods = DebugStore.EnC(asm, meta_buf, pdb_buf);
             foreach (var method in methods)
             {
-                await ResetBreakpoint(sessionId, method, token);
+                await ResetBreakpoint(sessionId, store, method, token);
             }
             var files = methods.Distinct(new MethodInfo.SourceComparer());
             foreach (var file in files)
             {
                 JObject scriptSource = JObject.FromObject(file.Source.ToScriptSource(context.Id, context.AuxData));
                 Log("debug", $"sending after update {file.Source.Url} {context.Id} {sessionId.sessionId}");
-                SendEvent(sessionId, "Debugger.scriptParsed", scriptSource, token);
+                await SendEvent(sessionId, "Debugger.scriptParsed", scriptSource, token);
             }
             return true;
         }
@@ -887,14 +887,9 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
             foreach (var req in context.BreakpointRequests.Values)
             {
-                if (req.Method != null && req.Method.Assembly.Id == method.Info.Assembly.Id && req.Method.Token == method.Info.Token)
+                if (req.TryResolve(method.Info.Source))
                 {
-                    await SetBreakpoint(sessionId, context.store, req, true, token);
-                }
-                //trying to reset breakpoints that were not bound but are in the same file of a method update
-                if (req.Method == null && method.Info.SourceName.Equals(req.File))
-                {
-                    await SetBreakpoint(sessionId, context.store, req, true, token);
+                    await SetBreakpoint(sessionId, context.store, req, true, true, token);
                 }
             }
             return true;
@@ -1395,7 +1390,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             {
                 if (req.TryResolve(source))
                 {
-                    await SetBreakpoint(sessionId, context.store, req, true, token);
+                    await SetBreakpoint(sessionId, context.store, req, true, false, token);
                 }
             }
         }
@@ -1473,7 +1468,19 @@ namespace Microsoft.WebAssembly.Diagnostics
             return store;
         }
 
-        private async Task ResetBreakpoint(SessionId msg_id, MethodInfo method, CancellationToken token)
+        private static IEnumerable<IGrouping<SourceId, SourceLocation>> GetBPReqLocations(DebugStore store, BreakpointRequest req)
+        {
+            var comparer = new SourceLocation.LocationComparer();
+            // if column is specified the frontend wants the exact matches
+            // and will clear the bp if it isn't close enoug
+            IEnumerable<IGrouping<SourceId, SourceLocation>> locations = store.FindBreakpointLocations(req)
+                .Distinct(comparer)
+                .Where(l => l.Line == req.Line && (req.Column == 0 || l.Column == req.Column))
+                .OrderBy(l => l.Column)
+                .GroupBy(l => l.Id);
+            return locations;
+        }
+        private async Task ResetBreakpoint(SessionId msg_id, DebugStore store, MethodInfo method, CancellationToken token)
         {
             ExecutionContext context = GetContext(msg_id);
             foreach (var req in context.BreakpointRequests.Values)
@@ -1481,7 +1488,16 @@ namespace Microsoft.WebAssembly.Diagnostics
                 if (req.Method != null)
                 {
                     if (req.Method.Assembly.Id == method.Assembly.Id && req.Method.Token == method.Token) {
-                        await RemoveBreakpoint(msg_id, JObject.FromObject(new {breakpointId = req.Id}), true, token);
+                        var locations = GetBPReqLocations(store, req);
+                        foreach (IGrouping<SourceId, SourceLocation> sourceId in locations)
+                        {
+                            SourceLocation loc = sourceId.First();
+                            if (req.Locations.Any(b => b.Location.IlLocation.Offset != loc.IlLocation.Offset))
+                            {
+                                await RemoveBreakpoint(msg_id, JObject.FromObject(new {breakpointId = req.Id}), true, token);
+                                break;
+                            }
+                        }
                     }
                 }
             }
@@ -1509,29 +1525,21 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
             if (!isEnCReset)
                 context.BreakpointRequests.Remove(bpid);
-            else
-                breakpointRequest.Locations = new List<Breakpoint>();
         }
 
-        private async Task SetBreakpoint(SessionId sessionId, DebugStore store, BreakpointRequest req, bool sendResolvedEvent, CancellationToken token)
+        private async Task SetBreakpoint(SessionId sessionId, DebugStore store, BreakpointRequest req, bool sendResolvedEvent, bool fromHotReload, CancellationToken token)
         {
             ExecutionContext context = GetContext(sessionId);
-            if (req.Locations.Any())
+            if ((!fromHotReload && req.Locations.Any()) || (fromHotReload && req.Locations.Any(bp => bp.State == BreakpointState.Active)))
             {
-                Log("debug", $"locations already loaded for {req.Id}");
+                if (!fromHotReload)
+                    Log("debug", $"locations already loaded for {req.Id}");
                 return;
             }
 
-            var comparer = new SourceLocation.LocationComparer();
-            // if column is specified the frontend wants the exact matches
-            // and will clear the bp if it isn't close enoug
-            IEnumerable<IGrouping<SourceId, SourceLocation>> locations = store.FindBreakpointLocations(req)
-                .Distinct(comparer)
-                .Where(l => l.Line == req.Line && (req.Column == 0 || l.Column == req.Column))
-                .OrderBy(l => l.Column)
-                .GroupBy(l => l.Id);
+            var locations = GetBPReqLocations(store, req);
 
-            logger.LogDebug("BP request for '{req}' runtime ready {context.RuntimeReady}", req, GetContext(sessionId).IsRuntimeReady);
+            logger.LogDebug("BP request for '{req}' runtime ready {context.RuntimeReady}", req, context.IsRuntimeReady);
 
             var breakpoints = new List<Breakpoint>();
 
@@ -1541,7 +1549,6 @@ namespace Microsoft.WebAssembly.Diagnostics
                 req.Method = loc.IlLocation.Method;
                 if (req.Method.DebuggerAttrInfo.HasDebuggerHidden)
                     continue;
-
                 Breakpoint bp = await SetMonoBreakpoint(sessionId, req.Id, loc, req.Condition, token);
 
                 // If we didn't successfully enable the breakpoint
