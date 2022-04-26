@@ -71,7 +71,8 @@
   <Target Name="UseTargetingPackForAssemblySearchPaths"
           BeforeTargets="ResolveAssemblyReferences;
                          DesignTimeResolveAssemblyReferences"
-          Condition="'$(TargetFrameworkMoniker)' == '$(NetCoreAppCurrentTargetFrameworkMoniker)' and
+          Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and
+                     '$(TargetFrameworkVersion)' == 'v$(NetCoreAppCurrentVersion)' and
                      '$(DisableImplicitFrameworkReferences)' == 'true'">
     <PropertyGroup>
       <AssemblySearchPaths>$(AssemblySearchPaths);$(MicrosoftNetCoreAppRefPackRefDir.TrimEnd('/\'))</AssemblySearchPaths>
