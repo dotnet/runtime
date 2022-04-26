@@ -203,6 +203,7 @@ jobs:
         registry: mcr
       jobParameters:
         runtimeFlavor: mono
+        hostedOs: windows
         stagedBuild: ${{ parameters.stagedBuild }}
         buildConfig: ${{ parameters.buildConfig }}
         ${{ if eq(parameters.passPlatforms, true) }}:
@@ -228,6 +229,7 @@ jobs:
         registry: mcr
       jobParameters:
         runtimeFlavor: mono
+        hostedOs: Linux
         stagedBuild: ${{ parameters.stagedBuild }}
         buildConfig: ${{ parameters.buildConfig }}
         ${{ if eq(parameters.passPlatforms, true) }}:
