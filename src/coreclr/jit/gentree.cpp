@@ -21698,7 +21698,52 @@ GenTree* Compiler::gtNewSimdShuffleNode(var_types   type,
 
     return retNode;
 #elif defined(TARGET_ARM64)
-    return nullptr;
+    uint64_t value      = 0;
+    uint8_t  vecCns[16] = { };
+
+    for (size_t index = 0; index < elementCount; index++)
+    {
+        value = op2->GetIntegralVectorConstElement(index);
+
+        if (value < elementCount)
+        {
+            for (uint32_t i = 0; i < elementSize; i++)
+            {
+                vecCns[(index * elementSize) + i] = (uint8_t)((value * elementSize) + i);
+            }
+        }
+        else
+        {
+            for (uint32_t i = 0; i < elementSize; i++)
+            {
+                vecCns[(index * elementSize) + i] = 0xFF;
+            }
+        }
+    }
+
+    NamedIntrinsic createIntrinsic = NI_Vector64_Create;
+    NamedIntrinsic lookupIntrinsic = NI_AdvSimd_VectorTableLookup;
+
+    if (simdSize == 16)
+    {
+        createIntrinsic = NI_Vector128_Create;
+        lookupIntrinsic = NI_AdvSimd_Arm64_VectorTableLookup;
+
+        op1 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, NI_Vector64_ToVector128, simdBaseJitType, simdSize,
+                                       isSimdAsHWIntrinsic);
+    }
+
+    IntrinsicNodeBuilder nodeBuilder(getAllocator(CMK_ASTNode), simdSize);
+
+    for (uint32_t i = 0; i < simdSize; i++)
+    {
+        nodeBuilder.AddOperand(i, gtNewIconNode(vecCns[i]));
+    }
+
+    op2 = gtNewSimdHWIntrinsicNode(type, std::move(nodeBuilder), createIntrinsic, simdBaseJitType, simdSize,
+                                   isSimdAsHWIntrinsic);
+
+    return gtNewSimdHWIntrinsicNode(type, op1, op2, lookupIntrinsic, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
 #else
 #error Unsupported platform
 #endif // !TARGET_XARCH && !TARGET_ARM64
