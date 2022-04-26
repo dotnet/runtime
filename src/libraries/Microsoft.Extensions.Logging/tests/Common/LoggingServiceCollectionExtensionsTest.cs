@@ -43,20 +43,20 @@ namespace Microsoft.Extensions.Logging.Test
         [Fact]
         public void AddLogging_TestInjectedScopeProvider()
         {
-            var testScope = "test scope";
-            var services = new ServiceCollection();
+            bool callbackCalled = false;
             var externalScopeProvider = new Mock<IExternalScopeProvider>();
-            var callbackCalled = false;
             externalScopeProvider
                 .Setup(e => e.Push(It.IsAny<object?>()))
                 .Callback(() => callbackCalled = true);
+      
+            var serviceProvider = new ServiceCollection()
+                .AddSingleton(externalScopeProvider.Object)
+                .AddLogging()
+                .BuildServiceProvider();
 
-            services.AddSingleton(externalScopeProvider.Object);
-            var loggerBuilder = services.AddLogging();
-            var serviceProvider = services.BuildServiceProvider();
             var loggerFactory = serviceProvider.GetService<ILoggerFactory>();
             var logger = loggerFactory.CreateLogger<LoggingServiceCollectionExtensionsTest>();
-            logger.BeginScope(testScope);
+            logger.BeginScope("test scope");
 
             Assert.True(callbackCalled);
         }
