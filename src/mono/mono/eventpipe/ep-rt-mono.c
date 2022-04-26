@@ -1443,7 +1443,7 @@ eventpipe_fire_method_events (
 
 		if (verbose) {
 			method_name = method->name;
-			method_signature = mono_signature_full_name (method->signature);
+			method_signature = mono_signature_full_name (mono_method_signature_internal (method));
 			if (method->klass)
 				method_namespace = mono_type_get_name_full (m_class_get_byval_arg (method->klass), MONO_TYPE_NAME_FORMAT_IL);
 		}
@@ -2959,7 +2959,7 @@ ep_rt_mono_write_event_jit_start (MonoMethod *method)
 		}
 
 		method_name = method->name;
-		method_signature = mono_signature_full_name (method->signature);
+		method_signature = mono_signature_full_name (mono_method_signature_internal (method));
 
 		if (method->klass) {
 			module_id = (uint64_t)m_class_get_image (method->klass);
@@ -3114,7 +3114,7 @@ ep_rt_mono_write_event_method_load (
 
 		if (verbose) {
 			method_name = method->name;
-			method_signature = mono_signature_full_name (method->signature);
+			method_signature = mono_signature_full_name (mono_method_signature_internal (method));
 
 			if (method->klass)
 				method_namespace = mono_type_get_name_full (m_class_get_byval_arg (method->klass), MONO_TYPE_NAME_FORMAT_IL);
@@ -5376,7 +5376,7 @@ mono_profiler_jit_done (
 	if (verbose) {
 		//TODO: Optimize string formatting into functions accepting GString to reduce heap alloc.
 		method_name = method->name;
-		method_signature = mono_signature_full_name (method->signature);
+		method_signature = mono_signature_full_name (mono_method_signature_internal (method));
 		if (method->klass)
 			method_namespace = mono_type_get_name_full (m_class_get_byval_arg (method->klass), MONO_TYPE_NAME_FORMAT_IL);
 	}
