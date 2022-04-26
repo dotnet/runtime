@@ -2180,6 +2180,18 @@ bool
 ep_rt_mono_write_event_ee_startup_start (void);
 
 void
+ep_rt_mono_fire_bulk_type_event (void);
+
+uint32_t
+ep_rt_mono_log_single_type (intptr_t type_id);
+
+void
+ep_rt_mono_log_type_and_parameters (intptr_t type_id);
+
+void
+ep_rt_mono_log_type_and_parameters_if_necessary (intptr_t type_id);
+
+void
 ep_rt_mono_send_method_details_events (MonoMethod *method);
 
 bool

@@ -2857,6 +2857,301 @@ ep_rt_mono_write_event_ee_startup_start (void)
 		NULL);
 }
 
+// !!!!!!! NOTE !!!!!!!!
+// The flags must match those in the ETW manifest exactly
+// !!!!!!! NOTE !!!!!!!!
+
+typedef enum {
+	K_ETW_TYPE_FLAGS_ARRAY = 0x8,
+} EtwTypeFlags;
+
+// This only contains the fixed-size data at the top of each struct in
+// the bulk type event.  These fields must still match exactly the initial
+// fields of the struct described in the manifest.
+typedef struct _EventStructBulkTypeFixedSizedData {
+	uint64_t type_id;
+    uint64_t module_id;
+    uint32_t type_name_id;
+    uint32_t flags;
+	uint8_t cor_element_type;
+} EventStructBulkTypeFixedSizedData;
+
+// Represents one instance of the Value struct inside a single BulkType event
+typedef struct _BultTypeValue {
+	EventStructBulkTypeFixedSizedData fixed_sized_data;
+	uint32_t c_type_parameters;
+	intptr_t rg_type_parameters[100]; // Should be variable length to save space
+	char *s_name;
+} BulkTypeValue;
+
+static
+uint32_t
+ep_rt_mono_get_byte_count_in_event(BulkTypeValue *bulk_type_value)
+{
+	return
+		sizeof(bulk_type_value->fixed_sized_data) +
+		sizeof(bulk_type_value->c_type_parameters) +
+		(sizeof(bulk_type_value->s_name) + 1) * sizeof(char) +  // Size of name, including null terminator
+		bulk_type_value->c_type_parameters * sizeof(uint64_t);	// Type parameters
+}
+
+// ETW has a limitation of 64K for TOTAL event Size, however there is overhead associated with
+// the event headers.   It is unclear exactly how much that is, but 1K should be sufficiently
+// far away to avoid problems without sacrificing the perf of bulk processing.
+static const uint32_t cb_max_etw_event = 63 * 1024;
+
+// Estimate of how many bytes we can squeeze in the event data for the value struct
+// array.  (Intentionally overestimate the size of the non-array parts to keep it safe.)
+static const uint32_t k_max_bytes_type_values = (cb_max_etw_event - 0x30);
+
+// Estimate of how many type value elements we can put into the struct array, while
+// staying under the ETW event size limit. Note that this is impossible to calculate
+// perfectly, since each element of the struct array has variable size.
+//
+// In addition to the byte-size limit per event, Windows always forces on us a
+// max-number-of-descriptors per event, which in the case of BulkType, will kick in
+// far sooner. There's a max number of 128 descriptors allowed per event. 2 are used
+// for Count + ClrInstanceID. Then 4 per batched value. (Might actually be 3 if there
+// are no type parameters to log, but let's overestimate at 4 per value).
+static const uint32_t k_max_count_type_values = (128 - 2) / 4;
+
+BulkTypeValue m_rg_bulk_type_values[k_max_count_type_values];
+uint32_t m_n_bulk_type_value_count;
+uint32_t m_n_bulk_type_value_byte_count;
+uint8_t *m_p_bulk_type_event_buffer[65536];
+
+//---------------------------------------------------------------------------------------
+//
+// ep_rt_mono_fire_bulk_type_event fires an ETW event for all the types batched so far,
+// it then resets the state to start batching new types at the beginning of the
+// m_rg_bulk_type_values array.
+//
+
+void
+ep_rt_mono_fire_bulk_type_event (void)
+{
+	if (m_n_bulk_type_value_count == 0)
+		return;
+	memset(m_p_bulk_type_event_buffer, 0, 65536 * sizeof(uint8_t));
+	uint16_t n_clr_instance_id = clr_instance_get_id();
+
+	uint32_t i_size = 0;
+
+	for (int i_type_data = 0; i_type_data < m_n_bulk_type_value_count; i_type_data++)
+	{
+		BulkTypeValue *target = &m_rg_bulk_type_values[i_type_data];
+
+		memcpy(m_p_bulk_type_event_buffer + i_size,
+			   &target->fixed_sized_data,
+			   sizeof(target->fixed_sized_data));
+		i_size += sizeof(target->fixed_sized_data);
+
+		char *wsz_name = target->s_name;
+		if (!wsz_name)
+		{
+			m_p_bulk_type_event_buffer[i_size++] = 0;
+			m_p_bulk_type_event_buffer[i_size++] = 0;
+		}
+		else
+		{
+			uint32_t name_size = (strlen(target->s_name) + 1) * sizeof(wchar_t);
+			memcpy(m_p_bulk_type_event_buffer + i_size, wsz_name, name_size);
+			i_size += strlen(wsz_name);
+		}
+
+		uint32_t *ptr_int = (uint32_t*)(m_p_bulk_type_event_buffer + i_size);
+		*ptr_int = target->c_type_parameters;
+		i_size += 4;
+
+		if (target->c_type_parameters > 0)
+		{
+			memcpy(m_p_bulk_type_event_buffer + i_size, target->rg_type_parameters, sizeof(uint64_t) * target->c_type_parameters);
+			i_size += sizeof(uint64_t) * target->c_type_parameters;
+		}
+	}
+
+	FireEtwBulkType(m_n_bulk_type_value_count,
+					n_clr_instance_id,
+					i_size,
+					m_p_bulk_type_event_buffer,
+					NULL,
+					NULL);
+
+	m_n_bulk_type_value_count = 0;
+	m_n_bulk_type_value_byte_count = 0;
+}
+
+//---------------------------------------------------------------------------------------
+//
+// ep_rt_mono_log_single_type batches a single type into the bulk type array and flushes
+// the array to ETW if it fills up. Most interaction with the type system (type analysis)
+// is done here. This does not recursively batch up any parameter types (arrays or generics),
+// but does add their unique identifiers to the rg_type_parameters array.
+// ep_rt_mono_log_type_and_parameters is responsible for initiating any recursive calls to
+// deal with type parameters.
+//
+// Arguments:
+//      type_id - Unique identifier for a mono type
+//
+// Return Value:
+//      Index into array of where this type got batched. -1 if there was a failure.
+
+uint32_t
+ep_rt_mono_log_single_type (intptr_t type_id)
+{
+    // If there's no room for another type, flush what we've got
+	if (m_n_bulk_type_value_count == k_max_count_type_values)
+		ep_rt_mono_fire_bulk_type_event();
+
+	EP_ASSERT (m_n_bulk_type_value_count < k_max_count_type_values);
+
+	BulkTypeValue *p_val = &m_rg_bulk_type_values[m_n_bulk_type_value_count];
+
+	MonoType *mono_type = (MonoType*)type_id;
+	MonoClass *klass = mono_class_from_mono_type_internal (mono_type);
+
+    // Clear out p_val before filling it out (array elements can get reused if there
+    // are enough types that we need to flush to multiple events).
+	memset(p_val->rg_type_parameters, 0, 100);
+	if (p_val->s_name)
+		p_val->s_name[0] = '\0';
+	p_val->c_type_parameters = 0;
+
+	// Initialize p_val fixed_sized_data
+	p_val->fixed_sized_data.type_id = (uint64_t)type_id;
+	p_val->fixed_sized_data.module_id = (uint64_t)m_class_get_image (klass);
+	p_val->fixed_sized_data.type_name_id = (0x00FFFFFF & m_class_get_type_token (klass)) | 0x02000000;  // dotnet-pgo ResolveMethodID expects type name ids with a 0x02 mask
+	p_val->fixed_sized_data.flags = 0;
+	p_val->fixed_sized_data.cor_element_type = (uint8_t)mono_type->type;
+
+	// Sets p_val variable sized parameter type data c_type_parameters and rg_type_parameters
+	// associated with arrays or generics and add unique identifiers to rg_type_parameters array
+	// to be recursively batched in the same ep_rt_mono_log_type_and_parameters call
+	if ((mono_type->type == MONO_TYPE_ARRAY) || (mono_type->type == MONO_TYPE_SZARRAY))
+	{
+		MonoArrayType *mono_array_type = mono_type_get_array_type (mono_type);
+		p_val->fixed_sized_data.flags |= K_ETW_TYPE_FLAGS_ARRAY;
+		if (mono_type->type == MONO_TYPE_ARRAY)
+		{
+			// Only ranks less than kEtwTypeFlagsArrayRankMax are supported.
+			// Fortunately kEtwTypeFlagsArrayRankMax should be greater than the
+			// number of ranks the type loader will support
+			uint32_t rank = mono_array_type->rank;
+			if (rank < (0x3700 >> 8))
+			{
+				rank <<= 8;
+				p_val->fixed_sized_data.flags |= rank;
+			}
+		}
+
+		// Add array's element's class' unique type identifier to rg_type_parameters array
+		if (m_class_is_byreflike (mono_array_type->eklass))
+			p_val->rg_type_parameters[p_val->c_type_parameters++] = m_class_get_this_arg (mono_array_type->eklass);
+		else
+			p_val->rg_type_parameters[p_val->c_type_parameters++] = m_class_get_byval_arg (mono_array_type->eklass);
+	}
+	else if (mono_type->type == MONO_TYPE_GENERICINST)
+	{
+		MonoGenericInst *class_inst = mono_type->data.generic_class->context.class_inst;
+		p_val->c_type_parameters = class_inst->type_argc;
+		for (int i = 0; i < class_inst->type_argc; i++)
+		{
+			// Add generic inst parameter's unique type identifier to rg_type_parameters array
+			MonoClass *mono_class_inst_type_class = mono_class_from_mono_type_internal (class_inst->type_argv[i]);
+			if (m_class_is_byreflike (mono_class_inst_type_class))
+				p_val->rg_type_parameters[i] = m_class_get_this_arg (mono_class_inst_type_class);
+			else
+				p_val->rg_type_parameters[i] = m_class_get_byval_arg (mono_class_inst_type_class);
+		}
+	}
+
+    // Now that we know the full size of this type's data, see if it fits in our
+    // batch or whether we need to flush
+	int cb_val = ep_rt_mono_get_byte_count_in_event(p_val);
+	if (cb_val > k_max_bytes_type_values)
+	{
+		if (p_val->s_name)
+			p_val->s_name[0] = '\0';
+		cb_val = ep_rt_mono_get_byte_count_in_event(p_val);
+
+		if (cb_val > k_max_bytes_type_values)
+		{
+			// This type is apparently so huge, it's too big to squeeze into an event, even
+            // if it were the only type batched in the whole event.  Bail
+			return -1;
+		}
+	}
+	if (m_n_bulk_type_value_byte_count + cb_val > k_max_bytes_type_values)
+	{
+        // Although this type fits into the array, its size is so big that the entire
+        // array can't be logged via ETW. So flush the array, and start over by
+        // calling ourselves--this refetches the type info and puts it at the
+        // beginning of the array.  Since we know this type is small enough to be
+        // batched into an event on its own, this recursive call will not try to
+        // call itself again.
+		ep_rt_mono_fire_bulk_type_event();
+		return ep_rt_mono_log_single_type(type_id);
+	}
+
+    // The type fits into the batch, so update our state
+	m_n_bulk_type_value_count++;
+	m_n_bulk_type_value_byte_count += cb_val;
+	return m_n_bulk_type_value_count - 1;
+}
+
+//---------------------------------------------------------------------------------------
+//
+// High-level method to batch a type and (recursively) its type parameters, flushing to
+// ETW as needed.  This is called by ep_rt_mono_log_type_and_parameters_if_necessary.
+//
+// Arguments:
+//      * type_id - Unique type identifier to batch
+
+void
+ep_rt_mono_log_type_and_parameters (intptr_t type_id)
+{
+    // Batch up this type.  This grabs useful info about the type, including any
+    // type parameters it may have, and sticks it in m_rg_bulk_type_values
+	uint32_t i_bulk_type_event_data = ep_rt_mono_log_single_type (type_id);
+	if (i_bulk_type_event_data == -1)
+	{
+        // There was a failure trying to log the type, so don't bother with its type
+        // parameters
+		return;
+	}
+
+    // Look at the type info we just batched, so we can get the type parameters
+	BulkTypeValue *p_val = &m_rg_bulk_type_values[i_bulk_type_event_data];
+
+    // We're about to recursively call ourselves for the type parameters, so make a
+    // local copy of their type handles first (else, as we log them we could flush
+    // and clear out m_rg_bulk_type_values, thus trashing p_val)
+	uint32_t c_params = p_val->c_type_parameters;
+	intptr_t rg_type_parameters[c_params];
+	for (uint32_t i = 0; i < c_params; i++)
+		rg_type_parameters[i] = p_val->rg_type_parameters[i];
+
+	for (uint32_t i = 0; i < c_params; i++)
+		ep_rt_mono_log_type_and_parameters_if_necessary (rg_type_parameters[i]);
+}
+
+//---------------------------------------------------------------------------------------
+//
+// Outermost level of ETW-type-logging.  This method is used to log a unique type identifier
+// (in this case a MonoType) and (recursively) its type parameters when present.
+//
+// Arguments:
+//      * type_id - Unique type identifier
+
+// static
+void
+ep_rt_mono_log_type_and_parameters_if_necessary (intptr_t type_id)
+{
+	// TODO Log the type if necessary
+
+	ep_rt_mono_log_type_and_parameters (type_id);
+}
+
 //---------------------------------------------------------------------------------------
 //
 // ep_rt_mono_send_method_details_event is the method responsible for sending details of
@@ -2898,6 +3193,8 @@ ep_rt_mono_send_method_details_event (MonoMethod *method)
 		else
 			method_type_id = (intptr_t)m_class_get_byval_arg (klass);
 
+		ep_rt_mono_log_type_and_parameters_if_necessary (method_type_id);
+
 		loader_module_id = (uint64_t)mono_class_get_image (klass);
 	}
 
@@ -2914,9 +3211,11 @@ ep_rt_mono_send_method_details_event (MonoMethod *method)
 			method_inst_parameters_type_ids[i] = m_class_get_this_arg (method_inst_type_parameter_class);
 		else
 			method_inst_parameters_type_ids[i] = m_class_get_byval_arg (method_inst_type_parameter_class);
+
+		ep_rt_mono_log_type_and_parameters_if_necessary (method_inst_parameters_type_ids[i]);
 	}
 
-	// Fire bulk type event
+	ep_rt_mono_fire_bulk_type_event();
 
 	FireEtwMethodDetails((uint64_t)method,
 						 (uint64_t)method_type_id,

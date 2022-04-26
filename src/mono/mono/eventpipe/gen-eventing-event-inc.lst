@@ -4,6 +4,7 @@ AppDomainDCEnd_V1
 AssemblyDCEnd_V1
 AssemblyLoad_V1
 AssemblyUnload_V1
+BulkType
 ContentionStart_V1
 ContentionStop
 DCEndComplete_V1
