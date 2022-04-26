@@ -907,7 +907,6 @@ namespace System.Threading.ThreadPools.Tests
         }
 
         [ConditionalFact(nameof(IsThreadingAndRemoteExecutorSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/66852", TestPlatforms.OSX)]
         public static void CooperativeBlockingCanCreateThreadsFaster()
         {
             // Run in a separate process to test in a clean thread pool environment such that work items queued by the test
@@ -925,6 +924,7 @@ namespace System.Threading.ThreadPools.Tests
                 int workItemCount = processorCount + 120;
                 SetBlockingConfigValue("ThreadsToAddWithoutDelay_ProcCountFactor", 1);
                 SetBlockingConfigValue("MaxDelayMs", 1);
+                SetBlockingConfigValue("IgnoreMemoryUsage", true);
 
                 var allWorkItemsUnblocked = new AutoResetEvent(false);
 
@@ -955,17 +955,19 @@ namespace System.Threading.ThreadPools.Tests
                     Assert.True(allWorkItemsUnblocked.WaitOne(30_000));
                 }
 
-                void SetBlockingConfigValue(string name, int value) =>
+                void SetBlockingConfigValue(string name, object value) =>
                     AppContextSetData("System.Threading.ThreadPool.Blocking." + name, value);
 
                 void AppContextSetData(string name, object value)
                 {
-                    typeof(AppContext).InvokeMember(
-                        "SetData",
-                        BindingFlags.ExactBinding | BindingFlags.InvokeMethod | BindingFlags.Public | BindingFlags.Static,
-                        null,
-                        null,
-                        new object[] { name, value });
+                    if (value is bool boolValue)
+                    {
+                        AppContext.SetSwitch(name, boolValue);
+                    }
+                    else
+                    {
+                        AppContext.SetData(name, value);
+                    }
                 }
             }).Dispose();
         }
