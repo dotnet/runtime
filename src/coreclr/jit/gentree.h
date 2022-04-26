@@ -1916,7 +1916,11 @@ public:
 
     // Simpler variant of the above which just returns the local node if this is an expression that
     // yields an address into a local
-    GenTreeLclVarCommon* IsLocalAddrExpr();
+    const GenTreeLclVarCommon* IsLocalAddrExpr() const;
+    GenTreeLclVarCommon*       IsLocalAddrExpr()
+    {
+        return const_cast<GenTreeLclVarCommon*>(static_cast<const GenTree*>(this)->IsLocalAddrExpr());
+    }
 
     // Determine if this tree represents the value of an entire implicit byref parameter,
     // and if so return the tree for the parameter.
@@ -5031,6 +5035,11 @@ struct GenTreeCall final : public GenTree
         return (gtCallMoreFlags & GTF_CALL_M_EXPANDED_EARLY) != 0;
     }
 
+    bool IsOptimizingRetBufAsLocal()
+    {
+        return (gtCallMoreFlags & GTF_CALL_M_RETBUFFARG_LCLOPT) != 0;
+    }
+
     //-----------------------------------------------------------------------------------------
     // GetIndirectionCellArgKind: Get the kind of indirection cell used by this call.
     //
@@ -5177,39 +5186,6 @@ struct GenTreeCall final : public GenTree
     {
     }
 #endif
-
-    GenTree* GetLclRetBufArgNode()
-    {
-        if (!gtArgs.HasRetBuffer() || ((gtCallMoreFlags & GTF_CALL_M_RETBUFFARG_LCLOPT) == 0))
-        {
-            return nullptr;
-        }
-
-        CallArg* retBufArg        = gtArgs.GetRetBufferArg();
-        GenTree* lclRetBufArgNode = retBufArg->GetEarlyNode();
-        if (lclRetBufArgNode == nullptr)
-        {
-            lclRetBufArgNode = retBufArg->GetLateNode();
-        }
-
-        switch (lclRetBufArgNode->OperGet())
-        {
-            // Get the true value from setup args
-            case GT_ASG:
-                return lclRetBufArgNode->AsOp()->gtGetOp2();
-            case GT_STORE_LCL_VAR:
-                return lclRetBufArgNode->AsUnOp()->gtGetOp1();
-
-            // Get the value from putarg wrapper nodes
-            case GT_PUTARG_REG:
-            case GT_PUTARG_STK:
-                return lclRetBufArgNode->AsOp()->gtGetOp1();
-
-            // Otherwise the node should be in the Use*
-            default:
-                return lclRetBufArgNode;
-        }
-    }
 };
 
 struct GenTreeCmpXchg : public GenTree

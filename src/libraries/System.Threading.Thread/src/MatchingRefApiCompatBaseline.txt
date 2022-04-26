@@ -1,0 +1,6 @@
+Compat issues with assembly System.Threading.Thread:
+CannotRemoveAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatformAttribute' exists on 'System.Threading.Thread.Start()' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatformAttribute' exists on 'System.Threading.Thread.Start(System.Object)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatformAttribute' exists on 'System.Threading.Thread.UnsafeStart()' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatformAttribute' exists on 'System.Threading.Thread.UnsafeStart(System.Object)' in the contract but not the implementation.
+Total Issues: 4

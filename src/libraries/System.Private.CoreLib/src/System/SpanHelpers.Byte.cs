@@ -341,26 +341,26 @@ namespace System
 
             uint uValue = value; // Use uint for comparisons to avoid unnecessary 8->32 extensions
             nuint offset = 0; // Use nuint for arithmetic to avoid unnecessary 64->32->64 truncations
-            nuint lengthToExamine = (nuint)(uint)length;
+            nuint lengthToExamine = (uint)length;
 
             if (Vector.IsHardwareAccelerated && length >= Vector<byte>.Count * 2)
             {
                 lengthToExamine = UnalignedCountVector(ref searchSpace);
             }
 
-        SequentialScan:
             while (lengthToExamine >= 8)
             {
                 lengthToExamine -= 8;
+                ref byte start = ref Unsafe.AddByteOffset(ref searchSpace, offset);
 
-                if (uValue == Unsafe.AddByteOffset(ref searchSpace, offset + 0) ||
-                    uValue == Unsafe.AddByteOffset(ref searchSpace, offset + 1) ||
-                    uValue == Unsafe.AddByteOffset(ref searchSpace, offset + 2) ||
-                    uValue == Unsafe.AddByteOffset(ref searchSpace, offset + 3) ||
-                    uValue == Unsafe.AddByteOffset(ref searchSpace, offset + 4) ||
-                    uValue == Unsafe.AddByteOffset(ref searchSpace, offset + 5) ||
-                    uValue == Unsafe.AddByteOffset(ref searchSpace, offset + 6) ||
-                    uValue == Unsafe.AddByteOffset(ref searchSpace, offset + 7))
+                if (uValue == Unsafe.AddByteOffset(ref start, 0) ||
+                    uValue == Unsafe.AddByteOffset(ref start, 1) ||
+                    uValue == Unsafe.AddByteOffset(ref start, 2) ||
+                    uValue == Unsafe.AddByteOffset(ref start, 3) ||
+                    uValue == Unsafe.AddByteOffset(ref start, 4) ||
+                    uValue == Unsafe.AddByteOffset(ref start, 5) ||
+                    uValue == Unsafe.AddByteOffset(ref start, 6) ||
+                    uValue == Unsafe.AddByteOffset(ref start, 7))
                 {
                     goto Found;
                 }
@@ -371,11 +371,12 @@ namespace System
             if (lengthToExamine >= 4)
             {
                 lengthToExamine -= 4;
+                ref byte start = ref Unsafe.AddByteOffset(ref searchSpace, offset);
 
-                if (uValue == Unsafe.AddByteOffset(ref searchSpace, offset + 0) ||
-                    uValue == Unsafe.AddByteOffset(ref searchSpace, offset + 1) ||
-                    uValue == Unsafe.AddByteOffset(ref searchSpace, offset + 2) ||
-                    uValue == Unsafe.AddByteOffset(ref searchSpace, offset + 3))
+                if (uValue == Unsafe.AddByteOffset(ref start, 0) ||
+                    uValue == Unsafe.AddByteOffset(ref start, 1) ||
+                    uValue == Unsafe.AddByteOffset(ref start, 2) ||
+                    uValue == Unsafe.AddByteOffset(ref start, 3))
                 {
                     goto Found;
                 }
@@ -385,24 +386,25 @@ namespace System
 
             while (lengthToExamine > 0)
             {
-                lengthToExamine -= 1;
+                lengthToExamine--;
 
                 if (uValue == Unsafe.AddByteOffset(ref searchSpace, offset))
                     goto Found;
 
-                offset += 1;
+                offset++;
             }
 
-            if (Vector.IsHardwareAccelerated && (offset < (nuint)(uint)length))
+            if (Vector.IsHardwareAccelerated && (offset < (uint)length))
             {
-                lengthToExamine = (((nuint)(uint)length - offset) & (nuint)~(Vector<byte>.Count - 1));
+                lengthToExamine = ((uint)length - offset) & (nuint)~(Vector<byte>.Count - 1);
 
-                Vector<byte> values = new Vector<byte>(value);
+                Vector<byte> values = new(value);
+                Vector<byte> matches;
 
-                while (lengthToExamine > offset)
+                while (offset < lengthToExamine)
                 {
-                    var matches = Vector.Equals(values, LoadVector(ref searchSpace, offset));
-                    if (Vector<byte>.Zero.Equals(matches))
+                    matches = Vector.Equals(values, LoadVector(ref searchSpace, offset));
+                    if (matches == Vector<byte>.Zero)
                     {
                         offset += (nuint)Vector<byte>.Count;
                         continue;
@@ -411,10 +413,17 @@ namespace System
                     goto Found;
                 }
 
-                if (offset < (nuint)(uint)length)
+                // The total length is at least Vector<byte>.Count, so instead of falling back to a
+                // sequential scan for the remainder, we check the vector read from the end -- note: unaligned read necessary.
+                // We do this only if at least one element is left.
+                if (offset < (uint)length)
                 {
-                    lengthToExamine = ((nuint)(uint)length - offset);
-                    goto SequentialScan;
+                    offset = (uint)(length - Vector<byte>.Count);
+                    matches = Vector.Equals(values, LoadVector(ref searchSpace, offset));
+                    if (matches != Vector<byte>.Zero)
+                    {
+                        goto Found;
+                    }
                 }
             }
 
@@ -2228,6 +2237,97 @@ namespace System
 
             // Find the first lane that is set inside compareResult.
             return (uint)BitOperations.TrailingZeroCount(selectedLanes) >> 2;
+        }
+
+        public static void Reverse(ref byte buf, nuint length)
+        {
+            if (Avx2.IsSupported && (nuint)Vector256<byte>.Count * 2 <= length)
+            {
+                Vector256<byte> reverseMask = Vector256.Create(
+                    (byte)15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0, // first 128-bit lane
+                    15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0); // second 128-bit lane
+                nuint numElements = (nuint)Vector256<byte>.Count;
+                nuint numIters = (length / numElements) / 2;
+                for (nuint i = 0; i < numIters; i++)
+                {
+                    nuint firstOffset = i * numElements;
+                    nuint lastOffset = length - ((1 + i) * numElements);
+
+                    // Load in values from beginning and end of the array.
+                    Vector256<byte> tempFirst = Vector256.LoadUnsafe(ref buf, firstOffset);
+                    Vector256<byte> tempLast = Vector256.LoadUnsafe(ref buf, lastOffset);
+
+                    // Avx2 operates on two 128-bit lanes rather than the full 256-bit vector.
+                    // Perform a shuffle to reverse each 128-bit lane, then permute to finish reversing the vector:
+                    //     +-------------------------------------------------------------------------------+
+                    //     | A1 | B1 | C1 | D1 | E1 | F1 | G1 | H1 | I1 | J1 | K1 | L1 | M1 | N1 | O1 | P1 |
+                    //     +-------------------------------------------------------------------------------+
+                    //     | A2 | B2 | C2 | D2 | E2 | F2 | G2 | H2 | I2 | J2 | K2 | L2 | M2 | N2 | O2 | P2 |
+                    //     +-------------------------------------------------------------------------------+
+                    //         Shuffle --->
+                    //     +-------------------------------------------------------------------------------+
+                    //     | P1 | O1 | N1 | M1 | L1 | K1 | J1 | I1 | H1 | G1 | F1 | E1 | D1 | C1 | B1 | A1 |
+                    //     +-------------------------------------------------------------------------------+
+                    //     | P2 | O2 | N2 | M2 | L2 | K2 | J2 | I2 | H2 | G2 | F2 | E2 | D2 | C2 | B2 | A2 |
+                    //     +-------------------------------------------------------------------------------+
+                    //         Permute --->
+                    //     +-------------------------------------------------------------------------------+
+                    //     | P2 | O2 | N2 | M2 | L2 | K2 | J2 | I2 | H2 | G2 | F2 | E2 | D2 | C2 | B2 | A2 |
+                    //     +-------------------------------------------------------------------------------+
+                    //     | P1 | O1 | N1 | M1 | L1 | K1 | J1 | I1 | H1 | G1 | F1 | E1 | D1 | C1 | B1 | A1 |
+                    //     +-------------------------------------------------------------------------------+
+                    tempFirst = Avx2.Shuffle(tempFirst, reverseMask);
+                    tempFirst = Avx2.Permute2x128(tempFirst, tempFirst, 0b00_01);
+                    tempLast = Avx2.Shuffle(tempLast, reverseMask);
+                    tempLast = Avx2.Permute2x128(tempLast, tempLast, 0b00_01);
+
+                    // Store the reversed vectors
+                    tempLast.StoreUnsafe(ref buf, firstOffset);
+                    tempFirst.StoreUnsafe(ref buf, lastOffset);
+                }
+                buf = ref Unsafe.Add(ref buf, numIters * numElements);
+                length -= numIters * numElements * 2;
+            }
+            else if (Sse2.IsSupported && (nuint)Vector128<byte>.Count * 2 <= length)
+            {
+                Vector128<byte> reverseMask = Vector128.Create((byte)15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0);
+                nuint numElements = (nuint)Vector128<byte>.Count;
+                nuint numIters = (length / numElements) / 2;
+                for (nuint i = 0; i < numIters; i++)
+                {
+                    nuint firstOffset = i * numElements;
+                    nuint lastOffset = length - ((1 + i) * numElements);
+
+                    // Load in values from beginning and end of the array.
+                    Vector128<byte> tempFirst = Vector128.LoadUnsafe(ref buf, firstOffset);
+                    Vector128<byte> tempLast = Vector128.LoadUnsafe(ref buf, lastOffset);
+
+                    // Shuffle to reverse each vector:
+                    //     +---------------------------------------------------------------+
+                    //     | A | B | C | D | E | F | G | H | I | J | K | L | M | N | O | P |
+                    //     +---------------------------------------------------------------+
+                    //          --->
+                    //     +---------------------------------------------------------------+
+                    //     | P | O | N | M | L | K | J | I | H | G | F | E | D | C | B | A |
+                    //     +---------------------------------------------------------------+
+                    tempFirst = Ssse3.Shuffle(tempFirst, reverseMask);
+                    tempLast = Ssse3.Shuffle(tempLast, reverseMask);
+
+                    // Store the reversed vectors
+                    tempLast.StoreUnsafe(ref buf, firstOffset);
+                    tempFirst.StoreUnsafe(ref buf, lastOffset);
+                }
+                buf = ref Unsafe.Add(ref buf, numIters * numElements);
+                length -= numIters * numElements * 2;
+            }
+
+            // Store any remaining values one-by-one
+            for (nuint i = 0; i < (length / 2); i++)
+            {
+                ref byte first = ref Unsafe.Add(ref buf, i);
+                ref byte last = ref Unsafe.Add(ref buf, length - 1 - i);
+                (last, first) = (first, last);
+            }
         }
     }
 }

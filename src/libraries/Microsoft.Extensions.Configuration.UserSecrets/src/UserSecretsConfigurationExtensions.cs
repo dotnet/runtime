@@ -169,11 +169,16 @@ namespace Microsoft.Extensions.Configuration
             ThrowHelper.ThrowIfNull(configuration);
             ThrowHelper.ThrowIfNull(userSecretsId);
 
-            return AddSecretsFile(configuration, PathHelper.GetSecretsPathFromSecretsId(userSecretsId), optional, reloadOnChange);
+            return AddSecretsFile(configuration, PathHelper.InternalGetSecretsPathFromSecretsId(userSecretsId, throwIfNoRoot: !optional), optional, reloadOnChange);
         }
 
         private static IConfigurationBuilder AddSecretsFile(IConfigurationBuilder configuration, string secretPath, bool optional, bool reloadOnChange)
         {
+            if (string.IsNullOrEmpty(secretPath))
+            {
+                return configuration;
+            }
+
             string? directoryPath = Path.GetDirectoryName(secretPath);
             PhysicalFileProvider? fileProvider = Directory.Exists(directoryPath)
                 ? new PhysicalFileProvider(directoryPath)

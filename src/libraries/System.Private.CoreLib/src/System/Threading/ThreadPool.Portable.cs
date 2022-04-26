@@ -107,6 +107,7 @@ namespace System.Threading
             ArgumentNullException.ThrowIfNull(waitObject);
             ArgumentNullException.ThrowIfNull(callBack);
 
+            Thread.ThrowIfNoThreadStart();
             RegisteredWaitHandle registeredHandle = new RegisteredWaitHandle(
                 waitObject,
                 new _ThreadPoolWaitOrTimerCallback(callBack, state, flowExecutionContext),
