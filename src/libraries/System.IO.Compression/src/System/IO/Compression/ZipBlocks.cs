@@ -220,7 +220,7 @@ namespace System.IO.Compression
                 if (ms.Position > extraField.Size - sizeof(int))
                     return true;
 
-                int value32 = reader.ReadInt32();
+                uint value32 = reader.ReadUInt32();
                 if (readStartDiskNumber)
                     zip64Block._startDiskNumber = value32;
 
@@ -228,7 +228,6 @@ namespace System.IO.Compression
                 if (zip64Block._uncompressedSize < 0) throw new InvalidDataException(SR.FieldTooBigUncompressedSize);
                 if (zip64Block._compressedSize < 0) throw new InvalidDataException(SR.FieldTooBigCompressedSize);
                 if (zip64Block._localHeaderOffset < 0) throw new InvalidDataException(SR.FieldTooBigLocalHeaderOffset);
-                if (zip64Block._startDiskNumber < 0) throw new InvalidDataException(SR.FieldTooBigStartDiskNumber);
 
                 return true;
             }
