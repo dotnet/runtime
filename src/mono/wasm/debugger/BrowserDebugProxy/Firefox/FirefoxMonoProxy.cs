@@ -431,7 +431,7 @@ internal sealed class FirefoxMonoProxy : MonoProxy
                         DebugStore store = await RuntimeReady(sessionId, token);
 
                         Log("verbose", $"BP req {args}");
-                        await SetBreakpoint(sessionId, store, request, !loaded, token);
+                        await SetBreakpoint(sessionId, store, request, !loaded, false, token);
                     }
                     await SendCommand(sessionId, "", args, token);
                     return true;
@@ -821,7 +821,7 @@ internal sealed class FirefoxMonoProxy : MonoProxy
         {
             if (req.TryResolve(source))
             {
-                await SetBreakpoint(sessionId, context.store, req, true, token);
+                await SetBreakpoint(sessionId, context.store, req, true, false, token);
             }
         }
     }

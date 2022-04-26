@@ -14,7 +14,7 @@ namespace DebuggerTests
 {
     public class HotReloadTests : DebuggerTestBase
     {
-        [Fact]
+        [ConditionalFact(nameof(RunningOnChrome))]
         public async Task DebugHotReloadMethodChangedUserBreak()
         {
             var pause_location = await LoadAssemblyAndTestHotReload(
@@ -32,7 +32,7 @@ namespace DebuggerTests
             await CheckBool(locals, "c", true);
         }
 
-        [Fact]
+        [ConditionalFact(nameof(RunningOnChrome))]
         public async Task DebugHotReloadMethodUnchanged()
         {
             var pause_location = await LoadAssemblyAndTestHotReload(
@@ -50,7 +50,7 @@ namespace DebuggerTests
             CheckNumber(locals, "a", 10);
         }
 
-        [Fact]
+        [ConditionalFact(nameof(RunningOnChrome))]
         public async Task DebugHotReloadMethodAddBreakpoint()
         {
             int line = 30;
@@ -98,7 +98,7 @@ namespace DebuggerTests
         }
 
 
-        [Fact]
+        [ConditionalFact(nameof(RunningOnChrome))]
         public async Task DebugHotReloadMethodEmpty()
         {
             int line = 38;
@@ -155,7 +155,7 @@ namespace DebuggerTests
             locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
         }
 
-[Fact]
+        [ConditionalFact(nameof(RunningOnChrome))]
         public async Task DebugHotReloadMethodChangedUserBreakUsingSDB()
         {
             string asm_file = Path.Combine(DebuggerTestAppPath, "ApplyUpdateReferencedAssembly.dll");
@@ -187,7 +187,7 @@ namespace DebuggerTests
             await CheckBool(locals, "c", true);
         }
 
-        [Fact]
+        [ConditionalFact(nameof(RunningOnChrome))]
         public async Task DebugHotReloadMethodUnchangedUsingSDB()
         {
             string asm_file = Path.Combine(DebuggerTestAppPath, "ApplyUpdateReferencedAssembly.dll");
@@ -216,7 +216,7 @@ namespace DebuggerTests
             CheckLocation("dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 21, 12, scripts, top_frame["location"]);
         }
 
-        [Fact]
+        [ConditionalFact(nameof(RunningOnChrome))]
         public async Task DebugHotReloadMethodAddBreakpointUsingSDB()
         {
             string asm_file = Path.Combine(DebuggerTestAppPath, "ApplyUpdateReferencedAssembly.dll");
@@ -279,7 +279,7 @@ namespace DebuggerTests
             );
         }
 
-        [Fact]
+        [ConditionalFact(nameof(RunningOnChrome))]
         public async Task DebugHotReloadMethodEmptyUsingSDB()
         {
             string asm_file = Path.Combine(DebuggerTestAppPath, "ApplyUpdateReferencedAssembly.dll");
@@ -337,7 +337,7 @@ namespace DebuggerTests
             //pause_location = await SendCommandAndCheck(JObject.FromObject(new { }), "Debugger.resume", "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 38, 8, "StaticMethod4");
         }
 
-        [Fact]
+        [ConditionalFact(nameof(RunningOnChrome))]
         public async Task DebugHotReloadMethod_CheckBreakpointLineUpdated_ByVS_Simulated()
         {
             string asm_file = Path.Combine(DebuggerTestAppPath, "ApplyUpdateReferencedAssembly.dll");
@@ -362,7 +362,7 @@ namespace DebuggerTests
             CheckLocation("dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 49, 12, scripts, top_frame["location"]);
         }
 
-        [Fact]
+        [ConditionalFact(nameof(RunningOnChrome))]
         public async Task DebugHotReloadMethod_CheckBreakpointLineUpdated_ByVS_Simulated_ReceivingBreakpointBeforeUpdate2()
         {
             string asm_file = Path.Combine(DebuggerTestAppPath, "ApplyUpdateReferencedAssembly.dll");
@@ -388,7 +388,7 @@ namespace DebuggerTests
             CheckLocation("dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 50, 12, scripts, top_frame["location"]);
         }
 
-        [Fact]
+        [ConditionalFact(nameof(RunningOnChrome))]
         public async Task DebugHotReloadMethod_CheckBreakpointLineUpdated_ByVS_Simulated_ReceivingBreakpointBeforeUpdate_BPNotChanged()
         {
             string asm_file = Path.Combine(DebuggerTestAppPath, "ApplyUpdateReferencedAssembly.dll");
