@@ -2970,6 +2970,7 @@ ep_rt_mono_fire_bulk_type_event (void)
 		}
 	}
 
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_DIAGNOSTICS, "Firing BulkTypeEvent!");
 	FireEtwBulkType(m_n_bulk_type_value_count,
 					n_clr_instance_id,
 					i_size,
@@ -3091,6 +3092,11 @@ ep_rt_mono_log_single_type (intptr_t type_id)
         // call itself again.
 		ep_rt_mono_fire_bulk_type_event();
 		return ep_rt_mono_log_single_type(type_id);
+	}
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_DIAGNOSTICS, "p_val added at index: %d\ntype_id: %d\nmodule_id: %d\ntype_name_id: %d\ntype: %d\nc_type_parameters: %d", m_n_bulk_type_value_count, p_val->fixed_sized_data.type_id, p_val->fixed_sized_data.module_id, p_val->fixed_sized_data.type_name_id, mono_type->type, p_val->c_type_parameters);
+	for (int i = 0; i < p_val->c_type_parameters; i++)
+	{
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_DIAGNOSTICS, "type: %d\n", ((MonoType*)p_val->rg_type_parameters[i])->type);
 	}
 
     // The type fits into the batch, so update our state
@@ -3217,6 +3223,7 @@ ep_rt_mono_send_method_details_event (MonoMethod *method)
 
 	ep_rt_mono_fire_bulk_type_event();
 
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_DIAGNOSTICS, "Firing Method:\n%s[%d]\ntype ID [%d]\nToken %d -> %d\nNumParam %d\nmodule %d\n", method->name, (uint64_t)method, method_type_id, method->token, method_token, method_inst_parameter_types_count, loader_module_id);
 	FireEtwMethodDetails((uint64_t)method,
 						 (uint64_t)method_type_id,
 						 method_token,
