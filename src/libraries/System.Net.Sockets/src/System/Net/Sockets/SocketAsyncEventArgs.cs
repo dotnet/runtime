@@ -201,6 +201,7 @@ namespace System.Net.Sockets
 
         private void OnCompletedInternal()
         {
+            // The following check checks if the operation was Accept (1) or Connect (2)
             if (LastOperation <= SocketAsyncOperation.Connect)
             {
                 AfterConnectAcceptTelemetry();
@@ -1006,6 +1007,7 @@ namespace System.Net.Sockets
                 FinishOperationSyncFailure(socketError, bytesTransferred, flags);
             }
 
+            // The following check checks if the operation was Accept (1) or Connect (2)
             if (LastOperation <= SocketAsyncOperation.Connect)
             {
                 AfterConnectAcceptTelemetry();
