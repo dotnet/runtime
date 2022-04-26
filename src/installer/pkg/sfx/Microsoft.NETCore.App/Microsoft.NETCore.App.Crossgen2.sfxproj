@@ -29,16 +29,20 @@
           DestinationFolder="$(MicrosoftNetCoreAppRuntimePackNativeDir)"
           SkipUnchangedFiles="true" />
 
-    <PropertyGroup>
-      <_TargetsToRun>Restore;Publish;PublishItemsOutputGroup</_TargetsToRun>
-    </PropertyGroup>
+<MSBuild Projects="$(RepoRoot)src/coreclr/tools/aot/crossgen2/crossgen2.csproj"
+             Targets="Restore"
+             Properties="MSBuildRestoreSessionId=$([System.Guid]::NewGuid())
+              ;RunningPublish=true
+              ;RuntimeIdentifier=$(PackageRID)
+              ;CoreCLRArtifactsPath=$(CoreCLRArtifactsPath)
+              ;R2ROverridePath=$(MSBuildThisFileDirectory)ReadyToRun.targets" />
 
     <MSBuild Projects="$(RepoRoot)src/coreclr/tools/aot/crossgen2/crossgen2.csproj"
+             Targets="Publish;PublishItemsOutputGroup"
              Properties="RunningPublish=true
               ;RuntimeIdentifier=$(PackageRID)
               ;CoreCLRArtifactsPath=$(CoreCLRArtifactsPath)
-              ;R2ROverridePath=$(MSBuildThisFileDirectory)ReadyToRun.targets"
-             Targets="$(_TargetsToRun)">
+              ;R2ROverridePath=$(MSBuildThisFileDirectory)ReadyToRun.targets">
       <Output TaskParameter="TargetOutputs"
               ItemName="_RawCrossgenPublishFiles" />
     </MSBuild>
