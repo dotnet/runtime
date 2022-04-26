@@ -103,7 +103,7 @@ namespace System.Threading.RateLimiting
 
             ThrowIfDisposed();
 
-            // Return SuccessfulAcquisition if requestedCount is 0 and resources are available
+            // Return SuccessfulAcquisition if requestCount is 0 and resources are available
             if (requestCount == 0 && _requestCount > 0)
             {
                 return new ValueTask<RateLimitLease>(SuccessfulLease);
@@ -181,8 +181,8 @@ namespace System.Threading.RateLimiting
                     return true;
                 }
 
-                // a. if there are no items queued we can lease
-                // b. if there are items queued but the processing order is newest first, then we can lease the incoming request since it is the newest
+                // a. If there are no items queued we can lease
+                // b. If there are items queued but the processing order is newest first, then we can lease the incoming request since it is the newest
                 if (_queueCount == 0 || (_queueCount > 0 && _options.QueueProcessingOrder == QueueProcessingOrder.NewestFirst))
                 {
                     _idleSince = null;
@@ -227,7 +227,7 @@ namespace System.Threading.RateLimiting
         // Used in tests that test behavior with specific time intervals
         private void ReplenishInternal(long nowTicks)
         {
-            // method is re-entrant (from Timer), lock to avoid multiple simultaneous replenishes
+            // Method is re-entrant (from Timer), lock to avoid multiple simultaneous replenishes
             lock (Lock)
             {
                 if (_disposed)
@@ -243,8 +243,7 @@ namespace System.Threading.RateLimiting
                 _lastReplenishmentTick = nowTicks;
 
                 int availableRequestCounters = _requestCount;
-                FixedWindowRateLimiterOptions options = _options;
-                int maxPermits = options.PermitLimit;
+                int maxPermits = _options.PermitLimit;
                 int resourcesToAdd;
 
                 if (availableRequestCounters < maxPermits)
@@ -257,25 +256,24 @@ namespace System.Threading.RateLimiting
                     return;
                 }
 
-                // Process queued requests
-                Deque<RequestRegistration> queue = _queue;
-
                 _requestCount += resourcesToAdd;
                 Debug.Assert(_requestCount == _options.PermitLimit);
-                while (queue.Count > 0)
+
+                // Process queued requests
+                while (_queue.Count > 0)
                 {
                     RequestRegistration nextPendingRequest =
-                          options.QueueProcessingOrder == QueueProcessingOrder.OldestFirst
-                          ? queue.PeekHead()
-                          : queue.PeekTail();
+                          _options.QueueProcessingOrder == QueueProcessingOrder.OldestFirst
+                          ? _queue.PeekHead()
+                          : _queue.PeekTail();
 
                     if (_requestCount >= nextPendingRequest.Count)
                     {
                         // Request can be fulfilled
                         nextPendingRequest =
-                            options.QueueProcessingOrder == QueueProcessingOrder.OldestFirst
-                            ? queue.DequeueHead()
-                            : queue.DequeueTail();
+                            _options.QueueProcessingOrder == QueueProcessingOrder.OldestFirst
+                            ? _queue.DequeueHead()
+                            : _queue.DequeueTail();
 
                         _queueCount -= nextPendingRequest.Count;
                         _requestCount -= nextPendingRequest.Count;

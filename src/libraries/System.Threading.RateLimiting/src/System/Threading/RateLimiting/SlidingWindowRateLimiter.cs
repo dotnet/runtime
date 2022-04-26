@@ -49,6 +49,8 @@ namespace System.Threading.RateLimiting
         {
             _options = options ?? throw new ArgumentNullException(nameof(options));
             _requestCount = options.PermitLimit;
+
+            // _requestsPerSegment holds the no. of acquired requests in each window segment
             _requestsPerSegment = new int[options.SegmentsPerWindow];
             _currentSegmentIndex = 0;
 
@@ -90,6 +92,7 @@ namespace System.Threading.RateLimiting
                     return lease;
                 }
 
+                // TODO: Acquire additional metadata during a failed lease decision
                 return FailedLease;
             }
         }
@@ -124,7 +127,7 @@ namespace System.Threading.RateLimiting
                 {
                     if (_options.QueueProcessingOrder == QueueProcessingOrder.NewestFirst && requestCount <= _options.QueueLimit)
                     {
-                        // remove oldest items from queue until there is space for the newest acquisition request
+                        // Remove oldest items from queue until there is space for the newest acquisition request
                         do
                         {
                             RequestRegistration oldestRequest = _queue.DequeueHead();
@@ -174,8 +177,8 @@ namespace System.Threading.RateLimiting
                     return true;
                 }
 
-                // a. if there are no items queued we can lease
-                // b. if there are items queued but the processing order is newest first, then we can lease the incoming request since it is the newest
+                // a. If there are no items queued we can lease
+                // b. If there are items queued but the processing order is NewestFirst, then we can lease the incoming request since it is the newest
                 if (_queueCount == 0 || (_queueCount > 0 && _options.QueueProcessingOrder == QueueProcessingOrder.NewestFirst))
                 {
                     _idleSince = null;
@@ -204,6 +207,8 @@ namespace System.Threading.RateLimiting
             {
                 return false;
             }
+
+            // Replenish call will slide the window one segment at a time
             Replenish(this);
             return true;
         }
@@ -221,7 +226,7 @@ namespace System.Threading.RateLimiting
         // Used in tests that test behavior with specific time intervals
         private void ReplenishInternal(long nowTicks)
         {
-            // method is re-entrant (from Timer), lock to avoid multiple simultaneous replenishes
+            // Method is re-entrant (from Timer), lock to avoid multiple simultaneous replenishes
             lock (Lock)
             {
                 if (_disposed)
@@ -236,6 +241,8 @@ namespace System.Threading.RateLimiting
 
                 _lastReplenishmentTick = nowTicks;
 
+                // Increament the current segment index while move the window
+                // We need to know the no. of requests that were acquired in a segment perviously to ensure that we don't acquire more than the permit limit.
                 _currentSegmentIndex = (_currentSegmentIndex + 1) % _options.SegmentsPerWindow;
                 int oldSegmentRequestCount = _requestsPerSegment[_currentSegmentIndex];
                 _requestsPerSegment[_currentSegmentIndex] = 0;
@@ -245,9 +252,10 @@ namespace System.Threading.RateLimiting
                     return;
                 }
 
-                // Process queued requests
                 _requestCount += oldSegmentRequestCount;
                 Debug.Assert(_requestCount <= _options.PermitLimit);
+
+                // Process queued requests
                 while (_queue.Count > 0)
                 {
                     RequestRegistration nextPendingRequest =
@@ -255,6 +263,7 @@ namespace System.Threading.RateLimiting
                           ? _queue.PeekHead()
                           : _queue.PeekTail();
 
+                    // If we have enough permits after replenishing to serve the queued requests
                     if (_requestCount >= nextPendingRequest.Count)
                     {
                         // Request can be fulfilled
@@ -264,7 +273,6 @@ namespace System.Threading.RateLimiting
                             : _queue.DequeueTail();
 
                         _queueCount -= nextPendingRequest.Count;
-
                         _requestCount -= nextPendingRequest.Count;
                         _requestsPerSegment[_currentSegmentIndex] += nextPendingRequest.Count;
                         Debug.Assert(_requestCount >= 0);
@@ -273,7 +281,7 @@ namespace System.Threading.RateLimiting
                         {
                             // Queued item was canceled so add count back
                             _requestCount -= nextPendingRequest.Count;
-                            _requestsPerSegment[_currentSegmentIndex] -= _requestCount;
+                            _requestsPerSegment[_currentSegmentIndex] -= nextPendingRequest.Count;
                             // Updating queue count is handled by the cancellation code
                             _queueCount += nextPendingRequest.Count;
                         }
