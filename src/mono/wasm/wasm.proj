@@ -226,6 +226,7 @@
     <Copy SourceFiles="runtime/driver.c;
                        runtime/pinvoke.c;
                        runtime/corebindings.c;
+                       runtime/dotnet-crypto-worker.js;
                        $(SharedNativeRoot)libs\System.Native\pal_random.lib.js;
                        $(SystemCryptoNativeDir)\pal_crypto_webworker.js;"
           DestinationFolder="$(NativeBinDir)src"
@@ -273,7 +274,9 @@
                        $(NativeBinDir)dotnet.d.ts;
                        $(NativeBinDir)package.json;
                        $(NativeBinDir)dotnet.wasm;
-                       $(NativeBinDir)dotnet.timezones.blat"
+                       $(NativeBinDir)dotnet.timezones.blat;
+                       $(NativeBinDir)\src\dotnet-crypto-worker.js;
+                       $(NativeBinDir)\src\pal_crypto_webworker.js;"
           DestinationFolder="$(MicrosoftNetCoreAppRuntimePackNativeDir)"
           SkipUnchangedFiles="true" />
 

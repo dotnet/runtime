@@ -66,7 +66,7 @@ import {
 import { create_weak_ref } from "./weak-ref";
 import { fetch_like, readAsync_like } from "./polyfills";
 import { EmscriptenModule } from "./types/emscripten";
-import { mono_run_main, mono_run_main_and_exit, mono_wasm_crypto } from "./run";
+import { mono_run_main, mono_run_main_and_exit } from "./run";
 
 const MONO = {
     // current "public" MONO API
@@ -388,9 +388,6 @@ const INTERNAL: any = {
     mono_wasm_raise_debug_event,
     mono_wasm_change_debugger_log_level,
     mono_wasm_runtime_is_ready: runtimeHelpers.mono_wasm_runtime_is_ready,
-
-    // used for browser crypto
-    mono_wasm_crypto,
 };
 
 

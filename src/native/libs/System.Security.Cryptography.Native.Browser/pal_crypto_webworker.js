@@ -13,6 +13,7 @@ const CryptoWebWorkerLib = {
                 type: hash,
                 data: Array.from(Module.HEAPU8.subarray (input_buffer, input_buffer + input_len))
             };
+
             var response = globalThis.mono_wasm_crypto.channel.send_msg (JSON.stringify (msg));
             var digest = JSON.parse (response);
             if (digest.length > output_len) {
@@ -24,11 +25,13 @@ const CryptoWebWorkerLib = {
             return 1;
         },
         can_call_digest: function () {
-            console.log("can_call_digest WasmCrypto:", JSON.stringify(globalThis.mono_wasm_crypto));
-            console.log("can_call_digest SharedArrayBuffer:", JSON.stringify(typeof SharedArrayBuffer));
-            if (!!globalThis.mono_wasm_crypto?.channel || typeof SharedArrayBuffer === "undefined") {
-                return 0; // Not supported
+            if (typeof globalThis.mono_wasm_crypto === "undefined" ||
+                typeof globalThis.mono_wasm_crypto.channel === "undefined" ||
+                typeof globalThis.mono_wasm_crypto.worker === "undefined" ||
+                typeof SharedArrayBuffer === "undefined") {
+                return 0;
             }
+
             return 1;
         }
     },

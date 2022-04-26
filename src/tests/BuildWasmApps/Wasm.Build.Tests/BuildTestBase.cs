@@ -500,6 +500,7 @@ namespace Wasm.Build.Tests
                 "dotnet.wasm",
                 "mono-config.json",
                 "dotnet.js"
+                "dotnet-crypto-worker.js"
             });
 
             AssertFilesExist(bundleDir, new[] { "run-v8.sh" }, expectToExist: hasV8Script);

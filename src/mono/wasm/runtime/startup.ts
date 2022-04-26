@@ -50,6 +50,24 @@ export function configure_emscripten_startup(module: DotnetModule, exportedAPI: 
         }
     }
 
+    console.debug ("MONO_WASM: Initialize WebWorkers");
+
+    if (ENVIRONMENT_IS_WEB && typeof SharedArrayBuffer !== "undefined") {
+        const chan = LibraryChannel.create(1024);
+        // // eslint-disable-next-line no-debugger
+        // debugger;
+        const worker = new Worker("dotnet-crypto-worker.js");
+        (globalThis as any).mono_wasm_crypto = {
+            channel: chan,
+            worker: worker,
+        };
+        worker.postMessage({
+            comm_buf: chan.get_comm_buffer(),
+            msg_buf: chan.get_msg_buffer(),
+            msg_char_len: chan.get_msg_len()
+        });
+    }
+
     // these could be overriden on DotnetModuleConfig
     if (!module.preInit) {
         module.preInit = [];
@@ -361,24 +379,6 @@ function finalize_startup(config: MonoConfig | MonoConfigError | undefined): voi
                 runtime_is_initialized_reject(err);
                 throw err;
             }
-        }
-
-        console.debug ("MONO_WASM: Initialize WebWorkers");
-
-        if (ENVIRONMENT_IS_WEB && typeof SharedArrayBuffer !== undefined) {
-            const chan = LibraryChannel.create(1024);
-            const worker = new Worker("dotnet-crypto-worker.ts");
-            const globalThisAny = globalThis as any;
-            globalThisAny.mono_wasm_crypto = {
-                channel: chan,
-                worker: worker,
-            };
-            console.log("Initialized worker:", JSON.stringify(globalThisAny.mono_wasm_crypto));
-            worker.postMessage({
-                comm_buff: chan.get_comm_buffer(),
-                msg_buf: chan.get_msg_buffer(),
-                msg_char_len: chan.get_msg_len()
-            });
         }
 
         if (moduleExt.onDotnetReady) {

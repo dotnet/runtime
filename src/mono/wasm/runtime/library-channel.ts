@@ -121,8 +121,9 @@ export class LibraryChannel {
             response += this._read_from_msg(0, size_to_read);
 
             // The response is complete.
-            if (state === this.STATE_RESP)
+            if (state === this.STATE_RESP) {
                 break;
+            }
 
             // Reset the size and transition to await state.
             Atomics.store(this.comm, this.MSG_SIZE_IDX, 0);
