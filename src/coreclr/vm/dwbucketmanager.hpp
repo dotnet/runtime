@@ -484,11 +484,10 @@ void BaseBucketParamsManager::GetAppVersion(_Out_writes_(maxLength) WCHAR* targe
 
     if ((GetCurrentModuleFileName(appPath) == S_OK) && SUCCEEDED(DwGetFileVersionInfo(appPath, major, minor, build, revision)))
     {
-        _snwprintf_s(targetParam,
-            maxLength,
-            _TRUNCATE,
-            W("%d.%d.%d.%d"),
-            major, minor, build, revision);
+        WCHAR* cur = FormatInteger(targetParam, maxLength, "%d.", major);
+        cur = FormatInteger(cur, maxLength - wcslen(targetParam), "%d.", minor);
+        cur = FormatInteger(cur, maxLength - wcslen(targetParam), "%d.", build);
+        cur = FormatInteger(cur, maxLength - wcslen(targetParam), "%d", revision);
     }
     else if (DwGetAssemblyVersion(appPath, verBuf, ARRAY_SIZE(verBuf)) != 0)
     {
@@ -519,11 +518,7 @@ void BaseBucketParamsManager::GetAppTimeStamp(_Out_writes_(maxLength) WCHAR* tar
 
         ULONG ulTimeStamp = pe.GetTimeDateStamp();
 
-        _snwprintf_s(targetParam,
-                    maxLength,
-                    _TRUNCATE,
-                    W("%x"),
-                    ulTimeStamp);
+        FormatInteger(targetParam, maxLength, "%x", ulTimeStamp);
     }
     EX_CATCH
     {
@@ -664,11 +659,10 @@ void BaseBucketParamsManager::GetModuleVersion(_Out_writes_(maxLength) WCHAR* ta
 
         if (!failed)
         {
-            _snwprintf_s(targetParam,
-                       maxLength,
-                       _TRUNCATE,
-                       W("%d.%d.%d.%d"),
-                       major, minor, build, revision);
+            WCHAR* cur = FormatInteger(targetParam, maxLength, "%d.", major);
+            cur = FormatInteger(cur, maxLength - wcslen(targetParam), "%d.", minor);
+            cur = FormatInteger(cur, maxLength - wcslen(targetParam), "%d.", build);
+            cur = FormatInteger(cur, maxLength - wcslen(targetParam), "%d", revision);
         }
     }
 
@@ -712,11 +706,7 @@ void BaseBucketParamsManager::GetModuleTimeStamp(_Out_writes_(maxLength) WCHAR* 
                 _ASSERTE(ulTimeStamp != 0);
             }
 
-            _snwprintf_s(targetParam,
-                   maxLength,
-                   _TRUNCATE,
-                   W("%x"),
-                   ulTimeStamp);
+            FormatInteger(targetParam, maxLength, "%x", ulTimeStamp);
         }
         EX_CATCH
         {
@@ -744,11 +734,7 @@ void BaseBucketParamsManager::GetMethodDef(_Out_writes_(maxLength) WCHAR* target
     if (m_pFaultingMD)
     {
         mdMethodDef methodDef = m_pFaultingMD->GetMemberDef();
-        _snwprintf_s(targetParam,
-                   maxLength,
-                   _TRUNCATE,
-                   W("%x"),
-                   RidFromToken(methodDef));
+        FormatInteger(targetParam, maxLength, "%x", RidFromToken(methodDef));
     }
     else
     {
@@ -767,12 +753,7 @@ void BaseBucketParamsManager::GetIlOffset(_Out_writes_(maxLength) WCHAR* targetP
     CONTRACTL_END;
 
     DWORD ilOffset = GetILOffset();
-
-    _snwprintf_s(targetParam,
-                maxLength,
-                _TRUNCATE,
-                W("%x"),
-                ilOffset);
+    FormatInteger(targetParam, maxLength, "%x", ilOffset);
 }
 
 void BaseBucketParamsManager::GetExceptionName(_Out_writes_(maxLength) WCHAR* targetParam, int maxLength)
@@ -889,11 +870,7 @@ void BaseBucketParamsManager::GetIlRva(_Out_writes_(maxLength) WCHAR* targetPara
     if (m_pFaultingMD)
         ilOffset += m_pFaultingMD->GetRVA();
 
-    _snwprintf_s(targetParam,
-                maxLength,
-                _TRUNCATE,
-                W("%x"),
-                ilOffset);
+    FormatInteger(targetParam, maxLength, "%x", ilOffset);
 }
 
 // helper functions

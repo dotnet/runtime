@@ -26,12 +26,6 @@ class MethodDesc;
 
 // Constants.
 static const unsigned int   FieldSemanticOffset =       100;
-static LPCSTR               szInitName =                COR_CTOR_METHOD_NAME; // not unicode
-static LPCWSTR              szInitNameUse =             W("Init");
-static LPCWSTR              szDefaultToString =         W("ToString");
-static LPCWSTR              szDuplicateDecoration =     W("_%d");
-static const int            cchDuplicateDecoration =    10; // max is _16777215 (0xffffff)
-static const int            cbDuplicateDecoration =     20;  // max is _16777215 (0xffffff)
 
 
 // Properties of a method in a ComMethodTable.

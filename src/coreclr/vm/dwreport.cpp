@@ -249,9 +249,14 @@ int DwGetAppDescription(                // Number of characters written.
     }
 
     // Build the query key for the language-specific file description resource.
-    WCHAR buf[64];                 //----+----1----+----2----+----3----+----4----+
-    _snwprintf_s(buf, ARRAY_SIZE(buf), _TRUNCATE, W("\\StringFileInfo\\%04x%04x\\FileDescription"),
-               translation->language, translation->codePage);
+    WCHAR buf[64];
+    wcscpy_s(buf, ARRAY_SIZE(buf), W("\\StringFileInfo\\"));
+
+    WCHAR buf2[ARRAY_SIZE("ffff") + ARRAY_SIZE("ffff") - 1];
+    WCHAR* nxt = FormatInteger(buf2, ARRAY_SIZE(buf2), "%04x", translation->language);
+    FormatInteger(nxt, ARRAY_SIZE(buf2) - 4, "%04x", translation->codePage);
+
+    wcscat_s(buf, ARRAY_SIZE(buf) - wcslen(buf), W("\\FileDescription"));
 
     // Get the file description.
     WCHAR* fileDescription;
@@ -381,9 +386,14 @@ int DwGetAssemblyVersion(               // Number of characters written.
     }
 
     // Build the query key for the language-specific assembly version resource.
-    WCHAR buf[64];                                                 //----+----1----+----2----+----3----+----4----+
-    _snwprintf_s(buf, ARRAY_SIZE(buf), _TRUNCATE, W("\\StringFileInfo\\%04x%04x\\Assembly Version"),
-               translation->language, translation->codePage);
+    WCHAR buf[64];
+    wcscpy_s(buf, ARRAY_SIZE(buf), W("\\StringFileInfo\\"));
+
+    WCHAR buf2[ARRAY_SIZE("ffff") + ARRAY_SIZE("ffff") - 1];
+    WCHAR* nxt = FormatInteger(buf2, ARRAY_SIZE(buf2), "%04x", translation->language);
+    FormatInteger(nxt, ARRAY_SIZE(buf2) - 4, "%04x", translation->codePage);
+
+    wcscat_s(buf, ARRAY_SIZE(buf) - wcslen(buf), W("\\Assembly Version"));
 
     // Get the assembly version.
     WCHAR* assemblyVersion;

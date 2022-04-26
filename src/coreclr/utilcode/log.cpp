@@ -75,7 +75,7 @@ VOID InitLogging()
 
     if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_LogWithPid))
     {
-        WCHAR pidSuffix[ARRAY_SIZE(".") + ARRAY_SIZE("4294967295")] = W(".");
+        WCHAR pidSuffix[ARRAY_SIZE(".") + ARRAY_SIZE("4294967295") - 1] = W(".");
         DWORD pid = GetCurrentProcessId();
         FormatInteger(pidSuffix + 1, ARRAY_SIZE(pidSuffix) - 1, "%u", pid);
         // Append the format ".%u" to the end of the file name

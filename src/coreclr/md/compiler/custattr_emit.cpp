@@ -638,15 +638,13 @@ HRESULT ParseKnownCaNamedArgs(
         // Better have found an argument.
         if (ixParam == cNamedParams)
         {
-            MAKE_WIDEPTR_FROMUTF8N(pWideStr, namedArg.szName, namedArg.cName)
-            IfFailGo(PostError(META_E_CA_UNKNOWN_ARGUMENT, wcslen(pWideStr), pWideStr));
+            IfFailGo(PostError(META_E_CA_UNKNOWN_ARGUMENT, namedArg.cName, namedArg.szName));
         }
 
         // Argument had better not have been seen already.
         if (pNamedParams[ixParam].val.type.tag != SERIALIZATION_TYPE_UNDEFINED)
         {
-            MAKE_WIDEPTR_FROMUTF8N(pWideStr, namedArg.szName, namedArg.cName)
-            IfFailGo(PostError(META_E_CA_REPEATED_ARG, wcslen(pWideStr), pWideStr));
+            IfFailGo(PostError(META_E_CA_REPEATED_ARG, namedArg.cName, namedArg.szName));
         }
 
         IfFailGo(ParseKnownCaValue(ca, &pNamedParams[ixParam].val, &namedArg.type));
@@ -1114,7 +1112,9 @@ HRESULT RegMeta::_HandleKnownCustomAttribute(    // S_OK or error.
         if (qNamedArgs[DI_CallingConvention].val.type.tag)
         {   // Calling convention makes no sense on a field.
             if (TypeFromToken(tkObj) == mdtFieldDef)
+            {
                 IfFailGo(PostError(META_E_CA_INVALID_ARG_FOR_TYPE, qNamedArgs[DI_CallingConvention].szName));
+            }
             // Turn off all callconv bits, then turn on specified value.
             dwFlags &= ~pmCallConvMask;
             switch (qNamedArgs[DI_CallingConvention].val.u4)
@@ -1157,7 +1157,9 @@ HRESULT RegMeta::_HandleKnownCustomAttribute(    // S_OK or error.
         if (qNamedArgs[DI_SetLastError].val.type.tag)
         {   // SetLastError makes no sense on a field.
             if (TypeFromToken(tkObj) == mdtFieldDef)
+            {
                 IfFailGo(PostError(META_E_CA_INVALID_ARG_FOR_TYPE, qNamedArgs[DI_SetLastError].szName));
+            }
             if (qNamedArgs[DI_SetLastError].val.u1)
                 dwFlags |= pmSupportsLastError;
         }
