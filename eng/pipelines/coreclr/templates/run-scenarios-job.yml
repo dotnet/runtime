@@ -72,7 +72,7 @@ jobs:
       - HelixPreCommandMusl: 'export ORIGPYPATH=$PYTHONPATH;sudo apk add py3-virtualenv;python3 -m venv $HELIX_WORKITEM_PAYLOAD/.venv;source $HELIX_WORKITEM_PAYLOAD/.venv/bin/activate;export PYTHONPATH=;python3 -m pip install -U pip;pip3 install --user azure.storage.blob==12.0.0 --force-reinstall;pip3 install --user azure.storage.queue==12.0.0 --force-reinstall;export PERFLAB_UPLOAD_TOKEN="$(PerfCommandUploadTokenLinux)"'
       - HelixPostCommandsMusl: 'export PYTHONPATH=$ORIGPYPATH'
     - ${{ if eq(parameters.osGroup, 'OSX') }}:
-      - HelixPreCommandOSX: 'export ORIGPYPATH=$PYTHONPATH;export CRYPTOGRAPHY_ALLOW_OPENSSL_102=true;python3 -m venv $HELIX_WORKITEM_PAYLOAD/.venv;source $HELIX_WORKITEM_PAYLOAD/.venv/bin/activate;export PYTHONPATH=;python3 -m pip install -U pip;pip3 install azure.storage.blob==12.0.0 --force-reinstall;pip3 install azure.storage.queue==12.0.0 --force-reinstall;export PERFLAB_UPLOAD_TOKEN="$(PerfCommandUploadTokenLinux)"'
+      - HelixPreCommandOSX: 'export ORIGPYPATH=$PYTHONPATH;export CRYPTOGRAPHY_ALLOW_OPENSSL_102=true;python3 -m venv $HELIX_WORKITEM_PAYLOAD/.venv;source $HELIX_WORKITEM_PAYLOAD/.venv/bin/activate;export PYTHONPATH=;python3 -m pip install -U pip;pip3 install azure.storage.blob==12.0.0 --force-reinstall;pip3 install azure.storage.queue==12.0.0 --force-reinstall;export PERFLAB_UPLOAD_TOKEN="$(PerfCommandUploadTokenLinux); export PYTHONPATH=$ORIGPYPATH"'
       - HelixPostCommandOSX: 'export PYTHONPATH=$ORIGPYPATH'
 
     # extra private job settings
