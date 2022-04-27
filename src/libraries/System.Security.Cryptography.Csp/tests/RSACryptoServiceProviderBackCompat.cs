@@ -160,7 +160,7 @@ namespace System.Security.Cryptography.Csp.Tests
             yield return new object[] { "MD5", typeof(MD5) };
             yield return new object[] { "MD5", "1.2.840.113549.2.5" };
 
-            if (RSACryptoServiceProviderTests.IsSha1Supported)
+            if (RSAFactory.SupportsSha1Signatures)
             {
                 yield return new object[] { "SHA1", SHA1.Create() };
                 yield return new object[] { "SHA1", typeof(SHA1) };

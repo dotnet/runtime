@@ -9,8 +9,6 @@ namespace System.Security.Cryptography.Csp.Tests
 {
     public class RSACryptoServiceProviderTests
     {
-        public static bool IsSha1Supported { get; } = SignatureSupport.CanProduceSha1Signature(new RSACryptoServiceProvider());
-
         const int PROV_RSA_FULL = 1;
         const int PROV_RSA_AES = 24;
 
@@ -308,7 +306,7 @@ namespace System.Security.Cryptography.Csp.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsSha1Supported))]
+        [ConditionalFact(typeof(RSAFactory), nameof(RSAFactory.SupportsSha1Signatures))]
         public static void SignHash_DefaultAlgorithm_Success()
         {
             byte[] hashVal = SHA1.HashData(TestData.HelloBytes);
@@ -320,7 +318,7 @@ namespace System.Security.Cryptography.Csp.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsSha1Supported))]
+        [ConditionalFact(typeof(RSAFactory), nameof(RSAFactory.SupportsSha1Signatures))]
         public static void VerifyHash_DefaultAlgorithm_Success()
         {
             byte[] hashVal = SHA1.HashData(TestData.HelloBytes);
