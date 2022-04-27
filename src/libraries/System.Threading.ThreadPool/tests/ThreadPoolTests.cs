@@ -1034,49 +1034,31 @@ namespace System.Threading.ThreadPools.Tests
                 const int FourKibibytes = OneKibibyte << 2;
                 const int FileSize = 1024;
 
-                string destinationFilePath = null;
-                try
+                using var destinationTempFile = TempFile.Create(CreateArray(FileSize));
+
+                static byte[] CreateArray(int count)
                 {
-                    destinationFilePath = CreateFileWithRandomContent(FileSize);
-
-                    static string CreateFileWithRandomContent(int fileSize)
-                    {
-                        string filePath = Path.GetTempFileName();
-                        File.WriteAllBytes(filePath, CreateArray(fileSize));
-                        return filePath;
-                    }
-
-                    static byte[] CreateArray(int count)
-                    {
-                        var result = new byte[count];
-                        const int Seed = 12345;
-                        var random = new Random(Seed);
-                        random.NextBytes(result);
-                        return result;
-                    }
-
-                    for (int j = 0; j < 100; j++)
-                    {
-                        using var fileStream =
-                            new FileStream(
-                                destinationFilePath,
-                                FileMode.Create,
-                                FileAccess.Write,
-                                FileShare.Read,
-                                FourKibibytes,
-                                FileOptions.None);
-                        for (int i = 0; i < FileSize; i++)
-                        {
-                            fileStream.WriteByte(default);
-                            await fileStream.FlushAsync();
-                        }
-                    }
+                    var result = new byte[count];
+                    const int Seed = 12345;
+                    var random = new Random(Seed);
+                    random.NextBytes(result);
+                    return result;
                 }
-                finally
+
+                for (int j = 0; j < 100; j++)
                 {
-                    if (!string.IsNullOrEmpty(destinationFilePath) && File.Exists(destinationFilePath))
+                    using var fileStream =
+                        new FileStream(
+                            destinationTempFile.Path,
+                            FileMode.Create,
+                            FileAccess.Write,
+                            FileShare.Read,
+                            FourKibibytes,
+                            FileOptions.None);
+                    for (int i = 0; i < FileSize; i++)
                     {
-                        File.Delete(destinationFilePath);
+                        fileStream.WriteByte(default);
+                        await fileStream.FlushAsync();
                     }
                 }
             }).Dispose();
