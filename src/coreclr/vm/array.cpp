@@ -457,7 +457,7 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
       InterfaceInfo_t *pIntInfo = (InterfaceInfo_t *) (pMTHead + imapOffset + index * sizeof(InterfaceInfo_t));
       pIntInfo->SetMethodTable((pParentClass->GetInterfaceMap() + index)->GetMethodTable());
     }
-    pMT->SetInterfaceMap(pParentClass->GetNumInterfaces(), (InterfaceInfo_t *)(pMTHead + imapOffset));
+    pMT->SetInterfaceMap((WORD)pParentClass->GetNumInterfaces(), (InterfaceInfo_t *)(pMTHead + imapOffset));
 
     // Copy down flags for these interfaces as well. This is simplified a bit since we know that System.Array
     // only has a few interfaces and the flags will fit inline into the MethodTable's optional members.

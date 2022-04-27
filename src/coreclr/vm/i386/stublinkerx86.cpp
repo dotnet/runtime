@@ -800,7 +800,7 @@ class X64LeaRIP : public InstructionFormat
 
             pOutBufferRW[0] = rex;
             pOutBufferRW[1] = 0x8D;
-            pOutBufferRW[2] = 0x05 | (reg << 3);
+            pOutBufferRW[2] = (BYTE)(0x05 | (reg << 3));
             // only support absolute pushimm32 of the label address. The fixedUpReference is
             // the offset to the label from the current point, so add to get address
             *((__int32*)(3+pOutBufferRW)) = (__int32)(fixedUpReference);

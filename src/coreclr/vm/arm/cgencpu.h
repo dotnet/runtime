@@ -99,10 +99,10 @@ EXTERN_C void setFPReturn(int fpSize, INT64 retVal);
 // Parameter size
 //**********************************************************************
 
-inline unsigned StackElemSize(unsigned parmSize, bool isValueType = false /* unused */, bool isFloatHfa = false /* unused */)
+inline uint16_t StackElemSize(unsigned parmSize, bool isValueType = false /* unused */, bool isFloatHfa = false /* unused */)
 {
     const unsigned stackSlotSize = 4;
-    return ALIGN_UP(parmSize, stackSlotSize);
+    return (uint16_t)ALIGN_UP(parmSize, stackSlotSize);
 }
 
 //**********************************************************************
@@ -1063,7 +1063,7 @@ struct ThisPtrRetBufPrecode {
         }
         CONTRACTL_END;
 
-        ExecutableWriterHolder<ThisPtrRetBufPrecode> precodeWriterHolder(this, sizeof(ThisPtrRetBufPrecode)); 
+        ExecutableWriterHolder<ThisPtrRetBufPrecode> precodeWriterHolder(this, sizeof(ThisPtrRetBufPrecode));
         return FastInterlockCompareExchange((LONG*)&precodeWriterHolder.GetRW()->m_pTarget, (LONG)target, (LONG)expected) == (LONG)expected;
     }
 #endif // !DACCESS_COMPILE

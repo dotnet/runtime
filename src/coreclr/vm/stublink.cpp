@@ -1213,11 +1213,11 @@ VOID StubLinker::UnwindAllocStack (SHORT FrameSizeIncrement)
     else
     {
         USHORT FrameOffset = (USHORT)FrameSizeIncrement;
-        BOOL fNeedExtraSlot = ((ULONG)FrameOffset != (ULONG)FrameSizeIncrement);
+        bool fNeedExtraSlot = ((ULONG)FrameOffset != (ULONG)FrameSizeIncrement);
 
-        UNWIND_CODE *pUnwindCode = AllocUnwindInfo(UWOP_ALLOC_LARGE, fNeedExtraSlot);
+        UNWIND_CODE *pUnwindCode = AllocUnwindInfo(UWOP_ALLOC_LARGE, fNeedExtraSlot ? 1 : 0);
 
-        pUnwindCode->OpInfo = fNeedExtraSlot;
+        pUnwindCode->OpInfo = fNeedExtraSlot ? 1 : 0;
 
         pUnwindCode[1].FrameOffset = FrameOffset;
 

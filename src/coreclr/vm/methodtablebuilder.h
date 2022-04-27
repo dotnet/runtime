@@ -2073,7 +2073,7 @@ private:
 
     // --------------------------------------------------------------------------------------------
     // Used for analyzing overlapped fields defined by explicit layout types.
-    enum bmtFieldLayoutTag {empty, nonoref, oref, byref};
+    enum bmtFieldLayoutTag : BYTE {empty, nonoref, oref, byref};
 
     // --------------------------------------------------------------------------------------------
     // used for calculating pointer series for tdexplicit

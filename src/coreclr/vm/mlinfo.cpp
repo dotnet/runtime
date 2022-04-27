@@ -2968,7 +2968,7 @@ void MarshalInfo::SetupArgumentSizes()
     }
     CONTRACTL_END;
 
-    const unsigned targetPointerSize = TARGET_POINTER_SIZE;
+    const UINT16 targetPointerSize = TARGET_POINTER_SIZE;
     const bool pointerIsValueType = false;
     const bool pointerIsFloatHfa = false;
     _ASSERTE(targetPointerSize == StackElemSize(TARGET_POINTER_SIZE, pointerIsValueType, pointerIsFloatHfa));

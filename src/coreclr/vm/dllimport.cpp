@@ -2925,7 +2925,7 @@ void PInvokeStaticSigInfo::InitCallConv(_In_ CorInfoCallConvExtension callConv, 
     if (callConv == CallConvWinApiSentinel)
     {
         CallConvBuilder builder;
-        UINT errorResID = 0;
+        WORD errorResID = 0;
 
         // System.Runtime.InteropServices.UnmanagedCallConvAttribute
         HRESULT hr = CallConv::TryGetCallingConventionFromUnmanagedCallConv(pMD, &builder, &errorResID);
@@ -2953,7 +2953,7 @@ void PInvokeStaticSigInfo::InitCallConv(CorInfoCallConvExtension callConv, BOOL 
     STANDARD_VM_CONTRACT;
 
     CallConvBuilder builder;
-    UINT errorResID;
+    WORD errorResID;
     HRESULT hr = CallConv::TryGetUnmanagedCallingConventionFromModOpt(GetScopeHandle(m_pModule), m_sig.GetRawSig(), m_sig.GetRawSigLen(), &builder, &errorResID);
     if (FAILED(hr))
     {
@@ -3147,7 +3147,7 @@ void NDirect::GetCallingConvention_IgnoreErrors(_In_ MethodDesc* pMD, _Out_opt_ 
     Module* module = pMD->GetModule();
 
     CallConvBuilder builder;
-    UINT errorResID;
+    WORD errorResID;
 
     // modopts
     (void)CallConv::TryGetUnmanagedCallingConventionFromModOpt(GetScopeHandle(module), sig.GetRawSig(), sig.GetRawSigLen(), &builder, &errorResID);
@@ -6007,7 +6007,7 @@ PCODE GetILStubForCalli(VASigCookie *pVASigCookie, MethodDesc *pMD)
         else
         {
             CallConvBuilder builder;
-            UINT errorResID;
+            WORD errorResID;
             HRESULT hr = CallConv::TryGetUnmanagedCallingConventionFromModOpt(GetScopeHandle(pVASigCookie->pModule), signature.GetRawSig(), signature.GetRawSigLen(), &builder, &errorResID);
             if (FAILED(hr))
                 COMPlusThrowHR(hr, errorResID);

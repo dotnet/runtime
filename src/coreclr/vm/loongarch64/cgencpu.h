@@ -65,10 +65,10 @@ extern PCODE GetPreStubEntryPoint();
 // Parameter size
 //**********************************************************************
 
-inline unsigned StackElemSize(unsigned parmSize, bool isValueType, bool isFloatHfa)
+inline uint16_t StackElemSize(unsigned parmSize, bool isValueType, bool isFloatHfa)
 {
     const unsigned stackSlotSize = 8;
-    return ALIGN_UP(parmSize, stackSlotSize);
+    return (uint16_t)ALIGN_UP(parmSize, stackSlotSize);
 }
 
 //

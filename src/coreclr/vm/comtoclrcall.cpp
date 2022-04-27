@@ -775,7 +775,9 @@ PCODE ComCallMethodDesc::CreateCOMToCLRStub(DWORD dwStubFlags, MethodDesc **ppSt
     }
     else
     {
-        comCallMDWriterHolder.GetRW()->m_StackBytes = pStubMD->SizeOfArgStack();
+        UINT size = pStubMD->SizeOfArgStack();
+        _ASSERTE(size <= USHRT_MAX);
+        comCallMDWriterHolder.GetRW()->m_StackBytes = (UINT16)size;
     }
 #endif // TARGET_X86
 

@@ -141,10 +141,10 @@ void     R8ToFPSpill(void* pSpillSlot, SIZE_T  srcDoubleAsSIZE_T)
 // Parameter size
 //**********************************************************************
 
-inline unsigned StackElemSize(unsigned parmSize, bool isValueType = false /* unused */, bool isFloatHfa = false /* unused */)
+inline uint16_t StackElemSize(unsigned parmSize, bool isValueType = false /* unused */, bool isFloatHfa = false /* unused */)
 {
     const unsigned stackSlotSize = 8;
-    return ALIGN_UP(parmSize, stackSlotSize);
+    return (uint16_t)ALIGN_UP(parmSize, stackSlotSize);
 }
 
 //**********************************************************************

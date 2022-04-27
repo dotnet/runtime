@@ -320,7 +320,7 @@ HRESULT CallConv::TryGetUnmanagedCallingConventionFromModOpt(
     _In_ PCCOR_SIGNATURE pSig,
     _In_ ULONG cSig,
     _Inout_ CallConvBuilder* builder,
-    _Out_ UINT *errorResID)
+    _Out_ WORD *errorResID)
 {
     CONTRACTL
     {
@@ -413,7 +413,7 @@ namespace
 HRESULT CallConv::TryGetCallingConventionFromUnmanagedCallConv(
     _In_ MethodDesc* pMD,
     _Inout_ CallConvBuilder* builder,
-    _Out_opt_ UINT* errorResID)
+    _Out_opt_ WORD* errorResID)
 {
     CONTRACTL
     {
