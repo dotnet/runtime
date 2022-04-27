@@ -1281,7 +1281,7 @@ BOOL CLRFreeLibrary(HMODULE hModule)
 GPTR_IMPL(JITNotification, g_pNotificationTable);
 GVAL_IMPL(ULONG32, g_dacNotificationFlags);
 
-BOOL IsValidMethodCodeNotification(USHORT Notification)
+BOOL IsValidMethodCodeNotification(ULONG32 Notification)
 {
     // If any bit is on other than that given by a valid combination of flags, no good.
     if (Notification & ~(

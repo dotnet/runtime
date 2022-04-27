@@ -4766,14 +4766,11 @@ ClrDataAccess::SetAllTypeNotifications(
 HRESULT STDMETHODCALLTYPE
 ClrDataAccess::SetAllCodeNotifications(
     /* [in] */ IXCLRDataModule* mod,
-    /* [in] */ ULONG32 flagsRaw)
+    /* [in] */ ULONG32 flags)
 {
     HRESULT status;
 
     DAC_ENTER();
-
-    _ASSERTE(flagsRaw <= USHRT_MAX);
-    USHORT flags = (USHORT)flagsRaw;
 
     EX_TRY
     {
@@ -4797,7 +4794,7 @@ ClrDataAccess::SetAllCodeNotifications(
                     PTR_HOST_TO_TADDR(((ClrDataModule*)mod)->GetModule()) :
                     NULL;
 
-                if (jn.SetAllNotifications(modulePtr, flags, &changedTable))
+                if (jn.SetAllNotifications(modulePtr, (USHORT)flags, &changedTable))
                 {
                     if (!changedTable ||
                         (changedTable && jn.UpdateOutOfProcTable()))
