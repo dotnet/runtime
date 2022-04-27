@@ -510,9 +510,8 @@ namespace System.Net.Security
                     }
                     break;
                 case TlsContentType.Handshake:
-                    byte handshakeType = _framing == Framing.SinceSSL3 ?
-                                            _handshakeBuffer.ActiveReadOnlySpan[HandshakeTypeOffsetTls] :
-                                            _handshakeBuffer.ActiveReadOnlySpan[HandshakeTypeOffsetSsl2];
+                    byte handshakeType = _handshakeBuffer.ActiveReadOnlySpan[_framing == Framing.SinceSSL3 ? HandshakeTypeOffsetTls : HandshakeTypeOffsetSsl2];
+
                     if (!_isRenego &&
                         (_sslAuthenticationOptions!.ServerCertSelectionDelegate != null || _sslAuthenticationOptions!.ServerOptionDelegate != null) &&
                         (handshakeType == (byte)TlsHandshakeType.ClientHello))

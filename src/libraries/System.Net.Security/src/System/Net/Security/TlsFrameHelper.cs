@@ -173,57 +173,41 @@ namespace System.Net.Security
 
         public static bool TryGetFrameHeader(ReadOnlySpan<byte> frame, ref TlsFrameHeader header)
         {
-            bool result = frame.Length > 4;
-
-            if (frame.Length >= 1)
+            header.Type = (TlsContentType)(frame.Length >= 1 ? frame[0] : 0);
+            if (frame.Length < TlsFrameHelper.HeaderSize)
             {
-                header.Type = (TlsContentType)frame[0];
-
-                if (frame.Length > 4)
-                {
-                    // SSLv3, TLS or later
-                    if (frame[1] == 3)
-                    {
-                        header.Length = ((frame[3] << 8) | frame[4]);
-                        header.Version = TlsMinorVersionToProtocol(frame[2]);
-                        return true;
-                    }
-                    else if (frame[2] == (byte)TlsHandshakeType.ClientHello &&
-                       frame[3] == 3) // SSL3 or above
-                    {
-                        int length;
-                        if ((frame[0] & 0x80) != 0)
-                        {
-                            // Two bytes
-                            length = (((frame[0] & 0x7f) << 8) | frame[1]) + 2;
-                        }
-                        else
-                        {
-                            // Three bytes
-                            length = (((frame[0] & 0x3f) << 8) | frame[1]) + 3;
-                        }
-
-                        // max frame for SSLv2 is 32767.
-                        // However, we expect something reasonable for initial HELLO
-                        // We don't have enough logic to verify full validity,
-                        // the limits bellow are queses.
-                        if (length > 20 && length < 1000)
-                        {
-#pragma warning disable CS0618 // Ssl2 and Ssl3 are obsolete
-                            header.Version = SslProtocols.Ssl2;
-#pragma warning restore CS0618
-                            header.Length = length;
-                            header.Type = TlsContentType.Handshake;
-                            return true;
-                        }
-                    }
-                }
+                header.Length = -1;
+                header.Version = SslProtocols.None;
+                return false;
             }
 
-            header.Length = -1;
-            header.Version = SslProtocols.None;
+            // SSLv3, TLS or later
+            if (frame[1] == ProtocolVersionTlsMajorValue)
+            {
+                header.Length = ((frame[3] << 8) | frame[4]);
+                header.Version = TlsMinorVersionToProtocol(frame[2]);
+            }
+            // Sslv2 or Unified
+            else if (frame[2] == (byte)TlsHandshakeType.ClientHello &&
+                     frame[3] == ProtocolVersionTlsMajorValue) // SSL3 or above
+            {
+                header.Length = (frame[0] & 0x80) != 0 ?
+                                    (((frame[0] & 0x7f) << 8) | frame[1]) + 2 : // two bytes
+                                    (((frame[0] & 0x3f) << 8) | frame[1]) + 3;  // three bytes
+#pragma warning disable CS0618 // Ssl2 and Ssl3 are obsolete
+                header.Version = SslProtocols.Ssl2;
+#pragma warning restore CS0618
+                header.Type = TlsContentType.Handshake;
+            }
+            else
+            {
+                // neither looks like TLS nor Ssl2 Hello
+                header.Length = -1;
+                header.Version = SslProtocols.None;
+                return false;
+            }
 
-                return result;
+            return true;
         }
 
         // Returns frame size e.g. header + content
