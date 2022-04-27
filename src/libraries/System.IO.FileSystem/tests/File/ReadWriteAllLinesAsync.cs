@@ -202,9 +202,19 @@ namespace System.IO.Tests
 
     public class File_ReadLinesAsync : File_ReadWriteAllLines_EnumerableAsync
     {
-        protected override Task<string[]> ReadAsync(string path)
+        protected override Task<string[]> ReadAsync(string path) => ReadAsync(path, default, default);
+
+        protected virtual IAsyncEnumerable<string> ReadLinesAsync(string path, CancellationToken ct = default) => File.ReadLinesAsync(path, ct);
+
+        private async Task<string[]> ReadAsync(string path, CancellationToken enumerableCt, CancellationToken enumeratorCt)
         {
-            return ReadAsync(path, default, default);
+            var list = new List<string>();
+            await foreach (string item in ReadLinesAsync(path, enumerableCt).WithCancellation(enumeratorCt))
+            {
+                list.Add(item);
+            }
+
+            return list.ToArray();
         }
 
         [Fact]
@@ -213,7 +223,7 @@ namespace System.IO.Tests
             string path = GetTestFilePath();
             await WriteAsync(path, new[] { "line1", "line2", "line3" });
 
-            IAsyncEnumerable<string> readLines = File.ReadLinesAsync(path);
+            IAsyncEnumerable<string> readLines = ReadLinesAsync(path);
             await using (IAsyncEnumerator<string> e1 = readLines.GetAsyncEnumerator())
             await using (IAsyncEnumerator<string> e2 = readLines.GetAsyncEnumerator())
             {
@@ -231,71 +241,28 @@ namespace System.IO.Tests
         public override async Task TaskAlreadyCanceledAsync()
         {
             string path = GetTestFilePath();
-            File.Create(path).Dispose();
+            await File.Create(path).DisposeAsync();
             var ct = new CancellationToken(true);
             await Assert.ThrowsAsync<TaskCanceledException>(() => ReadAsync(path, ct, default));
             await Assert.ThrowsAsync<TaskCanceledException>(() => ReadAsync(path, default, ct));
         }
 
         [Fact]
-        public virtual void InvalidArgumentsThrowsBeforeGetAsyncEnumerator()
+        public void InvalidArgumentsThrowsBeforeGetAsyncEnumerator()
         {
-            Assert.Throws<ArgumentNullException>("path", () => File.ReadLinesAsync(null));
-            Assert.Throws<ArgumentException>("path", () => File.ReadLinesAsync(string.Empty));
-        }
-
-        protected virtual async Task<string[]> ReadAsync(string path, CancellationToken enumerableCt, CancellationToken enumeratorCt)
-        {
-            var list = new List<string>();
-            await foreach (string item in File.ReadLinesAsync(path, enumerableCt).WithCancellation(enumeratorCt))
-            {
-                list.Add(item);
-            }
-
-            return list.ToArray();
+            Assert.Throws<ArgumentNullException>("path", () => ReadLinesAsync(null));
+            Assert.Throws<ArgumentException>("path", () => ReadLinesAsync(string.Empty));
         }
     }
 
     public class File_ReadLines_EncodedAsync : File_ReadLinesAsync
     {
-        [Fact]
-        public override void InvalidArgumentsThrowsBeforeGetAsyncEnumerator()
-        {
-            string path = GetTestFilePath();
-            Assert.Throws<ArgumentNullException>(() => File.ReadLinesAsync(path, null));
-            Assert.Throws<ArgumentNullException>("path", () => File.ReadLinesAsync(null, new UTF8Encoding(false)));
-            Assert.Throws<ArgumentException>("path", () => File.ReadLinesAsync(string.Empty, new UTF8Encoding(false)));
-        }
+        protected override IAsyncEnumerable<string> ReadLinesAsync(string path, CancellationToken ct = default) => File.ReadLinesAsync(path, new UTF8Encoding(false), ct);
 
         [Fact]
-        public override async Task DisposingEnumeratorClosesFileAsync()
+        public void InvalidArgumentsThrownForNullEncoding()
         {
-            string path = GetTestFilePath();
-            await WriteAsync(path, new[] { "line1", "line2", "line3" });
-
-            IAsyncEnumerable<string> readLines = File.ReadLinesAsync(path, new UTF8Encoding(false));
-            await using (IAsyncEnumerator<string> e1 = readLines.GetAsyncEnumerator())
-            await using (IAsyncEnumerator<string> e2 = readLines.GetAsyncEnumerator())
-            {
-                Assert.Same(readLines, e1);
-                Assert.NotSame(e1, e2);
-
-                await e1.MoveNextAsync();
-            }
-
-            // File should be closed deterministically; this shouldn't throw.
-            await File.OpenWrite(path).DisposeAsync();
-        }
-
-        protected override async Task<string[]> ReadAsync(string path, CancellationToken enumerableCt, CancellationToken enumeratorCt)
-        {
-            var list = new List<string>();
-            await foreach (string item in File.ReadLinesAsync(path, new UTF8Encoding(false), enumerableCt).WithCancellation(enumeratorCt))
-            {
-                list.Add(item);
-            }
-
-            return list.ToArray();
+            Assert.Throws<ArgumentNullException>("encoding", () => File.ReadLinesAsync("path", null));
         }
     }
 }
