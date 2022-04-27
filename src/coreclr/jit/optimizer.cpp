@@ -6521,6 +6521,21 @@ void Compiler::optHoistLoopBlocks(unsigned loopNum, ArrayStack<BasicBlock*>* blo
             {
                 return false;
             }
+            else if (node->OperIs(GT_NULLCHECK))
+            {
+                GenTreeLclVar* lclVar;
+                if (node->AsUnOp()->gtGetOp1()->OperIs(GT_LCL_VAR))
+                {
+                    // If a null-check is for `this` object, it is safe to
+                    // hoist it out of the loop.
+                    //
+                    // TODO-CQ: Identify more scenarios where we can hoist
+                    // the null-checks
+                    lclVar = node->AsUnOp()->gtGetOp1()->AsLclVar();
+                    return lclVar->GetLclNum() == m_compiler->info.compThisArg;
+                }
+                return false;
+            }
 
             // Tree must be a suitable CSE candidate for us to be able to hoist it.
             return m_compiler->optIsCSEcandidate(node);
