@@ -860,6 +860,9 @@ public:
 #elif defined(TARGET_ARM64)
             Object** firstIntReg = (Object**)&this->GetContext()->X0;
             Object** lastIntReg  = (Object**)&this->GetContext()->X28;
+#elif defined(TARGET_LOONGARCH64)
+            Object** firstIntReg = (Object**)&this->GetContext()->Tp;
+            Object** lastIntReg  = (Object**)&this->GetContext()->S8;
 #else
             _ASSERTE(!"nyi for platform");
 #endif
@@ -1900,6 +1903,10 @@ protected:
     TADDR           m_fp;
     TADDR           m_ReturnAddress;
     TADDR           m_x8; // ret buff arg
+    ArgumentRegisters m_argumentRegisters;
+#elif defined (TARGET_LOONGARCH64)
+    TADDR           m_fp;
+    TADDR           m_ReturnAddress;
     ArgumentRegisters m_argumentRegisters;
 #else
     TADDR           m_ReturnAddress;  // return address into unmanaged code

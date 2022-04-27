@@ -241,6 +241,12 @@ namespace System.Text.Json.Serialization.Metadata
         }
 
 #if DEBUG
+        internal string GetPropertyDebugInfo(ReadOnlySpan<byte> unescapedPropertyName)
+        {
+            string propertyName = JsonHelpers.Utf8GetString(unescapedPropertyName);
+            return $"propertyName = {propertyName}; DebugInfo={GetDebugInfo()}";
+        }
+
         internal string GetDebugInfo()
         {
             ConverterStrategy strat = PropertyInfoForTypeInfo.ConverterStrategy;

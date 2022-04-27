@@ -26,8 +26,10 @@ namespace System.Security.Cryptography
             }
         }
 
-        public override void GetBytes(byte[] data!!)
+        public override void GetBytes(byte[] data)
         {
+            ArgumentNullException.ThrowIfNull(data);
+
             GetBytes(new Span<byte>(data));
         }
 
@@ -45,8 +47,10 @@ namespace System.Security.Cryptography
             }
         }
 
-        public override void GetNonZeroBytes(byte[] data!!)
+        public override void GetNonZeroBytes(byte[] data)
         {
+            ArgumentNullException.ThrowIfNull(data);
+
             GetNonZeroBytes(new Span<byte>(data));
         }
 

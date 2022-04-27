@@ -342,17 +342,21 @@ namespace System.Collections
         }
 
         [Obsolete("This constructor has been deprecated. Use Hashtable(IDictionary, float, IEqualityComparer) instead.")]
-        public Hashtable(IDictionary d!!, float loadFactor, IHashCodeProvider? hcp, IComparer? comparer)
-            : this(d.Count, loadFactor, hcp, comparer)
+        public Hashtable(IDictionary d, float loadFactor, IHashCodeProvider? hcp, IComparer? comparer)
+            : this(d?.Count ?? 0, loadFactor, hcp, comparer)
         {
+            ArgumentNullException.ThrowIfNull(d);
+
             IDictionaryEnumerator e = d.GetEnumerator();
             while (e.MoveNext())
                 Add(e.Key, e.Value);
         }
 
-        public Hashtable(IDictionary d!!, float loadFactor, IEqualityComparer? equalityComparer)
-            : this(d.Count, loadFactor, equalityComparer)
+        public Hashtable(IDictionary d, float loadFactor, IEqualityComparer? equalityComparer)
+            : this(d?.Count ?? 0, loadFactor, equalityComparer)
         {
+            ArgumentNullException.ThrowIfNull(d);
+
             IDictionaryEnumerator e = d.GetEnumerator();
             while (e.MoveNext())
                 Add(e.Key, e.Value);
@@ -466,8 +470,10 @@ namespace System.Collections
         // Checks if this hashtable contains an entry with the given key.  This is
         // an O(1) operation.
         //
-        public virtual bool ContainsKey(object key!!)
+        public virtual bool ContainsKey(object key)
         {
+            ArgumentNullException.ThrowIfNull(key);
+
             // Take a snapshot of buckets, in case another thread resizes table
             Bucket[] lbuckets = _buckets;
             uint hashcode = InitHash(key, lbuckets.Length, out uint seed, out uint incr);
@@ -559,8 +565,10 @@ namespace System.Collections
 
         // Copies the values in this hash table to an array at
         // a given index.  Note that this only copies values, and not keys.
-        public virtual void CopyTo(Array array!!, int arrayIndex)
+        public virtual void CopyTo(Array array, int arrayIndex)
         {
+            ArgumentNullException.ThrowIfNull(array);
+
             if (array.Rank != 1)
                 throw new ArgumentException(SR.Arg_RankMultiDimNotSupported, nameof(array));
             if (arrayIndex < 0)
@@ -820,8 +828,10 @@ namespace System.Collections
         // Inserts an entry into this hashtable. This method is called from the Set
         // and Add methods. If the add parameter is true and the given key already
         // exists in the hashtable, an exception is thrown.
-        private void Insert(object key!!, object? nvalue, bool add)
+        private void Insert(object key, object? nvalue, bool add)
         {
+            ArgumentNullException.ThrowIfNull(key);
+
             if (_count >= _loadsize)
             {
                 expand();
@@ -956,8 +966,10 @@ namespace System.Collections
         // key exists in the hashtable, it is removed. An ArgumentException is
         // thrown if the key is null.
         //
-        public virtual void Remove(object key!!)
+        public virtual void Remove(object key)
         {
+            ArgumentNullException.ThrowIfNull(key);
+
             Debug.Assert(!_isWriterInProgress, "Race condition detected in usages of Hashtable - multiple threads appear to be writing to a Hashtable instance simultaneously!  Don't do that - use Hashtable.Synchronized.");
 
             // Assuming only one concurrent writer, write directly into buckets.
@@ -1002,13 +1014,17 @@ namespace System.Collections
 
         // Returns a thread-safe wrapper for a Hashtable.
         //
-        public static Hashtable Synchronized(Hashtable table!!)
+        public static Hashtable Synchronized(Hashtable table)
         {
+            ArgumentNullException.ThrowIfNull(table);
+
             return new SyncHashtable(table);
         }
 
-        public virtual void GetObjectData(SerializationInfo info!!, StreamingContext context)
+        public virtual void GetObjectData(SerializationInfo info, StreamingContext context)
         {
+            ArgumentNullException.ThrowIfNull(info);
+
             // This is imperfect - it only works well if all other writes are
             // also using our synchronized wrapper.  But it's still a good idea.
             lock (SyncRoot)
@@ -1169,8 +1185,10 @@ namespace System.Collections
                 _hashtable = hashtable;
             }
 
-            public void CopyTo(Array array!!, int arrayIndex)
+            public void CopyTo(Array array, int arrayIndex)
             {
+                ArgumentNullException.ThrowIfNull(array);
+
                 if (array.Rank != 1)
                     throw new ArgumentException(SR.Arg_RankMultiDimNotSupported, nameof(array));
                 if (arrayIndex < 0)
@@ -1203,8 +1221,10 @@ namespace System.Collections
                 _hashtable = hashtable;
             }
 
-            public void CopyTo(Array array!!, int arrayIndex)
+            public void CopyTo(Array array, int arrayIndex)
             {
+                ArgumentNullException.ThrowIfNull(array);
+
                 if (array.Rank != 1)
                     throw new ArgumentException(SR.Arg_RankMultiDimNotSupported, nameof(array));
                 if (arrayIndex < 0)
@@ -1289,8 +1309,10 @@ namespace System.Collections
                 return _table.Contains(key);
             }
 
-            public override bool ContainsKey(object key!!)
+            public override bool ContainsKey(object key)
             {
+                ArgumentNullException.ThrowIfNull(key);
+
                 return _table.ContainsKey(key);
             }
 
@@ -1481,8 +1503,10 @@ namespace System.Collections
         {
             private readonly Hashtable _hashtable;
 
-            public HashtableDebugView(Hashtable hashtable!!)
+            public HashtableDebugView(Hashtable hashtable)
             {
+                ArgumentNullException.ThrowIfNull(hashtable);
+
                 _hashtable = hashtable;
             }
 

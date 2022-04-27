@@ -332,8 +332,10 @@ namespace System.Xml
         // method will default to Indent=true for Html and Indent=false for Xml.
         internal TriState IndentInternal { get; set; }
         private bool IsQuerySpecific => CDataSectionElements.Count != 0 || _docTypePublic != null || _docTypeSystem != null || _standalone == XmlStandalone.Yes;
-        internal XmlWriter CreateWriter(string outputFileName!!)
+        internal XmlWriter CreateWriter(string outputFileName)
         {
+            ArgumentNullException.ThrowIfNull(outputFileName);
+
             // need to clone the settigns so that we can set CloseOutput to true to make sure the stream gets closed in the end
             XmlWriterSettings newSettings = this;
             if (!newSettings.CloseOutput)
@@ -358,8 +360,10 @@ namespace System.Xml
             }
         }
 
-        internal XmlWriter CreateWriter(Stream output!!)
+        internal XmlWriter CreateWriter(Stream output)
         {
+            ArgumentNullException.ThrowIfNull(output);
+
             XmlWriter writer;
 
             // create raw writer
@@ -431,8 +435,10 @@ namespace System.Xml
             return writer;
         }
 
-        internal XmlWriter CreateWriter(TextWriter output!!)
+        internal XmlWriter CreateWriter(TextWriter output)
         {
+            ArgumentNullException.ThrowIfNull(output);
+
             XmlWriter writer;
 
             // create raw writer
@@ -475,8 +481,10 @@ namespace System.Xml
             return writer;
         }
 
-        internal XmlWriter CreateWriter(XmlWriter output!!)
+        internal XmlWriter CreateWriter(XmlWriter output)
         {
+            ArgumentNullException.ThrowIfNull(output);
+
             return AddConformanceWrapper(output);
         }
 

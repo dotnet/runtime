@@ -9553,3 +9553,37 @@ void CodeGen::genCodeForBitCast(GenTreeOp* treeNode)
     }
     genProduceReg(treeNode);
 }
+
+//----------------------------------------------------------------------
+// genCanOmitNormalizationForBswap16:
+//   Small peephole to check if a bswap16 node can omit normalization.
+//
+// Arguments:
+//   tree - The BSWAP16 node
+//
+// Remarks:
+//   BSWAP16 nodes are required to zero extend the upper 16 bits, but since the
+//   importer always inserts a normalizing cast (either sign or zero extending)
+//   we almost never need to actually do this.
+//
+bool CodeGen::genCanOmitNormalizationForBswap16(GenTree* tree)
+{
+    if (compiler->opts.OptimizationDisabled())
+    {
+        return false;
+    }
+
+    assert(tree->OperIs(GT_BSWAP16));
+    if ((tree->gtNext == nullptr) || !tree->gtNext->OperIs(GT_CAST))
+    {
+        return false;
+    }
+
+    GenTreeCast* cast = tree->gtNext->AsCast();
+    if (cast->gtOverflow() || (cast->CastOp() != tree))
+    {
+        return false;
+    }
+
+    return (cast->gtCastType == TYP_USHORT) || (cast->gtCastType == TYP_SHORT);
+}

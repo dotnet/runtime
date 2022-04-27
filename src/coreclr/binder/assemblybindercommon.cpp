@@ -714,7 +714,7 @@ namespace BINDER_SPACE
 
             hr = BindSatelliteResourceFromBundle(pRequestedAssemblyName, fileName, pBindResult);
 
-            if (pBindResult->HaveResult() || (FAILED(hr) && hr != FUSION_E_CONFIGURATION_ERROR))
+            if (pBindResult->HaveResult() || FAILED(hr))
             {
                 return hr;
             }
@@ -725,7 +725,7 @@ namespace BINDER_SPACE
                                                      pBindResult,
                                                      BinderTracing::PathSource::PlatformResourceRoots);
 
-            if (pBindResult->HaveResult() || (FAILED(hr) && hr != FUSION_E_CONFIGURATION_ERROR))
+            if (pBindResult->HaveResult() || FAILED(hr))
             {
                 return hr;
             }

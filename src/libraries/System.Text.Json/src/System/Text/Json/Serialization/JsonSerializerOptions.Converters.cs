@@ -111,8 +111,8 @@ namespace System.Text.Json
             Add(JsonMetadataServices.Int16Converter);
             Add(JsonMetadataServices.Int32Converter);
             Add(JsonMetadataServices.Int64Converter);
-            Add(new JsonElementConverter());
-            Add(new JsonDocumentConverter());
+            Add(JsonMetadataServices.JsonElementConverter);
+            Add(JsonMetadataServices.JsonDocumentConverter);
             Add(JsonMetadataServices.ObjectConverter);
             Add(JsonMetadataServices.SByteConverter);
             Add(JsonMetadataServices.SingleConverter);
@@ -212,8 +212,13 @@ namespace System.Text.Json
         /// for <paramref name="typeToConvert"/> or its serializable members.
         /// </exception>
         [RequiresUnreferencedCode("Getting a converter for a type may require reflection which depends on unreferenced code.")]
-        public JsonConverter GetConverter(Type typeToConvert!!)
+        public JsonConverter GetConverter(Type typeToConvert)
         {
+            if (typeToConvert is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(typeToConvert));
+            }
+
             RootReflectionSerializerDependencies();
             return GetConverterInternal(typeToConvert);
         }

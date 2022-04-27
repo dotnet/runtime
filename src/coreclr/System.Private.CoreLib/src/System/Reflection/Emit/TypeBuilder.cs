@@ -25,14 +25,19 @@ namespace System.Reflection.Emit
             private readonly byte[]? m_binaryAttribute;
             private readonly CustomAttributeBuilder? m_customBuilder;
 
-            public CustAttr(ConstructorInfo con!!, byte[] binaryAttribute!!)
+            public CustAttr(ConstructorInfo con, byte[] binaryAttribute)
             {
+                ArgumentNullException.ThrowIfNull(con);
+                ArgumentNullException.ThrowIfNull(binaryAttribute);
+
                 m_con = con;
                 m_binaryAttribute = binaryAttribute;
             }
 
-            public CustAttr(CustomAttributeBuilder customBuilder!!)
+            public CustAttr(CustomAttributeBuilder customBuilder)
             {
+                ArgumentNullException.ThrowIfNull(customBuilder);
+
                 m_customBuilder = customBuilder;
             }
 
@@ -1145,8 +1150,9 @@ namespace System.Reflection.Emit
             }
         }
 
-        public GenericTypeParameterBuilder[] DefineGenericParameters(params string[] names!!)
+        public GenericTypeParameterBuilder[] DefineGenericParameters(params string[] names)
         {
+            ArgumentNullException.ThrowIfNull(names);
             if (names.Length == 0)
                 throw new ArgumentException(SR.Arg_EmptyArray, nameof(names));
 
@@ -1193,8 +1199,11 @@ namespace System.Reflection.Emit
             }
         }
 
-        private void DefineMethodOverrideNoLock(MethodInfo methodInfoBody!!, MethodInfo methodInfoDeclaration!!)
+        private void DefineMethodOverrideNoLock(MethodInfo methodInfoBody, MethodInfo methodInfoDeclaration)
         {
+            ArgumentNullException.ThrowIfNull(methodInfoBody);
+            ArgumentNullException.ThrowIfNull(methodInfoDeclaration);
+
             ThrowIfCreated();
 
             if (!ReferenceEquals(methodInfoBody.DeclaringType, this))
@@ -1544,8 +1553,10 @@ namespace System.Reflection.Emit
             }
         }
 
-        private FieldBuilder DefineInitializedDataNoLock(string name, byte[] data!!, FieldAttributes attributes)
+        private FieldBuilder DefineInitializedDataNoLock(string name, byte[] data, FieldAttributes attributes)
         {
+            ArgumentNullException.ThrowIfNull(data);
+
             // This method will define an initialized Data in .sdata.
             // We will create a fake TypeDef to represent the data with size. This TypeDef
             // will be the signature for the Field.
@@ -1908,8 +1919,10 @@ namespace System.Reflection.Emit
             }
         }
 
-        public void AddInterfaceImplementation([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type interfaceType!!)
+        public void AddInterfaceImplementation([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type interfaceType)
         {
+            ArgumentNullException.ThrowIfNull(interfaceType);
+
             ThrowIfCreated();
 
             int tkInterface = m_module.GetTypeTokenInternal(interfaceType);
@@ -1930,14 +1943,18 @@ namespace System.Reflection.Emit
             }
         }
 
-        public void SetCustomAttribute(ConstructorInfo con!!, byte[] binaryAttribute!!)
+        public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
         {
-            DefineCustomAttribute(m_module, m_tdType, ((ModuleBuilder)m_module).GetConstructorToken(con),
-                binaryAttribute);
+            ArgumentNullException.ThrowIfNull(con);
+            ArgumentNullException.ThrowIfNull(binaryAttribute);
+
+            DefineCustomAttribute(m_module, m_tdType, ((ModuleBuilder)m_module).GetConstructorToken(con), binaryAttribute);
         }
 
-        public void SetCustomAttribute(CustomAttributeBuilder customBuilder!!)
+        public void SetCustomAttribute(CustomAttributeBuilder customBuilder)
         {
+            ArgumentNullException.ThrowIfNull(customBuilder);
+
             customBuilder.CreateCustomAttribute((ModuleBuilder)m_module, m_tdType);
         }
 

@@ -15,8 +15,12 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal.PathSegments
 
         private readonly StringComparison _comparisonType;
 
-        public WildcardPathSegment(string beginsWith!!, List<string> contains!!, string endsWith!!, StringComparison comparisonType)
+        public WildcardPathSegment(string beginsWith, List<string> contains, string endsWith, StringComparison comparisonType)
         {
+            ThrowHelper.ThrowIfNull(beginsWith);
+            ThrowHelper.ThrowIfNull(contains);
+            ThrowHelper.ThrowIfNull(endsWith);
+
             BeginsWith = beginsWith;
             Contains = contains;
             EndsWith = endsWith;

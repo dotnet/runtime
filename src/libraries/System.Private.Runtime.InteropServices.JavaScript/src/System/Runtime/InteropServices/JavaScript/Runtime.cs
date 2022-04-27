@@ -301,8 +301,10 @@ namespace System.Runtime.InteropServices.JavaScript
             return o.ToString() ?? string.Empty;
         }
 
-        public static double GetDateValueRef(ref object dtv!!)
+        public static double GetDateValueRef(ref object dtv)
         {
+            ArgumentNullException.ThrowIfNull(dtv);
+
             if (!(dtv is DateTime dt))
                 throw new InvalidCastException(SR.Format(SR.UnableCastObjectToType, dtv.GetType(), typeof(DateTime)));
             if (dt.Kind == DateTimeKind.Local)

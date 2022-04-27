@@ -58,7 +58,7 @@ namespace System.Text.RegularExpressions.Symbolic
             protected internal override void Scan(ReadOnlySpan<char> text)
             {
                 // Perform the match.
-                SymbolicMatch pos = _matcher.FindMatch(quick, text, runtextpos, _perThreadData);
+                SymbolicMatch pos = _matcher.FindMatch(_mode, text, runtextpos, _perThreadData);
 
                 // Transfer the result back to the RegexRunner state.
                 if (pos.Success)
@@ -66,7 +66,7 @@ namespace System.Text.RegularExpressions.Symbolic
                     // If we successfully matched, capture the match, and then jump the current position to the end of the match.
                     int start = pos.Index;
                     int end = start + pos.Length;
-                    if (!quick && pos.CaptureStarts != null)
+                    if (_mode == RegexRunnerMode.FullMatchRequired && pos.CaptureStarts != null)
                     {
                         Debug.Assert(pos.CaptureEnds != null);
                         Debug.Assert(pos.CaptureStarts.Length == pos.CaptureEnds.Length);
@@ -89,7 +89,7 @@ namespace System.Text.RegularExpressions.Symbolic
                 {
                     // If we failed to find a match in the entire remainder of the input, skip the current position to the end.
                     // The calling scan loop will then exit.
-                    runtextpos = runtextend;
+                    runtextpos = text.Length;
                 }
             }
         }

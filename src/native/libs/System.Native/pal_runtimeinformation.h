@@ -6,8 +6,6 @@
 #include "pal_compiler.h"
 #include "pal_types.h"
 
-PALEXPORT const char* SystemNative_GetUnixName(void);
-
 PALEXPORT char* SystemNative_GetUnixRelease(void);
 
 PALEXPORT int32_t SystemNative_GetUnixVersion(char* version, int* capacity);
