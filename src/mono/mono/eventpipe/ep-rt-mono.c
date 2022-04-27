@@ -2881,6 +2881,7 @@ typedef struct _BultTypeValue {
 	EventStructBulkTypeFixedSizedData fixed_sized_data;
 	uint32_t c_type_parameters;
 	intptr_t rg_type_parameters[32];
+	MonoType *rg_mono_type_parameters[32];
 	char *s_name;
 } BulkTypeValue;
 
@@ -3015,13 +3016,14 @@ get_typeid_for_type (MonoType *t) {
 // deal with type parameters.
 //
 // Arguments:
-//      type_id - Unique identifier for a mono type
+//      * mono_type - MonoType to be logged
+//      * type_id - Unique type identifier of mono_type
 //
 // Return Value:
 //      Index into array of where this type got batched. -1 if there was a failure.
 
 uint32_t
-ep_rt_mono_log_single_type (intptr_t type_id)
+ep_rt_mono_log_single_type (MonoType *mono_type, intptr_t type_id)
 {
     // If there's no room for another type, flush what we've got
 	if (m_n_bulk_type_value_count == k_max_count_type_values)
@@ -3031,12 +3033,12 @@ ep_rt_mono_log_single_type (intptr_t type_id)
 
 	BulkTypeValue *p_val = &m_rg_bulk_type_values[m_n_bulk_type_value_count];
 
-	MonoType *mono_type = (MonoType*)type_id;
 	MonoClass *klass = mono_class_from_mono_type_internal (mono_type);
 
     // Clear out p_val before filling it out (array elements can get reused if there
     // are enough types that we need to flush to multiple events).
 	memset(p_val->rg_type_parameters, 0, 32);
+	memset(p_val->rg_mono_type_parameters, 0, 32);
 	if (p_val->s_name)
 		p_val->s_name[0] = '\0';
 	p_val->c_type_parameters = 0;
@@ -3069,7 +3071,9 @@ ep_rt_mono_log_single_type (intptr_t type_id)
 		}
 
 		// mono arrays are always arrays of by value types
-		p_val->rg_type_parameters[p_val->c_type_parameters++] = get_typeid_for_type (m_class_get_byval_arg (mono_array_type->eklass));
+		p_val->rg_mono_type_parameters[p_val->c_type_parameters] = m_class_get_byval_arg (mono_array_type->eklass);
+		p_val->rg_type_parameters[p_val->c_type_parameters] = get_typeid_for_type (m_class_get_byval_arg (mono_array_type->eklass));
+		p_val->c_type_parameters++;
 	}
 	else if (mono_type->type == MONO_TYPE_GENERICINST)
 	{
@@ -3077,7 +3081,8 @@ ep_rt_mono_log_single_type (intptr_t type_id)
 		p_val->c_type_parameters = class_inst->type_argc;
 		for (int i = 0; i < class_inst->type_argc; i++)
 		{
-			p_val->rg_type_parameters[i] = get_typeid_for_type (class_inst->type_argv[i])
+			p_val->rg_mono_type_parameters[i] = class_inst->type_argv[i];
+			p_val->rg_type_parameters[i] = get_typeid_for_type (class_inst->type_argv[i]);
 		}
 	}
 
@@ -3106,7 +3111,7 @@ ep_rt_mono_log_single_type (intptr_t type_id)
         // batched into an event on its own, this recursive call will not try to
         // call itself again.
 		ep_rt_mono_fire_bulk_type_event();
-		return ep_rt_mono_log_single_type(type_id);
+		return ep_rt_mono_log_single_type(mono_type, type_id);
 	}
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_DIAGNOSTICS, "p_val added at index: %d\ntype_id: %d\nmodule_id: %d\ntype_name_id: %d\ntype: %d\nc_type_parameters: %d", m_n_bulk_type_value_count, p_val->fixed_sized_data.type_id, p_val->fixed_sized_data.module_id, p_val->fixed_sized_data.type_name_id, mono_type->type, p_val->c_type_parameters);
 	for (int i = 0; i < p_val->c_type_parameters; i++)
@@ -3126,14 +3131,15 @@ ep_rt_mono_log_single_type (intptr_t type_id)
 // ETW as needed.  This is called by ep_rt_mono_log_type_and_parameters_if_necessary.
 //
 // Arguments:
-//      * type_id - Unique type identifier to batch
+//      * mono_type - MonoType to be logged
+//      * type_id - Unique type identifier of mono_type to batch
 
 void
-ep_rt_mono_log_type_and_parameters (intptr_t type_id)
+ep_rt_mono_log_type_and_parameters (MonoType *mono_type, intptr_t type_id)
 {
     // Batch up this type.  This grabs useful info about the type, including any
     // type parameters it may have, and sticks it in m_rg_bulk_type_values
-	uint32_t i_bulk_type_event_data = ep_rt_mono_log_single_type (type_id);
+	uint32_t i_bulk_type_event_data = ep_rt_mono_log_single_type (mono_type, type_id);
 	if (i_bulk_type_event_data == -1)
 	{
         // There was a failure trying to log the type, so don't bother with its type
@@ -3149,11 +3155,15 @@ ep_rt_mono_log_type_and_parameters (intptr_t type_id)
     // and clear out m_rg_bulk_type_values, thus trashing p_val)
 	uint32_t c_params = p_val->c_type_parameters;
 	intptr_t rg_type_parameters[c_params];
+	MonoType *rg_mono_type_parameters[c_params];
 	for (uint32_t i = 0; i < c_params; i++)
+	{
 		rg_type_parameters[i] = p_val->rg_type_parameters[i];
+		rg_mono_type_parameters[i] = p_val->rg_mono_type_parameters[i];
+	}
 
 	for (uint32_t i = 0; i < c_params; i++)
-		ep_rt_mono_log_type_and_parameters_if_necessary (rg_type_parameters[i]);
+		ep_rt_mono_log_type_and_parameters_if_necessary (rg_mono_type_parameters[i], rg_type_parameters[i]);
 }
 
 //---------------------------------------------------------------------------------------
@@ -3162,15 +3172,16 @@ ep_rt_mono_log_type_and_parameters (intptr_t type_id)
 // (in this case a MonoType) and (recursively) its type parameters when present.
 //
 // Arguments:
-//      * type_id - Unique type identifier
+//      * mono_type - MonoType to be logged
+//      * type_id - Unique type identifier of mono_type
 
 // static
 void
-ep_rt_mono_log_type_and_parameters_if_necessary (intptr_t type_id)
+ep_rt_mono_log_type_and_parameters_if_necessary (MonoType *mono_type, intptr_t type_id)
 {
 	// TODO Log the type if necessary
 
-	ep_rt_mono_log_type_and_parameters (type_id);
+	ep_rt_mono_log_type_and_parameters (mono_type, type_id);
 }
 
 //---------------------------------------------------------------------------------------
@@ -3208,10 +3219,10 @@ ep_rt_mono_send_method_details_event (MonoMethod *method)
 	MonoClass *klass = method->klass;
 	if (klass)
 	{
-		MonoType *method_mono_type = mono_class_get_type (klass);
+		MonoType *method_mono_type = m_class_get_byval_arg (klass);
 		method_type_id = get_typeid_for_type (method_mono_type);
 
-		ep_rt_mono_log_type_and_parameters_if_necessary (method_type_id);
+		ep_rt_mono_log_type_and_parameters_if_necessary (method_mono_type, method_type_id);
 
 		loader_module_id = (uint64_t)mono_class_get_image (klass);
 	}
@@ -3223,9 +3234,9 @@ ep_rt_mono_send_method_details_event (MonoMethod *method)
 	intptr_t method_inst_parameters_type_ids[method_inst_parameter_types_count];
 	for (int i = 0; i < method_inst_parameter_types_count; i++)
 	{
-		method_inst_parameters_type_ids[i] = get_typeid_for_type (method_inst->type_argv[i])
+		method_inst_parameters_type_ids[i] = get_typeid_for_type (method_inst->type_argv[i]);
 
-		ep_rt_mono_log_type_and_parameters_if_necessary (method_inst_parameters_type_ids[i]);
+		ep_rt_mono_log_type_and_parameters_if_necessary (method_inst->type_argv[i], method_inst_parameters_type_ids[i]);
 	}
 
 	ep_rt_mono_fire_bulk_type_event();

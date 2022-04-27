@@ -2183,13 +2183,13 @@ void
 ep_rt_mono_fire_bulk_type_event (void);
 
 uint32_t
-ep_rt_mono_log_single_type (intptr_t type_id);
+ep_rt_mono_log_single_type (MonoType *mono_type, intptr_t type_id);
 
 void
-ep_rt_mono_log_type_and_parameters (intptr_t type_id);
+ep_rt_mono_log_type_and_parameters (MonoType *mono_type, intptr_t type_id);
 
 void
-ep_rt_mono_log_type_and_parameters_if_necessary (intptr_t type_id);
+ep_rt_mono_log_type_and_parameters_if_necessary (MonoType *mono_type, intptr_t type_id);
 
 void
 ep_rt_mono_send_method_details_events (MonoMethod *method);
