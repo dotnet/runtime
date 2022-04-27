@@ -1419,7 +1419,6 @@ GenTree* CallArgs::MakeTmpArgNode(Compiler* comp, CallArg* arg)
 
     if (varTypeIsStruct(type))
     {
-
 #if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_ARM) || defined(TARGET_LOONGARCH64)
 
         // Can this type be passed as a primitive type?
@@ -1491,21 +1490,8 @@ GenTree* CallArgs::MakeTmpArgNode(Compiler* comp, CallArg* arg)
 #endif // !(TARGET_ARM64 || TARGET_LOONGARCH64)
 #endif // FEATURE_MULTIREG_ARGS
         }
-
-#else // not (TARGET_AMD64 or TARGET_ARM64 or TARGET_ARM or TARGET_LOONGARCH64)
-
-        // other targets, we pass the struct by value
-        assert(varTypeIsStruct(type));
-
-        addrNode = comp->gtNewOperNode(GT_ADDR, TYP_BYREF, argNode);
-
-        // Get a new Obj node temp to use it as a call argument.
-        // gtNewObjNode will set the GTF_EXCEPT flag if this is not a local stack object.
-        argNode               = comp->gtNewObjNode(comp->lvaGetStruct(tmpVarNum), addrNode);
-
-#endif // not (TARGET_AMD64 or TARGET_ARM64 or TARGET_ARM or TARGET_LOONGARCH64)
-
-    } // (varTypeIsStruct(type))
+#endif // (TARGET_AMD64 or TARGET_ARM64 or TARGET_ARM or TARGET_LOONGARCH64)
+    }  // (varTypeIsStruct(type))
 
     if (addrNode != nullptr)
     {
@@ -4168,7 +4154,7 @@ void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall* call, CallArg* arg)
             {
                 tmp   = (unsigned)lclNum;
                 found = true;
-                JITDUMP("reusing outgoing struct arg");
+                JITDUMP("reusing outgoing struct arg\n");
                 break;
             }
         }
@@ -4215,7 +4201,7 @@ void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall* call, CallArg* arg)
     // When on Unix create LCL_FLD for structs passed in more than one registers. See fgMakeTmpArgNode
     GenTree* argNode = copyBlk;
 
-#else // FEATURE_FIXED_OUT_ARGS
+#else // !FEATURE_FIXED_OUT_ARGS
 
     // Structs are always on the stack, and thus never need temps
     // so we have to put the copy and temp all into one expression.
@@ -4224,7 +4210,7 @@ void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall* call, CallArg* arg)
     // Change the expression to "(tmp=val),tmp"
     argNode                              = gtNewOperNode(GT_COMMA, argNode->TypeGet(), copyBlk, argNode);
 
-#endif // FEATURE_FIXED_OUT_ARGS
+#endif // !FEATURE_FIXED_OUT_ARGS
 
     arg->SetEarlyNode(argNode);
 }
