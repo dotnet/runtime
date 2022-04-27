@@ -201,9 +201,15 @@ namespace System.Text.Json.Serialization.Metadata
             if (_isConfigured)
                 return;
 
-            Configure();
+            lock (this)
+            {
+                if (_isConfigured)
+                    return;
 
-            _isConfigured = true;
+                Configure();
+
+                _isConfigured = true;
+            }
         }
 
         internal virtual void Configure()
