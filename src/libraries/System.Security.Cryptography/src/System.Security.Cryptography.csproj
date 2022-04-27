@@ -6,7 +6,6 @@
     <NoWarn>$(NoWarn);CA5350;CA5351;CA5379;CA5384;SYSLIB0026</NoWarn>
     <!-- PasswordDeriveBytes.GetBytes is obsolete but DeriveBytes.GetBytes intentionally isn't. -->
     <NoWarn>$(NoWarn);CS0809</NoWarn>
-    <Nullable>enable</Nullable>
   </PropertyGroup>
 
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->

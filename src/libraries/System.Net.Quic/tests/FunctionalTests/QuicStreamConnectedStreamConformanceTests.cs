@@ -95,7 +95,7 @@ namespace System.Net.Quic.Tests
                             listener.ListenEndPoint,
                             GetSslClientAuthenticationOptions());
                         await connection2.ConnectAsync();
-                        stream2 = connection2.OpenBidirectionalStream();
+                        stream2 = await connection2.OpenBidirectionalStreamAsync();
                         // OpenBidirectionalStream only allocates ID. We will force stream opening
                         // by Writing there and receiving data on the other side.
                         await stream2.WriteAsync(buffer);

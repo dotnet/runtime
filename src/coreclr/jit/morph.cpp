@@ -1782,6 +1782,10 @@ void CallArgs::EvalArgsToTemps(Compiler* comp, GenTreeCall* call)
         lateTail  = &arg.LateNextRef();
     }
 
+    // Make sure we did not do anything here that stops us from being able to
+    // find the local ret buf if we are optimizing it.
+    noway_assert(!call->IsOptimizingRetBufAsLocal() || (comp->gtCallGetDefinedRetBufLclAddr(call) != nullptr));
+
 #ifdef DEBUG
     if (comp->verbose)
     {

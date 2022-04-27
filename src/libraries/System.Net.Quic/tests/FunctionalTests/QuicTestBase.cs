@@ -187,7 +187,7 @@ namespace System.Net.Quic.Tests
 
         internal async Task PingPong(QuicConnection client, QuicConnection server)
         {
-            using QuicStream clientStream = client.OpenBidirectionalStream();
+            using QuicStream clientStream = await client.OpenBidirectionalStreamAsync();
             ValueTask t = clientStream.WriteAsync(s_ping);
             using QuicStream serverStream = await server.AcceptStreamAsync();
 
@@ -259,7 +259,7 @@ namespace System.Net.Quic.Tests
             await RunClientServer(
                 clientFunction: async connection =>
                 {
-                    await using QuicStream stream = bidi ? connection.OpenBidirectionalStream() : connection.OpenUnidirectionalStream();
+                    await using QuicStream stream = bidi ? await connection.OpenBidirectionalStreamAsync() : await connection.OpenUnidirectionalStreamAsync();
                     // Open(Bi|Uni)directionalStream only allocates ID. We will force stream opening
                     // by Writing there and receiving data on the other side.
                     await stream.WriteAsync(buffer);

@@ -318,7 +318,6 @@ set(VM_SOURCES_WKS
     dynamicinterfacecastable.cpp
     eeconfig.cpp
     eecontract.cpp
-    eemessagebox.cpp
     eepolicy.cpp
     eetoprofinterfaceimpl.cpp
     eventpipeinternal.cpp
@@ -421,7 +420,6 @@ set(VM_HEADERS_WKS
     dllimportcallback.h
     eeconfig.h
     eecontract.h
-    eemessagebox.h
     eepolicy.h
     eeprofinterfaces.h
     eeprofinterfaces.inl

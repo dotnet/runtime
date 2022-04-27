@@ -187,8 +187,7 @@ BEGIN
     COR_E_NEWER_RUNTIME                     "The assembly is built by a runtime newer than the currently loaded runtime, and cannot be loaded."
     IDS_EE_BAD_USER_PROFILE                 "The specified user does not have a valid profile.  Unable to load '%1'."
     IDS_EE_ALREADY_EXISTS                   "Cannot create/shadow copy '%1' when that file already exists."
-    IDS_EE_ERRORTITLE                       "Error"
-    IDS_EE_ERRORMESSAGETEMPLATE             "Error 0x%08x.\n\n%s."
+
     IDS_EE_RETHROW_NOT_ALLOWED              "No exception available to rethrow."
     IDS_EE_INVALID_OLE_VARIANT              "Specified OLE variant is invalid."
     IDS_EE_TO_MANY_ARGUMENTS_IN_MAIN        "Signature for the entry point has too many arguments."

@@ -263,6 +263,12 @@ namespace System.Reflection
                 if (s_loadfile.TryGetValue(normalizedPath, out result))
                     return result;
 
+                // we cannot check for file presence on BROWSER. The files could be embedded and not physically present.
+#if !TARGET_BROWSER
+                if (!File.Exists(normalizedPath))
+                    throw new FileNotFoundException(SR.Format(SR.FileNotFound_LoadFile, normalizedPath), normalizedPath);
+#endif // !TARGET_BROWSER
+
                 AssemblyLoadContext alc = new IndividualAssemblyLoadContext($"Assembly.LoadFile({normalizedPath})");
                 result = alc.LoadFromAssemblyPath(normalizedPath);
                 s_loadfile.Add(normalizedPath, result);

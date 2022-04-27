@@ -22,9 +22,6 @@ namespace System.Diagnostics.Tracing
     /// Unlike IncrementingEventCounter, this takes in a polling callback that it can call to update
     /// its own metric periodically.
     /// </summary>
-#if NETCOREAPP
-    [UnsupportedOSPlatform("browser")]
-#endif
     public partial class IncrementingPollingCounter : DiagnosticCounter
     {
         /// <summary>

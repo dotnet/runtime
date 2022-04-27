@@ -9,7 +9,7 @@ using Xunit;
 
 namespace DebuggerTests
 {
-    public class ArrayTests : DebuggerTestBase
+    public class ArrayTests : DebuggerTests
     {
 
         [Theory]
@@ -218,6 +218,15 @@ namespace DebuggerTests
             string local_var_name_prefix, object[] array, object[] array_elem_props,
             bool test_prev_frame = false, int frame_idx = 0, bool use_cfo = false)
         {
+            // FIXME:
+            if (!RunningOnChrome)
+            {
+                if (use_cfo)
+                {
+                    await Task.CompletedTask;
+                    return;
+                }
+            }
             var debugger_test_loc = "dotnet://debugger-test.dll/debugger-array-test.cs";
             UseCallFunctionOnBeforeGetProperties = use_cfo;
 
@@ -282,7 +291,7 @@ namespace DebuggerTests
             await CheckProps(props, new object[0], "${local_var_name_prefix}_arr_empty");
         }
 
-        [Theory]
+        [ConditionalTheory(nameof(RunningOnChrome))]
         [InlineData(false)]
         [InlineData(true)]
         public async Task InspectObjectArrayMembers(bool use_cfo)
@@ -470,7 +479,7 @@ namespace DebuggerTests
                 TPoint(45, 51, "point#Id", "Green"));
         }
 
-        [Theory]
+        [ConditionalTheory(nameof(RunningOnChrome))]
         [InlineData(false)]
         [InlineData(true)]
         public async Task InspectValueTypeArrayLocalsInAsyncStaticStructMethod(bool use_cfo)
@@ -502,7 +511,7 @@ namespace DebuggerTests
             }, "InspectValueTypeArrayLocalsInAsyncStaticStructMethod#locals");
         }
 
-        [Theory]
+        [ConditionalTheory(nameof(RunningOnChrome))]
         [InlineData(false)]
         [InlineData(true)]
         public async Task InspectValueTypeArrayLocalsInAsyncInstanceStructMethod(bool use_cfo)
@@ -551,7 +560,7 @@ namespace DebuggerTests
                 label: "this#0");
         }
 
-        [Fact]
+        [ConditionalFact(nameof(RunningOnChrome))]
         [Trait("Category", "windows-failing")] // https://github.com/dotnet/runtime/issues/65742
         [Trait("Category", "linux-failing")] // https://github.com/dotnet/runtime/issues/65742
         public async Task InvalidArrayId() => await CheckInspectLocalsAtBreakpointSite(
@@ -575,7 +584,7 @@ namespace DebuggerTests
                await GetProperties($"dotnet:array:{id.Value}", expect_ok: false);
            });
 
-        [Fact]
+        [ConditionalFact(nameof(RunningOnChrome))]
         public async Task InvalidAccessors() => await CheckInspectLocalsAtBreakpointSite(
             "DebuggerTests.Container", "PlaceholderMethod", 1, "PlaceholderMethod",
             "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.ArrayTestsClass:ObjectArrayMembers'); }, 1);",
@@ -607,7 +616,7 @@ namespace DebuggerTests
                 }
            });
 
-        [Theory]
+        [ConditionalTheory(nameof(RunningOnChrome))]
         [InlineData(false)]
         [InlineData(true)]
         public async Task InspectPrimitiveTypeMultiArrayLocals(bool use_cfo)
@@ -623,13 +632,13 @@ namespace DebuggerTests
             var locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
             Assert.Equal(3, locals.Count());
             var int_arr_1 = !use_cfo ?
-                            await GetProperties(locals[0]["value"]["objectId"].Value<string>()) : 
+                            await GetProperties(locals[0]["value"]["objectId"].Value<string>()) :
                             await GetObjectWithCFO((locals[0]["value"]["objectId"].Value<string>()));
 
             CheckNumber(int_arr_1, "0", 0);
             CheckNumber(int_arr_1, "1", 1);
             var int_arr_2 = !use_cfo ?
-                await GetProperties(locals[1]["value"]["objectId"].Value<string>()) : 
+                await GetProperties(locals[1]["value"]["objectId"].Value<string>()) :
                 await GetObjectWithCFO((locals[1]["value"]["objectId"].Value<string>()));
             CheckNumber(int_arr_2, "0, 0", 0);
             CheckNumber(int_arr_2, "0, 1", 1);
@@ -639,7 +648,7 @@ namespace DebuggerTests
             CheckNumber(int_arr_2, "1, 2", 12);
 
             var int_arr_3 = !use_cfo ?
-                await GetProperties(locals[2]["value"]["objectId"].Value<string>()) : 
+                await GetProperties(locals[2]["value"]["objectId"].Value<string>()) :
                 await GetObjectWithCFO((locals[2]["value"]["objectId"].Value<string>()));
             CheckNumber(int_arr_3, "0, 0, 0", 0);
             CheckNumber(int_arr_3, "0, 0, 1", 1);
