@@ -78,6 +78,7 @@
           cd $(ScenarioDirectory)mauiios
           sign MauiTesting.app
 
+          echo Py Path: $PYTHONPATH OrigPath: $ORIGPYPATH Helix Py Path: $HELIX_PYTHONPATH
           $(Python) pre.py --name MauiTesting.app
 
           # Testing commands
@@ -87,7 +88,6 @@
           
           # Post commands
           $(Python) post.py
-          echo Py Path: $PYTHONPATH OrigPath: $ORIGPYPATH Helix Py Path: $HELIX_PYTHONPATH
           exit $result
         ]]>
 	  </CustomCommands>
@@ -106,6 +106,7 @@
           cd $(ScenarioDirectory)mauiios
           sign Microsoft.NetConf2021.Maui.app
 
+          echo Py Path: $PYTHONPATH OrigPath: $ORIGPYPATH Helix Py Path: $HELIX_PYTHONPATH
           $(Python) pre.py --name Microsoft.NetConf2021.Maui.app
 
           # Testing commands
@@ -115,7 +116,6 @@
           
           # Post commands
           $(Python) post.py
-          echo Py Path: $PYTHONPATH OrigPath: $ORIGPYPATH Helix Py Path: $HELIX_PYTHONPATH
           exit $result
         ]]>
 	  </CustomCommands>
