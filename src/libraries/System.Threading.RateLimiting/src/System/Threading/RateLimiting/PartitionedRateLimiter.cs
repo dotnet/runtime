@@ -40,10 +40,10 @@ namespace System.Threading.RateLimiting
         // Used by the Timer to call TryRelenish on ReplenishingRateLimiters
         // We use a separate list to avoid running TryReplenish (which might be user code) inside our lock
         // And we cache the list to amortize the allocation cost to as close to 0 as we can get
-        private List<Lazy<RateLimiter>> _cachedLimiters = new();
+        private List<Lazy<RateLimiter>>? _cachedLimiters = new();
         private bool _cacheInvalid;
-        private int _executingTimer;
         private Timer? _timer;
+        private TaskCompletionSource<bool>? _timerTask;
 
         // Use the Dictionary as the lock field so we don't need to allocate another object for a lock and have another field in the object
         private object Lock => _limiters;
@@ -126,7 +126,17 @@ namespace System.Threading.RateLimiting
                 }
 
                 limiters = _limiters;
-                _limiters = new();
+                // Don't call Clear() as that would clear the local limiters reference as well, which is what we'll be using to call DisposeAsync on all the limiters
+                _limiters = new Dictionary<TKey, Lazy<RateLimiter>>();
+            }
+
+            TaskCompletionSource<bool> tcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
+            Interlocked.Exchange(ref _timerTask, tcs);
+            // if _cacheLimiters is null then the Timer is currently running so we will wait for it to complete
+            // if it's false then the Timer is done running even if the thread is still in the Timer callback, it wont be doing any work we need to wait for
+            if (Interlocked.Exchange(ref _cachedLimiters, null) is null)
+            {
+                await tcs.Task.ConfigureAwait(false);
             }
 
             foreach (KeyValuePair<TKey, Lazy<RateLimiter>> limiter in limiters)
@@ -147,6 +157,7 @@ namespace System.Threading.RateLimiting
                 return true;
             }
             _disposed = true;
+            _timer?.Dispose();
 
             return false;
         }
@@ -164,7 +175,8 @@ namespace System.Threading.RateLimiting
             DefaultPartitionedRateLimiter<TResource, TKey> limiter = (state as DefaultPartitionedRateLimiter<TResource, TKey>)!;
             Debug.Assert(limiter is not null);
 
-            if (Interlocked.Exchange(ref limiter._executingTimer, 1) != 0)
+            List<Lazy<RateLimiter>>? cachedLimiters = Interlocked.Exchange(ref limiter._cachedLimiters, null);
+            if (cachedLimiters is null)
             {
                 // Timer already running, do nothing
                 // This might be an indication that there is a slow ReplenishingRateLimiter.TryReplenish implementation
@@ -178,8 +190,7 @@ namespace System.Threading.RateLimiting
             {
                 if (limiter._disposed)
                 {
-                    limiter._timer!.Dispose();
-                    limiter._cachedLimiters.Clear();
+                    cachedLimiters.Clear();
                     return;
                 }
 
@@ -193,7 +204,7 @@ namespace System.Threading.RateLimiting
                         {
                             if (kvp.Value.Value is ReplenishingRateLimiter)
                             {
-                                limiter._cachedLimiters.Add(kvp.Value);
+                                cachedLimiters.Add(kvp.Value);
                             }
                         }
                         else
@@ -211,9 +222,9 @@ namespace System.Threading.RateLimiting
 
             try
             {
-                // _cachedLimiters is safe to use outside the lock because it is only updated by the Timer
+                // cachedLimiters is safe to use outside the lock because it is only updated by the Timer
                 // and the Timer avoids re-entrancy issues via the _executingTimer field
-                foreach (Lazy<RateLimiter> rateLimiter in limiter._cachedLimiters)
+                foreach (Lazy<RateLimiter> rateLimiter in cachedLimiters)
                 {
                     Debug.Assert(rateLimiter.IsValueCreated && rateLimiter.Value is ReplenishingRateLimiter);
                     ((ReplenishingRateLimiter)rateLimiter.Value).TryReplenish();
@@ -221,7 +232,13 @@ namespace System.Threading.RateLimiting
             }
             finally
             {
-                Interlocked.Exchange(ref limiter._executingTimer, 0);
+                Interlocked.Exchange(ref limiter._cachedLimiters, cachedLimiters);
+                TaskCompletionSource<bool>? tcs = Interlocked.Exchange(ref limiter._timerTask, null);
+                // DisposeAsync was called and is waiting for the Timer to indicate completion
+                if (tcs is not null)
+                {
+                    tcs.SetResult(true);
+                }
             }
         }
     }
