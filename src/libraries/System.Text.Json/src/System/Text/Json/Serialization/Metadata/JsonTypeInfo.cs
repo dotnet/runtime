@@ -195,13 +195,14 @@ namespace System.Text.Json.Serialization.Metadata
         }
 
         private bool _isConfigured;
+        private object _configureLock = new object();
 
         internal void EnsureConfigured()
         {
             if (_isConfigured)
                 return;
 
-            lock (this)
+            lock (_configureLock)
             {
                 if (_isConfigured)
                     return;
@@ -214,6 +215,7 @@ namespace System.Text.Json.Serialization.Metadata
 
         internal virtual void Configure()
         {
+            Debug.Assert(Monitor.IsEntered(_configureLock), "Configure called directly, use EnsureConfigured which locks this method");
             JsonConverter converter = PropertyInfoForTypeInfo.ConverterBase;
             Debug.Assert(PropertyInfoForTypeInfo.ConverterStrategy == PropertyInfoForTypeInfo.ConverterBase.ConverterStrategy,
                 $"ConverterStrategy from PropertyInfoForTypeInfo.ConverterStrategy ({PropertyInfoForTypeInfo.ConverterStrategy}) does not match converter's ({PropertyInfoForTypeInfo.ConverterBase.ConverterStrategy})");
