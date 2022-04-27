@@ -6918,6 +6918,7 @@ ArrayStack<BasicBlock*> Compiler::optHoistLoopBlocks(unsigned                 lo
         fgWalkResult PostOrderVisit(GenTree** use, GenTree* user)
         {
             GenTree* tree = *use;
+            JITDUMP("----- PostOrderVisit for [%06u]\n", dspTreeID(tree));
 
             if (tree->OperIsLocal())
             {
@@ -7224,6 +7225,9 @@ ArrayStack<BasicBlock*> Compiler::optHoistLoopBlocks(unsigned                 lo
                 // cctor dependent node is initially not hoistable and may become hoistable later,
                 // when its parent comma node is visited.
                 //
+                bool visitedCurr = false;
+                bool isCommaTree = tree->OperIs(GT_COMMA);
+                bool hasExcep    = false;
                 for (int i = 0; i < m_valueStack.Height(); i++)
                 {
                     Value& value = m_valueStack.BottomRef(i);
@@ -7231,6 +7235,14 @@ ArrayStack<BasicBlock*> Compiler::optHoistLoopBlocks(unsigned                 lo
                     if (value.m_hoistable)
                     {
                         assert(value.Node() != tree);
+                        JITDUMP("      [%06u]", dspTreeID(value.Node()));
+
+                        if (isCommaTree && hasExcep)
+                        {
+                            JITDUMP(" not hoistable: cannot move past node that throws exception.\n");
+                            continue;
+                        }
+                        JITDUMP(" hoistable\n");
 
                         // Don't hoist this tree again.
                         value.m_hoistable = false;
@@ -7241,8 +7253,20 @@ ArrayStack<BasicBlock*> Compiler::optHoistLoopBlocks(unsigned                 lo
                     }
                     else if (value.Node() != tree)
                     {
+                        if (visitedCurr && isCommaTree)
+                        {
+                            // If we have visited current tree, now we are visiting children.
+                            // For GT_COMMA nodes, we want to track if any children throws and
+                            // should not hoist further children past it.
+                            hasExcep = (tree->gtFlags & GTF_EXCEPT) != 0;
+                        }
                         JITDUMP("      [%06u] not %s: %s\n", dspTreeID(value.Node()),
                                 value.m_invariant ? "invariant" : "hoistable", value.m_failReason);
+                    }
+                    else
+                    {
+                        visitedCurr = true;
+                        JITDUMP("      [%06u] not hoistable : current node\n", dspTreeID(value.Node()));
                     }
                 }
             }
