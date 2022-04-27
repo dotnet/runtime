@@ -646,12 +646,12 @@ LinearScan::LinearScan(Compiler* theCompiler)
 
         if (!inRange)
         {
+            JITDUMP("*** JitStressRegs = 0x%x -- disabled by JitStressRegsRange\n", lsraStressMask);
             lsraStressMask = 0;
-            JITDUMP("*** JitStressRegs = 0x%x -- disabled by JitStressRegsRange\n");
         }
         else
         {
-            JITDUMP("*** JitStressRegs = 0x%x\n");
+            JITDUMP("*** JitStressRegs = 0x%x\n", lsraStressMask);
         }
     }
 #endif // DEBUG
