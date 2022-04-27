@@ -1343,20 +1343,7 @@ void Lowering::LowerArg(GenTreeCall* call, CallArg* callArg, bool late)
 
     JITDUMP("lowering arg : ");
     DISPNODE(arg);
-
-    // No assignments should remain by Lowering.
-    assert(!arg->OperIs(GT_ASG));
-    assert(!arg->OperIsPutArgStk());
-
-    // Assignments/stores at this level are not really placing an argument.
-    // They are setting up temporary locals that will later be placed into
-    // outgoing regs or stack.
-    // Note that atomic ops may be stores and still produce a value.
-    if (!arg->IsValue())
-    {
-        assert((arg->OperIsStore() && !arg->IsValue()) || arg->IsNothingNode() || arg->OperIsCopyBlkOp());
-        return;
-    }
+    assert(arg->IsValue());
 
     var_types type = arg->TypeGet();
 
@@ -6425,7 +6412,7 @@ void Lowering::CheckCallArg(GenTree* arg)
 {
     if (!arg->IsValue() && !arg->OperIsPutArgStk())
     {
-        assert(arg->OperIsStore() || arg->IsNothingNode() || arg->OperIsCopyBlkOp());
+        assert(arg->OperIsStore() || arg->OperIsCopyBlkOp());
         return;
     }
 

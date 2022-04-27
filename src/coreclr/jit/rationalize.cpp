@@ -615,6 +615,28 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
             RewriteIndir(use);
             break;
 
+        case GT_CALL:
+            // In linear order we no longer need to retain the stores in early
+            // args as these have now been sequenced.
+            for (CallArg& arg : node->AsCall()->gtArgs.EarlyArgs())
+            {
+                if (!arg.GetEarlyNode()->IsValue())
+                {
+                    // GTF_LATE_ARG is no longer meaningful.
+                    arg.GetEarlyNode()->gtFlags &= ~GTF_LATE_ARG;
+                    arg.SetEarlyNode(nullptr);
+                }
+            }
+
+#ifdef DEBUG
+            // The above means that all argument nodes are now true arguments.
+            for (CallArg& arg : node->AsCall()->gtArgs.Args())
+            {
+                assert((arg.GetEarlyNode() == nullptr) != (arg.GetLateNode() == nullptr));
+            }
+#endif
+            break;
+
         case GT_NOP:
             // fgMorph sometimes inserts NOP nodes between defs and uses
             // supposedly 'to prevent constant folding'. In this case, remove the
@@ -637,8 +659,8 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
             if ((sideEffects & GTF_ALL_EFFECT) == 0)
             {
                 // The LHS has no side effects. Remove it.
-                // None of the transforms performed herein violate tree order, so isClosed
-                // should always be true.
+                // All transformations on pure trees keep their operands in LIR
+                // and should not violate tree order.
                 assert(isClosed);
 
                 BlockRange().Delete(comp, m_block, std::move(lhsRange));
@@ -666,8 +688,8 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
 
                 if ((sideEffects & GTF_ALL_EFFECT) == 0)
                 {
-                    // None of the transforms performed herein violate tree order, so isClosed
-                    // should always be true.
+                    // All transformations on pure trees keep their operands in
+                    // LIR and should not violate tree order.
                     assert(isClosed);
 
                     BlockRange().Delete(comp, m_block, std::move(rhsRange));
