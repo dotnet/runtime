@@ -13102,7 +13102,7 @@ HRESULT gc_heap::initialize_gc (size_t soh_segment_size,
         // relocate the exising table and then calling copy_brick_card_table.
         // Right now all the non mark array portions are commmitted since I'm calling mark_card_table
         // on the whole range. This can be committed as needed.
-        size_t reserve_size = regions_range;
+        size_t reserve_size = (use_large_pages_p) ? heap_hard_limit : regions_range;
         uint8_t* reserve_range = (uint8_t*)virtual_alloc (reserve_size, use_large_pages_p);
         if (!reserve_range)
             return E_OUTOFMEMORY;
