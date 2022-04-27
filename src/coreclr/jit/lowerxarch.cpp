@@ -647,11 +647,17 @@ void Lowering::LowerPutArgStk(GenTreePutArgStk* putArgStk)
         MakeSrcContained(putArgStk, src);
     }
 #ifdef TARGET_X86
-    else if ((genTypeSize(src) == TARGET_POINTER_SIZE) && IsContainableMemoryOp(src) &&
-             IsSafeToContainMem(putArgStk, src))
+    else if ((genTypeSize(src) == TARGET_POINTER_SIZE) && IsSafeToContainMem(putArgStk, src))
     {
-        // Contain for "push [mem]".
-        MakeSrcContained(putArgStk, src);
+        // We can use "src" directly from memory with "push [mem]".
+        if (IsContainableMemoryOp(src))
+        {
+            MakeSrcContained(putArgStk, src);
+        }
+        else
+        {
+            src->SetRegOptional();
+        }
     }
 #endif // TARGET_X86
 }
