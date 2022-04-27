@@ -5616,7 +5616,7 @@ BOOL MethodTable::FindDefaultInterfaceImplementation(
         INSTANCE_CHECK;
         MODE_ANY;
         THROWS;
-        // GC_TRIGGERS;
+        GC_TRIGGERS;
         PRECONDITION(CheckPointer(pInterfaceMD));
         PRECONDITION(CheckPointer(pInterfaceMT));
         PRECONDITION(CheckPointer(ppDefaultMethod));
