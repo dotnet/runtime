@@ -532,30 +532,6 @@ namespace System.Net.Quic.Tests
         }
 
         [Fact]
-        public async Task Read_ConcurrentReads_Throws()
-        {
-            using SemaphoreSlim sem = new SemaphoreSlim(0);
-
-            await RunBidirectionalClientServer(
-                async clientStream =>
-                {
-                    await sem.WaitAsync();
-                },
-                async serverStream =>
-                {
-                    ValueTask<int> readTask = serverStream.ReadAsync(new byte[1]);
-                    Assert.False(readTask.IsCompleted);
-
-                    await Assert.ThrowsAsync<InvalidOperationException>(async () => await serverStream.ReadAsync(new byte[1]));
-
-                    sem.Release();
-
-                    int res = await readTask;
-                    Assert.Equal(0, res);
-                });
-        }
-
-        [Fact]
         public async Task WriteAbortedWithoutWriting_ReadThrows()
         {
             const long expectedErrorCode = 1234;

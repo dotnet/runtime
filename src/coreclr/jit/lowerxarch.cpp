@@ -4476,7 +4476,7 @@ void Lowering::ContainCheckCallOperands(GenTreeCall* call)
         }
     }
 
-    for (CallArg& arg : call->gtArgs.Args())
+    for (CallArg& arg : call->gtArgs.EarlyArgs())
     {
         if (arg.GetEarlyNode()->OperIs(GT_PUTARG_STK))
         {

@@ -5,7 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
@@ -16,12 +15,12 @@ using System.Net.Http;
 
 namespace Microsoft.WebAssembly.Diagnostics
 {
-    internal sealed class MonoProxy : DevToolsProxy
+    internal class MonoProxy : DevToolsProxy
     {
         private IList<string> urlSymbolServerList;
         private static HttpClient client = new HttpClient();
         private HashSet<SessionId> sessions = new HashSet<SessionId>();
-        private Dictionary<SessionId, ExecutionContext> contexts = new Dictionary<SessionId, ExecutionContext>();
+        protected Dictionary<SessionId, ExecutionContext> contexts = new Dictionary<SessionId, ExecutionContext>();
         private const string sPauseOnUncaught = "pause_on_uncaught";
         private const string sPauseOnCaught = "pause_on_caught";
         // index of the runtime in a same JS page/process
@@ -49,7 +48,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             return previous;
         }
 
-        internal Task<Result> SendMonoCommand(SessionId id, MonoCommands cmd, CancellationToken token) => SendCommand(id, "Runtime.evaluate", JObject.FromObject(cmd), token);
+        internal virtual Task<Result> SendMonoCommand(SessionId id, MonoCommands cmd, CancellationToken token) => SendCommand(id, "Runtime.evaluate", JObject.FromObject(cmd), token);
 
         internal void SendLog(SessionId sessionId, string message, CancellationToken token, string type = "warning")
         {
@@ -79,8 +78,10 @@ namespace Microsoft.WebAssembly.Diagnostics
             SendEvent(sessionId, "Runtime.consoleAPICalled", o, token);
         }
 
-        protected override async Task<bool> AcceptEvent(SessionId sessionId, string method, JObject args, CancellationToken token)
+        protected override async Task<bool> AcceptEvent(SessionId sessionId, JObject parms, CancellationToken token)
         {
+            var method = parms["method"].Value<string>();
+            var args = parms["params"] as JObject;
             switch (method)
             {
                 case "Runtime.consoleAPICalled":
@@ -95,7 +96,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                             int aCount = a.Count();
                             if (aCount >= 2 &&
                                 a[0]?["value"]?.ToString() == MonoConstants.RUNTIME_IS_READY &&
-                                a[1]?["value"]?.ToString() == "fe00e07a-5519-4dfe-b35a-f867dbaf2e28")
+                                a[1]?["value"]?.ToString() == MonoConstants.RUNTIME_IS_READY_ID)
                             {
                                 if (aCount > 2)
                                 {
@@ -189,14 +190,14 @@ namespace Microsoft.WebAssembly.Diagnostics
                                 string exceptionError = args?["data"]?["value"]?.Value<string>();
                                 if (exceptionError == sPauseOnUncaught)
                                 {
-                                    await SendCommand(sessionId, "Debugger.resume", new JObject(), token);
+                                    await SendResume(sessionId, token);
                                     if (context.PauseOnExceptions == PauseOnExceptionsKind.Unset)
                                         context.PauseOnExceptions = PauseOnExceptionsKind.Uncaught;
                                     return true;
                                 }
                                 if (exceptionError == sPauseOnCaught)
                                 {
-                                    await SendCommand(sessionId, "Debugger.resume", new JObject(), token);
+                                    await SendResume(sessionId, token);
                                     context.PauseOnExceptions = PauseOnExceptionsKind.All;
                                     return true;
                                 }
@@ -211,7 +212,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                             case "_mono_wasm_runtime_ready":
                                 {
                                     await RuntimeReady(sessionId, token);
-                                    await SendCommand(sessionId, "Debugger.resume", new JObject(), token);
+                                    await SendResume(sessionId, token);
                                     return true;
                                 }
                             case "mono_wasm_fire_debugger_agent_message":
@@ -222,7 +223,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                                     }
                                     catch (Exception) //if the page is refreshed maybe it stops here.
                                     {
-                                        await SendCommand(sessionId, "Debugger.resume", new JObject(), token);
+                                        await SendResume(sessionId, token);
                                         return true;
                                     }
                                 }
@@ -249,7 +250,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                                     return true;
                                 }
                         }
-                        Log("verbose", $"proxying Debugger.scriptParsed ({sessionId.sessionId}) {url} {args}");
+                        logger.LogTrace($"proxying Debugger.scriptParsed ({sessionId.sessionId}) {url} {args}");
                         break;
                     }
 
@@ -269,8 +270,11 @@ namespace Microsoft.WebAssembly.Diagnostics
 
             return false;
         }
-
-        private async Task<bool> IsRuntimeAlreadyReadyAlready(SessionId sessionId, CancellationToken token)
+        protected virtual async Task SendResume(SessionId id, CancellationToken token)
+        {
+            await SendCommand(id, "Debugger.resume", new JObject(), token);
+        }
+        protected async Task<bool> IsRuntimeAlreadyReadyAlready(SessionId sessionId, CancellationToken token)
         {
             if (contexts.TryGetValue(sessionId, out ExecutionContext context) && context.IsRuntimeReady)
                 return true;
@@ -279,8 +283,10 @@ namespace Microsoft.WebAssembly.Diagnostics
             return res.Value?["result"]?["value"]?.Value<bool>() ?? false;
         }
 
-        protected override async Task<bool> AcceptCommand(MessageId id, string method, JObject args, CancellationToken token)
+        protected override async Task<bool> AcceptCommand(MessageId id, JObject parms, CancellationToken token)
         {
+            var method = parms["method"].Value<string>();
+            var args = parms["params"] as JObject;
             // Inspector doesn't use the Target domain or sessions
             // so we try to init immediately
             if (id == SessionId.Null)
@@ -539,57 +545,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     }
                 case "DotnetDebugger.getMethodLocation":
                     {
-                        DebugStore store = await RuntimeReady(id, token);
-                        string aname = args["assemblyName"]?.Value<string>();
-                        string typeName = args["typeName"]?.Value<string>();
-                        string methodName = args["methodName"]?.Value<string>();
-                        if (aname == null || typeName == null || methodName == null)
-                        {
-                            SendResponse(id, Result.Err("Invalid protocol message '" + args + "'."), token);
-                            return true;
-                        }
-
-                        // GetAssemblyByName seems to work on file names
-                        AssemblyInfo assembly = store.GetAssemblyByName(aname);
-                        if (assembly == null)
-                            assembly = store.GetAssemblyByName(aname + ".exe");
-                        if (assembly == null)
-                            assembly = store.GetAssemblyByName(aname + ".dll");
-                        if (assembly == null)
-                        {
-                            SendResponse(id, Result.Err("Assembly '" + aname + "' not found."), token);
-                            return true;
-                        }
-
-                        TypeInfo type = assembly.GetTypeByName(typeName);
-                        if (type == null)
-                        {
-                            SendResponse(id, Result.Err($"Type '{typeName}' not found."), token);
-                            return true;
-                        }
-
-                        MethodInfo methodInfo = type.Methods.FirstOrDefault(m => m.Name == methodName);
-                        if (methodInfo == null)
-                        {
-                            // Maybe this is an async method, in which case the debug info is attached
-                            // to the async method implementation, in class named:
-                            //      `{type_name}.<method_name>::MoveNext`
-                            methodInfo = assembly.TypesByName.Values.SingleOrDefault(t => t.FullName.StartsWith($"{typeName}.<{methodName}>"))?
-                                .Methods.FirstOrDefault(mi => mi.Name == "MoveNext");
-                        }
-
-                        if (methodInfo == null)
-                        {
-                            SendResponse(id, Result.Err($"Method '{typeName}:{methodName}' not found."), token);
-                            return true;
-                        }
-
-                        string src_url = methodInfo.Assembly.Sources.Single(sf => sf.SourceId == methodInfo.SourceId).Url;
-                        SendResponse(id, Result.OkFromObject(new
-                        {
-                            result = new { line = methodInfo.StartLocation.Line, column = methodInfo.StartLocation.Column, url = src_url }
-                        }), token);
-
+                        SendResponse(id, await GetMethodLocation(id, args, token), token);
                         return true;
                     }
                 case "Runtime.callFunctionOn":
@@ -647,6 +603,57 @@ namespace Microsoft.WebAssembly.Diagnostics
             JustMyCode = isEnabled.Value;
             SendResponse(id, Result.OkFromObject(new { justMyCodeEnabled = JustMyCode }), token);
         }
+        internal async Task<Result> GetMethodLocation(MessageId id, JObject args, CancellationToken token)
+        {
+            DebugStore store = await RuntimeReady(id, token);
+            string aname = args["assemblyName"]?.Value<string>();
+            string typeName = args["typeName"]?.Value<string>();
+            string methodName = args["methodName"]?.Value<string>();
+            if (aname == null || typeName == null || methodName == null)
+            {
+                return Result.Err("Invalid protocol message '" + args + "'.");
+            }
+
+            // GetAssemblyByName seems to work on file names
+            AssemblyInfo assembly = store.GetAssemblyByName(aname);
+            if (assembly == null)
+                assembly = store.GetAssemblyByName(aname + ".exe");
+            if (assembly == null)
+                assembly = store.GetAssemblyByName(aname + ".dll");
+            if (assembly == null)
+            {
+                return Result.Err("Assembly '" + aname + "' not found.");
+            }
+
+            TypeInfo type = assembly.GetTypeByName(typeName);
+            if (type == null)
+            {
+                return Result.Err($"Type '{typeName}' not found.");
+            }
+
+            MethodInfo methodInfo = type.Methods.FirstOrDefault(m => m.Name == methodName);
+            if (methodInfo == null)
+            {
+                // Maybe this is an async method, in which case the debug info is attached
+                // to the async method implementation, in class named:
+                //      `{type_name}.<method_name>::MoveNext`
+                methodInfo = assembly.TypesByName.Values.SingleOrDefault(t => t.FullName.StartsWith($"{typeName}.<{methodName}>"))?
+                    .Methods.FirstOrDefault(mi => mi.Name == "MoveNext");
+            }
+
+            if (methodInfo == null)
+            {
+                return Result.Err($"Method '{typeName}:{methodName}' not found.");
+            }
+
+            string src_url = methodInfo.Assembly.Sources.Single(sf => sf.SourceId == methodInfo.SourceId).Url;
+
+            return Result.OkFromObject(new
+            {
+                result = new { line = methodInfo.StartLocation.Line, column = methodInfo.StartLocation.Column, url = src_url }
+            });
+        }
+
         private async Task<bool> CallOnFunction(MessageId id, JObject args, CancellationToken token)
         {
             var context = GetContext(id);
@@ -811,7 +818,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
         }
 
-        private async Task<bool> EvaluateCondition(SessionId sessionId, ExecutionContext context, Frame mono_frame, Breakpoint bp, CancellationToken token)
+        protected async Task<bool> EvaluateCondition(SessionId sessionId, ExecutionContext context, Frame mono_frame, Breakpoint bp, CancellationToken token)
         {
             if (string.IsNullOrEmpty(bp?.Condition) || mono_frame == null)
                 return true;
@@ -885,8 +892,66 @@ namespace Microsoft.WebAssembly.Diagnostics
             return true;
         }
 
-        private async Task<bool> SendCallStack(SessionId sessionId, ExecutionContext context, string reason, int thread_id, Breakpoint bp, JObject data, IEnumerable<JObject> orig_callframes, EventKind event_kind, CancellationToken token)
+        protected virtual async Task<bool> ShouldSkipMethod(SessionId sessionId, ExecutionContext context, EventKind event_kind, int j, MethodInfoWithDebugInformation method, CancellationToken token)
         {
+            var shouldReturn = await SkipMethod(
+                    isSkippable: context.IsSkippingHiddenMethod,
+                    shouldBeSkipped: event_kind != EventKind.UserBreak,
+                    StepKind.Over);
+            context.IsSkippingHiddenMethod = false;
+            if (shouldReturn)
+                return true;
+
+            shouldReturn = await SkipMethod(
+                isSkippable: context.IsSteppingThroughMethod,
+                shouldBeSkipped: event_kind != EventKind.UserBreak && event_kind != EventKind.Breakpoint,
+                StepKind.Over);
+            context.IsSteppingThroughMethod = false;
+            if (shouldReturn)
+                return true;
+
+            if (j == 0 && method?.Info.DebuggerAttrInfo.DoAttributesAffectCallStack(JustMyCode) == true)
+            {
+                if (method.Info.DebuggerAttrInfo.ShouldStepOut(event_kind))
+                {
+                    if (event_kind == EventKind.Step)
+                        context.IsSkippingHiddenMethod = true;
+                    if (await SkipMethod(isSkippable: true, shouldBeSkipped: true, StepKind.Out))
+                        return true;
+                }
+                if (!method.Info.DebuggerAttrInfo.HasStepperBoundary)
+                {
+                    if (event_kind == EventKind.Step ||
+                    (JustMyCode && (event_kind == EventKind.Breakpoint || event_kind == EventKind.UserBreak)))
+                    {
+                        if (context.IsResumedAfterBp)
+                            context.IsResumedAfterBp = false;
+                        else if (event_kind != EventKind.UserBreak)
+                            context.IsSteppingThroughMethod = true;
+                        if (await SkipMethod(isSkippable: true, shouldBeSkipped: true, StepKind.Out))
+                            return true;
+                    }
+                    if (event_kind == EventKind.Breakpoint)
+                        context.IsResumedAfterBp = true;
+                }
+            }
+            return false;
+            async Task<bool> SkipMethod(bool isSkippable, bool shouldBeSkipped, StepKind stepKind)
+            {
+                if (isSkippable && shouldBeSkipped)
+                {
+                    await context.SdbAgent.Step(context.ThreadId, stepKind, token);
+                    await SendResume(sessionId, token);
+                    return true;
+                }
+                return false;
+            }
+        }
+
+
+        protected virtual async Task<bool> SendCallStack(SessionId sessionId, ExecutionContext context, string reason, int thread_id, Breakpoint bp, JObject data, JObject args, EventKind event_kind, CancellationToken token)
+        {
+            var orig_callframes = args?["callFrames"]?.Values<JObject>();
             var callFrames = new List<object>();
             var frames = new List<Frame>();
             using var commandParamsWriter = new MonoBinaryWriter();
@@ -904,47 +969,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                 DebugStore store = await LoadStore(sessionId, token);
                 var method = await context.SdbAgent.GetMethodInfo(methodId, token);
 
-                var shouldReturn = await SkipMethod(
-                    isSkippable: context.IsSkippingHiddenMethod,
-                    shouldBeSkipped: event_kind != EventKind.UserBreak,
-                    StepKind.Over);
-                context.IsSkippingHiddenMethod = false;
-                if (shouldReturn)
+                if (await ShouldSkipMethod(sessionId, context, event_kind, j, method, token))
                     return true;
-
-                shouldReturn = await SkipMethod(
-                    isSkippable: context.IsSteppingThroughMethod,
-                    shouldBeSkipped: event_kind != EventKind.UserBreak && event_kind != EventKind.Breakpoint,
-                    StepKind.Over);
-                context.IsSteppingThroughMethod = false;
-                if (shouldReturn)
-                    return true;
-
-                if (j == 0 && method?.Info.DebuggerAttrInfo.DoAttributesAffectCallStack(JustMyCode) == true)
-                {
-                    if (method.Info.DebuggerAttrInfo.ShouldStepOut(event_kind))
-                    {
-                        if (event_kind == EventKind.Step)
-                            context.IsSkippingHiddenMethod = true;
-                        if (await SkipMethod(isSkippable: true, shouldBeSkipped: true, StepKind.Out))
-                            return true;
-                    }
-                    if (!method.Info.DebuggerAttrInfo.HasStepperBoundary)
-                    {
-                        if (event_kind == EventKind.Step ||
-                        (JustMyCode && (event_kind == EventKind.Breakpoint || event_kind == EventKind.UserBreak)))
-                        {
-                            if (context.IsResumedAfterBp)
-                                context.IsResumedAfterBp = false;
-                            else if (event_kind != EventKind.UserBreak)
-                                context.IsSteppingThroughMethod = true;
-                            if (await SkipMethod(isSkippable: true, shouldBeSkipped: true, StepKind.Out))
-                                return true;
-                        }
-                        if (event_kind == EventKind.Breakpoint)
-                            context.IsResumedAfterBp = true;
-                    }
-                }
 
                 SourceLocation location = method?.Info.GetLocationByIl(il_pos);
 
@@ -991,7 +1017,6 @@ namespace Microsoft.WebAssembly.Diagnostics
                 });
 
                 context.CallStack = frames;
-                context.ThreadId = thread_id;
             }
             string[] bp_list = new string[bp == null ? 0 : 1];
             if (bp != null)
@@ -1019,25 +1044,14 @@ namespace Microsoft.WebAssembly.Diagnostics
             if (!await EvaluateCondition(sessionId, context, context.CallStack.First(), bp, token))
             {
                 context.ClearState();
-                await SendCommand(sessionId, "Debugger.resume", new JObject(), token);
+                await SendResume(sessionId, token);
                 return true;
             }
             await SendEvent(sessionId, "Debugger.paused", o, token);
 
             return true;
-
-            async Task<bool> SkipMethod(bool isSkippable, bool shouldBeSkipped, StepKind stepKind)
-            {
-                if (isSkippable && shouldBeSkipped)
-                {
-                    await context.SdbAgent.Step(context.ThreadId, stepKind, token);
-                    await SendCommand(sessionId, "Debugger.resume", new JObject(), token);
-                    return true;
-                }
-                return false;
-            }
         }
-        private async Task<bool> OnReceiveDebuggerAgentEvent(SessionId sessionId, JObject args, CancellationToken token)
+        internal async Task<bool> OnReceiveDebuggerAgentEvent(SessionId sessionId, JObject args, CancellationToken token)
         {
             Result res = await SendMonoCommand(sessionId, MonoCommands.GetDebuggerAgentBufferReceived(RuntimeId), token);
             if (!res.IsOk)
@@ -1055,18 +1069,19 @@ namespace Microsoft.WebAssembly.Diagnostics
                 if (event_kind == EventKind.Step)
                     await context.SdbAgent.ClearSingleStep(request_id, token);
                 int thread_id = retDebuggerCmdReader.ReadInt32();
+                context.ThreadId = thread_id;
                 switch (event_kind)
                 {
                     case EventKind.MethodUpdate:
                     {
                         var ret = await SendBreakpointsOfMethodUpdated(sessionId, context, retDebuggerCmdReader, token);
-                        await SendCommand(sessionId, "Debugger.resume", new JObject(), token);
+                        await SendResume(sessionId, token);
                         return ret;
                     }
                     case EventKind.EnC:
                     {
                         var ret = await ProcessEnC(sessionId, context, retDebuggerCmdReader, token);
-                        await SendCommand(sessionId, "Debugger.resume", new JObject(), token);
+                        await SendResume(sessionId, token);
                         return ret;
                     }
                     case EventKind.Exception:
@@ -1086,13 +1101,17 @@ namespace Microsoft.WebAssembly.Diagnostics
                             objectId = $"dotnet:object:{object_id}"
                         });
 
-                        var ret = await SendCallStack(sessionId, context, reason, thread_id, null, data, args?["callFrames"]?.Values<JObject>(), event_kind, token);
+                        var ret = await SendCallStack(sessionId, context, reason, thread_id, null, data, args, event_kind, token);
                         return ret;
                     }
                     case EventKind.UserBreak:
                     case EventKind.Step:
                     case EventKind.Breakpoint:
                     {
+                        if (event_kind == EventKind.Step)
+                            context.PauseKind = "resumeLimit";
+                        else if (event_kind == EventKind.Breakpoint)
+                            context.PauseKind = "breakpoint";
                         Breakpoint bp = context.BreakpointRequests.Values.SelectMany(v => v.Locations).FirstOrDefault(b => b.RemoteId == request_id);
                         if (request_id == context.TempBreakpointForSetNextIP)
                         {
@@ -1103,7 +1122,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         int methodId = 0;
                         if (event_kind != EventKind.UserBreak)
                             methodId = retDebuggerCmdReader.ReadInt32();
-                        var ret = await SendCallStack(sessionId, context, reason, thread_id, bp, null, args?["callFrames"]?.Values<JObject>(), event_kind, token);
+                        var ret = await SendCallStack(sessionId, context, reason, thread_id, bp, null, args, event_kind, token);
                         return ret;
                     }
                 }
@@ -1154,9 +1173,8 @@ namespace Microsoft.WebAssembly.Diagnostics
             return null;
         }
 
-        private async Task OnDefaultContext(SessionId sessionId, ExecutionContext context, CancellationToken token)
+        protected void OnDefaultContextUpdate(SessionId sessionId, ExecutionContext context)
         {
-            Log("verbose", "Default context created, clearing state and sending events");
             if (UpdateContext(sessionId, context, out ExecutionContext previousContext))
             {
                 foreach (KeyValuePair<string, BreakpointRequest> kvp in previousContext.BreakpointRequests)
@@ -1165,12 +1183,17 @@ namespace Microsoft.WebAssembly.Diagnostics
                 }
                 context.PauseOnExceptions = previousContext.PauseOnExceptions;
             }
+        }
 
+        protected async Task OnDefaultContext(SessionId sessionId, ExecutionContext context, CancellationToken token)
+        {
+            Log("verbose", "Default context created, clearing state and sending events");
+            OnDefaultContextUpdate(sessionId, context);
             if (await IsRuntimeAlreadyReadyAlready(sessionId, token))
                 await RuntimeReady(sessionId, token);
         }
 
-        private async Task OnResume(MessageId msg_id, CancellationToken token)
+        protected async Task OnResume(MessageId msg_id, CancellationToken token)
         {
             ExecutionContext context = GetContext(msg_id);
             if (context.CallStack != null)
@@ -1183,7 +1206,8 @@ namespace Microsoft.WebAssembly.Diagnostics
             GetContext(msg_id).ClearState();
         }
 
-        private async Task<bool> Step(MessageId msgId, StepKind kind, CancellationToken token)
+
+        protected async Task<bool> Step(MessageId msgId, StepKind kind, CancellationToken token)
         {
             ExecutionContext context = GetContext(msgId);
             if (context.CallStack == null)
@@ -1203,7 +1227,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
             context.ClearState();
 
-            await SendCommand(msgId, "Debugger.resume", new JObject(), token);
+            await SendResume(msgId, token);
             return true;
         }
 
@@ -1370,10 +1394,10 @@ namespace Microsoft.WebAssembly.Diagnostics
             return bp;
         }
 
-        private async Task OnSourceFileAdded(SessionId sessionId, SourceFile source, ExecutionContext context, CancellationToken token)
+        internal virtual async Task OnSourceFileAdded(SessionId sessionId, SourceFile source, ExecutionContext context, CancellationToken token)
         {
             JObject scriptSource = JObject.FromObject(source.ToScriptSource(context.Id, context.AuxData));
-            Log("debug", $"sending {source.Url} {context.Id} {sessionId.sessionId}");
+            // Log("debug", $"sending {source.Url} {context.Id} {sessionId.sessionId}");
             await SendEvent(sessionId, "Debugger.scriptParsed", scriptSource, token);
 
             foreach (var req in context.BreakpointRequests.Values)
@@ -1435,7 +1459,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
         }
 
-        private async Task<DebugStore> RuntimeReady(SessionId sessionId, CancellationToken token)
+        protected async Task<DebugStore> RuntimeReady(SessionId sessionId, CancellationToken token)
         {
             ExecutionContext context = GetContext(sessionId);
             if (Interlocked.CompareExchange(ref context.ready, new TaskCompletionSource<DebugStore>(), null) != null)
@@ -1472,7 +1496,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
         }
 
-        private async Task RemoveBreakpoint(SessionId msg_id, JObject args, bool isEnCReset, CancellationToken token)
+        protected async Task RemoveBreakpoint(SessionId msg_id, JObject args, bool isEnCReset, CancellationToken token)
         {
             string bpid = args?["breakpointId"]?.Value<string>();
 
@@ -1498,7 +1522,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 breakpointRequest.Locations = new List<Breakpoint>();
         }
 
-        private async Task SetBreakpoint(SessionId sessionId, DebugStore store, BreakpointRequest req, bool sendResolvedEvent, CancellationToken token)
+        protected async Task SetBreakpoint(SessionId sessionId, DebugStore store, BreakpointRequest req, bool sendResolvedEvent, CancellationToken token)
         {
             ExecutionContext context = GetContext(sessionId);
             if (req.Locations.Any())
@@ -1612,11 +1636,11 @@ namespace Microsoft.WebAssembly.Diagnostics
 
             var breakpointId = await context.SdbAgent.SetBreakpoint(scope.Method.DebugId, ilOffset.Offset, token);
             context.TempBreakpointForSetNextIP = breakpointId;
-            await SendCommand(sessionId, "Debugger.resume", new JObject(), token);
+            await SendResume(sessionId, token);
             return true;
         }
 
-        private async Task<bool> OnGetScriptSource(MessageId msg_id, string script_id, CancellationToken token)
+        internal virtual async Task<bool> OnGetScriptSource(MessageId msg_id, string script_id, CancellationToken token)
         {
             if (!SourceId.TryParse(script_id, out SourceId id))
                 return false;

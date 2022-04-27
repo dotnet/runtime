@@ -1,11 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
+using Xunit.Sdk;
 
 namespace System.IO.Tests
 {
@@ -51,23 +53,26 @@ namespace System.IO.Tests
         [MemberData(nameof(FilterTypes))]
         public void FileSystemWatcher_File_NotifyFilter_CreationTime(NotifyFilters filter)
         {
-            using (var testDirectory = new TempDirectory(GetTestFilePath()))
-            using (var file = new TempFile(Path.Combine(testDirectory.Path, "file")))
-            using (var watcher = new FileSystemWatcher(testDirectory.Path, Path.GetFileName(file.Path)))
+            FileSystemWatcherTest.Execute(() =>
             {
-                watcher.NotifyFilter = filter;
-                Action action = () => File.SetCreationTime(file.Path, DateTime.Now + TimeSpan.FromSeconds(10));
+                using (var testDirectory = new TempDirectory(GetTestFilePath()))
+                using (var file = new TempFile(Path.Combine(testDirectory.Path, "file")))
+                using (var watcher = new FileSystemWatcher(testDirectory.Path, Path.GetFileName(file.Path)))
+                {
+                    watcher.NotifyFilter = filter;
+                    Action action = () => File.SetCreationTime(file.Path, DateTime.Now + TimeSpan.FromSeconds(10));
 
-                WatcherChangeTypes expected = 0;
-                if (filter == NotifyFilters.CreationTime)
-                    expected |= WatcherChangeTypes.Changed;
-                else if (OperatingSystem.IsLinux() && ((filter & LinuxFiltersForAttribute) > 0))
-                    expected |= WatcherChangeTypes.Changed;
-                else if (OperatingSystem.IsMacOS() && ((filter & OSXFiltersForModify) > 0))
-                    expected |= WatcherChangeTypes.Changed;
+                    WatcherChangeTypes expected = 0;
+                    if (filter == NotifyFilters.CreationTime)
+                        expected |= WatcherChangeTypes.Changed;
+                    else if (OperatingSystem.IsLinux() && ((filter & LinuxFiltersForAttribute) > 0))
+                        expected |= WatcherChangeTypes.Changed;
+                    else if (OperatingSystem.IsMacOS() && ((filter & OSXFiltersForModify) > 0))
+                        expected |= WatcherChangeTypes.Changed;
 
-                ExpectEvent(watcher, expected, action, expectedPath: file.Path);
-            }
+                    ExpectEvent(watcher, expected, action, expectedPath: file.Path);
+                }
+            }, maxAttempts: DefaultAttemptsForExpectedEvent, backoffFunc: (iteration) => RetryDelayMilliseconds, retryWhen: e => e is XunitException);
         }
 
         [Theory]

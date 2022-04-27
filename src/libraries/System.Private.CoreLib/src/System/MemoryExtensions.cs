@@ -6,6 +6,8 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.X86;
 
 namespace System
 {
@@ -1543,21 +1545,10 @@ namespace System
         /// </summary>
         public static void Reverse<T>(this Span<T> span)
         {
-            if (span.Length <= 1)
+            if (span.Length > 1)
             {
-                return;
+                SpanHelpers.Reverse(ref MemoryMarshal.GetReference(span), (nuint)span.Length);
             }
-
-            ref T first = ref MemoryMarshal.GetReference(span);
-            ref T last = ref Unsafe.Add(ref Unsafe.Add(ref first, span.Length), -1);
-            do
-            {
-                T temp = first;
-                first = last;
-                last = temp;
-                first = ref Unsafe.Add(ref first, 1);
-                last = ref Unsafe.Add(ref last, -1);
-            } while (Unsafe.IsAddressLessThan(ref first, ref last));
         }
 
         /// <summary>

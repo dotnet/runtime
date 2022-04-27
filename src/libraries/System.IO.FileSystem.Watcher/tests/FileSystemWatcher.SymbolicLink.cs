@@ -1,7 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using Xunit;
+using Xunit.Sdk;
 
 namespace System.IO.Tests
 {
@@ -78,30 +80,33 @@ namespace System.IO.Tests
         [Fact]
         public void FileSystemWatcher_SymbolicLink_TargetsDirectory_Create_IncludeSubdirectories()
         {
-            // Arrange
-            const string subDir = "subDir";
-            const string subDirLv2 = "subDirLv2";
-            using var tempDir = new TempDirectory(GetTestFilePath());
-            using var tempSubDir = new TempDirectory(Path.Combine(tempDir.Path, subDir));
+            FileSystemWatcherTest.Execute(() =>
+            {
+                // Arrange
+                const string subDir = "subDir";
+                const string subDirLv2 = "subDirLv2";
+                using var tempDir = new TempDirectory(GetTestFilePath());
+                using var tempSubDir = new TempDirectory(Path.Combine(tempDir.Path, subDir));
 
-            string linkPath = CreateSymbolicLinkToTarget(tempDir.Path, isDirectory: true);
-            using var watcher = new FileSystemWatcher(linkPath);
-            watcher.NotifyFilter = NotifyFilters.DirectoryName;
+                string linkPath = CreateSymbolicLinkToTarget(tempDir.Path, isDirectory: true);
+                using var watcher = new FileSystemWatcher(linkPath);
+                watcher.NotifyFilter = NotifyFilters.DirectoryName;
 
-            string subDirLv2Path = Path.Combine(tempSubDir.Path, subDirLv2);
+                string subDirLv2Path = Path.Combine(tempSubDir.Path, subDirLv2);
 
-            // Act - Assert
-            ExpectNoEvent(watcher, WatcherChangeTypes.Created,
-                action: () => Directory.CreateDirectory(subDirLv2Path),
-                cleanup: () => Directory.Delete(subDirLv2Path));
+                // Act - Assert
+                ExpectNoEvent(watcher, WatcherChangeTypes.Created,
+                    action: () => Directory.CreateDirectory(subDirLv2Path),
+                    cleanup: () => Directory.Delete(subDirLv2Path));
 
-            // Turn include subdirectories on.
-            watcher.IncludeSubdirectories = true;
+                // Turn include subdirectories on.
+                watcher.IncludeSubdirectories = true;
 
-            ExpectEvent(watcher, WatcherChangeTypes.Created,
-                action: () => Directory.CreateDirectory(subDirLv2Path),
-                cleanup: () => Directory.Delete(subDirLv2Path),
-                expectedPath: Path.Combine(linkPath, subDir, subDirLv2));
+                ExpectEvent(watcher, WatcherChangeTypes.Created,
+                    action: () => Directory.CreateDirectory(subDirLv2Path),
+                    cleanup: () => Directory.Delete(subDirLv2Path),
+                    expectedPath: Path.Combine(linkPath, subDir, subDirLv2));
+            }, maxAttempts: DefaultAttemptsForExpectedEvent, backoffFunc: (iteration) => RetryDelayMilliseconds, retryWhen: e => e is XunitException);
         }
 
         [Fact]

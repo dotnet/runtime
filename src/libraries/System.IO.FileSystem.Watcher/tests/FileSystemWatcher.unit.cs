@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading;
@@ -11,6 +12,7 @@ using Microsoft.DotNet.XUnitExtensions;
 
 using Xunit;
 using Xunit.Abstractions;
+using Xunit.Sdk;
 
 namespace System.IO.Tests
 {
@@ -952,66 +954,75 @@ namespace System.IO.Tests
         [Fact]
         public void FileSystemWatcher_File_Delete_MultipleFilters()
         {
-            // Check delete events against multiple filters
-
-            DirectoryInfo directory = Directory.CreateDirectory(GetTestFilePath());
-            FileInfo fileOne = new FileInfo(Path.Combine(directory.FullName, GetTestFileName()));
-            FileInfo fileTwo = new FileInfo(Path.Combine(directory.FullName, GetTestFileName()));
-            FileInfo fileThree = new FileInfo(Path.Combine(directory.FullName, GetTestFileName()));
-            fileOne.Create().Dispose();
-            fileTwo.Create().Dispose();
-            fileThree.Create().Dispose();
-
-            using (var watcher = new FileSystemWatcher(directory.FullName))
+            FileSystemWatcherTest.Execute(() =>
             {
-                watcher.Filters.Add(fileOne.Name);
-                watcher.Filters.Add(fileTwo.Name);
+                // Check delete events against multiple filters
 
-                ExpectEvent(watcher, WatcherChangeTypes.Deleted, () => fileOne.Delete(), cleanup: null, expectedPath : fileOne.FullName);
-                ExpectEvent(watcher, WatcherChangeTypes.Deleted, () => fileTwo.Delete(), cleanup: null, expectedPath: fileTwo.FullName );
-                ExpectNoEvent(watcher, WatcherChangeTypes.Deleted, () => fileThree.Delete(), cleanup: null, expectedPath: fileThree.FullName);
-            }
+                DirectoryInfo directory = Directory.CreateDirectory(GetTestFilePath());
+                FileInfo fileOne = new FileInfo(Path.Combine(directory.FullName, GetTestFileName()));
+                FileInfo fileTwo = new FileInfo(Path.Combine(directory.FullName, GetTestFileName()));
+                FileInfo fileThree = new FileInfo(Path.Combine(directory.FullName, GetTestFileName()));
+                fileOne.Create().Dispose();
+                fileTwo.Create().Dispose();
+                fileThree.Create().Dispose();
+
+                using (var watcher = new FileSystemWatcher(directory.FullName))
+                {
+                    watcher.Filters.Add(fileOne.Name);
+                    watcher.Filters.Add(fileTwo.Name);
+
+                    ExpectEvent(watcher, WatcherChangeTypes.Deleted, () => fileOne.Delete(), cleanup: null, expectedPath : fileOne.FullName);
+                    ExpectEvent(watcher, WatcherChangeTypes.Deleted, () => fileTwo.Delete(), cleanup: null, expectedPath: fileTwo.FullName );
+                    ExpectNoEvent(watcher, WatcherChangeTypes.Deleted, () => fileThree.Delete(), cleanup: null, expectedPath: fileThree.FullName);
+                }
+            }, maxAttempts: DefaultAttemptsForExpectedEvent, backoffFunc: (iteration) => RetryDelayMilliseconds, retryWhen: e => e is XunitException);
         }
 
         [Fact]
         public void FileSystemWatcher_Directory_Create_MultipleFilters()
         {
-            // Check create events against multiple filters
-
-            DirectoryInfo directory = Directory.CreateDirectory(GetTestFilePath());
-            string directoryOne = Path.Combine(directory.FullName, GetTestFileName());
-            string directoryTwo = Path.Combine(directory.FullName, GetTestFileName());
-            string directoryThree = Path.Combine(directory.FullName, GetTestFileName());
-
-            using (var watcher = new FileSystemWatcher(directory.FullName))
+            FileSystemWatcherTest.Execute(() =>
             {
-                watcher.Filters.Add(Path.GetFileName(directoryOne));
-                watcher.Filters.Add(Path.GetFileName(directoryTwo));
+                // Check create events against multiple filters
 
-                ExpectEvent(watcher, WatcherChangeTypes.Created, () => Directory.CreateDirectory(directoryOne), cleanup: null, expectedPath: directoryOne);
-                ExpectEvent(watcher, WatcherChangeTypes.Created, () => Directory.CreateDirectory(directoryTwo), cleanup: null, expectedPath: directoryTwo);
-                ExpectNoEvent(watcher, WatcherChangeTypes.Created, () => Directory.CreateDirectory(directoryThree), cleanup: null, expectedPath: directoryThree);
-            }
+                DirectoryInfo directory = Directory.CreateDirectory(GetTestFilePath());
+                string directoryOne = Path.Combine(directory.FullName, GetTestFileName());
+                string directoryTwo = Path.Combine(directory.FullName, GetTestFileName());
+                string directoryThree = Path.Combine(directory.FullName, GetTestFileName());
+
+                using (var watcher = new FileSystemWatcher(directory.FullName))
+                {
+                    watcher.Filters.Add(Path.GetFileName(directoryOne));
+                    watcher.Filters.Add(Path.GetFileName(directoryTwo));
+
+                    ExpectEvent(watcher, WatcherChangeTypes.Created, () => Directory.CreateDirectory(directoryOne), cleanup: null, expectedPath: directoryOne);
+                    ExpectEvent(watcher, WatcherChangeTypes.Created, () => Directory.CreateDirectory(directoryTwo), cleanup: null, expectedPath: directoryTwo);
+                    ExpectNoEvent(watcher, WatcherChangeTypes.Created, () => Directory.CreateDirectory(directoryThree), cleanup: null, expectedPath: directoryThree);
+                }
+            }, maxAttempts: DefaultAttemptsForExpectedEvent, backoffFunc: (iteration) => RetryDelayMilliseconds, retryWhen: e => e is XunitException);
         }
 
         [Fact]
         public void FileSystemWatcher_Directory_Create_Filter_Ctor()
         {
-            // Check create events against multiple filters
-
-            DirectoryInfo directory = Directory.CreateDirectory(GetTestFilePath());
-            string directoryOne = Path.Combine(directory.FullName, GetTestFileName());
-            string directoryTwo = Path.Combine(directory.FullName, GetTestFileName());
-            string directoryThree = Path.Combine(directory.FullName, GetTestFileName());
-
-            using (var watcher = new FileSystemWatcher(directory.FullName, Path.GetFileName(directoryOne)))
+            FileSystemWatcherTest.Execute(() =>
             {
-                watcher.Filters.Add(Path.GetFileName(directoryTwo));
+                // Check create events against multiple filters
 
-                ExpectEvent(watcher, WatcherChangeTypes.Created, () => Directory.CreateDirectory(directoryOne), cleanup: null, expectedPath: directoryOne);
-                ExpectEvent(watcher, WatcherChangeTypes.Created, () => Directory.CreateDirectory(directoryTwo), cleanup: null, expectedPath: directoryTwo);
-                ExpectNoEvent(watcher, WatcherChangeTypes.Created, () => Directory.CreateDirectory(directoryThree), cleanup: null, expectedPath: directoryThree);
-            }
+                DirectoryInfo directory = Directory.CreateDirectory(GetTestFilePath());
+                string directoryOne = Path.Combine(directory.FullName, GetTestFileName());
+                string directoryTwo = Path.Combine(directory.FullName, GetTestFileName());
+                string directoryThree = Path.Combine(directory.FullName, GetTestFileName());
+
+                using (var watcher = new FileSystemWatcher(directory.FullName, Path.GetFileName(directoryOne)))
+                {
+                    watcher.Filters.Add(Path.GetFileName(directoryTwo));
+
+                    ExpectEvent(watcher, WatcherChangeTypes.Created, () => Directory.CreateDirectory(directoryOne), cleanup: null, expectedPath: directoryOne);
+                    ExpectEvent(watcher, WatcherChangeTypes.Created, () => Directory.CreateDirectory(directoryTwo), cleanup: null, expectedPath: directoryTwo);
+                    ExpectNoEvent(watcher, WatcherChangeTypes.Created, () => Directory.CreateDirectory(directoryThree), cleanup: null, expectedPath: directoryThree);
+                }
+            }, maxAttempts: DefaultAttemptsForExpectedEvent, backoffFunc: (iteration) => RetryDelayMilliseconds, retryWhen: e => e is XunitException);
         }
 
         [Fact]
@@ -1036,55 +1047,61 @@ namespace System.IO.Tests
         [Fact]
         public void FileSystemWatcher_File_Create_MultipleFilters()
         {
-            DirectoryInfo directory = Directory.CreateDirectory(GetTestFilePath());
-            FileInfo fileOne = new FileInfo(Path.Combine(directory.FullName, GetTestFileName()));
-            FileInfo fileTwo = new FileInfo(Path.Combine(directory.FullName, GetTestFileName()));
-            FileInfo fileThree = new FileInfo(Path.Combine(directory.FullName, GetTestFileName()));
-
-            using (var watcher = new FileSystemWatcher(directory.FullName))
+            FileSystemWatcherTest.Execute(() =>
             {
-                watcher.Filters.Add(fileOne.Name);
-                watcher.Filters.Add(fileTwo.Name);
+                DirectoryInfo directory = Directory.CreateDirectory(GetTestFilePath());
+                FileInfo fileOne = new FileInfo(Path.Combine(directory.FullName, GetTestFileName()));
+                FileInfo fileTwo = new FileInfo(Path.Combine(directory.FullName, GetTestFileName()));
+                FileInfo fileThree = new FileInfo(Path.Combine(directory.FullName, GetTestFileName()));
 
-                ExpectEvent(watcher, WatcherChangeTypes.Created, () => fileOne.Create().Dispose(), cleanup: null, expectedPath: fileOne.FullName);
-                ExpectEvent(watcher, WatcherChangeTypes.Created, () => fileTwo.Create().Dispose(), cleanup: null, expectedPath: fileTwo.FullName);
-                ExpectNoEvent(watcher, WatcherChangeTypes.Created, () => fileThree.Create().Dispose(), cleanup: null, expectedPath: fileThree.FullName);
-            }
+                using (var watcher = new FileSystemWatcher(directory.FullName))
+                {
+                    watcher.Filters.Add(fileOne.Name);
+                    watcher.Filters.Add(fileTwo.Name);
+
+                    ExpectEvent(watcher, WatcherChangeTypes.Created, () => fileOne.Create().Dispose(), cleanup: null, expectedPath: fileOne.FullName);
+                    ExpectEvent(watcher, WatcherChangeTypes.Created, () => fileTwo.Create().Dispose(), cleanup: null, expectedPath: fileTwo.FullName);
+                    ExpectNoEvent(watcher, WatcherChangeTypes.Created, () => fileThree.Create().Dispose(), cleanup: null, expectedPath: fileThree.FullName);
+                }
+            }, maxAttempts: DefaultAttemptsForExpectedEvent, backoffFunc: (iteration) => RetryDelayMilliseconds, retryWhen: e => e is XunitException);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void FileSystemWatcher_ModifyFiltersConcurrentWithEvents()
         {
-            DirectoryInfo directory = Directory.CreateDirectory(GetTestFilePath());
-            FileInfo fileOne = new FileInfo(Path.Combine(directory.FullName, GetTestFileName()));
-            FileInfo fileTwo = new FileInfo(Path.Combine(directory.FullName, GetTestFileName()));
-            FileInfo fileThree = new FileInfo(Path.Combine(directory.FullName, GetTestFileName()));
-
-            using (var watcher = new FileSystemWatcher(directory.FullName))
+            FileSystemWatcherTest.Execute(() =>
             {
-                watcher.Filters.Add(fileOne.Name);
-                watcher.Filters.Add(fileTwo.Name);
+                DirectoryInfo directory = Directory.CreateDirectory(GetTestFilePath());
+                FileInfo fileOne = new FileInfo(Path.Combine(directory.FullName, GetTestFileName()));
+                FileInfo fileTwo = new FileInfo(Path.Combine(directory.FullName, GetTestFileName()));
+                FileInfo fileThree = new FileInfo(Path.Combine(directory.FullName, GetTestFileName()));
 
-                var cts = new CancellationTokenSource();
-                Thread thread = ThreadTestHelpers.CreateGuardedThread(out Action waitForThread, () =>
+                using (var watcher = new FileSystemWatcher(directory.FullName))
                 {
-                    string otherFilter = Guid.NewGuid().ToString("N");
-                    while (!cts.IsCancellationRequested)
+                    watcher.Filters.Add(fileOne.Name);
+                    watcher.Filters.Add(fileTwo.Name);
+
+                    var cts = new CancellationTokenSource();
+                    Thread thread = ThreadTestHelpers.CreateGuardedThread(out Action waitForThread, () =>
                     {
-                        watcher.Filters.Add(otherFilter);
-                        watcher.Filters.RemoveAt(2);
-                    }
-                });
-                thread.IsBackground = true;
-                thread.Start();
+                        string otherFilter = Guid.NewGuid().ToString("N");
+                        while (!cts.IsCancellationRequested)
+                        {
+                            watcher.Filters.Add(otherFilter);
+                            watcher.Filters.RemoveAt(2);
+                        }
+                    });
+                    thread.IsBackground = true;
+                    thread.Start();
 
-                ExpectEvent(watcher, WatcherChangeTypes.Created, () => fileOne.Create().Dispose(), cleanup: null, expectedPath: fileOne.FullName);
-                ExpectEvent(watcher, WatcherChangeTypes.Created, () => fileTwo.Create().Dispose(), cleanup: null, expectedPath: fileTwo.FullName);
-                ExpectNoEvent(watcher, WatcherChangeTypes.Created, () => fileThree.Create().Dispose(), cleanup: null, expectedPath: fileThree.FullName);
+                    ExpectEvent(watcher, WatcherChangeTypes.Created, () => fileOne.Create().Dispose(), cleanup: null, expectedPath: fileOne.FullName);
+                    ExpectEvent(watcher, WatcherChangeTypes.Created, () => fileTwo.Create().Dispose(), cleanup: null, expectedPath: fileTwo.FullName);
+                    ExpectNoEvent(watcher, WatcherChangeTypes.Created, () => fileThree.Create().Dispose(), cleanup: null, expectedPath: fileThree.FullName);
 
-                cts.Cancel();
-                waitForThread();
-            }
+                    cts.Cancel();
+                    waitForThread();
+                }
+            }, maxAttempts: DefaultAttemptsForExpectedEvent, backoffFunc: (iteration) => RetryDelayMilliseconds, retryWhen: e => e is XunitException);
         }
     }
 

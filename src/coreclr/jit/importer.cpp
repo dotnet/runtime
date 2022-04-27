@@ -1357,10 +1357,7 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
             }
             else // we don't have a GT_ADDR of a GT_LCL_VAR
             {
-                // !!! The destination could be on stack. !!!
-                // This flag will let us choose the correct write barrier.
-                asgType   = returnType;
-                destFlags = GTF_IND_TGTANYWHERE;
+                asgType = returnType;
             }
         }
     }
@@ -1387,13 +1384,6 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
             // Case of inline method returning a struct in one or more registers.
             // We won't need a return buffer
             asgType = src->gtType;
-
-            if ((destAddr->gtOper != GT_ADDR) || (destAddr->AsOp()->gtOp1->gtOper != GT_LCL_VAR))
-            {
-                // !!! The destination could be on stack. !!!
-                // This flag will let us choose the correct write barrier.
-                destFlags = GTF_IND_TGTANYWHERE;
-            }
         }
     }
     else if (src->OperIsBlk())
@@ -1735,10 +1725,6 @@ GenTree* Compiler::impNormStructVal(GenTree*             structVal,
         case GT_RET_EXPR:
             structVal->AsRetExpr()->gtRetClsHnd = structHnd;
             makeTemp                            = true;
-            break;
-
-        case GT_ARGPLACE:
-            structVal->AsArgPlace()->gtArgPlaceClsHnd = structHnd;
             break;
 
         case GT_INDEX:
@@ -7547,7 +7533,7 @@ GenTree* Compiler::impTransformThis(GenTree*                thisPtr,
 
             obj = gtNewOperNode(GT_IND, JITtype2varType(constraintTyp), obj);
             // ldind could point anywhere, example a boxed class static int
-            obj->gtFlags |= (GTF_EXCEPT | GTF_GLOB_REF | GTF_IND_TGTANYWHERE);
+            obj->gtFlags |= (GTF_EXCEPT | GTF_GLOB_REF);
 
             return obj;
         }
@@ -7573,9 +7559,6 @@ GenTree* Compiler::impTransformThis(GenTree*                thisPtr,
                 if (obj->OperIsBlk())
                 {
                     obj->ChangeOperUnchecked(GT_IND);
-
-                    // Obj could point anywhere, example a boxed class static int
-                    obj->gtFlags |= GTF_IND_TGTANYWHERE;
                     obj->AsOp()->gtOp2 = nullptr; // must be zero for tree walkers
                 }
 
@@ -14424,9 +14407,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 op1 = gtNewOperNode(GT_IND, lclTyp, op1);
 
-                // stind could point anywhere, example a boxed class static int
-                op1->gtFlags |= GTF_IND_TGTANYWHERE;
-
                 if (prefixFlags & PREFIX_VOLATILE)
                 {
                     assert(op1->OperGet() == GT_IND);
@@ -14501,7 +14481,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 op1 = gtNewOperNode(GT_IND, lclTyp, op1);
 
                 // ldind could point anywhere, example a boxed class static int
-                op1->gtFlags |= (GTF_EXCEPT | GTF_GLOB_REF | GTF_IND_TGTANYWHERE);
+                op1->gtFlags |= (GTF_EXCEPT | GTF_GLOB_REF);
 
                 if (prefixFlags & PREFIX_VOLATILE)
                 {
@@ -15261,13 +15241,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             op1->gtFlags |= GTF_EXCEPT;
                         }
 
-                        // If the object is a BYREF then our target is a value class and
-                        // it could point anywhere, example a boxed class static int
-                        if (obj->gtType == TYP_BYREF)
-                        {
-                            op1->gtFlags |= GTF_IND_TGTANYWHERE;
-                        }
-
                         DWORD typeFlags = info.compCompHnd->getClassAttribs(resolvedToken.hClass);
                         if (StructHasOverlappingFields(typeFlags))
                         {
@@ -15573,13 +15546,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             op1->gtFlags |= GTF_EXCEPT;
                         }
 
-                        // If object is a BYREF then our target is a value class and
-                        // it could point anywhere, example a boxed class static int
-                        if (obj->gtType == TYP_BYREF)
-                        {
-                            op1->gtFlags |= GTF_IND_TGTANYWHERE;
-                        }
-
                         if (compIsForInlining() &&
                             impInlineIsGuaranteedThisDerefBeforeAnySideEffects(op2, nullptr, obj,
                                                                                impInlineInfo->inlArgInfo))
@@ -15629,16 +15595,26 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 if (!deferStructAssign)
                 {
+                    assert(op1->OperIs(GT_FIELD, GT_IND));
+
                     if (prefixFlags & PREFIX_VOLATILE)
                     {
-                        assert((op1->OperGet() == GT_FIELD) || (op1->OperGet() == GT_IND));
                         op1->gtFlags |= GTF_ORDER_SIDEEFF; // Prevent this from being reordered
                         op1->gtFlags |= GTF_IND_VOLATILE;
                     }
                     if ((prefixFlags & PREFIX_UNALIGNED) && !varTypeIsByte(lclTyp))
                     {
-                        assert((op1->OperGet() == GT_FIELD) || (op1->OperGet() == GT_IND));
                         op1->gtFlags |= GTF_IND_UNALIGNED;
+                    }
+
+                    // Currently, *all* TYP_REF statics are stored inside an "object[]" array that itself
+                    // resides on the managed heap, and so we can use an unchecked write barrier for this
+                    // store. Likewise if we're storing to a field of an on-heap object.
+                    if ((lclTyp == TYP_REF) &&
+                        (((fieldInfo.fieldFlags & CORINFO_FLG_FIELD_STATIC) != 0) || obj->TypeIs(TYP_REF)))
+                    {
+                        static_assert_no_msg(GTF_FLD_TGT_HEAP == GTF_IND_TGT_HEAP);
+                        op1->gtFlags |= GTF_FLD_TGT_HEAP;
                     }
 
                     /* V4.0 allows assignment of i4 constant values to i8 type vars when IL verifier is bypassed (full
@@ -16866,7 +16842,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     op1 = gtNewOperNode(GT_IND, JITtype2varType(jitTyp), op1);
 
                     // Could point anywhere, example a boxed class static int
-                    op1->gtFlags |= GTF_IND_TGTANYWHERE | GTF_GLOB_REF;
+                    op1->gtFlags |= GTF_GLOB_REF;
                     assertImp(varTypeIsArithmetic(op1->gtType));
                 }
                 else
@@ -18926,14 +18902,39 @@ bool Compiler::impIsValueType(typeInfo* pTypeInfo)
     }
 }
 
-/*****************************************************************************
- *  Check to see if the tree is the address of a local or
-    the address of a field in a local.
+//------------------------------------------------------------------------
+// impIsInvariant: check if a tree (created during import) is invariant.
+//
+// Arguments:
+//   tree -- The tree
+//
+// Returns:
+//   true if it is invariant
+//
+// Remarks:
+//   This is a variant of GenTree::IsInvariant that is more suitable for use
+//   during import. Unlike that function, this one handles GT_FIELD nodes.
+//
+bool Compiler::impIsInvariant(const GenTree* tree)
+{
+    return tree->OperIsConst() || impIsAddressInLocal(tree);
+}
 
-    *lclVarTreeOut will contain the GT_LCL_VAR tree when it returns true.
-
- */
-
+//------------------------------------------------------------------------
+// impIsAddressInLocal:
+//   Check to see if the tree is the address of a local or
+//   the address of a field in a local.
+// Arguments:
+//     tree -- The tree
+//     lclVarTreeOut -- [out] the local that this points into
+//
+// Returns:
+//     true if it points into a local
+//
+// Remarks:
+//   This is a variant of GenTree::IsLocalAddrExpr that is more suitable for
+//   use during import. Unlike that function, this one handles GT_FIELD nodes.
+//
 bool Compiler::impIsAddressInLocal(const GenTree* tree, GenTree** lclVarTreeOut)
 {
     if (tree->gtOper != GT_ADDR)
@@ -19544,7 +19545,7 @@ void Compiler::impInlineRecordArgInfo(InlineInfo*   pInlineInfo,
         INDEBUG(curArgVal->AsLclVar()->gtLclILoffs = argNum;)
     }
 
-    if (curArgVal->IsInvariant())
+    if (impIsInvariant(curArgVal))
     {
         inlCurArgInfo->argIsInvariant = true;
         if (inlCurArgInfo->argIsThis && (curArgVal->gtOper == GT_CNS_INT) && (curArgVal->AsIntCon()->gtIconVal == 0))

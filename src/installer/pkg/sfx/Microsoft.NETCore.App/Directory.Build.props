@@ -211,6 +211,7 @@
     <PlatformManifestFileEntry Include="libmono-wasm-eh-wasm.a" IsNative="true" />
     <PlatformManifestFileEntry Include="System.Private.Runtime.InteropServices.Javascript.dll" />
     <PlatformManifestFileEntry Include="dotnet.js" IsNative="true" />
+    <PlatformManifestFileEntry Include="dotnet.worker.js" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.js.symbols" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.d.ts" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.wasm" IsNative="true" />
@@ -237,6 +238,7 @@
     <PlatformManifestFileEntry Include="pinvoke.c" IsNative="true" />
     <PlatformManifestFileEntry Include="pinvoke.h" IsNative="true" />
     <PlatformManifestFileEntry Include="gc-common.h" IsNative="true" />
+    <PlatformManifestFileEntry Include="wasm-config.h" IsNative="true" />
     <PlatformManifestFileEntry Include="emcc-default.rsp" IsNative="true" />
     <PlatformManifestFileEntry Include="emcc-link.rsp" IsNative="true" />
     <PlatformManifestFileEntry Include="emcc-props.json" IsNative="true" />

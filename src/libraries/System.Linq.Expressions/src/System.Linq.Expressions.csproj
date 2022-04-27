@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS;$(NetCoreAppCurrent)-MacCatalyst</TargetFrameworks>
-    <Nullable>enable</Nullable>
     <IsInterpreting>false</IsInterpreting>
     <DefineConstants> $(DefineConstants);FEATURE_FAST_CREATE</DefineConstants>
   </PropertyGroup>

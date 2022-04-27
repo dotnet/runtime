@@ -22,6 +22,11 @@
         <target state="translated">本机类型“{0}”必须在应用的 “System.Runtime.InteropServices.CustomTypeMarshallerAttribute” 上设置 “BufferSize” 字段以指定调用方分配的缓冲区的大小，因为它具有采用调用方分配的 “Span&lt;byte&gt;” 的构造函数</target>
         <note />
       </trans-unit>
+      <trans-unit id="CallerAllocConstructorMustHaveBufferSizeTitle">
+        <source>'BufferSize' should be set on 'CustomTypeMarshallerAttribute'</source>
+        <target state="new">'BufferSize' should be set on 'CustomTypeMarshallerAttribute'</target>
+        <note />
+      </trans-unit>
       <trans-unit id="CallerAllocMarshallingShouldSupportAllocatingMarshallingFallbackDescription">
         <source>A type that supports marshalling from managed to native using a caller-allocated buffer should also support marshalling from managed to native where using a caller-allocated buffer is impossible.</source>
         <target state="translated">支持使用调用方分配的缓冲区从托管到本机封送的类型还应该支持在不可能使用调用方分配的缓冲区情况下从托管到本机封送。</target>
@@ -132,6 +137,11 @@
         <target state="translated">转换为带“{0}”后缀的 “LibraryImport”</target>
         <note />
       </trans-unit>
+      <trans-unit id="CustomMarshallerTypeMustHaveRequiredShapeTitle">
+        <source>Marshaller type does not have the required shape</source>
+        <target state="new">Marshaller type does not have the required shape</target>
+        <note />
+      </trans-unit>
       <trans-unit id="CustomMarshallerTypeMustSupportDirectionDescription">
         <source>A native must set the 'Direction' property on the 'CustomTypeMarshallerAttribute' to a value that sets at least one known flag value on the 'CustomTypeMarshallerDirection' enum</source>
         <target state="translated">本机必须将 “CustomTypeMarshallerAttribute” 上的 “Direction” 属性设置为在 “CustomTypeMarshallerDirection” 枚举上至少设置一个已知标志值的值</target>
@@ -227,9 +237,24 @@
         <target state="translated">在标记为 “LibraryImportAttribute” 时，方法“{0}”应为 “static”、“partial” 和非泛型。P/Invoke 源生成将忽略方法“{0}”。</target>
         <note />
       </trans-unit>
+      <trans-unit id="InvalidCustomTypeMarshallerAttributeUsageTitle">
+        <source>Invalid `CustomTypeMarshallerAttribute` usage</source>
+        <target state="new">Invalid `CustomTypeMarshallerAttribute` usage</target>
+        <note />
+      </trans-unit>
       <trans-unit id="InvalidLibraryImportAttributeUsageTitle">
         <source>Invalid 'LibraryImportAttribute' usage</source>
         <target state="translated">“LibraryImportAttribute” 用法无效</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidNativeTypeTitle">
+        <source>Specified native type is invalid</source>
+        <target state="new">Specified native type is invalid</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidSignaturesInMarshallerShapeTitle">
+        <source>Marshaller type has incompatible method signatures</source>
+        <target state="new">Marshaller type has incompatible method signatures</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidStringMarshallingConfigurationDescription">
@@ -352,6 +377,11 @@
         <target state="translated">类型“{0}”未在应用于该类型的 “System.Runtime.InteropServices.CustomTypeMarshallerAttribute” 中指定托管类型</target>
         <note />
       </trans-unit>
+      <trans-unit id="MissingAllocatingMarshallingFallbackTitle">
+        <source>Marshaller type does not support allocating constructor</source>
+        <target state="new">Marshaller type does not support allocating constructor</target>
+        <note />
+      </trans-unit>
       <trans-unit id="NativeGenericTypeMustBeClosedOrMatchArityDescription">
         <source>The native type '{0}' must be a closed generic or have the same number of generic parameters as the managed type so the emitted code can use a specific instantiation.</source>
         <target state="translated">本机类型“{0}”必须是封闭泛型或具有与托管类型相同数目的泛型参数，以便发出的代码可以使用特定实例化。</target>
@@ -410,6 +440,11 @@
       <trans-unit id="OutTwoStageMarshallingRequiresFromNativeValueMessage">
         <source>The marshaller type '{0}' supports marshalling in the 'Out' direction with the 'TwoStageMarshalling' feature, but it does not provide a 'FromNativeValue' instance method that returns 'void' and takes one parameter.</source>
         <target state="translated">封送处理程序类型“{0}”支持使用 “TwoStageMarshalling” 功能在 “Out” 方向进行封送，但它不提供返回 “void” 并采用一个参数的 “FromNativeValue” 实例方法。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ProvidedMethodsNotSpecifiedInFeaturesTitle">
+        <source>Marshaller type defines a well-known method without specifying support for the corresponding feature</source>
+        <target state="new">Marshaller type defines a well-known method without specifying support for the corresponding feature</target>
         <note />
       </trans-unit>
       <trans-unit id="RefNativeValueUnsupportedDescription">

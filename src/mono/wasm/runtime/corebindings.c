@@ -13,6 +13,7 @@
 #include <mono/metadata/object.h>
 #include <mono/jit/jit.h>
 
+#include "wasm-config.h"
 #include "gc-common.h"
 
 //JS funcs
