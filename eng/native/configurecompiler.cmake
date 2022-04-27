@@ -592,7 +592,6 @@ if (MSVC)
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4201>) # nonstandard extension used : nameless struct/union
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4206>) # nonstandard extension used : translation unit is empty
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4239>) # nonstandard extension used : 'token' : conversion from 'type' to 'type'
-  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4244>) # conversion from 'type1' to 'type2', possible loss of data
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4245>) # conversion from 'type1' to 'type2', signed/unsigned mismatch
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4291>) # no matching operator delete found; memory will not be freed if initialization throws an exception
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4310>) # cast truncates constant value
