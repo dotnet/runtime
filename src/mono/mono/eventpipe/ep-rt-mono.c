@@ -2984,6 +2984,29 @@ ep_rt_mono_fire_bulk_type_event (void)
 
 //---------------------------------------------------------------------------------------
 //
+// get_typeid_for_type is responsible for obtaining the unique type identifier for a
+// particular MonoType. MonoTypes are structs that are not unique pointers. There
+// can be two different MonoTypes that both System.Thread or int32 or bool[]. There
+// is exactly one MonoClass * for any type, so we leverage the MonoClass a MonoType
+// points to in order to obtain a unique type identifier in mono. With that unique
+// MonoClass, its fields this_arg and _byval_arg are unique as well.
+//
+// Arguments:
+//      * mono_type - MonoType to be logged
+//
+// Return Value:
+//      type_id - Unique type identifier of mono_type
+
+static intptr_t
+get_typeid_for_type (MonoType *t) {
+	if (m_type_is_byref (t))
+		return m_class_get_this_arg (mono_class_from_mono_type_internal (t));
+	else
+		return m_class_get_byval_arg (mono_class_from_mono_type_internal (t));
+}
+
+//---------------------------------------------------------------------------------------
+//
 // ep_rt_mono_log_single_type batches a single type into the bulk type array and flushes
 // the array to ETW if it fills up. Most interaction with the type system (type analysis)
 // is done here. This does not recursively batch up any parameter types (arrays or generics),
@@ -3045,11 +3068,8 @@ ep_rt_mono_log_single_type (intptr_t type_id)
 			}
 		}
 
-		// Add array's element's class' unique type identifier to rg_type_parameters array
-		if (m_class_is_byreflike (mono_array_type->eklass))
-			p_val->rg_type_parameters[p_val->c_type_parameters++] = m_class_get_this_arg (mono_array_type->eklass);
-		else
-			p_val->rg_type_parameters[p_val->c_type_parameters++] = m_class_get_byval_arg (mono_array_type->eklass);
+		// mono arrays are always arrays of by value types
+		p_val->rg_type_parameters[p_val->c_type_parameters++] = get_typeid_for_type (m_class_get_byval_arg (mono_array_type->eklass));
 	}
 	else if (mono_type->type == MONO_TYPE_GENERICINST)
 	{
@@ -3057,12 +3077,7 @@ ep_rt_mono_log_single_type (intptr_t type_id)
 		p_val->c_type_parameters = class_inst->type_argc;
 		for (int i = 0; i < class_inst->type_argc; i++)
 		{
-			// Add generic inst parameter's unique type identifier to rg_type_parameters array
-			MonoClass *mono_class_inst_type_class = mono_class_from_mono_type_internal (class_inst->type_argv[i]);
-			if (m_class_is_byreflike (mono_class_inst_type_class))
-				p_val->rg_type_parameters[i] = m_class_get_this_arg (mono_class_inst_type_class);
-			else
-				p_val->rg_type_parameters[i] = m_class_get_byval_arg (mono_class_inst_type_class);
+			p_val->rg_type_parameters[i] = get_typeid_for_type (class_inst->type_argv[i])
 		}
 	}
 
@@ -3193,11 +3208,8 @@ ep_rt_mono_send_method_details_event (MonoMethod *method)
 	MonoClass *klass = method->klass;
 	if (klass)
 	{
-		// Get the unique identifier for a MonoMethod's type
-		if (m_class_is_byreflike (klass))
-			method_type_id = (intptr_t)m_class_get_this_arg (klass);
-		else
-			method_type_id = (intptr_t)m_class_get_byval_arg (klass);
+		MonoType *method_mono_type = mono_class_get_type (klass);
+		method_type_id = get_typeid_for_type (method_mono_type);
 
 		ep_rt_mono_log_type_and_parameters_if_necessary (method_type_id);
 
@@ -3211,12 +3223,7 @@ ep_rt_mono_send_method_details_event (MonoMethod *method)
 	intptr_t method_inst_parameters_type_ids[method_inst_parameter_types_count];
 	for (int i = 0; i < method_inst_parameter_types_count; i++)
 	{
-		// Get the unique identifier for a MonoMethod's instantiation parameter's type
-		MonoClass* method_inst_type_parameter_class = mono_class_from_mono_type_internal (method_inst->type_argv[i]);
-		if (m_class_is_byreflike (method_inst_type_parameter_class))
-			method_inst_parameters_type_ids[i] = m_class_get_this_arg (method_inst_type_parameter_class);
-		else
-			method_inst_parameters_type_ids[i] = m_class_get_byval_arg (method_inst_type_parameter_class);
+		method_inst_parameters_type_ids[i] = get_typeid_for_type (method_inst->type_argv[i])
 
 		ep_rt_mono_log_type_and_parameters_if_necessary (method_inst_parameters_type_ids[i]);
 	}
