@@ -2880,7 +2880,7 @@ typedef struct _EventStructBulkTypeFixedSizedData {
 typedef struct _BultTypeValue {
 	EventStructBulkTypeFixedSizedData fixed_sized_data;
 	uint32_t c_type_parameters;
-	intptr_t rg_type_parameters[100]; // Should be variable length to save space
+	intptr_t rg_type_parameters[32];
 	char *s_name;
 } BulkTypeValue;
 
@@ -3013,7 +3013,7 @@ ep_rt_mono_log_single_type (intptr_t type_id)
 
     // Clear out p_val before filling it out (array elements can get reused if there
     // are enough types that we need to flush to multiple events).
-	memset(p_val->rg_type_parameters, 0, 100);
+	memset(p_val->rg_type_parameters, 0, 32);
 	if (p_val->s_name)
 		p_val->s_name[0] = '\0';
 	p_val->c_type_parameters = 0;
