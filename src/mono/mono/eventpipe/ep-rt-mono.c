@@ -2896,7 +2896,7 @@ ep_rt_mono_get_byte_count_in_event(BulkTypeValue *bulk_type_value)
 	return
 		sizeof(bulk_type_value->fixed_sized_data) +
 		sizeof(bulk_type_value->c_type_parameters) +
-		(sizeof(bulk_type_value->s_name) + 1) * sizeof(char) +  // Size of name, including null terminator
+		(strlen(bulk_type_value->s_name) + 1) * sizeof(char) +  // Size of name, including null terminator
 		bulk_type_value->c_type_parameters * sizeof(uint64_t);	// Type parameters
 }
 
