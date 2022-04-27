@@ -42,8 +42,8 @@ namespace System.Threading.RateLimiting
         // And we cache the list to amortize the allocation cost to as close to 0 as we can get
         private List<Lazy<RateLimiter>>? _cachedLimiters = new();
         private bool _cacheInvalid;
-        private Timer? _timer;
-        private TaskCompletionSource<bool>? _timerTask;
+        private TimerAwaitable _timer;
+        private Task _timerTask;
 
         // Use the Dictionary as the lock field so we don't need to allocate another object for a lock and have another field in the object
         private object Lock => _limiters;
@@ -54,9 +54,19 @@ namespace System.Threading.RateLimiting
             _limiters = new Dictionary<TKey, Lazy<RateLimiter>>(equalityComparer);
             _partitioner = partitioner;
 
-            // TODO: Only create timer once there is an active replenishing limiter
             // TODO: Figure out what interval we should use
-            _timer = new Timer(Replenish, this, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1));
+            _timer = new TimerAwaitable(TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1));
+            _timerTask = RunTimer();
+        }
+
+        private async Task RunTimer()
+        {
+            _timer.Start();
+            while (!_timer.IsCompleted && !_disposed)
+            {
+                await _timer;
+                Replenish(this);
+            }
         }
 
         public override int GetAvailablePermits(TResource resourceID)
@@ -100,6 +110,7 @@ namespace System.Threading.RateLimiting
                 return;
             }
 
+            Dictionary<TKey, Lazy<RateLimiter>> limiters;
             lock (Lock)
             {
                 if (CommonDisposeUnsynchronized())
@@ -107,11 +118,16 @@ namespace System.Threading.RateLimiting
                     return;
                 }
 
-                foreach (KeyValuePair<TKey, Lazy<RateLimiter>> limiter in _limiters)
-                {
-                    limiter.Value.Value.Dispose();
-                }
-                _limiters.Clear();
+                limiters = _limiters;
+                // Don't call Clear() as that would clear the local limiters reference as well, which is what we'll be using to call DisposeAsync on all the limiters
+                _limiters = new Dictionary<TKey, Lazy<RateLimiter>>();
+            }
+
+            _timerTask.GetAwaiter().GetResult();
+
+            foreach (KeyValuePair<TKey, Lazy<RateLimiter>> limiter in limiters)
+            {
+                limiter.Value.Value.Dispose();
             }
         }
 
@@ -130,14 +146,7 @@ namespace System.Threading.RateLimiting
                 _limiters = new Dictionary<TKey, Lazy<RateLimiter>>();
             }
 
-            TaskCompletionSource<bool> tcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
-            Interlocked.Exchange(ref _timerTask, tcs);
-            // if _cacheLimiters is null then the Timer is currently running so we will wait for it to complete
-            // if it's false then the Timer is done running even if the thread is still in the Timer callback, it wont be doing any work we need to wait for
-            if (Interlocked.Exchange(ref _cachedLimiters, null) is null)
-            {
-                await tcs.Task.ConfigureAwait(false);
-            }
+            await _timerTask.ConfigureAwait(false);
 
             foreach (KeyValuePair<TKey, Lazy<RateLimiter>> limiter in limiters)
             {
@@ -157,7 +166,8 @@ namespace System.Threading.RateLimiting
                 return true;
             }
             _disposed = true;
-            _timer?.Dispose();
+            _timer.Stop();
+            _timer.Dispose();
 
             return false;
         }
@@ -170,11 +180,8 @@ namespace System.Threading.RateLimiting
             }
         }
 
-        private static void Replenish(object? state)
+        private static void Replenish(DefaultPartitionedRateLimiter<TResource, TKey> limiter)
         {
-            DefaultPartitionedRateLimiter<TResource, TKey> limiter = (state as DefaultPartitionedRateLimiter<TResource, TKey>)!;
-            Debug.Assert(limiter is not null);
-
             List<Lazy<RateLimiter>>? cachedLimiters = Interlocked.Exchange(ref limiter._cachedLimiters, null);
             if (cachedLimiters is null)
             {
@@ -197,6 +204,7 @@ namespace System.Threading.RateLimiting
                 // If the cache has been invalidated we need to recreate it
                 if (limiter._cacheInvalid)
                 {
+                    cachedLimiters.Clear();
                     bool cacheStillInvalid = false;
                     foreach (KeyValuePair<TKey, Lazy<RateLimiter>> kvp in limiter._limiters)
                     {
@@ -233,12 +241,6 @@ namespace System.Threading.RateLimiting
             finally
             {
                 Interlocked.Exchange(ref limiter._cachedLimiters, cachedLimiters);
-                TaskCompletionSource<bool>? tcs = Interlocked.Exchange(ref limiter._timerTask, null);
-                // DisposeAsync was called and is waiting for the Timer to indicate completion
-                if (tcs is not null)
-                {
-                    tcs.SetResult(true);
-                }
             }
         }
     }

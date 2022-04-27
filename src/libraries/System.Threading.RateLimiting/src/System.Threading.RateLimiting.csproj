@@ -31,6 +31,7 @@ System.Threading.RateLimiting.RateLimitLease</PackageDescription>
     <Compile Include="System\Threading\RateLimiting\ReplenishingRateLimiter.cs" />
     <Compile Include="System\Threading\RateLimiting\SlidingWindowRateLimiter.cs" />
     <Compile Include="System\Threading\RateLimiting\SlidingWindowRateLimiterOptions.cs" />
+    <Compile Include="System\Threading\RateLimiting\TimerAwaitable.cs" />
     <Compile Include="System\Threading\RateLimiting\TokenBucketRateLimiter.cs" />
     <Compile Include="System\Threading\RateLimiting\TokenBucketRateLimiterOptions.cs" />
     <Compile Include="$(CommonPath)System\Collections\Generic\Deque.cs" Link="Common\System\Collections\Generic\Deque.cs" />
