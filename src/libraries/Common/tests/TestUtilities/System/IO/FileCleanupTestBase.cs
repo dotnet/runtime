@@ -79,9 +79,9 @@ namespace System.IO
                 catch (UnauthorizedAccessException)
                 {
                     DirectoryInfo di = new DirectoryInfo(TestDirectory);
-                    foreach (FileInfo file in di.GetFiles("*", SearchOption.AllDirectories))
+                    foreach (FileSystemInfo fsi in di.EnumerateFileSystemInfos("*", SearchOption.AllDirectories))
                     {
-                        file.IsReadOnly = false;
+                        fsi.Attributes = FileAttributes.Normal;
                     }
 
                     Directory.Delete(TestDirectory, recursive: true);
