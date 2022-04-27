@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>>$(NetCoreAppToolCurrent)</TargetFramework>
+    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
     <OutputType>Exe</OutputType>
     <Platforms>x64;x86</Platforms>
     <PlatformTarget>AnyCPU</PlatformTarget>
