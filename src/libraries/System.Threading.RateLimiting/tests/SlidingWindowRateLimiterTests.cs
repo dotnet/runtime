@@ -63,8 +63,11 @@ namespace System.Threading.RateLimiting.Test
         }
 
         [Fact]
-        public async Task CanAcquireMulitpleRequestsAsync()
+        public async Task CanAcquireMultipleRequestsAsync()
         {
+            // This test verifies the following behavior
+            // 1. when we have available permits after replenish to serve the queued requests
+            // 2. when the oldest item from queue is remove to accomodate new requests (QueueProcessingOrder: NewestFirst)
             var limiter = new SlidingWindowRateLimiter(new SlidingWindowRateLimiterOptions(4, QueueProcessingOrder.NewestFirst, 4,
                 TimeSpan.Zero, 3, autoReplenishment: false));
 
@@ -456,7 +459,7 @@ namespace System.Threading.RateLimiting.Test
             var ex = await Assert.ThrowsAsync<TaskCanceledException>(() => wait.AsTask());
             Assert.Equal(cts.Token, ex.CancellationToken);
 
-            wait = limiter.WaitAsync();
+            wait = limiter.WaitAsync(1);
             Assert.False(wait.IsCompleted);
 
             limiter.TryReplenish();
@@ -464,6 +467,7 @@ namespace System.Threading.RateLimiting.Test
 
             lease = await wait;
             Assert.True(lease.IsAcquired);
+            Assert.Equal(1, limiter.GetAvailablePermits());
         }
 
         [Fact]

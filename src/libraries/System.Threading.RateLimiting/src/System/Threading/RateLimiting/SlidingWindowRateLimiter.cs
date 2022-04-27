@@ -241,8 +241,8 @@ namespace System.Threading.RateLimiting
 
                 _lastReplenishmentTick = nowTicks;
 
-                // Increament the current segment index while move the window
-                // We need to know the no. of requests that were acquired in a segment perviously to ensure that we don't acquire more than the permit limit.
+                // Increment the current segment index while move the window
+                // We need to know the no. of requests that were acquired in a segment previously to ensure that we don't acquire more than the permit limit.
                 _currentSegmentIndex = (_currentSegmentIndex + 1) % _options.SegmentsPerWindow;
                 int oldSegmentRequestCount = _requestsPerSegment[_currentSegmentIndex];
                 _requestsPerSegment[_currentSegmentIndex] = 0;
@@ -280,7 +280,7 @@ namespace System.Threading.RateLimiting
                         if (!nextPendingRequest.Tcs.TrySetResult(SuccessfulLease))
                         {
                             // Queued item was canceled so add count back
-                            _requestCount -= nextPendingRequest.Count;
+                            _requestCount += nextPendingRequest.Count;
                             _requestsPerSegment[_currentSegmentIndex] -= nextPendingRequest.Count;
                             // Updating queue count is handled by the cancellation code
                             _queueCount += nextPendingRequest.Count;
