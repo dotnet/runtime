@@ -64,7 +64,7 @@ void GCHeap::ReportGenerationBounds()
         {
             uint64_t range = static_cast<uint64_t>(rangeEnd - rangeStart);
             uint64_t rangeReserved = static_cast<uint64_t>(rangeEndReserved - rangeStart);
-            FIRE_EVENT(GCGenerationRange, generation, rangeStart, range, rangeReserved);
+            FIRE_EVENT(GCGenerationRange, (uint8_t)generation, rangeStart, range, rangeReserved);
         }, nullptr);
     }
 }
@@ -325,19 +325,19 @@ bool GCHeap::IsConcurrentGCInProgress()
 }
 
 #ifdef FEATURE_EVENT_TRACE
-void gc_heap::fire_etw_allocation_event (size_t allocation_amount, 
-                                         int gen_number, 
+void gc_heap::fire_etw_allocation_event (size_t allocation_amount,
+                                         int gen_number,
                                          uint8_t* object_address,
                                          size_t object_size)
 {
 #ifdef FEATURE_REDHAWK
     FIRE_EVENT(GCAllocationTick_V1, (uint32_t)allocation_amount, (uint32_t)gen_to_oh (gen_number));
 #else
-    FIRE_EVENT(GCAllocationTick_V4, 
-                allocation_amount, 
+    FIRE_EVENT(GCAllocationTick_V4,
+                allocation_amount,
                 (uint32_t)gen_to_oh (gen_number),
-                heap_number, 
-                object_address, 
+                heap_number,
+                object_address,
                 object_size);
 #endif //FEATURE_REDHAWK
 }

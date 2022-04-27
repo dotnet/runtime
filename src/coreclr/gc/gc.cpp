@@ -3024,7 +3024,7 @@ void gc_heap::fire_pevents()
         // Not every heap will compact LOH, the ones that didn't will just have 0s
         // in its info.
         FIRE_EVENT(GCLOHCompact,
-                   get_num_heaps(),
+                   (uint16_t)get_num_heaps(),
                    (uint32_t)(sizeof (etw_loh_compact_info)),
                    (void *)loh_compact_info);
     }
@@ -5039,7 +5039,7 @@ BOOL gc_heap::reserve_initial_memory (size_t normal_size, size_t large_size, siz
 
             int numa_node = block_index % numa_node_count;
             bool pinned_block = block_index >= numa_node_count;
-            block->memory_base = (uint8_t*)virtual_alloc (block->block_size, use_large_pages_p && !pinned_block, numa_node);
+            block->memory_base = (uint8_t*)virtual_alloc (block->block_size, use_large_pages_p && !pinned_block, (uint16_t)numa_node);
             if (block->memory_base == nullptr)
             {
                 dprintf(2, ("failed to reserve %Id bytes for on NUMA node %u", block->block_size, numa_node));
@@ -5998,7 +5998,7 @@ public:
         uint16_t proc_no[MAX_SUPPORTED_CPUS];
         uint16_t node_no[MAX_SUPPORTED_CPUS];
         uint16_t max_node_no = 0;
-        for (int i = 0; i < n_heaps; i++)
+        for (uint16_t i = 0; i < n_heaps; i++)
         {
             if (!GCToOSInterface::GetProcessorForHeap (i, &proc_no[i], &node_no[i]))
                 break;
@@ -6188,7 +6188,7 @@ public:
 
         for (int i = gc_heap::n_heaps; i < (int)g_num_active_processors; i++)
         {
-            if (!GCToOSInterface::GetProcessorForHeap (i, &proc_no, &node_no))
+            if (!GCToOSInterface::GetProcessorForHeap ((uint16_t)i, &proc_no, &node_no))
                 break;
 
             int start_heap = (int)numa_node_to_heap_map[node_no];
@@ -6211,8 +6211,8 @@ public:
                     current_heap_on_node = start_heap;
                 }
 
-                proc_no_to_heap_no[proc_no] = current_heap_on_node;
-                proc_no_to_numa_node[proc_no] = node_no;
+                proc_no_to_heap_no[proc_no] = (uint16_t)current_heap_on_node;
+                proc_no_to_numa_node[proc_no] = (uint16_t)node_no;
 
                 current_heap_on_node++;
             }
@@ -6263,7 +6263,7 @@ public:
             }
         } while (!found_node_with_heaps_p);
 
-        return start_index;
+        return (uint16_t)start_index;
     }
 };
 uint8_t* heap_select::sniff_buffer;
@@ -16178,7 +16178,7 @@ BOOL gc_heap::a_fit_segment_end_p (int gen_number,
         {
 #ifdef USE_REGIONS
             *commit_failed_p = TRUE;
-#else 
+#else
             if (!hard_limit_short_seg_end_p)
             {
                 dprintf (2, ("can't grow segment, doing a full gc"));
@@ -32231,7 +32231,7 @@ heap_segment* gc_heap::walk_relocation_sip (heap_segment* current_heap_segment, 
             }
             else
             {
-                if (!plug_start) 
+                if (!plug_start)
                 {
                     plug_start = obj;
                 }
@@ -45769,7 +45769,7 @@ void gc_heap::do_post_gc()
         last_gc_info->memory_load = settings.exit_memory_load;
     else if (settings.entry_memory_load != 0)
         last_gc_info->memory_load = settings.entry_memory_load;
-    last_gc_info->condemned_generation = settings.condemned_generation;
+    last_gc_info->condemned_generation = (uint8_t)settings.condemned_generation;
     last_gc_info->compaction = settings.compaction;
     last_gc_info->concurrent = settings.concurrent;
 
