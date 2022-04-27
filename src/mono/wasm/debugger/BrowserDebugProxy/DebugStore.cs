@@ -330,9 +330,11 @@ namespace Microsoft.WebAssembly.Diagnostics
     internal sealed class MethodInfo
     {
         private MethodDefinition methodDef;
-        private SourceFile source;
+        internal SourceFile Source { get; }
 
-        public SourceId SourceId => source.SourceId;
+        public SourceId SourceId => Source.SourceId;
+
+        public string SourceName => Source.DebuggerFileName;
 
         public string Name { get; }
         public MethodDebugInformation DebugInformation;
@@ -358,7 +360,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             this.Assembly = assembly;
             this.methodDef = asmMetadataReader.GetMethodDefinition(methodDefHandle);
             this.DebugInformation = pdbMetadataReader.GetMethodDebugInformation(methodDefHandle.ToDebugInformationHandle());
-            this.source = source;
+            this.Source = source;
             this.Token = token;
             this.methodDefHandle = methodDefHandle;
             this.Name = asmMetadataReader.GetString(methodDef.Name);
@@ -573,12 +575,26 @@ namespace Microsoft.WebAssembly.Diagnostics
                 return HasDebuggerHidden || (HasStepperBoundary && eventKind == EventKind.Step);
             }
         }
-
         public bool IsLexicallyContainedInMethod(MethodInfo containerMethod)
             => (StartLocation.Line > containerMethod.StartLocation.Line ||
                     (StartLocation.Line == containerMethod.StartLocation.Line && StartLocation.Column > containerMethod.StartLocation.Column)) &&
                 (EndLocation.Line < containerMethod.EndLocation.Line ||
                     (EndLocation.Line == containerMethod.EndLocation.Line && EndLocation.Column < containerMethod.EndLocation.Column));
+
+        internal sealed class SourceComparer : EqualityComparer<MethodInfo>
+        {
+            public override bool Equals(MethodInfo l1, MethodInfo l2)
+            {
+                if (l1.Source.Id == l2.Source.Id)
+                    return true;
+                return false;
+            }
+
+            public override int GetHashCode(MethodInfo loc)
+            {
+                return loc.Source.Id;
+            }
+        }
     }
 
     internal sealed class ParameterInfo
@@ -1012,7 +1028,6 @@ namespace Microsoft.WebAssembly.Diagnostics
     {
         private Dictionary<int, MethodInfo> methods;
         private AssemblyInfo assembly;
-        private int id;
         private Document doc;
         private DocumentHandle docHandle;
         private string url;
@@ -1023,7 +1038,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             this.methods = new Dictionary<int, MethodInfo>();
             this.SourceLinkUri = sourceLinkUri;
             this.assembly = assembly;
-            this.id = id;
+            this.Id = id;
             this.doc = assembly.pdbMetadataReader.GetDocument(docHandle);
             this.docHandle = docHandle;
             this.url = url;
@@ -1079,10 +1094,11 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         public string DebuggerFileName { get; }
         public string Url { get; }
+        public int Id { get; }
         public string AssemblyName => assembly.Name;
         public string DotNetUrl => $"dotnet://{assembly.Name}/{DebuggerFileName}";
 
-        public SourceId SourceId => new SourceId(assembly.Id, this.id);
+        public SourceId SourceId => new SourceId(assembly.Id, this.Id);
         public Uri SourceLinkUri { get; }
         public Uri SourceUri { get; }
 
@@ -1178,7 +1194,6 @@ namespace Microsoft.WebAssembly.Diagnostics
                     return new DeflateStream(stream, CompressionMode.Decompress);
                 }
             }
-
 
             foreach (Uri url in new[] { SourceUri, SourceLinkUri })
             {
