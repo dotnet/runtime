@@ -149,7 +149,7 @@
       </trans-unit>
       <trans-unit id="LimitedSourceGenerationMessage">
         <source>The RegexGenerator couldn't generate a complete source implementation for the specified regular expression due to an internal limitation.</source>
-        <target state="needs-review-translation">RegexGenerator no pudo generar una implementación de origen completa para la expresión regular especificada debido a una opción no admitida o a una expresión regular demasiado compleja.  La implementación interpretará la expresión regular en tiempo de ejecución.</target>
+        <target state="new">The RegexGenerator couldn't generate a complete source implementation for the specified regular expression due to an internal limitation.</target>
         <note />
       </trans-unit>
       <trans-unit id="LimitedSourceGenerationTitle">
