@@ -17,7 +17,6 @@
     <Reference Include="System.Diagnostics.TraceSource" />
     <Reference Include="System.Memory" />
     <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Text.Encoding.Extensions" />
     <Reference Include="System.Threading" />

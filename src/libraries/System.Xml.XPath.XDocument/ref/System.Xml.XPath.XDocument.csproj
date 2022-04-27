@@ -2,13 +2,14 @@
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
   </PropertyGroup>
+
   <ItemGroup>
     <Compile Include="System.Xml.XPath.XDocument.cs" />
   </ItemGroup>
+
   <ItemGroup>
-    <ProjectReference Include="..\..\System.Runtime\ref\System.Runtime.csproj" />
-    <ProjectReference Include="..\..\System.Xml.XDocument\ref\System.Xml.XDocument.csproj" />
-    <ProjectReference Include="..\..\System.Xml.XPath\ref\System.Xml.XPath.csproj" />
-    <ProjectReference Include="..\..\System.Xml.ReaderWriter\ref\System.Xml.ReaderWriter.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\ref\System.Runtime.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Xml.ReaderWriter\ref\System.Xml.ReaderWriter.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Xml.XDocument\ref\System.Xml.XDocument.csproj" />
   </ItemGroup>
 </Project>

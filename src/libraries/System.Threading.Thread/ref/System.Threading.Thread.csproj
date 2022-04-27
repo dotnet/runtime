@@ -9,8 +9,6 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\System.Runtime\ref\System.Runtime.csproj" />
-    <ProjectReference Include="..\..\System.Runtime.Extensions\ref\System.Runtime.Extensions.csproj" />
-    <ProjectReference Include="..\..\System.Security.Principal\ref\System.Security.Principal.csproj" />
     <ProjectReference Include="..\..\System.Threading\ref\System.Threading.csproj" />
   </ItemGroup>
 </Project>
