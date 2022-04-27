@@ -93,6 +93,7 @@ To enable simulated `Assembly.GetCallingAssembly`, you will need:
   <ItemGroup>
     <RuntimeHostConfigurationOption Include="Switch.System.Reflection.Assembly.SimulatedCallingAssembly" Value="true" />
   </ItemGroup>
+```
 
 ## Experimental Reflection Free Mode
 
