@@ -3533,7 +3533,7 @@ void Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
             // Create the assignment node.
             lclStore->ChangeOper(GT_STORE_OBJ);
             GenTreeBlk* objStore = lclStore->AsObj();
-            objStore->gtFlags = GTF_ASG | GTF_IND_NONFAULTING | GTF_IND_TGT_NOT_HEAP;
+            objStore->gtFlags    = GTF_ASG | GTF_IND_NONFAULTING | GTF_IND_TGT_NOT_HEAP;
 #ifndef JIT32_GCENCODER
             objStore->gtBlkOpGcUnsafe = false;
 #endif
