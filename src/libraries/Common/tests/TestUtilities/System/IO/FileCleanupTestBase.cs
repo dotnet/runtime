@@ -69,7 +69,6 @@ namespace System.IO
         /// <summary>Delete the associated test directory.</summary>
         protected virtual void Dispose(bool disposing)
         {
-            // No managed resources to clean up, so disposing is ignored.
             try
             {
                 try
