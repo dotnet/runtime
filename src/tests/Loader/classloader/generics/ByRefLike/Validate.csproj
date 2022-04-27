@@ -1,8 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <!-- See comment in InvalidCSharp project about local ILAsm. -->
-    <IlasmRoundTripIncompatible>true</IlasmRoundTripIncompatible>
     <DisableProjectBuild Condition="'$(RuntimeFlavor)' == 'Mono'">true</DisableProjectBuild>
   </PropertyGroup>
   <ItemGroup>

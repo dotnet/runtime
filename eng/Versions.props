@@ -77,7 +77,7 @@
     <MicrosoftNETCoreDotNetHostPolicyVersion>7.0.0-preview.4.22208.8</MicrosoftNETCoreDotNetHostPolicyVersion>
     <MicrosoftExtensionsDependencyModelVersion>3.1.0</MicrosoftExtensionsDependencyModelVersion>
     <!-- CoreClr dependencies -->
-    <MicrosoftNETCoreILAsmVersion>7.0.0-preview.4.22208.8</MicrosoftNETCoreILAsmVersion>
+    <MicrosoftNETCoreILAsmVersion>7.0.0-preview.5.22226.6</MicrosoftNETCoreILAsmVersion>
     <runtimelinuxarm64MicrosoftNETCoreRuntimeObjWriterVersion>1.0.0-alpha.1.22204.1</runtimelinuxarm64MicrosoftNETCoreRuntimeObjWriterVersion>
     <runtimelinuxx64MicrosoftNETCoreRuntimeObjWriterVersion>1.0.0-alpha.1.22204.1</runtimelinuxx64MicrosoftNETCoreRuntimeObjWriterVersion>
     <runtimelinuxmuslarm64MicrosoftNETCoreRuntimeObjWriterVersion>1.0.0-alpha.1.22204.1</runtimelinuxmuslarm64MicrosoftNETCoreRuntimeObjWriterVersion>
