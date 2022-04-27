@@ -19,9 +19,9 @@ public:
     BinStr(BYTE* pb, DWORD cb) { len = cb; max = cb+8; ptr_ = pb; }
     ~BinStr() { if (ptr_ != buff) delete [] ptr_;   }
 
-    void insertInt8(int val) { if (len >= max) Realloc(); memmove(ptr_+1, ptr_, len); *ptr_ = val; len++; }
+    void insertInt8(int val) { if (len >= max) Realloc(); memmove(ptr_+1, ptr_, len); *ptr_ = (uint8_t)val; len++; }
     void insertInt32(int val) { if (len + 4 > max) Realloc(); memmove(ptr_+4, ptr_, len); SET_UNALIGNED_32(&ptr_[0], val); len+=4; }
-    void appendInt8(int val) { if (len >= max) Realloc(); ptr_[len++] = val; }
+    void appendInt8(int val) { if (len >= max) Realloc(); ptr_[len++] = (uint8_t)val; }
     void appendInt16(int val) { if (len + 2 > max) Realloc(); SET_UNALIGNED_16(&ptr_[len], val); len += 2; }
     void appendInt32(int val) { if (len + 4 > max) Realloc(); SET_UNALIGNED_32(&ptr_[len], val); len += 4; }
     void appendInt64(__int64 *pval) { if (len + 8 > max) Realloc(8); SET_UNALIGNED_64(&ptr_[len],(*pval)); len += 8; }
