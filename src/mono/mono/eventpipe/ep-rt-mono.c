@@ -2863,6 +2863,10 @@ ep_rt_mono_write_event_ee_startup_start (void)
 
 typedef enum {
 	K_ETW_TYPE_FLAGS_ARRAY = 0x8,
+
+	K_ETW_TYPE_FLAGS_ARRAY_RANK_MASK = 0x3F00,
+	K_ETW_TYPE_FLAGS_ARRAY_RANK_SHIFT = 8,
+	K_ETW_TYPE_FLAGS_ARRAY_RANK_MAX = K_ETW_TYPE_FLAGS_ARRAY_RANK_MASK >> K_ETW_TYPE_FLAGS_ARRAY_RANK_SHIFT
 } EtwTypeFlags;
 
 // This only contains the fixed-size data at the top of each struct in
@@ -3063,7 +3067,7 @@ ep_rt_mono_log_single_type (MonoType *mono_type, intptr_t type_id)
 			// Fortunately kEtwTypeFlagsArrayRankMax should be greater than the
 			// number of ranks the type loader will support
 			uint32_t rank = mono_array_type->rank;
-			if (rank < (0x3700 >> 8))
+			if (rank < K_ETW_TYPE_FLAGS_ARRAY_RANK_MAX)
 			{
 				rank <<= 8;
 				p_val->fixed_sized_data.flags |= rank;
