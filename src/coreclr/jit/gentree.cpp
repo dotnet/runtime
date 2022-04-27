@@ -21436,7 +21436,7 @@ GenTree* Compiler::gtNewSimdShuffleNode(var_types   type,
     assert(op2->IsVectorConst());
 
     var_types simdBaseType = JitType2PreciseVarType(simdBaseJitType);
-    assert(varTypeIsArithmetic(simdBaseType) && !varTypeIsLong(simdBaseType));
+    assert(varTypeIsArithmetic(simdBaseType));
 
     if (op2->IsVectorAllBitsSet())
     {
@@ -21649,6 +21649,7 @@ GenTree* Compiler::gtNewSimdShuffleNode(var_types   type,
             // real benefit since shuffle gets its own port rather than using the fp specific ports.
 
             simdBaseJitType = CORINFO_TYPE_DOUBLE;
+            simdBaseType    = TYP_DOUBLE;
         }
 
         cnsNode = gtNewIconNode(control);
