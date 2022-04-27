@@ -945,7 +945,7 @@ namespace System.IO
             }
         }
 
-        private class DisposingFlagStreamReader : StreamReader
+        private sealed class DisposingFlagStreamReader : StreamReader
         {
             private volatile bool _isDisposed;
 
