@@ -9,7 +9,7 @@ using Microsoft.CodeAnalysis;
 
 namespace ILLink.Shared.TrimAnalysis
 {
-	partial class FlowAnnotations
+	readonly partial struct FlowAnnotations
 	{
 		public static bool RequiresDataFlowAnalysis (IMethodSymbol method)
 		{

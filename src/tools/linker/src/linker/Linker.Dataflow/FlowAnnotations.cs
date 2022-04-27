@@ -13,7 +13,7 @@ using Mono.Linker.Dataflow;
 
 namespace ILLink.Shared.TrimAnalysis
 {
-	partial class FlowAnnotations
+	readonly partial struct FlowAnnotations
 	{
 		readonly LinkContext _context;
 		readonly Dictionary<TypeDefinition, TypeAnnotations> _annotations = new Dictionary<TypeDefinition, TypeAnnotations> ();

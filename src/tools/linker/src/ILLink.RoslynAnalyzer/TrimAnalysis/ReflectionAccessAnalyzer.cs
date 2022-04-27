@@ -10,7 +10,7 @@ using Microsoft.CodeAnalysis;
 
 namespace ILLink.RoslynAnalyzer.TrimAnalysis
 {
-	class ReflectionAccessAnalyzer
+	readonly struct ReflectionAccessAnalyzer
 	{
 #pragma warning disable CA1822 // Mark members as static - the other partial implementations might need to be instance methods
 		internal void GetReflectionAccessDiagnostics (in DiagnosticContext diagnosticContext, ITypeSymbol typeSymbol, DynamicallyAccessedMemberTypes requiredMemberTypes, bool declaredOnly = false)
