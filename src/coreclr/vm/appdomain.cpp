@@ -1581,13 +1581,11 @@ bool SystemDomain::IsReflectionInvocationMethod(MethodDesc* pMeth)
                 return true;
         }
 
-        // Check for dynamically generate Invoke methods.
+        // Check for dynamically generated Invoke methods.
         if (pMeth->IsDynamicMethod())
         {
             if (strncmp(pMeth->GetName(), "InvokeStub_", 11) == 0)
-            {
                 return true;
-            }
         }
     }
 

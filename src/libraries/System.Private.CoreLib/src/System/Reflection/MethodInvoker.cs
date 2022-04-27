@@ -1,8 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#define USE_EMIT_INVOKE // Temporary for testing
-
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
@@ -19,18 +17,20 @@ namespace System.Reflection
         public MethodInvoker(RuntimeMethodInfo methodInfo)
         {
             _method = methodInfo;
+
+#if USE_NATIVE_INVOKE
+            // always use the native invoke.
+            _strategyDetermined = true;
+#elif USE_EMIT_INVOKE
+            // always use emit invoke (if it is compatible).
+            _invoked = true;
+#endif
         }
 
         [DebuggerStepThrough]
         [DebuggerHidden]
         public unsafe object? InvokeUnsafe(object? obj, IntPtr* args, Span<object?> argsForTemporaryMonoSupport, BindingFlags invokeAttr)
         {
-#if USE_NATIVE_INVOKE
-            _strategyDetermined = true; // always use the native invoke.
-#elif USE_EMIT_INVOKE
-            _invoked = true; // use the emit invoke on all invokes (assuming it is compatible)
-#endif
-
             if (!_strategyDetermined)
             {
                 if (!_invoked)

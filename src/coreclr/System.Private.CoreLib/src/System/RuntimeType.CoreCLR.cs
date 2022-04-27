@@ -3520,7 +3520,7 @@ namespace System
         /// <summary>
         /// Verify <paramref name="value"/> and optionally convert the value for special cases.
         /// </summary>
-        /// <returns>True if <paramref name="value"/> should be considered a value type, False otherwise</returns>
+        /// <returns>True if <paramref name="value"/> is a value type, False otherwise</returns>
         internal bool CheckValue(
             ref object? value,
             ref bool copyBack,
