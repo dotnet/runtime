@@ -2870,9 +2870,9 @@ typedef enum {
 // fields of the struct described in the manifest.
 typedef struct _EventStructBulkTypeFixedSizedData {
 	uint64_t type_id;
-    uint64_t module_id;
-    uint32_t type_name_id;
-    uint32_t flags;
+	uint64_t module_id;
+	uint32_t type_name_id;
+	uint32_t flags;
 	uint8_t cor_element_type;
 } EventStructBulkTypeFixedSizedData;
 
