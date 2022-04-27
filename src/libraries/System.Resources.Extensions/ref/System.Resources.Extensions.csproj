@@ -6,13 +6,4 @@
   <ItemGroup>
     <Compile Include="System.Resources.Extensions.cs" />
   </ItemGroup>
-
-  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Resources.Writer\ref\System.Resources.Writer.csproj" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and '$(TargetFramework)' != '$(NetCoreAppCurrent)'">
-    <Reference Include="System.Resources.Writer" />
-    <Reference Include="System.Runtime" />
-  </ItemGroup>
 </Project>
