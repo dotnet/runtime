@@ -10,7 +10,7 @@ namespace System.Text.Json.Serialization.Metadata
 {
     internal sealed partial class ReflectionEmitCachingMemberAccessor : MemberAccessor
     {
-        [RequiresDynamicCode("JSON serialization and deserialization might require types that cannot be statically analyzed and might need runtime code generation. Use System.Text.Json source generation for native AOT applications.")]
+        [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
         internal ReflectionEmitCachingMemberAccessor() { }
         [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
             Justification = "The ctor is marked RequiresDynamicCode.")]

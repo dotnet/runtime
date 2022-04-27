@@ -21,7 +21,7 @@ namespace System.Text.Json.Serialization
         /// Constructor. Creates the <see cref="JsonStringEnumConverter"/> with the
         /// default naming policy and allows integer values.
         /// </summary>
-        [RequiresDynamicCode("JSON serialization and deserialization might require types that cannot be statically analyzed and might need runtime code generation. Use System.Text.Json source generation for native AOT applications.")]
+        [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
         public JsonStringEnumConverter()
             : this(namingPolicy: null, allowIntegerValues: true)
         {
@@ -38,7 +38,7 @@ namespace System.Text.Json.Serialization
         /// True to allow undefined enum values. When true, if an enum value isn't
         /// defined it will output as a number rather than a string.
         /// </param>
-        [RequiresDynamicCode("JSON serialization and deserialization might require types that cannot be statically analyzed and might need runtime code generation. Use System.Text.Json source generation for native AOT applications.")]
+        [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
         public JsonStringEnumConverter(JsonNamingPolicy? namingPolicy = null, bool allowIntegerValues = true)
         {
             _namingPolicy = namingPolicy;

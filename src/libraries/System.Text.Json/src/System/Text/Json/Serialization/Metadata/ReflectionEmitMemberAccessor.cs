@@ -13,7 +13,7 @@ namespace System.Text.Json.Serialization.Metadata
     internal sealed class ReflectionEmitMemberAccessor : MemberAccessor
     {
 
-        [RequiresDynamicCode("JSON serialization and deserialization might require types that cannot be statically analyzed and might need runtime code generation. Use System.Text.Json source generation for native AOT applications.")]
+        [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
         internal ReflectionEmitMemberAccessor() { }
 
         [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
@@ -72,7 +72,7 @@ namespace System.Text.Json.Serialization.Metadata
         public override Func<object[], T>? CreateParameterizedConstructor<T>(ConstructorInfo constructor) =>
             CreateDelegate<Func<object[], T>>(CreateParameterizedConstructor(constructor));
 
-        [RequiresDynamicCode("JSON serialization and deserialization might require types that cannot be statically analyzed and might need runtime code generation. Use System.Text.Json source generation for native AOT applications.")]
+        [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
         private static DynamicMethod? CreateParameterizedConstructor(ConstructorInfo constructor)
         {
             Type? type = constructor.DeclaringType;
@@ -121,7 +121,7 @@ namespace System.Text.Json.Serialization.Metadata
             CreateDelegate<JsonTypeInfo.ParameterizedConstructorDelegate<T, TArg0, TArg1, TArg2, TArg3>>(
                 CreateParameterizedConstructor(constructor, typeof(TArg0), typeof(TArg1), typeof(TArg2), typeof(TArg3)));
 
-        [RequiresDynamicCode("JSON serialization and deserialization might require types that cannot be statically analyzed and might need runtime code generation. Use System.Text.Json source generation for native AOT applications.")]
+        [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
         private static DynamicMethod? CreateParameterizedConstructor(ConstructorInfo constructor, Type parameterType1, Type parameterType2, Type parameterType3, Type parameterType4)
         {
             Type? type = constructor.DeclaringType;
@@ -168,7 +168,7 @@ namespace System.Text.Json.Serialization.Metadata
         public override Action<TCollection, object?> CreateAddMethodDelegate<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] TCollection>() =>
             CreateDelegate<Action<TCollection, object?>>(CreateAddMethodDelegate(typeof(TCollection)));
 
-        [RequiresDynamicCode("JSON serialization and deserialization might require types that cannot be statically analyzed and might need runtime code generation. Use System.Text.Json source generation for native AOT applications.")]
+        [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
         private static DynamicMethod CreateAddMethodDelegate(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] Type collectionType)
         {
@@ -253,7 +253,7 @@ namespace System.Text.Json.Serialization.Metadata
         public override Func<object, TProperty> CreatePropertyGetter<TProperty>(PropertyInfo propertyInfo) =>
             CreateDelegate<Func<object, TProperty>>(CreatePropertyGetter(propertyInfo, typeof(TProperty)));
 
-        [RequiresDynamicCode("JSON serialization and deserialization might require types that cannot be statically analyzed and might need runtime code generation. Use System.Text.Json source generation for native AOT applications.")]
+        [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
         private static DynamicMethod CreatePropertyGetter(PropertyInfo propertyInfo, Type runtimePropertyType)
         {
             MethodInfo? realMethod = propertyInfo.GetMethod;
@@ -302,7 +302,7 @@ namespace System.Text.Json.Serialization.Metadata
         public override Action<object, TProperty> CreatePropertySetter<TProperty>(PropertyInfo propertyInfo) =>
             CreateDelegate<Action<object, TProperty>>(CreatePropertySetter(propertyInfo, typeof(TProperty)));
 
-        [RequiresDynamicCode("JSON serialization and deserialization might require types that cannot be statically analyzed and might need runtime code generation. Use System.Text.Json source generation for native AOT applications.")]
+        [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
         private static DynamicMethod CreatePropertySetter(PropertyInfo propertyInfo, Type runtimePropertyType)
         {
             MethodInfo? realMethod = propertyInfo.SetMethod;
@@ -343,7 +343,7 @@ namespace System.Text.Json.Serialization.Metadata
         public override Func<object, TProperty> CreateFieldGetter<TProperty>(FieldInfo fieldInfo) =>
             CreateDelegate<Func<object, TProperty>>(CreateFieldGetter(fieldInfo, typeof(TProperty)));
 
-        [RequiresDynamicCode("JSON serialization and deserialization might require types that cannot be statically analyzed and might need runtime code generation. Use System.Text.Json source generation for native AOT applications.")]
+        [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
         private static DynamicMethod CreateFieldGetter(FieldInfo fieldInfo, Type runtimeFieldType)
         {
             Type? declaringType = fieldInfo.DeclaringType;
@@ -380,7 +380,7 @@ namespace System.Text.Json.Serialization.Metadata
         public override Action<object, TProperty> CreateFieldSetter<TProperty>(FieldInfo fieldInfo) =>
             CreateDelegate<Action<object, TProperty>>(CreateFieldSetter(fieldInfo, typeof(TProperty)));
 
-        [RequiresDynamicCode("JSON serialization and deserialization might require types that cannot be statically analyzed and might need runtime code generation. Use System.Text.Json source generation for native AOT applications.")]
+        [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
         private static DynamicMethod CreateFieldSetter(FieldInfo fieldInfo, Type runtimeFieldType)
         {
             Type? declaringType = fieldInfo.DeclaringType;
@@ -409,7 +409,7 @@ namespace System.Text.Json.Serialization.Metadata
             return dynamicMethod;
         }
 
-        [RequiresDynamicCode("JSON serialization and deserialization might require types that cannot be statically analyzed and might need runtime code generation. Use System.Text.Json source generation for native AOT applications.")]
+        [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
         private static DynamicMethod CreateGetterMethod(string memberName, Type memberType) =>
             new DynamicMethod(
                 memberName + "Getter",
@@ -418,7 +418,7 @@ namespace System.Text.Json.Serialization.Metadata
                 typeof(ReflectionEmitMemberAccessor).Module,
                 skipVisibility: true);
 
-        [RequiresDynamicCode("JSON serialization and deserialization might require types that cannot be statically analyzed and might need runtime code generation. Use System.Text.Json source generation for native AOT applications.")]
+        [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
         private static DynamicMethod CreateSetterMethod(string memberName, Type memberType) =>
             new DynamicMethod(
                 memberName + "Setter",

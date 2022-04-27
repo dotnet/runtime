@@ -7,7 +7,7 @@ namespace System.Text.Json.Serialization.Converters
 {
     internal sealed class EnumConverterFactory : JsonConverterFactory
     {
-        [RequiresDynamicCode("JSON serialization and deserialization might require types that cannot be statically analyzed and might need runtime code generation. Use System.Text.Json source generation for native AOT applications.")]
+        [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
         public EnumConverterFactory()
         {
         }
