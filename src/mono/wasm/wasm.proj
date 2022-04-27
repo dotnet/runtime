@@ -204,7 +204,7 @@
       <CMakeBuildRuntimeConfigureCmd>$(CMakeBuildRuntimeConfigureCmd) -DICU_LIB_DIR=&quot;$(ICULibDir.TrimEnd('\/'))&quot;</CMakeBuildRuntimeConfigureCmd>
       <CMakeBuildRuntimeConfigureCmd>$(CMakeBuildRuntimeConfigureCmd) -DMONO_ARTIFACTS_DIR=&quot;$(MonoArtifactsPath.TrimEnd('\/'))&quot;</CMakeBuildRuntimeConfigureCmd>
       <CMakeBuildRuntimeConfigureCmd>$(CMakeBuildRuntimeConfigureCmd) -DNATIVE_BIN_DIR=&quot;$(NativeBinDir.TrimEnd('\/'))&quot;</CMakeBuildRuntimeConfigureCmd>
-      <CMakeBuildRuntimeConfigureCmd Condition="'$(MonoWasmThreads)' != 'true'">$(CMakeBuildRuntimeConfigureCmd) -DDISABLE_THREADS=1</CMakeBuildRuntimeConfigureCmd>
+      <CMakeBuildRuntimeConfigureCmd Condition="'$(MonoWasmThreads)' == 'true'">$(CMakeBuildRuntimeConfigureCmd) -DDISABLE_THREADS=0</CMakeBuildRuntimeConfigureCmd>
       <CMakeBuildRuntimeConfigureCmd Condition="'$(MonoWasmThreadsNoUser)' == 'true'">$(CMakeBuildRuntimeConfigureCmd) -DDISABLE_WASM_USER_THREADS=1</CMakeBuildRuntimeConfigureCmd>
       <CMakeBuildRuntimeConfigureCmd>$(CMakeBuildRuntimeConfigureCmd) $(CMakeConfigurationEmsdkPath)</CMakeBuildRuntimeConfigureCmd>
 
