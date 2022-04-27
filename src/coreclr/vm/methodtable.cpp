@@ -5476,7 +5476,7 @@ namespace
         MethodTable *interfaceMT,
         BOOL allowVariance,
         MethodDesc **candidateMD,
-        BOOL throwOnConflict)
+        BOOL *uniqueResolution)
     {
         *candidateMD = NULL;
 
@@ -5570,7 +5570,7 @@ namespace
                             interfaceMT,
                             interfaceMD,
                             /* verifyImplemented */ FALSE,
-                            /* throwOnConflict */ throwOnConflict);
+                            /* uniqueResolution */ uniqueResolution);
                     }
                 }
             }
@@ -5616,7 +5616,7 @@ BOOL MethodTable::FindDefaultInterfaceImplementation(
         INSTANCE_CHECK;
         MODE_ANY;
         THROWS;
-        GC_TRIGGERS;
+        // GC_TRIGGERS;
         PRECONDITION(CheckPointer(pInterfaceMD));
         PRECONDITION(CheckPointer(pInterfaceMT));
         PRECONDITION(CheckPointer(ppDefaultMethod));
@@ -5629,7 +5629,8 @@ BOOL MethodTable::FindDefaultInterfaceImplementation(
 
     // Check the current method table itself
     MethodDesc *candidateMaybe = NULL;
-    if (IsInterface() && TryGetCandidateImplementation(this, pInterfaceMD, pInterfaceMT, allowVariance, &candidateMaybe, throwOnConflict))
+    BOOL uniqueResolution;
+    if (IsInterface() && TryGetCandidateImplementation(this, pInterfaceMD, pInterfaceMT, allowVariance, &candidateMaybe, &uniqueResolution))
     {
         _ASSERTE(candidateMaybe != NULL);
 
@@ -5669,7 +5670,7 @@ BOOL MethodTable::FindDefaultInterfaceImplementation(
                 MethodTable *pCurMT = it.GetInterface(pMT);
 
                 MethodDesc *pCurMD = NULL;
-                if (TryGetCandidateImplementation(pCurMT, pInterfaceMD, pInterfaceMT, allowVariance, &pCurMD, throwOnConflict))
+                if (TryGetCandidateImplementation(pCurMT, pInterfaceMD, pInterfaceMT, allowVariance, &pCurMD, &uniqueResolution))
                 {
                     //
                     // Found a match. But is it a more specific match (we want most specific interfaces)
@@ -7998,7 +7999,7 @@ MethodTable::ResolveVirtualStaticMethod(
     BOOL allowNullResult,
     BOOL verifyImplemented,
     BOOL allowVariantMatches,
-    BOOL throwOnConflict)
+    BOOL* uniqueResolution)
 {
     if (!pInterfaceMD->IsSharedByGenericMethodInstantiations() && !pInterfaceType->IsSharedByGenericInstantiations())
     {
@@ -8027,7 +8028,7 @@ MethodTable::ResolveVirtualStaticMethod(
             // Search for match on a per-level in the type hierarchy
             for (MethodTable* pMT = this; pMT != nullptr; pMT = pMT->GetParentMethodTable())
             {
-                MethodDesc* pMD = pMT->TryResolveVirtualStaticMethodOnThisType(pInterfaceType, pInterfaceMD, verifyImplemented, throwOnConflict);
+                MethodDesc* pMD = pMT->TryResolveVirtualStaticMethodOnThisType(pInterfaceType, pInterfaceMD, verifyImplemented, uniqueResolution);
                 if (pMD != nullptr)
                 {
                     return pMD;
@@ -8071,7 +8072,7 @@ MethodTable::ResolveVirtualStaticMethod(
                         {
                             // Variant or equivalent matching interface found
                             // Attempt to resolve on variance matched interface
-                            pMD = pMT->TryResolveVirtualStaticMethodOnThisType(pItfInMap, pInterfaceMD, verifyImplemented, throwOnConflict);
+                            pMD = pMT->TryResolveVirtualStaticMethodOnThisType(pItfInMap, pInterfaceMD, verifyImplemented, uniqueResolution);
                             if (pMD != nullptr)
                             {
                                 return pMD;
@@ -8080,19 +8081,19 @@ MethodTable::ResolveVirtualStaticMethod(
                     }
                 }
 
-                // I have yet to figure out how to modify getCallInfo to support lazy throws upon
-                // ambiguous default interface method resolution. For now this effectively disables
-                // the uniqueness check.
-                /*BOOL haveUniqueDefaultImplementation =*/ pMT->FindDefaultInterfaceImplementation(
+                BOOL haveUniqueDefaultImplementation = pMT->FindDefaultInterfaceImplementation(
                     pInterfaceMD,
                     pInterfaceType,
                     &pMD,
                     /* allowVariance */ allowVariantMatches,
-                    /* throwOnConflict */ throwOnConflict);
-                // if (haveUniqueDefaultImplementation || (pMD != nullptr && verifyImplemented))
-                if (pMD != nullptr)
+                    /* throwOnConflict */ uniqueResolution == nullptr);
+                if (haveUniqueDefaultImplementation || (pMD != nullptr && verifyImplemented))
                 {
                     // We tolerate conflicts upon verification of implemented SVMs so that they only blow up when actually called at execution time.
+                    if (uniqueResolution != nullptr)
+                    {
+                        *uniqueResolution = haveUniqueDefaultImplementation;
+                    }
                     return pMD;
                 }
             }
@@ -8115,7 +8116,7 @@ MethodTable::ResolveVirtualStaticMethod(
 // Try to locate the appropriate MethodImpl matching a given interface static virtual method.
 // Returns nullptr on failure.
 MethodDesc*
-MethodTable::TryResolveVirtualStaticMethodOnThisType(MethodTable* pInterfaceType, MethodDesc* pInterfaceMD, BOOL verifyImplemented, BOOL throwOnConflict)
+MethodTable::TryResolveVirtualStaticMethodOnThisType(MethodTable* pInterfaceType, MethodDesc* pInterfaceMD, BOOL verifyImplemented, BOOL* uniqueResolution)
 {
     HRESULT hr = S_OK;
     IMDInternalImport* pMDInternalImport = GetMDImport();
@@ -8250,7 +8251,7 @@ MethodTable::TryResolveVirtualStaticMethodOnThisType(MethodTable* pInterfaceType
             {
                 return pMethodImpl;
             }
-            if (pPrevMethodImpl != nullptr && throwOnConflict)
+            if (pPrevMethodImpl != nullptr && uniqueResolution == nullptr)
             {
                 // Two MethodImpl records found for the same virtual static interface method
                 COMPlusThrow(kTypeLoadException, E_FAIL);
@@ -8275,6 +8276,10 @@ MethodTable::VerifyThatAllVirtualStaticMethodsAreImplemented()
             for (MethodIterator it(pInterfaceMT); it.IsValid(); it.Next())
             {
                 MethodDesc *pMD = it.GetMethodDesc();
+                // This flag is not really used, passing its address to ResolveVirtualStaticMethod just suppresses
+                // the ambiguous resolution exception throw as we should delay the exception until we actually hit
+                // the ambiguity at execution time.
+                BOOL uniqueResolution;
                 if (pMD->IsVirtual() &&
                     pMD->IsStatic() &&
                     (pMD->IsAbstract() &&
@@ -8284,7 +8289,7 @@ MethodTable::VerifyThatAllVirtualStaticMethodsAreImplemented()
                         /* allowNullResult */ TRUE,
                         /* verifyImplemented */ TRUE,
                         /* allowVariantMatches */ FALSE,
-                        /* throwOnConflict */ FALSE)))
+                        /* uniqueResolution */ &uniqueResolution)))
                 {
                     IMDInternalImport* pInternalImport = GetModule()->GetMDImport();
                     GetModule()->GetAssembly()->ThrowTypeLoadException(pInternalImport, GetCl(), pMD->GetName(), IDS_CLASSLOAD_STATICVIRTUAL_NOTIMPL);
@@ -8317,14 +8322,15 @@ MethodTable::TryResolveConstraintMethodApprox(
     {
         _ASSERTE(!thInterfaceType.IsTypeDesc());
         _ASSERTE(thInterfaceType.IsInterface());
+        BOOL uniqueResolution;
         MethodDesc *result = ResolveVirtualStaticMethod(
             thInterfaceType.GetMethodTable(),
             pInterfaceMD,
             /* allowNullResult */pfForceUseRuntimeLookup != NULL,
             /* verifyImplemented */ FALSE,
             /* allowVariantMatches */ TRUE,
-            /* throwOnConflict */ FALSE);
-        if (result == NULL)
+            &uniqueResolution);
+        if (result == NULL || !uniqueResolution)
         {
             *pfForceUseRuntimeLookup = TRUE;
         }

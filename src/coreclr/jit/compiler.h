@@ -3847,6 +3847,7 @@ public:
     GenTree* getRuntimeContextTree(CORINFO_RUNTIME_LOOKUP_KIND kind);
 
     GenTree* impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken,
+                                    CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken,
                                     CORINFO_LOOKUP*         pLookup,
                                     void*                   compileTimeHandle);
 

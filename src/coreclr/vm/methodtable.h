@@ -2092,14 +2092,15 @@ public:
     // Specify allowNullResult to return NULL instead of throwing if the there is no implementation
     // Specify verifyImplemented to verify that there is a match, but do not actually return a final usable MethodDesc
     // Specify allowVariantMatches to permit generic interface variance
-    // Specify throwOnConflict to throw upon ambiguous static virtual method resolution.
+    // Specify uniqueResolution to store the flag saying whether the resolution was unambiguous;
+    // when NULL, throw an AmbiguousResolutionException upon hitting ambiguous SVM resolution.
     MethodDesc *ResolveVirtualStaticMethod(
         MethodTable* pInterfaceType,
         MethodDesc* pInterfaceMD,
         BOOL allowNullResult,
         BOOL verifyImplemented = FALSE,
         BOOL allowVariantMatches = TRUE,
-        BOOL throwOnConflict = TRUE);
+        BOOL *uniqueResolution = NULL);
 
     // Try a partial resolve of the constraint call, up to generic code sharing.
     //
@@ -2217,7 +2218,7 @@ public:
 
     // Try to resolve a given static virtual method override on this type. Return nullptr
     // when not found.
-    MethodDesc *TryResolveVirtualStaticMethodOnThisType(MethodTable* pInterfaceType, MethodDesc* pInterfaceMD, BOOL verifyImplemented, BOOL throwOnConflict);
+    MethodDesc *TryResolveVirtualStaticMethodOnThisType(MethodTable* pInterfaceType, MethodDesc* pInterfaceMD, BOOL verifyImplemented, BOOL* uniqueResolution);
 
 public:
     static MethodDesc *MapMethodDeclToMethodImpl(MethodDesc *pMDDecl);

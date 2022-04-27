@@ -2027,7 +2027,7 @@ GenTree* Compiler::impLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken,
 
     // Need to use dictionary-based access which depends on the typeContext
     // which is only available at runtime, not at compile-time.
-    return impRuntimeLookupToTree(pResolvedToken, pLookup, compileTimeHandle);
+    return impRuntimeLookupToTree(pResolvedToken, nullptr, pLookup, compileTimeHandle);
 }
 
 #ifdef FEATURE_READYTORUN
@@ -2202,13 +2202,15 @@ GenTree* Compiler::getRuntimeContextTree(CORINFO_RUNTIME_LOOKUP_KIND kind)
         // context is the method table pointer of the this object
         ctxTree = gtNewMethodTableLookup(ctxTree);
     }
-    else
+    else if (kind == CORINFO_LOOKUP_METHODPARAM || kind == CORINFO_LOOKUP_CLASSPARAM)
     {
-        assert(kind == CORINFO_LOOKUP_METHODPARAM || kind == CORINFO_LOOKUP_CLASSPARAM);
-
         // Exact method descriptor as passed in
         ctxTree = gtNewLclvNode(pRoot->info.compTypeCtxtArg, TYP_I_IMPL);
         ctxTree->gtFlags |= GTF_VAR_CONTEXT;
+    }
+    else
+    {
+        assert(kind == CORINFO_LOOKUP_VIRTUALSTATIC);
     }
     return ctxTree;
 }
@@ -2232,10 +2234,20 @@ GenTree* Compiler::getRuntimeContextTree(CORINFO_RUNTIME_LOOKUP_KIND kind)
  */
 
 GenTree* Compiler::impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken,
+                                          CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken,
                                           CORINFO_LOOKUP*         pLookup,
                                           void*                   compileTimeHandle)
 {
-    GenTree* ctxTree = getRuntimeContextTree(pLookup->lookupKind.runtimeLookupKind);
+    GenTree* ctxTree;
+
+    if (pLookup->lookupKind.runtimeLookupKind == CORINFO_LOOKUP_VIRTUALSTATIC)
+    {
+        ctxTree = gtNewIconEmbClsHndNode(pConstrainedResolvedToken->hClass);
+    }
+    else
+    {
+        ctxTree = getRuntimeContextTree(pLookup->lookupKind.runtimeLookupKind);
+    }
 
     CORINFO_RUNTIME_LOOKUP* pRuntimeLookup = &pLookup->runtimeLookup;
     // It's available only via the run-time helper function
@@ -9455,6 +9467,48 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
         switch (callInfo->kind)
         {
+            case CORINFO_VIRTUALSTATICCALL_STUB:
+            {
+                assert(mflags & CORINFO_FLG_STATIC);
+                if (callInfo->stubLookup.lookupKind.needsRuntimeLookup)
+                {
+                    GenTree* stubAddr = impRuntimeLookupToTree(pResolvedToken, pConstrainedResolvedToken, &callInfo->stubLookup, methHnd);
+                    assert(stubAddr != nullptr);
+
+                    // The stubAddr may be a
+                    // complex expression. As it is evaluated after the args,
+                    // it may cause registered args to be spilled. Simply spill it.
+
+                    unsigned lclNum = lvaGrabTemp(true DEBUGARG("VirtualCall with runtime lookup"));
+                    impAssignTempGen(lclNum, stubAddr, (unsigned)CHECK_SPILL_NONE);
+                    stubAddr = gtNewLclvNode(lclNum, TYP_I_IMPL);
+
+                    call = gtNewIndCallNode(stubAddr, callRetTyp);
+
+                    call->gtFlags |= GTF_EXCEPT | (stubAddr->gtFlags & GTF_GLOB_EFFECT);
+                    call->gtFlags |= GTF_CALL_VIRT_STUB;
+
+#ifdef TARGET_X86
+                    // No tailcalls allowed for these yet...
+                    canTailCall             = false;
+                    szCanTailCallFailReason = "VirtualStaticCall with runtime lookup";
+#endif
+                }
+                else
+                {
+                    // The stub address is known at compile time
+                    call                               = gtNewCallNode(CT_USER_FUNC, callInfo->hMethod, callRetTyp, di);
+                    call->AsCall()->gtStubCallStubAddr = callInfo->stubLookup.constLookup.addr;
+                    call->gtFlags |= GTF_CALL_VIRT_STUB;
+                    assert(callInfo->stubLookup.constLookup.accessType != IAT_PPVALUE &&
+                           callInfo->stubLookup.constLookup.accessType != IAT_RELPVALUE);
+                    if (callInfo->stubLookup.constLookup.accessType == IAT_PVALUE)
+                    {
+                        call->AsCall()->gtCallMoreFlags |= GTF_CALL_M_VIRTSTUB_REL_INDIRECT;
+                    }
+                }
+                break;
+            }
 
             case CORINFO_VIRTUALCALL_STUB:
             {
@@ -9470,7 +9524,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                         return TYP_UNDEF;
                     }
 
-                    GenTree* stubAddr = impRuntimeLookupToTree(pResolvedToken, &callInfo->stubLookup, methHnd);
+                    GenTree* stubAddr = impRuntimeLookupToTree(pResolvedToken, nullptr, &callInfo->stubLookup, methHnd);
                     assert(!compDonotInline());
 
                     // This is the rough code to set up an indirect stub call

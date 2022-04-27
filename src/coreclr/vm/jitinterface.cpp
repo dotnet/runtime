@@ -2875,6 +2875,18 @@ static bool IsTypeSpecForTypicalInstantiation(SigPointer sigptr)
     return IsSignatureForTypicalInstantiation(sigptr, ELEMENT_TYPE_VAR, ntypars);
 }
 
+static void EncodeStaticVirtualRuntimeLookup(CORINFO_LOOKUP *pResultLookup, CORINFO_METHOD_HANDLE methodHandle)
+{
+    pResultLookup->lookupKind.runtimeLookupKind = CORINFO_LOOKUP_VIRTUALSTATIC;
+
+    CORINFO_RUNTIME_LOOKUP *pResult = &pResultLookup->runtimeLookup;
+    pResult->signature = (void*)methodHandle;
+    pResult->helper = CORINFO_HELP_VIRTUAL_STATIC;
+    pResult->indirections = CORINFO_USEHELPER;
+    pResult->testForNull = 0;
+    pResult->testForFixup = 0;
+}
+
 void CEEInfo::ComputeRuntimeLookupForSharedGenericToken(DictionaryEntryKind entryKind,
                                                         CORINFO_RESOLVED_TOKEN * pResolvedToken,
                                                         CORINFO_RESOLVED_TOKEN * pConstrainedResolvedToken,
@@ -2913,7 +2925,20 @@ void CEEInfo::ComputeRuntimeLookupForSharedGenericToken(DictionaryEntryKind entr
 
     // There is a pathological case where invalid IL refereces __Canon type directly, but there is no dictionary availabled to store the lookup.
     if (!pContextMD->IsSharedByGenericInstantiations())
+    {
+        if (pTemplateMD->IsStatic() && pConstrainedResolvedToken != nullptr)
+        {
+            pResultLookup->lookupKind.runtimeLookupKind = CORINFO_LOOKUP_VIRTUALSTATIC;
+            pResult->signature = (void*)pResolvedToken->hMethod;
+            pResult->helper = CORINFO_HELP_VIRTUAL_STATIC;
+            pResult->indirections = CORINFO_USEHELPER;
+            pResult->testForNull = 0;
+            pResult->testForFixup = 0;
+            return;
+        }
+    
         COMPlusThrow(kInvalidProgramException);
+    }
 
     BOOL fInstrument = FALSE;
 
@@ -4842,6 +4867,8 @@ void CEEInfo::getCallInfo(
         constrainedType = TypeHandle(pConstrainedResolvedToken->hClass);
     }
 
+    BOOL fIsStaticVirtualMethod = (pConstrainedResolvedToken != NULL && pMD->IsInterface() && pMD->IsStatic());
+
     BOOL fResolvedConstraint = FALSE;
     BOOL fForceUseRuntimeLookup = FALSE;
 
@@ -4935,9 +4962,13 @@ void CEEInfo::getCallInfo(
         {
             pResult->thisTransform = CORINFO_BOX_THIS;
         }
-        else
+        else if (!fIsStaticVirtualMethod)
         {
             pResult->thisTransform = CORINFO_DEREF_THIS;
+        }
+        else
+        {
+            pResult->thisTransform = CORINFO_NO_THIS_TRANSFORM;
         }
     }
 
@@ -4988,7 +5019,7 @@ void CEEInfo::getCallInfo(
     bool directCall = false;
     bool resolvedCallVirt = false;
 
-    if (flags & CORINFO_CALLINFO_LDFTN)
+    if ((flags & CORINFO_CALLINFO_LDFTN) && (!fIsStaticVirtualMethod || fResolvedConstraint))
     {
         // Since the ldvirtftn instruction resolves types
         // at run-time we do this earlier than ldftn. The
@@ -5013,12 +5044,12 @@ void CEEInfo::getCallInfo(
     }
     else
     // Static methods are always direct calls
-    if (pTargetMD->IsStatic())
+    if (pTargetMD->IsStatic() && (!fIsStaticVirtualMethod || fResolvedConstraint))
     {
         directCall = true;
     }
     else
-    if (!(flags & CORINFO_CALLINFO_CALLVIRT) || fResolvedConstraint)
+    if ((!fIsStaticVirtualMethod && !(flags & CORINFO_CALLINFO_CALLVIRT)) || fResolvedConstraint)
     {
         directCall = true;
     }
@@ -5146,13 +5177,13 @@ void CEEInfo::getCallInfo(
     // All virtual calls which take method instantiations must
     // currently be implemented by an indirect call via a runtime-lookup
     // function pointer
-    else if (pTargetMD->HasMethodInstantiation())
+    else if (pTargetMD->HasMethodInstantiation() && !fIsStaticVirtualMethod)
     {
         pResult->kind = CORINFO_VIRTUALCALL_LDVIRTFTN;  // stub dispatch can't handle generic method calls yet
         pResult->nullInstanceCheck = TRUE;
     }
     // Non-interface dispatches go through the vtable.
-    else if (!pTargetMD->IsInterface())
+    else if (!pTargetMD->IsInterface() && !fIsStaticVirtualMethod)
     {
         pResult->kind = CORINFO_VIRTUALCALL_VTABLE;
         pResult->nullInstanceCheck = TRUE;
@@ -5165,17 +5196,21 @@ void CEEInfo::getCallInfo(
         pResult->kind = CORINFO_VIRTUALCALL_LDVIRTFTN;
 #else // STUB_DISPATCH_PORTABLE
         pResult->kind = CORINFO_VIRTUALCALL_STUB;
+        if (fIsStaticVirtualMethod)
+        {
+            pResult->kind = CORINFO_VIRTUALSTATICCALL_STUB;
+        }
 
         // We can't make stub calls when we need exact information
         // for interface calls from shared code.
 
-        if (pResult->exactContextNeedsRuntimeLookup)
+        if (pResult->exactContextNeedsRuntimeLookup || fIsStaticVirtualMethod)
         {
             _ASSERTE(!m_pMethodBeingCompiled->IsDynamicMethod());
 
             ComputeRuntimeLookupForSharedGenericToken(DispatchStubAddrSlot,
                                                         pResolvedToken,
-                                                        NULL,
+                                                        pConstrainedResolvedToken,
                                                         pMD,
                                                         &pResult->stubLookup);
         }

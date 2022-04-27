@@ -5659,6 +5659,26 @@ HCIMPLEND_RAW
 EXTERN_C void JIT_ValidateIndirectCall();
 EXTERN_C void JIT_DispatchIndirectCall();
 
+HCIMPL2_VV(void*, JIT_DispatchVirtualStatic, MethodTable *constrainedType, MethodDesc *interfaceMethod)
+{
+    FCALL_CONTRACT;
+
+    BOOL uniqueResolution;
+    MethodDesc *methodDesc = constrainedType->ResolveVirtualStaticMethod(
+        interfaceMethod->GetMethodTable(),
+        interfaceMethod,
+        /* allowNullResult */ FALSE,
+        /* verifyImplemented */ FALSE,
+        /* allowVariantMatches */ TRUE,
+        /* uniqueResolution */ &uniqueResolution);
+    if (methodDesc != nullptr && !uniqueResolution)
+    {
+        FCThrow(kAmbiguousImplementationException);
+    }
+    return methodDesc;
+}
+HCIMPLEND
+
 //========================================================================
 //
 //      JIT HELPERS INITIALIZATION
