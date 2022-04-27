@@ -62,7 +62,7 @@ namespace System.Threading.RateLimiting
         private async Task RunTimer()
         {
             _timer.Start();
-            while (!_timer.IsCompleted && !_disposed)
+            while (!_disposed)
             {
                 await _timer;
                 Replenish(this);
