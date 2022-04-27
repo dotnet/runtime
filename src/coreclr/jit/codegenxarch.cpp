@@ -5531,7 +5531,7 @@ void CodeGen::genCall(GenTreeCall* call)
 #ifdef FEATURE_PUT_STRUCT_ARG_STK
             if (source->TypeIs(TYP_STRUCT) && !source->OperIs(GT_FIELD_LIST))
             {
-                unsigned loadSize = source->AsObj()->GetLayout()->GetSize();
+                unsigned loadSize = source->GetLayout(compiler)->GetSize();
                 assert(argSize == roundUp(loadSize, TARGET_POINTER_SIZE));
             }
 #endif // FEATURE_PUT_STRUCT_ARG_STK
@@ -7788,11 +7788,11 @@ bool CodeGen::genAdjustStackForPutArgStk(GenTreePutArgStk* putArgStk)
     {
         case GenTreePutArgStk::Kind::RepInstr:
         case GenTreePutArgStk::Kind::Unroll:
-            assert(!source->AsObj()->GetLayout()->HasGCPtr());
+            assert(!source->GetLayout(compiler)->HasGCPtr());
             break;
 
         case GenTreePutArgStk::Kind::Push:
-            assert(source->OperIs(GT_FIELD_LIST) || source->AsObj()->GetLayout()->HasGCPtr() ||
+            assert(source->OperIs(GT_FIELD_LIST) || source->GetLayout(compiler)->HasGCPtr() ||
                    (argSize < XMM_REGSIZE_BYTES));
             break;
 
