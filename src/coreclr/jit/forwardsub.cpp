@@ -665,6 +665,15 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
 
     // Quirks:
     //
+    // Don't substitute nodes "AddFinalArgsAndDetermineABIInfo" doesn't handle into struct args.
+    //
+    if (fsv.IsCallArg() && fsv.GetNode()->TypeIs(TYP_STRUCT) &&
+        !fwdSubNode->OperIs(GT_OBJ, GT_LCL_VAR, GT_LCL_FLD, GT_MKREFANY))
+    {
+        JITDUMP(" use is a struct arg; fwd sub node is not OBJ/LCL_VAR/LCL_FLD/MKREFANY\n");
+        return false;
+    }
+
     // We may sometimes lose or change a type handle. Avoid substituting if so.
     //
     if (gtGetStructHandleIfPresent(fwdSubNode) != gtGetStructHandleIfPresent(fsv.GetNode()))
