@@ -452,18 +452,17 @@ void Rationalizer::RewriteAssignment(LIR::Use& use)
 
         case GT_CLS_VAR:
         {
-            bool isVolatile = (location->gtFlags & GTF_CLS_VAR_VOLATILE) != 0;
+            GenTreeFlags indFlags = location->gtFlags & (GTF_CLS_VAR_VOLATILE | GTF_CLS_VAR_TGT_HEAP);
+            static_assert_no_msg(GTF_CLS_VAR_VOLATILE == GTF_IND_VOLATILE);
+            static_assert_no_msg(GTF_CLS_VAR_TGT_HEAP == GTF_IND_TGT_HEAP);
 
-            location->gtFlags &= ~GTF_CLS_VAR_VOLATILE;
+            location->gtFlags &= ~indFlags;
             location->SetOper(GT_CLS_VAR_ADDR);
             location->gtType = TYP_BYREF;
 
             assignment->SetOper(GT_STOREIND);
             assignment->AsStoreInd()->SetRMWStatusDefault();
-            if (isVolatile)
-            {
-                assignment->gtFlags |= GTF_IND_VOLATILE;
-            }
+            assignment->gtFlags |= indFlags;
 
             // TODO: JIT dump
         }
@@ -585,7 +584,7 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
     LIR::Use use;
     if (parentStack.Height() < 2)
     {
-        use = LIR::Use::GetDummyUse(BlockRange(), *useEdge);
+        LIR::Use::MakeDummyUse(BlockRange(), *useEdge, &use);
     }
     else
     {
@@ -616,6 +615,28 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
             RewriteIndir(use);
             break;
 
+        case GT_CALL:
+            // In linear order we no longer need to retain the stores in early
+            // args as these have now been sequenced.
+            for (CallArg& arg : node->AsCall()->gtArgs.EarlyArgs())
+            {
+                if (!arg.GetEarlyNode()->IsValue())
+                {
+                    // GTF_LATE_ARG is no longer meaningful.
+                    arg.GetEarlyNode()->gtFlags &= ~GTF_LATE_ARG;
+                    arg.SetEarlyNode(nullptr);
+                }
+            }
+
+#ifdef DEBUG
+            // The above means that all argument nodes are now true arguments.
+            for (CallArg& arg : node->AsCall()->gtArgs.Args())
+            {
+                assert((arg.GetEarlyNode() == nullptr) != (arg.GetLateNode() == nullptr));
+            }
+#endif
+            break;
+
         case GT_NOP:
             // fgMorph sometimes inserts NOP nodes between defs and uses
             // supposedly 'to prevent constant folding'. In this case, remove the
@@ -638,8 +659,8 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
             if ((sideEffects & GTF_ALL_EFFECT) == 0)
             {
                 // The LHS has no side effects. Remove it.
-                // None of the transforms performed herein violate tree order, so isClosed
-                // should always be true.
+                // All transformations on pure trees keep their operands in LIR
+                // and should not violate tree order.
                 assert(isClosed);
 
                 BlockRange().Delete(comp, m_block, std::move(lhsRange));
@@ -667,8 +688,8 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
 
                 if ((sideEffects & GTF_ALL_EFFECT) == 0)
                 {
-                    // None of the transforms performed herein violate tree order, so isClosed
-                    // should always be true.
+                    // All transformations on pure trees keep their operands in
+                    // LIR and should not violate tree order.
                     assert(isClosed);
 
                     BlockRange().Delete(comp, m_block, std::move(rhsRange));
@@ -680,11 +701,6 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
             }
         }
         break;
-
-        case GT_ARGPLACE:
-            // Remove argplace and list nodes from the execution order.
-            BlockRange().Remove(node);
-            break;
 
 #if defined(TARGET_XARCH) || defined(TARGET_ARM)
         case GT_CLS_VAR:

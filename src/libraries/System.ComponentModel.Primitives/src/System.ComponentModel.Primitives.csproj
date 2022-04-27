@@ -6,7 +6,6 @@
       always generate default resource string values which will be used when UseSystemResourceKeys is true in trimmed apps.
     -->
     <GenerateResxSourceIncludeDefaultValues>true</GenerateResxSourceIncludeDefaultValues>
-    <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\ComponentModel\ISynchronizeInvoke.cs" />

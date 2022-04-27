@@ -122,6 +122,7 @@ namespace System.Runtime.InteropServices
         public static void TestHandleCollector()
         {
             (int gen0, int gen1, int gen2) initialGcState = (GC.CollectionCount(0), GC.CollectionCount(1), GC.CollectionCount(2));
+            int initSum = initialGcState.gen0 + initialGcState.gen1 + initialGcState.gen2;
 
             HandleCollector lowLimitCollector = new HandleCollector("LowLimit.Collector", LowLimitSize);
             for (int i = 0; i < LowLimitSize + 1; ++i)
@@ -129,9 +130,13 @@ namespace System.Runtime.InteropServices
                 HandleLimitTester hlt = new HandleLimitTester(lowLimitCollector);
             }
 
-            (int gen0, int gen1, int gen2) postLowLimitState = (GC.CollectionCount(0),GC.CollectionCount(1), GC.CollectionCount(2));
+            // HandleLimitTester does the decrement on the HandleCollector during finalization, so we wait for pending finalizers.
+            GC.WaitForPendingFinalizers();
 
-            Assert.True(initialGcState.gen0 + initialGcState.gen1 + initialGcState.gen2 < postLowLimitState.gen0 + postLowLimitState.gen1 + postLowLimitState.gen2, "Low limit handle did not trigger a GC");
+            (int gen0, int gen1, int gen2) postLowLimitState = (GC.CollectionCount(0), GC.CollectionCount(1), GC.CollectionCount(2));
+            int postLowLimitSum = postLowLimitState.gen0 + postLowLimitState.gen1 + postLowLimitState.gen2;
+
+            Assert.True(initSum < postLowLimitSum, $"Low limit handle did not trigger a GC: {initSum} < {postLowLimitSum}");
 
             HandleCollector highLimitCollector = new HandleCollector("HighLimit.Collector", HighLimitSize);
             for (int i = 0; i < HighLimitSize + 10; ++i)
@@ -139,9 +144,13 @@ namespace System.Runtime.InteropServices
                 HandleLimitTester hlt = new HandleLimitTester(highLimitCollector);
             }
 
-            (int gen0, int gen1, int gen2) postHighLimitState = (GC.CollectionCount(0), GC.CollectionCount(1), GC.CollectionCount(2));
+            // HandleLimitTester does the decrement on the HandleCollector during finalization, so we wait for pending finalizers.
+            GC.WaitForPendingFinalizers();
 
-            Assert.True(postLowLimitState.gen0 + postLowLimitState.gen1 + postLowLimitState.gen2 < postHighLimitState.gen0 + postHighLimitState.gen1 + postHighLimitState.gen2, "High limit handle did not trigger a GC");
+            (int gen0, int gen1, int gen2) postHighLimitState = (GC.CollectionCount(0), GC.CollectionCount(1), GC.CollectionCount(2));
+            int postHighLimitSum = postHighLimitState.gen0 + postHighLimitState.gen1 + postHighLimitState.gen2;
+
+            Assert.True(postLowLimitSum < postHighLimitSum, $"High limit handle did not trigger a GC: {postLowLimitSum} < {postHighLimitSum}");
         }
 
         private sealed class HandleLimitTester

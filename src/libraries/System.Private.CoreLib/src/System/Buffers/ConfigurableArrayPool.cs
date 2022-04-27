@@ -120,8 +120,10 @@ namespace System.Buffers
             return buffer;
         }
 
-        public override void Return(T[] array!!, bool clearArray = false)
+        public override void Return(T[] array, bool clearArray = false)
         {
+            ArgumentNullException.ThrowIfNull(array);
+
             if (array.Length == 0)
             {
                 // Ignore empty arrays.  When a zero-length array is rented, we return a singleton

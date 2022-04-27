@@ -121,6 +121,7 @@ enum
 {
     PAL_S_IFMT = 0xF000,  // Type of file (apply as mask to FileStatus.Mode and one of S_IF*)
     PAL_S_IFIFO = 0x1000, // FIFO (named pipe)
+    PAL_S_IFBLK = 0x6000, // Block special
     PAL_S_IFCHR = 0x2000, // Character special
     PAL_S_IFDIR = 0x4000, // Directory
     PAL_S_IFREG = 0x8000, // Regular file
@@ -539,6 +540,26 @@ PALEXPORT int32_t SystemNative_Link(const char* source, const char* linkTarget);
  * Returns 0 on success; otherwise, returns -1 and errno is set.
  */
 PALEXPORT int32_t SystemNative_SymLink(const char* target, const char* linkPath);
+
+/**
+ * Given a device ID, extracts the major and minor and components and returns them.
+ * Return 0 on success; otherwise, returns -1 and errno is set.
+ */
+PALEXPORT int32_t SystemNative_GetDeviceIdentifiers(uint64_t dev, uint32_t* majorNumber, uint32_t* minorNumber);
+
+/**
+ * Creates a special or ordinary file.
+ *
+ * Returns 0 on success; otherwise, returns -1 and errno is set.
+ */
+PALEXPORT int32_t SystemNative_MkNod(const char* pathName, uint32_t mode, uint32_t major, uint32_t minor);
+
+/**
+ * Creates a FIFO special file (named pipe).
+ *
+ * Returns 0 on success; otherwise, returns -1 and errno is set.
+ */
+PALEXPORT int32_t SystemNative_MkFifo(const char* pathName, uint32_t mode);
 
 /**
  * Creates a file name that adheres to the specified template, creates the file on disk with

@@ -170,6 +170,7 @@ let exportedAPI: DotnetPublicAPI;
 
 // this is executed early during load of emscripten runtime
 // it exports methods to global objects MONO, BINDING and Module in backward compatible way
+// At runtime this will be referred to as 'createDotnetRuntime'
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 function initializeImportsAndExports(
     imports: { isESM: boolean, isGlobal: boolean, isNode: boolean, isShell: boolean, isWeb: boolean, locateFile: Function, quit_: Function, ExitStatus: ExitStatusError, requirePromise: Promise<Function> },
@@ -292,6 +293,14 @@ function initializeImportsAndExports(
     list.registerRuntime(exportedAPI);
 
     configure_emscripten_startup(module, exportedAPI);
+
+    // HACK: Emscripten expects the return value of this function to always be the Module object,
+    // but we changed ours to return a set of exported namespaces. In order for the emscripten
+    // generated worker code to keep working, we detect that we're running in a worker (via the
+    // presence of globalThis.importScripts) and emulate the old behavior. Note that this will
+    // impact anyone trying to load us in a web worker directly, not just emscripten!
+    if (typeof ((<any>globalThis)["importScripts"]) === "function")
+        return <any>exportedAPI.Module;
 
     return exportedAPI;
 }

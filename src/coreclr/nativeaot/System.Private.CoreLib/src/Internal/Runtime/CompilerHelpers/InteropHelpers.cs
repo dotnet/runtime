@@ -341,7 +341,7 @@ namespace Internal.Runtime.CompilerHelpers
                 if (hModule == IntPtr.Zero)
                 {
                     // Built-in rules didn't resolve the library. Use AssemblyLoadContext as a last chance attempt.
-                    AssemblyLoadContext? loadContext = AssemblyLoadContext.GetLoadContext(callingAssembly);
+                    AssemblyLoadContext loadContext = AssemblyLoadContext.GetLoadContext(callingAssembly)!;
                     hModule = loadContext.GetResolvedUnmanagedDll(callingAssembly, moduleName);
                 }
 

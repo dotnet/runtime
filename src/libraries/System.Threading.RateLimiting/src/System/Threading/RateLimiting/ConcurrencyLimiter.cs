@@ -36,9 +36,9 @@ namespace System.Threading.RateLimiting
         /// Initializes the <see cref="ConcurrencyLimiter"/>.
         /// </summary>
         /// <param name="options">Options to specify the behavior of the <see cref="ConcurrencyLimiter"/>.</param>
-        public ConcurrencyLimiter(ConcurrencyLimiterOptions options!!)
+        public ConcurrencyLimiter(ConcurrencyLimiterOptions options)
         {
-            _options = options;
+            _options = options ?? throw new ArgumentNullException(nameof(options));
             _permitCount = _options.PermitLimit;
         }
 

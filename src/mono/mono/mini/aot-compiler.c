@@ -11875,7 +11875,7 @@ emit_objc_selectors (MonoAotCompile *acfg)
 	fprintf (acfg->fp, ".align	3\n");
 	fprintf (acfg->fp, "L_OBJC_IMAGE_INFO:\n");
 	fprintf (acfg->fp, ".long	0\n");
-	fprintf (acfg->fp, ".long	16\n");
+	fprintf (acfg->fp, ".long	0\n");
 }
 
 static void

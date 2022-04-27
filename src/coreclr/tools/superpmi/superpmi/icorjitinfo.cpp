@@ -373,13 +373,14 @@ bool MyICJI::isValidStringRef(CORINFO_MODULE_HANDLE module, /* IN  */
     return jitInstance->mc->repIsValidStringRef(module, metaTOK);
 }
 
-const char16_t* MyICJI::getStringLiteral(CORINFO_MODULE_HANDLE module,  /* IN  */
-                                         unsigned              metaTOK, /* IN  */
-                                         int*                  length   /* OUT */
-                                         )
+int MyICJI::getStringLiteral(CORINFO_MODULE_HANDLE module,    /* IN  */
+                             unsigned              metaTOK,   /* IN  */
+                             char16_t*             buffer,    /* OUT */
+                             int                   bufferSize /* IN  */
+                             )
 {
     jitInstance->mc->cr->AddCall("getStringLiteral");
-    return jitInstance->mc->repGetStringLiteral(module, metaTOK, length);
+    return jitInstance->mc->repGetStringLiteral(module, metaTOK, buffer, bufferSize);
 }
 
 /**********************************************************************************/

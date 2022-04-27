@@ -16,8 +16,10 @@ namespace System.ComponentModel
         /// </summary>
         public ProvidePropertyAttribute(
             string propertyName,
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type receiverType!!)
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type receiverType)
         {
+            ArgumentNullException.ThrowIfNull(receiverType);
+
             PropertyName = propertyName;
             ReceiverTypeName = receiverType.AssemblyQualifiedName!;
         }

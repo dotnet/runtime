@@ -9,7 +9,7 @@ namespace System.Xml.Xsl.XsltOld
     using System.Xml;
     using System.Xml.XPath;
 
-    internal class ApplyTemplatesAction : ContainerAction
+    internal sealed class ApplyTemplatesAction : ContainerAction
     {
         private const int ProcessedChildren = 2;
         private const int ProcessNextNode = 3;
@@ -63,14 +63,7 @@ namespace System.Xml.Xsl.XsltOld
             else if (Ref.Equal(name, compiler.Atoms.Mode))
             {
                 Debug.Assert(_mode == null);
-                if (compiler.AllowBuiltInMode && value == "*")
-                {
-                    _mode = Compiler.BuiltInMode;
-                }
-                else
-                {
-                    _mode = compiler.CreateXPathQName(value);
-                }
+                _mode = compiler.CreateXPathQName(value);
             }
             else
             {

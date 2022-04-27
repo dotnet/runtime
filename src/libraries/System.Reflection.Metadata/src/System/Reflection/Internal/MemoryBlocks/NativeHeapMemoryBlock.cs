@@ -15,7 +15,7 @@ namespace System.Reflection.Internal
     /// </remarks>
     internal sealed class NativeHeapMemoryBlock : AbstractMemoryBlock
     {
-        private unsafe sealed class DisposableData : CriticalDisposableObject
+        private sealed unsafe class DisposableData : CriticalDisposableObject
         {
             private IntPtr _pointer;
 

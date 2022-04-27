@@ -134,6 +134,18 @@ jobs:
         - name: LogNamePrefix
           value: TestRunLogs_R2R_CG2_Composite
 
+    - name: testTreeFilterArg
+      value: ''
+    
+    # Only build GCSimulator tests when the gc-simulator group is specified.
+    - ${{ if eq(parameters.testGroup, 'gc-simulator') }}:
+      - ${{ if eq(parameters.osGroup, 'windows') }}:
+        - name: testTreeFilterArg
+          value: 'tree GC/Scenarios/GCSimulator'
+      - ${{ if ne(parameters.osGroup, 'windows') }}:
+        - name: testTreeFilterArg
+          value: '-tree:GC/Scenarios/GCSimulator'
+
     # Set job timeouts
     #
     # "timeoutPerTestCollectionInMinutes" is the time needed for the "biggest" xUnit test collection to complete.
@@ -287,7 +299,7 @@ jobs:
     # and directly unzip them there after download). Unfortunately the logic to copy
     # the native artifacts to the final test folders is dependent on availability of the
     # managed test artifacts.
-    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) copynativeonly $(logRootNameArg)Native $(runtimeFlavorArgs) $(crossgenArg) $(buildConfig) $(archType) $(priorityArg) $(librariesOverrideArg)
+    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) copynativeonly $(logRootNameArg)Native $(testTreeFilterArg) $(runtimeFlavorArgs) $(crossgenArg) $(buildConfig) $(archType) $(priorityArg) $(librariesOverrideArg)
       displayName: Copy native test components to test output folder
 
 

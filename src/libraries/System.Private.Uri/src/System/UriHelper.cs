@@ -107,9 +107,11 @@ namespace System
         }
 
         internal static string EscapeString(
-            string stringToEscape!!, // same name as public API
+            string stringToEscape, // same name as public API
             bool checkExistingEscaped, ReadOnlySpan<bool> unreserved, char forceEscape1 = '\0', char forceEscape2 = '\0')
         {
+            ArgumentNullException.ThrowIfNull(stringToEscape);
+
             if (stringToEscape.Length == 0)
             {
                 return string.Empty;

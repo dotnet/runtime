@@ -10,7 +10,7 @@ using System.Threading;
 namespace System.Text.RegularExpressions.Symbolic
 {
     /// <summary>Represents a symbolic derivative created from a symbolic regex without using minterms</summary>
-    internal sealed class TransitionRegex<TSet> where TSet : IComparable<TSet>
+    internal sealed class TransitionRegex<TSet> where TSet : IComparable<TSet>, IEquatable<TSet>
     {
         public readonly SymbolicRegexBuilder<TSet> _builder;
         public readonly TransitionRegexKind _kind;

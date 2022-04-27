@@ -628,8 +628,10 @@ namespace System.Globalization
             }
         }
 
-        private unsafe SortKey IcuCreateSortKey(string source!!, CompareOptions options)
+        private unsafe SortKey IcuCreateSortKey(string source, CompareOptions options)
         {
+            ArgumentNullException.ThrowIfNull(source);
+
             Debug.Assert(!GlobalizationMode.Invariant);
             Debug.Assert(!GlobalizationMode.UseNls);
 

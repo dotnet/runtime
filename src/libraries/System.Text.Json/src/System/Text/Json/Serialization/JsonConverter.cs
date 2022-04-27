@@ -29,7 +29,7 @@ namespace System.Text.Json.Serialization
         internal bool CanUseDirectReadOrWrite { get; set; }
 
         /// <summary>
-        /// Can the converter have $id metadata.
+        /// The converter supports writing and reading metadata.
         /// </summary>
         internal virtual bool CanHaveMetadata => false;
 
@@ -103,6 +103,7 @@ namespace System.Text.Json.Serialization
         // This is used internally to quickly determine the type being converted for JsonConverter<T>.
         internal abstract Type TypeToConvert { get; }
 
+        internal abstract bool OnTryReadAsObject(ref Utf8JsonReader reader, JsonSerializerOptions options, ref ReadStack state, out object? value);
         internal abstract bool TryReadAsObject(ref Utf8JsonReader reader, JsonSerializerOptions options, ref ReadStack state, out object? value);
 
         internal abstract bool TryWriteAsObject(Utf8JsonWriter writer, object? value, JsonSerializerOptions options, ref WriteStack state);

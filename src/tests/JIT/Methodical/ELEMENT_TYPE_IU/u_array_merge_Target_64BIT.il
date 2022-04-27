@@ -17,7 +17,7 @@
 .assembly extern TestLibrary {}
 .class public auto ansi Test_u_array_merge_Target_64BIT extends [mscorlib]System.Object
 {
-.method private hidebysig static int32 Main() il managed
+.method public hidebysig static int32 Main() il managed
 {
     // [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.Is64BitProcess))]
     .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ConditionalFactAttribute::.ctor(class [System.Runtime]System.Type,

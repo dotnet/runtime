@@ -2762,7 +2762,7 @@ DomainAssembly* AppDomain::LoadDomainAssembly(AssemblySpec* pSpec,
             if (!EEFileLoadException::CheckType(pEx))
             {
                 StackSString name;
-                pSpec->GetFileOrDisplayName(0, name);
+                pSpec->GetDisplayName(0, name);
                 pEx=new EEFileLoadException(name, pEx->GetHR(), pEx);
                 AddExceptionToCache(pSpec, pEx);
                 PAL_CPP_THROW(Exception *, pEx);
@@ -3352,20 +3352,22 @@ BOOL AppDomain::AddFileToCache(AssemblySpec* pSpec, PEAssembly * pPEAssembly, BO
     }
     CONTRACTL_END;
 
-    GCX_PREEMP();
-    DomainCacheCrstHolderForGCCoop holder(this);
-
-    // !!! suppress exceptions
-    if(!m_AssemblyCache.StorePEAssembly(pSpec, pPEAssembly) && !fAllowFailure)
     {
-        // TODO: Disabling the below assertion as currently we experience
-        // inconsistency on resolving the Microsoft.Office.Interop.MSProject.dll
-        // This causes below assertion to fire and crashes the VS. This issue
-        // is being tracked with Dev10 Bug 658555. Brought back it when this bug
-        // is fixed.
-        // _ASSERTE(FALSE);
+        GCX_PREEMP();
+        DomainCacheCrstHolderForGCCoop holder(this);
 
-        EEFileLoadException::Throw(pSpec, FUSION_E_CACHEFILE_FAILED, NULL);
+        // !!! suppress exceptions
+        if(!m_AssemblyCache.StorePEAssembly(pSpec, pPEAssembly) && !fAllowFailure)
+        {
+            // TODO: Disabling the below assertion as currently we experience
+            // inconsistency on resolving the Microsoft.Office.Interop.MSProject.dll
+            // This causes below assertion to fire and crashes the VS. This issue
+            // is being tracked with Dev10 Bug 658555. Brought back it when this bug
+            // is fixed.
+            // _ASSERTE(FALSE);
+
+            EEFileLoadException::Throw(pSpec, FUSION_E_CACHEFILE_FAILED, NULL);
+        }
     }
 
     return TRUE;
@@ -3740,7 +3742,7 @@ PEAssembly * AppDomain::BindAssemblySpec(
                                 StackSString exceptionDisplayName, failedSpecDisplayName;
 
                                 ((EEFileLoadException*)ex)->GetName(exceptionDisplayName);
-                                pFailedSpec->GetFileOrDisplayName(0, failedSpecDisplayName);
+                                pFailedSpec->GetDisplayName(0, failedSpecDisplayName);
 
                                 if (exceptionDisplayName.CompareCaseInsensitive(failedSpecDisplayName) == 0)
                                 {
@@ -4565,7 +4567,7 @@ AppDomain::RaiseAssemblyResolveEvent(
     CONTRACT_END;
 
     StackSString ssName;
-    pSpec->GetFileOrDisplayName(0, ssName);
+    pSpec->GetDisplayName(0, ssName);
 
     // Elevate threads allowed loading level.  This allows the host to load an assembly even in a restricted
     // condition.  Note, however, that this exposes us to possible recursion failures, if the host tries to
@@ -4904,7 +4906,7 @@ AppDomain::AssemblyIterator::Next_Unlocked(
 #if !defined(DACCESS_COMPILE)
 
 // Returns S_OK if the assembly was successfully loaded
-HRESULT RuntimeInvokeHostAssemblyResolver(INT_PTR pManagedAssemblyLoadContextToBindWithin, BINDER_SPACE::AssemblyName *pAssemblyName, DefaultAssemblyBinder *pDefaultBinder, BINDER_SPACE::Assembly **ppLoadedAssembly)
+HRESULT RuntimeInvokeHostAssemblyResolver(INT_PTR pManagedAssemblyLoadContextToBindWithin, BINDER_SPACE::AssemblyName *pAssemblyName, DefaultAssemblyBinder *pDefaultBinder, AssemblyBinder *pBinder, BINDER_SPACE::Assembly **ppLoadedAssembly)
 {
     CONTRACTL
     {
@@ -5080,6 +5082,22 @@ HRESULT RuntimeInvokeHostAssemblyResolver(INT_PTR pManagedAssemblyLoadContextToB
                 PathString name;
                 pAssemblyName->GetDisplayName(name, BINDER_SPACE::AssemblyName::INCLUDE_ALL);
                 COMPlusThrowHR(COR_E_INVALIDOPERATION, IDS_HOST_ASSEMBLY_RESOLVER_DYNAMICALLY_EMITTED_ASSEMBLIES_UNSUPPORTED, name);
+            }
+
+            // For collectible assemblies, ensure that the parent loader allocator keeps the assembly's loader allocator
+            // alive for all its lifetime.
+            if (pDomainAssembly->IsCollectible())
+            {
+                LoaderAllocator *pResultAssemblyLoaderAllocator = pDomainAssembly->GetLoaderAllocator();
+                LoaderAllocator *pParentLoaderAllocator = pBinder->GetLoaderAllocator();
+                if (pParentLoaderAllocator == NULL)
+                {
+                    // The AssemblyLoadContext for which we are resolving the the Assembly is not collectible.
+                    COMPlusThrow(kNotSupportedException, W("NotSupported_CollectibleBoundNonCollectible")); 
+                }
+
+                _ASSERTE(pResultAssemblyLoaderAllocator);
+                pParentLoaderAllocator->EnsureReference(pResultAssemblyLoaderAllocator);
             }
 
             pResolvedAssembly = pLoadedPEAssembly->GetHostAssembly();

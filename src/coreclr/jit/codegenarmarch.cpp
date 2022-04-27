@@ -738,17 +738,6 @@ void CodeGen::genIntrinsic(GenTree* treeNode)
 void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
 {
     assert(treeNode->OperIs(GT_PUTARG_STK));
-    GenTree*  source = treeNode->gtOp1;
-    var_types targetType;
-
-    if (!compMacOsArm64Abi())
-    {
-        targetType = genActualType(source->TypeGet());
-    }
-    else
-    {
-        targetType = source->TypeGet();
-    }
     emitter* emit = GetEmitter();
 
     // This is the varNum for our store operations,
@@ -761,12 +750,6 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
     // Here we cross check that argument offset hasn't changed from lowering to codegen since
     // we are storing arg slot number in GT_PUTARG_STK node in lowering phase.
     unsigned argOffsetOut = treeNode->getArgOffset();
-
-#ifdef DEBUG
-    CallArg* callArg = treeNode->gtCall->gtArgs.FindByNode(treeNode);
-    assert(callArg != nullptr);
-    DEBUG_ARG_SLOTS_ASSERT(argOffsetOut == (callArg->AbiInfo.SlotNum * TARGET_POINTER_SIZE));
-#endif // DEBUG
 
     // Whether to setup stk arg in incoming or out-going arg area?
     // Fast tail calls implemented as epilog+jmp = stk arg is setup in incoming arg area.
@@ -792,11 +775,13 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
         argOffsetMax = compiler->lvaOutgoingArgSpaceSize;
     }
 
-    bool isStruct = (targetType == TYP_STRUCT) || (source->OperGet() == GT_FIELD_LIST);
+    GenTree* source = treeNode->gtGetOp1();
+
+    bool isStruct = source->TypeIs(TYP_STRUCT) || (source->OperGet() == GT_FIELD_LIST);
 
     if (!isStruct) // a normal non-Struct argument
     {
-        if (varTypeIsSIMD(targetType))
+        if (varTypeIsSIMD(source->TypeGet()))
         {
             assert(!source->isContained());
 
@@ -815,7 +800,7 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
             else
 #endif // TARGET_ARM64
             {
-                emitAttr storeAttr = emitTypeSize(targetType);
+                emitAttr storeAttr = emitTypeSize(source->TypeGet());
                 emit->emitIns_S_R(INS_str, storeAttr, srcReg, varNumOut, argOffsetOut);
                 argOffsetOut += EA_SIZE_IN_BYTES(storeAttr);
             }
@@ -823,15 +808,18 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
             return;
         }
 
+        var_types slotType = genActualType(source);
         if (compMacOsArm64Abi())
         {
+            // Small typed args do not get their own full stack slots, so make
+            // sure we do not overwrite adjacent arguments.
             switch (treeNode->GetStackByteSize())
             {
                 case 1:
-                    targetType = TYP_BYTE;
+                    slotType = TYP_BYTE;
                     break;
                 case 2:
-                    targetType = TYP_SHORT;
+                    slotType = TYP_SHORT;
                     break;
                 default:
                     assert(treeNode->GetStackByteSize() >= 4);
@@ -839,8 +827,8 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
             }
         }
 
-        instruction storeIns  = ins_Store(targetType);
-        emitAttr    storeAttr = emitTypeSize(targetType);
+        instruction storeIns  = ins_Store(slotType);
+        emitAttr    storeAttr = emitTypeSize(slotType);
 
         // If it is contained then source must be the integer constant zero
         if (source->isContained())
@@ -860,7 +848,7 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
             genConsumeReg(source);
             emit->emitIns_S_R(storeIns, storeAttr, source->GetRegNum(), varNumOut, argOffsetOut);
 #ifdef TARGET_ARM
-            if (targetType == TYP_LONG)
+            if (source->TypeIs(TYP_LONG))
             {
                 // This case currently only occurs for double types that are passed as TYP_LONG;
                 // actual long types would have been decomposed by now.
@@ -1140,9 +1128,9 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
                         type = TYP_UINT;
                     }
                 }
-                const emitAttr attr     = emitTypeSize(type);
+
+                const emitAttr attr     = emitActualTypeSize(type);
                 const unsigned moveSize = genTypeSize(type);
-                assert(EA_SIZE_IN_BYTES(attr) == moveSize);
 
                 remainingSize -= moveSize;
 
@@ -2643,18 +2631,16 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
         srcReg = REG_ZR;
     }
 
-    regNumber dstReg                     = dstAddrBaseReg;
-    int       dstRegAddrAlignment        = 0;
-    bool      isDstRegAddrAlignmentKnown = false;
+    regNumber dstReg              = dstAddrBaseReg;
+    int       dstRegAddrAlignment = 0;
 
     if (dstLclNum != BAD_VAR_NUM)
     {
         bool      fpBased;
         const int baseAddr = compiler->lvaFrameAddress(dstLclNum, &fpBased);
 
-        dstReg                     = fpBased ? REG_FPBASE : REG_SPBASE;
-        dstRegAddrAlignment        = fpBased ? (genSPtoFPdelta() % 16) : 0;
-        isDstRegAddrAlignmentKnown = true;
+        dstReg              = fpBased ? REG_FPBASE : REG_SPBASE;
+        dstRegAddrAlignment = fpBased ? (genSPtoFPdelta() % 16) : 0;
 
         helper.SetDstOffset(baseAddr + dstOffset);
     }
@@ -2676,11 +2662,7 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
 
     bool shouldUse16ByteWideInstrs = false;
 
-    // Store operations that cross a 16-byte boundary reduce bandwidth or incur additional latency.
-    // The following condition prevents using 16-byte stores when dstRegAddrAlignment is:
-    //   1) unknown (i.e. dstReg is neither FP nor SP) or
-    //   2) non-zero (i.e. dstRegAddr is not 16-byte aligned).
-    const bool hasAvailableSimdReg = isDstRegAddrAlignmentKnown && (size > FP_REGSIZE_BYTES);
+    const bool hasAvailableSimdReg = (size > FP_REGSIZE_BYTES);
     const bool canUse16ByteWideInstrs =
         hasAvailableSimdReg && (dstRegAddrAlignment == 0) && helper.CanEncodeAllOffsets(FP_REGSIZE_BYTES);
 
@@ -2831,35 +2813,26 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
 
 #ifdef TARGET_ARM64
     CopyBlockUnrollHelper helper(srcOffset, dstOffset, size);
-
-    regNumber srcReg                     = srcAddrBaseReg;
-    int       srcRegAddrAlignment        = 0;
-    bool      isSrcRegAddrAlignmentKnown = false;
+    regNumber             srcReg = srcAddrBaseReg;
 
     if (srcLclNum != BAD_VAR_NUM)
     {
         bool      fpBased;
         const int baseAddr = compiler->lvaFrameAddress(srcLclNum, &fpBased);
 
-        srcReg                     = fpBased ? REG_FPBASE : REG_SPBASE;
-        srcRegAddrAlignment        = fpBased ? (genSPtoFPdelta() % 16) : 0;
-        isSrcRegAddrAlignmentKnown = true;
+        srcReg = fpBased ? REG_FPBASE : REG_SPBASE;
 
         helper.SetSrcOffset(baseAddr + srcOffset);
     }
 
-    regNumber dstReg                     = dstAddrBaseReg;
-    int       dstRegAddrAlignment        = 0;
-    bool      isDstRegAddrAlignmentKnown = false;
+    regNumber dstReg = dstAddrBaseReg;
 
     if (dstLclNum != BAD_VAR_NUM)
     {
         bool      fpBased;
         const int baseAddr = compiler->lvaFrameAddress(dstLclNum, &fpBased);
 
-        dstReg                     = fpBased ? REG_FPBASE : REG_SPBASE;
-        dstRegAddrAlignment        = fpBased ? (genSPtoFPdelta() % 16) : 0;
-        isDstRegAddrAlignmentKnown = true;
+        dstReg = fpBased ? REG_FPBASE : REG_SPBASE;
 
         helper.SetDstOffset(baseAddr + dstOffset);
     }
@@ -2920,8 +2893,7 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
     // known and the block size is larger than a single SIMD register size (i.e. when using SIMD instructions can
     // be profitable).
 
-    const bool canUse16ByteWideInstrs = isSrcRegAddrAlignmentKnown && isDstRegAddrAlignmentKnown &&
-                                        (size >= 2 * FP_REGSIZE_BYTES) && (srcRegAddrAlignment == dstRegAddrAlignment);
+    const bool canUse16ByteWideInstrs = (size >= 2 * FP_REGSIZE_BYTES);
 
     bool shouldUse16ByteWideInstrs = false;
 
@@ -5505,13 +5477,6 @@ unsigned CodeGenInterface::InferStructOpSizeAlign(GenTree* op, unsigned* alignme
     {
         opSize    = TARGET_POINTER_SIZE * 2;
         alignment = TARGET_POINTER_SIZE;
-    }
-    else if (op->IsArgPlaceHolderNode())
-    {
-        CORINFO_CLASS_HANDLE clsHnd = op->AsArgPlace()->gtArgPlaceClsHnd;
-        assert(clsHnd != 0);
-        opSize    = roundUp(compiler->info.compCompHnd->getClassSize(clsHnd), TARGET_POINTER_SIZE);
-        alignment = roundUp(compiler->info.compCompHnd->getClassAlignmentRequirement(clsHnd), TARGET_POINTER_SIZE);
     }
     else
     {

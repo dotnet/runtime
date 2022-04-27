@@ -223,8 +223,13 @@ namespace System.Formats.Asn1
         ///   A <see cref="PushSequence"/> or <see cref="PushSetOf"/> has not been closed via
         ///   <see cref="PopSequence"/> or <see cref="PopSetOf"/>.
         /// </exception>
-        public bool EncodedValueEquals(AsnWriter other!!)
+        public bool EncodedValueEquals(AsnWriter other)
         {
+            if (other is null)
+            {
+                throw new ArgumentNullException(nameof(other));
+            }
+
             return EncodeAsSpan().SequenceEqual(other.EncodeAsSpan());
         }
 
@@ -378,8 +383,13 @@ namespace System.Formats.Asn1
         ///   This writer's value is encoded in a manner that is not compatible with the
         ///   ruleset for the destination writer.
         /// </exception>
-        public void CopyTo(AsnWriter destination!!)
+        public void CopyTo(AsnWriter destination)
         {
+            if (destination is null)
+            {
+                throw new ArgumentNullException(nameof(destination));
+            }
+
             try
             {
                 destination.WriteEncodedValue(EncodeAsSpan());

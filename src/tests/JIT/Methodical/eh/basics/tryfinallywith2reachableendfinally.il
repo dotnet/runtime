@@ -13,9 +13,9 @@
 .assembly 'tryfinallywith2reachableendfinally' {}
 .assembly extern xunit.core {}
 
-.namespace hello
+.namespace hello_tryfinallywith2reachableendfinally_basics_il
 {
-  .class private auto ansi beforefieldinit Class1
+  .class public auto ansi beforefieldinit Class1
          extends [mscorlib]System.Object
   {
     .field private static class [eh_common]TestUtil.TestLog testLog
@@ -39,7 +39,7 @@
       callvirt   instance void [mscorlib]System.IO.TextWriter::WriteLine(string)
       ldloc.s    expectedOut
       newobj     instance void [eh_common]TestUtil.TestLog::.ctor(object)
-      stsfld     class [eh_common]TestUtil.TestLog hello.Class1::testLog
+      stsfld     class [eh_common]TestUtil.TestLog hello_tryfinallywith2reachableendfinally_basics_il.Class1::testLog
       ret
     } 
 
@@ -53,7 +53,7 @@
       .maxstack  1
       .locals init (int32 V_0)
 
-      ldsfld     class [eh_common]TestUtil.TestLog hello.Class1::testLog
+      ldsfld     class [eh_common]TestUtil.TestLog hello_tryfinallywith2reachableendfinally_basics_il.Class1::testLog
       callvirt   instance void [eh_common]TestUtil.TestLog::StartRecording()
 
       ldc.i4.0
@@ -88,10 +88,10 @@ again:
       br.s again
 
     done:  
-      ldsfld     class [eh_common]TestUtil.TestLog hello.Class1::testLog
+      ldsfld     class [eh_common]TestUtil.TestLog hello_tryfinallywith2reachableendfinally_basics_il.Class1::testLog
       callvirt   instance void [eh_common]TestUtil.TestLog::StopRecording()
       
-      ldsfld     class [eh_common]TestUtil.TestLog hello.Class1::testLog
+      ldsfld     class [eh_common]TestUtil.TestLog hello_tryfinallywith2reachableendfinally_basics_il.Class1::testLog
       callvirt   instance int32 [eh_common]TestUtil.TestLog::VerifyOutput()
 
       ret

@@ -5,23 +5,28 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <RunAnalyzers>false</RunAnalyzers>
     <IsTestProject>true</IsTestProject>
+    <DebuggerHost Condition="'$(DebuggerHost)' == '' or ('$(DebuggerHost)' != 'chrome' and '$(DebuggerHost)' != 'firefox')">chrome</DebuggerHost>
+    <DefineConstants Condition="'$(DebuggerHost)' == 'chrome'">$(DefineConstants);RUN_IN_CHROME</DefineConstants>
     <VersionsPropsFile>$(MSBuildThisFileDirectory)..\..\BrowsersForTesting.props</VersionsPropsFile>
     <BrowserHost Condition="$([MSBuild]::IsOSPlatform('windows'))">windows</BrowserHost>
-    <InstallChromeForDebuggerTests Condition="'$(InstallChromeForDebuggerTests)' == '' and '$(ContinuousIntegrationBuild)' != 'true' and Exists('/.dockerenv')">true</InstallChromeForDebuggerTests>
+    <InstallChromeForDebuggerTests Condition="'$(InstallChromeForDebuggerTests)' == '' and '$(DebuggerHost)' == 'chrome' and '$(ContinuousIntegrationBuild)' != 'true' and Exists('/.dockerenv')">true</InstallChromeForDebuggerTests>
+    <InstallFirefoxForDebuggerTests Condition="'$(DebuggerHost)' == 'firefox' and '$(InstallFirefoxForDebuggerTests)' == '' and '$(ContinuousIntegrationBuild)' != 'true' and Exists('/.dockerenv')">true</InstallFirefoxForDebuggerTests>
   </PropertyGroup>
 
   <Import Project="$(VersionsPropsFile)" />
 
   <PropertyGroup>
     <ChromeDir>$(ArtifactsBinDir)DebuggerTestSuite\chrome\</ChromeDir>
-    <ChromeStampDir>$(ArtifactsBinDir)DebuggerTestSuite\</ChromeStampDir>
-    <ChromeStampFile>$(ChromeStampDir).install-chrome-$(ChromiumRevision).stamp</ChromeStampFile>
+    <BrowserStampDir>$(ArtifactsBinDir)DebuggerTestSuite\</BrowserStampDir>
+    <ChromeStampFile>$(BrowserStampDir).install-chrome-$(ChromiumRevision).stamp</ChromeStampFile>
+    <FirefoxDir>$(ArtifactsBinDir)DebuggerTestSuite\firefox\</FirefoxDir>
+    <FirefoxStampFile>$(BrowserStampDir).install-firefox-$(FirefoxRevision).stamp</FirefoxStampFile>
   </PropertyGroup>
 
   <ItemGroup>
     <Content Include="appsettings.json" CopyToOutputDirectory="PreserveNewest" />
 
-    <Compile Include="..\BrowserDebugProxy\DevToolsQueue.cs" />
+    <Compile Include="..\BrowserDebugProxy\Common\*.cs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -51,7 +56,7 @@
           Condition="!Exists($(ChromeStampFile)) and '$(InstallChromeForDebuggerTests)' == 'true'">
 
     <ItemGroup>
-      <_StampFile Include="$(ChromeStampDir).install-chrome*.stamp" />
+      <_StampFile Include="$(BrowserStampDir).install-chrome*.stamp" />
     </ItemGroup>
 
     <Delete Files="@(_StampFile)" />
@@ -72,5 +77,33 @@
     <Exec Command="chmod +x $(_ChromeBinaryPath)" Condition="!$([MSBuild]::IsOSPlatform('windows'))" />
 
     <Touch Files="$(ChromeStampFile)" AlwaysCreate="true" />
+  </Target>
+
+  <Target Name="DownloadAndInstallFirefox"
+          AfterTargets="Build"
+          Condition="!Exists($(FirefoxStampFile)) and '$(InstallFirefoxForDebuggerTests)' == 'true' and !$([MSBuild]::IsOSPlatform('windows'))">
+    <ItemGroup>
+      <_StampFile Include="$(BrowserStampDir).install-firefox*.stamp" />
+    </ItemGroup>
+
+    <Delete Files="@(_StampFile)" />
+    <RemoveDir Directories="$(FirefoxDir)" />
+
+    <DownloadFile SourceUrl="$(FirefoxUrl)" DestinationFolder="$(FirefoxDir)" SkipUnchangedFiles="true">
+      <Output TaskParameter="DownloadedFile" PropertyName="_DownloadedFile" />
+    </DownloadFile>
+    <Exec Command="tar -xf $(_DownloadedFile) -C $(FirefoxDir)"/>
+    <Exec Command="rm -rf $(_DownloadedFile)"/>
+
+    <PropertyGroup>
+      <_FirefoxBinaryPath>$([MSBuild]::NormalizePath($(FirefoxDir), $(FirefoxBinaryName)))</_FirefoxBinaryPath>
+    </PropertyGroup>
+
+    <Error Text="Cannot find firefox at $(_FirefoxBinaryPath) in the downloaded copy"
+           Condition="!Exists($(_FirefoxBinaryPath))" />
+
+    <Exec Command="chmod +x $(_FirefoxBinaryPath)"/>
+
+    <Touch Files="$(FirefoxStampFile)" AlwaysCreate="true" />
   </Target>
 </Project>

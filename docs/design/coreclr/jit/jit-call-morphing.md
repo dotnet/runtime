@@ -144,11 +144,9 @@ For arguments that are marked as not needing a temp:
 -----------------
 
 1. If this is an argument that is passed in a register, then the existing
-node is moved to the late argument list and a new `GT_ARGPLACE` (placeholder)
-node replaces it in the early argument list.
-2. Additionally, if `m_needPlace` is true (only for `FEATURE_FIXED_OUT_ARGS`)
-then the existing node is moved to the late argument list and a new
-`GT_ARGPLACE` (placeholder) node replaces it in the `early argument list.
+node is moved to the late argument list.
+2. Similarly, if `m_needPlace` is true (only for `FEATURE_FIXED_OUT_ARGS`)
+then the existing node is moved to the late argument list.
 3. Otherwise the argument is left in the early argument and it will be
 evaluated directly into the outgoing arg area or pushed on the stack.
 

@@ -13,7 +13,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
 
         public ReflectionMemberImportDefinition(
             LazyMemberInfo importingLazyMember,
-            string contractName!!,
+            string contractName,
             string? requiredTypeIdentity,
             IEnumerable<KeyValuePair<string, Type>>? requiredMetadata,
             ImportCardinality cardinality,
@@ -24,6 +24,8 @@ namespace System.ComponentModel.Composition.ReflectionModel
             ICompositionElement? origin)
             : base(contractName, requiredTypeIdentity, requiredMetadata, cardinality, isRecomposable, isPrerequisite, requiredCreationPolicy, metadata, origin)
         {
+            ArgumentNullException.ThrowIfNull(contractName);
+
             _importingLazyMember = importingLazyMember;
         }
 

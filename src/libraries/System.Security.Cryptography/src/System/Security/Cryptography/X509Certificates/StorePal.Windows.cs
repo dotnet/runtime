@@ -15,7 +15,9 @@ namespace System.Security.Cryptography.X509Certificates
         internal static partial IStorePal FromHandle(IntPtr storeHandle)
         {
             if (storeHandle == IntPtr.Zero)
+            {
                 throw new ArgumentNullException(nameof(storeHandle));
+            }
 
             SafeCertStoreHandle certStoreHandle = Interop.Crypt32.CertDuplicateStore(storeHandle);
             if (certStoreHandle == null || certStoreHandle.IsInvalid)
