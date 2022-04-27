@@ -24,13 +24,6 @@ namespace System.Security.Cryptography.Xml
         public override System.Xml.XmlElement GetXml() { throw null; }
         public override void LoadXml(System.Xml.XmlElement value) { }
     }
-    public partial class CryptoSignedXmlRecursionException : System.Xml.XmlException
-    {
-        public CryptoSignedXmlRecursionException() { }
-        protected CryptoSignedXmlRecursionException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
-        public CryptoSignedXmlRecursionException(string message) { }
-        public CryptoSignedXmlRecursionException(string message, System.Exception inner) { }
-    }
     public partial class DataObject
     {
         public DataObject() { }
@@ -467,7 +460,7 @@ namespace System.Security.Cryptography.Xml
         public XmlDsigC14NTransform(bool includeComments) { }
         public override System.Type[] InputTypes { get { throw null; } }
         public override System.Type[] OutputTypes { get { throw null; } }
-        public override byte[]? GetDigestedOutput(System.Security.Cryptography.HashAlgorithm hash) { throw null; }
+        public override byte[] GetDigestedOutput(System.Security.Cryptography.HashAlgorithm hash) { throw null; }
         protected override System.Xml.XmlNodeList? GetInnerXml() { throw null; }
         public override object GetOutput() { throw null; }
         public override object GetOutput(System.Type type) { throw null; }

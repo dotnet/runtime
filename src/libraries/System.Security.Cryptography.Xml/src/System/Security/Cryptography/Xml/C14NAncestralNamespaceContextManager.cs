@@ -26,7 +26,7 @@ namespace System.Security.Cryptography.Xml
             }
 
             int rDepth;
-            XmlAttribute local = (XmlAttribute)nsLocallyDeclared[nsPrefix]!;
+            XmlAttribute? local = (XmlAttribute?)nsLocallyDeclared[nsPrefix];
             XmlAttribute? rAncestral = GetNearestRenderedNamespaceWithMatchingPrefix(nsPrefix, out rDepth);
             if (local != null)
             {

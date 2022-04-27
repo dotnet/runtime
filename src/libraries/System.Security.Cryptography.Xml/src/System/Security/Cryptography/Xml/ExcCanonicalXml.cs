@@ -65,11 +65,11 @@ namespace System.Security.Cryptography.Xml
             return utf8.GetBytes(sb.ToString());
         }
 
-        internal byte[]? GetDigestedBytes(HashAlgorithm hash)
+        internal byte[] GetDigestedBytes(HashAlgorithm hash)
         {
             _c14nDoc.WriteHash(hash, DocPosition.BeforeRootElement, _ancMgr);
             hash.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
-            byte[]? res = (byte[]?)hash.Hash!.Clone();
+            byte[] res = (byte[])hash.Hash!.Clone();
             // reinitialize the hash so it is still usable after the call
             hash.Initialize();
             return res;
