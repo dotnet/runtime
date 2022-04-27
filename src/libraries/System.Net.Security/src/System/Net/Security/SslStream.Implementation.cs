@@ -477,9 +477,8 @@ namespace System.Net.Security
 #pragma warning disable 0618
                 _lastFrame.Header.Version = SslProtocols.Ssl2;
 #pragma warning restore 0618
-                _lastFrame.Header.Type = TlsContentType.Handshake;  // Assume. Needed for check bellow.
+                _lastFrame.Header.Type = TlsContentType.Handshake;  // Implied. We only call this during handshake and SSL2 does not have framing layer.
                 _lastFrame.Header.Length = GetFrameSize(_handshakeBuffer.ActiveReadOnlySpan) - TlsFrameHelper.HeaderSize;
-
             }
             else
             {
