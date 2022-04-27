@@ -71,7 +71,6 @@
 	  <CustomCommands>
 	   	<![CDATA[
           # PreCommands
-          export PYTHONPATH=
           export XHARNESSPATH=$XHARNESS_CLI_PATH
 
           cp -r $HELIX_CORRELATION_PAYLOAD/MauiTesting.app $(ScenarioDirectory)mauiios/MauiTesting.app
@@ -102,7 +101,6 @@
 	  <CustomCommands>
 	   	<![CDATA[
           # PreCommands
-          export PYTHONPATH=
           export XHARNESSPATH=$XHARNESS_CLI_PATH
 
           cp -r $HELIX_CORRELATION_PAYLOAD/Microsoft.NetConf2021.Maui.app $(ScenarioDirectory)mauiios/Microsoft.NetConf2021.Maui.app
