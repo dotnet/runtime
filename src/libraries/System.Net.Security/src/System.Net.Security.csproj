@@ -14,6 +14,7 @@
     <UseAndroidCrypto Condition="'$(TargetPlatformIdentifier)' == 'Android'">true</UseAndroidCrypto>
     <UseAppleCrypto Condition="'$(TargetPlatformIdentifier)' == 'OSX' or '$(TargetPlatformIdentifier)' == 'iOS' or '$(TargetPlatformIdentifier)' == 'tvOS'">true</UseAppleCrypto>
     <DefineConstants Condition="'$(UseAndroidCrypto)' == 'true' or '$(UseAppleCrypto)' == 'true'">$(DefineConstants);SYSNETSECURITY_NO_OPENSSL</DefineConstants>
+    <GenAPIExcludeApiList>ReferenceAssemblyExclusions.txt</GenAPIExcludeApiList>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != ''">
     <Compile Include="System\Net\CertificateValidationPal.cs" />
