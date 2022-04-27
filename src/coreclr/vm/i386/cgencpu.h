@@ -97,10 +97,10 @@ EXTERN_C void SinglecastDelegateInvokeStub();
 // Parameter size
 //**********************************************************************
 
-inline uint16_t StackElemSize(unsigned parmSize, bool isValueType = false /* unused */, bool isFloatHfa = false /* unused */)
+inline unsigned StackElemSize(unsigned parmSize, bool isValueType = false /* unused */, bool isFloatHfa = false /* unused */)
 {
     const unsigned stackSlotSize = 4;
-    return (uint16_t)ALIGN_UP(parmSize, stackSlotSize);
+    return ALIGN_UP(parmSize, stackSlotSize);
 }
 
 #include "stublinkerx86.h"

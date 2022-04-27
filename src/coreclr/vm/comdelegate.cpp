@@ -534,8 +534,8 @@ BOOL GenerateShuffleArrayPortable(MethodDesc* pMethodSrc, MethodDesc *pMethodDst
             UINT16 srcIndex = GetNormalizedArgumentSlotIndex(entry.srcofs);
             UINT16 dstIndex = GetNormalizedArgumentSlotIndex(entry.dstofs);
 
-            _ASSERTE((srcIndex >= 0) && ((unsigned int)srcIndex < argSlots));
-            _ASSERTE((dstIndex >= 0) && ((unsigned int)dstIndex < argSlots));
+            _ASSERTE((srcIndex >= 0) && (srcIndex < argSlots));
+            _ASSERTE((dstIndex >= 0) && (dstIndex < argSlots));
 
             // Unmark the node to indicate that it was not processed yet
             pGraphNodes[srcIndex].isMarked = false;

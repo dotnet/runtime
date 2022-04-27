@@ -9613,7 +9613,7 @@ namespace
         case IMAGE_CEE_CS_CALLCONV_UNMANAGED:
         {
             CallConvBuilder builder;
-            WORD errorResID;
+            UINT errorResID;
             HRESULT hr = CallConv::TryGetUnmanagedCallingConventionFromModOpt(mod, pSig, cbSig, &builder, &errorResID);
 
             if (FAILED(hr))

@@ -82,7 +82,7 @@ void     R8ToFPSpill(void* pSpillSlot, SIZE_T  srcDoubleAsSIZE_T)
 // Parameter size
 //**********************************************************************
 
-inline uint16_t StackElemSize(unsigned parmSize, bool isValueType, bool isFloatHfa)
+inline unsigned StackElemSize(unsigned parmSize, bool isValueType, bool isFloatHfa)
 {
 #if defined(OSX_ARM64_ABI)
     if (!isValueType)
@@ -96,12 +96,12 @@ inline uint16_t StackElemSize(unsigned parmSize, bool isValueType, bool isFloatH
     {
         _ASSERTE((parmSize % 4) == 0);
         // float hfa is not considered a struct type and passed with 4-byte alignment.
-        return (uint16_t)parmSize;
+        return parmSize;
     }
 #endif
 
     const unsigned stackSlotSize = 8;
-    return (uint16_t)ALIGN_UP(parmSize, stackSlotSize);
+    return ALIGN_UP(parmSize, stackSlotSize);
 }
 
 //
