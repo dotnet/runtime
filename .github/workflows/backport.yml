@@ -2,6 +2,9 @@ name: Backport PR to branch
 on:
   issue_comment:
     types: [created]
+  schedule:
+    # once a day at 13:00 UTC
+    - cron: '0 13 * * *'
 
 permissions:
   contents: write
@@ -10,6 +13,7 @@ permissions:
 
 jobs:
   cleanup_old_runs:
+    if: github.event.schedule == '0 13 * * *'
     runs-on: ubuntu-20.04
     steps:
     - name: Delete old workflow runs
