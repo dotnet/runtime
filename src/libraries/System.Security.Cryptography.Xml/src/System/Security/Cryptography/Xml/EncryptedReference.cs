@@ -17,17 +17,18 @@ namespace System.Security.Cryptography.Xml
         {
         }
 
-        protected EncryptedReference(string? uri) : this(uri, new TransformChain())
+        protected EncryptedReference(string uri) : this(uri, new TransformChain())
         {
         }
 
-        protected EncryptedReference(string? uri, TransformChain transformChain)
+        protected EncryptedReference(string uri, TransformChain transformChain)
         {
             TransformChain = transformChain;
             Uri = uri;
             _cachedXml = null;
         }
 
+        [DisallowNull]
         public string? Uri
         {
             get { return _uri; }

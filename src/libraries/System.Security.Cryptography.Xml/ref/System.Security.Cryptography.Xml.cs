@@ -19,8 +19,8 @@ namespace System.Security.Cryptography.Xml
     public sealed partial class CipherReference : System.Security.Cryptography.Xml.EncryptedReference
     {
         public CipherReference() { }
-        public CipherReference(string? uri) { }
-        public CipherReference(string? uri, System.Security.Cryptography.Xml.TransformChain transformChain) { }
+        public CipherReference(string uri) { }
+        public CipherReference(string uri, System.Security.Cryptography.Xml.TransformChain transformChain) { }
         public override System.Xml.XmlElement GetXml() { throw null; }
         public override void LoadXml(System.Xml.XmlElement value) { }
     }
@@ -38,8 +38,8 @@ namespace System.Security.Cryptography.Xml
     public sealed partial class DataReference : System.Security.Cryptography.Xml.EncryptedReference
     {
         public DataReference() { }
-        public DataReference(string? uri) { }
-        public DataReference(string? uri, System.Security.Cryptography.Xml.TransformChain transformChain) { }
+        public DataReference(string uri) { }
+        public DataReference(string uri, System.Security.Cryptography.Xml.TransformChain transformChain) { }
     }
     public partial class DSAKeyValue : System.Security.Cryptography.Xml.KeyInfoClause
     {
@@ -71,8 +71,8 @@ namespace System.Security.Cryptography.Xml
     public abstract partial class EncryptedReference
     {
         protected EncryptedReference() { }
-        protected EncryptedReference(string? uri) { }
-        protected EncryptedReference(string? uri, System.Security.Cryptography.Xml.TransformChain transformChain) { }
+        protected EncryptedReference(string uri) { }
+        protected EncryptedReference(string uri, System.Security.Cryptography.Xml.TransformChain transformChain) { }
         protected internal bool CacheValid { get { throw null; } }
         protected string? ReferenceType { get { throw null; } set { } }
         public System.Security.Cryptography.Xml.TransformChain TransformChain { get { throw null; } set { } }
@@ -268,8 +268,8 @@ namespace System.Security.Cryptography.Xml
     public sealed partial class KeyReference : System.Security.Cryptography.Xml.EncryptedReference
     {
         public KeyReference() { }
-        public KeyReference(string? uri) { }
-        public KeyReference(string? uri, System.Security.Cryptography.Xml.TransformChain transformChain) { }
+        public KeyReference(string uri) { }
+        public KeyReference(string uri, System.Security.Cryptography.Xml.TransformChain transformChain) { }
     }
     public partial class Reference
     {
@@ -413,7 +413,7 @@ namespace System.Security.Cryptography.Xml
         public abstract System.Type[] OutputTypes { get; }
         public System.Collections.Hashtable PropagatedNamespaces { get { throw null; } }
         public System.Xml.XmlResolver? Resolver { set { } }
-        public virtual byte[]? GetDigestedOutput(System.Security.Cryptography.HashAlgorithm hash) { throw null; }
+        public virtual byte[] GetDigestedOutput(System.Security.Cryptography.HashAlgorithm hash) { throw null; }
         protected abstract System.Xml.XmlNodeList? GetInnerXml();
         public abstract object GetOutput();
         public abstract object GetOutput(System.Type type);
@@ -492,7 +492,7 @@ namespace System.Security.Cryptography.Xml
         public string? InclusiveNamespacesPrefixList { get { throw null; } set { } }
         public override System.Type[] InputTypes { get { throw null; } }
         public override System.Type[] OutputTypes { get { throw null; } }
-        public override byte[]? GetDigestedOutput(System.Security.Cryptography.HashAlgorithm hash) { throw null; }
+        public override byte[] GetDigestedOutput(System.Security.Cryptography.HashAlgorithm hash) { throw null; }
         protected override System.Xml.XmlNodeList? GetInnerXml() { throw null; }
         public override object GetOutput() { throw null; }
         public override object GetOutput(System.Type type) { throw null; }

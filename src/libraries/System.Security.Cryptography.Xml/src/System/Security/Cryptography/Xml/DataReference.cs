@@ -10,12 +10,12 @@ namespace System.Security.Cryptography.Xml
             ReferenceType = "DataReference";
         }
 
-        public DataReference(string? uri) : base(uri)
+        public DataReference(string uri) : base(uri)
         {
             ReferenceType = "DataReference";
         }
 
-        public DataReference(string? uri, TransformChain transformChain) : base(uri, transformChain)
+        public DataReference(string uri, TransformChain transformChain) : base(uri, transformChain)
         {
             ReferenceType = "DataReference";
         }
