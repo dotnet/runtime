@@ -8001,6 +8001,10 @@ MethodTable::ResolveVirtualStaticMethod(
     BOOL allowVariantMatches,
     BOOL* uniqueResolution)
 {
+    if (uniqueResolution != nullptr)
+    {
+        *uniqueResolution = TRUE;
+    }
     if (!pInterfaceMD->IsSharedByGenericMethodInstantiations() && !pInterfaceType->IsSharedByGenericInstantiations())
     {
         // Check that there is no implementation of the interface on this type which is the canonical interface for a shared generic. If so, that indicates that
@@ -8087,7 +8091,7 @@ MethodTable::ResolveVirtualStaticMethod(
                     &pMD,
                     /* allowVariance */ allowVariantMatches,
                     /* throwOnConflict */ uniqueResolution == nullptr);
-                if (haveUniqueDefaultImplementation || (pMD != nullptr && verifyImplemented))
+                if (haveUniqueDefaultImplementation || (pMD != nullptr && (verifyImplemented || uniqueResolution != nullptr)))
                 {
                     // We tolerate conflicts upon verification of implemented SVMs so that they only blow up when actually called at execution time.
                     if (uniqueResolution != nullptr)
@@ -8333,6 +8337,7 @@ MethodTable::TryResolveConstraintMethodApprox(
         if (result == NULL || !uniqueResolution)
         {
             *pfForceUseRuntimeLookup = TRUE;
+            result = NULL;
         }
         return result;
     }

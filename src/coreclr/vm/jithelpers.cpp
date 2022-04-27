@@ -5664,16 +5664,24 @@ HCIMPL2_VV(void*, JIT_DispatchVirtualStatic, MethodTable *constrainedType, Metho
     FCALL_CONTRACT;
 
     BOOL uniqueResolution;
+
+    FC_CAN_TRIGGER_GC();
     MethodDesc *methodDesc = constrainedType->ResolveVirtualStaticMethod(
         interfaceMethod->GetMethodTable(),
         interfaceMethod,
-        /* allowNullResult */ FALSE,
+        /* allowNullResult */ TRUE,
         /* verifyImplemented */ FALSE,
         /* allowVariantMatches */ TRUE,
         /* uniqueResolution */ &uniqueResolution);
-    if (methodDesc != nullptr && !uniqueResolution)
+    FC_CAN_TRIGGER_GC_END();
+
+    if (!uniqueResolution)
     {
         FCThrow(kAmbiguousImplementationException);
+    }
+    else if (methodDesc == nullptr)
+    {
+        FCThrow(kTypeLoadException);
     }
     return methodDesc;
 }
