@@ -55,18 +55,18 @@ namespace System.Threading.RateLimiting
             _partitioner = partitioner;
 
             // TODO: Figure out what interval we should use
-            _timer = new TimerAwaitable(TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1));
+            _timer = new TimerAwaitable(TimeSpan.FromMilliseconds(100), TimeSpan.FromMilliseconds(100));
             _timerTask = RunTimer();
         }
 
         private async Task RunTimer()
         {
             _timer.Start();
-            while (!_disposed)
+            while (await _timer)
             {
-                await _timer;
                 Replenish(this);
             }
+            _timer.Dispose();
         }
 
         public override int GetAvailablePermits(TResource resourceID)
@@ -153,8 +153,6 @@ namespace System.Threading.RateLimiting
                 await limiter.Value.Value.DisposeAsync().ConfigureAwait(false);
             }
 
-            limiters.Clear();
-
             return;
         }
 
@@ -167,7 +165,6 @@ namespace System.Threading.RateLimiting
             }
             _disposed = true;
             _timer.Stop();
-            _timer.Dispose();
 
             return false;
         }
@@ -197,7 +194,6 @@ namespace System.Threading.RateLimiting
             {
                 if (limiter._disposed)
                 {
-                    cachedLimiters.Clear();
                     return;
                 }
 
