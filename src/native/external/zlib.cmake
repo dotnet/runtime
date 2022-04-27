@@ -1,3 +1,5 @@
+add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4244>) # conversion from 'type1' to 'type2', possible loss of data
+
 set(ZLIB_SOURCES_BASE
     adler32.c
     compress.c
