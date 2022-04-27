@@ -1806,7 +1806,7 @@ HRESULT CMiniMdRW::InitOnCustomDataSource(IMDCustomDataSource* pDataSource)
         m_Tables[i].Initialize(m_TableDefs[i].m_cbRec, tableRecordData, !fIsReadOnly);
 
         IfFailGo(pDataSource->GetTableSortable(i, &sortable));
-        m_bSortable[i] = sortable;
+        m_bSortable[i] = !!sortable ? 1 : 0;
     }
 
     // Set the limits so we will know when to grow the database.

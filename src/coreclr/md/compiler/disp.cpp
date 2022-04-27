@@ -430,7 +430,7 @@ HRESULT Disp::OpenScopeOnITypeInfo(     // Return code.
 //*****************************************************************************
 // Create a brand new scope which will be used for portable PDB metadata.
 // This is based on the CLSID that was used to get the dispenser.
-// 
+//
 // The existing DefineScope method cannot be used for the purpose of PDB
 // metadata generation, since it internally creates module and type def table
 // entries.
@@ -445,7 +445,7 @@ Disp::DefinePortablePdbScope(
 {
 #ifdef FEATURE_METADATA_EMIT
     HRESULT     hr = S_OK;
-    
+
     BEGIN_ENTRYPOINT_NOTHROW;
 
     RegMeta* pMeta = 0;
@@ -457,7 +457,7 @@ Disp::DefinePortablePdbScope(
         IfFailGo(E_INVALIDARG);
 
     // Currently the portable PDB tables are treated as an extension to the MDVersion2
-    // TODO: this extension might deserve its own version number e.g. 'MDVersion3'  
+    // TODO: this extension might deserve its own version number e.g. 'MDVersion3'
     if (rclsid == CLSID_CLR_v2_MetaData)
     {
         optionForNewScope.m_MetadataVersion = MDVersion2;
@@ -876,7 +876,7 @@ HRESULT Disp::GetOption(                // Return code.
     {   // Note: This is not used in CLR sources anymore, but we store the value and return it here,
         // so we keep it for backward-compat.
         V_VT(pvalue) = VT_BOOL;
-        V_BOOL(pvalue) = m_OptionValue.m_GenerateTCEAdapters;
+        V_BOOL(pvalue) = !!m_OptionValue.m_GenerateTCEAdapters ? VARIANT_TRUE : VARIANT_FALSE;
     }
 #endif //FEATURE_METADATA_EMIT_ALL || FEATURE_METADATA_EMIT_IN_DEBUGGER
     else
