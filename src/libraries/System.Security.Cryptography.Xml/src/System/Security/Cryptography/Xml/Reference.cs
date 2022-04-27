@@ -353,7 +353,7 @@ namespace System.Security.Cryptography.Xml
             WebResponse? response = null;
             Stream? inputStream = null;
             XmlResolver? resolver = null;
-            byte[]? hashval = null;
+            byte[] hashval;
 
             try
             {

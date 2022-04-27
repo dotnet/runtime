@@ -4,6 +4,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Security.Cryptography.X509Certificates;
@@ -802,20 +803,23 @@ namespace System.Security.Cryptography.Xml
 
         private int GetReferenceLevel(int index, ArrayList references)
         {
-            if (_refProcessed![index]) return _refLevelCache![index];
+            Debug.Assert(_refProcessed != null);
+            Debug.Assert(_refLevelCache != null);
+
+            if (_refProcessed[index]) return _refLevelCache[index];
             _refProcessed[index] = true;
             Reference reference = (Reference)references[index]!;
             if (reference.Uri == null || reference.Uri.Length == 0 || (reference.Uri.Length > 0 && reference.Uri[0] != '#'))
             {
-                _refLevelCache![index] = 0;
+                _refLevelCache[index] = 0;
                 return 0;
             }
             if (reference.Uri.Length > 0 && reference.Uri[0] == '#')
             {
-                string idref = Utils.ExtractIdFromLocalUri(reference.Uri!);
+                string idref = Utils.ExtractIdFromLocalUri(reference.Uri);
                 if (idref == "xpointer(/)")
                 {
-                    _refLevelCache![index] = 0;
+                    _refLevelCache[index] = 0;
                     return 0;
                 }
                 // If this is pointing to another reference
@@ -823,12 +827,12 @@ namespace System.Security.Cryptography.Xml
                 {
                     if (((Reference)references[j]!).Id == idref)
                     {
-                        _refLevelCache![index] = GetReferenceLevel(j, references) + 1;
+                        _refLevelCache[index] = GetReferenceLevel(j, references) + 1;
                         return (_refLevelCache[index]);
                     }
                 }
                 // Then the reference points to an object tag
-                _refLevelCache![index] = 0;
+                _refLevelCache[index] = 0;
                 return 0;
             }
             // Malformed reference
