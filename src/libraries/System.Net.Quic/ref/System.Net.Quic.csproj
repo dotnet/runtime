@@ -15,6 +15,6 @@
     <ProjectReference Include="$(LIbrariesProjectRoot)System.Net.Primitives\ref\System.Net.Primitives.csproj" />
     <ProjectReference Include="$(LIbrariesProjectRoot)System.Net.Security\ref\System.Net.Security.csproj" />
     <ProjectReference Include="$(LIbrariesProjectRoot)System.Runtime\ref\System.Runtime.csproj" />
-    <ProjectReference Include="$(LIbrariesProjectRoot)System.Security.Cryptography\ref\System.Security.Cryptography.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Cryptography\ref\System.Security.Cryptography.csproj" />
   </ItemGroup>
 </Project>
