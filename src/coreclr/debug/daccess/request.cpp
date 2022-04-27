@@ -1738,7 +1738,7 @@ ClrDataAccess::GetMethodTableData(CLRDATA_ADDRESS mt, struct DacpMethodTableData
             MTData->Module = HOST_CDADDR(pMT->GetModule());
             MTData->Class = HOST_CDADDR(pMT->GetClass());
             MTData->ParentMethodTable = HOST_CDADDR(pMT->GetParentMethodTable());;
-            MTData->wNumInterfaces = pMT->GetNumInterfaces();
+            MTData->wNumInterfaces = (WORD)pMT->GetNumInterfaces();
             MTData->wNumMethods = pMT->GetNumMethods();
             MTData->wNumVtableSlots = pMT->GetNumVtableSlots();
             MTData->wNumVirtuals = pMT->GetNumVirtuals();

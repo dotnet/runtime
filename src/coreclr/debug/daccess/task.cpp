@@ -3428,11 +3428,14 @@ ClrDataMethodDefinition::GetCodeNotification(
 
 HRESULT STDMETHODCALLTYPE
 ClrDataMethodDefinition::SetCodeNotification(
-    /* [in] */ ULONG32 flags)
+    /* [in] */ ULONG32 flagsRaw)
 {
     HRESULT status;
 
     DAC_ENTER_SUB(m_dac);
+
+    _ASSERTE(flagsRaw <= USHRT_MAX);
+    USHORT flags = (USHORT)flagsRaw;
 
     EX_TRY
     {

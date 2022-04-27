@@ -4766,11 +4766,14 @@ ClrDataAccess::SetAllTypeNotifications(
 HRESULT STDMETHODCALLTYPE
 ClrDataAccess::SetAllCodeNotifications(
     /* [in] */ IXCLRDataModule* mod,
-    /* [in] */ ULONG32 flags)
+    /* [in] */ ULONG32 flagsRaw)
 {
     HRESULT status;
 
     DAC_ENTER();
+
+    _ASSERTE(flagsRaw <= USHRT_MAX);
+    USHORT flags = (USHORT)flagsRaw;
 
     EX_TRY
     {
@@ -4981,14 +4984,15 @@ ClrDataAccess::SetCodeNotifications(
                 {
                     for (ULONG32 check = 0; check < numTokens; check++)
                     {
-                        if (!IsValidMethodCodeNotification(flags[check]))
+                        _ASSERTE(flags[check] <= USHRT_MAX);
+                        if (!IsValidMethodCodeNotification((USHORT)flags[check]))
                         {
                             status = E_INVALIDARG;
                             goto Exit;
                         }
                     }
                 }
-                else if (!IsValidMethodCodeNotification(singleFlags))
+                else if (!IsValidMethodCodeNotification((USHORT)singleFlags))
                 {
                     status = E_INVALIDARG;
                     goto Exit;
