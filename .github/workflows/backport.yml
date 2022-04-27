@@ -15,6 +15,8 @@ jobs:
   cleanup_old_runs:
     if: github.event.schedule == '0 13 * * *'
     runs-on: ubuntu-20.04
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
     - name: Delete old workflow runs
       run: |
@@ -23,7 +25,7 @@ jobs:
         # delete workitems which are 'completed'. (other candidate values of status field are: 'queued' and 'in_progress')
 
         gh api -X GET "$_UrlPath" --paginate \
-          | jq '.workflow_runs[] | select(.name == '\"$GITHUB_WORKFLOW\"' and .status == "completed") | .id' \
+          | jq '.workflow_runs[] | select(.name == '\""$GITHUB_WORKFLOW"\"' and .status == "completed") | .id' \
           | xargs -I{} gh api -X DELETE "$_UrlPath"/{}
 
   backport:
