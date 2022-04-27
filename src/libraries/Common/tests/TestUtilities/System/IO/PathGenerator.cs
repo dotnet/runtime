@@ -24,7 +24,7 @@ namespace System.IO
         private static string GenerateRandomFileSafeString(int length)
         {
             // A little more entropy than Guid.NewGuid().ToString("N").Substring(0, length))
-            const string alphanum = "abcdefghijklmnopqrstuvwxyz0123456789";
+            const string AlphaNumeric = "abcdefghijklmnopqrstuvwxyz0123456789";
 
             byte[] bytes = new byte[length];
             lock (_rand)
@@ -36,7 +36,7 @@ namespace System.IO
 
             for (int i = 0; i < length; i++)
             {
-                chars[i] = alphanum[bytes[i] % alphanum.Length];
+                chars[i] = AlphaNumeric[bytes[i] % AlphaNumeric.Length];
             }
 
             return new String(chars);
