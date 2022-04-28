@@ -17,7 +17,7 @@ namespace System.Security.Cryptography.Xml
         // private static string defaultXPathWithComments = "(//. | //@* | //namespace::*)";
         // private static string defaultXPathWithComments = "(//. | //@* | //namespace::*)";
 
-        internal CanonicalXml(Stream inputStream, bool includeComments, XmlResolver resolver, string strBaseUri)
+        internal CanonicalXml(Stream inputStream, bool includeComments, XmlResolver? resolver, string strBaseUri)
         {
             if (inputStream is null)
             {
@@ -30,7 +30,7 @@ namespace System.Security.Cryptography.Xml
             _ancMgr = new C14NAncestralNamespaceContextManager();
         }
 
-        internal CanonicalXml(XmlDocument document, XmlResolver resolver) : this(document, resolver, false) { }
+        internal CanonicalXml(XmlDocument document, XmlResolver? resolver) : this(document, resolver, false) { }
         internal CanonicalXml(XmlDocument document, XmlResolver? resolver, bool includeComments)
         {
             if (document is null)
@@ -44,7 +44,7 @@ namespace System.Security.Cryptography.Xml
             _ancMgr = new C14NAncestralNamespaceContextManager();
         }
 
-        internal CanonicalXml(XmlNodeList nodeList, XmlResolver resolver, bool includeComments)
+        internal CanonicalXml(XmlNodeList nodeList, XmlResolver? resolver, bool includeComments)
         {
             if (nodeList is null)
             {
