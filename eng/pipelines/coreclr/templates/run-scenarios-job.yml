@@ -60,7 +60,7 @@ jobs:
     - ${{ if eq(parameters.osGroup, 'windows') }}:
       - SharedHelixPreCommands: 'call %HELIX_WORKITEM_PAYLOAD%\machine-setup.cmd;set PYTHONPATH=%HELIX_WORKITEM_PAYLOAD%\scripts%3B%HELIX_WORKITEM_PAYLOAD%'
     - ${{ if ne(parameters.osGroup, 'windows') }}:
-      - SharedHelixPreCommands: 'chmod +x $HELIX_WORKITEM_PAYLOAD/machine-setup.sh;. $HELIX_WORKITEM_PAYLOAD/machine-setup.sh;export PYTHONPATH=$HELIX_WORKITEM_PAYLOAD/scripts:$HELIX_WORKITEM_PAYLOAD:$ORIGPYPATH'
+      - SharedHelixPreCommands: 'chmod +x $HELIX_WORKITEM_PAYLOAD/machine-setup.sh;. $HELIX_WORKITEM_PAYLOAD/machine-setup.sh;export PYTHONPATH=$HELIX_WORKITEM_PAYLOAD/scripts:$HELIX_WORKITEM_PAYLOAD'
 
     - ${{ if eq(parameters.osGroup, 'windows') }}:
       - HelixPreCommandWindows: 'set ORIGPYPATH=%PYTHONPATH%;py -3 -m venv %HELIX_WORKITEM_PAYLOAD%\.venv;call %HELIX_WORKITEM_PAYLOAD%\.venv\Scripts\activate.bat;set PYTHONPATH=;py -3 -m pip install -U pip;py -3 -m pip install --user azure.storage.blob==12.0.0 --force-reinstall;py -3 -m pip install --user azure.storage.queue==12.0.0 --force-reinstall;set "PERFLAB_UPLOAD_TOKEN=$(PerfCommandUploadToken)"'

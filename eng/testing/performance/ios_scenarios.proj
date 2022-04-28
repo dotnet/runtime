@@ -88,6 +88,8 @@
           
           # Post commands
           $(Python) post.py
+          export PYTHONPATH=$ORIGPYPATH
+          $HELIX_PYTHONPATH -u $HELIX_WORKITEM_PAYLOAD/xharness-event-processor.py
           exit $result
         ]]>
 	  </CustomCommands>
@@ -116,6 +118,8 @@
           
           # Post commands
           $(Python) post.py
+          export PYTHONPATH=$ORIGPYPATH
+          $HELIX_PYTHONPATH -u $HELIX_WORKITEM_PAYLOAD/xharness-event-processor.py
           exit $result
         ]]>
 	  </CustomCommands>
