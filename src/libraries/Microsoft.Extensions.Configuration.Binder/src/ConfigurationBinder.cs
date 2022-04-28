@@ -425,21 +425,20 @@ namespace Microsoft.Extensions.Configuration
 
             ConstructorInfo[] constructors = type.GetConstructors(BindingFlags.Public | BindingFlags.Instance);
 
-            bool hasParameterlessPublicConstructor =
+            bool hasParameterlessConstructor =
                 constructors.Any(ctor => ctor.GetParameters().Length == 0);
 
-            // if it's not a value type, and there are no constructors, nor a default constructor
-            if (!type.IsValueType && constructors.Length == 0 && !hasParameterlessPublicConstructor)
+            if (!type.IsValueType && constructors.Length == 0)
             {
                 throw new InvalidOperationException(SR.Format(SR.Error_MissingParameterlessConstructor, type));
             }
 
-            if (constructors.Length > 1 && !hasParameterlessPublicConstructor)
+            if (constructors.Length > 1 && !hasParameterlessConstructor)
             {
                 throw new InvalidOperationException(SR.Format(SR.Error_MultipleParameterisedConstructors, type));
             }
 
-            if (constructors.Length == 1 && !hasParameterlessPublicConstructor)
+            if (constructors.Length == 1 && !hasParameterlessConstructor)
             {
                 ConstructorInfo constructor = constructors[0];
                 ParameterInfo[] parameters = constructor.GetParameters();
