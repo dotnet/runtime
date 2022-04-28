@@ -286,7 +286,7 @@ namespace System.Numerics.Tests
 
         // A test for Plane comparison involving NaN values
         [Fact]
-        public void PlaneEqualsNanTest()
+        public void PlaneEqualsNaNTest()
         {
             Plane a = new Plane(float.NaN, 0, 0, 0);
             Plane b = new Plane(0, float.NaN, 0, 0);
@@ -308,11 +308,10 @@ namespace System.Numerics.Tests
             Assert.False(c.Equals(new Plane(0, 0, 0, 0)));
             Assert.False(d.Equals(new Plane(0, 0, 0, 0)));
 
-            // Counterintuitive result - IEEE rules for NaN comparison are weird!
-            Assert.False(a.Equals(a));
-            Assert.False(b.Equals(b));
-            Assert.False(c.Equals(c));
-            Assert.False(d.Equals(d));
+            Assert.True(a.Equals(a));
+            Assert.True(b.Equals(b));
+            Assert.True(c.Equals(c));
+            Assert.True(d.Equals(d));
         }
 
         /* Enable when size of Vector3 is correct
