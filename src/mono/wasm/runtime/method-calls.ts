@@ -13,7 +13,7 @@ import { mono_array_root_to_js_array, unbox_mono_obj_root } from "./cs-to-js";
 import { get_js_obj, mono_wasm_get_jsobj_from_js_handle } from "./gc-handles";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore used by unsafe export
-import { js_array_to_mono_array, _js_to_mono_obj_unsafe, js_to_mono_obj_root } from "./js-to-cs";
+import { js_array_to_mono_array, js_to_mono_obj_root } from "./js-to-cs";
 import {
     mono_bind_method,
     Converter, _compile_converter_for_marshal_string,
@@ -620,9 +620,13 @@ export function mono_wasm_invoke_js(code: MonoString, is_exception: Int32Ptr): M
 // Compiles a JavaScript function from the function data passed.
 // Note: code snippet is not a function definition. Instead it must create and return a function instance.
 // code like `return function() { App.call_test_method(); };`
-export function mono_wasm_compile_function(code: MonoString, is_exception: Int32Ptr): MonoObject {
-    if (code === MonoStringNull)
-        return MonoStringNull;
+export function mono_wasm_compile_function(code: MonoString, is_exception: Int32Ptr, result_address: MonoObjectRef): void {
+    const resultRoot = mono_wasm_new_external_root<MonoObject>(result_address);
+
+    if (code === MonoStringNull) {
+        js_to_mono_obj_root(MonoStringNull, resultRoot, true);
+        return;
+    }
 
     const js_code = conv_string(code);
 
@@ -633,13 +637,16 @@ export function mono_wasm_compile_function(code: MonoString, is_exception: Int32
         const fn_body_template = `const {Module, MONO, BINDING, INTERNAL} = __closure; ${js_code} ;`;
         const fn_defn = new Function("__closure", fn_body_template);
         const res = fn_defn(closure);
-        if (!res || typeof res !== "function")
-            return wrap_error(is_exception, "Code must return an instance of a JavaScript function. Please use `return` statement to return a function.");
+        if (!res || typeof res !== "function") {
+            wrap_error_root(is_exception, "Code must return an instance of a JavaScript function. Please use `return` statement to return a function.", resultRoot);
+            return;
+        }
         Module.setValue(is_exception, 0, "i32");
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        // @ts-ignore caller is unsafe also
-        return _js_to_mono_obj_unsafe(true, res);
+
+        js_to_mono_obj_root(res, resultRoot, true);
     } catch (ex) {
-        return wrap_error(is_exception, ex);
+        wrap_error_root(is_exception, ex, resultRoot);
+    } finally {
+        resultRoot.release();
     }
 }

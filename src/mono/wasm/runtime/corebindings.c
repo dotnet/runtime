@@ -34,7 +34,7 @@ extern void mono_wasm_web_socket_send (int webSocket_js_handle, void* buffer_ptr
 extern void mono_wasm_web_socket_receive (int webSocket_js_handle, void* buffer_ptr, int offset, int length, void* response_ptr, int *thenable_js_handle, int *is_exception, MonoObject **result);
 extern void mono_wasm_web_socket_close_ref (int webSocket_js_handle, int code, MonoString **reason, int wait_for_close_received, int *thenable_js_handle, int *is_exception, MonoObject **result);
 extern void mono_wasm_web_socket_abort (int webSocket_js_handle, int *is_exception, MonoString **result);
-extern MonoObject* mono_wasm_compile_function (MonoString *str, int *is_exception);
+extern void mono_wasm_compile_function (MonoString *str, int *is_exception, MonoObject **result);
 
 void core_initialize_internals ()
 {
