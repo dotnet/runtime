@@ -2896,10 +2896,14 @@ static
 uint32_t
 ep_rt_mono_get_byte_count_in_event(BulkTypeValue *bulk_type_value)
 {
+	uint32_t s_name_len = 0;
+	if (bulk_type_value->s_name)
+		s_name_len = strlen(bulk_type_value->s_name);
+
 	return
 		sizeof(bulk_type_value->fixed_sized_data) +
 		sizeof(bulk_type_value->c_type_parameters) +
-		(strlen(bulk_type_value->s_name) + 1) * sizeof(char) +  // Size of name, including null terminator
+		(s_name_len + 1) * sizeof(char) +  // Size of name, including null terminator
 		bulk_type_value->c_type_parameters * sizeof(uint64_t);	// Type parameters
 }
 
@@ -2957,7 +2961,7 @@ ep_rt_mono_fire_bulk_type_event (BulkTypeEventLogger *p_type_logger)
 		i_size += sizeof(target->fixed_sized_data);
 
 		char *wsz_name = target->s_name;
-		if (!wsz_name)
+		if (!wsz_name || strlen(wsz_name) == 0)
 		{
 			p_type_logger->m_p_bulk_type_event_buffer[i_size++] = 0;
 			p_type_logger->m_p_bulk_type_event_buffer[i_size++] = 0;
@@ -3050,7 +3054,7 @@ ep_rt_mono_log_single_type (BulkTypeEventLogger *p_type_logger, MonoType *mono_t
 	memset(p_val->rg_type_parameters, 0, 32);
 	memset(p_val->rg_mono_type_parameters, 0, 32);
 	if (p_val->s_name)
-		p_val->s_name[0] = '\0';
+		p_val->s_name = '\0';
 	p_val->c_type_parameters = 0;
 
 	// Initialize p_val fixed_sized_data
