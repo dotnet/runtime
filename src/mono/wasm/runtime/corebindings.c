@@ -28,7 +28,7 @@ extern void mono_wasm_typed_array_to_array_ref (int js_handle, int *is_exception
 extern void mono_wasm_typed_array_copy_to_ref (int js_handle, int ptr, int begin, int end, int bytes_per_element, int *is_exception, MonoObject** result);
 extern void mono_wasm_typed_array_from_ref (int ptr, int begin, int end, int bytes_per_element, int type, int *is_exception, MonoObject** result);
 extern void mono_wasm_typed_array_copy_from_ref (int js_handle, int ptr, int begin, int end, int bytes_per_element, int *is_exception, MonoObject** result);
-extern MonoString* mono_wasm_cancel_promise (int thenable_js_handle, int *is_exception);
+extern void mono_wasm_cancel_promise (int thenable_js_handle, int *is_exception, MonoString** result);
 extern void mono_wasm_web_socket_open_ref (MonoString **uri, MonoArray **subProtocols, MonoDelegate **on_close, int *web_socket_js_handle, int *thenable_js_handle, int *is_exception, MonoObject **result);
 extern void mono_wasm_web_socket_send (int webSocket_js_handle, void* buffer_ptr, int offset, int length, int message_type, int end_of_message, int *thenable_js_handle, int *is_exception, MonoObject **result);
 extern void mono_wasm_web_socket_receive (int webSocket_js_handle, void* buffer_ptr, int offset, int length, void* response_ptr, int *thenable_js_handle, int *is_exception, MonoObject **result);
