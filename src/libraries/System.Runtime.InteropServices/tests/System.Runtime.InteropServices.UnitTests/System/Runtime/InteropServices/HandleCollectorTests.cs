@@ -163,7 +163,7 @@ namespace System.Runtime.InteropServices
             internal HandleLimitTester(HandleCollector collector)
             {
                 _collector = collector;
-                _pressure = new int[collector.InitialThreshold];
+                _pressure = new int[1_000];
                 _collector.Add();
                 GC.KeepAlive(this);
             }
