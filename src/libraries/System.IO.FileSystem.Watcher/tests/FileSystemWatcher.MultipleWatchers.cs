@@ -239,15 +239,15 @@ namespace System.IO.Tests
         [Fact]
         public void  FileSystemWatcher_File_Changed_NotAffectEachOther()
         {
-            string file = CreateTestFile(TestDirectory, "file");
-            string otherFile = CreateTestFile(TestDirectory, "otherFile");
+            string file = CreateTestFile(TestDirectory, "apple");
+            string otherFile = CreateTestFile(TestDirectory, "pear");
             using (var watcher1 = new FileSystemWatcher(TestDirectory, Path.GetFileName(file)))
             using (var watcher2 = new FileSystemWatcher(TestDirectory, Path.GetFileName(file)))
             using (var watcher3 = new FileSystemWatcher(TestDirectory, Path.GetFileName(otherFile)))
             {
-                AutoResetEvent autoResetEvent1 = WatchChanged(watcher1, new[] { Path.Combine(TestDirectory, "file") }).EventOccured;
-                AutoResetEvent autoResetEvent2 = WatchChanged(watcher2, new[] { Path.Combine(TestDirectory, "file") }).EventOccured;
-                AutoResetEvent autoResetEvent3 = WatchChanged(watcher3, new[] { Path.Combine(TestDirectory, "otherfile") }).EventOccured;
+                AutoResetEvent autoResetEvent1 = WatchChanged(watcher1, new[] { Path.Combine(TestDirectory, "apple") }).EventOccured;
+                AutoResetEvent autoResetEvent2 = WatchChanged(watcher2, new[] { Path.Combine(TestDirectory, "apple") }).EventOccured;
+                AutoResetEvent autoResetEvent3 = WatchChanged(watcher3, new[] { Path.Combine(TestDirectory, "pear") }).EventOccured;
 
                 watcher1.Error += OnError;
                 watcher2.Error += OnError;
