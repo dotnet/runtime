@@ -14,7 +14,7 @@
 
 // the enumeration has a specific set of values to keep it compatible with consumer library
 // it's sibling is defined in https://github.com/Microsoft/perfview/blob/10d1f92b242c98073b3817ac5ee6d98cd595d39b/src/FastSerialization/FastSerialization.cs#L2295
-typedef enum : uint8_t
+typedef enum
 {
 	FAST_SERIALIZER_TAGS_ERROR                  = 0, // To improve debugabilty, 0 is an illegal tag.
 	FAST_SERIALIZER_TAGS_NULL_REFERENCE         = 1, // Tag for a null object forwardReference.
