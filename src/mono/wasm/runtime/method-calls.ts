@@ -620,15 +620,15 @@ export function mono_wasm_invoke_js(code: MonoString, is_exception: Int32Ptr): M
 // Compiles a JavaScript function from the function data passed.
 // Note: code snippet is not a function definition. Instead it must create and return a function instance.
 // code like `return function() { App.call_test_method(); };`
-export function mono_wasm_compile_function_ref(code: MonoString, is_exception: Int32Ptr, result_address: MonoObjectRef): void {
-    const resultRoot = mono_wasm_new_external_root<MonoObject>(result_address);
+export function mono_wasm_compile_function_ref(code: MonoStringRef, is_exception: Int32Ptr, result_address: MonoObjectRef): void {
+    const codeRoot = mono_wasm_new_external_root<MonoString>(code),
+        resultRoot = mono_wasm_new_external_root<MonoObject>(result_address);
 
-    if (code === MonoStringNull) {
+    const js_code = conv_string_root(codeRoot);
+    if (!js_code) {
         js_to_mono_obj_root(MonoStringNull, resultRoot, true);
         return;
     }
-
-    const js_code = conv_string(code);
 
     try {
         const closure = {
