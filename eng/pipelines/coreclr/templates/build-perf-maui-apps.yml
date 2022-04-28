@@ -375,7 +375,7 @@ steps:
 
   - template: /eng/pipelines/common/upload-artifact-step.yml
     parameters:
-        rootFolder: $(Build.SourcesDirectory)/MauiBlazorpTesting/MauiBlazoriOSDefault.ipa
+        rootFolder: $(Build.SourcesDirectory)/MauiBlazorTesting/MauiBlazoriOSDefault.ipa
         includeRootFolder: true
         displayName: Maui Blazor iOS IPA
         artifactName: MauiBlazoriOSDefaultIPA
