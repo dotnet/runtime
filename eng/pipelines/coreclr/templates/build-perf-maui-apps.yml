@@ -259,7 +259,7 @@ steps:
       # NuGet.config file cannot be in the build directory currently due to https://github.com/dotnet/aspnetcore/issues/41397
       rm NuGet.config
 
-      ../dotnet publish -bl:MauiBlazoriOS.binlog -f net6.0-ios --self-contained -r ios-arm64 -c Release /p:_RequireCodeSigning=false
+      ../dotnet publish -bl:MauiBlazoriOS.binlog -f net6.0-ios --self-contained -r ios-arm64 -c Release /p:_RequireCodeSigning=false /p:ApplicationId=net.dot.mauiblazortesting
       mv ./bin/Release/net6.0-ios/ios-arm64/publish/MauiBlazorTesting.ipa ./MauiBlazoriOSDefault.ipa
 
       # Restore NuGet.config
