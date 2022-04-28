@@ -5460,15 +5460,12 @@ HRESULT RuntimeInvokeHostAssemblyResolver(INT_PTR pManagedAssemblyLoadContextToB
                 LoaderAllocator *pResultAssemblyLoaderAllocator = pDomainAssembly->GetLoaderAllocator();
                 LoaderAllocator *pParentLoaderAllocator = NULL;
                 hr = pBinder->GetLoaderAllocator((LPVOID*)&pParentLoaderAllocator);
-                if (!SUCCEEDED(hr))
+                if (SUCCEEDED(hr))
                 {
-                    // The AssemblyLoadContext for which we are resolving the the Assembly is not collectible.
-                    COMPlusThrow(kNotSupportedException, W("NotSupported_CollectibleBoundNonCollectible")); 
+                    _ASSERTE(pParentLoaderAllocator);
+                    _ASSERTE(pResultAssemblyLoaderAllocator);
+                    pParentLoaderAllocator->EnsureReference(pResultAssemblyLoaderAllocator);
                 }
-
-                _ASSERTE(pParentLoaderAllocator);
-                _ASSERTE(pResultAssemblyLoaderAllocator);
-                pParentLoaderAllocator->EnsureReference(pResultAssemblyLoaderAllocator);
             }
 
             pResolvedAssembly = pLoadedPEAssembly->GetHostAssembly();
