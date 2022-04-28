@@ -7,9 +7,9 @@ using System.Runtime.Serialization;
 
 namespace System.Text.Json.Serialization.Converters
 {
+    [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
     internal sealed class UnsupportedTypeConverterFactory : JsonConverterFactory
     {
-        [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
         public UnsupportedTypeConverterFactory()
         {
         }
@@ -46,8 +46,6 @@ namespace System.Text.Json.Serialization.Converters
 #endif
         }
 
-        [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode", Justification = "The factory constructors are only invoked in the context of reflection serialization code paths " +
-            "and are marked RequiresDynamicCode")]
         public override JsonConverter CreateConverter(Type type, JsonSerializerOptions options)
         {
             JsonConverter converter = (JsonConverter)Activator.CreateInstance(

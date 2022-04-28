@@ -8,16 +8,14 @@ namespace System.Text.Json.Nodes
     /// <summary>
     /// Not trim-safe since it calls JsonSerializer.Serialize(JsonSerializerOptions).
     /// </summary>
+    [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
     internal sealed partial class JsonValueNotTrimmable<TValue> : JsonValue<TValue>
     {
         [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
-        [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
         public JsonValueNotTrimmable(TValue value, JsonNodeOptions? options = null) : base(value, options) { }
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "The ctor is marked RequiresUnreferencedCode.")]
-        [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
-            Justification = "The ctor is marked RequiresDynamicCode.")]
         public override void WriteTo(Utf8JsonWriter writer, JsonSerializerOptions? options = null)
         {
             if (writer is null)
