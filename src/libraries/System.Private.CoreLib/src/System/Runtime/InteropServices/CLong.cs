@@ -439,7 +439,7 @@ namespace System.Runtime.InteropServices
         //
 
         /// <inheritdoc cref="IAdditiveIdentity{TSelf, TResult}.AdditiveIdentity" />
-        static CLong IAdditiveIdentity<CLong, CLong>.AdditiveIdentity => new CLong(NativeType.AdditiveIdentity);
+        static CLong IAdditiveIdentity<CLong, CLong>.AdditiveIdentity => new CLong((NativeType)0);
 
         //
         // IBinaryInteger
@@ -657,7 +657,7 @@ namespace System.Runtime.InteropServices
         //
 
         /// <inheritdoc cref="IMultiplicativeIdentity{TSelf, TResult}.MultiplicativeIdentity" />
-        static CLong IMultiplicativeIdentity<CLong, CLong>.MultiplicativeIdentity => new CLong(NativeType.MultiplicativeIdentity);
+        static CLong IMultiplicativeIdentity<CLong, CLong>.MultiplicativeIdentity => new CLong((NativeType)1);
 
         //
         // IMultiplyOperators
@@ -750,10 +750,10 @@ namespace System.Runtime.InteropServices
         //
 
         /// <inheritdoc cref="INumberBase{TSelf}.One" />
-        static CLong INumberBase<CLong>.One => new CLong(NativeType.One);
+        static CLong INumberBase<CLong>.One => new CLong((NativeType)1);
 
         /// <inheritdoc cref="INumberBase{TSelf}.Zero" />
-        static CLong INumberBase<CLong>.Zero => new CLong(NativeType.Zero);
+        static CLong INumberBase<CLong>.Zero => new CLong((NativeType)0);
 
         //
         // IParsable
