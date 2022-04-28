@@ -3357,24 +3357,7 @@ unsigned Compiler::gtSetCallArgsOrder(CallArgs* args, bool lateArgs, int* callCo
         {
             GenTree* node  = arg.GetEarlyNode();
             unsigned level = gtSetEvalOrder(node);
-
-            if (arg.GetWellKnownArg() == WellKnownArg::ThisPointer)
-            {
-                // TODO-ARGS: Quirk to match old costs assigned to 'this'
-                costEx += node->GetCostEx();
-                costSz += node->GetCostSz() + 1;
-            }
-            else
-            {
-                update(node, level);
-            }
-        }
-
-        // TODO-ARGS: Quirk to match old costs assigned to 'this'
-        CallArg* thisArg = args->GetThisArg();
-        if ((thisArg != nullptr) && (thisArg->GetEarlyNode() == nullptr))
-        {
-            costSz++;
+            update(node, level);
         }
     }
 
