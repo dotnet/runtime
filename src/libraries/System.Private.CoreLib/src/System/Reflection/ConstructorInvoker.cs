@@ -9,10 +9,12 @@ namespace System.Reflection
     internal sealed partial class ConstructorInvoker
     {
         private readonly RuntimeConstructorInfo _method;
-        public InvocationFlags _invocationFlags;
+
+#if !MONO // Temporary until Mono is updated.
         private bool _invoked;
         private bool _strategyDetermined;
         private InvokerEmitUtil.InvokeFunc<ConstructorInvoker>? _emitInvoke;
+#endif
 
         public ConstructorInvoker(RuntimeConstructorInfo constructorInfo)
         {
@@ -25,7 +27,6 @@ namespace System.Reflection
             // Always use emit invoke (if IsDynamicCodeCompiled == true); useful for testing.
             _invoked = true;
 #endif
-
         }
 
 #if MONO // Temporary until Mono is updated.

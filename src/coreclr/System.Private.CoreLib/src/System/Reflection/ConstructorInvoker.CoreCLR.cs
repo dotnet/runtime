@@ -7,6 +7,8 @@ namespace System.Reflection
 {
     internal partial class ConstructorInvoker
     {
+        public InvocationFlags _invocationFlags;
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private unsafe object? InvokeNonEmitUnsafe(object? obj, IntPtr* arguments)
         {

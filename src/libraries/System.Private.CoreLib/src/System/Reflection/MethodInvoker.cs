@@ -8,26 +8,7 @@ namespace System.Reflection
 {
     internal sealed partial class MethodInvoker
     {
-        internal InvocationFlags _invocationFlags;
         private readonly MethodBase _method;
-        private readonly Signature? _signature;
-        private bool _invoked;
-        private bool _strategyDetermined;
-        private InvokerEmitUtil.InvokeFunc<MethodInvoker>? _emitInvoke;
-
-        public MethodInvoker(MethodBase method, Signature? signature = null)
-        {
-            _method = method;
-            _signature = signature;
-
-#if USE_NATIVE_INVOKE
-            // Always use the native invoke; useful for testing.
-            _strategyDetermined = true;
-#elif USE_EMIT_INVOKE
-            // Always use emit invoke (if IsDynamicCodeCompiled == true); useful for testing.
-            _invoked = true;
-#endif
-        }
 
 #if MONO // Temporary until Mono is updated.
         [DebuggerStepThrough]
@@ -37,6 +18,10 @@ namespace System.Reflection
             return InvokeNonEmitUnsafe(obj, args, invokeAttr);
         }
 #else
+        private bool _invoked;
+        private bool _strategyDetermined;
+        private InvokerEmitUtil.InvokeFunc<MethodInvoker>? _emitInvoke;
+
         [DebuggerStepThrough]
         [DebuggerHidden]
         public unsafe object? InvokeUnsafe(object? obj, IntPtr* args, BindingFlags invokeAttr)

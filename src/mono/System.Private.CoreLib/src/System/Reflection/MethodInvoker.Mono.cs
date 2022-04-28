@@ -7,6 +7,19 @@ namespace System.Reflection
 {
     internal partial class MethodInvoker
     {
+        public MethodInvoker(MethodBase method)
+        {
+            _method = method;
+
+#if USE_NATIVE_INVOKE
+            // Always use the native invoke; useful for testing.
+            _strategyDetermined = true;
+#elif USE_EMIT_INVOKE
+            // Always use emit invoke (if IsDynamicCodeCompiled == true); useful for testing.
+            _invoked = true;
+#endif
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private unsafe object? InvokeNonEmitUnsafe(object? obj, Span<object?> args, BindingFlags invokeAttr)
         {
