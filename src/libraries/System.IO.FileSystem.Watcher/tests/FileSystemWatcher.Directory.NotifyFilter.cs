@@ -25,15 +25,14 @@ namespace System.IO.Tests
         {
             FileSystemWatcherTest.Execute(() =>
             {
-                using (var testDirectory = new TempDirectory(GetTestFilePath()))
-                using (var dir = new TempDirectory(Path.Combine(testDirectory.Path, "dir")))
-                using (var watcher = new FileSystemWatcher(testDirectory.Path, Path.GetFileName(dir.Path)))
+                string dir = CreateTestDirectory(TestDirectory, "dir");
+                using (var watcher = new FileSystemWatcher(TestDirectory, Path.GetFileName(dir)))
                 {
                     watcher.NotifyFilter = filter;
-                    var attributes = File.GetAttributes(dir.Path);
+                    var attributes = File.GetAttributes(dir);
 
-                    Action action = () => File.SetAttributes(dir.Path, attributes | FileAttributes.ReadOnly);
-                    Action cleanup = () => File.SetAttributes(dir.Path, attributes);
+                    Action action = () => File.SetAttributes(dir, attributes | FileAttributes.ReadOnly);
+                    Action cleanup = () => File.SetAttributes(dir, attributes);
 
                     WatcherChangeTypes expected = 0;
                     if (filter == NotifyFilters.Attributes)
@@ -44,7 +43,7 @@ namespace System.IO.Tests
                         expected |= WatcherChangeTypes.Changed;
                     else if (OperatingSystem.IsMacOS() && ((filter & NotifyFilters.Security) > 0))
                         expected |= WatcherChangeTypes.Changed; // Attribute change on OSX is a ChangeOwner operation which passes the Security NotifyFilter.
-                    ExpectEvent(watcher, expected, action, cleanup, dir.Path);
+                    ExpectEvent(watcher, expected, action, cleanup, dir);
                 }
             }, maxAttempts: DefaultAttemptsForExpectedEvent, backoffFunc: (iteration) => RetryDelayMilliseconds, retryWhen: e => e is XunitException);
         }
@@ -53,12 +52,11 @@ namespace System.IO.Tests
         [MemberData(nameof(FilterTypes))]
         public void FileSystemWatcher_Directory_NotifyFilter_CreationTime(NotifyFilters filter)
         {
-            using (var testDirectory = new TempDirectory(GetTestFilePath()))
-            using (var dir = new TempDirectory(Path.Combine(testDirectory.Path, "dir")))
-            using (var watcher = new FileSystemWatcher(testDirectory.Path, Path.GetFileName(dir.Path)))
+            string dir = CreateTestDirectory(TestDirectory, "dir");
+            using (var watcher = new FileSystemWatcher(TestDirectory, Path.GetFileName(dir)))
             {
                 watcher.NotifyFilter = filter;
-                Action action = () => Directory.SetCreationTime(dir.Path, DateTime.Now + TimeSpan.FromSeconds(10));
+                Action action = () => Directory.SetCreationTime(dir, DateTime.Now + TimeSpan.FromSeconds(10));
 
                 WatcherChangeTypes expected = 0;
                 if (filter == NotifyFilters.CreationTime)
@@ -68,7 +66,7 @@ namespace System.IO.Tests
                 else if (OperatingSystem.IsMacOS() && ((filter & OSXFiltersForModify) > 0))
                     expected |= WatcherChangeTypes.Changed;
 
-                ExpectEvent(watcher, expected, action, expectedPath: dir.Path);
+                ExpectEvent(watcher, expected, action, expectedPath: dir);
             }
         }
 
@@ -76,12 +74,11 @@ namespace System.IO.Tests
         [MemberData(nameof(FilterTypes))]
         public void FileSystemWatcher_Directory_NotifyFilter_DirectoryName(NotifyFilters filter)
         {
-            using (var testDirectory = new TempDirectory(GetTestFilePath()))
-            using (var dir = new TempDirectory(Path.Combine(testDirectory.Path, "dir")))
-            using (var watcher = new FileSystemWatcher(testDirectory.Path, Path.GetFileName(dir.Path)))
+            string dir = CreateTestDirectory(TestDirectory, "dir");
+            using (var watcher = new FileSystemWatcher(TestDirectory, Path.GetFileName(dir)))
             {
-                string sourcePath = dir.Path;
-                string targetPath = Path.Combine(testDirectory.Path, "targetDir");
+                string sourcePath = dir;
+                string targetPath = Path.Combine(TestDirectory, "targetDir");
                 watcher.NotifyFilter = filter;
 
                 Action action = () => Directory.Move(sourcePath, targetPath);
@@ -99,12 +96,11 @@ namespace System.IO.Tests
         [MemberData(nameof(FilterTypes))]
         public void FileSystemWatcher_Directory_NotifyFilter_LastAccessTime(NotifyFilters filter)
         {
-            using (var testDirectory = new TempDirectory(GetTestFilePath()))
-            using (var dir = new TempDirectory(Path.Combine(testDirectory.Path, "dir")))
-            using (var watcher = new FileSystemWatcher(testDirectory.Path, Path.GetFileName(dir.Path)))
+            string dir = CreateTestDirectory(TestDirectory, "dir");
+            using (var watcher = new FileSystemWatcher(TestDirectory, Path.GetFileName(dir)))
             {
                 watcher.NotifyFilter = filter;
-                Action action = () => Directory.SetLastAccessTime(dir.Path, DateTime.Now + TimeSpan.FromSeconds(10));
+                Action action = () => Directory.SetLastAccessTime(dir, DateTime.Now + TimeSpan.FromSeconds(10));
 
                 WatcherChangeTypes expected = 0;
                 if (filter == NotifyFilters.LastAccess)
@@ -114,7 +110,7 @@ namespace System.IO.Tests
                 else if (OperatingSystem.IsMacOS() && ((filter & OSXFiltersForModify) > 0))
                     expected |= WatcherChangeTypes.Changed;
 
-                ExpectEvent(watcher, expected, action, expectedPath: dir.Path);
+                ExpectEvent(watcher, expected, action, expectedPath: dir);
             }
         }
 
@@ -122,12 +118,11 @@ namespace System.IO.Tests
         [MemberData(nameof(FilterTypes))]
         public void FileSystemWatcher_Directory_NotifyFilter_LastWriteTime(NotifyFilters filter)
         {
-            using (var testDirectory = new TempDirectory(GetTestFilePath()))
-            using (var dir = new TempDirectory(Path.Combine(testDirectory.Path, "dir")))
-            using (var watcher = new FileSystemWatcher(testDirectory.Path, Path.GetFileName(dir.Path)))
+            string dir = CreateTestDirectory(TestDirectory, "dir");
+            using (var watcher = new FileSystemWatcher(TestDirectory, Path.GetFileName(dir)))
             {
                 watcher.NotifyFilter = filter;
-                Action action = () => Directory.SetLastWriteTime(dir.Path, DateTime.Now + TimeSpan.FromSeconds(10));
+                Action action = () => Directory.SetLastWriteTime(dir, DateTime.Now + TimeSpan.FromSeconds(10));
 
                 WatcherChangeTypes expected = 0;
                 if (filter == NotifyFilters.LastWrite)
@@ -137,7 +132,7 @@ namespace System.IO.Tests
                 else if (OperatingSystem.IsMacOS() && ((filter & OSXFiltersForModify) > 0))
                     expected |= WatcherChangeTypes.Changed;
 
-                ExpectEvent(watcher, expected, action, expectedPath: dir.Path);
+                ExpectEvent(watcher, expected, action, expectedPath: dir);
             }
         }
 
@@ -148,13 +143,12 @@ namespace System.IO.Tests
         {
             Assert.All(FilterTypes(), (filter2Arr =>
             {
-                using (var testDirectory = new TempDirectory(GetTestFilePath()))
-                using (var dir = new TempDirectory(Path.Combine(testDirectory.Path, "dir")))
-                using (var watcher = new FileSystemWatcher(testDirectory.Path, Path.GetFileName(dir.Path)))
+                string dir = CreateTestDirectory(TestDirectory, "dir");
+                using (var watcher = new FileSystemWatcher(TestDirectory, Path.GetFileName(dir)))
                 {
                     filter |= (NotifyFilters)filter2Arr[0];
                     watcher.NotifyFilter = filter;
-                    Action action = () => Directory.SetLastWriteTime(dir.Path, DateTime.Now + TimeSpan.FromSeconds(10));
+                    Action action = () => Directory.SetLastWriteTime(dir, DateTime.Now + TimeSpan.FromSeconds(10));
 
                     WatcherChangeTypes expected = 0;
                     if ((filter & NotifyFilters.LastWrite) > 0)
@@ -163,7 +157,7 @@ namespace System.IO.Tests
                         expected |= WatcherChangeTypes.Changed;
                     else if (OperatingSystem.IsMacOS() && ((filter & OSXFiltersForModify) > 0))
                         expected |= WatcherChangeTypes.Changed;
-                    ExpectEvent(watcher, expected, action, expectedPath: dir.Path);
+                    ExpectEvent(watcher, expected, action, expectedPath: dir);
                 }
             }));
         }
@@ -173,15 +167,14 @@ namespace System.IO.Tests
         [PlatformSpecific(TestPlatforms.Windows)]  // Uses P/Invokes to set security info
         public void FileSystemWatcher_Directory_NotifyFilter_Security(NotifyFilters filter)
         {
-            using (var testDirectory = new TempDirectory(GetTestFilePath()))
-            using (var dir = new TempDirectory(Path.Combine(testDirectory.Path, "dir")))
-            using (var watcher = new FileSystemWatcher(testDirectory.Path, Path.GetFileName(dir.Path)))
+            string dir = CreateTestDirectory(TestDirectory, "dir");
+            using (var watcher = new FileSystemWatcher(TestDirectory, Path.GetFileName(dir)))
             {
                 watcher.NotifyFilter = filter;
                 Action action = () =>
                 {
                     // ACL support is not yet available, so pinvoke directly.
-                    uint result = SetSecurityInfoByHandle(dir.Path,
+                    uint result = SetSecurityInfoByHandle(dir,
                         SE_FILE_OBJECT,
                         DACL_SECURITY_INFORMATION, // Only setting the DACL
                         owner: IntPtr.Zero,
@@ -193,8 +186,8 @@ namespace System.IO.Tests
                 Action cleanup = () =>
                 {
                     // Recreate the Directory.
-                    Directory.Delete(dir.Path);
-                    Directory.CreateDirectory(dir.Path);
+                    Directory.Delete(dir);
+                    Directory.CreateDirectory(dir);
                 };
 
                 WatcherChangeTypes expected = 0;
@@ -202,7 +195,7 @@ namespace System.IO.Tests
                 if (filter == NotifyFilters.Security)
                     expected |= WatcherChangeTypes.Changed;
 
-                ExpectEvent(watcher, expected, action, cleanup, dir.Path);
+                ExpectEvent(watcher, expected, action, cleanup, dir);
             }
         }
 
@@ -212,16 +205,15 @@ namespace System.IO.Tests
         [Fact]
         public void FileSystemWatcher_Directory_NotifyFilter_LastWriteAndFileName()
         {
-            using (var testDirectory = new TempDirectory(GetTestFilePath()))
-            using (var file = new TempFile(Path.Combine(testDirectory.Path, "file")))
-            using (var watcher = new FileSystemWatcher(testDirectory.Path, Path.GetFileName(file.Path)))
+            string file = CreateTestFile(TestDirectory, "file");
+            using (var watcher = new FileSystemWatcher(TestDirectory, Path.GetFileName(file)))
             {
                 NotifyFilters filter = NotifyFilters.LastWrite | NotifyFilters.DirectoryName;
                 watcher.NotifyFilter = filter;
 
-                Action action = () => File.SetLastWriteTime(file.Path, DateTime.Now + TimeSpan.FromSeconds(10));
+                Action action = () => File.SetLastWriteTime(file, DateTime.Now + TimeSpan.FromSeconds(10));
 
-                ExpectEvent(watcher, WatcherChangeTypes.Changed, action, expectedPath: file.Path);
+                ExpectEvent(watcher, WatcherChangeTypes.Changed, action, expectedPath: file);
             }
         }
 
@@ -232,23 +224,22 @@ namespace System.IO.Tests
         [Fact]
         public void FileSystemWatcher_Directory_NotifyFilter_ModifyAndCreate()
         {
-            using (var testDirectory = new TempDirectory(GetTestFilePath()))
-            using (var dir = new TempDirectory(Path.Combine(testDirectory.Path, "dir")))
-            using (var watcher = new FileSystemWatcher(testDirectory.Path, "*"))
+            string dir = CreateTestDirectory(TestDirectory, "dir");
+            using (var watcher = new FileSystemWatcher(TestDirectory, "*"))
             {
                 watcher.NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.DirectoryName;
-                string otherDir = Path.Combine(testDirectory.Path, "dir2");
+                string otherDir = Path.Combine(TestDirectory, "dir2");
 
                 Action action = () =>
                 {
                     Directory.CreateDirectory(otherDir);
-                    Directory.SetLastWriteTime(dir.Path, DateTime.Now + TimeSpan.FromSeconds(10));
+                    Directory.SetLastWriteTime(dir, DateTime.Now + TimeSpan.FromSeconds(10));
                 };
                 Action cleanup = () => Directory.Delete(otherDir);
 
                 WatcherChangeTypes expected = 0;
                 expected |= WatcherChangeTypes.Created | WatcherChangeTypes.Changed;
-                ExpectEvent(watcher, expected, action, cleanup, new string[] { otherDir, dir.Path });
+                ExpectEvent(watcher, expected, action, cleanup, new string[] { otherDir, dir });
             }
         }
 
@@ -259,17 +250,16 @@ namespace System.IO.Tests
         [Fact]
         public void FileSystemWatcher_Directory_NotifyFilter_ModifyAndDelete()
         {
-            using (var testDirectory = new TempDirectory(GetTestFilePath()))
-            using (var dir = new TempDirectory(Path.Combine(testDirectory.Path, "dir")))
-            using (var watcher = new FileSystemWatcher(testDirectory.Path, "*"))
+            string dir = CreateTestDirectory(TestDirectory, "dir");
+            using (var watcher = new FileSystemWatcher(TestDirectory, "*"))
             {
                 watcher.NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.DirectoryName;
-                string otherDir = Path.Combine(testDirectory.Path, "dir2");
+                string otherDir = Path.Combine(TestDirectory, "dir2");
 
                 Action action = () =>
                 {
                     Directory.Delete(otherDir);
-                    Directory.SetLastWriteTime(dir.Path, DateTime.Now + TimeSpan.FromSeconds(10));
+                    Directory.SetLastWriteTime(dir, DateTime.Now + TimeSpan.FromSeconds(10));
                 };
                 Action cleanup = () =>
                 {
@@ -279,28 +269,27 @@ namespace System.IO.Tests
 
                 WatcherChangeTypes expected = 0;
                 expected |= WatcherChangeTypes.Deleted | WatcherChangeTypes.Changed;
-                ExpectEvent(watcher, expected, action, cleanup, new string[] { otherDir, dir.Path });
+                ExpectEvent(watcher, expected, action, cleanup, new string[] { otherDir, dir });
             }
         }
 
         [Fact]
         public void FileSystemWatcher_Directory_NotifyFilter_DirectoryNameDoesntTriggerOnFileEvent()
         {
-            using (var testDirectory = new TempDirectory(GetTestFilePath()))
-            using (var dir = new TempDirectory(Path.Combine(testDirectory.Path, "dir")))
-            using (var watcher = new FileSystemWatcher(testDirectory.Path, "*"))
+            string dir = CreateTestDirectory(TestDirectory, "dir");
+            using (var watcher = new FileSystemWatcher(TestDirectory, "*"))
             {
                 watcher.NotifyFilter = NotifyFilters.FileName;
-                string renameDirSource = Path.Combine(testDirectory.Path, "dir2_source");
-                string renameDirDest = Path.Combine(testDirectory.Path, "dir2_dest");
-                string otherDir = Path.Combine(testDirectory.Path, "dir3");
+                string renameDirSource = Path.Combine(TestDirectory, "dir2_source");
+                string renameDirDest = Path.Combine(TestDirectory, "dir2_dest");
+                string otherDir = Path.Combine(TestDirectory, "dir3");
                 Directory.CreateDirectory(renameDirSource);
 
                 Action action = () =>
                 {
                     Directory.CreateDirectory(otherDir);
                     Directory.Move(renameDirSource, renameDirDest);
-                    Directory.SetLastWriteTime(dir.Path, DateTime.Now + TimeSpan.FromSeconds(10));
+                    Directory.SetLastWriteTime(dir, DateTime.Now + TimeSpan.FromSeconds(10));
                     Directory.Delete(otherDir);
                 };
                 Action cleanup = () =>
@@ -309,7 +298,7 @@ namespace System.IO.Tests
                 };
 
                 WatcherChangeTypes expected = 0;
-                ExpectEvent(watcher, expected, action, cleanup, new string[] { otherDir, dir.Path });
+                ExpectEvent(watcher, expected, action, cleanup, new string[] { otherDir, dir });
             }
         }
     }

@@ -462,21 +462,6 @@
         <target state="translated">Un tipo abstracto derivado de “SafeHandle” no se puede serializar por referencia. El tipo proporcionado debe ser concreto.</target>
         <note />
       </trans-unit>
-      <trans-unit id="TargetFrameworkNotSupportedDescription">
-        <source>P/Invoke source generation is not supported on unknown target framework v{0}. The generated source will not be compatible with other frameworks.</source>
-        <target state="translated">No se admite la generación de código fuente en la plataforma de destino v{0} desconocida. El código fuente generado no será compatible con otras plataformas.</target>
-        <note>{0} is a version number</note>
-      </trans-unit>
-      <trans-unit id="TargetFrameworkNotSupportedMessage">
-        <source>'LibraryImportAttribute' cannot be used for source-generated P/Invokes on an unknown target framework v{0}.</source>
-        <target state="translated">“LibraryImportAttribute” no se puede usar para P/Invokes de un generador de código fuente en una plataforma de destino v{0} desconocida.</target>
-        <note>{0} is a version number</note>
-      </trans-unit>
-      <trans-unit id="TargetFrameworkNotSupportedTitle">
-        <source>Current target framework is not supported by source-generated P/Invokes</source>
-        <target state="translated">La plataforma de destino actual no está admitida por P/Invokes de un generador de código fuente</target>
-        <note />
-      </trans-unit>
       <trans-unit id="ToNativeValueMethodProvidedShouldSpecifyTwoStageMarshallingFeatureDescription">
         <source>A marshaller type that provides a 'ToNativeValue' method should specify that it supports the 'TwoStageMarshalling' feature.</source>
         <target state="translated">Un tipo de serializador que proporciona un método “ToNativeValue” debe especificar que admite la característica “TwoStageMarshalling”.</target>

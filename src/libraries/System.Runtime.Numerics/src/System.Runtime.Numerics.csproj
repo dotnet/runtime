@@ -29,7 +29,5 @@
   <ItemGroup>
     <Reference Include="System.Memory" />
     <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.Extensions" />
-    <Reference Include="System.Runtime.CompilerServices.Unsafe" />
   </ItemGroup>
 </Project>

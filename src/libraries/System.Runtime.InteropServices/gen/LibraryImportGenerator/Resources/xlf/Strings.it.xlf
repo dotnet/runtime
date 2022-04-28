@@ -462,21 +462,6 @@
         <target state="translated">Non è possibile effettuare il marshalling per riferimento di un tipo astratto derivato da 'SafeHandle'. Il tipo specificato deve essere concreto.</target>
         <note />
       </trans-unit>
-      <trans-unit id="TargetFrameworkNotSupportedDescription">
-        <source>P/Invoke source generation is not supported on unknown target framework v{0}. The generated source will not be compatible with other frameworks.</source>
-        <target state="translated">La generazione dell'origine P/Invoke non è supportata nel framework di destinazione sconosciuto v{0}. L'origine generata non sarà compatibile con altri framework.</target>
-        <note>{0} is a version number</note>
-      </trans-unit>
-      <trans-unit id="TargetFrameworkNotSupportedMessage">
-        <source>'LibraryImportAttribute' cannot be used for source-generated P/Invokes on an unknown target framework v{0}.</source>
-        <target state="translated">Non è possibile usare 'LibraryImportAttribute' per P/Invoke generati dall'origine in un framework di destinazione sconosciuto v{0}.</target>
-        <note>{0} is a version number</note>
-      </trans-unit>
-      <trans-unit id="TargetFrameworkNotSupportedTitle">
-        <source>Current target framework is not supported by source-generated P/Invokes</source>
-        <target state="translated">Il framework di destinazione corrente non è supportato dai P/Invoke generati dall'origine</target>
-        <note />
-      </trans-unit>
       <trans-unit id="ToNativeValueMethodProvidedShouldSpecifyTwoStageMarshallingFeatureDescription">
         <source>A marshaller type that provides a 'ToNativeValue' method should specify that it supports the 'TwoStageMarshalling' feature.</source>
         <target state="translated">Un tipo di gestore del marshalling che fornisce un metodo 'ToNativeValue' deve specificare che supporta la funzionalità 'TwoStageMarshalling'.</target>

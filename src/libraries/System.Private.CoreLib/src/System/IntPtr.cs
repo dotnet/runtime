@@ -179,14 +179,14 @@ namespace System
         [NonVersionable]
         public unsafe void* ToPointer() => _value;
 
-        /// <inheritdoc cref="INumber{TSelf}.Max(TSelf, TSelf)" />
+        /// <inheritdoc cref="IMinMaxValue{TSelf}.MaxValue" />
         public static IntPtr MaxValue
         {
             [NonVersionable]
             get => (IntPtr)nint_t.MaxValue;
         }
 
-        /// <inheritdoc cref="INumber{TSelf}.Min(TSelf, TSelf)" />
+        /// <inheritdoc cref="IMinMaxValue{TSelf}.MinValue" />
         public static IntPtr MinValue
         {
             [NonVersionable]

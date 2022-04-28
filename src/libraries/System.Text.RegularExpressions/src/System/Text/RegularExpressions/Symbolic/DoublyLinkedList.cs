@@ -7,25 +7,21 @@ using System.Diagnostics;
 
 namespace System.Text.RegularExpressions.Symbolic
 {
-    /// <summary>
-    ///  Represents a doubly linked list data structure. Used to support O(1) append of two lists,
-    ///  that is currently not possible by using <see cref="Collections.Generic.LinkedList{T}"/>.
-    ///  <see cref="Append(DoublyLinkedList{T})"/> operation is made use
-    ///  of in the <see cref="RegexNodeConverter.ConvertToSymbolicRegexNode(RegexNode)"/> method
-    ///  where it maintains linear construction time in terms of
-    ///  the overall number of AST nodes in a given <see cref="RegexNode"/> input.
-    /// </summary>
+    /// <summary>Represents a doubly linked list data structure.</summary>
     /// <typeparam name="T">Element type of the list that must be not null</typeparam>
+    /// <remarks>
+    /// Used to support O(1) append of two lists that is currently not possible by using <see cref="LinkedList{T}"/>.
+    /// <see cref="AddLast(DoublyLinkedList{T})"/> operation is made use of in the <see cref="RegexNodeConverter.ConvertToSymbolicRegexNode(RegexNode)"/> method
+    /// where it maintains linear construction time in terms of the overall number of AST nodes in a given <see cref="RegexNode"/> input.
+    /// </remarks>
     internal sealed class DoublyLinkedList<T> where T : notnull
     {
         /// <summary>First node of the list</summary>
         private Node? _first;
         /// <summary>Last node of the list</summary>
         private Node? _last;
-        /// <summary>Number of elements in the list (positive integer)</summary>
-        internal int _size;
-
-        internal T FirstElement { get { Debug.Assert(_first is not null && CheckValidity()); return _first._elem; } }
+        /// <summary>The number of elements in the list.</summary>
+        private int _size;
 
         /// <summary>Creates a new empty list</summary>
         public DoublyLinkedList() { }
@@ -33,19 +29,30 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <summary>Creates a new singleton list containing the given element</summary>
         public DoublyLinkedList(T elem)
         {
-            Node node = new Node(elem);
-            _first = node;
-            _last = node;
+            _first = _last = new Node(elem);
             _size = 1;
         }
 
-        /// <summary>Append all the elements from the other list at the end of this list (O(1) operation, the other list must be discarded)</summary>
-        public void Append(DoublyLinkedList<T> other)
+        /// <summary>Number of elements in the list (positive integer)</summary>
+        public int Count => _size;
+
+        internal T FirstElement
         {
-            //self append not allowed to avoid circularity
-            Debug.Assert(other != this);
-            Debug.Assert(CheckValidity());
-            Debug.Assert(other.CheckValidity());
+            get
+            {
+                Debug.Assert(_first is not null);
+                AssertInvariants();
+
+                return _first.Value;
+            }
+        }
+
+        /// <summary>Append all the elements from the other list at the end of this list (O(1) operation, the other list must be discarded)</summary>
+        public void AddLast(DoublyLinkedList<T> other)
+        {
+            Debug.Assert(other != this, "self append not allowed to avoid circularity");
+            AssertInvariants();
+            other.AssertInvariants();
 
             if (other._first is null)
             {
@@ -65,27 +72,18 @@ namespace System.Text.RegularExpressions.Symbolic
 
             Debug.Assert(_last is not null);
 
-            _last._next = other._first;
-            other._first._prev = _last;
+            _last.Next = other._first;
+            other._first.Prev = _last;
             _last = other._last;
             _size += other._size;
 
             other._size = -1;
         }
 
-        /// <summary>Append all the elements from all the other lists at the end of this list (O(others.Length) operation, the other lists must be discarded)</summary>
-        public void Append(DoublyLinkedList<T>[] others)
-        {
-            for (int i = 0; i < others.Length; ++i)
-            {
-                Append(others[i]);
-            }
-        }
-
         /// <summary>Insert the given element at the end of this list (O(1) operation)</summary>
-        public void InsertAtEnd(T elem)
+        public void AddLast(T elem)
         {
-            Debug.Assert(CheckValidity());
+            AssertInvariants();
 
             if (_last is null)
             {
@@ -96,15 +94,14 @@ namespace System.Text.RegularExpressions.Symbolic
                 return;
             }
 
-            _last._next = new(elem, _last, null);
-            _last = _last._next;
-            _size += 1;
+            _last = _last.Next = new Node(elem, _last, null);
+            _size++;
         }
 
         /// <summary>Insert the given element at the start of this list (O(1) operation)</summary>
-        public void InsertAtStart(T elem)
+        public void AddFirst(T elem)
         {
-            Debug.Assert(CheckValidity());
+            AssertInvariants();
 
             if (_first is null)
             {
@@ -115,72 +112,67 @@ namespace System.Text.RegularExpressions.Symbolic
                 return;
             }
 
-            _first._prev = new(elem, null, _first);
-            _first = _first._prev;
-            _size += 1;
+            _first.Prev = new(elem, null, _first);
+            _first = _first.Prev;
+            _size++;
         }
 
-        /// <summary>Enumerate all elements in the list</summary>
-        /// <param name="inreverse">if true then the enumeration happens in reverse order</param>
-        public IEnumerable<T> Enumerate(bool inreverse = false) => inreverse ? EnumerateBackwards() : EnumerateForwards();
-
-        private IEnumerable<T> EnumerateForwards()
+        /// <summary>Enumerates the elements in the list from last to first.</summary>
+        public IEnumerable<T> EnumerateLastToFirst()
         {
-            Debug.Assert(CheckValidity());
+            AssertInvariants();
 
-            Node? current = _first;
-            while (current is not null)
+            for (Node? current = _last; current is not null; current = current.Prev)
             {
-                yield return current._elem;
-                current = current._next;
+                yield return current.Value;
             }
         }
 
-        private IEnumerable<T> EnumerateBackwards()
+#if DEBUG
+        public override string ToString()
         {
-            Debug.Assert(CheckValidity());
+            StringBuilder sb = new StringBuilder().Append('#').Append(_size).Append('(');
 
-            Node? current = _last;
-            while (current is not null)
+            string separator = "";
+            for (Node? current = _first; current is not null; current = current.Next)
             {
-                yield return current._elem;
-                current = current._prev;
+                sb.Append(separator).Append(current.Value);
+                separator = ",";
+            }
+
+            return sb.Append(')').ToString();
+        }
+#endif
+
+        [Conditional("DEBUG")]
+        private void AssertInvariants()
+        {
+            if (_size == 0)
+            {
+
+                Debug.Assert(_first is null && _last is null, "empty list");
+            }
+            else
+            {
+                Debug.Assert(_size > 0, "_size < 0 means that the list has been invalidated after Append");
+                Debug.Assert(_first is not null && _last is not null && _first.Prev is null && _last.Next is null, "non-empty list");
             }
         }
 
         private sealed class Node
         {
-            public Node? _next;
-            public Node? _prev;
-            public readonly T _elem;
+            public Node? Next;
+            public Node? Prev;
+            public readonly T Value;
 
-            public Node(T elem) { _elem = elem; }
+            public Node(T elem) { Value = elem; }
 
-            public Node(T elem, Node? prev, Node? next) { _elem = elem; _prev = prev; _next = next; }
-        }
-
-        public override string ToString()
-        {
-            StringBuilder sb = new();
-            sb.Append('#');
-            sb.Append(_size);
-            sb.Append('(');
-            Node? current = _first;
-            while (current is not null)
+            public Node(T elem, Node? prev, Node? next)
             {
-                sb.Append(current._elem);
-                current = current._next;
-                if (current is not null)
-                {
-                    sb.Append(',');
-                }
+                Value = elem;
+                Prev = prev;
+                Next = next;
             }
-            sb.Append(')');
-            return sb.ToString();
         }
-
-        private bool CheckValidity() => _size >= 0 && // _size < 0 means that the list has been invalidated after Append
-            (_size != 0 || (_first is null && _last is null)) && //empty list
-            (_size == 0 || (_first is not null && _last is not null && _first._prev is null && _last._next is null)); //nonempty list
     }
 }

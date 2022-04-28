@@ -52,11 +52,8 @@
     <Reference Include="System.Net.Primitives" />
     <Reference Include="System.Numerics.Vectors" />
     <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.CompilerServices.Unsafe" />
-    <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Security.Cryptography" />
-    <Reference Include="System.Security.Principal" />
     <Reference Include="System.Text.Encoding.Extensions" />
     <Reference Include="System.Threading" />
   </ItemGroup>

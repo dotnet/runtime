@@ -13,19 +13,19 @@ namespace Microsoft.Interop.Analyzers
         /// </summary>
         public static class Ids
         {
-            public const string Prefix = "DLLIMPORTGENANALYZER";
+            public const string Prefix = "SYSLIB";
 
             // Migration from DllImport to LibraryImport
-            public const string ConvertToLibraryImport = Prefix + "001";
+            public const string ConvertToLibraryImport = Prefix + "1054";
 
             // CustomTypeMarshaller
-            public const string InvalidCustomTypeMarshallerAttributeUsage = Prefix + "002";
-            public const string InvalidNativeType = Prefix + "003";
-            public const string CustomMarshallerTypeMustHaveRequiredShape = Prefix + "004";
-            public const string ProvidedMethodsNotSpecifiedInFeatures = Prefix + "005";
-            public const string MissingAllocatingMarshallingFallback = Prefix + "006";
-            public const string CallerAllocConstructorMustHaveBufferSize = Prefix + "007";
-            public const string InvalidSignaturesInMarshallerShape = Prefix + "008";
+            public const string InvalidCustomTypeMarshallerAttributeUsage = Prefix + "1055";
+            public const string InvalidNativeType = Prefix + "1056";
+            public const string CustomMarshallerTypeMustHaveRequiredShape = Prefix + "1057";
+            public const string ProvidedMethodsNotSpecifiedInFeatures = Prefix + "1058";
+            public const string MissingAllocatingMarshallingFallback = Prefix + "1059";
+            public const string CallerAllocConstructorMustHaveBufferSize = Prefix + "1060";
+            public const string InvalidSignaturesInMarshallerShape = Prefix + "1061";
         }
 
         internal static LocalizableResourceString GetResourceString(string resourceName)

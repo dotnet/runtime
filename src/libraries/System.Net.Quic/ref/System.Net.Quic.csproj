@@ -5,14 +5,16 @@
        (because the System.Net.Quic\src references this project) and hence need to define its dependencies. -->
     <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
   </PropertyGroup>
+
   <ItemGroup>
     <Compile Include="System.Net.Quic.cs" />
   </ItemGroup>
+
   <ItemGroup>
-    <ProjectReference Include="..\..\System.Runtime\ref\System.Runtime.csproj" />
-    <ProjectReference Include="..\..\System.Net.Primitives\ref\System.Net.Primitives.csproj" />
-    <ProjectReference Include="..\..\System.Net.Sockets\ref\System.Net.Sockets.csproj" />
-    <ProjectReference Include="..\..\System.Net.Security\ref\System.Net.Security.csproj" />
-    <ProjectReference Include="..\..\System.Security.Cryptography.X509Certificates\ref\System.Security.Cryptography.X509Certificates.csproj" />
+    <ProjectReference Include="$(LIbrariesProjectRoot)System.Memory\ref\System.Memory.csproj" />
+    <ProjectReference Include="$(LIbrariesProjectRoot)System.Net.Primitives\ref\System.Net.Primitives.csproj" />
+    <ProjectReference Include="$(LIbrariesProjectRoot)System.Net.Security\ref\System.Net.Security.csproj" />
+    <ProjectReference Include="$(LIbrariesProjectRoot)System.Runtime\ref\System.Runtime.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Cryptography\ref\System.Security.Cryptography.csproj" />
   </ItemGroup>
 </Project>

@@ -105,33 +105,19 @@
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.NonGeneric" />
     <Reference Include="System.Collections.Specialized" />
-    <Reference Include="System.ComponentModel" />
     <Reference Include="System.ComponentModel.Primitives" />
-    <Reference Include="System.Diagnostics.Debug" />
     <Reference Include="System.Diagnostics.Process" />
-    <Reference Include="System.Dynamic.Runtime" />
-    <Reference Include="System.Globalization" />
-    <Reference Include="System.IO" />
-    <Reference Include="System.IO.FileSystem" />
     <Reference Include="System.IO.FileSystem.DriveInfo" />
     <Reference Include="System.Linq" />
     <Reference Include="System.Linq.Expressions" />
     <Reference Include="System.ObjectModel" />
-    <Reference Include="System.Reflection" />
-    <Reference Include="System.Reflection.Emit" />
     <Reference Include="System.Reflection.Emit.ILGeneration" />
     <Reference Include="System.Reflection.Emit.Lightweight" />
-    <Reference Include="System.Reflection.Extensions" />
     <Reference Include="System.Reflection.Primitives" />
-    <Reference Include="System.Reflection.TypeExtensions" />
-    <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Runtime.InteropServices" />
-    <Reference Include="System.Security.Principal" />
     <Reference Include="System.Text.RegularExpressions" />
     <Reference Include="System.Threading" />
-    <Reference Include="System.Threading.Tasks" />
     <Reference Include="System.Threading.Thread" />
   </ItemGroup>
 </Project>

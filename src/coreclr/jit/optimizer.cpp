@@ -5250,7 +5250,6 @@ bool Compiler::optNarrowTree(GenTree* tree, var_types srct, var_types dstt, Valu
                 }
                 break;
 
-            case GT_CLS_VAR:
             case GT_LCL_FLD:
                 goto NARROW_IND;
             default:
@@ -5579,10 +5578,6 @@ Compiler::fgWalkResult Compiler::optIsVarAssgCB(GenTree** pTree, fgWalkData* dat
 
             varRefKinds refs = varTypeIsGC(tree->TypeGet()) ? VR_IND_REF : VR_IND_SCL;
             desc->ivaMaskInd = varRefKinds(desc->ivaMaskInd | refs);
-        }
-        else if (destOper == GT_CLS_VAR)
-        {
-            desc->ivaMaskInd = varRefKinds(desc->ivaMaskInd | VR_GLB_VAR);
         }
         else if (destOper == GT_IND)
         {
@@ -6704,8 +6699,7 @@ void Compiler::optHoistLoopBlocks(unsigned loopNum, ArrayStack<BasicBlock*>* blo
             // isCctorDependent and isAddressWhoseDereferenceWouldBeCctorDependent, but we don't for
             // simplicity/throughput; the constant itself would be considered non-hoistable anyway, since
             // optIsCSEcandidate returns false for constants.
-            bool treeIsCctorDependent = ((tree->OperIs(GT_CLS_VAR) && ((tree->gtFlags & GTF_CLS_VAR_INITCLASS) != 0)) ||
-                                         (tree->OperIs(GT_CNS_INT) && ((tree->gtFlags & GTF_ICON_INITCLASS) != 0)));
+            bool treeIsCctorDependent     = tree->OperIs(GT_CNS_INT) && ((tree->gtFlags & GTF_ICON_INITCLASS) != 0);
             bool treeIsInvariant          = true;
             bool treeHasHoistableChildren = false;
             int  childCount;
@@ -7882,13 +7876,6 @@ bool Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk)
                     {
                         memoryHavoc |= memoryKindSet(ByrefExposed);
                     }
-                }
-                else if (lhs->OperGet() == GT_CLS_VAR)
-                {
-                    AddModifiedFieldAllContainingLoops(mostNestedLoop, lhs->AsClsVar()->gtClsVarHnd,
-                                                       FieldKindForVN::SimpleStatic);
-                    // Conservatively assume byrefs may alias this static field
-                    memoryHavoc |= memoryKindSet(ByrefExposed);
                 }
                 // Otherwise, must be local lhs form.  I should assert that.
                 else if (lhs->OperGet() == GT_LCL_VAR)

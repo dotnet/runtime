@@ -284,17 +284,6 @@
   <data name="SafeHandleByRefMustBeConcrete" xml:space="preserve">
     <value>An abstract type derived from 'SafeHandle' cannot be marshalled by reference. The provided type must be concrete.</value>
   </data>
-  <data name="TargetFrameworkNotSupportedDescription" xml:space="preserve">
-    <value>P/Invoke source generation is not supported on unknown target framework v{0}. The generated source will not be compatible with other frameworks.</value>
-    <comment>{0} is a version number</comment>
-  </data>
-  <data name="TargetFrameworkNotSupportedMessage" xml:space="preserve">
-    <value>'LibraryImportAttribute' cannot be used for source-generated P/Invokes on an unknown target framework v{0}.</value>
-    <comment>{0} is a version number</comment>
-  </data>
-  <data name="TargetFrameworkNotSupportedTitle" xml:space="preserve">
-    <value>Current target framework is not supported by source-generated P/Invokes</value>
-  </data>
   <data name="TypeNotSupportedDescription" xml:space="preserve">
     <value>For types that are not supported by source-generated P/Invokes, the resulting P/Invoke will rely on the underlying runtime to marshal the specified type.</value>
   </data>

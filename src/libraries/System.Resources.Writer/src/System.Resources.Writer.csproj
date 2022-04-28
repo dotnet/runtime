@@ -16,6 +16,5 @@
   <ItemGroup>
     <Reference Include="System.Collections" />
     <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.Extensions" />
   </ItemGroup>
 </Project>
