@@ -502,7 +502,7 @@ namespace System.IO.Compression
             var source = Enumerable.Range(0, 64).Select(i => (byte)i).ToArray();
             byte[] compressedData;
             using (var compressed = new MemoryStream())
-            using (var gzip = CreateStream(compressed, CompressionMode.Compress))
+            using (var gzip = new GZipStream(compressed, CompressionMode.Compress))
             {
                 foreach (var b in source)
                 {
@@ -518,7 +518,7 @@ namespace System.IO.Compression
                 var expectException = i < compressedData.Length;
                 using (var compressedStream = new MemoryStream(compressedData.Take(i).ToArray()))
                 {
-                    using (var s = CreateStream(compressedStream, CompressionMode.Decompress))
+                    using (var s = new GZipStream(compressedStream, CompressionMode.Decompress))
                     {
                         var decompressedStream = new MemoryStream();
 
@@ -562,7 +562,7 @@ namespace System.IO.Compression
                         if (expectException)
                         {
                             throw new XunitException($"Truncated stream was decompressed successfully but exception was expected: length={i}/{compressedData.Length}");
-                        }                        
+                        }
                     }
                 }
             }
