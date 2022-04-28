@@ -42,6 +42,7 @@ namespace System.IO.Tests
         [PlatformSpecific(TestPlatforms.AnyUnix)]
         [InlineData("/", null, "/")]
         [InlineData("/", "", "/")]
+        [InlineData("/", "   ", "/   ")]
         [InlineData("/", "foo.txt", "/foo.txt")]
         [InlineData("/bar", null, "/bar/")]
         [InlineData("/bar", "", "/bar/")]
@@ -74,6 +75,8 @@ namespace System.IO.Tests
         [PlatformSpecific(TestPlatforms.AnyUnix)]
         [InlineData("", "")]
         [InlineData("", "foo.txt")]
+        [InlineData("   ", "    ")]
+        [InlineData("   ", "foo.txt")]
         [InlineData("bar", "foo.txt")]
         [InlineData("bar/baz", "foo.txt")]
         public static void FileSystemEventArgs_ctor_DirectoryIsRelativePath_Unix(string directory, string name)

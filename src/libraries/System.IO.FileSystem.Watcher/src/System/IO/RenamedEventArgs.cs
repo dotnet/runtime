@@ -19,13 +19,17 @@ namespace System.IO
         {
             _oldName = oldName;
 
-            _oldFullPath = Path.GetFullPath((string.IsNullOrWhiteSpace(directory), string.IsNullOrWhiteSpace(oldName)) switch
+            if (string.IsNullOrEmpty(directory)) // empty directory means current working dir
             {
-                (true, true) => "." + PathInternal.DirectorySeparatorCharAsString,
-                (true, false) => oldName!,
-                (false, true) => PathInternal.EnsureTrailingSeparator(directory),
-                (false, false) => Path.Join(directory, oldName),
-            });
+                directory = ".";
+            }
+
+            _oldFullPath = Path.Join(Path.GetFullPath(directory), oldName);
+
+            if (string.IsNullOrEmpty(oldName))
+            {
+                _oldFullPath = PathInternal.EnsureTrailingSeparator(_oldFullPath);
+            }
         }
 
         /// <devdoc>
