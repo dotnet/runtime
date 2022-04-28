@@ -163,6 +163,8 @@ namespace System.Runtime.InteropServices
             internal HandleLimitTester(HandleCollector collector)
             {
                 _collector = collector;
+                // Adding an allocation to ensure memory pressure exists so the call to
+                // GC.Collect() in the Add() method below will have something to do.
                 _pressure = new int[1_000];
                 _collector.Add();
                 GC.KeepAlive(this);
