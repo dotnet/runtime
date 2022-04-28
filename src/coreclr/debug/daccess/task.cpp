@@ -3428,14 +3428,11 @@ ClrDataMethodDefinition::GetCodeNotification(
 
 HRESULT STDMETHODCALLTYPE
 ClrDataMethodDefinition::SetCodeNotification(
-    /* [in] */ ULONG32 flagsRaw)
+    /* [in] */ ULONG32 flags)
 {
     HRESULT status;
 
     DAC_ENTER_SUB(m_dac);
-
-    _ASSERTE(flagsRaw <= USHRT_MAX);
-    USHORT flags = (USHORT)flagsRaw;
 
     EX_TRY
     {
@@ -3462,7 +3459,7 @@ ClrDataMethodDefinition::SetCodeNotification(
                 }
                 else
                 {
-                    if (jn.SetNotification(modulePtr, m_token, flags) &&
+                    if (jn.SetNotification(modulePtr, m_token, (USHORT)flags) &&
                         jn.UpdateOutOfProcTable())
                     {
                         // new notification added
