@@ -2522,7 +2522,8 @@ public:
                                  unsigned    simdSize,
                                  bool        isSimdAsHWIntrinsic);
 
-    GenTree* gtNewSimdShuffleNode(var_types   type,
+    GenTree* gtNewSimdShuffleNode(Compiler*   comp,
+                                  var_types   type,
                                   GenTree*    op1,
                                   GenTree*    op2,
                                   CorInfoType simdBaseJitType,

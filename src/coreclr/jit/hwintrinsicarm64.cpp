@@ -1417,7 +1417,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 op2 = impSIMDPopStack(retType);
                 op1 = impSIMDPopStack(retType);
 
-                retNode = gtNewSimdShuffleNode(retType, op1, op2, simdBaseJitType, simdSize,
+                retNode = gtNewSimdShuffleNode(this, retType, op1, op2, simdBaseJitType, simdSize,
                                                /* isSimdAsHWIntrinsic */ false);
             }
             break;

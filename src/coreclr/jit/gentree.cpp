@@ -21416,7 +21416,8 @@ GenTree* Compiler::gtNewSimdNarrowNode(var_types   type,
 #endif // !TARGET_XARCH && !TARGET_ARM64
 }
 
-GenTree* Compiler::gtNewSimdShuffleNode(var_types   type,
+GenTree* Compiler::gtNewSimdShuffleNode(Compiler*   comp,
+                                        var_types   type,
                                         GenTree*    op1,
                                         GenTree*    op2,
                                         CorInfoType simdBaseJitType,
@@ -21555,12 +21556,7 @@ GenTree* Compiler::gtNewSimdShuffleNode(var_types   type,
 
             simdBaseJitType = varTypeIsUnsigned(simdBaseType) ? CORINFO_TYPE_UBYTE : CORINFO_TYPE_BYTE;
 
-            CORINFO_CLASS_HANDLE clsHnd = gtGetStructHandleForSIMD(type, simdBaseJitType);
-
-            GenTree* op1Dup;
-            op1 = impCloneExpr(op1, &op1Dup, clsHnd, (unsigned)CHECK_SPILL_ALL,
-                               nullptr DEBUGARG("Clone op1 for vector shuffle"));
-
+            GenTree* op1Dup   = comp->fgMakeMultiUse(&op1);
             GenTree* op1Lower = gtNewSimdHWIntrinsicNode(type, op1, NI_Vector256_GetLower, simdBaseJitType, simdSize);
 
             IntrinsicNodeBuilder nodeBuilder1(getAllocator(CMK_ASTNode), 16);
@@ -21666,12 +21662,7 @@ GenTree* Compiler::gtNewSimdShuffleNode(var_types   type,
         }
         else
         {
-            CORINFO_CLASS_HANDLE clsHnd = gtGetStructHandleForSIMD(type, simdBaseJitType);
-
-            GenTree* op1Dup;
-            op1 = impCloneExpr(op1, &op1Dup, clsHnd, (unsigned)CHECK_SPILL_ALL,
-                               nullptr DEBUGARG("Clone op1 for vector shuffle"));
-
+            GenTree* op1Dup = comp->fgMakeMultiUse(&op1);
             retNode = gtNewSimdHWIntrinsicNode(type, op1, op1Dup, cnsNode, NI_SSE_Shuffle, simdBaseJitType, simdSize,
                                                isSimdAsHWIntrinsic);
         }
