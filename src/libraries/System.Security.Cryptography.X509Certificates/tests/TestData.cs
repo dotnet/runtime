@@ -173,11 +173,11 @@ tcCZhP5KEu6XKKc1GcTqbyA0vi92YyyZViUa36hhVrNqPxtpclir+lcnNgnlqg==
             return s;
         }
 
-        public static readonly byte[] PfxSha1Empty_ExpectedSig = (
-            "44b15120b8c7de19b4968d761600ffb8c54e5d0c1bcaba0880a20ab48912c8fd" +
-            "fa81b28134eabf58f3211a0d1eefdaae115e7872d5a67045c3b62a5da4393940" +
-            "e5a496413a6d55ea6309d0013e90657c83c6e40aa8fafeee66acbb6661c14190" +
-            "11e1fde6f4fcc328bd7e537e4aa2dbe216d8f1f3aa7e5ec60eb9cfdca7a41d74").HexToByteArray();
+        public static readonly byte[] PfxSha256Empty_ExpectedSig = (
+            "35306b63fbfe8eaf8e32937432e366d255461b02fb9e77368df319b99a8273cc" +
+            "dad52a21e8ae9c5df97ffa877d6c3ef6eb8a27ac7bbc93efdddd5dda9cf8d30e" +
+            "c52a76c7b2f9e478efe272d6e6f474033fb854e5685c44898367af860d5c893c" +
+            "56f89a69b84cd53434457de3296f80fbbe4eb938b4066b51638e35bce1e1c308").HexToByteArray();
 
         private static readonly byte[] PfxData_RC2ContentEncryption = (
             "3082063A020103308205F606092A864886F70D010701A08205E7048205E33082" +
