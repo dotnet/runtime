@@ -167,6 +167,13 @@ inline void SetRA(T_CONTEXT * context, TADDR ip) {
     context->Ra = ip;
 }
 
+inline TADDR GetReg(T_CONTEXT * context, int Regnum)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+    _ASSERTE((Regnum > 0) && (Regnum < 32));
+     return (TADDR)(&context->R0 + Regnum);
+}
+
 extern "C" LPVOID __stdcall GetCurrentSP();
 
 inline void SetSP(T_CONTEXT *context, TADDR sp) {

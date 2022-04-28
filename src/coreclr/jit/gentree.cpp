@@ -2109,42 +2109,6 @@ bool GenTreeCall::IsHelperCall(Compiler* compiler, unsigned helper) const
     return IsHelperCall(compiler->eeFindHelper(helper));
 }
 
-//------------------------------------------------------------------------
-// GenTreeCall::ReplaceCallOperand:
-//    Replaces a given operand to a call node and updates the call
-//    argument table if necessary.
-//
-// Arguments:
-//    useEdge - the use edge that points to the operand to be replaced.
-//    replacement - the replacement node.
-//
-void GenTreeCall::ReplaceCallOperand(GenTree** useEdge, GenTree* replacement)
-{
-    assert(useEdge != nullptr);
-    assert(replacement != nullptr);
-    assert(TryGetUse(*useEdge, &useEdge));
-
-    GenTree* originalOperand = *useEdge;
-    *useEdge                 = replacement;
-
-    const bool isArgument =
-        (replacement != gtControlExpr) &&
-        ((gtCallType != CT_INDIRECT) || ((replacement != gtCallCookie) && (replacement != gtCallAddr)));
-
-    if (isArgument)
-    {
-        if ((originalOperand->gtFlags & GTF_LATE_ARG) != 0)
-        {
-            replacement->gtFlags |= GTF_LATE_ARG;
-        }
-        else
-        {
-            assert((replacement->gtFlags & GTF_LATE_ARG) == 0);
-            assert(gtArgs.FindByNode(replacement)->GetNode() == replacement);
-        }
-    }
-}
-
 //--------------------------------------------------------------------------
 // Equals: Check if 2 CALL nodes are equal.
 //
@@ -2392,14 +2356,6 @@ AGAIN:
             case GT_LCL_FLD:
                 if ((op1->AsLclFld()->GetLclNum() != op2->AsLclFld()->GetLclNum()) ||
                     (op1->AsLclFld()->GetLclOffs() != op2->AsLclFld()->GetLclOffs()))
-                {
-                    break;
-                }
-
-                return true;
-
-            case GT_CLS_VAR:
-                if (op1->AsClsVar()->gtClsVarHnd != op2->AsClsVar()->gtClsVarHnd)
                 {
                     break;
                 }
@@ -4622,14 +4578,6 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
 #endif
                 break;
 
-            case GT_CLS_VAR:
-#ifdef TARGET_ARM
-                // We generate movw/movt/ldr
-                level  = 1;
-                costEx = 3 + IND_COST_EX; // 6
-                costSz = 4 + 4 + 2;       // 10
-                break;
-#endif
             case GT_LCL_FLD:
                 level  = 1;
                 costEx = IND_COST_EX;
@@ -5267,7 +5215,6 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
 
                 case GT_LCL_VAR:
                 case GT_LCL_FLD:
-                case GT_CLS_VAR:
 
                     // We evaluate op2 before op1
                     bReverseInAssignment = true;
@@ -5890,7 +5837,6 @@ bool GenTree::TryGetUse(GenTree* operand, GenTree*** pUse)
 #endif // !FEATURE_EH_FUNCLETS
         case GT_PHI_ARG:
         case GT_JMPTABLE:
-        case GT_CLS_VAR:
         case GT_CLS_VAR_ADDR:
         case GT_PHYSREG:
         case GT_EMITNOP:
@@ -6158,15 +6104,7 @@ void GenTree::ReplaceOperand(GenTree** useEdge, GenTree* replacement)
     assert(useEdge != nullptr);
     assert(replacement != nullptr);
     assert(TryGetUse(*useEdge, &useEdge));
-
-    if (OperGet() == GT_CALL)
-    {
-        AsCall()->ReplaceCallOperand(useEdge, replacement);
-    }
-    else
-    {
-        *useEdge = replacement;
-    }
+    *useEdge = replacement;
 }
 
 //------------------------------------------------------------------------
@@ -6273,7 +6211,7 @@ bool GenTree::OperRequiresAsgFlag()
     {
         // If the call has return buffer argument, it produced a definition and hence
         // should be marked with assignment.
-        return AsCall()->GetLclRetBufArgNode() != nullptr;
+        return AsCall()->IsOptimizingRetBufAsLocal();
     }
     return false;
 }
@@ -7983,27 +7921,23 @@ GenTree* Compiler::gtClone(GenTree* tree, bool complexOK)
             break;
 
         case GT_LCL_VAR:
-            // Remember that the LclVar node has been cloned. The flag will be set
-            // on 'copy' as well.
-            tree->gtFlags |= GTF_VAR_CLONED;
             copy = gtNewLclvNode(tree->AsLclVarCommon()->GetLclNum(),
-                                 tree->gtType DEBUGARG(tree->AsLclVar()->gtLclILoffs));
-            break;
+                                 tree->TypeGet() DEBUGARG(tree->AsLclVar()->gtLclILoffs));
+            goto FINISH_CLONING_LCL_NODE;
 
         case GT_LCL_FLD:
         case GT_LCL_FLD_ADDR:
-            // Remember that the LclVar node has been cloned. The flag will be set
-            // on 'copy' as well.
-            tree->gtFlags |= GTF_VAR_CLONED;
             copy = new (this, tree->OperGet())
                 GenTreeLclFld(tree->OperGet(), tree->TypeGet(), tree->AsLclFld()->GetLclNum(),
                               tree->AsLclFld()->GetLclOffs());
             copy->AsLclFld()->SetFieldSeq(tree->AsLclFld()->GetFieldSeq());
-            break;
+            goto FINISH_CLONING_LCL_NODE;
 
-        case GT_CLS_VAR:
-            copy = new (this, GT_CLS_VAR)
-                GenTreeClsVar(tree->gtType, tree->AsClsVar()->gtClsVarHnd, tree->AsClsVar()->gtFieldSeq);
+        FINISH_CLONING_LCL_NODE:
+            // Remember that the local node has been cloned. Below the flag will be set on 'copy' too.
+            tree->gtFlags |= GTF_VAR_CLONED;
+            copy->AsLclVarCommon()->SetSsaNum(tree->AsLclVarCommon()->GetSsaNum());
+            assert(!copy->AsLclVarCommon()->HasSsaName() || ((copy->gtFlags & GTF_VAR_DEF) == 0));
             break;
 
         default:
@@ -8191,11 +8125,6 @@ GenTree* Compiler::gtCloneExpr(
                     copy->AsLclFld()->SetFieldSeq(tree->AsLclFld()->GetFieldSeq());
                     copy->gtFlags = tree->gtFlags;
                 }
-                goto DONE;
-
-            case GT_CLS_VAR:
-                copy = new (this, GT_CLS_VAR)
-                    GenTreeClsVar(tree->TypeGet(), tree->AsClsVar()->gtClsVarHnd, tree->AsClsVar()->gtFieldSeq);
                 goto DONE;
 
             case GT_RET_EXPR:
@@ -9132,7 +9061,6 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
 #endif // !FEATURE_EH_FUNCLETS
         case GT_PHI_ARG:
         case GT_JMPTABLE:
-        case GT_CLS_VAR:
         case GT_CLS_VAR_ADDR:
         case GT_PHYSREG:
         case GT_EMITNOP:
@@ -9705,22 +9633,16 @@ void GenTree::SetIndirExceptionFlags(Compiler* comp)
         addr = AsArrLen()->ArrRef();
     }
 
-    if ((addr->gtFlags & GTF_EXCEPT) != 0)
-    {
-        gtFlags |= GTF_EXCEPT;
-    }
-    else
-    {
-        gtFlags &= ~GTF_EXCEPT;
-        gtFlags |= GTF_IND_NONFAULTING;
-    }
+    gtFlags |= GTF_IND_NONFAULTING;
+    gtFlags &= ~GTF_EXCEPT;
+    gtFlags |= addr->gtFlags & GTF_EXCEPT;
 }
 
 #ifdef DEBUG
 
 /* static */ int GenTree::gtDispFlags(GenTreeFlags flags, GenTreeDebugFlags debugFlags)
 {
-    int charsDisplayed = 11; // 11 is the "baseline" number of flag characters displayed
+    int charsDisplayed = 10; // the "baseline" number of flag characters displayed
 
     printf("%c", (flags & GTF_ASG) ? 'A' : (IsContained(flags) ? 'c' : '-'));
     printf("%c", (flags & GTF_CALL) ? 'C' : '-');
@@ -9737,7 +9659,6 @@ void GenTree::SetIndirExceptionFlags(Compiler* comp)
     printf("%c", (flags & GTF_SET_FLAGS) ? 'S' : '-');
     ++charsDisplayed;
 #endif
-    printf("%c", (flags & GTF_LATE_ARG) ? 'L' : '-');
     printf("%c", (flags & GTF_SPILLED) ? 'z' : (flags & GTF_SPILL) ? 'Z' : '-');
 
     return charsDisplayed;
@@ -10184,7 +10105,6 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, _In_ _In_opt_
             case GT_INDEX:
             case GT_INDEX_ADDR:
             case GT_FIELD:
-            case GT_CLS_VAR:
                 if (tree->gtFlags & GTF_IND_VOLATILE)
                 {
                     printf("V");
@@ -11290,11 +11210,6 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
             printf(" %s.%s\n", className, methodName);
         }
         break;
-
-        case GT_CLS_VAR:
-            printf(" Hnd=%#x", dspPtr(tree->AsClsVar()->gtClsVarHnd));
-            gtDispFieldSeq(tree->AsClsVar()->gtFieldSeq);
-            break;
 
         case GT_CLS_VAR_ADDR:
             printf(" Hnd=%#x", dspPtr(tree->AsClsVar()->gtClsVarHnd));
@@ -15717,11 +15632,6 @@ void Compiler::gtExtractSideEffList(GenTree*     expr,
 
         void PushSideEffects(GenTree* node)
         {
-            // The extracted side effect will no longer be an argument, so unmark it.
-            // This is safe to do because the side effects will be visited in pre-order,
-            // aborting as soon as any tree is extracted. Thus if an argument for a call
-            // is being extracted, it is guaranteed that the call itself will not be.
-            node->gtFlags &= ~GTF_LATE_ARG;
             m_sideEffects.Push(node);
         }
     };
@@ -16138,7 +16048,7 @@ bool GenTree::DefinesLocal(Compiler* comp, GenTreeLclVarCommon** pLclVarTree, bo
     }
     else if (OperIs(GT_CALL))
     {
-        GenTree* retBufArg = AsCall()->GetLclRetBufArgNode();
+        GenTree* retBufArg = comp->gtCallGetDefinedRetBufLclAddr(AsCall());
         if (retBufArg == nullptr)
         {
             return false;
@@ -16180,7 +16090,7 @@ bool GenTree::DefinesLocal(Compiler* comp, GenTreeLclVarCommon** pLclVarTree, bo
 // Returns true if this GenTree defines a result which is based on the address of a local.
 bool GenTree::DefinesLocalAddr(Compiler* comp, unsigned width, GenTreeLclVarCommon** pLclVarTree, bool* pIsEntire)
 {
-    if (OperGet() == GT_ADDR || OperGet() == GT_LCL_VAR_ADDR)
+    if (OperIs(GT_ADDR, GT_LCL_VAR_ADDR, GT_LCL_FLD_ADDR))
     {
         GenTree* addrArg = this;
         if (OperGet() == GT_ADDR)
@@ -16308,7 +16218,7 @@ bool GenTree::IsLocalExpr(Compiler* comp, GenTreeLclVarCommon** pLclVarTree, Fie
 // If this tree evaluates some sum of a local address and some constants,
 // return the node for the local being addressed
 
-GenTreeLclVarCommon* GenTree::IsLocalAddrExpr()
+const GenTreeLclVarCommon* GenTree::IsLocalAddrExpr() const
 {
     if (OperGet() == GT_ADDR)
     {
@@ -17862,6 +17772,57 @@ bool Compiler::gtIsStaticGCBaseHelperCall(GenTree* tree)
     }
 
     return false;
+}
+
+//------------------------------------------------------------------------
+// gtCallGetDefinedRetBufLclAddr:
+//   Get the tree corresponding to the address of the retbuf that this call defines.
+//
+// Parameters:
+//   call - The call node
+//
+// Returns:
+//   A tree representing the address of a local.
+//
+// Remarks:
+//   This function should not be used until after morph when local address
+//   nodes have been normalized. However, before that IsOptimizingRetBufAsLocal
+//   can be used to at least check if the call has a retbuf that we are
+//   optimizing.
+//
+GenTree* Compiler::gtCallGetDefinedRetBufLclAddr(GenTreeCall* call)
+{
+    if (!call->IsOptimizingRetBufAsLocal())
+    {
+        return nullptr;
+    }
+
+    CallArg* retBufArg = call->gtArgs.GetRetBufferArg();
+    assert(retBufArg != nullptr);
+
+    GenTree* node = retBufArg->GetNode();
+    switch (node->OperGet())
+    {
+        // Get the value from putarg wrapper nodes
+        case GT_PUTARG_REG:
+        case GT_PUTARG_STK:
+            node = node->AsOp()->gtGetOp1();
+            break;
+
+        default:
+            break;
+    }
+
+    // This may be called very late to check validity of LIR.
+    node = node->gtSkipReloadOrCopy();
+
+#ifdef DEBUG
+    unsigned             size = typGetObjLayout(call->gtRetClsHnd)->GetSize();
+    GenTreeLclVarCommon* lcl;
+    assert(node->DefinesLocalAddr(this, size, &lcl, nullptr) && lvaGetDesc(lcl)->lvHiddenBufferStructArg);
+#endif
+
+    return node;
 }
 
 //------------------------------------------------------------------------
@@ -22865,7 +22826,7 @@ bool GenTreeLclFld::IsOffsetMisaligned() const
 
 bool GenTree::IsInvariant() const
 {
-    return OperIsConst() || Compiler::impIsAddressInLocal(this);
+    return OperIsConst() || IsLocalAddrExpr();
 }
 
 //------------------------------------------------------------------------

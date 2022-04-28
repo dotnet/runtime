@@ -2973,10 +2973,6 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
 
     switch (tree->OperGet())
     {
-        case GT_CLS_VAR:
-            expectedFlags |= GTF_GLOB_REF;
-            break;
-
         case GT_CATCH_ARG:
             expectedFlags |= GTF_ORDER_SIDEEFF;
             break;
@@ -3090,7 +3086,7 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
     });
 
     // ADDR nodes break the "parent flags >= operands flags" invariant for GTF_GLOB_REF.
-    if (tree->OperIs(GT_ADDR) && op1->OperIs(GT_LCL_VAR, GT_LCL_FLD, GT_CLS_VAR))
+    if (tree->OperIs(GT_ADDR) && op1->OperIs(GT_LCL_VAR, GT_LCL_FLD))
     {
         expectedFlags &= ~GTF_GLOB_REF;
     }

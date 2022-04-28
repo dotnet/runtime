@@ -28,6 +28,7 @@
 #include <mono/jit/jit.h>
 #include <mono/jit/mono-private-unstable.h>
 
+#include "wasm-config.h"
 #include "pinvoke.h"
 #include "gc-common.h"
 
@@ -59,6 +60,8 @@ int32_t monoeg_g_hasenv(const char *variable);
 void mono_free (void*);
 int32_t mini_parse_debug_option (const char *option);
 char *mono_method_get_full_name (MonoMethod *method);
+
+static void mono_wasm_init_finalizer_thread (void);
 
 #define MARSHAL_TYPE_NULL 0
 #define MARSHAL_TYPE_INT 1
@@ -464,6 +467,12 @@ mono_wasm_load_runtime (const char *unused, int debug_level)
 	mono_wasm_link_icu_shim ();
 #endif
 
+	// We should enable this as part of the wasm build later
+#ifndef DISABLE_THREADS
+	monoeg_g_setenv ("MONO_THREADS_SUSPEND", "coop", 0);
+	monoeg_g_setenv ("MONO_SLEEP_ABORT_LIMIT", "250", 0);
+#endif
+
 #ifdef DEBUG
 	// monoeg_g_setenv ("MONO_LOG_LEVEL", "debug", 0);
 	// monoeg_g_setenv ("MONO_LOG_MASK", "gc", 0);
@@ -575,6 +584,10 @@ mono_wasm_load_runtime (const char *unused, int debug_level)
 	mono_initialize_internals();
 
 	mono_thread_set_main (mono_thread_current ());
+
+	// TODO: we can probably delay starting the finalizer thread even longer - maybe from JS
+	// once we're done with loading and are about to begin running some managed code.
+	mono_wasm_init_finalizer_thread ();
 }
 
 EMSCRIPTEN_KEEPALIVE MonoAssembly*
@@ -1203,6 +1216,7 @@ mono_wasm_exec_regression (int verbose_level, char *image)
 EMSCRIPTEN_KEEPALIVE int
 mono_wasm_exit (int exit_code)
 {
+	mono_jit_cleanup (root_domain);
 	exit (exit_code);
 }
 
@@ -1323,3 +1337,13 @@ mono_wasm_load_profiler_aot (const char *desc)
 }
 
 #endif
+
+static void
+mono_wasm_init_finalizer_thread (void)
+{
+	// At this time we don't use a dedicated thread for finalization even if threading is enabled.
+	// Finalizers periodically run on the main thread
+#if 0
+	mono_gc_init_finalizer_thread ();
+#endif
+}

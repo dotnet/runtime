@@ -3,27 +3,13 @@
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <Nullable>disable</Nullable>
   </PropertyGroup>
+
   <ItemGroup>
     <Compile Include="System.ServiceModel.Syndication.cs" Condition="'$(TargetFrameworkIdentifier)' != '.NETFramework'"/>
     <Compile Include="System.ServiceModel.Syndication.netframework.cs" Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'"/>
     <Compile Include="System.ServiceModel.Syndication.netcoreapp.cs" Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Collections\ref\System.Collections.csproj" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\ref\System.Runtime.csproj" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.Serialization.Primitives\ref\System.Runtime.Serialization.Primitives.csproj" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.Serialization.Xml\ref\System.Runtime.Serialization.Xml.csproj" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Xml.ReaderWriter\ref\System.Xml.ReaderWriter.csproj" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Xml.XmlSerializer\ref\System.Xml.XmlSerializer.csproj" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and '$(TargetFramework)' != '$(NetCoreAppCurrent)'">
-    <Reference Include="System.Collections" />
-    <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.Serialization.Primitives" />
-    <Reference Include="System.Runtime.Serialization.Xml" />
-    <Reference Include="System.Xml.ReaderWriter" />
-    <Reference Include="System.Xml.XmlSerializer" />
-  </ItemGroup>
+
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <Reference Include="System.ServiceModel" />
   </ItemGroup>

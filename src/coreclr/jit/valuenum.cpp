@@ -8049,32 +8049,6 @@ void Compiler::fgValueNumberAssignment(GenTreeOp* tree)
         }
         break;
 
-        case GT_CLS_VAR:
-        {
-            bool isVolatile = (lhs->gtFlags & GTF_FLD_VOLATILE) != 0;
-
-            if (isVolatile)
-            {
-                // For Volatile store indirection, first mutate GcHeap/ByrefExposed
-                fgMutateGcHeap(lhs DEBUGARG("GTF_CLS_VAR - store")); // always change fgCurMemoryVN
-            }
-
-            FieldSeqNode* fldSeq = lhs->AsClsVar()->gtFieldSeq;
-            assert(fldSeq != nullptr);
-
-            // We model statics as indices into GcHeap (which is a subset of ByrefExposed).
-            ValueNum storeVal = rhsVNPair.GetLiberal();
-            ValueNum newHeapVN =
-                vnStore->VNApplySelectorsAssign(VNK_Liberal, fgCurMemoryVN[GcHeap], fldSeq, storeVal, lhs->TypeGet());
-
-            // bbMemoryDef must include GcHeap for any block that mutates the GC heap
-            assert((compCurBB->bbMemoryDef & memoryKindSet(GcHeap)) != 0);
-
-            // Update the field map for the fgCurMemoryVN and SSA for the tree
-            recordGcHeapStore(tree, newHeapVN DEBUGARG("Static Field store"));
-        }
-        break;
-
         default:
             unreached();
     }
@@ -8487,68 +8461,6 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                 tree->gtVNPair.SetBoth(vnStore->VNForExpr(compCurBB, tree->TypeGet()));
                 break;
 
-            case GT_CLS_VAR:
-                // Skip GT_CLS_VAR nodes that are the LHS of an assignment.  (We labeled these earlier.)
-                // We will "evaluate" this as part of the assignment.
-                //
-                if ((tree->gtFlags & GTF_CLS_VAR_ASG_LHS) == 0)
-                {
-                    bool isVolatile = (tree->gtFlags & GTF_FLD_VOLATILE) != 0;
-
-                    if (isVolatile)
-                    {
-                        // For Volatile indirection, first mutate GcHeap/ByrefExposed
-                        fgMutateGcHeap(tree DEBUGARG("GTF_FLD_VOLATILE - read"));
-                    }
-
-                    // We just mutate GcHeap/ByrefExposed if isVolatile is true, and then do the read as normal.
-                    //
-                    // This allows:
-                    //   1: read s;
-                    //   2: volatile read s;
-                    //   3: read s;
-                    //
-                    // We should never assume that the values read by 1 and 2 are the same (because the heap was mutated
-                    // in between them)... but we *should* be able to prove that the values read in 2 and 3 are the
-                    // same.
-                    //
-
-                    ValueNumPair   clsVarVNPair;
-                    GenTreeClsVar* clsVar = tree->AsClsVar();
-                    FieldSeqNode*  fldSeq = clsVar->gtFieldSeq;
-                    assert((fldSeq != nullptr) && (fldSeq != FieldSeqStore::NotAField())); // We need to have one.
-
-                    // This is a reference to heap memory.
-                    // We model statics as indices into GcHeap (which is a subset of ByrefExposed).
-                    size_t   structSize = 0;
-                    ValueNum selectedStaticVar =
-                        vnStore->VNApplySelectors(VNK_Liberal, fgCurMemoryVN[GcHeap], fldSeq, &structSize);
-                    selectedStaticVar =
-                        vnStore->VNApplySelectorsTypeCheck(selectedStaticVar, tree->TypeGet(), structSize);
-
-                    clsVarVNPair.SetLiberal(selectedStaticVar);
-                    // The conservative interpretation always gets a new, unique VN.
-                    clsVarVNPair.SetConservative(vnStore->VNForExpr(compCurBB, tree->TypeGet()));
-
-                    // The ValueNum returned must represent the full-sized IL-Stack value
-                    // If we need to widen this value then we need to introduce a VNF_Cast here to represent
-                    // the widened value.    This is necessary since the CSE package can replace all occurrences
-                    // of a given ValueNum with a LclVar that is a full-sized IL-Stack value
-                    //
-                    if (varTypeIsSmall(tree->TypeGet()))
-                    {
-                        var_types castToType = tree->TypeGet();
-                        clsVarVNPair         = vnStore->VNPairForCast(clsVarVNPair, castToType, castToType);
-                    }
-                    tree->gtVNPair = clsVarVNPair;
-                }
-                else
-                {
-                    // Location nodes get the "Void" VN.
-                    tree->gtVNPair = vnStore->VNPForVoid();
-                }
-                break;
-
             case GT_MEMORYBARRIER: // Leaf
                 // For MEMORYBARRIER add an arbitrary side effect on GcHeap/ByrefExposed.
                 fgMutateGcHeap(tree DEBUGARG("MEMORYBARRIER"));
@@ -8742,7 +8654,17 @@ void Compiler::fgValueNumberTree(GenTree* tree)
             }
             else if (isVolatile)
             {
-                // For Volatile indirection, mutate GcHeap/ByrefExposed
+                // We just mutate GcHeap/ByrefExposed if isVolatile is true, and then do the read as normal.
+                //
+                // This allows:
+                //   1: read s;
+                //   2: volatile read s;
+                //   3: read s;
+                //
+                // We should never assume that the values read by 1 and 2 are the same (because the heap was mutated
+                // in between them)... but we *should* be able to prove that the values read in 2 and 3 are the
+                // same.
+                //
                 fgMutateGcHeap(tree DEBUGARG("GTF_IND_VOLATILE - read"));
 
                 // The value read by the GT_IND can immediately change

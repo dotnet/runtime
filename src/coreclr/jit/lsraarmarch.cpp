@@ -343,10 +343,10 @@ int LinearScan::BuildCall(GenTreeCall* call)
     {
         GenTree* argNode = arg.GetEarlyNode();
 
-        // Skip arguments that have been moved to the Late Arg list
-        if ((argNode->gtFlags & GTF_LATE_ARG) == 0)
+        // Skip arguments that have been moved to the late list
+        if (arg.GetLateNode() == nullptr)
         {
-            // PUTARG_SPLIT nodes must be in the gtCallLateArgs list, since they
+            // PUTARG_SPLIT nodes must be in the late list, since they
             // define registers used by the call.
             assert(argNode->OperGet() != GT_PUTARG_SPLIT);
             if (argNode->gtOper == GT_PUTARG_STK)

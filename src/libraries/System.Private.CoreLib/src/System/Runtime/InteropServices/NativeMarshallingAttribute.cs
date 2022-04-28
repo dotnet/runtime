@@ -16,7 +16,7 @@ namespace System.Runtime.InteropServices
     public sealed class NativeMarshallingAttribute : Attribute
     {
         /// <summary>
-        /// Create a <see cref="MarshalUsingAttribute" /> that provides a native marshalling type.
+        /// Create a <see cref="NativeMarshallingAttribute" /> that provides a native marshalling type.
         /// </summary>
         /// <param name="nativeType">The marshaller type used to convert the attributed type from managed to native code. This type must be attributed with <see cref="CustomTypeMarshallerAttribute" /></param>
         public NativeMarshallingAttribute(Type nativeType)

@@ -4,7 +4,6 @@
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="System.Security.SecureString.cs" />
     <Compile Include="System.Security.SecureString.Forwards.cs" />
   </ItemGroup>
   <ItemGroup>

@@ -387,37 +387,34 @@ namespace System.Text.RegularExpressions.Generator
                     writer.WriteLine($"base.runtextpos = {(!rtl ? "inputSpan.Length" : "0")};");
                 }
             }
-            else if (rm.MatchTimeout == Timeout.Infinite)
+            else
             {
-                // Emit the general purpose scan loop, without timeouts.
-                needsTryFind = needsTryMatch = true;
-                writer.WriteLine($"// Search until we can't find a valid starting position, we find a match, or we reach the end of the input.");
-                writer.WriteLine($"while (TryFindNextPossibleStartingPosition(inputSpan) &&");
-                writer.WriteLine($"       !TryMatchAtCurrentPosition(inputSpan) &&");
+                // Emit the general purpose scan loop. At this point, we always need TryMatchAtCurrentPosition.  If we have any
+                // information that will enable TryFindNextPossibleStartingPosition to help narrow down the search, we need it,
+                // too, but otherwise it can be skipped.
+                needsTryMatch = true;
+                needsTryFind =
+                    rm.Tree.FindOptimizations.FindMode != FindNextStartingPositionMode.NoSearch ||
+                    rm.Tree.FindOptimizations.MinRequiredLength != 0 ||
+                    rm.Tree.FindOptimizations.LeadingAnchor != RegexNodeKind.Unknown ||
+                    rm.Tree.FindOptimizations.TrailingAnchor != RegexNodeKind.Unknown;
+
+                writer.WriteLine("// Search until we can't find a valid starting position, we find a match, or we reach the end of the input.");
+                writer.Write("while (");
+                if (needsTryFind)
+                {
+                    writer.WriteLine("TryFindNextPossibleStartingPosition(inputSpan) &&");
+                    writer.Write("       ");
+                }
+                writer.WriteLine("!TryMatchAtCurrentPosition(inputSpan) &&");
                 writer.WriteLine($"       base.runtextpos != {(!rtl ? "inputSpan.Length" : "0")})");
                 using (EmitBlock(writer, null))
                 {
                     writer.WriteLine($"base.runtextpos{(!rtl ? "++" : "--")};");
-                }
-            }
-            else
-            {
-                // Emit the general purpose scan loop, with (possible) timeouts.
-                needsTryFind = needsTryMatch = true;
-                writer.WriteLine("// Search until we can't find a valid starting position, we find a match, or we reach the end of the input.");
-                using (EmitBlock(writer, "while (TryFindNextPossibleStartingPosition(inputSpan))"))
-                {
-                    // Check the timeout every time we run the whole match logic at a new starting location, as each such
-                    // operation could do work at least linear in the length of the input.
-                    EmitTimeoutCheckIfNeeded(writer, rm);
 
-                    using (EmitBlock(writer, $"if (TryMatchAtCurrentPosition(inputSpan) || base.runtextpos == {(!rtl ? "inputSpan.Length" : "0")})"))
-                    {
-                        writer.WriteLine("return;");
-                    }
-                    writer.WriteLine();
-
-                    writer.WriteLine($"base.runtextpos{(!rtl ? "++" : "--")};");
+                    // Check the timeout at least once per failed starting location, as finding the next location and
+                    // attempting a match at that location could do work at least linear in the length of the input.
+                    EmitTimeoutCheckIfNeeded(writer, rm, appendNewLineIfTimeoutEmitted: false);
                 }
             }
 
@@ -444,6 +441,7 @@ namespace System.Text.RegularExpressions.Generator
             writer.WriteLine();
 
             const string NoMatchFound = "NoMatchFound";
+            bool findEndsInAlwaysReturningTrue = false;
             bool noMatchFoundLabelNeeded = false;
 
             // Generate length check.  If the input isn't long enough to possibly match, fail quickly.
@@ -451,21 +449,21 @@ namespace System.Text.RegularExpressions.Generator
             // especially since we want the "return false" code regardless.
             int minRequiredLength = rm.Tree.FindOptimizations.MinRequiredLength;
             Debug.Assert(minRequiredLength >= 0);
-            writer.WriteLine("// Validate that enough room remains in the input to match.");
+            FinishEmitBlock clause = default;
             if (minRequiredLength > 0)
             {
-                writer.WriteLine($"// Any possible match is at least {minRequiredLength} characters.");
+                writer.WriteLine(minRequiredLength == 1 ?
+                    "// Empty matches aren't possible." :
+                    $"// Any possible match is at least {minRequiredLength} characters.");
+                clause = EmitBlock(writer, (minRequiredLength, rtl) switch
+                {
+                    (1, false) => "if ((uint)pos < (uint)inputSpan.Length)",
+                    (_, false) => $"if (pos <= inputSpan.Length - {minRequiredLength})",
+                    (1, true) => "if (pos > 0)",
+                    (_, true) => $"if (pos >= {minRequiredLength})",
+                });
             }
-            string clause = (minRequiredLength, rtl) switch
-                            {
-                                (0, false) => "if ((uint)pos <= (uint)inputSpan.Length)",
-                                (1, false) => "if ((uint)pos < (uint)inputSpan.Length)",
-                                (_, false) => $"if (pos <= inputSpan.Length - {minRequiredLength})",
-                                (0, true) => "if (pos >= 0)",
-                                (1, true) => "if (pos > 0)",
-                                (_, true) => $"if (pos >= {minRequiredLength})",
-                            };
-            using (EmitBlock(writer, clause))
+            using (clause)
             {
                 // Emit any anchors.
                 if (!EmitAnchors())
@@ -503,19 +501,25 @@ namespace System.Text.RegularExpressions.Generator
 
                         case FindNextStartingPositionMode.NoSearch:
                             writer.WriteLine("return true;");
+                            findEndsInAlwaysReturningTrue = true;
                             break;
                     }
                 }
             }
-            writer.WriteLine();
 
-            writer.WriteLine("// No match found.");
-            if (noMatchFoundLabelNeeded)
+            // If the main path is guaranteed to end in a "return true;" and nothing is going to
+            // jump past it, we don't need a "return false;" path.
+            if (minRequiredLength > 0 || !findEndsInAlwaysReturningTrue || noMatchFoundLabelNeeded)
             {
-                writer.WriteLine($"{NoMatchFound}:");
+                writer.WriteLine();
+                writer.WriteLine("// No match found.");
+                if (noMatchFoundLabelNeeded)
+                {
+                    writer.WriteLine($"{NoMatchFound}:");
+                }
+                writer.WriteLine($"base.runtextpos = {(!rtl ? "inputSpan.Length" : "0")};");
+                writer.WriteLine("return false;");
             }
-            writer.WriteLine($"base.runtextpos = {(!rtl ? "inputSpan.Length" : "0")};");
-            writer.WriteLine("return false;");
 
             // We're done.  Patch up any additional declarations.
             ReplaceAdditionalDeclarations(writer, additionalDeclarations, additionalDeclarationsPosition, additionalDeclarationsIndent);
@@ -567,6 +571,7 @@ namespace System.Text.RegularExpressions.Generator
                             writer.WriteLine("base.runtextpos = inputSpan.Length - 1;");
                         }
                         writer.WriteLine("return true;");
+                        findEndsInAlwaysReturningTrue = true;
                         return true;
 
                     case FindNextStartingPositionMode.LeadingAnchor_LeftToRight_End:
@@ -578,6 +583,7 @@ namespace System.Text.RegularExpressions.Generator
                             writer.WriteLine("base.runtextpos = inputSpan.Length;");
                         }
                         writer.WriteLine("return true;");
+                        findEndsInAlwaysReturningTrue = true;
                         return true;
 
                     case FindNextStartingPositionMode.LeadingAnchor_RightToLeft_Beginning:
@@ -590,6 +596,7 @@ namespace System.Text.RegularExpressions.Generator
                             writer.WriteLine("base.runtextpos = 0;");
                         }
                         writer.WriteLine("return true;");
+                        findEndsInAlwaysReturningTrue = true;
                         return true;
 
                     case FindNextStartingPositionMode.LeadingAnchor_RightToLeft_EndZ:
@@ -620,6 +627,7 @@ namespace System.Text.RegularExpressions.Generator
                             writer.WriteLine($"base.runtextpos = inputSpan.Length - {regexTree.FindOptimizations.MinRequiredLength + 1};");
                         }
                         writer.WriteLine("return true;");
+                        findEndsInAlwaysReturningTrue = true;
                         return true;
 
                     case FindNextStartingPositionMode.TrailingAnchor_FixedLength_LeftToRight_End:
@@ -630,6 +638,7 @@ namespace System.Text.RegularExpressions.Generator
                             writer.WriteLine($"base.runtextpos = inputSpan.Length - {regexTree.FindOptimizations.MinRequiredLength};");
                         }
                         writer.WriteLine("return true;");
+                        findEndsInAlwaysReturningTrue = true;
                         return true;
                 }
 
@@ -651,7 +660,8 @@ namespace System.Text.RegularExpressions.Generator
                                 noMatchFoundLabelNeeded = true;
                                 Goto(NoMatchFound);
                             }
-                            writer.WriteLine("pos = newlinePos + pos + 1;");
+                            writer.WriteLine("pos += newlinePos + 1;");
+                            writer.WriteLine();
 
                             // We've updated the position.  Make sure there's still enough room in the input for a possible match.
                             using (EmitBlock(writer, minRequiredLength switch
@@ -917,7 +927,7 @@ namespace System.Text.RegularExpressions.Generator
                 Debug.Assert(target.LoopNode.Kind is RegexNodeKind.Setloop or RegexNodeKind.Setlazy or RegexNodeKind.Setloopatomic);
                 Debug.Assert(target.LoopNode.N == int.MaxValue);
 
-                writer.Write($"// The pattern begins with an atomic loop for {DescribeSet(target.LoopNode.Str)}, followed by ");
+                writer.Write($"// The pattern begins with an atomic loop for {DescribeSet(target.LoopNode.Str!)}, followed by ");
                 writer.WriteLine(
                     target.Literal.String is not null ? $"the string {Literal(target.Literal.String)}." :
                     target.Literal.Chars is not null ? $"one of the characters {Literal(new string(target.Literal.Chars))}" :
@@ -1027,7 +1037,7 @@ namespace System.Text.RegularExpressions.Generator
 
             // Helper to define names.  Names start unadorned, but as soon as there's repetition,
             // they begin to have a numbered suffix.
-            var usedNames = new Dictionary<string, int>();
+            Dictionary<string, int> usedNames = new();
 
             // Every RegexTree is rooted in the implicit Capture for the whole expression.
             // Skip the Capture node. We handle the implicit root capture specially.
@@ -1039,8 +1049,8 @@ namespace System.Text.RegularExpressions.Generator
             // In some cases, we need to emit declarations at the beginning of the method, but we only discover we need them later.
             // To handle that, we build up a collection of all the declarations to include, track where they should be inserted,
             // and then insert them at that position once everything else has been output.
-            var additionalDeclarations = new HashSet<string>();
-            var additionalLocalFunctions = new Dictionary<string, string[]>();
+            HashSet<string> additionalDeclarations = new();
+            Dictionary<string, string[]> additionalLocalFunctions = new();
 
             // Declare some locals.
             string sliceSpan = "slice";
@@ -1453,7 +1463,7 @@ namespace System.Text.RegularExpressions.Generator
                         startingCapturePos = ReserveName("alternation_starting_capturepos");
                         if (canUseLocalsForAllState)
                         {
-                            additionalDeclarations.Add($"int {startingCapturePos} = base.Crawlpos();");
+                            additionalDeclarations.Add($"int {startingCapturePos} = 0;");
                             writer.WriteLine($"{startingCapturePos} = base.Crawlpos();");
                         }
                         else
@@ -3217,7 +3227,7 @@ namespace System.Text.RegularExpressions.Generator
                 // additional checks if we can prove that the loop can never match empty, which we can do by computing
                 // the minimum length of the child; only if it's 0 might iterations be empty.
                 bool iterationMayBeEmpty = child.ComputeMinLength() == 0;
-                string startingPos = null, sawEmpty = null;
+                string? startingPos = null, sawEmpty = null;
                 if (iterationMayBeEmpty)
                 {
                     startingPos = ReserveName("lazyloop_starting_pos");
@@ -3243,8 +3253,8 @@ namespace System.Text.RegularExpressions.Generator
                 // iterations, this state needs to be stored on to the backtracking stack.
                 int entriesPerIteration = 1/*pos*/ + (iterationMayBeEmpty ? 2/*startingPos+sawEmpty*/ : 0) + (expressionHasCaptures ? 1/*Crawlpos*/ : 0);
                 EmitStackPush(
-                    expressionHasCaptures && iterationMayBeEmpty ? new[] { "pos", startingPos, sawEmpty, "base.Crawlpos()" } :
-                    iterationMayBeEmpty ? new[] { "pos", startingPos, sawEmpty } :
+                    expressionHasCaptures && iterationMayBeEmpty ? new[] { "pos", startingPos!, sawEmpty!, "base.Crawlpos()" } :
+                    iterationMayBeEmpty ? new[] { "pos", startingPos!, sawEmpty! } :
                     expressionHasCaptures ? new[] { "pos", "base.Crawlpos()" } :
                     new[] { "pos" });
 
@@ -3323,7 +3333,7 @@ namespace System.Text.RegularExpressions.Generator
                         EmitUncaptureUntil(StackPop());
                     }
                     EmitStackPop(iterationMayBeEmpty ?
-                        new[] { sawEmpty, startingPos, "pos" } :
+                        new[] { sawEmpty!, startingPos!, "pos" } :
                         new[] { "pos" });
                     SliceInputSpan();
 
@@ -3373,7 +3383,7 @@ namespace System.Text.RegularExpressions.Generator
                     if (rm.Analysis.IsInLoop(node))
                     {
                         EmitStackPush(iterationMayBeEmpty ?
-                            new[] { iterationCount, startingPos, sawEmpty } :
+                            new[] { iterationCount, startingPos!, sawEmpty! } :
                             new[] { iterationCount });
                     }
 
@@ -3392,7 +3402,7 @@ namespace System.Text.RegularExpressions.Generator
                     if (rm.Analysis.IsInLoop(node))
                     {
                         EmitStackPop(iterationMayBeEmpty ?
-                            new[] { sawEmpty, startingPos, iterationCount } :
+                            new[] { sawEmpty!, startingPos!, iterationCount } :
                             new[] { iterationCount });
                     }
 
@@ -3818,9 +3828,9 @@ namespace System.Text.RegularExpressions.Generator
                 // here we still need the stack, because each iteration of _this_ loop may have its own state, e.g. we
                 // need to know where each iteration began so when backtracking we can jump back to that location.
                 EmitStackPush(
-                    expressionHasCaptures && iterationMayBeEmpty ? new[] { "base.Crawlpos()", startingPos, "pos" } :
+                    expressionHasCaptures && iterationMayBeEmpty ? new[] { "base.Crawlpos()", startingPos!, "pos" } :
                     expressionHasCaptures ? new[] { "base.Crawlpos()", "pos" } :
-                    iterationMayBeEmpty ? new[] { startingPos, "pos" } :
+                    iterationMayBeEmpty ? new[] { startingPos!, "pos" } :
                     new[] { "pos" });
                 writer.WriteLine();
 
@@ -3928,7 +3938,7 @@ namespace System.Text.RegularExpressions.Generator
                     Goto(originalDoneLabel);
                 }
                 EmitStackPop(iterationMayBeEmpty ?
-                    new[] { "pos", startingPos } :
+                    new[] { "pos", startingPos! } :
                     new[] { "pos" });
                 if (expressionHasCaptures)
                 {
@@ -4020,7 +4030,7 @@ namespace System.Text.RegularExpressions.Generator
 
                         // Store the loop's state
                         EmitStackPush(iterationMayBeEmpty ?
-                            new[] { startingPos, iterationCount } :
+                            new[] { startingPos!, iterationCount } :
                             new[] { iterationCount });
 
                         // Skip past the backtracking section
@@ -4032,7 +4042,7 @@ namespace System.Text.RegularExpressions.Generator
                         string backtrack = ReserveName("LoopBacktrack");
                         MarkLabel(backtrack, emitSemicolon: false);
                         EmitStackPop(iterationMayBeEmpty ?
-                            new[] { iterationCount, startingPos } :
+                            new[] { iterationCount, startingPos! } :
                             new[] { iterationCount });
 
                         // We're backtracking.  Check the timeout.
@@ -4175,17 +4185,24 @@ namespace System.Text.RegularExpressions.Generator
         /// but to ensure that significant backtracking can be stopped.  As such, we allow for up to O(n) work in the length of the input
         /// between checks, which means we emit checks anywhere backtracking is introduced, such that every check can have O(n) work
         /// associated with it.  This means checks:
-        /// - when restarting the whole match evaluation at a new index
-        /// - when backtracking backwards in a loop
-        /// - when backtracking forwards in a lazy loop
-        /// - when backtracking to the next branch of an alternation
-        /// - when processing a lookaround
+        /// - when restarting the whole match evaluation at a new index. Every match could end up doing O(n) work without a timeout
+        ///   check, and since this could then result in O(n) matches, we need a timeout check on each new position in order to
+        ///   avoid O(n^2) work without a timeout check.
+        /// - when backtracking backwards in a loop. Every backtracking step through the loop could evaluate the remainder of the
+        ///   pattern, which can lead to O(2^n) work if unchecked.
+        /// - when backtracking forwards in a lazy loop. Every backtracking step through the loop could evaluate the remainder of the
+        ///   pattern, which can lead to O(2^n) work if unchecked.
+        /// - when backtracking to the next branch of an alternation. Every branch of the alternation could evaluate the remainder of the
+        ///   pattern, which can lead to O(2^n) work if unchecked.
+        /// - when performing a lookaround.  Each lookaround can result in doing O(n) work, which means m lookarounds can result in
+        ///   O(m*n) work.  Lookarounds can be in loops, so without timeout checks in a lookaround, a pattern like `((?=(?>a*))a)+`
+        ///   could do O(n^2) work without a timeout check.
         /// Note that some other constructs have code that needs to deal with backtracking, e.g. conditionals needing to ensure
         /// that if any of their children have backtracking that code which backtracks back into the conditional is appropriately
         /// routed to the correct child, but such constructs aren't actually introducing backtracking and thus don't need to be
         /// instrumented for timeouts.
         /// </remarks>
-        private static void EmitTimeoutCheckIfNeeded(IndentedTextWriter writer, RegexMethod rm)
+        private static void EmitTimeoutCheckIfNeeded(IndentedTextWriter writer, RegexMethod rm, bool appendNewLineIfTimeoutEmitted = true)
         {
             // If the match timeout was explicitly set to infinite, then no timeout code needs to be emitted.
             if (rm.MatchTimeout != Timeout.Infinite)
@@ -4199,7 +4216,11 @@ namespace System.Text.RegularExpressions.Generator
                 {
                     writer.WriteLine("base.CheckTimeout();");
                 }
-                writer.WriteLine();
+
+                if (appendNewLineIfTimeoutEmitted)
+                {
+                    writer.WriteLine();
+                }
             }
         }
 

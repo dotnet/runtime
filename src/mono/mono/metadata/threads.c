@@ -684,8 +684,8 @@ mono_thread_internal_set_priority (MonoInternalThread *internal, MonoThreadPrior
 	return;
 #else /* !HOST_WIN32 and not HOST_FUCHSIA */
 	pthread_t tid;
-	int policy;
-	struct sched_param param;
+	int policy = SCHED_OTHER;
+	struct sched_param param = {0,};
 	gint res;
 
 	tid = thread_get_tid (internal);

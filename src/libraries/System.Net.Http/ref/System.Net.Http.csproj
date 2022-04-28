@@ -10,8 +10,6 @@
     <ProjectReference Include="..\..\System.Net.Primitives\ref\System.Net.Primitives.csproj" />
     <ProjectReference Include="..\..\System.Net.Sockets\ref\System.Net.Sockets.csproj" />
     <ProjectReference Include="..\..\System.Net.Security\ref\System.Net.Security.csproj" />
-    <ProjectReference Include="..\..\System.Security.Cryptography.X509Certificates\ref\System.Security.Cryptography.X509Certificates.csproj" />
-    <ProjectReference Include="..\..\System.Text.Encoding\ref\System.Text.Encoding.csproj" />
     <ProjectReference Include="..\..\System.Diagnostics.DiagnosticSource\ref\System.Diagnostics.DiagnosticSource.csproj" />
   </ItemGroup>
 </Project>

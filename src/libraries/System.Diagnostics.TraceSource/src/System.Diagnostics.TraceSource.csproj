@@ -34,8 +34,9 @@
     <ProjectReference Include="$(LibrariesProjectRoot)System.Collections.Specialized\src\System.Collections.Specialized.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.ComponentModel.Primitives\src\System.ComponentModel.Primitives.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\src\System.Runtime.csproj" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.Extensions\src\System.Runtime.Extensions.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Threading\src\System.Threading.csproj" />
+    <!-- error : CannotChangeAttribute : Attribute 'System.Diagnostics.SwitchLevelAttribute' on 'System.Diagnostics.BooleanSwitch' changed
+         from '[SwitchLevelAttribute(typeof(bool))]' in the implementation to '[SwitchLevelAttribute(typeof(Boolean))]' in the reference. -->
     <Reference Include="System.IO.FileSystem" />
   </ItemGroup>
 </Project>
