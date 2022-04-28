@@ -5340,7 +5340,7 @@ HCIMPL2(void, JIT_ClassProfile32, Object *obj, ICorJitInfo::HandleHistogram32* c
     const unsigned count = (*pCount)++;
     const unsigned S = ICorJitInfo::HandleHistogram32::SIZE;
     const unsigned N = ICorJitInfo::HandleHistogram32::SAMPLE_INTERVAL;
-    _ASSERTE(N >= S);
+    static_assert_no_msg(N >= S);
 
     if (objRef == NULL)
     {
@@ -5407,7 +5407,7 @@ HCIMPL2(void, JIT_ClassProfile64, Object *obj, ICorJitInfo::HandleHistogram64* c
     const uint64_t count = (*pCount)++;
     const unsigned S = ICorJitInfo::HandleHistogram32::SIZE;
     const unsigned N = ICorJitInfo::HandleHistogram32::SAMPLE_INTERVAL;
-    _ASSERTE(N >= S);
+    static_assert_no_msg(N >= S);
 
     if (objRef == NULL)
     {
@@ -5455,7 +5455,7 @@ HCIMPL4(void, JIT_MethodProfile32, Object *obj, CORINFO_METHOD_HANDLE baseMethod
     const unsigned methodCount = (*pMethodCount)++;
     const unsigned S = ICorJitInfo::HandleHistogram32::SIZE;
     const unsigned N = ICorJitInfo::HandleHistogram32::SAMPLE_INTERVAL;
-    _ASSERTE(N >= S);
+    static_assert_no_msg(N >= S);
 
     unsigned typeCount = 0;
     if (typeProfile != nullptr)
@@ -5491,9 +5491,6 @@ HCIMPL4(void, JIT_MethodProfile32, Object *obj, CORINFO_METHOD_HANDLE baseMethod
         // the only one we can reasonably do GDV for. For instance, open
         // delegates are filtered out here, and many cases with inner
         // "complicated" logic as well (e.g. multicast, unmanaged functions).
-        //
-        // Note that this covers all cases of delegates that can be created
-        // without the use of reflection.
         //
         DELEGATEREF del = (DELEGATEREF)objRef;
         if (del->GetInvocationCount() == 0)
@@ -5603,7 +5600,7 @@ HCIMPL4(void, JIT_MethodProfile64, Object *obj, CORINFO_METHOD_HANDLE baseMethod
     const uint64_t methodCount = (*pMethodCount)++;
     const unsigned S = ICorJitInfo::HandleHistogram32::SIZE;
     const unsigned N = ICorJitInfo::HandleHistogram32::SAMPLE_INTERVAL;
-    _ASSERTE(N >= S);
+    static_assert_no_msg(N >= S);
 
     unsigned typeCount = 0;
     if (typeProfile != nullptr)
@@ -5639,9 +5636,6 @@ HCIMPL4(void, JIT_MethodProfile64, Object *obj, CORINFO_METHOD_HANDLE baseMethod
         // the only one we can reasonably do GDV for. For instance, open
         // delegates are filtered out here, and many cases with inner
         // "complicated" logic as well (e.g. multicast, unmanaged functions).
-        //
-        // Note that this covers all cases of delegates that can be created
-        // without the use of reflection.
         //
         DELEGATEREF del = (DELEGATEREF)objRef;
         if (del->GetInvocationCount() == 0)
