@@ -5607,8 +5607,6 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
         tree->SetOper(GT_IND);
         tree->AsOp()->gtOp1 = addr;
 
-        tree->SetIndirExceptionFlags(this);
-
         if (addExplicitNullCheck)
         {
             //

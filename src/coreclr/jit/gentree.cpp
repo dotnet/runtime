@@ -9706,15 +9706,9 @@ void GenTree::SetIndirExceptionFlags(Compiler* comp)
         addr = AsArrLen()->ArrRef();
     }
 
-    if ((addr->gtFlags & GTF_EXCEPT) != 0)
-    {
-        gtFlags |= GTF_EXCEPT;
-    }
-    else
-    {
-        gtFlags &= ~GTF_EXCEPT;
-        gtFlags |= GTF_IND_NONFAULTING;
-    }
+    gtFlags |= GTF_IND_NONFAULTING;
+    gtFlags &= ~GTF_EXCEPT;
+    gtFlags |= addr->gtFlags & GTF_EXCEPT;
 }
 
 #ifdef DEBUG
