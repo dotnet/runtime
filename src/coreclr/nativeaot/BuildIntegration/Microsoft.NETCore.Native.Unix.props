@@ -79,6 +79,7 @@ The .NET Foundation licenses this file to you under the MIT license.
       <LinkerArg Include="-g" Condition="$(NativeDebugSymbols) == 'true'" />
       <LinkerArg Include="-Wl,--strip-debug" Condition="$(NativeDebugSymbols) != 'true' and '$(TargetOS)' != 'OSX'" />
       <LinkerArg Include="-Wl,-rpath,'$(IlcRPath)'" />
+      <LingerArg Include="-Wl,--build-id" />
       <LinkerArg Include="-Wl,--as-needed" Condition="'$(TargetOS)' != 'OSX'" />
       <LinkerArg Include="-pthread" Condition="'$(TargetOS)' != 'OSX'" />
       <LinkerArg Include="-lstdc++" />
