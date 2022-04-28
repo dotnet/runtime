@@ -103,8 +103,8 @@
         <note />
       </trans-unit>
       <trans-unit id="MarshallingStringOrCharAsUndefinedNotSupported">
-        <source>Marshalling string or char without explicit marshalling information is not supported. Specify either 'LibraryImportAttribute.CharSet' or 'MarshalAsAttribute'.</source>
-        <target state="translated">不支援封送處理字符串或没有明確排列資訊的字符。指定 'LibraryImportAttribute.CharSet' 或 'MarshalAsAttribute'。</target>
+        <source>Marshalling string or char without explicit marshalling information is not supported. Specify 'LibraryImportAttribute.StringMarshalling', 'LibraryImportAttribute.StringMarshallingCustomType', 'MarshalUsingAttribute' or 'MarshalAsAttribute'.</source>
+        <target state="needs-review-translation">不支援封送處理字符串或没有明確排列資訊的字符。指定 'LibraryImportAttribute.CharSet' 或 'MarshalAsAttribute'。</target>
         <note />
       </trans-unit>
       <trans-unit id="NativeGenericTypeMustBeClosedOrMatchArityMessage">
