@@ -13,13 +13,13 @@ namespace System.Text.RegularExpressions.Symbolic
         internal readonly SymbolicRegexMatcher _matcher;
 
         /// <summary>Initializes the factory.</summary>
-        public SymbolicRegexRunnerFactory(RegexTree regexTree, RegexOptions options, TimeSpan matchTimeout, CultureInfo culture)
+        public SymbolicRegexRunnerFactory(RegexTree regexTree, RegexOptions options, TimeSpan matchTimeout)
         {
             Debug.Assert((options & (RegexOptions.RightToLeft | RegexOptions.ECMAScript)) == 0);
 
             var charSetSolver = new CharSetSolver();
             var bddBuilder = new SymbolicRegexBuilder<BDD>(charSetSolver, charSetSolver);
-            var converter = new RegexNodeConverter(bddBuilder, culture, regexTree.CaptureNumberSparseMapping);
+            var converter = new RegexNodeConverter(bddBuilder, regexTree.CaptureNumberSparseMapping);
 
             SymbolicRegexNode<BDD> rootNode = converter.ConvertToSymbolicRegexNode(regexTree.Root);
             BDD[] minterms = rootNode.ComputeMinterms();

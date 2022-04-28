@@ -12,6 +12,7 @@ System.Threading.RateLimiting.ConcurrencyLimiter
 System.Threading.RateLimiting.TokenBucketRateLimiter
 System.Threading.RateLimiting.RateLimitLease</PackageDescription>
   </PropertyGroup>
+
   <ItemGroup>
     <Compile Include="System\Threading\RateLimiting\ConcurrencyLimiter.cs" />
     <Compile Include="System\Threading\RateLimiting\ConcurrencyLimiterOptions.cs" />
@@ -26,14 +27,9 @@ System.Threading.RateLimiting.RateLimitLease</PackageDescription>
     <Compile Include="System\Threading\RateLimiting\TokenBucketRateLimiterOptions.cs" />
     <Compile Include="$(CommonPath)System\Collections\Generic\Deque.cs" Link="Common\System\Collections\Generic\Deque.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
-    <Reference Include="System.Runtime" />
-    <Reference Include="System.Threading" />
-  </ItemGroup>
+
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
     <PackageReference Include="System.Threading.Tasks.Extensions" Version="$(SystemThreadingTasksExtensionsVersion)" />
-  </ItemGroup>
-  <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'netstandard2.1'))">
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Bcl.AsyncInterfaces\src\Microsoft.Bcl.AsyncInterfaces.csproj" />
   </ItemGroup>
 </Project>

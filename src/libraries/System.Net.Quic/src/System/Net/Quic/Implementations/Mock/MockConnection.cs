@@ -164,7 +164,7 @@ namespace System.Net.Quic.Implementations.Mock
             return ValueTask.CompletedTask;
         }
 
-        internal override ValueTask WaitForAvailableUnidirectionalStreamsAsync(CancellationToken cancellationToken = default)
+        internal async override ValueTask<QuicStreamProvider> OpenUnidirectionalStreamAsync(CancellationToken cancellationToken)
         {
             PeerStreamLimit? streamLimit = RemoteStreamLimit;
             if (streamLimit is null)
@@ -172,31 +172,9 @@ namespace System.Net.Quic.Implementations.Mock
                 throw new InvalidOperationException("Not connected");
             }
 
-            return streamLimit.Unidirectional.WaitForAvailableStreams(cancellationToken);
-        }
-
-        internal override ValueTask WaitForAvailableBidirectionalStreamsAsync(CancellationToken cancellationToken = default)
-        {
-            PeerStreamLimit? streamLimit = RemoteStreamLimit;
-            if (streamLimit is null)
+            while (!streamLimit.Unidirectional.TryIncrement())
             {
-                throw new InvalidOperationException("Not connected");
-            }
-
-            return streamLimit.Bidirectional.WaitForAvailableStreams(cancellationToken);
-        }
-
-        internal override QuicStreamProvider OpenUnidirectionalStream()
-        {
-            PeerStreamLimit? streamLimit = RemoteStreamLimit;
-            if (streamLimit is null)
-            {
-                throw new InvalidOperationException("Not connected");
-            }
-
-            if (!streamLimit.Unidirectional.TryIncrement())
-            {
-                throw new QuicException("No available unidirectional stream");
+                await streamLimit.Unidirectional.WaitForAvailableStreams(cancellationToken).ConfigureAwait(false);
             }
 
             long streamId;
@@ -209,7 +187,7 @@ namespace System.Net.Quic.Implementations.Mock
             return OpenStream(streamId, false);
         }
 
-        internal override QuicStreamProvider OpenBidirectionalStream()
+        internal async override ValueTask<QuicStreamProvider> OpenBidirectionalStreamAsync(CancellationToken cancellationToken)
         {
             PeerStreamLimit? streamLimit = RemoteStreamLimit;
             if (streamLimit is null)
@@ -217,9 +195,9 @@ namespace System.Net.Quic.Implementations.Mock
                 throw new InvalidOperationException("Not connected");
             }
 
-            if (!streamLimit.Bidirectional.TryIncrement())
+            while (!streamLimit.Bidirectional.TryIncrement())
             {
-                throw new QuicException("No available bidirectional stream");
+                await streamLimit.Bidirectional.WaitForAvailableStreams(cancellationToken).ConfigureAwait(false);
             }
 
             long streamId;
