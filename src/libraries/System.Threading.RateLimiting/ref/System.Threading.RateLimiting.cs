@@ -113,4 +113,49 @@ namespace System.Threading.RateLimiting
         public int TokenLimit { get { throw null; } }
         public int TokensPerPeriod { get { throw null; } }
     }
+    public sealed partial class SlidingWindowRateLimiter : System.Threading.RateLimiting.ReplenishingRateLimiter
+    {
+        public SlidingWindowRateLimiter(System.Threading.RateLimiting.SlidingWindowRateLimiterOptions options) { }
+        public override System.TimeSpan? IdleDuration { get { throw null; } }
+        public override bool IsAutoReplenishing { get { throw null; } }
+        public override System.TimeSpan ReplenishmentPeriod { get { throw null; } }
+        protected override System.Threading.RateLimiting.RateLimitLease AcquireCore(int requestCount) { throw null; }
+        protected override void Dispose(bool disposing) { }
+        protected override System.Threading.Tasks.ValueTask DisposeAsyncCore() { throw null; }
+        public override int GetAvailablePermits() { throw null; }
+        public override bool TryReplenish() { throw null; }
+        protected override System.Threading.Tasks.ValueTask<System.Threading.RateLimiting.RateLimitLease> WaitAsyncCore(int requestCount, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+    }
+    public sealed partial class SlidingWindowRateLimiterOptions
+    {
+        public SlidingWindowRateLimiterOptions(int permitLimit, System.Threading.RateLimiting.QueueProcessingOrder queueProcessingOrder, int queueLimit, System.TimeSpan window, int segmentsPerWindow, bool autoReplenishment = true) { }
+        public bool AutoReplenishment { get { throw null; } }
+        public int QueueLimit { get { throw null; } }
+        public System.Threading.RateLimiting.QueueProcessingOrder QueueProcessingOrder { get { throw null; } }
+        public System.TimeSpan Window { get { throw null; } }
+        public int PermitLimit { get { throw null; } }
+        public int SegmentsPerWindow { get { throw null; } }
+    }
+    public sealed partial class FixedWindowRateLimiter : System.Threading.RateLimiting.ReplenishingRateLimiter
+    {
+        public FixedWindowRateLimiter(System.Threading.RateLimiting.FixedWindowRateLimiterOptions options) { }
+        public override System.TimeSpan? IdleDuration { get { throw null; } }
+        public override bool IsAutoReplenishing { get { throw null; } }
+        public override System.TimeSpan ReplenishmentPeriod { get { throw null; } }
+        protected override System.Threading.RateLimiting.RateLimitLease AcquireCore(int requestCount) { throw null; }
+        protected override void Dispose(bool disposing) { }
+        protected override System.Threading.Tasks.ValueTask DisposeAsyncCore() { throw null; }
+        public override int GetAvailablePermits() { throw null; }
+        public override bool TryReplenish() { throw null; }
+        protected override System.Threading.Tasks.ValueTask<System.Threading.RateLimiting.RateLimitLease> WaitAsyncCore(int requestCount, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+    }
+    public sealed partial class FixedWindowRateLimiterOptions
+    {
+        public FixedWindowRateLimiterOptions(int permitLimit, System.Threading.RateLimiting.QueueProcessingOrder queueProcessingOrder, int queueLimit, System.TimeSpan window, bool autoReplenishment = true) { }
+        public bool AutoReplenishment { get { throw null; } }
+        public int QueueLimit { get { throw null; } }
+        public System.Threading.RateLimiting.QueueProcessingOrder QueueProcessingOrder { get { throw null; } }
+        public System.TimeSpan Window { get { throw null; } }
+        public int PermitLimit { get { throw null; } }
+    }
 }
