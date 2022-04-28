@@ -3375,6 +3375,37 @@ NOINLINE HCIMPL3(CORINFO_MethodPtr, JIT_VirtualFunctionPointer_Framed, Object * 
 }
 HCIMPLEND
 
+HCIMPL2(void*, JIT_DispatchVirtualStatic, MethodTable *constrainedType, MethodDesc *interfaceMethod)
+{
+    FCALL_CONTRACT;
+
+    BOOL uniqueResolution = FALSE;
+    MethodDesc *methodDesc = nullptr;
+
+    HELPER_METHOD_FRAME_BEGIN_0();
+
+    methodDesc = constrainedType->ResolveVirtualStaticMethod(
+        interfaceMethod->GetMethodTable(),
+        interfaceMethod,
+        /* allowNullResult */ TRUE,
+        /* verifyImplemented */ FALSE,
+        /* allowVariantMatches */ TRUE,
+        /* uniqueResolution */ &uniqueResolution);
+
+    HELPER_METHOD_FRAME_END();
+
+    if (!uniqueResolution)
+    {
+        FCThrow(kAmbiguousImplementationException);
+    }
+    else if (methodDesc == nullptr)
+    {
+        FCThrow(kTypeLoadException);
+    }
+    return methodDesc;
+}
+HCIMPLEND
+
 HCIMPL1(Object*, JIT_GetRuntimeFieldStub, CORINFO_FIELD_HANDLE field)
 {
     FCALL_CONTRACT;
@@ -5658,34 +5689,6 @@ HCIMPLEND_RAW
 // These two do take args but have a custom calling convention.
 EXTERN_C void JIT_ValidateIndirectCall();
 EXTERN_C void JIT_DispatchIndirectCall();
-
-HCIMPL2_VV(void*, JIT_DispatchVirtualStatic, MethodTable *constrainedType, MethodDesc *interfaceMethod)
-{
-    FCALL_CONTRACT;
-
-    BOOL uniqueResolution;
-
-    FC_CAN_TRIGGER_GC();
-    MethodDesc *methodDesc = constrainedType->ResolveVirtualStaticMethod(
-        interfaceMethod->GetMethodTable(),
-        interfaceMethod,
-        /* allowNullResult */ TRUE,
-        /* verifyImplemented */ FALSE,
-        /* allowVariantMatches */ TRUE,
-        /* uniqueResolution */ &uniqueResolution);
-    FC_CAN_TRIGGER_GC_END();
-
-    if (!uniqueResolution)
-    {
-        FCThrow(kAmbiguousImplementationException);
-    }
-    else if (methodDesc == nullptr)
-    {
-        FCThrow(kTypeLoadException);
-    }
-    return methodDesc;
-}
-HCIMPLEND
 
 //========================================================================
 //
