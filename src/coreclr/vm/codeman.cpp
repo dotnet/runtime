@@ -17,7 +17,6 @@
 #include "nibblemapmacros.h"
 #include "generics.h"
 #include "dynamicmethod.h"
-#include "eemessagebox.h"
 #include "eventtrace.h"
 #include "threadsuspend.h"
 

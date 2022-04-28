@@ -26,13 +26,14 @@ namespace Microsoft.Extensions.Caching.Memory
 
             internal void AttachTokens(CacheEntry cacheEntry)
             {
-                if (_expirationTokens != null)
+                List<IChangeToken>? expirationTokens = _expirationTokens;
+                if (expirationTokens is not null)
                 {
                     lock (this)
                     {
-                        for (int i = 0; i < _expirationTokens.Count; i++)
+                        for (int i = 0; i < expirationTokens.Count; i++)
                         {
-                            IChangeToken expirationToken = _expirationTokens[i];
+                            IChangeToken expirationToken = expirationTokens[i];
                             if (expirationToken.ActiveChangeCallbacks)
                             {
                                 _expirationTokenRegistrations ??= new List<IDisposable>(1);
@@ -46,11 +47,12 @@ namespace Microsoft.Extensions.Caching.Memory
 
             internal bool CheckForExpiredTokens(CacheEntry cacheEntry)
             {
-                if (_expirationTokens != null)
+                List<IChangeToken>? expirationTokens = _expirationTokens;
+                if (expirationTokens is not null)
                 {
-                    for (int i = 0; i < _expirationTokens.Count; i++)
+                    for (int i = 0; i < expirationTokens.Count; i++)
                     {
-                        IChangeToken expiredToken = _expirationTokens[i];
+                        IChangeToken expiredToken = expirationTokens[i];
                         if (expiredToken.HasChanged)
                         {
                             cacheEntry.SetExpired(EvictionReason.TokenExpired);
@@ -69,12 +71,10 @@ namespace Microsoft.Extensions.Caching.Memory
                 {
                     lock (this)
                     {
-                        lock (parentEntry.GetOrCreateTokens())
+                        CacheEntryTokens parentTokens = parentEntry.GetOrCreateTokens();
+                        lock (parentTokens)
                         {
-                            foreach (IChangeToken expirationToken in _expirationTokens)
-                            {
-                                parentEntry.AddExpirationToken(expirationToken);
-                            }
+                            parentTokens.ExpirationTokens.AddRange(_expirationTokens);
                         }
                     }
                 }

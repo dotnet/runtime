@@ -1,6 +1,7 @@
 var require = require || undefined;
 // if loaded into global namespace and configured with global Module, we will self start in compatibility mode
-let ENVIRONMENT_IS_GLOBAL = typeof globalThis.Module === "object" && globalThis.__dotnet_runtime === __dotnet_runtime;
+const __isWorker = typeof globalThis.importScripts === "function";
+let ENVIRONMENT_IS_GLOBAL = !__isWorker && (typeof globalThis.Module === "object" && globalThis.__dotnet_runtime === __dotnet_runtime);
 if (ENVIRONMENT_IS_GLOBAL) {
     createDotnetRuntime(() => { return globalThis.Module; }).then((exports) => exports);
 }

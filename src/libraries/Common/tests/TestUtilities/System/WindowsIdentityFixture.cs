@@ -114,7 +114,7 @@ namespace System
         private static partial bool LogonUser(string userName, string domain, string password, int logonType, int logonProvider, out SafeAccessTokenHandle safeAccessTokenHandle);
 
 #pragma warning disable DLLIMPORTGENANALYZER015 // Use 'LibraryImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
-        // TODO: [DllImportGenerator] Switch to use LibraryImport once we add support for non-blittable struct marshalling.
+        // TODO: [LibraryImportGenerator] Switch to use LibraryImport once we add support for non-blittable struct marshalling.
         [DllImport("netapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
         internal static extern uint NetUserAdd([MarshalAs(UnmanagedType.LPWStr)]string servername, uint level, ref USER_INFO_1 buf, out uint parm_err);
 #pragma warning restore DLLIMPORTGENANALYZER015 // Use 'LibraryImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time

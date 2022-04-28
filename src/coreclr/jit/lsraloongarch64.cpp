@@ -120,7 +120,6 @@ int LinearScan::BuildNode(GenTree* tree)
             srcCount = 0;
             break;
 
-        case GT_ARGPLACE:
         case GT_NO_OP:
         case GT_START_NONGC:
             srcCount = 0;
@@ -163,7 +162,6 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_COMMA:
         case GT_QMARK:
         case GT_COLON:
-        case GT_CLS_VAR:
         case GT_ADDR:
             srcCount = 0;
             assert(dstCount == 0);
@@ -597,7 +595,7 @@ int LinearScan::BuildNode(GenTree* tree)
         {
             assert(dstCount == 0);
 
-            if (compiler->codeGen->gcInfo.gcIsWriteBarrierStoreIndNode(tree))
+            if (compiler->codeGen->gcInfo.gcIsWriteBarrierStoreIndNode(tree->AsStoreInd()))
             {
                 srcCount = BuildGCWriteBarrier(tree);
                 break;
@@ -918,7 +916,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
     // because the code generator doesn't actually consider it live,
     // so it can't be spilled.
 
-    for (CallArg& arg : call->gtArgs.Args())
+    for (CallArg& arg : call->gtArgs.EarlyArgs())
     {
         GenTree* argNode = arg.GetEarlyNode();
 

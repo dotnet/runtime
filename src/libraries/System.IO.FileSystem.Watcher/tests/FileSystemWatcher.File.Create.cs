@@ -1,10 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
+using Xunit.Sdk;
 
 namespace System.IO.Tests
 {
@@ -30,7 +32,7 @@ namespace System.IO.Tests
         [OuterLoop]
         public void FileSystemWatcher_File_Create_EnablingDisablingNotAffectRaisingEvent()
         {
-            ExecuteWithRetry(() =>
+            FileSystemWatcherTest.Execute(() =>
             {
                 using (var testDirectory = new TempDirectory(GetTestFilePath()))
                 using (var watcher = new FileSystemWatcher(testDirectory.Path))
@@ -62,7 +64,7 @@ namespace System.IO.Tests
                     Assert.False(autoResetEvent.WaitOne(SubsequentExpectedWait));
                     Assert.True(numberOfRaisedEvents == 1);
                 }
-            });
+            }, DefaultAttemptsForExpectedEvent, (iteration) => RetryDelayMilliseconds);
         }
 
         [Fact]
@@ -144,21 +146,24 @@ namespace System.IO.Tests
         [Fact]
         public void FileSystemWatcher_File_Create_SynchronizingObject()
         {
-            using (var testDirectory = new TempDirectory(GetTestFilePath()))
-            using (var watcher = new FileSystemWatcher(testDirectory.Path))
+            FileSystemWatcherTest.Execute(() =>
             {
-                TestISynchronizeInvoke invoker = new TestISynchronizeInvoke();
-                watcher.SynchronizingObject = invoker;
+                using (var testDirectory = new TempDirectory(GetTestFilePath()))
+                using (var watcher = new FileSystemWatcher(testDirectory.Path))
+                {
+                    TestISynchronizeInvoke invoker = new TestISynchronizeInvoke();
+                    watcher.SynchronizingObject = invoker;
 
-                string fileName = Path.Combine(testDirectory.Path, "file");
-                watcher.Filter = Path.GetFileName(fileName);
+                    string fileName = Path.Combine(testDirectory.Path, "file");
+                    watcher.Filter = Path.GetFileName(fileName);
 
-                Action action = () => File.Create(fileName).Dispose();
-                Action cleanup = () => File.Delete(fileName);
+                    Action action = () => File.Create(fileName).Dispose();
+                    Action cleanup = () => File.Delete(fileName);
 
-                ExpectEvent(watcher, WatcherChangeTypes.Created, action, cleanup, fileName);
-                Assert.True(invoker.BeginInvoke_Called);
-            }
+                    ExpectEvent(watcher, WatcherChangeTypes.Created, action, cleanup, fileName);
+                    Assert.True(invoker.BeginInvoke_Called);
+                }
+            }, maxAttempts: DefaultAttemptsForExpectedEvent, backoffFunc: (iteration) => RetryDelayMilliseconds, retryWhen: e => e is XunitException);
         }
     }
 }

@@ -2,11 +2,11 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
-    <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Collections\HashtableExtensions.cs" />
     <Compile Include="System\Collections\Generic\ValueListBuilder.Pop.cs" />
+    <Compile Include="System\Text\RegularExpressions\Symbolic\DoublyLinkedList.cs" />
     <Compile Include="System\Text\RegularExpressions\ValueMatch.cs" />
     <Compile Include="System\Threading\StackHelper.cs" />
     <Compile Include="System\Text\SegmentStringBuilder.cs" />

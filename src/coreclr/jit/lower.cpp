@@ -1106,20 +1106,14 @@ GenTree* Lowering::NewPutArg(GenTreeCall* call, GenTree* arg, CallArg* callArg, 
 #endif // TARGET_ARM
         }
 
-        const unsigned slotNumber = callArg->AbiInfo.ByteOffset / TARGET_POINTER_SIZE;
-        DEBUG_ARG_SLOTS_ASSERT(slotNumber == callArg->AbiInfo.SlotNum);
-        const bool putInIncomingArgArea = call->IsFastTailCall();
+        const unsigned slotNumber           = callArg->AbiInfo.ByteOffset / TARGET_POINTER_SIZE;
+        const bool     putInIncomingArgArea = call->IsFastTailCall();
 
-        putArg = new (comp, GT_PUTARG_SPLIT)
-            GenTreePutArgSplit(arg, callArg->AbiInfo.ByteOffset,
-#if defined(DEBUG_ARG_SLOTS) && defined(FEATURE_PUT_STRUCT_ARG_STK)
-                               callArg->AbiInfo.GetStackByteSize(), slotNumber, callArg->AbiInfo.GetStackSlotsNumber(),
-#elif defined(DEBUG_ARG_SLOTS) && !defined(FEATURE_PUT_STRUCT_ARG_STK)
-                               slotNumber,
-#elif !defined(DEBUG_ARG_SLOTS) && defined(FEATURE_PUT_STRUCT_ARG_STK)
-                               callArg->AbiInfo.GetStackByteSize(),
+        putArg = new (comp, GT_PUTARG_SPLIT) GenTreePutArgSplit(arg, callArg->AbiInfo.ByteOffset,
+#ifdef FEATURE_PUT_STRUCT_ARG_STK
+                                                                callArg->AbiInfo.GetStackByteSize(),
 #endif
-                               callArg->AbiInfo.NumRegs, call, putInIncomingArgArea);
+                                                                callArg->AbiInfo.NumRegs, call, putInIncomingArgArea);
         // If struct argument is morphed to GT_FIELD_LIST node(s),
         // we can know GC info by type of each GT_FIELD_LIST node.
         // So we skip setting GC Pointer info.
@@ -1240,12 +1234,7 @@ GenTree* Lowering::NewPutArg(GenTreeCall* call, GenTree* arg, CallArg* callArg, 
 
             putArg =
                 new (comp, GT_PUTARG_STK) GenTreePutArgStk(GT_PUTARG_STK, TYP_VOID, arg, callArg->AbiInfo.ByteOffset,
-#if defined(DEBUG_ARG_SLOTS) && defined(FEATURE_PUT_STRUCT_ARG_STK)
-                                                           callArg->AbiInfo.GetStackByteSize(), slotNumber,
-                                                           callArg->AbiInfo.GetStackSlotsNumber(),
-#elif defined(DEBUG_ARG_SLOTS) && !defined(FEATURE_PUT_STRUCT_ARG_STK)
-                                                           slotNumber,
-#elif !defined(DEBUG_ARG_SLOTS) && defined(FEATURE_PUT_STRUCT_ARG_STK)
+#ifdef FEATURE_PUT_STRUCT_ARG_STK
                                                            callArg->AbiInfo.GetStackByteSize(),
 #endif
                                                            call, putInIncomingArgArea);
@@ -1325,10 +1314,6 @@ GenTree* Lowering::NewPutArg(GenTreeCall* call, GenTree* arg, CallArg* callArg, 
     DISPNODE(putArg);
     JITDUMP("\n");
 
-    if (arg->gtFlags & GTF_LATE_ARG)
-    {
-        putArg->gtFlags |= GTF_LATE_ARG;
-    }
     return putArg;
 }
 
@@ -1354,21 +1339,7 @@ void Lowering::LowerArg(GenTreeCall* call, CallArg* callArg, bool late)
 
     JITDUMP("lowering arg : ");
     DISPNODE(arg);
-
-    // No assignments should remain by Lowering.
-    assert(!arg->OperIs(GT_ASG));
-    assert(!arg->OperIsPutArgStk());
-
-    // Assignments/stores at this level are not really placing an argument.
-    // They are setting up temporary locals that will later be placed into
-    // outgoing regs or stack.
-    // Note that atomic ops may be stores and still produce a value.
-    if (!arg->IsValue())
-    {
-        assert((arg->OperIsStore() && !arg->IsValue()) || arg->IsArgPlaceHolderNode() || arg->IsNothingNode() ||
-               arg->OperIsCopyBlkOp());
-        return;
-    }
+    assert(arg->IsValue());
 
     var_types type = arg->TypeGet();
 
@@ -1447,7 +1418,7 @@ void Lowering::LowerArg(GenTreeCall* call, CallArg* callArg, bool late)
             // For longs, we will replace the GT_LONG with a GT_FIELD_LIST, and put that under a PUTARG_STK.
             // Although the hi argument needs to be pushed first, that will be handled by the general case,
             // in which the fields will be reversed.
-            assert(callArg->AbiInfo.NumSlots == 2);
+            assert(callArg->AbiInfo.GetStackSlotsNumber() == 2);
             newArg->SetRegNum(REG_STK);
             BlockRange().InsertBefore(arg, fieldList, newArg);
         }
@@ -1588,7 +1559,7 @@ GenTree* Lowering::LowerFloatArgReg(GenTree* arg, regNumber regNum)
 void Lowering::LowerArgsForCall(GenTreeCall* call)
 {
     JITDUMP("args:\n======\n");
-    for (CallArg& arg : call->gtArgs.Args())
+    for (CallArg& arg : call->gtArgs.EarlyArgs())
     {
         LowerArg(call, &arg, false);
     }
@@ -1802,7 +1773,7 @@ void Lowering::InsertProfTailCallHook(GenTreeCall* call, GenTree* insertionPoint
 
     if (insertionPoint == nullptr)
     {
-        for (CallArg& arg : call->gtArgs.Args())
+        for (CallArg& arg : call->gtArgs.EarlyArgs())
         {
             assert(!arg.GetEarlyNode()->OperIs(GT_PUTARG_REG)); // We don't expect to see these in early args
 
@@ -1911,7 +1882,7 @@ void Lowering::LowerFastTailCall(GenTreeCall* call)
     // call could over-write the stack arg that is setup earlier.
     ArrayStack<GenTree*> putargs(comp->getAllocator(CMK_ArrayStack));
 
-    for (CallArg& arg : call->gtArgs.Args())
+    for (CallArg& arg : call->gtArgs.EarlyArgs())
     {
         if (arg.GetEarlyNode()->OperIs(GT_PUTARG_STK))
         {
@@ -2383,7 +2354,7 @@ void Lowering::LowerCFGCall(GenTreeCall* call)
             LowerNode(regNode);
 
             // Finally move all GT_PUTARG_* nodes
-            for (CallArg& arg : call->gtArgs.Args())
+            for (CallArg& arg : call->gtArgs.EarlyArgs())
             {
                 GenTree* node = arg.GetEarlyNode();
                 // Non-value nodes in early args are setup nodes for late args.
@@ -2407,9 +2378,7 @@ void Lowering::LowerCFGCall(GenTreeCall* call)
 #ifdef REG_DISPATCH_INDIRECT_CALL_ADDR
             // Now insert the call target as an extra argument.
             //
-            GenTree* placeHolder = comp->gtNewArgPlaceHolderNode(callTarget->TypeGet(), NO_CLASS_HANDLE);
-            CallArg* targetArg   = call->gtArgs.PushBack(comp, placeHolder, WellKnownArg::DispatchIndirectCallTarget);
-            placeHolder->gtFlags |= GTF_LATE_ARG;
+            CallArg* targetArg = call->gtArgs.PushBack(comp, nullptr, WellKnownArg::DispatchIndirectCallTarget);
             targetArg->SetLateNode(callTarget);
             call->gtArgs.PushLateBack(targetArg);
 
@@ -2420,7 +2389,6 @@ void Lowering::LowerCFGCall(GenTreeCall* call)
             targetArg->AbiInfo.SetByteSize(TARGET_POINTER_SIZE, TARGET_POINTER_SIZE, false, false);
 
             // Lower the newly added args now that call is updated
-            LowerArg(call, targetArg, false /* late */);
             LowerArg(call, targetArg, true /* late */);
 
             // Finally update the call to be a helper call
@@ -3565,9 +3533,7 @@ void Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
             // Create the assignment node.
             lclStore->ChangeOper(GT_STORE_OBJ);
             GenTreeBlk* objStore = lclStore->AsObj();
-            // Only the GTF_LATE_ARG flag (if present) is preserved.
-            objStore->gtFlags &= GTF_LATE_ARG;
-            objStore->gtFlags |= GTF_ASG | GTF_IND_NONFAULTING | GTF_IND_TGT_NOT_HEAP;
+            objStore->gtFlags    = GTF_ASG | GTF_IND_NONFAULTING | GTF_IND_TGT_NOT_HEAP;
 #ifndef JIT32_GCENCODER
             objStore->gtBlkOpGcUnsafe = false;
 #endif
@@ -6440,8 +6406,7 @@ void Lowering::CheckCallArg(GenTree* arg)
 {
     if (!arg->IsValue() && !arg->OperIsPutArgStk())
     {
-        assert((arg->OperIsStore() && !arg->IsValue()) || arg->IsArgPlaceHolderNode() || arg->IsNothingNode() ||
-               arg->OperIsCopyBlkOp());
+        assert(arg->OperIsStore() || arg->OperIsCopyBlkOp());
         return;
     }
 
@@ -6476,7 +6441,7 @@ void Lowering::CheckCallArg(GenTree* arg)
 //
 void Lowering::CheckCall(GenTreeCall* call)
 {
-    for (CallArg& arg : call->gtArgs.Args())
+    for (CallArg& arg : call->gtArgs.EarlyArgs())
     {
         CheckCallArg(arg.GetEarlyNode());
     }
@@ -7328,11 +7293,6 @@ bool Lowering::TryTransformStoreObjAsStoreInd(GenTreeBlk* blkNode)
     blkNode->ChangeOper(GT_STOREIND);
     blkNode->ChangeType(regType);
 
-    if ((blkNode->gtFlags & GTF_IND_TGT_NOT_HEAP) == 0)
-    {
-        blkNode->gtFlags |= GTF_IND_TGTANYWHERE;
-    }
-
     if (varTypeIsStruct(src))
     {
         src->ChangeType(regType);
@@ -7404,7 +7364,7 @@ void Lowering::LowerSIMD(GenTreeSIMD* simdNode)
 
             CORINFO_FIELD_HANDLE hnd =
                 comp->GetEmitter()->emitBlkConst(constArgValues, cnsSize, cnsAlign, simdNode->GetSimdBaseType());
-            GenTree* clsVarAddr = new (comp, GT_CLS_VAR_ADDR) GenTreeClsVar(GT_CLS_VAR_ADDR, TYP_I_IMPL, hnd, nullptr);
+            GenTree* clsVarAddr = new (comp, GT_CLS_VAR_ADDR) GenTreeClsVar(TYP_I_IMPL, hnd);
             BlockRange().InsertBefore(simdNode, clsVarAddr);
             simdNode->ChangeOper(GT_IND);
             simdNode->AsOp()->gtOp1 = clsVarAddr;

@@ -131,8 +131,7 @@ For arguments that are marked as needing a temp:
 
 1. We create an assignment using `gtNewTempAssign`. This assignment replaces
 the original argument in the early argument list.  After we create the assignment
-the argument is marked with `m_isTmp = true`.  The new assignment is marked with the
-`GTF_LATE_ARG` flag.
+the argument is marked with `m_isTmp = true`.
 2. Arguments that are already marked with `m_isTmp` are treated similarly as
 above except we don't create an assignment for them.
 3. A `TYP_STRUCT` argument passed by value will have `m_isTmp` set to true
@@ -144,11 +143,9 @@ For arguments that are marked as not needing a temp:
 -----------------
 
 1. If this is an argument that is passed in a register, then the existing
-node is moved to the late argument list and a new `GT_ARGPLACE` (placeholder)
-node replaces it in the early argument list.
-2. Additionally, if `m_needPlace` is true (only for `FEATURE_FIXED_OUT_ARGS`)
-then the existing node is moved to the late argument list and a new
-`GT_ARGPLACE` (placeholder) node replaces it in the `early argument list.
+node is moved to the late argument list.
+2. Similarly, if `m_needPlace` is true (only for `FEATURE_FIXED_OUT_ARGS`)
+then the existing node is moved to the late argument list.
 3. Otherwise the argument is left in the early argument and it will be
 evaluated directly into the outgoing arg area or pushed on the stack.
 
