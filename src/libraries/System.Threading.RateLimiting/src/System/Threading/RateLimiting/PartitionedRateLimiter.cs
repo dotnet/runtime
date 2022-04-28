@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 
 namespace System.Threading.RateLimiting
@@ -40,7 +41,7 @@ namespace System.Threading.RateLimiting
         // Used by the Timer to call TryRelenish on ReplenishingRateLimiters
         // We use a separate list to avoid running TryReplenish (which might be user code) inside our lock
         // And we cache the list to amortize the allocation cost to as close to 0 as we can get
-        private List<Lazy<RateLimiter>>? _cachedLimiters = new();
+        private List<Lazy<RateLimiter>> _cachedLimiters = new();
         private bool _cacheInvalid;
         private TimerAwaitable _timer;
         private Task _timerTask;
@@ -64,7 +65,12 @@ namespace System.Threading.RateLimiting
             _timer.Start();
             while (await _timer)
             {
-                Replenish(this);
+                try
+                {
+                    Replenish(this);
+                }
+                // TODO: Can we log to EventSource or somewhere? Maybe dispatch throwing the exception so it is at least an unhandled exception?
+                catch { }
             }
             _timer.Dispose();
         }
@@ -110,62 +116,56 @@ namespace System.Threading.RateLimiting
                 return;
             }
 
-            Dictionary<TKey, Lazy<RateLimiter>> limiters;
-            lock (Lock)
-            {
-                if (CommonDisposeUnsynchronized())
-                {
-                    return;
-                }
-
-                limiters = _limiters;
-                // Don't call Clear() as that would clear the local limiters reference as well, which is what we'll be using to call DisposeAsync on all the limiters
-                _limiters = new Dictionary<TKey, Lazy<RateLimiter>>();
-            }
+            bool alreadyDisposed = CommonDispose();
 
             _timerTask.GetAwaiter().GetResult();
+            _cachedLimiters.Clear();
 
-            foreach (KeyValuePair<TKey, Lazy<RateLimiter>> limiter in limiters)
+            if (alreadyDisposed)
+            {
+                return;
+            }
+
+            // Safe to access _limiters outside the lock
+            // The timer is no longer running and _disposed is set so anyone trying to access fields will be checking that first
+            foreach (KeyValuePair<TKey, Lazy<RateLimiter>> limiter in _limiters)
             {
                 limiter.Value.Value.Dispose();
             }
+            _limiters.Clear();
         }
 
         protected override async ValueTask DisposeAsyncCore()
         {
-            Dictionary<TKey, Lazy<RateLimiter>> limiters;
-            lock (Lock)
-            {
-                if (CommonDisposeUnsynchronized())
-                {
-                    return;
-                }
-
-                limiters = _limiters;
-                // Don't call Clear() as that would clear the local limiters reference as well, which is what we'll be using to call DisposeAsync on all the limiters
-                _limiters = new Dictionary<TKey, Lazy<RateLimiter>>();
-            }
+            bool alreadyDisposed = CommonDispose();
 
             await _timerTask.ConfigureAwait(false);
+            _cachedLimiters.Clear();
 
-            foreach (KeyValuePair<TKey, Lazy<RateLimiter>> limiter in limiters)
+            if (alreadyDisposed)
+            {
+                return;
+            }
+
+            foreach (KeyValuePair<TKey, Lazy<RateLimiter>> limiter in _limiters)
             {
                 await limiter.Value.Value.DisposeAsync().ConfigureAwait(false);
             }
-
-            return;
+            _limiters.Clear();
         }
 
-        // This handles the common state changes that Dipose and DisposeAsync need to do, the individual limiters still need to be Disposed after this call
-        private bool CommonDisposeUnsynchronized()
+        // This handles the common state changes that Dispose and DisposeAsync need to do, the individual limiters still need to be Disposed after this call
+        private bool CommonDispose()
         {
-            if (_disposed)
+            lock (Lock)
             {
-                return true;
+                if (_disposed)
+                {
+                    return true;
+                }
+                _disposed = true;
+                _timer.Stop();
             }
-            _disposed = true;
-            _timer.Stop();
-
             return false;
         }
 
@@ -179,17 +179,6 @@ namespace System.Threading.RateLimiting
 
         private static void Replenish(DefaultPartitionedRateLimiter<TResource, TKey> limiter)
         {
-            List<Lazy<RateLimiter>>? cachedLimiters = Interlocked.Exchange(ref limiter._cachedLimiters, null);
-            if (cachedLimiters is null)
-            {
-                // Timer already running, do nothing
-                // This might be an indication that there is a slow ReplenishingRateLimiter.TryReplenish implementation
-                // Or many limiters that need updating and a short timer period
-                // Or threadpool exhaustion unrelated to this type directly
-                // We might want to write an event for this in the future so it's visible to diagnostic tools
-                return;
-            }
-
             lock (limiter.Lock)
             {
                 if (limiter._disposed)
@@ -200,7 +189,7 @@ namespace System.Threading.RateLimiting
                 // If the cache has been invalidated we need to recreate it
                 if (limiter._cacheInvalid)
                 {
-                    cachedLimiters.Clear();
+                    limiter._cachedLimiters.Clear();
                     bool cacheStillInvalid = false;
                     foreach (KeyValuePair<TKey, Lazy<RateLimiter>> kvp in limiter._limiters)
                     {
@@ -208,7 +197,7 @@ namespace System.Threading.RateLimiting
                         {
                             if (kvp.Value.Value is ReplenishingRateLimiter)
                             {
-                                cachedLimiters.Add(kvp.Value);
+                                limiter._cachedLimiters.Add(kvp.Value);
                             }
                         }
                         else
@@ -224,19 +213,12 @@ namespace System.Threading.RateLimiting
                 }
             }
 
-            try
+            // cachedLimiters is safe to use outside the lock because it is only updated by the Timer
+            // and the Timer avoids re-entrancy issues via the _executingTimer field
+            foreach (Lazy<RateLimiter> rateLimiter in limiter._cachedLimiters)
             {
-                // cachedLimiters is safe to use outside the lock because it is only updated by the Timer
-                // and the Timer avoids re-entrancy issues via the _executingTimer field
-                foreach (Lazy<RateLimiter> rateLimiter in cachedLimiters)
-                {
-                    Debug.Assert(rateLimiter.IsValueCreated && rateLimiter.Value is ReplenishingRateLimiter);
-                    ((ReplenishingRateLimiter)rateLimiter.Value).TryReplenish();
-                }
-            }
-            finally
-            {
-                Interlocked.Exchange(ref limiter._cachedLimiters, cachedLimiters);
+                Debug.Assert(rateLimiter.IsValueCreated && rateLimiter.Value is ReplenishingRateLimiter);
+                ((ReplenishingRateLimiter)rateLimiter.Value).TryReplenish();
             }
         }
     }

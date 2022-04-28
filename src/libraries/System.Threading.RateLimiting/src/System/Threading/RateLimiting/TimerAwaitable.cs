@@ -52,18 +52,12 @@ namespace System.Threading.RateLimiting
                                 restoreFlow = true;
                             }
 
-                            // This fixes the cycle by using a WeakReference to the state object. The object graph now looks like this:
-                            // Timer -> TimerHolder -> TimerQueueTimer -> WeakReference<TimerAwaitable> -> Timer -> ...
-                            // If TimerAwaitable falls out of scope, the timer should be released.
-                            _timer = new Timer(state =>
+                            _timer = new Timer(static state =>
                             {
-                                var weakRef = (WeakReference<TimerAwaitable>)state!;
-                                if (weakRef.TryGetTarget(out var thisRef))
-                                {
-                                    thisRef.Tick();
-                                }
+                                var thisRef = (TimerAwaitable)state!;
+                                thisRef.Tick();
                             },
-                            state: new WeakReference<TimerAwaitable>(this),
+                            state: this,
                             dueTime: _dueTime,
                             period: _period);
                         }
