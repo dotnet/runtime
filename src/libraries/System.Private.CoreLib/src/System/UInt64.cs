@@ -31,16 +31,16 @@ namespace System
         public const ulong MinValue = 0x0;
 
         /// <summary>Represents the additive identity (0).</summary>
-        private const ulong AdditiveIdentity = 0;
+        internal const ulong AdditiveIdentity = 0;
 
         /// <summary>Represents the multiplicative identity (1).</summary>
-        private const ulong MultiplicativeIdentity = 1;
+        internal const ulong MultiplicativeIdentity = 1;
 
         /// <summary>Represents the number one (1).</summary>
-        private const ulong One = 1;
+        internal const ulong One = 1;
 
         /// <summary>Represents the number zero (0).</summary>
-        private const ulong Zero = 0;
+        internal const ulong Zero = 0;
 
         // Compares this object to another object, returning an integer that
         // indicates the relationship.

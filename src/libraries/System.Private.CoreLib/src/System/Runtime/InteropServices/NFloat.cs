@@ -699,7 +699,7 @@ namespace System.Runtime.InteropServices
         /// <summary>Converts the numeric value of this instance to its equivalent string representation using the specified culture-specific format information.</summary>
         /// <param name="provider">An object that supplies culture-specific formatting information.</param>
         /// <returns>The string representation of the value of this instance as specified by <paramref name="provider" />.</returns>
-        public string ToString(IFormatProvider? provider)=> _value.ToString(provider);
+        public string ToString(IFormatProvider? provider) => _value.ToString(provider);
 
         /// <summary>Converts the numeric value of this instance to its equivalent string representation using the specified format and culture-specific format information.</summary>
         /// <param name="format">A numeric format string.</param>
@@ -1076,90 +1076,17 @@ namespace System.Runtime.InteropServices
         /// <inheritdoc cref="INumber{TSelf}.CreateChecked{TOther}(TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static NFloat CreateChecked<TOther>(TOther value)
-            where TOther : INumber<TOther>
-        {
-            if (typeof(TOther) == typeof(byte))
-            {
-                return (byte)(object)value;
-            }
-            else if (typeof(TOther) == typeof(char))
-            {
-                return (char)(object)value;
-            }
-            else if (typeof(TOther) == typeof(decimal))
-            {
-                return (NFloat)(decimal)(object)value;
-            }
-            else if (typeof(TOther) == typeof(double))
-            {
-                return (NFloat)(double)(object)value;
-            }
-            else if (typeof(TOther) == typeof(short))
-            {
-                return (short)(object)value;
-            }
-            else if (typeof(TOther) == typeof(int))
-            {
-                return (int)(object)value;
-            }
-            else if (typeof(TOther) == typeof(long))
-            {
-                return (long)(object)value;
-            }
-            else if (typeof(TOther) == typeof(nint))
-            {
-                return (nint)(object)value;
-            }
-            else if (typeof(TOther) == typeof(sbyte))
-            {
-                return (sbyte)(object)value;
-            }
-            else if (typeof(TOther) == typeof(float))
-            {
-                return (NFloat)(float)(object)value;
-            }
-            else if (typeof(TOther) == typeof(ushort))
-            {
-                return (ushort)(object)value;
-            }
-            else if (typeof(TOther) == typeof(uint))
-            {
-                return (uint)(object)value;
-            }
-            else if (typeof(TOther) == typeof(ulong))
-            {
-                return (ulong)(object)value;
-            }
-            else if (typeof(TOther) == typeof(nuint))
-            {
-                return (nuint)(object)value;
-            }
-            else if (typeof(TOther) == typeof(NFloat))
-            {
-                return (NFloat)(object)value;
-            }
-            else
-            {
-                ThrowHelper.ThrowNotSupportedException();
-                return default;
-            }
-        }
+            where TOther : INumber<TOther> => new NFloat(NativeType.CreateChecked(value));
 
         /// <inheritdoc cref="INumber{TSelf}.CreateSaturating{TOther}(TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static NFloat CreateSaturating<TOther>(TOther value)
-            where TOther : INumber<TOther>
-        {
-            return CreateChecked(value);
-        }
+            where TOther : INumber<TOther> => new NFloat(NativeType.CreateSaturating(value));
 
         /// <inheritdoc cref="INumber{TSelf}.CreateTruncating{TOther}(TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static NFloat CreateTruncating<TOther>(TOther value)
-            where TOther : INumber<TOther>
-        {
-            return CreateChecked(value);
-        }
+            where TOther : INumber<TOther> => new NFloat(NativeType.CreateTruncating(value));
 
         /// <inheritdoc cref="INumber{TSelf}.Max(TSelf, TSelf)" />
         public static NFloat Max(NFloat x, NFloat y) => new NFloat(NativeType.Max(x._value, y._value));
@@ -1181,87 +1108,8 @@ namespace System.Runtime.InteropServices
         public static bool TryCreate<TOther>(TOther value, out NFloat result)
             where TOther : INumber<TOther>
         {
-            if (typeof(TOther) == typeof(byte))
-            {
-                result = (byte)(object)value;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(char))
-            {
-                result = (char)(object)value;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(decimal))
-            {
-                result = (NFloat)(decimal)(object)value;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(double))
-            {
-                result = (NFloat)(double)(object)value;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(short))
-            {
-                result = (short)(object)value;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(int))
-            {
-                result = (int)(object)value;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(long))
-            {
-                result = (long)(object)value;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(nint))
-            {
-                result = (nint)(object)value;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(sbyte))
-            {
-                result = (sbyte)(object)value;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(float))
-            {
-                result = (NFloat)(float)(object)value;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(ushort))
-            {
-                result = (ushort)(object)value;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(uint))
-            {
-                result = (uint)(object)value;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(ulong))
-            {
-                result = (ulong)(object)value;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(nuint))
-            {
-                result = (nuint)(object)value;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(NFloat))
-            {
-                result = (NFloat)(object)value;
-                return true;
-            }
-            else
-            {
-                ThrowHelper.ThrowNotSupportedException();
-                result = default;
-                return false;
-            }
+            Unsafe.SkipInit(out result);
+            return NativeType.TryCreate(value, out Unsafe.As<NFloat, NativeType>(ref result));
         }
 
         //
@@ -1352,7 +1200,7 @@ namespace System.Runtime.InteropServices
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.SinCos(TSelf)" />
         public static (NFloat Sin, NFloat Cos) SinCos(NFloat x)
         {
-            var (sin, cos) = MathF.SinCos((float)x);
+            (NativeType sin, NativeType cos) = NativeType.SinCos(x._value);
             return (new NFloat(sin), new NFloat(cos));
         }
 

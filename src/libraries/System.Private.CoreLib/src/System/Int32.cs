@@ -30,19 +30,19 @@ namespace System
         public const int MinValue = unchecked((int)0x80000000);
 
         /// <summary>Represents the additive identity (0).</summary>
-        private const int AdditiveIdentity = 0;
+        internal const int AdditiveIdentity = 0;
 
         /// <summary>Represents the multiplicative identity (1).</summary>
-        private const int MultiplicativeIdentity = 1;
+        internal const int MultiplicativeIdentity = 1;
 
         /// <summary>Represents the number one (1).</summary>
-        private const int One = 1;
+        internal const int One = 1;
 
         /// <summary>Represents the number zero (0).</summary>
-        private const int Zero = 0;
+        internal const int Zero = 0;
 
         /// <summary>Represents the number negative one (-1).</summary>
-        private const int NegativeOne = -1;
+        internal const int NegativeOne = -1;
 
         // Compares this object to another object, returning an integer that
         // indicates the relationship.

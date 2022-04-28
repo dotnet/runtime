@@ -478,6 +478,12 @@
   <data name="Arg_MustBeChar" xml:space="preserve">
     <value>Object must be of type Char.</value>
   </data>
+  <data name="Arg_MustBeCLong" xml:space="preserve">
+    <value>Object must be of type CLong.</value>
+  </data>
+  <data name="Arg_MustBeCULong" xml:space="preserve">
+    <value>Object must be of type CULong.</value>
+  </data>
   <data name="Arg_MustBeDateOnly" xml:space="preserve">
     <value>Object must be of type DateOnly.</value>
     <comment>{Locked="DateOnly"}</comment>

@@ -188,16 +188,156 @@ namespace System.Runtime.InteropServices
         AutoDual = 2,
     }
     [System.CLSCompliantAttribute(false)]
-    public readonly partial struct CLong : System.IEquatable<System.Runtime.InteropServices.CLong>
+    public readonly partial struct CLong : System.IComparable, System.IComparable<System.Runtime.InteropServices.CLong>, System.IEquatable<System.Runtime.InteropServices.CLong>, System.IFormattable, System.IParsable<System.Runtime.InteropServices.CLong>, System.ISpanFormattable, System.ISpanParsable<System.Runtime.InteropServices.CLong>, System.Numerics.IAdditionOperators<System.Runtime.InteropServices.CLong, System.Runtime.InteropServices.CLong, System.Runtime.InteropServices.CLong>, System.Numerics.IAdditiveIdentity<System.Runtime.InteropServices.CLong, System.Runtime.InteropServices.CLong>, System.Numerics.IBinaryInteger<System.Runtime.InteropServices.CLong>, System.Numerics.IBinaryNumber<System.Runtime.InteropServices.CLong>, System.Numerics.IBitwiseOperators<System.Runtime.InteropServices.CLong, System.Runtime.InteropServices.CLong, System.Runtime.InteropServices.CLong>, System.Numerics.IComparisonOperators<System.Runtime.InteropServices.CLong, System.Runtime.InteropServices.CLong>, System.Numerics.IDecrementOperators<System.Runtime.InteropServices.CLong>, System.Numerics.IDivisionOperators<System.Runtime.InteropServices.CLong, System.Runtime.InteropServices.CLong, System.Runtime.InteropServices.CLong>, System.Numerics.IEqualityOperators<System.Runtime.InteropServices.CLong, System.Runtime.InteropServices.CLong>, System.Numerics.IIncrementOperators<System.Runtime.InteropServices.CLong>, System.Numerics.IMinMaxValue<System.Runtime.InteropServices.CLong>, System.Numerics.IModulusOperators<System.Runtime.InteropServices.CLong, System.Runtime.InteropServices.CLong, System.Runtime.InteropServices.CLong>, System.Numerics.IMultiplicativeIdentity<System.Runtime.InteropServices.CLong, System.Runtime.InteropServices.CLong>, System.Numerics.IMultiplyOperators<System.Runtime.InteropServices.CLong, System.Runtime.InteropServices.CLong, System.Runtime.InteropServices.CLong>, System.Numerics.INumber<System.Runtime.InteropServices.CLong>, System.Numerics.INumberBase<System.Runtime.InteropServices.CLong>, System.Numerics.IShiftOperators<System.Runtime.InteropServices.CLong, System.Runtime.InteropServices.CLong>, System.Numerics.ISignedNumber<System.Runtime.InteropServices.CLong>, System.Numerics.ISubtractionOperators<System.Runtime.InteropServices.CLong, System.Runtime.InteropServices.CLong, System.Runtime.InteropServices.CLong>, System.Numerics.IUnaryNegationOperators<System.Runtime.InteropServices.CLong, System.Runtime.InteropServices.CLong>, System.Numerics.IUnaryPlusOperators<System.Runtime.InteropServices.CLong, System.Runtime.InteropServices.CLong>
     {
         private readonly int _dummyPrimitive;
         public CLong(int value) { throw null; }
         public CLong(nint value) { throw null; }
+        public static System.Runtime.InteropServices.CLong MaxValue { get { throw null; } }
+        public static System.Runtime.InteropServices.CLong MinValue { get { throw null; } }
+        static System.Runtime.InteropServices.CLong System.Numerics.IAdditiveIdentity<System.Runtime.InteropServices.CLong,System.Runtime.InteropServices.CLong>.AdditiveIdentity { get { throw null; } }
+        static System.Runtime.InteropServices.CLong System.Numerics.IMultiplicativeIdentity<System.Runtime.InteropServices.CLong,System.Runtime.InteropServices.CLong>.MultiplicativeIdentity { get { throw null; } }
+        static System.Runtime.InteropServices.CLong System.Numerics.INumberBase<System.Runtime.InteropServices.CLong>.One { get { throw null; } }
+        static System.Runtime.InteropServices.CLong System.Numerics.INumberBase<System.Runtime.InteropServices.CLong>.Zero { get { throw null; } }
+        static System.Runtime.InteropServices.CLong System.Numerics.ISignedNumber<System.Runtime.InteropServices.CLong>.NegativeOne { get { throw null; } }
         public nint Value { get { throw null; } }
+        public static System.Runtime.InteropServices.CLong Abs(System.Runtime.InteropServices.CLong value) { throw null; }
+        public static System.Runtime.InteropServices.CLong Clamp(System.Runtime.InteropServices.CLong value, System.Runtime.InteropServices.CLong min, System.Runtime.InteropServices.CLong max) { throw null; }
+        public int CompareTo(object? value) { throw null; }
+        public int CompareTo(System.Runtime.InteropServices.CLong value) { throw null; }
+        public static System.Runtime.InteropServices.CLong CopySign(System.Runtime.InteropServices.CLong value, System.Runtime.InteropServices.CLong sign) { throw null; }
+        public static System.Runtime.InteropServices.CLong CreateChecked<TOther>(TOther value) where TOther : System.Numerics.INumber<TOther> { throw null; }
+        public static System.Runtime.InteropServices.CLong CreateSaturating<TOther>(TOther value) where TOther : System.Numerics.INumber<TOther> { throw null; }
+        public static System.Runtime.InteropServices.CLong CreateTruncating<TOther>(TOther value) where TOther : System.Numerics.INumber<TOther> { throw null; }
+        public static (System.Runtime.InteropServices.CLong Quotient, System.Runtime.InteropServices.CLong Remainder) DivRem(System.Runtime.InteropServices.CLong left, System.Runtime.InteropServices.CLong right) { throw null; }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? o) { throw null; }
         public bool Equals(System.Runtime.InteropServices.CLong other) { throw null; }
         public override int GetHashCode() { throw null; }
+        public static bool IsNegative(System.Runtime.InteropServices.CLong value) { throw null; }
+        public static bool IsPow2(System.Runtime.InteropServices.CLong value) { throw null; }
+        public static System.Runtime.InteropServices.CLong LeadingZeroCount(System.Runtime.InteropServices.CLong value) { throw null; }
+        public static System.Runtime.InteropServices.CLong Log2(System.Runtime.InteropServices.CLong value) { throw null; }
+        public static System.Runtime.InteropServices.CLong Max(System.Runtime.InteropServices.CLong x, System.Runtime.InteropServices.CLong y) { throw null; }
+        public static System.Runtime.InteropServices.CLong MaxMagnitude(System.Runtime.InteropServices.CLong x, System.Runtime.InteropServices.CLong y) { throw null; }
+        public static System.Runtime.InteropServices.CLong Min(System.Runtime.InteropServices.CLong x, System.Runtime.InteropServices.CLong y) { throw null; }
+        public static System.Runtime.InteropServices.CLong MinMagnitude(System.Runtime.InteropServices.CLong x, System.Runtime.InteropServices.CLong y) { throw null; }
+        public static System.Runtime.InteropServices.CLong operator +(System.Runtime.InteropServices.CLong left, System.Runtime.InteropServices.CLong right) { throw null; }
+        public static System.Runtime.InteropServices.CLong operator &(System.Runtime.InteropServices.CLong left, System.Runtime.InteropServices.CLong right) { throw null; }
+        public static System.Runtime.InteropServices.CLong operator |(System.Runtime.InteropServices.CLong left, System.Runtime.InteropServices.CLong right) { throw null; }
+        public static System.Runtime.InteropServices.CLong operator checked +(System.Runtime.InteropServices.CLong left, System.Runtime.InteropServices.CLong right) { throw null; }
+        public static System.Runtime.InteropServices.CLong operator checked --(System.Runtime.InteropServices.CLong value) { throw null; }
+        public static explicit operator checked System.Runtime.InteropServices.CLong (double value) { throw null; }
+        public static explicit operator checked System.Runtime.InteropServices.CLong (long value) { throw null; }
+        public static explicit operator checked System.Runtime.InteropServices.CLong (nint value) { throw null; }
+        public static explicit operator checked byte (System.Runtime.InteropServices.CLong value) { throw null; }
+        public static explicit operator checked char (System.Runtime.InteropServices.CLong value) { throw null; }
+        public static explicit operator checked short (System.Runtime.InteropServices.CLong value) { throw null; }
+        public static explicit operator checked int (System.Runtime.InteropServices.CLong value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator checked sbyte (System.Runtime.InteropServices.CLong value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator checked ushort (System.Runtime.InteropServices.CLong value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator checked uint (System.Runtime.InteropServices.CLong value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator checked ulong (System.Runtime.InteropServices.CLong value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator checked nuint (System.Runtime.InteropServices.CLong value) { throw null; }
+        public static explicit operator checked System.Runtime.InteropServices.CLong (float value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator checked System.Runtime.InteropServices.CLong (uint value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator checked System.Runtime.InteropServices.CLong (ulong value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator checked System.Runtime.InteropServices.CLong (nuint value) { throw null; }
+        public static System.Runtime.InteropServices.CLong operator checked ++(System.Runtime.InteropServices.CLong value) { throw null; }
+        public static System.Runtime.InteropServices.CLong operator checked *(System.Runtime.InteropServices.CLong left, System.Runtime.InteropServices.CLong right) { throw null; }
+        public static System.Runtime.InteropServices.CLong operator checked -(System.Runtime.InteropServices.CLong left, System.Runtime.InteropServices.CLong right) { throw null; }
+        public static System.Runtime.InteropServices.CLong operator checked -(System.Runtime.InteropServices.CLong value) { throw null; }
+        public static System.Runtime.InteropServices.CLong operator --(System.Runtime.InteropServices.CLong value) { throw null; }
+        public static System.Runtime.InteropServices.CLong operator /(System.Runtime.InteropServices.CLong left, System.Runtime.InteropServices.CLong right) { throw null; }
+        public static bool operator ==(System.Runtime.InteropServices.CLong left, System.Runtime.InteropServices.CLong right) { throw null; }
+        public static System.Runtime.InteropServices.CLong operator ^(System.Runtime.InteropServices.CLong left, System.Runtime.InteropServices.CLong right) { throw null; }
+        public static explicit operator System.Runtime.InteropServices.CLong (decimal value) { throw null; }
+        public static explicit operator System.Runtime.InteropServices.CLong (double value) { throw null; }
+        public static explicit operator System.Runtime.InteropServices.CLong (long value) { throw null; }
+        public static explicit operator System.Runtime.InteropServices.CLong (nint value) { throw null; }
+        public static explicit operator byte (System.Runtime.InteropServices.CLong value) { throw null; }
+        public static explicit operator char (System.Runtime.InteropServices.CLong value) { throw null; }
+        public static explicit operator short (System.Runtime.InteropServices.CLong value) { throw null; }
+        public static explicit operator int (System.Runtime.InteropServices.CLong value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator sbyte (System.Runtime.InteropServices.CLong value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator ushort (System.Runtime.InteropServices.CLong value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator uint (System.Runtime.InteropServices.CLong value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator ulong (System.Runtime.InteropServices.CLong value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator nuint (System.Runtime.InteropServices.CLong value) { throw null; }
+        public static explicit operator System.Runtime.InteropServices.CLong (float value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator System.Runtime.InteropServices.CLong (uint value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator System.Runtime.InteropServices.CLong (ulong value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator System.Runtime.InteropServices.CLong (nuint value) { throw null; }
+        public static bool operator >(System.Runtime.InteropServices.CLong left, System.Runtime.InteropServices.CLong right) { throw null; }
+        public static bool operator >=(System.Runtime.InteropServices.CLong left, System.Runtime.InteropServices.CLong right) { throw null; }
+        public static implicit operator System.Runtime.InteropServices.CLong (byte value) { throw null; }
+        public static implicit operator System.Runtime.InteropServices.CLong (char value) { throw null; }
+        public static implicit operator System.Runtime.InteropServices.CLong (short value) { throw null; }
+        public static implicit operator System.Runtime.InteropServices.CLong (int value) { throw null; }
+        public static implicit operator decimal (System.Runtime.InteropServices.CLong value) { throw null; }
+        public static implicit operator double (System.Runtime.InteropServices.CLong value) { throw null; }
+        public static implicit operator long (System.Runtime.InteropServices.CLong value) { throw null; }
+        public static implicit operator nint (System.Runtime.InteropServices.CLong value) { throw null; }
+        public static implicit operator float (System.Runtime.InteropServices.CLong value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static implicit operator System.Runtime.InteropServices.CLong (sbyte value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static implicit operator System.Runtime.InteropServices.CLong (ushort value) { throw null; }
+        public static System.Runtime.InteropServices.CLong operator ++(System.Runtime.InteropServices.CLong value) { throw null; }
+        public static bool operator !=(System.Runtime.InteropServices.CLong left, System.Runtime.InteropServices.CLong right) { throw null; }
+        public static System.Runtime.InteropServices.CLong operator <<(System.Runtime.InteropServices.CLong value, int shiftAmount) { throw null; }
+        public static bool operator <(System.Runtime.InteropServices.CLong left, System.Runtime.InteropServices.CLong right) { throw null; }
+        public static bool operator <=(System.Runtime.InteropServices.CLong left, System.Runtime.InteropServices.CLong right) { throw null; }
+        public static System.Runtime.InteropServices.CLong operator %(System.Runtime.InteropServices.CLong left, System.Runtime.InteropServices.CLong right) { throw null; }
+        public static System.Runtime.InteropServices.CLong operator *(System.Runtime.InteropServices.CLong left, System.Runtime.InteropServices.CLong right) { throw null; }
+        public static System.Runtime.InteropServices.CLong operator ~(System.Runtime.InteropServices.CLong value) { throw null; }
+        public static System.Runtime.InteropServices.CLong operator >>(System.Runtime.InteropServices.CLong value, int shiftAmount) { throw null; }
+        public static System.Runtime.InteropServices.CLong operator -(System.Runtime.InteropServices.CLong left, System.Runtime.InteropServices.CLong right) { throw null; }
+        public static System.Runtime.InteropServices.CLong operator -(System.Runtime.InteropServices.CLong value) { throw null; }
+        public static System.Runtime.InteropServices.CLong operator +(System.Runtime.InteropServices.CLong value) { throw null; }
+        public static System.Runtime.InteropServices.CLong operator >>>(System.Runtime.InteropServices.CLong value, int shiftAmount) { throw null; }
+        public static System.Runtime.InteropServices.CLong Parse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
+        public static System.Runtime.InteropServices.CLong Parse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider) { throw null; }
+        public static System.Runtime.InteropServices.CLong Parse(string s) { throw null; }
+        public static System.Runtime.InteropServices.CLong Parse(string s, System.Globalization.NumberStyles style) { throw null; }
+        public static System.Runtime.InteropServices.CLong Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
+        public static System.Runtime.InteropServices.CLong Parse(string s, System.IFormatProvider? provider) { throw null; }
+        public static System.Runtime.InteropServices.CLong PopCount(System.Runtime.InteropServices.CLong value) { throw null; }
+        public static System.Runtime.InteropServices.CLong RotateLeft(System.Runtime.InteropServices.CLong value, int rotateAmount) { throw null; }
+        public static System.Runtime.InteropServices.CLong RotateRight(System.Runtime.InteropServices.CLong value, int rotateAmount) { throw null; }
+        public static int Sign(System.Runtime.InteropServices.CLong value) { throw null; }
+        int System.Numerics.IBinaryInteger<System.Runtime.InteropServices.CLong>.GetByteCount() { throw null; }
+        long System.Numerics.IBinaryInteger<System.Runtime.InteropServices.CLong>.GetShortestBitLength() { throw null; }
+        bool System.Numerics.IBinaryInteger<System.Runtime.InteropServices.CLong>.TryWriteLittleEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
+        static System.Runtime.InteropServices.CLong System.Numerics.IDivisionOperators<System.Runtime.InteropServices.CLong, System.Runtime.InteropServices.CLong, System.Runtime.InteropServices.CLong>.operator checked /(System.Runtime.InteropServices.CLong left, System.Runtime.InteropServices.CLong right) { throw null; }
         public override string ToString() { throw null; }
+        public string ToString(System.IFormatProvider? provider) { throw null; }
+        public string ToString([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] string? format) { throw null; }
+        public string ToString(string? format, System.IFormatProvider? formatProvider) { throw null; }
+        public static System.Runtime.InteropServices.CLong TrailingZeroCount(System.Runtime.InteropServices.CLong value) { throw null; }
+        public static bool TryCreate<TOther>(TOther value, out System.Runtime.InteropServices.CLong result) where TOther : System.Numerics.INumber<TOther> { throw null; }
+        public bool TryFormat(System.Span<char> destination, out int charsWritten, System.ReadOnlySpan<char> format, System.IFormatProvider? provider) { throw null; }
+        public static bool TryParse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.Runtime.InteropServices.CLong result) { throw null; }
+        public static bool TryParse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider, out System.Runtime.InteropServices.CLong result) { throw null; }
+        public static bool TryParse(System.ReadOnlySpan<char> s, out System.Runtime.InteropServices.CULong result) { throw null; }
+        public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.Runtime.InteropServices.CLong result) { throw null; }
+        public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.IFormatProvider? provider, out System.Runtime.InteropServices.CLong result) { throw null; }
+        public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, out System.Runtime.InteropServices.CULong result) { throw null; }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Interface, Inherited=false)]
     public sealed partial class CoClassAttribute : System.Attribute
@@ -326,16 +466,155 @@ namespace System.Runtime.InteropServices
         public ComUnregisterFunctionAttribute() { }
     }
     [System.CLSCompliantAttribute(false)]
-    public readonly partial struct CULong : System.IEquatable<System.Runtime.InteropServices.CULong>
+    public readonly partial struct CULong : System.IComparable, System.IComparable<System.Runtime.InteropServices.CULong>, System.IEquatable<System.Runtime.InteropServices.CULong>, System.IFormattable, System.IParsable<System.Runtime.InteropServices.CULong>, System.ISpanFormattable, System.ISpanParsable<System.Runtime.InteropServices.CULong>, System.Numerics.IAdditionOperators<System.Runtime.InteropServices.CULong, System.Runtime.InteropServices.CULong, System.Runtime.InteropServices.CULong>, System.Numerics.IAdditiveIdentity<System.Runtime.InteropServices.CULong, System.Runtime.InteropServices.CULong>, System.Numerics.IBinaryInteger<System.Runtime.InteropServices.CULong>, System.Numerics.IBinaryNumber<System.Runtime.InteropServices.CULong>, System.Numerics.IBitwiseOperators<System.Runtime.InteropServices.CULong, System.Runtime.InteropServices.CULong, System.Runtime.InteropServices.CULong>, System.Numerics.IComparisonOperators<System.Runtime.InteropServices.CULong, System.Runtime.InteropServices.CULong>, System.Numerics.IDecrementOperators<System.Runtime.InteropServices.CULong>, System.Numerics.IDivisionOperators<System.Runtime.InteropServices.CULong, System.Runtime.InteropServices.CULong, System.Runtime.InteropServices.CULong>, System.Numerics.IEqualityOperators<System.Runtime.InteropServices.CULong, System.Runtime.InteropServices.CULong>, System.Numerics.IIncrementOperators<System.Runtime.InteropServices.CULong>, System.Numerics.IMinMaxValue<System.Runtime.InteropServices.CULong>, System.Numerics.IModulusOperators<System.Runtime.InteropServices.CULong, System.Runtime.InteropServices.CULong, System.Runtime.InteropServices.CULong>, System.Numerics.IMultiplicativeIdentity<System.Runtime.InteropServices.CULong, System.Runtime.InteropServices.CULong>, System.Numerics.IMultiplyOperators<System.Runtime.InteropServices.CULong, System.Runtime.InteropServices.CULong, System.Runtime.InteropServices.CULong>, System.Numerics.INumber<System.Runtime.InteropServices.CULong>, System.Numerics.INumberBase<System.Runtime.InteropServices.CULong>, System.Numerics.IShiftOperators<System.Runtime.InteropServices.CULong, System.Runtime.InteropServices.CULong>, System.Numerics.ISubtractionOperators<System.Runtime.InteropServices.CULong, System.Runtime.InteropServices.CULong, System.Runtime.InteropServices.CULong>, System.Numerics.IUnaryNegationOperators<System.Runtime.InteropServices.CULong, System.Runtime.InteropServices.CULong>, System.Numerics.IUnaryPlusOperators<System.Runtime.InteropServices.CULong, System.Runtime.InteropServices.CULong>, System.Numerics.IUnsignedNumber<System.Runtime.InteropServices.CULong>
     {
         private readonly int _dummyPrimitive;
         public CULong(uint value) { throw null; }
         public CULong(nuint value) { throw null; }
+        public static System.Runtime.InteropServices.CULong MaxValue { get { throw null; } }
+        public static System.Runtime.InteropServices.CULong MinValue { get { throw null; } }
+        static System.Runtime.InteropServices.CULong System.Numerics.IAdditiveIdentity<System.Runtime.InteropServices.CULong,System.Runtime.InteropServices.CULong>.AdditiveIdentity { get { throw null; } }
+        static System.Runtime.InteropServices.CULong System.Numerics.IMultiplicativeIdentity<System.Runtime.InteropServices.CULong,System.Runtime.InteropServices.CULong>.MultiplicativeIdentity { get { throw null; } }
+        static System.Runtime.InteropServices.CULong System.Numerics.INumberBase<System.Runtime.InteropServices.CULong>.One { get { throw null; } }
+        static System.Runtime.InteropServices.CULong System.Numerics.INumberBase<System.Runtime.InteropServices.CULong>.Zero { get { throw null; } }
         public nuint Value { get { throw null; } }
+        public static System.Runtime.InteropServices.CULong Abs(System.Runtime.InteropServices.CULong value) { throw null; }
+        public static System.Runtime.InteropServices.CULong Clamp(System.Runtime.InteropServices.CULong value, System.Runtime.InteropServices.CULong min, System.Runtime.InteropServices.CULong max) { throw null; }
+        public int CompareTo(object? value) { throw null; }
+        public int CompareTo(System.Runtime.InteropServices.CULong value) { throw null; }
+        public static System.Runtime.InteropServices.CULong CopySign(System.Runtime.InteropServices.CULong value, System.Runtime.InteropServices.CULong sign) { throw null; }
+        public static System.Runtime.InteropServices.CULong CreateChecked<TOther>(TOther value) where TOther : System.Numerics.INumber<TOther> { throw null; }
+        public static System.Runtime.InteropServices.CULong CreateSaturating<TOther>(TOther value) where TOther : System.Numerics.INumber<TOther> { throw null; }
+        public static System.Runtime.InteropServices.CULong CreateTruncating<TOther>(TOther value) where TOther : System.Numerics.INumber<TOther> { throw null; }
+        public static (System.Runtime.InteropServices.CULong Quotient, System.Runtime.InteropServices.CULong Remainder) DivRem(System.Runtime.InteropServices.CULong left, System.Runtime.InteropServices.CULong right) { throw null; }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? o) { throw null; }
         public bool Equals(System.Runtime.InteropServices.CULong other) { throw null; }
         public override int GetHashCode() { throw null; }
+        public static bool IsNegative(System.Runtime.InteropServices.CULong value) { throw null; }
+        public static bool IsPow2(System.Runtime.InteropServices.CULong value) { throw null; }
+        public static System.Runtime.InteropServices.CULong LeadingZeroCount(System.Runtime.InteropServices.CULong value) { throw null; }
+        public static System.Runtime.InteropServices.CULong Log2(System.Runtime.InteropServices.CULong value) { throw null; }
+        public static System.Runtime.InteropServices.CULong Max(System.Runtime.InteropServices.CULong x, System.Runtime.InteropServices.CULong y) { throw null; }
+        public static System.Runtime.InteropServices.CULong MaxMagnitude(System.Runtime.InteropServices.CULong x, System.Runtime.InteropServices.CULong y) { throw null; }
+        public static System.Runtime.InteropServices.CULong Min(System.Runtime.InteropServices.CULong x, System.Runtime.InteropServices.CULong y) { throw null; }
+        public static System.Runtime.InteropServices.CULong MinMagnitude(System.Runtime.InteropServices.CULong x, System.Runtime.InteropServices.CULong y) { throw null; }
+        public static System.Runtime.InteropServices.CULong operator +(System.Runtime.InteropServices.CULong left, System.Runtime.InteropServices.CULong right) { throw null; }
+        public static System.Runtime.InteropServices.CULong operator &(System.Runtime.InteropServices.CULong left, System.Runtime.InteropServices.CULong right) { throw null; }
+        public static System.Runtime.InteropServices.CULong operator |(System.Runtime.InteropServices.CULong left, System.Runtime.InteropServices.CULong right) { throw null; }
+        public static System.Runtime.InteropServices.CULong operator checked +(System.Runtime.InteropServices.CULong left, System.Runtime.InteropServices.CULong right) { throw null; }
+        public static System.Runtime.InteropServices.CULong operator checked --(System.Runtime.InteropServices.CULong value) { throw null; }
+        public static explicit operator checked System.Runtime.InteropServices.CULong (double value) { throw null; }
+        public static explicit operator checked System.Runtime.InteropServices.CULong (short value) { throw null; }
+        public static explicit operator checked System.Runtime.InteropServices.CULong (int value) { throw null; }
+        public static explicit operator checked System.Runtime.InteropServices.CULong (long value) { throw null; }
+        public static explicit operator checked System.Runtime.InteropServices.CULong (nint value) { throw null; }
+        public static explicit operator checked byte (System.Runtime.InteropServices.CULong value) { throw null; }
+        public static explicit operator checked char (System.Runtime.InteropServices.CULong value) { throw null; }
+        public static explicit operator checked short (System.Runtime.InteropServices.CULong value) { throw null; }
+        public static explicit operator checked int (System.Runtime.InteropServices.CULong value) { throw null; }
+        public static explicit operator checked long (System.Runtime.InteropServices.CULong value) { throw null; }
+        public static explicit operator checked nint (System.Runtime.InteropServices.CULong value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator checked sbyte (System.Runtime.InteropServices.CULong value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator checked ushort (System.Runtime.InteropServices.CULong value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator checked uint (System.Runtime.InteropServices.CULong value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator checked System.Runtime.InteropServices.CULong (sbyte value) { throw null; }
+        public static explicit operator checked System.Runtime.InteropServices.CULong (float value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator checked System.Runtime.InteropServices.CULong (ulong value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator checked System.Runtime.InteropServices.CULong (nuint value) { throw null; }
+        public static System.Runtime.InteropServices.CULong operator checked ++(System.Runtime.InteropServices.CULong value) { throw null; }
+        public static System.Runtime.InteropServices.CULong operator checked *(System.Runtime.InteropServices.CULong left, System.Runtime.InteropServices.CULong right) { throw null; }
+        public static System.Runtime.InteropServices.CULong operator checked -(System.Runtime.InteropServices.CULong left, System.Runtime.InteropServices.CULong right) { throw null; }
+        public static System.Runtime.InteropServices.CULong operator --(System.Runtime.InteropServices.CULong value) { throw null; }
+        public static System.Runtime.InteropServices.CULong operator /(System.Runtime.InteropServices.CULong left, System.Runtime.InteropServices.CULong right) { throw null; }
+        public static bool operator ==(System.Runtime.InteropServices.CULong left, System.Runtime.InteropServices.CULong right) { throw null; }
+        public static System.Runtime.InteropServices.CULong operator ^(System.Runtime.InteropServices.CULong left, System.Runtime.InteropServices.CULong right) { throw null; }
+        public static explicit operator System.Runtime.InteropServices.CULong (decimal value) { throw null; }
+        public static explicit operator System.Runtime.InteropServices.CULong (double value) { throw null; }
+        public static explicit operator System.Runtime.InteropServices.CULong (short value) { throw null; }
+        public static explicit operator System.Runtime.InteropServices.CULong (int value) { throw null; }
+        public static explicit operator System.Runtime.InteropServices.CULong (long value) { throw null; }
+        public static explicit operator System.Runtime.InteropServices.CULong (nint value) { throw null; }
+        public static explicit operator byte (System.Runtime.InteropServices.CULong value) { throw null; }
+        public static explicit operator char (System.Runtime.InteropServices.CULong value) { throw null; }
+        public static explicit operator short (System.Runtime.InteropServices.CULong value) { throw null; }
+        public static explicit operator int (System.Runtime.InteropServices.CULong value) { throw null; }
+        public static explicit operator long (System.Runtime.InteropServices.CULong value) { throw null; }
+        public static explicit operator nint (System.Runtime.InteropServices.CULong value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator sbyte (System.Runtime.InteropServices.CULong value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator ushort (System.Runtime.InteropServices.CULong value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator uint (System.Runtime.InteropServices.CULong value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator System.Runtime.InteropServices.CULong (sbyte value) { throw null; }
+        public static explicit operator System.Runtime.InteropServices.CULong (float value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator System.Runtime.InteropServices.CULong (ulong value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator System.Runtime.InteropServices.CULong (nuint value) { throw null; }
+        public static bool operator >(System.Runtime.InteropServices.CULong left, System.Runtime.InteropServices.CULong right) { throw null; }
+        public static bool operator >=(System.Runtime.InteropServices.CULong left, System.Runtime.InteropServices.CULong right) { throw null; }
+        public static implicit operator System.Runtime.InteropServices.CULong (byte value) { throw null; }
+        public static implicit operator System.Runtime.InteropServices.CULong (char value) { throw null; }
+        public static implicit operator decimal (System.Runtime.InteropServices.CULong value) { throw null; }
+        public static implicit operator double (System.Runtime.InteropServices.CULong value) { throw null; }
+        public static implicit operator float (System.Runtime.InteropServices.CULong value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static implicit operator ulong (System.Runtime.InteropServices.CULong value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static implicit operator nuint (System.Runtime.InteropServices.CULong value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static implicit operator System.Runtime.InteropServices.CULong (ushort value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static implicit operator System.Runtime.InteropServices.CULong (uint value) { throw null; }
+        public static System.Runtime.InteropServices.CULong operator ++(System.Runtime.InteropServices.CULong value) { throw null; }
+        public static bool operator !=(System.Runtime.InteropServices.CULong left, System.Runtime.InteropServices.CULong right) { throw null; }
+        public static System.Runtime.InteropServices.CULong operator <<(System.Runtime.InteropServices.CULong value, int shiftAmount) { throw null; }
+        public static bool operator <(System.Runtime.InteropServices.CULong left, System.Runtime.InteropServices.CULong right) { throw null; }
+        public static bool operator <=(System.Runtime.InteropServices.CULong left, System.Runtime.InteropServices.CULong right) { throw null; }
+        public static System.Runtime.InteropServices.CULong operator %(System.Runtime.InteropServices.CULong left, System.Runtime.InteropServices.CULong right) { throw null; }
+        public static System.Runtime.InteropServices.CULong operator *(System.Runtime.InteropServices.CULong left, System.Runtime.InteropServices.CULong right) { throw null; }
+        public static System.Runtime.InteropServices.CULong operator ~(System.Runtime.InteropServices.CULong value) { throw null; }
+        public static System.Runtime.InteropServices.CULong operator >>(System.Runtime.InteropServices.CULong value, int shiftAmount) { throw null; }
+        public static System.Runtime.InteropServices.CULong operator -(System.Runtime.InteropServices.CULong left, System.Runtime.InteropServices.CULong right) { throw null; }
+        public static System.Runtime.InteropServices.CULong operator +(System.Runtime.InteropServices.CULong value) { throw null; }
+        public static System.Runtime.InteropServices.CULong operator >>>(System.Runtime.InteropServices.CULong value, int shiftAmount) { throw null; }
+        public static System.Runtime.InteropServices.CULong Parse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
+        public static System.Runtime.InteropServices.CULong Parse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider) { throw null; }
+        public static System.Runtime.InteropServices.CULong Parse(string s) { throw null; }
+        public static System.Runtime.InteropServices.CULong Parse(string s, System.Globalization.NumberStyles style) { throw null; }
+        public static System.Runtime.InteropServices.CULong Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
+        public static System.Runtime.InteropServices.CULong Parse(string s, System.IFormatProvider? provider) { throw null; }
+        public static System.Runtime.InteropServices.CULong PopCount(System.Runtime.InteropServices.CULong value) { throw null; }
+        public static System.Runtime.InteropServices.CULong RotateLeft(System.Runtime.InteropServices.CULong value, int rotateAmount) { throw null; }
+        public static System.Runtime.InteropServices.CULong RotateRight(System.Runtime.InteropServices.CULong value, int rotateAmount) { throw null; }
+        public static int Sign(System.Runtime.InteropServices.CULong value) { throw null; }
+        int System.Numerics.IBinaryInteger<System.Runtime.InteropServices.CULong>.GetByteCount() { throw null; }
+        long System.Numerics.IBinaryInteger<System.Runtime.InteropServices.CULong>.GetShortestBitLength() { throw null; }
+        bool System.Numerics.IBinaryInteger<System.Runtime.InteropServices.CULong>.TryWriteLittleEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
+        static System.Runtime.InteropServices.CULong System.Numerics.IDivisionOperators<System.Runtime.InteropServices.CULong, System.Runtime.InteropServices.CULong, System.Runtime.InteropServices.CULong>.operator checked /(System.Runtime.InteropServices.CULong left, System.Runtime.InteropServices.CULong right) { throw null; }
+        static System.Runtime.InteropServices.CULong System.Numerics.IUnaryNegationOperators<System.Runtime.InteropServices.CULong, System.Runtime.InteropServices.CULong>.operator checked -(System.Runtime.InteropServices.CULong value) { throw null; }
+        static System.Runtime.InteropServices.CULong System.Numerics.IUnaryNegationOperators<System.Runtime.InteropServices.CULong, System.Runtime.InteropServices.CULong>.operator -(System.Runtime.InteropServices.CULong value) { throw null; }
         public override string ToString() { throw null; }
+        public string ToString(System.IFormatProvider? provider) { throw null; }
+        public string ToString([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] string? format) { throw null; }
+        public string ToString(string? format, System.IFormatProvider? formatProvider) { throw null; }
+        public static System.Runtime.InteropServices.CULong TrailingZeroCount(System.Runtime.InteropServices.CULong value) { throw null; }
+        public static bool TryCreate<TOther>(TOther value, out System.Runtime.InteropServices.CULong result) where TOther : System.Numerics.INumber<TOther> { throw null; }
+        public bool TryFormat(System.Span<char> destination, out int charsWritten, System.ReadOnlySpan<char> format, System.IFormatProvider? provider) { throw null; }
+        public static bool TryParse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.Runtime.InteropServices.CULong result) { throw null; }
+        public static bool TryParse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider, out System.Runtime.InteropServices.CULong result) { throw null; }
+        public static bool TryParse(System.ReadOnlySpan<char> s, out System.Runtime.InteropServices.CULong result) { throw null; }
+        public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.Runtime.InteropServices.CULong result) { throw null; }
+        public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.IFormatProvider? provider, out System.Runtime.InteropServices.CULong result) { throw null; }
+        public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, out System.Runtime.InteropServices.CULong result) { throw null; }
     }
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     [System.ObsoleteAttribute("CurrencyWrapper and support for marshalling to the VARIANT type may be unavailable in future releases.")]

@@ -31,16 +31,16 @@ namespace System
         public const uint MinValue = 0U;
 
         /// <summary>Represents the additive identity (0).</summary>
-        private const uint AdditiveIdentity = 0;
+        internal const uint AdditiveIdentity = 0;
 
         /// <summary>Represents the multiplicative identity (1).</summary>
-        private const uint MultiplicativeIdentity = 1;
+        internal const uint MultiplicativeIdentity = 1;
 
         /// <summary>Represents the number one (1).</summary>
-        private const uint One = 1;
+        internal const uint One = 1;
 
         /// <summary>Represents the number zero (0).</summary>
-        private const uint Zero = 0;
+        internal const uint Zero = 0;
 
         // Compares this object to another object, returning an integer that
         // indicates the relationship.
