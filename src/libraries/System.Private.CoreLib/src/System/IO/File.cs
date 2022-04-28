@@ -343,7 +343,7 @@ namespace System.IO
         {
             Validate(path, encoding);
 
-            var sr = new DisposingFlagStreamReader(path, encoding); // Move first streamReader allocation here so to throw related file exception upfront, which will cause known leaking if user never actually foreach's over the enumerable
+            StreamReader sr = AsyncStreamReader(path, encoding); // Move first streamReader allocation here so to throw related file exception upfront, which will cause known leaking if user never actually foreach's over the enumerable
             return IterateFileLinesAsync(sr, path, encoding, cancellationToken);
         }
 
@@ -927,11 +927,11 @@ namespace System.IO
             return preambleSize + encoding.GetByteCount(contents);
         }
 
-        private static async IAsyncEnumerable<string> IterateFileLinesAsync(DisposingFlagStreamReader sr, string path, Encoding encoding, CancellationToken ctEnumerable, [EnumeratorCancellation] CancellationToken ctEnumerator = default)
+        private static async IAsyncEnumerable<string> IterateFileLinesAsync(StreamReader sr, string path, Encoding encoding, CancellationToken ctEnumerable, [EnumeratorCancellation] CancellationToken ctEnumerator = default)
         {
-            if (sr.IsDisposed)
+            if (!sr.BaseStream.CanRead)
             {
-                sr = new DisposingFlagStreamReader(path, encoding);
+                sr = AsyncStreamReader(path, encoding);
             }
 
             using (sr)
@@ -942,25 +942,6 @@ namespace System.IO
                 {
                     yield return line;
                 }
-            }
-        }
-
-        private sealed class DisposingFlagStreamReader : StreamReader
-        {
-            private volatile bool _isDisposed;
-
-            public DisposingFlagStreamReader(string path, Encoding encoding) : base(
-                new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, DefaultBufferSize, FileOptions.Asynchronous | FileOptions.SequentialScan),
-                encoding, detectEncodingFromByteOrderMarks: true)
-            {
-            }
-
-            public bool IsDisposed => _isDisposed;
-
-            protected override void Dispose(bool disposing)
-            {
-                base.Dispose(disposing);
-                _isDisposed = true;
             }
         }
     }
