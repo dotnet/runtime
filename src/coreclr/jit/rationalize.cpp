@@ -450,24 +450,6 @@ void Rationalizer::RewriteAssignment(LIR::Use& use)
         }
         break;
 
-        case GT_CLS_VAR:
-        {
-            GenTreeFlags indFlags = location->gtFlags & (GTF_CLS_VAR_VOLATILE | GTF_CLS_VAR_TGT_HEAP);
-            static_assert_no_msg(GTF_CLS_VAR_VOLATILE == GTF_IND_VOLATILE);
-            static_assert_no_msg(GTF_CLS_VAR_TGT_HEAP == GTF_IND_TGT_HEAP);
-
-            location->gtFlags &= ~indFlags;
-            location->SetOper(GT_CLS_VAR_ADDR);
-            location->gtType = TYP_BYREF;
-
-            assignment->SetOper(GT_STOREIND);
-            assignment->AsStoreInd()->SetRMWStatusDefault();
-            assignment->gtFlags |= indFlags;
-
-            // TODO: JIT dump
-        }
-        break;
-
         case GT_BLK:
         case GT_OBJ:
         {
@@ -542,17 +524,6 @@ void Rationalizer::RewriteAddress(LIR::Use& use)
 
         use.ReplaceWith(location);
         BlockRange().Remove(address);
-    }
-    else if (locationOp == GT_CLS_VAR)
-    {
-        location->SetOper(GT_CLS_VAR_ADDR);
-        location->gtType = TYP_BYREF;
-        copyFlags(location, address, GTF_ALL_EFFECT);
-
-        use.ReplaceWith(location);
-        BlockRange().Remove(address);
-
-        JITDUMP("Rewriting GT_ADDR(GT_CLS_VAR) to GT_CLS_VAR_ADDR:\n");
     }
     else if (location->OperIsIndir())
     {
@@ -701,36 +672,6 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
             }
         }
         break;
-
-#if defined(TARGET_XARCH) || defined(TARGET_ARM)
-        case GT_CLS_VAR:
-        {
-            // Class vars that are the target of an assignment will get rewritten into
-            // GT_STOREIND(GT_CLS_VAR_ADDR, val) by RewriteAssignment. This check is
-            // not strictly necessary--the GT_IND(GT_CLS_VAR_ADDR) pattern that would
-            // otherwise be generated would also be picked up by RewriteAssignment--but
-            // skipping the rewrite here saves an allocation and a bit of extra work.
-            const bool isLHSOfAssignment = (use.User()->OperGet() == GT_ASG) && (use.User()->gtGetOp1() == node);
-            if (!isLHSOfAssignment)
-            {
-                GenTree* ind = comp->gtNewOperNode(GT_IND, node->TypeGet(), node);
-                if ((node->gtFlags & GTF_CLS_VAR_VOLATILE) != 0)
-                {
-                    ind->gtFlags |= GTF_IND_VOLATILE;
-                }
-
-                node->gtFlags &= ~GTF_CLS_VAR_VOLATILE;
-                node->SetOper(GT_CLS_VAR_ADDR);
-                node->gtType = TYP_BYREF;
-
-                BlockRange().InsertAfter(node, ind);
-                use.ReplaceWith(ind);
-
-                // TODO: JIT dump
-            }
-        }
-        break;
-#endif // TARGET_XARCH
 
         case GT_INTRINSIC:
             // Non-target intrinsics should have already been rewritten back into user calls.
