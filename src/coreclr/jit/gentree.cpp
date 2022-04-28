@@ -2109,42 +2109,6 @@ bool GenTreeCall::IsHelperCall(Compiler* compiler, unsigned helper) const
     return IsHelperCall(compiler->eeFindHelper(helper));
 }
 
-//------------------------------------------------------------------------
-// GenTreeCall::ReplaceCallOperand:
-//    Replaces a given operand to a call node and updates the call
-//    argument table if necessary.
-//
-// Arguments:
-//    useEdge - the use edge that points to the operand to be replaced.
-//    replacement - the replacement node.
-//
-void GenTreeCall::ReplaceCallOperand(GenTree** useEdge, GenTree* replacement)
-{
-    assert(useEdge != nullptr);
-    assert(replacement != nullptr);
-    assert(TryGetUse(*useEdge, &useEdge));
-
-    GenTree* originalOperand = *useEdge;
-    *useEdge                 = replacement;
-
-    const bool isArgument =
-        (replacement != gtControlExpr) &&
-        ((gtCallType != CT_INDIRECT) || ((replacement != gtCallCookie) && (replacement != gtCallAddr)));
-
-    if (isArgument)
-    {
-        if ((originalOperand->gtFlags & GTF_LATE_ARG) != 0)
-        {
-            replacement->gtFlags |= GTF_LATE_ARG;
-        }
-        else
-        {
-            assert((replacement->gtFlags & GTF_LATE_ARG) == 0);
-            assert(gtArgs.FindByNode(replacement)->GetNode() == replacement);
-        }
-    }
-}
-
 //--------------------------------------------------------------------------
 // Equals: Check if 2 CALL nodes are equal.
 //
@@ -6140,15 +6104,7 @@ void GenTree::ReplaceOperand(GenTree** useEdge, GenTree* replacement)
     assert(useEdge != nullptr);
     assert(replacement != nullptr);
     assert(TryGetUse(*useEdge, &useEdge));
-
-    if (OperGet() == GT_CALL)
-    {
-        AsCall()->ReplaceCallOperand(useEdge, replacement);
-    }
-    else
-    {
-        *useEdge = replacement;
-    }
+    *useEdge = replacement;
 }
 
 //------------------------------------------------------------------------
@@ -9686,7 +9642,7 @@ void GenTree::SetIndirExceptionFlags(Compiler* comp)
 
 /* static */ int GenTree::gtDispFlags(GenTreeFlags flags, GenTreeDebugFlags debugFlags)
 {
-    int charsDisplayed = 11; // 11 is the "baseline" number of flag characters displayed
+    int charsDisplayed = 10; // the "baseline" number of flag characters displayed
 
     printf("%c", (flags & GTF_ASG) ? 'A' : (IsContained(flags) ? 'c' : '-'));
     printf("%c", (flags & GTF_CALL) ? 'C' : '-');
@@ -9703,7 +9659,6 @@ void GenTree::SetIndirExceptionFlags(Compiler* comp)
     printf("%c", (flags & GTF_SET_FLAGS) ? 'S' : '-');
     ++charsDisplayed;
 #endif
-    printf("%c", (flags & GTF_LATE_ARG) ? 'L' : '-');
     printf("%c", (flags & GTF_SPILLED) ? 'z' : (flags & GTF_SPILL) ? 'Z' : '-');
 
     return charsDisplayed;
@@ -15677,11 +15632,6 @@ void Compiler::gtExtractSideEffList(GenTree*     expr,
 
         void PushSideEffects(GenTree* node)
         {
-            // The extracted side effect will no longer be an argument, so unmark it.
-            // This is safe to do because the side effects will be visited in pre-order,
-            // aborting as soon as any tree is extracted. Thus if an argument for a call
-            // is being extracted, it is guaranteed that the call itself will not be.
-            node->gtFlags &= ~GTF_LATE_ARG;
             m_sideEffects.Push(node);
         }
     };

@@ -2193,8 +2193,6 @@ bool Compiler::fgTryRemoveNonLocal(GenTree* node, LIR::Range* blockRange)
 void Compiler::fgRemoveDeadStoreLIR(GenTree* store, BasicBlock* block)
 {
     LIR::Range& blockRange = LIR::AsRange(block);
-
-    assert((store->gtFlags & GTF_LATE_ARG) == 0);
     blockRange.Remove(store);
     assert(!opts.MinOpts());
     fgStmtRemoved = true;

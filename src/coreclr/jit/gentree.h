@@ -405,7 +405,6 @@ enum GenTreeFlags : unsigned int
 
     GTF_UNSIGNED    = 0x00008000, // With GT_CAST:   the source operand is an unsigned type
                                   // With operators: the specified node is an unsigned operator
-    GTF_LATE_ARG    = 0x00010000, // The specified node is evaluated to a temp in the arg list, and this temp is added to gtCallLateArgs.
     GTF_SPILL       = 0x00020000, // Needs to be spilled here
 
 // The extra flag GTF_IS_IN_CSE is used to tell the consumer of the side effect flags
@@ -5160,8 +5159,6 @@ struct GenTreeCall final : public GenTree
     }
 
     bool IsHelperCall(Compiler* compiler, unsigned helper) const;
-
-    void ReplaceCallOperand(GenTree** operandUseEdge, GenTree* replacement);
 
     bool AreArgsComplete() const;
 

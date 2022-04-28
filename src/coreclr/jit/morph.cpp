@@ -1581,9 +1581,6 @@ void CallArgs::EvalArgsToTemps(Compiler* comp, GenTreeCall* call)
             {
                 // Create a copy of the temp to go into the late argument list
                 defArg = MakeTmpArgNode(comp, &arg);
-
-                // mark the original node as a late argument
-                argx->gtFlags |= GTF_LATE_ARG;
             }
             else
             {
@@ -1710,9 +1707,6 @@ void CallArgs::EvalArgsToTemps(Compiler* comp, GenTreeCall* call)
                     }
 #endif // TARGET_ARM
                 }
-
-                /* mark the assignment as a late argument */
-                setupArg->gtFlags |= GTF_LATE_ARG;
 
 #ifdef DEBUG
                 if (comp->verbose)
@@ -3641,8 +3635,7 @@ void Compiler::fgMorphMultiregStructArgs(GenTreeCall* call)
 
     for (CallArg& arg : call->gtArgs.Args())
     {
-        bool     isLateArg = arg.GetLateNode() != nullptr;
-        GenTree* argx      = arg.GetNode();
+        GenTree*& argx = arg.GetLateNode() != nullptr ? arg.LateNodeRef() : arg.EarlyNodeRef();
 
         if (!arg.AbiInfo.IsStruct)
         {
@@ -3685,19 +3678,7 @@ void Compiler::fgMorphMultiregStructArgs(GenTreeCall* call)
                 }
 
                 GenTree* newArgx = fgMorphMultiregStructArg(&arg);
-
-                // Did we replace 'argx' with a new tree?
-                if (newArgx != argx)
-                {
-                    if (isLateArg)
-                    {
-                        arg.SetLateNode(newArgx);
-                    }
-                    else
-                    {
-                        arg.SetEarlyNode(newArgx);
-                    }
-                }
+                argx             = newArgx;
             }
         }
     }
@@ -8254,7 +8235,7 @@ void Compiler::fgMorphRecursiveFastTailCallIntoLoop(BasicBlock* block, GenTreeCa
     for (CallArg& arg : recursiveTailCall->gtArgs.EarlyArgs())
     {
         GenTree* earlyArg = arg.GetEarlyNode();
-        if ((earlyArg->gtFlags & GTF_LATE_ARG) != 0)
+        if (arg.GetLateNode() != nullptr)
         {
             // This is a setup node so we need to hoist it.
             Statement* earlyArgStmt = gtNewStmt(earlyArg, callDI);
@@ -8677,8 +8658,6 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
 
                 assert(argNode != arr);
                 assert(argNode != index);
-
-                argNode->gtFlags &= ~GTF_LATE_ARG;
 
                 GenTree* op1 = argSetup;
                 if (op1 == nullptr)
@@ -12352,7 +12331,7 @@ DONE_MORPHING_CHILDREN:
                 }
                 else
                 {
-                    op2->gtFlags |= (tree->gtFlags & (GTF_DONT_CSE | GTF_LATE_ARG));
+                    op2->gtFlags |= (tree->gtFlags & GTF_DONT_CSE);
                     DEBUG_DESTROY_NODE(tree);
                     DEBUG_DESTROY_NODE(op1);
                     return op2;
@@ -12362,7 +12341,7 @@ DONE_MORPHING_CHILDREN:
                 // comma throw, in which case we want the top-level morphing loop to recognize it.
                 if (op2->IsNothingNode() && op1->TypeIs(TYP_VOID) && !fgIsCommaThrow(tree))
                 {
-                    op1->gtFlags |= (tree->gtFlags & (GTF_DONT_CSE | GTF_LATE_ARG));
+                    op1->gtFlags |= (tree->gtFlags & GTF_DONT_CSE);
                     DEBUG_DESTROY_NODE(tree);
                     DEBUG_DESTROY_NODE(op2);
                     return op1;

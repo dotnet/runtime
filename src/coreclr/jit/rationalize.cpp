@@ -545,10 +545,6 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
     GenTree* node = *useEdge;
     assert(node != nullptr);
 
-#ifdef DEBUG
-    const bool isLateArg = (node->gtFlags & GTF_LATE_ARG) != 0;
-#endif
-
     // Clear the REVERSE_OPS flag on the current node.
     node->gtFlags &= ~GTF_REVERSE_OPS;
 
@@ -593,8 +589,6 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
             {
                 if (!arg.GetEarlyNode()->IsValue())
                 {
-                    // GTF_LATE_ARG is no longer meaningful.
-                    arg.GetEarlyNode()->gtFlags &= ~GTF_LATE_ARG;
                     arg.SetEarlyNode(nullptr);
                 }
             }
@@ -811,8 +805,6 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
             comp->compLongUsed = true;
         }
     }
-
-    assert(isLateArg == ((use.Def()->gtFlags & GTF_LATE_ARG) != 0));
 
     return Compiler::WALK_CONTINUE;
 }
