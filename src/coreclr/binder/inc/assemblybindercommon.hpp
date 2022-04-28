@@ -52,6 +52,7 @@ namespace BINDER_SPACE
         static HRESULT BindUsingHostAssemblyResolver (/* in */ INT_PTR pManagedAssemblyLoadContextToBindWithin,
                                                       /* in */ AssemblyName       *pAssemblyName,
                                                       /* in */ DefaultAssemblyBinder *pDefaultBinder,
+                                                      /* in */ AssemblyBinder *pBinder,
                                                       /* out */ Assembly           **ppAssembly);
 
         static HRESULT BindUsingPEImage(/* in */  AssemblyBinder     *pBinder,

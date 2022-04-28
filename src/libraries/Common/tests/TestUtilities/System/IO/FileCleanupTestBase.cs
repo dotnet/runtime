@@ -36,7 +36,8 @@ namespace System.IO
             string failure = string.Empty;
             for (int i = 0; i <= 2; i++)
             {
-                TestDirectory = Path.Combine(tempDirectory, GetType().Name + "_" + Path.GetRandomFileName());
+                // Prefix with "#" to help spot leaked files
+                TestDirectory = Path.Combine(tempDirectory, "#" + GetType().Name + "_" + Path.GetRandomFileName());
                 try
                 {
                     Directory.CreateDirectory(TestDirectory);
@@ -68,10 +69,24 @@ namespace System.IO
         /// <summary>Delete the associated test directory.</summary>
         protected virtual void Dispose(bool disposing)
         {
-            // No managed resources to clean up, so disposing is ignored.
+            try
+            {
+                try
+                {
+                    Directory.Delete(TestDirectory, recursive: true);
+                }
+                catch (UnauthorizedAccessException)
+                {
+                    DirectoryInfo di = new DirectoryInfo(TestDirectory);
+                    foreach (FileSystemInfo fsi in di.EnumerateFileSystemInfos("*", SearchOption.AllDirectories))
+                    {
+                        fsi.Attributes = FileAttributes.Normal;
+                    }
 
-            try { Directory.Delete(TestDirectory, recursive: true); }
-            catch { } // avoid exceptions escaping Dispose
+                    Directory.Delete(TestDirectory, recursive: true);
+                }
+            }
+            catch {  } // avoid exceptions escaping Dispose
         }
 
         /// <summary>
@@ -80,13 +95,13 @@ namespace System.IO
         /// </summary>
         protected string TestDirectory { get; }
 
-        protected string GetRandomFileName() => GetTestFileName() + ".txt";
-        protected string GetRandomLinkName() => GetTestFileName() + ".link";
-        protected string GetRandomDirName()  => GetTestFileName() + "_dir";
+        protected string GetRandomFileName([CallerMemberName] string memberName = null, [CallerLineNumber] int lineNumber = 0) => GetTestFileName(index: null, memberName, lineNumber) + ".txt";
+        protected string GetRandomLinkName([CallerMemberName] string memberName = null, [CallerLineNumber] int lineNumber = 0) => GetTestFileName(index: null, memberName, lineNumber) + ".link";
+        protected string GetRandomDirName([CallerMemberName] string memberName = null, [CallerLineNumber] int lineNumber = 0) => GetTestFileName(index: null, memberName, lineNumber) + "_dir";
 
-        protected string GetRandomFilePath() => Path.Combine(TestDirectoryActualCasing, GetRandomFileName());
-        protected string GetRandomLinkPath() => Path.Combine(TestDirectoryActualCasing, GetRandomLinkName());
-        protected string GetRandomDirPath()  => Path.Combine(TestDirectoryActualCasing, GetRandomDirName());
+        protected string GetRandomFilePath([CallerMemberName] string memberName = null, [CallerLineNumber] int lineNumber = 0) => Path.Combine(TestDirectoryActualCasing, GetRandomFileName(memberName, lineNumber));
+        protected string GetRandomLinkPath([CallerMemberName] string memberName = null, [CallerLineNumber] int lineNumber = 0) => Path.Combine(TestDirectoryActualCasing, GetRandomLinkName(memberName, lineNumber));
+        protected string GetRandomDirPath([CallerMemberName] string memberName = null, [CallerLineNumber] int lineNumber = 0)  => Path.Combine(TestDirectoryActualCasing, GetRandomDirName(memberName, lineNumber));
 
         private string _testDirectoryActualCasing;
         private string TestDirectoryActualCasing => _testDirectoryActualCasing ??= GetTestDirectoryActualCasing();

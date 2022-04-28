@@ -90,7 +90,7 @@ namespace System.Text.RegularExpressions
             if ((options & RegexOptions.NonBacktracking) != 0)
             {
                 // If we're in non-backtracking mode, create the appropriate factory.
-                factory = new SymbolicRegexRunnerFactory(tree, options, matchTimeout, culture);
+                factory = new SymbolicRegexRunnerFactory(tree, options, matchTimeout);
             }
             else
             {
