@@ -6,6 +6,7 @@ using System.ComponentModel.Design.Serialization;
 using System.Globalization;
 using System.Linq;
 using System.Reflection;
+using System.Tests;
 using Xunit;
 
 namespace System.ComponentModel.Tests
@@ -150,6 +151,15 @@ namespace System.ComponentModel.Tests
             };
             Assert.Equal("(Default)", converter.ConvertTo(CultureInfo.InvariantCulture, typeof(string)));
             Assert.Equal("Fixed", converter.ConvertTo(new CultureInfo("en-US"), typeof(string)));
+        }
+
+        [Fact]
+        public void CultureInfoConverterForDefaultValue()
+        {
+            using (new ThreadCultureChange(null, CultureInfo.InvariantCulture))
+            {
+                Assert.Equal("", ((CultureInfo)TypeDescriptor.GetConverter(typeof(System.Globalization.CultureInfo)).ConvertFrom(null, null, "(Default)")).Name);
+            }
         }
 
         private class SubCultureInfoConverter : CultureInfoConverter
