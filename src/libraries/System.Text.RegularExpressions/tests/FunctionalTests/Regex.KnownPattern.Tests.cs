@@ -740,16 +740,6 @@ namespace System.Text.RegularExpressions.Tests
         // https://docs.microsoft.com/en-us/dotnet/standard/base-types/backtracking-in-regular-expressions#nonbacktracking-subexpression
         [Theory]
         [MemberData(nameof(RegexHelpers.AvailableEngines_MemberData), MemberType = typeof(RegexHelpers))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/57891")] // takes too long due to backtracking
-        public async Task Docs_Backtracking_WithNestedOptionalQuantifiers_ExcessiveBacktracking(RegexEngine engine)
-        {
-            Regex r = await RegexHelpers.GetRegexAsync(engine, "^(([0-9a-fA-F]{1,4}:)*([0-9a-fA-F]{1,4}))*(::)$");
-            Assert.False(r.IsMatch("b51:4:1DB:9EE1:5:27d60:f44:D4:cd:E:5:0A5:4a:D24:41Ad:"));
-        }
-
-        // https://docs.microsoft.com/en-us/dotnet/standard/base-types/backtracking-in-regular-expressions#nonbacktracking-subexpression
-        [Theory]
-        [MemberData(nameof(RegexHelpers.AvailableEngines_MemberData), MemberType = typeof(RegexHelpers))]
         public async Task Docs_Backtracking_WithNestedOptionalQuantifiers_BacktrackingEliminated(RegexEngine engine)
         {
             const string Input = "b51:4:1DB:9EE1:5:27d60:f44:D4:cd:E:5:0A5:4a:D24:41Ad:";
@@ -782,9 +772,9 @@ namespace System.Text.RegularExpressions.Tests
         }
 
         // https://docs.microsoft.com/en-us/dotnet/standard/base-types/backtracking-in-regular-expressions#lookahead-assertions
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Doesn't support NonBacktracking")]
         [Theory]
-        [MemberData(nameof(RegexHelpers.AvailableEngines_MemberData), MemberType = typeof(RegexHelpers))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/57891")] // takes too long due to backtracking
+        [InlineData(RegexEngine.NonBacktracking)]
         public async Task Docs_Backtracking_LookaheadAssertions_ExcessiveBacktracking(RegexEngine engine)
         {
             Regex r = await RegexHelpers.GetRegexAsync(engine, @"^(([A-Z]\w*)+\.)*[A-Z]\w*$", RegexOptions.IgnoreCase);
