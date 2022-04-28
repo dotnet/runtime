@@ -760,7 +760,15 @@ DWORD LCM(DWORD u, DWORD v)
     CONTRACTL_END;
 
 #if !defined(FEATURE_NATIVEAOT) && (defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64))
-    BOOL enableGCCPUGroups = Configuration::GetKnobBooleanValue(W("System.GC.CpuGroup"), CLRConfig::EXTERNAL_GCCpuGroup);
+    USHORT groupCount = 0;
+
+    // Starting with Windows 11 and Windows Server 2022, a process is no longer restricted to a single processor group
+    // by default. Use all processor groups if the process is not affinitized to a single one.
+    if (GetProcessGroupAffinity(GetCurrentProcess(), &groupCount, NULL) || GetLastError() != ERROR_INSUFFICIENT_BUFFER)
+        groupCount = 1;
+
+    BOOL enableGCCPUGroups = groupCount > 1 ||
+        Configuration::GetKnobBooleanValue(W("System.GC.CpuGroup"), CLRConfig::EXTERNAL_GCCpuGroup);
 
     if (!enableGCCPUGroups)
         return;
@@ -772,7 +780,7 @@ DWORD LCM(DWORD u, DWORD v)
     if (m_nGroups > 1)
     {
         m_enableGCCPUGroups = TRUE;
-        m_threadUseAllCpuGroups = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_Thread_UseAllCpuGroups) != 0;
+        m_threadUseAllCpuGroups = groupCount > 1 || CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_Thread_UseAllCpuGroups) != 0;
         m_threadAssignCpuGroups = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_Thread_AssignCpuGroups) != 0;
 
         // Save the processor group affinity of the initial thread
