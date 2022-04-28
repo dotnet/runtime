@@ -10,6 +10,5 @@
 
   <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\ref\System.Runtime.csproj" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Collections\ref\System.Collections.csproj" />
   </ItemGroup>
 </Project>

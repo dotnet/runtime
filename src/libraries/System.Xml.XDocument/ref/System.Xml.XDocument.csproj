@@ -8,7 +8,6 @@
   <ItemGroup>
     <ProjectReference Include="..\..\System.ObjectModel\ref\System.ObjectModel.csproj" />
     <ProjectReference Include="..\..\System.Runtime\ref\System.Runtime.csproj" />
-    <ProjectReference Include="..\..\System.Runtime.Extensions\ref\System.Runtime.Extensions.csproj" />
     <ProjectReference Include="..\..\System.Xml.ReaderWriter\ref\System.Xml.ReaderWriter.csproj" />
   </ItemGroup>
 </Project>

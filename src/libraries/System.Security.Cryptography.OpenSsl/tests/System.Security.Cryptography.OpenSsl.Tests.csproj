@@ -139,8 +139,4 @@
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.Initialization.cs"
              Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.Initialization.cs" />
   </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Cryptography.Cng\src\System.Security.Cryptography.Cng.csproj" />
-    <ProjectReference Include="..\src\System.Security.Cryptography.OpenSsl.csproj" />
-  </ItemGroup>
 </Project>

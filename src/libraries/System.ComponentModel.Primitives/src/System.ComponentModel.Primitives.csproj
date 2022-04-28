@@ -44,7 +44,6 @@
     <Reference Include="System.ComponentModel" />
     <Reference Include="System.ObjectModel" />
     <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Threading" />
   </ItemGroup>
 </Project>
