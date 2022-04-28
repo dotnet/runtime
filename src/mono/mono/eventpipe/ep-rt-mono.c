@@ -2862,6 +2862,9 @@ ep_rt_mono_write_event_ee_startup_start (void)
 // !!!!!!! NOTE !!!!!!!!
 
 typedef enum {
+	K_ETW_TYPE_FLAGS_DELEGATE = 0x1,
+	K_ETW_TYPE_FLAGS_FINALIZABLE = 0x2,
+	K_ETW_TYPE_FLAGS_EXTERNALLY_IMPLEMENTED_COM_OBJECT = 0x4,
 	K_ETW_TYPE_FLAGS_ARRAY = 0x8,
 
 	K_ETW_TYPE_FLAGS_ARRAY_RANK_MASK = 0x3F00,
@@ -3089,6 +3092,15 @@ ep_rt_mono_log_single_type (MonoType *mono_type, intptr_t type_id)
 			p_val->rg_type_parameters[i] = get_typeid_for_type (class_inst->type_argv[i]);
 		}
 	}
+
+	if (mono_class_has_finalizer (klass))
+		p_val->fixed_sized_data.flags |= K_ETW_TYPE_FLAGS_FINALIZABLE;
+
+	if (m_class_is_delegate (klass))
+		p_val->fixed_sized_data.flags |= K_ETW_TYPE_FLAGS_DELEGATE;
+
+	if (mono_class_is_com_object (klass))
+		p_val->fixed_sized_data.flags |= K_ETW_TYPE_FLAGS_EXTERNALLY_IMPLEMENTED_COM_OBJECT;
 
     // Now that we know the full size of this type's data, see if it fits in our
     // batch or whether we need to flush
