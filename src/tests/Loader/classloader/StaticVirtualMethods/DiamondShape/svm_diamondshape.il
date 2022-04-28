@@ -117,6 +117,14 @@
 {
 } // end of class FooClass
 
+.class private auto ansi sealed beforefieldinit FooStruct
+       extends [mscorlib]System.ValueType
+       implements IFoo2,
+                  IFoo,
+                  IFooEx
+{
+} // end of class FooStruct
+
 .class interface private abstract auto ansi I1
 {
   .method public hidebysig newslot abstract virtual 
@@ -211,6 +219,15 @@
                   I3
 {
 } // end of class I4Class
+
+.class private auto ansi sealed beforefieldinit I4Struct
+       extends [mscorlib]System.ValueType
+       implements I4,
+                  I2,
+                  I1,
+                  I3
+{
+} // end of class I4Struct
 
 .class interface private abstract auto ansi I5
        implements I1
@@ -332,6 +349,18 @@
 {
 } // end of class I47Class
 
+.class private auto ansi sealed beforefieldinit I47Struct
+       extends [mscorlib]System.ValueType
+       implements I4,
+                  I2,
+                  I1,
+                  I3,
+                  I7,
+                  I5,
+                  I6
+{
+} // end of class I47Struct
+
 .class private auto ansi beforefieldinit I8Class
        extends [mscorlib]System.Object
        implements I8,
@@ -344,6 +373,19 @@
                   I6 
 {
 } // end of class I8Class  
+
+.class private auto ansi sealed beforefieldinit I8Struct
+       extends [mscorlib]System.ValueType
+       implements I8,
+                  I4,
+                  I2,
+                  I1,
+                  I3,
+                  I7,
+                  I5,
+                  I6 
+{
+} // end of class I8Struct
 
 .class interface private abstract auto ansi GI1`1<T>
 {
@@ -535,6 +577,14 @@
 {
 } // end of class GI23Class`1
 
+.class private auto ansi sealed beforefieldinit GI23Struct`1<T>
+       extends [mscorlib]System.ValueType
+       implements class GI2`1<!T>,
+                  class GI1`1<!T>,
+                  class GI3`1<!T>
+{
+} // end of class GI23Struct`1
+
 .class private auto ansi beforefieldinit GI4Class`1<T>
        extends [mscorlib]System.Object
        implements class GI4`1<!T>,
@@ -543,6 +593,15 @@
                   class GI3`1<!T>
 {
 } // end of class GI4Class`1
+
+.class private auto ansi sealed beforefieldinit GI4Struct`1<T>
+       extends [mscorlib]System.ValueType
+       implements class GI4`1<!T>,
+                  class GI2`1<!T>,
+                  class GI1`1<!T>,
+                  class GI3`1<!T>
+{
+} // end of class GI4Struct`1
 
 .class private auto ansi beforefieldinit Program
        extends [mscorlib]System.Object
@@ -557,7 +616,7 @@
              class [mscorlib]System.Type[] V_8,
              class [mscorlib]System.Exception V_9)
     IL_0000:  nop
-    IL_0009:  ldstr      "Calling IFoo.Foo on Foo - expecting exception."
+    IL_0009:  ldstr      "Calling IFoo.Foo on FooClass - expecting exception."
     IL_000e:  call       void [mscorlib]System.Console::WriteLine(string)
     IL_0013:  nop
     .try
@@ -568,7 +627,7 @@
       IL_0018:  call         int32 IFoo::Foo(int32)
       IL_001d:  pop
       IL_001e:  ldc.i4.0
-      IL_001f:  ldstr      "Expecting exception on Foo"
+      IL_001f:  ldstr      "Expecting exception on FooClass"
       IL_0024:  call       void Test::Assert(bool,
                                              string)
       IL_0029:  nop
@@ -591,6 +650,41 @@
       IL_0048:  leave.s    IL_004a
 
     }  // end handler
+
+                nop
+                ldstr      "Calling IFoo.Foo on FooStruct - expecting exception."
+                call       void [mscorlib]System.Console::WriteLine(string)
+                nop
+    .try
+    {
+                nop
+                ldc.i4.s   10
+                constrained. class [svm_diamondshape]FooStruct
+                call         int32 IFoo::Foo(int32)
+                pop
+                ldc.i4.0
+                ldstr      "Expecting exception on FooStruct"
+                call       void Test::Assert(bool,
+                                             string)
+                nop
+                leave.s    IL_004a
+
+    }  // end .try
+    catch [System.Runtime]System.Runtime.AmbiguousImplementationException
+    {
+                stloc.s    V_6
+                nop
+                ldstr      "Exception caught: "
+                ldloc.s    V_6
+                callvirt   instance string [mscorlib]System.Object::ToString()
+                call       string [mscorlib]System.String::Concat(string,
+                                                                  string)
+                call       void [mscorlib]System.Console::WriteLine(string)
+                nop
+                leave.s    IL_004a
+
+    }  // end handler
+
     IL_004a:  ldstr      "Calling I1.Func on I47Class - expecting exception"
     IL_0057:  call       void [mscorlib]System.Console::WriteLine(string)
     IL_005c:  nop
@@ -607,7 +701,7 @@
                                              string)
       IL_0072:  nop
       IL_0073:  nop
-      IL_0074:  leave.s    IL_0093
+      IL_0074:  leave.s    IL_0093a
 
     }  // end .try
     catch [System.Runtime]System.Runtime.AmbiguousImplementationException
@@ -622,11 +716,44 @@
       IL_008a:  call       void [mscorlib]System.Console::WriteLine(string)
       IL_008f:  nop
       IL_0090:  nop
-      IL_0091:  leave.s    IL_0093
+      IL_0091:  leave.s    IL_0093a
 
     }  // end handler
-    IL_0093:  ldstr      "Calling GI1<T>.Func on GI23Class<S> - expecting ex"
-    + "ception"
+
+    IL_0093a: ldstr      "Calling I1.Func on I47Struct - expecting exception"
+              call       void [mscorlib]System.Console::WriteLine(string)
+              nop
+    .try
+    {
+                nop
+                ldc.i4.s   10
+                constrained. valuetype [svm_diamondshape]I47Struct
+                call         int32 I1::Func(int32)
+                pop
+                ldc.i4.0
+                ldstr      "Expecting exception on I47Struct"
+                call       void Test::Assert(bool, string)
+                nop
+                nop
+                leave.s    IL_0093
+
+    }  // end .try
+    catch [System.Runtime]System.Runtime.AmbiguousImplementationException
+    {
+                stloc.s    V_7
+                nop
+                ldstr      "Exception caught: "
+                ldloc.s    V_7
+                callvirt   instance string [mscorlib]System.Object::ToString()
+                call       string [mscorlib]System.String::Concat(string, string)
+                call       void [mscorlib]System.Console::WriteLine(string)
+                nop
+                nop
+                leave.s    IL_0093
+
+    }  // end handler
+
+    IL_0093:  ldstr      "Calling GI1<T>.Func on GI23Class<S> - expecting exception"
     IL_00a3:  call       void [mscorlib]System.Console::WriteLine(string)
     IL_00a8:  nop
     .try
@@ -638,11 +765,10 @@
       IL_00b3:  pop
       IL_00b4:  ldc.i4.0
       IL_00b5:  ldstr      "Expecting exception on GI23Class"
-      IL_00ba:  call       void Test::Assert(bool,
-                                             string)
+      IL_00ba:  call       void Test::Assert(bool, string)
       IL_00bf:  nop
       IL_00c0:  nop
-      IL_00c1:  leave.s    IL_00e0
+      IL_00c1:  leave.s    IL_00e0a
 
     }  // end .try
     catch [System.Runtime]System.Runtime.AmbiguousImplementationException
@@ -652,14 +778,47 @@
       IL_00c6:  ldstr      "Exception caught: "
       IL_00cb:  ldloc.s    V_9
       IL_00cd:  callvirt   instance string [mscorlib]System.Object::ToString()
-      IL_00d2:  call       string [mscorlib]System.String::Concat(string,
-                                                                  string)
+      IL_00d2:  call       string [mscorlib]System.String::Concat(string, string)
       IL_00d7:  call       void [mscorlib]System.Console::WriteLine(string)
       IL_00dc:  nop
-      IL_00dd:  nop
-      IL_00de:  leave.s    IL_00e0
+      IL_00de:  leave.s    IL_00e0a
 
     }  // end handler
+
+    IL_00e0a: ldstr      "Calling GI1<T>.Func on GI23Struct<S> - expecting exception"
+              call       void [mscorlib]System.Console::WriteLine(string)
+              nop
+    .try
+    {
+                nop
+                ldloca.s   V_8
+                constrained. valuetype [svm_diamondshape]GI23Struct`1<object>
+                call         int32 class GI1`1<object>::Func<string>(class [mscorlib]System.Type[]&)
+                pop
+                ldc.i4.0
+                ldstr      "Expecting exception on GI23Class"
+                call       void Test::Assert(bool,
+                                             string)
+                nop
+                leave.s    IL_00e0
+
+    }  // end .try
+    catch [System.Runtime]System.Runtime.AmbiguousImplementationException
+    {
+                stloc.s    V_9
+                nop
+                ldstr      "Exception caught: "
+                ldloc.s    V_9
+                callvirt   instance string [mscorlib]System.Object::ToString()
+                call       string [mscorlib]System.String::Concat(string,
+                                                                  string)
+                call       void [mscorlib]System.Console::WriteLine(string)
+                nop
+                nop
+                leave.s    IL_00e0
+
+    }  // end handler
+
     IL_00e0:  ret 
   } // end of method Program::Negative
 
@@ -667,12 +826,7 @@
   {
     // Code size       189 (0xbd)
     .maxstack  2
-    .locals init (class I4Class V_0,
-             class I1 V_1,
-             class I8Class V_2,
-             class GI4Class`1<object> V_3,
-             class [mscorlib]System.Type[] V_4,
-             class GI1`1<object> V_5)
+    .locals init (class [mscorlib]System.Type[] V_4)
     IL_0000:  nop
     IL_0001:  ldstr      "Calling I1.Func on I4Class - expecting I4.Func"
     IL_0006:  call       void [mscorlib]System.Console::WriteLine(string)
@@ -683,9 +837,21 @@
     IL_001c:  ldc.i4.s   14
     IL_001e:  ceq
     IL_0020:  ldstr      "Expecting I1.Func to land on I4.Func"
-    IL_0025:  call       void Test::Assert(bool,
-                                           string)
+    IL_0025:  call       void Test::Assert(bool, string)
     IL_002a:  nop
+
+              ldstr      "Calling I1.Func on I4Struct - expecting I4.Func"
+              call       void [mscorlib]System.Console::WriteLine(string)
+              nop
+              ldc.i4.s   10
+              constrained. valuetype I4Struct
+              call       int32 I1::Func(int32)
+              ldc.i4.s   14
+              ceq
+              ldstr      "Expecting I1.Func to land on I4.Func"
+              call       void Test::Assert(bool, string)
+              nop
+
     IL_002b:  ldstr      "Calling I1.Func on I8Class - expecting I8.Func"
     IL_0030:  call       void [mscorlib]System.Console::WriteLine(string)
     IL_0035:  nop
@@ -695,11 +861,22 @@
     IL_0046:  ldc.i4.s   18
     IL_0048:  ceq
     IL_004a:  ldstr      "Expecting I1.Func to land on I8.Func"
-    IL_004f:  call       void Test::Assert(bool,
-                                           string)
+    IL_004f:  call       void Test::Assert(bool, string)
     IL_0054:  nop
-    IL_0055:  ldstr      "Calling GI1.Func on GI4Class<object> - expecting G"
-    + "I4.Func<S>"
+
+              ldstr      "Calling I1.Func on I8Struct - expecting I8.Func"
+              call       void [mscorlib]System.Console::WriteLine(string)
+              nop
+              ldc.i4.s   10
+              constrained. valuetype [svm_diamondshape]I8Struct
+              call       int32 I1::Func(int32)
+              ldc.i4.s   18
+              ceq
+              ldstr      "Expecting I1.Func to land on I8.Func"
+              call       void Test::Assert(bool, string)
+              nop
+
+    IL_0055:  ldstr      "Calling GI1.Func on GI4Class<object> - expecting GI4.Func<S>"
     IL_005a:  call       void [mscorlib]System.Console::WriteLine(string)
     IL_005f:  nop
     IL_006b:  ldloca.s   V_4
@@ -708,30 +885,57 @@
     IL_0072:  ldc.i4.4
     IL_0073:  ceq
     IL_0075:  ldstr      "Expecting GI1<T>.Func to land on GII4<T>.Func<S>"
-    IL_007a:  call       void Test::Assert(bool,
-                                           string)
+    IL_007a:  call       void Test::Assert(bool, string)
     IL_007f:  nop
+
+              ldloc.s    V_4
+              ldc.i4.0
+              ldelem.ref
+              ldtoken    [mscorlib]System.Object
+              call       class [mscorlib]System.Type [mscorlib]System.Type::GetTypeFromHandle(valuetype [mscorlib]System.RuntimeTypeHandle)
+              call       bool [mscorlib]System.Type::op_Equality(class [mscorlib]System.Type, class [mscorlib]System.Type)
+              ldstr      "T must be object"
+              call       void Test::Assert(bool, string)
+              nop
+              ldloc.s    V_4
+              ldc.i4.1
+              ldelem.ref
+              ldtoken    [mscorlib]System.String
+              call       class [mscorlib]System.Type [mscorlib]System.Type::GetTypeFromHandle(valuetype [mscorlib]System.RuntimeTypeHandle)
+              call       bool [mscorlib]System.Type::op_Equality(class [mscorlib]System.Type, class [mscorlib]System.Type)
+              ldstr      "S must be string"
+              call       void Test::Assert(bool, string)
+              nop
+
+              ldstr      "Calling GI1.Func on GI4Struct<object> - expecting GI4.Func<S>"
+              call       void [mscorlib]System.Console::WriteLine(string)
+              nop
+              ldloca.s   V_4
+              constrained. valuetype [svm_diamondshape]GI4Struct`1<object>
+              call       int32 class GI1`1<object>::Func<string>(class [mscorlib]System.Type[]&)
+              ldc.i4.4
+              ceq
+              ldstr      "Expecting GI1<T>.Func to land on GII4<T>.Func<S>"
+              call       void Test::Assert(bool, string)
+              nop
+
     IL_0080:  ldloc.s    V_4
     IL_0082:  ldc.i4.0
     IL_0083:  ldelem.ref
     IL_0084:  ldtoken    [mscorlib]System.Object
     IL_0089:  call       class [mscorlib]System.Type [mscorlib]System.Type::GetTypeFromHandle(valuetype [mscorlib]System.RuntimeTypeHandle)
-    IL_008e:  call       bool [mscorlib]System.Type::op_Equality(class [mscorlib]System.Type,
-                                                                 class [mscorlib]System.Type)
+    IL_008e:  call       bool [mscorlib]System.Type::op_Equality(class [mscorlib]System.Type, class [mscorlib]System.Type)
     IL_0093:  ldstr      "T must be object"
-    IL_0098:  call       void Test::Assert(bool,
-                                           string)
+    IL_0098:  call       void Test::Assert(bool, string)
     IL_009d:  nop
     IL_009e:  ldloc.s    V_4
     IL_00a0:  ldc.i4.1
     IL_00a1:  ldelem.ref
     IL_00a2:  ldtoken    [mscorlib]System.String
     IL_00a7:  call       class [mscorlib]System.Type [mscorlib]System.Type::GetTypeFromHandle(valuetype [mscorlib]System.RuntimeTypeHandle)
-    IL_00ac:  call       bool [mscorlib]System.Type::op_Equality(class [mscorlib]System.Type,
-                                                                 class [mscorlib]System.Type)
+    IL_00ac:  call       bool [mscorlib]System.Type::op_Equality(class [mscorlib]System.Type, class [mscorlib]System.Type)
     IL_00b1:  ldstr      "S must be string"
-    IL_00b6:  call       void Test::Assert(bool,
-                                           string)
+    IL_00b6:  call       void Test::Assert(bool, string)
     IL_00bb:  nop
     IL_00bc:  ret
   } // end of method Program::Positive
