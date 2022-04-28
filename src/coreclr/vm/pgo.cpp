@@ -20,7 +20,7 @@
 //
 // In the current implementation, the method stable hash code isn't a good replacement for "token" as it doesn't
 // carry any detail about signatures, and is probably quite slow to compute
-// The plan is to swap over to the typenamehash 
+// The plan is to swap over to the typenamehash
 
 // Goals
 // 1. Need to be able to walk at any time.
@@ -121,7 +121,7 @@ public:
 
         auto lambda = [&](int64_t thWritten)
         {
-            if (ICorJitInfo::IsUnknownTypeHandle(thWritten)) return;
+            if (ICorJitInfo::IsUnknownTypeHandle((intptr_t)thWritten)) return;
 
             if (thWritten != 0)
             {
@@ -291,7 +291,7 @@ void ReadLineAndDiscard(FILE* file)
         auto stringLen = strlen(buffer);
         if (stringLen == 0)
             return;
-        
+
         if (buffer[stringLen - 1] == '\n')
         {
             return;
@@ -387,7 +387,7 @@ void PgoManager::ReadPgoData()
 
             // Read schema
             ICorJitInfo::PgoInstrumentationSchema schema;
-            
+
             if (sscanf_s(buffer, s_RecordString, &schema.InstrumentationKind, &schema.ILOffset, &schema.Count, &schema.Other) != 4)
             {
                 failed = true;
@@ -639,7 +639,7 @@ HRESULT PgoManager::allocPgoInstrumentationBySchemaInstance(MethodDesc* pMD,
     }
 
     S_SIZE_T allocationSize = S_SIZE_T(sizeof(HeaderList)) + S_SIZE_T(pSchema[countSchemaItems - 1].Offset) + S_SIZE_T(pSchema[countSchemaItems - 1].Count) * S_SIZE_T(InstrumentationKindToSize(pSchema[countSchemaItems - 1].InstrumentationKind));
-    
+
     if (allocationSize.IsOverflow())
     {
         return E_NOTIMPL;
@@ -1020,7 +1020,7 @@ HRESULT PgoManager::getPgoInstrumentationResultsInstance(MethodDesc* pMD, BYTE**
         *pCountSchemaItems = schemaArray.GetCount();
         memcpy(*pAllocatedData, schemaArray.OpenRawBuffer(), schemaDataSize);
         schemaArray.CloseRawBuffer();
-        
+
         size_t* pInstrumentationDataDst = (size_t*)((*pAllocatedData) + schemaDataSize);
         size_t* pInstrumentationDataDstEnd = (size_t*)((*pAllocatedData) + schemaDataSize + instrumentationDataSize);
         *pInstrumentationData = (BYTE*)pInstrumentationDataDst;

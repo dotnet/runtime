@@ -1097,7 +1097,7 @@ void ComCallMethodDesc::InitNativeInfo()
             {
                 // Check to see if this is the parameter after which we need to read the LCID from.
                 if (iArg == iLCIDArg)
-                    nativeArgSize += StackElemSize(sizeof(LCID));
+                    nativeArgSize += (UINT16)StackElemSize(sizeof(LCID));
 
                 MarshalInfo info(msig.GetModule(), msig.GetArgProps(), msig.GetSigTypeContext(), params[iArg],
                                  MarshalInfo::MARSHAL_SCENARIO_COMINTEROP,
@@ -1110,7 +1110,7 @@ void ComCallMethodDesc::InitNativeInfo()
 
                 if (info.GetMarshalType() == MarshalInfo::MARSHAL_TYPE_UNKNOWN)
                 {
-                    nativeArgSize += StackElemSize(sizeof(LPVOID));
+                    nativeArgSize += (UINT16)StackElemSize(sizeof(LPVOID));
                     m_flags |= enum_HasMarshalError;
                 }
                 else
@@ -1125,7 +1125,7 @@ void ComCallMethodDesc::InitNativeInfo()
 
             // Check to see if this is the parameter after which we need to read the LCID from.
             if (iArg == iLCIDArg)
-                nativeArgSize += StackElemSize(sizeof(LCID));
+                nativeArgSize += (UINT16)StackElemSize(sizeof(LCID));
 #endif // TARGET_X86
 
 

@@ -2905,7 +2905,7 @@ void MarshalInfo::GenerateReturnIL(NDirectStubLinker* psl,
         // structure and 4-byte structure. The former is supposed to be returned by-ref using a secret argument
         // (at least in MSVC compiled code) while the latter is returned in EAX. We are keeping the behavior for
         // now for backward compatibility.
-        X86_ONLY(wNativeSize = StackElemSize(wNativeSize));
+        X86_ONLY(wNativeSize = (UINT16)StackElemSize(wNativeSize));
 
         pMarshaler->EmitMarshalReturnValue(pcsMarshal, pcsUnmarshal, pcsDispatch, m_paramidx + argOffset, wNativeSize, dwMarshalFlags, &m_args);
 
