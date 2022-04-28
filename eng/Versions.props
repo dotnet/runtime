@@ -92,7 +92,6 @@
     <MicrosoftWin32RegistryVersion>5.0.0</MicrosoftWin32RegistryVersion>
     <StyleCopAnalyzersVersion>1.2.0-beta.406</StyleCopAnalyzersVersion>
     <SystemBuffersVersion>4.5.1</SystemBuffersVersion>
-    <SystemCollectionsImmutableVersion>6.0.0</SystemCollectionsImmutableVersion>
     <SystemComponentModelAnnotationsVersion>5.0.0</SystemComponentModelAnnotationsVersion>
     <SystemDataSqlClientVersion>4.8.3</SystemDataSqlClientVersion>
     <SystemDataDataSetExtensionsVersion>4.5.0</SystemDataDataSetExtensionsVersion>
@@ -100,7 +99,7 @@
     <SystemIOPipesAccessControlVersion>5.0.0</SystemIOPipesAccessControlVersion>
     <SystemMemoryVersion>4.5.4</SystemMemoryVersion>
     <SystemNumericsVectorsVersion>4.5.0</SystemNumericsVectorsVersion>
-    <SystemReflectionMetadataVersion>6.0.1</SystemReflectionMetadataVersion>
+    <SystemReflectionMetadataVersion>6.0.0</SystemReflectionMetadataVersion>
     <SystemReflectionEmitVersion>4.7.0</SystemReflectionEmitVersion>
     <SystemReflectionEmitILGenerationVersion>4.7.0</SystemReflectionEmitILGenerationVersion>
     <SystemReflectionEmitLightweightVersion>4.7.0</SystemReflectionEmitLightweightVersion>
