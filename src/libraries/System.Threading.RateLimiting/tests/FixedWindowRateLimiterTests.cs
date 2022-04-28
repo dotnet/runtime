@@ -690,5 +690,57 @@ namespace System.Threading.RateLimiting.Test
             Assert.False(limiter2.IsAutoReplenishing);
             Assert.Equal(replenishPeriod, limiter2.ReplenishmentPeriod);
         }
+
+        [Fact]
+        public override async Task CanFillQueueWithNewestFirstAfterCancelingQueuedRequestWithAnotherQueuedRequest()
+        {
+            var limiter = new FixedWindowRateLimiter(new FixedWindowRateLimiterOptions(2, QueueProcessingOrder.NewestFirst, 2,
+                TimeSpan.Zero, autoReplenishment: false));
+            var lease = limiter.Acquire(2);
+            Assert.True(lease.IsAcquired);
+
+            var cts = new CancellationTokenSource();
+            var wait = limiter.WaitAsync(1, cts.Token);
+
+            // Add another item to queue, will be completed as failed later when we queue another item
+            var wait2 = limiter.WaitAsync(1);
+            Assert.False(wait.IsCompleted);
+
+            cts.Cancel();
+            var ex = await Assert.ThrowsAsync<TaskCanceledException>(() => wait.AsTask());
+            Assert.Equal(cts.Token, ex.CancellationToken);
+
+            lease.Dispose();
+
+            var wait3 = limiter.WaitAsync(2);
+            Assert.False(wait3.IsCompleted);
+
+            // will be kicked by wait3 because we're using NewestFirst
+            lease = await wait2;
+            Assert.False(lease.IsAcquired);
+
+            limiter.TryReplenish();
+            lease = await wait3;
+            Assert.True(lease.IsAcquired);
+        }
+
+        [Fact]
+        public override async Task CanDisposeAfterCancelingQueuedRequest()
+        {
+            var limiter = new FixedWindowRateLimiter(new FixedWindowRateLimiterOptions(1, QueueProcessingOrder.OldestFirst, 1,
+                TimeSpan.Zero, autoReplenishment: false));
+            var lease = limiter.Acquire(1);
+            Assert.True(lease.IsAcquired);
+
+            var cts = new CancellationTokenSource();
+            var wait = limiter.WaitAsync(1, cts.Token);
+
+            cts.Cancel();
+            var ex = await Assert.ThrowsAsync<TaskCanceledException>(() => wait.AsTask());
+            Assert.Equal(cts.Token, ex.CancellationToken);
+
+            // Make sure dispose doesn't have any side-effects when dealing with a canceled queued item
+            limiter.Dispose();
+        }
     }
 }

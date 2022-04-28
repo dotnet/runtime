@@ -37,6 +37,7 @@ namespace System.Threading.RateLimiting
         // TODO: Look at ConcurrentDictionary to try and avoid a global lock
         private Dictionary<TKey, Lazy<RateLimiter>> _limiters;
         private bool _disposed;
+        private TaskCompletionSource<object?> _disposeComplete = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
         // Used by the Timer to call TryRelenish on ReplenishingRateLimiters
         // We use a separate list to avoid running TryReplenish (which might be user code) inside our lock
@@ -123,6 +124,7 @@ namespace System.Threading.RateLimiting
 
             if (alreadyDisposed)
             {
+                _disposeComplete.Task.GetAwaiter().GetResult();
                 return;
             }
 
@@ -133,6 +135,7 @@ namespace System.Threading.RateLimiting
                 limiter.Value.Value.Dispose();
             }
             _limiters.Clear();
+            _disposeComplete.TrySetResult(null);
         }
 
         protected override async ValueTask DisposeAsyncCore()
@@ -144,6 +147,7 @@ namespace System.Threading.RateLimiting
 
             if (alreadyDisposed)
             {
+                await _disposeComplete.Task.ConfigureAwait(false);
                 return;
             }
 
@@ -152,6 +156,7 @@ namespace System.Threading.RateLimiting
                 await limiter.Value.Value.DisposeAsync().ConfigureAwait(false);
             }
             _limiters.Clear();
+            _disposeComplete.TrySetResult(null);
         }
 
         // This handles the common state changes that Dispose and DisposeAsync need to do, the individual limiters still need to be Disposed after this call
