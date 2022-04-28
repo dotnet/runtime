@@ -16,7 +16,7 @@
 #include "gc-common.h"
 
 //JS funcs
-extern MonoObject* mono_wasm_invoke_js_with_args (int js_handle, MonoString *method, MonoArray *args, int *is_exception);
+extern void mono_wasm_invoke_js_with_args (int js_handle, MonoString *method, MonoArray *args, int *is_exception, MonoObject **result);
 extern void mono_wasm_get_object_property_ref (int js_handle, MonoString **propertyName, int *is_exception, MonoObject **result);
 extern void mono_wasm_get_by_index_ref (int js_handle, int property_index, int *is_exception, MonoObject **result);
 extern void mono_wasm_set_object_property_ref (int js_handle, MonoString **propertyName, MonoObject **value, int createIfNotExist, int hasOwnProperty, int *is_exception, MonoObject **result);

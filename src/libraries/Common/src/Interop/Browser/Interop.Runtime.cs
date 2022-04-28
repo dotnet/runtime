@@ -17,7 +17,7 @@ internal static partial class Interop
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern object CompileFunction(string str, out int exceptionalResult);
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern object InvokeJSWithArgs(IntPtr jsHandle, string method, object?[] parms, out int exceptionalResult);
+        internal static extern void InvokeJSWithArgs(IntPtr jsHandle, string method, object?[] parms, out int exceptionalResult, out object result);
         // FIXME: All of these signatures need to be object? in various places and not object, but the nullability
         //  warnings will take me hours and hours to fix so I'm not doing that right now since they're already broken
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
