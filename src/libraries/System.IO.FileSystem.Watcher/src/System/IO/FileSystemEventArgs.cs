@@ -22,17 +22,13 @@ namespace System.IO
             _changeType = changeType;
             _name = name;
 
-            if (string.IsNullOrEmpty(directory)) // empty directory means current working dir
+            if (directory.Length == 0) // empty directory means current working dir
             {
                 directory = ".";
             }
 
-            _fullPath = Path.Join(Path.GetFullPath(directory), name);
-
-            if (string.IsNullOrEmpty(name))
-            {
-                _fullPath = PathInternal.EnsureTrailingSeparator(_fullPath);
-            }
+            string fullDirectoryPath = Path.GetFullPath(directory);
+            _fullPath = string.IsNullOrEmpty(name) ? PathInternal.EnsureTrailingSeparator(fullDirectoryPath) : Path.Join(fullDirectoryPath, name);
         }
 
         /// <devdoc>
