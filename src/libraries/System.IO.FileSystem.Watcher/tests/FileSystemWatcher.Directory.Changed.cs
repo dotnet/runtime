@@ -14,14 +14,13 @@ namespace System.IO.Tests
         {
             FileSystemWatcherTest.Execute(() =>
             {
-                using (var testDirectory = new TempDirectory(GetTestFilePath()))
-                using (var dir = new TempDirectory(Path.Combine(testDirectory.Path, "dir")))
-                using (var watcher = new FileSystemWatcher(testDirectory.Path, Path.GetFileName(dir.Path)))
+                string dir = CreateTestDirectory(TestDirectory, "dir");
+                using (var watcher = new FileSystemWatcher(TestDirectory, Path.GetFileName(dir)))
                 {
-                    Action action = () => Directory.SetLastWriteTime(dir.Path, DateTime.Now + TimeSpan.FromSeconds(10));
+                    Action action = () => Directory.SetLastWriteTime(dir, DateTime.Now + TimeSpan.FromSeconds(10));
 
                     WatcherChangeTypes expected = WatcherChangeTypes.Changed;
-                    ExpectEvent(watcher, expected, action, expectedPath: dir.Path);
+                    ExpectEvent(watcher, expected, action, expectedPath: dir);
                 }
             }, maxAttempts: DefaultAttemptsForExpectedEvent, backoffFunc: (iteration) => RetryDelayMilliseconds, retryWhen: e => e is XunitException);
         }
@@ -29,13 +28,12 @@ namespace System.IO.Tests
         [Fact]
         public void FileSystemWatcher_Directory_Changed_WatchedFolder()
         {
-            using (var testDirectory = new TempDirectory(GetTestFilePath()))
-            using (var dir = new TempDirectory(Path.Combine(testDirectory.Path, "dir")))
-            using (var watcher = new FileSystemWatcher(dir.Path, "*"))
+            string dir = CreateTestDirectory(TestDirectory, "dir");
+            using (var watcher = new FileSystemWatcher(dir, "*"))
             {
-                Action action = () => Directory.SetLastWriteTime(dir.Path, DateTime.Now + TimeSpan.FromSeconds(10));
+                Action action = () => Directory.SetLastWriteTime(dir, DateTime.Now + TimeSpan.FromSeconds(10));
 
-                ExpectEvent(watcher, 0, action, expectedPath: dir.Path);
+                ExpectEvent(watcher, 0, action, expectedPath: dir);
             }
         }
 
@@ -44,57 +42,53 @@ namespace System.IO.Tests
         [InlineData(true)]
         public void FileSystemWatcher_Directory_Changed_Nested(bool includeSubdirectories)
         {
-            using (var dir = new TempDirectory(GetTestFilePath()))
-            using (var firstDir = new TempDirectory(Path.Combine(dir.Path, "dir1")))
-            using (var nestedDir = new TempDirectory(Path.Combine(firstDir.Path, "nested")))
-            using (var watcher = new FileSystemWatcher(dir.Path, "*"))
+            string nestedDir = CreateTestDirectory(TestDirectory, "dir1", "nested");
+            using (var watcher = new FileSystemWatcher(TestDirectory, "*"))
             {
                 watcher.IncludeSubdirectories = includeSubdirectories;
                 watcher.NotifyFilter = NotifyFilters.DirectoryName | NotifyFilters.Attributes;
 
-                var attributes = File.GetAttributes(nestedDir.Path);
-                Action action = () => File.SetAttributes(nestedDir.Path, attributes | FileAttributes.ReadOnly);
-                Action cleanup = () => File.SetAttributes(nestedDir.Path, attributes);
+                var attributes = File.GetAttributes(nestedDir);
+                Action action = () => File.SetAttributes(nestedDir, attributes | FileAttributes.ReadOnly);
+                Action cleanup = () => File.SetAttributes(nestedDir, attributes);
 
                 WatcherChangeTypes expected = includeSubdirectories ? WatcherChangeTypes.Changed : 0;
-                ExpectEvent(watcher, expected, action, cleanup, nestedDir.Path);
+                ExpectEvent(watcher, expected, action, cleanup, nestedDir);
             }
         }
 
         [ConditionalFact(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
         public void FileSystemWatcher_Directory_Changed_SymLink()
         {
-            using (var testDirectory = new TempDirectory(GetTestFilePath()))
-            using (var dir = new TempDirectory(Path.Combine(testDirectory.Path, "dir")))
-            using (var tempDir = new TempDirectory(Path.Combine(testDirectory.Path, "tempDir")))
-            using (var file = new TempFile(Path.Combine(tempDir.Path, "test")))
-            using (var watcher = new FileSystemWatcher(dir.Path, "*"))
+            string dir = Path.Combine(TestDirectory, "dir");
+            string tempDir = CreateTestDirectory(dir, "tempDir");
+            string file = CreateTestFile(tempDir, "test");
+            using (var watcher = new FileSystemWatcher(dir, "*"))
             {
                 // Setup the watcher
                 watcher.NotifyFilter = NotifyFilters.FileName | NotifyFilters.Size;
                 watcher.IncludeSubdirectories = true;
-                Assert.True(MountHelper.CreateSymbolicLink(Path.Combine(dir.Path, GetRandomLinkName()), tempDir.Path, true));
+                Assert.True(MountHelper.CreateSymbolicLink(Path.Combine(dir, GetRandomLinkName()), tempDir, true));
 
-                Action action = () => File.AppendAllText(file.Path, "longtext");
-                Action cleanup = () => File.AppendAllText(file.Path, "short");
+                Action action = () => File.AppendAllText(file, "longtext");
+                Action cleanup = () => File.AppendAllText(file, "short");
 
-                ExpectEvent(watcher, 0, action, cleanup, dir.Path);
+                ExpectEvent(watcher, 0, action, cleanup, dir);
             }
         }
 
         [Fact]
         public void FileSystemWatcher_Directory_Changed_SynchronizingObject()
         {
-            using (var testDirectory = new TempDirectory(GetTestFilePath()))
-            using (var dir = new TempDirectory(Path.Combine(testDirectory.Path, "dir")))
-            using (var watcher = new FileSystemWatcher(testDirectory.Path, Path.GetFileName(dir.Path)))
+            string dir = CreateTestDirectory(TestDirectory, "dir");
+            using (var watcher = new FileSystemWatcher(TestDirectory, Path.GetFileName(dir)))
             {
                 TestISynchronizeInvoke invoker = new TestISynchronizeInvoke();
                 watcher.SynchronizingObject = invoker;
 
-                Action action = () => Directory.SetLastWriteTime(dir.Path, DateTime.Now + TimeSpan.FromSeconds(10));
+                Action action = () => Directory.SetLastWriteTime(dir, DateTime.Now + TimeSpan.FromSeconds(10));
 
-                ExpectEvent(watcher, WatcherChangeTypes.Changed, action, expectedPath: dir.Path);
+                ExpectEvent(watcher, WatcherChangeTypes.Changed, action, expectedPath: dir);
                 Assert.True(invoker.BeginInvoke_Called);
             }
         }
