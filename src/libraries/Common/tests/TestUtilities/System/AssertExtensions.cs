@@ -382,75 +382,74 @@ namespace System
         }
 
         /// <summary>
-        /// Validates that the actual collection contains same items as expected collection. If the test fails, this will display:
+        /// Validates that the actual collection contains same items as expected collection (doesn't verify ordering). If the test fails, this will display:
         /// 1. Count if two collection count are different;
-        /// 2. Missed expected collection item when found
+        /// 2. Unexpected actual collection items
         /// </summary>
         /// <param name="expected">The collection that <paramref name="actual"/> should contain same items as</param>
         /// <param name="actual"></param>
         /// <param name="comparer">The comparer used to compare the items in two collections</param>
         public static void CollectionEqual<T>(IEnumerable<T> expected, IEnumerable<T> actual, IEqualityComparer<T> comparer)
         {
-            var actualItemCountMapping = new Dictionary<T, ItemCount>(comparer);
-            int actualCount = 0;
-            foreach (T actualItem in actual)
+            var expectedItemCountMapping = new Dictionary<T, ItemCount>(comparer);
+            int expectedCount = 0;
+            foreach (T expectedItem in expected)
             {
-                if (actualItemCountMapping.TryGetValue(actualItem, out ItemCount countInfo))
+                if (expectedItemCountMapping.TryGetValue(expectedItem, out ItemCount countInfo))
                 {
                     countInfo.Original++;
                     countInfo.Remain++;
                 }
                 else
                 {
-                    actualItemCountMapping[actualItem] = new ItemCount(1, 1);
+                    expectedItemCountMapping[expectedItem] = new ItemCount(1, 1);
                 }
 
-                actualCount++;
+                expectedCount++;
             }
 
-            var expectedArray = expected.ToArray();
-            var expectedCount = expectedArray.Length;
+            var actualArray = actual.ToArray();
+            var actualCount = actualArray.Length;
 
-            if (expectedCount != actualCount)
-            {
-                Throw();
-            }
+            var sb = new StringBuilder();
+            sb.AppendLine("Collections are not equal.");
+            sb.AppendLine($"Expected length: {expectedCount}, actual length: {actualCount}.");
 
-            for (var i = 0; i < expectedCount; i++)
+            int notFoundCount = 0;
+            const int NotFoundCountLimit = 10;
+
+            for (var i = 0; i < actualCount; i++)
             {
-                T currentExpectedItem = expectedArray[i];
-                if (!actualItemCountMapping.TryGetValue(currentExpectedItem, out ItemCount countInfo))
+                T currentActualItem = actualArray[i];
+                if (!expectedItemCountMapping.TryGetValue(currentActualItem, out ItemCount countInfo))
                 {
-                    Throw();
+                    LogAndThrow(currentActualItem);
+                    continue;
                 }
 
                 if (countInfo.Remain == 0)
                 {
-                    Throw();
+                    LogAndThrow(currentActualItem);
+                    continue;
                 }
 
                 countInfo.Remain--;
             }
 
-            void Throw()
+            if (actualCount != expectedCount)
             {
-                var sb = new StringBuilder();
-                sb.AppendLine("Collections are not equal.");
-                sb.AppendLine($"Expected length: {expectedCount}, actual length: {actualCount}");
-
-                sb.AppendLine("Expected elements:");
-                foreach (T e in expected)
-                {
-                    sb.AppendLine(e.ToString());
-                }
-
-                sb.AppendLine("Actual elements:");
-                foreach (T a in actual)
-                {
-                    sb.AppendLine(a.ToString());
-                }
-
                 throw new XunitException(sb.ToString());
+            }
+
+            void LogAndThrow(T currentActualItem)
+            {
+                sb.AppendLine($"Unexpected item: {currentActualItem.ToString()}");
+
+                notFoundCount++;
+                if (notFoundCount == NotFoundCountLimit)
+                {
+                    throw new XunitException(sb.ToString());
+                }
             }
         }
 
