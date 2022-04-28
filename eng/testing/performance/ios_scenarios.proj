@@ -125,6 +125,8 @@
   </ItemGroup>
 
   <Target Name="ResetPYTHONPATHFix" AfterTargets="AddXHarnessCLI">
-    <HelixPostCommands>export PYTHONPATH=$ORIGPYPATH;$(HelixPostCommands)</HelixPostCommands>
+    <PropertyGroup>
+      <HelixPostCommands>export PYTHONPATH=$ORIGPYPATH;$(HelixPostCommands)</HelixPostCommands>
+    </PropertyGroup>
   </Target>
 </Project>
