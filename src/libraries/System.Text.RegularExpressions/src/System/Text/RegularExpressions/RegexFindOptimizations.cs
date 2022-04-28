@@ -686,10 +686,8 @@ namespace System.Text.RegularExpressions
                             }
 
                             // We have a winner.  The starting position is just after the last position that failed to match the loop.
-                            // TODO: It'd be nice to be able to communicate literalPos as a place the matching engine can start matching
-                            // after the loop, so that it doesn't need to re-match the loop.  This might only be feasible for RegexCompiler
-                            // and the source generator after we refactor them to generate a single Scan method rather than separate
-                            // FindFirstChar / Go methods.
+                            // RegexCompiler and the source generator also communicate the location of the found literal via a member of RegexRunner
+                            // they don't use, but that's not viable here.
                             pos = startingPos + prev + 1;
                             return true;
                         }
