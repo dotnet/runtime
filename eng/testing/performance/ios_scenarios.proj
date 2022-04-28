@@ -78,7 +78,6 @@
           cd $(ScenarioDirectory)mauiios
           sign MauiTesting.app
 
-          echo Py Path: $PYTHONPATH OrigPath: $ORIGPYPATH Helix Py Path: $HELIX_PYTHONPATH
           $(Python) pre.py --name MauiTesting.app
 
           # Testing commands
@@ -88,7 +87,13 @@
           
           # Post commands
           $(Python) post.py
-          export PYTHONPATH=$ORIGPYPATH
+          result=1
+
+          if [ "$result" != "0" ]; then
+            echo Reporting Infra Problem
+            report_infrastructure_failure "TESTING:Failed to ios perf, this message is not great but its all we got for this string..."
+          fi
+
           exit $result
         ]]>
 	  </CustomCommands>
@@ -107,7 +112,6 @@
           cd $(ScenarioDirectory)mauiios
           sign Microsoft.NetConf2021.Maui.app
 
-          echo Py Path: $PYTHONPATH OrigPath: $ORIGPYPATH Helix Py Path: $HELIX_PYTHONPATH
           $(Python) pre.py --name Microsoft.NetConf2021.Maui.app
 
           # Testing commands
@@ -117,14 +121,20 @@
           
           # Post commands
           $(Python) post.py
-          export PYTHONPATH=$ORIGPYPATH
+          result=1
+
+          if [ "$result" != "0" ]; then
+            echo Reporting Infra Problem
+            report_infrastructure_failure "TESTING:Failed to ios perf, this message is not great but its all we got for this string..."
+          fi
+
           exit $result
         ]]>
 	  </CustomCommands>
 	</XHarnessAppBundleToTest>
   </ItemGroup>
 
-  <Target Name="ResetPYTHONPATHFix" AfterTargets="AddXHarnessCLI">
+  <Target Name="ResetPYTHONPATHBeforeXHarnessCommand" AfterTargets="AddXHarnessCLI">
     <PropertyGroup>
       <HelixPostCommands>export PYTHONPATH=$ORIGPYPATH;$(HelixPostCommands)</HelixPostCommands>
     </PropertyGroup>
