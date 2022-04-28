@@ -7237,10 +7237,15 @@ ArrayStack<BasicBlock*> Compiler::optHoistLoopBlocks(unsigned                 lo
                         assert(value.Node() != tree);
                         JITDUMP("      [%06u]", dspTreeID(value.Node()));
 
-                        if (isCommaTree && hasExcep)
+                        if ((value.Node()->gtFlags & GTF_ALL_EFFECT) != 0)
                         {
-                            JITDUMP(" not hoistable: cannot move past node that throws exception.\n");
-                            continue;
+                            // If the hoistable node has any side effects, make sure
+                            // we don't hoist it past a sibling that throws any exception.
+                            if (isCommaTree && hasExcep)
+                            {
+                                JITDUMP(" not hoistable: cannot move past node that throws exception.\n");
+                                continue;
+                            }
                         }
                         JITDUMP(" hoistable\n");
 
