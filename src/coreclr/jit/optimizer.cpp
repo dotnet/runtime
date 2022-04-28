@@ -6250,7 +6250,7 @@ void Compiler::optHoistLoopCode()
 #endif // DEBUG
 }
 
-ArrayStack<BasicBlock*> Compiler::optHoistLoopNest(unsigned lnum, LoopHoistContext* hoistCtxt)
+BasicBlockList* Compiler::optHoistLoopNest(unsigned lnum, LoopHoistContext* hoistCtxt)
 {
     // Do this loop, then recursively do all nested loops.
     JITDUMP("\n%s " FMT_LP "\n", optLoopTable[lnum].lpParent == BasicBlock::NOT_IN_LOOP ? "Loop Nest" : "Nested Loop",
@@ -6263,7 +6263,8 @@ ArrayStack<BasicBlock*> Compiler::optHoistLoopNest(unsigned lnum, LoopHoistConte
 #endif // LOOP_HOIST_STATS
 
     VNSet*                  hoistedInCurLoop = hoistCtxt->ExtractHoistedInCurLoop();
-    ArrayStack<BasicBlock*> preHeadersOfChildLoops(getAllocatorLoopHoist());
+    BasicBlockList* preHeadersOfChildLoops = nullptr;
+    BasicBlockList*         firstPreHeader         = nullptr;
 
     if (optLoopTable[lnum].lpChild != BasicBlock::NOT_IN_LOOP)
     {
@@ -6287,11 +6288,10 @@ ArrayStack<BasicBlock*> Compiler::optHoistLoopNest(unsigned lnum, LoopHoistConte
         for (unsigned child = optLoopTable[lnum].lpChild; child != BasicBlock::NOT_IN_LOOP;
              child          = optLoopTable[child].lpSibling)
         {
-            ArrayStack<BasicBlock*> preHeadersForThisLoop = optHoistLoopNest(child, hoistCtxt);
-
-            while (!preHeadersForThisLoop.Empty())
+            BasicBlockList* preHeadersForThisLoop = optHoistLoopNest(child, hoistCtxt);
+            while (preHeadersForThisLoop != nullptr)
             {
-                BasicBlock* preHeaderBlock = preHeadersForThisLoop.Pop();
+                BasicBlock* preHeaderBlock = preHeadersForThisLoop->block;
 
                 if (BitVecTraits::GetSize(&m_visitedTraits) < preHeaderBlock->bbNum)
                 {
@@ -6304,8 +6304,20 @@ ArrayStack<BasicBlock*> Compiler::optHoistLoopNest(unsigned lnum, LoopHoistConte
                 if (!BitVecOps::IsMember(&m_visitedTraits, m_visited, preHeaderBlock->bbNum))
                 {
                     BitVecOps::AddElemD(&m_visitedTraits, m_visited, preHeaderBlock->bbNum);
-                    preHeadersOfChildLoops.Push(preHeaderBlock);
+                    JITDUMP(" PREHEADER: " FMT_BB "\n", preHeaderBlock->bbNum);
+
+                    
+                    preHeadersOfChildLoops =
+                        new (this, CMK_LoopHoist) BasicBlockList(preHeaderBlock, preHeadersOfChildLoops);
+                    if (preHeadersOfChildLoops->next == nullptr)
+                    {
+                        firstPreHeader = preHeadersOfChildLoops;
+                    }
+
+                    //preHeadersOfChildLoops.Push(preHeaderBlock);
                 }
+
+                preHeadersForThisLoop = preHeadersForThisLoop->next;
             }
         }
 
@@ -6321,12 +6333,12 @@ ArrayStack<BasicBlock*> Compiler::optHoistLoopNest(unsigned lnum, LoopHoistConte
         }
     }
 
-    return optHoistThisLoop(lnum, hoistCtxt, preHeadersOfChildLoops);
+    return optHoistThisLoop(lnum, hoistCtxt, firstPreHeader);
 }
 
-ArrayStack<BasicBlock*> Compiler::optHoistThisLoop(unsigned                lnum,
+BasicBlockList* Compiler::optHoistThisLoop(unsigned                lnum,
                                                    LoopHoistContext*       hoistCtxt,
-                                                   ArrayStack<BasicBlock*> existingPreHeaders)
+                                                   BasicBlockList* existingPreHeaders)
 {
     LoopDsc* pLoopDsc = &optLoopTable[lnum];
 
@@ -6335,7 +6347,7 @@ ArrayStack<BasicBlock*> Compiler::optHoistThisLoop(unsigned                lnum,
     if (pLoopDsc->lpFlags & LPFLG_REMOVED)
     {
         JITDUMP("   ... not hoisting " FMT_LP ": removed\n", lnum);
-        return ArrayStack<BasicBlock*>(getAllocatorLoopHoist());
+        return nullptr;
     }
 
     // Ensure the per-loop sets/tables are empty.
@@ -6446,24 +6458,29 @@ ArrayStack<BasicBlock*> Compiler::optHoistThisLoop(unsigned                lnum,
     //
     ArrayStack<BasicBlock*> defExec(getAllocatorLoopHoist());
 
-    while (!existingPreHeaders.Empty())
+    
+    /*while (!existingPreHeaders.Empty())
     {
         BasicBlock* preHeaderBlock = existingPreHeaders.Pop();
-        JITDUMP("  Considering hoisting in preheader block " FMT_BB " added for the nested loop \n", preHeaderBlock->bbNum);
+        JITDUMP("  Considering hoisting in preheader block " FMT_BB " added for the nested loop \n",
+                preHeaderBlock->bbNum);
         defExec.Push(preHeaderBlock);
-    }
+    }*/
 
     if (pLoopDsc->lpExitCnt == 1)
     {
         assert(pLoopDsc->lpExit != nullptr);
-        JITDUMP("  Considering hoisting in blocks that dominate exit block " FMT_BB "\n", pLoopDsc->lpExit->bbNum);
+        JITDUMP("  Considering hoisting in blocks that dominate exit block " FMT_BB ":\n", pLoopDsc->lpExit->bbNum);
         BasicBlock* cur = pLoopDsc->lpExit;
         // Push dominators, until we reach "entry" or exit the loop.
         while (cur != nullptr && pLoopDsc->lpContains(cur) && cur != pLoopDsc->lpEntry)
         {
+            JITDUMP("  --  " FMT_BB "\n", cur->bbNum);
+
             defExec.Push(cur);
             cur = cur->bbIDom;
         }
+
         // If we didn't reach the entry block, give up and *just* push the entry block.
         if (cur != pLoopDsc->lpEntry)
         {
@@ -6472,16 +6489,33 @@ ArrayStack<BasicBlock*> Compiler::optHoistThisLoop(unsigned                lnum,
                     pLoopDsc->lpEntry->bbNum);
             defExec.Reset();
         }
-        defExec.Push(pLoopDsc->lpEntry);
     }
     else // More than one exit
     {
         JITDUMP("  Considering hoisting in entry block " FMT_BB " because " FMT_LP " has more than one exit\n",
                 pLoopDsc->lpEntry->bbNum, lnum);
+
         // We'll assume that only the entry block is definitely executed.
         // We could in the future do better.
-        defExec.Push(pLoopDsc->lpEntry);
     }
+
+    JITDUMP("  Considering hoisting in preheader blocks added for the nested loop:\n");
+
+    while (existingPreHeaders != nullptr)
+    {
+        BasicBlock* preHeaderBlock = existingPreHeaders->block;
+        /*JITDUMP("  Considering hoisting in preheader block " FMT_BB " added for the nested loop \n",
+                preHeaderBlock->bbNum);*/
+        JITDUMP("  --  " FMT_BB "\n", preHeaderBlock->bbNum);
+        defExec.Push(preHeaderBlock);
+        existingPreHeaders = existingPreHeaders->next;
+    }
+    JITDUMP("  Considering hoisting in entry block:\n");
+    JITDUMP("  --  " FMT_BB "\n", pLoopDsc->lpEntry->bbNum);
+    defExec.Push(pLoopDsc->lpEntry);
+
+    JITDUMP("\n");
+
 
     return optHoistLoopBlocks(lnum, &defExec, hoistCtxt);
 }
@@ -6724,7 +6758,7 @@ void Compiler::optCopyLoopMemoryDependence(GenTree* fromTree, GenTree* toTree)
 //    the loop, in the execution order, starting with the loop entry
 //    block on top of the stack.
 //
-ArrayStack<BasicBlock*> Compiler::optHoistLoopBlocks(unsigned                 loopNum,
+BasicBlockList* Compiler::optHoistLoopBlocks(unsigned                 loopNum,
                                                      ArrayStack<BasicBlock*>* blocks,
                                                      LoopHoistContext*        hoistContext)
 {
@@ -6756,12 +6790,14 @@ ArrayStack<BasicBlock*> Compiler::optHoistLoopBlocks(unsigned                 lo
             }
         };
 
-        ArrayStack<Value> m_valueStack;
-        bool              m_beforeSideEffect;
-        unsigned          m_loopNum;
-        LoopHoistContext* m_hoistContext;
-        BasicBlock*       m_currentBlock;
-        ArrayStack<BasicBlock*> m_preHeadersList;
+        ArrayStack<Value>       m_valueStack;
+        bool                    m_beforeSideEffect;
+        unsigned                m_loopNum;
+        LoopHoistContext*       m_hoistContext;
+        BasicBlock*             m_currentBlock;
+        BasicBlockList* m_preHeadersList;
+        BasicBlockList*         m_firstPreHeader;
+        //ArrayStack<BasicBlock*> m_preHeadersList;
 
         bool IsNodeHoistable(GenTree* node)
         {
@@ -6800,6 +6836,49 @@ ArrayStack<BasicBlock*> Compiler::optHoistLoopBlocks(unsigned                 lo
                 vnIsInvariant = IsTreeLoopMemoryInvariant(tree);
             }
             return vnIsInvariant;
+        }
+
+        //------------------------------------------------------------------------
+        // AppendPreheader: Appends the preheaders in the BasicBlockList. The list
+        //   populated is FIFO meaning the BasicBlock added first is the first block
+        //   in the list. During hoisting, we would extract them all and populate
+        //   them in another accumulator BasicBlockList. There, we would add the blocks
+        //   in LIFO order. The reason being `optHoistLoopBlocks` expects them to be
+        //   present in execution order.
+        //
+        // Arguments:
+        //   preHeader -- preHeader to add
+        //
+        void AppendPreheader(BasicBlock* preHeader)
+        {
+            if (m_preHeadersList == nullptr)
+            {
+                m_preHeadersList = new (m_compiler, CMK_LoopHoist) BasicBlockList(preHeader, nullptr);
+                m_firstPreHeader = m_preHeadersList;
+            }
+            else
+            {
+                m_preHeadersList->next = new (m_compiler, CMK_LoopHoist) BasicBlockList(preHeader, nullptr);
+                m_preHeadersList       = m_preHeadersList->next;
+            }
+        }
+
+        bool IsHoistingOverExcepSibling(GenTree* node, bool parentIsCommaTree, bool siblingHasExcep)
+        {
+            JITDUMP("      [%06u]", dspTreeID(node));
+
+            if ((node->gtFlags & GTF_ALL_EFFECT) != 0)
+            {
+                // If the hoistable node has any side effects, make sure
+                // we don't hoist it past a sibling that throws any exception.
+                if (parentIsCommaTree && siblingHasExcep)
+                {
+                    JITDUMP(" not hoistable: cannot move past node that throws exception.\n");
+                    return false;
+                }
+            }
+            JITDUMP(" hoistable\n");
+            return true;
         }
 
         //------------------------------------------------------------------------
@@ -6866,14 +6945,15 @@ ArrayStack<BasicBlock*> Compiler::optHoistLoopBlocks(unsigned                 lo
             , m_currentBlock(nullptr)
             /*, m_visitedTraits(compiler->fgBBNumMax * 2, compiler)
             , m_visited(BitVecOps::MakeEmpty(&m_visitedTraits)) */
-            , m_preHeadersList(compiler->getAllocatorLoopHoist())
+            , m_preHeadersList(nullptr)
+            //, m_preHeadersList(compiler->getAllocatorLoopHoist())
 
         {
         }
 
-        ArrayStack<BasicBlock*> GetNewPreHeaders()
+        BasicBlockList* GetNewPreHeaders()
         {
-            return m_preHeadersList;
+            return m_firstPreHeader;
         }
 
         void HoistBlock(BasicBlock* block)
@@ -6890,7 +6970,9 @@ ArrayStack<BasicBlock*> Compiler::optHoistLoopBlocks(unsigned                 lo
                     m_compiler->optHoistCandidate(stmt->GetRootNode(), block, m_loopNum, m_hoistContext);
                     if ((m_compiler->optLoopTable[m_loopNum].lpFlags & LPFLG_HAS_PREHEAD) != 0)
                     {
-                        m_preHeadersList.Push(m_compiler->optLoopTable[m_loopNum].lpHead);
+                        AppendPreheader(m_compiler->optLoopTable[m_loopNum].lpHead);
+                        /*m_preHeadersList = new (m_compiler, CMK_LoopHoist)
+                            BasicBlockList(m_compiler->optLoopTable[m_loopNum].lpHead, m_preHeadersList);*/
                     }
                 }
                 else
@@ -7235,26 +7317,20 @@ ArrayStack<BasicBlock*> Compiler::optHoistLoopBlocks(unsigned                 lo
                     if (value.m_hoistable)
                     {
                         assert(value.Node() != tree);
-                        JITDUMP("      [%06u]", dspTreeID(value.Node()));
-
-                        if ((value.Node()->gtFlags & GTF_ALL_EFFECT) != 0)
+                        
+                        if (IsHoistingOverExcepSibling(value.Node(), isCommaTree, hasExcep))
                         {
-                            // If the hoistable node has any side effects, make sure
-                            // we don't hoist it past a sibling that throws any exception.
-                            if (isCommaTree && hasExcep)
-                            {
-                                JITDUMP(" not hoistable: cannot move past node that throws exception.\n");
-                                continue;
-                            }
+                            m_compiler->optHoistCandidate(value.Node(), m_currentBlock, m_loopNum, m_hoistContext);
                         }
-                        JITDUMP(" hoistable\n");
 
                         // Don't hoist this tree again.
                         value.m_hoistable = false;
                         value.m_invariant = false;
 
-                        m_compiler->optHoistCandidate(value.Node(), m_currentBlock, m_loopNum, m_hoistContext);
-                        m_preHeadersList.Push(m_compiler->optLoopTable[m_loopNum].lpHead);
+                        AppendPreheader(m_compiler->optLoopTable[m_loopNum].lpHead);
+                        /*m_preHeadersList = new (m_compiler, CMK_LoopHoist)
+                            BasicBlockList(m_compiler->optLoopTable[m_loopNum].lpHead, m_preHeadersList);*/
+
                     }
                     else if (value.Node() != tree)
                     {
@@ -7293,7 +7369,6 @@ ArrayStack<BasicBlock*> Compiler::optHoistLoopBlocks(unsigned                 lo
 
             return fgWalkResult::WALK_CONTINUE;
         }
-
     };
 
     LoopDsc* loopDsc = &optLoopTable[loopNum];
