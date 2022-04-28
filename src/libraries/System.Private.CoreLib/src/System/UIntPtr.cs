@@ -172,14 +172,14 @@ namespace System
         [NonVersionable]
         public unsafe void* ToPointer() => _value;
 
-        /// <inheritdoc cref="INumber{TSelf}.Max(TSelf, TSelf)" />
+        /// <inheritdoc cref="IMinMaxValue{TSelf}.MaxValue" />
         public static UIntPtr MaxValue
         {
             [NonVersionable]
             get => (UIntPtr)nuint_t.MaxValue;
         }
 
-        /// <inheritdoc cref="INumber{TSelf}.Min(TSelf, TSelf)" />
+        /// <inheritdoc cref="IMinMaxValue{TSelf}.MinValue" />
         public static UIntPtr MinValue
         {
             [NonVersionable]
