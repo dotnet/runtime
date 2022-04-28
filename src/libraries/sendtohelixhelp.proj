@@ -6,7 +6,7 @@
   -->
 
   <PropertyGroup>
-    <WindowsShell Condition="'$(TargetOS)' == 'windows' or '$(BrowserHost)' == 'windows'">true</WindowsShell>
+    <WindowsShell Condition="'$(TargetOS)' == 'windows' or '$(BrowserHost)' == 'windows' or '$(IsPosixShell)' != 'true'">true</WindowsShell>
 
     <!-- Set Helix build to build number if available -->
     <HelixBuild Condition="'$(HelixBuild)' == ''">$(BUILD_BUILDNUMBER)</HelixBuild>
