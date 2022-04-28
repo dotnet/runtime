@@ -3772,21 +3772,19 @@ GenTree* Compiler::fgMorphMultiregStructArg(CallArg* arg)
     }
 
     var_types hfaType                 = TYP_UNDEF;
-    var_types elemType                = TYP_UNDEF;
     unsigned  elemCount               = 0;
-    unsigned  elemSize                = 0;
+    unsigned  elemSize                = 0;  // Will only be set for LCL_VAR/FLD arguments.
     var_types type[MAX_ARG_REG_COUNT] = {}; // TYP_UNDEF = 0
 
     hfaType = arg->AbiInfo.GetHfaType();
     if (varTypeIsValidHfaType(hfaType) && arg->AbiInfo.IsPassedInFloatRegisters())
     {
-        elemType  = hfaType;
-        elemSize  = genTypeSize(elemType);
+        elemSize  = genTypeSize(hfaType);
         elemCount = structSize / elemSize;
         assert(elemSize * elemCount == structSize);
         for (unsigned inx = 0; inx < elemCount; inx++)
         {
-            type[inx] = elemType;
+            type[inx] = hfaType;
         }
     }
     else
@@ -3837,8 +3835,7 @@ GenTree* Compiler::fgMorphMultiregStructArg(CallArg* arg)
             CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifndef TARGET_LOONGARCH64
-            // For LoongArch64's ABI, the struct which size is TARGET_POINTER_SIZE
-            // may be passed by two registers.
+            // For LoongArch64's ABI, the struct which size is TARGET_POINTER_SIZE may be passed by two registers,
             // e.g  `struct {int a; float b;}` passed by an integer register and a float register.
             structSize = elemCount * TARGET_POINTER_SIZE;
 #endif
@@ -3890,10 +3887,16 @@ GenTree* Compiler::fgMorphMultiregStructArg(CallArg* arg)
         unsigned             varNum  = varNode->GetLclNum();
         LclVarDsc*           varDsc  = lvaGetDesc(varNum);
 
-        // At this point any TYP_STRUCT LclVar must be an aligned struct
-        // or an HFA struct, both which are passed by value.
-        //
-        assert((varDsc->lvSize() == elemCount * TARGET_POINTER_SIZE) || varDsc->lvIsHfa());
+        // Code below will treat the local as a collection of "elemCount" fields,
+        // each "elemSize" bytes. Make sure that accounts for the whole variable.
+        CLANG_FORMAT_COMMENT_ANCHOR;
+
+#ifndef UNIX_AMD64_ABI
+        assert(varDsc->lvSize() == (elemCount * elemSize));
+#else // !UNXI_AMD64_ABI
+        // TODO-Cleanup: set "elemSize" for Unix x64 ABI correctly.
+        assert(varDsc->lvSize() == (elemCount * TARGET_POINTER_SIZE));
+#endif // !UNXI_AMD64_ABI
 
         varDsc->lvIsMultiRegArg = true;
 
@@ -3906,49 +3909,6 @@ GenTree* Compiler::fgMorphMultiregStructArg(CallArg* arg)
 #endif // DEBUG
 
 #ifndef UNIX_AMD64_ABI
-        // This local variable must match the layout of the 'objClass' type exactly
-        if (varDsc->lvIsHfa() && arg->AbiInfo.IsPassedInFloatRegisters())
-        {
-            // We have a HFA struct.
-            noway_assert(elemType == varDsc->GetHfaType());
-            noway_assert(elemSize == genTypeSize(elemType));
-            noway_assert(elemCount == (varDsc->lvExactSize / elemSize));
-            noway_assert(elemSize * elemCount == varDsc->lvExactSize);
-
-            for (unsigned inx = 0; (inx < elemCount); inx++)
-            {
-                noway_assert(type[inx] == elemType);
-            }
-        }
-        else
-        {
-#if defined(TARGET_ARM64)
-            // We must have a 16-byte struct (non-HFA)
-            noway_assert(elemCount == 2);
-#elif defined(TARGET_ARM)
-            noway_assert(elemCount <= 4);
-#endif
-
-            for (unsigned inx = 0; inx < elemCount; inx++)
-            {
-                var_types currentGcLayoutType = varDsc->GetLayout()->GetGCPtrType(inx);
-
-                // We setup the type[inx] value above using the GC info from 'objClass'
-                // This GT_LCL_VAR must have the same GC layout info
-                //
-                if (varTypeIsGC(currentGcLayoutType))
-                {
-                    noway_assert(type[inx] == currentGcLayoutType);
-                }
-                else
-                {
-                    // We may have use a small type when we setup the type[inx] values above
-                    // We can safely widen this to TYP_I_IMPL
-                    type[inx] = TYP_I_IMPL;
-                }
-            }
-        }
-
         if (varDsc->lvPromoted && varDsc->lvIsHfa() && arg->AbiInfo.IsPassedInFloatRegisters())
         {
             bool canMorphToFieldList = true;
