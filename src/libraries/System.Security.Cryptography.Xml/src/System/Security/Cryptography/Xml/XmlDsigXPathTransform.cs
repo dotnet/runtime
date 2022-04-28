@@ -134,7 +134,7 @@ namespace System.Security.Cryptography.Xml
         private void LoadStreamInput(Stream stream)
         {
             XmlResolver resolver = (ResolverSet ? _xmlResolver : XmlResolverHelper.GetThrowingResolver());
-            XmlReader valReader = Utils.PreProcessStreamInput(stream, resolver, BaseURI);
+            XmlReader valReader = Utils.PreProcessStreamInput(stream, resolver, BaseURI!);
             _document = new XmlDocument();
             _document.PreserveWhitespace = true;
             _document.Load(valReader);

@@ -454,7 +454,7 @@ namespace System.Security.Cryptography.Xml
                 "RIPEMD160" => SignedXml.XmlDsigMoreHMACRIPEMD160Url,
                 _ => throw new CryptographicException(SR.Cryptography_Xml_SignatureMethodKeyMismatch),
             };
-            byte[]? hashValue = GetC14NDigest(hash);
+            byte[] hashValue = GetC14NDigest(hash);
 
             SignedXmlDebugLog.LogSigning(this, hash);
             m_signature.SignatureValue = new byte[signatureLength / 8];
@@ -773,7 +773,7 @@ namespace System.Security.Cryptography.Xml
             }
         }
 
-        private byte[]? GetC14NDigest(HashAlgorithm hash)
+        private byte[] GetC14NDigest(HashAlgorithm hash)
         {
             bool isKeyedHashAlgorithm = hash is KeyedHashAlgorithm;
             if (isKeyedHashAlgorithm || !_bCacheValid || !SignedInfo!.CacheValid)
@@ -798,7 +798,7 @@ namespace System.Security.Cryptography.Xml
 
                 _bCacheValid = !isKeyedHashAlgorithm;
             }
-            return _digestedSignedInfo;
+            return _digestedSignedInfo!;
         }
 
         private int GetReferenceLevel(int index, ArrayList references)
@@ -1018,7 +1018,7 @@ namespace System.Security.Cryptography.Xml
             HashAlgorithm? hashAlgorithm = signatureDescription.CreateDigest();
             if (hashAlgorithm == null)
                 throw new CryptographicException(SR.Cryptography_Xml_CreateHashAlgorithmFailed);
-            byte[]? hashval = GetC14NDigest(hashAlgorithm);
+            byte[] hashval = GetC14NDigest(hashAlgorithm);
 
             AsymmetricSignatureDeformatter asymmetricSignatureDeformatter = signatureDescription.CreateDeformatter(key);
             SignedXmlDebugLog.LogVerifySignedInfo(this,
@@ -1057,7 +1057,7 @@ namespace System.Security.Cryptography.Xml
                 throw new CryptographicException(SR.Cryptography_Xml_InvalidSignatureLength);
 
             // Calculate the hash
-            byte[]? hashValue = GetC14NDigest(macAlg);
+            byte[] hashValue = GetC14NDigest(macAlg);
             SignedXmlDebugLog.LogVerifySignedInfo(this, macAlg, hashValue, m_signature.SignatureValue);
 
             return m_signature.SignatureValue.AsSpan().SequenceEqual(hashValue.AsSpan(0, m_signature.SignatureValue.Length));

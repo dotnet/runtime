@@ -232,7 +232,7 @@ namespace System.Security.Cryptography.Xml
                 byte[]? cipherValue = null;
                 using (MemoryStream ms = new MemoryStream())
                 {
-                    Utils.Pump(decInputStream, ms);
+                    Utils.Pump(decInputStream!, ms);
                     cipherValue = ms.ToArray();
                     // Close the stream and return
                     inputStream?.Close();

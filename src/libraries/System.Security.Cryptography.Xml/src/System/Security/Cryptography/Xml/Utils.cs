@@ -381,7 +381,7 @@ namespace System.Security.Cryptography.Xml
         // an output stream, connecting them up and reading until
         // hitting the end of the input stream.
         // returns the number of bytes copied
-        internal static long Pump(Stream? input, Stream output)
+        internal static long Pump(Stream input, Stream output)
         {
             // Use MemoryStream's WriteTo(Stream) method if possible
             MemoryStream? inputMS = input as MemoryStream;
@@ -396,7 +396,7 @@ namespace System.Security.Cryptography.Xml
             int numBytes;
             long totalBytes = 0;
 
-            while ((numBytes = input!.Read(bytes, 0, count)) > 0)
+            while ((numBytes = input.Read(bytes, 0, count)) > 0)
             {
                 output.Write(bytes, 0, numBytes);
                 totalBytes += numBytes;
@@ -758,7 +758,7 @@ namespace System.Security.Cryptography.Xml
 
         internal static AsymmetricAlgorithm? GetAnyPublicKey(X509Certificate2 certificate)
         {
-            AsymmetricAlgorithm? algorithm = (AsymmetricAlgorithm)certificate.GetRSAPublicKey()! ?? certificate.GetECDsaPublicKey();
+            AsymmetricAlgorithm? algorithm = (AsymmetricAlgorithm?)certificate.GetRSAPublicKey() ?? certificate.GetECDsaPublicKey();
 
 #if NETCOREAPP
             if (algorithm is null && !OperatingSystem.IsTvOS() && !OperatingSystem.IsIOS())
