@@ -32,7 +32,7 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             AssertNotDisposed();
 
-            Interop.Runtime.InvokeJSWithArgs(JSHandle, method, args, out int exception, out object res);
+            Interop.Runtime.InvokeJSWithArgsRef(JSHandle, method, args, out int exception, out object res);
             if (exception != 0)
                 throw new JSException((string)res);
             Interop.Runtime.ReleaseInFlight(res);

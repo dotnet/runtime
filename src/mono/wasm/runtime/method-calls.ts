@@ -301,7 +301,7 @@ export function mono_call_assembly_entry_point(assembly: string, args?: any[], s
     return mono_bind_assembly_entry_point(assembly, signature)(...args);
 }
 
-export function mono_wasm_invoke_js_with_args(js_handle: JSHandle, method_name: MonoString, args: MonoArray, is_exception: Int32Ptr, result_address: MonoObjectRef): any {
+export function mono_wasm_invoke_js_with_args_ref(js_handle: JSHandle, method_name: MonoString, args: MonoArray, is_exception: Int32Ptr, result_address: MonoObjectRef): any {
     const argsRoot = mono_wasm_new_root(args), 
         nameRoot = mono_wasm_new_root(method_name),
         resultRoot = mono_wasm_new_external_root<MonoObject>(result_address);
@@ -620,7 +620,7 @@ export function mono_wasm_invoke_js(code: MonoString, is_exception: Int32Ptr): M
 // Compiles a JavaScript function from the function data passed.
 // Note: code snippet is not a function definition. Instead it must create and return a function instance.
 // code like `return function() { App.call_test_method(); };`
-export function mono_wasm_compile_function(code: MonoString, is_exception: Int32Ptr, result_address: MonoObjectRef): void {
+export function mono_wasm_compile_function_ref(code: MonoString, is_exception: Int32Ptr, result_address: MonoObjectRef): void {
     const resultRoot = mono_wasm_new_external_root<MonoObject>(result_address);
 
     if (code === MonoStringNull) {

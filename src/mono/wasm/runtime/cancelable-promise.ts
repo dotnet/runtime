@@ -18,7 +18,7 @@ export function isThenable(js_obj: any): boolean {
         ((typeof js_obj === "object" || typeof js_obj === "function") && typeof js_obj.then === "function");
 }
 
-export function mono_wasm_cancel_promise(thenable_js_handle: JSHandle, is_exception: Int32Ptr, result_address: MonoObjectRef): void | MonoString {
+export function mono_wasm_cancel_promise_ref(thenable_js_handle: JSHandle, is_exception: Int32Ptr, result_address: MonoObjectRef): void | MonoString {
     const resultRoot = mono_wasm_new_external_root<MonoObject>(result_address);
     try {
         const promise = mono_wasm_get_jsobj_from_js_handle(thenable_js_handle);
