@@ -256,8 +256,14 @@ steps:
       cp MauiBlazorTesting.csproj MauiBlazorTesting.csproj.bak
       sed -i'' -e 's/net6.0-ios;net6.0-maccatalyst/net6.0-ios/g' MauiBlazorTesting.csproj
 
+      # NuGet.config file cannot be in the build directory currently due to https://github.com/dotnet/aspnetcore/issues/41397
+      rm NuGet.config
+
       ../dotnet publish -bl:MauiBlazoriOS.binlog -f net6.0-ios --self-contained -r ios-arm64 -c Release /p:_RequireCodeSigning=false
       mv ./bin/Release/net6.0-ios/ios-arm64/publish/MauiBlazorTesting.ipa ./MauiBlazoriOSDefault.ipa
+
+      # Restore NuGet.config
+      cp $(Build.SourcesDirectory)/NuGet.config ./NuGet.config
 
       cp MauiBlazorTesting.csproj.bak MauiBlazorTesting.csproj
     displayName: Build MAUI Blazor iOS
@@ -265,7 +271,15 @@ steps:
 
   - script: |
       chmod -R a+r .
+
+      # NuGet.config file cannot be in the build directory currently due to https://github.com/dotnet/aspnetcore/issues/41397
+      rm NuGet.config
+
       ../dotnet publish -bl:MauiBlazorMacCatalyst.binlog -f net6.0-maccatalyst -c Release
+
+      # Restore NuGet.config
+      cp $(Build.SourcesDirectory)/NuGet.config ./NuGet.config
+
       mv ./bin/Release/net6.0-maccatalyst/maccatalyst-x64/MauiBlazorTesting.app ./MauiBlazorMacCatalystDefault.app
     displayName: Build MAUI Blazor MacCatalyst
     workingDirectory: $(Build.SourcesDirectory)/MauiBlazorTesting
