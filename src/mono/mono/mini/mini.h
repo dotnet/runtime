@@ -1308,10 +1308,10 @@ typedef struct {
 	MonoJumpInfo    *patch_info;
 	MonoJitInfo     *jit_info;
 	MonoJitDynamicMethodInfo *dynamic_info;
-	guint            num_bblocks, max_block_num;
-	guint            locals_start;
-	guint            num_varinfo; /* used items in varinfo */
-	guint            varinfo_count; /* total storage in varinfo */
+	int              num_bblocks, max_block_num;
+	int              locals_start;
+	int              num_varinfo; /* used items in varinfo */
+	int              varinfo_count; /* total storage in varinfo */
 	gint             stack_offset;
 	gint             max_ireg;
 	gint             cil_offset_to_bb_len;
@@ -1369,7 +1369,7 @@ typedef struct {
 	GHashTable      *cbb_hash;
 
 	/* The current virtual register number */
-	guint32 next_vreg;
+	int next_vreg;
 
 	MonoRgctxAccess rgctx_access;
 	MonoGenericSharingContext gsctx;
@@ -1523,21 +1523,21 @@ typedef struct {
 	MonoInst **vreg_to_inst;
 
 	/* Size of above array */
-	guint32 vreg_to_inst_len;
+	int vreg_to_inst_len;
 
 	/* Marks vregs which hold a GC ref */
 	/* FIXME: Use a bitmap */
 	gboolean *vreg_is_ref;
 
 	/* Size of above array */
-	guint32 vreg_is_ref_len;
+	int vreg_is_ref_len;
 
 	/* Marks vregs which hold a managed pointer */
 	/* FIXME: Use a bitmap */
 	gboolean *vreg_is_mp;
 
 	/* Size of above array */
-	guint32 vreg_is_mp_len;
+	int vreg_is_mp_len;
 
 	/*
 	 * The original method to compile, differs from 'method' when doing generic

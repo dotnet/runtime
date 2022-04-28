@@ -333,9 +333,9 @@ typedef struct MonoAotCompile {
 	guint32 tramp_page_code_offsets [MONO_AOT_TRAMP_NUM];
 
 	MonoAotOptions aot_opts;
-	guint32 nmethods;
+	int nmethods;
 	int call_table_entry_size;
-	guint32 nextra_methods;
+	int nextra_methods;
 	guint32 jit_opts;
 	guint32 simd_opts;
 	MonoMemPool *mempool;
@@ -3057,7 +3057,7 @@ stream_init (MonoDynamicStream *sh)
 }
 
 static void
-make_room_in_stream (MonoDynamicStream *stream, int size)
+make_room_in_stream (MonoDynamicStream *stream, guint32 size)
 {
 	if (size <= stream->alloc_size)
 		return;
@@ -4391,7 +4391,6 @@ can_marshal_struct (MonoClass *klass)
 	gboolean can_marshal = TRUE;
 	gpointer iter = NULL;
 	MonoMarshalType *info;
-	int i;
 
 	if (mono_class_is_auto_layout (klass))
 		return FALSE;
@@ -4429,7 +4428,7 @@ can_marshal_struct (MonoClass *klass)
 			gboolean has_mspec = FALSE;
 
 			if (info) {
-				for (i = 0; i < info->num_fields; ++i) {
+				for (guint32 i = 0; i < info->num_fields; ++i) {
 					if (info->fields [i].field == field && info->fields [i].mspec)
 						has_mspec = TRUE;
 				}
@@ -6321,7 +6320,7 @@ never_direct_pinvoke (const char *pinvoke_symbol)
  * since trampolines are needed to make PLT work.
  */
 static void
-emit_and_reloc_code (MonoAotCompile *acfg, MonoMethod *method, guint8 *code, guint32 code_len, MonoJumpInfo *relocs, gboolean got_only, MonoDebugMethodJitInfo *debug_info)
+emit_and_reloc_code (MonoAotCompile *acfg, MonoMethod *method, guint8 *code, int code_len, MonoJumpInfo *relocs, gboolean got_only, MonoDebugMethodJitInfo *debug_info)
 {
 	int i, pindex, start_index;
 	GPtrArray *patches;
@@ -12777,7 +12776,7 @@ load_profile_file (MonoAotCompile *acfg, char *filename)
 	FILE *infile;
 	char buf [1024];
 	size_t res, len;
-	int version;
+	guint32 version;
 	char magic [32];
 
 	infile = fopen (filename, "rb");
@@ -12799,7 +12798,7 @@ load_profile_file (MonoAotCompile *acfg, char *filename)
 		exit (1);
 	}
 	guint32 expected_version = (AOT_PROFILER_MAJOR_VERSION << 16) | AOT_PROFILER_MINOR_VERSION;
-	version = profread_int (infile);
+	version = (guint32)profread_int (infile);
 	if (version != expected_version) {
 		printf ("Profile file has wrong version 0x%4x, expected 0x%4x.\n", version, expected_version);
 		fclose (infile);
