@@ -34,7 +34,12 @@ namespace System.Runtime.InteropServices
           IMinMaxValue<CULong>,
           IUnsignedNumber<CULong>
     {
+#if TARGET_WINDOWS
         private readonly NativeType _value;
+#else
+        // Explicitly use nuint rather than NativeType to ensure operators are available
+        private readonly nuint _value;
+#endif
 
         /// <summary>
         /// Constructs an instance from a 32-bit unsigned integer.
@@ -151,7 +156,7 @@ namespace System.Runtime.InteropServices
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to a c-sized long value.</returns>
         /// <exception cref="OverflowException"><paramref name="value" /> is not representable by <see cref="CULong" />.</exception>
-        public static explicit operator checked CULong(double value) => new CULong(checked((NativeType) value));
+        public static explicit operator checked CULong(double value) => new CULong(checked((NativeType)value));
 
         /// <summary>Explicitly converts a <see cref="short" /> value to a c-sized long value.</summary>
         /// <param name="value">The value to convert.</param>
@@ -162,7 +167,7 @@ namespace System.Runtime.InteropServices
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to a c-sized long value.</returns>
         /// <exception cref="OverflowException"><paramref name="value" /> is not representable by <see cref="CULong" />.</exception>
-        public static explicit operator checked CULong(short value) => new CULong(checked((NativeType) value));
+        public static explicit operator checked CULong(short value) => new CULong(checked((NativeType)value));
 
         /// <summary>Explicitly converts a <see cref="int" /> value to a c-sized long value.</summary>
         /// <param name="value">The value to convert.</param>
@@ -173,7 +178,7 @@ namespace System.Runtime.InteropServices
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to a c-sized long value.</returns>
         /// <exception cref="OverflowException"><paramref name="value" /> is not representable by <see cref="CULong" />.</exception>
-        public static explicit operator checked CULong(int value) => new CULong(checked((NativeType) value));
+        public static explicit operator checked CULong(int value) => new CULong(checked((NativeType)value));
 
         /// <summary>Explicitly converts a <see cref="long" /> value to a c-sized long value.</summary>
         /// <param name="value">The value to convert.</param>
@@ -184,18 +189,34 @@ namespace System.Runtime.InteropServices
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to a c-sized long value.</returns>
         /// <exception cref="OverflowException"><paramref name="value" /> is not representable by <see cref="CULong" />.</exception>
-        public static explicit operator checked CULong(long value) => new CULong(checked((NativeType) value));
+        public static explicit operator checked CULong(long value) => new CULong(checked((NativeType)value));
 
         /// <summary>Explicitly converts a <see cref="IntPtr" /> value to a c-sized long value.</summary>
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to a c-sized long value.</returns>
-        public static explicit operator CULong(nint value) => new CULong((NativeType)value);
+        public static explicit operator CULong(nint value)
+        {
+#if TARGET_WINDOWS
+            return new CULong((NativeType)value);
+#else
+            // Explicitly use nuint rather than NativeType to ensure operators are available
+            return new CULong((nuint)value);
+#endif
+        }
 
         /// <summary>Explicitly converts a <see cref="IntPtr" /> value to a c-sized long value, throwing an overflow exception for any values that fall outside the representable range.</summary>
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to a c-sized long value.</returns>
         /// <exception cref="OverflowException"><paramref name="value" /> is not representable by <see cref="CULong" />.</exception>
-        public static explicit operator checked CULong(nint value) => new CULong(checked((NativeType) value));
+        public static explicit operator checked CULong(nint value)
+        {
+#if TARGET_WINDOWS
+            return new CULong(checked((NativeType)value));
+#else
+            // Explicitly use nuint rather than NativeType to ensure operators are available
+            return new CULong(checked((nuint)value));
+#endif
+        }
 
         /// <summary>Explicitly converts a <see cref="sbyte" /> value to a c-sized long value.</summary>
         /// <param name="value">The value to convert.</param>
@@ -208,7 +229,7 @@ namespace System.Runtime.InteropServices
         /// <returns><paramref name="value" /> converted to a c-sized long value.</returns>
         /// <exception cref="OverflowException"><paramref name="value" /> is not representable by <see cref="CULong" />.</exception>
         [CLSCompliant(false)]
-        public static explicit operator checked CULong(sbyte value) => new CULong(checked((NativeType) value));
+        public static explicit operator checked CULong(sbyte value) => new CULong(checked((NativeType)value));
 
         /// <summary>Explicitly converts a <see cref="float" /> value to a c-sized long value.</summary>
         /// <param name="value">The value to convert.</param>
@@ -219,7 +240,7 @@ namespace System.Runtime.InteropServices
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to a c-sized long value.</returns>
         /// <exception cref="OverflowException"><paramref name="value" /> is not representable by <see cref="CULong" />.</exception>
-        public static explicit operator checked CULong(float value) => new CULong(checked((NativeType) value));
+        public static explicit operator checked CULong(float value) => new CULong(checked((NativeType)value));
 
         /// <summary>Explicitly converts a <see cref="ulong" /> value to a c-sized long value.</summary>
         /// <param name="value">The value to convert.</param>
@@ -232,7 +253,7 @@ namespace System.Runtime.InteropServices
         /// <returns><paramref name="value" /> converted to a c-sized long value.</returns>
         /// <exception cref="OverflowException"><paramref name="value" /> is not representable by <see cref="CULong" />.</exception>
         [CLSCompliant(false)]
-        public static explicit operator checked CULong(ulong value) => new CULong(checked((NativeType) value));
+        public static explicit operator checked CULong(ulong value) => new CULong(checked((NativeType)value));
 
         /// <summary>Explicitly converts a <see cref="System.UIntPtr" /> value to a c-sized long value.</summary>
         /// <param name="value">The value to convert.</param>
@@ -245,7 +266,7 @@ namespace System.Runtime.InteropServices
         /// <returns><paramref name="value" /> converted to a c-sized long value.</returns>
         /// <exception cref="OverflowException"><paramref name="value" /> is not representable by <see cref="CULong" />.</exception>
         [CLSCompliant(false)]
-        public static explicit operator checked CULong(nuint value) => new CULong(checked((NativeType) value));
+        public static explicit operator checked CULong(nuint value) => new CULong(checked((NativeType)value));
 
         //
         // Explicit Convert From CULong

@@ -34,7 +34,12 @@ namespace System.Runtime.InteropServices
           IMinMaxValue<CLong>,
           ISignedNumber<CLong>
     {
+#if TARGET_WINDOWS
         private readonly NativeType _value;
+#else
+        // Explicitly use nint rather than NativeType to ensure operators are available
+        private readonly nint _value;
+#endif
 
         /// <summary>
         /// Constructs an instance from a 32-bit integer.
@@ -216,14 +221,30 @@ namespace System.Runtime.InteropServices
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to a c-sized long value.</returns>
         [CLSCompliant(false)]
-        public static explicit operator CLong(nuint value) => new CLong((NativeType)value);
+        public static explicit operator CLong(nuint value)
+        {
+#if TARGET_WINDOWS
+            return new CLong((NativeType)value);
+#else
+            // Explicitly use nint rather than NativeType to ensure operators are available
+            return new CLong((nint)value);
+#endif
+        }
 
         /// <summary>Explicitly converts a <see cref="System.UIntPtr" /> value to a c-sized long value, throwing an overflow exception for any values that fall outside the representable range.</summary>
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to a c-sized long value.</returns>
         /// <exception cref="OverflowException"><paramref name="value" /> is not representable by <see cref="CLong" />.</exception>
         [CLSCompliant(false)]
-        public static explicit operator checked CLong(nuint value) => new CLong(checked((NativeType) value));
+        public static explicit operator checked CLong(nuint value)
+        {
+#if TARGET_WINDOWS
+            return new CLong(checked((NativeType)value));
+#else
+            // Explicitly use nint rather than NativeType to ensure operators are available
+            return new CLong(checked((nint)value));
+#endif
+        }
 
         //
         // Explicit Convert From CLong
