@@ -230,7 +230,7 @@ steps:
                           var activity = MainActivity.Context as Activity;
                           activity.ReportFullyDrawn();
                         #else
-                          System.Console.WriteLine("__MAUI_Blazor_WebView_OnAfterRender__");
+                          System.Console.WriteLine(\"__MAUI_Blazor_WebView_OnAfterRender__\");
                         #endif
                     }
                 }
