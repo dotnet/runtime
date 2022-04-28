@@ -3041,6 +3041,7 @@ ep_rt_mono_log_single_type (MonoType *mono_type, intptr_t type_id)
 	BulkTypeValue *p_val = &m_rg_bulk_type_values[m_n_bulk_type_value_count];
 
 	MonoClass *klass = mono_class_from_mono_type_internal (mono_type);
+	MonoType *mono_underlying_type = mono_type_get_underlying_type (mono_type);
 
     // Clear out p_val before filling it out (array elements can get reused if there
     // are enough types that we need to flush to multiple events).
@@ -3055,16 +3056,16 @@ ep_rt_mono_log_single_type (MonoType *mono_type, intptr_t type_id)
 	p_val->fixed_sized_data.module_id = (uint64_t)m_class_get_image (klass);
 	p_val->fixed_sized_data.type_name_id = (0x00FFFFFF & m_class_get_type_token (klass)) | 0x02000000;  // dotnet-pgo ResolveMethodID expects type name ids with a 0x02 mask
 	p_val->fixed_sized_data.flags = 0;
-	p_val->fixed_sized_data.cor_element_type = (uint8_t)mono_type->type;
+	p_val->fixed_sized_data.cor_element_type = (uint8_t)mono_underlying_type->type;
 
 	// Sets p_val variable sized parameter type data c_type_parameters and rg_type_parameters
 	// associated with arrays or generics and add unique identifiers to rg_type_parameters array
 	// to be recursively batched in the same ep_rt_mono_log_type_and_parameters call
-	if ((mono_type->type == MONO_TYPE_ARRAY) || (mono_type->type == MONO_TYPE_SZARRAY))
+	if ((mono_underlying_type == MONO_TYPE_ARRAY) || (mono_underlying_type == MONO_TYPE_SZARRAY))
 	{
 		MonoArrayType *mono_array_type = mono_type_get_array_type (mono_type);
 		p_val->fixed_sized_data.flags |= K_ETW_TYPE_FLAGS_ARRAY;
-		if (mono_type->type == MONO_TYPE_ARRAY)
+		if (mono_underlying_type == MONO_TYPE_ARRAY)
 		{
 			// Only ranks less than kEtwTypeFlagsArrayRankMax are supported.
 			// Fortunately kEtwTypeFlagsArrayRankMax should be greater than the
@@ -3082,7 +3083,7 @@ ep_rt_mono_log_single_type (MonoType *mono_type, intptr_t type_id)
 		p_val->rg_type_parameters[p_val->c_type_parameters] = get_typeid_for_type (m_class_get_byval_arg (mono_array_type->eklass));
 		p_val->c_type_parameters++;
 	}
-	else if (mono_type->type == MONO_TYPE_GENERICINST)
+	else if (mono_underlying_type == MONO_TYPE_GENERICINST)
 	{
 		MonoGenericInst *class_inst = mono_type->data.generic_class->context.class_inst;
 		p_val->c_type_parameters = class_inst->type_argc;
@@ -3091,6 +3092,12 @@ ep_rt_mono_log_single_type (MonoType *mono_type, intptr_t type_id)
 			p_val->rg_mono_type_parameters[i] = class_inst->type_argv[i];
 			p_val->rg_type_parameters[i] = get_typeid_for_type (class_inst->type_argv[i]);
 		}
+	}
+	else if (mono_underlying_type == MONO_TYPE_CLASS || mono_underlying_type == MONO_TYPE_VALUETYPE || mono_underlying_type == MONO_TYPE_PTR || mono_underlying_type == MONO_TYPE_BYREF)
+	{
+		p_val->rg_mono_type_parameters[p_val->c_type_parameters] = mono_type_get_underlying_type (mono_type);
+		p_val->rg_type_parameters[p_val->c_type_parameters] = get_typeid_for_type (mono_type_get_underlying_type (mono_type));
+		p_val->c_type_parameters++;
 	}
 
 	if (mono_class_has_finalizer (klass))
@@ -3129,7 +3136,7 @@ ep_rt_mono_log_single_type (MonoType *mono_type, intptr_t type_id)
 		ep_rt_mono_fire_bulk_type_event();
 		return ep_rt_mono_log_single_type(mono_type, type_id);
 	}
-	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_DIAGNOSTICS, "p_val added at index: %d\ntype_id: %d\nmodule_id: %d\ntype_name_id: %d\ntype: %d\nc_type_parameters: %d", m_n_bulk_type_value_count, p_val->fixed_sized_data.type_id, p_val->fixed_sized_data.module_id, p_val->fixed_sized_data.type_name_id, mono_type->type, p_val->c_type_parameters);
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_DIAGNOSTICS, "p_val added at index: %d\ntype_id: %d\nmodule_id: %d\ntype_name_id: %d\ntype: %d\nc_type_parameters: %d", p_type_logger->m_n_bulk_type_value_count, p_val->fixed_sized_data.type_id, p_val->fixed_sized_data.module_id, p_val->fixed_sized_data.type_name_id, mono_underlying_type, p_val->c_type_parameters);
 	for (int i = 0; i < p_val->c_type_parameters; i++)
 	{
 		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_DIAGNOSTICS, "type: %d\n", ((MonoType*)p_val->rg_type_parameters[i])->type);
