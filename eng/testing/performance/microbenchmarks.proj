@@ -63,10 +63,10 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(WorkItemCommand)' != ''">
-    <WorkItemCommand>$(Python) $(WorkItemCommand) --incremental no --architecture $(Architecture) -f $(_Framework) $(PerfLabArguments)</WorkItemCommand>
+    <WorkItemCommand>$(Python) $(WorkItemCommand) --incremental no --architecture $(Architecture) -f $(PERFLAB_Framework) $(PerfLabArguments)</WorkItemCommand>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(_Framework)' != 'net461'">
+  <PropertyGroup Condition="'$(PERFLAB_Framework)' != 'net461'">
     <WorkItemCommand>$(WorkItemCommand) $(CliArguments)</WorkItemCommand>
   </PropertyGroup>
   
@@ -129,7 +129,7 @@
       <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
       <PreCommands Condition="'$(Compare)' == 'true'">$(WorkItemCommand) --bdn-artifacts $(BaselineArtifactsDirectory) --bdn-arguments="--anyCategories $(BDNCategories) $(ExtraBenchmarkDotNetArguments) $(BaselineCoreRunArgument) --partition-count $(PartitionCount) --partition-index %(HelixWorkItem.Index)"</PreCommands>
       <Command>$(WorkItemCommand) --bdn-artifacts $(ArtifactsDirectory) --bdn-arguments="--anyCategories $(BDNCategories) $(ExtraBenchmarkDotNetArguments) $(CoreRunArgument) --partition-count $(PartitionCount) --partition-index %(HelixWorkItem.Index)"</Command>
-      <PostCommands Condition="'$(Compare)' == 'true'">$(DotnetExe) run -f $(_Framework) -p $(ResultsComparer) --base $(BaselineArtifactsDirectory) --diff $(ArtifactsDirectory) --threshold 2$(Percent) --xml $(XMLResults);$(FinalCommand)</PostCommands>
+      <PostCommands Condition="'$(Compare)' == 'true'">$(DotnetExe) run -f $(PERFLAB_Framework) -p $(ResultsComparer) --base $(BaselineArtifactsDirectory) --diff $(ArtifactsDirectory) --threshold 2$(Percent) --xml $(XMLResults);$(FinalCommand)</PostCommands>
       <Timeout>$(WorkItemTimeout)</Timeout>
     </HelixWorkItem>
   </ItemGroup>
@@ -139,7 +139,7 @@
       <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
       <PreCommands Condition="'$(Compare)' == 'true'">$(WorkItemCommand) --bdn-artifacts $(BaselineArtifactsDirectory) --bdn-arguments="--anyCategories $(BDNCategories) $(ExtraBenchmarkDotNetArguments) $(BaselineCoreRunArgument)"</PreCommands>
       <Command>$(WorkItemCommand) --bdn-artifacts $(ArtifactsDirectory) --bdn-arguments="--anyCategories $(BDNCategories) $(ExtraBenchmarkDotNetArguments) $(CoreRunArgument)"</Command>
-      <PostCommands Condition="'$(Compare)' == 'true'">$(DotnetExe) run -f $(_Framework) -p $(ResultsComparer) --base $(BaselineArtifactsDirectory) --diff $(ArtifactsDirectory) --threshold 2$(Percent) --xml $(XMLResults)</PostCommands>
+      <PostCommands Condition="'$(Compare)' == 'true'">$(DotnetExe) run -f $(PERFLAB_Framework) -p $(ResultsComparer) --base $(BaselineArtifactsDirectory) --diff $(ArtifactsDirectory) --threshold 2$(Percent) --xml $(XMLResults)</PostCommands>
       <Timeout>4:00</Timeout>
     </HelixWorkItem>
   </ItemGroup>
