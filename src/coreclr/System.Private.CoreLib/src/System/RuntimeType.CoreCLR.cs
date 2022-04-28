@@ -3589,7 +3589,7 @@ namespace System
             }
 
             Debug.Fail("Error result not expected");
-            return default;
+            return false;
         }
 
         private CheckValueStatus TryChangeType(
@@ -3605,9 +3605,8 @@ namespace System
 
                 if (sigElementType.IsInstanceOfType(value))
                 {
-                    Debug.Assert(!sigElementType.IsGenericParameter);
                     isValueType = RuntimeTypeHandle.IsValueType(sigElementType);
-                    if (sigElementType.IsValueType)
+                    if (isValueType)
                     {
                         if (sigElementType.IsNullableOfT)
                         {
@@ -3643,7 +3642,7 @@ namespace System
                     return CheckValueStatus.Success;
                 }
 
-                isValueType = default;
+                isValueType = false;
                 return CheckValueStatus.ArgumentException;
             }
 
@@ -3679,7 +3678,7 @@ namespace System
 
                 if (!CanValueSpecialCast(srcType, this))
                 {
-                    isValueType = copyBack = default;
+                    isValueType = copyBack = false;
                     return CheckValueStatus.ArgumentException;
                 }
 
@@ -3702,7 +3701,7 @@ namespace System
                 return CheckValueStatus.Success;
             }
 
-            copyBack = isValueType = default;
+            copyBack = isValueType = false;
             return CheckValueStatus.ArgumentException;
         }
 

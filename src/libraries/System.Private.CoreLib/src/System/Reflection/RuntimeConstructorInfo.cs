@@ -130,7 +130,7 @@ namespace System.Reflection
             {
                 if (argCount == 0)
                 {
-                    Invoker.InvokeUnsafe(obj, args: default, argsForTemporaryMonoSupport: default, invokeAttr);
+                    Invoker.InvokeUnsafe(obj, args: default, invokeAttr);
                 }
                 else if (argCount > MaxStackAllocArgCount)
                 {
@@ -157,7 +157,11 @@ namespace System.Reflection
                         culture,
                         invokeAttr);
 
-                    Invoker.InvokeUnsafe(obj, pByRefStorage, copyOfParameters, invokeAttr);
+#if MONO // Temporary until Mono is updated.
+                    Invoker.InvokeUnsafe(obj, copyOfParameters, invokeAttr);
+#else
+                    Invoker.InvokeUnsafe(obj, pByRefStorage, invokeAttr);
+#endif
 
                     // Copy modified values out. This should be done only with ByRef or Type.Missing parameters.
                     for (int i = 0; i < argCount; i++)
@@ -212,7 +216,11 @@ namespace System.Reflection
                     culture,
                     invokeAttr);
 
-                ci.Invoker.InvokeUnsafe(obj, pByRefStorage, copyOfParameters, invokeAttr);
+#if MONO // Temporary until Mono is updated.
+                ci.Invoker.InvokeUnsafe(obj, copyOfParameters, invokeAttr);
+#else
+                ci.Invoker.InvokeUnsafe(obj, pByRefStorage, invokeAttr);
+#endif
             }
             finally
             {
@@ -254,7 +262,7 @@ namespace System.Reflection
             {
                 if (argCount == 0)
                 {
-                    retValue = Invoker.InvokeUnsafe(obj: null, args: default, argsForTemporaryMonoSupport: default, invokeAttr);
+                    retValue = Invoker.InvokeUnsafe(obj: null, args: default, invokeAttr);
                 }
                 else if (argCount > MaxStackAllocArgCount)
                 {
@@ -280,7 +288,11 @@ namespace System.Reflection
                         culture,
                         invokeAttr);
 
-                    retValue = Invoker.InvokeUnsafe(obj: null, pByRefStorage, copyOfParameters, invokeAttr);
+#if MONO // Temporary until Mono is updated.
+                    retValue = Invoker.InvokeUnsafe(obj: null, copyOfParameters, invokeAttr);
+#else
+                    retValue = Invoker.InvokeUnsafe(obj: null, pByRefStorage, invokeAttr);
+#endif
 
                     // Copy modified values out. This should be done only with ByRef or Type.Missing parameters.
                     for (int i = 0; i < argCount; i++)
@@ -338,7 +350,11 @@ namespace System.Reflection
                     culture,
                     invokeAttr);
 
-                retValue = ci.Invoker.InvokeUnsafe(obj: null, pByRefStorage, copyOfParameters, invokeAttr);
+#if MONO // Temporary until Mono is updated.
+                retValue = ci.Invoker.InvokeUnsafe(obj: null, copyOfParameters, invokeAttr);
+#else
+                retValue = ci.Invoker.InvokeUnsafe(obj: null, pByRefStorage, invokeAttr);
+#endif
             }
             finally
             {

@@ -9,27 +9,37 @@ namespace System.Reflection
     internal sealed partial class MethodInvoker
     {
         internal InvocationFlags _invocationFlags;
-        private readonly RuntimeMethodInfo _method;
+        private readonly MethodBase _method;
+        private readonly Signature? _signature;
         private bool _invoked;
         private bool _strategyDetermined;
         private InvokerEmitUtil.InvokeFunc<MethodInvoker>? _emitInvoke;
 
-        public MethodInvoker(RuntimeMethodInfo methodInfo)
+        public MethodInvoker(MethodBase method, Signature? signature = null)
         {
-            _method = methodInfo;
+            _method = method;
+            _signature = signature;
 
 #if USE_NATIVE_INVOKE
-            // always use the native invoke.
+            // Always use the native invoke; useful for testing.
             _strategyDetermined = true;
 #elif USE_EMIT_INVOKE
-            // always use emit invoke (if it is compatible).
+            // Always use emit invoke (if IsDynamicCodeCompiled == true); useful for testing.
             _invoked = true;
 #endif
         }
 
+#if MONO // Temporary until Mono is updated.
         [DebuggerStepThrough]
         [DebuggerHidden]
-        public unsafe object? InvokeUnsafe(object? obj, IntPtr* args, Span<object?> argsForTemporaryMonoSupport, BindingFlags invokeAttr)
+        public unsafe object? InvokeUnsafe(object? obj, Span<object?> args, BindingFlags invokeAttr)
+        {
+            return InvokeNonEmitUnsafe(obj, args, invokeAttr);
+        }
+#else
+        [DebuggerStepThrough]
+        [DebuggerHidden]
+        public unsafe object? InvokeUnsafe(object? obj, IntPtr* args, BindingFlags invokeAttr)
         {
             if (!_strategyDetermined)
             {
@@ -40,18 +50,15 @@ namespace System.Reflection
                 }
                 else
                 {
-                    if (RuntimeFeature.IsDynamicCodeCompiled &&
-                        _method.SupportsNewInvoke) // Remove check for SupportsNewInvoke once Mono is updated.
+                    if (RuntimeFeature.IsDynamicCodeCompiled)
                     {
                         _emitInvoke = InvokerEmitUtil.CreateInvokeDelegate<MethodInvoker>(_method);
                     }
-
                     _strategyDetermined = true;
                 }
             }
 
-            // Remove check for SupportsNewInvoke once Mono is updated (Mono's InvokeNonEmitUnsafe has its own exception handling)
-            if (_method.SupportsNewInvoke && (invokeAttr & BindingFlags.DoNotWrapExceptions) == 0)
+            if ((invokeAttr & BindingFlags.DoNotWrapExceptions) == 0)
             {
                 try
                 {
@@ -60,7 +67,7 @@ namespace System.Reflection
                         return _emitInvoke(this, obj, args);
                     }
 
-                    return _method.InvokeNonEmitUnsafe(obj, args, argsForTemporaryMonoSupport, invokeAttr);
+                    return InvokeNonEmitUnsafe(obj, args);
                 }
                 catch (Exception e)
                 {
@@ -73,7 +80,8 @@ namespace System.Reflection
                 return _emitInvoke(this, obj, args);
             }
 
-            return _method.InvokeNonEmitUnsafe(obj, args, argsForTemporaryMonoSupport, invokeAttr);
+            return InvokeNonEmitUnsafe(obj, args);
         }
+#endif
     }
 }

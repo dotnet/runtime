@@ -12,7 +12,7 @@ namespace System.Reflection
         // If changed, update native stack walking code that also uses this prefix to ignore reflection frames.
         private const string InvokeStubPrefix = "InvokeStub_";
 
-        // This is an instance method to avoid overhead of shuffle thunk.
+        // The 'obj' parameter allows the DynamicMethod to be treated as an instance method which is slightly faster than a static.
         internal unsafe delegate object? InvokeFunc<T>(T obj, object? target, IntPtr* arguments);
 
         public static unsafe InvokeFunc<T> CreateInvokeDelegate<T>(MethodBase method)

@@ -1656,7 +1656,6 @@ namespace System
                 return ctor.Invoker.InvokeUnsafe(
                     obj: null,
                     args: default,
-                    argsForTemporaryMonoSupport: default,
                     wrapExceptions ? BindingFlags.Default : BindingFlags.DoNotWrapExceptions);
             }
         }
@@ -2052,7 +2051,7 @@ namespace System
 
             unsafe
             {
-                return ctor.Invoker.InvokeUnsafe(obj: null, args: default, argsForTemporaryMonoSupport: default, BindingFlags.Default)!;
+                return ctor.Invoker.InvokeUnsafe(obj: null, args: default, BindingFlags.Default)!;
             }
         }
 

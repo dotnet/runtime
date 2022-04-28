@@ -48,7 +48,7 @@ namespace System.Reflection
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                m_invoker ??= new MethodInvoker(this);
+                m_invoker ??= new MethodInvoker(this, Signature);
                 return m_invoker;
             }
         }
@@ -366,21 +366,14 @@ namespace System.Reflection
                     culture,
                     invokeAttr);
 
-                retValue = Invoker.InvokeUnsafe(obj, pByRefStorage, copyOfParameters, invokeAttr);
+#if MONO // Temporary until Mono is updated.
+                retValue = Invoker.InvokeUnsafe(obj, copyOfParameters, invokeAttr);
+#else
+                retValue = Invoker.InvokeUnsafe(obj, pByRefStorage, invokeAttr);
+#endif
             }
 
             return retValue;
-        }
-
-#pragma warning disable CA1822 // Mark members as static
-        internal bool SupportsNewInvoke => true;
-#pragma warning restore CA1822 // Mark members as static
-
-        [DebuggerHidden]
-        [DebuggerStepThrough]
-        internal unsafe object? InvokeNonEmitUnsafe(object? obj, IntPtr* arguments, Span<object?> argsForTemporaryMonoSupport, BindingFlags invokeAttr)
-        {
-            return RuntimeMethodHandle.InvokeMethod(obj, (void**)arguments, Signature, isConstructor: false);
         }
 
         #endregion

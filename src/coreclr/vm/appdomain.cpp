@@ -1557,7 +1557,6 @@ bool SystemDomain::IsReflectionInvocationMethod(MethodDesc* pMeth)
         CLASS__MULTICAST_DELEGATE,
         CLASS__METHOD_INVOKER,
         CLASS__CONSTRUCTOR_INVOKER,
-        CLASS__DYNAMIC_METHOD_INVOKER
     };
 
     static bool fInited = false;
@@ -1584,7 +1583,7 @@ bool SystemDomain::IsReflectionInvocationMethod(MethodDesc* pMeth)
         // Check for dynamically generated Invoke methods.
         if (pMeth->IsDynamicMethod())
         {
-            if (strncmp(pMeth->GetName(), "InvokeStub_", 11) == 0)
+            if (strncmp(pMeth->GetName(), "InvokeStub_", ARRAY_SIZE("InvokeStub_") - 1) == 0)
                 return true;
         }
     }

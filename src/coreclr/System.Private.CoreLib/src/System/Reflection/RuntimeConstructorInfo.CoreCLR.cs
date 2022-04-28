@@ -95,16 +95,6 @@ namespace System.Reflection
 
         internal BindingFlags BindingFlags => m_bindingFlags;
 
-#pragma warning disable CA1822 // Mark members as static
-        internal bool SupportsNewInvoke => true;
-#pragma warning restore CA1822 // Mark members as static
-
-        [DebuggerStepThrough]
-        [DebuggerHidden]
-        internal unsafe object InvokeNonEmitUnsafe(object? obj, IntPtr* args, Span<object?> argsForTemporaryMonoSupport, BindingFlags invokeAttr)
-        {
-            return RuntimeMethodHandle.InvokeMethod(obj, (void**)args, Signature, isConstructor: obj is null)!;
-        }
         #endregion
 
         #region Object Overrides

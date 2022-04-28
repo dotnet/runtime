@@ -23,7 +23,7 @@ namespace System.Reflection.Emit
         private RuntimeModule m_module = null!;
         internal bool m_skipVisibility;
         internal RuntimeType? m_typeOwner; // can be null
-        private DynamicMethodInvoker? _invoker;
+        private MethodInvoker? _invoker;
         private Signature? _signature;
 
         // We want the creator of the DynamicMethod to control who has access to the
@@ -434,13 +434,12 @@ namespace System.Reflection.Emit
 
         public override bool IsSecurityTransparent => false;
 
-        private DynamicMethodInvoker Invoker
+        private MethodInvoker Invoker
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                _invoker ??= new DynamicMethodInvoker(this);
-
+                _invoker ??= new MethodInvoker(this, Signature);
                 return _invoker;
             }
         }
@@ -589,13 +588,6 @@ namespace System.Reflection.Emit
             }
 
             return retValue;
-        }
-
-        [DebuggerHidden]
-        [DebuggerStepThrough]
-        internal unsafe object? InvokeNonEmitUnsafe(object? obj, IntPtr* arguments)
-        {
-            return RuntimeMethodHandle.InvokeMethod(obj, (void**)arguments, Signature, isConstructor: false);
         }
 
         public override object[] GetCustomAttributes(Type attributeType, bool inherit)
