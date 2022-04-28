@@ -7,9 +7,9 @@ using System.Security.Authentication;
 
 namespace System.Net.Security
 {
-    internal sealed partial class SslConnectionInfo
+    internal partial struct SslConnectionInfo
     {
-        public SslConnectionInfo(SafeSslHandle sslContext)
+        public void UpdateSslConnectionInfo(SafeSslHandle sslContext)
         {
             string protocolString = Interop.AndroidCrypto.SSLStreamGetProtocol(sslContext);
             SslProtocols protocol = protocolString switch
@@ -26,6 +26,7 @@ namespace System.Net.Security
                 _ => SslProtocols.None,
             };
             Protocol = (int)protocol;
+            ApplicationProtocol = Interop.AndroidCrypto.SSLStreamGetApplicationProtocol(sslContext);
 
             // Enum value names should match the cipher suite name, so we just parse the
             string cipherSuite = Interop.AndroidCrypto.SSLStreamGetCipherSuite(sslContext);

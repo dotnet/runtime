@@ -10,14 +10,37 @@ namespace System.Net.Security
 {
     internal sealed class SslAuthenticationOptions
     {
-        internal SslAuthenticationOptions(SslClientAuthenticationOptions sslClientAuthenticationOptions, RemoteCertificateValidationCallback? remoteCallback, LocalCertSelectionCallback? localCallback)
+        internal SslAuthenticationOptions()
+        {
+            TargetHost = string.Empty;
+        }
+
+        internal void UpdateOptions(SslClientAuthenticationOptions sslClientAuthenticationOptions)
         {
             Debug.Assert(sslClientAuthenticationOptions.TargetHost != null);
+
+            if (CertValidationDelegate == null)
+            {
+                CertValidationDelegate = sslClientAuthenticationOptions.RemoteCertificateValidationCallback;
+            }
+            else if (CertValidationDelegate != sslClientAuthenticationOptions.RemoteCertificateValidationCallback)
+            {
+                // Callback was set in constructor to differet value.
+                throw new InvalidOperationException(SR.Format(SR.net_conflicting_options, nameof(RemoteCertificateValidationCallback)));
+            }
+
+            if (CertSelectionDelegate == null)
+            {
+                CertSelectionDelegate = sslClientAuthenticationOptions.LocalCertificateSelectionCallback;
+            }
+            else if (CertSelectionDelegate != sslClientAuthenticationOptions.LocalCertificateSelectionCallback)
+            {
+                throw new InvalidOperationException(SR.Format(SR.net_conflicting_options, nameof(LocalCertificateSelectionCallback)));
+            }
 
             // Common options.
             AllowRenegotiation = sslClientAuthenticationOptions.AllowRenegotiation;
             ApplicationProtocols = sslClientAuthenticationOptions.ApplicationProtocols;
-            CertValidationDelegate = remoteCallback;
             CheckCertName = true;
             EnabledSslProtocols = FilterOutIncompatibleSslProtocols(sslClientAuthenticationOptions.EnabledSslProtocols);
             EncryptionPolicy = sslClientAuthenticationOptions.EncryptionPolicy;
@@ -27,77 +50,38 @@ namespace System.Net.Security
             TargetHost = sslClientAuthenticationOptions.TargetHost.TrimEnd('.');
 
             // Client specific options.
-            CertSelectionDelegate = localCallback;
             CertificateRevocationCheckMode = sslClientAuthenticationOptions.CertificateRevocationCheckMode;
             ClientCertificates = sslClientAuthenticationOptions.ClientCertificates;
             CipherSuitesPolicy = sslClientAuthenticationOptions.CipherSuitesPolicy;
         }
 
-        internal SslAuthenticationOptions(SslServerAuthenticationOptions sslServerAuthenticationOptions)
-        {
-            // Common options.
-            AllowRenegotiation = sslServerAuthenticationOptions.AllowRenegotiation;
-            ApplicationProtocols = sslServerAuthenticationOptions.ApplicationProtocols;
-            CheckCertName = false;
-            EnabledSslProtocols = FilterOutIncompatibleSslProtocols(sslServerAuthenticationOptions.EnabledSslProtocols);
-            EncryptionPolicy = sslServerAuthenticationOptions.EncryptionPolicy;
-            IsServer = true;
-            RemoteCertRequired = sslServerAuthenticationOptions.ClientCertificateRequired;
-            if (NetEventSource.Log.IsEnabled())
-            {
-                NetEventSource.Info(this, $"Server RemoteCertRequired: {RemoteCertRequired}.");
-            }
-            TargetHost = string.Empty;
-
-            // Server specific options.
-            CipherSuitesPolicy = sslServerAuthenticationOptions.CipherSuitesPolicy;
-            CertificateRevocationCheckMode = sslServerAuthenticationOptions.CertificateRevocationCheckMode;
-
-            if (sslServerAuthenticationOptions.ServerCertificateContext != null)
-            {
-                CertificateContext = sslServerAuthenticationOptions.ServerCertificateContext;
-            }
-            else if (sslServerAuthenticationOptions.ServerCertificate != null)
-            {
-                X509Certificate2? certificateWithKey = sslServerAuthenticationOptions.ServerCertificate as X509Certificate2;
-
-                if (certificateWithKey != null && certificateWithKey.HasPrivateKey)
-                {
-                    // given cert is X509Certificate2 with key. We can use it directly.
-                    CertificateContext = SslStreamCertificateContext.Create(certificateWithKey, null);
-                }
-                else
-                {
-                    // This is legacy fix-up. If the Certificate did not have key, we will search stores and we
-                    // will try to find one with matching hash.
-                    certificateWithKey = SecureChannel.FindCertificateWithPrivateKey(this, true, sslServerAuthenticationOptions.ServerCertificate);
-                    if (certificateWithKey == null)
-                    {
-                        throw new AuthenticationException(SR.net_ssl_io_no_server_cert);
-                    }
-
-                    CertificateContext = SslStreamCertificateContext.Create(certificateWithKey);
-                }
-            }
-
-            if (sslServerAuthenticationOptions.RemoteCertificateValidationCallback != null)
-            {
-                CertValidationDelegate = sslServerAuthenticationOptions.RemoteCertificateValidationCallback;
-            }
-        }
-
-        internal SslAuthenticationOptions(ServerOptionsSelectionCallback optionCallback, object? state, RemoteCertificateValidationCallback? remoteCallback)
+        internal void UpdateOptions(ServerOptionsSelectionCallback optionCallback, object? state)
         {
             CheckCertName = false;
             TargetHost = string.Empty;
             IsServer = true;
             UserState = state;
             ServerOptionDelegate = optionCallback;
-            CertValidationDelegate = remoteCallback;
         }
 
         internal void UpdateOptions(SslServerAuthenticationOptions sslServerAuthenticationOptions)
         {
+            if (sslServerAuthenticationOptions.ServerCertificate == null &&
+                sslServerAuthenticationOptions.ServerCertificateContext == null &&
+                sslServerAuthenticationOptions.ServerCertificateSelectionCallback == null &&
+                CertSelectionDelegate == null)
+            {
+                throw new ArgumentNullException(nameof(sslServerAuthenticationOptions.ServerCertificate));
+            }
+
+            if ((sslServerAuthenticationOptions.ServerCertificate != null ||
+                 sslServerAuthenticationOptions.ServerCertificateContext != null ||
+                 CertSelectionDelegate != null) &&
+                sslServerAuthenticationOptions.ServerCertificateSelectionCallback != null)
+            {
+                throw new InvalidOperationException(SR.Format(SR.net_conflicting_options, nameof(ServerCertificateSelectionCallback)));
+            }
+
             AllowRenegotiation = sslServerAuthenticationOptions.AllowRenegotiation;
             ApplicationProtocols = sslServerAuthenticationOptions.ApplicationProtocols;
             EnabledSslProtocols = FilterOutIncompatibleSslProtocols(sslServerAuthenticationOptions.EnabledSslProtocols);
@@ -150,10 +134,10 @@ namespace System.Net.Security
         internal bool RemoteCertRequired { get; set; }
         internal bool CheckCertName { get; set; }
         internal RemoteCertificateValidationCallback? CertValidationDelegate { get; set; }
-        internal LocalCertSelectionCallback? CertSelectionDelegate { get; set; }
-        internal ServerCertSelectionCallback? ServerCertSelectionDelegate { get; set; }
+        internal LocalCertificateSelectionCallback? CertSelectionDelegate { get; set; }
+        internal ServerCertificateSelectionCallback? ServerCertSelectionDelegate { get; set; }
         internal CipherSuitesPolicy? CipherSuitesPolicy { get; set; }
-        internal object? UserState { get; }
-        internal ServerOptionsSelectionCallback? ServerOptionDelegate { get; }
+        internal object? UserState { get; set; }
+        internal ServerOptionsSelectionCallback? ServerOptionDelegate { get; set; }
     }
 }
