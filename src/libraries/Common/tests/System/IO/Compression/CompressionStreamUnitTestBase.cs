@@ -567,6 +567,50 @@ namespace System.IO.Compression
                 }
             }
         }
+
+        [Fact]
+        public void StreamCorruption_IsDetected()
+        {
+            var source = Enumerable.Range(0, 64).Select(i => (byte)i).ToArray();
+            var buffer = new byte[64];
+            byte[] compressedData;
+            using (var compressed = new MemoryStream())
+            using (var gzip = new GZipStream(compressed, CompressionMode.Compress))
+            {
+                foreach (var b in source)
+                {
+                    gzip.WriteByte(b);
+                }
+
+                gzip.Dispose();
+                compressedData = compressed.ToArray();
+            }
+
+            for (var byteToCorrupt = 0; byteToCorrupt < compressedData.Length; byteToCorrupt++)
+            {
+                // corrupt the data
+                compressedData[byteToCorrupt]++;
+
+                using (var decompressedStream = new MemoryStream(compressedData))
+                {
+                    using (var s = new GZipStream(decompressedStream, CompressionMode.Decompress))
+                    {
+                        try
+                        {
+                            while(ZipFileTestBase.ReadAllBytes(s, buffer, 0, buffer.Length) != 0) { };
+
+                            Assert.Equal(source, buffer);
+                        }
+                        catch (InvalidDataException)
+                        {
+                        }
+                    }
+                }
+
+                // restore the data
+                compressedData[byteToCorrupt]--;
+            }
+        }
     }
 
     internal sealed class BadWrappedStream : MemoryStream
