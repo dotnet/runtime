@@ -11,10 +11,6 @@ namespace System.Text.Json.Serialization.Converters
     [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
     internal sealed class NullableConverterFactory : JsonConverterFactory
     {
-        public NullableConverterFactory()
-        {
-        }
-
         public override bool CanConvert(Type typeToConvert)
         {
             return typeToConvert.IsNullableOfT();

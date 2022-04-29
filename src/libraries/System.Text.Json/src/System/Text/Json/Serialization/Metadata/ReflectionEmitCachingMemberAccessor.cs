@@ -11,7 +11,6 @@ namespace System.Text.Json.Serialization.Metadata
     [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
     internal sealed partial class ReflectionEmitCachingMemberAccessor : MemberAccessor
     {
-        internal ReflectionEmitCachingMemberAccessor() { }
         private static readonly ReflectionEmitMemberAccessor s_sourceAccessor = new();
         private static readonly Cache<(string id, Type declaringType, MemberInfo? member)> s_cache =
             new(slidingExpiration: TimeSpan.FromMilliseconds(1000), evictionInterval: TimeSpan.FromMilliseconds(200));

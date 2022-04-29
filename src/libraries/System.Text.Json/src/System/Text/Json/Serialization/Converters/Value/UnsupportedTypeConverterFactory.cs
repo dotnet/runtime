@@ -10,10 +10,6 @@ namespace System.Text.Json.Serialization.Converters
     [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
     internal sealed class UnsupportedTypeConverterFactory : JsonConverterFactory
     {
-        public UnsupportedTypeConverterFactory()
-        {
-        }
-
         public override bool CanConvert(Type type)
         {
             // If a type is added, also add to the SourceGeneration project.

@@ -13,9 +13,6 @@ namespace System.Text.Json.Serialization.Metadata
     [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
     internal sealed class ReflectionEmitMemberAccessor : MemberAccessor
     {
-
-        internal ReflectionEmitMemberAccessor() { }
-
         public override JsonTypeInfo.ConstructorDelegate? CreateConstructor(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type type)
         {
