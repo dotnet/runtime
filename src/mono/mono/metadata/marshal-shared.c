@@ -118,15 +118,6 @@ mono_mb_emit_auto_layout_exception (MonoMethodBuilder *mb, MonoClass *klass)
 	mono_marshal_shared_mb_emit_exception_marshal_directive (mb, msg);
 }
 
-void
-mono_marshal_shared_emit_string_free_icall (MonoMethodBuilder *mb, MonoMarshalConv conv)
-{
-	if (conv == MONO_MARSHAL_CONV_BSTR_STR || conv == MONO_MARSHAL_CONV_ANSIBSTR_STR || conv == MONO_MARSHAL_CONV_TBSTR_STR)
-		mono_mb_emit_icall (mb, mono_free_bstr);
-	else
-		mono_mb_emit_icall (mb, mono_marshal_free);
-}
-
 gboolean
 mono_marshal_shared_is_in (const MonoType *t)
 {

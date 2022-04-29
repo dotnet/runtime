@@ -3980,6 +3980,14 @@ emit_marshal_vtype_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 	return conv_arg;
 }
 
+static void
+emit_string_free_icall (MonoMethodBuilder *mb, MonoMarshalConv conv)
+{
+	if (conv == MONO_MARSHAL_CONV_BSTR_STR || conv == MONO_MARSHAL_CONV_ANSIBSTR_STR || conv == MONO_MARSHAL_CONV_TBSTR_STR)
+		mono_mb_emit_icall (mb, mono_free_bstr);
+	else
+		mono_mb_emit_icall (mb, mono_marshal_free);
+}
 
 static int
 emit_marshal_string_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
@@ -4064,7 +4072,7 @@ emit_marshal_string_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 
 		if (need_free) {
 			mono_mb_emit_ldloc (mb, conv_arg);
-			mono_marshal_shared_emit_string_free_icall (mb, conv);
+			emit_string_free_icall (mb, conv);
 		}
 		break;
 
@@ -4091,7 +4099,7 @@ emit_marshal_string_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 
 		/* free the string */
 		mono_mb_emit_ldloc (mb, 0);
-		mono_marshal_shared_emit_string_free_icall (mb, conv);
+		emit_string_free_icall (mb, conv);
 		break;
 
 	case MARSHAL_ACTION_MANAGED_CONV_IN:

@@ -30,10 +30,6 @@ mono_marshal_shared_init_safe_handle (void);
 void
 mono_mb_emit_auto_layout_exception (MonoMethodBuilder *mb, MonoClass *klass);
 
-/* TODO: This was inlined before */
-void
-mono_marshal_shared_emit_string_free_icall (MonoMethodBuilder *mb, MonoMarshalConv conv);
-
 gboolean mono_marshal_shared_is_in (const MonoType *t);
 
 gboolean mono_marshal_shared_is_out (const MonoType *t);
