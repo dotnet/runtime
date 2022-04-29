@@ -44,7 +44,7 @@ namespace Microsoft.Extensions.DependencyInjection
                 throw new InvalidOperationException(message);
             }
 
-            ConstructorInfo? pereferredConstructor = null;
+            ConstructorInfo? preferredConstructor = null;
             foreach (ConstructorInfo constructor in constructors)
             {
                 if (!constructor.IsDefined(typeof(ActivatorUtilitiesConstructorAttribute), false))
