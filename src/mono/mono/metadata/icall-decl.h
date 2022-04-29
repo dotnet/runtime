@@ -197,6 +197,4 @@ ICALL_EXPORT gint32 ves_icall_RuntimeType_GetGenericParameterPosition (MonoQCall
 
 ICALL_EXPORT int ves_icall_System_Enum_InternalGetCorElementType (MonoQCallTypeHandle type_handle);
 
-ICALL_EXPORT MonoBoolean ves_icall_System_Runtime_InteropServices_Marshal_IsPinnableType (MonoQCallTypeHandle type_handle);
-
 #endif // __MONO_METADATA_ICALL_DECL_H__

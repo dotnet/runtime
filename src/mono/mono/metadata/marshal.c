@@ -5423,14 +5423,6 @@ ves_icall_System_Runtime_InteropServices_Marshal_GetFunctionPointerForDelegateIn
 	return mono_delegate_to_ftnptr_impl (delegate, error);
 }
 
-MonoBoolean
-ves_icall_System_Runtime_InteropServices_Marshal_IsPinnableType (MonoQCallTypeHandle type_handle)
-{
-	MonoClass *klass = mono_class_from_mono_type_internal (type_handle.type);
-	mono_class_init_internal (klass);
-	return m_class_has_references (klass);
-}
-
 /**
  * mono_marshal_is_loading_type_info:
  *
