@@ -9,6 +9,19 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
 {
     public class ActivatorUtilitiesTests
     {
+        [Theory]
+        [InlineData(typeof(DefaultConstructorFirst))]
+        [InlineData(typeof(DefaultConstructorLast))]
+        public void ChoosesDefaultConstructorNoMatterOrder(Type instanceType)
+        {
+            var services = new ServiceCollection();
+            using var provider = services.BuildServiceProvider();
+
+            var instance = ActivatorUtilities.CreateInstance(provider, instanceType);
+
+            Assert.NotNull(instance);
+        }
+
         [Fact]
         public void ShouldFixIssue_46132()
         {
@@ -138,5 +151,43 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
     {
         Valid,
         Invalid
+    }
+
+    internal class DefaultConstructorFirst
+    {
+        public A A { get; }
+        public B B { get; }
+
+        public DefaultConstructorFirst() { }
+
+        public DefaultConstructorFirst(A a)
+        {
+            A = a;
+        }
+
+        public DefaultConstructorFirst(A a, B b)
+        {
+            A = a;
+            B = b;
+        }
+    }
+
+    internal class DefaultConstructorLast
+    {
+        public A A { get; }
+        public B B { get; }
+
+        public DefaultConstructorLast(A a, B b)
+        {
+            A = a;
+            B = b;
+        }
+
+        public DefaultConstructorLast(A a)
+        {
+            A = a;
+        }
+
+        public DefaultConstructorLast() { }
     }
 }
