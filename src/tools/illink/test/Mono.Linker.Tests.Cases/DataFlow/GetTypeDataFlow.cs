@@ -33,6 +33,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			TestStringEmpty ();
 
+			TypeWithWarnings.Test ();
+
 			// TODO:
 			// Test multi-value returns
 			//    Type.GetType over a constant and a param
@@ -71,19 +73,17 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			type.RequiresNone ();
 		}
 
-		[ExpectedWarning ("IL2072", nameof (DataFlowTypeExtensions.RequiresAll) + "(Type)", nameof (Type.GetType) + "(String)")]
 		static void TestNull ()
 		{
-			// Warns about the return value of GetType, even though this throws at runtime.
+			// GetType(null) throws at runtime, so we "give up" on analysis
 			Type.GetType (null).RequiresAll ();
 		}
 
-		[ExpectedWarning ("IL2072", nameof (DataFlowTypeExtensions.RequiresAll) + "(Type)", nameof (Type.GetType) + "(String)")]
 		static void TestNoValue ()
 		{
 			Type t = null;
+			// null.AssemblyQualifiedName throws at runtime, so we "give up" on analysis
 			string noValue = t.AssemblyQualifiedName;
-			// Warns about the return value of GetType, even though AssemblyQualifiedName throws at runtime.
 			Type.GetType (noValue).RequiresAll ();
 		}
 
@@ -159,6 +159,24 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			Type.GetType (typeName).RequiresNonPublicConstructors ();
+		}
+
+		class TypeWithWarnings
+		{
+
+			[RequiresUnreferencedCode ("--Method1--")]
+			public void Method1 () { }
+
+			[RequiresUnreferencedCode ("--Method2--")]
+			public void Method2 () { }
+
+			// https://github.com/dotnet/linker/issues/2273
+			[ExpectedWarning ("IL2026", "--Method1--", ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2026", "--Method2--", ProducedBy = ProducedBy.Trimmer)]
+			public static void Test ()
+			{
+				Type.GetType ("Mono.Linker.Tests.Cases.DataFlow." + nameof (GetTypeDataFlow) + "+" + nameof (TypeWithWarnings)).RequiresPublicMethods ();
+			}
 		}
 
 		[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]

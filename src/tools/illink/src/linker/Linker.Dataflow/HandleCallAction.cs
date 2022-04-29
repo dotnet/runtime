@@ -68,6 +68,32 @@ namespace ILLink.Shared.TrimAnalysis
 			return false;
 		}
 
+		private partial bool TryResolveTypeNameForCreateInstance (in MethodProxy calledMethod, string assemblyName, string typeName, out TypeProxy resolvedType)
+		{
+			var resolvedAssembly = _context.TryResolve (assemblyName);
+			if (resolvedAssembly == null) {
+				_diagnosticContext.AddDiagnostic (DiagnosticId.UnresolvedAssemblyInCreateInstance,
+					assemblyName,
+					calledMethod.GetDisplayName ());
+				resolvedType = default;
+				return false;
+			}
+
+			if (!_context.TypeNameResolver.TryResolveTypeName (resolvedAssembly, typeName, out TypeReference? typeRef)
+				|| _context.TryResolve (typeRef) is not TypeDefinition resolvedTypeDefinition
+				|| typeRef is ArrayType) {
+				// It's not wrong to have a reference to non-existing type - the code may well expect to get an exception in this case
+				// Note that we did find the assembly, so it's not a linker config problem, it's either intentional, or wrong versions of assemblies
+				// but linker can't know that. In case a user tries to create an array using System.Activator we should simply ignore it, the user
+				// might expect an exception to be thrown.
+				resolvedType = default;
+				return false;
+			}
+
+			resolvedType = new TypeProxy (resolvedTypeDefinition);
+			return true;
+		}
+
 		private partial void MarkStaticConstructor (TypeProxy type)
 			=> _reflectionMarker.MarkStaticConstructor (_diagnosticContext.Origin, type.Type);
 
@@ -83,8 +109,8 @@ namespace ILLink.Shared.TrimAnalysis
 		private partial void MarkPublicParameterlessConstructorOnType (TypeProxy type)
 			=> _reflectionMarker.MarkConstructorsOnType (_diagnosticContext.Origin, type.Type, m => m.IsPublic && m.Parameters.Count == 0);
 
-		private partial void MarkConstructorsOnType (TypeProxy type, BindingFlags? bindingFlags)
-			=> _reflectionMarker.MarkConstructorsOnType (_diagnosticContext.Origin, type.Type, null, bindingFlags);
+		private partial void MarkConstructorsOnType (TypeProxy type, BindingFlags? bindingFlags, int? parameterCount)
+			=> _reflectionMarker.MarkConstructorsOnType (_diagnosticContext.Origin, type.Type, parameterCount == null ? null : m => m.Parameters.Count == parameterCount, bindingFlags);
 
 		private partial void MarkMethod (MethodProxy method)
 			=> _reflectionMarker.MarkMethod (_diagnosticContext.Origin, method.Method);

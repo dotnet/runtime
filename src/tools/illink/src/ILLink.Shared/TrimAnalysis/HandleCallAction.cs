@@ -589,6 +589,23 @@ namespace ILLink.Shared.TrimAnalysis
 			//
 			// System.Linq.Expressions.Expression
 			//
+			// static New (Type)
+			//
+			case IntrinsicId.Expression_New: {
+					var targetValue = _annotations.GetMethodParameterValue (calledMethod, 0, DynamicallyAccessedMemberTypes.PublicParameterlessConstructor);
+					foreach (var value in argumentValues[0]) {
+						if (value is SystemTypeValue systemTypeValue) {
+							MarkConstructorsOnType (systemTypeValue.RepresentedType, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, parameterCount: null);
+						} else {
+							_requireDynamicallyAccessedMembersAction.Invoke (value, targetValue);
+						}
+					}
+				}
+				break;
+
+			//
+			// System.Linq.Expressions.Expression
+			//
 			// static Property (Expression, MethodInfo)
 			//
 			case IntrinsicId.Expression_Property when calledMethod.HasParameterOfType (1, "System.Reflection.MethodInfo"): {
@@ -725,6 +742,53 @@ namespace ILLink.Shared.TrimAnalysis
 						ValueWithDynamicallyAccessedMembers damValue => damValue,
 						_ => annotatedMethodReturnValue
 					});
+				}
+				break;
+
+			//
+			// System.Type
+			//
+			// GetType (string)
+			// GetType (string, Boolean)
+			// GetType (string, Boolean, Boolean)
+			// GetType (string, Func<AssemblyName, Assembly>, Func<Assembly, String, Boolean, Type>)
+			// GetType (string, Func<AssemblyName, Assembly>, Func<Assembly, String, Boolean, Type>, Boolean)
+			// GetType (string, Func<AssemblyName, Assembly>, Func<Assembly, String, Boolean, Type>, Boolean, Boolean)
+			//
+			case IntrinsicId.Type_GetType: {
+					if (argumentValues[0].IsEmpty ()) {
+						returnValue = MultiValueLattice.Top;
+						break;
+					}
+
+					if ((calledMethod.HasParametersCount (3) && calledMethod.HasParameterOfType (2, "System.Boolean") && argumentValues[2].AsConstInt () != 0) ||
+						(calledMethod.HasParametersCount (5) && argumentValues[4].AsConstInt () != 0)) {
+						_diagnosticContext.AddDiagnostic (DiagnosticId.CaseInsensitiveTypeGetTypeCallIsNotSupported, calledMethod.GetDisplayName ());
+						returnValue = MultiValueLattice.Top; // This effectively disables analysis of anything which uses the return value
+						break;
+					}
+
+					foreach (var typeNameValue in argumentValues[0]) {
+						if (typeNameValue is KnownStringValue knownStringValue) {
+							if (!_requireDynamicallyAccessedMembersAction.TryResolveTypeNameAndMark (knownStringValue.Contents, false, out TypeProxy foundType)) {
+								// Intentionally ignore - it's not wrong for code to call Type.GetType on non-existing name, the code might expect null/exception back.
+								AddReturnValue (MultiValueLattice.Top);
+							} else {
+								AddReturnValue (new SystemTypeValue (foundType));
+							}
+						} else if (typeNameValue == NullValue.Instance) {
+							// Nothing to do - this throws at runtime
+							AddReturnValue (MultiValueLattice.Top);
+						} else if (typeNameValue is ValueWithDynamicallyAccessedMembers valueWithDynamicallyAccessedMembers && valueWithDynamicallyAccessedMembers.DynamicallyAccessedMemberTypes != 0) {
+							// Propagate the annotation from the type name to the return value. Annotation on a string value will be fullfilled whenever a value is assigned to the string with annotation.
+							// So while we don't know which type it is, we can guarantee that it will fulfill the annotation.
+							AddReturnValue (_annotations.GetMethodReturnValue (calledMethod, valueWithDynamicallyAccessedMembers.DynamicallyAccessedMemberTypes));
+						} else {
+							_diagnosticContext.AddDiagnostic (DiagnosticId.UnrecognizedTypeNameInTypeGetType, calledMethod.GetDisplayName ());
+							AddReturnValue (MultiValueLattice.Top);
+						}
+					}
+
 				}
 				break;
 
@@ -903,7 +967,7 @@ namespace ILLink.Shared.TrimAnalysis
 								&& ctorParameterCount == 0) {
 								MarkPublicParameterlessConstructorOnType (systemTypeValue.RepresentedType);
 							} else {
-								MarkConstructorsOnType (systemTypeValue.RepresentedType, bindingFlags);
+								MarkConstructorsOnType (systemTypeValue.RepresentedType, bindingFlags, parameterCount: null);
 							}
 						} else {
 							// Otherwise fall back to the bitfield requirements
@@ -945,6 +1009,139 @@ namespace ILLink.Shared.TrimAnalysis
 					// MakeGenericMethod doesn't change the identity of the MethodBase we're tracking so propagate to the return value
 					AddReturnValue (instanceValue);
 				}
+				break;
+
+			//
+			// System.Activator
+			//
+			// static CreateInstance (System.Type type)
+			// static CreateInstance (System.Type type, bool nonPublic)
+			// static CreateInstance (System.Type type, params object?[]? args)
+			// static CreateInstance (System.Type type, object?[]? args, object?[]? activationAttributes)
+			// static CreateInstance (System.Type type, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, object?[]? args, System.Globalization.CultureInfo? culture)
+			// static CreateInstance (System.Type type, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, object?[]? args, System.Globalization.CultureInfo? culture, object?[]? activationAttributes) { throw null; }
+			//
+			case IntrinsicId.Activator_CreateInstance_Type: {
+					int? ctorParameterCount = null;
+					BindingFlags bindingFlags = BindingFlags.Instance;
+					if (calledMethod.GetParametersCount () > 1) {
+						if (calledMethod.HasParameterOfType (1, "System.Boolean")) {
+							// The overload that takes a "nonPublic" bool
+							bool nonPublic = argumentValues[1].AsConstInt () != 0;
+
+							if (nonPublic)
+								bindingFlags |= BindingFlags.NonPublic | BindingFlags.Public;
+							else
+								bindingFlags |= BindingFlags.Public;
+							ctorParameterCount = 0;
+						} else {
+							// Overload that has the parameters as the second or fourth argument
+							int argsParam = calledMethod.HasParametersCount (2) || calledMethod.HasParametersCount (3) ? 1 : 3;
+
+							if (argumentValues.Count > argsParam) {
+								if (argumentValues[argsParam].AsSingleValue () is ArrayValue arrayValue &&
+									arrayValue.Size.AsConstInt () != null)
+									ctorParameterCount = arrayValue.Size.AsConstInt ();
+								else if (argumentValues[argsParam].AsSingleValue () is NullValue)
+									ctorParameterCount = 0;
+							}
+
+							if (calledMethod.GetParametersCount () > 3) {
+								if (argumentValues[1].AsConstInt () is int constInt)
+									bindingFlags |= (BindingFlags) constInt;
+								else
+									bindingFlags |= BindingFlags.NonPublic | BindingFlags.Public;
+							} else {
+								bindingFlags |= BindingFlags.Public;
+							}
+						}
+					} else {
+						// The overload with a single System.Type argument
+						ctorParameterCount = 0;
+						bindingFlags |= BindingFlags.Public;
+					}
+
+					// Go over all types we've seen
+					foreach (var value in argumentValues[0]) {
+						if (value is SystemTypeValue systemTypeValue) {
+							// Special case known type values as we can do better by applying exact binding flags and parameter count.
+							MarkConstructorsOnType (systemTypeValue.RepresentedType, bindingFlags, ctorParameterCount);
+						} else {
+							// Otherwise fall back to the bitfield requirements
+							var requiredMemberTypes = GetDynamicallyAccessedMemberTypesFromBindingFlagsForConstructors (bindingFlags);
+
+							// Special case the public parameterless constructor if we know that there are 0 args passed in
+							if (ctorParameterCount == 0 && requiredMemberTypes.HasFlag (DynamicallyAccessedMemberTypes.PublicConstructors)) {
+								requiredMemberTypes &= ~DynamicallyAccessedMemberTypes.PublicConstructors;
+								requiredMemberTypes |= DynamicallyAccessedMemberTypes.PublicParameterlessConstructor;
+							}
+
+							var targetValue = _annotations.GetMethodParameterValue (calledMethod, 0, requiredMemberTypes);
+
+							_requireDynamicallyAccessedMembersAction.Invoke (value, targetValue);
+						}
+					}
+				}
+				break;
+
+			//
+			// System.Activator
+			//
+			// static CreateInstance (string assemblyName, string typeName)
+			// static CreateInstance (string assemblyName, string typeName, bool ignoreCase, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, object?[]? args, System.Globalization.CultureInfo? culture, object?[]? activationAttributes)
+			// static CreateInstance (string assemblyName, string typeName, object?[]? activationAttributes)
+			//
+			case IntrinsicId.Activator_CreateInstance_AssemblyName_TypeName:
+				ProcessCreateInstanceByName (calledMethod, argumentValues);
+				break;
+
+			//
+			// System.Activator
+			//
+			// static CreateInstanceFrom (string assemblyFile, string typeName)
+			// static CreateInstanceFrom (string assemblyFile, string typeName, bool ignoreCase, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, object? []? args, System.Globalization.CultureInfo? culture, object? []? activationAttributes)
+			// static CreateInstanceFrom (string assemblyFile, string typeName, object? []? activationAttributes)
+			//
+			case IntrinsicId.Activator_CreateInstanceFrom:
+				ProcessCreateInstanceByName (calledMethod, argumentValues);
+				break;
+
+			//
+			// System.AppDomain
+			//
+			// CreateInstance (string assemblyName, string typeName)
+			// CreateInstance (string assemblyName, string typeName, bool ignoreCase, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, object? []? args, System.Globalization.CultureInfo? culture, object? []? activationAttributes)
+			// CreateInstance (string assemblyName, string typeName, object? []? activationAttributes)
+			//
+			// CreateInstanceAndUnwrap (string assemblyName, string typeName)
+			// CreateInstanceAndUnwrap (string assemblyName, string typeName, bool ignoreCase, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, object? []? args, System.Globalization.CultureInfo? culture, object? []? activationAttributes)
+			// CreateInstanceAndUnwrap (string assemblyName, string typeName, object? []? activationAttributes)
+			//
+			// CreateInstanceFrom (string assemblyFile, string typeName)
+			// CreateInstanceFrom (string assemblyFile, string typeName, bool ignoreCase, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, object? []? args, System.Globalization.CultureInfo? culture, object? []? activationAttributes)
+			// CreateInstanceFrom (string assemblyFile, string typeName, object? []? activationAttributes)
+			//
+			// CreateInstanceFromAndUnwrap (string assemblyFile, string typeName)
+			// CreateInstanceFromAndUnwrap (string assemblyFile, string typeName, bool ignoreCase, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, object? []? args, System.Globalization.CultureInfo? culture, object? []? activationAttributes)
+			// CreateInstanceFromAndUnwrap (string assemblyFile, string typeName, object? []? activationAttributes)
+			//
+			case var appDomainCreateInstance when appDomainCreateInstance == IntrinsicId.AppDomain_CreateInstance
+					|| appDomainCreateInstance == IntrinsicId.AppDomain_CreateInstanceAndUnwrap
+					|| appDomainCreateInstance == IntrinsicId.AppDomain_CreateInstanceFrom
+					|| appDomainCreateInstance == IntrinsicId.AppDomain_CreateInstanceFromAndUnwrap:
+				ProcessCreateInstanceByName (calledMethod, argumentValues);
+				break;
+
+			//
+			// System.Reflection.Assembly
+			//
+			// CreateInstance (string typeName)
+			// CreateInstance (string typeName, bool ignoreCase)
+			// CreateInstance (string typeName, bool ignoreCase, BindingFlags bindingAttr, Binder? binder, object []? args, CultureInfo? culture, object []? activationAttributes)
+			//
+			case IntrinsicId.Assembly_CreateInstance:
+				// For now always fail since we don't track assemblies (dotnet/linker/issues/1947)
+				_diagnosticContext.AddDiagnostic (DiagnosticId.ParametersOfAssemblyCreateInstanceCannotBeAnalyzed, calledMethod.GetDisplayName ());
 				break;
 
 			case IntrinsicId.None:
@@ -1094,6 +1291,50 @@ namespace ILLink.Shared.TrimAnalysis
 			return builder.ToImmutableArray ();
 		}
 
+		void ProcessCreateInstanceByName (MethodProxy calledMethod, IReadOnlyList<MultiValue> argumentValues)
+		{
+			BindingFlags bindingFlags = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
+			bool parameterlessConstructor = true;
+			if (calledMethod.HasParametersCount (8) && calledMethod.HasParameterOfType (2, "System.Boolean")) {
+				parameterlessConstructor = false;
+				bindingFlags = BindingFlags.Instance;
+				if (argumentValues[3].AsConstInt () is int bindingFlagsInt)
+					bindingFlags |= (BindingFlags) bindingFlagsInt;
+				else
+					bindingFlags |= BindingFlags.Public | BindingFlags.NonPublic;
+			}
+
+			foreach (var assemblyNameValue in argumentValues[0]) {
+				if (assemblyNameValue is KnownStringValue assemblyNameStringValue) {
+					if (assemblyNameStringValue.Contents is string assemblyName && assemblyName.Length == 0) {
+						// Throws exception for zero-length assembly name.
+						continue;
+					}
+					foreach (var typeNameValue in argumentValues[1]) {
+						if (typeNameValue is NullValue) {
+							// Throws exception for null type name.
+							continue;
+						}
+						if (typeNameValue is KnownStringValue typeNameStringValue) {
+							if (!TryResolveTypeNameForCreateInstance (calledMethod, assemblyNameStringValue.Contents, typeNameStringValue.Contents, out TypeProxy resolvedType)) {
+								// It's not wrong to have a reference to non-existing type - the code may well expect to get an exception in this case
+								// Note that we did find the assembly, so it's not a linker config problem, it's either intentional, or wrong versions of assemblies
+								// but linker can't know that. In case a user tries to create an array using System.Activator we should simply ignore it, the user
+								// might expect an exception to be thrown.
+								continue;
+							}
+
+							MarkConstructorsOnType (resolvedType, bindingFlags, parameterlessConstructor ? 0 : null);
+						} else {
+							_diagnosticContext.AddDiagnostic (DiagnosticId.UnrecognizedParameterInMethodCreateInstance, calledMethod.GetParameterDisplayName (1), calledMethod.GetDisplayName ());
+						}
+					}
+				} else {
+					_diagnosticContext.AddDiagnostic (DiagnosticId.UnrecognizedParameterInMethodCreateInstance, calledMethod.GetParameterDisplayName (0), calledMethod.GetDisplayName ());
+				}
+			}
+		}
+
 		internal static BindingFlags? GetBindingFlagsFromValue (in MultiValue parameter) => (BindingFlags?) parameter.AsConstInt ();
 
 		internal static bool BindingFlagsAreUnsupported (BindingFlags? bindingFlags)
@@ -1175,6 +1416,8 @@ namespace ILLink.Shared.TrimAnalysis
 
 		private partial bool TryGetBaseType (TypeProxy type, [NotNullWhen (true)] out TypeProxy? baseType);
 
+		private partial bool TryResolveTypeNameForCreateInstance (in MethodProxy calledMethod, string assemblyName, string typeName, out TypeProxy resolvedType);
+
 		private partial void MarkStaticConstructor (TypeProxy type);
 
 		private partial void MarkEventsOnTypeHierarchy (TypeProxy type, string name, BindingFlags? bindingFlags);
@@ -1185,7 +1428,7 @@ namespace ILLink.Shared.TrimAnalysis
 
 		private partial void MarkPublicParameterlessConstructorOnType (TypeProxy type);
 
-		private partial void MarkConstructorsOnType (TypeProxy type, BindingFlags? bindingFlags);
+		private partial void MarkConstructorsOnType (TypeProxy type, BindingFlags? bindingFlags, int? parameterCount);
 
 		private partial void MarkMethod (MethodProxy method);
 

@@ -46,9 +46,9 @@ namespace Mono.Linker.Dataflow
 			}
 		}
 
-		internal bool TryResolveTypeNameAndMark (string typeName, MessageOrigin origin, [NotNullWhen (true)] out TypeDefinition? type)
+		internal bool TryResolveTypeNameAndMark (string typeName, MessageOrigin origin, bool needsAssemblyName, [NotNullWhen (true)] out TypeDefinition? type)
 		{
-			if (!_context.TypeNameResolver.TryResolveTypeName (typeName, origin.Provider, out TypeReference? typeRef, out AssemblyDefinition? typeAssembly)
+			if (!_context.TypeNameResolver.TryResolveTypeName (typeName, origin.Provider, out TypeReference? typeRef, out AssemblyDefinition? typeAssembly, needsAssemblyName)
 				|| typeRef.ResolveToTypeDefinition (_context) is not TypeDefinition foundType) {
 				type = default;
 				return false;

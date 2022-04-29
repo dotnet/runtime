@@ -13,7 +13,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 		[Fact]
 		public Task ActivatorCreateInstance ()
 		{
-			return RunTest (allowMissingWarnings: true);
+			return RunTest ();
 		}
 
 		[Fact]
@@ -67,7 +67,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 		[Fact]
 		public Task ExpressionNewType ()
 		{
-			return RunTest (allowMissingWarnings: true);
+			return RunTest ();
 		}
 
 		[Fact]
@@ -196,13 +196,43 @@ namespace ILLink.RoslynAnalyzer.Tests
 		[Fact]
 		public Task TypeUsedViaReflection ()
 		{
-			return RunTest (allowMissingWarnings: true);
+			return RunTest ();
+		}
+
+		[Fact]
+		public Task TypeUsedViaReflectionAssemblyDoesntExist ()
+		{
+			return RunTest ();
+		}
+
+		[Fact]
+		public Task TypeUsedViaReflectionInDifferentAssembly ()
+		{
+			return RunTest ();
+		}
+
+		[Fact]
+		public Task TypeUsedViaReflectionLdstrIncomplete ()
+		{
+			return RunTest ();
+		}
+
+		[Fact]
+		public Task TypeUsedViaReflectionLdstrValidButChanged ()
+		{
+			return RunTest ();
 		}
 
 		[Fact]
 		public Task TypeUsedViaReflectionTypeDoesntExist ()
 		{
-			return RunTest (allowMissingWarnings: true);
+			return RunTest ();
+		}
+
+		[Fact]
+		public Task TypeUsedViaReflectionTypeNameIsSymbol ()
+		{
+			return RunTest ();
 		}
 	}
 }

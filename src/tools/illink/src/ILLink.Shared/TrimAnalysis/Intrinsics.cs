@@ -278,13 +278,6 @@ namespace ILLink.Shared.TrimAnalysis
 					&& calledMethod.HasParameterOfType (1, "System.String")
 					=> IntrinsicId.Activator_CreateInstanceFrom,
 
-				// static T System.Activator.CreateInstance<T> ()
-				"CreateInstance" when calledMethod.IsDeclaredOnType ("System.Activator")
-					&& calledMethod.HasGenericParameters ()
-					&& calledMethod.HasGenericParametersCount (1)
-					&& calledMethod.HasParametersCount (0)
-					=> IntrinsicId.Activator_CreateInstanceOfT,
-
 				// System.AppDomain.CreateInstance (string assemblyName, string typeName)
 				// System.AppDomain.CreateInstance (string assemblyName, string typeName, bool ignoreCase, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, object? []? args, System.Globalization.CultureInfo? culture, object? []? activationAttributes)
 				// System.AppDomain.CreateInstance (string assemblyName, string typeName, object? []? activationAttributes)

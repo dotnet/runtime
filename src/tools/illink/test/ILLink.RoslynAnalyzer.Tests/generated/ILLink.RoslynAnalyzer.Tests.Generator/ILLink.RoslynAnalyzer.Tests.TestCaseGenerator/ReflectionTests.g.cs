@@ -62,36 +62,6 @@ namespace ILLink.RoslynAnalyzer.Tests
 		}
 
 		[Fact]
-		public Task TypeUsedViaReflectionAssemblyDoesntExist ()
-		{
-			return RunTest (allowMissingWarnings: true);
-		}
-
-		[Fact]
-		public Task TypeUsedViaReflectionInDifferentAssembly ()
-		{
-			return RunTest (allowMissingWarnings: true);
-		}
-
-		[Fact]
-		public Task TypeUsedViaReflectionLdstrIncomplete ()
-		{
-			return RunTest (allowMissingWarnings: true);
-		}
-
-		[Fact]
-		public Task TypeUsedViaReflectionLdstrValidButChanged ()
-		{
-			return RunTest (allowMissingWarnings: true);
-		}
-
-		[Fact]
-		public Task TypeUsedViaReflectionTypeNameIsSymbol ()
-		{
-			return RunTest (allowMissingWarnings: true);
-		}
-
-		[Fact]
 		public Task UnderlyingSystemType ()
 		{
 			return RunTest (allowMissingWarnings: true);

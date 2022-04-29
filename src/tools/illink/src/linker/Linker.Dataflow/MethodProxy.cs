@@ -27,6 +27,8 @@ namespace ILLink.Shared.TypeSystemProxy
 
 		internal partial bool HasParameterOfType (int parameterIndex, string fullTypeName) => Method.HasParameterOfType (parameterIndex, fullTypeName);
 
+		internal partial string GetParameterDisplayName (int parameterIndex) => Method.Parameters[parameterIndex].Name;
+
 		internal partial bool HasGenericParameters () => Method.HasGenericParameters;
 
 		internal partial bool HasGenericParametersCount (int genericParameterCount) => Method.GenericParameters.Count == genericParameterCount;

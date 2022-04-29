@@ -37,7 +37,7 @@ namespace ILLink.Shared.TrimAnalysis
 				} else if (uniqueValue is SystemTypeValue systemTypeValue) {
 					MarkTypeForDynamicallyAccessedMembers (systemTypeValue.RepresentedType, targetValue.DynamicallyAccessedMemberTypes);
 				} else if (uniqueValue is KnownStringValue knownStringValue) {
-					if (!TryResolveTypeNameAndMark (knownStringValue.Contents, out TypeProxy foundType)) {
+					if (!TryResolveTypeNameAndMark (knownStringValue.Contents, true, out TypeProxy foundType)) {
 						// Intentionally ignore - it's not wrong for code to call Type.GetType on non-existing name, the code might expect null/exception back.
 					} else {
 						MarkTypeForDynamicallyAccessedMembers (foundType, targetValue.DynamicallyAccessedMemberTypes);
@@ -62,7 +62,7 @@ namespace ILLink.Shared.TrimAnalysis
 			}
 		}
 
-		private partial bool TryResolveTypeNameAndMark (string typeName, out TypeProxy type);
+		public partial bool TryResolveTypeNameAndMark (string typeName, bool needsAssemblyName, out TypeProxy type);
 
 		private partial void MarkTypeForDynamicallyAccessedMembers (in TypeProxy type, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes);
 	}
