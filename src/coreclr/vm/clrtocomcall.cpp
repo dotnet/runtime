@@ -61,17 +61,11 @@ ComPlusCallInfo *ComPlusCall::PopulateComPlusCallMethodDesc(MethodDesc* pMD, DWO
     MethodTable *pMT = pMD->GetMethodTable();
     MethodTable *pItfMT = NULL;
 
-    // We are going to use this MethodDesc for a CLR->COM call
-    g_IBCLogger.LogMethodCodeAccess(pMD);
-
     if (pMD->IsComPlusCall())
     {
         ComPlusCallMethodDesc *pCMD = (ComPlusCallMethodDesc *)pMD;
         if (pCMD->m_pComPlusCallInfo == NULL)
         {
-            // We are going to write the m_pComPlusCallInfo field of the MethodDesc
-            g_IBCLogger.LogMethodDescWriteAccess(pMD);
-
             LoaderHeap *pHeap = pMD->GetLoaderAllocator()->GetHighFrequencyHeap();
             ComPlusCallInfo *pTemp = (ComPlusCallInfo *)(void *)pHeap->AllocMem(S_SIZE_T(sizeof(ComPlusCallInfo)));
 

@@ -45,8 +45,6 @@ GPTR_IMPL(IdDispenser,       g_pThinLockThreadIdDispenser);
 
 GPTR_IMPL(IdDispenser,       g_pModuleIndexDispenser);
 
-IBCLogger                    g_IBCLogger;
-
 // For [<I1, etc. up to and including [Object
 GARY_IMPL(TypeHandle, g_pPredefinedArrayTypes, ELEMENT_TYPE_MAX);
 

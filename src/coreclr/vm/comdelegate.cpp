@@ -832,8 +832,6 @@ Stub* COMDelegate::SetupShuffleThunk(MethodTable * pDelMT, MethodDesc *pTargetMe
         COMPlusThrowOM();
     }
 
-    g_IBCLogger.LogEEClassCOWTableAccess(pDelMT);
-
     if (!pTargetMeth->IsStatic() && pTargetMeth->HasRetBuffArg() && IsRetBuffPassedAsFirstArg())
     {
         if (FastInterlockCompareExchangePointer(&pClass->m_pInstRetBuffCallStub, pShuffleThunk, NULL ) != NULL)
@@ -1275,7 +1273,6 @@ LPVOID COMDelegate::ConvertToCallback(OBJECTREF pDelegateObj)
                 ExecutableWriterHolder<UMThunkMarshInfo> uMThunkMarshInfoWriterHolder(pUMThunkMarshInfo, sizeof(UMThunkMarshInfo));
                 uMThunkMarshInfoWriterHolder.GetRW()->LoadTimeInit(pInvokeMeth);
 
-                g_IBCLogger.LogEEClassCOWTableAccess(pMT);
                 if (FastInterlockCompareExchangePointer(&(pClass->m_pUMThunkMarshInfo),
                                                         pUMThunkMarshInfo,
                                                         NULL ) != NULL)
@@ -1719,8 +1716,6 @@ FCIMPL3(void, COMDelegate::DelegateConstruct, Object* refThisUNSAFE, Object* tar
         {
             if (pMTTarg)
             {
-                g_IBCLogger.LogMethodTableAccess(pMTTarg);
-
                 // Use the Unboxing stub for value class methods, since the value
                 // class is constructed using the boxed instance.
                 //
@@ -2315,8 +2310,6 @@ FCIMPL1(PCODE, COMDelegate::GetMulticastInvoke, Object* refThisIn)
 
         pStub = Stub::NewStub(JitILStub(pStubMD));
 
-        g_IBCLogger.LogEEClassCOWTableAccess(pDelegateMT);
-
         InterlockedCompareExchangeT<PTR_Stub>(&delegateEEClass->m_pMultiCastInvokeStub, pStub, NULL);
 
         HELPER_METHOD_FRAME_END();
@@ -2368,13 +2361,11 @@ FCIMPL1(PCODE, COMDelegate::GetMulticastInvoke, Object* refThisIn)
             if (!pWinner)
                 COMPlusThrowOM();
 
-            LOG((LF_CORDB,LL_INFO10000, "Putting a MC stub at 0x%x (code:0x%x)\n",
+            LOG((LF_CORDB,LL_INFO10000, "Putting a MC stub at 0x%p (code:0x%p)\n",
                 pWinner, (BYTE*)pWinner+sizeof(Stub)));
 
             pStub = pWinner;
         }
-
-        g_IBCLogger.LogEEClassCOWTableAccess(pDelegateMT);
 
         // we don't need to do an InterlockedCompareExchange here - the m_pMulticastStubCache->AttemptToSetStub
         // will make sure all threads racing here will get the same stub, so they'll all store the same value
@@ -2446,8 +2437,6 @@ PCODE COMDelegate::GetWrapperInvoke(MethodDesc* pMD)
                                                           &sl);
 
         pStub = Stub::NewStub(JitILStub(pStubMD));
-
-        g_IBCLogger.LogEEClassCOWTableAccess(pDelegateMT);
 
         InterlockedCompareExchangeT<PTR_Stub>(&delegateEEClass->m_pWrapperDelegateInvokeStub, pStub, NULL);
 

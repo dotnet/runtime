@@ -369,8 +369,6 @@ OBJECTREF AllocateSzArray(MethodTable* pArrayMT, INT32 cElements, GC_ALLOC_FLAGS
         MODE_COOPERATIVE; // returns an objref without pinning it => cooperative
     } CONTRACTL_END;
 
-    // IBC Log MethodTable access
-    g_IBCLogger.LogMethodTableAccess(pArrayMT);
     SetTypeHandleOnThreadForAlloc(TypeHandle(pArrayMT));
 
     _ASSERTE(pArrayMT->CheckInstanceActivated());
@@ -544,8 +542,6 @@ OBJECTREF AllocateArrayEx(MethodTable *pArrayMT, INT32 *pArgs, DWORD dwNumArgs, 
     }
 #endif
 
-    // IBC Log MethodTable access
-    g_IBCLogger.LogMethodTableAccess(pArrayMT);
     SetTypeHandleOnThreadForAlloc(TypeHandle(pArrayMT));
 
     // keep original flags in case the call is recursive (jugged array case)
@@ -920,8 +916,6 @@ OBJECTREF AllocateObject(MethodTable *pMT
     // not set becuase it isn't until near the end of the fcn at which point we can allow
     // the check.
     _UNCHECKED_OBJECTREF oref;
-
-    g_IBCLogger.LogMethodTableAccess(pMT);
     SetTypeHandleOnThreadForAlloc(TypeHandle(pMT));
 
 

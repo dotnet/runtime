@@ -267,8 +267,6 @@ inline MethodDesc *Module::LookupMethodDef(mdMethodDef token)
     CONTRACTL_END
 
     _ASSERTE(TypeFromToken(token) == mdtMethodDef);
-    g_IBCLogger.LogRidMapAccess( MakePair( this, token ) );
-
     return m_MethodDefToDescMap.GetElement(RidFromToken(token));
 }
 
@@ -277,7 +275,6 @@ inline MethodDesc *Module::LookupMemberRefAsMethod(mdMemberRef token)
     LIMITED_METHOD_DAC_CONTRACT;
 
     _ASSERTE(TypeFromToken(token) == mdtMemberRef);
-    g_IBCLogger.LogRidMapAccess( MakePair( this, token ) );
     BOOL flags = FALSE;
     PTR_MemberRef pMemberRef = m_pMemberRefToDescHashTable->GetValue(token, &flags);
     return flags ? dac_cast<PTR_MethodDesc>(pMemberRef) : NULL;

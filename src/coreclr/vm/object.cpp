@@ -466,14 +466,6 @@ VOID Object::Validate(BOOL bDeep, BOOL bVerifyNextHeader, BOOL bVerifySyncBlock)
     STATIC_CONTRACT_MODE_COOPERATIVE;
     STATIC_CONTRACT_CANNOT_TAKE_LOCK;
 
-    if (g_IBCLogger.InstrEnabled() && !GCStress<cfg_any>::IsEnabled())
-    {
-        // If we are instrumenting for IBC (and GCStress is not enabled)
-        // then skip these Object::Validate() as they slow down the
-        // instrument phase by an order of magnitude
-        return;
-    }
-
     if (g_fEEShutDown & ShutDown_Phase2)
     {
         // During second phase of shutdown the code below is not guaranteed to work.

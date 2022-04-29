@@ -1428,8 +1428,6 @@ public:
 
         BAD_FORMAT_NOTHROW_ASSERT(TypeFromToken(token) == mdtTypeDef);
 
-        g_IBCLogger.LogRidMapAccess( MakePair( this, token ) );
-
         TADDR flags;
         TypeHandle th = TypeHandle(m_TypeDefToMethodTableMap.GetElementAndFlags(RidFromToken(token), &flags));
 
@@ -1446,8 +1444,6 @@ public:
         LIMITED_METHOD_DAC_CONTRACT;
 
         BAD_FORMAT_NOTHROW_ASSERT(TypeFromToken(token) == mdtTypeDef);
-
-        g_IBCLogger.LogRidMapAccess( MakePair( this, token ) );
 
         TADDR flags;
         TypeHandle th = TypeHandle(m_GenericTypeDefToCanonMethodTableMap.GetElementAndFlags(RidFromToken(token), &flags));
@@ -1501,8 +1497,6 @@ public:
         WRAPPER_NO_CONTRACT;
 
         _ASSERTE(TypeFromToken(token) == mdtTypeRef);
-
-        g_IBCLogger.LogRidMapAccess( MakePair( this, token ) );
 
         // The TypeRef cache is strictly a lookaside cache. If we get an OOM trying to grow the table,
         // we cannot abort the load. (This will cause fatal errors during gc promotion.)
@@ -1565,7 +1559,6 @@ public:
         _ASSERTE(TypeFromToken(token) == mdtMemberRef);
 
         TADDR pResult = dac_cast<TADDR>(m_pMemberRefToDescHashTable->GetValue(token, pfIsMethod));
-        g_IBCLogger.LogRidMapAccess( MakePair( this, token ) );
         return pResult;
     }
     MethodDesc *LookupMemberRefAsMethod(mdMemberRef token);
@@ -1832,10 +1825,6 @@ public:
     Module *GetModuleFromIndexIfLoaded(DWORD ix);
 
     ICorJitInfo::BlockCounts * AllocateMethodBlockCounts(mdToken _token, DWORD _size, DWORD _ILSize);
-    HANDLE OpenMethodProfileDataLogFile(GUID mvid);
-    static void ProfileDataAllocateTokenLists(ProfileEmitter * pEmitter, TokenProfileData* pTokenProfileData);
-    HRESULT WriteMethodProfileDataLogFile(bool cleanup);
-    static void WriteAllModuleProfileData(bool cleanup);
     void SetMethodProfileList(CORCOMPILE_METHOD_PROFILE_LIST * value)
     {
         m_methodProfileList = value;

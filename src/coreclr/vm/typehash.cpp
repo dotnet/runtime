@@ -494,12 +494,10 @@ TypeHandle EETypeHashTable::GetValue(TypeKey *pKey)
 
     if (pItem)
     {
-        TypeHandle th = pItem->GetTypeHandle();
-        g_IBCLogger.LogTypeHashTableAccess(&th);
         return pItem->GetTypeHandle();
     }
-    else
-        return TypeHandle();
+
+    return TypeHandle();
 }
 
 #ifndef DACCESS_COMPILE

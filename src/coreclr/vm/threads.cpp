@@ -1575,8 +1575,6 @@ Thread::Thread()
 
     m_pPendingTypeLoad = NULL;
 
-    m_pIBCInfo = NULL;
-
     m_dwAVInRuntimeImplOkayCount = 0;
 
 #if defined(HAVE_GCCOVER) && defined(USE_REDIRECT_FOR_GCSTRESS) && !defined(TARGET_UNIX) // GCCOVER
@@ -2724,10 +2722,6 @@ Thread::~Thread()
     }
 
     g_pThinLockThreadIdDispenser->DisposeId(GetThreadId());
-
-    if (m_pIBCInfo) {
-        delete m_pIBCInfo;
-    }
 
     m_tailCallTls.FreeArgBuffer();
 

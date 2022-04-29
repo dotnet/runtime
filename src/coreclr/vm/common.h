@@ -292,7 +292,6 @@ inline void ClrRestoreNonvolatileContext(PCONTEXT ContextRecord)
 #include "gcenv.interlocked.inl"
 
 #include "util.hpp"
-#include "ibclogger.h"
 #include "eepolicy.h"
 
 #include "vars.hpp"

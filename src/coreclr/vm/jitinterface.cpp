@@ -5594,7 +5594,7 @@ bool __stdcall TrackAllocationsEnabled()
     CONTRACTL_END;
 
     return (
-        (g_IBCLogger.InstrEnabled() != FALSE)
+        FALSE
 #ifdef PROFILING_SUPPORTED
         || CORProfilerTrackAllocationsEnabled()
 #endif // PROFILING_SUPPORTED

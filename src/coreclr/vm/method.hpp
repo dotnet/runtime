@@ -943,7 +943,6 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         MethodTable *pMT = GetMethodTable();
-        g_IBCLogger.LogMethodTableAccess(pMT);
         return
             !IsEnCAddedMethod()
             // The slot numbers are currently meaningless for
@@ -999,7 +998,6 @@ public:
     {
         WRAPPER_NO_CONTRACT;
         MethodTable *pMT = GetMethodTable_NoLogging();
-        g_IBCLogger.LogEEClassAndMethodTableAccess(pMT);
         EEClass *pClass = pMT->GetClass_NoLogging();
         PREFIX_ASSUME(pClass != NULL);
         return pClass;
@@ -2414,7 +2412,6 @@ public:
         return (PCCOR_SIGNATURE)
             DacInstantiateTypeByAddress(GetSigRVA(), m_cSig, true);
 #else // !DACCESS_COMPILE
-        g_IBCLogger.LogNDirectCodeAccess(this);
         return (PCCOR_SIGNATURE) m_pSig;
 #endif // !DACCESS_COMPILE
     }
@@ -3544,7 +3541,6 @@ inline PTR_MethodTable MethodDesc::GetMethodTable() const
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
-    g_IBCLogger.LogMethodDescAccess(this);
     return GetMethodTable_NoLogging();
 }
 
@@ -3581,7 +3577,6 @@ inline mdMethodDef MethodDesc::GetMemberDef_NoLogging() const
 inline mdMethodDef MethodDesc::GetMemberDef() const
 {
     LIMITED_METHOD_DAC_CONTRACT;
-    g_IBCLogger.LogMethodDescAccess(this);
     return GetMemberDef_NoLogging();
 }
 
@@ -3683,7 +3678,6 @@ inline BOOL MethodDesc::IsGenericMethodDefinition() const
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
-    g_IBCLogger.LogMethodDescAccess(this);
     return GetClassification() == mcInstantiated && AsInstantiatedMethodDesc()->IMD_IsGenericMethodDefinition();
 }
 

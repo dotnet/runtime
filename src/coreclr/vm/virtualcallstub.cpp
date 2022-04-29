@@ -2029,8 +2029,6 @@ VirtualCallStubManager::Resolver(
     }
 #endif // _DEBUG
 
-    g_IBCLogger.LogMethodTableAccess(pMT);
-
     // NOTE: CERs are not hardened against transparent proxy types,
     // so no need to worry about throwing an exception from here.
 
@@ -2046,7 +2044,6 @@ VirtualCallStubManager::Resolver(
     // this target and backpatch the callsite.
     if (!implSlot.IsNull())
     {
-        g_IBCLogger.LogDispatchTableSlotAccess(&implSlot);
 #if defined(LOGGING) || defined(_DEBUG)
         {
             pMD = implSlot.GetMethodDesc();
@@ -2112,10 +2109,6 @@ VirtualCallStubManager::Resolver(
                     //           every time. If the way we call generic virtual methods changes, this will also need
                     //           to change.
                     fShouldPatch = TRUE;
-                }
-                else
-                {
-                    g_IBCLogger.LogMethodDescAccess(pMD);
                 }
             }
         }

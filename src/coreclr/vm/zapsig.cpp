@@ -233,13 +233,6 @@ BOOL ZapSig::GetSignatureForTypeHandle(TypeHandle      handle,
 
     if ((index != 0) && (this->pfnTokenDefinition != NULL))
     {
-        //
-        // We do not want to log the metadata lookups that we perform here
-        //
-        IBCLoggingDisabler   disableLogging;
-
-        // During IBC profiling this calls
-        //     code:Module::TokenDefinitionHelper
         (*this->pfnTokenDefinition)(this->context.pModuleContext, pTypeHandleModule, index, &token);
 
         // ibcExternalType tokens are actually encoded as mdtTypeDef tokens in the signature
@@ -676,7 +669,7 @@ Module *ZapSig::DecodeModuleFromIndexIfLoaded(Module *fromModule,
                 {   // Unexpected failure reading MetaData
                     fValidAssemblyRef = FALSE;
                 }
-    
+
                 if (fValidAssemblyRef)
                 {
                     pAssembly = fromModule->GetAssemblyIfLoaded(
@@ -912,8 +905,6 @@ MethodDesc *ZapSig::DecodeMethod(Module *pInfoModule,
                                                             inst,
                                                             !(isInstantiatingStub || isUnboxingStub) && !actualOwnerRequired,
                                                             actualOwnerRequired);
-
-    g_IBCLogger.LogMethodDescAccess(pMethod);
 
     if (methodFlags & ENCODE_METHOD_SIG_Constrained)
     {
@@ -1278,13 +1269,6 @@ BOOL ZapSig::EncodeMethod(
             //
             if ((index != 0) && (pfnDefineToken != NULL))
             {
-                //
-                // We do not want to log the metadata lookups that we perform here
-                //
-                IBCLoggingDisabler   disableLogging;
-
-                // During IBC profiling this calls
-                //     code:Module::TokenDefinitionHelper()
                 (*((TokenDefinitionCallback) pfnDefineToken))(pEncodeModuleContext, pTypeHandleModule, index, &methodToken);
             }
         }

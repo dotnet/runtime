@@ -951,17 +951,6 @@ TypeHandle ClassLoader::LoadConstructedTypeThrowing(TypeKey *pKey,
         typeHnd = pKey->GetModule()->LookupFullyCanonicalInstantiation(pKey->GetTypeToken(), &existingLoadLevel);
     }
 
-    if (typeHnd.IsNull())
-    {
-        typeHnd = LookupTypeHandleForTypeKey(pKey);
-        if (!typeHnd.IsNull())
-        {
-            existingLoadLevel = typeHnd.GetLoadLevel();
-            if (existingLoadLevel >= level)
-                g_IBCLogger.LogTypeHashTableAccess(&typeHnd);
-        }
-    }
-
     // If something has been published in the tables, and it's at the right level, just return it
     if (!typeHnd.IsNull() && existingLoadLevel >= level)
     {
@@ -2842,7 +2831,7 @@ TypeHandle ClassLoader::DoIncrementalLoad(TypeKey *pTypeKey, TypeHandle typeHnd,
         // or at least level CLASS_LOAD_APPROXPARENTS (if creating type for the first time)
         case CLASS_LOAD_BEGIN :
             {
-                IBCLoggerAwareAllocMemTracker amTracker;
+                AllocMemTracker amTracker;
                 typeHnd = CreateTypeHandleForTypeKey(pTypeKey, &amTracker);
                 CONSISTENCY_CHECK(!typeHnd.IsNull());
                 TypeHandle published = PublishType(pTypeKey, typeHnd);
@@ -3133,8 +3122,6 @@ void ClassLoader::Notify(TypeHandle typeHnd)
         END_PROFILER_CALLBACK();
     }
 #endif //PROFILING_SUPPORTED
-
-    g_IBCLogger.LogMethodTableAccess(pMT);
 
     if (pMT->IsTypicalTypeDefinition())
     {

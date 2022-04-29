@@ -542,9 +542,6 @@ OBJECTREF ParamTypeDesc::GetManagedClassObject()
             GetTemplateMethodTableInternal()->GetWriteableDataForWrite()->m_hExposedClassObject = m_hExposedClassObject;
         }
 
-        // Log the TypeVarTypeDesc access
-        g_IBCLogger.LogTypeMethodTableWriteableAccess(&th);
-
         GCPROTECT_END();
     }
     return GetManagedClassObjectIfExists();
@@ -560,8 +557,6 @@ BOOL TypeDesc::IsRestored()
     STATIC_CONTRACT_CANNOT_TAKE_LOCK;
     SUPPORTS_DAC;
 
-    TypeHandle th = TypeHandle(this);
-    g_IBCLogger.LogTypeMethodTableAccess(&th);
     return IsRestored_NoLogging();
 }
 

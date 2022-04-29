@@ -305,9 +305,6 @@ void MethodDescCallSite::CallTargetWorker(const ARG_SLOT *pArguments, ARG_SLOT *
         //
         GCX_FORBID();
 
-        // Record this call if required
-        g_IBCLogger.LogMethodDescAccess(m_pMD);
-
         //
         // All types must already be loaded. This macro also sets up a FAULT_FORBID region which is
         // also required for critical calls since we cannot inject any failure points between the

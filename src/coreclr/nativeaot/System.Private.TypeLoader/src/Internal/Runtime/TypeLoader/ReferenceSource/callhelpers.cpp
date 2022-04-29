@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 /*
  *    CallHelpers.CPP: helpers to call managed code
- * 
+ *
 
  */
 
@@ -28,12 +28,12 @@ void AssertMulticoreJitAllowedModule(PCODE pTarget)
     }
     CONTRACTL_END;
 
-    MethodDesc* pMethod = Entry2MethodDesc(pTarget, NULL); 
+    MethodDesc* pMethod = Entry2MethodDesc(pTarget, NULL);
 
     Module * pModule = pMethod->GetModule_NoLogging();
 
 #if defined(FEATURE_APPX_BINDER)
-    
+
     // For Appx process, allow certain modules to load on background thread
     if (AppX::IsAppXProcess())
     {
@@ -89,7 +89,7 @@ void CallDescrWorkerWithHandler(
 }
 
 
-#if !defined(_WIN64) && defined(_DEBUG) 
+#if !defined(_WIN64) && defined(_DEBUG)
 
 //*******************************************************************************
 // assembly code, in i386/asmhelpers.asm
@@ -103,7 +103,7 @@ void CallDescrWorker(CallDescrData * pCallDescrData)
     // unwind the C++ handler before branching to the catch clause in managed code. That essentially causes an
     // out-of-order destruction of the contract object, resulting in very odd crashes later.
     //
-#if 0 
+#if 0
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
@@ -189,7 +189,7 @@ void DispatchCallDebuggerWrapper(
 // Helper for VM->managed calls with simple signatures.
 void * DispatchCallSimple(
                     SIZE_T *pSrc,
-                    DWORD numStackSlotsToCopy, 
+                    DWORD numStackSlotsToCopy,
                     PCODE pTargetAddress,
                     DWORD dwDispatchCallSimpleFlags)
 {
@@ -201,7 +201,7 @@ void * DispatchCallSimple(
     }
     CONTRACTL_END;
 
-#ifdef DEBUGGING_SUPPORTED 
+#ifdef DEBUGGING_SUPPORTED
     if (CORDebuggerTraceCall())
         g_pDebugInterface->TraceCall((const BYTE *)pTargetAddress);
 #endif // DEBUGGING_SUPPORTED
@@ -261,7 +261,7 @@ void DispatchCall(
     }
     CONTRACTL_END;
 
-#ifdef DEBUGGING_SUPPORTED 
+#ifdef DEBUGGING_SUPPORTED
     if (CORDebuggerTraceCall())
         g_pDebugInterface->TraceCall((const BYTE *)pCallDescrData->pTarget);
 #endif // DEBUGGING_SUPPORTED
@@ -320,7 +320,7 @@ void FillInRegTypeMap(int argOffset, CorElementType typ, BYTE * pMap)
     // right for each arg.
 
     if (regArgNum < NUM_ARGUMENT_REGISTERS)
-    {        
+    {
         pMap[regArgNum] = typ;
     }
 }
@@ -342,8 +342,8 @@ ARG_SLOT MethodDescCallSite::CallTargetWorker(const ARG_SLOT *pArguments)
     //
     // WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING
     //
-    // This method needs to have a GC_TRIGGERS contract because it 
-    // calls managed code.  However, IT MAY NOT TRIGGER A GC ITSELF 
+    // This method needs to have a GC_TRIGGERS contract because it
+    // calls managed code.  However, IT MAY NOT TRIGGER A GC ITSELF
     // because the argument array is not protected and may contain gc
     // refs.
     //
@@ -361,7 +361,7 @@ ARG_SLOT MethodDescCallSite::CallTargetWorker(const ARG_SLOT *pArguments)
 #ifdef FEATURE_COMINTEROP
         // If we're an exe, then we must either be initializing the first AD, or have already setup the main thread's
         //  COM apartment state.
-        // If you hit this assert, then you likely introduced code during startup that could inadvertently 
+        // If you hit this assert, then you likely introduced code during startup that could inadvertently
         //  initialize the COM apartment state of the main thread before we set it based on the user attribute.
         PRECONDITION(g_fInExecuteMainMethod ? (g_fMainThreadApartmentStateSet || g_fInitializingInitialAD) : TRUE);
 #endif // FEATURE_COMINTEROP
@@ -375,7 +375,7 @@ ARG_SLOT MethodDescCallSite::CallTargetWorker(const ARG_SLOT *pArguments)
     //
     // @todo: In an ideal world, we would require each of those sites to do the override rather than disabling
     // the assert broadly here. However, by limiting the override to mscorlib methods, we should still be able
-    // to effectively enforce the more general rule about loader recursion. 
+    // to effectively enforce the more general rule about loader recursion.
     MAYBE_OVERRIDE_TYPE_LOAD_LEVEL_LIMIT(CLASS_LOADED, m_pMD->GetModule()->IsSystem());
 
     LPBYTE pTransitionBlock;
@@ -391,17 +391,14 @@ ARG_SLOT MethodDescCallSite::CallTargetWorker(const ARG_SLOT *pArguments)
 
     {
         //
-        // the incoming argument array is not gc-protected, so we 
+        // the incoming argument array is not gc-protected, so we
         // may not trigger a GC before we actually call managed code
         //
         GCX_FORBID();
 
-        // Record this call if required
-        g_IBCLogger.LogMethodDescAccess(m_pMD);
-
-        // 
+        //
         // All types must already be loaded. This macro also sets up a FAULT_FORBID region which is
-        // also required for critical calls since we cannot inject any failure points between the 
+        // also required for critical calls since we cannot inject any failure points between the
         // caller of MethodDesc::CallDescr and the actual transition to managed code.
         //
         ENABLE_FORBID_GC_LOADER_USE_IN_THIS_SCOPE();
@@ -492,7 +489,7 @@ ARG_SLOT MethodDescCallSite::CallTargetWorker(const ARG_SLOT *pArguments)
         }
 #ifdef FEATURE_HFA
 #ifdef FEATURE_INTERPRETER
-        // Something is necessary for HFA's, but what's below (in the FEATURE_INTERPRETER ifdef) 
+        // Something is necessary for HFA's, but what's below (in the FEATURE_INTERPRETER ifdef)
         // doesn't seem to do the proper test.  It fires,
         // incorrectly, for a one-word struct that *doesn't* have a ret buff.  So we'll try this, instead:
         // We're here because it doesn't have a ret buff.  If it would, except that the struct being returned
@@ -642,7 +639,7 @@ ARG_SLOT MethodDescCallSite::CallTargetWorker(const ARG_SLOT *pArguments)
         }
     }
 #endif // !defined(_WIN64) && BIGENDIAN
-    
+
     return retval;
 }
 

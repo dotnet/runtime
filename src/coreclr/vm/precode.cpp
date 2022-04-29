@@ -147,11 +147,6 @@ MethodDesc* Precode::GetMethodDesc(BOOL fSpeculative /*= FALSE*/)
     // GetMethodDesc() on platform specific precode types returns TADDR. It should return
     // PTR_MethodDesc instead. It is a workaround to resolve cyclic dependency between headers.
     // Once we headers factoring of headers cleaned up, we should be able to get rid of it.
-
-    // For speculative calls, pMD can be garbage that causes IBC logging to crash
-    if (!fSpeculative)
-        g_IBCLogger.LogMethodPrecodeAccess((PTR_MethodDesc)pMD);
-
     return (PTR_MethodDesc)pMD;
 }
 
@@ -339,8 +334,6 @@ BOOL Precode::SetTargetInterlocked(PCODE target, BOOL fOnlyRedirectFromPrestub)
     if (fOnlyRedirectFromPrestub && !IsPointingToPrestub(expected))
         return FALSE;
 
-    g_IBCLogger.LogMethodPrecodeWriteAccess(GetMethodDesc());
-
     PrecodeType precodeType = GetType();
     switch (precodeType)
     {
@@ -468,7 +461,7 @@ TADDR Precode::AllocateTemporaryEntryPoints(MethodDescChunk *  pChunk,
     TADDR temporaryEntryPoints;
     SIZE_T oneSize = SizeOfTemporaryEntryPoint(t);
     MethodDesc * pMD = pChunk->GetFirstMethodDesc();
-    
+
     if (t == PRECODE_FIXUP || t == PRECODE_STUB)
     {
         LoaderHeap *pStubHeap;

@@ -1744,8 +1744,6 @@ StackWalkAction SystemDomain::CallersMethodCallbackWithStackMark(CrawlFrame* pCf
     Frame* frame = pCf->GetFrame();
     _ASSERTE(pCf->IsFrameless() || frame);
 
-
-
     // Skipping reflection frames. We don't need to be quite as exhaustive here
     // as the security or reflection stack walking code since we know this logic
     // is only invoked for selected methods in CoreLib itself. So we're
@@ -1753,8 +1751,6 @@ StackWalkAction SystemDomain::CallersMethodCallbackWithStackMark(CrawlFrame* pCf
     // constructors, properties or events. This leaves being invoked via
     // MethodInfo, Type or Delegate (and depending on which invoke overload is
     // being used, several different reflection classes may be involved).
-
-    g_IBCLogger.LogMethodDescAccess(pFunc);
 
     if (SystemDomain::IsReflectionInvocationMethod(pFunc))
         return SWA_CONTINUE;
@@ -5093,7 +5089,7 @@ HRESULT RuntimeInvokeHostAssemblyResolver(INT_PTR pManagedAssemblyLoadContextToB
                 if (pParentLoaderAllocator == NULL)
                 {
                     // The AssemblyLoadContext for which we are resolving the the Assembly is not collectible.
-                    COMPlusThrow(kNotSupportedException, W("NotSupported_CollectibleBoundNonCollectible")); 
+                    COMPlusThrow(kNotSupportedException, W("NotSupported_CollectibleBoundNonCollectible"));
                 }
 
                 _ASSERTE(pResultAssemblyLoaderAllocator);

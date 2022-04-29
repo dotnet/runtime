@@ -503,11 +503,7 @@ HRESULT EEConfig::sync()
     if (szZapBBInstr != NULL)
     {
         IfFailRet(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_ZapBBInstrDir, &szZapBBInstrDir));
-        g_IBCLogger.EnableAllInstr();
     }
-    else
-        g_IBCLogger.DisableAllInstr();
-
 
     dwDisableStackwalkCache = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_DisableStackwalkCache, dwDisableStackwalkCache);
 

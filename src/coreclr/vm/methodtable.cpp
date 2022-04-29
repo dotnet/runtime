@@ -369,8 +369,6 @@ PTR_Module MethodTable::GetModule()
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
-    g_IBCLogger.LogMethodTableAccess(this);
-
     // Fast path for non-generic non-array case
     if ((m_dwFlags & (enum_flag_HasComponentSize | enum_flag_GenericsMask)) == 0)
         return GetLoaderModule();
@@ -413,8 +411,6 @@ PTR_DispatchMap MethodTable::GetDispatchMap()
         if (!pMT->HasDispatchMapSlot())
             return NULL;
     }
-
-    g_IBCLogger.LogDispatchMapAccess(pMT);
 
     TADDR pSlot = pMT->GetMultipurposeSlotPtr(enum_flag_HasDispatchMapSlot, c_DispatchMapSlotOffsets);
     return *dac_cast<DPTR(PTR_DispatchMap)>(pSlot);
@@ -1233,8 +1229,6 @@ Module* MethodTable::GetModuleForStatics()
     WRAPPER_NO_CONTRACT;
     SUPPORTS_DAC;
 
-    g_IBCLogger.LogMethodTableAccess(this);
-
     if (HasGenericsStaticsInfo())
     {
         DWORD dwDynamicClassDomainID;
@@ -1587,8 +1581,6 @@ BOOL MethodTable::CanCastToClass(MethodTable *pTargetMT, TypeHandlePairList *pVi
             if (pMT->IsEquivalentTo(pTargetMT))
                 return TRUE;
 
-            g_IBCLogger.LogMethodTableAccess(pMT);
-
             if (pMT->CanCastByVarianceToInterfaceOrDelegate(pTargetMT, pVisited))
                 return TRUE;
 
@@ -1602,8 +1594,6 @@ BOOL MethodTable::CanCastToClass(MethodTable *pTargetMT, TypeHandlePairList *pVi
         do {
             if (pMT->IsEquivalentTo(pTargetMT))
                 return TRUE;
-
-            g_IBCLogger.LogMethodTableAccess(pMT);
 
             pMT = pMT->GetParentMethodTable();
         } while (pMT);
@@ -3762,8 +3752,6 @@ void MethodTable::DoRunClassInitThrowing()
 
     STRESS_LOG2(LF_CLASSLOADER, LL_INFO100000, "DoRunClassInit: returning SUCCESS for init %pT in appdomain %p\n", this, pDomain);
     // No need to set pThrowable in case of error it will already have been set.
-
-    g_IBCLogger.LogMethodTableAccess(this);
 Exit:
     ;
 }
@@ -4167,8 +4155,6 @@ void MethodTable::CheckRestore()
         ClassLoader::EnsureLoaded(this);
         _ASSERTE(IsFullyLoaded());
     }
-
-    g_IBCLogger.LogMethodTableAccess(this);
 }
 
 #ifndef DACCESS_COMPILE
@@ -4533,8 +4519,6 @@ void MethodTable::DoFullyLoad(Generics::RecursionGraph * const pVisited,  const 
 
         while (pField < pFieldEnd)
         {
-            g_IBCLogger.LogFieldDescsAccess(pField);
-
             if (pField->GetFieldType() == ELEMENT_TYPE_VALUETYPE)
             {
                 TypeHandle th = pField->GetFieldTypeHandleThrowing((ClassLoadLevel) (level - 1));
@@ -4762,7 +4746,6 @@ void MethodTable::SetOHDelegate (OBJECTHANDLE _ohDelegate)
 {
     LIMITED_METHOD_CONTRACT;
     _ASSERTE(GetClass());
-    g_IBCLogger.LogEEClassCOWTableAccess(this);
     GetClass_NoLogging()->SetOHDelegate(_ohDelegate);
 }
 
@@ -4869,9 +4852,6 @@ CorElementType MethodTable::GetInternalCorElementType()
 
     // This should not touch the EEClass, at least not in the
     // common cases of ELEMENT_TYPE_CLASS and ELEMENT_TYPE_VALUETYPE.
-
-    g_IBCLogger.LogMethodTableAccess(this);
-
     CorElementType ret;
 
     switch (GetFlag(enum_flag_Category_ElementTypeMask))
@@ -4924,9 +4904,6 @@ CorElementType MethodTable::GetVerifierCorElementType()
 
     // This should not touch the EEClass, at least not in the
     // common cases of ELEMENT_TYPE_CLASS and ELEMENT_TYPE_VALUETYPE.
-
-    g_IBCLogger.LogMethodTableAccess(this);
-
     CorElementType ret;
 
     switch (GetFlag(enum_flag_Category_ElementTypeMask))
@@ -4969,9 +4946,6 @@ CorElementType MethodTable::GetSignatureCorElementType()
 
     // This should not touch the EEClass, at least not in the
     // common cases of ELEMENT_TYPE_CLASS and ELEMENT_TYPE_VALUETYPE.
-
-    g_IBCLogger.LogMethodTableAccess(this);
-
     CorElementType ret;
 
     switch (GetFlag(enum_flag_Category_ElementTypeMask))
@@ -5243,7 +5217,6 @@ BOOL MethodTable::FindDispatchEntry(UINT32 typeID,
     UINT32 iCurInheritanceChainDelta = 0;
     while (pCurMT != NULL)
     {
-        g_IBCLogger.LogMethodTableAccess(pCurMT);
         if (pCurMT->FindDispatchEntryForCurrentType(
                 typeID, slotNumber, pEntry))
         {
@@ -6229,7 +6202,6 @@ void MethodTable::GetGuid(GUID *pGuid, BOOL bGenerateIfNotFound, BOOL bClassic /
             // Remember that we didn't find the GUID, so we can skip looking during
             // future checks. (Note that this is a very important optimization in the
             // prejit case.)
-            g_IBCLogger.LogEEClassCOWTableAccess(this);
             GetClass_NoLogging()->SetHasNoGuid();
         }
     }
@@ -6446,7 +6418,6 @@ unsigned MethodTable::GetTypeDefRid()
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
-    g_IBCLogger.LogMethodTableAccess(this);
     return GetTypeDefRid_NoLogging();
 }
 
@@ -6877,7 +6848,6 @@ void MethodTable::MethodDataObject::FillEntryDataForAncestor(MethodTable * pMT)
     for (; it.IsValid(); it.Next())
     {
         MethodDesc * pMD = it.GetMethodDesc();
-        g_IBCLogger.LogMethodDescAccess(pMD);
 
         unsigned slot = pMD->GetSlot();
         if (slot == MethodTable::NO_SLOT)
@@ -7853,8 +7823,6 @@ PCODE MethodTable::GetRestoredSlot(DWORD slotNumber)
     MethodTable * pMT = this;
     while (true)
     {
-        g_IBCLogger.LogMethodTableAccess(pMT);
-
         pMT = pMT->GetCanonicalMethodTable();
 
         _ASSERTE(pMT != NULL);
@@ -7889,8 +7857,6 @@ MethodTable * MethodTable::GetRestoredSlotMT(DWORD slotNumber)
     MethodTable * pMT = this;
     while (true)
     {
-        g_IBCLogger.LogMethodTableAccess(pMT);
-
         pMT = pMT->GetCanonicalMethodTable();
 
         _ASSERTE(pMT != NULL);
