@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
+using System.Runtime.Intrinsics;
 
 namespace System.Numerics
 {
@@ -668,15 +669,26 @@ namespace System.Numerics
         /// <param name="other">The other quaternion.</param>
         /// <returns><see langword="true" /> if the two quaternions are equal; otherwise, <see langword="false" />.</returns>
         /// <remarks>Two quaternions are equal if each of their corresponding components is equal.</remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public readonly bool Equals(Quaternion other)
         {
             // This function needs to account for floating-point equality around NaN
             // and so must behave equivalently to the underlying float/double.Equals
 
-            return X.Equals(other.X)
-                && Y.Equals(other.Y)
-                && Z.Equals(other.Z)
-                && W.Equals(other.W);
+            if (Vector128.IsHardwareAccelerated)
+            {
+                return Vector128.LoadUnsafe(ref Unsafe.AsRef(in X)).Equals(Vector128.LoadUnsafe(ref other.X));
+            }
+
+            return SoftwareFallback(in this, other);
+
+            static bool SoftwareFallback(in Quaternion self, Quaternion other)
+            {
+                return self.X.Equals(other.X)
+                    && self.Y.Equals(other.Y)
+                    && self.Z.Equals(other.Z)
+                    && self.W.Equals(other.W);
+            }
         }
 
         /// <summary>Returns the hash code for this instance.</summary>

@@ -318,19 +318,38 @@ namespace System.Runtime.Intrinsics
         /// <param name="other">The <see cref="Vector256{T}" /> to compare with the current instance.</param>
         /// <returns><c>true</c> if <paramref name="other" /> is equal to the current instance; otherwise, <c>false</c>.</returns>
         /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals(Vector256<T> other)
         {
             // This function needs to account for floating-point equality around NaN
             // and so must behave equivalently to the underlying float/double.Equals
 
-            for (int index = 0; index < Count; index++)
+            if (Vector256.IsHardwareAccelerated)
             {
-                if (!Scalar<T>.ObjectEquals(this.GetElementUnsafe(index), other.GetElementUnsafe(index)))
+                if ((typeof(T) == typeof(double)) || (typeof(T) == typeof(float)))
                 {
-                    return false;
+                    Vector256<T> result = Vector256.Equals(this, other) | ~(Vector256.Equals(this, this) | Vector256.Equals(other, other));
+                    return result.AsInt32() == Vector256<int>.AllBitsSet;
+                }
+                else
+                {
+                    return this == other;
                 }
             }
-            return true;
+
+            return SoftwareFallback(in this, other);
+
+            static bool SoftwareFallback(in Vector256<T> self, Vector256<T> other)
+            {
+                for (int index = 0; index < Count; index++)
+                {
+                    if (!Scalar<T>.ObjectEquals(self.GetElementUnsafe(index), other.GetElementUnsafe(index)))
+                    {
+                        return false;
+                    }
+                }
+                return true;
+            }
         }
 
         /// <summary>Gets the hash code for the instance.</summary>

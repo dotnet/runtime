@@ -4,6 +4,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
+using System.Runtime.Intrinsics;
 
 namespace System.Numerics
 {
@@ -301,8 +302,18 @@ namespace System.Numerics
             // This function needs to account for floating-point equality around NaN
             // and so must behave equivalently to the underlying float/double.Equals
 
-            return Normal.Equals(other.Normal)
-                && D.Equals(other.D);
+            if (Vector128.IsHardwareAccelerated)
+            {
+                return Vector128.LoadUnsafe(ref Unsafe.AsRef(in Normal.X)).Equals(Vector128.LoadUnsafe(ref other.Normal.X));
+            }
+
+            return SoftwareFallback(in this, other);
+
+            static bool SoftwareFallback(in Plane self, Plane other)
+            {
+                return self.Normal.Equals(other.Normal)
+                    && self.D.Equals(other.D);
+            }
         }
 
         /// <summary>Returns the hash code for this instance.</summary>

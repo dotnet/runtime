@@ -587,19 +587,38 @@ namespace System.Numerics
         /// <summary>Returns a boolean indicating whether the given vector is equal to this vector instance.</summary>
         /// <param name="other">The vector to compare this instance to.</param>
         /// <returns>True if the other vector is equal to this instance; False otherwise.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals(Vector<T> other)
         {
             // This function needs to account for floating-point equality around NaN
             // and so must behave equivalently to the underlying float/double.Equals
 
-            for (int index = 0; index < Count; index++)
+            if (Vector.IsHardwareAccelerated)
             {
-                if (!Scalar<T>.ObjectEquals(this.GetElementUnsafe(index), other.GetElementUnsafe(index)))
+                if ((typeof(T) == typeof(double)) || (typeof(T) == typeof(float)))
                 {
-                    return false;
+                    Vector<T> result = Vector.Equals(this, other) | ~(Vector.Equals(this, this) | Vector.Equals(other, other));
+                    return result.As<T, int>() == Vector<int>.AllBitsSet;
+                }
+                else
+                {
+                    return this == other;
                 }
             }
-            return true;
+
+            return SoftwareFallback(in this, other);
+
+            static bool SoftwareFallback(in Vector<T> self, Vector<T> other)
+            {
+                for (int index = 0; index < Count; index++)
+                {
+                    if (!Scalar<T>.ObjectEquals(self.GetElementUnsafe(index), other.GetElementUnsafe(index)))
+                    {
+                        return false;
+                    }
+                }
+                return true;
+            }
         }
 
         /// <summary>Returns the hash code for this instance.</summary>
