@@ -40,7 +40,7 @@ namespace System.Timers
                 if (!_replaced)
                 {
                     _replaced = true;
-                    DescriptionValue = string.Format(base.Description);
+                    DescriptionValue = base.Description;
                 }
                 return base.Description;
             }
