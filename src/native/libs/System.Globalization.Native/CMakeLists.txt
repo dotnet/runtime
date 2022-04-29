@@ -80,6 +80,11 @@ endif()
 include_directories("../Common")
 
 if (GEN_SHARED_LIB)
+    if (CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_MACCATALYST OR  CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
+        include(CMakeFindFrameworks)
+        find_library(FOUNDATION Foundation REQUIRED)
+    endif()
+
     add_library(System.Globalization.Native
         SHARED
         ${NATIVEGLOBALIZATION_SOURCES}
@@ -88,11 +93,11 @@ if (GEN_SHARED_LIB)
 
     target_link_libraries(System.Globalization.Native
         dl
+        ${FOUNDATION}
     )
 
     install_with_stripped_symbols (System.Globalization.Native PROGRAMS .)
 endif()
-
 
 add_library(System.Globalization.Native-Static
     STATIC

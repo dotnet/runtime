@@ -134,11 +134,13 @@ int32_t FixupLocaleName(UChar* value, int32_t valueLength)
 // is not desirable at all because it doesn't support case insensitive string comparisons.
 const char* DetectDefaultLocaleName()
 {
-#ifndef __APPLE__
-    const char* icuLocale = uloc_getDefault();
-#else
-    const char* icuLocale = DetectDefaultAppleLocaleName();
+    const char* icuLocale;
+#ifdef __APPLE__
+    icuLocale = DetectDefaultAppleLocaleName();
+if (icuLocale == NULL || icuLocale[0] == 0)
 #endif
+    icuLocale = uloc_getDefault();
+
     if (strcmp(icuLocale, "en_US_POSIX") == 0)
     {
         return "";
