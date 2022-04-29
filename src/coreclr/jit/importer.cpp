@@ -1957,7 +1957,7 @@ GenTree* Compiler::impTokenToHandle(CORINFO_RESOLVED_TOKEN* pResolvedToken,
     }
 
     // Generate the full lookup tree. May be null if we're abandoning an inline attempt.
-    GenTree* result = impLookupToTree(pResolvedToken, &embedInfo.lookup, gtTokenToIconFlags(pResolvedToken->token),
+    GenTree* result = impLookupToTree(pResolvedToken, nullptr, &embedInfo.lookup, gtTokenToIconFlags(pResolvedToken->token),
                                       embedInfo.compileTimeHandle);
 
     // If we have a result and it requires runtime lookup, wrap it in a runtime lookup node.
@@ -1970,6 +1970,7 @@ GenTree* Compiler::impTokenToHandle(CORINFO_RESOLVED_TOKEN* pResolvedToken,
 }
 
 GenTree* Compiler::impLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken,
+                                   CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken,
                                    CORINFO_LOOKUP*         pLookup,
                                    GenTreeFlags            handleFlags,
                                    void*                   compileTimeHandle)
@@ -2027,7 +2028,7 @@ GenTree* Compiler::impLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken,
 
     // Need to use dictionary-based access which depends on the typeContext
     // which is only available at runtime, not at compile-time.
-    return impRuntimeLookupToTree(pResolvedToken, nullptr, pLookup, compileTimeHandle);
+    return impRuntimeLookupToTree(pResolvedToken, pConstrainedResolvedToken, pLookup, compileTimeHandle);
 }
 
 #ifdef FEATURE_READYTORUN
@@ -2141,7 +2142,7 @@ GenTreeCall* Compiler::impReadyToRunHelperToTree(CORINFO_RESOLVED_TOKEN* pResolv
 }
 #endif
 
-GenTree* Compiler::impMethodPointer(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_CALL_INFO* pCallInfo)
+GenTree* Compiler::impMethodPointer(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_RESOLVED_TOKEN *pConstrainedResolvedToken, CORINFO_CALL_INFO* pCallInfo)
 {
     GenTree* op1 = nullptr;
 
@@ -2159,7 +2160,11 @@ GenTree* Compiler::impMethodPointer(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORI
             break;
 
         case CORINFO_CALL_CODE_POINTER:
-            op1 = impLookupToTree(pResolvedToken, &pCallInfo->codePointerLookup, GTF_ICON_FTN_ADDR, pCallInfo->hMethod);
+            op1 = impLookupToTree(pResolvedToken, nullptr, &pCallInfo->codePointerLookup, GTF_ICON_FTN_ADDR, pCallInfo->hMethod);
+            break;
+
+        case CORINFO_VIRTUALSTATICCALL_STUB:
+            op1 = impLookupToTree(pResolvedToken, pConstrainedResolvedToken, &pCallInfo->codePointerLookup, GTF_ICON_FTN_ADDR, pCallInfo->hMethod);
             break;
 
         default:
@@ -4036,7 +4041,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 CORINFO_GENERICHANDLE_RESULT embedInfo;
                 info.compCompHnd->expandRawHandleIntrinsic(&resolvedToken, &embedInfo);
 
-                GenTree* rawHandle = impLookupToTree(&resolvedToken, &embedInfo.lookup, gtTokenToIconFlags(memberRef),
+                GenTree* rawHandle = impLookupToTree(&resolvedToken, nullptr, &embedInfo.lookup, gtTokenToIconFlags(memberRef),
                                                      embedInfo.compileTimeHandle);
                 if (rawHandle == nullptr)
                 {
@@ -7385,7 +7390,7 @@ GenTree* Compiler::impImportLdvirtftn(GenTree*                thisPtr,
     if ((pCallInfo->sig.sigInst.methInstCount != 0) && IsTargetAbi(CORINFO_NATIVEAOT_ABI))
     {
         GenTree* runtimeMethodHandle =
-            impLookupToTree(pResolvedToken, &pCallInfo->codePointerLookup, GTF_ICON_METHOD_HDL, pCallInfo->hMethod);
+            impLookupToTree(pResolvedToken, nullptr, &pCallInfo->codePointerLookup, GTF_ICON_METHOD_HDL, pCallInfo->hMethod);
         return gtNewHelperCallNode(CORINFO_HELP_GVMLOOKUP_FOR_SLOT, TYP_I_IMPL, thisPtr, runtimeMethodHandle);
     }
 
@@ -9695,7 +9700,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                 assert((sig->callConv & CORINFO_CALLCONV_MASK) != CORINFO_CALLCONV_NATIVEVARARG);
 
                 GenTree* fptr =
-                    impLookupToTree(pResolvedToken, &callInfo->codePointerLookup, GTF_ICON_FTN_ADDR, callInfo->hMethod);
+                    impLookupToTree(pResolvedToken, nullptr, &callInfo->codePointerLookup, GTF_ICON_FTN_ADDR, callInfo->hMethod);
 
                 if (compDonotInline())
                 {
@@ -15184,7 +15189,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 impHandleAccessAllowed(callInfo.accessAllowed, &callInfo.callsiteCalloutHelper);
 
             DO_LDFTN:
-                op1 = impMethodPointer(&resolvedToken, &callInfo);
+                op1 = impMethodPointer(&resolvedToken, &constrainedResolvedToken, &callInfo);
 
                 if (compDonotInline())
                 {

@@ -609,7 +609,7 @@
   .method public hidebysig static void  Negative() cil managed
   {
     // Code size       225 (0xe1)
-    .maxstack  2
+    .maxstack  10
     .locals init (
              class [mscorlib]System.Exception V_6,
              class [mscorlib]System.Exception V_7,
@@ -632,7 +632,7 @@
                                              string)
       IL_0029:  nop
       IL_002a:  nop
-      IL_002b:  leave.s    IL_004a
+      IL_002b:  leave.s    IL_004aa
 
     }  // end .try
     catch [System.Runtime]System.Runtime.AmbiguousImplementationException
@@ -647,11 +647,42 @@
       IL_0041:  call       void [mscorlib]System.Console::WriteLine(string)
       IL_0046:  nop
       IL_0047:  nop
-      IL_0048:  leave.s    IL_004a
+      IL_0048:  leave.s    IL_004aa
 
     }  // end handler
 
+    IL_004aa: ldstr      "resolving delegate IFoo.Foo on FooClass - expecting exception."
+              call       void [mscorlib]System.Console::WriteLine(string)
+              nop
+    .try
+    {
                 nop
+                ldc.i4.s   10
+                constrained. class [svm_diamondshape]FooClass
+                ldftn        int32 IFoo::Foo(int32)
+                pop
+                ldc.i4.0
+                ldstr      "Expecting exception on FooClass"
+                call       void Test::Assert(bool, string)
+                nop
+                leave.s    IL_004ab
+
+    }  // end .try
+    catch [System.Runtime]System.Runtime.AmbiguousImplementationException
+    {
+                stloc.s    V_6
+                nop
+                ldstr      "Exception caught: "
+                ldloc.s    V_6
+                callvirt   instance string [mscorlib]System.Object::ToString()
+                call       string [mscorlib]System.String::Concat(string, string)
+                call       void [mscorlib]System.Console::WriteLine(string)
+                nop
+                leave.s    IL_004ab
+
+    }  // end handler
+
+    IL_004ab:   nop
                 ldstr      "Calling IFoo.Foo on FooStruct - expecting exception."
                 call       void [mscorlib]System.Console::WriteLine(string)
                 nop
@@ -659,8 +690,42 @@
     {
                 nop
                 ldc.i4.s   10
-                constrained. class [svm_diamondshape]FooStruct
+                constrained. valuetype [svm_diamondshape]FooStruct
                 call         int32 IFoo::Foo(int32)
+                pop
+                ldc.i4.0
+                ldstr      "Expecting exception on FooStruct"
+                call       void Test::Assert(bool,
+                                             string)
+                nop
+                leave.s    IL_004ac
+
+    }  // end .try
+    catch [System.Runtime]System.Runtime.AmbiguousImplementationException
+    {
+                stloc.s    V_6
+                nop
+                ldstr      "Exception caught: "
+                ldloc.s    V_6
+                callvirt   instance string [mscorlib]System.Object::ToString()
+                call       string [mscorlib]System.String::Concat(string,
+                                                                  string)
+                call       void [mscorlib]System.Console::WriteLine(string)
+                nop
+                leave.s    IL_004ac
+
+    }  // end handler
+
+    IL_004ac:   nop
+                ldstr      "Resolving delegate IFoo.Foo on FooStruct - expecting exception."
+                call       void [mscorlib]System.Console::WriteLine(string)
+                nop
+    .try
+    {
+                nop
+                ldc.i4.s   10
+                constrained. valuetype [svm_diamondshape]FooStruct
+                ldftn        int32 IFoo::Foo(int32)
                 pop
                 ldc.i4.0
                 ldstr      "Expecting exception on FooStruct"
@@ -720,7 +785,40 @@
 
     }  // end handler
 
-    IL_0093a: ldstr      "Calling I1.Func on I47Struct - expecting exception"
+    IL_0093a: ldstr      "Resolving delegate I1.Func on I47Struct - expecting exception"
+              call       void [mscorlib]System.Console::WriteLine(string)
+              nop
+    .try
+    {
+                nop
+                ldc.i4.s   10
+                constrained. valuetype [svm_diamondshape]I47Struct
+                ldftn        int32 I1::Func(int32)
+                pop
+                ldc.i4.0
+                ldstr      "Expecting exception on I47Struct"
+                call       void Test::Assert(bool, string)
+                nop
+                nop
+                leave.s    IL_0093b
+
+    }  // end .try
+    catch [System.Runtime]System.Runtime.AmbiguousImplementationException
+    {
+                stloc.s    V_7
+                nop
+                ldstr      "Exception caught: "
+                ldloc.s    V_7
+                callvirt   instance string [mscorlib]System.Object::ToString()
+                call       string [mscorlib]System.String::Concat(string, string)
+                call       void [mscorlib]System.Console::WriteLine(string)
+                nop
+                nop
+                leave.s    IL_0093b
+
+    }  // end handler
+
+    IL_0093b: ldstr      "Calling I1.Func on I47Struct - expecting exception"
               call       void [mscorlib]System.Console::WriteLine(string)
               nop
     .try
@@ -729,6 +827,39 @@
                 ldc.i4.s   10
                 constrained. valuetype [svm_diamondshape]I47Struct
                 call         int32 I1::Func(int32)
+                pop
+                ldc.i4.0
+                ldstr      "Expecting exception on I47Struct"
+                call       void Test::Assert(bool, string)
+                nop
+                nop
+                leave.s    IL_0093c
+
+    }  // end .try
+    catch [System.Runtime]System.Runtime.AmbiguousImplementationException
+    {
+                stloc.s    V_7
+                nop
+                ldstr      "Exception caught: "
+                ldloc.s    V_7
+                callvirt   instance string [mscorlib]System.Object::ToString()
+                call       string [mscorlib]System.String::Concat(string, string)
+                call       void [mscorlib]System.Console::WriteLine(string)
+                nop
+                nop
+                leave.s    IL_0093c
+
+    }  // end handler
+
+    IL_0093c: ldstr      "Resolving delegate I1.Func on I47Struct - expecting exception"
+              call       void [mscorlib]System.Console::WriteLine(string)
+              nop
+    .try
+    {
+                nop
+                ldc.i4.s   10
+                constrained. valuetype [svm_diamondshape]I47Struct
+                ldftn        int32 I1::Func(int32)
                 pop
                 ldc.i4.0
                 ldstr      "Expecting exception on I47Struct"
@@ -785,7 +916,41 @@
 
     }  // end handler
 
-    IL_00e0a: ldstr      "Calling GI1<T>.Func on GI23Struct<S> - expecting exception"
+    IL_00e0a: ldstr      "Resolving delegate GI1<T>.Func on GI23Struct<S> - expecting exception"
+              call       void [mscorlib]System.Console::WriteLine(string)
+              nop
+    .try
+    {
+                nop
+                ldloca.s   V_8
+                constrained. valuetype [svm_diamondshape]GI23Struct`1<object>
+                ldftn        int32 class GI1`1<object>::Func<string>(class [mscorlib]System.Type[]&)
+                pop
+                ldc.i4.0
+                ldstr      "Expecting exception on GI23Class"
+                call       void Test::Assert(bool,
+                                             string)
+                nop
+                leave.s    IL_00e0b
+
+    }  // end .try
+    catch [System.Runtime]System.Runtime.AmbiguousImplementationException
+    {
+                stloc.s    V_9
+                nop
+                ldstr      "Exception caught: "
+                ldloc.s    V_9
+                callvirt   instance string [mscorlib]System.Object::ToString()
+                call       string [mscorlib]System.String::Concat(string,
+                                                                  string)
+                call       void [mscorlib]System.Console::WriteLine(string)
+                nop
+                nop
+                leave.s    IL_00e0b
+
+    }  // end handler
+
+    IL_00e0b: ldstr      "Calling GI1<T>.Func on GI23Struct<S> - expecting exception"
               call       void [mscorlib]System.Console::WriteLine(string)
               nop
     .try
@@ -794,6 +959,40 @@
                 ldloca.s   V_8
                 constrained. valuetype [svm_diamondshape]GI23Struct`1<object>
                 call         int32 class GI1`1<object>::Func<string>(class [mscorlib]System.Type[]&)
+                pop
+                ldc.i4.0
+                ldstr      "Expecting exception on GI23Class"
+                call       void Test::Assert(bool,
+                                             string)
+                nop
+                leave.s    IL_00e0c
+
+    }  // end .try
+    catch [System.Runtime]System.Runtime.AmbiguousImplementationException
+    {
+                stloc.s    V_9
+                nop
+                ldstr      "Exception caught: "
+                ldloc.s    V_9
+                callvirt   instance string [mscorlib]System.Object::ToString()
+                call       string [mscorlib]System.String::Concat(string,
+                                                                  string)
+                call       void [mscorlib]System.Console::WriteLine(string)
+                nop
+                nop
+                leave.s    IL_00e0c
+
+    }  // end handler
+
+    IL_00e0c: ldstr      "Resolving delegate GI1<T>.Func on GI23Struct<S> - expecting exception"
+              call       void [mscorlib]System.Console::WriteLine(string)
+              nop
+    .try
+    {
+                nop
+                ldloca.s   V_8
+                constrained. valuetype [svm_diamondshape]GI23Struct`1<object>
+                ldftn        int32 class GI1`1<object>::Func<string>(class [mscorlib]System.Type[]&)
                 pop
                 ldc.i4.0
                 ldstr      "Expecting exception on GI23Class"
@@ -825,7 +1024,7 @@
   .method public hidebysig static void  Positive() cil managed
   {
     // Code size       189 (0xbd)
-    .maxstack  2
+    .maxstack  10
     .locals init (class [mscorlib]System.Type[] V_4)
     IL_0000:  nop
     IL_0001:  ldstr      "Calling I1.Func on I4Class - expecting I4.Func"
@@ -840,12 +1039,38 @@
     IL_0025:  call       void Test::Assert(bool, string)
     IL_002a:  nop
 
+              ldstr      "Calling I1.Func on I4Class as a delegate - expecting I4.Func"
+              call       void [mscorlib]System.Console::WriteLine(string)
+              nop
+              ldc.i4.s   10
+              constrained. class I4Class
+              ldftn      int32 I1::Func(int32)
+              calli      int32(int32)
+              ldc.i4.s   14
+              ceq
+              ldstr      "Expecting I1.Func to land on I4.Func"
+              call       void Test::Assert(bool, string)
+              nop
+
               ldstr      "Calling I1.Func on I4Struct - expecting I4.Func"
               call       void [mscorlib]System.Console::WriteLine(string)
               nop
               ldc.i4.s   10
               constrained. valuetype I4Struct
               call       int32 I1::Func(int32)
+              ldc.i4.s   14
+              ceq
+              ldstr      "Expecting I1.Func to land on I4.Func"
+              call       void Test::Assert(bool, string)
+              nop
+
+              ldstr      "Calling I1.Func on I4Struct as a delegate - expecting I4.Func"
+              call       void [mscorlib]System.Console::WriteLine(string)
+              nop
+              ldc.i4.s   10
+              constrained. valuetype I4Struct
+              ldftn      int32 I1::Func(int32)
+              calli      int32(int32)
               ldc.i4.s   14
               ceq
               ldstr      "Expecting I1.Func to land on I4.Func"
@@ -864,12 +1089,38 @@
     IL_004f:  call       void Test::Assert(bool, string)
     IL_0054:  nop
 
+              ldstr      "Calling I1.Func on I8Class as a delegate - expecting I8.Func"
+              call       void [mscorlib]System.Console::WriteLine(string)
+              nop
+              ldc.i4.s   10
+              constrained. class [svm_diamondshape]I8Class
+              ldftn      int32 I1::Func(int32)
+              calli      int32(int32)
+              ldc.i4.s   18
+              ceq
+              ldstr      "Expecting I1.Func to land on I8.Func"
+              call       void Test::Assert(bool, string)
+              nop
+
               ldstr      "Calling I1.Func on I8Struct - expecting I8.Func"
               call       void [mscorlib]System.Console::WriteLine(string)
               nop
               ldc.i4.s   10
               constrained. valuetype [svm_diamondshape]I8Struct
               call       int32 I1::Func(int32)
+              ldc.i4.s   18
+              ceq
+              ldstr      "Expecting I1.Func to land on I8.Func"
+              call       void Test::Assert(bool, string)
+              nop
+
+              ldstr      "Calling I1.Func on I8Struct as a delegate - expecting I8.Func"
+              call       void [mscorlib]System.Console::WriteLine(string)
+              nop
+              ldc.i4.s   10
+              constrained. valuetype [svm_diamondshape]I8Struct
+              ldftn      int32 I1::Func(int32)
+              calli      int32(int32)
               ldc.i4.s   18
               ceq
               ldstr      "Expecting I1.Func to land on I8.Func"
@@ -887,6 +1138,38 @@
     IL_0075:  ldstr      "Expecting GI1<T>.Func to land on GII4<T>.Func<S>"
     IL_007a:  call       void Test::Assert(bool, string)
     IL_007f:  nop
+
+              ldloc.s    V_4
+              ldc.i4.0
+              ldelem.ref
+              ldtoken    [mscorlib]System.Object
+              call       class [mscorlib]System.Type [mscorlib]System.Type::GetTypeFromHandle(valuetype [mscorlib]System.RuntimeTypeHandle)
+              call       bool [mscorlib]System.Type::op_Equality(class [mscorlib]System.Type, class [mscorlib]System.Type)
+              ldstr      "T must be object"
+              call       void Test::Assert(bool, string)
+              nop
+              ldloc.s    V_4
+              ldc.i4.1
+              ldelem.ref
+              ldtoken    [mscorlib]System.String
+              call       class [mscorlib]System.Type [mscorlib]System.Type::GetTypeFromHandle(valuetype [mscorlib]System.RuntimeTypeHandle)
+              call       bool [mscorlib]System.Type::op_Equality(class [mscorlib]System.Type, class [mscorlib]System.Type)
+              ldstr      "S must be string"
+              call       void Test::Assert(bool, string)
+              nop
+
+              ldstr      "Calling GI1.Func on GI4Class<object> as a delegate - expecting GI4.Func<S>"
+              call       void [mscorlib]System.Console::WriteLine(string)
+              nop
+              ldloca.s   V_4
+              constrained. class [svm_diamondshape]GI4Class`1<object>
+              ldftn      int32 class GI1`1<object>::Func<string>(class [mscorlib]System.Type[]&)
+              calli      int32(class [mscorlib]System.Type[]&)
+              ldc.i4.4
+              ceq
+              ldstr      "Expecting GI1<T>.Func to land on GII4<T>.Func<S>"
+              call       void Test::Assert(bool, string)
+              nop
 
               ldloc.s    V_4
               ldc.i4.0
@@ -937,6 +1220,39 @@
     IL_00b1:  ldstr      "S must be string"
     IL_00b6:  call       void Test::Assert(bool, string)
     IL_00bb:  nop
+
+              ldstr      "Calling GI1.Func on GI4Struct<object> as a delegate - expecting GI4.Func<S>"
+              call       void [mscorlib]System.Console::WriteLine(string)
+              nop
+              ldloca.s   V_4
+              constrained. valuetype [svm_diamondshape]GI4Struct`1<object>
+              ldftn      int32 class GI1`1<object>::Func<string>(class [mscorlib]System.Type[]&)
+              calli      int32(class [mscorlib]System.Type[]&)
+              ldc.i4.4
+              ceq
+              ldstr      "Expecting GI1<T>.Func to land on GII4<T>.Func<S>"
+              call       void Test::Assert(bool, string)
+              nop
+
+              ldloc.s    V_4
+              ldc.i4.0
+              ldelem.ref
+              ldtoken    [mscorlib]System.Object
+              call       class [mscorlib]System.Type [mscorlib]System.Type::GetTypeFromHandle(valuetype [mscorlib]System.RuntimeTypeHandle)
+              call       bool [mscorlib]System.Type::op_Equality(class [mscorlib]System.Type, class [mscorlib]System.Type)
+              ldstr      "T must be object"
+              call       void Test::Assert(bool, string)
+              nop
+              ldloc.s    V_4
+              ldc.i4.1
+              ldelem.ref
+              ldtoken    [mscorlib]System.String
+              call       class [mscorlib]System.Type [mscorlib]System.Type::GetTypeFromHandle(valuetype [mscorlib]System.RuntimeTypeHandle)
+              call       bool [mscorlib]System.Type::op_Equality(class [mscorlib]System.Type, class [mscorlib]System.Type)
+              ldstr      "S must be string"
+              call       void Test::Assert(bool, string)
+              nop
+
     IL_00bc:  ret
   } // end of method Program::Positive
 
