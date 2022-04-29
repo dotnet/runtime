@@ -1,9 +1,10 @@
 /**
- * \file
- * Copyright 2022 Microsoft
- * Licensed under the MIT license. See LICENSE file in the project root for full license information.
- */
-
+* \file
+* Functionality shared between the legacy and DisableRuntimeMarshaling marshaling subsystems. 
+*
+* Licensed to the .NET Foundation under one or more agreements.
+* The .NET Foundation licenses this file to you under the MIT license.
+*/
 
 #include "mono/metadata/debug-helpers.h"
 #include "metadata/marshal.h"
