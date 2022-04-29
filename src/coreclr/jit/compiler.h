@@ -5971,21 +5971,21 @@ protected:
     // value numbers in "m_hoistedInParentLoops".  This set is not modified by the call.
     //
     // Returns the list of basic blocks that were added as preheaders as part of hoisting the current loop.
-    BasicBlockList* optHoistLoopNest(unsigned lnum, LoopHoistContext* hoistCtxt);
+    void optHoistLoopNest(unsigned lnum, LoopHoistContext* hoistCtxt);
 
     // Do hoisting for a particular loop ("lnum" is an index into the optLoopTable.)
     // Assumes that expressions have been hoisted in containing loops if their value numbers are in
     // "m_hoistedInParentLoops".
     //
     // Returns the new preheaders created.
-    BasicBlockList* optHoistThisLoop(unsigned                lnum,
+    void optHoistThisLoop(unsigned                lnum,
                                              LoopHoistContext*       hoistCtxt,
                                              BasicBlockList* existingPreHeaders);
 
     // Hoist all expressions in "blocks" that are invariant in loop "loopNum" (an index into the optLoopTable)
     // outside of that loop.  Exempt expressions whose value number is in "m_hoistedInParentLoops"; add VN's of hoisted
     // expressions to "hoistInLoop".
-    BasicBlockList* optHoistLoopBlocks(unsigned                 loopNum,
+    void optHoistLoopBlocks(unsigned                 loopNum,
                                                ArrayStack<BasicBlock*>* blocks,
                                                LoopHoistContext*        hoistContext);
 
@@ -6368,6 +6368,8 @@ protected:
     // Returns true iff "l2" is not NOT_IN_LOOP, and "l1" contains "l2".
     // A loop contains itself.
     bool optLoopContains(unsigned l1, unsigned l2) const;
+
+    BasicBlock* optLoopEntry(BasicBlock* preHeader);
 
     // Updates the loop table by changing loop "loopInd", whose head is required
     // to be "from", to be "to".  Also performs this transformation for any
