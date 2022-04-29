@@ -227,9 +227,13 @@ namespace System.Reflection
 
                 if (isValueType)
                 {
-#if DEBUG
-                    // Once Mono has managed conversion logic, VerifyValueType() can be lifted here as Asserts.
-                    sigType.VerifyValueType(arg);
+#if !MONO // Temporary until Mono is updated.
+                    Debug.Assert(arg != null);
+                    Debug.Assert(
+                        arg.GetType() == sigType ||
+                        (sigType.IsPointer && arg.GetType() == typeof(IntPtr)) ||
+                        (sigType.IsByRef && arg.GetType() == RuntimeTypeHandle.GetElementType(sigType)) ||
+                        ((sigType.IsEnum || arg.GetType().IsEnum) && RuntimeType.GetUnderlyingType((RuntimeType)arg.GetType()) == RuntimeType.GetUnderlyingType(sigType)));
 #endif
                     ByReference<byte> valueTypeRef = new(ref copyOfParameters[i]!.GetRawData());
                     *(ByReference<byte>*)(byrefParameters + i) = valueTypeRef;

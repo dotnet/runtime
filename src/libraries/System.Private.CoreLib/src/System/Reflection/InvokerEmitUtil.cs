@@ -12,24 +12,23 @@ namespace System.Reflection
         // If changed, update native stack walking code that also uses this prefix to ignore reflection frames.
         private const string InvokeStubPrefix = "InvokeStub_";
 
-        // The 'obj' parameter allows the DynamicMethod to be treated as an instance method which is slightly faster than a static.
-        internal unsafe delegate object? InvokeFunc<T>(T obj, object? target, IntPtr* arguments);
+        internal unsafe delegate object? InvokeFunc(object? target, IntPtr* arguments);
 
-        public static unsafe InvokeFunc<T> CreateInvokeDelegate<T>(MethodBase method)
+        public static unsafe InvokeFunc CreateInvokeDelegate(MethodBase method)
         {
             Debug.Assert(!method.ContainsGenericParameters);
 
             bool emitNew = method is RuntimeConstructorInfo;
             bool hasThis = !(emitNew || method.IsStatic);
 
-            Type[] delegateParameters = new Type[3] { typeof(T), typeof(object), typeof(IntPtr*) };
+            // The first element allows the DynamicMethod to be treated as an instance method which is slightly faster than a static.
+            Type[] delegateParameters = new Type[3] { typeof(object), typeof(object), typeof(IntPtr*) };
 
             var dm = new DynamicMethod(
                 InvokeStubPrefix + method.DeclaringType!.Name + "." + method.Name,
                 returnType: typeof(object),
                 delegateParameters,
-                owner: typeof(T),
-                skipVisibility: true);
+                restrictedSkipVisibility: true);
 
             ILGenerator il = dm.GetILGenerator();
 
@@ -136,8 +135,8 @@ namespace System.Reflection
 
             il.Emit(OpCodes.Ret);
 
-            // Create the delegate; it is also compiled at this point due to skipVisibility=true.
-            return (InvokeFunc<T>)dm.CreateDelegate(typeof(InvokeFunc<T>));
+            // Create the delegate; it is also compiled at this point due to restrictedSkipVisibility=true.
+            return (InvokeFunc)dm.CreateDelegate(typeof(InvokeFunc), target: null);
         }
 
         private static RuntimeType NormalizePointerType(RuntimeType type)

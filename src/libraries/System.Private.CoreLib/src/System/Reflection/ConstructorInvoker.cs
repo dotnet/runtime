@@ -13,7 +13,7 @@ namespace System.Reflection
 #if !MONO // Temporary until Mono is updated.
         private bool _invoked;
         private bool _strategyDetermined;
-        private InvokerEmitUtil.InvokeFunc<ConstructorInvoker>? _emitInvoke;
+        private InvokerEmitUtil.InvokeFunc? _emitInvoke;
 #endif
 
         public ConstructorInvoker(RuntimeConstructorInfo constructorInfo)
@@ -52,12 +52,13 @@ namespace System.Reflection
                 {
                     if (RuntimeFeature.IsDynamicCodeCompiled)
                     {
-                        _emitInvoke = InvokerEmitUtil.CreateInvokeDelegate<ConstructorInvoker>(_method);
+                        _emitInvoke = InvokerEmitUtil.CreateInvokeDelegate(_method);
                     }
                     _strategyDetermined = true;
                 }
             }
 
+            object? ret;
             if ((invokeAttr & BindingFlags.DoNotWrapExceptions) == 0)
             {
                 try
@@ -66,23 +67,28 @@ namespace System.Reflection
                     // with a non-null 'obj', we use the slow path to avoid having two emit-based delegates.
                     if (_emitInvoke != null && obj == null)
                     {
-                        return _emitInvoke(this, obj, args);
+                        ret = _emitInvoke(target: null, args);
                     }
-
-                    return InvokeNonEmitUnsafe(obj, args);
+                    else
+                    {
+                        ret = InvokeNonEmitUnsafe(obj, args);
+                    }
                 }
                 catch (Exception e)
                 {
                     throw new TargetInvocationException(e);
                 }
             }
-
-            if (_emitInvoke != null && obj == null)
+            else if (_emitInvoke != null && obj == null)
             {
-                return _emitInvoke(this, obj, args);
+                ret = _emitInvoke(target: null, args);
+            }
+            else
+            {
+                ret = InvokeNonEmitUnsafe(obj, args);
             }
 
-            return InvokeNonEmitUnsafe(obj, args);
+            return ret;
         }
 #endif
     }

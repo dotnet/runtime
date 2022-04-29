@@ -1660,14 +1660,6 @@ namespace System
             }
         }
 
-        // Once Mono has managed conversion logic, this method can be removed and the Core
-        // implementation of this method moved to RuntimeMethod.Invoke().
-#if DEBUG
-#pragma warning disable CA1822
-        internal void VerifyValueType(object? value) { }
-#pragma warning restore CA1822
-#endif
-
         /// <summary>
         /// Verify <paramref name="value"/> and optionally convert the value for special cases.
         /// </summary>

@@ -3504,19 +3504,6 @@ namespace System
             NotSupported_ByRefLike
         }
 
-#if DEBUG
-        internal void VerifyValueType(object? value)
-        {
-            Debug.Assert(value != null);
-            Debug.Assert(
-                value.GetType() == this ||
-                (IsPointer && value.GetType() == typeof(IntPtr)) ||
-                (IsByRef && value.GetType() == RuntimeTypeHandle.GetElementType(this)) ||
-                (value.GetType().IsEnum && GetUnderlyingType((RuntimeType)value.GetType()) == GetUnderlyingType(this)) ||
-                (IsEnum && GetUnderlyingType((RuntimeType)value.GetType()) == GetUnderlyingType(this)));
-        }
-#endif
-
         /// <summary>
         /// Verify <paramref name="value"/> and optionally convert the value for special cases.
         /// </summary>
@@ -3723,7 +3710,7 @@ namespace System
             return false;
         }
 
-        private static CorElementType GetUnderlyingType(RuntimeType type)
+        internal static CorElementType GetUnderlyingType(RuntimeType type)
         {
             if (type.IsEnum)
             {

@@ -20,7 +20,7 @@ namespace System.Reflection
 #else
         private bool _invoked;
         private bool _strategyDetermined;
-        private InvokerEmitUtil.InvokeFunc<MethodInvoker>? _emitInvoke;
+        private InvokerEmitUtil.InvokeFunc? _emitInvoke;
 
         [DebuggerStepThrough]
         [DebuggerHidden]
@@ -37,35 +37,41 @@ namespace System.Reflection
                 {
                     if (RuntimeFeature.IsDynamicCodeCompiled)
                     {
-                        _emitInvoke = InvokerEmitUtil.CreateInvokeDelegate<MethodInvoker>(_method);
+                        _emitInvoke = InvokerEmitUtil.CreateInvokeDelegate(_method);
                     }
                     _strategyDetermined = true;
                 }
             }
 
+            object? ret;
             if ((invokeAttr & BindingFlags.DoNotWrapExceptions) == 0)
             {
                 try
                 {
                     if (_emitInvoke != null)
                     {
-                        return _emitInvoke(this, obj, args);
+                        ret = _emitInvoke(obj, args);
                     }
-
-                    return InvokeNonEmitUnsafe(obj, args);
+                    else
+                    {
+                        ret = InvokeNonEmitUnsafe(obj, args);
+                    }
                 }
                 catch (Exception e)
                 {
                     throw new TargetInvocationException(e);
                 }
             }
-
-            if (_emitInvoke != null)
+            else if (_emitInvoke != null)
             {
-                return _emitInvoke(this, obj, args);
+                ret = _emitInvoke(obj, args);
+            }
+            else
+            {
+                ret = InvokeNonEmitUnsafe(obj, args);
             }
 
-            return InvokeNonEmitUnsafe(obj, args);
+            return ret;
         }
 #endif
     }
