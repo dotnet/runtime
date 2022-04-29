@@ -641,7 +641,6 @@ namespace System.Numerics
         /// <param name="other">The other vector.</param>
         /// <returns><see langword="true" /> if the two vectors are equal; otherwise, <see langword="false" />.</returns>
         /// <remarks>Two vectors are equal if their <see cref="System.Numerics.Vector2.X" /> and <see cref="System.Numerics.Vector2.Y" /> elements are equal.</remarks>
-        [Intrinsic]
         public readonly bool Equals(Vector2 other)
         {
             // This function needs to account for floating-point equality around NaN

@@ -309,7 +309,6 @@ namespace System.Runtime.Intrinsics
         /// <param name="other">The <see cref="Vector128{T}" /> to compare with the current instance.</param>
         /// <returns><c>true</c> if <paramref name="other" /> is equal to the current instance; otherwise, <c>false</c>.</returns>
         /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
-        [Intrinsic]
         public bool Equals(Vector128<T> other)
         {
             // This function needs to account for floating-point equality around NaN

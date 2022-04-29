@@ -587,7 +587,6 @@ namespace System.Numerics
         /// <summary>Returns a boolean indicating whether the given vector is equal to this vector instance.</summary>
         /// <param name="other">The vector to compare this instance to.</param>
         /// <returns>True if the other vector is equal to this instance; False otherwise.</returns>
-        [Intrinsic]
         public bool Equals(Vector<T> other)
         {
             // This function needs to account for floating-point equality around NaN
