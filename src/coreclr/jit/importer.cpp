@@ -9516,39 +9516,43 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
         call->gtFlags |= obj->gtFlags & GTF_GLOB_EFFECT;
         call->AsCall()->gtArgs.PushFront(this, obj, WellKnownArg::ThisPointer);
 
-        // Is this a virtual or interface call?
-        if (call->AsCall()->IsVirtual())
-        {
-            // only true object pointers can be virtual
-            assert(obj->gtType == TYP_REF);
-
-            // See if we can devirtualize.
-
-            const bool isExplicitTailCall     = (tailCallFlags & PREFIX_TAILCALL_EXPLICIT) != 0;
-            const bool isLateDevirtualization = false;
-            impDevirtualizeCall(call->AsCall(), pResolvedToken, &callInfo->hMethod, &callInfo->methodFlags,
-                                &callInfo->contextHandle, &exactContextHnd, isLateDevirtualization, isExplicitTailCall,
-                                // Take care to pass raw IL offset here as the 'debug info' might be different for
-                                // inlinees.
-                                rawILOffset);
-
-            // Devirtualization may change which method gets invoked. Update our local cache.
-            //
-            methHnd = callInfo->hMethod;
-        }
-        else if (call->AsCall()->IsDelegateInvoke() && opts.OptimizationEnabled() && !opts.IsOSR())
-        {
-            considerGuardedDevirtualization(call->AsCall(), rawILOffset, false, NO_METHOD_HANDLE, NO_CLASS_HANDLE,
-                                            nullptr);
-        }
-
         if (impIsThis(obj))
         {
             call->AsCall()->gtCallMoreFlags |= GTF_CALL_M_NONVIRT_SAME_THIS;
         }
     }
 
-    impConsiderCallProbe(call->AsCall(), rawILOffset);
+    bool probing;
+    probing = impConsiderCallProbe(call->AsCall(), rawILOffset);
+
+    // See if we can devirt if we aren't probing.
+    if (!probing && opts.OptimizationEnabled())
+    {
+        if (call->AsCall()->IsVirtual())
+        {
+            // only true object pointers can be virtual
+            assert(call->AsCall()->gtArgs.HasThisPointer() && call->AsCall()->gtArgs.GetThisArg()->GetNode()->TypeIs(TYP_REF));
+
+            // See if we can devirtualize.
+
+            const bool isExplicitTailCall = (tailCallFlags & PREFIX_TAILCALL_EXPLICIT) != 0;
+            const bool isLateDevirtualization = false;
+            impDevirtualizeCall(call->AsCall(), pResolvedToken, &callInfo->hMethod, &callInfo->methodFlags,
+                &callInfo->contextHandle, &exactContextHnd, isLateDevirtualization, isExplicitTailCall,
+                // Take care to pass raw IL offset here as the 'debug info' might be different for
+                // inlinees.
+                rawILOffset);
+
+            // Devirtualization may change which method gets invoked. Update our local cache.
+            //
+            methHnd = callInfo->hMethod;
+        }
+        else if (call->AsCall()->IsDelegateInvoke())
+        {
+            considerGuardedDevirtualization(call->AsCall(), rawILOffset, false, NO_METHOD_HANDLE, NO_CLASS_HANDLE,
+                nullptr);
+        }
+    }
 
     //-------------------------------------------------------------------------
     // The "this" pointer for "newobj"
@@ -20888,12 +20892,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     // This should be a virtual vtable or virtual stub call.
     //
     assert(call->IsVirtual());
-
-    // Bail if optimizations are disabled.
-    if (opts.OptimizationDisabled())
-    {
-        return;
-    }
+    assert(opts.OptimizationEnabled());
 
 #if defined(DEBUG)
     // Bail if devirt is disabled.
@@ -21509,7 +21508,18 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
 #endif // FEATURE_READYTORUN
 }
 
-void Compiler::impConsiderCallProbe(GenTreeCall* call, IL_OFFSET ilOffset)
+//------------------------------------------------------------------------
+// impConsiderCallProbe: Consider whether a call should get a histogram probe
+// and mark it if so.
+//
+// Arguments:
+//     call - The call
+//     ilOffset - The precise IL offset of the call
+//
+// Returns:
+//     True if the call was marked such that we will add a class or method probe for it.
+//
+bool Compiler::impConsiderCallProbe(GenTreeCall* call, IL_OFFSET ilOffset)
 {
     // Possibly instrument. Note for OSR+PGO we will instrument when
     // optimizing and (currently) won't devirtualize. We may want
@@ -21521,7 +21531,7 @@ void Compiler::impConsiderCallProbe(GenTreeCall* call, IL_OFFSET ilOffset)
     //
     if (!opts.jitFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR))
     {
-        return;
+        return false;
     }
 
     assert(opts.OptimizationDisabled() || opts.IsOSR());
@@ -21532,22 +21542,25 @@ void Compiler::impConsiderCallProbe(GenTreeCall* call, IL_OFFSET ilOffset)
     // we'd just keep track of the calls themselves, so we don't
     // have to search for them later.
     //
-    if (compClassifyGDVProbeType(call) != GDVProbeType::None)
+    if (compClassifyGDVProbeType(call) == GDVProbeType::None)
     {
-        JITDUMP("\n ... marking [%06u] in " FMT_BB " for method/class profile instrumentation\n", dspTreeID(call),
-                compCurBB->bbNum);
-        HandleHistogramProfileCandidateInfo* pInfo = new (this, CMK_Inlining) HandleHistogramProfileCandidateInfo;
-
-        // Record some info needed for the class profiling probe.
-        //
-        pInfo->ilOffset                             = ilOffset;
-        pInfo->probeIndex                           = info.compHandleHistogramProbeCount++;
-        call->gtHandleHistogramProfileCandidateInfo = pInfo;
-
-        // Flag block as needing scrutiny
-        //
-        compCurBB->bbFlags |= BBF_HAS_HISTOGRAM_PROFILE;
+        return false;
     }
+
+    JITDUMP("\n ... marking [%06u] in " FMT_BB " for method/class profile instrumentation\n", dspTreeID(call),
+            compCurBB->bbNum);
+    HandleHistogramProfileCandidateInfo* pInfo = new (this, CMK_Inlining) HandleHistogramProfileCandidateInfo;
+
+    // Record some info needed for the class profiling probe.
+    //
+    pInfo->ilOffset                             = ilOffset;
+    pInfo->probeIndex                           = info.compHandleHistogramProbeCount++;
+    call->gtHandleHistogramProfileCandidateInfo = pInfo;
+
+    // Flag block as needing scrutiny
+    //
+    compCurBB->bbFlags |= BBF_HAS_HISTOGRAM_PROFILE;
+    return true;
 }
 
 Compiler::GDVProbeType Compiler::compClassifyGDVProbeType(GenTreeCall* call)
@@ -21597,7 +21610,6 @@ Compiler::GDVProbeType Compiler::compClassifyGDVProbeType(GenTreeCall* call)
 // Returns:
 //     Exact class handle returned by the intrinsic call, if known.
 //     Nullptr if not known, or not likely to lead to beneficial optimization.
-
 CORINFO_CLASS_HANDLE Compiler::impGetSpecialIntrinsicExactReturnType(CORINFO_METHOD_HANDLE methodHnd)
 {
     JITDUMP("Special intrinsic: looking for exact type returned by %s\n", eeGetMethodFullName(methodHnd));

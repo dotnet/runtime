@@ -3523,7 +3523,7 @@ public:
                              bool                    isExplicitTailCall,
                              IL_OFFSET               ilOffset = BAD_IL_OFFSET);
 
-    void impConsiderCallProbe(GenTreeCall* call, IL_OFFSET ilOffset);
+    bool impConsiderCallProbe(GenTreeCall* call, IL_OFFSET ilOffset);
 
     enum class GDVProbeType
     {
