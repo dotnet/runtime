@@ -92,7 +92,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
     internal class Creatable
     {
         public A A { get; }
-        public B? B { get; }
+        public B B { get; }
         public C C { get; }
         public S S { get; }
         public Creatable(A a, B b, C c, S s)
