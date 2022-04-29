@@ -91,6 +91,7 @@
 
           if [ "$result" != "0" ]; then
             echo Reporting Infra Problem
+            export PYTHONPATH=$ORIGPYPATH
             report_infrastructure_failure "TESTING:Failed to ios perf, this message is not great but its all we got for this string..."
           fi
 
@@ -125,6 +126,7 @@
 
           if [ "$result" != "0" ]; then
             echo Reporting Infra Problem
+            export PYTHONPATH=$ORIGPYPATH
             report_infrastructure_failure "TESTING:Failed to ios perf, this message is not great but its all we got for this string..."
           fi
 
