@@ -2027,6 +2027,83 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
+        public void Vector64ByteShuffleOneInputWithDirectVectorTest()
+        {
+            Vector64<byte> result = Vector64.Shuffle(Vector64.Create((byte)1, 2, 3, 4, 5, 6, 7, 8), Vector64.Create((byte)7, 6, 5, 4, 3, 2, 1, 0));
+
+            for (int index = 0; index < Vector64<byte>.Count; index++)
+            {
+                Assert.Equal((byte)(Vector64<byte>.Count - index), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector64Int16ShuffleOneInputWithDirectVectorTest()
+        {
+            Vector64<short> result = Vector64.Shuffle(Vector64.Create((short)1, 2, 3, 4), Vector64.Create((short)3, 2, 1, 0));
+
+            for (int index = 0; index < Vector64<short>.Count; index++)
+            {
+                Assert.Equal((short)(Vector64<short>.Count - index), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector64Int32ShuffleOneInputWithDirectVectorTest()
+        {
+            Vector64<int> result = Vector64.Shuffle(Vector64.Create((int)1, 2), Vector64.Create((int)1, 0));
+
+            for (int index = 0; index < Vector64<int>.Count; index++)
+            {
+                Assert.Equal((int)(Vector64<int>.Count - index), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector64SByteShuffleOneInputWithDirectVectorTest()
+        {
+            Vector64<sbyte> result = Vector64.Shuffle(Vector64.Create((sbyte)1, 2, 3, 4, 5, 6, 7, 8), Vector64.Create((sbyte)7, 6, 5, 4, 3, 2, 1, 0));
+
+            for (int index = 0; index < Vector64<sbyte>.Count; index++)
+            {
+                Assert.Equal((sbyte)(Vector64<sbyte>.Count - index), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector64SingleShuffleOneInputWithDirectVectorTest()
+        {
+            Vector64<float> result = Vector64.Shuffle(Vector64.Create((float)1, 2), Vector64.Create((int)1, 0));
+
+            for (int index = 0; index < Vector64<float>.Count; index++)
+            {
+                Assert.Equal((float)(Vector64<float>.Count - index), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector64UInt16ShuffleOneInputWithDirectVectorTest()
+        {
+            Vector64<ushort> result = Vector64.Shuffle(Vector64.Create((ushort)1, 2, 3, 4), Vector64.Create((ushort)3, 2, 1, 0));
+
+            for (int index = 0; index < Vector64<ushort>.Count; index++)
+            {
+                Assert.Equal((ushort)(Vector64<ushort>.Count - index), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector64UInt32ShuffleOneInputWithDirectVectorTest()
+        {
+            Vector64<uint> result = Vector64.Shuffle(Vector64.Create((uint)1, 2), Vector64.Create((uint)1, 0));
+
+            for (int index = 0; index < Vector64<uint>.Count; index++)
+            {
+                Assert.Equal((uint)(Vector64<uint>.Count - index), result.GetElement(index));
+            }
+        }
+
+        [Fact]
         public void Vector64ByteShuffleOneInputWithLocalIndicesTest()
         {
             Vector64<byte> vector = Vector64.Create((byte)1, 2, 3, 4, 5, 6, 7, 8);
