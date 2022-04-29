@@ -9,6 +9,21 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
 {
     public class ActivatorUtilitiesTests
     {
+        [Fact]
+        public void ShouldUseLongestAvailableConstructorOnlyIfConstructorsHaveTheSamePriority()
+        {
+            var services = new ServiceCollection();
+            services.AddScoped<B>();
+            services.AddScoped<S>();
+            using var provider = services.BuildServiceProvider();
+            var a = new A();
+            var c = new C();
+
+            var instance = ActivatorUtilities.CreateInstance<Creatable>(provider, a, c);
+
+            Assert.Null(instance.B);
+        }
+
         [Theory]
         [InlineData(typeof(DefaultConstructorFirst))]
         [InlineData(typeof(DefaultConstructorLast))]

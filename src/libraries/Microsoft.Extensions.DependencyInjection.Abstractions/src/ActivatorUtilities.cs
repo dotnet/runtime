@@ -75,7 +75,13 @@ namespace Microsoft.Extensions.DependencyInjection
                 matcher.Match(parameters);
                 matchers[i] = matcher;
             }
-            Array.Sort(matchers, (a, b) => b.Priority - a.Priority);
+
+            Array.Sort(matchers, (a, b) =>
+            {
+                return a.MatchedLength == b.MatchedLength
+                    ? b.ParametersCount - a.ParametersCount : b.MatchedLength - a.MatchedLength;
+            });
+
             object? instance = null;
             for (int i = 0; i < matchers.Length; i++)
             {
@@ -346,10 +352,11 @@ namespace Microsoft.Extensions.DependencyInjection
                 _constructor = constructor;
                 _parameters = _constructor.GetParameters();
                 _parameterValues = new object?[_parameters.Length];
+                ParametersCount = _parameters.Length;
             }
 
             public int MatchedLength { get; private set; } = -1;
-            public int Priority => MatchedLength == -1 ? -1 : MatchedLength + _parameters.Length;
+            public int ParametersCount { get; }
 
             public void Match(object[] givenParameters)
             {
