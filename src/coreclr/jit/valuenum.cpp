@@ -4564,7 +4564,7 @@ void Compiler::fgValueNumberLocalStore(GenTree*             storeNode,
         ValueNumPair newLclValue;
         if (vnStore->LoadStoreIsEntire(lclSize, offset, storeSize))
         {
-            newLclValue = normalize ? vnStore->VNPairForLoadStoreBitCast(value, varDsc->TypeGet(), lclSize) : value;
+            newLclValue = value;
         }
         else
         {
@@ -4578,8 +4578,12 @@ void Compiler::fgValueNumberLocalStore(GenTree*             storeNode,
         // Any out-of-bounds stores should have made the local address-exposed.
         assert(newLclValue.BothDefined());
 
-        // We normalize types stored in local locations because things outside VN itself look at them.
-        assert((genActualType(vnStore->TypeOfVN(newLclValue.GetLiberal())) == genActualType(varDsc)) || !normalize);
+        if (normalize)
+        {
+            // We normalize types stored in local locations because things outside VN itself look at them.
+            newLclValue = vnStore->VNPairForLoadStoreBitCast(newLclValue, varDsc->TypeGet(), lclSize);
+            assert((genActualType(vnStore->TypeOfVN(newLclValue.GetLiberal())) == genActualType(varDsc)));
+        }
 
         varDsc->GetPerSsaData(lclDefSsaNum)->m_vnPair = newLclValue;
 
@@ -8238,77 +8242,52 @@ void Compiler::fgValueNumberBlockAssignment(GenTree* tree)
                 lhsFldSeq = vnStore->FieldSeqVNToFieldSeq(lhsAddrFunc.m_args[1]);
             }
 
-            bool         isNewUniq       = false;
-            ValueNumPair newLhsLclVNPair = ValueNumPair();
+            ValueNumPair rhsVNPair = ValueNumPair();
             if (tree->OperIsInitBlkOp())
             {
-                ValueNum lclVarVN = ValueNumStore::NoVN;
+                ValueNum initObjVN = ValueNumStore::NoVN;
                 if (isEntire && rhs->IsIntegralConst(0))
                 {
                     // Note that it is possible to see pretty much any kind of type for the local
                     // (not just TYP_STRUCT) here because of the ASG(BLK(ADDR(LCL_VAR/FLD)), 0) form.
-                    lclVarVN = (lhsVarDsc->TypeGet() == TYP_STRUCT) ? vnStore->VNForZeroObj(lhsVarDsc->GetStructHnd())
-                                                                    : vnStore->VNZeroForType(lhsVarDsc->TypeGet());
+                    initObjVN = (lhsVarDsc->TypeGet() == TYP_STRUCT) ? vnStore->VNForZeroObj(lhsVarDsc->GetStructHnd())
+                                                                     : vnStore->VNZeroForType(lhsVarDsc->TypeGet());
                 }
                 else
                 {
                     // Non-zero block init is very rare so we'll use a simple, unique VN here.
-                    lclVarVN  = vnStore->VNForExpr(compCurBB, lhsVarDsc->TypeGet());
-                    isNewUniq = true;
+                    initObjVN  = vnStore->VNForExpr(compCurBB, lhsVarDsc->TypeGet());
+
+                    // TODO-PhysicalVN: remove this pessimization, it was added to avoid diffs.
+                    // There is no need to invalidate the whole local.
+                    offset    = 0;
+                    storeSize = lhsLclSize;
                 }
 
-                newLhsLclVNPair.SetBoth(lclVarVN);
+                rhsVNPair.SetBoth(initObjVN);
             }
             else
             {
                 assert(tree->OperIsCopyBlkOp());
 
+                rhsVNPair = vnStore->VNPNormalPair(rhs->gtVNPair);
+
                 // TODO-PhysicalVN: with the physical VN scheme, we no longer need this check.
-                if (fgValueNumberBlockAssignmentTypeCheck(lhsVarDsc, lhsFldSeq, rhs))
+                if (!fgValueNumberBlockAssignmentTypeCheck(lhsVarDsc, lhsFldSeq, rhs))
                 {
-                    ValueNumPair rhsVNPair = vnStore->VNPNormalPair(rhs->gtVNPair);
-
-                    // TODO-PhysicalVN: remove this quirk, it was added to avoid diffs.
-                    if (lhs->TypeIs(TYP_STRUCT) && (vnStore->TypeOfVN(rhsVNPair.GetLiberal()) != TYP_STRUCT))
-                    {
-                        rhsVNPair.SetBoth(vnStore->VNForExpr(compCurBB, TYP_STRUCT));
-                    }
-
-                    if (isEntire)
-                    {
-                        newLhsLclVNPair = vnStore->VNPairForLoadStoreBitCast(rhsVNPair, lhsVarDsc->TypeGet(),
-                                                                             lhsLclSize);
-                    }
-                    else
-                    {
-                        ValueNumPair oldLhsLclVNPair = lhsVarDsc->GetPerSsaData(lclVarTree->GetSsaNum())->m_vnPair;
-                        newLhsLclVNPair              = vnStore->VNPairForStore(oldLhsLclVNPair, lhsLclSize, offset,
-                                                                               storeSize, rhsVNPair);
-                    }
+                    // Invalidate the whole local.
+                    rhsVNPair.SetBoth(vnStore->VNForExpr(compCurBB, lhsVarDsc->TypeGet()));
+                    offset    = 0;
+                    storeSize = lhsLclSize;
                 }
-                else
+                // TODO-PhysicalVN: remove this quirk, it was added to avoid diffs.
+                else if (lhs->TypeIs(TYP_STRUCT) && (vnStore->TypeOfVN(rhsVNPair.GetLiberal()) != TYP_STRUCT))
                 {
-                    newLhsLclVNPair.SetBoth(vnStore->VNForExpr(compCurBB, lhsVarDsc->TypeGet()));
-                    isNewUniq = true;
+                    rhsVNPair.SetBoth(vnStore->VNForExpr(compCurBB, lhsVarDsc->TypeGet()));
                 }
             }
 
-            lhsVarDsc->GetPerSsaData(lclDefSsaNum)->m_vnPair = newLhsLclVNPair;
-
-#ifdef DEBUG
-            if (verbose)
-            {
-                printf("Tree ");
-                Compiler::printTreeID(tree);
-                printf(" assigned VN to local var V%02u/%d: ", lhsLclNum, lclDefSsaNum);
-                if (isNewUniq)
-                {
-                    printf("new uniq ");
-                }
-                vnpPrint(newLhsLclVNPair, 1);
-                printf("\n");
-            }
-#endif // DEBUG
+            fgValueNumberLocalStore(tree, lclVarTree, offset, storeSize, rhsVNPair);
         }
         else if (lclVarTree->HasSsaName())
         {
