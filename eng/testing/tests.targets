@@ -1,15 +1,19 @@
 <Project>
+  <PropertyGroup>
+    <RunScriptWindowsCmd Condition="'$(TargetOS)' == 'windows' and '$(RunScriptWindowsCmd)' != ''">false</RunScriptWindowsCmd>
+    <RunScriptWindowsCmd Condition="'$(TargetOS)' != 'windows' and '$(RunScriptWindowsCmd)' != ''">true</RunScriptWindowsCmd>
+  </PropertyGroup>
   <PropertyGroup Condition="'$(RunScriptInputName)' == ''">
-    <RunScriptInputName Condition="'$(TargetOS)' == 'windows'">RunnerTemplate.cmd</RunScriptInputName>
-    <RunScriptInputName Condition="'$(TargetOS)' != 'windows'">RunnerTemplate.sh</RunScriptInputName>
+    <RunScriptInputName Condition="'$(RunScriptWindowsCmd)' == 'true'">RunnerTemplate.cmd</RunScriptInputName>
+    <RunScriptInputName Condition="'$(RunScriptWindowsCmd)' != 'true'">RunnerTemplate.sh</RunScriptInputName>
     <RunScriptInputName Condition="'$(BuildTestsOnHelix)' == 'true' and '$(TargetsAppleMobile)' == 'true'">AppleHelixRunnerTemplate.sh</RunScriptInputName>
     <RunScriptInputName Condition="'$(BuildTestsOnHelix)' != 'true' and '$(TargetsAppleMobile)' == 'true'">AppleRunnerTemplate.sh</RunScriptInputName>
     <RunScriptInputName Condition="'$(TargetOS)' == 'Android'">AndroidRunnerTemplate.sh</RunScriptInputName>
     <RunScriptInputName Condition="'$(TargetOS)' == 'Browser' and '$(OS)' != 'Windows_NT' and '$(BuildAOTTestsOnHelix)' == 'true'">WasmRunnerAOTTemplate.sh</RunScriptInputName>
     <RunScriptInputName Condition="'$(TargetOS)' == 'Browser' and '$(OS)' != 'Windows_NT' and '$(BuildAOTTestsOnHelix)' != 'true'">WasmRunnerTemplate.sh</RunScriptInputName>
     <RunScriptInputName Condition="'$(TargetOS)' == 'Browser' and '$(OS)' == 'Windows_NT'">WasmRunnerTemplate.cmd</RunScriptInputName>
-    <RunScriptInputName Condition="$(OutputRid.StartsWith('linux-bionic')) and '$(OS)' != 'Windows_NT'">BionicRunnerTemplate.sh</RunScriptInputName>
-    <RunScriptInputName Condition="$(OutputRid.StartsWith('linux-bionic')) and '$(OS)' == 'Windows_NT'">BionicRunnerTemplate.cmd</RunScriptInputName>
+    <RunScriptInputName Condition="$(OutputRid.StartsWith('linux-bionic')) and '$(RunScriptWindowsCmd)' != 'true'">BionicRunnerTemplate.sh</RunScriptInputName>
+    <RunScriptInputName Condition="$(OutputRid.StartsWith('linux-bionic')) and '$(RunScriptWindowsCmd)' == 'true'">BionicRunnerTemplate.cmd</RunScriptInputName>
     <InnerRunScriptInputName>BionicRunOnDevice.sh</InnerRunScriptInputName>
   </PropertyGroup>
 
@@ -17,19 +21,19 @@
     <RunScriptInputPath Condition="'$(RunScriptInputPath)' == ''">$(MSBuildThisFileDirectory)$(RunScriptInputName)</RunScriptInputPath>
     <InnerRunScriptInputPath>$(MSBuildThisFileDirectory)$(InnerRunScriptInputName)</InnerRunScriptInputPath>
 
-    <RunScriptOutputName Condition="'$(TargetOS)' != 'windows'">RunTests.sh</RunScriptOutputName>
+    <RunScriptOutputName Condition="'$(RunScriptWindowsCmd)' != 'true'">RunTests.sh</RunScriptOutputName>
     <RunScriptOutputName Condition="'$(BuildTestsOnHelix)' == 'true' and '$(TargetsAppleMobile)' == 'true'">build-apple-app.sh</RunScriptOutputName>
-    <RunScriptOutputName Condition="'$(TargetOS)' == 'windows' or ('$(TargetOS)' == 'Browser' and '$(OS)' == 'Windows_NT')">RunTests.cmd</RunScriptOutputName>
+    <RunScriptOutputName Condition="'$(RunScriptWindowsCmd)' == 'true' or ('$(TargetOS)' == 'Browser' and '$(OS)' == 'Windows_NT')">RunTests.cmd</RunScriptOutputName>
     <InnerRunScriptOutputName>$(AssemblyName).sh</InnerRunScriptOutputName>
     <RunScriptOutputPath>$([MSBuild]::NormalizePath('$(OutDir)', '$(RunScriptOutputName)'))</RunScriptOutputPath>
     <InnerRunScriptOutputPath>$([MSBuild]::NormalizePath('$(OutDir)', '$(InnerRunScriptOutputName)'))</InnerRunScriptOutputPath>
     <InnerRunEnvOutputPath>$([MSBuild]::NormalizePath('$(OutDir)', 'TestEnv.txt'))</InnerRunEnvOutputPath>
 
-    <RunScriptHostDir Condition="'$(TargetOS)' == 'windows'">%RUNTIME_PATH%\</RunScriptHostDir>
-    <RunScriptHostDir Condition="'$(TargetOS)' != 'windows'">$RUNTIME_PATH/</RunScriptHostDir>
+    <RunScriptHostDir Condition="'$(RunScriptWindowsCmd)' == 'true'">%RUNTIME_PATH%\</RunScriptHostDir>
+    <RunScriptHostDir Condition="'$(RunScriptWindowsCmd)' != 'true'">$RUNTIME_PATH/</RunScriptHostDir>
 
-    <RunScriptHost Condition="'$(TargetOS)' == 'windows'">$(RunScriptHostDir)dotnet.exe</RunScriptHost>
-    <RunScriptHost Condition="'$(TargetOS)' != 'windows'">$(RunScriptHostDir)dotnet</RunScriptHost>
+    <RunScriptHost Condition="'$(RunScriptWindowsCmd)' == 'true'">$(RunScriptHostDir)dotnet.exe</RunScriptHost>
+    <RunScriptHost Condition="'$(RunScriptWindowsCmd)' != 'true'">$(RunScriptHostDir)dotnet</RunScriptHost>
   </PropertyGroup>
 
   <!-- For both tests.mobile.targets and tests.wasm.targets -->
@@ -78,8 +82,8 @@
   <Target Name="GenerateRunScript">
     <PropertyGroup>
       <!-- RSP file support. -->
-      <RunScriptCommand Condition="'$(TargetOS)' != 'windows' and ('$(TargetOS)' != 'Browser' or '$(OS)' != 'Windows_NT')">$(RunScriptCommand) $RSP_FILE</RunScriptCommand>
-      <RunScriptCommand Condition="'$(TargetOS)' == 'windows' or ('$(TargetOS)' == 'Browser' and '$(OS)' == 'Windows_NT')">$(RunScriptCommand) %RSP_FILE%</RunScriptCommand>
+      <RunScriptCommand Condition="'$(RunScriptWindowsCmd)' != 'true' and ('$(TargetOS)' != 'Browser' or '$(OS)' != 'Windows_NT')">$(RunScriptCommand) $RSP_FILE</RunScriptCommand>
+      <RunScriptCommand Condition="'$(RunScriptWindowsCmd)' == 'true' or ('$(TargetOS)' == 'Browser' and '$(OS)' == 'Windows_NT')">$(RunScriptCommand) %RSP_FILE%</RunScriptCommand>
 
       <!-- Escape potential user input. -->
       <RunScriptCommand>$([MSBuild]::Escape('$(RunScriptCommand)'))</RunScriptCommand>
