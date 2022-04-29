@@ -951,6 +951,15 @@ TypeHandle ClassLoader::LoadConstructedTypeThrowing(TypeKey *pKey,
         typeHnd = pKey->GetModule()->LookupFullyCanonicalInstantiation(pKey->GetTypeToken(), &existingLoadLevel);
     }
 
+    if (typeHnd.IsNull())
+    {
+        typeHnd = LookupTypeHandleForTypeKey(pKey);
+        if (!typeHnd.IsNull())
+        {
+            existingLoadLevel = typeHnd.GetLoadLevel();
+        }
+    }
+
     // If something has been published in the tables, and it's at the right level, just return it
     if (!typeHnd.IsNull() && existingLoadLevel >= level)
     {
