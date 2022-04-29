@@ -381,7 +381,9 @@ namespace System.Data.Tests
         public void SerializationFormat_Binary_does_not_work_by_default()
         {
             DataTable dt = new DataTable("MyTable");
+#pragma warning disable SYSLIB0038
             Assert.Throws<InvalidEnumArgumentException>(() => dt.RemotingFormat = SerializationFormat.Binary);
+#pragma warning restore SYSLIB0038
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -396,7 +398,9 @@ namespace System.Data.Tests
                 DataTable dt = new DataTable("MyTable");
                 DataColumn dc = new DataColumn("dc", typeof(int));
                 dt.Columns.Add(dc);
+#pragma warning disable SYSLIB0038
                 dt.RemotingFormat = SerializationFormat.Binary;
+#pragma warning restore SYSLIB0038
 
                 DataTable dtDeserialized;
                 using (MemoryStream ms = new MemoryStream())
