@@ -81,7 +81,6 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             GCHandle handle = (GCHandle)(IntPtr)tcsGCHandle;
             // this is JS owned Normal handle. We always have a Target
-            Debug.Assert(handle.Target != null, "TaskCompletionSource should not be null.");
             TaskCompletionSource<object> tcs = (TaskCompletionSource<object>)handle.Target!;
             result = tcs.Task;
         }
