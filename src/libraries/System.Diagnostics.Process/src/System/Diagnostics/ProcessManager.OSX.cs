@@ -20,7 +20,7 @@ namespace System.Diagnostics
             return Interop.libproc.proc_pidpath(processId);
         }
 
-        private static ProcessInfo CreateProcessInfo(int pid)
+        internal static ProcessInfo? CreateProcessInfo(int pid, string? processNameFilter = null)
         {
             // Negative PIDs aren't valid
             if (pid < 0)
@@ -28,10 +28,7 @@ namespace System.Diagnostics
                 throw new ArgumentOutOfRangeException(nameof(pid));
             }
 
-            ProcessInfo procInfo = new ProcessInfo()
-            {
-                ProcessId = pid
-            };
+            ProcessInfo procInfo;
 
             // Try to get the task info. This can fail if the user permissions don't permit
             // this user context to query the specified process
@@ -40,10 +37,28 @@ namespace System.Diagnostics
             {
                 // Set the values we have; all the other values don't have meaning or don't exist on OSX
                 Interop.libproc.proc_taskallinfo temp = info.Value;
-                unsafe { procInfo.ProcessName = Marshal.PtrToStringAnsi(new IntPtr(temp.pbsd.pbi_comm))!; }
-                procInfo.BasePriority = temp.pbsd.pbi_nice;
-                procInfo.VirtualBytes = (long)temp.ptinfo.pti_virtual_size;
-                procInfo.WorkingSet = (long)temp.ptinfo.pti_resident_size;
+                string processName;
+                unsafe { processName = Marshal.PtrToStringAnsi(new IntPtr(temp.pbsd.pbi_comm))!; }
+                if (!string.IsNullOrEmpty(processNameFilter) && !string.Equals(processName, processNameFilter, StringComparison.OrdinalIgnoreCase))
+                {
+                    return null;
+                }
+
+                procInfo = new ProcessInfo()
+                {
+                    ProcessId = pid,
+                    ProcessName = processName,
+                    BasePriority = temp.pbsd.pbi_nice,
+                    VirtualBytes = (long)temp.ptinfo.pti_virtual_size,
+                    WorkingSet = (long)temp.ptinfo.pti_resident_size,
+                };
+            }
+            else
+            {
+                procInfo = new ProcessInfo()
+                {
+                    ProcessId = pid,
+                };
             }
 
             // Get the sessionId for the given pid, getsid returns -1 on error
